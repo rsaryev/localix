@@ -19,7 +19,7 @@ The findings behind each item, with counts and paths, are in [the audit](audit.m
 | [x] Agent               | `agent` by key         | Seat and handle repair                                         | `apps/api/src/features/agents/`                                |
 | [x] MCP server, plugin  | `mcp`, `plugin` by key | Capability cleanup: rules, OAuth tokens, vault bindings        | `apps/api/src/features/mcp/`, `apps/api/src/features/plugins/` |
 | [x] Capability rule     | `capability.rule`      | Relay; semantic index                                          | `apps/api/src/features/capabilities/`                          |
-| [ ] Message edit        | `chat.message`         | Semantic index                                                 | `apps/api/src/features/chat/`                                  |
+| [x] Message edit        | `chat.message`         | Semantic index                                                 | `apps/api/src/features/chat/`                                  |
 | [ ] Chat deletion       | `chat.session` cascade | Session residue: sandbox, child loops and monitors, inbox rows | `apps/api/src/features/chat/`                                  |
 | [ ] Local model         | `local.model`          | Route repair                                                   | `apps/api/src/features/local-models/`                          |
 

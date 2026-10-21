@@ -169,6 +169,16 @@ export function createMessageWriteQueries(
           .where('id', '=', id)
           .execute()
         await syncMessageUsage(trx, id, merged, stored, finalizing)
+        // An edit, a foreign write or the final flush is a change consumers re-read. The
+        // streaming checkpoints between (each carrying the `known` hint of the previous one)
+        // are not: they would announce one notice per flush of a reply still being written,
+        // and its finalizing flush announces it whole.
+        if (!known || finalizing)
+          await recordCoreChanges(trx, {
+            entity: 'chat.message',
+            op: 'upserted',
+            ref: { id, userId, sessionId },
+          })
         return { payload: merged, payloadJson }
       })
     },
