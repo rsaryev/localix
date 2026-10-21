@@ -1,7 +1,8 @@
-import type { Kysely } from 'kysely'
+import type { Kysely, Transaction } from 'kysely'
 
 import { retrySqliteBusy, type AppDatabase } from '../../../db'
 import { safeJsonParse } from '../../../lib/json'
+import { recordSessionChanges } from '../session-changes'
 
 /** The chat-owned rows that name an agent: its seats and its entries in the choice maps. */
 
@@ -13,6 +14,25 @@ export interface SeatOfAgent {
   agentId: string
   handle: string
   projectId: string
+}
+
+/**
+ * Say these chats changed, in the writer's transaction, grouped by owner. Route repair and agent
+ * seats ignore `chat.session`, so their own notices never wake them again.
+ */
+async function announceSessions(
+  trx: Transaction<AppDatabase>,
+  sessionIds: readonly string[],
+): Promise<void> {
+  if (sessionIds.length === 0) return
+  const rows = await trx
+    .selectFrom('agent_sessions')
+    .select(['id', 'user_id'])
+    .where('id', 'in', [...sessionIds])
+    .execute()
+  const byUser = new Map<string, string[]>()
+  for (const row of rows) byUser.set(row.user_id, [...(byUser.get(row.user_id) ?? []), row.id])
+  for (const [userId, ids] of byUser) await recordSessionChanges(trx, userId, ids)
 }
 
 export function createAgentSeatsRepository(db: Kysely<AppDatabase>) {
@@ -34,16 +54,20 @@ export function createAgentSeatsRepository(db: Kysely<AppDatabase>) {
 
     /** The seats' display handle follows the agent's; returns the sessions that changed. */
     async rename(agentId: string, handle: string): Promise<string[]> {
-      const rows = await retrySqliteBusy(() =>
-        db
-          .updateTable('conversation_participants')
-          .set({ handle })
-          .where('agent_id', '=', agentId)
-          .where('handle', '!=', handle)
-          .returning('session_id')
-          .execute(),
+      return retrySqliteBusy(() =>
+        db.transaction().execute(async (trx) => {
+          const rows = await trx
+            .updateTable('conversation_participants')
+            .set({ handle })
+            .where('agent_id', '=', agentId)
+            .where('handle', '!=', handle)
+            .returning('session_id')
+            .execute()
+          const sessions = [...new Set(rows.map((row) => row.session_id))]
+          await announceSessions(trx, sessions)
+          return sessions
+        }),
       )
-      return rows.map((row) => row.session_id)
     },
 
     /**
@@ -75,6 +99,7 @@ export function createAgentSeatsRepository(db: Kysely<AppDatabase>) {
             .where('agent_id', '=', agentId)
             .where('session_id', 'in', sessions)
             .execute()
+          await announceSessions(trx, sessions)
           return sessions
         }),
       )
@@ -103,6 +128,7 @@ export function createAgentSeatsRepository(db: Kysely<AppDatabase>) {
               .execute()
             changed.push(row.id)
           }
+          await announceSessions(trx, changed)
           return changed
         }),
       )

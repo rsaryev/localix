@@ -237,5 +237,5 @@ persisted per session where applicable.
 - [Session-tree deletion](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/session-deletion.ts)
 - [Deletion tree traversal](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/session-subtree.ts)
 - [Session lifecycle and deletion](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/session-lifecycle.ts)
-- [Durable agent queue](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/wake-queue-store.ts)
+- [Durable agent queue](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/wake-queue-repository.ts)
 - [URL-backed workspace navigation](https://github.com/rsaryev/localix/blob/main/apps/ui/src/pages/chat/model/useUrlStoreSync.ts)

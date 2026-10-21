@@ -1,11 +1,11 @@
 import { buildAgentEngine } from './agent-engine'
+import { recoverBootState, type BootRecovery } from './boot-recovery'
 import { createChangeFeeds, type ChangeFeeds } from './change-feed'
 import { dirname, join } from 'node:path'
 import type { DestinationStream } from 'pino'
 import type { LocalModelsService } from '../features/local-models/service'
 import type { AgentEngine, AgentRuntime, LanguageModelFactory } from '@localixai/agent/runtime'
 import { createDatabase, migrateToLatest } from '../db'
-import { takeInterruptedRuns } from '../db/migrator'
 import { createDigestLoaders } from '../boot/digests'
 import { createCatalogService } from '../features/catalog/service'
 import { logCatalogRefresh } from '../features/catalog/refresh-schedule'
@@ -27,21 +27,12 @@ import {
 import { createSecretsService } from '../features/secrets/service'
 import { createSecretExposureShield } from '../features/secrets/exposure-shield'
 import { createNotificationJournal, type NotificationJournal } from '../features/notifications'
-import {
-  recordInterruptedRuns,
-  startAgentNotifications,
-  type AgentNotifications,
-} from '../features/notifications/producers'
-import { createAttentionRegistry } from '../features/attention/registry'
-import { rebuildDurableAttention } from '../features/attention/sources'
-import { createPlanRepository } from '../features/plans/repository'
 import { redactSecrets } from '../lib/secret-redaction'
 import { createUiLocationCatalogService } from '../features/ui-locations/service'
 import { warmPreviewProbe } from '../features/agent-core/tools/preview/preview-probe'
 import { loadEnv } from '../lib/env'
 import { createLogger } from '../lib/logger'
 import type { BootstrapServiceRefs } from './chat-service-deps'
-import { markLostWorkItems } from '../features/chat/runtime/lost-work'
 import { createWorkRegistry, type WorkRegistry } from '../features/work/registry'
 import { createWorkRepository } from '../features/work/repository'
 import { installBackendHostModules } from '../features/plugins/backend-host-modules'
@@ -70,7 +61,7 @@ export interface InfraPhase {
   serviceRefs: BootstrapServiceRefs
   bootRepo: ReturnType<typeof createChatRepository>
   work: WorkRegistry
-  interruptedRuns: ReturnType<typeof takeInterruptedRuns>
+  interruptedRuns: BootRecovery['interruptedRuns']
   digests: ReturnType<typeof createDigestLoaders>
   finalAssistantText: ReturnType<typeof createDigestLoaders>['finalAssistantText']
   loadSessionDigest: ReturnType<typeof createDigestLoaders>['loadSessionDigest']
@@ -84,7 +75,7 @@ export interface InfraPhase {
   /** The Event Center's single source of truth; every phase after this one records into it. */
   notifications: NotificationJournal
   /** The server's agent-lifecycle producers into that journal, threaded to their seams. */
-  agentNotifications: AgentNotifications
+  agentNotifications: BootRecovery['agentNotifications']
   catalogService: ReturnType<typeof createCatalogService>
   uiLocationCatalogService: ReturnType<typeof createUiLocationCatalogService>
   providerConnectionsService: ReturnType<typeof createProviderConnectionsService>
@@ -157,11 +148,6 @@ export async function createInfraPhase(
     repo: createWorkRepository(db),
     logger: { warn: (msg) => logger.warn({ event: 'work.warn', msg }) },
   })
-  // The agent-lifecycle producers (`features/notifications/producers`). Started before
-  // `hydrate`, whose losses they report, and awaited: a pending question the old process held is
-  // settled before this process can ask a new one.
-  const lookupSession = (...args: Parameters<typeof bootRepo.getSession>) =>
-    bootRepo.getSession(...args)
   // ONE instance of the connection conditions, shared by the run producers (a spent quota, a
   // refused key) and the OAuth refresh path below: each keeps a memo of what it last said, and two
   // memos about the same connection would disagree. The name is looked up lazily, at a run's end,
@@ -171,32 +157,17 @@ export async function createInfraPhase(
       .listConnections(userId)
       .then(({ connections }) => connections.find((c) => c.id === connectionId)?.label),
   )
-  const agentNotifications = await startAgentNotifications({
+  // What the dead process left behind: its agent notifications, lost work, plans under review
+  // and interrupted runs (`boot-recovery.ts`).
+  const { agentNotifications, interruptedRuns } = await recoverBootState({
     db,
-    journal: notifications,
-    attention: createAttentionRegistry({ warn: (msg) => logger.warn({ event: 'attention', msg }) }),
-    lookupSession,
-    defaultUserId: env.LOCALIX_DEFAULT_USER_ID,
+    env,
+    logger,
+    bootRepo,
+    notifications,
     work,
-    provider: providerConditions,
-    log: (event, detail) => logger.warn({ event, ...detail }),
+    providerConditions,
   })
-  await markLostWorkItems(bootRepo, await work.hydrate(), new Date().toISOString(), {
-    warn: (msg) => logger.warn({ event: 'work.lost_item', msg }),
-  })
-  // A plan presented for review is not lost with the old process: it rejoins the "waiting on
-  // you" set from its row.
-  await rebuildDurableAttention(agentNotifications.attention, {
-    plans: await createPlanRepository(db).listAwaitingReview(),
-    getSession: (...args) => bootRepo.getSession(...args),
-  })
-  // Which sessions had a run in flight, from `agent_runs` — the migration sweep above already
-  // reclassified them. NOT from the session sweep: a chat session never reaches
-  // `runtime_status='running'`, so that column only ever sees workers, and the first version of
-  // this feature announced nothing at all because of it (found by review). Read once; the note
-  // itself has to wait for the chat service, which owns the stream registry.
-  const interruptedRuns = takeInterruptedRuns()
-  await recordInterruptedRuns({ journal: notifications, lookupSession }, interruptedRuns)
 
   // DB-backed reads behind the composer's `@`-context-refs (session / terminal /
   // call / project / message) + the `localix://resource/chat` nav listing ports, plus the

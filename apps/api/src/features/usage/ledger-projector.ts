@@ -1,7 +1,7 @@
 /**
  * THE USAGE LEDGER, as a projector on the core change feed.
  *
- * A chat turn's ledger row is derived from its assistant message (`ledger-rows.ts`): its usage,
+ * A chat turn's ledger row is derived from its assistant message (`ledger-rows.ts`, written by `ledger-repository.ts`): its usage,
  * timing and the routing the run stamped on it (`payload.turnEnd`). The run used to write the
  * row itself, fire-and-forget after the message committed, and a boot pass repaired the crash
  * window between the two. The message's notice is recorded in the message's own transaction, so

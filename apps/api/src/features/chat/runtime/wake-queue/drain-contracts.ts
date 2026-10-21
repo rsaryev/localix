@@ -1,7 +1,7 @@
 import type { AgentTurnAdmission } from '../agent-turn-ticket'
 import type { AgentTurnSource } from '../conversation-strategy'
 import type { WakeQueueContext } from '../wake-queue-contracts'
-import type { WakeQueueStore } from '../wake-queue-store'
+import type { WakeQueueStore } from '../wake-queue-repository'
 import type { ContinuationOperations } from './continuations'
 import type { DeadLetter } from './dead-letter'
 import type { PendingTurn } from './entry'

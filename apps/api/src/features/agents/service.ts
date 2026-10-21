@@ -164,8 +164,8 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
       // An `agent:<id>` rule lives in that agent's OWN list — "may this role be invoked" is a
       // statement about the role, and keeping it beside the role's tool rules is what lets a
       // delete drop both in one write.
-      // Written through the rule repository, not the availability writer: the writer bumps the
-      // capability revision, and the composition root already bumps it once for this method.
+      // The rule write bumps the capability revision once; the composition root's announcement
+      // for this method sees that bump and does not add another.
       await ruleRepository.mutate(userId, entry.record.id, (current) =>
         applySwitches(current, 'agent', [{ name: entry.record.id, enabled }]),
       )

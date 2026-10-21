@@ -3,7 +3,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 
 import { createDatabase } from '../../../db/connection'
 import type { AppDatabase } from '../../../db/types'
-import { createDatabaseWakeQueueStore, queueDeliveryMessageIds } from './wake-queue-store'
+import { createDatabaseWakeQueueStore, queueDeliveryMessageIds } from './wake-queue-repository'
 import { createWakeQueue } from './wake-queue'
 import { insertInternalTurn } from './message-persistence'
 import type { SessionRecord } from '../repository'

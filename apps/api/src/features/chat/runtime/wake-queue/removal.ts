@@ -10,7 +10,7 @@
  */
 import type { QueueItem } from '../../../../lib/priority-queue'
 import type { QueueClearResult, QueueRemovalResult } from '../../contracts'
-import type { WakeQueueStore } from '../wake-queue-store'
+import type { WakeQueueStore } from '../wake-queue-repository'
 import type { ContinuationOperations } from './continuations'
 import type { PendingTurn } from './entry'
 import { renderBatch } from './kinds'

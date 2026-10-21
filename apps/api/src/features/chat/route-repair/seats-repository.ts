@@ -2,6 +2,7 @@ import type { Kysely } from 'kysely'
 
 import { retrySqliteBusy, type AppDatabase } from '../../../db'
 import { safeJsonParse } from '../../../lib/json'
+import { recordSessionChanges } from '../session-changes'
 
 /**
  * The chat-owned routes route repair reads and rebinds: seats (what a run reads) and the session
@@ -10,6 +11,7 @@ import { safeJsonParse } from '../../../lib/json'
  */
 
 export interface SeatRoute {
+  userId: string
   sessionId: string
   agentId: string
   providerConnectionId: string | null
@@ -17,6 +19,7 @@ export interface SeatRoute {
 }
 
 export interface ChoiceRoute {
+  userId: string
   sessionId: string
   agentId: string
   providerConnectionId: string
@@ -26,7 +29,7 @@ export interface ChoiceRoute {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
-function choiceRoutes(sessionId: string, raw: string | null): ChoiceRoute[] {
+function choiceRoutes(userId: string, sessionId: string, raw: string | null): ChoiceRoute[] {
   const parsed = safeJsonParse<unknown>(raw)
   if (!isRecord(parsed) || !isRecord(parsed.agents)) return []
   return Object.entries(parsed.agents).flatMap(([agentId, route]) =>
@@ -35,6 +38,7 @@ function choiceRoutes(sessionId: string, raw: string | null): ChoiceRoute[] {
     typeof route.providerConnectionId === 'string'
       ? [
           {
+            userId,
             sessionId,
             agentId,
             modelId: route.modelId,
@@ -52,6 +56,7 @@ export function createRouteSeatsRepository(db: Kysely<AppDatabase>) {
         .selectFrom('conversation_participants as seat')
         .innerJoin('agent_sessions as session', 'session.id', 'seat.session_id')
         .select([
+          'session.user_id as userId',
           'seat.session_id as sessionId',
           'seat.agent_id as agentId',
           'seat.provider_connection_id as providerConnectionId',
@@ -61,23 +66,30 @@ export function createRouteSeatsRepository(db: Kysely<AppDatabase>) {
         .execute()
     },
 
-    /** Rebind one seat; false when it no longer holds the route that was read. */
+    /**
+     * Rebind one seat; false when it no longer holds the route that was read. The chat's notice is
+     * recorded with the write; route repair ignores `chat.session`, so it never wakes itself.
+     */
     async rebindSeat(seat: SeatRoute, to: string): Promise<boolean> {
-      const result = await retrySqliteBusy(() =>
-        db
-          .updateTable('conversation_participants')
-          .set({ provider_connection_id: to })
-          .where('session_id', '=', seat.sessionId)
-          .where('agent_id', '=', seat.agentId)
-          .where('model_id', '=', seat.modelId)
-          .where((eb) =>
-            seat.providerConnectionId === null
-              ? eb('provider_connection_id', 'is', null)
-              : eb('provider_connection_id', '=', seat.providerConnectionId),
-          )
-          .executeTakeFirst(),
+      return retrySqliteBusy(() =>
+        db.transaction().execute(async (trx) => {
+          const result = await trx
+            .updateTable('conversation_participants')
+            .set({ provider_connection_id: to })
+            .where('session_id', '=', seat.sessionId)
+            .where('agent_id', '=', seat.agentId)
+            .where('model_id', '=', seat.modelId)
+            .where((eb) =>
+              seat.providerConnectionId === null
+                ? eb('provider_connection_id', 'is', null)
+                : eb('provider_connection_id', '=', seat.providerConnectionId),
+            )
+            .executeTakeFirst()
+          const moved = Number(result.numUpdatedRows) > 0
+          if (moved) await recordSessionChanges(trx, seat.userId, [seat.sessionId])
+          return moved
+        }),
       )
-      return Number(result.numUpdatedRows) > 0
     },
 
     async choices(userId: string): Promise<ChoiceRoute[]> {
@@ -87,7 +99,7 @@ export function createRouteSeatsRepository(db: Kysely<AppDatabase>) {
         .where('user_id', '=', userId)
         .where('model_choices', 'is not', null)
         .execute()
-      return rows.flatMap((row) => choiceRoutes(row.id, row.model_choices))
+      return rows.flatMap((row) => choiceRoutes(userId, row.id, row.model_choices))
     },
 
     /** Rebind one choice entry, keeping the rest of the stored map (stamps included) as it is. */
@@ -114,6 +126,7 @@ export function createRouteSeatsRepository(db: Kysely<AppDatabase>) {
             .set({ model_choices: JSON.stringify(parsed) })
             .where('id', '=', choice.sessionId)
             .execute()
+          await recordSessionChanges(trx, choice.userId, [choice.sessionId])
           return true
         }),
       )

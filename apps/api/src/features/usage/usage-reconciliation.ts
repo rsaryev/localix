@@ -1,7 +1,7 @@
 import { sql, type Kysely } from 'kysely'
 
 import type { AppDatabase } from '../../db'
-import { selectLedgerSources, writeLedgerRows } from './ledger-rows'
+import { selectLedgerSources, writeLedgerRows } from './ledger-repository'
 
 export function createUsageReconciliation(db: Kysely<AppDatabase>) {
   return {

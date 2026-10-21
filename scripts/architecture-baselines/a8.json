@@ -1,7 +1,4 @@
 [
-  "features/chat -> features/external-agents",
-  "features/chat -> features/inspector",
-  "features/chat -> features/settings",
   "features/chat -> features/terminal",
   "features/chat -> features/workspace-grid",
   "features/companion -> features/chat",
@@ -9,7 +6,6 @@
   "features/external-agents -> features/terminal",
   "features/external-agents -> features/workspace-grid",
   "features/inspector -> features/chat",
-  "features/inspector -> features/settings",
   "features/inspector -> features/workspace-grid",
   "features/search -> features/chat",
   "features/search -> features/settings",

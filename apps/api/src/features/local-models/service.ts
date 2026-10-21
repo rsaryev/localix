@@ -15,8 +15,6 @@ import { PINNED_MODELS, REQUIRED_MODELS } from './pinned'
 import { requiredModels } from './required'
 import { whenInstalled } from './when-installed'
 import { createLocalCatalog } from './catalog'
-import { planFor } from './catalog-rank'
-import { readShape } from './gguf-header'
 import { createHfClient, type HfClient } from './hf-client'
 import {
   installPaths,
@@ -29,7 +27,8 @@ import {
   discardDownload,
 } from './installer'
 import type { LlamaServer, LlamaServerOptions } from './llama-server'
-import { detectMachine, type MachineProfile } from './machine'
+import type { MachineProfile } from './machine'
+import { createMachinePlans } from './machine-plans'
 import { createBackgroundDownloads, type BackgroundDownloads } from './background'
 import { createInstallQueue } from './install-queue'
 import { createSignal } from './signal'
@@ -71,43 +70,32 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
   let installed: LocalModelSpec[] = []
   let partial: PartialModel[] = []
   let runtimeInstalled = false
-  let machine: MachineProfile | null = null
-  const plans = new Map<string, ModelPlan | null>()
   const progress = createSignal()
   const notify = progress.emit
   // Rarer than `notify` (every progress tick): the set of listable models changed.
   const list = createSignal()
   const listChanged = list.emit
 
+  const machine = createMachinePlans({
+    paths,
+    detect: deps.detect,
+    executable: () => (build && runtimeInstalled ? paths.runtimeExecutable(build) : null),
+    installed: () => installed,
+  })
+
   const catalog = createLocalCatalog({
     root: deps.root,
     hf: deps.hf ?? createHfClient(fetch, { token: deps.hfToken }),
     installed: () => installed,
-    machine: () => machine,
+    machine: machine.profile,
     log: deps.log,
   })
 
-  /** How an installed model runs here, from its own header on disk. */
-  async function planInstalled(spec: LocalModelSpec) {
-    if (!machine || spec.kind !== 'chat') return null
-    const weights = spec.files.find((f) => f.role === 'weights')
-    const shape = weights
-      ? await readShape(paths.modelFile(spec.id, weights.name)).catch(() => null)
-      : null
-    return planFor(spec, machine, shape)
-  }
-
-  /** Profile this computer: llama.cpp's own device list once the runtime is here. */
-  async function profileMachine() {
-    const executable = build && runtimeInstalled ? paths.runtimeExecutable(build) : null
-    machine = await (deps.detect ?? detectMachine)(executable).catch(() => machine)
-    await replan()
-  }
   const router = createModelRouter({
     paths,
     executable: async () =>
       build && (await isRuntimeInstalled(paths, build)) ? paths.runtimeExecutable(build) : null,
-    models: async () => installed.map((spec) => ({ spec, plan: plans.get(spec.id) ?? null })),
+    models: async () => installed.map((spec) => ({ spec, plan: machine.planOf(spec.id) })),
     idleMs: deps.routerIdleMs,
     log: deps.log,
     ...(deps.startServer ? { start: deps.startServer } : {}),
@@ -123,15 +111,9 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
     installed = (await listInstalledModels(paths)).map(named)
     partial = (await listPartialModels(paths)).map((p) => ({ ...p, spec: named(p.spec) }))
     runtimeInstalled = build ? await isRuntimeInstalled(paths, build) : false
-    await replan()
+    await machine.replan()
     // What is here changed: a wanted model that went missing downloads again.
     background.reconcile()
-  }
-
-  /** Plan every installed model for this computer: the router starts it so, the provider says so. */
-  async function replan() {
-    plans.clear()
-    for (const spec of installed) plans.set(spec.id, await planInstalled(spec))
   }
 
   const downloads = createInstallQueue({
@@ -141,7 +123,7 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
     installed: async (spec, runtimeAdded) => {
       await refresh()
       // A first runtime install: llama.cpp can now report this computer's devices itself.
-      if (runtimeAdded) await profileMachine()
+      if (runtimeAdded) await machine.detect()
       await router.reload()
       listChanged()
       deps.announce?.({ op: 'upserted', id: spec.id })
@@ -166,7 +148,7 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
       // What is installed is known only now; a catalog read before boot listed nothing local.
       listChanged()
       deps.announce?.({ op: 'resync' })
-      await profileMachine()
+      await machine.detect()
       // Downloads quitting cut short go on — quietly when they were fetched ahead of need —
       // and the ones a person paused wait for them.
       for (const { spec, background: quiet } of partial.filter((p) => p.resume)) {
@@ -191,7 +173,7 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
       kind ? installed.filter((s) => s.kind === kind) : installed,
     isInstalled: (modelId: string) => installed.some((s) => s.id === modelId),
     /** How an installed model runs here — the context its server is started with. */
-    planOf: (modelId: string): ModelPlan | null => plans.get(modelId) ?? null,
+    planOf: (modelId: string): ModelPlan | null => machine.planOf(modelId),
 
     /**
      * Start downloading a model (and the runtime). For an installed model it fetches only what
@@ -285,7 +267,7 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
         jobs: downloads.list(),
         partial,
         loaded: await router.loaded(),
-        machine,
+        machine: machine.profile(),
       })
     },
 

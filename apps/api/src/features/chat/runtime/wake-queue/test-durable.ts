@@ -7,7 +7,7 @@ import { sessionFixture } from '../../../../testing/session-fixture'
 import type { PersistedMessage } from '../../contracts'
 import type { RunParams } from '../run-contract'
 import { createWakeQueue, type WakeQueueContext } from '../wake-queue'
-import { createDatabaseWakeQueueStore, type WakeQueueStore } from '../wake-queue-store'
+import { createDatabaseWakeQueueStore, type WakeQueueStore } from '../wake-queue-repository'
 import type { PendingTurn } from './entry'
 
 export type DurableStore = WakeQueueStore<PendingTurn>

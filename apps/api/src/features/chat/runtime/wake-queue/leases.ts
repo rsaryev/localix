@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { createPriorityQueue, type PriorityQueue } from '../../../../lib/priority-queue'
 import type { RuntimeState } from '../agent-runner-state'
 import type { RunCompletion } from '../run-outcome'
-import type { DurableQueueItem, WakeQueueStore } from '../wake-queue-store'
+import type { DurableQueueItem, WakeQueueStore } from '../wake-queue-repository'
 import { readPendingTurn, type PendingTurn } from './entry'
 
 /**

@@ -8,7 +8,7 @@
  * (`state = 'failed'`), skipped by selection and steering, and listed in the queue snapshot so
  * the person sees it and retries or removes it. Retrying puts the whole band back where it was.
  */
-import type { WakeQueueStore } from '../wake-queue-store'
+import type { WakeQueueStore } from '../wake-queue-repository'
 import type { PendingTurn } from './entry'
 import type { LeaseOperations, WakeQueueSharedState } from './leases'
 

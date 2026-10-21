@@ -92,10 +92,6 @@ const EXEMPTIONS: Exemptions = {
     reason:
       'Matches an MCP server’s per-tool rule actions (`mcp:<server>/<tool>`) when the server is removed. It compares rule identifiers only; no filesystem path is resolved or accessed.',
   },
-  [exemptionKey('src/features/usage/ledger-rows.ts', 'sep-template')]: {
-    reason:
-      'Normalizes a persisted MODEL ID by removing its provider namespace (`openai/…`) before rebuilding a missing usage-ledger row. It compares catalog identifiers only; no filesystem path is resolved or accessed.',
-  },
   [exemptionKey('src/features/context-fabric/policy.ts', 'sep-template')]: {
     reason:
       'Matches an already-RELATIVE path against a user-supplied EXCLUSION PREFIX (`src/secrets`), which is a glob-ish pattern, not a filesystem root — resolving it against a root would change what an empty/odd prefix means. The real root-containment check in this file DOES go through the owner.',

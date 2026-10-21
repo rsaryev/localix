@@ -12,7 +12,7 @@ import type { RunExecutionOutcome, RunCompletion } from './run-outcome'
 import type { RunIdentity, RunParams } from './run-contract'
 import type { SessionStreamRegistry } from './session-stream-registry'
 import type { PendingTurn } from './wake-queue/entry'
-import type { WakeQueueStore } from './wake-queue-store'
+import type { WakeQueueStore } from './wake-queue-repository'
 import type { FloorAdvisor, FloorScope } from './floor-advice'
 
 export interface WakeQueueContext {

@@ -1,6 +1,6 @@
 import type { QueueItem } from '../../../../lib/priority-queue'
 import type { SessionQueueItem, WakeSource } from '../../contracts'
-import type { WakeQueueStore } from '../wake-queue-store'
+import type { WakeQueueStore } from '../wake-queue-repository'
 import type { PendingTurn } from './entry'
 import type { HeldEntries } from './holds'
 import { renderBatch } from './kinds'

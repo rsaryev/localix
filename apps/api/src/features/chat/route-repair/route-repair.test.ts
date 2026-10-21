@@ -173,6 +173,35 @@ describe('route repair', () => {
     await feed.close()
   })
 
+  test('a repair records the chat.session notice with each rebind, and does not wake itself', async () => {
+    const t = await setup()
+    t.signIn([{ id: 'or-new', providerId: 'openrouter' }])
+    const sessionNotices = () =>
+      t.db
+        .selectFrom('change_events')
+        .select(['entity', 'op', 'ref_json'])
+        .where('entity', '=', 'chat.session')
+        .execute()
+    await t.repair.repairUser('u1')
+    const notices = await sessionNotices()
+    // One for the seat, one for the choice map: both in s1.
+    expect(notices).toHaveLength(2)
+    for (const notice of notices) {
+      expect(notice.op).toBe('upserted')
+      expect(JSON.parse(notice.ref_json!)).toEqual({ id: 's1', userId: 'u1' })
+    }
+    expect(t.repair.handlers['chat.session']).toBe('ignore')
+    // Delivered through the feed, its own notices do not run another repair.
+    const feed = createCoreChangeFeed(t.db)
+    await feed.subscribe('route-repair', t.repair.handlers, { kind: 'reactor' })
+    await feed.settle()
+    const published = t.published.length
+    await feed.settle()
+    expect(t.published.length).toBe(published)
+    expect(await sessionNotices()).toHaveLength(2)
+    await feed.close()
+  })
+
   test('a disabled-key connection is not a live route', async () => {
     const t = await setup()
     t.signIn([

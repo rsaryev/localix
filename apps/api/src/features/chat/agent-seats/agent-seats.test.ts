@@ -95,6 +95,31 @@ describe('agent seats', () => {
     expect(t.forgotten).toEqual(['a2', 'a2'])
   })
 
+  test('each write records the chat.session notice of the chats it changed', async () => {
+    const t = await setup()
+    const notices = async () =>
+      (
+        await t.db
+          .selectFrom('change_events')
+          .select(['op', 'ref_json'])
+          .where('entity', '=', 'chat.session')
+          .orderBy('seq')
+          .execute()
+      ).map((row) => ({ op: row.op, ...JSON.parse(row.ref_json!) }))
+    t.agents.delete('a2')
+    const handler = t.seats.handlers.agent
+    if (handler === 'ignore') throw new Error('expected a handler')
+    await handler({ entity: 'agent', op: 'deleted', ref: ref('critic', 'a2') })
+    // Leaving the shared room, then dropping the picks from both chats' choice maps.
+    expect(await notices()).toEqual([
+      { op: 'upserted', id: 'group', userId: 'u1' },
+      { op: 'upserted', id: 'group', userId: 'u1' },
+      { op: 'upserted', id: 'solo', userId: 'u1' },
+    ])
+    // The reactor ignores its own notices, so they cannot loop back into it.
+    expect(t.seats.handlers['chat.session']).toBe('ignore')
+  })
+
   test('the reconcile repairs handles and never removes a seat of a missing agent', async () => {
     const t = await setup()
     t.agents.set('a1', 'author')

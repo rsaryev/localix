@@ -40,7 +40,7 @@
 import { frameInterjection } from '../../../agent-core/interjection'
 import { createSteeredUserMessage, insertSteeredUserMessage } from '../message-persistence'
 import { splitAssistantRowForSteer } from './steer-split'
-import { queueDeliveryMessageIds } from '../wake-queue-store'
+import { queueDeliveryMessageIds } from '../wake-queue-repository'
 import type { TurnEventContext } from './event-handlers'
 import type { ChatRepository } from '../../repository'
 import type { RunEnv } from './types'

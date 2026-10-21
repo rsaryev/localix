@@ -11,7 +11,11 @@ import { createCapabilitySourceRepository } from '../capabilities/source-reposit
 import { seedAgentPresets } from '../capabilities/seed-agent-presets'
 import { resolveCapabilities } from '../capabilities/resolve'
 import { createInvocationRegistry } from '../capabilities/invocation'
-import { capabilityRevision } from '../capabilities/revision'
+import {
+  capabilitiesChanged,
+  capabilityRevision,
+  trackCapabilityChange,
+} from '../capabilities/revision'
 
 const cleanup: Array<() => Promise<void>> = []
 afterEach(async () => {
@@ -131,13 +135,17 @@ describe('native agent registry', () => {
     )
   })
 
-  // The composition root bumps the revision for this method; the service itself must not too.
-  test('switching an agent leaves the capability revision to the composition root', async () => {
+  // The rule write bumps the revision once; the composition root's announcement, made inside the
+  // same tracked mutation, does not bump it again.
+  test('switching an agent moves the capability revision once', async () => {
     const { service } = await fixture()
     const { record } = await service.createAgent('u', input())
     const before = capabilityRevision()
-    await service.setAgentEnabled('u', record.id, false)
-    expect(capabilityRevision()).toBe(before)
+    await trackCapabilityChange(async () => {
+      await service.setAgentEnabled('u', record.id, false)
+      capabilitiesChanged()
+    })
+    expect(capabilityRevision()).toBe(before + 1)
     expect((await service.getAgent('u', record.id))?.enabled).toBe(false)
   })
 
