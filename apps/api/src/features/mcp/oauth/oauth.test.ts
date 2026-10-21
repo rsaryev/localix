@@ -1,12 +1,13 @@
 import { afterAll, describe, expect, test } from 'bun:test'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { makeTempDir } from '@localixai/testing'
 
 import { createAesCipher } from '../../secrets/cipher'
 import { createMcpOAuthProvider } from './provider'
 import { createMcpOAuthStore } from './store'
 
-const TMP = path.join(import.meta.dir, '__tmp_oauth__')
+const TMP = makeTempDir('localix-mcp-oauth')
 afterAll(() => rm(TMP, { recursive: true, force: true }))
 
 function encStore(sub: string) {

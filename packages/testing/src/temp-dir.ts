@@ -8,9 +8,21 @@ import { dirname, join } from 'node:path'
 /** File contents keyed by path relative to the directory; nested paths create their folders. */
 export type FileTree = Record<string, string | Uint8Array>
 
-/** Create a fresh directory under the OS temp dir, optionally filled with `tree`. */
-export function makeTempDir(prefix = 'localix-test', tree: FileTree = {}): string {
-  const dir = mkdtempSync(join(tmpdir(), `${prefix}-`))
+/**
+ * Create a fresh directory under the OS temp dir, optionally filled with `tree`.
+ *
+ * `root` moves it elsewhere, for the one fixture an OS temp dir cannot hold: code that has to
+ * resolve the repository's own packages from `node_modules` (a plugin backend importing `hono`, a
+ * migration importing `kysely`). Keep such a root git-ignored and outside every source tree a lint
+ * walks, or a scan can meet the fixture half-written; never a test's own folder.
+ */
+export function makeTempDir(
+  prefix = 'localix-test',
+  tree: FileTree = {},
+  root: string = tmpdir(),
+): string {
+  mkdirSync(root, { recursive: true })
+  const dir = mkdtempSync(join(root, `${prefix}-`))
   writeTree(dir, tree)
   return dir
 }

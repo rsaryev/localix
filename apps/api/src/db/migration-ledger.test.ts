@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { promises as fs } from 'node:fs'
-import { mkdtemp, rm, writeFile, rename } from 'node:fs/promises'
+import { rm, writeFile, rename } from 'node:fs/promises'
 import path, { join } from 'node:path'
 import { sql } from 'kysely'
 import { FileMigrationProvider, Migrator } from 'kysely/migration'
 
 import { createDatabase, destroyDatabase } from './connection'
+import { makeApiScratchDir } from '../testing/scratch-dir'
 import {
   MIGRATION_DIGEST_TABLE,
   MigrationLedgerError,
@@ -49,9 +50,8 @@ async function migrate(db: ReturnType<typeof createDatabase>) {
 }
 
 beforeEach(async () => {
-  // Inside the repository: the migration files import `kysely`, which resolves from here only.
-  await fs.mkdir(join(process.cwd(), 'tmp'), { recursive: true })
-  folder = await mkdtemp(join(process.cwd(), 'tmp', 'migration-ledger-'))
+  // Inside the API package: the migration files import `kysely`, which resolves from here only.
+  folder = makeApiScratchDir('migration-ledger')
 })
 
 afterEach(async () => {

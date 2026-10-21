@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { promises as fs } from 'node:fs'
+import { makeTempDir } from '@localixai/testing'
 import { join } from 'node:path'
 import { createSkill, skillNameFromId, updateSkill, type SkillOpsContext } from './skill-ops'
 
@@ -14,8 +15,7 @@ import { createSkill, skillNameFromId, updateSkill, type SkillOpsContext } from 
  * approval prompt and hang an unattended run (mirrors skills.test.ts). Only PROJECT scope
  * is exercised — global writes go to the real `homedir()` via `createSkill`.
  */
-const tmpBase = (label: string): Promise<string> =>
-  fs.mkdtemp(join(import.meta.dir, `.tmp-${label}-`))
+const tmpBase = async (label: string): Promise<string> => makeTempDir(`localix-${label}`)
 
 /** A ctx whose project working dir is a throwaway temp base. */
 const ctxFor = (base: string): SkillOpsContext => ({

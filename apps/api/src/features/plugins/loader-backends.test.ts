@@ -6,6 +6,7 @@ import { Hono } from 'hono'
 import type { CapabilitySourceRepository } from '../capabilities/source-repository'
 
 import { loadPluginBackends } from './loader'
+import { makeApiScratchDir } from '../../testing/scratch-dir'
 import { createSubsystemRegistry } from '../ext/subsystem-contrib'
 import { createWsFrameRegistry, createWsFrameConnection } from '../ext/ws-frame-registry'
 import { createResourceProviderRegistry } from '../agent-core/resource-refs/provider'
@@ -53,9 +54,9 @@ const emptyRepo: CapabilitySourceRepository = {
   remove: async () => {},
 }
 
-// The fixture lives UNDER the api package tree so the plugin's `.mjs` can resolve
-// `hono` from the monorepo's hoisted node_modules (a tmpdir() location cannot).
-const fixtureBase = join(import.meta.dir, '.tmp-backend-fixture')
+// The fixture lives UNDER the api package so the plugin's `.mjs` can resolve `hono` from the
+// monorepo's node_modules (an OS temp dir cannot), in its scratch root outside `src`.
+const fixtureBase = makeApiScratchDir('backend-fixture')
 const fixtureRoot = join(fixtureBase, 'bundled')
 const fixtureHome = join(fixtureBase, 'home')
 const prevEnv = process.env.LOCALIX_BUNDLED_PLUGINS_DIR

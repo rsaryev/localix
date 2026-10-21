@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { makeTempDir, removeDir } from '@localixai/testing'
 import path from 'node:path'
 
 import { expandContextRefs, toResourceExpansionResult } from './expand-refs'
@@ -227,11 +228,11 @@ describe('expandContextRefs — freshness (resolves fresh at send, never frozen 
 describe('expandContextRefs — sizeOnly preflight (cheap estimate, no heavy fetch)', () => {
   let sizeDir: string
   beforeAll(async () => {
-    sizeDir = await mkdtemp(path.join(import.meta.dir, '.sizeonly-test-'))
+    sizeDir = makeTempDir('localix-expand-refs-size')
     await writeFile(path.join(sizeDir, 'small.ts'), 'const a = 1\nconst b = 2\nconst c = 3\n')
   })
-  afterAll(async () => {
-    await rm(sizeDir, { recursive: true, force: true })
+  afterAll(() => {
+    removeDir(sizeDir)
   })
 
   test('resource: estimated size, and the resolver is NEVER called', async () => {
@@ -327,16 +328,15 @@ describe('expandContextRefs — filesystem kinds (confinement / sensitive / bina
   let dir: string
 
   beforeAll(async () => {
-    // In-workspace temp dir (a /tmp write can block on permission approval).
-    dir = await mkdtemp(path.join(import.meta.dir, '.expand-refs-test-'))
+    dir = makeTempDir('localix-expand-refs')
     await writeFile(path.join(dir, 'small.ts'), 'line 1\nline 2\nline 3\nline 4\nline 5')
     await writeFile(path.join(dir, '.env'), 'SECRET=x')
     await writeFile(path.join(dir, 'blob.bin'), Buffer.from([0x89, 0x00, 0x50, 0x4e, 0x47]))
     await mkdir(path.join(dir, '.ssh'), { recursive: true })
     await writeFile(path.join(dir, '.ssh', 'config'), 'Host x')
   })
-  afterAll(async () => {
-    await rm(dir, { recursive: true, force: true })
+  afterAll(() => {
+    removeDir(dir)
   })
 
   const fileRef = (p: string, over: Partial<ContextRef> = {}): ContextRef => ({

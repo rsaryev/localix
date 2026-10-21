@@ -3,6 +3,7 @@ import { createChatFeaturePorts } from '../../bootstrap/chat-feature-ports'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
+import { makeTempDir } from '@localixai/testing'
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { testWork } from '../../testing/work-fixture'
 
@@ -16,7 +17,7 @@ import {
   createTestChatService as createChatService,
 } from './test-harness'
 
-const tempDir = join(import.meta.dir, `.tmp-history-search-${randomUUID()}`)
+const tempDir = makeTempDir('localix-history-search')
 
 describe('chatService.searchHistory', () => {
   beforeAll(async () => {

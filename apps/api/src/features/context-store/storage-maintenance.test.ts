@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
+import { makeTempDir } from '@localixai/testing'
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { sql } from 'kysely'
 
@@ -16,7 +17,7 @@ import { COMPRESS_MIN_BYTES, decodeArtifactText, encodeArtifactText } from './ar
 import { compactArtifacts, deleteSessionChunks, sweepOrphanChunks } from './repository-maintenance'
 import { createContextStoreRepository } from './repository'
 
-const tempDir = join(import.meta.dir, `.tmp-storage-${randomUUID()}`)
+const tempDir = makeTempDir('localix-storage-maintenance')
 beforeAll(() => mkdir(tempDir, { recursive: true }))
 afterAll(() => rm(tempDir, { recursive: true, force: true }))
 

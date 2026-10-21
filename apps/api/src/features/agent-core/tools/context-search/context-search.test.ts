@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { sql } from 'kysely'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
+import { makeTempDir } from '@localixai/testing'
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { zodToJsonSchema } from '@localixai/agent'
 
@@ -12,7 +13,7 @@ import { MAX_CHUNKS_PER_SESSION } from '../../context-index-policy'
 import type { ChatRepository } from '../../../chat/repository'
 import { createToolOutputTool } from './context-search'
 
-const tempDir = join(import.meta.dir, `.tmp-context-search-${randomUUID()}`)
+const tempDir = makeTempDir('localix-context-search')
 
 describe('tool_output tool', () => {
   beforeAll(async () => {

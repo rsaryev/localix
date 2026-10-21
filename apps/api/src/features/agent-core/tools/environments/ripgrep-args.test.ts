@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { writeFile } from 'node:fs/promises'
+import { makeTempDir, removeDir } from '@localixai/testing'
 import { join } from 'node:path'
 
 import { interpretRipgrep, shellQuote } from '../environment'
@@ -83,12 +84,11 @@ describe('the remote command actually runs (real rg, via bash -c)', () => {
   let dir: string
 
   beforeAll(async () => {
-    // In-workspace temp dir (not /tmp) so the write needs no approval.
-    dir = await mkdtemp(join(import.meta.dir, '.rg-fixture-'))
+    dir = makeTempDir('localix-rg-fixture')
     await writeFile(join(dir, 'sample.ts'), 'alpha\nbeta\ngamma\n', 'utf8')
   })
-  afterAll(async () => {
-    await rm(dir, { recursive: true, force: true })
+  afterAll(() => {
+    removeDir(dir)
   })
 
   const runRemoteForm = async (pattern: string) => {

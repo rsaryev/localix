@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
+import { makeTempDir } from '@localixai/testing'
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { sql } from 'kysely'
 
@@ -8,7 +9,7 @@ import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createStorageService } from './service'
 
-const tempDir = join(import.meta.dir, `.tmp-storage-service-${randomUUID()}`)
+const tempDir = makeTempDir('localix-storage-service')
 beforeAll(() => mkdir(tempDir, { recursive: true }))
 afterAll(() => rm(tempDir, { recursive: true, force: true }))
 

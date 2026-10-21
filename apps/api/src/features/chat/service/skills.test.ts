@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { promises as fs } from 'node:fs'
+import { makeTempDir } from '@localixai/testing'
 import { join } from 'node:path'
 import { toFileSkillRecord } from './skills'
 import type { DiscoveredSkill } from '../../agent-core/skill-discovery'
@@ -98,8 +99,7 @@ describe('toFileSkillRecord', () => {
  * Temp dirs live INSIDE the workspace on purpose: writes under `/tmp` trip the
  * sandbox's approval prompt and hang an unattended run.
  */
-const tmpBase = async (label: string): Promise<string> =>
-  fs.mkdtemp(join(import.meta.dir, `.tmp-${label}-`))
+const tmpBase = async (label: string): Promise<string> => makeTempDir(`localix-${label}`)
 
 describe('writeSkillFile — frontmatter is preserved, not rebuilt', () => {
   test('an edit that changes only the description keeps every other frontmatter key', async () => {

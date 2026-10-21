@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
+import { makeTempDir } from '@localixai/testing'
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { sql } from 'kysely'
 
@@ -12,7 +13,7 @@ import { buildExternalizeAfterToolCall } from './externalize'
 import { createContextStoreRepository } from './repository'
 import { MAX_CHUNKS } from './chunking'
 
-const tempDir = join(import.meta.dir, `.tmp-context-store-${randomUUID()}`)
+const tempDir = makeTempDir('localix-context-store')
 
 describe('chunkToolOutput', () => {
   test('empty and whitespace-only text produce no chunks', () => {

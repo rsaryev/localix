@@ -39,7 +39,10 @@ variables and makes a request to a non-loopback host fail at once, naming the UR
    takes `wait`; the bash tool takes `backgroundSettle`). Use `jest.useFakeTimers()` only for a
    timer you cannot inject, and restore real timers in `afterEach`.
 3. Create directories with `tempDirPerTest()` or `makeTempDir()` from `@localixai/testing`. They are
-   removed after the test, pass or fail.
+   removed after the test, pass or fail. Never make one beside the test (`import.meta.dir`): the
+   source lints walk those trees and can meet a half-written fixture. A fixture that must resolve
+   the repository's own packages takes the API's git-ignored scratch root (`makeApiScratchDir`).
+   `scripts/test-temp-dir-guard.test.ts` enforces both.
 4. Start processes with `run()` or `runSync()` from `@localixai/testing`, which kill a child that
    misses its deadline with `SIGKILL`. A direct spawn needs `timeout` and `killSignal: 'SIGKILL'`.
 5. Give every git child `scratchGitEnv()`: no inherited `GIT_*`, no global or system config, a fixed

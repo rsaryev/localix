@@ -2,15 +2,14 @@ import { afterAll, describe, expect, it } from 'bun:test'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { makeTempDir } from '@localixai/testing'
 import {
   createMarketTableCache,
   marketTableCacheKey,
   type RawMarketTable,
 } from './market-table-cache'
 
-// A temp dir INSIDE the repo, under a `tmp/` path git already ignores — never /tmp (which would
-// trip a permission prompt). Unique per run; removed in afterAll.
-const TMP_ROOT = path.join(import.meta.dir, 'tmp', `market-cache-test-${randomUUID()}`)
+const TMP_ROOT = makeTempDir('localix-market-cache')
 afterAll(async () => {
   await rm(TMP_ROOT, { recursive: true, force: true })
 })

@@ -21,6 +21,7 @@
   "devDependencies": {
     "@localixai/plugin-sdk": "workspace:*",
     "@localixai/source-lint": "workspace:*",
+    "@localixai/testing": "workspace:*",
     "@types/react": "^19.3.0",
     "lightweight-charts": "^5.2.1",
     "react-dom": "^19.3.1",
