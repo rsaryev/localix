@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { ProjectFolderMenu } from '@/entities/chat/ui/ProjectFolderMenu'
 import { PermissionsChip } from './PermissionsChip'
+import { ChipRow } from '@/entities/chat/ui/prompt-input/ChipRow'
 import { useChatStore } from '@/entities/chat/model/store'
 import { useAddProjectFolder } from '@/entities/chat/model/useAddProjectFolder'
 import { useRoutedNavigation } from '@/shared/hooks/useRoutedNavigation'
@@ -12,7 +13,7 @@ import { toast } from '@/shared/lib/notify'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 
 /**
- * Context bar above the composer input: a left-aligned row of compact pill-chips — the
+ * Context bar above the composer input: a left-aligned, sideways-scrolling row of compact pill-chips — the
  * "where am I working" header for the chat. Reuses shared primitives (Popover, TogglePill) and
  * design tokens; no bespoke surfaces. Everything beyond the project chip is CONTRIBUTED, as a
  * declared status item or through the `composer.context` surface, so the bar knows nothing about
@@ -34,7 +35,7 @@ export function ComposerContextBar({
   running?: boolean
 }) {
   return (
-    <div className="flex min-w-0 flex-wrap items-center gap-1.5 px-1 pb-2">
+    <ChipRow className="px-1 pb-2">
       <ProjectChip />
       {children}
       {/* CONTRIBUTED indicator pills — declared, not drawn. Same seam as the titlebar cluster and
@@ -55,7 +56,7 @@ export function ComposerContextBar({
         context={{ running }}
       />
       <PermissionsChip sessionId={activeSessionId} tools={autoApprovedTools ?? []} />
-    </div>
+    </ChipRow>
   )
 }
 

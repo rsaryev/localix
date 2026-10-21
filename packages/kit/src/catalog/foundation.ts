@@ -57,11 +57,12 @@ export const FOUNDATION: readonly KitCatalogEntry[] = [
       'loadOnce',
       'fuzzyMatchPositions',
       'useElementWidth',
+      'useHorizontalWheelScroll',
       'dismiss',
       'isDismissed',
     ],
     summary:
-      'Small helpers the primitives share: a bounded cache, once-loading, fuzzy match, element width, one-shot dismissal.',
+      'Small helpers the primitives share: a bounded cache, once-loading, fuzzy match, element width, a mouse wheel that scrolls a one-line row sideways, one-shot dismissal.',
     use: 'The same needs in a surface, instead of a private copy.',
   },
   // Served by the host.

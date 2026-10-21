@@ -1,5 +1,6 @@
 import { cloneElement, lazy, Suspense, useCallback, useId, useMemo, useRef, useState } from 'react'
 
+import { ChipRow } from './ChipRow'
 import { isModelRoutingTaskEnabled } from '@localixai/api/model-task-catalog'
 import { useUserSettings } from '@/shared/lib/user-settings/useUserSettings'
 import { acceptAttribute } from '@/shared/lib/attachment-policy'
@@ -322,7 +323,7 @@ export function PromptInput(props: PromptInputProps) {
         (contextBar ? (
           cloneElement(contextBar, { children: contextControls })
         ) : (
-          <div className="flex min-w-0 flex-wrap items-center gap-1.5 pb-2">{contextControls}</div>
+          <ChipRow className="pb-2">{contextControls}</ChipRow>
         ))}
       {isEditing && onCancelEdit && (
         <EditingBanner originalText={editingOriginalText ?? ''} onCancel={onCancelEdit} />

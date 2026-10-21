@@ -3,6 +3,7 @@ export {
   WHEEL_LINE_PX,
   decideWheelScroll,
   normalizeWheelDelta,
+  useHorizontalWheelScroll,
 } from '../lib/use-horizontal-wheel-scroll'
 export type { StripScrollMetrics, WheelIntent } from '../lib/use-horizontal-wheel-scroll'
 export { createBoundedCache } from '../lib/bounded-cache'
