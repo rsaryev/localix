@@ -56,7 +56,7 @@ sagas harder to understand, and defers orchestration to a later post.
   `apps/api/src/features/changes/core-entities.ts`, expanded in
   `packages/change-feed/src/consumer.ts`). It removes derived data only and needs no compensation.
 - Cross-feature behaviour goes through typed ports wired in the composition root, for example
-  `apps/api/src/bootstrap/resource-sync.ts`, rather than through events that expect action.
+  `apps/api/src/bootstrap/core-reactors.ts`, rather than through events that expect action.
 - Atomic publish per step is provided by `packages/change-feed/src/record.ts`; see
   [Transactional outbox](transactional-outbox.md).
 

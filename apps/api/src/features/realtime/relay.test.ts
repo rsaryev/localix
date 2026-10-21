@@ -22,7 +22,7 @@ describe('the relay', () => {
       handler({ entity: kind, op: 'resync' })
       expect(published).toEqual([
         ['u1', [...topics.resources]],
-        ['owner', [...topics.resources]],
+        ['owner', [...('resync' in topics ? topics.resync : topics.resources)]],
       ])
       expect(capabilityRevision()).toBe('bumpsCapabilities' in topics ? 2 : 0)
     }

@@ -38,6 +38,12 @@ export function createUsageLedgerProjector(deps: {
     'capability.rule': 'ignore',
     project: 'ignore',
     'local.model': 'ignore',
+    'project.settings': 'ignore',
+    'user.profile': 'ignore',
+    'user.agent-settings': 'ignore',
+    'user.view-state': 'ignore',
+    secret: 'ignore',
+    'system.toggle': 'ignore',
     'provider.connection': 'ignore',
   }
 

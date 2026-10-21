@@ -5,6 +5,7 @@ import type { createAuxProviderHelpers } from './aux-provider'
 import type { createChatRepository } from '../repository'
 import type { createSessionWorkspace } from './session-workspace'
 import * as skillOps from './skill-ops'
+import { capabilitiesChanged } from '../../capabilities/revision'
 import type { SkillInput, SkillRecord } from './skills'
 import type { SkillOverrides } from '../../agent-core/skill-overrides'
 
@@ -91,16 +92,22 @@ export function createChatSkillFacade({
 
     /** Creates/overwrites a SKILL.md file (project working dir, or home for global). */
     async createSkill(userId: string, input: SkillInput): Promise<SkillRecord> {
-      return skillOps.createSkill(skillOpsCtx, userId, input)
+      const record = await skillOps.createSkill(skillOpsCtx, userId, input)
+      capabilitiesChanged()
+      return record
     },
 
     async updateSkill(userId: string, _id: string, input: Partial<SkillInput>) {
-      return skillOps.updateSkill(skillOpsCtx, userId, _id, input)
+      const record = await skillOps.updateSkill(skillOpsCtx, userId, _id, input)
+      capabilitiesChanged()
+      return record
     },
 
     /** Deletes a skill by name, scoped to the given project (or global). */
     async deleteSkill(userId: string, id: string, projectId?: string | null) {
-      return skillOps.deleteSkill(skillOpsCtx, userId, id, projectId)
+      const result = await skillOps.deleteSkill(skillOpsCtx, userId, id, projectId)
+      capabilitiesChanged()
+      return result
     },
   }
 }

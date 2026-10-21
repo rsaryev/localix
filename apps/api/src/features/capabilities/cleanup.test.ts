@@ -74,7 +74,9 @@ describe('capability cleanup', () => {
     await plugins.remove('u1', '', 'acme-board')
     await feed.settle()
     expect(t.unbound).toEqual(['plugin:acme-board'])
-    expect((await t.rules.read('u1', 'a1')).some((r) => r.action === 'plugin:acme-board')).toBe(false)
+    expect((await t.rules.read('u1', 'a1')).some((r) => r.action === 'plugin:acme-board')).toBe(
+      false,
+    )
     await feed.close()
   })
 })

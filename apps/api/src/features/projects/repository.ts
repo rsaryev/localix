@@ -5,9 +5,9 @@ import { recordCoreChanges } from '../changes/core-entities'
 import { projectRef } from './contracts'
 
 /**
- * A project announces what a consumer of its scope cares about: it exists, moved folder, was
- * renamed, deleted or restored. A settings-only write is not announced — no consumer reads them
- * from the feed, and each would reload every project's plugin backends.
+ * A project announces every change in its transaction: `project` when its scope moves (it exists,
+ * moved folder, was renamed, deleted or restored), `project.settings` for a settings-only write —
+ * a kind of its own, so scope consumers (plugin backends) do not reload on every settings write.
  */
 const announce = (
   trx: Parameters<typeof recordCoreChanges>[0],
@@ -156,8 +156,14 @@ export function createProjectsRepository(db: Kysely<AppDatabase>) {
           patch.name !== undefined ||
           patch.workingDir !== undefined ||
           patch.deletedAt !== undefined
-        if (scoped && Number(result.numUpdatedRows) > 0)
-          await announce(trx, userId, id, patch.deletedAt ? 'deleted' : 'upserted')
+        if (Number(result.numUpdatedRows) === 0) return
+        if (scoped) await announce(trx, userId, id, patch.deletedAt ? 'deleted' : 'upserted')
+        else
+          await recordCoreChanges(trx, {
+            entity: 'project.settings',
+            op: 'upserted',
+            ref: { id, userId },
+          })
       })
     },
 

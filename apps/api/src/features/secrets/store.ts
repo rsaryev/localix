@@ -12,6 +12,7 @@ import { loadOrCreateMasterKey } from './master-key'
 import {
   createItem,
   decryptItemValue,
+  announceVaultItem,
   insertAudit,
   metadataFor,
   rotateItem,
@@ -199,6 +200,7 @@ export function createSecretsStore(options: {
           at: timestamp,
         })
         await tx.deleteFrom('vault_items').where('id', '=', item.id).execute()
+        await announceVaultItem(tx, userId, key, 'deleted')
         return { status: 'deleted' }
       })
     },

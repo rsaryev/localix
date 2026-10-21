@@ -47,9 +47,9 @@ development aid.
 
 - The resource list is fixed in `apps/api/src/features/realtime/resources.ts`; the
   `resources.changed` event lists names only, with no payloads or secrets.
-- The server side poke is published from the composition root
-  (`apps/api/src/bootstrap/resource-sync.ts`), which maps committed service mutations to the
-  resources they invalidate.
+- The server side poke is published by the relay (`apps/api/src/features/realtime/relay.ts`), a
+  projector on the core change feed that maps each committed notice kind to the resources it
+  invalidates.
 - `apps/ui/src/shared/api/resourceSyncTransport.ts` turns socket events into invalidations and ties
   reads to connection state.
 - `packages/plugin-sdk/src/ui/resource-sync.ts` is the pull side: invalidations are coalesced, reads

@@ -31,7 +31,7 @@ flowchart LR
 | Event/RPC socket          | `shared/api/eventSocket/`                                               | Reference counted connection, reconnect backoff, cursor, scope declarations, frame batching and RPC correlation. |
 | Event delivery            | `chat/runtime/session-stream-registry.ts`                               | Serialize once; fan out by user and watched session; explicitly classify replay and delivery scope.              |
 | Shared resource changes   | `realtime/resources.ts`                                                 | `resources.changed` identifies read models, without transmitting private entity data.                            |
-| Mutation announcements    | `bootstrap/resource-sync.ts`                                            | Explicit typed service-method maps; successful mutations announce for HTTP and internal callers alike.           |
+| Mutation announcements    | `realtime/relay.ts`                                                     | Owners record a change notice in their transaction; the relay maps each notice kind to the topics it pokes.      |
 | Read coordination         | `shared/api/resourceSync.ts`                                            | Coalesce bursts; one read in flight per adapter; skip superseded results; bounded retries.                       |
 | Feature adapters          | `app/workspaceResourceSync.ts` and feature hooks                        | The application binds resources to their owning stores. Shared code never imports feature stores.                |
 | Notification delivery     | Server notification journal and `shared/lib/notifications/inboxSync.ts` | Durable journal cursor plus live `n` frames on the existing socket.                                              |

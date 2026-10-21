@@ -152,9 +152,9 @@ seam rather than opening a new turn.
 
 [Client/server interaction and workspace synchronization](client-server-sync.md) maps every
 transport, shared read model, window-owned state and recovery rule. Shared resource mutations are
-declared in `bootstrap/resource-sync.ts`; client adapters use `shared/api/resourceSync.ts` over the
-existing socket. Conversation roster events apply directly, while low-frequency resource changes
-coalesce into authoritative reads.
+announced by their owners and relayed to topics in `features/realtime/relay.ts`; client adapters use
+`shared/api/resourceSync.ts` over the existing socket. Conversation roster events apply directly,
+while low-frequency resource changes coalesce into authoritative reads.
 
 `features/chat/runtime/session-stream-registry.ts` tags each opcode (`replayable`, `watched`).
 `scripts/stream-contract-guard.test.ts` pins the opcode set in both directions. A new server event

@@ -1,6 +1,7 @@
 import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../../db/types'
 import { ApiError } from '../../lib/errors'
+import { recordCoreChanges } from '../changes/core-entities'
 import { createKeyedSerializer } from '../../lib/keyed-serializer'
 import {
   viewStateAddressSchema,
@@ -62,23 +63,33 @@ export function createViewStateService(db: Kysely<AppDatabase>, now: () => strin
         updated_at: now(),
       }
       // The compare also lives in SQL: independent callers/processes cannot overwrite a newer row.
-      const saved =
-        current.revision === 0
-          ? await db
-              .insertInto('user_view_state')
-              .values({ user_id: userId, kind: patch.kind, key: patch.key, ...row })
-              .onConflict((conflict) => conflict.columns(['user_id', 'kind', 'key']).doNothing())
-              .returning('revision')
-              .executeTakeFirst()
-          : await db
-              .updateTable('user_view_state')
-              .set(row)
-              .where('user_id', '=', userId)
-              .where('kind', '=', patch.kind)
-              .where('key', '=', patch.key)
-              .where('revision', '=', current.revision)
-              .returning('revision')
-              .executeTakeFirst()
+      // An accepted write is announced in its transaction.
+      const saved = await db.transaction().execute(async (trx) => {
+        const written =
+          current.revision === 0
+            ? await trx
+                .insertInto('user_view_state')
+                .values({ user_id: userId, kind: patch.kind, key: patch.key, ...row })
+                .onConflict((conflict) => conflict.columns(['user_id', 'kind', 'key']).doNothing())
+                .returning('revision')
+                .executeTakeFirst()
+            : await trx
+                .updateTable('user_view_state')
+                .set(row)
+                .where('user_id', '=', userId)
+                .where('kind', '=', patch.kind)
+                .where('key', '=', patch.key)
+                .where('revision', '=', current.revision)
+                .returning('revision')
+                .executeTakeFirst()
+        if (written)
+          await recordCoreChanges(trx, {
+            entity: 'user.view-state',
+            op: 'upserted',
+            ref: { userId, kind: patch.kind, key: patch.key },
+          })
+        return written
+      })
       return {
         accepted: Boolean(saved),
         state: saved
