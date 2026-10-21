@@ -16,7 +16,7 @@ The findings behind each item, with counts and paths, are in [the audit](audit.m
 | ----------------------- | ---------------------- | -------------------------------------------------------------- | -------------------------------------------------------------- |
 | [x] Provider connection | `provider.connection`  | Route repair; provider condition cleanup                       | `apps/api/src/features/provider-connections/`                  |
 | [x] Project             | `project`              | Plugin backend host refresh                                    | `apps/api/src/features/projects/`                              |
-| [ ] Agent               | `agent` by key         | Seat and handle repair                                         | `apps/api/src/features/agents/`                                |
+| [x] Agent               | `agent` by key         | Seat and handle repair                                         | `apps/api/src/features/agents/`                                |
 | [ ] MCP server, plugin  | `mcp`, `plugin` by key | Capability cleanup: rules, OAuth tokens, vault bindings        | `apps/api/src/features/mcp/`, `apps/api/src/features/plugins/` |
 | [ ] Capability rule     | `capability.rule`      | Relay; semantic index                                          | `apps/api/src/features/capabilities/`                          |
 | [ ] Message edit        | `chat.message`         | Semantic index                                                 | `apps/api/src/features/chat/`                                  |

@@ -8,6 +8,9 @@ import type { ConsumerHandlers } from '@localixai/change-feed'
 import type { AppDatabase } from '../db/types'
 import type { CatalogService } from '../features/catalog/service'
 import type { CoreCascades, CoreChangeFeed, CoreRefs } from '../features/changes/core-entities'
+import { createAgentSeats } from '../features/chat/agent-seats/agent-seats'
+import { createAgentSeatsRepository } from '../features/chat/agent-seats/seats-repository'
+import type { AgentsService } from '../features/agents/service'
 import { createRouteRepair } from '../features/chat/route-repair/route-repair'
 import { createRouteSeatsRepository } from '../features/chat/route-repair/seats-repository'
 import type { ProviderConditions } from '../features/notifications/conditions/providers'
@@ -26,6 +29,7 @@ export interface CoreReactorDeps {
   providerConnectionsService: Pick<ProviderConnectionsService, 'listConnections'>
   projectsService: Pick<ReturnType<typeof createProjectsService>, 'listProjects' | 'updateProject'>
   userService: Pick<UserService, 'getProfile' | 'updateProfile'>
+  agentsService: Pick<AgentsService, 'listAgents'>
   providerConditions: Pick<ProviderConditions, 'connectionRemoved' | 'connectionsRemaining'>
   triggerConditions: Pick<TriggerConditions, 'routeStranded'>
   publish(userId: string, resources: RealtimeResource[]): void
@@ -82,6 +86,27 @@ export function createRouteRepairReactor(deps: CoreReactorDeps) {
   })
 }
 
+export function createAgentSeatsReactor(deps: CoreReactorDeps) {
+  const userId = deps.defaultUserId
+  return createAgentSeats({
+    seats: createAgentSeatsRepository(deps.db),
+    async handles(projectId) {
+      const agents = await deps.agentsService.listAgents(userId, { projectId: projectId || null })
+      return new Map(agents.map((agent) => [agent.record.id, agent.record.handle]))
+    },
+    async forgetModelSettings(agentId) {
+      const settings = (await deps.userService.getProfile(userId)).agentSettings?.agentModelSettings
+      if (!settings?.some((entry) => entry.agentId === agentId)) return
+      await deps.userService.updateProfile(userId, {
+        agentSettingsPatch: {
+          agentModelSettings: settings.filter((entry) => entry.agentId !== agentId),
+        },
+      })
+    },
+    publish: (resources) => deps.publish(userId, resources),
+  })
+}
+
 /** Provider condition rows of a deleted connection: nothing is left to fix. */
 export function notificationsCleanupHandlers(
   conditions: Pick<ProviderConditions, 'connectionRemoved'>,
@@ -121,6 +146,11 @@ export async function startCoreReactors(deps: CoreReactorDeps): Promise<void> {
   await deps.feed.subscribe('route-repair', repair.handlers, {
     kind: 'reactor',
     reconcile: () => repair.repairAll(),
+  })
+  const agentSeats = createAgentSeatsReactor(deps)
+  await deps.feed.subscribe('agent-seats', agentSeats.handlers, {
+    kind: 'reactor',
+    reconcile: () => agentSeats.reconcile(),
   })
   await deps.feed.subscribe('plugin-backends', pluginBackendHandlers(deps.refreshPluginBackends), {
     kind: 'reactor',

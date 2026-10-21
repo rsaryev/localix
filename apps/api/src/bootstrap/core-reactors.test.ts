@@ -52,7 +52,6 @@ describe('notifications cleanup', () => {
     const removed: string[] = []
     const handlers = notificationsCleanupHandlers({
       connectionRemoved: (_u, id) => void removed.push(id),
-      connectionsRemaining: async () => {},
     })
     const handler = handlers['provider.connection']
     if (handler === 'ignore') throw new Error('expected a handler')

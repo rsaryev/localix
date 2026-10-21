@@ -27,7 +27,8 @@ export const CORE_REFS = {
   skill: z.object({ name: z.string(), scope }),
   plugin: z.object({ id: z.string(), scope }),
   mcp: z.object({ id: z.string(), scope }),
-  agent: z.object({ id: z.string(), scope }),
+  // `id` is the agent's catalog key (its handle); `agentId` its stable id, when the owner knows it.
+  agent: z.object({ id: z.string(), scope, agentId: z.string().optional() }),
   // A project: created, moved, renamed, deleted or restored (settings-only writes are silent).
   project: z.object({ id: z.string(), userId: z.string() }),
   // A provider account: created, signed in, a key enabled, or deleted.

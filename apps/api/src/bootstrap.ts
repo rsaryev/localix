@@ -320,6 +320,7 @@ export async function bootstrap(
         providerConnectionsService,
         projectsService,
         userService,
+        agentsService,
         providerConditions: infra.providerConditions,
         triggerConditions,
         refreshPluginBackends: () => backendHost.refresh(),
