@@ -32,7 +32,7 @@ The findings behind each item, with counts and paths, are in [the audit](audit.m
 - [x] Usage ledger projector replaces the fire-and-forget usage write and the boot repair.
 - [x] `resolveLanguageModel` picks its connection with `routeReadiness`; the server copy of the rule
       is removed.
-- [ ] `resolveLiveCatalogModel` (UI and `@localixai/agent/catalog`) is replaced by `routeReadiness`.
+- [x] `resolveLiveCatalogModel` (UI and `@localixai/agent/catalog`) is replaced by `routeReadiness`.
 
 - [x] Keyed wakes from triggers, plugins and background jobs go through a durable outbox
       (`wake_outbox`): the queue's admission removes the row in its transaction, and a boot
@@ -50,7 +50,8 @@ scheduling, terminal lifecycle and the session event stream.
 - [x] Agent tools reach memory and context search through ports.
 - [x] `apps/api/src/db/payload.ts` imports no feature module.
 - [x] Cross-feature cycles in the API shrink to zero (A6).
-- [ ] UI slices stop importing each other and gain public entries (A8).
+- [x] UI slices stop importing each other (A8, enforced at a baseline of 0).
+- [ ] Every UI slice gains a public entry that outsiders import instead of its internals.
 - [x] Desktop calls go through `platformCapabilities` (the inspector and companion are guarded).
 
 ## Client synchronization

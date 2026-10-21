@@ -59,8 +59,8 @@ in `apps/api/src/features/chat/runtime/run/runtime-tool-ports.ts`.
 ## Known gaps
 
 - The checker reads import text. It does not prove that data crossing a port is a plain structure.
-- Persistence is not behind ports everywhere: 91 non-test files under `apps/api/src/features` import
-  `kysely` directly (measured 2026-10-21), so many feature services and their repositories share a
-  module.
+- Kysely is confined to repository modules and migrations (A5), but a feature's service and its
+  repository still live in the same feature and are wired by the composition root rather than behind
+  a declared port in every case.
 - See [the architecture overview](../../architecture.md) for the composition phases and
   [hexagonal ports and adapters](hexagonal-ports-and-adapters.md) for the port vocabulary.

@@ -29,7 +29,7 @@ control, or a plugin surface, and when a review asks why a colour was rejected.
 | Float a panel over content       | `POPOVER_SURFACE` (panel) or `FLOATING_SURFACE` (toolbar, label) from `kit/src/overlays/popover-surface`. | Both are `POPOVER_MATERIAL` plus a shape; never transcribe the material itself.                |
 | Animate an overlay in and out    | `OVERLAY_ENTER_EXIT` / `SCRIM_ENTER_EXIT` / `TOOLTIP_ENTER_EXIT` from `kit/src/overlays/overlay-motion`.  | A primitive that writes its own animation fails `overlay-motion.test.ts`.                      |
 | Time a transition                | A motion token: `duration-(--dur-*)`, `ease-(--ease-*)`.                                                  | A literal `duration-200` or `ease-out` is a second opinion the tokens cannot retune.           |
-| Open a disclosure                | `COLLAPSIBLE_MOTION` from `shared/ui/collapsible-motion`.                                                 | The chevron and the body must settle on the same beat.                                         |
+| Open a disclosure                | `COLLAPSIBLE_MOTION` from `@localixai/kit/collapsible-motion`.                                            | The chevron and the body must settle on the same beat.                                         |
 | Pin a sticky header              | `.lx-occluder` — the pane's own hue at a density that occludes, frosted.                                  | This deliberately escapes the paint-once rule: it must hide what scrolls under.                |
 | Give keyboard focus an indicator | The `focus-ring` utility, or a shared primitive that already carries one.                                 | Never a second `focus-visible:ring-*`; focus is what a keyboard user steers by.                |
 | Size a control                   | A rung name — `xs` 20, `sm` 24, `md` 28, `lg` 32, `xl` 36 — the same on every primitive.                  | A name means one height everywhere: `sm` is 24px on a button, a field and a segmented control. |
@@ -307,7 +307,7 @@ change behaviour rather than paint:
 - The terminal quick-pick (`features/terminal/ui/TerminalQuickpick.tsx`) runs its own listbox and
   arrow-key model instead of the shared `command.tsx`; cmdk's filtering and focus model differ.
 - The workspace shell's mobile sidebar (`widgets/workspace-shell/ui/WorkspaceShell.tsx`) draws its
-  own drawer and scrim instead of `shared/ui/drawer.tsx`; vaul would add drag-to-dismiss.
+  own drawer and scrim instead of the kit's `overlays/drawer.tsx`; vaul would add drag-to-dismiss.
 - `CollapsibleStrip` animates `max-height` rather than the grid-rows reveal the other disclosures
   use, because the same value caps the strip's scrollable list.
 

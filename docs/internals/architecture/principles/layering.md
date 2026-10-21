@@ -53,8 +53,7 @@ state and API calls, `apps/ui/src/entities/chat/ui` holds components. See
 
 ## Known gaps
 
-- Not enforced inside API features: no check stops a route file from importing a repository or
-  `kysely`. 46 non-test files under `apps/api/src/features` import `hono` and 91 import `kysely`
-  (measured 2026-10-21); the split into routes, service and repository files is a convention.
+- A5 (Kysely only in repositories and migrations) and A7 (HTTP errors only in routes) hold at a
+  baseline of zero; the routes, service and repository split is otherwise a convention.
 - Not every API feature uses the routes, service, repository file naming.
 - Related: [bounded context](bounded-context.md), [architecture overview](../../architecture.md).

@@ -88,14 +88,14 @@ ones pass through the same spill thresholds and manifest path as uploaded text.
 
 These values are code constants, not user settings.
 
-| Constant                          |       Value | Purpose                                                |
-| --------------------------------- | ----------: | ------------------------------------------------------ |
-| `MAX_INLINE_LINES`                | 2,000 lines | Maximum line count for inline text                     |
-| `MAX_INLINE_BYTES`                |      50 KiB | Maximum UTF-8 size for inline text                     |
-| `SPILL_PREVIEW_LINES`             |    50 lines | Maximum manifest head preview                          |
-| `TEXT_PREVIEW_BYTES`              |     128 KiB | Maximum prefix decoded from an existing file           |
-| `ATTACHMENT_SPILL_CONCURRENCY`    |           4 | Concurrent writes, copies, and extractions per message |
-| `MODEL_HISTORY_MEDIA_CONCURRENCY` |           4 | Concurrent media preparation across messages           |
+| Constant                       |       Value | Purpose                                                |
+| ------------------------------ | ----------: | ------------------------------------------------------ |
+| `MAX_INLINE_LINES`             | 2,000 lines | Maximum line count for inline text                     |
+| `MAX_INLINE_BYTES`             |      50 KiB | Maximum UTF-8 size for inline text                     |
+| `SPILL_PREVIEW_LINES`          |    50 lines | Maximum manifest head preview                          |
+| `TEXT_PREVIEW_BYTES`           |     128 KiB | Maximum prefix decoded from an existing file           |
+| `ATTACHMENT_SPILL_CONCURRENCY` |           4 | Concurrent writes, copies, and extractions per message |
+| `MEDIA_CONCURRENCY`            |           4 | Concurrent media preparation across messages           |
 
 ## Limits
 

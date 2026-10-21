@@ -55,7 +55,7 @@ affect logs, heaps and load without breaking semantics.
   re-read, `deleted` carries the ref needed for cleanup, `resync` means reconcile the kind.
 - The semantic index handlers in `apps/api/src/features/embeddings/targets.ts` re-embed or remove by
   key, which is safe to repeat.
-- Tests for retry and redelivery live in `apps/api/src/features/changes/feed.test.ts`.
+- Tests for retry and redelivery live in `packages/change-feed/src/feed.test.ts`.
 - On the client, `packages/plugin-sdk/src/ui/resource-sync.ts` coalesces invalidations and drops a
   read result that a newer invalidation has superseded.
 

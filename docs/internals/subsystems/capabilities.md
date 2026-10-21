@@ -284,10 +284,10 @@ told about a tool it can structurally never hold.
 
 ### One resolve per run
 
-A run resolves its rules once, in `resolveRunCapabilities`, and carries the result on the prepared
-context as `availability`. The plugin loader and the MCP gather read it from there. A second read
-downstream could only produce a different answer, which is the exact failure this subsystem exists
-to prevent: the settings screen and the run disagreeing.
+A run resolves its rules once, in `resolveCapabilities` (`capabilities/resolve.ts`), and carries the
+result on the prepared context as `availability`. The plugin loader and the MCP gather read it from
+there. A second read downstream could only produce a different answer, which is the exact failure
+this subsystem exists to prevent: the settings screen and the run disagreeing.
 
 ### Composer tips
 

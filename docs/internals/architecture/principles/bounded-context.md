@@ -56,7 +56,7 @@ export-map leaves in `apps/api/package.json`, enforced by `scripts/browser-graph
 
 - No context map exists as a single artifact; ownership is spread across the overview, the code map
   and test headers.
-- Mutual feature imports remain common: among `apps/api/src/features`, 36 pairs of features import
-  each other (counting type-only imports, measured 2026-10-21), for example `chat` and
-  `capabilities`.
+- Features still import each other's types, and some call each other through ports that only the
+  composition root (`apps/api/src/bootstrap/`, A4) may construct; value-import cycles between
+  features are at zero (A6).
 - Only three features are covered by `host-boundaries.test.ts`.

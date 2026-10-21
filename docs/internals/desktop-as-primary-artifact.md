@@ -289,11 +289,10 @@ and require review for changes to `.github/workflows/**` and release scripts. Wo
 select the environment, but repository settings are the trust boundary that enforces its reviewers,
 deployment policy and secret scope.
 
-The public artifact repository is `rsaryev/localix`. Mirror the exact source commit and the same tag
-there before dispatch, and give its environment-scoped `RELEASE_TOKEN` `contents:write` access; the
-workflow rejects a missing tag or one that resolves to a different commit. If the repository's
-GitHub plan does not support required environment reviewers, do not treat the release path as
-production-safe until an equivalent approval boundary is available.
+Releases are published to this repository (`RELEASE_REPO: rsaryev/localix`) with the workflow's own
+`github.token`; the workflow rejects a missing tag or one that resolves to a different commit. If
+the repository's GitHub plan does not support required environment reviewers, do not treat the
+release path as production-safe until an equivalent approval boundary is available.
 
 ## Limits
 

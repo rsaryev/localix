@@ -1,8 +1,8 @@
 # Change feed
 
-The change feed tells consumers what changed, once, for every consumer: the semantic index today,
-and any later reader (realtime, group chats looking up skills). Producers depend only on a
-registry's types; consumers each read at their own cursor.
+The change feed tells consumers what changed, once, for every consumer: the semantic index, the
+relay that pokes clients, and the reactors that repair or reap what a change leaves behind (listed
+below). Producers depend only on a registry's types; consumers each read at their own cursor.
 
 The engine is the `@localixai/change-feed` package (`packages/change-feed/src/index.ts`): notices,
 recording, consumers and a test kit. The API keeps what is its own: the core registry, the plugin

@@ -27,8 +27,8 @@ never waits on the machine, so the sharded run stays fast and deterministic.
 | Merge queue and `main` CI       | Every gate over the whole tree.                                                    | Before anything reaches `main`. |
 
 Bun reads `bunfig.toml` only from the directory a run starts in, so every workspace with tests has
-its own and lists `@localixai/testing/preload/index.ts`. The preload removes git's repository
-variables and makes a request to a non-loopback host fail at once, naming the URL.
+its own and lists `packages/testing/src/preload/index.ts` by its relative path. The preload removes
+git's repository variables and makes a request to a non-loopback host fail at once, naming the URL.
 
 ## Writing a test
 

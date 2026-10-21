@@ -59,9 +59,10 @@ independent of the apps that use it.
 
 ## Known gaps
 
-- Only the provider ban on `packages/engine-loop` is a check. The bans on React, Hono, Kysely and
-  SQLite in the core hold today but are not enforced, and the provider ban does not cover
-  `apps/api/src/features/agent-core`.
-- Features outside the core import `kysely` and `hono` directly; they are agnostic of providers but
-  not of storage or transport.
+- A2 keeps React, Hono, Kysely, `bun:sqlite`, `node:*` and provider SDKs out of the core packages,
+  and A3 keeps provider SDKs in `packages/engine-models`; both are at a baseline of zero. They read
+  import text, so a dependency smuggled in through a re-export of a non-core package is caught only
+  where that package itself is checked.
+- Features outside the core still use `hono` in their routes and `kysely` in their repositories, by
+  design: those are the edges where a transport and a storage engine belong (A5, A7).
 - See [the architecture overview](../../architecture.md) and [the code map](../../code-map.md).

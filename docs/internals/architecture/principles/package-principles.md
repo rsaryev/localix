@@ -59,8 +59,7 @@ module.
 
 ## Known gaps
 
-- No check detects cycles; the package graph is acyclic by current state, not by a gate.
-- Feature-level cycles exist: 36 mutual feature pairs in `apps/api/src/features` (including
-  type-only imports) and several in `apps/ui/src/features`; see
-  [Feature-Sliced Design](feature-sliced-design.md).
+- A1 forbids a cycle between workspace packages and A6 a value-import cycle between API features,
+  both at a baseline of zero. Type-only imports between features are not counted and may form
+  cycles; they carry no runtime coupling.
 - Instability and abstractness are not measured.

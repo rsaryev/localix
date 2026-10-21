@@ -51,12 +51,12 @@ One flow connects a published release to an installed app. Each step names the c
    bundles. The release is published as the **latest** one, a `-beta.N` version included, because
    the app reads `releases/latest/download/latest.json` and GitHub's `latest` skips a prerelease.
    `scripts/assert-newest-release.mjs` refuses a version older than the current latest.
-2. **Check.** The rail's `DesktopUpdateButton` is the one poller: thirty seconds after launch, then
-   hourly, it calls `updater_check` (`updater.rs`), which reads the manifest, compares versions and
-   keeps the `Update` handle. A failed check is quiet and reports "no update".
+2. **Check.** `useDesktopUpdate` is the one poller: three seconds after launch, then hourly, it
+   calls `updater_check` (`updater.rs`), which reads the manifest, compares versions and keeps the
+   `Update` handle. A failed check is quiet and reports "no update".
 3. **Notice.** `useDesktopUpdate` holds one shared state, so three surfaces agree: `UpdateStrip`
-   above the focused composer (`ComposerHeaderStrips`), the rail button, and Settings → Updates.
-   Hiding the strip is remembered per version.
+   above the focused composer (`ComposerHeaderStrips`), the titlebar's `UpdateActionButton`, and
+   Settings → Updates. Hiding the strip is remembered per version.
 4. **Press.** All three go through `restartToUpdate`. The loaded UI roster supplies top-level
    running turns and non-monitor work rows. A non-empty counted set requires confirmation; otherwise
    installation starts at once. Every monitor row is excluded, including stream watches that cannot
