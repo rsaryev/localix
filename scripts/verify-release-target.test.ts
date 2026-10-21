@@ -22,10 +22,11 @@ describe('release target provenance', () => {
         [`/repos/rsaryev/localix/git/tags/${tagObject}`]: {
           object: { type: 'commit', sha: commit },
         },
-        '/repos/rsaryev/localix/releases/tags/v1.2.3': {
-          draft: true,
-          body: `Localix v1.2.3\n\nSource commit: ${commit}`,
-        },
+        // Only the list returns drafts; `releases/tags/{tag}` answers 404 for one.
+        '/repos/rsaryev/localix/releases?per_page=100': [
+          { tag_name: 'v1.2.2', draft: false, body: 'older' },
+          { tag_name: 'v1.2.3', draft: true, body: `Localix v1.2.3\n\nSource commit: ${commit}` },
+        ],
       }),
     })
 
@@ -62,7 +63,11 @@ describe('release target provenance', () => {
           ...baseEntries,
           ...(release === undefined
             ? {}
-            : { '/repos/rsaryev/localix/releases/tags/v1.2.3': release }),
+            : {
+                '/repos/rsaryev/localix/releases?per_page=100': [
+                  { tag_name: 'v1.2.3', ...release },
+                ],
+              }),
         }),
       })
 
@@ -73,5 +78,17 @@ describe('release target provenance', () => {
     expect(() => inspect({ draft: true, body: 'another source' })).toThrow(
       'belongs to a different source commit',
     )
+    // Another tag's draft in the list is not this release.
+    expect(
+      inspectReleaseTarget({
+        repository: 'rsaryev/localix',
+        tag: 'v1.2.3',
+        sourceCommit: commit,
+        request: requestFrom({
+          ...baseEntries,
+          '/repos/rsaryev/localix/releases?per_page=100': [{ tag_name: 'v1.2.4', draft: true }],
+        }),
+      }),
+    ).toEqual({ releaseExists: false })
   })
 })

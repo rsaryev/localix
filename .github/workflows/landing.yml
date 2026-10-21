@@ -52,11 +52,13 @@ on:
 permissions:
   contents: read
 
-# Keep only the newest automatic deployment for each ref. Manual and release deployments
-# have separate groups, so a push cannot cancel an explicitly requested deployment.
+# Every production deployment (a push to main, a published release, a manual run) shares ONE
+# group and queues instead of cancelling: two of them in flight could finish in the wrong order,
+# and a build from before a release would replace the page that links its installers. A pull
+# request previews in its own group and keeps only its newest run.
 concurrency:
-  group: landing-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
+  group: landing-${{ github.event_name == 'pull_request' && github.ref || 'production' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}

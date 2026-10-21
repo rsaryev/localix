@@ -89,7 +89,9 @@ describe('release workflow contract', () => {
   test('builds workspace declarations before checking source and test types', () => {
     // Every app slice builds, then runs its own commands (type checks among them).
     expect(ci).toContain('bun run type-check')
-    expect(ci.indexOf('run: ${{ matrix.run }}')).toBeGreaterThan(ci.indexOf('run: bun run build'))
+    expect(ci.indexOf('name: Check ${{ matrix.check }}')).toBeGreaterThan(
+      ci.indexOf('run: bun run build'),
+    )
     expect(ci.indexOf('run: bun run build')).toBeGreaterThan(-1)
   })
 
@@ -339,11 +341,16 @@ describe('release workflow contract', () => {
       }
     ).jobs
     const verify = jobs.verify.steps
-    const green = verify.findIndex((step) => step.run === 'bun scripts/require-green-ci.mjs')
+    // Green CI is required in prepare, before the release environment and its secrets.
+    const prepare = jobs.prepare.steps
+    const green = prepare.findIndex((step) => step.run === 'bun scripts/require-green-ci.mjs')
+    expect(green).toBeGreaterThan(
+      prepare.findIndex((step) => step.name === 'Resolve tagged source'),
+    )
+    expect(verify.some((step) => step.run === 'bun scripts/require-green-ci.mjs')).toBe(false)
     const sign = verify.findIndex((step) => step.name === 'Sign updater probe')
     const key = verify.findIndex((step) => step.name === 'Verify probe with shipped public key')
-    expect(green).toBe(verify.findIndex((step) => step.run !== undefined))
-    expect(sign).toBeGreaterThan(green)
+    expect(sign).toBeGreaterThan(-1)
     expect(key).toBeGreaterThan(sign)
     expect(verify[key]?.run).toBe(
       'bun scripts/verify-updater-signature.mjs "$RUNNER_TEMP/updater-signing-probe"',

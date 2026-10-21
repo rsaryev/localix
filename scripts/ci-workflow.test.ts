@@ -6,6 +6,7 @@ const root = resolve(import.meta.dir, '..')
 const read = (path: string) => readFileSync(resolve(root, path), 'utf8')
 type Step = {
   name?: string
+  shell?: string
   run?: string
   uses?: string
   if?: string
@@ -134,10 +135,12 @@ describe('CI minute budget contract', () => {
     expect(existsSync(join(root, '.github/dependabot.yml'))).toBe(false)
   })
 
-  test('cancels superseded landing pushes and PRs independently of manual deployments', () => {
-    expect(landing.concurrency.group).toBe('landing-${{ github.event_name }}-${{ github.ref }}')
+  test('serialises production website deployments and cancels only superseded previews', () => {
+    expect(landing.concurrency.group).toBe(
+      "landing-${{ github.event_name == 'pull_request' && github.ref || 'production' }}",
+    )
     expect(landing.concurrency['cancel-in-progress']).toBe(
-      "${{ github.event_name == 'push' || github.event_name == 'pull_request' }}",
+      "${{ github.event_name == 'pull_request' }}",
     )
   })
 
@@ -151,7 +154,7 @@ describe('CI minute budget contract', () => {
     expect(runs.filter((run) => run === './.github/actions/setup-workspace')).toHaveLength(1)
     expect(runs.filter((run) => run === 'bun run build')).toHaveLength(1)
     const build = runs.indexOf('bun run build')
-    const check = app.steps.findIndex((step) => step.run === '${{ matrix.run }}')
+    const check = app.steps.findIndex((step) => step.name === 'Check ${{ matrix.check }}')
     expect(check).toBeGreaterThan(build)
     expect(app.steps[check]?.if).toBeUndefined()
     expect(app.steps[check]?.['continue-on-error']).toBeUndefined()
@@ -162,6 +165,13 @@ describe('CI minute budget contract', () => {
     expect(tools?.with?.toolchain).toBe('${{ env.RUST_TOOLCHAIN }}')
     expect(ci.env?.RUST_TOOLCHAIN).toBe('1.96.1')
     expect(app.steps.indexOf(tools!)).toBeLessThan(check)
+    // The slice runs under bash with pipefail, so piping its log through tee keeps its exit code.
+    expect(app.steps[check]?.shell).toBe('bash')
+    expect(app.steps[check]?.run).toContain('| tee "$RUNNER_TEMP/check.log"')
+    const summary = app.steps[check + 1]
+    expect(summary?.if).toBe('failure()')
+    expect(summary?.run).toContain('bun scripts/ci-failure-summary.mjs')
+    expect(summary?.run).toContain('>> "$GITHUB_STEP_SUMMARY"')
   })
 
   test('the slices run what a local bun run test runs, split in two', () => {
@@ -172,8 +182,10 @@ describe('CI minute budget contract', () => {
   })
 
   test('release verification requires green CI instead of repeating its gates', () => {
+    expect(release.jobs.prepare.steps.map((step) => step.run ?? '').join('\n')).toContain(
+      'bun scripts/require-green-ci.mjs',
+    )
     const verify = release.jobs.verify.steps.map((step) => step.run ?? '').join('\n')
-    expect(verify).toContain('bun scripts/require-green-ci.mjs')
     expect(verify.match(/^\s*bun run .+$/gmu)).toBeNull()
   })
 

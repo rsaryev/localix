@@ -42,9 +42,13 @@ export function inspectReleaseTarget({ repository, tag, sourceCommit, request })
     throw new Error(`Release tag ${tag} does not point to reviewed commit ${sourceCommit}`)
   }
 
-  const release = request(`/repos/${repository}/releases/tags/${encodedTag}`, {
-    allowMissing: true,
-  })
+  // `releases/tags/{tag}` never returns a DRAFT, so a re-run looked like a first run: it created a
+  // second draft for the same tag and skipped the provenance check below. The list includes drafts
+  // for a token that can write releases; the newest 100 cover every release a run can resume.
+  const releases = request(`/repos/${repository}/releases?per_page=100`) ?? []
+  const release = Array.isArray(releases)
+    ? releases.find((entry) => entry?.tag_name === tag)
+    : undefined
   if (!release) return { releaseExists: false }
   if (!release.draft) {
     throw new Error(`Release ${tag} is already published and will not be modified`)

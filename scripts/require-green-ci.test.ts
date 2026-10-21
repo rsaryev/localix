@@ -22,6 +22,11 @@ describe('ciVerdict', () => {
     expect(verdict.message).toContain('https://ci/1')
   })
 
+  test('fails a cancelled or timed-out run instead of releasing an unverified commit', () => {
+    for (const conclusion of ['cancelled', 'timed_out', 'skipped'])
+      expect(ciVerdict([run({ conclusion })], 'abc').state).toBe('fail')
+  })
+
   test('waits for a missing or unfinished run', () => {
     expect(ciVerdict([], 'abc').state).toBe('wait')
     expect(ciVerdict([run({ status: 'in_progress', conclusion: null })], 'abc').state).toBe('wait')

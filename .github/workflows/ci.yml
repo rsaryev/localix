@@ -59,7 +59,8 @@ jobs:
             run: bun run check:bundle
     # A pull request checks and tests only the packages it changes and their dependents (Turbo's
     # --affected against its base; a global input selects everything). The merge queue and main
-    # check the whole tree, so nothing unchecked reaches main. The build is never filtered: the
+    # deliberately check the whole tree, unfiltered, so nothing unchecked reaches main and every
+    # main commit has a full run a release can rely on. The build is never filtered: the
     # repository tests import built packages, and Turbo replays what main already built.
     env:
       TURBO_FILTER: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
@@ -109,8 +110,21 @@ jobs:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
           build-native: 'false'
 
+      # The log is kept so a failure can be summarised below; `shell: bash` adds pipefail, so the
+      # pipe through tee still fails the step when the check does.
       - name: Check ${{ matrix.check }}
-        run: ${{ matrix.run }}
+        shell: bash
+        env:
+          CHECK: ${{ matrix.run }}
+        run: bash -c "$CHECK" 2>&1 | tee "$RUNNER_TEMP/check.log"
+
+      - name: Summarise failures
+        if: failure()
+        env:
+          TITLE: App (${{ matrix.check }})
+        run:
+          bun scripts/ci-failure-summary.mjs "$TITLE" "$RUNNER_TEMP/check.log" >>
+          "$GITHUB_STEP_SUMMARY"
 
       # The archive is restored and saved again on every main push, so without a bound it only
       # grows. Entries untouched for two weeks are dropped; a task that still needs one rebuilds it.

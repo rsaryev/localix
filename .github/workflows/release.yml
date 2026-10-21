@@ -71,9 +71,11 @@ jobs:
   prepare:
     name: Prepare release
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Waits for CI on the tagged commit (up to 30 min, see require-green-ci.mjs) with room to report.
+    timeout-minutes: 40
     permissions:
       contents: read
+      actions: read
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
       version: ${{ steps.tag.outputs.version }}
@@ -109,6 +111,16 @@ jobs:
           RELEASE_TAG_REF: ${{ github.ref_name }}
         run: bun scripts/resolve-release-ref.mjs >> "$GITHUB_OUTPUT"
 
+      # CI already built, type-checked and tested this exact commit, release tooling included, on
+      # push to main; repeating any of it here only lengthened the release. Checked here, before
+      # the release environment and its signing secrets are reached, so red CI stops the release
+      # without touching them.
+      - name: Require green CI for the tagged commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT: ${{ steps.tag.outputs.commit }}
+        run: bun scripts/require-green-ci.mjs
+
       # Which native legs to build. Empty builds both. Naming legs rebuilds only those: the
       # assets the other legs already uploaded to the draft stay, and the updater manifest is still
       # assembled from the whole release, so a leg that flaked can be redone without redoing the
@@ -138,16 +150,15 @@ jobs:
           echo "Building: $(jq -r 'map(.name) | join(", ")' <<<"$matrix")"
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
-  # ── verify: require green CI for the tagged source, then check release signing ─
+  # ── verify: changelog and release signing (CI for the tag is checked in prepare) ──
   verify:
     name: Validate source and signing
     environment: release
     needs: prepare
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     permissions:
       contents: read
-      actions: read
     steps:
       - name: Checkout source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -155,17 +166,11 @@ jobs:
           ref: ${{ needs.prepare.outputs.commit }}
           persist-credentials: false
 
+      # This job holds the updater signing key: no dependency lifecycle script runs beside it.
       - name: Setup workspace
         uses: ./.github/actions/setup-workspace
-
-      # CI already built, type-checked and tested this exact commit, release tooling included, on
-      # push to main; repeating any of it here only lengthened the release. Verification requires
-      # that run to have succeeded and keeps the one check CI cannot do: the signing secret.
-      - name: Require green CI for the tagged commit
-        env:
-          GH_TOKEN: ${{ github.token }}
-          COMMIT: ${{ needs.prepare.outputs.commit }}
-        run: bun scripts/require-green-ci.mjs
+        with:
+          ignore-scripts: 'true'
 
       # The version's CHANGELOG section is what the GitHub release and the app's update dialog
       # say is new. A release without one would announce itself with nothing to read.
@@ -227,7 +232,9 @@ jobs:
         run: |
           gh release create "$TAG" --repo "$RELEASE_REPO" --draft --verify-tag \
             --title "Localix $TAG${RELEASE_CHANNEL:+ ($RELEASE_CHANNEL)}" \
-            --notes "Localix $TAG. The release notes are written when the release is published."
+            --notes "Localix $TAG. The release notes are written when the release is published.
+
+          Source commit: $SOURCE_COMMIT"
 
   # ── build-desktop: one NATIVE build per platform → upload installers ─────────
   # Native runners per arch (no cross-compile) so the bundled API sidecar (a real
@@ -278,11 +285,11 @@ jobs:
         with:
           path: .turbo/cache
           key:
-            turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ needs.prepare.outputs.commit
-            }}
+            turbo-release-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{
+            needs.prepare.outputs.commit }}
           restore-keys: |
-            turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
-            turbo-js-${{ runner.os }}-
+            turbo-release-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
+            turbo-release-${{ runner.os }}-
 
       # `scripts/stamp-version.mjs` owns which files carry the version (tauri.conf.json, Cargo.toml
       # and the crate's Cargo.lock entry) and refuses anything that is not a semantic version.
@@ -297,6 +304,12 @@ jobs:
       - name: Build workspace packages
         run: bunx turbo build --filter=@localixai/api
 
+      # Bounded like CI's archives: entries untouched for two weeks are dropped before the save.
+      - name: Prune Turbo cache
+        run: |
+          [ -d .turbo/cache ] || exit 0
+          find .turbo/cache -type f -mtime +14 -delete
+
       # Saved here, not after the signing steps: a later failure should not cost the next attempt.
       - name: Save Turbo cache
         if: steps.turbo-cache.outputs.cache-hit != 'true'
@@ -304,8 +317,8 @@ jobs:
         with:
           path: .turbo/cache
           key:
-            turbo-js-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ needs.prepare.outputs.commit
-            }}
+            turbo-release-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{
+            needs.prepare.outputs.commit }}
 
       - name: Decode Apple API key
         if: runner.os == 'macOS'

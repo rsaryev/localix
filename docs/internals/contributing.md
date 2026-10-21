@@ -134,10 +134,13 @@ release needs the run for its exact commit.
 protection needs to require only that status. The app jobs run in parallel, each building from its
 own Turbo archive: `types` (source and test types), `unit tests` (`bun run test:unit`),
 `integration and repository tests` (`check:release` and `bun run test:system`) and `desktop bundle`
-(a smoke test of the staged bundle). One failing job does not stop the others. The other job scans
-the history for secrets with gitleaks, lints every workflow with actionlint and zizmor, and checks
-the Rust shell. PRs can skip the Rust steps when the merge diff changes no desktop sources, root
-manifest, Bun lockfile, Node version, or shared CI setup.
+(a smoke test of the staged bundle). One failing job does not stop the others.
+
+A failing job lists its failing tests, type errors and Turbo tasks on the run's summary page
+(`scripts/ci-failure-summary.mjs`). The other job scans the history for secrets with gitleaks, lints
+every workflow with actionlint and zizmor, and checks the Rust shell. PRs can skip the Rust steps
+when the merge diff changes no desktop sources, root manifest, Bun lockfile, Node version, or shared
+CI setup.
 
 Every job runs on a GitHub-hosted runner: `ubuntu-latest`, with the Rust job and the Linux release
 leg on `ubuntu-22.04` for an older glibc baseline, and the macOS release leg on `macos-15`.
@@ -145,15 +148,22 @@ Workflows grant no default token permissions; each job names its own. Scanners a
 release binaries.
 
 The Bun package cache, the Turbo cache, and the Rust target are restored from GitHub cache archives.
-Only pushes to `main` save the Turbo and Rust archives, so pull requests restore them without
-evicting them. The Turbo archive drops entries untouched for two weeks before it is saved, so it
-stays bounded. Pinned actions, workspace packages and crates are updated by hand; there is no
-Dependabot.
+Only pushes to `main` save CI's Turbo and Rust archives, so pull requests restore them without
+evicting them; the release keeps its own `turbo-release` archive. The Turbo archive drops entries
+untouched for two weeks before it is saved, so it stays bounded. Pinned actions, workspace packages
+and crates are updated by hand; there is no Dependabot.
 
 `check:bundle` starts the staged API outside the checkout during `Checks`. Release verification does
 not rerun the CI gates: it requires a successful `Checks` run for the tagged commit, then signs a
 probe with the updater secret and verifies it against the shipped public key in
 `scripts/verify-updater-signature.mjs`, before any draft exists.
+
+`Prepare release` requires a green `Checks` run for the tagged commit before any job reaches the
+`release` environment and its signing secrets. The verify job installs dependencies without
+lifecycle scripts, since it holds the updater signing key. The draft records its source commit, so a
+rerun finds and reuses its own draft (looked up among drafts, which the tag endpoint omits) and
+refuses one built from another commit. Production website deployments queue in one group, so a build
+from before a release never replaces the page that links its installers.
 
 Each build leg smoke-tests the packaged API. On macOS it then checks the DMG and the app inside it
 with `codesign`, the team ID, `stapler`, and Gatekeeper's `spctl`. Every updater bundle's signature
@@ -166,7 +176,8 @@ To cut a release:
    [AGENTS.md](https://github.com/rsaryev/localix/blob/main/AGENTS.md#releases) and commit it to
    `main`. It is the release's Highlights and the "What's new" of the app's update dialog; the
    workflow refuses a version without one.
-2. Wait for `Checks` to pass on the `main` commit being released.
+2. Wait for `Checks` to pass on the `main` commit being released. Tag the commit that has its own
+   `Checks` run: when several commits are pushed at once, only the newest one gets a run.
 3. Tag that commit with the next semantic version and push the tag:
    `git tag v0.1.0-beta.6 && git push origin v0.1.0-beta.6`.
 4. Start the release from `main`: `gh workflow run release.yml --ref main -f tag=v0.1.0-beta.6`.
