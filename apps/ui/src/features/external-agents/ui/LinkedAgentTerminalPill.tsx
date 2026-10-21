@@ -18,6 +18,7 @@ import { MenuEntries } from '@localixai/kit/menu-entries'
 import type { MenuEntry } from '@localixai/plugin-sdk/ui'
 import { toast } from '@/shared/lib/notify'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { applyServerSession } from '@/features/chat/model/sessionSync'
 
 /** A chat can have a linked CLI; opening its pane never changes the chat or the draft. */
 export function LinkedAgentTerminalPill({ sessionId }: { sessionId: string | null }) {
@@ -36,7 +37,7 @@ export function LinkedAgentTerminalPill({ sessionId }: { sessionId: string | nul
     try {
       if (selectedProvider) {
         const linked = await externalAgentsApi.linkAgent(sessionId, selectedProvider)
-        useChatStore.getState()._replaceSession(linked)
+        applyServerSession(linked)
       }
       await openOwnedExternalSession(sessionId)
     } catch (cause) {

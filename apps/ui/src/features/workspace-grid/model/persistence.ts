@@ -5,7 +5,7 @@ import { workspaceStorageKey } from '@/shared/lib/workspaceWindow'
 // sanitizes the tree against the items that actually survived.
 import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
 import { createPendingWrite } from '@/shared/lib/quitFlush'
-import type { SerializedWorkItem, WorkItem } from './workItem'
+import type { SerializedWorkItem, WorkItem } from '@/shared/lib/workItem'
 import { isRestorableForPersistence, persistedScopeKindOf } from './capabilities'
 import { GLOBAL_SCOPE } from './scope'
 import type { EditorState } from './itemOps'

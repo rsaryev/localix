@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test'
 import { GLOBAL_SCOPE } from './scope'
 import { useGridStore, nextGroupId, seedGroupSeq, setPreviewTabs } from './store'
 import { findLeaf, leafIds } from './tree'
-import type { WorkItem } from './workItem'
+import type { WorkItem } from '@/shared/lib/workItem'
 
 const get = () => useGridStore.getState()
 // Every session tab names its chat on open; these all belong to S1 unless a test says otherwise.

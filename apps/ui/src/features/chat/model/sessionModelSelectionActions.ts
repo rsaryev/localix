@@ -10,6 +10,7 @@ import type { ChatStore, CustomSet } from './store'
 import type { SessionActions } from './sessionActionsSlice'
 import { createApplyPartyRoute } from './sessionPartyRoute'
 import { choiceFor, withModelChoices } from './sessionModelChoices'
+import { applyServerSession } from './sessionSync'
 
 /** The per-session model/effort actions of the chat store, sharing one ordered write lane. */
 export function createModelSelectionActions({
@@ -126,7 +127,7 @@ export function createModelSelectionActions({
     // cannot detect that, so only the last write is allowed to replace the session snapshot.
     if (!latest) return
     if (!seated) {
-      get()._replaceSession(session)
+      applyServerSession(session)
       return
     }
     const current = findSessionInState(get(), sessionId)
@@ -139,7 +140,7 @@ export function createModelSelectionActions({
     ) {
       // A reasoning change can race the model PATCH. Keep that newer effort
       // instead of allowing this response to repaint an older snapshot.
-      get()._replaceSession(
+      applyServerSession(
         currentRoute.reasoningEffort !== reasoningEffort && reasoningEffort !== undefined
           ? withRoute(session, { reasoningEffort: currentRoute.reasoningEffort }, target)
           : session,

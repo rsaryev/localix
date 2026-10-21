@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import type { WorkItem } from '@/features/workspace-grid/model'
+import type { WorkItem } from '@/shared/lib/workItem'
 import { setEnabledPluginNames } from '@/shared/contrib/pluginActivation'
 import { workItemKindRegistry } from '@/shared/contrib/uiContrib'
 import { workItemToMessageBinding, workItemToMessageBindings } from './tabMessageBinding'

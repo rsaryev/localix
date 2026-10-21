@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { tauriInvoke } from '@/shared/lib/tauri'
+import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { useTauriEvent } from '@/shared/hooks/useTauriEvent'
 import { isIslandGeometry, PREVIEW_GEOMETRY } from './geometry'
 
@@ -8,7 +8,8 @@ export function useIslandGeometry() {
   const [geometry, setGeometry] = useState(PREVIEW_GEOMETRY)
   useEffect(() => {
     let alive = true
-    void tauriInvoke()?.('companion_geometry')
+    void platformCapabilities()
+      .desktop.invoker()?.('companion_geometry')
       .then((value) => {
         if (alive && isIslandGeometry(value)) setGeometry(value)
       })

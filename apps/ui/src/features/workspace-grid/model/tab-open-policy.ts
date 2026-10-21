@@ -1,4 +1,4 @@
-import { resolveTabIdentity, tabIdentityOf, type WorkItem } from './workItem'
+import { resolveTabIdentity, tabIdentityOf, type WorkItem } from '@/shared/lib/workItem'
 import { isCappedFileItem, isPathBacked, isPinnedItem } from './capabilities'
 import { scopeOf } from './scope'
 import type { EditorState, OpenOptions } from './editor-state'

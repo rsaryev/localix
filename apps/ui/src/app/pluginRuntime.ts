@@ -36,7 +36,7 @@ import { useSettingsStore } from '@/shared/lib/user-settings/settingsStore'
 import { isModelRoutingTaskEnabled } from '@localixai/api/model-task-catalog'
 import { assertPluginOwnedWorkItemInstance } from '@/shared/contrib/uiContrib'
 import { createPluginToast } from '@/shared/contrib/pluginToast'
-import { openFileInGrid } from '@/features/inspector/model/fileNav'
+import { openFileInGrid } from '@/shared/lib/recentFiles'
 import { refFromContextBinding } from '@/features/chat/model/sendRefs'
 import { refOpenAction } from '@/features/chat/ui/refKindPresentation'
 

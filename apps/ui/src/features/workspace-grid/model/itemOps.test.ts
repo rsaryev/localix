@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { WorkItem } from './workItem'
+import type { WorkItem } from '@/shared/lib/workItem'
 import {
   type EditorState,
   MAX_FILE_TABS,

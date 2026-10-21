@@ -3,7 +3,7 @@ import { backendClient } from '@/shared/api/client'
 import type { DirEntry } from '@/shared/api/contracts'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import { acknowledgeInline } from '@/shared/lib/notifications/inlineReport'
-import { openFileInGrid } from '../model/fileNav'
+import { openFileInGrid } from '@/shared/lib/recentFiles'
 import type { FileTreeGuards } from './useDirectoryLoader'
 import type { EditState } from './useFileTree'
 

@@ -9,7 +9,7 @@ import {
 } from './activeTabLink'
 import { clearLiveTabMessageContext, publishLiveTabMessageContext } from './liveTabMessageContext'
 import { insertSplit, makeLeaf } from './tree'
-import type { WorkItem } from './workItem'
+import type { WorkItem } from '@/shared/lib/workItem'
 import type { ScopeActiveTab } from './warm'
 import { resourceMessageBindingDraft } from '@localixai/plugin-sdk/ui'
 

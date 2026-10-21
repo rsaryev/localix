@@ -1,4 +1,4 @@
-import type { WorkItem } from './workItem'
+import type { WorkItem } from '@/shared/lib/workItem'
 import type { EditorState, OpenOptions } from './editor-state'
 import { isEphemeralCapable, isEphemeralItem, isPathBacked, isSingleton } from './capabilities'
 import { findLeaf } from './tree'

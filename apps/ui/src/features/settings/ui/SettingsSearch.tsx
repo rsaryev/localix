@@ -7,9 +7,9 @@ import {
   AutocompleteList,
   AutocompleteOption,
 } from '@localixai/kit/autocomplete'
-import { SETTINGS_INDEX } from '../model/settingsIndex'
+import { SETTINGS_INDEX } from '@/shared/lib/settings-index/settingsIndex'
 import { searchSettings } from '../model/settingsSearch'
-import type { SettingsIndexEntry } from '../model/settingsIndex'
+import type { SettingsIndexEntry } from '@/shared/lib/settings-index/settingsIndex'
 import { settingsTargetUri } from '@/shared/lib/settingsAnchors'
 import { isDesktop, IS_MAC } from '@localixai/kit/environment'
 

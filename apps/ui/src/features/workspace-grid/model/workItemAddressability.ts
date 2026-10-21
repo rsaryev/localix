@@ -3,7 +3,7 @@ import {
   type CoreWorkItemKind,
   type WorkItem,
   type WorkItemKind,
-} from './workItem'
+} from '@/shared/lib/workItem'
 import type { GridNode } from './tree'
 import { groupOfTab } from './itemOps'
 import { isVisibleInScope } from './scope'

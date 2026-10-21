@@ -16,6 +16,7 @@ import { findSessionInState } from './findSession'
 import { patchSessionById } from './sessionListHelpers'
 import { recoverInactiveHitlSession } from './hitlInteraction'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { applyServerSession } from './sessionSync'
 
 // The data plane (one realtime subscription for every session) lives in chatEventStream.ts.
 export { useChatEventStream } from './chatEventStream'
@@ -233,7 +234,7 @@ export function useSessionRuntime(sessionId: string | null): SessionRuntime {
       void backendClient
         .getSession(sessionId)
         .then((session) => {
-          useChatStore.getState()._replaceSession(session)
+          applyServerSession(session)
         })
         .catch(() => {})
       throw err

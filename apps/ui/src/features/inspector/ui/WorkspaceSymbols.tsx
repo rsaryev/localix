@@ -15,7 +15,7 @@ import {
 } from '@localixai/kit/command'
 import { CommandHints } from '@/shared/ui/command-hints'
 import { baseName } from '@localixai/plugin-sdk/ui/utilities'
-import { openFileInGrid } from '../model/fileNav'
+import { openFileInGrid } from '@/shared/lib/recentFiles'
 import { loadFileEditor } from '../model/fileEditorLoader'
 import { subscribeUiOverlay } from '@/shared/lib/uiOverlayBus'
 import { WORKSPACE_SYMBOL_OVERLAY_ID } from './WorkspaceSymbols.surface'

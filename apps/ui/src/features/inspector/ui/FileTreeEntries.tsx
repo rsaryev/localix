@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Virtualizer } from '@tanstack/react-virtual'
 import { ChevronRight } from 'lucide-react'
-import { openFileInGrid } from '../model/fileNav'
+import { openFileInGrid } from '@/shared/lib/recentFiles'
 import { fileIcon, folderIcon } from '@/shared/ui/file-icon/fileIcon'
 import {
   ContextMenu,

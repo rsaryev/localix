@@ -1,7 +1,8 @@
 import { closeGridTab, useGridStore, type WorkItem } from '@/features/workspace-grid/model'
+import type { TerminalExit } from '@/shared/lib/terminalBus'
 import { backendClient } from '@/shared/api/client'
-import { useLiveTerminalsStore } from './liveTerminals'
-import { forgetTerminalState } from './terminalStates'
+import { useLiveTerminalsStore } from '@/shared/lib/terminals/liveTerminals'
+import { forgetTerminalState } from '@/shared/lib/terminals/terminalStates'
 
 function terminalIdOf(item: WorkItem): string | undefined {
   return item.kind === 'terminal' && typeof item.payload?.terminalId === 'string'
@@ -22,13 +23,6 @@ export function closeDeadTerminalTabs(terminalId: string): void {
     const closed = state.closed.filter((entry) => terminalIdOf(entry.item) !== terminalId)
     return closed.length === state.closed.length ? state : { closed }
   })
-}
-
-export interface TerminalExit {
-  exitCode: number | null
-  interactive?: boolean
-  command?: string
-  cwd?: string
 }
 
 /**

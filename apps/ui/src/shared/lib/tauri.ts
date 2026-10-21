@@ -14,7 +14,7 @@ declare global {
   }
 }
 
-type InvokeFn = (cmd: string, args?: Record<string, unknown>) => Promise<unknown>
+export type InvokeFn = (cmd: string, args?: Record<string, unknown>) => Promise<unknown>
 
 export type DesktopInvokePhase = 'started' | 'succeeded' | 'failed'
 export interface DesktopInvokeEvent {
@@ -43,7 +43,7 @@ function emitDesktopInvokeEvent(event: DesktopInvokeEvent): void {
 }
 
 type UnlistenFn = () => void
-type ListenFn = (
+export type ListenFn = (
   event: string,
   handler: (event: { payload: unknown }) => void,
   options?: { target: { kind: 'Webview' | 'Window'; label: string } },

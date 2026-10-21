@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { backendClient } from '@/shared/api/client'
 import { isDesktop } from '@localixai/kit/environment'
 import { previewControlBus } from '@/shared/lib/previewControlBus'
-import { tauriInvoke } from '@/shared/lib/tauri'
+import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import type { PreviewsBySession } from '../model/preview'
 import { browserEngine } from '../model/browserUrl'
 import { decodeEvalResult, ensureNativeProbe } from './nativeProbe'
@@ -26,7 +26,7 @@ export function useNativeBrowserAgent(tabsBySession: PreviewsBySession): void {
       )
       if (!tab) return
       if (inFlight.current.has(event.commandId)) return
-      const invoke = tauriInvoke()
+      const invoke = platformCapabilities().desktop.invoker()
       if (!invoke) return
       inFlight.current.add(event.commandId)
       void (async () => {

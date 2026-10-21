@@ -1,7 +1,7 @@
 import type { WorkItemKindContribution } from '@/shared/contrib/uiContrib'
 import { usePluginRegistrySlice } from '@/shared/contrib/usePluginRegistrySlice'
 import { activeWorkItemContribution, isPendingContributedKind } from './capabilities'
-import type { WorkItemKind } from './workItem'
+import type { WorkItemKind } from '@/shared/lib/workItem'
 
 /**
  * What a plugin-only kind can render right now: its live registration, or why there is none.

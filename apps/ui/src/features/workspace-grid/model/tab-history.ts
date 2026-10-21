@@ -1,4 +1,4 @@
-import type { WorkItem } from './workItem'
+import type { WorkItem } from '@/shared/lib/workItem'
 import { isEphemeralItem } from './capabilities'
 import { isVisibleInScope, type ScopeId } from './scope'
 

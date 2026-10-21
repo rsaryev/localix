@@ -123,7 +123,7 @@ conversations, then asks for confirmation; automatic removal is disabled until c
 ## Source of truth
 
 - [Section order and groups](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/model/settingsNavigation.ts)
-- [Search catalog](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/model/settingsIndex.ts)
+- [Search catalog](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/settings-index/settingsIndex.ts)
 - [Shared workspace layout](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/ui/SettingsWorkspace.tsx)
 - [Shared section geometry](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/ui/SettingsScaffold.tsx)
 - [Paired field grid](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/ui/SettingsFieldGrid.tsx)

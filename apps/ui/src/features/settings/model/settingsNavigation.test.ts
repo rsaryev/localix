@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 import { SETTINGS_STRING_TABS } from '@/shared/routing/routes'
 import { primarySettingsSection, SETTINGS_SECTIONS } from './settingsNavigation'
-import { SETTINGS_INDEX } from './settingsIndex'
+import { SETTINGS_INDEX } from '@/shared/lib/settings-index/settingsIndex'
 import { searchSettings } from './settingsSearch'
 
 test('every settings destination has exactly one primary section', () => {

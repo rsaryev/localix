@@ -1,5 +1,5 @@
 import { pluginViewTarget } from '@localixai/api/plugin-view-target'
-import { tauriInvoke } from '@/shared/lib/tauri'
+import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { isTabOpenedAs, scopeKindOf } from '@/features/workspace-grid/model'
 import type { PreviewCommand } from '@/shared/api/contracts'
 import { pluginLabel } from '@/shared/contrib/pluginAttribution'
@@ -262,7 +262,7 @@ async function nativePanelShot(
   panel: HTMLElement,
 ): Promise<PluginViewReply | null> {
   if (command.action !== 'screenshot' || command.ref || command.selector) return null
-  const invoke = tauriInvoke()
+  const invoke = platformCapabilities().desktop.invoker()
   if (!invoke) return null
   const rect = panel.getBoundingClientRect()
   try {

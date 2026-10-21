@@ -12,6 +12,7 @@ import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import { pluginContribSnapshot } from '@/shared/contrib/enabledPlugins'
 import { resolveAuthorIdentity } from '@/shared/contrib/useAgentIdentity'
 import { usePluginContribVersion } from '@/shared/contrib/usePluginContribVersion'
+import { applyServerSession } from '@/features/chat/model/sessionSync'
 
 interface ComposerQueuePanelProps {
   /** Backend-owned queue: messages waiting behind the in-flight run. */
@@ -137,7 +138,7 @@ export const ComposerQueuePanel = memo(function ComposerQueuePanel({
           try {
             const latest = await backendClient.getSession(activeSessionId)
             if (useChatStore.getState().activeSessionId === activeSessionId)
-              useChatStore.getState()._replaceSession(latest)
+              applyServerSession(latest)
           } catch {
             // The inline status still explains the failed promotion.
           }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { SETTINGS_INDEX } from './settingsIndex'
+import { SETTINGS_INDEX } from '@/shared/lib/settings-index/settingsIndex'
 import { parseSettingsQuery, searchSettings } from './settingsSearch'
 import { KEYMAP_PRESETS } from '@/shared/lib/keybindings/presets'
 

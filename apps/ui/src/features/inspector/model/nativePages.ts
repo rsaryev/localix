@@ -1,6 +1,6 @@
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import { toast } from '@/shared/lib/notify'
-import { tauriInvoke } from '@/shared/lib/tauri'
+import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { nativePageRendererLease } from '@/shared/lib/nativePageRendererLease'
 
 /**
@@ -13,7 +13,7 @@ import { nativePageRendererLease } from '@/shared/lib/nativePageRendererLease'
  * tabs are already gone and nothing else would show the pages are not.
  */
 export function closeNativePages(tabIds: readonly string[], failure: string): void {
-  const invoke = tauriInvoke()
+  const invoke = platformCapabilities().desktop.invoker()
   if (!invoke || !tabIds.length) return
   const unique = [...new Set(tabIds)].flatMap((id) => {
     const retired = nativePageRendererLease.retire(id)

@@ -3,7 +3,7 @@ import { registerDom } from '@localixai/kit/testing/dom'
 import type { CommentView, SessionPlan } from '@localixai/api/client'
 import type { UiSession } from '@/shared/api/contracts'
 import type { PlanDraftInfo } from '@/shared/api/plans-client'
-import type { WorkItem } from '@/features/workspace-grid/model'
+import type { WorkItem } from '@/shared/lib/workItem'
 
 let teardown: () => Promise<void>
 const cleanups: Array<() => unknown> = []

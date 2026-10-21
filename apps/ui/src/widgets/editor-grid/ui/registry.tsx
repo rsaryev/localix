@@ -1,12 +1,12 @@
 import { lazy, memo, Suspense, useCallback, useEffect } from 'react'
-import type { WorkItem } from '@/features/workspace-grid/model'
+import type { WorkItem } from '@/shared/lib/workItem'
 import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
 import { isCoreWorkItemKind, sessionOfScope } from '@/features/workspace-grid/model'
 import { publishLiveTabMessageContext } from '@/features/workspace-grid/model/liveTabMessageContext'
 import { useChatStore } from '@/features/chat/model/store'
 import { WorkItemSessionProvider } from '@localixai/plugin-sdk/ui/work-item-session'
 import type { ResolvedTheme } from '@/shared/theme/useTheme'
-import { ChatSurface } from '@/widgets/chat-workspace/ui/ChatSurface'
+import { chatSurface } from '@/shared/ui/chatSurfaceSlot'
 import { fileEditorsFor } from '@/shared/contrib/fileEditors'
 import { ContributedFileBody } from './FileEditorPicker'
 import { PluginWorkItemBody } from './PluginWorkItemBody'
@@ -17,9 +17,7 @@ import { WorkItemVisibilityProvider } from '@localixai/plugin-sdk/ui/visibility'
 import { WorkItemFocusProvider } from '@localixai/kit/work-item-focus'
 import { loadFileEditor } from '@/features/inspector/model/fileEditorLoader'
 
-const StatsPanel = lazy(() =>
-  import('@/features/stats/ui/StatsPanel').then((m) => ({ default: m.StatsPanel })),
-)
+const StatsPanel = lazy(() => import('./StatsPanel').then((m) => ({ default: m.StatsPanel })))
 const GlobalSearchTab = lazy(() =>
   import('@/features/search/ui/GlobalSearchTab').then((m) => ({ default: m.GlobalSearchTab })),
 )
@@ -144,14 +142,16 @@ function WorkItemBodyInner({
       />
     )
   switch (item.kind) {
-    case 'chat':
-      return (
+    case 'chat': {
+      const ChatSurface = chatSurface()
+      return ChatSurface ? (
         <ChatSurface
           sessionId={p<string>(item, 'sessionId') ?? null}
           isFocused={focused}
           resolvedTheme={resolvedTheme}
         />
-      )
+      ) : null
+    }
     case 'file': {
       const filePath = p<string>(item, 'path') ?? ''
       const mediaId = p<string>(item, 'mediaId')

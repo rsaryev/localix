@@ -2,8 +2,11 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 
 import { backendClient } from '@/shared/api/client'
 import { eventSocket } from '@/shared/api/eventSocket'
-import { useLiveTerminalsStore } from './liveTerminals'
-import { replaceTerminalStates, useTerminalStatesStore } from './terminalStates'
+import { useLiveTerminalsStore } from '@/shared/lib/terminals/liveTerminals'
+import {
+  replaceTerminalStates,
+  useTerminalStatesStore,
+} from '@/shared/lib/terminals/terminalStates'
 
 const NO_ROWS: readonly never[] = []
 

@@ -1,6 +1,6 @@
 import { API_BASE_URL, apiFetch } from '@/shared/api/client'
 import { pollAttempts } from '@/shared/lib/pollAttempts'
-import { tauriInvoke } from '@/shared/lib/tauri'
+import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { nativePageRendererLease } from '@/shared/lib/nativePageRendererLease'
 import type { PreviewEntry } from '../model/preview'
 import { nativeProbeUrl } from '../model/nativeProbeUrl'
@@ -82,7 +82,7 @@ function documentReady(loading: boolean, page: PageState | null): boolean {
  * after six seconds. It is now the document's own state (`documentReady`).
  */
 export async function ensureNativeProbe(tab: PreviewEntry): Promise<void> {
-  const invoke = tauriInvoke()
+  const invoke = platformCapabilities().desktop.invoker()
   if (!invoke) throw new Error('Native browser is unavailable')
   const tabId = tab.previewId
   nativePageRendererLease.revive(tabId)

@@ -1,4 +1,4 @@
-import type { SettingsIndexEntry } from './settingsIndex'
+import type { SettingsIndexEntry } from '@/shared/lib/settings-index/settingsIndex'
 import { rankSearchCandidates } from '@localixai/search'
 
 export interface SettingsSearchResult {

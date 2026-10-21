@@ -1,5 +1,5 @@
 import type { EditorState, OpenOptions } from './itemOps'
-import type { WorkItem } from './workItem'
+import type { WorkItem } from '@/shared/lib/workItem'
 import type { SplitDir } from './tree'
 import type { ScopeId } from './scope'
 import type { ScopeActiveTab } from './warm'

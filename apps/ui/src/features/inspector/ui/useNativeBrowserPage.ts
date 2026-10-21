@@ -1,6 +1,6 @@
 import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import { overlayOnScreen, useFocusStack } from '@localixai/plugin-sdk/ui/focus'
-import { tauriInvoke } from '@/shared/lib/tauri'
+import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { useLatestRef } from '@/shared/lib/useLatestRef'
 import { workbenchGesture } from '@/shared/lib/workbenchGesture'
 import { nativePageRendererLease } from '@/shared/lib/nativePageRendererLease'
@@ -56,7 +56,7 @@ export function useNativeBrowserPage({
   const handlers = useLatestRef({ onOpened, onError })
 
   useLayoutEffect(() => {
-    const invoke = tauriInvoke()
+    const invoke = platformCapabilities().desktop.invoker()
     const host = hostRef.current
     if (!invoke || !host) return
     const lease = nativePageRendererLease.claim(tabId)

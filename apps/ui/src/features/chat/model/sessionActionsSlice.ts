@@ -21,6 +21,7 @@ import {
   resolveConversationStart,
   type ConversationStartStrategy,
 } from './conversationStartStrategy'
+import { applyServerSession } from './sessionSync'
 
 export { logCurrentChatMessages } from './sessionBodyActivation'
 
@@ -188,7 +189,7 @@ export function createSessionActions({
         let session = reusable
         if (needsUpdate) {
           session = await backendClient.updateSession(reusable.id, { title })
-          get()._replaceSession(session)
+          applyServerSession(session)
         }
         customSet({ activeSessionId: session.id })
         return session

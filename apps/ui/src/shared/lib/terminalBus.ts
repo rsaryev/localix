@@ -17,10 +17,24 @@ type Sender = (data: string) => void
 /** Reveal the terminal tab and attach a pane to an agent-launched job by backend terminal id. */
 type JobOpener = (args: { terminalId: string; sessionId: string; title?: string }) => void
 
+/** How a backend terminal ended, as the `terminal.finished` frame reports it. */
+export interface TerminalExit {
+  exitCode: number | null
+  interactive?: boolean
+  command?: string
+  cwd?: string
+}
+/** Retire a finished terminal's tabs and transcript actions. */
+type Finisher = (terminalId: string, exit: TerminalExit) => void
+/** Reveal the pane of a terminal a chat owns (an external agent's CLI). */
+type OwnedOpener = (sessionId: string, terminalId: string, title: string) => void
+
 let opener: ((sessionId: string) => void) | null = null
 const senders = new Map<string, Sender>()
 const pending = new Map<string, string>()
 let jobOpener: JobOpener | null = null
+let finisher: Finisher | null = null
+let ownedOpener: OwnedOpener | null = null
 
 export const terminal = {
   /** The terminal feature registers how to reveal a chat's terminal tab. */
@@ -67,5 +81,31 @@ export const terminal = {
   /** Reveal a chat's terminal tab attached to an agent-launched job (by backend terminal id). */
   openJob(args: Parameters<JobOpener>[0]): void {
     jobOpener?.(args)
+  },
+
+  /** The terminal feature registers how to reveal a terminal a chat owns. */
+  setOwnedOpener(fn: OwnedOpener): () => void {
+    ownedOpener = fn
+    return () => {
+      if (ownedOpener === fn) ownedOpener = null
+    }
+  },
+
+  /** Reveal the pane of a chat-owned terminal. No-op until the terminal feature is wired. */
+  openOwned(sessionId: string, terminalId: string, title: string): void {
+    ownedOpener?.(sessionId, terminalId, title)
+  },
+
+  /** The terminal feature registers how a finished terminal retires its tabs; the app installs it. */
+  setFinisher(fn: Finisher): () => void {
+    finisher = fn
+    return () => {
+      if (finisher === fn) finisher = null
+    }
+  },
+
+  /** A backend terminal exited: hand it to the terminal feature. No-op until one is installed. */
+  finished(terminalId: string, exit: TerminalExit): void {
+    finisher?.(terminalId, exit)
   },
 }

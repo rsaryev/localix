@@ -3,7 +3,7 @@ import workItemFocusSurface from '../WorkItemFocus.surface'
 import fileSurface from '@/features/inspector/ui/FileTab.surface'
 import { GLOBAL_SCOPE } from './scope'
 import { makeLeaf } from './tree'
-import { CORE_WORK_ITEM_KINDS, type WorkItem } from './workItem'
+import { CORE_WORK_ITEM_KINDS, type WorkItem } from '@/shared/lib/workItem'
 import {
   CORE_WORK_ITEM_ADDRESSABILITY,
   resolveExistingWorkItemFocus,

@@ -16,7 +16,7 @@ import {
 import { CommandHints } from '@/shared/ui/command-hints'
 import { baseName, dirName } from '@localixai/plugin-sdk/ui/utilities'
 import type { FileSearchEntry } from '@/shared/api/contracts'
-import { openFileInGrid, useRecentFiles } from '../model/fileNav'
+import { openFileInGrid, useRecentFiles } from '@/shared/lib/recentFiles'
 import { loadFileEditor } from '../model/fileEditorLoader'
 import { subscribeUiOverlay } from '@/shared/lib/uiOverlayBus'
 import { QUICK_OPEN_OVERLAY_ID } from './QuickOpen.surface'

@@ -1,7 +1,7 @@
 // Deterministic tab placement: a kind always opens into its ROLE's group,
 // regardless of which group was last focused. Pure + unit-testable; the store
 // supplies fresh group ids via a callback so this module stays id-generator-free.
-import type { CoreWorkItemKind, WorkItemKind } from './workItem'
+import type { CoreWorkItemKind, WorkItemKind } from '@/shared/lib/workItem'
 import { activeWorkItemContribution } from './capabilities'
 import {
   type GridNode,

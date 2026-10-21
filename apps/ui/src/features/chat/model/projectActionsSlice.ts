@@ -11,6 +11,7 @@ import {
 import { sessionBelongsToScope } from './sessionListHelpers'
 import type { ChatStore, CustomSet } from './store'
 import { scopedNewConversation } from './conversationStartStrategy'
+import { applyServerProjects } from './sessionSync'
 
 export interface ProjectActionsDeps {
   set: StoreApi<ChatStore>['setState']
@@ -52,7 +53,7 @@ export function createProjectActions({ set, customSet, get }: ProjectActionsDeps
       const projects = await backendClient.listProjects()
       // Through the store's single fetched-roster writer, so `projectsLoaded` can never be
       // true for one entry point and false for the other.
-      get()._hydrateProjects(projects)
+      applyServerProjects(projects)
     },
 
     selectProject: async (id) => {

@@ -1,7 +1,7 @@
 import { SquareTerminal } from 'lucide-react'
 import type { ToolCallItem } from '@localixai/agent/agents'
 import { terminal as terminalBus } from '@/shared/lib/terminalBus'
-import { useIsTerminalLive } from '@/features/terminal/model/liveTerminals'
+import { useIsTerminalLive } from '@/shared/lib/terminals/liveTerminals'
 import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
 import { ToolLine } from '../ToolLine'
 import { ErrorRow, IORow, OutputBlock, ToolBody, ToolHeaderAction } from '../ToolIO'

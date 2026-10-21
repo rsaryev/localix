@@ -169,6 +169,6 @@ whole multiple of its threshold after dismissal.
 - [Sliced startup reconciliation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/usage/reconcile-slices.ts)
 - [Usage range calculation](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/hooks/usageRange.ts)
 - [Usage queries and paging lifecycle](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/hooks/useUsageStats.ts)
-- [Usage workbench](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/stats/ui/StatsPanel.tsx)
+- [Usage workbench](https://github.com/rsaryev/localix/blob/main/apps/ui/src/widgets/editor-grid/ui/StatsPanel.tsx)
 - [Composer usage indicator](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/prompt-input/UsageIndicator.tsx)
 - [Spend alert policy](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/spendAlert.ts)

@@ -1,4 +1,4 @@
-import type { WorkItem } from './workItem'
+import type { WorkItem } from '@/shared/lib/workItem'
 import type { GridNode } from './tree'
 import type { ClosedTab } from './tab-history'
 

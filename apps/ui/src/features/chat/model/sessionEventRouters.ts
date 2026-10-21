@@ -1,8 +1,8 @@
 import { publishFsChange } from '@/shared/lib/fsChangeBus'
 import type { AgentStreamEvent } from '@/shared/api/contracts'
-import { useLiveTerminalsStore } from '@/features/terminal/model/liveTerminals'
-import { applyTerminalState, forgetTerminalState } from '@/features/terminal/model/terminalStates'
-import { finishTerminalTabs } from '@/features/terminal/model/deadTerminalTabs'
+import { useLiveTerminalsStore } from '@/shared/lib/terminals/liveTerminals'
+import { applyTerminalState, forgetTerminalState } from '@/shared/lib/terminals/terminalStates'
+import { terminal } from '@/shared/lib/terminalBus'
 import { useChatStore } from './store'
 import { backendClient } from '@/shared/api/client'
 import { openPolicy } from '@/shared/lib/workspaceOf'
@@ -101,7 +101,7 @@ export function routeTerminalFinished(
   sessionId: string,
   parsed: Extract<AgentStreamEvent, { type: 'terminal.finished' }>,
 ): void {
-  finishTerminalTabs(parsed.terminalId, {
+  terminal.finished(parsed.terminalId, {
     exitCode: parsed.exitCode,
     interactive: parsed.interactive,
     command: parsed.command,

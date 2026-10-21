@@ -12,6 +12,10 @@ import { installQuitFlush } from '@/shared/lib/quitFlush'
 import { isDesktop } from '@localixai/kit/environment'
 import { registerAgentRunPreflight } from '@/shared/api/agentRunPreflight'
 import { registerSessionPreviews } from '@/shared/lib/sessionPreviews'
+import { registerChatSurface } from '@/shared/ui/chatSurfaceSlot'
+import { terminal as terminalBus } from '@/shared/lib/terminalBus'
+import { finishTerminalTabs } from '@/features/terminal/model/deadTerminalTabs'
+import { ChatSurface } from '@/widgets/chat-workspace/ui/ChatSurface'
 import { inspectorSessionPreviews } from '@/features/inspector/model/sessionPreviewRouters'
 import { registerCompletionWorkingSet } from '@/shared/api/completionWorkingSet'
 import { workspaceCompletionWorkingSet } from '@/features/workspace-grid/model/completionWorkingSet'
@@ -62,6 +66,9 @@ installQuitFlush()
 // first run.
 registerAgentRunPreflight(waitForRuntimeCapabilities)
 registerSessionPreviews(inspectorSessionPreviews)
+// The editor grid lays out chat tabs; the chat workspace widget draws them.
+registerChatSurface(ChatSurface)
+terminalBus.setFinisher(finishTerminalTabs)
 // Every completion surface (composer, commit subject, plugin fields, the code editor) carries
 // what is open on screen; the grid is the one thing that knows it.
 registerCompletionWorkingSet(workspaceCompletionWorkingSet)

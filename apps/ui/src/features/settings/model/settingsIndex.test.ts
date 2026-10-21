@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { SETTINGS_INDEX, type SettingsIndexEntry } from './settingsIndex'
+import { SETTINGS_INDEX, type SettingsIndexEntry } from '@/shared/lib/settings-index/settingsIndex'
 import { CAPABILITY_TABS } from '@/shared/routing/routes'
 
 /**

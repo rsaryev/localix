@@ -1,5 +1,5 @@
 import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
-import type { WorkItem } from '@/features/workspace-grid/model'
+import type { WorkItem } from '@/shared/lib/workItem'
 import ExternalHistorySidebar from './ExternalHistorySidebar'
 
 /** Container resource links reuse the same history body without another rail entry. */

@@ -7,7 +7,7 @@
  *
  * Pure selectors here; the thin zustand hook lives in `useActiveTabRef.ts`.
  */
-import type { WorkItem } from './workItem'
+import type { WorkItem } from '@/shared/lib/workItem'
 import type { MessageContextBindingDraft } from '@localixai/plugin-sdk/ui'
 import { workItemToMessageBindings } from './tabMessageBinding'
 import { type FocusedFileState, groupViewModel, scopedViewRoot } from './groupView'

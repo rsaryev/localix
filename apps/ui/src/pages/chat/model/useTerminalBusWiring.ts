@@ -3,6 +3,7 @@ import { terminal as terminalBus } from '@/shared/lib/terminalBus'
 import {
   revealOrCreateTerminal,
   adoptTerminal,
+  openOwnedTerminal,
   revealTerminal,
 } from '@/features/terminal/model/terminalTabs'
 import { useEventFocusStore, type EventFocusRequest } from '@/shared/lib/eventFocusBus'
@@ -35,6 +36,9 @@ export function useTerminalBusWiring(opts: { activeSessionId: string | null }): 
   // reveal a terminal tab attached to the job's backend terminal (adopted — closing the tab leaves
   // the job running), in the job's own chat. Nothing calls this on the job's own events.
   useEffect(() => terminalBus.setJobOpener(adoptTerminal), [])
+
+  // An external agent's CLI runs in a terminal its chat owns; opening that chat reveals it here.
+  useEffect(() => terminalBus.setOwnedOpener(openOwnedTerminal), [])
 
   // Event Center resource deep-link → exact PTY. The request survives navigation;
   // when the destination session becomes active this feature consumes only the

@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
+import { afterAll, beforeAll, expect, mock, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { act } from 'react'
 import { MemoryRouter, useLocation } from 'react-router'
@@ -10,7 +10,7 @@ import { useChatStore } from '@/features/chat/model/store'
 import * as agents from '@/shared/contrib/useAgents'
 import * as installed from '@/features/external-agents/model/useInstalledAgents'
 import { externalAgentsApi } from '@/features/external-agents/api'
-import * as terminalTabs from '@/features/terminal/model/terminalTabs'
+import { terminal as terminalBus } from '@/shared/lib/terminalBus'
 import { toUiSessionSummary } from '@/shared/api/converters'
 import type { SessionSummary, Project } from '@/shared/api/contracts'
 
@@ -209,7 +209,8 @@ test('Unified history shows owned Localix and external sessions together within 
     terminalId: 'pty',
     providerName: 'Codex',
   })
-  const terminal = spyOn(terminalTabs, 'openOwnedTerminal').mockImplementation(() => {})
+  const terminal = mock((_sessionId: string, _terminalId: string, _title: string) => {})
+  const unregister = terminalBus.setOwnedOpener(terminal)
   const selected: string[] = []
   const { createRoot } = await import('react-dom/client')
   const host = document.createElement('div')
@@ -290,11 +291,11 @@ test('Unified history shows owned Localix and external sessions together within 
       installedAgents,
       foreignHistory,
       open,
-      terminal,
       nativeHistory,
       attach,
       reload,
     ])
       spy.mockRestore()
+    unregister()
   }
 })

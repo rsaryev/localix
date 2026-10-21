@@ -10,7 +10,7 @@
  *                     → `agent-runtime.ts` `handleSessionEvent` routes these to their buses
  *                       (`sessionEventRouters.ts`) and returns before reaching the store.
  *   terminal.state    → `agent-runtime.ts` hands it to the terminal feature's state store
- *                       (`features/terminal/model/terminalStates.ts`) and returns.
+ *                       (`shared/lib/terminals/terminalStates.ts`) and returns.
  *   user.mentioned    → nothing here: the server lists the waiting question in its attention
  *                       roster (`attention.updated`) and journals the notification. The durable
  *                       fact is already on the message row this frame points at (`to: 'user'`),

@@ -1,11 +1,11 @@
 import type { RefObject } from 'react'
 import type { Terminal } from '@xterm/xterm'
 import type { SearchAddon } from '@xterm/addon-search'
-import { openFileInGrid } from '@/features/inspector/model/fileNav'
+import { openFileInGrid } from '@/shared/lib/recentFiles'
 import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { createShellIntegration } from '../model/terminalShellIntegration'
 import type { TerminalFind } from '../model/useTerminalFind'
-import type { TerminalExit } from '../model/deadTerminalTabs'
+import type { TerminalExit } from '@/shared/lib/terminalBus'
 import { createTerminalLinkProvider } from './terminalLinkProvider'
 import { attachTerminalHotkeys, bindTerminalPasteGuard, type PastePrompt } from './terminalInput'
 

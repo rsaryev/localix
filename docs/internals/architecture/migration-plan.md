@@ -45,12 +45,13 @@ scheduling, terminal lifecycle and the session event stream.
 - [ ] `apps/api/src/db/payload.ts` imports no feature module.
 - [ ] Cross-feature cycles in the API shrink to zero (A6).
 - [ ] UI slices stop importing each other and gain public entries (A8).
-- [ ] Desktop calls go through `platformCapabilities`.
+- [x] Desktop calls go through `platformCapabilities` (the inspector and companion are guarded).
 
 ## Client synchronization
 
 - [x] One writer for connections; the duplicate SWR keys and manual refreshes go.
-- [ ] Session writes reach other surfaces through topics instead of `_replaceSession` patches.
+- [x] Session writes land through the chat sync layer (`applyServerSession`) instead of
+      `_replaceSession` patches from each surface (C6).
 - [x] Caches with no topic subscribe to one: the settings model field, settings project lists, the
       model catalog, join routes and linked session previews.
 - [x] The transport tells the scheduler when a reconnect replayed every missed frame.

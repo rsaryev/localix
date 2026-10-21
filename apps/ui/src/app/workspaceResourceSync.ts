@@ -1,7 +1,7 @@
 import { backendClient } from '@/shared/api/client'
 import { resourceSync } from '@/shared/api/resourceSync'
 import { startResourceSyncTransport } from '@/shared/api/resourceSyncTransport'
-import { useChatStore } from '@/features/chat/model/store'
+import { applyServerProjects } from '@/features/chat/model/sessionSync'
 import { registerConnectionsSync } from '@/features/chat/model/connectionsSync'
 import { useSettingsStore } from '@/shared/lib/user-settings/settingsStore'
 import { startPluginContribSync } from '@/shared/contrib/enabledPlugins'
@@ -13,7 +13,7 @@ export function startWorkspaceResourceSync(): () => void {
   const stops = [
     resourceSync.register('projects', {
       read: (signal) => backendClient.listProjects(signal),
-      apply: (projects) => useChatStore.getState()._hydrateProjects(projects),
+      apply: applyServerProjects,
       onError: (error) => console.warn('[realtime] project sync failed', error),
     }),
     registerConnectionsSync(),

@@ -7,7 +7,7 @@
  * screen instead, a path printed by a background chat's build landed in another chat's
  * workspace, where it resolved against the wrong root or not at all.
  */
-import { openFileInGrid } from '@/features/inspector/model/fileNav'
+import { openFileInGrid } from '@/shared/lib/recentFiles'
 import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import type { TerminalLinkItem } from './terminalLinks'
 

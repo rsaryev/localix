@@ -5,6 +5,7 @@ import { backendClient } from '@/shared/api/client'
 import { resourceSync } from '@/shared/api/resourceSync'
 import { shouldSurfaceStartupFailure, startupRetryDelay } from '@/shared/lib/startupRetry'
 import { runtimeReadyBarrier } from '@/shared/lib/runtimeReady'
+import { applyServerSession } from './sessionSync'
 
 const STARTUP_REQUEST_TIMEOUT_MS = 5_000
 
@@ -86,7 +87,7 @@ export function useWorkspace() {
     ([, sessionId]) =>
       withStartupDeadline(async (signal) => {
         const session = await backendClient.getSession(sessionId, signal)
-        useChatStore.getState()._replaceSession(session)
+        applyServerSession(session)
       }),
     {
       ...startupSWRConfig,

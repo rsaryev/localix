@@ -94,7 +94,7 @@ describe('workbench foundation contracts', () => {
       'button-variants sizes glyphs on the Tailwind ladder',
     ).not.toContain('var(--icon-')
     for (const path of [
-      'features/chat/ui/BreadcrumbTrailingActions.tsx',
+      'pages/chat/ui/BreadcrumbTrailingActions.tsx',
       'shared/ui/notification-center/NotificationCenterLauncher.tsx',
       'widgets/workspace-shell/ui/WorkspaceShell.tsx',
     ]) {
@@ -209,7 +209,7 @@ describe('workbench foundation contracts', () => {
   })
 
   test('the titlebar keeps core actions and renders contributed ones through one control', () => {
-    const cluster = read('features/chat/ui/BreadcrumbTrailingActions.tsx')
+    const cluster = read('pages/chat/ui/BreadcrumbTrailingActions.tsx')
 
     // Core's three are always there, and the bell is LAST. It is the one place a user looks when
     // something needs attention; an anchor that a plugin can push around is not an anchor.

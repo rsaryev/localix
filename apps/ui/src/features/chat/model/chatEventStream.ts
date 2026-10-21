@@ -27,6 +27,7 @@ import { sessionEventHandlersFor } from '@/shared/contrib/sessionEvents'
 import { sessionPreviews } from '@/shared/lib/sessionPreviews'
 import { resourceSync } from '@/shared/api/resourceSync'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { applyServerSession } from './sessionSync'
 
 /**
  * DATA PLANE — mounted ONCE (in ChatPage). Owns the single realtime WebSocket
@@ -58,9 +59,7 @@ export function useChatEventStream(enabled = true): void {
             isStillTarget: () => useChatStore.getState().activeSessionId === sessionId,
             fetchSession: () => backendClient.getSession(sessionId),
             applySession: (session) => {
-              const store = useChatStore.getState()
-              store._replaceSession(session)
-              store._setSessionRunning(sessionId, session.isRunning)
+              applyServerSession(session, { running: session.isRunning })
             },
           })
         } catch (error) {
@@ -89,9 +88,7 @@ export function useChatEventStream(enabled = true): void {
         getSession: (id) => findSessionInState(useChatStore.getState(), id),
         fetchSession: (id) => backendClient.getSession(id),
         applySession: (session) => {
-          const store = useChatStore.getState()
-          store._replaceSession(session)
-          store._setSessionRunning(session.id, session.isRunning)
+          applyServerSession(session, { running: session.isRunning })
         },
       }),
     [],

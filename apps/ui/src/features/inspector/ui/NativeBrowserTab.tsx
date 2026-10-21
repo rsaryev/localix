@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import { toast } from '@/shared/lib/notify'
-import { tauriInvoke } from '@/shared/lib/tauri'
+import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { BrowserToolbar } from './BrowserToolbar'
 import { NativePageSurface } from './NativePageSurface'
 import { useNativeBrowserPage } from './useNativeBrowserPage'
@@ -48,7 +48,7 @@ export function NativeBrowserTab({
   })
   const [loading, setLoading] = useState(false)
   const updateTab = usePreviewStore((s) => s.updateBrowserTab)
-  const invoke = useMemo(() => tauriInvoke(), [])
+  const invoke = useMemo(() => platformCapabilities().desktop.invoker(), [])
 
   const refreshNavigation = useCallback(() => {
     void invoke?.('browser_navigation_state', { tabId: tab.previewId })

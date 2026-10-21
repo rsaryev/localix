@@ -34,4 +34,22 @@ describe('platform capability port', () => {
     expect(platformCapabilities().desktop.invoke('missing')).toBeNull()
     restore()
   })
+
+  test('the web has no native bridge, and a host or test can install one', async () => {
+    expect(platformCapabilities().desktop.invoker()).toBeUndefined()
+    expect(platformCapabilities().desktop.listener()).toBeUndefined()
+    const calls: string[] = []
+    const restore = configurePlatformCapabilities({
+      desktop: {
+        invoker: () => async (command) => {
+          calls.push(command)
+          return 'ok'
+        },
+      },
+    })
+    expect(await platformCapabilities().desktop.invoker()?.('browser_reload')).toBe('ok')
+    expect(calls).toEqual(['browser_reload'])
+    expect(platformCapabilities().desktop.listener()).toBeUndefined()
+    restore()
+  })
 })

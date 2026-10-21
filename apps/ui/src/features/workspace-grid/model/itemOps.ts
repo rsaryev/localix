@@ -1,6 +1,6 @@
 // Pure reducers over the editor-grid state. Opening, closing and shared tree updates live
 // in adjacent modules; this module preserves the reducer entry points used by the store.
-import type { WorkItem } from './workItem'
+import type { WorkItem } from '@/shared/lib/workItem'
 import type { EditorState } from './editor-state'
 import { groupOfTab, patchLeaf, gcItems, bumpMru } from './grid-state'
 
