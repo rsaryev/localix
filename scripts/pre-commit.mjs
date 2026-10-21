@@ -2,12 +2,19 @@
 import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
 import { runOrExit } from './lib/run.mjs'
+import { scrubGitEnv } from './scratch-git-env.mjs'
 import { isGlobalTypeInput, isInWorkspace, planChecks, readWorkspaces } from './pre-commit-plan.mjs'
+
+// Git exports GIT_DIR, GIT_INDEX_FILE and friends to its hooks. Only this hook's own git calls
+// need them (to see the index being committed); a tool or test started here must not inherit a
+// pointer to this repository.
+const toolEnv = scrubGitEnv({ ...process.env })
 
 function run(command, args, options = {}) {
   // The hook runs in whichever checkout invoked it, not necessarily the one this file lives in.
   return runOrExit(command, args, {
     cwd: process.cwd(),
+    env: command === 'git' ? process.env : toolEnv,
     stdio: 'inherit',
     timeout: 60_000,
     killSignal: 'SIGKILL',

@@ -17,7 +17,8 @@
  * one blocked every later stage, commit and discard on that repo until restart.
  */
 import { execFile, type ExecFileOptions } from 'node:child_process'
-import { toolEnv } from '@localixai/plugin-sdk/backend'
+
+import { gitHardenedEnv } from './git-env'
 
 /** Cap on a single git invocation's output (large diffs/status of huge trees). */
 const GIT_MAX_BUFFER = 8_000_000
@@ -48,33 +49,6 @@ const NETWORK_SUBCOMMANDS = new Set(['push', 'pull', 'fetch', 'clone'])
 export function resolveGitTimeoutMs(args: string[], explicit?: number): number {
   if (explicit !== undefined) return Math.max(0, explicit)
   return NETWORK_SUBCOMMANDS.has(args[0] ?? '') ? NETWORK_GIT_TIMEOUT_MS : DEFAULT_GIT_TIMEOUT_MS
-}
-
-/**
- * Never let git block on an interactive prompt. Without this a missing
- * credential, an SSH passphrase, or an askpass helper would make git read
- * /dev/tty and hang this process forever — fatal for the boot stale-sweep and
- * any unattended worktree/source-control op. GIT_TERMINAL_PROMPT=0 disables the
- * terminal prompt; GIT_ASKPASS='' disables any GUI askpass helper.
- *
- * env REPLACES the child env. Built PER CALL from `toolEnv()` — the call-time env (after
- * bootstrap repaired PATH for a GUI launch) plus the install dirs a GUI app's PATH misses — so
- * git and what it spawns (credential/askpass helpers, ssh, gpg, hooks) are found; a module-level
- * const would freeze the bare launchd PATH into every git spawn.
- */
-function gitHardenedEnv(extra?: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-  return {
-    ...toolEnv(),
-    GIT_TERMINAL_PROMPT: '0',
-    GIT_ASKPASS: '',
-    // An HTTP transfer under 1 KB/s for a full minute is dead, not slow: git aborts it itself,
-    // long before the network ceiling, and a transfer that is still moving is never touched.
-    GIT_HTTP_LOW_SPEED_LIMIT: '1000',
-    GIT_HTTP_LOW_SPEED_TIME: '60',
-    // Callers may layer on top (e.g. GIT_SEQUENCE_EDITOR/GIT_EDITOR for a
-    // non-interactive rebase). Spread LAST so an explicit override wins.
-    ...extra,
-  }
 }
 
 export interface GitResult {

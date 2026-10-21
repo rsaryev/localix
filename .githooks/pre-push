@@ -1,0 +1,9 @@
+#!/bin/sh
+# Every push runs the CI gates over the whole tree; Turbo replays every unchanged package.
+
+set -e
+
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+
+bun scripts/pre-push.mjs

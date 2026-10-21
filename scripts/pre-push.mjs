@@ -1,15 +1,20 @@
 #!/usr/bin/env bun
-// The CI gates, run before every commit.
+// The CI gates, run before every push.
+//
+// A commit only checks what it stages (pre-commit.mjs) and stays a few seconds; the whole tree is
+// checked once per push instead of once per commit. The gates run on the working tree, so it must
+// hold exactly what is pushed: uncommitted tracked changes are refused.
 //
 // Affected-package selection missed failures that only the whole tree shows: a docs edit breaking a
 // landing test, a repository guard in scripts/, a test in a package nothing imports. CI caught them
 // one push at a time. Turbo caches each task by its inputs, so an unchanged package replays instantly
 // and the full run stays short. Rust is still checked only on the host platform (see pre-commit.mjs).
 import { runOrExit } from './lib/run.mjs'
+import { scrubGitEnv } from './scratch-git-env.mjs'
 
 const GATES = ['check:release', 'type-check', 'check:tests', 'test']
 
-const unstaged = runOrExit('git', ['diff', '--name-only', '-z'], {
+const uncommitted = runOrExit('git', ['status', '--porcelain', '-z', '--untracked-files=no'], {
   cwd: process.cwd(),
   stdio: ['ignore', 'pipe', 'inherit'],
   encoding: 'utf8',
@@ -18,19 +23,23 @@ const unstaged = runOrExit('git', ['diff', '--name-only', '-z'], {
 })
   .stdout.split('\0')
   .filter(Boolean)
-if (unstaged.length) {
-  console.error('[pre-commit] The full suite checks the working tree. Stage or stash these first:')
-  for (const path of unstaged) console.error(`  ${path}`)
+if (uncommitted.length) {
+  console.error('[pre-push] The gates check the working tree. Commit or stash these first:')
+  for (const entry of uncommitted) console.error(`  ${entry}`)
   process.exit(1)
 }
 
+// Git exports GIT_DIR and friends to its hooks; nothing the gates start may inherit them.
+const env = scrubGitEnv({ ...process.env })
+
 for (const gate of GATES) {
-  console.log(`[pre-commit] bun run ${gate}`)
+  console.log(`[pre-push] bun run ${gate}`)
   runOrExit('bun', ['run', gate], {
     cwd: process.cwd(),
+    env,
     stdio: 'inherit',
     timeout: 1_200_000,
     killSignal: 'SIGKILL',
   })
 }
-console.log('[pre-commit] Full suite passed.')
+console.log('[pre-push] Full suite passed.')

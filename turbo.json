@@ -1,11 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": [
-    ".nvmrc",
-    "plugins/*/backend/**",
-    "plugins/*/*/backend/**",
-    "plugins/*/ui/**"
-  ],
+  "globalDependencies": [".nvmrc"],
   "tasks": {
     "build": {
       "dependsOn": ["^build", "docs:gen"],

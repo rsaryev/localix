@@ -4,10 +4,17 @@
   "tasks": {
     "type-check": {
       "dependsOn": ["^build", "docs:gen"],
-      "outputs": []
+      "outputs": [],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/plugins/**"]
     },
     "type-check:tests": {
       "dependsOn": ["^build", "docs:gen"],
+      "outputs": [],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/plugins/**"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/plugins/**"],
       "outputs": []
     }
   }

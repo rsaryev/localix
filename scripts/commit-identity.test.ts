@@ -55,6 +55,12 @@ describe('commit identity guard', () => {
     expect(hook.indexOf('commit-identity.mjs')).toBeGreaterThan(-1)
     expect(hook.indexOf('commit-identity.mjs')).toBeLessThan(hook.indexOf('pre-commit.mjs'))
   })
+
+  test('a commit checks what it stages; the whole tree is checked before a push', async () => {
+    const hooks = resolve(import.meta.dir, '../.githooks')
+    expect(await Bun.file(join(hooks, 'pre-commit')).text()).not.toContain('pre-push.mjs')
+    expect(await Bun.file(join(hooks, 'pre-push')).text()).toContain('bun scripts/pre-push.mjs')
+  })
 })
 
 describe('test git environment', () => {

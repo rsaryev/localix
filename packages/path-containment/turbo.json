@@ -4,6 +4,11 @@
   "tasks": {
     "dev": {
       "dependsOn": ["build", "^build"]
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/plugins/**"],
+      "outputs": []
     }
   }
 }

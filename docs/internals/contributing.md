@@ -100,12 +100,19 @@ available. The hook does not rewrite or stage tracked files, but type checks may
 output. Staged files and affected packages must have no unstaged edits; stage or stash them before
 committing.
 
-After the staged-file checks, the hook runs the CI gates `check:release`, `type-check`,
+Before every push, `.githooks/pre-push` runs the CI gates `check:release`, `type-check`,
 `check:tests`, and `test` over the whole tree; Turbo replays every unchanged package from its cache.
-`bun run test` runs the package suites and the repository tests in `test:repo` side by side and
-prints the repository output when it finishes. Run optional architecture, documentation, and audit
-checks when relevant. `bun run check:rust` reproduces native validation, including the full Rust
-test suite.
+The gates check the working tree, so commit or stash tracked changes before pushing.
+
+Hooks never pass git's repository variables (`GIT_DIR`, `GIT_INDEX_FILE` and the rest) to the tools
+and tests they start: a test that creates a scratch repository would otherwise act on this one,
+which is what a commit from a linked worktree used to do. Tests that run git build their environment
+with `scripts/scratch-git-env.mjs`; the git-workspace runner drops the variables
+`git rev-parse --local-env-vars` lists. A commit made under a scratch identity (`*.invalid`,
+`*.test`, `*.example`, `localhost`) is refused. `bun run test` runs the package suites and the
+repository tests in `test:repo` side by side and prints the repository output when it finishes. Run
+optional architecture, documentation, and audit checks when relevant. `bun run check:rust`
+reproduces native validation, including the full Rust test suite.
 
 ### Workflows and releases
 

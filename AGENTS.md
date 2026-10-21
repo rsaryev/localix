@@ -13,9 +13,9 @@ Localix uses Bun 1.3.14 and Turborepo. [CONTRIBUTING.md](CONTRIBUTING.md) docume
 - For requested commits, stage intended changes and commit. Pre-commit checks formatting, lint,
   affected source/test types, focused tests, and applicable Rust formatting/Clippy; do not duplicate
   those checks manually or bypass failures.
-- Full builds and suites belong to CI; pre-commit runs affected-package checks. Run optional
-  architecture, documentation, and audit gates when relevant or explicitly requested. Report
-  verification accurately; stop servers and browsers you started.
+- Pre-push runs the CI gates over the whole tree from the Turbo cache; commit or stash first. Full
+  builds belong to CI. Run optional architecture, documentation, and audit gates when relevant or
+  explicitly requested. Report verification accurately; stop servers and browsers you started.
 
 ## Project Structure
 

@@ -17,6 +17,24 @@
         "$TURBO_ROOT$/plugins/**/backend/**"
       ],
       "outputs": []
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/plugins/**/ui/**",
+        "$TURBO_ROOT$/plugins/**/backend/**"
+      ],
+      "outputs": []
+    },
+    "type-check:tests": {
+      "dependsOn": ["^build", "docs:gen"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/plugins/**/ui/**",
+        "$TURBO_ROOT$/plugins/**/backend/**"
+      ],
+      "outputs": []
     }
   }
 }

@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { buildLinePatch, parseFileDiff } from './line-patch'
 import { gitRunner } from './cli'
+import { gitHardenedEnv } from './git-env'
 import { stageLines, unstageLines, discardLines, getFileDiffLines } from './line-staging'
 
 // --- Pure patch construction --------------------------------------------------
@@ -99,7 +100,16 @@ describe('line-staging against a real repo', () => {
   let dir: string
   const run = () => gitRunner(dir)
 
-  const git = (...args: string[]) => execFileSync('git', args, { cwd: dir, encoding: 'utf8' })
+  // A scratch repository: no inherited GIT_* (a hook's GIT_DIR would redirect every call into the
+  // developer's repository) and no global or system config.
+  const git = (...args: string[]) =>
+    execFileSync('git', args, {
+      cwd: dir,
+      encoding: 'utf8',
+      env: { ...gitHardenedEnv(), GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1' },
+      timeout: 10_000,
+      killSignal: 'SIGKILL',
+    })
 
   beforeAll(() => {
     dir = mkdtempSync(join(tmpdir(), 'localix-linestage-'))

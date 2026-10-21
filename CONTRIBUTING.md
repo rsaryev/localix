@@ -37,8 +37,10 @@ available; missing Clippy or rustfmt then blocks the commit. Native CI also chec
 
 The hook does not rewrite or stage tracked files. Unstaged changes in packages being checked must be
 staged or stashed first, so the checks cannot validate an unstaged repair instead of the commit.
-Type checks may generate ignored build output. Full builds and test suites remain in CI; optional
-architecture, documentation, and dependency audits run when relevant.
+Type checks may generate ignored build output. Every push runs the CI gates over the whole tree
+through `.githooks/pre-push`, replaying unchanged packages from the Turbo cache; commit or stash
+tracked changes first. Full builds remain in CI; optional architecture, documentation, and
+dependency audits run when relevant.
 
 One development dependency is not OSI-licensed: `oxlint-plugin-react-doctor`, used only by the
 optional `bun run lint:react-doctor`, ships under a modified MIT license that restricts some uses of

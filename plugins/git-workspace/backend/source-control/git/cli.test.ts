@@ -1,4 +1,8 @@
 import { afterEach, describe, expect, test } from 'bun:test'
+import { execFileSync } from 'node:child_process'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import {
   DEFAULT_GIT_TIMEOUT_MS,
   NETWORK_GIT_TIMEOUT_MS,
@@ -9,6 +13,7 @@ import {
   resolveGitTimeoutMs,
   runGit,
 } from './cli'
+import { GIT_LOCAL_ENV_VARS, gitHardenedEnv } from './git-env'
 
 describe('firstLine', () => {
   test('returns the only line, trimmed, when there are no newlines', () => {
@@ -219,5 +224,39 @@ describe('runGit wall-clock timeout', () => {
     const res = await pending
     expect(res.ok).toBe(true)
     expect(res.timedOut).toBeUndefined()
+  })
+})
+
+describe('repository-locating environment', () => {
+  test('matches the set git itself clears before entering another repository', () => {
+    const fromGit = execFileSync('git', ['rev-parse', '--local-env-vars'], {
+      encoding: 'utf8',
+      timeout: 10_000,
+      killSignal: 'SIGKILL',
+    })
+      .split('\n')
+      .filter(Boolean)
+    expect([...GIT_LOCAL_ENV_VARS].sort()).toEqual(expect.arrayContaining(fromGit.sort()))
+  })
+
+  test('an inherited GIT_DIR never redirects a call away from its cwd', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'localix-git-env-'))
+    const saved = { GIT_DIR: process.env.GIT_DIR, GIT_INDEX_FILE: process.env.GIT_INDEX_FILE }
+    try {
+      // What a hook in another repository exports to everything it starts.
+      process.env.GIT_DIR = join(root, 'elsewhere.git')
+      process.env.GIT_INDEX_FILE = join(root, 'elsewhere.index')
+      for (const key of GIT_LOCAL_ENV_VARS) expect(gitHardenedEnv()[key]).toBeUndefined()
+      const repo = join(root, 'repo')
+      expect((await runGit(root, ['init', '-q', repo])).ok).toBe(true)
+      const top = await runGit(repo, ['rev-parse', '--show-toplevel'])
+      expect(top.stdout.trim()).toEndWith('/repo')
+    } finally {
+      for (const [key, value] of Object.entries(saved)) {
+        if (value === undefined) delete process.env[key]
+        else process.env[key] = value
+      }
+      rmSync(root, { recursive: true, force: true })
+    }
   })
 })
