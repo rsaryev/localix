@@ -12,6 +12,7 @@ import {
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { planChecks } from './pre-commit-plan.mjs'
+import { scratchGitEnv } from './scratch-git-env.mjs'
 
 const roots: string[] = []
 const script = resolve(import.meta.dir, 'pre-commit.mjs')
@@ -20,7 +21,8 @@ afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
 })
 
-function run(root: string, command: string, args: string[], env = process.env) {
+// Both the fixture's git calls and pre-commit.mjs itself must address the scratch repository.
+function run(root: string, command: string, args: string[], env = scratchGitEnv()) {
   return spawnSync(command, args, {
     cwd: root,
     encoding: 'utf8',
@@ -245,7 +247,7 @@ test('Rust lint-only mode propagates Clippy failures and never runs the Rust tes
   )
   const log = join(root, 'cargo.log')
   const env = {
-    ...process.env,
+    ...scratchGitEnv(),
     PATH: `${bin}:${process.env.PATH}`,
     LOCALIX_TEST_CARGO_LOG: log,
     LOCALIX_TEST_CLIPPY_EXIT: '0',

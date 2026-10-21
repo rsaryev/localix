@@ -10,6 +10,7 @@ import {
   resolveReleaseCommit,
   selectReleaseTag,
 } from './resolve-release-ref.mjs'
+import { scratchGitEnv } from './scratch-git-env.mjs'
 
 describe('release ref validation', () => {
   test('accepts stable and prerelease semantic versions', () => {
@@ -54,18 +55,7 @@ describe('release ref validation', () => {
 
   test('peels an annotated tag to the exact source commit', () => {
     const repository = mkdtempSync(join(tmpdir(), 'localix-release-ref-'))
-    const gitEnvironment = {
-      ...process.env,
-      GIT_AUTHOR_NAME: 'Localix test',
-      GIT_AUTHOR_EMAIL: 'test@localix.invalid',
-      GIT_COMMITTER_NAME: 'Localix test',
-      GIT_COMMITTER_EMAIL: 'test@localix.invalid',
-      // Release tests must not inherit a developer's signing agent, hooks path,
-      // or credential helpers. Those can turn a tiny temporary commit into an
-      // interactive or multi-second operation under CI load.
-      GIT_CONFIG_NOSYSTEM: '1',
-      GIT_CONFIG_GLOBAL: '/dev/null',
-    }
+    const gitEnvironment = scratchGitEnv()
     const git = (...args: string[]) =>
       execFileSync('git', args, { cwd: repository, env: gitEnvironment, encoding: 'utf8' }).trim()
 
@@ -77,8 +67,10 @@ describe('release ref validation', () => {
       const commit = git('rev-parse', 'HEAD')
       git('tag', '-a', 'v1.2.3', '-m', 'release v1.2.3')
 
-      expect(resolveReleaseCommit('v1.2.3', repository)).toBe(commit)
-      expect(() => assertReleaseCommitOnMain(commit, repository, 'refs/heads/main')).not.toThrow()
+      expect(resolveReleaseCommit('v1.2.3', repository, gitEnvironment)).toBe(commit)
+      expect(() =>
+        assertReleaseCommitOnMain(commit, repository, 'refs/heads/main', gitEnvironment),
+      ).not.toThrow()
 
       git('switch', '--quiet', '-c', 'unreviewed-release')
       writeFileSync(join(repository, 'unreviewed.txt'), 'side branch only\n')
@@ -86,10 +78,10 @@ describe('release ref validation', () => {
       git('commit', '--quiet', '-m', 'unreviewed release source')
       const unreviewedCommit = git('rev-parse', 'HEAD')
       expect(() =>
-        assertReleaseCommitOnMain(unreviewedCommit, repository, 'refs/heads/main'),
+        assertReleaseCommitOnMain(unreviewedCommit, repository, 'refs/heads/main', gitEnvironment),
       ).toThrow('Release tag commit must be reachable from refs/heads/main')
 
-      expect(() => resolveReleaseCommit('v1.2.4', repository)).toThrow(
+      expect(() => resolveReleaseCommit('v1.2.4', repository, gitEnvironment)).toThrow(
         'Release tag does not exist in this repository',
       )
     } finally {

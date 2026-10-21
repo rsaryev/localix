@@ -21,12 +21,13 @@ export function parseReleaseTag(tag) {
   }
 }
 
-export function resolveReleaseCommit(tag, cwd = process.cwd()) {
+export function resolveReleaseCommit(tag, cwd = process.cwd(), env = process.env) {
   const result = spawnSync(
     'git',
     ['rev-parse', '--verify', '--quiet', `refs/tags/${tag}^{commit}`],
     {
       cwd,
+      env,
       encoding: 'utf8',
     },
   )
@@ -43,9 +44,11 @@ export function assertReleaseCommitOnMain(
   commit,
   cwd = process.cwd(),
   mainRef = 'refs/remotes/origin/main',
+  env = process.env,
 ) {
   const result = spawnSync('git', ['merge-base', '--is-ancestor', commit, mainRef], {
     cwd,
+    env,
     encoding: 'utf8',
   })
 

@@ -5,20 +5,25 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 
 import { BUILD_STAMP_ENV, RELEASE_STAMPED_FILES, resolveBuildStamp } from './build-stamp.mjs'
+import { scratchGitEnv } from './scratch-git-env.mjs'
 
 const root = resolve(import.meta.dir, '..')
 const scratch = mkdtempSync(join(tmpdir(), 'localix-build-stamp-'))
 afterAll(() => rmSync(scratch, { recursive: true, force: true }))
 
-const run = (args: string[], cwd: string) =>
-  execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+// Injected into resolveBuildStamp too: a hook's GIT_DIR would otherwise redirect its git calls.
+const run = (args: string[], cwd?: string) =>
+  execFileSync('git', args, {
+    cwd,
+    env: scratchGitEnv(),
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  }).trim()
 
 /** A real repository holding the release-stamped files, so the pathspec is exercised by git. */
 function fixtureRepo() {
   const repo = mkdtempSync(join(scratch, 'repo-'))
   run(['init', '-q'], repo)
-  run(['config', 'user.email', 'stamp@example.invalid'], repo)
-  run(['config', 'user.name', 'stamp'], repo)
   for (const file of [...RELEASE_STAMPED_FILES, 'apps/ui/src/main.ts']) {
     mkdirSync(dirname(join(repo, file)), { recursive: true })
     writeFileSync(join(repo, file), 'version = "0.0.1"\n')
@@ -36,20 +41,22 @@ describe('UI build stamp', () => {
       writeFileSync(join(repo, file), 'version = "1.2.3"\n')
     }
 
-    expect(resolveBuildStamp({ cwd: repo, env: {} })).toBe(commit)
+    expect(resolveBuildStamp({ cwd: repo, env: {}, git: run })).toBe(commit)
     // Vite resolves from `apps/ui`; a cwd-relative pathspec would miss the stamped files there.
-    expect(resolveBuildStamp({ cwd: join(repo, 'apps/ui'), env: {} })).toBe(commit)
+    expect(resolveBuildStamp({ cwd: join(repo, 'apps/ui'), env: {}, git: run })).toBe(commit)
   })
 
   test('any other change still marks the bundle dirty', () => {
     const repo = fixtureRepo()
     const commit = run(['rev-parse', '--short', 'HEAD'], repo)
     writeFileSync(join(repo, 'apps/ui/src/main.ts'), 'changed\n')
-    expect(resolveBuildStamp({ cwd: join(repo, 'apps/ui'), env: {} })).toBe(`${commit}-dirty`)
+    expect(resolveBuildStamp({ cwd: join(repo, 'apps/ui'), env: {}, git: run })).toBe(
+      `${commit}-dirty`,
+    )
 
     writeFileSync(join(repo, 'apps/ui/src/new.ts'), 'untracked\n')
     run(['checkout', '--', 'apps/ui/src/main.ts'], repo)
-    expect(resolveBuildStamp({ cwd: repo, env: {} })).toBe(`${commit}-dirty`)
+    expect(resolveBuildStamp({ cwd: repo, env: {}, git: run })).toBe(`${commit}-dirty`)
   })
 
   test('an explicit stamp wins over Turbo and git, and a malformed one is refused', () => {

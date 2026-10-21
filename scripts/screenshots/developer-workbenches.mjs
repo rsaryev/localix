@@ -5,8 +5,16 @@ import { promisify } from 'node:util'
 import { expect } from '@playwright/test'
 import { api, captureRoot } from './runtime.mjs'
 import { button, openTool } from './scenarios.mjs'
+import { scratchGitEnv } from '../scratch-git-env.mjs'
 
 const execute = promisify(execFile)
+// The capture repository is a disposable fixture; keep the hook environment out of it.
+const reviewerEnv = scratchGitEnv(process.env, {
+  GIT_AUTHOR_NAME: 'Demo Reviewer',
+  GIT_AUTHOR_EMAIL: 'reviewer@example.com',
+  GIT_COMMITTER_NAME: 'Demo Reviewer',
+  GIT_COMMITTER_EMAIL: 'reviewer@example.com',
+})
 const courseId = 'release-quality'
 const courseTitle = 'Review a reliable release'
 
@@ -19,7 +27,7 @@ export async function seedDeveloper(fixture) {
   await api(`/projects/${fixture.platformProjectId}`, { workingDir: root }, 'PATCH')
   fixture.platformRoot = root
   const git = (...args) =>
-    execute('git', args, { cwd: root, timeout: 10_000, killSignal: 'SIGKILL' })
+    execute('git', args, { cwd: root, env: reviewerEnv, timeout: 10_000, killSignal: 'SIGKILL' })
   let initialized = true
   try {
     await fs.access(path.join(root, '.git'))
@@ -28,8 +36,6 @@ export async function seedDeveloper(fixture) {
   }
   if (!initialized) {
     await git('init', '-b', 'main')
-    await git('config', 'user.name', 'Demo Reviewer')
-    await git('config', 'user.email', 'reviewer@example.com')
     await git('add', '.')
     await git('commit', '-m', 'Add the release workspace')
   }
