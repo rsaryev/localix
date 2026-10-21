@@ -24,9 +24,7 @@ import { removeAgentRecordFiles, writeAgentRecordFile } from './registry-files'
 import type { AgentRecord, AgentSummary } from './contracts'
 import type { AgentsService, AgentsServiceDeps } from './service-contract'
 import { BUILTIN_OVERRIDE_FIELD, builtinOverrideHash } from './builtin-override'
-import { SEMANTIC_GLOBAL_SCOPE } from '@localixai/plugin-sdk/backend'
-import { recordCoreChanges, type CoreChange } from '../changes/core-entities'
-import { capabilitiesChanged, trackCapabilityChange } from '../capabilities/revision'
+import { createAgentAnnouncer } from './announce'
 
 export type { AgentsService, AgentsServiceDeps } from './service-contract'
 
@@ -38,34 +36,7 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
   )
   // The one writer of availability, shared with every other kind.
   const availabilityWriter = createAvailabilityWriter(deps.db)
-  /**
-   * Announce an agent's catalog keys by its stable id: the first key is gone (deleted or renamed
-   * away from), a second one is where it lives now. Its files are the truth, so there is no
-   * transaction to join; the feed's reconcile covers a lost notice.
-   */
-  const announceAgent = (projectId: string, agentId: string, [gone, now]: string[]) => {
-    const scope = projectId || SEMANTIC_GLOBAL_SCOPE
-    const changes: CoreChange[] = [
-      { entity: 'agent', op: 'deleted', ref: { id: gone!, scope, agentId } },
-    ]
-    if (now) changes.push({ entity: 'agent', op: 'upserted', ref: { id: now, scope, agentId } })
-    return recordCoreChanges(deps.db, changes)
-  }
-  /**
-   * Every agent write moves the capability revision once (a rule write already has) and names
-   * the agent it left, so its chats and every surface hear of it (the relay).
-   */
-  const announced = <T extends AgentSummary | void>(run: () => Promise<T>): Promise<T> =>
-    trackCapabilityChange(async () => {
-      const result = await run()
-      if (result) {
-        const scope = result.projectId || SEMANTIC_GLOBAL_SCOPE
-        const ref = { id: result.record.handle, scope, agentId: result.record.id }
-        await recordCoreChanges(deps.db, { entity: 'agent', op: 'upserted', ref })
-      }
-      capabilitiesChanged()
-      return result
-    })
+  const { keys: announceAgent, write: announced } = createAgentAnnouncer(deps.db)
   const ruleRepository = createCapabilityRuleRepository(deps.db)
   const invocations = deps.invocations ?? createInvocationRegistry()
   const serialize = createKeyedSerializer()

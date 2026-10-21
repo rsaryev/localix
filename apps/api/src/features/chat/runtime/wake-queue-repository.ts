@@ -46,7 +46,6 @@ export function createDatabaseWakeQueueStore<TPayload = unknown>(
             .executeTakeFirst()
           if (Number(receipt.numInsertedOrUpdatedRows) === 0) return false
         }
-        // The queue now holds this delivery: an outboxed wake for it is no longer in doubt.
         await trx.deleteFrom('wake_outbox').where('delivery_key', '=', item.deliveryKey).execute()
         await trx
           .insertInto('agent_queue_items')
