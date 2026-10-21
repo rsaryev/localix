@@ -1,6 +1,6 @@
-import { afterEach, expect, spyOn, test } from 'bun:test'
+import { afterEach, expect, mock, spyOn, test } from 'bun:test'
 import { externalAgentsApi } from '../api'
-import * as terminalTabs from '@/features/terminal/model/terminalTabs'
+import { terminal as terminalBus } from '@/shared/lib/terminalBus'
 import { useChatStore } from '@/features/chat/model/store'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { openExternalSessionTerminal, prepareExternalTranscript } from './openSession'
@@ -60,7 +60,8 @@ test('existing native sessions open their normal linked chat and owned CLI termi
     terminalId: 'pty',
     providerName: 'Codex',
   })
-  const terminal = spyOn(terminalTabs, 'openOwnedTerminal').mockImplementation(() => {})
+  const terminal = mock((_sessionId: string, _terminalId: string, _title: string) => {})
+  const unregister = terminalBus.setOwnedOpener(terminal)
   const items = spyOn(externalAgentsApi, 'items')
   const imported = spyOn(backendClient, 'importSession')
   const create = spyOn(backendClient, 'createSession')
@@ -78,7 +79,8 @@ test('existing native sessions open their normal linked chat and owned CLI termi
     expect(imported).not.toHaveBeenCalled()
     expect(create).not.toHaveBeenCalled()
   } finally {
-    for (const spy of [attach, open, terminal, items, imported, create, reload]) spy.mockRestore()
+    for (const spy of [attach, open, items, imported, create, reload]) spy.mockRestore()
+    unregister()
   }
 })
 

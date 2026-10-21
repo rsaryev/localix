@@ -1,11 +1,11 @@
-import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
+import { afterAll, beforeAll, expect, mock, spyOn, test } from 'bun:test'
 import { act } from 'react'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { LinkedAgentTerminalPill } from './LinkedAgentTerminalPill'
 import { useChatStore } from '@/features/chat/model/store'
 import { nativeHistoryRows } from '@/features/external-agents/model/unifiedHistory'
 import { externalAgentsApi } from '@/features/external-agents/api'
-import * as terminalTabs from '@/features/terminal/model/terminalTabs'
+import { terminal as terminalBus } from '@/shared/lib/terminalBus'
 import { backendClient } from '@/shared/api/client'
 import * as installed from '../model/useInstalledAgents'
 
@@ -59,7 +59,8 @@ test('choosing a CLI in the unlinked pill binds the current chat and opens its t
     terminalId: 'pty',
     providerName: 'Codex',
   })
-  const terminal = spyOn(terminalTabs, 'openOwnedTerminal').mockImplementation(() => {})
+  const terminal = mock((_sessionId: string, _terminalId: string, _title: string) => {})
+  const unregister = terminalBus.setOwnedOpener(terminal)
   const create = spyOn(backendClient, 'createSession')
   const imported = spyOn(backendClient, 'importSession')
   const { createRoot } = await import('react-dom/client')
@@ -99,7 +100,8 @@ test('choosing a CLI in the unlinked pill binds the current chat and opens its t
     await act(async () => root.unmount())
     host.remove()
     useChatStore.setState(original)
-    for (const spy of [providers, link, open, terminal, create, imported]) spy.mockRestore()
+    for (const spy of [providers, link, open, create, imported]) spy.mockRestore()
+    unregister()
   }
 })
 
@@ -134,7 +136,8 @@ test('the linked agent pill reopens its owned terminal without creating or impor
     terminalId: 'pty',
     providerName: 'Codex',
   })
-  const terminal = spyOn(terminalTabs, 'openOwnedTerminal').mockImplementation(() => {})
+  const terminal = mock((_sessionId: string, _terminalId: string, _title: string) => {})
+  const unregister = terminalBus.setOwnedOpener(terminal)
   const create = spyOn(backendClient, 'createSession')
   const imported = spyOn(backendClient, 'importSession')
   const providers = spyOn(installed, 'useInstalledAgents').mockReturnValue({
@@ -164,6 +167,7 @@ test('the linked agent pill reopens its owned terminal without creating or impor
     await act(async () => root.unmount())
     host.remove()
     useChatStore.setState(original)
-    for (const spy of [open, terminal, create, imported, providers]) spy.mockRestore()
+    for (const spy of [open, create, imported, providers]) spy.mockRestore()
+    unregister()
   }
 })

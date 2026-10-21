@@ -26,12 +26,15 @@ export interface TerminalExit {
 }
 /** Retire a finished terminal's tabs and transcript actions. */
 type Finisher = (terminalId: string, exit: TerminalExit) => void
+/** Reveal the pane of a terminal a chat owns (an external agent's CLI). */
+type OwnedOpener = (sessionId: string, terminalId: string, title: string) => void
 
 let opener: ((sessionId: string) => void) | null = null
 const senders = new Map<string, Sender>()
 const pending = new Map<string, string>()
 let jobOpener: JobOpener | null = null
 let finisher: Finisher | null = null
+let ownedOpener: OwnedOpener | null = null
 
 export const terminal = {
   /** The terminal feature registers how to reveal a chat's terminal tab. */
@@ -78,6 +81,19 @@ export const terminal = {
   /** Reveal a chat's terminal tab attached to an agent-launched job (by backend terminal id). */
   openJob(args: Parameters<JobOpener>[0]): void {
     jobOpener?.(args)
+  },
+
+  /** The terminal feature registers how to reveal a terminal a chat owns. */
+  setOwnedOpener(fn: OwnedOpener): () => void {
+    ownedOpener = fn
+    return () => {
+      if (ownedOpener === fn) ownedOpener = null
+    }
+  },
+
+  /** Reveal the pane of a chat-owned terminal. No-op until the terminal feature is wired. */
+  openOwned(sessionId: string, terminalId: string, title: string): void {
+    ownedOpener?.(sessionId, terminalId, title)
   },
 
   /** The terminal feature registers how a finished terminal retires its tabs; the app installs it. */
