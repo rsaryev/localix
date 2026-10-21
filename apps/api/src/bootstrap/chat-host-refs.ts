@@ -12,6 +12,7 @@
 import type { WakeRequest } from '../features/chat/contracts'
 import type { createChatService } from '../features/chat/service'
 import { createWakeDelivery } from '../features/triggers/delivery'
+import { createWakeOutboxRepository } from '../features/triggers/wake-outbox-repository'
 import { createWakeNotices } from '../features/notifications/conditions/triggers'
 import { announceCapabilitiesSettled } from '../features/capabilities/settle'
 import type { InfraPhase } from './infra'
@@ -23,7 +24,8 @@ export function bindChatHostRefs({
   env,
   logger,
   notifications,
-}: Pick<InfraPhase, 'env' | 'logger' | 'notifications'> & {
+  db,
+}: Pick<InfraPhase, 'env' | 'logger' | 'notifications' | 'db'> & {
   hostRefs: PluginHostRefs
   chatService: ReturnType<typeof createChatService>
 }) {
@@ -34,6 +36,7 @@ export function bindChatHostRefs({
   // backends and monitors, a finished child's report (see `features/triggers/delivery.ts`).
   const wakes = createWakeDelivery<WakeRequest>({
     wake: (...args) => chatService.wakeSession(...args),
+    outbox: createWakeOutboxRepository<WakeRequest>(db),
     logger,
     onUndelivered: createWakeNotices(notifications),
   })

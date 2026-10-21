@@ -583,6 +583,7 @@ export interface AppDatabase {
   agent_queue_items: AgentQueueItemsTable
   agent_delivery_receipts: AgentDeliveryReceiptsTable
   agent_turn_starts: AgentTurnStartsTable
+  wake_outbox: WakeOutboxTable
   agent_memory: AgentMemoryTable
   user_view_state: UserViewStateTable
   semantic_settings: SemanticSettingsTable
@@ -629,6 +630,15 @@ export interface AgentTurnStartsTable {
   user_id: string
   session_id: string
   agent_id: string
+  created_at: string
+}
+
+/** A keyed wake waiting for its session's queue to admit it (`triggers/wake-outbox-repository.ts`). */
+export interface WakeOutboxTable {
+  delivery_key: string
+  user_id: string
+  session_id: string
+  request_json: string
   created_at: string
 }
 

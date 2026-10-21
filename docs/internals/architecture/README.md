@@ -135,6 +135,12 @@ keeps these rules:
   the run returns; a slot left at boot with no run record replaces its empty placeholder with a
   notice that offers a retry (`runtime/unstarted-turns.ts`).
 
+A wake a trigger, a plugin or a background job asks for under a delivery key is recorded in
+`wake_outbox` before it is sent
+([`delivery.ts`](../../../apps/api/src/features/triggers/delivery.ts)). The queue's admission
+deletes the row in its own transaction; a boot redelivers what is left under the same key. A
+once-ever `receipt` delivery (a child's report) keeps its own recovery.
+
 ## Enforcement
 
 Rules become deterministic checks in `scripts/check-architecture.mjs` and source-reading tests. A

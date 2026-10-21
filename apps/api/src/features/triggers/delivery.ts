@@ -14,10 +14,16 @@
  * No retry, deliberately: a re-wake has to be recognised as the same delivery as one that DID
  * land, and only its delivery key can say so — which is the producer's to choose (a trigger's
  * fire is `trg:<id>:<seq>`, see `triggerWake`).
+ *
+ * Durable when given an `outbox`: a keyed wake is recorded before it is sent and leaves when the
+ * session's queue admits it (in the queue's own transaction) or delivery answers, so a crash in
+ * between is redelivered at boot (`redeliver`) under the same key instead of being lost. A
+ * once-ever `receipt` delivery (a child's report) keeps its own recovery and is not outboxed.
  */
 import { agentParticipant, type ParticipantRef } from '../../db/participant'
 import { errorMessage } from '../../lib/errors'
 import type { TriggerRecord } from './contracts'
+import type { WakeOutbox } from './wake-outbox-repository'
 
 /**
  * A wake request, as far as delivery needs to read it. The host's own request type satisfies it;
@@ -32,6 +38,8 @@ export interface WakeShape<S extends string = string> {
   deliveryKey?: string
   /** Delivered together with the other queued wakes of this key (a monitor's fires). */
   coalesce?: string
+  /** Admitted once ever (a child's report); its producer keeps its own recovery. */
+  receipt?: true
 }
 
 /** What the host's wake primitive answers. `missed: 'unreadable'` is its store failing. */
@@ -57,10 +65,13 @@ export interface WakeDeliveryDeps<R extends WakeShape> {
     subject: string,
     outcome: Exclude<WakeOutcome, { status: 'delivered' }>,
   ) => void
+  outbox?: Pick<WakeOutbox<R>, 'record' | 'remove' | 'pending'>
+  now?: () => number
 }
 
 export function createWakeDelivery<R extends WakeShape>(deps: WakeDeliveryDeps<R>) {
-  const deliver = async (request: R): Promise<WakeOutcome> => {
+  const now = deps.now ?? Date.now
+  const wakeOnce = async (request: R): Promise<WakeOutcome> => {
     try {
       const answer = await deps.wake(request)
       if (answer.delivered) return { status: 'delivered' }
@@ -70,6 +81,19 @@ export function createWakeDelivery<R extends WakeShape>(deps: WakeDeliveryDeps<R
     } catch (error) {
       return { status: 'failed', detail: errorMessage(error) }
     }
+  }
+  const outboxed = (request: R) =>
+    deps.outbox && request.deliveryKey && !request.receipt ? request.deliveryKey : null
+  const deliver = async (request: R): Promise<WakeOutcome> => {
+    const key = outboxed(request)
+    if (key) {
+      // Not recorded is not a reason to drop the wake: it is sent anyway, as before.
+      await deps.outbox!.record(request, new Date(now()).toISOString()).catch(() => undefined)
+    }
+    const outcome = await wakeOnce(request)
+    // A failure is the host's (its store); the row stays and the next boot tries again.
+    if (key && outcome.status !== 'failed') await deps.outbox!.remove(key).catch(() => undefined)
+    return outcome
   }
 
   return {
@@ -101,6 +125,23 @@ export function createWakeDelivery<R extends WakeShape>(deps: WakeDeliveryDeps<R
      */
     unaddressed(subject: string, source: R['source']): void {
       deps.logger.warn({ event: 'wake.undelivered', subject, source, missed: 'no-session' })
+    },
+    /** Boot: send again what a previous process recorded and never handed over. */
+    async redeliver(): Promise<number> {
+      if (!deps.outbox) return 0
+      const pending = await deps.outbox.pending(now())
+      for (const request of pending) {
+        const outcome = await deliver(request)
+        if (outcome.status === 'delivered') continue
+        deps.logger.warn({
+          event: 'wake.undelivered',
+          subject: 'redelivered wake',
+          sessionId: request.sessionId,
+          source: request.source,
+          ...(outcome.status === 'missed' ? { missed: outcome.reason } : { err: outcome.detail }),
+        })
+      }
+      return pending.length
     },
   }
 }

@@ -34,6 +34,12 @@ The findings behind each item, with counts and paths, are in [the audit](audit.m
       is removed.
 - [ ] `resolveLiveCatalogModel` (UI and `@localixai/agent/catalog`) is replaced by `routeReadiness`.
 
+- [x] Keyed wakes from triggers, plugins and background jobs go through a durable outbox
+      (`wake_outbox`): the queue's admission removes the row in its transaction, and a boot
+      redelivers what a crash left under the same delivery key. Plan and delegation receipts stay.
+- [x] An agent turn acknowledged before its run record existed is settled at boot
+      (`agent_turn_starts`) instead of leaving an empty reply placeholder.
+
 Stays a command: plan approval, capability apply, stopping runs before a chat is deleted, trigger
 scheduling, terminal lifecycle and the session event stream.
 

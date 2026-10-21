@@ -175,5 +175,9 @@ export async function createAgentFacadePhase({
     logger: { warn: (msg) => logger.warn({ event: 'boot.unstarted_turn_failed', msg }) },
   })
   if (unstarted > 0) logger.info?.(`[boot] ${unstarted} agent turn(s) never started; announced`)
+  // Wakes a trigger, a plugin or a background job asked for that the previous process recorded
+  // and never handed to a session's queue (`features/triggers/delivery.ts`).
+  const redelivered = await wakes.redeliver()
+  if (redelivered > 0) logger.info?.(`[boot] ${redelivered} wake(s) redelivered`)
 }
 import { agentRunDefaults } from '../features/agents/run-defaults'
