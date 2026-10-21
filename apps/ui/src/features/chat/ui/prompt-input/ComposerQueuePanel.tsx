@@ -1,7 +1,7 @@
 import { memo, useState } from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '@localixai/kit/popover'
 import { backendClient } from '@/shared/api/client'
-import type { SessionQueueItem } from '@/shared/api/contracts'
+import type { QueueRemovalResult, SessionQueueItem } from '@/shared/api/contracts'
 import { composerBus } from '@/shared/lib/composerBus'
 import { toast } from '@/shared/lib/notify'
 import { QueuePanel, type QueuePanelItem } from './QueuePanel'
@@ -42,28 +42,44 @@ export const ComposerQueuePanel = memo(function ComposerQueuePanel({
       queueKind: q.kind,
       wakeSource: q.source,
       delivery: q.delivery,
+      ...(q.failure ? { failure: q.failure } : {}),
       ...(agent ? { agent: { handle: agent.handle, name: agent.name } } : {}),
     }
   })
+  /**
+   * A remove the server refused, in the person's words. A `batched` item was claimed with others
+   * and is delivered as one turn with them, so it leaves only with all of them: offer that.
+   */
+  const explainRefusal = (
+    result: Exclude<QueueRemovalResult, { removed: true }>,
+    noun: 'message' | 'wake',
+    removeBatch: () => unknown,
+  ) => {
+    if (result.reason === 'batched')
+      return toast.info(`This queued ${noun} is sent together with ${result.batchSize - 1} more`, {
+        description: 'They are delivered as one turn, so they leave the queue together.',
+        action: { label: `Remove all ${result.batchSize}`, onClick: () => void removeBatch() },
+      })
+    toast.info(
+      result.reason === 'leased'
+        ? noun === 'wake'
+          ? 'This queued wake is already being delivered'
+          : 'This queued message is already being sent'
+        : `This queued ${noun} is no longer available`,
+    )
+  }
   const [open, setOpen] = useState(false)
   // The list closes with the queue: an open popover over nothing would be a stray frame.
   if (queue.length === 0 && open) setOpen(false)
   if (queue.length === 0) return null
-  const onRemove = (item: QueuePanelItem) => {
+  const onRemove = (item: QueuePanelItem, wholeBatch = false): Promise<unknown> | undefined => {
     if (!activeSessionId) return
+    const remove = (sessionId: string, itemId: string) =>
+      backendClient.removeQueuedMessage(sessionId, itemId, wholeBatch ? { wholeBatch } : undefined)
     if (item.queueKind === 'wake') {
-      return deleteServerQueueItem({
-        sessionId: activeSessionId,
-        itemId: item.id,
-        remove: (sessionId, itemId) => backendClient.removeQueuedMessage(sessionId, itemId),
-      })
+      return deleteServerQueueItem({ sessionId: activeSessionId, itemId: item.id, remove })
         .then((result) => {
-          if (!result.removed)
-            toast.info(
-              'reason' in result && result.reason === 'leased'
-                ? 'This queued wake is already being delivered'
-                : 'This queued wake is no longer available',
-            )
+          if (!result.removed) explainRefusal(result, 'wake', () => onRemove(item, true))
         })
         .catch((err: unknown) =>
           toast.error('Could not delete the queued wake', {
@@ -74,7 +90,7 @@ export const ComposerQueuePanel = memo(function ComposerQueuePanel({
     return returnServerQueueItem({
       sessionId: activeSessionId,
       itemId: item.id,
-      remove: (sessionId, itemId) => backendClient.removeQueuedMessage(sessionId, itemId),
+      remove,
       restore: ({ content, bindings }) =>
         composerBus.insert({
           sessionId: activeSessionId,
@@ -83,20 +99,19 @@ export const ComposerQueuePanel = memo(function ComposerQueuePanel({
           buffer: true,
         }),
       onRemoved: () => {
-        const queued = serverQueue?.find((candidate) => candidate.id === item.id)
-        if (queued?.clientMessageId)
-          useChatStore
-            .getState()
-            ._dropOptimistic(activeSessionId, { userId: queued.clientMessageId })
+        // A whole batch leaves together: every optimistic row it stood for goes with it.
+        const batchId = serverQueue?.find((candidate) => candidate.id === item.id)?.batchId
+        for (const queued of serverQueue ?? []) {
+          if (!queued.clientMessageId) continue
+          if (queued.id === item.id || (wholeBatch && batchId && queued.batchId === batchId))
+            useChatStore
+              .getState()
+              ._dropOptimistic(activeSessionId, { userId: queued.clientMessageId })
+        }
       },
     })
       .then((result) => {
-        if ('reason' in result)
-          toast.info(
-            result.reason === 'leased'
-              ? 'This queued message is already being sent'
-              : 'This queued message is no longer available',
-          )
+        if (!result.removed) explainRefusal(result, 'message', () => onRemove(item, true))
       })
       .catch((err: unknown) =>
         toast.error('Could not return the queued message to the composer', {
@@ -109,7 +124,13 @@ export const ComposerQueuePanel = memo(function ComposerQueuePanel({
     return backendClient
       .interruptAndPromoteQueuedMessage(activeSessionId, item.id)
       .then(async (result) => {
-        if (result.promoted) return { message: 'Accepted — starting the queued turn…' }
+        if (result.promoted)
+          return {
+            message:
+              item.delivery === 'failed'
+                ? 'Back in line — trying again.'
+                : 'Accepted — starting the queued turn…',
+          }
         if (result.reason === 'not_found' || result.reason === 'not_user') {
           // A lost queue event can leave an obsolete row clickable indefinitely.
           // Reconcile that row with the server instead of inviting endless retries.
@@ -125,9 +146,11 @@ export const ComposerQueuePanel = memo(function ComposerQueuePanel({
           message:
             result.reason === 'leased'
               ? 'Already being delivered; wait for the current turn.'
-              : result.reason === 'not_user'
-                ? 'An internal wake cannot be sent as your message.'
-                : 'No longer in the server queue; refresh this session.',
+              : result.reason === 'batched'
+                ? 'Sent together with other queued messages; it goes with them.'
+                : result.reason === 'not_user'
+                  ? 'An internal wake cannot be sent as your message.'
+                  : 'No longer in the server queue; refresh this session.',
         }
       })
       .catch((err: unknown) => {

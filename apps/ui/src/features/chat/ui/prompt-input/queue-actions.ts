@@ -39,7 +39,13 @@ export async function deleteServerQueueItem(input: {
   return input.remove(input.sessionId, input.itemId)
 }
 
-export type QueueReturnOutcome = 'returned' | 'empty' | 'not_returnable' | 'leased' | 'not_found'
+export type QueueReturnOutcome =
+  | 'returned'
+  | 'empty'
+  | 'not_returnable'
+  | 'leased'
+  | 'batched'
+  | 'not_found'
 
 /**
  * Escape-path queue return for the first operator-authored row. Internal wakes

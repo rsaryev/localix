@@ -3,6 +3,7 @@ import type { AgentTurnSource } from '../conversation-strategy'
 import type { WakeQueueContext } from '../wake-queue-contracts'
 import type { WakeQueueStore } from '../wake-queue-store'
 import type { ContinuationOperations } from './continuations'
+import type { DeadLetter } from './dead-letter'
 import type { PendingTurn } from './entry'
 import type { HeldEntries } from './holds'
 import type { LeaseOperations } from './leases'
@@ -38,4 +39,6 @@ export interface DrainDependencies extends Pick<
   holdsOf: (sessionId: string) => HeldEntries
   /** Drain `sessionId` again at `atMs`, when its earliest held entry is released by age. */
   holdUntil: (sessionId: string, atMs: number) => void
+  /** Parks a band that failed every retry (`dead-letter.ts`). */
+  deadLetter: DeadLetter
 }

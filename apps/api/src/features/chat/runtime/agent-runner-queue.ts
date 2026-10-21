@@ -103,8 +103,13 @@ export function createRunnerQueue({ state, wakeQueue, stopCtx }: RunnerQueueDeps
     },
 
     /** Remove a queued message, returning full content only after cancellation wins. */
-    removeQueued(userId: string, sessionId: string, itemId: string) {
-      return wakeQueue.remove(userId, sessionId, itemId)
+    removeQueued(
+      userId: string,
+      sessionId: string,
+      itemId: string,
+      options?: { wholeBatch?: boolean },
+    ) {
+      return wakeQueue.remove(userId, sessionId, itemId, options)
     },
 
     /** Reserve one queued user/control row, stop the exact active run, and hand
@@ -134,7 +139,8 @@ export function createRunnerQueue({ state, wakeQueue, stopCtx }: RunnerQueueDeps
       sessionId: string,
       deliveryKey: string,
     ): Promise<'removed' | 'stopped' | 'absent'> {
-      const removal = await wakeQueue.remove(userId, sessionId, deliveryKey)
+      // A wake claimed in a batch is one delivery with the batch: it is withdrawn with it.
+      const removal = await wakeQueue.remove(userId, sessionId, deliveryKey, { wholeBatch: true })
       if (removal.removed) return 'removed'
       // Leased means a drain or a steer carried it into the run in flight.
       if (removal.reason !== 'leased') return 'absent'

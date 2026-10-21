@@ -93,9 +93,14 @@ export function createChatRuntimeFacade({
      * Remove a queued (not-yet-running) message from a session's backend queue —
      * the composer's "unqueue" button. Publishes `session_queue.updated`.
      */
-    async removeQueuedMessage(userId: string, sessionId: string, itemId: string) {
+    async removeQueuedMessage(
+      userId: string,
+      sessionId: string,
+      itemId: string,
+      options?: { wholeBatch?: boolean },
+    ) {
       await requireSession(userId, sessionId)
-      return runner.removeQueued(userId, sessionId, itemId)
+      return runner.removeQueued(userId, sessionId, itemId, options)
     },
 
     /** Server-owned "send now": ownership check, interrupt, durable selection,

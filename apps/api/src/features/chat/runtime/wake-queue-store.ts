@@ -1,7 +1,8 @@
-import type { Kysely } from 'kysely'
+import { sql, type Kysely } from 'kysely'
 
 import type { AppDatabase } from '../../../db/types'
 import { mapQueueRows, TURN_KINDS, type WakeQueueStore } from './wake-queue-store-contracts'
+import { createBandWrites } from './wake-queue-store-parking'
 
 export type { DurableQueueItem, WakeQueueStore } from './wake-queue-store-contracts'
 
@@ -157,7 +158,9 @@ export function createDatabaseWakeQueueStore<TPayload = unknown>(
               state: 'leased',
               lease_owner: leaseOwner,
               lease_expires_at: leaseExpiresAt,
-              ...(batchId ? { batch_id: batchId } : {}),
+              // A band keeps the name it was first claimed under: a re-claim led by another of
+              // its rows (reordered meanwhile) must not mint new transcript ids for it.
+              ...(batchId ? { batch_id: sql<string>`coalesce(batch_id, ${batchId})` } : {}),
             })
             .where('user_id', '=', userId)
             .where('session_id', '=', sessionId)
@@ -233,10 +236,12 @@ export function createDatabaseWakeQueueStore<TPayload = unknown>(
         .where('user_id', '=', userId)
         .where('session_id', '=', sessionId)
         .where('id', '=', id)
-        .where('state', '=', 'pending')
+        .where('state', 'in', ['pending', 'failed'])
         .executeTakeFirst()
       return Number(result.numDeletedRows) === 1
     },
+
+    ...createBandWrites(db),
 
     async setPriority(userId, sessionId, id, priority) {
       if (!Number.isFinite(priority)) throw new Error('Invalid priority')

@@ -24,6 +24,8 @@ export interface WakeQueueContext {
   run: (params: RunParams) => Promise<RunExecutionOutcome>
   onError?: (error: unknown) => void
   store?: WakeQueueStore<PendingTurn>
+  /** Durable lease length, renewed while a delivery step runs (default 60s; tests shorten it). */
+  leaseMs?: number
   /** Who leads a conversation that has not yet been answered; absent means party order. */
   leadership?: (userId: string, projectId: string | null) => LeadershipPriorities
   /** A decision model's advice for an unaddressed message; absent means the grammar alone. */

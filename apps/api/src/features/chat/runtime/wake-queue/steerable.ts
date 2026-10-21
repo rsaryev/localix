@@ -24,6 +24,7 @@ export interface JoinFilter {
 export const createSteerableSelection = (shared: WakeQueueSharedState) => {
   const free = (sessionId: string, item: QueueItem<PendingTurn>) =>
     leaseHolder(shared, sessionId, item.id) === undefined &&
+    !item.value.failure &&
     // A caller awaiting the logical terminal outcome must keep this row on the standalone run
     // path; steering is absorbed by another run and cannot provide an independent result.
     !shared.continuationCompletions.has(item.id)
@@ -66,6 +67,9 @@ export const createSteerableSelection = (shared: WakeQueueSharedState) => {
     }
     if (filter.accepts && !filter.accepts(turn.content)) return undefined
     if (turn.entry === 'person' && !sameSurface(turn.toolSurface, filter.surface)) return undefined
+    // A batch a drain claimed before replays through the drain, under its own transcript ids
+    // (`selection.ts`); taking one of its lines here would deliver it twice or not at all.
+    if (turn.batch) return undefined
     return [first]
   }
 

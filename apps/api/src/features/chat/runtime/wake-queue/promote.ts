@@ -1,9 +1,11 @@
 import type { QueuePromoteResult } from '../../contracts'
+import type { DeadLetter } from './dead-letter'
 import type { PendingTurn } from './entry'
 import { holdLeases, type LeaseOperations, type WakeQueueSharedState } from './leases'
 
 interface PromoteDependencies {
   leases: LeaseOperations
+  deadLetter: Pick<DeadLetter, 'retry'>
   scheduleDrain: (
     sessionId: string,
     options?: { ownsDrainLease?: boolean; preferredItemId?: string; preclaimedItemId?: string },
@@ -14,7 +16,7 @@ interface PromoteDependencies {
 
 export const createPromoteOperations = (
   shared: WakeQueueSharedState,
-  { leases, scheduleDrain, queues, onError }: PromoteDependencies,
+  { leases, deadLetter, scheduleDrain, queues, onError }: PromoteDependencies,
 ) => {
   const { drainingSessions } = shared
 
@@ -59,10 +61,19 @@ export const createPromoteOperations = (
         ?.list()
         .find((candidate) => candidate.id === itemId)
       if (!item || item.value.userId !== userId) return { promoted: false, reason: 'not_found' }
+      // Send-now on a FAILED entry is its retry: it goes back in line, batch and all, without
+      // stopping anything (`dead-letter.ts`). A wake may be retried too — nothing reinterprets it.
+      if (item.value.failure)
+        return (await deadLetter.retry(userId, sessionId, itemId))
+          ? { promoted: true }
+          : { promoted: false, reason: 'not_found' }
       // Internal wakes carry trusted execution context and must never be
       // reinterpreted as an operator-authored turn by a queue UI action.
       if (item.value.kind === 'wake') return { promoted: false, reason: 'not_user' }
       if (leases.isLeased(sessionId, itemId)) return { promoted: false, reason: 'leased' }
+      // A batch claimed before is one delivery under its name's transcript ids: sending one
+      // of its entries alone would acknowledge the rest without their text (`selection.ts`).
+      if (item.value.batch) return { promoted: false, reason: 'batched' }
 
       holdLeases(shared, sessionId, [itemId], 'drain')
       if (!(await leases.claim(userId, sessionId, [itemId]))) {

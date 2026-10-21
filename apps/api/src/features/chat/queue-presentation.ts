@@ -40,11 +40,13 @@ export function queueItemCapabilities(kind: SessionQueueItem['kind']): QueueItem
  * `undefined` here is not old data but a CLIENT-LOCAL optimistic row the server has
  * not acknowledged yet (QueuePanel merges both). Such a row will drain as its own
  * turn unless the ack upgrades it, so "Next turn" is its truthful label. `held` is a
- * child's report waiting for its siblings, so their delegator answers them together.
+ * child's report waiting for its siblings, so their delegator answers them together. `failed`
+ * failed every delivery retry and waits for the person to retry or remove it.
  */
 export function queueDeliveryLabel(
   delivery: SessionQueueItem['delivery'],
-): 'Next tool' | 'Next turn' | 'Waits for other reports' {
+): 'Next tool' | 'Next turn' | 'Waits for other reports' | 'Failed to send' {
   if (delivery === 'held') return 'Waits for other reports'
+  if (delivery === 'failed') return 'Failed to send'
   return delivery === 'next-tool' ? 'Next tool' : 'Next turn'
 }

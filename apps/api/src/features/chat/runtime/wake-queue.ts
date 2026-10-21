@@ -1,12 +1,14 @@
 import type { QueueItem } from '../../../lib/priority-queue'
 import type { SessionQueueItem } from '../contracts'
 import { createContinuationOperations } from './wake-queue/continuations'
+import { createDeadLetter } from './wake-queue/dead-letter'
 import { createDrainOperations, type DrainOperations } from './wake-queue/drain'
 import { ticketOf, type PendingTurn } from './wake-queue/entry'
 import { heldEntries, type HeldEntries } from './wake-queue/holds'
 import { joinPoint } from './wake-queue/kinds'
 import { createLeaseOperations, createWakeQueueSharedState } from './wake-queue/leases'
 import { createPromoteOperations } from './wake-queue/promote'
+import { createRemovalOperations } from './wake-queue/removal'
 import { createSteeringOperations } from './wake-queue/steering'
 import type { AgentTurnAdmission } from './agent-turn-ticket'
 import type { AgentTurnSource } from './conversation-strategy'
@@ -29,6 +31,7 @@ export function createWakeQueue(ctx: WakeQueueContext) {
     now,
     store,
     scheduleDrain: (sessionId) => scheduleDrain(sessionId),
+    ...(ctx.leaseMs ? { leaseMs: ctx.leaseMs } : {}),
   })
   const continuations = createContinuationOperations(shared)
 
@@ -54,11 +57,15 @@ export function createWakeQueue(ctx: WakeQueueContext) {
       preview: turn.content.slice(0, 140),
       queuedAt: turn.queuedAt,
       ...(turn.source ? { source: turn.source } : {}),
-      delivery: held.ids.has(item.id)
-        ? 'held'
-        : joinPoint(turn) === 'boundary'
-          ? 'next-tool'
-          : 'next-turn',
+      ...(turn.failure ? { failure: turn.failure } : {}),
+      ...(turn.batch ? { batchId: turn.batch } : {}),
+      delivery: turn.failure
+        ? 'failed'
+        : held.ids.has(item.id)
+          ? 'held'
+          : joinPoint(turn) === 'boundary'
+            ? 'next-tool'
+            : 'next-turn',
     }
   }
 
@@ -101,7 +108,10 @@ export function createWakeQueue(ctx: WakeQueueContext) {
     publishQueue,
   })
 
+  const deadLetter = createDeadLetter(shared, { ...(store ? { store } : {}), leases, publishQueue })
+
   const drain = createDrainOperations(shared, {
+    deadLetter,
     repo,
     streamRegistry,
     now,
@@ -133,14 +143,21 @@ export function createWakeQueue(ctx: WakeQueueContext) {
     store,
     ready: leases.ready,
     leases,
-    continuations,
     publishQueue,
     toPublic,
     holdsOf,
   })
+  const removal = createRemovalOperations(shared, {
+    ...(store ? { store } : {}),
+    ready: leases.ready,
+    leases,
+    continuations,
+    publishQueue,
+  })
 
   const { interruptAndPromote } = createPromoteOperations(shared, {
     leases,
+    deadLetter,
     scheduleDrain,
     queues,
     onError,
@@ -198,7 +215,10 @@ export function createWakeQueue(ctx: WakeQueueContext) {
     if (shared.closed) return false
     const q = queues.get(sessionId)
     const item = q?.list().find((entry) => entry.id === id && entry.value.userId === userId)
-    if (!item || leases.isLeased(sessionId, id)) return false
+    // A band claimed before keeps its place and its name (`leases.ts`, `claim`): moving one of
+    // its entries would split or rename a delivery whose transcript row may already exist.
+    if (!item || item.value.batch || item.value.failure || leases.isLeased(sessionId, id))
+      return false
     if (store && !(await store.setPriority(userId, sessionId, id, priority))) return false
     q!.setPriority(id, priority)
     publishQueue(userId, sessionId)
@@ -260,9 +280,9 @@ export function createWakeQueue(ctx: WakeQueueContext) {
     drainPendingAndRun: drain.drainPendingAndRun,
     scheduleDrain: drain.scheduleDrain,
     wake,
-    remove: steering.remove,
+    remove: removal.remove,
     interruptAndPromote,
-    clear: steering.clear,
+    clear: removal.clear,
     list: steering.list,
     hasPending: steering.hasPending,
     forget,

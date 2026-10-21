@@ -39,11 +39,15 @@ export const runsApi = {
   },
 
   /** Atomically cancel one queued message; content is returned only when cancellation wins. */
-  async removeQueuedMessage(sessionId: string, itemId: string): Promise<QueueRemovalResult> {
+  async removeQueuedMessage(
+    sessionId: string,
+    itemId: string,
+    options?: { wholeBatch?: boolean },
+  ): Promise<QueueRemovalResult> {
     return unwrap(
       await client.rpc.sessions[':id'].queue.remove.$post({
         param: { id: sessionId },
-        json: { itemId },
+        json: { itemId, ...(options?.wholeBatch ? { wholeBatch: true } : {}) },
       }),
     )
   },

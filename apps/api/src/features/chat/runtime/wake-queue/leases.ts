@@ -93,14 +93,16 @@ interface LeaseDependencies {
   now: () => string
   store?: WakeQueueStore<PendingTurn>
   scheduleDrain: (sessionId: string) => void
+  /** How long a durable lease lasts before renewal (`keepAlive`); tests shorten it. */
+  leaseMs?: number
 }
 
 export const createLeaseOperations = (
   shared: WakeQueueSharedState,
-  { now, store, scheduleDrain }: LeaseDependencies,
+  { now, store, scheduleDrain, leaseMs = 60_000 }: LeaseDependencies,
 ) => {
   const leaseOwner = randomUUID()
-  const LEASE_MS = 60_000
+  const LEASE_MS = leaseMs
 
   const leaseWindow = (): { nowIso: string; expiresIso: string } => {
     const nowIso = now()
@@ -118,17 +120,61 @@ export const createLeaseOperations = (
       shared.queues.set(row.sessionId, q)
     }
     if (!q.list().some((item) => item.id === row.id)) {
-      q.enqueue(readPendingTurn(row.payload, row.batchId), { id: row.id, priority: row.priority })
+      q.enqueue(readPendingTurn(row.payload, row.batchId, row.failure), {
+        id: row.id,
+        priority: row.priority,
+      })
     }
-    if (row.state === 'leased' && row.leaseExpiresAt) {
-      const delay = Math.max(0, Date.parse(row.leaseExpiresAt) - Date.now()) + 5
-      const timer = setTimeout(() => {
-        shared.recoveryTimers.delete(timer)
-        scheduleDrain(row.sessionId)
-      }, delay)
-      timer.unref?.()
-      shared.recoveryTimers.add(timer)
-    }
+    if (row.state === 'leased' && row.leaseExpiresAt) drainAt(row.sessionId, row.leaseExpiresAt)
+  }
+
+  /** Drain `sessionId` again once a lease another owner holds has expired. */
+  const drainAt = (sessionId: string, expiresIso: string): void => {
+    if (shared.closed) return
+    const delay = Math.max(0, Date.parse(expiresIso) - Date.parse(now())) + 5
+    const timer = setTimeout(() => {
+      shared.recoveryTimers.delete(timer)
+      scheduleDrain(sessionId)
+    }, delay)
+    timer.unref?.()
+    shared.recoveryTimers.add(timer)
+  }
+
+  /**
+   * A claim this process lost: another owner leases (some of) the band. Its delivery is not
+   * this process's to observe, but if that owner dies the rows wait for their lease to expire
+   * and for somebody to look again — so look again then. Rows it already acknowledged leave
+   * this process's queue too; rows nobody holds are retried now.
+   */
+  const awaitForeignLease = async (userId: string, sessionId: string, ids: readonly string[]) => {
+    if (!store) return
+    const rows = (await store.listSession(userId, sessionId)).filter((row) => ids.includes(row.id))
+    const q = shared.queues.get(sessionId)
+    for (const id of ids) if (!rows.some((row) => row.id === id)) q?.remove(id)
+    const foreign = rows.flatMap((row) =>
+      row.state === 'leased' && row.leaseExpiresAt ? [row.leaseExpiresAt] : [],
+    )
+    if (foreign.length > 0) drainAt(sessionId, foreign.sort().at(-1)!)
+    else if (rows.length > 0) scheduleDrainRetry(sessionId)
+  }
+
+  /**
+   * Keep this owner's lease on `ids` alive while a delivery step runs longer than the lease
+   * (a slow recipient resolution, a steering row awaiting its transcript write). Stop it when
+   * the step acknowledges or releases; a renewal that finds the rows gone stops by itself.
+   */
+  const keepAlive = (userId: string, sessionId: string, ids: readonly string[]): (() => void) => {
+    if (!store) return () => {}
+    const timer = setInterval(() => {
+      void store
+        .renew(userId, sessionId, ids, leaseOwner, leaseWindow().expiresIso)
+        .then((held) => {
+          if (!held) clearInterval(timer)
+        })
+        .catch(() => clearInterval(timer))
+    }, LEASE_MS / 3)
+    timer.unref?.()
+    return () => clearInterval(timer)
   }
 
   /** One startup barrier: expired leases are released before rows become visible.
@@ -158,10 +204,16 @@ export const createLeaseOperations = (
   /**
    * Lease `ids` as one delivery. Several are claimed as a BATCH, named by its first entry: the
    * name is written with the lease and kept until acknowledgement, so the band is a fact the
-   * store holds rather than one the next selection re-derives (`entry.ts`, `batch`).
+   * store holds rather than one the next selection re-derives (`entry.ts`, `batch`). A band
+   * claimed again keeps its first name even when another of its entries now leads it: the name
+   * seeds the transcript ids, and a new one would write the same turn twice.
    */
   const claim = async (userId: string, sessionId: string, ids: readonly string[]) => {
-    const batch = ids.length > 1 ? ids[0] : undefined
+    const named = shared.queues
+      .get(sessionId)
+      ?.list()
+      .find((item) => ids.includes(item.id) && item.value.batch)?.value.batch
+    const batch = named ?? (ids.length > 1 ? ids[0] : undefined)
     if (store) {
       await ready
       const window = leaseWindow()
@@ -225,6 +277,9 @@ export const createLeaseOperations = (
     claim,
     ack,
     release,
+    keepAlive,
+    awaitForeignLease,
+    owner: leaseOwner,
     isLeased,
     releaseDrainBand,
     resetDrainRetry,

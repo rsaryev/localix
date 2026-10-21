@@ -58,7 +58,9 @@ function fixture(failure?: 'ack' | 'remove' | 'publish') {
       scheduleDrainRetry: () => {
         trace.push('schedule-retry')
       },
+      keepAlive: () => () => {},
     },
+    deadLetter: { recordFailure: async () => false, delivered: () => {} },
     continuations: {
       settleCompletion: (_ids: string[], outcome: RunExecutionOutcome) => {
         trace.push('settle')
