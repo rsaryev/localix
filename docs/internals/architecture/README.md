@@ -103,14 +103,36 @@ the exceptions in prose.
 | A5  | Kysely is imported only by repository modules and migrations.                               | Enforced with a baseline (10)        |
 | A6  | No value-import cycle between API features.                                                 | Enforced with a baseline (89)        |
 | A7  | Domain and service code throws domain errors; only routes produce HTTP errors.              | Enforced with a baseline (69)        |
-| A8  | UI slices on the same layer do not import each other; outsiders use a slice's public entry. | Enforced with a baseline (23)        |
+| A8  | UI slices on the same layer do not import each other; outsiders use a slice's public entry. | Enforced with a baseline (19)        |
 | C1  | A write to an owned entity records its notice in the same transaction.                      | Enforced with a baseline (3)         |
 | C2  | A notice names identity only: entity, op and ref.                                           | Enforced by the registry types       |
 | C3  | Every consumer handles every kind or ignores it explicitly.                                 | Enforced by the registry types       |
 | C4  | Every consumer has tests for a duplicate, a gap with reconcile, and a parent deletion.      | Enforced with a baseline (1)         |
 | C5  | A follow-up in another feature runs in a consumer, unless it is a documented command.       | Planned, with a baseline             |
-| C6  | Clients learn of changes from the relay; a write does not patch another surface's store.    | Enforced with a baseline (20)        |
-| C7  | Whether a route can run is decided once, by `routeReadiness` in `@localixai/agent/catalog`. | Enforced with a baseline (2)         |
+| C6  | Clients learn of changes from the relay; a write does not patch another surface's store.    | Enforced with a baseline (14)        |
+| C7  | Whether a route can run is decided once, by `routeReadiness` in `@localixai/agent/catalog`. | Enforced with a baseline (1)         |
+
+### Durable turn queue
+
+Every turn that does not start in an idle session waits in the session's durable queue
+([`wake-queue/`](../../../apps/api/src/features/chat/runtime/wake-queue), stored by
+[`wake-queue-repository.ts`](../../../apps/api/src/features/chat/runtime/wake-queue-repository.ts)).
+A drain claims the head band with a lease, writes the turn under transcript ids derived from the
+band, and acknowledges the rows afterwards. A crash between the write and the acknowledgement
+replays the same rows, so delivery is at least once and the transcript stays idempotent. The queue
+keeps these rules:
+
+- A band claimed together keeps its batch name until it is acknowledged. Send-now and priority
+  changes refuse a batched row, and removal takes the whole batch.
+- A lease lasts 60 seconds and is renewed while a delivery or a steering reservation is held. A
+  claim lost to another owner drains again when that owner's lease expires.
+- A band that fails three consecutive deliveries is parked as `failed`. It leaves the head, appears
+  as failed in the queue snapshot, and waits for the person to retry or remove it.
+- An agent turn ticket is the documented exception. Its row is acknowledged **before** the run
+  starts, so dispatch is at most once and a crash never replays tools. Once the run has started, the
+  boot sweep marks it `interrupted` and posts a notice in the transcript. A crash after the
+  acknowledgement but before the run record exists leaves an empty reply placeholder that is never
+  retried.
 
 ## Enforcement
 
