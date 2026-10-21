@@ -7,6 +7,7 @@ import {
   backpressureAction,
   deliverSessionFrameBatch,
   decodeResumeCursor,
+  gapFrame,
   mergeRealtimeToolSurface,
   parseRealtimeCommand,
   REALTIME_BACKPRESSURE_DROP_BYTES,
@@ -550,5 +551,13 @@ describe('parseRealtimeCommand', () => {
         },
       }),
     ).toEqual({ kind: 'invalid', reason: 'bad_payload' })
+  })
+})
+
+describe('replay gap marker', () => {
+  it('is a session frame of this boot carrying the dropped cursor', () => {
+    expect(gapFrame('boot-a', '7')).toBe(
+      `s\n${encodeSessionCursor('boot-a', '7')}\n\n{"type":"transport.gap"}`,
+    )
   })
 })

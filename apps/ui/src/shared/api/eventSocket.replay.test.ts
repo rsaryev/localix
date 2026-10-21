@@ -1,6 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, spyOn } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import type * as EventSocketModule from './eventSocket'
-import { REPLAY_TRUST_MS } from './eventSocket/transport'
 
 const NativeWebSocket = globalThis.WebSocket
 let mod: typeof EventSocketModule
@@ -81,10 +80,20 @@ describe('eventSocket replay verdict', () => {
     expect(resyncs).toBe(0)
   })
 
-  it('a restarted server withdraws the replay on its first frame', async () => {
+  it('a gap marker from a restarted server withdraws the replay', async () => {
     const second = await reconnectAfterOneFrame()
     second.open()
+    second.onmessage?.({ data: 's\nboot-b:0\n\n{"type":"transport.gap"}' })
     second.onmessage?.({ data: 's\nboot-b:1\nsess\n{"type":"run.started"}' })
+    await drained()
+    expect(mod.eventSocket.resumedWithReplay()).toBeFalse()
+    expect(resyncs).toBe(1)
+  })
+
+  it('a gap marker for frames the ring dropped withdraws the replay', async () => {
+    const second = await reconnectAfterOneFrame()
+    second.open()
+    second.onmessage?.({ data: 's\nboot-a:40\n\n{"type":"transport.gap"}' })
     await drained()
     expect(mod.eventSocket.resumedWithReplay()).toBeFalse()
     expect(resyncs).toBe(1)
@@ -101,15 +110,9 @@ describe('eventSocket replay verdict', () => {
     expect(resyncs).toBe(1)
   })
 
-  it('an outage longer than the replay ring is trusted for is a fresh stream', async () => {
+  it('a long outage still trusts the replay until the server reports a gap', async () => {
     const second = await reconnectAfterOneFrame()
-    const now = Date.now()
-    const clock = spyOn(Date, 'now').mockReturnValue(now + REPLAY_TRUST_MS + 1)
-    try {
-      second.open()
-      expect(mod.eventSocket.resumedWithReplay()).toBeFalse()
-    } finally {
-      clock.mockRestore()
-    }
+    second.open()
+    expect(mod.eventSocket.resumedWithReplay()).toBeTrue()
   })
 })

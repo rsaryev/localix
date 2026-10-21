@@ -152,6 +152,15 @@ export function decodeResumeCursor(raw: string | null, epoch: string): string | 
   return cursor.sequence
 }
 
+/**
+ * The explicit gap marker: frames after the client's cursor are gone — it came from another
+ * boot, or the ring dropped them — so the replay that follows is not everything it missed. Its
+ * cursor is the newest frame the server no longer holds; the replayed frames follow it.
+ */
+export function gapFrame(epoch: string, droppedThrough: string): string {
+  return sessionFrame(epoch, droppedThrough, '', JSON.stringify({ type: 'transport.gap' }))
+}
+
 const WORKBENCH_UI_CAPABILITY = 'workbench-ui'
 
 /**
@@ -412,7 +421,10 @@ export function createRealtimeRoute(deps: RealtimeDeps) {
     const connectionToolSurface = realtimeConnectionToolSurface(c.req.query('surface'))
     // Resume cursor: the client reconnects with ?since=<lastCursor> so it catches up
     // on events buffered while the socket was down (ids are monotonic within this boot).
-    const since = decodeResumeCursor(c.req.query('since') ?? null, streamEpoch)
+    const resumeFrom = c.req.query('since') ?? null
+    const since = decodeResumeCursor(resumeFrom, streamEpoch)
+    // A cursor from another boot (or unreadable) names frames this process never held.
+    const foreignResume = resumeFrom !== null && since === '0'
     // The sessions this connection renders. MUTATED IN PLACE for the socket's whole life — the
     // registry holds this exact reference and re-reads it per frame, so `session.watch` takes
     // effect on the next published event without touching the subscription or its cursor.
@@ -501,8 +513,16 @@ export function createRealtimeRoute(deps: RealtimeDeps) {
             pendingSessionFrames.push(envelope)
             sessionFlushTimer ??= setTimeout(flushSessionFrames!, SESSION_COALESCE_MS)
           },
-          { since, watching },
+          {
+            since,
+            watching,
+            // Sent directly, ahead of the buffered replay it qualifies.
+            onGap: (droppedThrough) => {
+              if (!foreignResume) ws.send(gapFrame(streamEpoch, droppedThrough))
+            },
+          },
         )
+        if (foreignResume) ws.send(gapFrame(streamEpoch, '0'))
 
         // Notification journal: every committed change to this user's inbox, as it commits.
         unsubNotifications =

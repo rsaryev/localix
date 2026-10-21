@@ -23,7 +23,6 @@ export const conn = {
   /** The cursor the current socket was dialled with (its `since`), or null for a fresh stream. */
   dialCursor: null as string | null,
   /** When the last socket went down; a replay is trusted only after a short outage. */
-  lastDownAt: null as number | null,
   /**
    * Whether the current open resumed after a short outage from a cursor, so the server replays
    * every frame missed since it. Withdrawn (with a resync notice) by a lag marker or by a first
@@ -31,7 +30,6 @@ export const conn = {
    */
   openResumed: false,
   /** The epoch the first frame after a resumed open must carry; null once checked. */
-  verifyEpoch: null as string | null,
   /** Survives an idle teardown: a later open is still a REconnect for a tab holding state. */
   everOpened: false,
   reconnectTimer: null as ReturnType<typeof setTimeout> | null,
@@ -67,9 +65,7 @@ export function resetConnState(): void {
   conn.socket = null
   conn.lastCursor = null
   conn.dialCursor = null
-  conn.lastDownAt = null
   conn.openResumed = false
-  conn.verifyEpoch = null
   conn.everOpened = false
   conn.reconnectTimer = null
   conn.idleDisconnectTimer = null

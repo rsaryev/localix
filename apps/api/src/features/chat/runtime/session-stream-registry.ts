@@ -49,6 +49,8 @@ const MAX_TRACKED_USERS = 256
 export interface ScopedSubscribeOptions {
   /** Resume cursor, as on `subscribeAll`. */
   since?: string | null
+  /** Called before the replay when frames after `since` are gone (see `subscribeAll`). */
+  onGap?: (droppedThrough: string) => void
   /**
    * The publish keys this connection is ACTIVELY rendering — a LIVE set the CALLER owns and
    * MUTATES in place (the transport adds/removes ids as the client sends watch/unwatch commands).
@@ -115,6 +117,8 @@ export function createSessionStreamRegistry() {
   // Map insertion order doubles as an LRU recency list: re-publishing a session
   // re-inserts it at the tail (see publish).
   const sessionEventLog = new Map<string, StreamEnvelope[]>()
+  // Per user, the newest id its global ring no longer holds (trimmed, or the whole ring evicted).
+  const droppedThrough = new Map<string, number>()
   let nextEventId = 0
 
   const makeEventId = () => String(++nextEventId)
@@ -136,6 +140,7 @@ export function createSessionStreamRegistry() {
       // Never evict a user with a live firehose connection (their replay matters).
       if (!globalSubscribers.has(userId)) {
         globalEventLog.delete(userId)
+        droppedThrough.set(userId, nextEventId)
         if (globalEventLog.size <= MAX_TRACKED_USERS) break
       }
     }
@@ -183,6 +188,7 @@ export function createSessionStreamRegistry() {
     subscriber: Subscriber,
     since: string | null | undefined,
     watching: ReadonlySet<string> | null,
+    onGap?: (droppedThrough: string) => void,
   ) => {
     const entry: GlobalSubscriber = { deliver: subscriber, watching }
     const set = globalSubscribers.get(userId) ?? new Set<GlobalSubscriber>()
@@ -191,6 +197,8 @@ export function createSessionStreamRegistry() {
 
     const cursor = since ? Number(since) : null
     if (cursor !== null && Number.isFinite(cursor)) {
+      const dropped = droppedThrough.get(userId) ?? 0
+      if (cursor < dropped) onGap?.(String(dropped))
       replayGlobal(userId, entry, cursor)
     }
 
@@ -253,6 +261,9 @@ export function createSessionStreamRegistry() {
     // publish can't be double-counted. Non-idempotent client reducers
     // (hook.notice append, counters) MAY rely on this.
     //
+    // A cursor older than what the ring still holds (trimmed, or the user's ring evicted) replays
+    // only a suffix; a scoped subscriber hears of it first through `onGap`.
+    //
     // Takes EVERY frame. The browser wants {@link subscribeScoped} instead.
     subscribeAll(userId: string, subscriber: Subscriber, opts?: { since?: string | null }) {
       return subscribeGlobal(userId, subscriber, opts?.since, null)
@@ -276,7 +287,7 @@ export function createSessionStreamRegistry() {
      * (ui reconcileSession), which is the correct way to close that gap.
      */
     subscribeScoped(userId: string, subscriber: Subscriber, opts: ScopedSubscribeOptions) {
-      return subscribeGlobal(userId, subscriber, opts.since, opts.watching)
+      return subscribeGlobal(userId, subscriber, opts.since, opts.watching, opts.onGap)
     },
 
     /**
@@ -329,7 +340,7 @@ export function createSessionStreamRegistry() {
       // replay. The envelope (and its pre-serialized `data`) is shared BY
       // REFERENCE with the per-session ring — do not clone; the second ring only
       // costs array slots.
-      pushToRing(
+      const trimmed = pushToRing(
         globalEventLog,
         userId,
         event,
@@ -337,6 +348,7 @@ export function createSessionStreamRegistry() {
         MAX_GLOBAL_BUFFERED_EVENTS,
         evictGlobalIfNeeded,
       )
+      if (trimmed !== null) droppedThrough.set(userId, Number(trimmed))
 
       const set = subscribers.get(sessionId)
       if (set) {

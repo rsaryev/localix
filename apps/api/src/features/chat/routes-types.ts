@@ -284,7 +284,11 @@ export interface ChatRoutesService {
         event: AgentStreamEvent
         data: string
       }) => void,
-      opts: { since?: string | null; watching: ReadonlySet<string> },
+      opts: {
+        since?: string | null
+        watching: ReadonlySet<string>
+        onGap?: (droppedThrough: string) => void
+      },
     ): () => void
   }
 }
