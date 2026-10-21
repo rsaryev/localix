@@ -30,6 +30,7 @@ import {
 } from '../features/context-fabric/session-workspace'
 import type { createChatService } from '../features/chat/service'
 import type { createUserService } from '../features/user/service'
+import { createUserProfileRepository } from '../features/user/repository'
 import type { createProjectsService } from '../features/projects/service'
 
 export interface AuxAssistDeps {
@@ -71,7 +72,7 @@ export function createAuxAssistServices(deps: AuxAssistDeps) {
 
   // Shared provider helpers; each surface resolves its own model-drawer route.
   const aux = createAuxProviderHelpers({
-    db,
+    userProfileRepo: createUserProfileRepository(db),
     catalogService,
     providerConnectionsService,
     languageModelFactory,

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { createChatFeaturePorts } from '../../bootstrap/chat-feature-ports'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { describe, expect, test, beforeAll, afterAll } from 'bun:test'
@@ -11,7 +12,7 @@ import type { Project } from './contracts'
 import {
   createTestCatalogService as createCatalogService,
   createTestChatService as createChatService,
-} from '../chat/test-runtime'
+} from '../chat/test-harness'
 import { createProviderConnectionsService } from '../provider-connections/service'
 
 const tempDir = join(process.cwd(), 'tmp', 'projects-tests')
@@ -33,6 +34,7 @@ describe('projects feature', () => {
     chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService,
       providerConnectionsService,
     })

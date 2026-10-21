@@ -14,7 +14,7 @@ import type { HitlRegistry } from '../runtime/hitl-registry'
 import type { SessionStreamRegistry } from '../runtime/session-stream-registry'
 import type { PersistedMessage } from '../contracts'
 import type { LspManager } from '../../lsp'
-import type { PluginService } from '../../plugins/service-types'
+import type { ChatFeaturePorts } from '../feature-ports'
 import type {
   TerminalJobHandle,
   TerminalSnapshot,
@@ -83,15 +83,10 @@ export interface ChatServiceDeps {
   /** The engine's script sandbox, for the `codemode` tool; absent where the engine has none. */
   scripts?: ScriptSandbox
   /**
-   * The host's plugin service. Supply it and the chat graph uses THAT one; omit it and
-   * the graph builds its own (tests, and any consumer with no host).
-   *
-   * The graph used to always build its own, which meant a running app had two: two
-   * inspection caches importing the same plugins, and two `onChanged` owners — only one
-   * of which reconciled the live hosts. `bumpUnwiredMutation` in the `/plugin` handler
-   * existed solely to paper over the difference.
+   * Other features' stores and the host's plugin service, built by the composition root
+   * (`bootstrap/chat-feature-ports.ts`). The graph and the runner share these instances.
    */
-  pluginService?: PluginService
+  ports: ChatFeaturePorts
   /** Immutable frontend-published UI catalogs, selected by id for each workbench run. */
   uiLocationCatalog?: UiLocationCatalogService
   /** Structured diagnostic sink; feature code must never write straight to a host's stdout. */

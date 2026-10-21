@@ -5,7 +5,7 @@ import { request as httpRequest } from 'node:http'
 
 import { createApp } from './app'
 import { createDatabase, destroyDatabase } from './db'
-import { createTestCatalogService, createTestChatService } from './features/chat/test-runtime'
+import { createTestCatalogService, createTestChatService } from './features/chat/test-harness'
 import { websocket } from './features/realtime/ws'
 import { LOCALIX_CLIENT_HEADER } from './lib/client-header'
 import { createLocalOriginPolicy, parseUiOrigins } from './lib/local-origin-guard'

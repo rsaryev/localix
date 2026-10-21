@@ -128,7 +128,7 @@ export async function handleModelCommand(
   }
   // The level follows the model, as it does in the picker: the previous model's level never
   // carries over, and the stored level is one this model offers.
-  const settings = await readAgentSettings(deps.db, userId)
+  const settings = await readAgentSettings(deps.ports.userProfileRepo, userId)
   const reasoningEffort = effortForModelSwitch({
     previous: participant,
     next: matched,

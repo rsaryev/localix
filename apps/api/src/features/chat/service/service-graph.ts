@@ -1,4 +1,3 @@
-import { createCapabilitySourceRepository } from '../../capabilities/source-repository'
 /**
  * The chat service's OBJECT GRAPH: every long-lived collaborator a `ChatService`
  * is built out of — repositories, the sub-services it owns, the process-wide
@@ -23,27 +22,20 @@ import { createRouteDefaults } from './session-route-defaults'
 import { readAgentSettings } from './agent-settings'
 import { normalizeProjectSettings } from '../../projects/contracts'
 import { safeJsonParse } from '../../../lib/json'
-import { createUsageRepository } from '../../usage/repository'
-import { createMemoryRepository } from '../../memory/repository'
-import { createProjectsRepository } from '../../projects/repository'
-import { createMcpRepository } from '../../mcp/repository'
-import { createPluginService } from '../../plugins/service'
 import { createAgentRunner, type AgentRunner } from '../runtime/agent-runner'
 import { createHitlRegistry, type HitlRegistry } from '../runtime/hitl-registry'
 import { createPluginCommandRegistry } from '../runtime/plugin-command-registry'
 import { createPreviewCommandRegistry } from '../runtime/preview-command-registry'
 import { createSessionStreamRegistry } from '../runtime/session-stream-registry'
 import { createKeyedSerializer } from '../../../lib/keyed-serializer'
-import { resolveDefaultUserId, userHome } from '../../../lib/env'
+import { resolveDefaultUserId } from '../../../lib/env'
 import type { ChatServiceDeps } from './context'
-import { capabilitiesChanged } from '../../capabilities/revision'
 
 export function createChatServiceGraph(deps: ChatServiceDeps) {
   const now = deps.now ?? (() => new Date().toISOString())
 
-  const usageRepo = createUsageRepository(deps.db)
-  const memoryRepo = createMemoryRepository(deps.db)
-  const projectsRepo = createProjectsRepository(deps.db)
+  const { ports } = deps
+  const { projectsRepo, pluginService } = ports
   // A seat stores its route explicitly. The wrapper only fills a legacy blank seat once and
   // writes it back; new seats are decided at birth by `routeDefaults.seatRoute`.
   const baseRepo = createChatRepository(deps.db)
@@ -62,29 +54,9 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
     ...(deps.loadAgentModelDefaults ? { loadAgentModelDefaults: deps.loadAgentModelDefaults } : {}),
     loadRecentRoutes: (userId) => baseRepo.listRecentRoutes(userId),
     loadAgentModelSettings: async (userId) =>
-      (await readAgentSettings(deps.db, userId))?.agentModelSettings ?? [],
+      (await readAgentSettings(ports.userProfileRepo, userId))?.agentModelSettings ?? [],
   })
   const repo = withResolvedRoutes(baseRepo, routeDefaults)
-  const mcpRepo = createMcpRepository(deps.db)
-  const pluginRepo = createCapabilitySourceRepository(deps.db, 'plugin')
-  const resolveProjectCwd = async (uid: string, pid: string) =>
-    (await projectsRepo.getProject(uid, pid))?.workingDir ?? null
-  // The HOST's plugin service when there is one. Building a second is a fallback for
-  // callers with no host (tests): two services mean two inspection caches importing the
-  // same plugins, and two `onChanged` owners where only the host's reconciles the live
-  // channel/backend/monitor hosts. The fallback keeps the revision owner wired so a
-  // mutation still invalidates run-scope caches.
-  const pluginService =
-    deps.pluginService ??
-    createPluginService({
-      db: deps.db,
-      homeDir: userHome(),
-      now: deps.now,
-      resolveProjectCwd,
-      onChanged: () => {
-        capabilitiesChanged()
-      },
-    })
   const streamRegistry = deps.streamRegistry ?? createSessionStreamRegistry()
   const hitlRegistry: HitlRegistry =
     deps.hitlRegistry ??
@@ -122,6 +94,7 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
     deps.runner ??
     createAgentRunner({
       db: deps.db,
+      ports,
       work: deps.work,
       notifications: deps.notifications,
       // The RESOLVED reader, so a wake the runner starts from its own read of a session sees
@@ -187,12 +160,7 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
     now,
     repo,
     routeDefaults,
-    usageRepo,
-    memoryRepo,
-    projectsRepo,
-    mcpRepo,
-    pluginRepo,
-    pluginService,
+    ...ports,
     hitlRegistry,
     streamRegistry,
     previewRegistry,

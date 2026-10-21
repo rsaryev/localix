@@ -3,7 +3,7 @@ import { createDatabase, destroyDatabase } from '../../../db/connection'
 import { migrateToLatest } from '../../../db/migrator'
 import { createProviderConnectionsService } from '../../provider-connections/service'
 import { createProjectsRepository } from '../../projects/repository'
-import { createTestCatalogService, createTestChatService } from '../test-runtime'
+import { createTestCatalogService, createTestChatService } from '../test-harness'
 import { testWork } from '../../../testing/work-fixture'
 
 test('an attached native identity is persisted at chat creation without imported messages', async () => {

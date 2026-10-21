@@ -1,4 +1,5 @@
 import { DEFAULT_AGENT_PARTICIPANT, USER_PARTICIPANT } from '../../db'
+import { createChatFeaturePorts } from '../../bootstrap/chat-feature-ports'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -13,7 +14,7 @@ import { createChatRepository } from './repository'
 import {
   createTestCatalogService as createCatalogService,
   createTestChatService as createChatService,
-} from './test-runtime'
+} from './test-harness'
 
 const tempDir = join(import.meta.dir, `.tmp-history-search-${randomUUID()}`)
 
@@ -31,6 +32,7 @@ describe('chatService.searchHistory', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
     })

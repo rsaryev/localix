@@ -1,5 +1,6 @@
 /// <reference types="bun" />
 
+import { createChatFeaturePorts } from '../../bootstrap/chat-feature-ports'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -19,7 +20,7 @@ import { createSessionStreamRegistry } from './runtime/session-stream-registry'
 import {
   createTestCatalogService as createCatalogService,
   createTestChatService as createChatService,
-} from './test-runtime'
+} from './test-harness'
 
 const tempDir = join(process.cwd(), 'tmp', 'chat-submit-secret-tests')
 
@@ -97,6 +98,7 @@ describe('chatService.submitSecret (request_secret answer leg)', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
       hitlRegistry,

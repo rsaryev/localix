@@ -24,6 +24,7 @@ test('plugin_build suggests browser verification only when browser survives the 
   const ctx = {
     deps: {
       db: {},
+      ports: { contextStore: {} },
       pluginAuthoring: authoring,
       previewControl: { send: async () => ({}) },
     },
@@ -72,7 +73,7 @@ test('the skill tool announces its save through the host capability port', async
   try {
     let announced = 0
     const ctx = {
-      deps: { db: {}, announceCapabilityChange: () => announced++ },
+      deps: { db: {}, ports: { contextStore: {} }, announceCapabilityChange: () => announced++ },
       repo: {},
       memoryRepo: {},
       work: {},
@@ -104,7 +105,7 @@ test('the skill tool announces its save through the host capability port', async
 
 test('set_topic is offered exactly when the host built its port', () => {
   const ctx = {
-    deps: { db: {} },
+    deps: { db: {}, ports: { contextStore: {} } },
     repo: {},
     memoryRepo: {},
     work: {},

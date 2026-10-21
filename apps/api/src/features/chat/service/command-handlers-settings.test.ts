@@ -37,7 +37,7 @@ describe('/model', () => {
     const ctx = {
       deps: {
         // A failed settings read degrades to "nothing remembered".
-        db: {},
+        ports: { userProfileRepo: {} },
         catalogService: {
           getCatalog: async () => ({
             providers: [{ id: 'openrouter' }],

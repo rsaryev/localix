@@ -3,7 +3,7 @@ import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { testWork } from '../../testing/work-fixture'
 import { createProviderConnectionsService } from '../provider-connections/service'
-import { createTestChatService, createTestCatalogService } from '../chat/test-runtime'
+import { createTestChatService, createTestCatalogService } from '../chat/test-harness'
 import { createViewStateService } from './view-state-service'
 
 test('channels retain drafts with CAS, user isolation and session ownership', async () => {

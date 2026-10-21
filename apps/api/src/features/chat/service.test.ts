@@ -1,5 +1,6 @@
 /// <reference types="bun" />
 
+import { createChatFeaturePorts } from '../../bootstrap/chat-feature-ports'
 import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -14,7 +15,7 @@ import { createChatRepository } from './repository'
 import {
   createTestCatalogService as createCatalogService,
   createTestChatService as createChatService,
-} from './test-runtime'
+} from './test-harness'
 import type { AgentRunner } from './runtime/agent-runner'
 import { noLeadership } from './runtime/conversation-strategy'
 import type { PersistedMessage } from './contracts'
@@ -64,6 +65,7 @@ describe('chat service', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
     })
@@ -100,6 +102,7 @@ describe('chat service', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
     })
@@ -208,6 +211,7 @@ describe('chat service', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
       runner,
@@ -272,6 +276,7 @@ describe('chat service', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
     })
@@ -370,6 +375,7 @@ describe('chat service', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
       runner,
@@ -430,6 +436,7 @@ describe('chat service', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
       runner,
@@ -478,6 +485,7 @@ describe('chat service', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
       runner,
@@ -521,6 +529,7 @@ describe('chat service', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
       runner,
@@ -571,6 +580,7 @@ describe('chat service', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
       runner,
@@ -621,6 +631,7 @@ describe('chat service', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
       runner,
@@ -699,6 +710,7 @@ describe('chat service', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
     })
@@ -749,6 +761,7 @@ describe('chat service', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
     })
@@ -812,6 +825,7 @@ describe('chat service', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
     })
@@ -871,6 +885,7 @@ describe('chat service', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
     })
@@ -923,6 +938,7 @@ describe('chat service', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
     })
@@ -971,6 +987,7 @@ describe('chat service', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
     })
@@ -1009,6 +1026,7 @@ describe('chat service', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
     })
@@ -1107,6 +1125,7 @@ describe('chat service', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
       runner,
@@ -1247,6 +1266,7 @@ describe('chat service', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
       runner,
@@ -1308,6 +1328,7 @@ describe('chat service', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
     })
@@ -1359,6 +1380,7 @@ describe('session project assignment', () => {
     const chatService = createChatService({
       db,
       work: testWork(db),
+      ports: createChatFeaturePorts(db),
       catalogService: createCatalogService(),
       providerConnectionsService: createProviderConnectionsService({ db }),
     })
