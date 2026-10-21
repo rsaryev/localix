@@ -11,6 +11,7 @@ import { createCapabilitySourceRepository } from '../capabilities/source-reposit
 import { seedAgentPresets } from '../capabilities/seed-agent-presets'
 import { resolveCapabilities } from '../capabilities/resolve'
 import { createInvocationRegistry } from '../capabilities/invocation'
+import { capabilityRevision } from '../capabilities/revision'
 
 const cleanup: Array<() => Promise<void>> = []
 afterEach(async () => {
@@ -128,6 +129,16 @@ describe('native agent registry', () => {
     expect((await service.explainAgentAvailability('u', record.id, 'chat')).status).toBe(
       'agent_disabled',
     )
+  })
+
+  // The composition root bumps the revision for this method; the service itself must not too.
+  test('switching an agent leaves the capability revision to the composition root', async () => {
+    const { service } = await fixture()
+    const { record } = await service.createAgent('u', input())
+    const before = capabilityRevision()
+    await service.setAgentEnabled('u', record.id, false)
+    expect(capabilityRevision()).toBe(before)
+    expect((await service.getAgent('u', record.id))?.enabled).toBe(false)
   })
 
   test('host registration and unload are shared by catalog and launch admission', async () => {

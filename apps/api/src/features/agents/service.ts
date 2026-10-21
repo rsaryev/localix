@@ -10,7 +10,7 @@ import { agentContributionSchema } from './contribution'
 import { buildAgentCatalog } from './catalog'
 import { createAgentInvocationService } from './invocation-service'
 import { createRegistrationPolicyService } from './registration-policy'
-import { createAvailabilityWriter } from '../capabilities/availability'
+import { applySwitches, createAvailabilityWriter } from '../capabilities/availability'
 import { createInvocationRegistry } from '../capabilities/invocation'
 import { createCapabilityRuleRepository } from '../capabilities/rule-repository'
 import { createNativeAgent } from './create-native-agent'
@@ -149,9 +149,11 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
       // An `agent:<id>` rule lives in that agent's OWN list — "may this role be invoked" is a
       // statement about the role, and keeping it beside the role's tool rules is what lets a
       // delete drop both in one write.
-      await availabilityWriter.set(userId, entry.record.id, 'agent', [
-        { name: entry.record.id, enabled },
-      ])
+      // Written through the rule repository, not the availability writer: the writer bumps the
+      // capability revision, and the composition root already bumps it once for this method.
+      await ruleRepository.mutate(userId, entry.record.id, (current) =>
+        applySwitches(current, 'agent', [{ name: entry.record.id, enabled }]),
+      )
       const refreshed = await buildCatalog(userId, scope)
       return pickEntry(refreshed, name, entry.projectId)!
     },
