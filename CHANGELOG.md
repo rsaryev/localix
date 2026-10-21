@@ -6,17 +6,27 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 Changes land on `main`.
 
+## v0.1.0-beta.15 — 2026-10-21
+
+Localix now tells you what is new: each update is announced in a dialog with its release notes,
+setup opens as a dialog over a new chat, and every dialog arrives with the same motion.
+
 ### Added
 
 - **Update dialog**: a newly found version is announced once, with what is new in it, before you
-  restart. Updates are found a few seconds after launch instead of thirty.
+  restart. **Later** keeps it offered above the message box, in the title bar and in Settings.
 - **Setup dialog**: setup opens over a new chat at launch, with the workspace tips and their
   controls, until you close it once. Open it again from the command palette with **Set up Localix**.
 
 ### Changed
 
+- **Faster update check**: a new version is found a few seconds after launch instead of thirty.
 - **Launch** always opens a chat: the one you were in, or a new one. An empty editor group shows the
   Localix bird instead of the workspace tips.
+- **Dialogs** rise into place and settle, and confirmations open centred on a mark in the colour of
+  what they do: red for what cannot be undone.
+
+## v0.1.0-beta.14 — 2026-10-21
 
 ### Removed
 
