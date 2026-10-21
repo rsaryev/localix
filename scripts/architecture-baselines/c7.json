@@ -1,0 +1,4 @@
+[
+  "apps/api/src/features/chat/runtime/model-resolution.ts gates on a provider prefix",
+  "apps/api/src/features/usage/usage-reconciliation.ts gates on a provider prefix"
+]

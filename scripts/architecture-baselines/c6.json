@@ -1,0 +1,22 @@
+[
+  "apps/ui/src/features/chat/model/agent-runtime.ts -> _replaceSession",
+  "apps/ui/src/features/chat/model/chatEventStream.ts -> _replaceSession",
+  "apps/ui/src/features/chat/model/hitlInteraction.ts -> _replaceSession",
+  "apps/ui/src/features/chat/model/projectActionsSlice.ts -> _hydrateProjects",
+  "apps/ui/src/features/chat/model/retrySessionRun.ts -> _replaceSession",
+  "apps/ui/src/features/chat/model/sessionActionsSlice.ts -> _replaceSession",
+  "apps/ui/src/features/chat/model/sessionModelSelectionActions.ts -> _replaceSession",
+  "apps/ui/src/features/chat/model/sessionPartyRoute.ts -> _replaceSession",
+  "apps/ui/src/features/chat/model/useForkSession.ts -> _replaceSession",
+  "apps/ui/src/features/chat/model/useParticipantsEditing.ts -> _replaceSession",
+  "apps/ui/src/features/chat/model/usePermissionMode.ts -> _replaceSession",
+  "apps/ui/src/features/chat/model/useWorkspace.ts -> _hydrateProjects",
+  "apps/ui/src/features/chat/model/useWorkspace.ts -> _replaceSession",
+  "apps/ui/src/features/chat/ui/prompt-input/ComposerQueuePanel.tsx -> _replaceSession",
+  "apps/ui/src/features/chat/ui/prompt-input/useConnections.ts -> _replaceConnection",
+  "apps/ui/src/features/chat/ui/prompt-input/useConnections.ts -> _replaceSession",
+  "apps/ui/src/features/chat/ui/prompt-input/usePromptSessionView.ts -> _replaceSession",
+  "apps/ui/src/features/companion/model/useQuickChat.ts -> _replaceSession",
+  "apps/ui/src/features/external-agents/ui/LinkedAgentTerminalPill.tsx -> _replaceSession",
+  "apps/ui/src/widgets/chat-workspace/model/useMessageActions.ts -> _replaceSession"
+]
