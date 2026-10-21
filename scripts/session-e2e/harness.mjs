@@ -40,7 +40,7 @@ export async function startRuntime({ port = 5261, keep = false } = {}) {
   const env = Object.fromEntries(
     Object.entries(process.env).filter(([key]) => !/^(LOCALIX_|PORT$|BUN_OPTIONS$)/.test(key)),
   )
-  const child = spawn('bun', ['scripts/dev-api.mjs'], {
+  const child = spawn('bun', [path.join(repoRoot, 'scripts', 'dev-api.mjs')], {
     cwd: repoRoot,
     detached: true,
     env: {

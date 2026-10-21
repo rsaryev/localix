@@ -3,7 +3,7 @@ import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../../../db/types'
 import type { NotificationJournal } from '../journal'
 import { HITL_ATTENTION_PREFIX as HITL_PREFIX } from '../../attention/contracts'
-import { childKey, failureKey } from './runs'
+import { childKey, continueAction, failureKey } from './runs'
 import {
   isInternalSession,
   openChatAction,
@@ -79,7 +79,10 @@ export async function recordInterruptedRuns(
         ? `${session.title} — the reply is incomplete.`
         : 'The reply is incomplete.',
       origin: resourceOrigin(session, 'run', run.runId, child ? 'Sub-agent' : 'Agent run'),
-      actions: [openChatAction(session)],
+      // A root conversation's cut-off reply is its resume point: Continue picks it up.
+      actions: child
+        ? [openChatAction(session)]
+        : [openChatAction(session), continueAction(session, run.runId)],
     })
   }
 }

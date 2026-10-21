@@ -17,9 +17,10 @@ export function useConnectionSettings(provider: ProviderEntry) {
   const fields = provider.settings ?? []
   const [values, setValues] = useState<Record<string, string>>({})
   const missing = fields.some((field) => field.required && !values[field.name]?.trim())
+  // Only this provider's fields: a value typed for another provider never rides along.
   const filled = Object.fromEntries(
-    Object.entries(values)
-      .map(([name, value]) => [name, value.trim()] as const)
+    fields
+      .map((field) => [field.name, values[field.name]?.trim() ?? ''] as const)
       .filter(([, value]) => value),
   )
   return {

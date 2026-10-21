@@ -40,7 +40,15 @@ interface AddConnectionFormProps {
 let nextKeyRowId = 0
 const emptyKeyRow = () => ({ id: `key-${nextKeyRowId++}`, value: '' })
 
-export function AddConnectionForm({
+/**
+ * Keyed by the provider: a label, key or setting typed for one provider is dropped when another is
+ * picked, so it can never be submitted to the wrong one.
+ */
+export function AddConnectionForm(props: AddConnectionFormProps) {
+  return <AddConnectionFormBody key={props.provider.id} {...props} />
+}
+
+function AddConnectionFormBody({
   nav,
   provider,
   isOAuth = false,

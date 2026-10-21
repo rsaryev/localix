@@ -5,8 +5,8 @@
  * here it blocks this worker, and the host stays free to time it out, abort it, and terminate the
  * worker. The VM lives until then — it never decides on its own that it is finished.
  *
- * Importing this module starts the worker. A bundled host adds it as an entry of its own
- * (`SCRIPT_WORKER_ENTRY`) and passes the bundled file as the sandbox's `workerUrl`.
+ * Importing this module starts the worker. A bundled host bundles it from the package's `./worker`
+ * export, the same build the host itself resolves, and passes the file as the sandbox's `workerUrl`.
  */
 import { parentPort, workerData } from 'node:worker_threads'
 
@@ -83,38 +83,44 @@ async function main(data: WorkerData): Promise<void> {
     vm.callFunction(stalled, api).dispose()
   }
 
-  // Called by the prelude with primitives only.
+  // The prelude passes primitives only. A handle that is not a string is refused rather than
+  // converted: converting an object runs the script's own `toString`.
+  const text = (handle: JSValueHandle | undefined): string => {
+    if (!handle?.isString) throw new TypeError('The script sandbox received a non-string value')
+    return handle.toString()
+  }
+  const optionalText = (handle: JSValueHandle | undefined): string | undefined =>
+    handle === undefined || handle.isUndefined ? undefined : text(handle)
   const bridge = vm.newFunction('bridge', (kind, a, b, c) => {
-    switch (kind.toString()) {
+    try {
+      relay(kind, a, b, c)
+    } catch (error) {
+      // Ends the run on the host; thrown into the VM instead, the script could catch it.
+      crash(error)
+    }
+    return vm.undefined
+  })
+  function relay(kind: JSValueHandle, a: JSValueHandle, b?: JSValueHandle, c?: JSValueHandle) {
+    switch (text(kind)) {
       case 'call':
-        post({
-          type: 'call',
-          id: a.toNumber(),
-          name: b.toString(),
-          args: c === undefined || c.isUndefined ? undefined : c.toString(),
-        })
+        if (!a.isNumber) throw new TypeError('The script sandbox received a non-numeric call id')
+        post({ type: 'call', id: a.toNumber(), name: text(b), args: optionalText(c) })
         break
       case 'output':
         post({
           type: 'output',
           item:
-            a.toString() === 'image'
-              ? { type: 'image', data: b.toString(), mimeType: c.toString() }
-              : { type: 'text', text: b.toString() },
+            text(a) === 'image'
+              ? { type: 'image', data: text(b), mimeType: text(c) }
+              : { type: 'text', text: text(b) },
         })
         break
       case 'done':
-        if (a.toBoolean())
-          post({
-            type: 'done',
-            ok: true,
-            value: b === undefined || b.isUndefined ? undefined : b.toString(),
-          })
-        else post({ type: 'done', ok: false, error: b.toString() })
+        if (a.toBoolean()) post({ type: 'done', ok: true, value: optionalText(b) })
+        else post({ type: 'done', ok: false, error: text(b) })
         break
     }
-    return vm.undefined
-  })
+  }
 
   try {
     // Lives as long as the VM, which dies with the worker.

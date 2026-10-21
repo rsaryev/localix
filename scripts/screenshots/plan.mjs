@@ -236,6 +236,25 @@ export const capturePlan = {
     purpose: 'Model discovery and provider connection, with no account secrets',
     scenario: 'models',
   },
+  'providers/cloud-connection-settings': {
+    guide: 'features/providers.md',
+    purpose: 'A cloud provider asks for its region beside the key and waits for the key to add it',
+    scenario: 'cloud-connection',
+    start: 'project',
+  },
+  'chat/unfinished-reply': {
+    guide: 'features/conversations.md',
+    purpose:
+      'A reply a restart cut off: a quiet marker in the transcript, Continue above the composer',
+    scenario: 'unfinished-reply',
+    start: 'project',
+  },
+  'tools/codemode-card': {
+    guide: 'features/tools.md',
+    purpose: 'One script run: its calls with their files, outcome and time, and its JSON report',
+    scenario: 'codemode-card',
+    start: 'project',
+  },
   'plugins/workbenches': {
     guide: 'extending/plugins.md',
     purpose: 'Available workspace tools and how to open them',

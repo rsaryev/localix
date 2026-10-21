@@ -211,7 +211,7 @@ export function useConnections(sessionId: string | null) {
       const openSignIn = async (url: string | undefined) => {
         if (!url) return true
         const accepted = await platformCapabilities().external.requestOpen(url, true)
-        if (accepted !== false) return true
+        if (accepted) return true
         if (sessionStorage.getItem(OAUTH_STATE_KEY) === state) {
           sessionStorage.removeItem(OAUTH_STATE_KEY)
           sessionStorage.removeItem(OAUTH_SESSION_KEY)

@@ -165,6 +165,11 @@ export interface Usage {
    * Lets the UI/dashboard flag trustworthiness.
    */
   costSource?: 'actual' | 'estimated' | 'subscription'
+  /**
+   * The token counts themselves are estimates: the response was stopped or cut off before the
+   * provider reported its usage. Priced like any other, never read as a measured context size.
+   */
+  estimated?: boolean
   cost?: {
     input: number
     output: number

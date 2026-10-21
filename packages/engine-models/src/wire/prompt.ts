@@ -10,22 +10,15 @@ import type {
   LanguageModelV4CallOptions,
   LanguageModelV4FilePart,
   LanguageModelV4Message,
-  LanguageModelV4TextPart,
-  LanguageModelV4ToolResultOutput,
   SharedV4ProviderOptions,
 } from '@ai-sdk/provider'
-import type {
-  AssistantMessage,
-  FileContent,
-  ImageContent,
-  Message,
-  ReasoningEffort,
-  TextContent,
-  ToolResult,
-} from '@localixai/agent'
+import type { AssistantMessage, ReasoningEffort } from '@localixai/agent'
+import type { AgentMessageOrigin } from '@localixai/agent/agents'
 import type { ModelTurnRequest } from '@localixai/agent/runtime'
 
+import { attachedFromTools, toolOutput, userParts, type ToolOutputShape } from './media'
 import { decodeProviderState } from './provider-state'
+import { toolCallIdMapper, type ToolCallIdFormat } from './tool-call-ids'
 
 /** How one provider family wants its requests shaped. */
 export interface WireProfile {
@@ -39,6 +32,17 @@ export interface WireProfile {
   temperature: boolean
   /** The provider refuses a requested output limit (the ChatGPT backend). */
   refusesOutputLimit?: boolean
+  /** The model reads images. When false, images are sent as a short placeholder. Default: true. */
+  images?: boolean
+  /**
+   * The OpenAI-compatible chat wire: a tool message carries text only, and reasoning returns as
+   * `reasoning_content`, which DeepSeek and Kimi want back within a tool loop.
+   */
+  compatible?: boolean
+  /** The form of tool-call id the provider insists on, when it insists. */
+  toolCallIds?: ToolCallIdFormat
+  /** Which explicit breakpoints `cacheBreakpoints` places: Anthropic's (default) or Bedrock's. */
+  cachePoints?: 'anthropic' | 'bedrock'
 }
 
 export interface RequestContext {
@@ -48,69 +52,39 @@ export interface RequestContext {
   idleMs: number | undefined
 }
 
-const EPHEMERAL = { cacheControl: { type: 'ephemeral' } }
+const CACHE_POINT = {
+  anthropic: { anthropic: { cacheControl: { type: 'ephemeral' } } },
+  bedrock: { bedrock: { cachePoint: { type: 'default' } } },
+} as const
 
-function fileData(data: string) {
-  return { type: 'data' as const, data }
-}
-
-function userParts(
-  content: Message['content'] & (string | Array<TextContent | ImageContent | FileContent>),
-) {
-  if (typeof content === 'string')
-    return [{ type: 'text', text: content } satisfies LanguageModelV4TextPart]
-  return content.map((part): LanguageModelV4TextPart | LanguageModelV4FilePart =>
-    part.type === 'text'
-      ? { type: 'text', text: part.text }
-      : part.type === 'image'
-        ? { type: 'file', mediaType: part.mediaType, data: fileData(part.data) }
-        : {
-            type: 'file',
-            mediaType: part.mediaType,
-            data: fileData(part.data),
-            ...(part.filename ? { filename: part.filename } : {}),
-          },
-  )
-}
-
-function toolOutput(result: ToolResult): LanguageModelV4ToolResultOutput {
-  const parts =
-    typeof result.content === 'string'
-      ? [{ type: 'text' as const, text: result.content }]
-      : result.content
-  const media = parts.some((part) => part.type !== 'text')
-  if (!media) {
-    const value = parts.map((part) => (part.type === 'text' ? part.text : '')).join('')
-    return result.isError ? { type: 'error-text', value } : { type: 'text', value }
-  }
-  return {
-    type: 'content',
-    value: parts.map((part) =>
-      part.type === 'text'
-        ? { type: 'text' as const, text: part.text }
-        : {
-            type: 'file' as const,
-            mediaType: part.mediaType,
-            data: fileData(part.data),
-            ...(part.type === 'file' && part.filename ? { filename: part.filename } : {}),
-          },
-    ),
-  }
+/** The model a stored message's provider state is valid for: the one that produced it. */
+function sameOrigin(message: AssistantMessage, origin: AgentMessageOrigin | undefined): boolean {
+  if (!origin) return true
+  if (message.model !== origin.model) return false
+  return message.provider === undefined || message.provider === origin.provider
 }
 
 /**
- * An assistant message replayed. Reasoning goes back only with the state its provider needs to
- * accept it — a signature, an encrypted item — and only to the provider that issued it; text and
- * tool calls go back always, their state attached where there is some.
+ * An assistant message replayed. Provider state — a signature, an encrypted reasoning item, an
+ * item id — goes back only to the model that issued it, and never from a response that failed
+ * or was stopped (OpenAI refuses a reasoning item whose following item never arrived). Reasoning
+ * goes back only with that state, except on the OpenAI-compatible wire, where the model's own
+ * reasoning returns as plain `reasoning_content`. Text and tool calls go back always.
  */
 function assistantMessage(
   message: AssistantMessage,
   profile: WireProfile,
+  origin: AgentMessageOrigin | undefined,
+  callId: (id: string) => string,
 ): LanguageModelV4Message | undefined {
+  const failed = message.stopReason === 'error' || message.stopReason === 'aborted'
+  const keepState = sameOrigin(message, origin) && !failed
+  const state = (signature: string | undefined, part: 'text' | 'reasoning' | 'tool-call') =>
+    keepState ? decodeProviderState(signature, part, message.api) : undefined
   const content: Extract<LanguageModelV4Message, { role: 'assistant' }>['content'] = []
   for (const part of message.content) {
     if (part.type === 'text') {
-      const providerOptions = decodeProviderState(part.textSignature, 'text', message.api)
+      const providerOptions = state(part.textSignature, 'text')
       if (part.text || providerOptions)
         content.push({
           type: 'text',
@@ -118,6 +92,7 @@ function assistantMessage(
           ...(providerOptions ? { providerOptions } : {}),
         })
     } else if (part.type === 'thinking') {
+      if (!keepState) continue
       const providerOptions = decodeProviderState(
         part.thinkingSignature,
         'reasoning',
@@ -126,13 +101,15 @@ function assistantMessage(
           redacted: part.redacted === true,
         },
       )
-      if (providerOptions?.[profile.namespace])
+      if (providerOptions && Object.keys(providerOptions).length > 0)
         content.push({ type: 'reasoning', text: part.thinking, providerOptions })
+      else if (profile.compatible && part.thinking.trim())
+        content.push({ type: 'reasoning', text: part.thinking })
     } else {
-      const providerOptions = decodeProviderState(part.thoughtSignature, 'tool-call', message.api)
+      const providerOptions = state(part.thoughtSignature, 'tool-call')
       content.push({
         type: 'tool-call',
-        toolCallId: part.id,
+        toolCallId: callId(part.id),
         toolName: part.name,
         input: part.arguments ?? {},
         ...(providerOptions ? { providerOptions } : {}),
@@ -142,43 +119,65 @@ function assistantMessage(
   return content.length > 0 ? { role: 'assistant', content } : undefined
 }
 
-function withCache(message: LanguageModelV4Message): LanguageModelV4Message {
+function withCache(
+  message: LanguageModelV4Message,
+  points: WireProfile['cachePoints'],
+): LanguageModelV4Message {
   return {
     ...message,
-    providerOptions: { ...message.providerOptions, anthropic: EPHEMERAL },
+    providerOptions: { ...message.providerOptions, ...CACHE_POINT[points ?? 'anthropic'] },
   } as LanguageModelV4Message
 }
 
+/**
+ * The conversation as the SDK's prompt. `origin` is the model this request goes to; provider
+ * state from any other is left out.
+ */
 export function buildPrompt(
   request: Pick<ModelTurnRequest, 'systemPrompt' | 'messages'>,
   profile: WireProfile,
+  origin?: AgentMessageOrigin,
 ) {
+  const images = profile.images !== false
+  const shape: ToolOutputShape = { images, textOnly: profile.compatible === true }
+  const callId = toolCallIdMapper(profile.toolCallIds)
   const prompt: LanguageModelV4Message[] = [{ role: 'system', content: request.systemPrompt }]
   let anchor = -1
   for (const message of request.messages) {
-    let wire: LanguageModelV4Message | undefined
-    if (message.role === 'user') wire = { role: 'user', content: userParts(message.content) }
-    else if (message.role === 'assistant') wire = assistantMessage(message, profile)
-    else
-      wire = {
+    const wire: LanguageModelV4Message[] = []
+    if (message.role === 'user') {
+      wire.push({ role: 'user', content: userParts(message.content, images) })
+    } else if (message.role === 'assistant') {
+      const assistant = assistantMessage(message, profile, origin, callId)
+      if (assistant) wire.push(assistant)
+    } else {
+      const follow: LanguageModelV4FilePart[] = []
+      wire.push({
         role: 'tool',
-        content: message.results.map((result) => ({
-          type: 'tool-result' as const,
-          toolCallId: result.toolCallId,
-          toolName: result.toolName,
-          output: toolOutput(result),
-        })),
-      }
-    if (!wire) continue
-    if (message.cacheAnchor) anchor = prompt.length
-    prompt.push(wire)
+        content: message.results.map((result) => {
+          const shaped = toolOutput(result, shape)
+          follow.push(...shaped.follow)
+          return {
+            type: 'tool-result' as const,
+            toolCallId: callId(result.toolCallId),
+            toolName: result.toolName,
+            output: shaped.output,
+          }
+        }),
+      })
+      if (follow.length > 0) wire.push(attachedFromTools(follow))
+    }
+    if (wire.length === 0) continue
+    if (message.cacheAnchor) anchor = prompt.length + wire.length - 1
+    prompt.push(...wire)
   }
   if (profile.cacheBreakpoints) {
     // The system prompt (and the tools before it), the end of the history rebuilt byte for byte
     // next run, and the newest message: the three prefixes worth reading back.
-    prompt[0] = withCache(prompt[0]!)
-    if (anchor > 0) prompt[anchor] = withCache(prompt[anchor]!)
-    if (prompt.length > 1) prompt[prompt.length - 1] = withCache(prompt[prompt.length - 1]!)
+    const points = profile.cachePoints
+    prompt[0] = withCache(prompt[0]!, points)
+    if (anchor > 0) prompt[anchor] = withCache(prompt[anchor]!, points)
+    if (prompt.length > 1) prompt[prompt.length - 1] = withCache(prompt[prompt.length - 1]!, points)
   }
   return prompt
 }
@@ -187,13 +186,14 @@ export function buildCallOptions(
   request: ModelTurnRequest,
   profile: WireProfile,
   context: RequestContext,
+  origin?: AgentMessageOrigin,
 ): LanguageModelV4CallOptions {
   const extra = profile.requestOptions?.(context)
   const providerOptions: SharedV4ProviderOptions | undefined = extra
     ? ({ [profile.namespace]: extra } as SharedV4ProviderOptions)
     : undefined
   return {
-    prompt: buildPrompt(request, profile),
+    prompt: buildPrompt(request, profile, origin),
     ...(request.tools.length > 0
       ? {
           tools: request.tools.map((tool) => ({

@@ -6,7 +6,7 @@
  * Continue, it shows only while nobody is working on the conversation.
  */
 import { memo } from 'react'
-import { Play } from 'lucide-react'
+import { Play, TriangleAlert } from 'lucide-react'
 import { WorkbenchNoticeBar } from '@localixai/kit/workbench-notice-bar'
 
 import { usePlanOwnerId } from '../../model/plans'
@@ -17,6 +17,9 @@ import {
   useResumePoints,
 } from '../../model/resume'
 import { ContinueButton } from './ContinueButton'
+
+/** The conversation's last reply, cut short (`chat/turn-resume.ts` on the server). */
+const TURN_KIND = 'turn'
 
 export const ResumeStrip = memo(function ResumeStrip({ sessionId }: { sessionId: string | null }) {
   // The ROOT owns the work, as it owns the plans; the same resolution serves both.
@@ -34,10 +37,18 @@ export const ResumeStrip = memo(function ResumeStrip({ sessionId }: { sessionId:
           key={point.key}
           role="region"
           aria-label="Unfinished work"
-          tone="info"
-          icon={<Play className="size-3.5" />}
-          title={`${point.title} paused`}
-          description={point.detail ?? undefined}
+          // A reply that did not finish names itself ("Reply interrupted"); other work is paused.
+          tone={point.kind === TURN_KIND ? 'warning' : 'info'}
+          icon={
+            point.kind === TURN_KIND ? (
+              <TriangleAlert className="size-3.5" />
+            ) : (
+              <Play className="size-3.5" />
+            )
+          }
+          title={point.kind === TURN_KIND ? point.title : `${point.title} paused`}
+          // Truncated to the row; the whole line on hover.
+          description={point.detail ? <span title={point.detail}>{point.detail}</span> : undefined}
           actionsLabel="Unfinished work actions"
           actions={
             <ContinueButton

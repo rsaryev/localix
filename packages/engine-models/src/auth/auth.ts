@@ -1,9 +1,9 @@
 /**
  * SIGN-IN AND ACCESS: the engine's `AgentRuntimeAuth`, and the credential a request goes out with.
  *
- * A request uses the credential the host stored for the connection. An OAuth token close to its
- * expiry is refreshed inside the store's serialized `modify`, so two runs refreshing at once never
- * lose the newer refresh token; without a store, the run's own snapshot is refreshed in memory.
+ * A request uses the credential the host stored for the connection. An OAuth credential is kept
+ * fresh for the whole run (`oauth-access`); without a store, the run's own snapshot is refreshed
+ * in memory.
  */
 import type {
   AgentRuntimeAuth,
@@ -12,7 +12,6 @@ import type {
   RuntimeAuthType,
   RuntimeCredential,
   RuntimeCredentialStore,
-  RuntimeOAuthCredential,
 } from '@localixai/agent/runtime'
 
 import type { CatalogEntry } from '../catalog/catalog'
@@ -23,6 +22,7 @@ import { openAIChatGPTFlow } from './flows/openai-chatgpt'
 import { openAICodexFlow } from './flows/openai-codex'
 import { openRouterFlow } from './flows/openrouter'
 import type { OAuthFlow } from './flows/types'
+import { freshOAuth, refreshingAccess } from './oauth-access'
 
 const FLOWS: Readonly<Record<OAuthLogin['flow'], OAuthFlow>> = {
   'openai-chatgpt': openAIChatGPTFlow,
@@ -30,9 +30,6 @@ const FLOWS: Readonly<Record<OAuthLogin['flow'], OAuthFlow>> = {
   openrouter: openRouterFlow,
   'github-copilot': gitHubCopilotFlow,
 }
-
-/** Refresh a token this long before it lapses. */
-const REFRESH_MARGIN_MS = 60_000
 
 function flowFor(providerId: string): OAuthFlow | undefined {
   const login = OAUTH_LOGINS[providerId]
@@ -88,27 +85,6 @@ export function createAuth(options: AuthOptions): AgentRuntimeAuth {
   }
 }
 
-async function freshOAuth(
-  providerId: string,
-  snapshot: RuntimeOAuthCredential,
-  flow: OAuthFlow,
-  store: RuntimeCredentialStore | undefined,
-  signal: AbortSignal,
-): Promise<RuntimeOAuthCredential> {
-  const stale = (credential: RuntimeOAuthCredential) =>
-    credential.expiresAt - Date.now() < REFRESH_MARGIN_MS
-  if (!store) return stale(snapshot) ? flow.refresh(snapshot, signal) : snapshot
-  const current = await store.read(providerId)
-  const stored = current?.type === 'oauth' ? current : snapshot
-  if (!stale(stored)) return stored
-  const refreshed = await store.modify(providerId, async (latest) => {
-    const base = latest?.type === 'oauth' ? latest : stored
-    // Another run may have refreshed while this one waited for the lock.
-    return stale(base) ? flow.refresh(base, signal) : undefined
-  })
-  return refreshed?.type === 'oauth' ? refreshed : stored
-}
-
 /** How a request for `entry` reaches its provider with the run's credential. */
 export async function accessFor(
   entry: CatalogEntry,
@@ -128,9 +104,12 @@ export async function accessFor(
   const flow = flowFor(entry.provider.id)
   if (!flow)
     throw new Error(`${entry.provider.name} has no OAuth sign-in; reconnect it with an API key`)
-  const fresh = await freshOAuth(entry.provider.id, credential, flow, options.store, options.signal)
+  const providerId = entry.provider.id
+  const fresh = await freshOAuth(providerId, credential, flow, options.store)
+  const request = options.sessionId ? { sessionId: options.sessionId } : {}
   return {
-    access: flow.access(fresh, options.sessionId ? { sessionId: options.sessionId } : {}),
-    subscription: OAUTH_LOGINS[entry.provider.id]?.subscription === true,
+    // Checked again before every request: a long run outlives a short-lived token.
+    access: refreshingAccess(providerId, fresh, flow, options.store, request),
+    subscription: OAUTH_LOGINS[providerId]?.subscription ?? false,
   }
 }

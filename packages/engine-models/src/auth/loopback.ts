@@ -92,7 +92,16 @@ export async function startCallbackServer<T>(
   const server = createServer((request, response) => {
     void (async () => {
       const url = new URL(request.url ?? '/', 'http://localhost')
-      if (options.cancel && request.method === 'GET' && url.pathname === options.cancel.path) {
+      // A newer login (ours or the Codex CLI's) asks over plain HTTP. A browser's request — a web
+      // page loading this address to break a sign-in — names its origin, and is refused.
+      const fromBrowser =
+        request.headers.origin !== undefined || request.headers['sec-fetch-site'] !== undefined
+      if (
+        options.cancel &&
+        request.method === 'GET' &&
+        url.pathname === options.cancel.path &&
+        !fromBrowser
+      ) {
         response.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' })
         response.end('Cancelled', () => server.close())
         finish({ error: new Error(options.cancel.message) })
@@ -241,4 +250,24 @@ export function parsePastedAuthorization(input: string): {
     return { ...(code ? { code } : {}), ...(state ? { state } : {}) }
   }
   return { code: value }
+}
+
+/**
+ * Ask a stale login's listener on `port` to give way through its `/cancel` route, as the Codex CLI
+ * does; never throws. Plain `node:http`, so no browser headers go with it.
+ */
+export async function askToFreePort(port: number, path = '/cancel'): Promise<void> {
+  const http = await import('node:http')
+  await new Promise<void>((resolve) => {
+    const request = http.request(
+      { host: '127.0.0.1', port, path, method: 'GET', timeout: 1_000 },
+      (response) => {
+        response.resume()
+        response.once('end', resolve)
+      },
+    )
+    request.once('timeout', () => (request.destroy(), resolve()))
+    request.once('error', () => resolve())
+    request.end()
+  })
 }

@@ -51,7 +51,7 @@ export async function runLoop(input: LoopInput, run: RunContext): Promise<AgentR
     context: input.toolExecutionContext,
     beforeToolCall: input.beforeToolCall,
     afterToolCall: input.afterToolCall,
-    callToolFor: createNestedCalls(() => env, signal),
+    callToolFor: createNestedCalls(() => env, signal, emit, input.shouldDeferToolCalls),
   }
   const conversation: AgentMessage[] = [...input.messages]
   const boundary: SteeringBoundary = {}
@@ -77,11 +77,18 @@ export async function runLoop(input: LoopInput, run: RunContext): Promise<AgentR
     if (signal.aborted) resolve()
     else signal.addEventListener('abort', () => resolve(), { once: true })
   })
-  const steering = async (): Promise<AgentMessage[]> => {
-    if (!input.takeSteering) return []
+  const caughtUp = async (): Promise<boolean> => {
     await Promise.race([run.handled(), stopped])
-    if (signal.aborted) return []
+    return !signal.aborted
+  }
+  const steering = async (): Promise<AgentMessage[]> => {
+    if (!input.takeSteering || !(await caughtUp())) return []
     return (await input.takeSteering({ ...boundary })).filter(isConversational)
+  }
+  // Same ordering as steering: the protocol a host checks reads state its handlers build.
+  const followUps = async (): Promise<AgentMessage[]> => {
+    if (!input.takeFollowUp || !(await caughtUp())) return []
+    return (await input.takeFollowUp()).filter(isConversational)
   }
   const startTurn = async () => {
     await emit({ type: 'turn_start', turnIndex: turnsStarted })
@@ -103,7 +110,7 @@ export async function runLoop(input: LoopInput, run: RunContext): Promise<AgentR
           stoppedBetweenTurns = true
           break outer
         }
-        if (pending.length === 0) pending = await steering()
+        // Steering was read at the boundary that led here; nothing has run since.
         await startTurn()
       }
       for (const message of pending) await append(message)
@@ -178,13 +185,15 @@ export async function runLoop(input: LoopInput, run: RunContext): Promise<AgentR
       pending = await steering()
     }
     // The model is done. A host protocol may still require messages before the run may finish.
-    const followUps = ((await input.takeFollowUp?.()) ?? []).filter(isConversational)
-    if (followUps.length === 0) break
-    pending = followUps
+    const required = await followUps()
+    if (required.length === 0) break
+    pending = required
   }
 
   const stopReason = last?.message.stopReason
-  if (stoppedBetweenTurns) await end('aborted')
+  // A stop wins, wherever it landed: the event and the result agree that the run was stopped.
+  if (stoppedBetweenTurns || (signal.aborted && stopReason !== 'error' && stopReason !== 'aborted'))
+    await end('aborted')
   else if (stopReason !== 'error' && stopReason !== 'aborted') {
     await end(terminated ? 'tool_terminate' : budgetExhausted ? 'max_turns' : 'completed')
   }

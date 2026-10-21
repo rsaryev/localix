@@ -147,3 +147,26 @@ describe('a connection that fails runs the same way', () => {
     expect(await openRows(test)).toEqual([])
   })
 })
+
+describe('a connection whose account sign-in is gone', () => {
+  it('is one row per connection, and a connection reconnected or removed settles its row', async () => {
+    const test = await createTestJournal()
+    journals.push(test)
+    const conditions = createProviderConditions(test.journal)
+    await conditions.signInsRemoved(U, [
+      { connectionId: 'C1', label: 'Anthropic' },
+      { connectionId: 'C2', label: 'xAI' },
+    ])
+    await conditions.signInsRemoved(U, [
+      { connectionId: 'C1', label: 'Anthropic' },
+      { connectionId: 'C2', label: 'xAI' },
+    ])
+    expect((await openRows(test)).map((row) => row.title).sort()).toEqual([
+      'Anthropic needs an API key',
+      'xAI needs an API key',
+    ])
+    // C2 was removed (or reconnected with a key): the next report no longer names it.
+    await conditions.signInsRemoved(U, [{ connectionId: 'C1', label: 'Anthropic' }])
+    expect((await openRows(test)).map((row) => row.title)).toEqual(['Anthropic needs an API key'])
+  })
+})

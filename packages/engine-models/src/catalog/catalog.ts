@@ -9,7 +9,6 @@
  */
 import { createHash } from 'node:crypto'
 
-import type { CatalogProvider } from '@localixai/agent/catalog'
 import type {
   EngineCatalog,
   EngineCatalogRefreshOptions,
@@ -21,6 +20,7 @@ import type {
 import { LOCAL_PROVIDER_ID } from '@localixai/agent/runtime'
 
 import { OAUTH_LOGINS, wireOf, type OAuthLogin, type Route } from './families'
+import { listedProvider, localProvider } from './listing'
 import {
   DOCUMENT_SCHEMA,
   listedModel,
@@ -70,58 +70,14 @@ export interface ModelCatalogOptions {
 const digestOf = (document: CatalogDocument) =>
   createHash('sha256').update(JSON.stringify(document)).digest('hex')
 
-function localProvider(host: LocalProviderHost): ServedProvider {
-  const route: Route = { family: 'openai-compatible', baseURL: 'http://127.0.0.1/v1' }
-  const chat: Record<string, ServedModel> = {}
-  for (const model of host.models()) {
-    chat[model.id] = {
-      id: model.id,
-      name: model.name,
-      route,
-      input: model.vision ? ['text', 'image'] : ['text'],
-      output: ['text'],
-      attachment: model.vision,
-      tools: true,
-      reasons: model.reasoning,
-      reasoning: model.reasoning ? ['off', 'low', 'medium', 'high'] : [],
-      temperature: true,
-      contextWindow: model.contextWindow,
-      maxOutputTokens: model.maxTokens,
-      cost: { input: 0, output: 0 },
-    }
-  }
-  return { id: LOCAL_PROVIDER_ID, name: 'Local', env: [], settings: [], route, chat, decision: {} }
-}
-
-/** What the key field asks for where it is not a plain API key. */
-const KEY_LABEL: Partial<Record<Route['family'], string>> = {
-  bedrock: 'Bedrock API key',
-  vertex: 'Service account key (JSON) or Vertex API key',
-  'vertex-anthropic': 'Service account key (JSON)',
-}
-
-function listedProvider(provider: ServedProvider): CatalogProvider {
-  const keyLabel = KEY_LABEL[provider.route.family]
-  return {
-    id: provider.id,
-    name: provider.name,
-    modelCount: Object.keys(provider.chat).length,
-    authType: OAUTH_LOGINS[provider.id] && provider.env.length === 0 ? 'oauth-pkce' : 'api-key',
-    ...(provider.route.baseURL ? { apiBaseUrl: provider.route.baseURL } : {}),
-    ...(provider.doc ? { doc: provider.doc } : {}),
-    ...(provider.settings.length > 0
-      ? { settings: provider.settings.map((setting) => ({ ...setting })) }
-      : {}),
-    ...(keyLabel ? { keyLabel } : {}),
-  }
-}
-
 export function createModelCatalog(options: ModelCatalogOptions = {}) {
   let state: Omit<StoredEntry, 'schema'> | undefined
   let loading: Promise<void> | undefined
   let projection: EngineCatalog | undefined
-  /** A check in flight; a second caller waits for it instead of asking models.dev again. */
-  let checking: Promise<EngineCatalogRefreshResult> | undefined
+  /** Bumped by every change a projection in flight must not outlive. */
+  let generation = 0
+  /** The one network check in flight, shared by every caller and cut short by none of them. */
+  let fetching: Promise<EngineCatalogRefreshResult> | undefined
 
   const persist = async () => {
     if (state)
@@ -199,17 +155,12 @@ export function createModelCatalog(options: ModelCatalogOptions = {}) {
     }
   }
 
-  const check = async (
-    refresh: EngineCatalogRefreshOptions,
+  const fetchNow = async (
+    current: Omit<StoredEntry, 'schema'>,
   ): Promise<EngineCatalogRefreshResult> => {
-    const current = await ready()
-    if (!refresh.allowNetwork || (!refresh.force && Date.now() - current.fetchedAt < FRESH_MS)) {
-      return { changed: false, aborted: false, errors: [] }
-    }
     try {
       const outcome = await fetchModelsDev({
         ...(current.etag ? { etag: current.etag } : {}),
-        ...(refresh.signal ? { signal: refresh.signal } : {}),
         ...(options.fetch ? { fetch: options.fetch } : {}),
       })
       const fetchedAt = Date.now()
@@ -229,11 +180,13 @@ export function createModelCatalog(options: ModelCatalogOptions = {}) {
         digest,
         document: changed ? document : current.document,
       }
-      if (changed) projection = undefined
+      if (changed) {
+        generation++
+        projection = undefined
+      }
       await persist()
       return { changed, aborted: false, errors: [] }
     } catch (error) {
-      if (refresh.signal?.aborted) return { changed: false, aborted: true, errors: [] }
       return {
         changed: false,
         aborted: false,
@@ -247,20 +200,50 @@ export function createModelCatalog(options: ModelCatalogOptions = {}) {
     }
   }
 
+  /** The shared check, or an aborted result as soon as this caller's own signal fires. */
+  const awaitFor = (
+    shared: Promise<EngineCatalogRefreshResult>,
+    signal: AbortSignal | undefined,
+  ): Promise<EngineCatalogRefreshResult> => {
+    if (!signal) return shared
+    const aborted = { changed: false, aborted: true, errors: [] }
+    if (signal.aborted) return Promise.resolve(aborted)
+    return new Promise((resolve) => {
+      const onAbort = () => resolve(aborted)
+      signal.addEventListener('abort', onAbort, { once: true })
+      void shared.then(resolve).finally(() => signal.removeEventListener('abort', onAbort))
+    })
+  }
+
+  const check = async (
+    refresh: EngineCatalogRefreshOptions,
+  ): Promise<EngineCatalogRefreshResult> => {
+    const current = await ready()
+    if (!refresh.allowNetwork || (!refresh.force && Date.now() - current.fetchedAt < FRESH_MS)) {
+      return { changed: false, aborted: false, errors: [] }
+    }
+    fetching ??= fetchNow(current).finally(() => (fetching = undefined))
+    return awaitFor(fetching, refresh.signal)
+  }
+
   return {
     async list(): Promise<EngineCatalog> {
-      projection ??= await project()
-      return structuredClone(projection)
+      if (projection) return structuredClone(projection)
+      const started = generation
+      const projected = await project()
+      // An invalidation that landed while projecting wins: the next read projects again.
+      if (started === generation) projection = projected
+      return structuredClone(projected)
     },
 
     /** The host's own list changed (local models): the next `list()` projects again. */
     invalidate() {
+      generation++
       projection = undefined
     },
 
     refresh(refresh: EngineCatalogRefreshOptions): Promise<EngineCatalogRefreshResult> {
-      checking ??= check(refresh).finally(() => (checking = undefined))
-      return checking
+      return check(refresh)
     },
 
     /**

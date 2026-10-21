@@ -60,7 +60,7 @@ describe('continuing an approved plan', () => {
       sessionId: OWNER.sessionId,
       source: 'resume',
       // A double click while the first wake waits is the same request.
-      deliveryKey: 'resume-point:plan:p1',
+      deliveryKey: `resume-point:${OWNER.sessionId}:plan:p1`,
     })
     expect(wakes[0]!.content).toContain('continue implementing the approved plan v2')
     expect(wakes[0]!.content).toContain('1. Build it')

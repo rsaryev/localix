@@ -13,6 +13,8 @@ import { seedPlatform } from './platform-fixture.mjs'
 import { seedAnswerBoard } from './board-fixture.mjs'
 import { ensureDemoAgents } from './demo-agents.mjs'
 import { seedPartyRoutes } from './party-route.mjs'
+import { seedCodemodeCard } from './codemode-card.mjs'
+import { seedUnfinishedReply } from './unfinished-reply.mjs'
 import { emptyEntry } from '../../plugins/resume/shared/schema.ts'
 
 await verifyDemoRuntime()
@@ -203,6 +205,8 @@ await seedDeveloper(fixture)
 await seedPlatformViews(fixture)
 await seedGames(fixture)
 await seedExternal(fixture)
+await seedCodemodeCard(fixture)
+await seedUnfinishedReply(fixture)
 fixture.resumeId = resume.id
 fixture.connectionId = connection.id
 await fs.writeFile(fixtureFile, `${JSON.stringify(fixture, null, 2)}\n`)

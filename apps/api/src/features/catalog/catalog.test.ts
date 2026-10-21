@@ -127,7 +127,12 @@ describe('runtime catalog facade', () => {
     })
 
     const result = await service.getCatalog()
-    expect(result.providers.map(({ id }) => id)).toEqual(['anthropic', 'key-only', 'mixed', 'oauth'])
+    expect(result.providers.map(({ id }) => id)).toEqual([
+      'anthropic',
+      'key-only',
+      'mixed',
+      'oauth',
+    ])
     expect(result.models.map(({ id }) => id)).toEqual(['key-only/newer', 'oauth/older'])
   })
 

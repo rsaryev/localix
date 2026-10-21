@@ -17,6 +17,8 @@ function eventKey(notice: StoredSystemNotice): string {
     notice.kind === 'run_failed' ||
     notice.kind === 'run_interrupted' ||
     notice.kind === 'turn_limit' ||
+    // Continuing supersedes the ending it continues: the tail no longer says the turn failed.
+    notice.kind === 'run_continued' ||
     // A status, not a lasting fact: the next turn's outcome supersedes it.
     notice.kind === 'handoff_limit'
   ) {

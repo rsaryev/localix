@@ -1,3 +1,4 @@
 export * from './model-lookup'
 export * from './model-order'
+export * from './setting-names'
 export * from './types'

@@ -95,13 +95,15 @@ export function createLanguageModelFactory(options: ModelAccessOptions): Languag
           request.signal?.throwIfAborted()
           const signal = request.signal ?? new AbortController().signal
           const entry = await resolveEntry(options.catalog, ref)
+          // One id for the whole call: it keys the provider's prompt cache and the credential.
+          const sessionId = request.sessionId ?? `aux-${crypto.randomUUID()}`
           const bound = await bindModel(
             options,
             {
               model: ref,
               credential,
               ...(credentialStore ? { credentialStore } : {}),
-              sessionId: request.sessionId ?? `aux-${crypto.randomUUID()}`,
+              sessionId,
               signal,
             },
             entry,
@@ -114,7 +116,7 @@ export function createLanguageModelFactory(options: ModelAccessOptions): Languag
             entry.model.maxOutputTokens,
           )
           const turn = createModelSession(bound, {
-            sessionId: request.sessionId ?? 'aux',
+            sessionId,
             ...(options.retry ? { retry: options.retry } : {}),
           }).turn({
             systemPrompt: request.systemPrompt,

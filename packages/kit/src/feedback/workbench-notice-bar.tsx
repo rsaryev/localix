@@ -77,7 +77,16 @@ export function WorkbenchNoticeBar({
           stacked ? 'flex flex-col gap-1' : 'flex items-baseline gap-1.5',
         )}
       >
-        <span className="min-w-0 font-medium leading-snug text-text-soft">{title}</span>
+        {/* Inline, the title holds its line and the description gives way: a long description
+            used to squeeze the title into a narrow column wrapped over three lines. */}
+        <span
+          className={cn(
+            'font-medium leading-snug text-text-soft',
+            stacked ? 'min-w-0' : 'shrink-0 whitespace-nowrap',
+          )}
+        >
+          {title}
+        </span>
         {description != null && (
           <span className={cn('min-w-0 text-text-faint', stacked ? 'leading-relaxed' : 'truncate')}>
             {description}

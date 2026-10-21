@@ -526,6 +526,31 @@ describe('createPermissionGate', () => {
     expect(result?.block).toBe(true)
   })
 
+  test("the card is raised with the call's own signal, so a nested call's card can be withdrawn", async () => {
+    const call = new AbortController()
+    let cardSignal: AbortSignal | undefined
+    const gate = createPermissionGate({
+      rules: baseRules,
+      toolsByName,
+      root: ROOT,
+      requestConfirm: async ({ signal }) => {
+        cardSignal = signal
+        return false
+      },
+    })
+
+    await gate(
+      {
+        toolCallId: 'p1/1',
+        toolName: 'read',
+        input: { path: path.join(os.homedir(), '.ssh/id_ed25519'), cwd: ROOT },
+      },
+      call.signal,
+    )
+
+    expect(cardSignal).toBe(call.signal)
+  })
+
   test('an image read traversal is judged by its resolved destination and asks outside', async () => {
     let asked = 0
     const gate = createPermissionGate({

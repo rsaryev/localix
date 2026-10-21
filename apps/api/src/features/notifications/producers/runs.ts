@@ -59,6 +59,11 @@ export interface RunEnded {
 
 export interface RunNotifications {
   ended(run: RunEnded): void
+  /**
+   * Observe every run's end, after its transcript notice is written — what a feature that reads
+   * the conversation's last turn (`chat/turn-resume.ts`) re-reads on. Returns the unsubscribe.
+   */
+  onEnded(listener: (run: RunEnded) => void): () => void
   /** A regenerate was accepted: the failure it retries is no longer actionable. */
   retried(userId: string, sessionId: string): void
 }
@@ -80,12 +85,17 @@ const CHILD = {
   stopped: { topic: 'child.stopped', severity: 'info', title: 'Sub-agent stopped' },
 } as const
 
-function retryAction(session: SessionFacts, runId: string): InboxAction {
+/**
+ * Continue the reply that did not finish — the conversation's resume point (`chat/turn-resume.ts`):
+ * the agent keeps what it did and is told what happened, where a regenerate threw the partial
+ * reply away and ran the person's message again. The run id stays on the action for the client.
+ */
+export function continueAction(session: SessionFacts, runId: string): InboxAction {
   return {
-    id: 'retry',
-    label: 'Retry',
+    id: 'continue',
+    label: 'Continue',
     kind: 'invoke',
-    command: 'retry_run',
+    command: 'continue_run',
     target: { kind: 'session', sessionId: session.id, projectId: session.projectId },
     runId,
     available: true,
@@ -112,7 +122,7 @@ function failureActions(
   return [
     openChatAction(session),
     ...recoveries.map((recovery) =>
-      recovery === 'retry' ? retryAction(session, runId) : recoveryAction(recovery),
+      recovery === 'retry' ? continueAction(session, runId) : recoveryAction(recovery),
     ),
   ]
 }
@@ -124,6 +134,7 @@ export function createRunNotifications(deps: {
   provider?: Pick<ProviderConditions, 'runEnded'>
 }): RunNotifications {
   const { journal, lane } = deps
+  const endListeners = new Set<(run: RunEnded) => void>()
 
   /**
    * ONE ROW PER PROBLEM. A refused key or a spent quota fails every run on the connection, and
@@ -198,7 +209,18 @@ export function createRunNotifications(deps: {
   }
 
   return {
+    onEnded(listener) {
+      endListeners.add(listener)
+      return () => endListeners.delete(listener)
+    },
     ended(run) {
+      for (const listener of endListeners) {
+        try {
+          listener(run)
+        } catch {
+          // An observer is told; it never decides whether the run's own rows are written.
+        }
+      }
       // The CONNECTION's fact comes first and from every kind of run — a channel turn or a
       // sub-agent spends the same quota a chat does (`conditions/providers.ts`).
       if (deps.provider && run.connectionId !== undefined) {

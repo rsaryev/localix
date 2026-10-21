@@ -1,7 +1,12 @@
 import { recordClientFact } from './clientFacts'
 import { registerNotificationCommand } from './commandRegistry'
 import { sendProblemToAgent } from './agentHandoff'
-import { failedRunOf, retryFailedRun, type RetryFailedRunDeps } from './runLifecycle'
+import {
+  continueFailedRun,
+  failedRunOf,
+  retryFailedRun,
+  type RetryFailedRunDeps,
+} from './runLifecycle'
 import { useNotificationsStore } from './store'
 
 /**
@@ -35,6 +40,16 @@ export function startNotificationCommandHandlers(host: NotificationCommandHost =
       await retryFailedRun(run, {
         report: reportRetry,
         ...(host.regenerate ? { regenerate: host.regenerate } : {}),
+        settle: (reason) => useNotificationsStore.getState().settle(entry.id, reason),
+      })
+    }),
+    // Continue: the reply that did not finish is picked up where it stopped (rows written before
+    // Continue still carry `retry_run` above, and keep working).
+    registerNotificationCommand('continue_run', async ({ entry, action }) => {
+      const run = failedRunOf(entry, action)
+      if (!run) return
+      await continueFailedRun(run, {
+        report: reportRetry,
         settle: (reason) => useNotificationsStore.getState().settle(entry.id, reason),
       })
     }),

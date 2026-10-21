@@ -63,11 +63,61 @@ export function pendingToolNames(payload: unknown): string[] {
   const items = (payload as { items?: unknown } | null)?.items
   if (!Array.isArray(items)) return []
   return items.flatMap((item) => {
-    const record = item as { status?: unknown; toolName?: unknown; name?: unknown }
-    if (record.status !== 'running') return []
+    const record = item as {
+      status?: unknown
+      toolName?: unknown
+      name?: unknown
+      error?: { code?: unknown }
+    }
+    // Still running, or settled by the boot sweep below as cut off by the restart.
+    const cutOff = record.status === 'aborted' && record.error?.code === RESTART_CODE
+    if (record.status !== 'running' && !cutOff) return []
     const name = typeof record.toolName === 'string' ? record.toolName : record.name
     return typeof name === 'string' && name.length > 0 ? [name] : []
   })
+}
+
+/** The code a tool call cut off by a restart is settled with — what `pendingToolNames` reads. */
+const RESTART_CODE = 'PROCESS_RESTART'
+const CUT_OFF_TEXT =
+  'Interrupted: the server restarted while this was running. It may or may not have taken effect.'
+
+/**
+ * Settle the calls a restart left `running`: nothing will ever end them, and a card that kept
+ * spinning "Working…" read as work still in progress (opencode settles stale calls the same way).
+ * Each becomes aborted with the restart's code, so the reader sees it stopped and the Continue
+ * note can still name it as a call whose effect is unknown.
+ */
+async function settleCutOffCalls(
+  deps: AnnounceInterruptedRunsDeps,
+  run: { userId: string; sessionId: string },
+  reply: { id: string; payload: { items?: unknown } } | undefined,
+): Promise<void> {
+  const items = reply?.payload.items
+  if (!reply || !Array.isArray(items)) return
+  if (!items.some((item) => (item as { status?: unknown }).status === 'running')) return
+  const settled = items.map((item) =>
+    (item as { status?: unknown }).status === 'running'
+      ? {
+          ...item,
+          status: 'aborted',
+          errorText: CUT_OFF_TEXT,
+          error: {
+            kind: 'aborted',
+            code: RESTART_CODE,
+            message: CUT_OFF_TEXT,
+            userMessage: 'Interrupted by a restart',
+          },
+        }
+      : item,
+  )
+  await deps.repo.updateMessage(
+    run.userId,
+    run.sessionId,
+    reply.id,
+    { items: settled } as never,
+    deps.now(),
+  )
 }
 
 export interface AnnounceInterruptedRunsDeps {
@@ -96,7 +146,11 @@ export interface AnnounceInterruptedRunsDeps {
 async function interruptedReplyOf(
   deps: AnnounceInterruptedRunsDeps,
   run: { userId: string; sessionId: string; agentId: string },
-): Promise<{ pending: string[]; handle?: string }> {
+): Promise<{
+  pending: string[]
+  handle?: string
+  reply?: { id: string; payload: { items?: unknown } }
+}> {
   try {
     const author = `agent:${run.agentId}`
     const messages = await deps.repo.listMessages(run.userId, run.sessionId)
@@ -107,6 +161,7 @@ async function interruptedReplyOf(
     return {
       pending: own ? pendingToolNames(own.payload) : [],
       ...(shared && handle ? { handle } : {}),
+      ...(own ? { reply: { id: own.id, payload: own.payload } } : {}),
     }
   } catch {
     return { pending: [] }
@@ -123,7 +178,13 @@ export async function announceInterruptedRuns(
       // Was a side-effecting call in flight? The answer changes the advice, so it is read
       // rather than assumed. A failure to read it degrades to the plain notice: an
       // interruption must always be announced, and a less specific warning beats silence.
-      const { pending, handle } = await interruptedReplyOf(deps, { userId, sessionId, agentId })
+      const { pending, handle, reply } = await interruptedReplyOf(deps, {
+        userId,
+        sessionId,
+        agentId,
+      })
+      // Best effort: the announcement matters more than the card's spinner.
+      await settleCutOffCalls(deps, { userId, sessionId }, reply).catch(() => undefined)
       const base =
         pending.length > 0 ? interruptedWithPendingToolNotice(pending) : RUN_INTERRUPTED_NOTICE
       // Named when others spoke too: "this reply" has to say whose.

@@ -16,6 +16,8 @@ import { observeMcpOAuthSecrets } from '../features/mcp/oauth/runtime'
 import { mcpClientManager } from '../features/mcp/client-manager'
 import { createMcpConditions } from '../features/notifications/conditions/mcp'
 import { createProviderConditions } from '../features/notifications/conditions/providers'
+import { catalogSettingNames } from '../features/provider-connections/connection-settings'
+import { removedSignInsReporter } from '../features/provider-connections/removed-sign-ins'
 import {
   createSecretsStore,
   defaultLegacySecretsDir,
@@ -244,9 +246,21 @@ export async function createInfraPhase(
     onCredentialRefresh: (...args) => providerConditions.credentialRefreshed(...args),
     createAuthRuntime: (...args) => engine.createAuth(...args),
     credentialVault: secretsStore,
-    // A provider connected or removed changes what the catalog lists from it (embedding models).
-    onChanged: () => catalogService.invalidate(),
+    // A connection change moves what the catalog lists (embedding models) and what sign-ins broke.
+    onChanged: () => (catalogService.invalidate(), reportSignIns()),
+    settingNamesFor: catalogSettingNames(catalogService),
   })
+  // OAuth connections no sign-in serves any more, in the Event Center from boot on.
+  const reportSignIns = removedSignInsReporter(
+    {
+      connections: providerConnectionsService,
+      catalog: catalogService,
+      conditions: providerConditions,
+    },
+    env.LOCALIX_DEFAULT_USER_ID,
+    (msg) => logger.warn({ event: 'provider.sign_in_check_failed', msg }),
+  )
+  reportSignIns()
   // Filesystem media store, rooted beside the db (`~/.localix/media/`). Uploaded
   // media bytes live here as content-addressed files, served by id over
   // /rpc/media/:id — keeping the heavy base64 out of the message-payload db.

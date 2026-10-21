@@ -23,6 +23,14 @@ export const ExternalAnchor = forwardRef<HTMLAnchorElement, ExternalAnchorProps>
   ({ href, newTab = true, systemBrowser = false, onClick, onAuxClick, ...props }, ref) => {
     const open = () => platformCapabilities().external.open(href, systemBrowser)
     /**
+     * NO `target="_blank"` IN THE DESKTOP SHELL. Stopping propagation is not enough there: a link
+     * inside a portal (the model picker, every dialog) sits in a container mounted on `body`, so
+     * React's listener and the shell shim's share that node, and the shim, registered first,
+     * runs first — the click raised "shell.open not allowed" and opened nothing. The shim and the
+     * opener's equivalent only act on `target="_blank"`, and this anchor opens every link itself.
+     */
+    const newTabTarget = newTab && !isDesktopRuntime()
+    /**
      * STOPS PROPAGATION as well as the default.
      *
      * `tauri-plugin-shell` injects a click listener on `document.body` that fires
@@ -36,14 +44,6 @@ export const ExternalAnchor = forwardRef<HTMLAnchorElement, ExternalAnchorProps>
      * body, so not letting the event travel further is what keeps that shim out
      * of a click this component has fully handled.
      */
-    /**
-     * NO `target="_blank"` IN THE DESKTOP SHELL. Stopping propagation is not enough there: a link
-     * inside a portal (the model picker, every dialog) sits in a container mounted on `body`, so
-     * React's listener and the shell shim's share that node, and the shim, registered first,
-     * runs first — the click raised "shell.open not allowed" and opened nothing. The shim and the
-     * opener's equivalent only act on `target="_blank"`, and this anchor opens every link itself.
-     */
-    const newTabTarget = newTab && !isDesktopRuntime()
     const handled = (event: MouseEvent<HTMLAnchorElement>) => {
       event.preventDefault()
       event.stopPropagation()

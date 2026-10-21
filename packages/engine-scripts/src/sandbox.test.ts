@@ -30,14 +30,27 @@ const run = (
 
 describe('the script sandbox', () => {
   test('runs independent calls in parallel and returns only what the script outputs', async () => {
-    const started = performance.now()
-    const result = await run(`
+    // Overlap, not wall time: starting the worker is no part of what this pins.
+    const events: string[] = []
+    const tracked: ScriptTool = {
+      ...read,
+      execute: async (input, signal) => {
+        events.push('start')
+        const value = await read.execute(input, signal)
+        events.push('end')
+        return value
+      },
+    }
+    const result = await run(
+      `
       const [a, b] = await Promise.allSettled([tools.read({ path: 'a.ts' }), tools.read({ path: 'b.ts' })])
       text(a.value)
       console.log('lines', { n: 2 })
       return b.value.length
-    `)
-    expect(performance.now() - started).toBeLessThan(290)
+    `,
+      [tracked],
+    )
+    expect(events).toEqual(['start', 'start', 'end', 'end'])
     expect(result).toEqual({
       ok: true,
       value: 'contents of b.ts'.length,
@@ -101,9 +114,15 @@ describe('the script sandbox', () => {
 
     const controller = new AbortController()
     let callSignal: AbortSignal | undefined
+    let called!: () => void
+    const inCall = new Promise<void>((resolve) => (called = resolve))
     const slow: ScriptTool = {
       ...read,
-      execute: (_input, signal) => ((callSignal = signal), sleep(5_000)),
+      execute: async (_input, signal) => {
+        callSignal = signal
+        called()
+        await sleep(5_000)
+      },
     }
     const pending = run(
       `await tools.read({ path: 'x' }); return 1`,
@@ -111,7 +130,8 @@ describe('the script sandbox', () => {
       10_000,
       controller.signal,
     )
-    await sleep(100)
+    // Stop once the call is under way, however long the worker took to start.
+    await inCall
     controller.abort()
     expect(await pending).toMatchObject({
       ok: false,

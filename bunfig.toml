@@ -9,11 +9,7 @@ preload = [
   "./packages/kit/test-preload.ts",
   "./scripts/test-globals-guard.ts",
 ]
-# `bun test <filter>` matches a path SUBSTRING, and `vendor/pi/packages/*` is a real
-# workspace — so `bun test packages/agent` silently also ran
-# `vendor/pi/packages/agent/test`, whose upstream suites fail in this environment
-# (temp dirs, Buffer surrogate semantics, uuidv7 monotonicity). Those never run in CI:
-# the vendored package declares no `test` script, so `turbo test` skips it. The only
-# thing they produced was a misread of our own suite as red. Vendored code is upstream's
-# to test; ours is what a local run should report on.
+# Vendored code is upstream's to test; ours is what a local run should report on. `bun test
+# <filter>` matches a path SUBSTRING, so without this a filter could also pick up a vendored
+# package's own suites.
 pathIgnorePatterns = ["**/vendor/**"]

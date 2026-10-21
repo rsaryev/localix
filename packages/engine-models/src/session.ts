@@ -26,8 +26,18 @@ import {
   type RetryPolicy,
 } from './retry'
 import { priceUsage } from './usage'
+import { PartialUsage } from './wire/partial-usage'
+import {
+  ContentFilterError,
+  NAMED_ENDINGS,
+  ProviderFinishError,
+  ProviderPrematureCloseError,
+  readWithDeadline,
+} from './wire/endings'
 import { buildCallOptions, type WireProfile } from './wire/prompt'
 import { ResponseAssembler } from './wire/stream'
+
+export { StreamIdleTimeoutError } from './wire/endings'
 
 /** A provider model resolved for one run, with everything a turn needs to know about it. */
 export interface BoundModel {
@@ -54,18 +64,6 @@ export interface SessionOptions {
   idleMs?: number
   retry?: RetryPolicy
   silence?: SilenceDeadline
-}
-
-/** Named so the host's error classifier recognises it without knowing this package. */
-export class StreamIdleTimeoutError extends Error {
-  constructor(waitedMs: number, phase: 'first-event' | 'mid-stream') {
-    super(
-      phase === 'first-event'
-        ? `The provider accepted the request but sent nothing for ${Math.round(waitedMs / 1000)}s`
-        : `The provider stopped sending data ${Math.round(waitedMs / 1000)}s into the response`,
-    )
-    this.name = 'StreamIdleTimeoutError'
-  }
 }
 
 /** A small single-consumer queue: the producer never waits, the consumer awaits the next delta. */
@@ -98,24 +96,6 @@ function deltaQueue() {
   }
 }
 
-async function readWithDeadline<T>(
-  reader: ReadableStreamDefaultReader<T>,
-  timeoutMs: number,
-  phase: 'first-event' | 'mid-stream',
-): Promise<Awaited<ReturnType<ReadableStreamDefaultReader<T>['read']>>> {
-  let timer: ReturnType<typeof setTimeout> | undefined
-  try {
-    return await Promise.race([
-      reader.read(),
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new StreamIdleTimeoutError(timeoutMs, phase)), timeoutMs)
-      }),
-    ])
-  } finally {
-    clearTimeout(timer)
-  }
-}
-
 export function createModelSession(bound: BoundModel, options: SessionOptions): ModelSession {
   const retry = options.retry ?? DEFAULT_RETRY_POLICY
   const silence = options.silence ?? DEFAULT_SILENCE
@@ -125,7 +105,11 @@ export function createModelSession(bound: BoundModel, options: SessionOptions): 
     turn(request: ModelTurnRequest): ModelTurn {
       const queue = deltaQueue()
       let failure: Error | undefined
-      const message = run(request, queue.push, (error) => (failure = error)).finally(queue.close)
+      const message = run(
+        request,
+        (delta) => queue.push(delta),
+        (error) => (failure = error),
+      ).finally(() => queue.close())
       return {
         message,
         get failure() {
@@ -142,60 +126,95 @@ export function createModelSession(bound: BoundModel, options: SessionOptions): 
     fail: (error: Error) => void,
   ): Promise<AssistantMessage> {
     const { signal } = request
-    const call = buildCallOptions(request, bound.profile, {
-      sessionId: options.sessionId,
-      reasoningEffort: request.reasoningEffort,
-      idleMs: options.idleMs,
-    })
+    const call = buildCallOptions(
+      request,
+      bound.profile,
+      {
+        sessionId: options.sessionId,
+        reasoningEffort: request.reasoningEffort,
+        idleMs: options.idleMs,
+      },
+      bound.origin,
+    )
     const started = performance.now()
     let assembler = new ResponseAssembler(bound.origin)
+    let partial = new PartialUsage(call.prompt, call.tools)
     let firstPartAt: number | undefined
     let firstToolAt: number | undefined
     let readMs = 0
 
-    for (let attempt = 0; ; attempt++) {
-      assembler = new ResponseAssembler(bound.origin)
-      let error: unknown
+    /**
+     * One request. Its own abort reaches the provider's connection however the read ends — a
+     * silence deadline, an error part, the run's stop — so a stream given up on is never left
+     * open, generating and billing, until the server closes it.
+     */
+    async function attempt(): Promise<unknown> {
+      const ownAbort = new AbortController()
+      let completed = false
+      let reader: ReadableStreamDefaultReader<LanguageModelV4StreamPart> | undefined
       try {
-        const { stream } = await bound.model.doStream(call)
-        const reader = stream.getReader()
-        try {
-          while (true) {
-            const waitStarted = performance.now()
-            // oxlint-disable-next-line react-doctor/async-await-in-loop -- parts are read one at a time, each under the silence deadline
-            const next = await readWithDeadline(
-              reader,
-              firstPartAt === undefined ? silence.firstPartMs : silence.betweenPartsMs,
-              firstPartAt === undefined ? 'first-event' : 'mid-stream',
-            )
-            readMs += performance.now() - waitStarted
-            if (next.done) break
-            const part: LanguageModelV4StreamPart = next.value
-            if (firstPartAt === undefined && isContent(part)) firstPartAt = performance.now()
-            if (firstToolAt === undefined && part.type.startsWith('tool-'))
-              firstToolAt = performance.now()
-            for (const delta of assembler.push(part)) emit(delta)
-            if (part.type === 'error') break
+        const { stream } = await bound.model.doStream({
+          ...call,
+          // The provider's own events, for the usage of a response cut short before `finish`.
+          includeRawChunks: true,
+          abortSignal: AbortSignal.any([signal, ownAbort.signal]),
+        })
+        reader = stream.getReader()
+        while (true) {
+          const waitStarted = performance.now()
+          // oxlint-disable-next-line react-doctor/async-await-in-loop -- parts are read one at a time, each under the silence deadline
+          const next = await readWithDeadline(
+            reader,
+            firstPartAt === undefined ? silence.firstPartMs : silence.betweenPartsMs,
+            firstPartAt === undefined ? 'first-event' : 'mid-stream',
+            signal,
+          )
+          readMs += performance.now() - waitStarted
+          if (next.done) {
+            completed = true
+            break
           }
-        } finally {
-          reader.releaseLock()
+          const part: LanguageModelV4StreamPart = next.value
+          if (firstPartAt === undefined && isContent(part)) firstPartAt = performance.now()
+          if (firstToolAt === undefined && part.type.startsWith('tool-'))
+            firstToolAt = performance.now()
+          partial.observe(part)
+          for (const delta of assembler.push(part)) emit(delta)
+          if (part.type === 'error') break
         }
-        error = assembler.error
+        return assembler.error
       } catch (thrown) {
-        error = thrown
+        return thrown
+      } finally {
+        if (!completed) {
+          ownAbort.abort()
+          reader?.cancel().catch(() => undefined)
+        }
+        reader?.releaseLock()
       }
+    }
+
+    for (let attemptIndex = 0; ; attemptIndex++) {
+      assembler = new ResponseAssembler(bound.origin)
+      partial = new PartialUsage(call.prompt, call.tools)
+      // oxlint-disable-next-line react-doctor/async-await-in-loop -- an attempt follows the one before it
+      const error = (await attempt()) ?? unfinished(assembler)
       if (signal.aborted) return settle(assembler, { aborted: true })
       if (error === undefined) break
       // Only a request that produced nothing may be sent again; a partial answer is final.
-      if (!assembler.hasContent && attempt < retry.maxRetries && isRetryable(error)) {
-        await sleep(retryDelayMs(error, attempt, retry), signal)
+      const delay =
+        !assembler.hasContent && attemptIndex < retry.maxRetries && isRetryable(error)
+          ? retryDelayMs(error, attemptIndex, retry)
+          : undefined
+      if (delay !== undefined) {
+        await sleep(delay, signal)
         if (signal.aborted) return settle(assembler, { aborted: true })
         continue
       }
       const described =
-        error instanceof Error && error.name === 'StreamIdleTimeoutError'
+        error instanceof Error && NAMED_ENDINGS.has(error.name)
           ? error
-          : describeFailure(error)
+          : describeFailure(error, bound.origin.provider ?? bound.ref.providerId)
       fail(described)
       return settle(assembler, { aborted: false, error: described })
     }
@@ -206,7 +225,9 @@ export function createModelSession(bound: BoundModel, options: SessionOptions): 
       ending: { aborted: boolean; error?: Error },
     ): AssistantMessage {
       const { message, usage, metadata } = source.settle(ending)
-      const priced = priceUsage(usage, {
+      // Without a `finish` the provider still billed what it read and wrote.
+      const counted = usage ?? partial.settle()
+      const priced = priceUsage(counted, {
         ...(bound.cost ? { cost: bound.cost } : {}),
         subscription: bound.subscription,
         ...(metadata ? { metadata } : {}),
@@ -214,7 +235,7 @@ export function createModelSession(bound: BoundModel, options: SessionOptions): 
       const end = performance.now()
       return {
         ...message,
-        ...(priced ? { usage: priced } : {}),
+        ...(priced ? { usage: usage ? priced : { ...priced, estimated: true } } : {}),
         ...(firstPartAt !== undefined
           ? {
               genTimings: {
@@ -229,6 +250,24 @@ export function createModelSession(bound: BoundModel, options: SessionOptions): 
   }
 }
 
+/** Parts that are bookkeeping or the response's ending, not the response itself. */
+const NOT_CONTENT: ReadonlySet<string> = new Set([
+  'stream-start',
+  'response-metadata',
+  'raw',
+  'error',
+  'finish',
+])
+
 function isContent(part: LanguageModelV4StreamPart): boolean {
-  return part.type !== 'stream-start' && part.type !== 'response-metadata' && part.type !== 'raw'
+  return !NOT_CONTENT.has(part.type)
+}
+
+/** A stream that ended cleanly but did not finish its response, as the failure it stands for. */
+function unfinished(assembler: ResponseAssembler): Error | undefined {
+  const reason = assembler.finishReason
+  if (!reason) return new ProviderPrematureCloseError()
+  if (reason.unified === 'content-filter') return new ContentFilterError()
+  if (reason.unified === 'error') return new ProviderFinishError(reason.raw)
+  return undefined
 }

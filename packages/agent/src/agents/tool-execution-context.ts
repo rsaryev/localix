@@ -87,7 +87,9 @@ export interface NestedToolCallOutcome {
 export interface AgentToolExecutionContext {
   /**
    * Run another of this run's tools on this tool's behalf, through the pipeline a call the model
-   * makes goes through: input validation, the permission gate and the host's before/after hooks.
+   * makes goes through: input validation, the permission gate and the host's before hooks. The
+   * result comes back raw: the host's after hooks (gate notes, externalized output, reminders)
+   * belong to the model-facing call, never to a script's input.
    * A tool that calls tools (`codemode`) must use this rather than call an implementation directly,
    * or its calls would skip every rule the person set.
    *

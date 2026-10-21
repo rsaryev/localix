@@ -43,6 +43,8 @@ const ICONS: Partial<Record<SystemNoticeKind, LucideIcon>> = {
   // A run that stopped on something transient — the same glyph, because the reader's
   // situation is the same one: an answer that is not finished and a decision to make.
   run_failed: TriangleAlert,
+  // The person continued a reply that did not finish: where the conversation picked up.
+  run_continued: Play,
   // The turns above were folded into the agent's checkpoint cards — folded, not lost.
   context_checkpoint: FoldVertical,
   // Ordinary lines in the server's own tone (muted): the plan's decisions are acted on in the
@@ -70,6 +72,18 @@ const TONE_CLASS: Record<SystemNoticeTone, string> = {
  * drawn the way the composer's mode control draws that mode — the one presentation map — and
  * a row stored before the mode was recorded keeps the generic look.
  */
+/**
+ * Endings of a reply that did not finish. In the transcript they are a quiet marker of WHERE it
+ * happened — a short label, the whole sentence on hover — and no control: the decision to continue
+ * is made above the composer (`ResumeStrip`), once, instead of in amber prose with a button in
+ * every place the conversation once stopped.
+ */
+const TURN_ENDING_LABELS: Partial<Record<SystemNoticeKind, string>> = {
+  run_interrupted: 'Reply interrupted',
+  run_failed: 'Reply did not finish',
+  turn_limit: 'Turn limit reached',
+}
+
 function noticeLook(notice: SystemNotice): { icon: LucideIcon; toneClass: string } {
   if (notice.kind === 'permission_mode_change' && notice.mode) {
     const { icon, tone } = PERMISSION_MODE_PRESENTATION[notice.mode]
@@ -130,12 +144,15 @@ export const SystemNoticeLine = memo(function SystemNoticeLine({
   onRetry?: () => void
 }) {
   const clock = messageClock(createdAt)
-  const text = systemMessageLabel(cleanSystemMessageText(notice.text), repeatCount)
+  const full = systemMessageLabel(cleanSystemMessageText(notice.text), repeatCount)
   const detail = notice.detail ? cleanSystemMessageText(notice.detail) : undefined
   const recoveries = notice.recovery ?? []
-  const retry = recoveries.includes('retry') && onRetry ? onRetry : undefined
+  const ending = TURN_ENDING_LABELS[notice.kind]
+  const text = ending ? systemMessageLabel(ending, repeatCount) : full
+  const retry = !ending && recoveries.includes('retry') && onRetry ? onRetry : undefined
   const links = recoveries.filter((recovery) => recovery !== 'retry')
-  const look = noticeLook(notice)
+  const look = ending ? { icon: TriangleAlert, toneClass: TONE_CLASS.neutral } : noticeLook(notice)
+  const tooltip = [ending ? full : text, detail].filter(Boolean).join('\n')
 
   return (
     <SystemLine
@@ -144,7 +161,7 @@ export const SystemNoticeLine = memo(function SystemNoticeLine({
       text={text}
       // The text is truncated to one line; expose the full message (plus any
       // secondary detail) on hover so a long hook `systemMessage` isn't lost.
-      title={detail ? `${text}\n${detail}` : text}
+      title={tooltip}
       // An actionable notice is the one place the clamp costs more than it saves: its
       // text says what to check BEFORE pressing the button beside it. A plan approval is the
       // other: it carries the person's own note, and a clamp would cut their words mid-sentence.

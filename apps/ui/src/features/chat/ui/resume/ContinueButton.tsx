@@ -26,7 +26,11 @@ export function ContinueButton({
       size="xs"
       recommended={!busy && !disabled}
       disabled={busy || disabled}
-      title={`Ask the agent to continue ${point.title}`}
+      title={
+        point.kind === 'turn'
+          ? 'Ask the agent to pick up where it stopped'
+          : `Ask the agent to continue ${point.title}`
+      }
       onClick={() => onContinue(point)}
     >
       <Play data-icon="inline-start" aria-hidden />

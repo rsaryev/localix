@@ -1,30 +1,26 @@
 /**
  * JavaScript evaluated inside the VM before the script: the script's whole world.
  *
- * It keeps the host bridge in a closure the script cannot reach and builds on it `tools`, `text`,
- * `image`, `console` and `exit`. Nothing else exists in the VM — no timers, network, modules or
- * file system — so a script can only compute and call its tools. It may still patch built-ins,
- * which can only corrupt what it reports about itself: the host decodes every message defensively
- * and fails the run on one that does not decode.
+ * It first freezes every built-in (`lockdown.ts`), so the helpers below and the script share
+ * intrinsics the script cannot patch. It keeps the host bridge in a closure the script cannot
+ * reach and builds on it `tools`, `text`, `image`, `console` and `exit`. Nothing else exists in the
+ * VM — no timers, network, modules or file system — so a script can only compute and call its
+ * tools. The checks here are for the script's sake (it learns of a limit where it prints); the host
+ * enforces every limit again on what it receives and never trusts a length computed in the VM.
  *
  * Evaluates to `(bridge, toolsJson) => { run, settle, stalled }`, where the bridge takes
  * `("call", id, name, argsJson)`, `("output", "text" | "image", data, mimeType)` and
  * `("done", ok, valueJsonOrErrorJson)`.
  */
-
-/**
- * Output one script may produce: characters (base64 image data included) and items. The host holds
- * it until the script ends, so a script printing in a loop must hit a wall rather than the host's
- * memory; the item limit catches a loop printing empty strings.
- */
-export const MAX_OUTPUT_CHARS = 4 * 1024 * 1024
-export const MAX_OUTPUT_ITEMS = 50_000
+import { MAX_OUTPUT_CHARS, MAX_OUTPUT_ITEMS } from './limits'
+import { LOCKDOWN_SOURCE } from './lockdown'
 
 const IMAGE_EXPECTS =
   'image() expects a base64 data: URL, an { image_url } object, or an image block { type: "image", data, mimeType }'
 
 export const PRELUDE_SOURCE = `(function (bridge, toolsJson) {
   "use strict";
+  ${LOCKDOWN_SOURCE}
   const stringify = JSON.stringify;
   const parse = JSON.parse;
   const then = Promise.prototype.then;

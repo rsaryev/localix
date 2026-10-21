@@ -6,6 +6,13 @@ Localix is in beta: versions before 1.0 may change behavior between releases.
 
 Changes land on `main`.
 
+### Removed
+
+- Sign-in for Anthropic (Claude Pro/Max), Kimi Coding, Meta, xAI and Radius. A connection signed in
+  to one of them stops working, and the Event Center says so from startup; remove it and add the
+  provider again with an API key. Sign in with ChatGPT, OpenAI Codex, OpenRouter and GitHub Copilot
+  remain.
+
 ## v0.1.0-beta.10 — draft prepared 2026-10-17
 
 ### Added

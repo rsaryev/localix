@@ -22,33 +22,16 @@ import type {
 import type { AgentMessageDelta, AgentMessageOrigin } from '@localixai/agent/agents'
 
 import { stopReasonOf, usageOf, type AssembledUsage } from './finish'
-import { parsePartialJson } from './partial-json'
-import { encodeProviderState } from './provider-state'
+import { encodeProviderState, mergeMetadata as merge } from './provider-state'
+import { parseToolInput, StreamingToolInput } from './tool-input'
 
 type Part = TextContent | ThinkingContent | ToolCall
 
 interface Slot {
   index: number
   metadata?: SharedV4ProviderMetadata
-  /** Raw tool input as it streamed, for a tool-call slot. */
-  input?: string
-}
-
-function merge(a: SharedV4ProviderMetadata | undefined, b: SharedV4ProviderMetadata | undefined) {
-  if (!a) return b
-  if (!b) return a
-  const merged: SharedV4ProviderMetadata = { ...a }
-  for (const [key, value] of Object.entries(b)) merged[key] = { ...a[key], ...value }
-  return merged
-}
-
-function parseInput(input: unknown): unknown {
-  if (typeof input !== 'string') return input ?? {}
-  try {
-    return JSON.parse(input)
-  } catch {
-    return parsePartialJson(input) ?? {}
-  }
+  /** The input as it streams, for a tool-call slot. */
+  input?: StreamingToolInput
 }
 
 export class ResponseAssembler {
@@ -66,7 +49,10 @@ export class ResponseAssembler {
   /** The provider's error part, when the stream reported one. */
   error: unknown
 
-  constructor(private readonly origin: AgentMessageOrigin) {}
+  constructor(
+    private readonly origin: AgentMessageOrigin,
+    private readonly now: () => number = () => performance.now(),
+  ) {}
 
   get hasContent(): boolean {
     return this.content.length > 0
@@ -90,6 +76,8 @@ export class ResponseAssembler {
       case 'text-delta': {
         const slot = this.slots.get(part.id) ?? this.open(part.id, { type: 'text', text: '' })
         ;(this.content[slot.index] as TextContent).text += part.delta
+        // Gemini signs text parts too (`thoughtSignature` on a delta); it must ride back.
+        slot.metadata = merge(slot.metadata, part.providerMetadata)
         return [
           { kind: 'text', phase: 'delta', contentIndex: slot.index, delta: part.delta, origin },
         ]
@@ -151,12 +139,14 @@ export class ResponseAssembler {
         ]
       }
       case 'tool-input-start': {
+        // A tool the provider runs itself is not the loop's to call.
+        if (part.providerExecuted) return []
         const slot = this.open(
           part.id,
           { type: 'tool_call', id: part.id, name: part.toolName, arguments: {} },
           part.providerMetadata,
         )
-        slot.input = ''
+        slot.input = new StreamingToolInput()
         return [
           {
             kind: 'tool_call',
@@ -172,11 +162,9 @@ export class ResponseAssembler {
       }
       case 'tool-input-delta': {
         const slot = this.slots.get(part.id)
-        if (!slot) return []
-        slot.input = (slot.input ?? '') + part.delta
+        if (!slot?.input) return []
         const call = this.content[slot.index] as ToolCall
-        // Keep the last input that parsed: a half-written literal must not blank the card.
-        const input = parsePartialJson(slot.input) ?? call.arguments
+        const input = slot.input.push(part.delta, this.now())
         call.arguments = input
         return [
           {
@@ -203,7 +191,7 @@ export class ResponseAssembler {
           })
         const call = this.content[slot.index] as ToolCall
         call.name = part.toolName
-        call.arguments = parseInput(part.input)
+        call.arguments = parseToolInput(part.input)
         const signature = encodeProviderState(merge(slot.metadata, part.providerMetadata))
         if (signature) call.thoughtSignature = signature
         return [
@@ -234,9 +222,29 @@ export class ResponseAssembler {
       case 'error':
         this.error = part.error
         return []
-      default:
+      // The input is final with `tool-call`. The rest is bookkeeping or content this loop does
+      // not carry: provider-run tools and results, approvals, sources, files, custom parts.
+      case 'tool-input-end':
+      case 'stream-start':
+      case 'raw':
+      case 'tool-result':
+      case 'tool-approval-request':
+      case 'source':
+      case 'file':
+      case 'reasoning-file':
+      case 'custom':
         return []
     }
+  }
+
+  /** Whether the stream reported a finish part (its absence is a connection cut short). */
+  get finished(): boolean {
+    return this.finish !== undefined
+  }
+
+  /** The finish reason, when the stream reported one. */
+  get finishReason(): LanguageModelV4FinishReason | undefined {
+    return this.finish?.reason
   }
 
   /** The settled message and its token counts. `stopReason` follows the stream's own ending. */

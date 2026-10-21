@@ -9,6 +9,7 @@ import type { RuntimeOAuthCredential } from '@localixai/agent/runtime'
 
 import { cancellableSleep, pollDeviceCode } from '../device-code'
 import {
+  askToFreePort,
   callbackOrPasted,
   generatePkce,
   parsePastedAuthorization,
@@ -33,10 +34,9 @@ const ACCOUNT_CLAIM = 'https://api.openai.com/auth'
 /** The ChatGPT account a token belongs to, which every Codex request names. */
 function accountIdOf(accessToken: string): string {
   try {
-    const payload = JSON.parse(atob(accessToken.split('.')[1] ?? '')) as Record<
-      string,
-      { chatgpt_account_id?: unknown }
-    >
+    const payload = JSON.parse(
+      Buffer.from(accessToken.split('.')[1] ?? '', 'base64url').toString('utf8'),
+    ) as Record<string, { chatgpt_account_id?: unknown }>
     const accountId = payload[ACCOUNT_CLAIM]?.chatgpt_account_id
     if (typeof accountId === 'string' && accountId) return accountId
   } catch {
@@ -45,10 +45,18 @@ function accountIdOf(accessToken: string): string {
   throw new Error('The ChatGPT token names no account')
 }
 
+/** Without a stated lifetime a token is taken to last an hour, as the Codex CLI does. */
+const DEFAULT_LIFETIME_SECONDS = 3_600
+
+/**
+ * One token request. A refresh may leave out a new refresh token (the old one stays valid) or the
+ * lifetime, as the Codex CLI accepts; only the access token is required.
+ */
 async function token(
   body: Record<string, string>,
   signal: AbortSignal,
   operation: string,
+  previous?: RuntimeOAuthCredential,
 ): Promise<RuntimeOAuthCredential> {
   const response = await signInFetch(TOKEN_URL, {
     method: 'POST',
@@ -57,19 +65,22 @@ async function token(
     signal,
   })
   const json = await tokenJson(response, 'OpenAI Codex', operation)
-  if (
-    typeof json.access_token !== 'string' ||
-    typeof json.refresh_token !== 'string' ||
-    typeof json.expires_in !== 'number'
-  ) {
+  const refreshToken =
+    typeof json.refresh_token === 'string' && json.refresh_token
+      ? json.refresh_token
+      : previous?.refreshToken
+  if (typeof json.access_token !== 'string' || !json.access_token || !refreshToken)
     throw new Error('OpenAI Codex sent an incomplete token response')
-  }
+  const lifetime =
+    typeof json.expires_in === 'number' && json.expires_in > 0
+      ? json.expires_in
+      : DEFAULT_LIFETIME_SECONDS
   return {
     type: 'oauth',
     accessToken: json.access_token,
-    refreshToken: json.refresh_token,
-    expiresAt: Date.now() + json.expires_in * 1_000,
-    extra: { accountId: accountIdOf(json.access_token) },
+    refreshToken,
+    expiresAt: Date.now() + lifetime * 1_000,
+    extra: { ...previous?.extra, accountId: accountIdOf(json.access_token) },
   }
 }
 
@@ -86,23 +97,6 @@ const exchange = (code: string, verifier: string, redirectUri: string, signal: A
     'exchange',
   )
 
-/** Ask a stale login's listener on `port` to stop; never throws. Plain `node:http`, not `fetch`. */
-async function cancelStale(port: number): Promise<void> {
-  const http = await import('node:http')
-  await new Promise<void>((resolve) => {
-    const request = http.request(
-      { host: '127.0.0.1', port, path: CANCEL_PATH, method: 'GET', timeout: 1_000 },
-      (response) => {
-        response.resume()
-        response.once('end', resolve)
-      },
-    )
-    request.once('timeout', () => (request.destroy(), resolve()))
-    request.once('error', () => resolve())
-    request.end()
-  })
-}
-
 async function listen(
   state: string,
   signal: AbortSignal,
@@ -116,7 +110,6 @@ async function listen(
           host: '127.0.0.1',
           port,
           path: CALLBACK_PATH,
-          redirectHost: 'localhost',
           cancel: {
             path: CANCEL_PATH,
             message: 'Login cancelled by a newer ChatGPT login attempt',
@@ -128,7 +121,7 @@ async function listen(
       } catch (error) {
         if ((error as NodeJS.ErrnoException)?.code !== 'EADDRINUSE') return undefined
         // oxlint-disable-next-line react-doctor/async-await-in-loop -- binding is retried in order on purpose
-        if (attempt === 0) await cancelStale(port)
+        if (attempt === 0) await askToFreePort(port, CANCEL_PATH)
         // oxlint-disable-next-line react-doctor/async-await-in-loop -- binding is retried in order on purpose
         await cancellableSleep(200, signal)
       }
@@ -143,7 +136,7 @@ async function browserLogin(
   const { interaction, signal, agentName } = context
   const state = randomToken(16)
   const callback = await listen(state, signal)
-  const redirectUri = callback?.redirectUri ?? `http://localhost:${PORTS[0]}${CALLBACK_PATH}`
+  const redirectUri = callback?.redirectUri ?? `http://127.0.0.1:${PORTS[0]}${CALLBACK_PATH}`
   const { verifier, challenge } = await generatePkce()
   const url = new URL(`${AUTH}/oauth/authorize`)
   url.search = new URLSearchParams({
@@ -271,6 +264,7 @@ export const openAICodexFlow: OAuthFlow = {
       { grant_type: 'refresh_token', refresh_token: credential.refreshToken, client_id: CLIENT_ID },
       signal,
       'refresh',
+      credential,
     ),
   access: (credential, request) => {
     const accountId = credential.extra?.accountId

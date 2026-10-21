@@ -75,7 +75,9 @@ export function createResumeRegistry(deps: ResumeRegistryDeps) {
         source: 'resume',
         // One wake per point while it waits in the queue: a double click is the same request.
         // No receipt — after that wake ran, a later Continue (after another stop) is a new one.
-        deliveryKey: `resume-point:${key}`,
+        // Scoped to the conversation: a queue row's key is unique across every session, and a
+        // key a producer reuses per conversation (`turn:last`) collided with another's row.
+        deliveryKey: `resume-point:${owner.sessionId}:${key}`,
       })
       return { wake: outcome.status, points: await list(owner) }
     },

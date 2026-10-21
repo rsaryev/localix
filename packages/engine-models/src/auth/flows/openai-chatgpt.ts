@@ -7,7 +7,14 @@
  */
 import type { RuntimeOAuthCredential } from '@localixai/agent/runtime'
 
-import { callbackOrPasted, generatePkce, randomToken, startCallbackServer } from '../loopback'
+import { cancellableSleep } from '../device-code'
+import {
+  askToFreePort,
+  callbackOrPasted,
+  generatePkce,
+  randomToken,
+  startCallbackServer,
+} from '../loopback'
 import { signInFetch, tokenJson, type OAuthFlow } from './types'
 
 const DYNAMIC_CLIENT_ID = 'dynamic_agent_client'
@@ -16,6 +23,7 @@ const TOKEN_URL = 'https://auth.openai.com/api/accounts/oauth/token'
 const RESOURCE = 'https://api.openai.com/v1'
 const CALLBACK_PORT = 1455
 const CALLBACK_PATH = '/auth/callback'
+const CANCEL_PATH = '/cancel'
 const REDIRECT_URI = `http://127.0.0.1:${CALLBACK_PORT}${CALLBACK_PATH}`
 const DIRECT_TOKEN_SCOPE = 'chatgpt.tokens.use.direct'
 const SCOPE = `openid profile email offline_access resource.invoke ${DIRECT_TOKEN_SCOPE}`
@@ -67,6 +75,39 @@ function fromRedirect(params: URLSearchParams, state: string): { code: string; c
   return { code, clientId }
 }
 
+/**
+ * The callback server on 1455, the port this flow's redirect is registered on. A Codex login
+ * waiting there (ours or the Codex CLI's) is asked to give way first, as the Codex flow does.
+ */
+async function listen(state: string, signal: AbortSignal) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      // oxlint-disable-next-line react-doctor/async-await-in-loop -- binding is retried in order on purpose
+      return await startCallbackServer({
+        providerName: 'ChatGPT',
+        host: '127.0.0.1',
+        port: CALLBACK_PORT,
+        path: CALLBACK_PATH,
+        cancel: { path: CANCEL_PATH, message: 'Login cancelled by a newer ChatGPT login attempt' },
+        state,
+        complete: async (params) => fromRedirect(params, state),
+        signal,
+      })
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException)?.code !== 'EADDRINUSE') throw error
+      if (attempt >= 10)
+        throw new Error(
+          `Port ${CALLBACK_PORT} is in use by another program. Close it and try again.`,
+          { cause: error },
+        )
+      // oxlint-disable-next-line react-doctor/async-await-in-loop -- binding is retried in order on purpose
+      if (attempt === 0) await askToFreePort(CALLBACK_PORT, CANCEL_PATH)
+      // oxlint-disable-next-line react-doctor/async-await-in-loop -- binding is retried in order on purpose
+      await cancellableSleep(200, signal)
+    }
+  }
+}
+
 export const openAIChatGPTFlow: OAuthFlow = {
   async login({ interaction, signal, agentName, getDeviceId }) {
     const deviceId = getDeviceId?.()
@@ -74,20 +115,7 @@ export const openAIChatGPTFlow: OAuthFlow = {
       throw new Error('Sign in with ChatGPT needs a device id (UUID) for this installation')
     const { verifier, challenge } = await generatePkce()
     const state = randomToken()
-    const callback = await startCallbackServer({
-      providerName: 'ChatGPT',
-      host: '127.0.0.1',
-      port: CALLBACK_PORT,
-      path: CALLBACK_PATH,
-      state,
-      complete: async (params) => fromRedirect(params, state),
-      signal,
-    }).catch((error: unknown) => {
-      if ((error as NodeJS.ErrnoException)?.code !== 'EADDRINUSE') throw error
-      throw new Error(
-        `Port ${CALLBACK_PORT} is in use, probably by an unfinished login or by the Codex CLI. Cancel that login and try again.`,
-      )
-    })
+    const callback = await listen(state, signal)
     try {
       const url = new URL(AUTHORIZE_URL)
       url.search = new URLSearchParams({

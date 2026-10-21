@@ -19,6 +19,7 @@ import type { CatalogEntry, ModelCatalog } from './catalog/catalog'
 import { languageModelFor, profileFor, type ProviderAccess } from './providers/connect'
 import type { RetryPolicy } from './retry'
 import { createModelSession, type BoundModel, type SilenceDeadline } from './session'
+import { wireTraits } from './wire/traits'
 
 /** A request the model cannot serve. Terminal: no retry makes it servable. */
 export class PreflightRejection extends Error {
@@ -29,22 +30,27 @@ export class PreflightRejection extends Error {
   }
 }
 
-function carriesImage(messages: readonly Message[]): boolean {
-  return messages.some(
-    (message) =>
-      'content' in message &&
-      Array.isArray(message.content) &&
-      message.content.some((part) => part.type === 'image'),
-  )
+/**
+ * The image the person is sending now: the newest user message's. An image further back in the
+ * conversation, or one a tool returned, is replaced by a placeholder for a model that cannot read
+ * it (`wire/media`), so switching to a text-only model never strands a conversation.
+ */
+function sendsImage(messages: readonly Message[]): boolean {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i]!
+    if (message.role !== 'user') continue
+    return Array.isArray(message.content) && message.content.some((part) => part.type === 'image')
+  }
+  return false
 }
 
-/** Refuse before any network call what the model declares it cannot read. */
+/** Refuse before any network call an image the person sends to a model that cannot read it. */
 export function assertServable(
   entry: CatalogEntry,
   ref: RuntimeModelRef,
   messages: readonly Message[],
 ): void {
-  if (!entry.model.input.includes('image') && carriesImage(messages)) {
+  if (!entry.model.input.includes('image') && sendsImage(messages)) {
     throw new PreflightRejection(
       `${ref.providerId}/${ref.modelId} accepts ${entry.model.input.join('/')} input only, and this request carries an image`,
     )
@@ -132,7 +138,7 @@ export async function bindModel(
   return {
     ref: input.model,
     model: await languageModelFor(entry, access),
-    profile: profileFor(entry),
+    profile: { ...profileFor(entry), ...wireTraits(entry) },
     origin: { api: entry.model.api, provider: entry.provider.id, model: entry.model.id },
     ...(entry.model.cost ? { cost: entry.model.cost } : {}),
     subscription,

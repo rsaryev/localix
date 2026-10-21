@@ -351,6 +351,25 @@ apply this child cascade. To end future [loop](loops.md) runs, cancel the loop s
 
 Cards on the chat's board keep their status; an assignment alone did not start work.
 
+## A reply that did not finish
+
+When a restart, a provider error or the turns-per-message limit cuts a reply short, the transcript
+keeps a short marker where it stopped (**Reply interrupted**, **Reply did not finish** or **Turn
+limit reached**; hover it for the full sentence). The decision sits above the composer: one row says
+what happened and offers **Continue** while nobody is working on the conversation.
+
+**Continue** keeps the partial reply. The agent receives a note only it reads, saying what happened
+and asking it to carry on without repeating completed work. After a restart that interrupted a
+running tool call, the note names the call and asks the agent to check the current state before it
+runs the call again, because the call may or may not have taken effect.
+
+The transcript shows **Continued after the interruption** (or after the error, or past the turn
+limit) where the conversation picked up. Anything said or run after the stop, including your next
+message, replaces the row. A failure that trying again cannot fix, such as a spent quota, offers its
+own recovery instead. To run your message again from scratch, use **Regenerate** on the reply.
+
+![A reply a restart cut off: a quiet marker in the transcript, Continue above the composer](../assets/screenshots/chat/unfinished-reply--2026-10-21.png)
+
 ## Source of truth
 
 - [Mention grammar](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/agent-mentions.ts)
@@ -358,6 +377,7 @@ Cards on the chat's board keep their status; an assignment alone did not start w
 - [Reference promotion](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/wake-queue/agent-turns.ts)
 - [Conversation strategies](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/conversation-strategy.ts)
 - [Durable execution queue](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/wake-queue.ts)
+- [Continuing a reply that did not finish](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/turn-resume.ts)
 - [Queue priority policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/queue-policy.ts)
 - [Agent turn tickets](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/agent-turn-ticket.ts)
 - [Conversation control](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/conversation-control.ts)

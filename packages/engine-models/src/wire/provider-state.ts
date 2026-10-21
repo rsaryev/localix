@@ -24,6 +24,18 @@ export function encodeProviderState(
   return Object.keys(kept).length > 0 ? `${PREFIX}${JSON.stringify(kept)}` : undefined
 }
 
+/** Metadata from a part's start, deltas and end, as one: later keys win within a provider. */
+export function mergeMetadata(
+  a: SharedV4ProviderMetadata | undefined,
+  b: SharedV4ProviderMetadata | undefined,
+): SharedV4ProviderMetadata | undefined {
+  if (!a) return b
+  if (!b) return a
+  const merged: SharedV4ProviderMetadata = { ...a }
+  for (const [key, value] of Object.entries(b)) merged[key] = { ...a[key], ...value }
+  return merged
+}
+
 /** The part a stored signature belongs to, which decides how an old one is read. */
 export type StatePart = 'text' | 'reasoning' | 'tool-call'
 

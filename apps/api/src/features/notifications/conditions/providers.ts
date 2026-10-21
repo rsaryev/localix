@@ -46,6 +46,9 @@ export interface ConnectionRunEnded {
   failure?: { rateLimited?: boolean; retryable?: boolean; authFailed?: boolean }
 }
 
+/** The subject of a connection whose account sign-in is gone: one row per connection. */
+const REMOVED_SIGN_IN = 'provider-sign-in-removed'
+
 export function createProviderConditions(
   journal: ConditionJournal,
   /** The connection's display name, when it can be looked up; the id otherwise. */
@@ -87,6 +90,32 @@ export function createProviderConditions(
           ),
         ],
       })
+    },
+    /**
+     * OAuth connections whose provider Localix no longer signs in to with an account (the sign-ins
+     * that left with the vendored runtime: Anthropic, Kimi Coding, Meta, xAI, Radius). Every run on
+     * one fails, and the run said so only after the person had already waited for it. Reported at
+     * boot and after every connection change with the WHOLE broken set: a connection reconnected,
+     * fixed or removed is swept, because nothing else would ever settle its row.
+     */
+    async signInsRemoved(
+      userId: string,
+      broken: readonly { connectionId: string; label: string }[],
+    ): Promise<void> {
+      for (const { connectionId, label } of broken)
+        conditions.raise(userId, {
+          subject: [REMOVED_SIGN_IN, connectionId],
+          problem: 'sign-in-removed',
+          severity: 'error',
+          title: `${label} needs an API key`,
+          body: 'Localix no longer signs in to this provider with an account. Runs on this connection fail until it is connected again with an API key.',
+          origin: { kind: 'application', label },
+          actions: [recoveryAction('open-settings:providers')],
+        })
+      const open = new Set(broken.map((entry) => entry.connectionId))
+      await conditions.sweep(userId, [REMOVED_SIGN_IN], ([connectionId]) =>
+        Boolean(connectionId && open.has(connectionId)),
+      )
     },
     credentialRefreshed(event: ProviderCredentialEvent): void {
       const subject = ['provider', event.connectionId]

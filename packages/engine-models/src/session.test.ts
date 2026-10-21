@@ -219,7 +219,7 @@ describe('a model session turn', () => {
 })
 
 describe('the request a turn sends', () => {
-  test('replays reasoning only to the provider that signed it, and caches the stable prefixes', async () => {
+  test('replays reasoning only to the model that signed it, and caches the stable prefixes', async () => {
     const { model, calls } = fakeModel([[finish()]])
     await createModelSession(bind(model), { sessionId: 's' }).turn(
       request({
@@ -227,16 +227,31 @@ describe('the request a turn sends', () => {
           { role: 'user', content: 'hi', timestamp: 0, cacheAnchor: true },
           {
             role: 'assistant',
-            api: 'anthropic-messages',
-            model: 'm',
+            api: 'openai-responses',
+            provider: 'openai',
+            model: 'gpt-5',
             timestamp: 0,
             content: [
-              { type: 'thinking', thinking: 'old', thinkingSignature: 'legacy-sig' },
               {
                 type: 'thinking',
                 thinking: 'foreign',
                 thinkingSignature: 'aisdk:{"openai":{"itemId":"rs_1"}}',
               },
+              {
+                type: 'text',
+                text: 'Earlier.',
+                textSignature: 'aisdk:{"openai":{"itemId":"m_1"}}',
+              },
+            ],
+          },
+          {
+            role: 'assistant',
+            api: 'anthropic-messages',
+            provider: 'fake',
+            model: 'fake-1',
+            timestamp: 0,
+            content: [
+              { type: 'thinking', thinking: 'old', thinkingSignature: 'legacy-sig' },
               { type: 'tool_call', id: 'c1', name: 'read', arguments: { path: 'a' } },
             ],
           },
@@ -265,7 +280,9 @@ describe('the request a turn sends', () => {
     expect(sent.tools).toEqual([
       { type: 'function', name: 'read', description: 'Read', inputSchema: { type: 'object' } },
     ])
-    const [system, user, assistant, tool] = sent.prompt
+    const [system, user, foreign, assistant, tool] = sent.prompt
+    // Another model's reasoning and item ids are not sent; its words are.
+    expect(foreign!.content).toEqual([{ type: 'text', text: 'Earlier.' }])
     expect(system).toMatchObject({
       role: 'system',
       providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } },

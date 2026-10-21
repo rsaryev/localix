@@ -53,12 +53,27 @@ function version(): string {
   }
 }
 
+/** The promise, or the signal's abort as soon as it fires — whichever settles first. */
+function untilAborted<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
+  if (signal.aborted) return Promise.reject(abortError(signal))
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => reject(abortError(signal))
+    signal.addEventListener('abort', onAbort, { once: true })
+    promise.then(resolve, reject).finally(() => signal.removeEventListener('abort', onAbort))
+  })
+}
+
+function abortError(signal: AbortSignal): Error {
+  return signal.reason instanceof Error ? signal.reason : new Error('Operation aborted')
+}
+
 /**
  * A session that opens on its first turn. `run()` must hand back a run at once, while opening a
  * session is asynchronous (an OAuth refresh, a local model's download); a failure to open becomes
- * the first turn's failure, keeping its own error for the host to classify.
+ * the first turn's failure, keeping its own error (and its message on the turn) for the host to
+ * classify. A stop ends the wait at once, even when the opening itself does not listen for it.
  */
-function lazySession(
+export function lazySession(
   input: AgentRuntimeRunInput,
   open: (signal: AbortSignal) => Promise<ModelSession>,
 ): ModelSession {
@@ -68,7 +83,10 @@ function lazySession(
     turn(request): ModelTurn {
       let failure: Error | undefined
       let inner: ModelTurn | undefined
-      const ready = (opening ??= open(request.signal)).then(
+      opening ??= open(request.signal)
+      // A rejection the race no longer waits for must not surface as unhandled.
+      opening.catch(() => undefined)
+      const ready = untilAborted(opening, request.signal).then(
         (session) => (inner = session.turn(request)),
         (error: unknown) => {
           failure = error instanceof Error ? error : new Error(String(error))
@@ -76,18 +94,20 @@ function lazySession(
         },
       )
       return {
-        message: ready.then(
-          (turn) =>
-            turn?.message ?? {
-              role: 'assistant' as const,
-              content: [],
-              provider: input.model.providerId,
-              model: input.model.modelId,
-              stopReason: request.signal.aborted ? ('aborted' as const) : ('error' as const),
-              errorMessage: failure?.message,
-              timestamp: Date.now(),
-            },
-        ),
+        message: ready.then((turn) => {
+          if (turn) return turn.message
+          const aborted = request.signal.aborted
+          return {
+            role: 'assistant' as const,
+            content: [],
+            provider: input.model.providerId,
+            model: input.model.modelId,
+            stopReason: aborted ? ('aborted' as const) : ('error' as const),
+            errorMessage:
+              failure?.message || (aborted ? 'Operation aborted' : 'The model could not be opened'),
+            timestamp: Date.now(),
+          }
+        }),
         get failure() {
           return inner?.failure ?? failure
         },

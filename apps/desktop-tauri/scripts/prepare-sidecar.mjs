@@ -30,7 +30,6 @@ import { execFileSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import {
   SCRIPT_WASM_FILE,
-  SCRIPT_WORKER_ENTRY,
   SCRIPT_WORKER_FILE,
 } from '../../../packages/engine-scripts/src/assets.ts'
 import {
@@ -203,9 +202,14 @@ if (!runtimeReady) {
   }
   // ── 1b. the script sandbox (`codemode`): its VM starts in a worker thread from a file beside the
   //        module that creates it, and reads the QuickJS binary from disk. server.js has neither
-  //        beside it, so both are staged here, where `bundledScriptSandboxOptions` finds them. ──
+  //        beside it, so both are staged here, where `bundledScriptSandboxOptions` finds them.
+  //        The worker is the package's `./worker` export, resolved from the engine that imports
+  //        the package — the same build server.js bundled the host side from, so the two always
+  //        speak the same protocol. ──
   const scriptWorker = await Bun.build({
-    entrypoints: [join(repo, 'packages', 'engine-scripts', SCRIPT_WORKER_ENTRY)],
+    entrypoints: [
+      Bun.resolveSync('@localixai/engine-scripts/worker', join(repo, 'packages', 'engine')),
+    ],
     target: 'bun',
     outdir: resources,
     naming: { entry: SCRIPT_WORKER_FILE },

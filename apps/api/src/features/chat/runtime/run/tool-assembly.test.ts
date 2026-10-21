@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import type { AgentTool } from '@localixai/agent/agents'
 import { validateToolRegistry } from '@localixai/agent/agents'
 import { z } from 'zod'
-import { claimSecondaryTools, indexToolPresentation } from './tool-assembly'
+import { claimSecondaryTools, indexToolPresentation, recordMutatingTools } from './tool-assembly'
 import {
   MAX_SESSION_ACTIVATED_TOOLS,
   mergeActivatedTools,
@@ -22,6 +22,17 @@ const tool = (name: string, description = name): AgentTool =>
     activeVerb: 'Testing',
     execute: async () => ({ content: '' }),
   }) satisfies AgentTool
+
+describe('recordMutatingTools', () => {
+  test('a declared writer and a tool that calls tools are stored at their start; a reader is not', () => {
+    const names = new Set<string>()
+    recordMutatingTools(
+      [{ ...tool('write'), mutates: true }, { ...tool('codemode'), mutates: false }, tool('read')],
+      names,
+    )
+    expect([...names]).toEqual(['write', 'codemode'])
+  })
+})
 
 describe('claimSecondaryTools', () => {
   test('keeps the canonical runtime owner when an MCP name collides', () => {

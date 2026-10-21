@@ -4,8 +4,9 @@
  * so nothing a script does — a spinning loop included — outlives it or reaches the next one.
  *
  * The first terminal event decides the run: the script's `done`, a crash, the deadline, the
- * caller's abort, or the worker dying. Calls still in flight are aborted then; later events are
- * ignored.
+ * caller's abort, the worker dying, or the script passing a limit the host counts itself
+ * (`budget.ts`). The run settles at once; calls still in flight are aborted, the worker is
+ * terminated in the background, and later events are ignored.
  */
 import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
@@ -22,6 +23,7 @@ import type {
 } from '@localixai/agent/runtime'
 
 import { SCRIPT_WASM_FILE, SCRIPT_WORKER_FILE } from './assets'
+import { createCallSlots, createRunBudget } from './budget'
 import { renderDeclarations, toIdentifier } from './declarations'
 import { isWorkerMessage, type HostMessage, type WorkerData, type WorkerMessage } from './protocol'
 
@@ -89,11 +91,15 @@ function scriptError(json: string): { message: string; stack?: string } {
   }
 }
 
+/** setTimeout fires at once past this; a longer deadline is no deadline in practice. */
+const MAX_TIMER_MS = 2_147_483_647
+
 export function createScriptSandbox(options: ScriptSandboxOptions = {}): ScriptSandbox {
-  const wasmPath =
-    options.wasmPath ?? createRequire(import.meta.url).resolve('quickjs-wasi/quickjs.wasm')
-  const workerUrl = options.workerUrl ?? defaultWorkerUrl()
   const memoryLimitBytes = options.memoryLimitBytes ?? DEFAULT_MEMORY_LIMIT
+  // Resolved on the first run, not here: a host missing the files fails codemode, not its boot.
+  const wasmPath = () =>
+    options.wasmPath ?? createRequire(import.meta.url).resolve('quickjs-wasi/quickjs.wasm')
+  const workerUrl = () => options.workerUrl ?? defaultWorkerUrl()
 
   return {
     declare: renderDeclarations,
@@ -101,6 +107,8 @@ export function createScriptSandbox(options: ScriptSandboxOptions = {}): ScriptS
       const output: ScriptOutputItem[] = []
       const calls = new Map<number, AbortController>()
       const tools = new Map(request.tools.map((tool) => [tool.name, tool]))
+      const budget = createRunBudget()
+      const slots = createCallSlots()
       const interrupt = new SharedArrayBuffer(4)
       let worker: Worker | undefined
       let finished = false
@@ -116,14 +124,16 @@ export function createScriptSandbox(options: ScriptSandboxOptions = {}): ScriptS
         request.signal?.removeEventListener('abort', onAbort)
         for (const controller of calls.values()) controller.abort()
         calls.clear()
+        slots.close()
         Atomics.store(new Int32Array(interrupt), 0, 1)
-        const settled: ScriptRunResult =
+        // Settled now: a VM inside a long native operation takes time to stop, and nothing it
+        // does any more can reach the result.
+        void worker?.terminate().catch(() => undefined)
+        resolve(
           'error' in outcome
             ? { ok: false, error: outcome.error, output }
-            : { ok: true, value: outcome.value, output }
-        void (worker?.terminate() ?? Promise.resolve())
-          .catch(() => undefined)
-          .then(() => resolve(settled))
+            : { ok: true, value: outcome.value, output },
+        )
       }
       const fail = (message: string) => finish({ error: { message } })
       const onAbort = () => {
@@ -134,10 +144,13 @@ export function createScriptSandbox(options: ScriptSandboxOptions = {}): ScriptS
             : 'The script was cancelled',
         )
       }
-      const timer = setTimeout(
-        () => fail(`The script timed out after ${request.timeoutMs} ms`),
-        request.timeoutMs,
-      )
+      const timer =
+        Number.isFinite(request.timeoutMs) && request.timeoutMs < MAX_TIMER_MS
+          ? setTimeout(
+              () => fail(`The script timed out after ${request.timeoutMs} ms`),
+              Math.max(0, request.timeoutMs),
+            )
+          : undefined
       if (request.signal?.aborted) onAbort()
       else request.signal?.addEventListener('abort', onAbort, { once: true })
 
@@ -147,6 +160,8 @@ export function createScriptSandbox(options: ScriptSandboxOptions = {}): ScriptS
       const call = async ({ id, name, args }: Extract<WorkerMessage, { type: 'call' }>) => {
         const controller = new AbortController()
         calls.set(id, controller)
+        await slots.acquire()
+        if (controller.signal.aborted) return
         let message: HostMessage
         try {
           const tool = tools.get(name)
@@ -163,6 +178,8 @@ export function createScriptSandbox(options: ScriptSandboxOptions = {}): ScriptS
           }
         } catch (error) {
           message = { type: 'result', id, ok: false, payload: messageOf(error) }
+        } finally {
+          slots.release()
         }
         if (calls.delete(id)) reply(message)
       }
@@ -172,20 +189,22 @@ export function createScriptSandbox(options: ScriptSandboxOptions = {}): ScriptS
           if (!isWorkerMessage(message)) return
           switch (message.type) {
             case 'output':
-              output.push(message.item)
+              output.push(budget.output(message.item))
               break
             case 'call':
+              budget.call(message.args)
               void call(message)
               break
             case 'done':
-              if (message.ok)
+              if (message.ok) {
+                budget.returnValue(message.value)
                 finish({
                   value:
                     message.value === undefined
                       ? undefined
                       : parseJson(message.value, 'return value'),
                 })
-              else finish({ error: scriptError(message.error) })
+              } else finish({ error: scriptError(message.error) })
               break
             case 'crash':
               fail(message.message)
@@ -197,7 +216,14 @@ export function createScriptSandbox(options: ScriptSandboxOptions = {}): ScriptS
       }
 
       if (!finished) {
-        loadWasm(wasmPath).then(
+        let paths: { wasm: string; worker: string | URL }
+        try {
+          paths = { wasm: wasmPath(), worker: workerUrl() }
+        } catch (error) {
+          fail(`The script sandbox could not find QuickJS: ${messageOf(error)}`)
+          return result
+        }
+        loadWasm(paths.wasm).then(
           (wasm) => {
             if (finished) return
             const data: WorkerData = {
@@ -211,7 +237,7 @@ export function createScriptSandbox(options: ScriptSandboxOptions = {}): ScriptS
               interrupt,
             }
             try {
-              worker = new Worker(workerUrl, { workerData: data })
+              worker = new Worker(paths.worker, { workerData: data })
             } catch (error) {
               fail(`The script sandbox did not start: ${messageOf(error)}`)
               return

@@ -62,7 +62,7 @@ export function parseToolArguments(input: {
     ok: false,
     message: `Validation failed for tool "${input.toolName}":\n${
       lines.join('\n') || '  - root: invalid input'
-    }\n\nReceived arguments:\n${JSON.stringify(input.raw, null, 2)}`,
+    }\n\nReceived arguments:\n${echoOf(input.raw)}`,
   }
 }
 
@@ -106,7 +106,27 @@ function describeIssue(issue: Issue): string[] {
           )
         : [`  - ${pathOf(issue.path)}: ${issue.message}`]
     }
-    default:
+    case 'too_big':
+    case 'too_small':
+    case 'invalid_format':
+    case 'not_multiple_of':
+    case 'invalid_key':
+    case 'invalid_element':
+    case 'custom':
       return [`  - ${pathOf(issue.path)}: ${issue.message}`]
   }
+}
+
+/** The arguments echoed back with a failed call: enough to repair it, never a whole file again. */
+const ECHO_LIMIT = 2_000
+
+function echoOf(raw: unknown): string {
+  let text: string
+  try {
+    text = JSON.stringify(raw, null, 2) ?? String(raw)
+  } catch {
+    text = String(raw)
+  }
+  if (text.length <= ECHO_LIMIT) return text
+  return `${text.slice(0, ECHO_LIMIT)}\n… (${text.length - ECHO_LIMIT} more characters not shown)`
 }

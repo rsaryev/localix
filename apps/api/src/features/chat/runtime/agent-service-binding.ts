@@ -109,9 +109,31 @@ export interface AgentServiceBinding {
 }
 
 let current: AgentServiceBinding | null = null
+let bound: (() => void) | undefined
+let ready = new Promise<void>((resolve) => (bound = resolve))
 
 export function setAgentService(svc: AgentServiceBinding): void {
   current = svc
+  bound?.()
+}
+
+/**
+ * The binding, once boot has made it. A run a wake or a trigger starts while the server is still
+ * booting would otherwise find no agent service and fail as "Agent is unavailable"; it waits for
+ * the binding instead, up to `timeoutMs`, and only then is the service truly missing.
+ */
+export async function awaitAgentService(timeoutMs = 30_000): Promise<AgentServiceBinding | null> {
+  if (current) return current
+  let timer: ReturnType<typeof setTimeout> | undefined
+  await Promise.race([ready, new Promise<void>((done) => (timer = setTimeout(done, timeoutMs)))])
+  clearTimeout(timer)
+  return current
+}
+
+/** Tests only: forget the binding, as a fresh process would. */
+export function resetAgentServiceForTests(): void {
+  current = null
+  ready = new Promise<void>((resolve) => (bound = resolve))
 }
 
 export function getAgentService(): AgentServiceBinding | null {

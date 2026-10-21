@@ -171,6 +171,7 @@ export function accumulateTurnUsage(
     totalTokens?: number
     costSource?: string
     totalCost?: number
+    estimated?: boolean
   },
   estimatedCost?: number,
 ): void {
@@ -185,8 +186,9 @@ export function accumulateTurnUsage(
   totals.totalTokens += normalized.totalTokens
   // The per-REQUEST context anchor: inputTokens is the normalized TOTAL context
   // (non-cached + cacheRead + cacheWrite — see parseUsage in @localixai/agent). A
-  // usage-less turn (0 input) keeps the previous anchor rather than clearing it.
-  if (normalized.inputTokens > 0) {
+  // usage-less turn (0 input) keeps the previous anchor rather than clearing it, and so does a
+  // turn cut short, whose counts are estimates.
+  if (normalized.inputTokens > 0 && !usage.estimated) {
     state.lastTurnContextTokens = normalized.inputTokens + normalized.outputTokens
     // Only the FIRST measured turn describes the request the estimate was made for;
     // later turns carry messages the estimate never saw. Set once, never overwritten.

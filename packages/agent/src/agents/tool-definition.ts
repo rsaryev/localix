@@ -105,7 +105,9 @@ export interface AgentTool<TInput = unknown, TDetails = unknown> {
    * How this tool's calls are scheduled within one assistant turn. `parallel` calls run
    * concurrently with each other (subject to {@link parallelScopePaths}); a `sequential` call
    * waits for every earlier call of the turn and finishes before any later call starts. It
-   * does NOT serialize the rest of the turn. Defaults to `parallel`.
+   * does NOT serialize the rest of the turn. Defaults to `parallel` — except for a tool that
+   * {@link mutates} and declares neither a mode nor {@link parallelScopePaths} (an unannotated
+   * MCP tool): overlapping is opt-in for a writer, so such a call runs as if `sequential`.
    */
   executionMode?: 'sequential' | 'parallel'
   /**

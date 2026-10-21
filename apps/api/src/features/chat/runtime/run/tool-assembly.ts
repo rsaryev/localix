@@ -10,6 +10,7 @@ import type { CcHooksRuntime } from '../../../cc-hooks'
 import type { RunProfile } from '../../../agent-core/run-shape'
 import type { LoadedPlugins } from '../../../plugins/loader'
 import type { SessionRecord } from '../../repository'
+import { TOOL } from '../../../agent-core/tool-names'
 import { applyToolWrapperChain } from './tool-wrapper-chain'
 import { consoleWarnLogger } from '../plugin-hook-logger'
 import { resolveMcpTools, type McpInventoryEntry } from './mcp-tools'
@@ -83,6 +84,16 @@ export interface AssembledRunTools {
 }
 
 export { claimSecondaryTools, indexToolPresentation } from './tool-namespace'
+
+/**
+ * The tools whose start is stored at once (`handleToolExecutionStart`): every declared writer,
+ * and a tool that calls tools (`codemode`) — it declares no effect of its own, but the calls it
+ * makes write files and run commands without events of their own, so its start is all the
+ * transcript can record of them.
+ */
+export function recordMutatingTools(tools: readonly AgentTool[], into: Set<string>): void {
+  for (const t of tools) if (t.mutates || t.name === TOOL.codemode) into.add(t.name)
+}
 
 export async function assembleRunTools(
   options: AssembleRunToolsOptions,
@@ -179,7 +190,7 @@ export async function assembleRunTools(
   // `background` flag (generic — no hardcoded tool names). Done before any tool
   // executes, so the child-session + async-registry managers classify correctly.
   for (const t of allTools) if (t.background) backgroundToolNames.add(t.name)
-  if (mutatingToolNames) for (const t of allTools) if (t.mutates) mutatingToolNames.add(t.name)
+  if (mutatingToolNames) recordMutatingTools(allTools, mutatingToolNames)
 
   // ---- Deferral: only external plugin and MCP call tools go behind `activate_tools` -------
   //

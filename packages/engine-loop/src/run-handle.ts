@@ -52,6 +52,8 @@ export function startRun(
   let consumerClosed = false
   let done = false
   let terminalError: Error | undefined
+  /** The run was stopped before it failed: the failure is the stop's, not the consumer's to see. */
+  let stoppedBeforeFailure = false
 
   // A stop must release producers blocked on a paused consumer, and must not cost the consumer
   // the events that say how the run ended — a tool call's end above all, without which it reads
@@ -79,10 +81,13 @@ export function startRun(
       return settled
     } catch (thrown) {
       terminalError = thrown instanceof Error ? thrown : new Error(String(thrown))
+      stoppedBeforeFailure = signal.aborted
+      // Whatever the body left running — a sibling tool of the batch it failed in — stops with it.
+      if (!stoppedBeforeFailure) controller.abort(terminalError)
       await run.emit({ type: 'error', error: terminalError })
       return {
         messages: run.transcript.messages.slice(0, run.transcript.settled),
-        terminal: signal.aborted ? 'aborted' : 'failed',
+        terminal: stoppedBeforeFailure ? 'aborted' : 'failed',
         error: terminalError,
       }
     } finally {
@@ -118,7 +123,7 @@ export function startRun(
           if (!done) controller.abort('Agent event consumer closed')
         }
       }
-      if (terminalError && !signal.aborted) throw terminalError
+      if (terminalError && !stoppedBeforeFailure) throw terminalError
     },
   }
 }

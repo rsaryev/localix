@@ -58,8 +58,7 @@ export function createCodemodeTool(scripts: ScriptSandbox, tools: readonly Agent
     // Its calls are not declared up front, so it does not share a turn's parallel slot.
     executionMode: 'sequential',
     async execute(_toolCallId, input, signal, _onUpdate, context) {
-      const callTool = context?.callTool
-      if (!callTool) {
+      if (!context?.callTool) {
         return { content: 'This run cannot make nested tool calls.', isError: true }
       }
       const record = createCallRecord()
@@ -67,7 +66,7 @@ export function createCodemodeTool(scripts: ScriptSandbox, tools: readonly Agent
         ...tool,
         execute: async (args, callSignal) => {
           const end = record.start(tool.name, args)
-          const outcome = await callTool(tool.name, args, callSignal)
+          const outcome = await context.callTool!(tool.name, args, callSignal)
           if (outcome.isError) {
             const error = outcome.result.content || `Tool ${tool.name} failed`
             end({ error })

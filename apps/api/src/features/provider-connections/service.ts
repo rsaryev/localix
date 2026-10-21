@@ -26,6 +26,7 @@ import {
   type ProviderConnectionRecord,
 } from './repository'
 import { apiKeyCredential, cleanSettings } from './connection-settings'
+import { credentialSecrets, decodeCredential } from './stored-credential'
 import { toDto } from './mappers'
 import { createKeyedSerializer } from '../../lib/keyed-serializer'
 import { createOAuthFlowManager } from './oauth-flow-manager'
@@ -39,6 +40,8 @@ export interface ProviderConnectionsServiceDeps {
   db: Kysely<AppDatabase>
   /** A connection or key was added, changed or removed. */
   onChanged?: () => void
+  /** The setting names the catalog asks the provider for; undefined when it is not listed. */
+  settingNamesFor?: (providerId: string) => Promise<readonly string[] | undefined>
   /**
    * Called with every provider secret this service DECRYPTS — the API key, and both halves of an
    * OAuth credential. The host uses it to register the value with the vault exposure shield, so a
@@ -136,45 +139,14 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
       consumerType: 'provider',
       consumerId: keyId,
     })
-    if (!encoded) return undefined
-    try {
-      const parsed: unknown = JSON.parse(encoded)
-      if (!parsed || typeof parsed !== 'object') return undefined
-      const credential = parsed as Partial<RuntimeCredential>
-      // Register EVERY decrypted value, once per read. This covers every READ (DTO hydration and
-      // the runtime store's read/list/modify) without those five call sites each remembering to;
-      // `writeCredential` covers the other direction, since a token `modify` refreshes is handed
-      // straight back to the caller and never re-read before it is used.
-      const remember = (value: string | undefined) => {
-        if (value) deps.onCredentialResolved?.(userId, value)
-      }
-      if (credential.type === 'api-key') {
-        if (typeof credential.key !== 'string') return undefined
-        remember(credential.key)
-        return { type: 'api-key', key: credential.key, env: credential.env }
-      }
-      if (
-        credential.type === 'oauth' &&
-        typeof credential.accessToken === 'string' &&
-        typeof credential.refreshToken === 'string' &&
-        typeof credential.expiresAt === 'number'
-      ) {
-        // BOTH halves: an echoed refresh token is worse than an echoed access token, since it does
-        // not expire on its own.
-        remember(credential.accessToken)
-        remember(credential.refreshToken)
-        return {
-          type: 'oauth',
-          accessToken: credential.accessToken,
-          refreshToken: credential.refreshToken,
-          expiresAt: credential.expiresAt,
-          extra: credential.extra,
-        }
-      }
-      return undefined
-    } catch {
-      return undefined
-    }
+    const credential = encoded ? decodeCredential(encoded) : undefined
+    // Register EVERY decrypted value, once per read. This covers every READ (DTO hydration and the
+    // runtime store's read/list/modify) without those five call sites each remembering to;
+    // `writeCredential` covers the other direction, since a token `modify` refreshes is handed
+    // straight back to the caller and never re-read before it is used.
+    for (const value of credential ? credentialSecrets(credential) : [])
+      deps.onCredentialResolved?.(userId, value)
+    return credential
   }
 
   const writeCredential = async (
@@ -182,19 +154,9 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
     keyId: string,
     credential: RuntimeCredential,
   ): Promise<void> => {
-    // Registered on the WRITE path too, because `readCredential` alone is not the choke point a
-    // review took it for: `modify` reads (registering the OLD tokens), calls `update(current)`, and
-    // returns the REFRESHED pair — which is what pi authenticates with from that moment on, while
-    // nothing had registered it until the next run's read. A rotated refresh token is exactly the
-    // value that must not be echoed, and this is the one point every stored credential passes.
-    const registerWritten = (value: string | undefined) => {
-      if (value) deps.onCredentialResolved?.(userId, value)
-    }
-    if (credential.type === 'api-key') registerWritten(credential.key)
-    else {
-      registerWritten(credential.accessToken)
-      registerWritten(credential.refreshToken)
-    }
+    // Registered on the WRITE path too: `modify` returns the REFRESHED pair, which authenticates
+    // from that moment on and is never re-read first — a rotated refresh token must not be echoed.
+    for (const value of credentialSecrets(credential)) deps.onCredentialResolved?.(userId, value)
     const alias = vaultKey(keyId)
     const item = await vault.set(userId, alias, JSON.stringify(credential), {
       label: credential.type === 'oauth' ? 'Provider OAuth credential' : 'Provider API key',
@@ -448,6 +410,9 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
       })
     : undefined
 
+  // An unreadable catalog must not stop a connection from being saved: secret names stay refused.
+  const allowedFor = (id: string) => deps.settingNamesFor?.(id).catch(() => undefined)
+
   const createConnectionImpl = async (
     userId: string,
     input: CreateProviderConnectionRequest,
@@ -455,7 +420,7 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
     const timestamp = now()
     const id = randomUUID()
     const seedKeys = [...(input.apiKey ? [input.apiKey] : []), ...(input.apiKeys ?? [])]
-    const settings = cleanSettings(input.settings)
+    const settings = cleanSettings(input.settings, await allowedFor(input.providerId))
     if (seedKeys.length === 0) {
       throw new ApiError(400, 'provider_connection_no_key', 'At least one API key is required')
     }
@@ -504,14 +469,14 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
     ): Promise<ProviderConnection> {
       const existing = await requireRawConnectionRecord(userId, id)
 
-      const updatedAt = now()
-      await repo.update(userId, id, { label: patch.label, updatedAt })
-
-      // New settings replace the old on every key; otherwise each key keeps what it has.
+      // New settings replace the old on every key (checked before any write); else each keeps its own.
       const settings =
         patch.settings !== undefined
-          ? cleanSettings(patch.settings)
+          ? cleanSettings(patch.settings, await allowedFor(existing.providerId))
           : await settingsOfKeys(userId, existing.keys)
+
+      const updatedAt = now()
+      await repo.update(userId, id, { label: patch.label, updatedAt })
       if (patch.settings !== undefined) {
         for (const key of existing.keys) {
           const credential = await readCredential(userId, key.id).catch(() => undefined)

@@ -137,9 +137,22 @@ exactly that:
 | Claude on Vertex | A service account key (JSON)                     | Project and location (optional; location defaults to global) |
 
 Settings are stored with every key of the connection, so a key added later reaches the same place,
-and they show in the connection's settings; a secret is refused as a setting. Requests use only what
-the connection holds: the server's own `AWS_*` or `GOOGLE_*` variables are never read. A model whose
+and they show in the connection's settings. A setting whose name reads like a secret (a key, token,
+password, credential, or personal access token such as `CLARIFAI_PAT`) is refused, and a change that
+includes one is rejected without writing anything; such a value stored by an earlier version is
+never shown back. A name the provider's catalog entry does not ask for is refused too.
+
+Requests use only what the connection holds. Every request names its address and passes its key
+explicitly, so the server's own environment never supplies either: variables such as
+`OPENAI_API_KEY`, `OPENAI_BASE_URL`, `ANTHROPIC_BASE_URL`, `AWS_ENDPOINT_URL`, other `AWS_*` values
+or `GOOGLE_VERTEX_API_KEY` are not read, including ones exported in your login shell. A model whose
 address needs a value no connection can set (a Vertex endpoint of its own) is not listed.
+
+models.dev decides where most providers' requests go, so its addresses are checked before a key is
+sent to one. OpenAI, Anthropic, Google, OpenRouter, GitHub Copilot and Vercel AI Gateway keys reach
+only their own hosts, whatever the list says; a model's own address must stay on its provider's
+origin (or inside its cloud); and every address is HTTPS, except one on this computer. A provider
+whose address fails these checks is not listed, and neither is a model with such an address.
 
 | When                                   | What happens                                                                                                      |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -211,7 +224,13 @@ connections and selects the conversation's model.
 - “Provider-flexible” means the providers and models in the runtime catalog, not every provider,
   endpoint, protocol, or model.
 - OAuth is not synthesized for API-key-only providers. The available sign-in methods are exactly
-  those reported by the adapter's provider definitions.
+  those reported by the adapter's provider definitions: Sign in with ChatGPT (OpenAI), OpenAI Codex
+  (legacy), OpenRouter, and GitHub Copilot.
+- Sign-in for Anthropic (Claude Pro/Max), Kimi Coding, Meta, xAI and Radius is no longer offered.
+  The Event Center lists each existing signed-in connection to one of them as "<name> needs an API
+  key", from startup on, and its runs fail with "has no OAuth sign-in; reconnect it with an API
+  key". Remove it and add the provider again with an API key; the entry settles once the connection
+  is gone.
 - Multiple keys do not provide automatic rotation or request failover. A run selects the
   highest-priority enabled key; a provider failure does not retry the next key.
 - If vault data is missing, corrupt, or unreadable, Localix keeps the connection metadata visible

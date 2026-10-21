@@ -35,6 +35,7 @@ function harness(
   const inserted: Inserted[] = []
   const marked: string[] = []
   const persisted = new Map<string, PersistedMessage>()
+  const updates: { id: string; patch: { items?: unknown[] } }[] = []
   let markFailed = false
   const repo = {
     insertMessage: async (input: PersistedMessage) => {
@@ -53,10 +54,15 @@ function harness(
       persisted.get(messageId) ?? null,
     getSession: async () => null,
     listMessages: async () => opts.history ?? [],
+    updateMessage: async (_u: string, _s: string, id: string, patch: { items?: unknown[] }) => {
+      updates.push({ id, patch })
+      return null
+    },
   } as unknown as ChatRepository
   const warnings: string[] = []
   return {
     inserted,
+    updates,
     marked,
     warnings,
     deps: {
@@ -164,6 +170,34 @@ describe('announceInterruptedRuns', () => {
       { runId: 'r1', sessionId: 's1', userId: 'u1', agentId: 'backend' },
     ])
     expect(h.inserted[0]?.content).toBe(`backend: ${interruptedWithPendingToolNotice(['bash'])}`)
+  })
+
+  test('a call the restart cut off stops spinning, and is still read as one whose effect is unknown', async () => {
+    const reply = {
+      id: 'a',
+      payload: {
+        id: 'a',
+        role: 'assistant',
+        from: 'agent:localix',
+        items: [
+          { type: 'tool_call', status: 'completed', name: 'read' },
+          { type: 'tool_call', status: 'running', name: 'bash' },
+        ],
+      },
+    } as unknown as PersistedMessage
+    const h = harness({ history: [reply] })
+    await announceInterruptedRuns(h.deps, [
+      { runId: 'r1', sessionId: 's1', userId: 'u1', agentId: 'localix' },
+    ])
+    const settled = h.updates[0]?.patch.items as { status: string; error?: { code: string } }[]
+    expect(h.updates.map((update) => update.id)).toEqual(['a'])
+    expect(settled.map((item) => item.status)).toEqual(['completed', 'aborted'])
+    expect(settled[1]?.error?.code).toBe('PROCESS_RESTART')
+    expect(
+      pendingToolNames({
+        items: settled.map((item, i) => ({ ...item, name: ['read', 'bash'][i] })),
+      }),
+    ).toEqual(['bash'])
   })
 })
 

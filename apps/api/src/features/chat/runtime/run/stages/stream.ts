@@ -17,13 +17,14 @@ import { agentRoute } from '../../../session-route'
 import { speakerPlace } from '../../../policy/axes/seat'
 import { createItemAccumulator } from '../../items'
 import { withMidRunReminders } from '../../mid-run-reminders'
+import { consoleWarnLogger } from '../../plugin-hook-logger'
 import { createRunAsyncRegistry, describeToolActions } from '../async-registry'
 import { handleAgentEvent, type TurnEventContext } from '../event-handlers'
 import { persistNow } from '../event-handlers-flush'
 import { buildRuntimeToolContext } from '../runtime-execution'
-import { requireCompletedRuntime } from '../runtime-result'
 import { wireRunSteering } from '../steering-wiring'
 import { indexToolPresentation } from '../tool-assembly'
+import { settleRunStream } from './stream-settle'
 import type { RunInputs } from './context'
 import type { RunFrame } from './frame'
 import type { RunHistory } from './history'
@@ -210,20 +211,17 @@ export async function streamRun(
   frame.steerCtxRef.current = eventCtx
 
   // Only the run's terminal state is journaled; the events themselves stream to the client.
-  try {
-    for await (const event of stream) {
-      await handleAgentEvent(eventCtx, event)
-    }
-    const runtimeResult = await stream.result
-    await history.runRecord.finish(runtimeResult)
-    // A run that did not complete is finalized from its STORED row, which the stream writes only
-    // on a cadence. Store what the run reached first — above all a tool call that ended after
-    // the stop — or finalizing rewinds that call to running, and it spins in the transcript.
-    if (runtimeResult.terminal !== 'completed') await persistNow(eventCtx, state.payload)
-    requireCompletedRuntime(runtimeResult)
-  } catch (error) {
-    await history.runRecord.fail(error)
-    throw error
-  }
+  await settleRunStream({
+    stream,
+    handle: (event) => handleAgentEvent(eventCtx, event),
+    record: history.runRecord,
+    storeReached: () => persistNow(eventCtx, state.payload),
+    onStoreFailed: (error) =>
+      consoleWarnLogger.warn(
+        `[run] could not store what run ${assistantMessageId} reached before finalizing: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      ),
+  })
   return { eventCtx, acc }
 }

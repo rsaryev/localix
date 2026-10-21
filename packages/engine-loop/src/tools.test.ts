@@ -1,7 +1,7 @@
 /**
  * Tool calls through the loop: how a batch is scheduled, how the guard, the permission gate and
- * the after-hook shape a result, and how a tool's question to a person and its nested calls ride
- * the same pipeline.
+ * the after-hook shape a result, and how a tool's question to a person and its progress ride the
+ * run's events. Nested calls: `nested.test.ts`; stops and broken host pieces: `stopping.test.ts`.
  */
 import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
@@ -268,33 +268,5 @@ describe('what a running tool reaches', () => {
     const updates = events.filter((event) => event.type === 'tool_execution_update')
     expect(updates.length).toBeLessThan(10)
     expect(last(updates)).toMatchObject({ details: { step: 499 } })
-  })
-
-  test('a nested call goes through the gate and the after-hook, with an id of its own', async () => {
-    const gated: string[] = []
-    const after: string[] = []
-    const outer = probe('outer', {
-      execute: async (_id, _input, _signal, _update, context) => {
-        const allowed = await context!.callTool!('read', { id: 'inner' })
-        const refused = await context!.callTool!('read', { id: 'refused' })
-        const invalid = await context!.callTool!('read', { wrong: 1 })
-        return { content: JSON.stringify([allowed.isError, refused.isError, invalid.isError]) }
-      },
-    })
-    const { events } = await runCalls([{ name: 'outer', arguments: { id: 'o' }, id: 'p1' }], {
-      tools: [outer, read],
-      beforeToolCall: async (context) => {
-        gated.push(context.toolCallId)
-        return (context.input as { id?: string }).id === 'refused'
-          ? { block: true, blockedMessage: 'no' }
-          : undefined
-      },
-      afterToolCall: async (context) => (after.push(context.toolCallId), undefined),
-    })
-    expect(ends(events)[0]!.result.content).toBe('[false,true,true]')
-    expect(gated).toEqual(['p1', 'p1/1', 'p1/2'])
-    expect(after).toEqual(['p1/1', 'p1'])
-    // Nested calls make no events of their own: the parent's card tells their story.
-    expect(ends(events).map((event) => event.toolCallId)).toEqual(['p1'])
   })
 })

@@ -37,6 +37,11 @@ export interface StoredSystemNotice {
      */
     | 'run_failed'
     /**
+     * The person CONTINUED a turn that did not finish (`chat/turn-resume.ts`): the agent was told
+     * what happened in a note only it reads, and this line marks where the conversation picked up.
+     */
+    | 'run_continued'
+    /**
      * SOMEONE JOINED OR LEFT the conversation.
      *
      * The visible row is UI-only, like every notice. Its resolved system context binding is

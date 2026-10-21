@@ -10,6 +10,7 @@
         "plugins/*/arg-sources/**/*.ts",
         "scripts/*.mjs",
         "scripts/*.ts",
+        "scripts/session-e2e/provider.mjs",
         "scripts/screenshots/*.mjs"
       ],
       "project": ["plugins/**/*.{ts,mjs}", "scripts/**/*.{mjs,ts}"]
@@ -20,7 +21,8 @@
         "src/bootstrap.ts",
         "migrations/*.ts",
         "scripts/**/*.ts",
-        "src/**/*.test.ts"
+        "src/**/*.test.ts",
+        "src/**/testing/fake-*.ts"
       ],
       "ignoreDependencies": [
         "@parcel/watcher-darwin-arm64",
@@ -42,6 +44,7 @@
         "build/**/*.test.ts"
       ],
       "ignoreDependencies": [
+        "vaul",
         "@fontsource-variable/dm-sans",
         "@fontsource-variable/fira-code",
         "@fontsource-variable/geist",
@@ -50,10 +53,11 @@
       ]
     },
     "apps/landing": {
-      "entry": ["src/main.tsx", "vite.config.ts", "scripts/**/*.mjs"]
+      "entry": ["src/main.tsx", "vite.config.ts", "scripts/**/*.mjs"],
+      "ignoreDependencies": ["@happy-dom/global-registrator"]
     },
     "apps/desktop-tauri": {
-      "entry": ["scripts/**/*.test.ts"]
+      "entry": ["scripts/**/*.test.ts", "scripts/check-*.mjs"]
     },
     "plugins/*": {
       "entry": [
@@ -86,8 +90,12 @@
     "packages/*": {
       "entry": ["src/index.ts", "src/**/*.test.{ts,tsx,mjs}"]
     },
+    "packages/engine-scripts": {
+      "entry": ["src/index.ts", "src/worker.ts", "src/**/*.test.ts"]
+    },
     "packages/kit": {
-      "entry": ["src/entries/*.ts", "src/testing/*.ts", "**/*.test.{ts,tsx}", "test-preload.ts"]
+      "entry": ["src/entries/*.ts", "src/testing/*.ts", "**/*.test.{ts,tsx}", "test-preload.ts"],
+      "ignoreDependencies": ["mediabunny"]
     },
     "packages/cli": {
       "entry": ["bin/localix.mjs", "src/main.ts", "src/**/*.test.ts", "scripts/**/*.mjs"]
@@ -106,5 +114,5 @@
     "tailwindcss",
     "@localixai/visual-feedback"
   ],
-  "ignoreBinaries": ["lipo", "rustc", "strip"]
+  "ignoreBinaries": ["lipo", "rustc", "strip", "tauri"]
 }

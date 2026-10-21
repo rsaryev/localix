@@ -107,6 +107,11 @@ export function createChatSessionFacade({
       return recordSessionNotice(sessionLifecycleCtx, userId, sessionId, notice)
     },
 
+    /** The active branch's messages, notices included — what a feature reading the last turn needs. */
+    listMessages(userId: string, sessionId: string) {
+      return repo.listMessages(userId, sessionId)
+    },
+
     /** A participant's handle in the conversation, or null when it is not (or no longer) in it. */
     async participantHandle(userId: string, sessionId: string, agentId: string) {
       const session = await sessionLifecycleCtx.requireSession(userId, sessionId)

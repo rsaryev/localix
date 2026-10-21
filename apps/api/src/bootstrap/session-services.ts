@@ -16,6 +16,7 @@ import { createPlanRepository } from '../features/plans/repository'
 import { createPlanService } from '../features/plans/service'
 import { createPlanFiles, planRef } from '../features/plans/plan-files'
 import { planResumeProducer } from '../features/plans/resume-point'
+import { TURN_RESUME_KIND, turnResumeProducer } from '../features/chat/turn-resume'
 import { createResumeRegistry } from '../features/resume/registry'
 import { invalidateFileMtime } from '../features/agent-core/tools/file/file-mtime'
 import type { TriggersWiringInput } from './triggers'
@@ -49,9 +50,19 @@ export function wireSessionServices({
   // "Continue" (`features/resume`): one registry, its producers read at call time. The plan is
   // the first producer — an approved version nobody is working on — and every change to the
   // plans re-pushes the points (below), so a composer's Continue follows approve/complete/dismiss.
+  // The conversation's last turn is the second (`chat/turn-resume.ts`): a reply a restart, an
+  // error or the turn limit cut short, continued with a note only the agent reads.
+  const turns = turnResumeProducer(chatService)
   const resume = createResumeRegistry({
-    producers: () => (serviceRefs.plans ? [planResumeProducer(serviceRefs.plans)] : []),
-    wake: (...args) => wakes.deliver(...args),
+    producers: () => [...(serviceRefs.plans ? [planResumeProducer(serviceRefs.plans)] : []), turns],
+    wake: async (...args) => {
+      const outcome = await wakes.deliver(...args)
+      // Continuing a failed turn answers its Event Center row, as a Retry did.
+      const [request] = args
+      if (outcome.status === 'delivered' && request.deliveryKey?.includes(`:${TURN_RESUME_KIND}:`))
+        agentNotifications.runs.retried(request.userId, request.sessionId)
+      return outcome
+    },
     notice: ({ userId, sessionId }, notice) =>
       chatService.recordSessionNotice(userId, sessionId, notice),
     publish: ({ userId, sessionId }, points) =>
@@ -62,6 +73,12 @@ export function wireSessionServices({
       }),
   })
   serviceRefs.resume = resume
+  // Every run's end may start or close an unfinished turn; its notice is written by then. Only a
+  // root conversation owns resume points — a child runs under its root's work.
+  agentNotifications.runs.onEnded(({ userId, session }) => {
+    if (session.parentSessionId || session.sessionKind !== 'chat') return
+    void resume.changed({ userId, sessionId: session.id }).catch(() => undefined)
+  })
   serviceRefs.comments = createCommentRepository(db)
   serviceRefs.plans = createPlanService({
     repo: createPlanRepository(db),

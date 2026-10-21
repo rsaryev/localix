@@ -35,7 +35,7 @@ describe('codemode call shape', () => {
 
   test('a running call, or one whose details are not loaded, still has a shape', () => {
     const shape = codemodeShape({ input: { code: 'text(1)' }, output: undefined })
-    expect(shape).toEqual({ code: 'text(1)', calls: [], complete: true })
+    expect(shape).toEqual({ code: 'text(1)', calls: [], complete: true, omittedCalls: 0 })
     expect(codemodeTitle(shape)).toBe('Script')
     expect(codemodeSubtitle(shape)).toBe('No tool calls')
   })
@@ -46,6 +46,15 @@ describe('codemode call shape', () => {
       output: { calls: [{ name: 'read', status: 'ok' }], complete: false },
     })
     expect(codemodeSubtitle(shape)).toBe('1 call+')
+  })
+
+  test('calls the record only counted are in the total', () => {
+    const shape = codemodeShape({
+      input: {},
+      output: { calls: [{ name: 'read', status: 'ok' }], complete: false, omittedCalls: 4 },
+    })
+    expect(shape.omittedCalls).toBe(4)
+    expect(codemodeSubtitle(shape)).toBe('5 calls')
   })
 
   test('names what each call was about: its files or its command', () => {

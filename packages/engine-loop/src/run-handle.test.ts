@@ -85,4 +85,22 @@ describe('a run handle', () => {
     expect(result).toMatchObject({ terminal: 'failed', messages: [{ content: 'kept' }] })
     expect(events.map((event) => event.type)).toEqual(['error'])
   })
+
+  test('a body that throws stops what it left running', async () => {
+    let sibling: AbortSignal | undefined
+    const run = startRun({}, async ({ signal }) => {
+      sibling = signal
+      throw new Error('contextPolicy failed')
+    })
+    const result = await run.result
+    expect(result.terminal).toBe('failed')
+    expect(sibling?.aborted).toBe(true)
+    await expect(
+      (async () => {
+        for await (const _event of run) {
+          // drain
+        }
+      })(),
+    ).rejects.toThrow('contextPolicy failed')
+  })
 })

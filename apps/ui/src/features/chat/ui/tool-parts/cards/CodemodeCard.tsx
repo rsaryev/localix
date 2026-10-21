@@ -3,6 +3,7 @@
  * tool, what it was about (its files, its command), how it ended and how long it took — then what
  * the script reported, which is all the agent read. The calls' own results stayed in the script.
  */
+import { useMemo } from 'react'
 import { SquareCode } from 'lucide-react'
 import type { ToolCallItem } from '@localixai/agent/agents'
 import { formatDuration } from '@localixai/plugin-sdk/ui/utilities'
@@ -96,6 +97,11 @@ export function CodemodeCard({ item }: { item: ToolCallItem }) {
   const shape = codemodeShape(item)
   const streaming = isItemStreaming(item)
   const hasError = hasItemError(item)
+  // The report can be megabytes of JSON; parse and indent it once per result, not per render.
+  const report = useMemo(
+    () => (item.resultText ? codemodeOutput(item.resultText) : undefined),
+    [item.resultText],
+  )
   return (
     <ToolLine
       icon={SquareCode}
@@ -122,9 +128,9 @@ export function CodemodeCard({ item }: { item: ToolCallItem }) {
         {shape.calls.map((call, index) => (
           <CallRow key={index} call={call} index={index} />
         ))}
-        {item.resultText && !hasError && (
+        {report && !hasError && (
           <IORow label="OUT">
-            <OutputBlock linkify>{codemodeOutput(item.resultText)}</OutputBlock>
+            <OutputBlock linkify>{report}</OutputBlock>
           </IORow>
         )}
         <ToolImages item={item} />

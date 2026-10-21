@@ -6,6 +6,11 @@ export interface BeforeToolCallContext {
   input: unknown
   /** Optional human-readable source for nested tool calls, e.g. a delegate title. */
   sourceTitle?: string
+  /**
+   * Set for a call a tool makes on its own behalf (`AgentToolExecutionContext.callTool`): the
+   * call the person sees in the transcript, which a prompt about this one belongs to.
+   */
+  parentToolCallId?: string
 }
 /**
  * How a gated tool call was ALLOWED — the permission gate's decision provenance,

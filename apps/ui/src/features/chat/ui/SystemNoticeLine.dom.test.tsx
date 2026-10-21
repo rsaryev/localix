@@ -41,25 +41,20 @@ const interrupted: SystemNotice = {
 
 describe('a notice that can be acted on', () => {
   /**
-   * The gap this closes. The transcript's one line that asked for a decision was also the
-   * only line with no way to make it: the copy said "send again", and the reader had to
-   * know that meant retyping, or find Regenerate in a hover menu on the row above.
+   * A reply that did not finish is decided on above the composer (`ResumeStrip`, Continue). In the
+   * transcript it is only a marker of where it happened: the amber sentence with a Retry beside it
+   * in every place a conversation once stopped was the noise this replaces.
    */
-  test('offers the recovery it names', async () => {
-    let retried = 0
-    const view = await render(
-      interrupted,
-      () => {
-        retried += 1
-      },
-      3,
-    )
+  test('a reply that did not finish is a quiet marker: a short label, the sentence on hover', async () => {
+    const view = await render(interrupted, () => {}, 3)
     try {
-      const button = view.button()
-      expect(button?.textContent).toContain('Retry')
+      expect(view.button()).toBeNull()
+      expect(view.host.textContent).toContain('Reply interrupted')
       expect(view.host.textContent).toContain('×3')
-      button?.click()
-      expect(retried).toBe(1)
+      const line = view.host.querySelector('[role="status"]')
+      expect(line?.getAttribute('title')).toContain('this reply is incomplete')
+      expect(line?.className).toContain('text-text-faint')
+      expect(view.host.querySelector('span')?.className).toContain('truncate')
     } finally {
       await view.cleanup()
     }
@@ -74,12 +69,14 @@ describe('a notice that can be acted on', () => {
     }
   })
 
-  test('no handler, no button — a surface that cannot re-run must not offer to', async () => {
-    // A read-only transcript (a sub-agent's, a shared session) renders the same notice.
-    const view = await render(interrupted)
+  test('a turn limit reads the same way', async () => {
+    const view = await render(
+      { kind: 'turn_limit', tone: 'neutral', text: 'Stopped after 40 turns.', recovery: ['retry'] },
+      () => {},
+    )
     try {
       expect(view.button()).toBeNull()
-      expect(view.host.textContent).toContain('this reply is incomplete')
+      expect(view.host.textContent).toContain('Turn limit reached')
     } finally {
       await view.cleanup()
     }
@@ -113,21 +110,6 @@ describe('a notice that can be acted on', () => {
       const line = view.host.querySelector('[role="status"]')
       expect(line?.className).toContain('text-text-soft')
       expect(line?.querySelector('svg')?.getAttribute('class')).toContain('lucide-shield-check')
-    } finally {
-      await view.cleanup()
-    }
-  })
-
-  test('an actionable notice is not clamped to one line', async () => {
-    // Its text is what the reader has to weigh BEFORE pressing the button beside it — the
-    // pending-tool warning ends in "Check before retrying", which the clamp ate.
-    const view = await render(
-      { ...interrupted, text: 'Backend restarted while bash was still running — check first.' },
-      () => {},
-    )
-    try {
-      const label = view.host.querySelector('span')
-      expect(label?.className).not.toContain('truncate')
     } finally {
       await view.cleanup()
     }

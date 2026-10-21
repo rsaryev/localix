@@ -168,6 +168,16 @@ function stream(item) {
           },
         ]
       : []),
+    // A message's text streams as deltas, as the real API sends it; the AI SDK reads the text
+    // from them, not from the finished item.
+    ...(item.type === 'message'
+      ? item.content.map((part) => ({
+          type: 'response.output_text.delta',
+          output_index: 0,
+          item_id: item.id,
+          delta: part.text,
+        }))
+      : []),
     { type: 'response.output_item.done', output_index: 0, item },
     { type: 'response.completed', response: response(item, 'completed') },
   ]
@@ -181,14 +191,18 @@ function stream(item) {
 }
 
 /**
- * A decision model's answer (group routing, OpenRouter's `/systemone`), scripted by the event: the
+ * A decision model's answer (group routing, OpenRouter's `/decisions`), scripted by the event: the
  * last transcript message may carry `ROUTE{"choice":"<option>","p":<probability>}` in a code span,
  * plus `"alone"` (the "can one participant do it alone?" probability) and `"which"` (the one
  * picked, at `"pw"`, default 0.9) for a person's untagged message. With none, every answer is unconfident
  * (0.5), so the address rules decide as they would without it.
  */
 function decision(body) {
-  const transcript = Array.isArray(body.state?.transcript) ? body.state.transcript : []
+  // The AI SDK sends an object state as parts (`[{ type: 'json', value }]`); older ones sent it bare.
+  const state = Array.isArray(body.state)
+    ? body.state.find((part) => part?.type === 'json')?.value
+    : body.state
+  const transcript = Array.isArray(state?.transcript) ? state.transcript : []
   const last = transcript.at(-1)
   const at = typeof last?.text === 'string' ? last.text.indexOf('ROUTE{') : -1
   const routed = at >= 0 ? objectAt(last.text, at + 'ROUTE'.length)?.steps : undefined
@@ -240,7 +254,8 @@ globalThis.fetch = Object.assign(async function scriptedFetch(input, init) {
   if (!isOurs(input, init)) return realFetch(input, init)
   const body = await bodyOf(input, init)
   const url = String(input instanceof Request ? input.url : input)
-  if (url.endsWith('/systemone')) return decision(body)
+  // OpenRouter's decision endpoint: `/decisions` in the current SDK, `/systemone` before it.
+  if (url.endsWith('/decisions') || url.endsWith('/systemone')) return decision(body)
   const system = systemPromptOf(body)
   const tools = (Array.isArray(body.tools) ? body.tools : []).flatMap((tool) =>
     tool?.name ? [tool.name] : [],

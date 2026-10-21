@@ -9,8 +9,9 @@
  * order whenever the batch drains — around an exclusive call, and at the end.
  */
 import type { CallEnvironment, CallOutcome, ResolvedCall, ToolCallRequest } from './call'
-import { admitCall, errorResult, executeCall, resolveCall } from './call'
+import { abortedResult, admitCall, errorResult, executeCall, resolveCall } from './call'
 import type { EmitEvent } from '../run-handle'
+import { DEFERRED_TEXT, messageWaits } from './results'
 
 export interface SettledCall {
   call: ToolCallRequest
@@ -41,10 +42,13 @@ function claimOf(resolved: ResolvedCall): Claim {
   try {
     const mode = tool!.executionModeFor?.(resolved.args) ?? tool!.executionMode
     if (mode === 'sequential') return EXCLUSIVE
-    const scope = tool!.parallelScopePaths?.(resolved.args)
-    if (!scope) return { exclusive: false, writes: false }
-    const paths = scope.length > 0 ? scope : undefined
     const writes = tool!.mutates === true
+    const scope = tool!.parallelScopePaths?.(resolved.args)
+    // Overlapping is opt-in for a writer: one that never said it may run beside other calls —
+    // an unannotated MCP tool — runs alone. One that did (per tool or per call) keeps its word.
+    if (!scope)
+      return writes && mode === undefined ? EXCLUSIVE : { exclusive: false, writes: false }
+    const paths = scope.length > 0 ? scope : undefined
     // A writer that cannot say what it writes must not overlap anything.
     if (writes && !paths) return EXCLUSIVE
     return paths ? { exclusive: false, writes, paths } : { exclusive: false, writes }
@@ -78,18 +82,6 @@ function conflicts(a: Claim, b: Claim): boolean {
   if (!a.paths || !b.paths) return true
   const right = b.paths
   return a.paths.some((left) => right.some((path) => overlaps(left, path)))
-}
-
-const DEFERRED_TEXT =
-  'Not run: the user sent a message before this call started. Read it first, then re-issue this call if it still applies.'
-
-/** A host probe that throws must never fail the batch. */
-async function probe(shouldDefer: BatchInput['shouldDefer']): Promise<boolean> {
-  try {
-    return (await shouldDefer?.()) === true
-  } catch {
-    return false
-  }
 }
 
 async function announce(emit: EmitEvent, call: ToolCallRequest): Promise<void> {
@@ -132,9 +124,11 @@ export async function runToolBatch(input: BatchInput): Promise<SettledCall[]> {
     const resolved = resolveCall(env, call)
     const claim = claimOf(resolved)
     if (claim.exclusive) await drain()
+    // The stop may have come while the batch drained: nothing more is asked, announced or admitted.
+    if (signal.aborted) break
     // A waiting message outranks calls the model chose before it could read it. Calls already
     // admitted keep running; the rest wait behind the message.
-    if (await probe(input.shouldDefer)) {
+    if (await messageWaits(input.shouldDefer)) {
       for (const later of calls.slice(index)) {
         const outcome: CallOutcome = { result: { content: DEFERRED_TEXT, details: {} } }
         await announce(emit, later)
@@ -155,7 +149,7 @@ export async function runToolBatch(input: BatchInput): Promise<SettledCall[]> {
       const done = (async (): Promise<SettledCall> => {
         if (blockers.length > 0) await Promise.allSettled(blockers)
         const outcome: CallOutcome = signal.aborted
-          ? { result: errorResult('Operation aborted') }
+          ? { result: abortedResult() }
           : await executeCall(env, admitted, signal, emit)
         await finish(emit, call, outcome)
         return { call, outcome }
@@ -167,6 +161,14 @@ export async function runToolBatch(input: BatchInput): Promise<SettledCall[]> {
       if (claim.exclusive) await drain()
     }
     if (signal.aborted) break
+  }
+  // A stopped batch still answers every call the model made: the ones it never reached end as
+  // cancelled, start and end announced, so no item is left pending and every call has its result.
+  for (const later of calls.slice(outcomes.length)) {
+    const outcome: CallOutcome = { result: abortedResult() }
+    await announce(emit, later)
+    await finish(emit, later, outcome)
+    outcomes.push(Promise.resolve({ call: later, outcome }))
   }
   await drain()
   return settled

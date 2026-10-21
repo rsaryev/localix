@@ -14,7 +14,7 @@ import { agentModelSettingsFor } from '@localixai/agent'
 import { toSessionSummary } from '../../../repository'
 import { agentRoute } from '../../../session-route'
 import { loadUserSettingsContext } from '../../../../user/runtime-settings'
-import { getAgentService } from '../../agent-service-binding'
+import { awaitAgentService } from '../../agent-service-binding'
 import { sessionAgent } from '../../message-envelope'
 import { invocationApprovalRequester } from '../invocation-approval'
 import {
@@ -39,7 +39,7 @@ export async function resolveRunTurn(frame: RunFrame, standing: RunStanding) {
   const speaker = sessionAgent(initialSession, speakerAgentId)
   const invocation = standing.policy.invocation.admissionHost
   const admittedAgent = await requireRunAgent(
-    getAgentService()?.resolveRunAgent,
+    (await awaitAgentService())?.resolveRunAgent,
     userId,
     speakerAgentId,
     invocation,

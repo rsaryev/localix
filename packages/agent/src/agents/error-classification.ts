@@ -1,6 +1,10 @@
 import { HumanInLoopDismissedError, HumanInLoopTimeoutError } from './human-in-loop'
 import { AgentRunError, MODEL_NOT_DOWNLOADED } from './errors'
-import { isProviderHttpError, providerRetryDelayMs } from '../utils/provider-http-error'
+import {
+  isProviderHttpError,
+  providerResponseOf,
+  providerRetryDelayMs,
+} from '../utils/provider-http-error'
 import { agentRunErrorToInfo } from './agent-run-error-info'
 import type { AgentErrorInfo } from './error-classification-contracts'
 import {
@@ -47,6 +51,11 @@ export function classifyAgentError(error: unknown): AgentErrorInfo {
   return stated === undefined ? info : { ...info, retryAfterMs: stated }
 }
 
+function carriesProviderStatus(error: unknown): error is Error {
+  const status = error instanceof Error ? providerResponseOf(error)?.status : undefined
+  return status !== undefined && status >= 100 && status < 600
+}
+
 function classifyErrorKind(error: unknown): AgentErrorInfo {
   if (error instanceof Error && (error.name === 'AbortError' || error.name === 'RetryAbortError')) {
     return { kind: 'abort', userMessage: 'Cancelled', retryable: false }
@@ -81,7 +90,9 @@ function classifyErrorKind(error: unknown): AgentErrorInfo {
   // A provider rejection — recognized by NAME, and its status read back out of the
   // "provider 401: …" message shape. Both are owned by `utils/provider-http-error.ts`;
   // this is the branch that makes them load-bearing (retry / failover / compact-and-retry).
-  if (isProviderHttpError(error)) {
+  // An error that carries the provider's response (`attachProviderResponse`, an SDK error with
+  // its status) is one too, whatever it is named: missing the branch turns a 5xx into a fatal.
+  if (isProviderHttpError(error) || carriesProviderStatus(error)) {
     const status = extractProviderStatus(error)
     // A 413 (payload too large) from an LLM endpoint is virtually always an oversized
     // prompt, and a 400 that names the window is the same class. Both recover by sending

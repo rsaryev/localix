@@ -33,6 +33,7 @@ export type SystemNoticeKind =
   | 'turn_limit'
   /** A run that ended in an error the same request might survive. */
   | 'run_failed'
+  | 'run_continued'
   /** Someone joined or left; the model reads the deduplicated system context binding. */
   | 'participants_change'
   /** A chain of participant handoffs reached its bound; the conversation is back with the person. */

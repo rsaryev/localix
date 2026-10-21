@@ -25,8 +25,8 @@ export function withRefusalBreaker(
   decide: PermissionGateFn,
   tracker: GateRefusalTracker,
 ): PermissionGateFn {
-  return async (ctx) => {
-    const verdict = await decide(ctx)
+  return async (ctx, signal) => {
+    const verdict = await decide(ctx, signal)
     if (!verdict?.block) {
       // Includes `undefined` — the gate's plain allow. A call getting through is the only
       // evidence that the run is not simply hammering a wall.

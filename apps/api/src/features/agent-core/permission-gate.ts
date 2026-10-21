@@ -45,6 +45,11 @@ export interface RequestConfirmArgs {
   grants?: readonly GrantOption[]
   cwd?: string
   sourceTitle?: string
+  /**
+   * The CALL's own signal. A script's nested call ends with its script, before the run does: the
+   * card is withdrawn then, and an answer that comes later approves nothing and records nothing.
+   */
+  signal?: AbortSignal
 }
 
 /**
@@ -102,14 +107,14 @@ interface GateContext {
 type GateResult = BeforeToolCallResult | undefined
 
 /** The gate closure {@link createPermissionGate} returns — the run's `beforeToolCall`. */
-export type PermissionGateFn = (ctx: GateContext) => Promise<GateResult>
+export type PermissionGateFn = (ctx: GateContext, signal?: AbortSignal) => Promise<GateResult>
 
 /**
  * Single, centralized permission gate used as the agent loop's `beforeToolCall`.
  * Replaces the scattered ask-mode / workspace / dangerous-command checks.
  */
 export function createPermissionGate(opts: PermissionGateOptions): PermissionGateFn {
-  const decide = async (ctx: GateContext): Promise<GateResult> => {
+  const decide = async (ctx: GateContext, signal?: AbortSignal): Promise<GateResult> => {
     // A call is judged on the tool's own verdict about THIS input (`AgentTool.classify`), not on
     // a static flag: a dual-purpose tool declaring `mutates: true` would otherwise have every
     // rule about writes confirm or refuse its reads too. A tool that declares nothing is
@@ -226,6 +231,7 @@ export function createPermissionGate(opts: PermissionGateOptions): PermissionGat
       ...confirmSubject(call, ctx.toolName, facts),
       cwd: opts.root,
       sourceTitle: ctx.sourceTitle ?? call.sourceTitle,
+      ...(signal ? { signal } : {}),
     })
     const approved = typeof outcome === 'boolean' ? outcome : outcome.approved
     const reply = typeof outcome === 'object' ? outcome.message : undefined

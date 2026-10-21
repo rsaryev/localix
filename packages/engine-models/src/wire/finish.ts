@@ -19,7 +19,8 @@ export function stopReasonOf(
     case 'content-filter':
     case 'error':
       return 'error'
-    default:
+    // A provider-specific reason the SDK could not map: judged by what the response holds.
+    case 'other':
       return hasToolCalls ? 'tool_use' : 'end_turn'
   }
 }

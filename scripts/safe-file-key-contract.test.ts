@@ -92,6 +92,10 @@ const EXEMPTIONS: Exemptions = {
     reason:
       'CLAIM 2 only (its charset admits `.`, so it is not the owner\'s rule). `sanitizeSegment` guards the dot-segment hazard EXPLICITLY with a second pass — `.replace(/^\\.+/, "_")` — so `..` → `__` before it reaches `path.posix.join`. It keys a scratch spill file by sessionId under `.localix/attachments/`, not a credential store. Newly VISIBLE (not new) once CLAIM 2 learned to read `path.posix.join`; reviewed and ruled safe on that explicit guard.',
   },
+  [exemptionKey('packages/engine-models/src/wire/tool-call-ids.ts', 'rule')]: {
+    reason:
+      'Maps a model-given TOOL-CALL ID into the form a strict provider accepts on the wire (Anthropic, Claude on Bedrock or Vertex: `[a-zA-Z0-9_-]{1,64}`). Same charset as the owner because the provider spec says so, not because it names a file: the id only ever travels inside a request body, and nothing joins it into a path. A collision is stepped past with a salted digest, so a call and its result stay paired. Pinned in wire/prompt.test.ts.',
+  },
   [exemptionKey('packages/visual-feedback/src/core/identify.ts', 'rule')]: {
     reason:
       'ESCAPES the same charset for a CSS SELECTOR (`\\${ch}`) rather than replacing it. The opposite operation: it PRESERVES every character so the selector still matches, where a file key must DESTROY them. Also in a package upstream of apps/api.',

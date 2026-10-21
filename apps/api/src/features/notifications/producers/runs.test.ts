@@ -82,9 +82,11 @@ describe('run outcomes', () => {
       title: 'Could not finish the reply in “Refactor the parser”',
       body: 'Network connection to the provider dropped.',
     })
-    expect(row!.actions?.find((a) => a.id === 'retry')).toMatchObject({
+    // Continue, not regenerate: the agent keeps what it did and is told what happened.
+    expect(row!.actions?.find((a) => a.id === 'continue')).toMatchObject({
+      label: 'Continue',
       kind: 'invoke',
-      command: 'retry_run',
+      command: 'continue_run',
       runId: 'm1',
       target: { sessionId: 'S1' },
       available: true,

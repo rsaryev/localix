@@ -99,23 +99,33 @@ describe('takeSteering reaches the model inside the same run', () => {
       await new Promise((resolve) => setTimeout(resolve, 5))
       if (event.type === 'turn_end') handledTurnEnds += 1
     }
-    // Asked before the first request, after each turn's end, and again before the next turn
-    // starts — and every time the host had already handled each turn_end emitted so far.
-    expect(observed).toEqual([0, 1, 1, 2])
+    // Asked before the first request and once after each turn's end — never twice at one
+    // boundary — and every time the host had already handled each turn_end emitted so far.
+    expect(observed).toEqual([0, 1, 2])
   })
 
   test('waits for a host however slow it is, and not at all once the run is stopped', async () => {
     const observed: number[] = []
     let handledTurnEnds = 0
+    let release: () => void = () => {}
     const { run } = start([call('work'), say('done')], {
       takeSteering: () => (observed.push(handledTurnEnds), []),
     })
-    for await (const event of run) {
-      // Slower than any fixed cap the loop could have chosen.
-      if (event.type === 'turn_end') await new Promise((resolve) => setTimeout(resolve, 2_200))
-      if (event.type === 'turn_end') handledTurnEnds += 1
+    const consumed = (async () => {
+      for await (const event of run) {
+        if (event.type !== 'turn_end') continue
+        // The host holds this event until the test lets it go: no timer of the loop's ends it.
+        await new Promise<void>((resolve) => (release = resolve))
+        handledTurnEnds += 1
+      }
+    })()
+    for (const expected of [[0], [0, 1]]) {
+      await Bun.sleep(60)
+      expect(observed).toEqual(expected)
+      release()
     }
-    expect(observed).toEqual([0, 1, 1, 2])
+    await consumed
+    expect(observed).toEqual([0, 1, 2])
 
     const asked: number[] = []
     const stopped = start([call('work'), say('done')], { takeSteering: () => (asked.push(1), []) })
@@ -125,7 +135,7 @@ describe('takeSteering reaches the model inside the same run', () => {
     }
     expect((await stopped.run.result).terminal).toBe('aborted')
     expect(asked.length).toBeLessThanOrEqual(1)
-  }, 10_000)
+  })
 
   test('a waiting message defers the calls that have not started', async () => {
     let ran = 0

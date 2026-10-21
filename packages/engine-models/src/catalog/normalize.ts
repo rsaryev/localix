@@ -10,14 +10,15 @@
  * - the context the host may fill, capped at the first long-context price tier.
  */
 import type { CatalogModel, ModelCost } from '@localixai/agent/catalog'
-import type { Model, ProviderMap } from '@opencode-ai/models'
+import type { Model } from '@opencode-ai/models'
 
+import { modelAddressAllowed, providerAddress } from './addresses'
 import { DECISION_FAMILIES, routeOf, wireOf, type Route } from './families'
 import { contextWindowOf, costOf, reasoningLevels } from './model-facts'
 import { settingsOf, type ProviderSetting } from './settings'
 
 /** Bumped whenever normalization changes what it keeps, so a stored copy is normalized again. */
-export const DOCUMENT_SCHEMA = 3
+export const DOCUMENT_SCHEMA = 4
 
 export interface ServedModel {
   id: string
@@ -77,6 +78,9 @@ const CODEX_CONTEXT = 272_000
 /** OpenAI's Decisions API takes its chat model's id; models.dev lists only the chat model. */
 const OPENAI_DECISION_MODELS = ['gpt-6-luna']
 
+/** Ids the engine serves itself, and keys no record may be stored under. */
+const RESERVED = new Set(['local', 'openai-codex', '__proto__', 'constructor', 'prototype'])
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 const strings = (value: unknown): string[] =>
@@ -93,11 +97,12 @@ function servedModel(model: Model, route: Route): ServedModel {
     route,
     input: input.length > 0 ? input : ['text'],
     output: strings(model.modalities?.output),
-    attachment: model.attachment === true || input.includes('image'),
-    tools: model.tool_call !== false,
-    reasons: model.reasoning === true,
+    // models.dev declares these; a record that leaves one out reads as its usual value.
+    attachment: Boolean(model.attachment) || input.includes('image'),
+    tools: (model.tool_call as boolean | undefined) ?? true,
+    reasons: Boolean(model.reasoning),
     reasoning: reasoningLevels(model, route),
-    temperature: model.temperature !== false,
+    temperature: (model.temperature as boolean | undefined) ?? true,
     ...(interleaved === 'reasoning_content' || interleaved === 'reasoning_details'
       ? { interleaved }
       : {}),
@@ -153,11 +158,12 @@ function codexProvider(openai: ServedProvider | undefined): ServedProvider | und
  * The document for a models.dev provider map. Defensive per record: a provider or model that does
  * not have the shape it should is left out, never the whole document.
  */
-export function normalize(providers: ProviderMap | unknown): CatalogDocument {
+export function normalize(providers: unknown): CatalogDocument {
   const document: CatalogDocument = {}
   if (!isRecord(providers)) return document
   for (const [id, provider] of Object.entries(providers)) {
     if (
+      RESERVED.has(id) ||
       !isRecord(provider) ||
       typeof provider.npm !== 'string' ||
       typeof provider.name !== 'string' ||
@@ -165,18 +171,31 @@ export function normalize(providers: ProviderMap | unknown): CatalogDocument {
     )
       continue
     const npm = provider.npm
-    const api = typeof provider.api === 'string' ? provider.api : undefined
-    const settings = settingsOf(strings(provider.env))
+    const api = providerAddress(id, typeof provider.api === 'string' ? provider.api : undefined)
+    if (api === null) continue
+    const models = Object.entries(provider.models).filter(
+      (entry): entry is [string, Record<string, unknown>] =>
+        !RESERVED.has(entry[0]) && isRecord(entry[1]),
+    )
+    const ownApi = (value: Record<string, unknown>) =>
+      isRecord(value.provider) && typeof value.provider.api === 'string'
+        ? value.provider.api
+        : undefined
+    const settings = settingsOf(strings(provider.env), [
+      api,
+      ...models.map(([, value]) => ownApi(value)),
+    ])
     const settable = settings.map((setting) => setting.name)
     const route = routeOf(npm, api, undefined, settable)
     const chat: Record<string, ServedModel> = {}
     const decision: Record<string, ServedModel> = {}
-    for (const [modelId, value] of Object.entries(provider.models)) {
-      if (!isRecord(value)) continue
+    for (const [modelId, value] of models) {
       const model = { ...(value as unknown as Model), id: modelId }
       const own = isRecord(model.provider)
         ? (model.provider as NonNullable<Model['provider']>)
         : undefined
+      // A model's own address must not carry the provider's key anywhere else.
+      if (own?.api && own.api !== api && !modelAddressAllowed(id, api, own.api)) continue
       const modelRoute =
         own?.npm || own?.api || own?.shape
           ? routeOf(own.npm ?? npm, own.api ?? api, own.shape, settable)

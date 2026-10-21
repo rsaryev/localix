@@ -22,8 +22,10 @@ export interface CodemodeCall {
 export interface CodemodeShape {
   code: string
   calls: CodemodeCall[]
-  /** False when the record left calls or their arguments out. */
+  /** False when the record left calls out or kept only an input's target. */
   complete: boolean
+  /** Calls the record counted but did not keep. */
+  omittedCalls: number
 }
 
 /** What one call was about: the files it named, or the command it ran. */
@@ -55,6 +57,7 @@ export function codemodeShape(item: Pick<ToolCallItem, 'input' | 'output'>): Cod
       ]
     }),
     complete: details?.complete !== false,
+    omittedCalls: numField(details, 'omittedCalls') ?? 0,
   }
 }
 
@@ -95,14 +98,18 @@ export function codemodeTitle(shape: CodemodeShape): string {
   return `Script · ${shown}${names.length > 3 ? ` +${names.length - 3}` : ''}`
 }
 
-/** "3 calls", "3 calls · 1 failed · 1 cancelled": the card's line once the script has settled. */
+/**
+ * "3 calls", "3 calls · 1 failed · 1 cancelled": the card's line once the script has settled. Calls
+ * the record only counted are in the total; a record that shortened inputs it could not count reads
+ * "3 calls+".
+ */
 export function codemodeSubtitle(shape: CodemodeShape): string {
-  const count = shape.calls.length
+  const count = shape.calls.length + shape.omittedCalls
   const made = count === 0 ? 'No tool calls' : `${count} call${count === 1 ? '' : 's'}`
   const failed = shape.calls.filter((call) => call.status === 'error').length
   const cancelled = shape.calls.filter((call) => call.status === 'cancelled').length
   return [
-    shape.complete ? made : `${made}+`,
+    shape.complete || shape.omittedCalls > 0 ? made : `${made}+`,
     failed > 0 ? `${failed} failed` : undefined,
     cancelled > 0 ? `${cancelled} cancelled` : undefined,
   ]

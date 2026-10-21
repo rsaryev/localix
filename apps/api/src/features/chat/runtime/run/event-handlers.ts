@@ -153,7 +153,8 @@ async function handleMessageEnd(ctx: TurnEventContext, event: EventOf<'message_e
     ).totalCost
     accumulateTurnUsage(state, message.usage, estimate)
     // inputTokens is the normalized whole-request context (see accumulateTurnUsage).
-    const measuredInput = normalizeUsage(message.usage).inputTokens
+    // A response cut short carries estimated counts: priced, never taken as the context's size.
+    const measuredInput = message.usage.estimated ? 0 : normalizeUsage(message.usage).inputTokens
     if (measuredInput > 0) ctx.observeMeasuredContext?.(measuredInput)
   }
   // Run cost is 'actual' only if every usage-bearing turn reported it;

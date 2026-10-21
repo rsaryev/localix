@@ -26,10 +26,17 @@ const azure: ProviderEntry = {
   ],
 }
 
+const bedrock: ProviderEntry = {
+  id: 'amazon-bedrock',
+  name: 'Amazon Bedrock',
+  modelCount: 40,
+  authType: 'api-key',
+  settings: [{ name: 'AWS_REGION', label: 'AWS region', placeholder: 'us-east-1', required: true }],
+}
+
 /** Type into a React-controlled input the way a person does. */
 function type(input: HTMLInputElement, value: string) {
-  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
-  setter.call(input, value)
+  Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(input, value)
   input.dispatchEvent(new Event('input', { bubbles: true }))
 }
 
@@ -72,6 +79,49 @@ describe('adding a cloud connection', () => {
       expect(submit.disabled).toBe(false)
       await act(async () => submit.click())
       expect(added).toEqual([{ key: 'az-key', settings: { AZURE_RESOURCE_NAME: 'acme' } }])
+    } finally {
+      await act(async () => root.unmount())
+      host.remove()
+    }
+  })
+
+  test('switching provider drops what was typed for the previous one', async () => {
+    const { act } = await import('react')
+    const { createRoot } = await import('react-dom/client')
+    const { AddConnectionForm } = await import('./AddConnectionForm')
+    const host = document.createElement('div')
+    document.body.append(host)
+    const root = createRoot(host)
+    const added: Array<{ key: string; settings?: Record<string, string> }> = []
+    const render = (provider: ProviderEntry) =>
+      root.render(
+        <AddConnectionForm
+          provider={provider}
+          onAdded={() => {}}
+          onAddApiKey={(_label, key, opts) =>
+            added.push({ key, ...(opts?.settings ? { settings: opts.settings } : {}) })
+          }
+          onAddOAuth={() => {}}
+        />,
+      )
+    const input = (selector: string) => host.querySelector<HTMLInputElement>(selector)!
+
+    try {
+      await act(async () => render(azure))
+      await act(async () => type(input('input[aria-label="Azure resource name"]'), 'acme'))
+      await act(async () => type(input('input[type="password"]'), 'azure-key'))
+
+      await act(async () => render(bedrock))
+      expect(input('input[type="password"]').value).toBe('')
+      const submit = [...host.querySelectorAll('button')].find(
+        (button) => button.textContent === 'Add Connection',
+      )!
+      expect(submit.disabled).toBe(true)
+
+      await act(async () => type(input('input[aria-label="AWS region"]'), 'eu-west-1'))
+      await act(async () => type(input('input[type="password"]'), 'bedrock-key'))
+      await act(async () => submit.click())
+      expect(added).toEqual([{ key: 'bedrock-key', settings: { AWS_REGION: 'eu-west-1' } }])
     } finally {
       await act(async () => root.unmount())
       host.remove()

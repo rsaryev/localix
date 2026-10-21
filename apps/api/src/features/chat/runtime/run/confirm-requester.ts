@@ -143,11 +143,18 @@ export function createConfirmRequester(
     // CLOSES before the tool runs, so it is booked as a settled span the tool-end handler adds
     // to HITL time and subtracts from the tool's own duration.
     const waitStartedAt = Date.now()
+    // The card lives as long as both the run and the call that raised it: a script's nested call
+    // ends with its script, while the run goes on.
+    const signal = confirmArgs.signal
+      ? AbortSignal.any([args.abortSignal, confirmArgs.signal])
+      : args.abortSignal
     try {
       const response = await env.deps.hitlRegistry.controller.request<
         ConfirmToolRequest,
         ConfirmToolResponse
-      >(request, args.abortSignal)
+      >(request, signal)
+      // An answer to a withdrawn card approves nothing and records no grant or rule.
+      if (signal.aborted) throw signal.reason
       fireHitlResolved({ response: response.payload.answers })
       // Re-read against what THIS card offered: the answer is client input, and a grant id it
       // did not list widens nothing (see `confirm-answer.ts`).

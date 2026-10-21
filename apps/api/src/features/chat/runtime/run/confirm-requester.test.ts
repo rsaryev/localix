@@ -536,6 +536,38 @@ describe('the "Always" answer', () => {
     }
   })
 
+  test('a card withdrawn with its call approves nothing and records nothing', async () => {
+    persisted.length = 0
+    const call = new AbortController()
+    let cardSignal: AbortSignal | undefined
+    const h = alwaysHarness()
+    const controller = {
+      // The person answers "Always" just after the script that asked has ended.
+      request: async (_request: unknown, signal: AbortSignal) => {
+        cardSignal = signal
+        call.abort()
+        return { payload: { answers: { confirmed: true, scope: 'always' } } }
+      },
+    }
+    const env = {
+      ...h.env,
+      deps: { ...h.env.deps, hitlRegistry: { ...h.env.deps.hitlRegistry, controller } },
+    }
+    const outcome = await make(
+      env,
+      projectChat,
+    )({
+      ...bashCall('git push origin main'),
+      signal: call.signal,
+    })
+
+    expect(cardSignal?.aborted).toBe(true)
+    expect(outcome).toMatchObject({ approved: false })
+    expect(persisted).toEqual([])
+    expect(granted(h)).toEqual([])
+    expect(h.cleared).toEqual(['perm:tc1'])
+  })
+
   test('a failed write grants nothing, so the next call asks again', async () => {
     const h = alwaysHarness(async () => {
       throw new Error('disk full')

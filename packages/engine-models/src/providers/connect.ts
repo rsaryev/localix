@@ -8,7 +8,9 @@
 import type { Experimental_DecisionModelV4, LanguageModelV4 } from '@ai-sdk/provider'
 import type { ReasoningEffort } from '@localixai/agent'
 
+import { PINNED_ADDRESS } from '../catalog/addresses'
 import type { CatalogEntry } from '../catalog/catalog'
+import type { ProviderFamily } from '../catalog/families'
 import { CODEX_PROVIDER_ID } from '../catalog/normalize'
 import { fillTemplate } from '../catalog/settings'
 import type { WireProfile } from '../wire/prompt'
@@ -34,13 +36,29 @@ function openrouterEffort(effort: ReasoningEffort): string {
 }
 
 /**
+ * Where each first-party SDK sends requests when models.dev names no address. Always passed
+ * explicitly: left out, these SDKs read `OPENAI_BASE_URL`, `ANTHROPIC_BASE_URL`… from the server's
+ * environment — which the login shell fills from the user's dotfiles — and a connection's key would
+ * follow that variable to whatever proxy it names.
+ */
+const FAMILY_ADDRESS: Partial<Record<ProviderFamily, string>> = {
+  openai: PINNED_ADDRESS.openai,
+  anthropic: PINNED_ADDRESS.anthropic,
+  google: PINNED_ADDRESS.google,
+  openrouter: PINNED_ADDRESS.openrouter,
+  gateway: PINNED_ADDRESS.vercel,
+}
+
+/**
  * Where requests go. An access that names its own host (Copilot's per-account endpoint) moves the
  * provider, and a model address that extends the provider's (`…/v1` for Claude on Copilot) moves
  * with it.
  */
 export function addressOf(entry: CatalogEntry, access: ProviderAccess): string | undefined {
   // An address naming the connection's settings (`https://${AZURE_RESOURCE_NAME}…`) is filled first.
-  const route = entry.route.baseURL && fillTemplate(entry.route.baseURL, access.settings)
+  const route =
+    (entry.route.baseURL && fillTemplate(entry.route.baseURL, access.settings)) ||
+    FAMILY_ADDRESS[entry.route.family]
   if (!access.baseURL) return route
   const base = entry.provider.baseURL
   if (route && base && route !== base && route.startsWith(base))
@@ -99,7 +117,11 @@ export function profileFor(entry: CatalogEntry): WireProfile {
       }
     case 'gateway':
       return { namespace: 'gateway', cacheBreakpoints: false, temperature }
-    default:
+    case 'bedrock':
+    case 'azure':
+    case 'vertex':
+    case 'vertex-anthropic':
+    case 'openai-compatible':
       // The OpenAI-compatible wire: the clouds were shaped above.
       return entry.provider.local
         ? {
@@ -124,60 +146,77 @@ export function profileFor(entry: CatalogEntry): WireProfile {
   }
 }
 
+/**
+ * The key every SDK is given: always a string, even an empty one, so none of them falls back to
+ * its `*_API_KEY` environment variable and sends a key this connection does not have.
+ */
+const keyOf = (access: ProviderAccess) => access.apiKey ?? ''
+
 export async function languageModelFor(
   entry: CatalogEntry,
   access: ProviderAccess,
 ): Promise<LanguageModelV4> {
-  const { apiKey, headers, fetch } = access
+  const { headers, fetch } = access
+  const apiKey = keyOf(access)
   const baseURL = addressOf(entry, access)
-  if (CLOUD_FAMILIES.has(entry.route.family)) return cloudModelFor(entry, access, baseURL)
+  const family = entry.route.family
+  if (CLOUD_FAMILIES.has(family)) return cloudModelFor(entry, access, baseURL)
   const common = {
     ...(baseURL ? { baseURL } : {}),
     ...(headers ? { headers } : {}),
     ...(fetch ? { fetch } : {}),
   }
   const id = entry.model.id
-  switch (entry.route.family) {
+  switch (family) {
     case 'openai': {
       const { createOpenAI } = await import('@ai-sdk/openai')
-      const openai = createOpenAI({ ...common, ...(apiKey ? { apiKey } : {}) })
+      const openai = createOpenAI({ ...common, apiKey })
       return entry.route.shape === 'completions' ? openai.chat(id) : openai.responses(id)
     }
     case 'anthropic': {
       const { createAnthropic } = await import('@ai-sdk/anthropic')
       return createAnthropic({
         ...common,
-        ...(access.authToken ? { authToken: access.authToken } : apiKey ? { apiKey } : {}),
+        ...(access.authToken ? { authToken: access.authToken } : { apiKey }),
       }).languageModel(id)
     }
     case 'google': {
       const { createGoogle } = await import('@ai-sdk/google')
-      return createGoogle({ ...common, ...(apiKey ? { apiKey } : {}) }).languageModel(id)
+      return createGoogle({ ...common, apiKey }).languageModel(id)
     }
     case 'openrouter': {
       const { createOpenRouter } = await import('@openrouter/ai-sdk-provider')
-      return createOpenRouter({ ...common, ...(apiKey ? { apiKey } : {}) }).chat(
-        id,
-      ) as unknown as LanguageModelV4
+      return createOpenRouter({ ...common, apiKey }).chat(id) as unknown as LanguageModelV4
     }
     case 'gateway': {
       const { createGateway } = await import('@ai-sdk/gateway')
-      return createGateway({ ...common, ...(apiKey ? { apiKey } : {}) }).languageModel(id)
+      return createGateway({ ...common, apiKey: gatewayKey(entry, access) }).languageModel(id)
     }
-    default: {
-      // The OpenAI-compatible wire: the clouds were served above.
+    case 'openai-compatible':
+    case 'bedrock':
+    case 'azure':
+    case 'vertex':
+    case 'vertex-anthropic': {
+      // The OpenAI-compatible wire: the clouds were served above. Its SDK reads no environment.
       const { createOpenAICompatible } = await import('@ai-sdk/openai-compatible')
       if (!baseURL) throw new Error(`${entry.provider.name} has no address to send requests to`)
       return createOpenAICompatible({
         name: entry.provider.id,
         baseURL,
-        ...(apiKey ? { apiKey } : {}),
+        ...(access.apiKey ? { apiKey: access.apiKey } : {}),
         ...(headers ? { headers } : {}),
         ...(fetch ? { fetch } : {}),
         includeUsage: true,
       }).chatModel(id)
     }
   }
+}
+
+/** The gateway's key: without one its SDK signs in with the server's own Vercel OIDC token. */
+function gatewayKey(entry: CatalogEntry, access: ProviderAccess): string {
+  if (!access.apiKey)
+    throw new Error(`${entry.provider.name} needs a key; add one to the connection`)
+  return access.apiKey
 }
 
 /**
@@ -208,28 +247,37 @@ export async function decisionModelFor(
   entry: CatalogEntry,
   access: ProviderAccess,
 ): Promise<Experimental_DecisionModelV4> {
-  const { apiKey, headers, fetch } = access
+  const { headers, fetch } = access
   const baseURL = addressOf(entry, access)
   const common = {
     ...(baseURL ? { baseURL } : {}),
     ...(headers ? { headers } : {}),
     ...(fetch ? { fetch } : {}),
-    ...(apiKey ? { apiKey } : {}),
   }
   switch (entry.route.family) {
     case 'openai': {
       const { createOpenAI } = await import('@ai-sdk/openai')
-      return createOpenAI(common).decisionModel(entry.model.id)
+      return createOpenAI({ ...common, apiKey: keyOf(access) }).decisionModel(entry.model.id)
     }
     case 'openrouter': {
       const { createOpenRouter } = await import('@openrouter/ai-sdk-provider')
-      return asDecisionModel(createOpenRouter(common).evaluationModel(entry.model.id))
+      return asDecisionModel(
+        createOpenRouter({ ...common, apiKey: keyOf(access) }).evaluationModel(entry.model.id),
+      )
     }
     case 'gateway': {
       const { createGateway } = await import('@ai-sdk/gateway')
-      return createGateway(common).decisionModel(entry.model.id)
+      return createGateway({ ...common, apiKey: gatewayKey(entry, access) }).decisionModel(
+        entry.model.id,
+      )
     }
-    default:
+    case 'anthropic':
+    case 'google':
+    case 'openai-compatible':
+    case 'bedrock':
+    case 'azure':
+    case 'vertex':
+    case 'vertex-anthropic':
       throw new Error(`${entry.provider.name} has no decision models`)
   }
 }

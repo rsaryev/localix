@@ -103,3 +103,39 @@ export async function retryFailedRun(run: FailedRun, deps: RetryFailedRunDeps): 
   if (outcome === 'accepted') deps.settle?.('retried')
   return outcome === 'accepted'
 }
+
+/** The conversation's unfinished turn (`chat/turn-resume.ts` on the server): one per conversation. */
+export const TURN_RESUME_KEY = 'turn:last'
+
+/**
+ * CONTINUING A FAILED RUN FROM ITS ROW: the agent keeps what it did and is told what happened,
+ * where a Retry regenerated the reply. The server answers whether the reply still waits — a newer
+ * turn means the row can no longer act, and says so — and the wake it opened is the answer.
+ */
+export async function continueFailedRun(
+  run: FailedRun,
+  deps: Pick<RetryFailedRunDeps, 'report' | 'settle'>,
+): Promise<boolean> {
+  try {
+    const answer = await backendClient.resumeWork(run.sessionId, TURN_RESUME_KEY)
+    if (answer.gone) {
+      deps.settle?.('superseded')
+      deps.report(
+        'info',
+        'This reply no longer needs continuing',
+        'The conversation has moved on since it stopped. Open the chat to continue from there.',
+        run,
+      )
+      return false
+    }
+    if (answer.wake !== 'delivered') {
+      deps.report('warning', 'The agent was not woken', 'Send a message to continue.', run)
+      return false
+    }
+    deps.settle?.('retried')
+    return true
+  } catch (error) {
+    deps.report('error', 'Could not continue the agent run', errorMessage(error, ''), run)
+    return false
+  }
+}

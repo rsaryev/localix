@@ -138,6 +138,10 @@ async function enablePolicies(
   return enabled
 }
 
+/** A field of GitHub's answer as text, whatever JSON it is. */
+const textOf = (value: unknown) =>
+  typeof value === 'string' ? value : value === undefined ? '' : JSON.stringify(value)
+
 const enterpriseOf = (credential: RuntimeOAuthCredential) =>
   typeof credential.extra?.enterpriseUrl === 'string'
     ? normalizeDomain(credential.extra.enterpriseUrl)
@@ -220,7 +224,7 @@ export const gitHubCopilotFlow: OAuthFlow = {
           }
         return {
           status: 'failed',
-          message: `Device sign-in failed: ${String(body.error ?? 'unknown')}${body.error_description ? `: ${String(body.error_description)}` : ''}`,
+          message: `Device sign-in failed: ${textOf(body.error) || 'unknown'}${body.error_description ? `: ${textOf(body.error_description)}` : ''}`,
         }
       },
     })

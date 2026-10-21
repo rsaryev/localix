@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 
-import { createEngine } from './engine'
+import type { ModelSession } from '@localixai/agent/runtime'
+
+import { createEngine, lazySession } from './engine'
 
 describe('the engine', () => {
   test('a model it cannot open fails the run with the reason, and settles', async () => {
@@ -47,5 +49,35 @@ describe('the engine', () => {
         .listProviders()
         .map((provider) => provider.id),
     ).toContain('openai-codex')
+  })
+
+  test('a stop ends a turn waiting for its session at once, even when the opening ignores it', async () => {
+    const never = new Promise<ModelSession>(() => {})
+    const session = lazySession(
+      { model: { providerId: 'openai', modelId: 'gpt' } } as never,
+      () => never,
+    )
+    const controller = new AbortController()
+    const turn = session.turn({ signal: controller.signal } as never)
+    setTimeout(() => controller.abort(), 10)
+    const started = Date.now()
+    const message = await turn.message
+    expect(Date.now() - started).toBeLessThan(1_000)
+    expect(message).toMatchObject({ stopReason: 'aborted', errorMessage: expect.any(String) })
+  })
+
+  test('a session that cannot open fails its turn with the reason, on the turn and as the failure', async () => {
+    const session = lazySession(
+      { model: { providerId: 'openai', modelId: 'gpt' } } as never,
+      async () => {
+        throw new Error('OAuth refresh failed')
+      },
+    )
+    const turn = session.turn({ signal: new AbortController().signal } as never)
+    expect(await turn.message).toMatchObject({
+      stopReason: 'error',
+      errorMessage: 'OAuth refresh failed',
+    })
+    expect(turn.failure?.message).toBe('OAuth refresh failed')
   })
 })

@@ -150,4 +150,27 @@ describe('the model catalog', () => {
       await catalog.resolve({ providerId: 'openai', modelId: 'no-such-model' }),
     ).toBeUndefined()
   })
+
+  test('one check is shared by every caller, and one caller giving up does not stop it for the rest', async () => {
+    let release: () => void = () => {}
+    const gate = new Promise<void>((resolve) => (release = resolve))
+    let requests = 0
+    const fetch = (async () => {
+      requests++
+      await gate
+      return new Response(JSON.stringify(catalogOf(['a', 'b'])), { status: 200 })
+    }) as unknown as typeof globalThis.fetch
+    const catalog = createModelCatalog({ fetch })
+    await catalog.list()
+    const controller = new AbortController()
+    const first = catalog.refresh({ ...network, force: true, signal: controller.signal })
+    const second = catalog.refresh({ ...network, force: true })
+    await Bun.sleep(5)
+    controller.abort()
+    expect(await first).toEqual({ changed: false, aborted: true, errors: [] })
+    release()
+    expect(await second).toMatchObject({ changed: true, aborted: false })
+    expect(requests).toBe(1)
+    expect((await catalog.list()).models.map((model) => model.id)).toContain('openai/b')
+  })
 })

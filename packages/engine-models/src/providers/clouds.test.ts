@@ -3,6 +3,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import type { CatalogEntry } from '../catalog/catalog'
 import type { Route } from '../catalog/families'
 import { MissingSettingError } from '../catalog/settings'
+import { serviceAccountOf } from './clouds'
 import { languageModelFor, profileFor } from './connect'
 
 function entry(providerId: string, route: Route, modelId = 'm'): CatalogEntry {
@@ -57,8 +58,11 @@ afterEach(() => {
   for (const name of [
     'AWS_REGION',
     'AWS_BEARER_TOKEN_BEDROCK',
+    'AWS_ENDPOINT_URL',
+    'AWS_ENDPOINT_URL_BEDROCK_RUNTIME',
     'AZURE_RESOURCE_NAME',
     'GOOGLE_VERTEX_PROJECT',
+    'GOOGLE_VERTEX_API_KEY',
   ]) {
     if (saved[name] === undefined) delete process.env[name]
     else process.env[name] = saved[name]
@@ -126,6 +130,7 @@ describe('the clouds', () => {
     expect(requests[0]?.headers.get('x-goog-api-key')).toBe('vk')
 
     const account = JSON.stringify({
+      type: 'service_account',
       client_email: 'bot@acme.iam.gserviceaccount.com',
       private_key: 'not-a-real-key',
       project_id: 'acme-prod',
@@ -144,9 +149,97 @@ describe('the clouds', () => {
     ).rejects.toThrow('service account key')
     await expect(
       languageModelFor(entry('google-vertex', { family: 'vertex' }), {
-        apiKey: JSON.stringify({ client_email: 'a@b', private_key: 'k' }),
+        apiKey: JSON.stringify({ type: 'service_account', client_email: 'a@b', private_key: 'k' }),
       }),
     ).rejects.toThrow('GOOGLE_VERTEX_PROJECT')
+  })
+
+  test("Bedrock: an endpoint variable in the server's environment never moves the connection's key", async () => {
+    process.env.AWS_ENDPOINT_URL = 'https://attacker.test'
+    process.env.AWS_ENDPOINT_URL_BEDROCK_RUNTIME = 'https://attacker.test'
+    const { fetch, requests } = capture()
+    const bedrock = entry('amazon-bedrock', { family: 'bedrock' }, 'anthropic.claude-sonnet-5')
+    await stream(
+      await languageModelFor(bedrock, {
+        apiKey: 'bk',
+        settings: { AWS_REGION: 'eu-west-1' },
+        fetch,
+      }),
+    )
+    expect(requests[0]?.url).toStartWith('https://bedrock-runtime.eu-west-1.amazonaws.com/')
+    await expect(
+      languageModelFor(bedrock, { apiKey: 'bk', settings: { AWS_REGION: 'evil.test/x' } }),
+    ).rejects.toThrow('AWS_REGION')
+  })
+
+  test('Azure Cognitive Services goes to its own host, not Azure OpenAI', async () => {
+    const { fetch, requests } = capture()
+    await stream(
+      await languageModelFor(entry('azure-cognitive-services', { family: 'azure' }, 'gpt-6-luna'), {
+        apiKey: 'ak',
+        settings: { AZURE_COGNITIVE_SERVICES_RESOURCE_NAME: 'acme' },
+        fetch,
+      }),
+    )
+    expect(requests[0]?.url).toStartWith('https://acme.cognitiveservices.azure.com/openai/')
+    await expect(
+      languageModelFor(entry('azure', { family: 'azure' }), {
+        apiKey: 'ak',
+        settings: { AZURE_RESOURCE_NAME: 'evil.test#' },
+      }),
+    ).rejects.toThrow('AZURE_RESOURCE_NAME')
+  })
+
+  test("Vertex: a service account is never overridden by the server's GOOGLE_VERTEX_API_KEY", async () => {
+    process.env.GOOGLE_VERTEX_API_KEY = 'SERVER-KEY'
+    const { fetch, requests } = capture()
+    const account = JSON.stringify({
+      type: 'service_account',
+      client_email: 'bot@acme.iam.gserviceaccount.com',
+      private_key: 'not-a-real-key',
+      project_id: 'acme-prod',
+    })
+    await stream(
+      await languageModelFor(entry('google-vertex', { family: 'vertex' }, 'gemini-3-pro'), {
+        apiKey: account,
+        fetch,
+      }),
+    )
+    // Signing with the fake key fails before any request; none may carry the server's key.
+    expect(requests.every((request) => !request.headers.get('x-goog-api-key'))).toBe(true)
+  })
+
+  test('Vertex: only a service account key is accepted as JSON, rebuilt from its own fields', async () => {
+    const vertex = entry('google-vertex', { family: 'vertex' }, 'gemini-3-pro')
+    const external = JSON.stringify({
+      type: 'external_account',
+      client_email: 'x@y',
+      private_key: 'k',
+      credential_source: { file: '/etc/passwd' },
+      token_url: 'https://attacker.test/token',
+    })
+    await expect(languageModelFor(vertex, { apiKey: external })).rejects.toThrow('service_account')
+    const { fetch, requests } = capture()
+    await expect(
+      languageModelFor(vertex, { apiKey: '{"client_email": "a@b", "pri', fetch }),
+    ).rejects.toThrow('not valid JSON')
+    expect(requests).toHaveLength(0)
+    expect(
+      serviceAccountOf(
+        JSON.stringify({
+          type: 'service_account',
+          client_email: 'a@b',
+          private_key: 'k',
+          token_uri: 'https://attacker.test/token',
+          universe_domain: 'attacker.test',
+        }),
+      ),
+    ).toEqual({
+      type: 'service_account',
+      client_email: 'a@b',
+      private_key: 'k',
+      token_uri: 'https://oauth2.googleapis.com/token',
+    })
   })
 
   test('each cloud is asked under the namespace its SDK reads and writes', () => {

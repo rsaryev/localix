@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 
 import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
+import { cleanSettings } from './connection-settings'
 import { createProviderConnectionsService } from './service'
 
 const tempDir = join(process.cwd(), 'tmp', 'provider-connection-settings-tests')
@@ -85,5 +86,24 @@ describe('provider connection settings', () => {
         settings: { AWS_SECRET_ACCESS_KEY: 'leak' },
       }),
     ).rejects.toMatchObject({ status: 400 })
+  })
+})
+
+describe('cleaning connection settings', () => {
+  test('a personal access token is a secret too, never a plain-text setting', () => {
+    for (const name of ['CLARIFAI_PAT', 'SNOWFLAKE_CORTEX_PAT', 'X_AUTH', 'GITHUB_TOKEN'])
+      expect(() => cleanSettings({ [name]: 'secret' })).toThrow('secrets belong in the key')
+    expect(cleanSettings({ SNOWFLAKE_ACCOUNT: ' xy12345 ' })).toEqual({
+      SNOWFLAKE_ACCOUNT: 'xy12345',
+    })
+  })
+
+  test("only the settings the provider uses are kept when the catalog's list is given", () => {
+    expect(cleanSettings({ AWS_REGION: 'us-east-1' }, ['AWS_REGION'])).toEqual({
+      AWS_REGION: 'us-east-1',
+    })
+    expect(() =>
+      cleanSettings({ AWS_REGION: 'us-east-1', AZURE_RESOURCE_NAME: 'acme' }, ['AWS_REGION']),
+    ).toThrow('not a setting this provider uses')
   })
 })

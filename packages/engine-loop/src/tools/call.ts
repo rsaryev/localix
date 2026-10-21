@@ -7,7 +7,6 @@
  * `executeCall` runs the tool with its context and finishes it through the after-hook. A model's
  * call and a nested one (`callTool`) go through the very same stages.
  */
-import type { TextContent, ImageContent, FileContent } from '@localixai/agent'
 import { zodToJsonSchema } from '@localixai/agent'
 import type {
   AgentTool,
@@ -23,6 +22,16 @@ import { parseToolArguments } from './arguments'
 import type { JsonSchema } from './coerce'
 import { withHumanInLoopEvents } from './human-in-loop'
 import { createProgressPump } from './progress'
+import {
+  abortedResult,
+  applyAfterPatch,
+  errorResult,
+  markAborted,
+  modelParts,
+  textOf,
+} from './results'
+
+export { abortedResult, errorResult } from './results'
 
 export interface ToolCallRequest {
   id: string
@@ -47,7 +56,18 @@ export interface CallEnvironment {
   beforeToolCall: AgentRuntimeRunInput['beforeToolCall']
   afterToolCall: AgentRuntimeRunInput['afterToolCall']
   /** Binds `callTool` to the call it is handed to; absent where tools may not call tools. */
-  callToolFor?: (toolCallId: string) => NonNullable<AgentToolExecutionContext['callTool']>
+  callToolFor?: (parent: ToolCallRequest) => NonNullable<AgentToolExecutionContext['callTool']>
+}
+
+/**
+ * A call a tool makes on its own behalf. Its result goes back to that tool, not to the model, so
+ * nothing addressed to the model reaches it: no gate note, no after-hook (the host's output
+ * externalization and mid-run reminders are for the model's reading). A question it asks a
+ * person is announced under its parent, the call the person sees.
+ */
+export interface NestedCaller {
+  parent: { id: string; name: string }
+  emit?: EmitEvent
 }
 
 /** How a call ended: the result, and how the gate allowed it when it did so explicitly. */
@@ -70,10 +90,6 @@ export type AdmittedCall =
     }
   | { kind: 'settled'; call: ToolCallRequest; outcome: CallOutcome }
 
-export function errorResult(message: string): AgentToolResult {
-  return { content: message, isError: true }
-}
-
 export function resolveCall(env: CallEnvironment, call: ToolCallRequest): ResolvedCall {
   const runTool = env.tools.get(call.name)
   if (!runTool)
@@ -94,8 +110,6 @@ export function resolveCall(env: CallEnvironment, call: ToolCallRequest): Resolv
     : { kind: 'settled', call, runTool, outcome: { result: errorResult(parsed.message) } }
 }
 
-const ABORTED = 'Operation aborted'
-
 /**
  * The tool's own guard, then the host's gate. A blocked call never runs and never reaches the
  * after-hook; a guard or gate that throws settles the call with its error instead of the run.
@@ -104,10 +118,11 @@ export async function admitCall(
   env: CallEnvironment,
   resolved: ResolvedCall,
   signal: AbortSignal,
+  parentToolCallId?: string,
 ): Promise<AdmittedCall> {
   if (resolved.kind === 'settled') return resolved
   try {
-    return await admitParsed(env, resolved, signal)
+    return await admitParsed(env, resolved, signal, parentToolCallId)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     return { kind: 'settled', call: resolved.call, outcome: { result: errorResult(message) } }
@@ -118,6 +133,7 @@ async function admitParsed(
   env: CallEnvironment,
   resolved: Extract<ResolvedCall, { kind: 'parsed' }>,
   signal: AbortSignal,
+  parentToolCallId: string | undefined,
 ): Promise<AdmittedCall> {
   const { call, runTool, args } = resolved
   const guard = await runTool.tool.guard?.({ toolCallId: call.id, input: args, signal })
@@ -125,9 +141,17 @@ async function admitParsed(
     return { kind: 'settled', call, outcome: { result: { ...guard.result, isError: true } } }
 
   const gate = env.beforeToolCall
-    ? await env.beforeToolCall({ toolCallId: call.id, toolName: call.name, input: args }, signal)
+    ? await env.beforeToolCall(
+        {
+          toolCallId: call.id,
+          toolName: call.name,
+          input: args,
+          ...(parentToolCallId ? { parentToolCallId } : {}),
+        },
+        signal,
+      )
     : undefined
-  if (signal.aborted) return { kind: 'settled', call, outcome: { result: errorResult(ABORTED) } }
+  if (signal.aborted) return { kind: 'settled', call, outcome: { result: abortedResult() } }
   if (gate?.block) {
     // The model is told the gate's instruction verbatim; the card shows the sentence for the person.
     const message = gate.blockedMessage ?? `Tool "${call.name}" was blocked`
@@ -155,24 +179,6 @@ async function admitParsed(
   return { kind: 'ready', call, runTool, args, ...(gate ? { gate } : {}) }
 }
 
-/** The parts the model reads: the media a tool returned, led by its text when they lack one. */
-export function modelParts(
-  result: AgentToolResult,
-): Array<TextContent | ImageContent | FileContent> {
-  const parts = result.contentParts
-  if (!parts) return [{ type: 'text', text: result.content }]
-  if (!result.content || parts.some((part) => part.type === 'text')) return parts
-  return [{ type: 'text', text: result.content }, ...parts]
-}
-
-function textOf(parts: ReadonlyArray<TextContent | ImageContent | FileContent>): string {
-  return parts
-    .map((part) =>
-      part.type === 'text' ? part.text : part.type === 'image' ? '[image]' : '[file]',
-    )
-    .join('')
-}
-
 /** How long a stopped tool may take to wind down (a killed process reporting its output) before its call is closed for it. */
 const STOP_GRACE_MS = 2_000
 
@@ -196,12 +202,24 @@ function settleOrCancel<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
   })
 }
 
+/** A thrown error as the text the model reads, through the host's shield; never rethrows. */
+function shownError(context: AgentToolExecutionContext | undefined, error: unknown): string {
+  try {
+    const shown = context?.sanitizeError?.(error) ?? error
+    return shown instanceof Error ? shown.message : String(shown)
+  } catch {
+    // The shield failed: the raw error may carry what it was meant to hide.
+    return 'The tool failed, and its error could not be shown safely.'
+  }
+}
+
 /** Run an admitted call and finish it through the after-hook and the gate's note. Never rejects. */
 export async function executeCall(
   env: CallEnvironment,
   admitted: Extract<AdmittedCall, { kind: 'ready' }>,
   signal: AbortSignal,
   emit?: EmitEvent,
+  nested?: NestedCaller,
 ): Promise<CallOutcome> {
   const { call, runTool, args, gate } = admitted
   const tool = runTool.tool
@@ -209,9 +227,13 @@ export async function executeCall(
     await emit?.({ type: 'tool_execution_update', toolCallId: call.id, details })
   })
   const base: AgentToolExecutionContext | undefined = env.callToolFor
-    ? { ...env.context, callTool: env.callToolFor(call.id) }
+    ? { ...env.context, callTool: env.callToolFor(call) }
     : env.context
-  const context = emit && base ? withHumanInLoopEvents(base, call, signal, emit) : base
+  const announcer = nested ? nested.emit : emit
+  const context =
+    announcer && base
+      ? withHumanInLoopEvents(base, nested ? nested.parent : call, signal, announcer)
+      : base
 
   let result: AgentToolResult
   try {
@@ -225,28 +247,21 @@ export async function executeCall(
     result = context?.sanitizeResult?.(raw) ?? raw
   } catch (error) {
     await progress.settle().catch(() => {})
-    const shown = context?.sanitizeError?.(error) ?? error
-    result = errorResult(shown instanceof Error ? shown.message : String(shown))
+    result = errorResult(shownError(context, error))
   }
+  // Read before the after-hook: a tool that finished before the stop did its work, however long
+  // the hook takes after it, and must not be reported as cancelled (the model would redo it).
+  const stoppedDuringTool = signal.aborted
 
   const provenance = result.gateProvenance ?? gate?.provenance
   let finished: AgentToolResult = provenance ? { ...result, gateProvenance: provenance } : result
-  if (env.afterToolCall) {
+  if (env.afterToolCall && !nested) {
     try {
       const patch = await env.afterToolCall(
         { toolCallId: call.id, toolName: call.name, input: args, result: finished },
         signal,
       )
-      if (patch) {
-        finished = {
-          ...finished,
-          ...(patch.content !== undefined
-            ? { content: patch.content, contentParts: undefined }
-            : {}),
-          ...(patch.isError !== undefined ? { isError: patch.isError } : {}),
-          ...(patch.terminate !== undefined ? { terminate: patch.terminate } : {}),
-        }
-      }
+      finished = applyAfterPatch(finished, patch)
     } catch (error) {
       finished = errorResult(error instanceof Error ? error.message : String(error))
     }
@@ -254,28 +269,23 @@ export async function executeCall(
   // A call the run was stopped during ended because of the stop, whatever the tool made of it
   // (a killed command still returns its output): the output stays, and the call is marked
   // cancelled so no surface reports it as done.
-  if (signal.aborted && !finished.error) {
-    finished = {
-      ...finished,
-      isError: true,
-      error: { kind: 'aborted', message: 'The run was stopped', userMessage: 'Stopped' },
-    }
-  }
+  if (stoppedDuringTool) finished = markAborted(finished)
   // The gate's note tells the model what it could not otherwise see ("the person approved this").
   let parts = modelParts(finished)
-  if (gate?.note && !finished.isError)
+  if (gate?.note && !finished.isError && !nested)
     parts = [{ type: 'text', text: `${gate.note}\n\n` }, ...parts]
   const settled: AgentToolResult = { ...finished, content: textOf(parts), contentParts: parts }
   return provenance ? { result: settled, provenance } : { result: settled }
 }
 
 /** A whole call — resolve, admit, execute — for a tool calling a tool. Never rejects. */
-export async function runCall(
+export async function runNestedCall(
   env: CallEnvironment,
   call: ToolCallRequest,
   signal: AbortSignal,
+  nested: NestedCaller,
 ): Promise<CallOutcome> {
-  const admitted = await admitCall(env, resolveCall(env, call), signal)
+  const admitted = await admitCall(env, resolveCall(env, call), signal, nested.parent.id)
   if (admitted.kind === 'settled') return admitted.outcome
-  return executeCall(env, admitted, signal)
+  return executeCall(env, admitted, signal, undefined, nested)
 }

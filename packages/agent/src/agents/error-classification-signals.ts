@@ -1,3 +1,5 @@
+import { providerResponseOf } from '../utils/provider-response'
+
 // Transport and message evidence used by the ordered agent error classifier.
 
 // Phrases that can contain overflow-like words but mean transient throttling.
@@ -128,6 +130,9 @@ export function extractProviderStatus(error: unknown): number {
   // a numeric property — prefer that over scraping the message, which often omits it
   // (e.g. "Key limit exceeded (total limit)" with statusCode 403).
   if (error && typeof error === 'object') {
+    // The response a runtime attached (`attachProviderResponse`) is the authority when present.
+    const attached = providerResponseOf(error)?.status
+    if (attached !== undefined && attached >= 100 && attached < 600) return attached
     const obj = error as Record<string, unknown>
     for (const key of ['statusCode', 'status', 'code']) {
       const value = obj[key]

@@ -11,19 +11,19 @@ not add a duplicate generic event.
 
 ## What you can do
 
-| Action                       | Mechanism                                                   | Boundary                                                                 |
-| ---------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Review recent activity       | Open the title-bar bell; entries appear newest first        | The local server shares history with connected windows for the same user |
-| Read an entry in full        | Select the row; its body, actions and trace expand          | Expanding an entry marks it read                                         |
-| Return to a source session   | Select the arrow on a row that names a session              | Application messages without a session are not navigable                 |
-| Answer a waiting request     | Select **Respond** on a human-input entry                   | The entry settles once the request is answered, expires or ends          |
-| Retry a failed top-level run | Select **Retry** on the failure entry                       | Refused once a newer reply exists; settled by a later run                |
-| Hand a problem to the agent  | Select **Send to agent** on a problem entry                 | Stages the report as context; review and send your own request           |
-| Find an entry                | Search, or filter by status, event type, severity and time  | Search syntax is listed behind the **?** in the search field             |
-| Manage unread state          | Expand an entry, open its chat, or select **Mark all read** | Opening the bell alone does not mark anything read                       |
-| Remove history               | Remove one entry, or select **Clear history**               | Clear keeps pending requests and problems that are still true            |
-| Control interruptions        | Choose **Always**, **When app is inactive**, or **Never**   | Durable history is unaffected by this choice                             |
-| Show an app-icon count       | Enable the waiting count or indicator on the app icon       | Requires the desktop shell and operating-system support                  |
+| Action                      | Mechanism                                                   | Boundary                                                                 |
+| --------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Review recent activity      | Open the title-bar bell; entries appear newest first        | The local server shares history with connected windows for the same user |
+| Read an entry in full       | Select the row; its body, actions and trace expand          | Expanding an entry marks it read                                         |
+| Return to a source session  | Select the arrow on a row that names a session              | Application messages without a session are not navigable                 |
+| Answer a waiting request    | Select **Respond** on a human-input entry                   | The entry settles once the request is answered, expires or ends          |
+| Continue a failed run       | Select **Continue** on the failure entry                    | Gone once the conversation moved on; settled by a later run              |
+| Hand a problem to the agent | Select **Send to agent** on a problem entry                 | Stages the report as context; review and send your own request           |
+| Find an entry               | Search, or filter by status, event type, severity and time  | Search syntax is listed behind the **?** in the search field             |
+| Manage unread state         | Expand an entry, open its chat, or select **Mark all read** | Opening the bell alone does not mark anything read                       |
+| Remove history              | Remove one entry, or select **Clear history**               | Clear keeps pending requests and problems that are still true            |
+| Control interruptions       | Choose **Always**, **When app is inactive**, or **Never**   | Durable history is unaffected by this choice                             |
+| Show an app-icon count      | Enable the waiting count or indicator on the app icon       | Requires the desktop shell and operating-system support                  |
 
 The command palette provides **Event Center**, **Mark all events read**, and **Clear event
 history**.
@@ -44,10 +44,12 @@ history**.
 | An action you took that failed, or that needs a decision from you                              | Error or warning                                                                                | Only an error                    |
 
 A logical run reports once after retries and continuations finish. Successful top-level runs report
-when no later turns remain queued; nested chats do not add the same completion entry. **Retry**
-appears only when the failure's recovery supports it. Authentication and rate-limit failures owned
-by a provider connection update its standing problem instead of adding a duplicate run-failure
-entry.
+when no later turns remain queued; nested chats do not add the same completion entry. **Continue**
+appears only when the failure's recovery supports it; it picks the reply up where it stopped, as the
+row above the composer does
+([A reply that did not finish](conversations.md#a-reply-that-did-not-finish)). Authentication and
+rate-limit failures owned by a provider connection update its standing problem instead of adding a
+duplicate run-failure entry.
 
 Some facts are deliberately not entries: a slash command's reply, a shell you opened yourself
 exiting, and every answer to your own action that is not a failure (a rename in the file tree, a
@@ -91,7 +93,7 @@ standing entry per plugin and source.
 
 ### Actions on an entry
 
-**Retry**, **Respond** and **Send to agent** stay available after a reload. A choice offered on a
+**Continue**, **Respond** and **Send to agent** stay available after a reload. A choice offered on a
 failure or warning entry, such as **Force push** after a rejected push, stays available for one
 minute: after that the state it would act on has moved on, and the button is gone. **Undo** after a
 rename belongs to the answer beside the control, not to an entry.
