@@ -103,7 +103,7 @@ the exceptions in prose.
 | A5  | Kysely is imported only by repository modules and migrations.                               | Enforced with a baseline (10)        |
 | A6  | No value-import cycle between API features.                                                 | Enforced with a baseline (89)        |
 | A7  | Domain and service code throws domain errors; only routes produce HTTP errors.              | Enforced with a baseline (69)        |
-| A8  | UI slices on the same layer do not import each other; outsiders use a slice's public entry. | Enforced with a baseline (19)        |
+| A8  | UI slices on the same layer do not import each other; outsiders use a slice's public entry. | Enforced with a baseline (8)         |
 | C1  | A write to an owned entity records its notice in the same transaction.                      | Enforced with a baseline (3)         |
 | C2  | A notice names identity only: entity, op and ref.                                           | Enforced by the registry types       |
 | C3  | Every consumer handles every kind or ignores it explicitly.                                 | Enforced by the registry types       |
