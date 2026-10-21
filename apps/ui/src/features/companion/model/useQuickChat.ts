@@ -23,6 +23,7 @@ import { reconcileAfterReconnect } from '@/features/chat/model/reconnect-reconci
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import { isAgentUnavailable } from '@/features/chat/model/newChatAgent'
 import { isMissingSession, landIn, restoreOrLand } from './islandConversation'
+import { applyServerSession } from '@/features/chat/model/sessionSync'
 
 export const ISLAND_SESSION_KEY = 'localix_companion_session_v1'
 /** The backend view-state record that both the island and the workspace read. */
@@ -46,7 +47,7 @@ const createIn = async (projectId: string | null, landing: boolean) => {
       projectId,
       ...(landing ? { reuseEmptyDraft: true } : {}),
     })
-    useChatStore.getState()._replaceSession(session)
+    applyServerSession(session)
     return session
   }
 }
@@ -116,7 +117,7 @@ export function useQuickChat(focused = true) {
         land: (projectId) => createIn(projectId, true),
         forget,
       })
-      if (session && restored) useChatStore.getState()._replaceSession(session)
+      if (session && restored) applyServerSession(session)
       if (session && (!restored || selected.revision === 0)) selectSession(session.id)
       setStartFailed(false)
       return session
@@ -164,7 +165,7 @@ export function useQuickChat(focused = true) {
           getCurrent: () => findSessionInState(useChatStore.getState(), sessionId),
           isStillTarget: () => alive && target.current === sessionId,
           fetchSession: () => backendClient.getSession(sessionId),
-          applySession: (detail) => useChatStore.getState()._replaceSession(detail),
+          applySession: (detail) => applyServerSession(detail),
         })
       } catch (cause) {
         if (!alive) return
@@ -218,7 +219,7 @@ export function useQuickChat(focused = true) {
     if (creation.current || id === sessionId) return
     try {
       const restored = await backendClient.getSession(id)
-      useChatStore.getState()._replaceSession(restored)
+      applyServerSession(restored)
       files.clearAttachments()
       selectSession(id)
       setError(null)

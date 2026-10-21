@@ -83,9 +83,9 @@ export const C4_CONSUMER_TESTS: Rule = {
   },
 }
 
-/** The sync layer that applies relay state, and the store that defines the writers. */
+/** The chat store's sync layer, which applies server state, and the store that defines the writers. */
 export const STORE_WRITER_ALLOWLIST = new Set([
-  'apps/ui/src/app/workspaceResourceSync.ts',
+  'apps/ui/src/features/chat/model/sessionSync.ts',
   'apps/ui/src/features/chat/model/store.ts',
 ])
 const PRIVATE_WRITER = /\.\s*(_(?:replace|hydrate)[A-Z]\w*)\b/gu

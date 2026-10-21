@@ -2,8 +2,8 @@ import { useCallback } from 'react'
 import { toast } from '@/shared/lib/notify'
 
 import { backendClient } from '@/shared/api/client'
-import { useChatStore } from '@/features/chat/model/store'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { applyServerSession } from './sessionSync'
 
 /**
  * Fork the given session (optionally up to a message) into a fresh chat and
@@ -20,7 +20,7 @@ export function useForkSession(
       void backendClient
         .forkSession(activeSessionId, messageId)
         .then((session) => {
-          useChatStore.getState()._replaceSession(session)
+          applyServerSession(session)
           // Navigating into the copy IS the confirmation; a durable "Forked" row would only echo it.
           goToSession(session.id, { project: session.projectId ?? null })
         })

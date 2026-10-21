@@ -6,6 +6,7 @@ import { patchSessionById } from './sessionListHelpers'
 import { findSessionInState } from './findSession'
 import type { ChatStore, CustomSet } from './store'
 import { withModelChoices } from './sessionModelChoices'
+import { applyServerSession } from './sessionSync'
 
 /**
  * "ALL" — ONE ROUTE FOR EVERY AGENT THE PICKER LISTS.
@@ -119,7 +120,7 @@ export function createApplyPartyRoute({
     } finally {
       if (lane.get(sessionId) === write) lane.delete(sessionId)
     }
-    if (!lane.has(sessionId)) get()._replaceSession(session)
+    if (!lane.has(sessionId)) applyServerSession(session)
     // The level is remembered per agent and model, exactly as a single pick records it.
     for (const member of session.agents) {
       const providerId = seatProviderId(

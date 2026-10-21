@@ -8,6 +8,7 @@ import { useChatStore } from '@/features/chat/model/store'
 import { useForkSession } from '@/features/chat/model/useForkSession'
 import type { SessionRuntime, AgentOptions } from '@/features/chat/model/agent-runtime'
 import { findSessionInState } from '@/features/chat/model/findSession'
+import { applyServerSession } from '@/features/chat/model/sessionSync'
 
 export interface MessageActionsDeps {
   activeSessionId: string | null
@@ -91,7 +92,7 @@ export function useMessageActions({
       void backendClient
         .switchBranch(activeSessionId, messageId, branchIndex)
         .then((session) => {
-          useChatStore.getState()._replaceSession(session)
+          applyServerSession(session)
         })
         .catch((e: unknown) =>
           toast.error('Could not switch branch', {
@@ -132,7 +133,7 @@ export function useMessageActions({
           s._setSessionRunning(activeSessionId, false)
           void backendClient
             .getSession(activeSessionId)
-            .then((session) => useChatStore.getState()._replaceSession(session))
+            .then((session) => applyServerSession(session))
             .catch(() => {})
           toast.error('Could not edit this message', {
             description: errorMessage(e, '') || undefined,
@@ -148,7 +149,7 @@ export function useMessageActions({
       void backendClient
         .openMessageThread(activeSessionId, messageId)
         .then((session) => {
-          useChatStore.getState()._replaceSession(session)
+          applyServerSession(session)
           goToSession(session.id, { project: session.projectId ?? null })
         })
         .catch((e: unknown) =>

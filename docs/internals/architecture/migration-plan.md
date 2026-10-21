@@ -50,7 +50,8 @@ scheduling, terminal lifecycle and the session event stream.
 ## Client synchronization
 
 - [x] One writer for connections; the duplicate SWR keys and manual refreshes go.
-- [ ] Session writes reach other surfaces through topics instead of `_replaceSession` patches.
+- [x] Session writes land through the chat sync layer (`applyServerSession`) instead of
+      `_replaceSession` patches from each surface (C6).
 - [x] Caches with no topic subscribe to one: the settings model field, settings project lists, the
       model catalog, join routes and linked session previews.
 - [x] The transport tells the scheduler when a reconnect replayed every missed frame.

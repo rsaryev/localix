@@ -4,6 +4,7 @@ import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import { toast } from '@/shared/lib/notify'
 import { useChatStore } from './store'
 import { findSessionInState } from './findSession'
+import { applyServerSession } from './sessionSync'
 
 /**
  * How a retry ended. `superseded` / `no_reply` are the server REFUSING because the reply the caller
@@ -45,7 +46,7 @@ export async function retrySessionRun(
           session.id === sessionId &&
           findSessionInState(useChatStore.getState(), sessionId) === beforeSnapshot
         )
-          useChatStore.getState()._replaceSession(session)
+          applyServerSession(session)
       })
       .catch(() => undefined)
     const refusal = error instanceof ApiError && error.code ? REFUSALS[error.code] : undefined

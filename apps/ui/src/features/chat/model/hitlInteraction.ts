@@ -9,6 +9,7 @@ import type {
 } from '@/shared/api/contracts'
 
 import { useChatStore } from './store'
+import { applyServerSession } from './sessionSync'
 
 type WireHitlRequest = Extract<AgentStreamEvent, { type: 'hitl.requested' }>['request']
 
@@ -90,8 +91,7 @@ export function recoverInactiveHitlSession(id: string | null): void {
   void backendClient
     .getSession(id)
     .then((session) => {
-      useChatStore.getState()._replaceSession(session)
-      useChatStore.getState()._setSessionRunning(id, false)
+      applyServerSession(session, { running: false })
     })
     .catch(() => {
       useChatStore.getState()._setSessionRunning(id, false)
