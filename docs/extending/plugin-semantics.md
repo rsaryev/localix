@@ -62,6 +62,17 @@ returns the person's move at once, and the model's move lands through the store 
 `subscribe(consumer, handler)` reads them at a cursor that survives a restart; a handler that throws
 is retried from the same notice.
 
+`followCoreDeletions(consumer, handler)` reads the core's deletions the same way, read-only: a
+deleted agent, chat, project or provider connection, with its ref only (`CoreDeletion`). Use it to
+clean up what you kept about one, such as a card assigned to an agent that is gone. A renamed agent
+is not a deletion: store the agent's stable `agentId`, never its handle. The Kanban plugin unassigns
+a deleted agent's cards on every board this way, listing its chat folders with
+`ctx.sessionStorage.listDataDirs()`.
+
+This feed is durable and for backend consumers. To refresh an open view after a store write, use the
+store change feed instead; [Plugin synchronization](plugin-sync.md#two-change-feeds) explains the
+split.
+
 ## Example
 
 ```ts
@@ -102,6 +113,11 @@ const column =
 const stop = await host?.changes?.subscribe('digest', async (change) => {
   if (change.op === 'resync') await rebuildDigest()
   else await refreshDigest(change.ref.id as string)
+})
+
+// An agent was deleted: nothing of yours may still name it.
+await host?.changes?.followCoreDeletions('unassign', async (deletion) => {
+  if (deletion.entity === 'agent' && deletion.ref.agentId) await unassign(deletion.ref.agentId)
 })
 ```
 

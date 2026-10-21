@@ -3,7 +3,9 @@
  * items: the plugin records thin notices, and any number of its consumers read them, each at its
  * own durable cursor (a consumer that was down catches up on start). The core's chats, messages
  * and capabilities flow through the same mechanism; a plugin's stream is its own
- * (`plugin:<name>`), so it can neither read nor write another's.
+ * (`plugin:<name>`), so it can neither read nor write another's. Of the core's stream a plugin
+ * reads only deletions (`followCoreDeletions`). This feed is for backend consumers; an open view
+ * refreshes through `createStoreChangeFeed` (ephemeral, covers external file edits).
  *
  * A notice names what changed, never its state: a consumer reads what it needs, so delivery at
  * least once is harmless. `upserted` is created-or-changed, `deleted` carries what cleanup
