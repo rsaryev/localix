@@ -9,10 +9,9 @@ import { CapabilitiesSettings } from './CapabilitiesSettings'
 import { AgentsSettings } from './AgentsSettings'
 import { SystemSettings } from './SystemSettings'
 import { ProjectSettingsForm } from './ProjectsSettings'
-import type { Project } from '@/shared/api/contracts'
 import { backendClient } from '@/shared/api/client'
 import { toast } from '@/shared/lib/notify'
-import { reportProjectListFailure, reportProjectListLoaded } from '../model/projectListProblem'
+import { useSettingsProjects } from '../model/useSettingsProjects'
 import { prefersReducedMotion } from '@localixai/kit/environment'
 import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
 import { SettingsNavigation } from './SettingsNavigation'
@@ -20,7 +19,6 @@ import { SettingsWorkspace } from './SettingsWorkspace'
 import { ProjectScopeSelect } from './ScopeSwitcher'
 import { isCapabilityTab, parseSettingsTab, type SettingsTabId } from '@/shared/routing/routes'
 import { subscribeSettingsNav, consumeSettingsNav } from '@/shared/lib/settingsNavBus'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
 import { useSettingsAnchorMaterializer } from '../model/useSettingsAnchorMaterializer'
 import { navigateUi } from '@/shared/lib/uiNavigation'
 import { primarySettingsSection } from '../model/settingsNavigation'
@@ -45,7 +43,6 @@ export function SettingsPanel({
   onTabChange: onTabChangeProp,
   defaultScope,
 }: SettingsPanelProps) {
-  const workItemVisible = useWorkItemVisible()
   // Settings is app-level: it acts for no chat, so a link out of it opens nothing chat-scoped.
   const uiNavigation = useUiNavigation({ sessionId: null })
   const contentRef = useRef<HTMLDivElement>(null)
@@ -54,27 +51,12 @@ export function SettingsPanel({
   // one project, and that choice is unrelated to which scope's ceiling you were last
   // editing on the Capabilities page.
   const [agentsScope, setAgentsScope] = useState(defaultScope ?? '')
-  const [projects, setProjects] = useState<Project[]>([])
+  const projects = useSettingsProjects()
   // When rendered without controlling props (the grid mounts it bare), the panel
   // owns its own tab state so the tab bar still switches.
   const [internalTab, setInternalTab] = useState<SettingsTabId>('preferences')
   const activeTab = activeTabProp ?? internalTab
   const onTabChange = onTabChangeProp ?? setInternalTab
-
-  useEffect(() => {
-    if (!workItemVisible) return
-    let cancelled = false
-    backendClient
-      .listProjects()
-      .then((p) => {
-        reportProjectListLoaded()
-        if (!cancelled) setProjects(p)
-      })
-      .catch(reportProjectListFailure)
-    return () => {
-      cancelled = true
-    }
-  }, [workItemVisible])
 
   useEffect(() => {
     contentRef.current?.scrollTo({
@@ -116,7 +98,7 @@ export function SettingsPanel({
       if (!dir) return
       const name = dir.split('/').pop() ?? 'New project'
       const proj = await backendClient.createProject(name, dir)
-      setProjects((prev) => [...prev, proj])
+      // The 'projects' topic brings the new project into the list.
       onTabChange?.({ kind: 'project', id: proj.id })
     } catch (error) {
       toast.error('Could not add the project folder', {
@@ -174,13 +156,7 @@ export function SettingsPanel({
             <ProjectSettingsForm
               key={proj.id}
               project={proj}
-              onSaved={(updated) =>
-                setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
-              }
-              onDeleted={(id) => {
-                setProjects((prev) => prev.filter((p) => p.id !== id))
-                onTabChange?.('preferences')
-              }}
+              onDeleted={() => onTabChange?.('preferences')}
             />
           ) : (
             <p className="text-sm text-text-soft">Select a project above, or create one.</p>

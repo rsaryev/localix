@@ -11,11 +11,10 @@ import { SettingsActionActivity } from './SettingsActionActivity'
 
 export interface ProjectSettingsFormProps {
   project: Project
-  onSaved: (p: Project) => void
   onDeleted?: (id: string) => void
 }
 
-export function ProjectSettingsForm({ project, onSaved, onDeleted }: ProjectSettingsFormProps) {
+export function ProjectSettingsForm({ project, onDeleted }: ProjectSettingsFormProps) {
   const [name, setName] = useState(project.name)
   const [systemPrompt, setSystemPrompt] = useState(project.settings?.customSystemPrompt ?? '')
   const [saving, setSaving] = useState(false)
@@ -44,8 +43,8 @@ export function ProjectSettingsForm({ project, onSaved, onDeleted }: ProjectSett
         .catch(() => undefined)
         .then(async () => {
           try {
-            const updated = await backendClient.updateProject(project.id, request)
-            onSaved(updated)
+            // The 'projects' topic brings the saved project back into every list.
+            await backendClient.updateProject(project.id, request)
             if (version === saveVersionRef.current) setMutationError(null)
           } catch (error) {
             if (version === saveVersionRef.current) {
@@ -58,7 +57,7 @@ export function ProjectSettingsForm({ project, onSaved, onDeleted }: ProjectSett
       saveQueueRef.current = queued
       return queued
     },
-    [project, name, systemPrompt, onSaved],
+    [project, name, systemPrompt],
   )
 
   const handleDelete = async () => {
