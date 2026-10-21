@@ -1,6 +1,6 @@
 import { conversationPolicy } from '../policy/session-policy'
 import { ApiError } from '../../../lib/errors'
-import { recordSessionChanges } from '../runtime/session-notice'
+import { announceSessionChanges } from '../runtime/session-notice'
 import { changeParticipants } from '../runtime/conversation-participants'
 import { sessionFieldsPatch } from './session-patch'
 import { reseatParticipants } from './participant-routes'
@@ -113,7 +113,7 @@ export async function updateSession(
   // What the people who stayed now run on, said in the conversation. The membership lines were
   // already written by the participants writer, so this diff starts from its result. AFTER the
   // write is durable, so a failed edit never announces a change that did not happen.
-  await recordSessionChanges(ctx, userId, id, afterMembership, persisted)
+  await announceSessionChanges(ctx, userId, id, afterMembership, persisted)
   const modeBefore = afterMembership.permissionMode
   if (persisted.permissionMode !== undefined && persisted.permissionMode !== modeBefore)
     await ctx.onPermissionModeChanged?.(userId, id, modeBefore, persisted.permissionMode)
