@@ -20,7 +20,7 @@
  * an anti-void assertion, and a positive control planted ON DISK — are NOT hand-rolled
  * here. They live once in `lib/source-lint.ts`; this file supplies only the detector.
  */
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, setDefaultTimeout, test } from 'bun:test'
 import { dirname } from 'node:path'
 import {
   assertNotVoid,
@@ -28,6 +28,9 @@ import {
   scanSources,
   type SourceFile,
 } from '../../lib/source-lint'
+
+// Walks the whole source tree: seconds under a parallel run of every package, not milliseconds.
+setDefaultTimeout(30_000)
 
 const CORE_DIR = dirname(Bun.fileURLToPath(import.meta.url))
 

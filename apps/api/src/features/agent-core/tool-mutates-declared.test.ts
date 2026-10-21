@@ -1,12 +1,15 @@
 /// <reference types="bun" />
 
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, setDefaultTimeout, test } from 'bun:test'
 import {
   assertNotVoid,
   assertPositiveControl,
   scanSources,
   withPlantedSources,
 } from '../../lib/source-lint'
+
+// Walks the whole source tree: seconds under a parallel run of every package, not milliseconds.
+setDefaultTimeout(30_000)
 
 /**
  * EVERY CORE TOOL MUST SAY, OUT LOUD, WHETHER IT MUTATES.

@@ -6,13 +6,16 @@
  * outside the app's `{ error: { code, message } }` contract. `apps/ui` `unwrap()` reads
  * `error.error.message`, so the user saw the JSON dump of the Zod issue array with a null code.
  */
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, setDefaultTimeout, test } from 'bun:test'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { stripComments } from './source-lint'
 import { zValidator } from './validator'
+
+// Walks the whole source tree: seconds under a parallel run of every package, not milliseconds.
+setDefaultTimeout(30_000)
 
 const app = new Hono()
   .post('/json', zValidator('json', z.object({ name: z.string().min(1), port: z.number() })), (c) =>

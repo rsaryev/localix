@@ -10,12 +10,15 @@
  *                          tools — plugin/MCP-hosted — are the stated exception)
  *   ports = branches       every port is read by one `optional.<name>` registration
  */
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, setDefaultTimeout, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { stripComments } from '../../lib/source-lint'
 import { BUILTIN_TOOL_NAMES } from './tool-names'
+
+// Walks the whole source tree: seconds under a parallel run of every package, not milliseconds.
+setDefaultTimeout(30_000)
 
 const HERE = import.meta.dir
 const read = (file: string) => stripComments(readFileSync(join(HERE, file), 'utf8'))

@@ -1,6 +1,6 @@
 /// <reference types="bun" />
 
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, setDefaultTimeout, test } from 'bun:test'
 import path from 'node:path'
 
 import {
@@ -13,6 +13,9 @@ import {
   stripComments,
   type Exemptions,
 } from '../../lib/source-lint'
+
+// Walks the whole source tree: seconds under a parallel run of every package, not milliseconds.
+setDefaultTimeout(30_000)
 
 /**
  * THE COMPOSITION-ROOT CONTRACT, ENFORCED.

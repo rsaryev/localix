@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, setDefaultTimeout, test } from 'bun:test'
 import path from 'node:path'
 
 import {
@@ -10,6 +10,9 @@ import {
   staleReport,
   type Exemptions,
 } from './source-lint'
+
+// Walks the whole source tree: seconds under a parallel run of every package, not milliseconds.
+setDefaultTimeout(30_000)
 
 /**
  * THE PATH-CONTAINMENT CONTRACT, ENFORCED.

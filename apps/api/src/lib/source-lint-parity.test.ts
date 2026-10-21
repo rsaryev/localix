@@ -1,9 +1,12 @@
 /// <reference types="bun" />
 
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, setDefaultTimeout, test } from 'bun:test'
 
 import { codeOnly } from '@localixai/source-lint'
 import { stripComments } from './source-lint'
+
+// Walks the whole source tree: seconds under a parallel run of every package, not milliseconds.
+setDefaultTimeout(30_000)
 
 /**
  * TWO COMMENT STRIPPERS, ONE MEANING OF "CODE".

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test'
+import { describe, expect, it, setDefaultTimeout } from 'bun:test'
 import { access } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -9,6 +9,9 @@ import { resolvePluginConfig } from './config'
 import { inspectPluginTools } from './native'
 import { validatePluginFull } from './validate'
 import { assertNotVoid } from '../../lib/source-lint'
+
+// Walks the whole source tree: seconds under a parallel run of every package, not milliseconds.
+setDefaultTimeout(30_000)
 
 async function exists(path: string): Promise<boolean> {
   try {

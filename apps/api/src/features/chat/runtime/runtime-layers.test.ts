@@ -24,7 +24,7 @@
  * control) is `lib/source-lint.ts`, exactly as in `agent-core/agnostic-boundary.test.ts`. This
  * file supplies only the detectors.
  */
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, setDefaultTimeout, test } from 'bun:test'
 import { dirname, join } from 'node:path'
 import {
   assertNotVoid,
@@ -32,6 +32,9 @@ import {
   scanSources,
   type SourceFile,
 } from '../../../lib/source-lint'
+
+// Walks the whole source tree: seconds under a parallel run of every package, not milliseconds.
+setDefaultTimeout(30_000)
 
 const RUNTIME_DIR = dirname(Bun.fileURLToPath(import.meta.url))
 const RUN_DIR = join(RUNTIME_DIR, 'run')

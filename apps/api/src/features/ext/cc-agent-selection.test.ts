@@ -1,10 +1,13 @@
 /// <reference types="bun" />
 
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, setDefaultTimeout, test } from 'bun:test'
 import path from 'node:path'
 
 import { roleNameOfSubagentType } from './cc-agent-selection'
 import { scanSources } from '../../lib/source-lint'
+
+// Walks the whole source tree: seconds under a parallel run of every package, not milliseconds.
+setDefaultTimeout(30_000)
 
 /** The CC selector rule has one adapter owner; native handoffs do not interpret it. */
 const SRC_ROOT = path.resolve(import.meta.dir, '..', '..')

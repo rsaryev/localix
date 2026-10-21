@@ -19,9 +19,12 @@
  * The honest-lint mechanics (comment stripping, recursive walk, liveness floor, planted positive
  * control) live once in `lib/source-lint.ts`; this file supplies only the detector.
  */
-import { describe, expect, test } from 'bun:test'
+import { describe, expect, setDefaultTimeout, test } from 'bun:test'
 import { dirname, join } from 'node:path'
 import { assertPositiveControl, scanSources, type SourceFile } from '../lib/source-lint'
+
+// Walks the whole source tree: seconds under a parallel run of every package, not milliseconds.
+setDefaultTimeout(30_000)
 
 const FEATURES_DIR = dirname(Bun.fileURLToPath(import.meta.url))
 
