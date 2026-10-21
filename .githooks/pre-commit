@@ -6,5 +6,8 @@ set -e
 root=$(git rev-parse --show-toplevel)
 cd "$root"
 
+bun scripts/commit-identity.mjs
 bun scripts/pre-commit.mjs
-bun scripts/pre-commit-full.mjs
+# The full gates run tests; none of them may inherit the hook's pointer to this repository.
+env -u GIT_DIR -u GIT_INDEX_FILE -u GIT_WORK_TREE -u GIT_COMMON_DIR -u GIT_PREFIX \
+  bun scripts/pre-commit-full.mjs
