@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test'
 
 import { usePreviewStore } from '@/features/inspector/model/previewStore'
+import { inspectorSessionPreviews } from '@/features/inspector/model/sessionPreviewRouters'
+import { registerSessionPreviews } from '@/shared/lib/sessionPreviews'
 import { backendClient } from '@/shared/api/client'
 import { ApiError } from '@/shared/api/failure'
 import type { UiSession } from '@/shared/api/contracts'
@@ -23,8 +25,11 @@ let originalPreviewState: Pick<
 >
 let restoreDelete: (() => void) | undefined
 let unregister: (() => void) | undefined
+// The app installs the inspector's previews; this suite pins what deleting a chat does to them.
+let unregisterPreviews: (() => void) | undefined
 
 beforeEach(() => {
+  unregisterPreviews = registerSessionPreviews(inspectorSessionPreviews)
   originalChatState = useChatStore.getState()
   const previewState = usePreviewStore.getState()
   originalPreviewState = {
@@ -42,6 +47,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  unregisterPreviews?.()
   restoreDelete?.()
   restoreDelete = undefined
   unregister?.()

@@ -2,8 +2,7 @@ import { backendClient } from '@/shared/api/client'
 import { ApiError } from '@/shared/api/failure'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { composerDrafts } from '@/shared/lib/composerDrafts'
-import { usePreviewStore } from '@/features/inspector/model/previewStore'
-import { closeNativePages } from '@/features/inspector/model/nativePages'
+import { sessionPreviews } from '@/shared/lib/sessionPreviews'
 import type { UiSession } from '@/shared/api/contracts'
 import type { ReasoningEffort } from './reasoning'
 import { patchSessionById, sessionBelongsToScope, sortSessions } from './sessionListHelpers'
@@ -86,16 +85,11 @@ export function createSessionActions({
   const actions: SessionActions = {
     _forgetSessions: (ids) => {
       for (const pending of pendingSelections) if (ids.includes(pending.id)) pending.removed = true
+      sessionPreviews().forget(ids)
       for (const id of ids) {
         drafts.forget(id)
         sessionBodyCache.delete(id)
         composerDrafts.forget(id)
-        const previews = usePreviewStore.getState()
-        closeNativePages(
-          (previews.previewTabsBySession[id] ?? []).map((entry) => entry.previewId),
-          'Could not close the pages of the deleted chat',
-        )
-        previews.discardSessionPreview(id)
         inspector.closeSession(id)
       }
     },

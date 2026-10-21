@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { eventSocket } from '@/shared/api/eventSocket'
 import { isDesktop } from '@localixai/kit/environment'
-import { routePreviewCommand, routePreviewUpdated } from '@/features/chat/model/sessionEventRouters'
+import { routePreviewCommand, routePreviewUpdated } from '../model/sessionPreviewRouters'
 import { usePreviewStore } from '../model/previewStore'
 import { previewHostKey, usePreviewHosts } from '../model/previewHosts'
 import type { PreviewEntry, PreviewsBySession } from '../model/preview'

@@ -15,7 +15,7 @@ import { backendClient } from '@/shared/api/client'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import { toast } from '@/shared/lib/notify'
 import type { SessionWork } from '@/shared/api/contracts'
-import { openPreviewFromClick } from '@/features/inspector/model/openPreview'
+import { sessionPreviews } from '@/shared/lib/sessionPreviews'
 import { terminal as terminalBus } from '@/shared/lib/terminalBus'
 import { useTerminalLiveness } from '@/features/terminal/model/useTerminalLiveness'
 import { useChatStore } from '../../model/store'
@@ -133,7 +133,7 @@ export const WorkStrip = memo(function WorkStrip({
                   aria-label="Open preview"
                   tooltip={`Open preview — ${previewUrl}`}
                   tooltipSide="top"
-                  onClick={() => openPreviewFromClick(sessionId, previewUrl)}
+                  onClick={() => sessionPreviews().open(sessionId, previewUrl)}
                   className="ring-1 ring-inset ring-control-border/55 hover:bg-surface-hover"
                 >
                   <MonitorPlay className="size-3" />

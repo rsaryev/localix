@@ -17,9 +17,6 @@ import { applyAttentionRoster, loadAttention } from './attention/store'
 import { routePlanPresented } from './plans'
 import {
   routePluginCommand,
-  routePreviewUpdated,
-  routePreviewCommand,
-  routePreviewClosed,
   routeFsChanged,
   routeTerminalOpened,
   routeTerminalState,
@@ -27,6 +24,7 @@ import {
   routePluginSessionEvent,
 } from './sessionEventRouters'
 import { sessionEventHandlersFor } from '@/shared/contrib/sessionEvents'
+import { sessionPreviews } from '@/shared/lib/sessionPreviews'
 import { resourceSync } from '@/shared/api/resourceSync'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 
@@ -118,15 +116,15 @@ export function useChatEventStream(enabled = true): void {
       return
     }
     if (parsed.type === 'preview.updated') {
-      routePreviewUpdated(sessionId, parsed)
+      sessionPreviews().updated(sessionId, parsed)
       return
     }
     if (parsed.type === 'preview.command') {
-      routePreviewCommand(sessionId, parsed)
+      sessionPreviews().command(sessionId, parsed)
       return
     }
     if (parsed.type === 'preview.closed') {
-      routePreviewClosed(sessionId, parsed)
+      sessionPreviews().closed(sessionId, parsed)
       return
     }
     if (parsed.type === 'fs.changed') {
