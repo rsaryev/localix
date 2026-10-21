@@ -29,7 +29,7 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
-    # A pull request builds, checks and tests only the packages it changes and their dependents
+    # A pull request checks and tests only the packages it changes and their dependents
     # (Turbo's --affected against the base commit; a global input selects everything). The merge
     # queue and main check the whole tree, so nothing unchecked reaches main.
     env:

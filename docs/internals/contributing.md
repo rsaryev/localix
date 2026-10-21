@@ -143,8 +143,8 @@ release binaries.
 The Bun package cache, the Turbo cache, and the Rust target are restored from GitHub cache archives.
 Only pushes to `main` save the Turbo and Rust archives, so pull requests restore them without
 evicting them. The Turbo archive drops entries untouched for two weeks before it is saved, so it
-stays bounded. Dependabot opens one grouped pull request a week for pinned GitHub Actions, only for
-releases at least a week old; workspace packages and crates are updated by hand.
+stays bounded. Pinned actions, workspace packages and crates are updated by hand; there is no
+Dependabot.
 
 `check:bundle` starts the staged API outside the checkout during `Checks`. Release verification does
 not rerun the CI gates: it requires a successful `Checks` run for the tagged commit, then signs a

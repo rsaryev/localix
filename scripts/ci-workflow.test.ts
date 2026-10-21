@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 
 const root = resolve(import.meta.dir, '..')
 const read = (path: string) => readFileSync(resolve(root, path), 'utf8')
@@ -224,15 +224,8 @@ describe('CI minute budget contract', () => {
     expect(steps[save]?.if).toContain("github.ref == 'refs/heads/main'")
   })
 
-  test('updates pinned actions through one weekly grouped Dependabot pull request', () => {
-    const config = Bun.YAML.parse(read('.github/dependabot.yml')) as {
-      updates: { 'package-ecosystem': string; directories: string[]; cooldown: object }[]
-    }
-    const [actions] = config.updates
-    expect(config.updates).toHaveLength(1)
-    expect(actions?.['package-ecosystem']).toBe('github-actions')
-    expect(actions?.directories).toContain('/.github/actions/*')
-    expect(actions?.cooldown).toEqual({ 'default-days': 7 })
+  test('dependencies are updated by hand: no Dependabot configuration', () => {
+    expect(existsSync(join(root, '.github/dependabot.yml'))).toBe(false)
   })
 
   test('runs the package and repository suites side by side', () => {
@@ -249,8 +242,11 @@ describe('CI minute budget contract', () => {
       TURBO_SCM_BASE: '${{ github.event.pull_request.base.sha }}',
     })
     const scripts = JSON.parse(read('package.json')).scripts as Record<string, string>
-    for (const gate of ['build', 'type-check', 'check:tests'])
+    for (const gate of ['type-check', 'check:tests'])
       expect(scripts[gate]).toContain('${TURBO_FILTER:-}')
+    // The repository tests run on every change and import built packages, so the build is never
+    // filtered; Turbo replays every unchanged package from the cache main saved.
+    expect(scripts.build).toBe('bunx turbo build')
     expect(read('scripts/test-all.mjs')).toContain('...filter')
   })
 

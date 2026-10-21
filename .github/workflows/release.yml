@@ -458,7 +458,10 @@ jobs:
               mkdir -p "$work/appimage" "$work/deb"
               appimage=$(compgen -G "$BUNDLE/appimage/*.AppImage" | head -n 1)
               deb=$(compgen -G "$BUNDLE/deb/*.deb" | head -n 1)
-              [ -n "$appimage" ] && [ -n "$deb" ] || { echo "AppImage or .deb missing under $BUNDLE" >&2; exit 1; }
+              if [ -z "$appimage" ] || [ -z "$deb" ]; then
+                echo "AppImage or .deb missing under $BUNDLE" >&2
+                exit 1
+              fi
               (cd "$work/appimage" && "$appimage" --appimage-extract >/dev/null)
               dpkg-deb -x "$deb" "$work/deb"
               "${SMOKE[@]}" --root "$work/appimage/squashfs-root"
