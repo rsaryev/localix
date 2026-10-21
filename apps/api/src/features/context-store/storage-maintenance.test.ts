@@ -13,7 +13,7 @@ import {
   storageUsage,
 } from '../../db/storage'
 import { COMPRESS_MIN_BYTES, decodeArtifactText, encodeArtifactText } from './artifact-codec'
-import { compactArtifacts, deleteSessionChunks, sweepOrphanChunks } from './maintenance'
+import { compactArtifacts, deleteSessionChunks, sweepOrphanChunks } from './repository-maintenance'
 import { createContextStoreRepository } from './repository'
 
 const tempDir = join(import.meta.dir, `.tmp-storage-${randomUUID()}`)

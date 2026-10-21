@@ -9,7 +9,7 @@ import { USAGE_AUXILIARY_KINDS } from './usage-types'
  * Reads and writes of chat-turn usage-ledger rows: the one writer of those rows. The row itself is
  * derived from its assistant message in `ledger-rows.ts`. The ledger projector writes the messages
  * a notice names; the boot reconcile scans every assistant message for rows that disagree with
- * theirs (`usage-reconciliation.ts`).
+ * theirs (`repository-reconciliation.ts`).
  */
 
 const AUXILIARY_FINISH_REASONS = new Set<string>(USAGE_AUXILIARY_KINDS)

@@ -18,7 +18,7 @@ import {
   usageAggregateColumns,
   usageKindKeyExpr,
   mapUsageAggregate,
-} from './usage-query-helpers'
+} from './repository-query-helpers'
 
 export function createUsageQueries(db: Kysely<AppDatabase>) {
   return {

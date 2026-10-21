@@ -3,7 +3,7 @@ import { sql, type Kysely } from 'kysely'
 import type { AppDatabase } from '../../db'
 import { decodeArtifactText, encodeArtifactText } from './artifact-codec'
 import { chunkToolOutput, MAX_CHUNKS } from './chunking'
-import { participantOutputPredicate } from './participant-output'
+import { participantOutputPredicate } from './repository-participant-output'
 
 /**
  * Durable exact tool I/O plus its disposable FTS5 search projection. The exact

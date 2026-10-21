@@ -1,7 +1,10 @@
 import { checkpointWal, ensureIncrementalVacuum, reclaimFreePages } from '../db/storage'
 import { errorMessage } from '../lib/errors'
 import type { IdleTaskContext } from '../lib/idle-tasks'
-import { compactArtifacts, sweepOrphanChunks } from '../features/context-store/maintenance'
+import {
+  compactArtifacts,
+  sweepOrphanChunks,
+} from '../features/context-store/repository-maintenance'
 import type { UserService } from '../features/user/service'
 import type { StorageService } from '../features/storage/service'
 import type { InfraPhase } from './infra'

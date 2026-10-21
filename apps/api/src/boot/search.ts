@@ -38,7 +38,7 @@ import type { createMcpService } from '../features/mcp/service'
 import type { createAgentsService } from '../features/agents/service'
 import type { createCatalogService } from '../features/catalog/service'
 import type { SemanticService } from '../features/embeddings/service'
-import { createMessageSearchReads } from '../features/chat/message-search-reads'
+import { createMessageSearchReads } from '../features/chat/repository-message-search'
 import { registerCapabilitySemantics } from '../bootstrap/capability-semantic'
 
 /** How long eager search may reuse the runtime adapter's model catalog. */

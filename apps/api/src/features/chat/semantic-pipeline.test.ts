@@ -19,12 +19,12 @@ import { createSemanticReader } from '../embeddings/semantic-index'
 import { createSemanticStore } from '../embeddings/store'
 import { createFakeEngine, FAKE_DIMENSIONS } from '../embeddings/testing/fake-engine'
 import { createVectorCache } from '../embeddings/vector-cache'
-import { createMessageSearchReads } from './message-search-reads'
+import { createMessageSearchReads } from './repository-message-search'
 import {
   chatSemanticTargets,
   createMessagesSemanticSource,
   createSessionsSemanticSource,
-} from './semantic-sources'
+} from './repository-semantic-sources'
 import { createMessagesSearchProvider, createSessionsSearchProvider } from './search-provider'
 
 type Db = ReturnType<typeof createDatabase>
