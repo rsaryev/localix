@@ -1,7 +1,7 @@
 # Localix
 
-> Localix is an open source Agentic Development Environment: agent teams, a fast Browser, and
-> plugins you build in minutes on embeddings and decision models. It is one desktop application made of
+> Localix is an open source Agentic Development Environment: a team of AI agents with your
+> editor, terminals and browser. Use any model, or run one locally. It is one desktop application made of
 > a React workspace, a local Bun/Hono API, and an agent runtime.
 
 ## Reaching Localix from a program

@@ -43,8 +43,8 @@ export function HomePage() {
               className="display text-[2.5rem] sm:text-[3.25rem] lg:text-[4rem] xl:text-[4.75rem]"
             />
             <p className="lede hero-rise text-lg">
-              Your editor, terminals, Browser and a team of agents in one desktop app — fast where
-              it matters, open where it counts.
+              A team of AI agents works with you in one desktop app: your editor, terminals and
+              browser. Any model, or run one on your own computer.
             </p>
             <HomeActions className="hero-actions hero-rise" />
           </div>

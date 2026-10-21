@@ -1,7 +1,7 @@
 {
   "name": "localix",
   "private": true,
-  "description": "Open source Agentic Development Environment: agent teams, a fast Browser, and plugins you build in minutes on embeddings and decision models.",
+  "description": "Open source Agentic Development Environment: a team of AI agents with your editor, terminals and browser. Use any model, or run one locally.",
   "license": "MIT",
   "workspaces": [
     "apps/*",

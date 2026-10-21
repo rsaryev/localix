@@ -98,7 +98,7 @@ describe('landing page shell', () => {
     // The one-sentence description is repeated in the hero, the page metadata, the structured
     // data and the social card. Each carrier once said something different.
     const appRoot = join(srcDir, '..')
-    const sentence = 'agent teams, a fast Browser, and plugins'
+    const sentence = 'a team of AI agents with your editor, terminals and browser'
     const carriers = [
       readFileSync(join(appRoot, 'index.html'), 'utf8'),
       readFileSync(join(appRoot, 'public/og.svg'), 'utf8'),
@@ -107,13 +107,15 @@ describe('landing page shell', () => {
     for (const carrier of carriers) expect(carrier).toContain(sentence)
     // The hero states the product's short form.
     expect(read('pages/HomePage.tsx').replaceAll(/\s+/g, ' ')).toContain(
-      'Your editor, terminals, Browser and a team of agents in one desktop app',
+      'A team of AI agents works with you in one desktop app',
     )
     // llms.txt is hand-maintained and wraps its copy inside a blockquote, so unwrap first.
     const llms = readFileSync(join(appRoot, 'public/llms.txt'), 'utf8')
       .replaceAll(/^>\s?/gmu, '')
       .replaceAll(/\s+/gu, ' ')
-    expect(llms).toContain('agent teams, a fast Browser, and plugins you build in minutes')
+    expect(llms).toContain(
+      'a team of AI agents with your editor, terminals and browser. Use any model, or run one locally',
+    )
     // No claim of a download until a release exists: the action that works today is a build.
     expect(read('components/DownloadChooser.tsx')).toContain('/docs/getting-started--installation')
   })

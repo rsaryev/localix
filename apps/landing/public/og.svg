@@ -3,7 +3,7 @@
   <!-- Kept in sync with the product sentence in index.html / README. The card mirrors the
        homepage: the headline with the bird beside it, and the demo's app window rising from the
        bottom edge. `og.png` is rendered from this file with the landing's own fonts. -->
-  <desc id="description">Localix is an open source Agentic Development Environment: agent teams, a fast Browser, and plugins you build in minutes on embeddings and decision models.</desc>
+  <desc id="description">Localix is an open source Agentic Development Environment: a team of AI agents with your editor, terminals and browser. Use any model, or run one locally.</desc>
   <defs>
     <clipPath id="window">
       <rect x="80" y="292" width="1040" height="420" rx="18" />

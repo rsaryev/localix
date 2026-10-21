@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  Your editor, terminals, Browser and a team of agents in one desktop app — fast where it matters, open where it counts.
+  A team of AI agents works with you in one desktop app: your editor, terminals and browser. Any model, or run one on your own computer.
 </p>
 
 <p align="center">

@@ -2,7 +2,7 @@
 name = "desktop-tauri"
 # Keep in sync with tauri.conf.json's version (the authoritative bundle version).
 version = "0.0.1"
-description = "Open source Agentic Development Environment: agent teams, a fast Browser, and plugins you build in minutes on embeddings and decision models."
+description = "Open source Agentic Development Environment: a team of AI agents with your editor, terminals and browser. Use any model, or run one locally."
 # No `authors`: the .deb Maintainer field then falls back to the tauri.conf.json
 # `publisher` ("Localix") instead of shipping a placeholder.
 edition = "2021"
