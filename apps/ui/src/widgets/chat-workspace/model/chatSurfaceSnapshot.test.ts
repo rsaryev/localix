@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { Message } from '@/features/chat/model/types'
+import type { Message } from '@/entities/chat/model/types'
 import { createChatSurfaceSnapshotSelector } from './chatSurfaceSnapshot'
 
 const message = (value: Partial<Message> & Pick<Message, 'id' | 'role'>): Message =>

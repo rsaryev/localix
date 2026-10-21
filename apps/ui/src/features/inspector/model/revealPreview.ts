@@ -1,5 +1,5 @@
 import { autoReveal } from '@/shared/lib/inspectorBus'
-import { useChatStore } from '@/features/chat/model/store'
+import { useChatStore } from '@/entities/chat/model/store'
 import { openPolicy } from '@/shared/lib/workspaceOf'
 import { usePreviewStore } from './previewStore'
 import type { PreviewEntry } from './preview'

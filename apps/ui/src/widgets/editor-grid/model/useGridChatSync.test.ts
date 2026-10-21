@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { makeLeaf, type WorkItem } from '@/features/workspace-grid/model'
+import { makeLeaf, type WorkItem } from '@/entities/workspace-grid/model'
 import { syncGridChatSelection } from './useGridChatSync'
 
 function bridge() {

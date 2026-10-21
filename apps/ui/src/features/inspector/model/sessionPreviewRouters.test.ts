@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { setWorkspaceResolver } from '@/shared/lib/workspaceOf'
 import { registerInspectorHandler, type InspectorRequest } from '@/shared/lib/inspectorBus'
-import { useChatStore } from '@/features/chat/model/store'
+import { useChatStore } from '@/entities/chat/model/store'
 import { usePreviewStore } from './previewStore'
 import { previewHostKey, usePreviewHosts } from './previewHosts'
 import {

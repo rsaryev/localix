@@ -156,5 +156,5 @@ outcome is shown beside it.
 - [Foreground job promotion](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/bash/bash-promote.ts)
 - [The jobs tool](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/bash/jobs.ts)
 - [Panes as work](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/terminal/terminal-work.ts)
-- [Background-work strip](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/prompt-input/WorkStrip.tsx)
-- [What a restart to update stops](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/model/interruptibleWork.ts)
+- [Background-work strip](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/chat/ui/prompt-input/WorkStrip.tsx)
+- [What a restart to update stops](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/chat/model/interruptibleWork.ts)

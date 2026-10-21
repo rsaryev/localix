@@ -8,7 +8,7 @@ import type {
 // ---- Pending HITL interactions (UI shape) -----------------------------------
 // The client-side shape of a pending ask/quiz/confirm request, derived from the
 // API contract types. Defined here (shared) so both the backend client and the
-// chat feature can use them; features/chat/model/agent-runtime re-exports them.
+// chat feature can use them; entities/chat/model/agent-runtime re-exports them.
 
 interface PendingHitlSource {
   /** Session whose run created this request; it may be rendered on an ancestor. */

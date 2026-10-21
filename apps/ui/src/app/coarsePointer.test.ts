@@ -5,15 +5,15 @@ import { readKitStylesheet } from '@localixai/kit/testing/stylesheet'
 
 const css = readKitStylesheet()
 const messageCard = readFileSync(
-  resolve(import.meta.dir, '../features/chat/ui/MessageCard.tsx'),
+  resolve(import.meta.dir, '../entities/chat/ui/MessageCard.tsx'),
   'utf8',
 )
 const mediaFigure = readFileSync(
-  resolve(import.meta.dir, '../features/chat/ui/MediaFigure.tsx'),
+  resolve(import.meta.dir, '../entities/chat/ui/MediaFigure.tsx'),
   'utf8',
 )
 const messageActions = readFileSync(
-  resolve(import.meta.dir, '../features/chat/ui/MessageActions.tsx'),
+  resolve(import.meta.dir, '../entities/chat/ui/MessageActions.tsx'),
   'utf8',
 )
 const tabs = readFileSync(

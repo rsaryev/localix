@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from 'react'
-import { useGridStore, GLOBAL_SCOPE, groupOfTab, scopeOf } from '@/features/workspace-grid/model'
+import { useGridStore, GLOBAL_SCOPE, groupOfTab, scopeOf } from '@/entities/workspace-grid/model'
 import { workspaceOf } from '@/shared/lib/workspaceOf'
 import { shownTab } from './workspaceChats'
 

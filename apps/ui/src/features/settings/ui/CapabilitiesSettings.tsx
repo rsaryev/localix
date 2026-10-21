@@ -17,7 +17,7 @@ import { useUiTarget } from '@/shared/hooks/useUiTarget'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { agentScopeValue } from '@/shared/api/capabilityScope'
 import { useAgents } from '@/shared/contrib/useAgents'
-import { useActiveSessionAgentId } from '@/features/chat/model/store'
+import { useActiveSessionAgentId } from '@/entities/chat/model/store'
 
 interface CapabilitiesSettingsProps {
   activeTab: CapabilityTabId

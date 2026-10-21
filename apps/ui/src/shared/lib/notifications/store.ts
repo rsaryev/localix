@@ -119,7 +119,7 @@ onJournalProjection((entries) => useNotificationsStore.setState({ entries }))
 // No dock badge from here. This store used to mirror its unread count onto the native app-icon
 // badge while the chat mirrored its waiting conversations onto the SAME badge, so the number
 // meant whichever writer ran last. The badge now has one writer and one meaning — conversations
-// waiting on the person (`features/chat/model/useDockBadge.ts`); unread history stays on the bell.
+// waiting on the person (`entities/chat/model/useDockBadge.ts`); unread history stays on the bell.
 
 /** Non-React accessor for settling superseded or cleared standing conditions. */
 export function resolveNotificationCondition(prefix: string, keep?: string): void {

@@ -3,8 +3,8 @@
 // chat-selection sync this widget owns, so it lives here: `features/workspace-grid`,
 // where the rest of the hydration tests live, may not import a widget.
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import type { PersistedGrid } from '@/features/workspace-grid/model/persistence'
-import { __resetGridForTests } from '@/features/workspace-grid/model/store'
+import type { PersistedGrid } from '@/entities/workspace-grid/model/persistence'
+import { __resetGridForTests } from '@/entities/workspace-grid/model/store'
 import {
   activeWorkItemContribution,
   findLeaf,
@@ -12,7 +12,7 @@ import {
   hydrateGrid,
   reconcileUnavailableContributedItems,
   useGridStore,
-} from '@/features/workspace-grid/model'
+} from '@/entities/workspace-grid/model'
 import { workItemKindRegistry } from '@/shared/contrib/uiContrib'
 import { pluginUiHostFor } from '@/shared/contrib/host'
 import { setEnabledPluginNames } from '@/shared/contrib/pluginActivation'

@@ -1,1 +1,1 @@
-export * from '@/features/chat/model/useSendMessage'
+export * from '@/entities/chat/model/useSendMessage'

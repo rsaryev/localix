@@ -1,6 +1,6 @@
 import { Check, ChevronDown, Folder, FolderPlus } from 'lucide-react'
-import { useChatStore } from '@/features/chat/model/store'
-import { useAddProjectFolder } from '@/features/chat/model/useAddProjectFolder'
+import { useChatStore } from '@/entities/chat/model/store'
+import { useAddProjectFolder } from '@/entities/chat/model/useAddProjectFolder'
 import { useRoutedNavigation } from '@/shared/hooks/useRoutedNavigation'
 import { TipPick } from '../TipPick'
 import './project-scene.css'

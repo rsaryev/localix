@@ -46,7 +46,7 @@ research input
 | [`research-ranking.ts`](../../../apps/api/src/features/agent-core/tools/web/research-ranking.ts)   | Canonical HTTP(S) URL is the candidate identity                             | Credentials, non-HTTP schemes, and rejected domains never become candidates                              |
 | [`research-fetch.ts`](../../../apps/api/src/features/agent-core/tools/web/research-fetch.ts)       | Every redirect hop passes the same network-safety check                     | Blocked, timed-out, PDF, and non-successful reads fail; oversized bodies are capped and marked truncated |
 | [`sources.ts`](../../../packages/agent/src/agents/sources.ts)                                      | Source normalization bounds fields and merges repeated `kind + uri` records | Invalid records are dropped; weaker observations cannot downgrade stronger roles                         |
-| [`sessionSources.ts`](../../../apps/ui/src/features/chat/model/sessionSources.ts)                  | Answer sources are derived from the selected message's persisted items      | Discovered and failed records stay off the answer-grade list                                             |
+| [`sessionSources.ts`](../../../apps/ui/src/entities/chat/model/sessionSources.ts)                  | Answer sources are derived from the selected message's persisted items      | Discovered and failed records stay off the answer-grade list                                             |
 
 Backends run concurrently up to the configured backend limit. Queries for one backend run in
 sequence, allowing its cooldown or required backoff to stop later variants without cancelling other
@@ -140,5 +140,5 @@ and injected into the tool by
 - [Network safety](../../../apps/api/src/features/agent-core/tools/web/net-safety.ts)
 - [Shared source contract](../../../packages/agent/src/agents/sources.ts)
 - [MCP source normalization](../../../apps/api/src/features/mcp/mcp-result.ts)
-- [Message source action](../../../apps/ui/src/features/chat/ui/MessageSources.tsx)
+- [Message source action](../../../apps/ui/src/entities/chat/ui/MessageSources.tsx)
 - [Activity source presentation](../../../apps/ui/src/features/inspector/ui/MessageReplayTab.tsx)

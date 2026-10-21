@@ -2,7 +2,7 @@ import type { PluginUiHost, UiAnchorContribution } from '@localixai/plugin-sdk/u
 import { parseLocalixResourceUri } from '@localixai/plugin-sdk/ui'
 import { lazy } from 'react'
 import { ClipboardList } from 'lucide-react'
-import { PLAN_WORK_KIND } from './model/plans'
+import { PLAN_WORK_KIND } from '@/entities/chat/model/plans'
 
 export const chatResourceAnchor: UiAnchorContribution = {
   id: 'chat-resources',
@@ -27,7 +27,7 @@ export const chatResourceAnchor: UiAnchorContribution = {
 
 /** Loaded when a plan tab first renders: most sessions never present a plan. */
 const PlanView = lazy(() =>
-  import('./ui/plan/PlanView').then((module) => ({ default: module.PlanView })),
+  import('@/entities/chat/ui/plan/PlanView').then((module) => ({ default: module.PlanView })),
 )
 
 export function registerUi(host: PluginUiHost): void {

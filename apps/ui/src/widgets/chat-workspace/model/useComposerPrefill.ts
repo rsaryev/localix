@@ -1,1 +1,1 @@
-export * from '@/features/chat/model/useComposerPrefill'
+export * from '@/entities/chat/model/useComposerPrefill'

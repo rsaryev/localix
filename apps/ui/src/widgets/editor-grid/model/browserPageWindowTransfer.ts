@@ -1,4 +1,4 @@
-import { useGridStore, sessionOfScope } from '@/features/workspace-grid/model'
+import { useGridStore, sessionOfScope } from '@/entities/workspace-grid/model'
 import { usePreviewStore } from '@/features/inspector/model/previewStore'
 import { closeTab as closePreviewPage } from '@/features/inspector/model/preview'
 import { closeNativePages } from '@/features/inspector/model/nativePages'

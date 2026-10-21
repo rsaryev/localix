@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
-import { useGridStore } from '@/features/workspace-grid/model'
+import { useGridStore } from '@/entities/workspace-grid/model'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { openFileInGrid, useRecentFiles } from '@/shared/lib/recentFiles'

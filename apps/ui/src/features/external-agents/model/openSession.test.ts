@@ -1,10 +1,10 @@
 import { afterEach, expect, mock, spyOn, test } from 'bun:test'
 import { externalAgentsApi } from '../api'
 import { terminal as terminalBus } from '@/shared/lib/terminalBus'
-import { useChatStore } from '@/features/chat/model/store'
+import { useChatStore } from '@/entities/chat/model/store'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { openExternalSessionTerminal, prepareExternalTranscript } from './openSession'
-import { readTranscript, forgetTranscripts } from '@/features/chat/model/openTranscript'
+import { readTranscript, forgetTranscripts } from '@/entities/chat/model/openTranscript'
 import { backendClient } from '@/shared/api/client'
 import { composerBus } from '@/shared/lib/composerBus'
 

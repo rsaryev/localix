@@ -11,35 +11,35 @@ import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import { useLocation } from 'react-router'
 import { useShallow } from 'zustand/react/shallow'
 
-import { useChatStore, useHasHydrated } from '@/features/chat/model/store'
+import { useChatStore, useHasHydrated } from '@/entities/chat/model/store'
 import { useExternalSessionTerminal } from '@/features/external-agents/model/useExternalSessionTerminal'
 import { useDeadTerminalCleanup } from '@/features/terminal/model/useDeadTerminalCleanup'
-import { useJobTerminal } from '@/features/chat/model/useJobTerminal'
-import { useCodeSnippetOpener } from '@/features/chat/model/useCodeSnippetOpener'
+import { useJobTerminal } from '@/entities/chat/model/useJobTerminal'
+import { useCodeSnippetOpener } from '@/entities/chat/model/useCodeSnippetOpener'
 import { useRoutedNavigation } from '@/shared/hooks/useRoutedNavigation'
 import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
 import { isSectionId } from '@/shared/routing/routes'
-import { StatusBar } from '@/features/chat/ui/StatusBar'
+import { StatusBar } from '@/entities/chat/ui/StatusBar'
 import { ChatSidebar } from '@/widgets/chat-sidebar/ui/ChatSidebar'
 import { SemanticIndexStatusItem } from '@/features/settings/ui/SemanticIndexStatusItem'
 import { useTheme } from '@/shared/theme/useTheme'
 import { subscribeUiOverlay } from '@/shared/lib/uiOverlayBus'
-import { SOURCES_OVERLAY_ID } from '@/features/chat/ui/sources/Sources.surface'
-import { answerSourcesOfMessage } from '@/features/chat/model/sessionSources'
-import { findSessionInState } from '@/features/chat/model/findSession'
-import { useWorkspace } from '@/features/chat/model/useWorkspace'
+import { SOURCES_OVERLAY_ID } from '@/entities/chat/ui/sources/Sources.surface'
+import { answerSourcesOfMessage } from '@/entities/chat/model/sessionSources'
+import { findSessionInState } from '@/entities/chat/model/findSession'
+import { useWorkspace } from '@/entities/chat/model/useWorkspace'
 import { toast } from '@/shared/lib/notify'
 import { requireOpenChat } from '@/shared/lib/pageOpenChat'
 import { inspector } from '@/shared/lib/inspectorBus'
-import { useAddProjectFolder } from '@/features/chat/model/useAddProjectFolder'
+import { useAddProjectFolder } from '@/entities/chat/model/useAddProjectFolder'
 import { WorkspaceShell } from '@/widgets/workspace-shell'
 import { GridView } from '@/widgets/editor-grid'
-import { useGridStore, hydrateGrid } from '@/features/workspace-grid/model'
+import { useGridStore, hydrateGrid } from '@/entities/workspace-grid/model'
 import { useWorkspaceTabTransfer } from '@/widgets/editor-grid/model/useWorkspaceTabTransfer'
 import { installBrowserPageWindowTransfers } from '@/widgets/editor-grid/model/browserPageWindowTransfer'
 import { installBrowserPageOwnership } from '@/widgets/editor-grid/model/browserPageOwnership'
 import { installWorkspaceDragPreviews } from '@/widgets/editor-grid/model/workspaceDragPreviews'
-import { AttentionDialog } from '@/features/chat/ui/attention/AttentionDialog'
+import { AttentionDialog } from '@/entities/chat/ui/attention/AttentionDialog'
 import { SetupAnnouncement } from '@/widgets/workspace-tips/ui/SetupAnnouncement'
 import { FolderTree } from 'lucide-react'
 import { discoverUi } from '@/shared/contrib/discover'
@@ -111,12 +111,12 @@ const WorkspaceSymbols = lazy(() =>
   })),
 )
 const SessionSwitcher = lazy(() =>
-  import('@/features/chat/ui/SessionSwitcher').then((module) => ({
+  import('@/entities/chat/ui/SessionSwitcher').then((module) => ({
     default: module.SessionSwitcher,
   })),
 )
 const ProjectSwitcher = lazy(() =>
-  import('@/features/chat/ui/ProjectSwitcher').then((module) => ({
+  import('@/entities/chat/ui/ProjectSwitcher').then((module) => ({
     default: module.ProjectSwitcher,
   })),
 )

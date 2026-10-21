@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { GridNode, GroupRole } from '@/features/workspace-grid/model'
+import type { GridNode, GroupRole } from '@/entities/workspace-grid/model'
 import {
   computeLayout,
   maximizedLayout,

@@ -1,4 +1,4 @@
-import { useGridStore, type WorkItem } from '@/features/workspace-grid/model'
+import { useGridStore, type WorkItem } from '@/entities/workspace-grid/model'
 import { backendClient } from '@/shared/api/client'
 import { workItemTransferState } from '@/shared/lib/workItemTransferState'
 import { toast } from '@/shared/lib/notify'

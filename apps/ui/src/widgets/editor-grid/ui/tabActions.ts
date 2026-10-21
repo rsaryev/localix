@@ -1,4 +1,4 @@
-import { sessionOfScope, type WorkItem } from '@/features/workspace-grid/model'
+import { sessionOfScope, type WorkItem } from '@/entities/workspace-grid/model'
 import { openNewTerminal, restartTerminalTab } from '@/features/terminal/model/terminalTabs'
 
 /** A "create another tab of this kind" action, surfaced in the tab CONTEXT MENU.

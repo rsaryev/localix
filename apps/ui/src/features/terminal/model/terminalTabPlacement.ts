@@ -1,4 +1,4 @@
-import { useGridStore, groupOfTab, type WorkItem } from '@/features/workspace-grid/model'
+import { useGridStore, groupOfTab, type WorkItem } from '@/entities/workspace-grid/model'
 
 export function makeTerminalItem(args: {
   sessionId: string

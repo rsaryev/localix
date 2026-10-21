@@ -18,7 +18,7 @@ import {
   getPreviewTabs,
   setPreviewTabs,
   subscribePreviewTabs,
-} from '@/features/workspace-grid/model/store'
+} from '@/entities/workspace-grid/model/store'
 import { formatChordText } from '@/shared/lib/keybindings'
 
 /**

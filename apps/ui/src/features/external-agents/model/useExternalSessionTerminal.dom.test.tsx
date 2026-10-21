@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, expect, mock, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { act } from 'react'
-import { useChatStore } from '@/features/chat/model/store'
+import { useChatStore } from '@/entities/chat/model/store'
 import type { UiSession } from '@/shared/api/contracts'
 import { terminal as terminalBus } from '@/shared/lib/terminalBus'
 import { externalAgentsApi } from '../api'

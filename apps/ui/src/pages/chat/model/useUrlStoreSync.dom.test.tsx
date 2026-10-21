@@ -7,13 +7,13 @@ import {
   registerDom,
   removeTestLocalStorage,
 } from '@localixai/kit/testing/dom'
-import { useChatStore } from '@/features/chat/model/store'
+import { useChatStore } from '@/entities/chat/model/store'
 import {
   loadLastWorkspace,
   recordChatLocation,
   rememberLastWorkspace,
-} from '@/features/chat/model/persistence'
-import { LAUNCH_RESTORE_WAIT_MS } from '@/features/chat/model/launchRestore'
+} from '@/entities/chat/model/persistence'
+import { LAUNCH_RESTORE_WAIT_MS } from '@/entities/chat/model/launchRestore'
 import { useUrlStoreSync } from './useUrlStoreSync'
 
 let teardown: () => Promise<void>

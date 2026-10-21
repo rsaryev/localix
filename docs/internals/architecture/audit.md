@@ -24,7 +24,7 @@ Counts are from import scans of non-test files on 2026-10-21. A finding names th
 | The provider-SDK ban covers only `engine-loop`, not every core package.                      | `scripts/check-architecture.mjs`                                                                                         |
 | `plugin-sdk` binds React, zustand, Hono and `node:*`; only its subpaths keep them apart.     | `packages/plugin-sdk/src/backend/http.ts`, `packages/plugin-sdk/src/ui/resource-sync.ts`                                 |
 | The UI client is typed through the API's Hono app rather than a contracts package.           | `apps/ui/src/shared/api/internal.ts`                                                                                     |
-| The server treats a connection id as a hint; the composer treats it as required (two rules). | `apps/api/src/features/chat/runtime/model-resolution.ts`, `apps/ui/src/features/chat/ui/prompt-input/connectionScope.ts` |
+| The server treats a connection id as a hint; the composer treats it as required (two rules). | `apps/api/src/features/chat/runtime/model-resolution.ts`, `apps/ui/src/entities/chat/ui/prompt-input/connectionScope.ts` |
 | Provider names appear as data in setup scenes and the model order list.                      | `apps/ui/src/widgets/workspace-tips/ui/scenes/ModelScene.tsx`, `packages/agent/src/catalog/model-order.ts`               |
 
 ## Layers and ownership (A4–A8)
@@ -40,7 +40,7 @@ Counts are from import scans of non-test files on 2026-10-21. A finding names th
 | Agent tools import concrete repositories instead of ports (79 repository imports across features).                          | `apps/api/src/features/agent-core/tools/memory/memory.ts`, `apps/api/src/features/agent-core/tools/context-search/context-search.ts` |
 | The storage layer type-imports feature modules.                                                                             | `apps/api/src/db/payload.ts`                                                                                                         |
 | `ApiError`, an HTTP-shaped error, is thrown from 69 non-route feature files.                                                | `apps/api/src/lib/errors.ts`                                                                                                         |
-| UI feature slices import each other: 129 imports over 23 edges, cycles chat↔settings, chat↔inspector, chat↔external-agents. | `apps/ui/src/features/inspector/model/revealPreview.ts`, `apps/ui/src/features/chat/model/seatEffortMemory.ts`                       |
+| UI feature slices import each other: 129 imports over 23 edges, cycles chat↔settings, chat↔inspector, chat↔external-agents. | `apps/ui/src/features/inspector/model/revealPreview.ts`, `apps/ui/src/entities/chat/model/seatEffortMemory.ts`                       |
 | UI slices have no public entry; outsiders import `model/store` and other internals.                                         | `apps/ui/src/features/companion/model/roster.ts`                                                                                     |
 | Desktop calls bypass the platform layer in inspector and companion features.                                                | `apps/ui/src/features/inspector/ui/useNativeBrowserPage.ts`                                                                          |
 
@@ -96,9 +96,9 @@ Follow-ups driven by the writer instead of a consumer, most valuable first:
 
 | Finding                                                                                    | Where                                                                                                                        |
 | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| Connections have five writers; only the realtime adapter discards a stale answer.          | `apps/ui/src/features/chat/model/store.ts`, `apps/ui/src/features/chat/model/useWorkspace.ts`                                |
-| Writers patch readers directly: the setup model step and the connections hook.             | `apps/ui/src/widgets/workspace-tips/ui/scenes/ModelScene.tsx`, `apps/ui/src/features/chat/ui/prompt-input/useConnections.ts` |
-| About 25 sites replace a session in the store with their own response.                     | `apps/ui/src/features/chat/model/sessionModelSelectionActions.ts`                                                            |
+| Connections have five writers; only the realtime adapter discards a stale answer.          | `apps/ui/src/entities/chat/model/store.ts`, `apps/ui/src/entities/chat/model/useWorkspace.ts`                                |
+| Writers patch readers directly: the setup model step and the connections hook.             | `apps/ui/src/widgets/workspace-tips/ui/scenes/ModelScene.tsx`, `apps/ui/src/entities/chat/ui/prompt-input/useConnections.ts` |
+| About 25 sites replace a session in the store with their own response.                     | `apps/ui/src/entities/chat/model/sessionModelSelectionActions.ts`                                                            |
 | Caches with no topic: the settings model field, settings project lists, the model catalog. | `apps/ui/src/shared/ui/ModelFieldSelect.tsx`, `apps/ui/src/shared/hooks/useModelsCatalog.ts`                                 |
 | A reconnect invalidates every resource instead of catching up after a position.            | `packages/plugin-sdk/src/ui/resource-sync.ts`                                                                                |
 | Topic names are repeated in the API and the UI.                                            | `apps/api/src/features/realtime/resources.ts`, `apps/ui/src/shared/api/resourceSyncTransport.ts`                             |

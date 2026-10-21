@@ -15,7 +15,7 @@ describe('useSearchProject', () => {
   test('reads the projects without re-rendering forever, and falls back to the active one', async () => {
     const { act } = await import('react')
     const { createRoot } = await import('react-dom/client')
-    const { useChatStore } = await import('@/features/chat/model/store')
+    const { useChatStore } = await import('@/entities/chat/model/store')
     const { useSearchProject } = await import('./useSearchProject')
     useChatStore.setState({
       projects: [

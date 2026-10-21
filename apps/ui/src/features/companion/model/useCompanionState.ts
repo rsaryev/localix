@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { registerConnectionsSync } from '@/features/chat/model/connectionsSync'
+import { registerConnectionsSync } from '@/entities/chat/model/connectionsSync'
 import { backendClient } from '@/shared/api/client'
 import type { Project, UiSession } from '@/shared/api/contracts'
 import { eventSocket } from '@/shared/api/eventSocket'
@@ -9,8 +9,8 @@ import {
   applyAttentionRoster,
   loadAttention,
   useAttentionStore,
-} from '@/features/chat/model/attention/store'
-import { reconcileSessionListAfterReconnect } from '@/features/chat/model/reconnect-session-list'
+} from '@/entities/chat/model/attention/store'
+import { reconcileSessionListAfterReconnect } from '@/entities/chat/model/reconnect-session-list'
 import { applyCompanionEvent } from './roster'
 
 export function useCompanionState() {

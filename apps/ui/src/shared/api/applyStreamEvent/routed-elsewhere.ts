@@ -18,8 +18,8 @@
  *   resources.changed → app-level resource sync invalidates the affected read models.
  *   session.deleted   → the chat store removes rows and releases window-owned state.
  *   attention.updated → `agent-runtime.ts` replaces the user-wide attention roster
- *                       (`features/chat/model/attention/store.ts`) and returns before the store.
- *   plan.presented    → `agent-runtime.ts` opens the plan tab (`features/chat/model/plans.ts`
+ *                       (`entities/chat/model/attention/store.ts`) and returns before the store.
+ *   plan.presented    → `agent-runtime.ts` opens the plan tab (`entities/chat/model/plans.ts`
  *                       `routePlanPresented`) and returns before the store: a cue, not state —
  *                       the versions arrive as `plan.updated`.
  */

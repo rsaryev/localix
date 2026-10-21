@@ -135,5 +135,5 @@ conversations, then asks for confirmation; automatic removal is disabled until c
 - [Context exclusion validation](https://github.com/rsaryev/localix/blob/main/apps/api/src/contracts/context-exclusion-schema.ts)
 - [Runtime settings contract](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/user/contracts.ts)
 - [Capability agent selection](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/ui/CapabilitiesSettings.tsx)
-- [Spend alert suppression](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/prompt-input/SpendAlertStrip.tsx)
+- [Spend alert suppression](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/chat/ui/prompt-input/SpendAlertStrip.tsx)
 - [Mixed usage provenance](https://github.com/rsaryev/localix/blob/main/packages/agent/src/usage-summary.ts)

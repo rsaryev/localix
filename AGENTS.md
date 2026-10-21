@@ -47,7 +47,7 @@ id when a change touches one, and record any exception in the audit rather than 
 - `bun install --frozen-lockfile`: install dependencies when needed.
 - `bun run dev`: desktop; `bun run dev:workspace`: workspace services.
 - `bun run build`: full build; `bun run test`: full suite.
-- `bun test apps/ui/src/features/chat/model/sendRefs.test.ts`: focused test from the root.
+- `bun test apps/ui/src/entities/chat/model/sendRefs.test.ts`: focused test from the root.
 
 ## Coding Style
 

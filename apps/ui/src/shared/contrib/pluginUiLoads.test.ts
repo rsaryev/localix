@@ -130,7 +130,7 @@ describe('a failed first UI load is not a settle', () => {
 })
 
 // The grid's side of a failed import (its restored tabs are kept) is pinned where the grid lives:
-// `features/workspace-grid/model/failedPluginTab.test.ts`.
+// `entities/workspace-grid/model/failedPluginTab.test.ts`.
 describe('the capability store over the UI loads', () => {
   // Ownership used to move when a newer request STARTED; the one-shot refetch on socket connect
   // failing then orphaned the pass that did publish, and the plugin stayed pending for good.

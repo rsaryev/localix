@@ -20,7 +20,7 @@ describe('the panel button at the end of a tab strip', () => {
     const { act } = await import('react')
     const { createRoot } = await import('react-dom/client')
     const { GroupActions } = await import('./GroupActions')
-    const { useGridStore, groupOfTab } = await import('@/features/workspace-grid/model')
+    const { useGridStore, groupOfTab } = await import('@/entities/workspace-grid/model')
 
     const grid = useGridStore.getState()
     grid.resetLayout()

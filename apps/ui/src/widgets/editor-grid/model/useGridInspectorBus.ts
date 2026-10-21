@@ -6,7 +6,7 @@ import {
   resolveExistingWorkItemFocus,
   leaves,
   activeWorkItemContribution,
-} from '@/features/workspace-grid/model'
+} from '@/entities/workspace-grid/model'
 import { useMessageFocusStore } from '@/shared/lib/messageFocusBus'
 import {
   openCommandTerminal,

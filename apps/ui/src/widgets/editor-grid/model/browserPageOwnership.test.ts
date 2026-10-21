@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from 'bun:test'
-import { emptyEditorState, useGridStore, type WorkItem } from '@/features/workspace-grid/model'
+import { emptyEditorState, useGridStore, type WorkItem } from '@/entities/workspace-grid/model'
 import { usePreviewStore } from '@/features/inspector/model/previewStore'
 import { installBrowserPageOwnership } from './browserPageOwnership'
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { LAUNCH_RESTORE_WAIT_MS } from '@/features/chat/model/launchRestore'
+import { LAUNCH_RESTORE_WAIT_MS } from '@/entities/chat/model/launchRestore'
 
 /**
  * The project scope the plugin contribution store should describe — the route's, EXCEPT across a

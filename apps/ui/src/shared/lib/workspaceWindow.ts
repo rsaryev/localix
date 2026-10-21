@@ -18,7 +18,7 @@ let reportedRoute: string | null = null
 
 /**
  * Tell the desktop shell which route this window shows; it saves the route for the next launch.
- * Called only by the chat location ledger (`features/chat/model/locationLedger.ts`), which
+ * Called only by the chat location ledger (`entities/chat/model/locationLedger.ts`), which
  * follows every router navigation. No-op outside a desktop workspace window.
  */
 export function reportWorkspaceRoute(pathname: string): void {

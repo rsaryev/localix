@@ -3,7 +3,7 @@ import { CircleAlert, TriangleAlert, ChevronRight, CornerDownRight, Focus } from
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@localixai/kit/context-menu'
 import { MenuEntries } from '@localixai/kit/menu-entries'
 import { problemMenu } from './problemMenu'
-import { useChatStore } from '@/features/chat/model/store'
+import { useChatStore } from '@/entities/chat/model/store'
 import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
 import { useActiveFilePath } from '../model/fileNav'
 import { openFileInGrid } from '@/shared/lib/recentFiles'

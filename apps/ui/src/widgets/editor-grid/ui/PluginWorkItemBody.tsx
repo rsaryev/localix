@@ -1,5 +1,5 @@
 import type { PublishMessageContext, WorkItemKindContribution } from '@localixai/plugin-sdk/ui'
-import { usePluginKind, type WorkItem } from '@/features/workspace-grid/model'
+import { usePluginKind, type WorkItem } from '@/entities/workspace-grid/model'
 import { recordPluginRenderCrash } from '@/shared/contrib/pluginViewErrors'
 import type { ResolvedTheme } from '@/shared/theme/useTheme'
 import { SurfaceErrorBoundary } from '@/shared/ui/SurfaceErrorBoundary'

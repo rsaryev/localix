@@ -1,10 +1,1 @@
-[
-  "features/companion -> features/chat",
-  "features/external-agents -> features/chat",
-  "features/inspector -> features/chat",
-  "features/inspector -> features/workspace-grid",
-  "features/search -> features/chat",
-  "features/settings -> features/chat",
-  "features/settings -> features/workspace-grid",
-  "features/terminal -> features/workspace-grid"
-]
+[]

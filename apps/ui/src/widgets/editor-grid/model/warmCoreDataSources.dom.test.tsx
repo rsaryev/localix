@@ -176,7 +176,7 @@ describe('warm-hidden core work-item data sources', () => {
     const React = await import('react')
     const { createRoot } = await import('react-dom/client')
     const { act } = React
-    const { useSeededLiveList } = await import('@/features/chat/model/useSeededLiveList')
+    const { useSeededLiveList } = await import('@/entities/chat/model/useSeededLiveList')
     const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
 
     const seedCalls: string[] = []

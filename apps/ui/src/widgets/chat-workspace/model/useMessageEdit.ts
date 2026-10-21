@@ -8,7 +8,7 @@ import {
   shouldPersistEdit,
   type EditState,
   type EditingMessage,
-} from '@/features/chat/model/messageEdit'
+} from '@/entities/chat/model/messageEdit'
 
 export interface MessageEditDeps {
   activeSessionId: string | null

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Button } from '@localixai/kit/button'
-import { restartToUpdate } from '@/features/chat/model/restartToUpdate'
+import { restartToUpdate } from '@/entities/chat/model/restartToUpdate'
 import {
   checkDesktopUpdate,
   hasDesktopUpdater,

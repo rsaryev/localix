@@ -2,7 +2,7 @@ import { importsOf, moduleId, resolveSpec, type Rule, type Source } from './kit'
 
 /** UI and change-feed rules: A8 (UI slices), C1, C4 (feed), C6 (store writers), C7 (route gating). */
 
-const UI_SLICE_LAYERS = new Set(['features', 'widgets', 'pages'])
+const UI_SLICE_LAYERS = new Set(['entities', 'features', 'widgets', 'pages'])
 const sliceOf = (file: string | null) => {
   const match = file?.match(/^apps\/ui\/src\/([^/]+)\/([^/]+)/u)
   return match && UI_SLICE_LAYERS.has(match[1]) ? `${match[1]}/${match[2]}` : null
@@ -85,8 +85,8 @@ export const C4_CONSUMER_TESTS: Rule = {
 
 /** The chat store's sync layer, which applies server state, and the store that defines the writers. */
 export const STORE_WRITER_ALLOWLIST = new Set([
-  'apps/ui/src/features/chat/model/sessionSync.ts',
-  'apps/ui/src/features/chat/model/store.ts',
+  'apps/ui/src/entities/chat/model/sessionSync.ts',
+  'apps/ui/src/entities/chat/model/store.ts',
 ])
 const PRIVATE_WRITER = /\.\s*(_(?:replace|hydrate)[A-Z]\w*)\b/gu
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { getThemeVars, themeVarsBus } from '@/features/chat/model/themeVarsBus'
+import { getThemeVars, themeVarsBus } from '@/entities/chat/model/themeVarsBus'
 import type {
   VfCapture,
   VfCommand,

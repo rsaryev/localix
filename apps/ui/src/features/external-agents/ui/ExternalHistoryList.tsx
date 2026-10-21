@@ -13,8 +13,8 @@ import { Button } from '@localixai/kit/button'
 import { formatRelativeTime } from '@localixai/plugin-sdk/ui/utilities'
 import type { RosterRow } from '@localixai/api/external-agent-contracts'
 import { externalHistoryRows, type HistoryGroup } from '../model/historyRows'
-import type { SessionGroupingMode } from '@/features/chat/model/sessionGrouping'
-import type { SortMode } from '@/features/chat/model/useSidebarSessions'
+import type { SessionGroupingMode } from '@/entities/chat/model/sessionGrouping'
+import type { SortMode } from '@/entities/chat/model/useSidebarSessions'
 import { dragExternalResource, externalSessionUri } from '../model/sessionResource'
 
 type Agent = { id: string; name: string }

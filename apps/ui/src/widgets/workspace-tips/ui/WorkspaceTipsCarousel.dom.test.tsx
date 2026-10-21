@@ -56,7 +56,7 @@ test('the tips carousel pages by buttons and arrows, ends by handing back to the
   // No plugin features a command here, so the slide that teaches one stays out.
   await stubCommands([])
   const WORKSPACE_TIPS = visibleTips({ featuredCommand: false, island: false })
-  const { useChatStore } = await import('@/features/chat/model/store')
+  const { useChatStore } = await import('@/entities/chat/model/store')
   // The model slide reads live connections; the test has no server behind it.
   useChatStore.setState({ loadProjects: async () => {} })
   localStorage.clear()

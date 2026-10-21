@@ -1,5 +1,5 @@
 import { setNativeWindowDragImage } from '@localixai/plugin-sdk/ui/message-binding-drag'
-import { useGridStore, sessionOfScope } from '@/features/workspace-grid/model'
+import { useGridStore, sessionOfScope } from '@/entities/workspace-grid/model'
 import { browserTabTransferBus, type BrowserTabDrag } from '@/shared/lib/browserTabTransferBus'
 import { workItemDragBus } from '@/shared/lib/workItemDragBus'
 import { platformCapabilities } from '@/shared/lib/platformCapabilities'

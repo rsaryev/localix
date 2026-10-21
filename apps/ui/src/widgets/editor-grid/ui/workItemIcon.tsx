@@ -19,7 +19,7 @@ import {
   activeWorkItemContribution,
   type CoreWorkItemKind,
   type WorkItemKind,
-} from '@/features/workspace-grid/model'
+} from '@/entities/workspace-grid/model'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 
 /** Per-kind tab icon for the grid tab strip. Kept out of registry.tsx so that

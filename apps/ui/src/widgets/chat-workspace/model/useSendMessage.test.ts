@@ -82,7 +82,7 @@ describe('the first message of a composer with no chat yet', () => {
     let created = false
     // Reject at the send boundary: another suite's WebSocket stub or startup barrier must not
     // decide whether this draft-restoration test ever settles.
-    const sending = await import('@/features/chat/model/sendChatMessage')
+    const sending = await import('@/entities/chat/model/sendChatMessage')
     const originalSend = sending.sendChatMessage
     const send = spyOn(sending, 'sendChatMessage').mockRejectedValue(new Error('Send failed'))
     // Subscribing first keeps the buffered insert from leaking into a later test's bus.

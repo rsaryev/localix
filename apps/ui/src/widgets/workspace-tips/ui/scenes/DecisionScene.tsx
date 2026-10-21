@@ -1,13 +1,13 @@
 import { lazy, Suspense, useState, type CSSProperties } from 'react'
 import { Zap } from 'lucide-react'
 import type { ReasoningEffort } from '@localixai/agent'
-import { useConnections } from '@/features/chat/ui/prompt-input/useConnections'
+import { useConnections } from '@/entities/chat/ui/prompt-input/useConnections'
 import { useModelsCatalog } from '@/shared/hooks/useModelsCatalog'
 import { TipPickTrigger } from '../TipPick'
 import './decision-scene.css'
 
 const ModelPickerDrawer = lazy(() =>
-  import('@/features/chat/ui/prompt-input/ModelPickerDrawer').then((m) => ({
+  import('@/entities/chat/ui/prompt-input/ModelPickerDrawer').then((m) => ({
     default: m.ModelPickerDrawer,
   })),
 )

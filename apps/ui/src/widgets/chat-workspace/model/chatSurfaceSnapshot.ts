@@ -6,15 +6,15 @@ import {
   type ChatCacheDiagnosticsPayload,
   type ChatUsagePayload,
 } from '@localixai/agent'
-import type { Message } from '@/features/chat/model/types'
+import type { Message } from '@/entities/chat/model/types'
 import {
   contextAttemptFromMessage,
   contextWindowFromParts,
   type ContextAttemptSnapshot,
   type ContextWindowDiagnostics,
-} from '@/features/chat/model/contextUsage'
+} from '@/entities/chat/model/contextUsage'
 import { isCommandItem, isFileChangeItem, isMcpCallItem } from '@localixai/agent/agents/items'
-import { findLastStreamingToolItem } from '@/features/chat/ui/tool-parts/itemHelpers'
+import { findLastStreamingToolItem } from '@/entities/chat/ui/tool-parts/itemHelpers'
 
 export interface ChatSurfaceSnapshot {
   userText: string

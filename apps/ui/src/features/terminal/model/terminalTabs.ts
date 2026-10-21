@@ -10,7 +10,7 @@
 //  - `owned` marks a terminal the USER created here (closing its tab kills the PTY);
 //    adopted terminals (agent jobs, dev servers) are owned by their launcher, so
 //    closing the tab only detaches — the process keeps running.
-import { useGridStore, groupOfTab, scopeOf, type WorkItem } from '@/features/workspace-grid/model'
+import { useGridStore, groupOfTab, scopeOf, type WorkItem } from '@/entities/workspace-grid/model'
 import { backendClient } from '@/shared/api/client'
 import { workspaceOf } from '@/shared/lib/workspaceOf'
 import { toast } from '@/shared/lib/notify'

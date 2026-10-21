@@ -103,7 +103,7 @@ the exceptions in prose.
 | A5  | Kysely is imported only by repository modules and migrations.                               | Enforced with a baseline (0)         |
 | A6  | No value-import cycle between API features.                                                 | Enforced with a baseline (0)         |
 | A7  | Domain and service code throws domain errors; only routes produce HTTP errors.              | Enforced with a baseline (0)         |
-| A8  | UI slices on the same layer do not import each other; outsiders use a slice's public entry. | Enforced with a baseline (8)         |
+| A8  | UI slices on the same layer do not import each other; outsiders use a slice's public entry. | Enforced with a baseline (0)         |
 | C1  | A write to an owned entity records its notice in the same transaction.                      | Enforced with a baseline (3)         |
 | C2  | A notice names identity only: entity, op and ref.                                           | Enforced by the registry types       |
 | C3  | Every consumer handles every kind or ignores it explicitly.                                 | Enforced by the registry types       |
@@ -167,7 +167,7 @@ command and check that the diff only removes entries. Scope notes:
 - C1 knows the tables of registered entities from `FEED_TABLES` in
   `scripts/architecture/flow-rules.ts`; a new registry kind adds its tables there.
 - C6 allows the private store writers only in the chat store's sync layer
-  (`apps/ui/src/features/chat/model/sessionSync.ts`) and in the store that defines them. A server
+  (`apps/ui/src/entities/chat/model/sessionSync.ts`) and in the store that defines them. A server
   answer that a caller needs at once lands through `applyServerSession` or `applyServerProjects`.
 
 Checks that hold today and back these rules:

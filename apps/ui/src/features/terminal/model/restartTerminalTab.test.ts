@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, spyOn, test } from 'bun:test'
-import { emptyEditorState, useGridStore } from '@/features/workspace-grid/model'
+import { emptyEditorState, useGridStore } from '@/entities/workspace-grid/model'
 import { backendClient } from '@/shared/api/client'
 import { restartTerminalTab } from './terminalTabs'
 

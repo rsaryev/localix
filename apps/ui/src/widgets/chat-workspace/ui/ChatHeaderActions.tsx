@@ -1,6 +1,6 @@
 import { Search } from 'lucide-react'
 import type { ChatUsagePayload } from '@localixai/agent'
-import { SessionUsageIndicator } from '@/features/chat/ui/prompt-input/SessionUsageIndicator'
+import { SessionUsageIndicator } from '@/entities/chat/ui/prompt-input/SessionUsageIndicator'
 import { useMessageSearchStore } from '@/shared/lib/messageSearchBus'
 import { CMD, useChordHint } from '@/shared/lib/keybindings'
 import { IconButton } from '@localixai/kit/icon-button'

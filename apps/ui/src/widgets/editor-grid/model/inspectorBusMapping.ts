@@ -3,7 +3,7 @@
 // tree, plugin work items, …) drive the grid unchanged once it replaces the inspector docks.
 import type { InspectorRequest } from '@/shared/lib/inspectorBus'
 import { baseName } from '@localixai/plugin-sdk/ui/utilities'
-import { tabIdInScope, workspaceScope, type WorkItem } from '@/features/workspace-grid/model'
+import { tabIdInScope, workspaceScope, type WorkItem } from '@/entities/workspace-grid/model'
 
 /** Which chats a prefix close reaches (see `workItemIdMatchesPrefix`). */
 export interface CloseTarget {

@@ -1,24 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
-import { useChatStore } from '@/features/chat/model/store'
+import { useChatStore } from '@/entities/chat/model/store'
 import {
   loadScopeLocation,
   rememberScopeSection,
   rememberScopeSidebarOpen,
-} from '@/features/chat/model/workspaceLocation'
+} from '@/entities/chat/model/workspaceLocation'
 import {
   forgetLastWorkspace,
   holdLastWorkspace,
   loadLastWorkspace,
-} from '@/features/chat/model/persistence'
-import { LAUNCH_RESTORE_WAIT_MS, resolveLaunchRestore } from '@/features/chat/model/launchRestore'
-import { findSessionInState } from '@/features/chat/model/findSession'
+} from '@/entities/chat/model/persistence'
+import { LAUNCH_RESTORE_WAIT_MS, resolveLaunchRestore } from '@/entities/chat/model/launchRestore'
+import { findSessionInState } from '@/entities/chat/model/findSession'
 import { scopePath } from '@/shared/routing/routes'
 import { composerBus } from '@/shared/lib/composerBus'
 import { startStartupRetry } from '@/shared/lib/startupRetry'
 import type { useRoutedNavigation } from '@/shared/hooks/useRoutedNavigation'
 import * as routed from './urlSessionSelection'
 import { useDeadProjectRoute } from './useDeadProjectRoute'
-import { scopedNewConversation } from '@/features/chat/model/conversationStartStrategy'
+import { scopedNewConversation } from '@/entities/chat/model/conversationStartStrategy'
 
 type Nav = ReturnType<typeof useRoutedNavigation>
 type ChatState = ReturnType<typeof useChatStore.getState>

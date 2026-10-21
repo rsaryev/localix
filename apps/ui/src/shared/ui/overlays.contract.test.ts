@@ -53,7 +53,7 @@ describe('workbench floating-surface contracts', () => {
     // keeps a real instance under it rather than leaving the test asserting nothing.
     const composerContext = read('../../widgets/chat-workspace/ui/ComposerContextBar.tsx')
     expect(composerContext).toContain('<ProjectFolderMenu')
-    const projectMenu = read('../../features/chat/ui/ProjectFolderMenu.tsx')
+    const projectMenu = read('../../entities/chat/ui/ProjectFolderMenu.tsx')
     expect(projectMenu).toContain('<DropdownMenu')
     expect(projectMenu).toMatch(/<MenuEntries[\s\S]*family="dropdown"/)
     expect(projectMenu).toContain('selected: project.id === activeProjectId')

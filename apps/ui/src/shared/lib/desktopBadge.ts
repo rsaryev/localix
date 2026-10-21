@@ -6,7 +6,7 @@ import { platformCapabilities } from './platformCapabilities'
  * The command, not the window badge API: on Windows there is no numeric badge, and the API alone
  * left the taskbar blank while the shell's command draws a red-dot overlay icon in its place. Two
  * paths to one badge were also how it ended up with two writers that overwrote each other; this is
- * now the only path, called only by `features/chat/model/useDockBadge.ts`.
+ * now the only path, called only by `entities/chat/model/useDockBadge.ts`.
  *
  * Outside the desktop shell (the web build, SSR) the bridge is absent and this is a no-op; a
  * failure is swallowed so a badge can never affect the app. `count <= 0` clears it, and an

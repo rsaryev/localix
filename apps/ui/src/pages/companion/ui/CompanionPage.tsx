@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Paperclip } from 'lucide-react'
 import { DROP_TARGET_OVERLAY_ACTIVE } from '@localixai/kit/drop-target'
-import { useComposerDropzone } from '@/features/chat/ui/prompt-input/useComposerDropzone'
+import { useComposerDropzone } from '@/entities/chat/ui/prompt-input/useComposerDropzone'
 import { Button } from '@localixai/kit/button'
 import { useTheme } from '@/shared/theme/useTheme'
 import { useFontFamily } from '@/features/settings/model/useFontFamily'

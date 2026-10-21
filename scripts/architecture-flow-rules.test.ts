@@ -121,7 +121,7 @@ describe('positive and negative controls', () => {
       'apps/ui/src/features/x/y.ts -> _replaceSession',
     ])
     expect(
-      C6_STORE_WRITERS.detect([planted('apps/ui/src/features/chat/model/sessionSync.ts', code)]),
+      C6_STORE_WRITERS.detect([planted('apps/ui/src/entities/chat/model/sessionSync.ts', code)]),
     ).toEqual([])
   })
 

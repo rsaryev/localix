@@ -5,7 +5,7 @@ import {
   type GridNode,
   type LeafNode,
   type Orientation,
-} from '@/features/workspace-grid/model'
+} from '@/entities/workspace-grid/model'
 // Structural width/height minimums are owned by the model layer (single source of
 // truth, also consumed by the placement column budget) and re-exported here so the
 // renderer's existing importers keep resolving them from './layout'.
@@ -15,7 +15,7 @@ import {
   minWidthOf,
   minHeightOf,
   type GridDims,
-} from '@/features/workspace-grid/model'
+} from '@/entities/workspace-grid/model'
 
 export { BASE_DIMS, scaleDims, minWidthOf, minHeightOf, type GridDims }
 

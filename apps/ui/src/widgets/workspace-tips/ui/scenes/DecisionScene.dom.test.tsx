@@ -14,7 +14,7 @@ afterAll(async () => {
 test('the OpenRouter slide offers sign-in until a connection to OpenRouter exists', async () => {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
-  const { useChatStore } = await import('@/features/chat/model/store')
+  const { useChatStore } = await import('@/entities/chat/model/store')
   const { DecisionAction } = await import('./DecisionScene')
   // No server behind the test: the connections are what the store holds.
   useChatStore.setState({ connections: [] })

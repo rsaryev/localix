@@ -23,7 +23,7 @@ import { startUnreportedFailurePublisher } from '@/shared/lib/notifications/inci
 import { startNotificationCommandHandlers } from '@/shared/lib/notifications/runtime'
 import { startNotificationSync } from '@/shared/lib/notifications/inboxSync'
 import { startOpenChatRead } from '@/shared/lib/notifications/openChatRead'
-import { retrySessionRun } from '@/features/chat/model/retrySessionRun'
+import { retrySessionRun } from '@/entities/chat/model/retrySessionRun'
 import { startUserIntentCapture } from '@/shared/lib/notifications/userIntent'
 import { startRealtimeEventTracing } from '@/shared/lib/notifications/realtimeInstrumentation'
 import { startDesktopEventTracing } from '@/shared/lib/notifications/desktopInstrumentation'

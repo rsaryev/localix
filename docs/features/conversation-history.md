@@ -74,12 +74,12 @@ See [Context checkpoints](context-checkpoints.md),
 
 ## Source of truth
 
-- [Sidebar message search](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/model/useHistorySearch.ts)
+- [Sidebar message search](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/chat/model/useHistorySearch.ts)
 - [History tool modes](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/history/history-search.ts)
 - [History query scope](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/repository-history.ts)
 - [Preview and output limits](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/history/history-search-format.ts)
-- [Transcript projection](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/transcriptProjection.ts)
-- [Adjacent notice equality](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/coalesceSystemMessages.ts)
+- [Transcript projection](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/chat/ui/transcriptProjection.ts)
+- [Adjacent notice equality](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/chat/ui/coalesceSystemMessages.ts)
 - [Model wire-history projection](https://github.com/rsaryev/localix/blob/main/packages/agent/src/agents/chat.ts)
-- [Action blocks](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/tool-parts/ToolChain.tsx)
+- [Action blocks](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/chat/ui/tool-parts/ToolChain.tsx)
 - [Continuation item ownership](https://github.com/rsaryev/localix/blob/main/packages/agent/src/agents/continuation-items.ts)

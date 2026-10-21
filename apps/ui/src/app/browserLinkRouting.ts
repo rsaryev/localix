@@ -1,4 +1,4 @@
-import { useChatStore } from '@/features/chat/model/store'
+import { useChatStore } from '@/entities/chat/model/store'
 import { usePreviewStore } from '@/features/inspector/model/previewStore'
 import { registerAppBrowserOpener } from '@/shared/lib/externalLink'
 import { inspector, isInspectorReady } from '@/shared/lib/inspectorBus'

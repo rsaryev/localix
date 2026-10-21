@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { groupOfTab, useGridStore, type WorkItem } from '@/features/workspace-grid/model'
+import { groupOfTab, useGridStore, type WorkItem } from '@/entities/workspace-grid/model'
 import { setWorkspaceResolver } from '@/shared/lib/workspaceOf'
 import { syncGridChatSelection } from './useGridChatSync'
 import { followShownChat } from './workspaceChats'

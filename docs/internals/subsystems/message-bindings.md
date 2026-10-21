@@ -119,7 +119,7 @@ counts toward the 20-binding limit but contributes zero content bytes to this gu
 - [Wire materialization (media stage)](../../../apps/api/src/features/chat/runtime/history/stages/media.ts)
 - [Edit and regeneration behavior](../../../apps/api/src/features/chat/service/branching-ops.ts)
 - [Slash invocation persistence](../../../apps/api/src/features/chat/service/run-macro.ts)
-- [Composer merge](../../../apps/ui/src/features/chat/model/sendRefs.ts)
+- [Composer merge](../../../apps/ui/src/entities/chat/model/sendRefs.ts)
 - [Drag transport](../../../packages/plugin-sdk/src/ui/message-binding-drag.ts)
 - [Plugin assistant validation](../../../apps/api/src/features/plugins/hooks-messages.ts)
 - [Storage and search](../../../apps/api/migrations/20260601T000000_init_schema.ts)

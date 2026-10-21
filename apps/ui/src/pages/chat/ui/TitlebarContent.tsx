@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 
-import { UnifiedBreadcrumb } from '@/features/chat/ui/UnifiedBreadcrumb'
+import { UnifiedBreadcrumb } from '@/entities/chat/ui/UnifiedBreadcrumb'
 import { BreadcrumbTrailingActions } from './BreadcrumbTrailingActions'
 import { useElementWidth } from '@localixai/kit/lib'
 

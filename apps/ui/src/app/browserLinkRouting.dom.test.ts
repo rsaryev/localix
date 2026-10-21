@@ -9,7 +9,7 @@ afterAll(async () => teardown())
 
 test('shared links open and reveal app tabs; explicit OS links and mail bypass the app', async () => {
   const { startBrowserLinkRouting } = await import('./browserLinkRouting')
-  const { useChatStore } = await import('@/features/chat/model/store')
+  const { useChatStore } = await import('@/entities/chat/model/store')
   const { usePreviewStore } = await import('@/features/inspector/model/previewStore')
   const { useBrowserHistory } = await import('@/features/inspector/model/browserHistory')
   const { registerInspectorHandler } = await import('@/shared/lib/inspectorBus')

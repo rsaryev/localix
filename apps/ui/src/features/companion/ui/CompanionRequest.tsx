@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import type { AttentionItem } from '@localixai/api/client'
 import type { UiSession } from '@/shared/api/contracts'
-import { HitlAttentionBody } from '@/features/chat/ui/attention/HitlAttentionBody'
+import { HitlAttentionBody } from '@/entities/chat/ui/attention/HitlAttentionBody'
 import { useIslandInputFocus } from '../model/useIslandInputFocus'
 
 export function CompanionRequest({

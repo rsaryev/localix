@@ -6,14 +6,14 @@ import { ArrowDown } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { PulsingDot } from '@localixai/kit/pulsing-dot'
-import { useSessionRuntime, type AgentOptions } from '@/features/chat/model/agent-runtime'
-import { logCurrentChatMessages, useSessionById, useChatStore } from '@/features/chat/model/store'
+import { useSessionRuntime, type AgentOptions } from '@/entities/chat/model/agent-runtime'
+import { logCurrentChatMessages, useSessionById, useChatStore } from '@/entities/chat/model/store'
 import { WorkItemSessionProvider } from '@localixai/plugin-sdk/ui/work-item-session'
-import { useJobTerminal } from '@/features/chat/model/useJobTerminal'
-import { AWAITING_ANSWER_LABEL } from '@/features/chat/model/messageActivity'
-import { EmptyState } from '@/features/chat/ui/EmptyState'
-import { PromptInput } from '@/features/chat/ui/prompt-input'
-import { RuntimeSessionsPanel } from '@/features/chat/ui/RuntimeSessionsPanel'
+import { useJobTerminal } from '@/entities/chat/model/useJobTerminal'
+import { AWAITING_ANSWER_LABEL } from '@/entities/chat/model/messageActivity'
+import { EmptyState } from '@/entities/chat/ui/EmptyState'
+import { PromptInput } from '@/entities/chat/ui/prompt-input'
+import { RuntimeSessionsPanel } from '@/entities/chat/ui/RuntimeSessionsPanel'
 import { ComposerContextBar } from './ComposerContextBar'
 import { useComposerAttachments } from '@/shared/lib/attachments/useComposerAttachments'
 import { ChatHeaderActions } from './ChatHeaderActions'
@@ -23,17 +23,17 @@ import { useComposerPrefill } from '../model/useComposerPrefill'
 import { useComposerHeight } from '../model/useComposerHeight'
 import { useSendMessage } from '../model/useSendMessage'
 import { useChatAutoScrollTriggers } from '../model/useChatAutoScrollTriggers'
-import { useConnections } from '@/features/chat/ui/prompt-input/useConnections'
+import { useConnections } from '@/entities/chat/ui/prompt-input/useConnections'
 import { buildSessionChain } from '@localixai/plugin-sdk/ui/session-tree'
-import { findSessionInState } from '@/features/chat/model/findSession'
+import { findSessionInState } from '@/entities/chat/model/findSession'
 import type { ResolvedTheme } from '@/shared/theme/useTheme'
-import type { ReasoningEffort } from '@/features/chat/model/reasoning'
+import type { ReasoningEffort } from '@/entities/chat/model/reasoning'
 import { useAutoScroll } from '@/shared/hooks/useAutoScroll'
 import { useRoutedNavigation } from '@/shared/hooks/useRoutedNavigation'
 import { useModelsCatalog } from '@/shared/hooks/useModelsCatalog'
-import { useComposerDraft } from '@/features/chat/model/useComposerDraft'
-import { useWorkspaceReloader } from '@/features/chat/model/useWorkspace'
-import { useActiveTabRefs } from '@/features/workspace-grid/model'
+import { useComposerDraft } from '@/entities/chat/model/useComposerDraft'
+import { useWorkspaceReloader } from '@/entities/chat/model/useWorkspace'
+import { useActiveTabRefs } from '@/entities/workspace-grid/model'
 import { SessionSurface } from '@/shared/contrib/sessionSurfaces'
 import { createChatSurfaceSnapshotSelector } from '../model/chatSurfaceSnapshot'
 import {
@@ -43,9 +43,9 @@ import {
 } from '../model/chatEmptyTransition'
 import { findCatalogModelForConnection } from '@localixai/agent/catalog'
 import { sessionRoute } from '@/shared/api/contracts'
-import { activeConversationDraft } from '@/features/chat/model/conversationStartStrategy'
+import { activeConversationDraft } from '@/entities/chat/model/conversationStartStrategy'
 import type { MessageBinding } from '@/shared/api/contracts'
-import { withoutQueuedUserMessages } from '@/features/chat/model/queuedUserMessages'
+import { withoutQueuedUserMessages } from '@/entities/chat/model/queuedUserMessages'
 import { useSystemContextManifest } from '../model/useSystemContextManifest'
 
 // The transcript pulls in Markdown, syntax highlighting, virtualization, and all
@@ -53,7 +53,7 @@ import { useSystemContextManifest } from '../model/useSystemContextManifest'
 // load it as one boundary when the first message is actually present. One shared
 // boundary also avoids a separate loading flash for every message/tool part.
 const LazyMessageList = lazy(async () => {
-  const module = await import('@/features/chat/ui/MessageList')
+  const module = await import('@/entities/chat/ui/MessageList')
   return { default: module.MessageList }
 })
 
@@ -61,14 +61,14 @@ const LazyMessageList = lazy(async () => {
 // Keeping them behind their own boundaries avoids preloading every search/HITL
 // renderer for the common read-and-compose path.
 const LazyMessageSearch = lazy(async () => {
-  const module = await import('@/features/chat/ui/MessageSearch')
+  const module = await import('@/entities/chat/ui/MessageSearch')
   return { default: module.MessageSearch }
 })
 
 // The session source registry. Its shell is tiny; Vaul and the list body arrive on first open.
 
 const LazyChatInteractionOverlay = lazy(async () => {
-  const module = await import('@/features/chat/ui/hitl/ChatInteractionOverlay')
+  const module = await import('@/entities/chat/ui/hitl/ChatInteractionOverlay')
   return { default: module.ChatInteractionOverlay }
 })
 

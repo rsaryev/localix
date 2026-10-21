@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router'
 import { ComposerContextBar } from './ComposerContextBar'
 import { LinkedAgentTerminalPill } from '@/features/external-agents/ui/LinkedAgentTerminalPill'
 import { nativeHistoryRows } from '@/features/external-agents/model/unifiedHistory'
-import { useChatStore } from '@/features/chat/model/store'
+import { useChatStore } from '@/entities/chat/model/store'
 import { registerSessionSurface, removeSessionSurfacesOf } from '@/shared/contrib/sessionSurfaces'
 let teardown: () => Promise<void>
 beforeAll(() => {

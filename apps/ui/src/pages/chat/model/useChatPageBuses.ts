@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 
-import { useChatEventStream } from '@/features/chat/model/agent-runtime'
-import { usePlanEventFocus } from '@/features/chat/model/planEventFocus'
+import { useChatEventStream } from '@/entities/chat/model/agent-runtime'
+import { usePlanEventFocus } from '@/entities/chat/model/planEventFocus'
 import { usePluginViewAgent } from '@/features/inspector/ui/usePluginViewAgent'
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle'
 import { subscribeRevealInTree } from '@/shared/lib/explorerBus'

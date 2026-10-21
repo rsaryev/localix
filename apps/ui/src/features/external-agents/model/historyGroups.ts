@@ -1,5 +1,5 @@
 import type { RosterRow } from '@localixai/api/external-agent-contracts'
-import { activitySessionGroups } from '@/features/chat/model/sessionGrouping'
+import { activitySessionGroups } from '@/entities/chat/model/sessionGrouping'
 
 export function externalHistoryGroups(sessions: readonly RosterRow[], now = Date.now()) {
   return activitySessionGroups(sessions, now).map((day) => {

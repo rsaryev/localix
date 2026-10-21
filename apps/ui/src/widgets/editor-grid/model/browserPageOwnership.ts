@@ -1,4 +1,4 @@
-import { useGridStore, sessionOfScope, type WorkItem } from '@/features/workspace-grid/model'
+import { useGridStore, sessionOfScope, type WorkItem } from '@/entities/workspace-grid/model'
 import { usePreviewStore } from '@/features/inspector/model/previewStore'
 import { closeNativePages } from '@/features/inspector/model/nativePages'
 import { workspaceOf } from '@/shared/lib/workspaceOf'

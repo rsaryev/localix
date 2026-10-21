@@ -1,11 +1,11 @@
-import { useChatStore } from '@/features/chat/model/store'
-import { findSessionInState } from '@/features/chat/model/findSession'
+import { useChatStore } from '@/entities/chat/model/store'
+import { findSessionInState } from '@/entities/chat/model/findSession'
 import {
   GLOBAL_SCOPE,
   isRestorable,
   sessionOfScope,
   type WorkItem,
-} from '@/features/workspace-grid/model'
+} from '@/entities/workspace-grid/model'
 import { fileContentCache } from '@/features/inspector/model/fileContentCache'
 import {
   getFileDraft,

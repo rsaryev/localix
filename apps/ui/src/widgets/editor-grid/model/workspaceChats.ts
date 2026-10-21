@@ -16,7 +16,7 @@ import {
   useGridStore,
   type GridStore,
   type LeafNode,
-} from '@/features/workspace-grid/model'
+} from '@/entities/workspace-grid/model'
 import { workspaceOf } from '@/shared/lib/workspaceOf'
 
 type ShownState = Pick<GridStore, 'items' | 'scopeActiveTab'>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useSyncExternalStore } from 'react'
 
-import { reconcileUnavailableContributedItems } from '@/features/workspace-grid/model'
+import { reconcileUnavailableContributedItems } from '@/entities/workspace-grid/model'
 import {
   pluginContribSnapshot,
   pluginContribSourceFor,
