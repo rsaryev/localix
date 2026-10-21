@@ -7,7 +7,7 @@
  * name no tool either — the turn they open may hold a different roster than the one that wrote
  * the plan, and prompt text naming a tool the run lacks sends the model looking for it.
  */
-import { PERMISSION_MODE_COPY } from '../capabilities/permission-modes'
+import { PERMISSION_MODE_COPY } from '../../contracts/permission-modes'
 import { anchorQuote, type CommentRecord } from '../comments/contracts'
 import type { ImplementationMode, PlanRecord } from './contracts'
 

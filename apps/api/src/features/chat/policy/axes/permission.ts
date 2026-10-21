@@ -11,7 +11,7 @@ import {
   DEFAULT_PERMISSION_MODE,
   PERMISSION_MODES,
   type PermissionMode,
-} from '../../../capabilities/permission-modes'
+} from '../../../../contracts/permission-modes'
 import { applyPermissionMode } from '../../../capabilities/permission-mode-policy'
 import { defineAxis } from '../axis'
 

@@ -33,7 +33,7 @@
     "./mcp-command-line": "./src/features/mcp/command-line.ts",
     "./mcp-import": "./src/features/mcp/unwrap.ts",
     "./participant": "./src/db/participant.ts",
-    "./permission-modes": "./src/features/capabilities/permission-modes.ts",
+    "./permission-modes": "./src/contracts/permission-modes.ts",
     "./plugin-kit-layout": "./src/features/plugins/authoring/kit-layout.ts",
     "./plugin-kit": "./src/features/plugins/authoring/kit.ts",
     "./plugin-ui-build": "./src/features/plugins/authoring/ui-build.ts",

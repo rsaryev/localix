@@ -12,7 +12,7 @@
  * new stage cannot be announced in a voice of its own.
  */
 import type { StoredSystemNotice } from '../../db/payload'
-import { PERMISSION_MODE_COPY } from '../capabilities/permission-modes'
+import { PERMISSION_MODE_COPY } from '../../contracts/permission-modes'
 import type { ImplementationMode, SessionPlan } from './contracts'
 
 type Plan = Pick<SessionPlan, 'version' | 'title'>

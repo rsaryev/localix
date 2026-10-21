@@ -237,7 +237,7 @@ classes are available to your own rules as resources — `effect:files`, `effect
 
 ## Source of truth
 
-- [Mode vocabulary](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/permission-modes.ts)
+- [Mode vocabulary](https://github.com/rsaryev/localix/blob/main/apps/api/src/contracts/permission-modes.ts)
 - [Per-run mode rewrite](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/permission-mode-policy.ts)
 - [Classification fallback](https://github.com/rsaryev/localix/blob/main/packages/agent/src/agents/call-class.ts)
 - [Bash call classification](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/bash/bash-call-class.ts)

@@ -4,7 +4,7 @@ import { z } from 'zod'
 
 import { BUILTIN_AGENTS } from '../agents/builtin'
 import { builtinAgentPreset } from '../capabilities/builtin-agent-presets'
-import { PERMISSION_MODES } from '../capabilities/permission-modes'
+import { PERMISSION_MODES } from '../../contracts/permission-modes'
 import { loadBundledPluginTools, type LoadedBundledTools } from './bundled-plugin-tools'
 import { CORE_CALL_CASES, WORKSPACE, type CallCase } from './core-call-cases'
 import { contributedCallCases, matrixMismatches, type PresetUnderTest } from './mode-matrix'

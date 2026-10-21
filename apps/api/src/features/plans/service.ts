@@ -31,7 +31,7 @@
 import { ConflictError, InvalidRequestError } from '../../lib/domain-errors'
 import { agentParticipant } from '../../db/participant'
 import type { StoredSystemNotice } from '../../db/payload'
-import type { PermissionMode } from '../capabilities/permission-modes'
+import type { PermissionMode } from '../../contracts/permission-modes'
 import type { WakeRequest } from '../chat/contracts'
 import type { WakeOutcome } from '../triggers/delivery'
 import type { CommentRepository } from '../comments/repository'

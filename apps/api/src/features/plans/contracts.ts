@@ -24,7 +24,7 @@
 import { z } from 'zod'
 import { ALL_MENTION_HANDLE } from '@localixai/agent/agents'
 
-import type { PermissionMode } from '../capabilities/permission-modes'
+import type { PermissionMode } from '../../contracts/permission-modes'
 import { planSnapshotPath } from '../agent-core/plan-paths'
 import { PLAN_BODY_MAX, PLAN_TITLE_MAX } from '../agent-core/plan-limits'
 

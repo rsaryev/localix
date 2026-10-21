@@ -3,17 +3,22 @@ import type { z } from 'zod'
 import type { ChatUsagePayload } from '@localixai/agent'
 import type { ToolBackedItem } from '@localixai/agent/agents'
 import type { StoredMessagePayload } from '../../../db/payload'
-import type { PermissionMode } from '../../capabilities/permission-modes'
+import type { PermissionMode } from '../../../contracts/permission-modes'
 import type { LspServerState } from '../../lsp'
 import type { SessionPlan } from '../../plans/contracts'
 import type { ResumePoint } from '../../resume/contracts'
 import type { LastMessagePreview } from '../repository-types'
 import type { reasoningEffortSchema, runtimeStatusSchema, sessionKindSchema } from './session'
 import type { SessionLoopSummary, SessionQueueItem, SessionWork } from './queue'
-import type { SessionTiming } from './timing'
+import type { SessionTiming } from '../../../contracts/message-timing'
 import type { SessionModelChoicesView } from './model-choices'
 
-export type { MessageProviderMeta, MessageTiming, SessionTiming, ToolTiming } from './timing'
+export type {
+  MessageProviderMeta,
+  MessageTiming,
+  SessionTiming,
+  ToolTiming,
+} from '../../../contracts/message-timing'
 export type { JoinRoutesView, ModelChoiceView, SessionModelChoicesView } from './model-choices'
 export type { LastMessagePreview } from '../repository-types'
 

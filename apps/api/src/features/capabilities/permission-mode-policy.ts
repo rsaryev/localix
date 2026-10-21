@@ -1,4 +1,4 @@
-import type { PermissionMode } from './permission-modes'
+import type { PermissionMode } from '../../contracts/permission-modes'
 import { composeCapabilities, type ResolvedCapabilities } from './resolve'
 import { resourceClassOf } from '../agent-core/capability-resource-classes'
 import type { Rule } from '../agent-core/capability-rule'

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
 import { builtinAgentPreset } from '../capabilities/builtin-agent-presets'
-import { PERMISSION_MODES } from '../capabilities/permission-modes'
+import { PERMISSION_MODES } from '../../contracts/permission-modes'
 import { modeSurface, planPortFor, runRegistry } from './run-surface'
 
 /**

@@ -1,8 +1,8 @@
 import type { AgentChatMessage } from '@localixai/agent/agents/chat'
 import type { ParticipantRef } from './participant'
-import type { MessageProviderMeta, MessageTiming } from '../features/chat/contracts'
-import type { Recovery } from '../features/notifications/recovery'
-import type { PermissionMode } from '../features/capabilities/permission-modes'
+import type { MessageProviderMeta, MessageTiming } from '../contracts/message-timing'
+import type { Recovery } from '@localixai/agent/agents'
+import type { PermissionMode } from '../contracts/permission-modes'
 
 /**
  * Durable, model-invisible presentation metadata for transcript events owned by

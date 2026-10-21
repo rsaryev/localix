@@ -10,7 +10,7 @@
  * participants writer (`runtime/conversation-participants.ts`), and what one of them runs on is
  * its own write. Archiving keeps the FIRST archive time rather than restamping it on every toggle.
  */
-import type { PermissionMode } from '../../capabilities/permission-modes'
+import type { PermissionMode } from '../../../contracts/permission-modes'
 import type { SessionRecord } from '../repository'
 import { normalizeSessionTitle } from '../session-limits'
 

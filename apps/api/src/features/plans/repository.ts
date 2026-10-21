@@ -14,7 +14,7 @@ import { randomUUID } from 'node:crypto'
 import type { Kysely, Selectable } from 'kysely'
 
 import type { AppDatabase, SessionPlansTable } from '../../db/types'
-import { parsePermissionMode } from '../capabilities/permission-modes'
+import { parsePermissionMode } from '../../contracts/permission-modes'
 import type {
   ImplementationMode,
   PlanDismissedBy,

@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import { REASONING_EFFORTS } from '../../../db/types'
-import { PERMISSION_MODES } from '../../capabilities/permission-modes'
+import { PERMISSION_MODES } from '../../../contracts/permission-modes'
 import { modelIdSchema, providerConnectionIdSchema } from '../../catalog/model-identity'
 import { SESSION_TITLE_MAX_CHARS } from '../session-limits'
 import { sessionTopicSchema } from '../../agent-core/session-topic'

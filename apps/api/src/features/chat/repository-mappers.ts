@@ -1,7 +1,7 @@
 import type { AgentSessionKind } from '../../db'
 import { asStringArray } from '../../lib/coerce'
 import { safeJsonParse } from '../../lib/json'
-import { DEFAULT_PERMISSION_MODE, parsePermissionMode } from '../capabilities/permission-modes'
+import { DEFAULT_PERMISSION_MODE, parsePermissionMode } from '../../contracts/permission-modes'
 import { deserializeMessagePayload } from '../../db'
 import type { PersistedMessage, SessionSummary } from './contracts'
 import type { SessionRecord } from './repository'
