@@ -102,6 +102,27 @@ persistence around the `AgentRuntime` port. The production composition root supp
 [agent runtime boundary](https://github.com/rsaryev/localix/blob/main/docs/internals/agent-runtime.md)
 owns that interface and its event contract.
 
+### Durable turn queue
+
+Every turn that does not start in an idle session waits in the session's durable queue
+([`wake-queue/`](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/wake-queue)).
+A drain claims the head band with a lease, writes the turn under transcript ids derived from the
+band, and acknowledges the rows afterwards. A crash between the write and the acknowledgement
+replays the same rows, so delivery is at least once and the transcript stays idempotent. The queue
+keeps these rules:
+
+- A band claimed together keeps its batch name until it is acknowledged. Send-now and priority
+  changes refuse a batched row, and removal takes the whole batch.
+- A lease lasts 60 seconds and is renewed while a delivery or a steering reservation is held. A
+  claim lost to another owner drains again when that owner's lease expires.
+- A band that fails three consecutive deliveries is parked as `failed`. It leaves the head, appears
+  as failed in the queue snapshot, and waits for the person to retry or remove it.
+- An agent turn ticket is the documented exception. Its row is acknowledged **before** the run
+  starts, so dispatch is at most once and a crash never replays tools. Once the run has started, the
+  boot sweep marks it `interrupted` and posts a notice in the transcript. A crash after the
+  acknowledgement but before the run record exists leaves an empty reply placeholder that is never
+  retried.
+
 Kanban is a bundled plugin
 ([`plugin.json`](https://github.com/rsaryev/localix/blob/main/plugins/kanban/plugin.json)): a
 passive board per chat, stored in that chat's plugin folder. Core names no board. The plugin reaches
