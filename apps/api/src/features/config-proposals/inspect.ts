@@ -4,7 +4,7 @@ import {
   remediableWithholds,
   type ToolLedger,
 } from '../agent-core/tool-ledger'
-import { MODEL_ROUTING_TASKS, isModelRoutingTaskEnabled } from '../chat/model-task-catalog'
+import { MODEL_ROUTING_TASKS, isModelRoutingTaskEnabled } from '../../contracts/model-task-catalog'
 import type { RemedyContext } from './contracts'
 
 /**

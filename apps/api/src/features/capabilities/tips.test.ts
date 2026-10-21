@@ -3,10 +3,14 @@ import { composerTips } from './tips'
 import { CURATED_TIPS, TEACHABLE_COMMANDS } from './tips-curated'
 import { SLASH_COMMANDS } from '../chat/slash-catalog'
 import { tipKeywordPattern } from './tips-keywords'
-import { TIP_SIGNALS, type CapabilitySnapshot } from './contracts'
+import { TIP_SIGNALS } from './contracts'
+import type { CapabilitySnapshot } from '../../contracts/capability-snapshot'
 import type { PluginRecord } from '../plugins/contracts'
 import { parseLocalixUri } from '@localixai/plugin-sdk/navigation'
 import { BUILTIN_TOOL_CATALOG } from '../agent-core/tool-names'
+
+const tipsOf = (snapshot: Parameters<typeof composerTips>[0]) =>
+  composerTips(snapshot, SLASH_COMMANDS)
 
 /** Every builtin tool enabled — the scope in which no capability gate can hide a tip. */
 const ALL_TOOLS = Object.values(BUILTIN_TOOL_CATALOG).map((tool) => tool.name)
@@ -63,23 +67,23 @@ const ids = (tips: { id: string }[]) => tips.map((tip) => tip.id)
 
 describe('composerTips — curated tips follow the tool surface', () => {
   test('a tip about a denied tool is not shipped', () => {
-    const tips = composerTips(snapshot())
+    const tips = tipsOf(snapshot())
     expect(ids(tips)).not.toContain('bash-background')
   })
 
   test('the same tip ships once its tool is enabled', () => {
-    const tips = composerTips(snapshot({ tools: { ...snapshot().tools, enabled: ['bash'] } }))
+    const tips = tipsOf(snapshot({ tools: { ...snapshot().tools, enabled: ['bash'] } }))
     expect(ids(tips)).toContain('bash-background')
   })
 
   test('an ungated product tip always ships', () => {
-    expect(ids(composerTips(snapshot()))).toContain('queue-while-running')
+    expect(ids(tipsOf(snapshot()))).toContain('queue-while-running')
   })
 
   test('the gate never reaches the wire', () => {
     const gated = CURATED_TIPS.find((tip) => tip.requiresAnyTool)
     expect(gated).toBeDefined()
-    const tips = composerTips(
+    const tips = tipsOf(
       snapshot({ tools: { ...snapshot().tools, enabled: [...(gated?.requiresAnyTool ?? [])] } }),
     )
     const shipped = tips.find((tip) => tip.id === gated?.id)
@@ -90,7 +94,7 @@ describe('composerTips — curated tips follow the tool surface', () => {
 
 describe('composerTips — the pool is derived from this scope', () => {
   test('an installed-but-off plugin is offered, gated on its own words', () => {
-    const tips = composerTips(
+    const tips = tipsOf(
       snapshot({
         plugins: [
           plugin({
@@ -118,7 +122,7 @@ describe('composerTips — the pool is derived from this scope', () => {
   })
 
   test('an enabled plugin is not advertised as something to enable', () => {
-    const tips = composerTips(
+    const tips = tipsOf(
       snapshot({
         // A synthetic name, not a bundled plugin's: core must not know one, and the rule under
         // test is about the ENABLED flag, which any plugin row carries.
@@ -129,7 +133,7 @@ describe('composerTips — the pool is derived from this scope', () => {
   })
 
   test('a broken plugin is not advertised at all', () => {
-    const tips = composerTips(
+    const tips = tipsOf(
       snapshot({
         plugins: [
           plugin({ name: 'broken', enabled: false, description: 'X.', error: 'bad manifest' }),
@@ -140,7 +144,7 @@ describe('composerTips — the pool is derived from this scope', () => {
   })
 
   test('plugin commands and skills become insertable tips', () => {
-    const tips = composerTips(
+    const tips = tipsOf(
       snapshot({
         commands: [
           {
@@ -176,7 +180,7 @@ describe('composerTips — the pool is derived from this scope', () => {
   })
 
   test('a skill the scope switched off is not taught', () => {
-    const tips = composerTips(
+    const tips = tipsOf(
       snapshot({
         skills: [
           {
@@ -197,8 +201,8 @@ describe('composerTips — the pool is derived from this scope', () => {
   })
 
   test('onboarding lines appear only while their catalog is empty', () => {
-    expect(ids(composerTips(snapshot()))).toContain('onboarding:skills')
-    const withSkill = composerTips(
+    expect(ids(tipsOf(snapshot()))).toContain('onboarding:skills')
+    const withSkill = tipsOf(
       snapshot({
         skills: [
           {
@@ -220,7 +224,7 @@ describe('composerTips — the pool is derived from this scope', () => {
 
   test('ids are unique — the client keys its seen-counts by them', () => {
     const duplicated = plugin({ name: 'same', enabled: false, description: 'Two scopes.' })
-    const tips = composerTips(
+    const tips = tipsOf(
       snapshot({ plugins: [duplicated, { ...duplicated, projectId: 'p1', scope: 'project' }] }),
     )
     expect(new Set(ids(tips)).size).toBe(tips.length)
@@ -231,7 +235,7 @@ describe('composerTips — built-in commands are derived, not retyped', () => {
   test('a taught command takes its text from the shared catalog', () => {
     const spec = SLASH_COMMANDS.find((command) => command.name === TEACHABLE_COMMANDS[0])
     expect(spec).toBeDefined()
-    const tip = composerTips(snapshot()).find((t) => t.id === `builtin:${spec?.name}`)
+    const tip = tipsOf(snapshot()).find((t) => t.id === `builtin:${spec?.name}`)
     expect(tip?.actions).toEqual([
       { kind: 'insert', label: `/${spec?.name}`, text: `/${spec?.name}` },
     ])
@@ -245,7 +249,7 @@ describe('composerTips — built-in commands are derived, not retyped', () => {
   })
 
   test('a hidden or untaught command produces no tip', () => {
-    const ids = new Set(composerTips(snapshot()).map((tip) => tip.id))
+    const ids = new Set(tipsOf(snapshot()).map((tip) => tip.id))
     for (const command of SLASH_COMMANDS) {
       if (command.hidden || !TEACHABLE_COMMANDS.includes(command.name)) {
         expect(ids.has(`builtin:${command.name}`)).toBe(false)
@@ -257,9 +261,7 @@ describe('composerTips — built-in commands are derived, not retyped', () => {
 describe('composerTips — session tips ship with their gates intact', () => {
   test('every signal a tip names is one the client knows', () => {
     const named = new Set<string>()
-    for (const tip of composerTips(
-      snapshot({ tools: { ...snapshot().tools, enabled: ALL_TOOLS } }),
-    )) {
+    for (const tip of tipsOf(snapshot({ tools: { ...snapshot().tools, enabled: ALL_TOOLS } }))) {
       for (const signal of tip.when?.signals ?? []) named.add(signal)
       for (const signal of tip.when?.notSignals ?? []) named.add(signal)
     }
@@ -271,7 +273,7 @@ describe('composerTips — session tips ship with their gates intact', () => {
 
 describe('composerTips — quick actions', () => {
   test('every navigate action is a destination the navigation layer can parse', () => {
-    const tips = composerTips(
+    const tips = tipsOf(
       snapshot({
         tools: { ...snapshot().tools, enabled: ALL_TOOLS },
         plugins: [plugin({ name: 'off-one', enabled: false, description: 'Does a thing.' })],
@@ -291,7 +293,7 @@ describe('composerTips — quick actions', () => {
   })
 
   test('a tip carries at most two actions — the band is not a toolbar', () => {
-    const tips = composerTips(snapshot({ tools: { ...snapshot().tools, enabled: ALL_TOOLS } }))
+    const tips = tipsOf(snapshot({ tools: { ...snapshot().tools, enabled: ALL_TOOLS } }))
     for (const tip of tips) expect(tip.actions?.length ?? 0).toBeLessThanOrEqual(2)
   })
 })

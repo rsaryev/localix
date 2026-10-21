@@ -24,7 +24,7 @@ import { coreInlineCompletionSurface, type InlineCompletionSurfaceSpec } from '.
 import { gatherSurfaceContext, type SurfaceContextDeps } from './surface-context'
 import { startCompletionOperation } from './operation'
 import type { SurfaceContextResolver } from './context-resolvers'
-import { isModelRoutingTaskEnabled } from '../chat/model-task-catalog'
+import { isModelRoutingTaskEnabled } from '../../contracts/model-task-catalog'
 import type { Usage } from '@localixai/agent'
 import type { PluginTextInputCompletionSurface } from '@localixai/plugin-sdk/backend'
 import type { ContextContribution } from '../context-fabric/contracts'

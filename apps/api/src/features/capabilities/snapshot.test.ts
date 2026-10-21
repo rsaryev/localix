@@ -52,6 +52,7 @@ function contributions(plugins: PluginRecord[]): PluginContributions {
 
 function makePorts(over: Partial<CapabilitySnapshotPorts> = {}): CapabilitySnapshotPorts {
   return {
+    builtinCommands: [],
     listPluginContributions: async () => contributions([]),
     listAgents: async () => [],
     listMcpServers: async () => [],

@@ -10,7 +10,7 @@ import type {
   Project,
   UpdateProjectRequest,
 } from './contracts'
-import { refKindSpec } from '../chat/context-ref-kinds'
+import { refKindSpec } from '../../contracts/context-ref-kinds'
 import type { ResourceExpansionResult } from './expand-refs'
 import { createUserRefExpander } from './user-ref-expander'
 import { createProjectsRepository, type ProjectRecord } from './repository'

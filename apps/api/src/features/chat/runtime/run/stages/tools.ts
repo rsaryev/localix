@@ -11,6 +11,7 @@ import { mkdirSync } from 'node:fs'
 
 import { TOOL } from '../../../../agent-core/tool-names'
 import { sessionScratchDir } from '../../../../agent-core/tools/workspace'
+import { TOOL_WRAPPER_CHAIN } from '../tool-wrapper-chain'
 import { recordComposition } from '../../../../effective-config/composition-store'
 import { recordToolRoster } from '../../../../tools/usage-recorder'
 import { executionToolSurface } from '../../execution-context'
@@ -141,7 +142,12 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
   // Failure-proof by construction: a snapshot must never affect the run that produced it.
   void assembledPromise.then(
     (assembled) =>
-      recordComposition(session.id, { assembled, loadedPlugins, policy: policy.trace }),
+      recordComposition(session.id, {
+        assembled,
+        loadedPlugins,
+        wrappers: TOOL_WRAPPER_CHAIN.map((entry) => entry.label),
+        policy: policy.trace,
+      }),
     () => {},
   )
 

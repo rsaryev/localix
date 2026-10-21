@@ -1,7 +1,7 @@
 import { DEFAULT_REASONING_EFFORT } from '@localixai/agent'
 import type { SeatRouteFor } from './session-route-defaults'
 import type { SessionAgentRoute, ModelRoute } from '../repository-types'
-import { sessionRoute } from '../session-route'
+import { sessionRoute } from '../../../contracts/session-route'
 import { choiceFor, type SessionModelChoices } from '../session-model-choices'
 import {
   resolveSessionParticipants,

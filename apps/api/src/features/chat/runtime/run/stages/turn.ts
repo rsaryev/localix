@@ -12,7 +12,7 @@ import { findCatalogModel } from '@localixai/agent/catalog'
 import { agentModelSettingsFor } from '@localixai/agent'
 
 import { toSessionSummary } from '../../../repository'
-import { agentRoute } from '../../../session-route'
+import { agentRoute } from '../../../../../contracts/session-route'
 import { loadUserSettingsContext } from '../../../../user/runtime-settings'
 import { awaitAgentService } from '../../agent-service-binding'
 import { sessionAgent } from '../../message-envelope'

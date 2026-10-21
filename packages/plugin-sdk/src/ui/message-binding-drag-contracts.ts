@@ -29,7 +29,7 @@ export const MESSAGE_BINDING_DRAG_VERSION = 1
  * The bound has to sit ABOVE the largest payload the composer itself accepts or
  * hardening would silently eat legitimate drags: a `snippet` binding carries its
  * content inline in `target.attributes.content` and is clamped only much later,
- * at `SNIPPET_CONTENT_MAX` (100_000 chars, apps/api/src/features/chat/context-ref-kinds.ts),
+ * at `SNIPPET_CONTENT_MAX` (100_000 chars, apps/api/src/contracts/context-ref-kinds.ts),
  * which is ~300 KB once the text is not ASCII. Everything past that is a corrupt
  * or hostile payload, and rejecting it keeps the synchronous `JSON.parse` in a
  * drop handler off the frame budget. Nothing else bounds these bytes: the

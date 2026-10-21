@@ -10,7 +10,7 @@ import { createSpawnForkSkill, type ForkSkillDeps } from './fork-skill'
 import type { SessionRecord } from '../repository'
 import type { SessionLifecycleCtx } from './session-lifecycle'
 import { routedParticipants, sessionFixture } from '../../../testing/session-fixture'
-import { sessionRoute } from '../session-route'
+import { sessionRoute } from '../../../contracts/session-route'
 
 /** The effort a forked child ended up on — it lives on the child's participant. */
 const childEffort = (child: SessionRecord | undefined | null) =>

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import type { SessionAgentRoute } from './contracts/read-model'
+import type { SessionAgentRoute } from '../features/chat/contracts/read-model'
 import { agentRoute, chosenRoute, isMultiParticipant } from './session-route'
 
 function participant(agentId: string, modelId: string): SessionAgentRoute {

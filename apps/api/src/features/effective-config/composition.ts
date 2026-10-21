@@ -1,4 +1,3 @@
-import { TOOL_WRAPPER_CHAIN } from '../chat/runtime/run/tool-wrapper-chain'
 import type { AssembledRunTools } from '../chat/runtime/run/tool-assembly'
 import type { LoadedPlugins } from '../plugins/loader'
 
@@ -11,8 +10,8 @@ import type { LoadedPlugins } from '../plugins/loader'
  * a name came from, and nothing put the three together.
  *
  * The report is built from values the ROSTER ITSELF produced — `sourceByTool` and
- * `wireToolNames` come back from `assembleRunTools`, and the wrapper order is the exported
- * `TOOL_WRAPPER_CHAIN` the assembly applies. That is the whole design constraint: a dump
+ * `wireToolNames` come back from `assembleRunTools`, and the wrapper order is the labels of
+ * the `TOOL_WRAPPER_CHAIN` the assembly applies, handed in by the run. That is the whole design constraint: a dump
  * assembled from a parallel description would drift from the real thing, and a drifting
  * answer to this question is worse than no answer, because it is believed.
  */
@@ -77,6 +76,8 @@ export function describeComposition(input: {
     'wireToolNames' | 'deferredToolNames' | 'sourceByTool' | 'mcpInventory'
   >
   loadedPlugins: Pick<LoadedPlugins, 'loaded'>
+  /** The labels of the tool wrappers the run applied, outermost last. */
+  wrappers: readonly string[]
   policy?: readonly { axis: string; variant: string }[]
 }): CompositionReport {
   const { assembled, loadedPlugins } = input
@@ -109,7 +110,7 @@ export function describeComposition(input: {
       ...(plugin.error ? { error: plugin.error } : {}),
     })),
     tools,
-    wrappers: TOOL_WRAPPER_CHAIN.map((entry) => entry.label),
+    wrappers: [...input.wrappers],
     mcp: Object.entries(assembled.mcpInventory ?? {}).map(([server, entry]) => ({
       server,
       tools: Array.isArray(entry) ? entry.length : 0,

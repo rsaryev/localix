@@ -37,7 +37,7 @@ export const AGENT_TASK_NAME_PATTERN = /^[a-z0-9][a-z0-9_]{0,47}$/
  * to one tree (`/root/worker` names a different agent in every conversation), it is assigned from
  * the sibling names that happened to exist at creation time, and it is only meaningful while that tree
  * is alive — an id is globally unique and permanent. A session is already addressable three ways
- * for the STORED case (raw id, the composer's `@session:<id>` token in `chat/context-refs.ts`, and
+ * for the STORED case (raw id, the composer's `@session:<id>` token in `contracts/context-refs.ts`, and
  * `localix://resource/chat/session/<id>` in `chat/resource-provider.ts`), and every one of them
  * keys on the id. This is the fourth address, and it is deliberately the only one that is
  * model-typed and never written down: `resolveAgentTaskReference` (here) plus

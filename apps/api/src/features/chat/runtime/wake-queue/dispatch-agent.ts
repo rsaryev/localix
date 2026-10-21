@@ -5,7 +5,7 @@ import { dispatchParams } from '../run-params'
 import type { RunCompletion, RunExecutionOutcome } from '../run-outcome'
 import type { WakeQueueContext } from '../wake-queue'
 import type { AgentTurnTicket } from '../agent-turn-ticket'
-import { withRoute } from '../../session-route'
+import { withRoute } from '../../../../contracts/session-route'
 
 /** Execution consumer: every participant uses this path, irrespective of its producer. */
 export async function dispatchAgentTicket(

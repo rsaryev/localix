@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import type { CapabilitySnapshot } from '../capabilities/contracts'
+import type { CapabilitySnapshot } from '../../contracts/capability-snapshot'
 import {
   TOOL_BUDGET_HOT_MARGIN,
   TOOL_BUDGET_HYSTERESIS,

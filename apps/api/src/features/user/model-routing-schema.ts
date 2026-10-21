@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { REASONING_EFFORTS } from '../../db/types'
-import { MODEL_ROUTING_TASKS, type ModelRoutingTaskKey } from '../chat/model-task-catalog'
+import { MODEL_ROUTING_TASKS, type ModelRoutingTaskKey } from '../../contracts/model-task-catalog'
 import { modelIdSchema, providerConnectionIdSchema } from '../catalog/model-identity'
 
 const modelRoutingTaskKeys = MODEL_ROUTING_TASKS.map((task) => task.key) as [

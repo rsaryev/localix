@@ -1,6 +1,6 @@
 /** Pure construction, wire projection and model-facing formatting of context-ref payloads. */
-import type { ContextRef, ContextRefExpansion } from '../projects/contracts'
-import { DEFAULT_CONTEXT_WINDOW } from './runtime/agent-runner-constants'
+import type { ContextRef, ContextRefExpansion } from '../features/projects/contracts'
+import { DEFAULT_CONTEXT_WINDOW } from '../features/chat/runtime/agent-runner-constants'
 import { refKindSpec, SNIPPET_CONTENT_MAX, type ContextRefKind } from './context-ref-kinds'
 
 export interface ParsedContextRef extends ContextRef {

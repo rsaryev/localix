@@ -13,7 +13,7 @@ import type { RegistriesPhase } from './registries'
 import type { PluginHostsPhase } from './plugin-hosts'
 import type { DomainServicesPhase } from './domain-services'
 import type { EnginesPhase } from './engines'
-import { sessionRoute } from '../features/chat/session-route'
+import { sessionRoute } from '../contracts/session-route'
 import {
   NO_ROSTERS,
   projectCapabilities,

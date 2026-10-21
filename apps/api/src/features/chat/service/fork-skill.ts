@@ -1,4 +1,4 @@
-import { agentRoute, sessionRoute } from '../session-route'
+import { agentRoute, sessionRoute } from '../../../contracts/session-route'
 import { agentParticipant } from '../../../db'
 import { randomUUID } from 'node:crypto'
 

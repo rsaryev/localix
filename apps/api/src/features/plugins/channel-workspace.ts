@@ -1,5 +1,5 @@
 import type { ReasoningEffort } from '../../db'
-import { sessionRoute } from '../chat/session-route'
+import { sessionRoute } from '../../contracts/session-route'
 import type {
   ChannelModelOption,
   ChannelSessionSummary,

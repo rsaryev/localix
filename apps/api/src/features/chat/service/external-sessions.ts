@@ -9,7 +9,7 @@ import type { SessionStreamRegistry } from '../runtime/session-stream-registry'
 import type { RunAgentFn } from './run-agent'
 import type { SessionMutationLock } from './session-access'
 import { childExecutionContext } from '../runtime/execution-context'
-import { sessionRoute } from '../session-route'
+import { sessionRoute } from '../../../contracts/session-route'
 import { mirrorRunToChannel } from './channel-run-mirror'
 
 export interface ExternalSessionInput {

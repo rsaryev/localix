@@ -14,7 +14,7 @@
  * participant is exhausted, until the first of them recovers: holding while one route is still
  * admitted would reintroduce the whole-conversation hold for the unaddressed case.
  */
-import { agentRoute, type RoutableSession } from '../session-route'
+import { agentRoute, type RoutableSession } from '../../../contracts/session-route'
 import type { ProviderRoute } from './route-cooldowns'
 
 export function addressedCooldownUntil(

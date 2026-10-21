@@ -124,7 +124,7 @@ describe('Git Workspace ownership boundary', () => {
     const files = await scanSources({
       root: REPO_ROOT,
       include: [
-        'apps/api/src/features/chat/context-ref-kinds.ts',
+        'apps/api/src/contracts/context-ref-kinds.ts',
         'apps/api/src/features/projects/contracts.ts',
         'apps/api/src/features/projects/expand-refs.ts',
         'apps/ui/src/shared/lib/inspectorBus.ts',

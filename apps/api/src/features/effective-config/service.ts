@@ -8,7 +8,7 @@
  */
 import { createHash } from 'node:crypto'
 import type { AgentSettings } from '../user/contracts'
-import { MODEL_ROUTING_TASKS, isModelRoutingTaskEnabled } from '../chat/model-task-catalog'
+import { MODEL_ROUTING_TASKS, isModelRoutingTaskEnabled } from '../../contracts/model-task-catalog'
 import type { ProjectSettings } from '../projects/contracts'
 import { resolveEffectiveAgentConfig, type EffectiveConfigDefaults } from './effective-config'
 import { buildDiagnostics, type ResolvedModel } from './validate'

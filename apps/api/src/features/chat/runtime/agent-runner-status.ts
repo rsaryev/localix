@@ -1,7 +1,7 @@
 import type { SessionWork } from '../contracts'
 import type { RuntimeState } from './agent-runner-state'
 import { sessionWork } from './work-view'
-import type { RoutableSession } from '../session-route'
+import type { RoutableSession } from '../../../contracts/session-route'
 import { addressedCooldownUntil } from './addressed-route-cooldown'
 
 /**

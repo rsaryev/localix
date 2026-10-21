@@ -1,4 +1,4 @@
-import { agentRoute, sessionRoute } from '../../session-route'
+import { agentRoute, sessionRoute } from '../../../../contracts/session-route'
 /**
  * The three ways a Claude Code hook can reach a VERDICT.
  *

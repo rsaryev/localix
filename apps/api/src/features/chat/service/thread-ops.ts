@@ -1,5 +1,5 @@
 import { InvalidRequestError, NotFoundError } from '../../../lib/domain-errors'
-import { agentRoute, chosenRoute, sessionRoute } from '../session-route'
+import { agentRoute, chosenRoute, sessionRoute } from '../../../contracts/session-route'
 import { participantAgentId } from '../../../db/participant'
 import { randomUUID } from 'node:crypto'
 

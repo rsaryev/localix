@@ -4,8 +4,8 @@ import path from 'node:path'
 
 import { expandContextRefs, toResourceExpansionResult } from './expand-refs'
 import type { ContextRef } from './contracts'
-import { makeSnippetRef, toWireRef } from '../chat/context-refs'
-import { formatRefExpansionBlock } from '../chat/context-refs'
+import { makeSnippetRef, toWireRef } from '../../contracts/context-refs'
+import { formatRefExpansionBlock } from '../../contracts/context-refs'
 
 /**
  * The `snippet` kind is the token-less, inline-content ref (client-minted, drag/attach

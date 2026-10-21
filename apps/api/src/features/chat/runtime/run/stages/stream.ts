@@ -12,7 +12,7 @@ import { agentParticipant } from '../../../../../db/participant'
 
 import { TOOL } from '../../../../agent-core/tool-names'
 import { buildExternalizeAfterToolCall } from '../../../../context-store/externalize'
-import { agentRoute } from '../../../session-route'
+import { agentRoute } from '../../../../../contracts/session-route'
 import { speakerPlace } from '../../../policy/axes/seat'
 import { createItemAccumulator } from '../../items'
 import { withMidRunReminders } from '../../mid-run-reminders'

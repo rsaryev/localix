@@ -1,4 +1,4 @@
-import { sessionRoute } from '../session-route'
+import { sessionRoute } from '../../../contracts/session-route'
 import { dirname } from 'node:path'
 import { recordSkillUse } from '../../agent-core/skill-usage-recorder'
 import { parseSkillCommand, applySkillArguments } from './slash-commands'

@@ -1,6 +1,6 @@
 import type { AgentDefinition } from '@localixai/agent/agents'
 
-import { DEFAULT_MAX_TURNS } from '../../turn-budget'
+import { DEFAULT_MAX_TURNS } from '../../../../contracts/turn-budget'
 
 /** A definition's authored limit can tighten, but never raise, the host's turn budget. */
 export function runTurnLimit(

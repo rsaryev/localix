@@ -5,7 +5,6 @@ import { defaultErrorHandler } from '../../lib/http'
 import { zValidator } from '../../lib/validator'
 import {
   capabilitySnapshotQuerySchema,
-  capabilitySnapshotSchema,
   capabilityPermissionsQuerySchema,
   capabilityRulesSchema,
   capabilityRulesApplySchema,
@@ -13,6 +12,7 @@ import {
   type CapabilityScope,
   type CapabilityRules,
 } from './contracts'
+import { capabilitySnapshotSchema } from '../../contracts/capability-snapshot'
 import type { Rule } from '../agent-core/capability-rule'
 import type { CapabilitySnapshotService } from './snapshot'
 import type { CapabilityApplyService } from './apply'

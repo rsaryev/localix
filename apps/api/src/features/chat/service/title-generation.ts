@@ -9,7 +9,7 @@ import {
 } from '../../context-fabric/input-intent'
 import { executeModelTask } from '../../model-task-runtime'
 import { assistantText } from '../../../lib/assistant-text'
-import { isModelRoutingTaskEnabled } from '../model-task-catalog'
+import { isModelRoutingTaskEnabled } from '../../../contracts/model-task-catalog'
 import { sessionTopicSchema } from '../../agent-core/session-topic'
 
 type AuxHelpers = ReturnType<typeof createAuxProviderHelpers>

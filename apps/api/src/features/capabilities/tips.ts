@@ -1,6 +1,7 @@
 import { pluginLabel } from '@localixai/plugin-sdk/manifest'
-import type { CapabilitySnapshot, ComposerTip } from './contracts'
-import { SLASH_COMMANDS } from '../chat/slash-catalog'
+import type { ComposerTip } from './contracts'
+import type { CapabilitySnapshot } from '../../contracts/capability-snapshot'
+import type { SlashCommandSpec } from '../chat/slash-command-catalog'
 import { CURATED_TIPS, TEACHABLE_COMMANDS } from './tips-curated'
 import { SESSION_TIPS } from './tips-session'
 import { capabilityAction, insertAction, settingsAction } from './tips-actions'
@@ -81,13 +82,14 @@ function inactivePluginTips(plugins: CapabilitySnapshot['plugins']): ComposerTip
  * The product's OWN slash commands, read from the catalog that defines them.
  *
  * These were the last tips still written on the client, on the argument that only the
- * composer knows its commands. It does not: `SLASH_COMMANDS` is the leaf the parser,
+ * composer knows its commands. It does not: `SLASH_COMMANDS`, handed in by the composition
+ * root, is the leaf the parser,
  * the menu and `/help` all derive from, so the tip is derived from it too — and the
  * pool has ONE origin instead of a server half and a client half that could disagree
  * about what a command does.
  */
-function builtinCommandTips(): ComposerTip[] {
-  return SLASH_COMMANDS.flatMap((command) =>
+function builtinCommandTips(builtinCommands: readonly BuiltinCommand[]): ComposerTip[] {
+  return builtinCommands.flatMap((command) =>
     command.hidden || !TEACHABLE_COMMANDS.includes(command.name)
       ? []
       : [
@@ -161,7 +163,13 @@ function onboardingTips(snapshot: Omit<CapabilitySnapshot, 'tips'>): ComposerTip
   return tips
 }
 
-export function composerTips(snapshot: Omit<CapabilitySnapshot, 'tips'>): ComposerTip[] {
+/** What a tip needs of one of the product's own slash commands (`SLASH_COMMANDS`). */
+export type BuiltinCommand = Pick<SlashCommandSpec, 'name' | 'description' | 'hidden'>
+
+export function composerTips(
+  snapshot: Omit<CapabilitySnapshot, 'tips'>,
+  builtinCommands: readonly BuiltinCommand[],
+): ComposerTip[] {
   const enabledTools = new Set(snapshot.tools.enabled)
   // One filter for both hand-written pools: a tip may only name a capability this
   // scope actually has, whether it talks about the workspace or about the session.
@@ -173,7 +181,7 @@ export function composerTips(snapshot: Omit<CapabilitySnapshot, 'tips'>): Compos
 
   const tips = [
     ...curated,
-    ...builtinCommandTips(),
+    ...builtinCommandTips(builtinCommands),
     ...onboardingTips(snapshot),
     ...inactivePluginTips(snapshot.plugins),
     ...commandTips(snapshot.commands),

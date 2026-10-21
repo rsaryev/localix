@@ -11,9 +11,9 @@ import type { PluginContributions } from '../plugins/service-types'
 import { CATEGORY_LABELS, toolCatalogEntries, type ToolCatalogPluginSource } from '../tools/catalog'
 import { composeCapabilities, type CapabilityKind, type ResolvedCapabilities } from './resolve'
 import { ruleGrammar } from './rule-grammar'
-import { composerTips } from './tips'
+import { composerTips, type BuiltinCommand } from './tips'
 import { capabilityRevision } from './revision'
-import type { CapabilitySnapshot, CapabilityToolSurface } from './contracts'
+import type { CapabilitySnapshot, CapabilityToolSurface } from '../../contracts/capability-snapshot'
 
 /**
  * THE capability resolver. One place computes the snapshot every client and (soon)
@@ -26,6 +26,8 @@ import type { CapabilitySnapshot, CapabilityToolSurface } from './contracts'
  */
 
 export interface CapabilitySnapshotPorts {
+  /** The product's own slash commands (`SLASH_COMMANDS`), taught as tips. */
+  builtinCommands: readonly BuiltinCommand[]
   listPluginContributions(userId: string, projectId: string): Promise<PluginContributions>
   listAgents(userId: string, projectId: string): Promise<AgentSummary[]>
   listMcpServers(userId: string, projectId: string): Promise<McpServer[]>
@@ -278,7 +280,7 @@ export function createCapabilitySnapshotService(
       // Tips are a PROJECTION of the document above, not a seventh catalog: they are
       // composed from the fields already resolved here, so a tip can never describe a
       // plugin, tool or skill differently from the snapshot it travelled with.
-      return { ...snapshot, tips: composerTips(snapshot) }
+      return { ...snapshot, tips: composerTips(snapshot, ports.builtinCommands) }
     },
   }
 }

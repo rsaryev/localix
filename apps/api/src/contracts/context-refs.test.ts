@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
-import type { ContextRefExpansion } from '../projects/contracts'
-import { contextRefSchema, SNIPPET_CONTENT_MAX } from '../projects/contracts'
+import type { ContextRefExpansion } from '../features/projects/contracts'
+import { contextRefSchema, SNIPPET_CONTENT_MAX } from '../features/projects/contracts'
 import {
   classifyExpansionBudget,
   formatRefExpansionBlock,

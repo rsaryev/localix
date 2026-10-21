@@ -24,7 +24,7 @@ export interface StoredSystemNotice {
     | 'run_interrupted'
     /**
      * A run that stopped because it reached the person's turn limit
-     * (`features/chat/turn-budget.ts`). Its own kind rather than prose in the assistant row:
+     * (`contracts/turn-budget.ts`). Its own kind rather than prose in the assistant row:
      * the row above is an unfinished answer, and the line saying so is the system speaking
      * about what IT did — the finalizer refuses to fabricate anything in the model's voice.
      */

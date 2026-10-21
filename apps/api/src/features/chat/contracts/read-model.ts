@@ -111,7 +111,7 @@ export interface SessionSummary {
 // Re-exported from its zod-free leaf home (`session-ref.ts`) so server-side
 // importers keep taking it from contracts while browser bundles use the leaf
 // (`@localixai/api/session-ref`) without dragging this module's schemas along.
-export { sessionRef } from '../session-ref'
+export { sessionRef } from '../../../contracts/session-ref'
 
 export interface PersistedMessage {
   id: string

@@ -1,5 +1,5 @@
 /** Pure contracts shared by the context-ref registry, composer and wire schema. */
-import type { ContextRef } from '../projects/contracts'
+import type { ContextRef } from '../features/projects/contracts'
 
 /**
  * Max inline content carried by a `snippet` ref (client-minted). ~100 KB.

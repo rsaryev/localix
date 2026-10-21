@@ -5,7 +5,7 @@ import { DEFAULT_REASONING_EFFORT, type ReasoningEffort } from '@localixai/agent
 import { createSession, type SessionLifecycleCtx } from './session-lifecycle'
 import type { SessionRecord } from '../repository'
 import { routedParticipants, sessionFixture } from '../../../testing/session-fixture'
-import { sessionRoute } from '../session-route'
+import { sessionRoute } from '../../../contracts/session-route'
 
 /**
  * A child session is created fresh, not cloned from its parent, so every setting the

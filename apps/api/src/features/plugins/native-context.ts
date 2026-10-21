@@ -10,7 +10,7 @@ import type {
 } from '@localixai/plugin-sdk/backend'
 import { resolveRuntimeAddress, resolveWebhookUrl } from '../../lib/runtime-address'
 import { makePluginOAuth } from './oauth'
-import { pluginDataDir, pluginStateDir } from './mcp-substitute'
+import { pluginDataDir, pluginStateDir } from '../ext/user-config-substitute'
 import type { PluginConfigValues } from './config'
 import { makeHelpers } from './native-helpers'
 import type { PluginProblemReporter } from './problem-reporter'

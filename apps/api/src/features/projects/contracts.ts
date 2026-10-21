@@ -3,8 +3,8 @@ import {
   PROJECT_SETTINGS_MAX_SERIALIZED_CHARS,
 } from './limits'
 import { z } from 'zod'
-import { SNIPPET_CONTENT_MAX } from '../chat/context-ref-kinds'
-import { contextExclusionsSchema } from '../context-fabric/exclusion-schema'
+import { SNIPPET_CONTENT_MAX } from '../../contracts/context-ref-kinds'
+import { contextExclusionsSchema } from '../../contracts/context-exclusion-schema'
 import { modelIdSchema, providerConnectionIdSchema } from '../catalog/model-identity'
 
 export {
@@ -153,7 +153,7 @@ export const projectParamsSchema = z.object({
 })
 
 /** Max inline content carried by a `snippet` ref (client-minted). Defined ONCE in
- *  the pure ref-kind contracts (`features/chat/context-ref-kind-contracts.ts`) so the mint
+ *  the pure ref-kind contracts (`contracts/context-ref-kind-contracts.ts`) so the mint
  *  path (`makeSnippetRef`) can clamp to it client-side; the schema below enforces
  *  it as a backstop. Re-exported here for wire-contract consumers. */
 export { SNIPPET_CONTENT_MAX }
@@ -161,7 +161,7 @@ export { SNIPPET_CONTENT_MAX }
 /**
  * Composer context references (`@file:` / `@folder:` / `@session:` / `@project:` / `@terminal:` /
  * `@call:` / `@resource:` / `message` / `snippet`). The ref-kind registry in
- * `features/chat/context-ref-kinds.ts` is the source of truth for the token grammar;
+ * `contracts/context-ref-kinds.ts` is the source of truth for the token grammar;
  * resource providers own their URI namespaces. The UI parses typed syntax and sends structured
  * refs here; the server resolves them against the working directory (project working
  * dir, or the session sandbox workspace for project-less sessions) and returns the

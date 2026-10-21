@@ -1,6 +1,6 @@
-import { DEFAULT_AGENT_HANDLE } from '../../db/participant'
+import { DEFAULT_AGENT_HANDLE } from '../db/participant'
 import { builtinAgentId } from '@localixai/agent/agents'
-import type { SessionAgentRoute } from './contracts/read-model'
+import type { SessionAgentRoute } from '../features/chat/contracts/read-model'
 
 /**
  * WHICH AGENT'S MODEL A CALLER MEANS.

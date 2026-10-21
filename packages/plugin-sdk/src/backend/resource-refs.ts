@@ -61,7 +61,7 @@ export {
 
 /**
  * RESOURCE-REF PROVIDER REGISTRY — the agnostic seam behind the single `resource`
- * context-ref kind (`features/chat/context-ref-kinds.ts`). A provider owns a URI
+ * context-ref kind (`contracts/context-ref-kinds.ts`). A provider owns a URI
  * namespace (e.g. `db`) and exposes a hierarchical tree the composer `@`-menu / drag
  * drills into (`listChildren`) plus a node→model-facing-text resolver (`expand`).
  *

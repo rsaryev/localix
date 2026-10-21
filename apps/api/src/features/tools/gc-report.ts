@@ -7,7 +7,7 @@ import {
   type ToolGcSuggestion,
   type ToolGcSurfaced,
 } from '../agent-core/tool-gc'
-import type { CapabilitySnapshot } from '../capabilities/contracts'
+import type { CapabilitySnapshot } from '../../contracts/capability-snapshot'
 import type { ToolUsageRecord } from './usage-repository'
 import { phantomToolNames } from './wire-tools'
 

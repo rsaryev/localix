@@ -1,4 +1,4 @@
-import { withRoute } from '../session-route'
+import { withRoute } from '../../../contracts/session-route'
 import { commandTarget } from './command-participant'
 import { findCatalogModel } from '@localixai/agent/catalog'
 import { readAgentSettings } from './agent-settings'

@@ -1,4 +1,4 @@
-import { agentRoute } from '../session-route'
+import { agentRoute } from '../../../contracts/session-route'
 import type { ChatCacheDiagnosticsPayload } from '@localixai/agent'
 import type { createChatCacheDiagnostics } from '@localixai/agent'
 import {

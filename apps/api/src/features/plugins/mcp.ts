@@ -3,17 +3,17 @@ import type { McpServerRecord } from '../mcp/repository'
 import { normalizeMcpServerEntry } from '../mcp/normalize'
 import type { DiscoveredPlugin } from './discovery'
 import { declaredConfigKeys, type PluginConfigValues } from './config'
-import { pluginDataDir, substituteMcpServerEntry } from './mcp-substitute'
+import { pluginDataDir, substituteMcpServerEntry } from '../ext/user-config-substitute'
 
 // Substitution internals + token collectors + `pluginDataDir` live in
-// `./mcp-substitute` (section-aware secret policy; shared with cc-hooks);
+// `../ext/user-config-substitute` (section-aware secret policy; shared with cc-hooks);
 // re-exported here so historical importers keep working.
 export {
   isPlainObject,
   collectMcpConfigTokens,
   collectMcpTokensOutsideEnv,
   pluginDataDir,
-} from './mcp-substitute'
+} from '../ext/user-config-substitute'
 
 /**
  * Build the `CLAUDE_PLUGIN_OPTION_<KEY>` env-var map for a plugin's resolved config.

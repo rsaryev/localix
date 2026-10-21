@@ -27,7 +27,7 @@
  * The caller supplies `isSecret(key: string) => boolean`. The prompt/skill path passes
  * a real predicate that excludes keys whose manifest declares `secret: true`. The MCP
  * path does NOT use this module — it has its own section-aware substituter
- * (`plugins/mcp-substitute.ts`) that reveals secrets only inside a server's `env`
+ * (`ext/user-config-substitute.ts`) that reveals secrets only inside a server's `env`
  * block and blocks them everywhere else (command/args/url/headers).
  * The security boundary stays with the caller; this module is policy-agnostic.
  *
@@ -48,7 +48,7 @@ export interface SubstituterOptions {
    * substituted into the output.
    *
    * Prompt/skill path: `(key) => Boolean(manifest.config?.[key]?.secret)`.
-   * (The MCP path uses `plugins/mcp-substitute.ts` instead — env-only secrets.)
+   * (The MCP path uses `ext/user-config-substitute.ts` instead — env-only secrets.)
    */
   isSecret: (key: string) => boolean
 }

@@ -5,7 +5,7 @@
  * and none of its business otherwise — the builder composes sections, it does not know what a
  * session's participants are. Here they become a roster and election context, including a solo chat.
  */
-import { agentRoute } from '../../session-route'
+import { agentRoute } from '../../../../contracts/session-route'
 import type { RunPolicy } from '../../policy/run-policy'
 import type { SessionRecord } from '../../repository'
 import type { HumanProfile } from '../../../agent-core/prompt/sections/conversation'

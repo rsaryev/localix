@@ -3,7 +3,7 @@ import { z } from 'zod'
 import type { AppContext } from '../../app'
 import { jsonError } from '../../lib/http'
 import { zValidator } from '../../lib/validator'
-import type { CapabilitySnapshot } from '../capabilities/contracts'
+import type { CapabilitySnapshot } from '../../contracts/capability-snapshot'
 import { buildToolGcReport } from './gc-report'
 import type { ToolUsageRecord } from './usage-repository'
 
