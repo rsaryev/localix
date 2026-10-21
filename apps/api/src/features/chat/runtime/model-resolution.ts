@@ -1,5 +1,5 @@
 import type { RuntimeCredential } from '@localixai/agent/runtime'
-import { findCatalogModel } from '@localixai/agent/catalog'
+import { findCatalogModel, routeReadiness } from '@localixai/agent/catalog'
 
 import { firstEnabledKey } from './provider-keys'
 import type { RunnerDeps } from './agent-runner-types'
@@ -19,6 +19,12 @@ export function stripProviderPrefix(modelId: string, providerId: string): string
 /** Whether a catalog model id carries the `"<providerId>/"` namespace. */
 export function hasProviderPrefix(modelId: string, providerId: string): boolean {
   return modelId.startsWith(`${providerId}/`)
+}
+
+/** A connection can serve a run while one of its keys is enabled (a listing without keys: yes). */
+function usableConnection(connection: { keys?: unknown }): boolean {
+  const keys = connection.keys
+  return !Array.isArray(keys) || keys.some((key: { enabled?: boolean }) => key.enabled !== false)
 }
 
 /** A LanguageModel must produce text (`complete`) or typed decisions (`decide`). Catalog entries
@@ -185,53 +191,38 @@ export async function resolveLanguageModel(params: {
   const { modelId, preferredConnectionId } = params
   const { connections } = await params.deps.providerConnectionsService
     .listConnections(params.userId)
-    .catch(() => ({ connections: [] as { id: string; providerId: string }[] }))
-
-  // Resolve the durable provider/model identity before trying credentials. The
-  // preferred connection is authoritative only when its provider actually owns
-  // the model. If that connection was deleted, a sole catalog owner or explicit
-  // `<providerId>/…` namespace can recover the provider. An ambiguous bare id
-  // fails closed instead of crossing to whichever provider happens to list first.
+    .catch(() => ({ connections: [] as Array<{ id: string; providerId: string; keys?: unknown }> }))
   const catalog =
     params.catalog ?? (await params.deps.catalogService.getCatalog().catch(() => undefined))
-  const catalogProviders = new Set(catalog?.models?.map((model) => model.providerId) ?? [])
-  const catalogOwners = new Set(
-    [...catalogProviders].filter((providerId) =>
-      findCatalogModel(catalog?.models ?? [], providerId, modelId),
-    ),
-  )
-  const preferred = preferredConnectionId
-    ? connections.find((connection) => connection.id === preferredConnectionId)
-    : undefined
-  const preferredOwnsModel = preferred
-    ? catalogOwners.size > 0
-      ? catalogOwners.has(preferred.providerId)
-      : hasProviderPrefix(modelId, preferred.providerId)
-    : false
-  const namespacedOwners = new Set<string>()
-  for (const connection of connections) {
-    if (hasProviderPrefix(modelId, connection.providerId)) {
-      namespacedOwners.add(connection.providerId)
-    }
-  }
   if (params.providerId !== undefined && !providerOwnsModel(params.providerId, modelId, catalog))
     return null
-  const providerId =
-    params.providerId ??
-    (preferredOwnsModel
-      ? preferred!.providerId
-      : catalogOwners.size === 1
-        ? [...catalogOwners][0]
-        : catalogOwners.size === 0 && namespacedOwners.size === 1
-          ? [...namespacedOwners][0]
-          : undefined)
-  if (!providerId) return null
 
-  const orderedIds: string[] = []
-  if (preferred?.providerId === providerId) orderedIds.push(preferred.id)
-  for (const c of connections) {
-    if (c.providerId === providerId && c.id !== preferredConnectionId) orderedIds.push(c.id)
-  }
+  // The provider and the account are decided by THE route rule (`routeReadiness`, C7): the stored
+  // connection when it still serves the model, else another usable account of the model's one
+  // provider; never a guess across providers. An explicit provider narrows the question to it.
+  const explicit = params.providerId
+  const routeConnections = connections
+    .filter((c) => explicit === undefined || c.providerId === explicit)
+    .map((c) => ({ id: c.id, providerId: c.providerId, usable: usableConnection(c) }))
+  const models = (catalog?.models ?? []).filter(
+    (model) => explicit === undefined || model.providerId === explicit,
+  )
+  const readiness = routeReadiness(
+    { modelId, providerConnectionId: preferredConnectionId },
+    routeConnections,
+    models,
+  )
+  if (readiness.status !== 'ready') return null
+  const { providerId } = readiness
+
+  // The chosen account first; the provider's other usable accounts after it, for a credential
+  // that fails to resolve.
+  const orderedIds = [
+    readiness.connectionId,
+    ...routeConnections
+      .filter((c) => c.providerId === providerId && c.usable && c.id !== readiness.connectionId)
+      .map((c) => c.id),
+  ]
 
   for (const id of orderedIds) {
     const resolved = await resolveConnectionModel({

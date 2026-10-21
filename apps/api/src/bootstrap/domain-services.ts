@@ -2,7 +2,7 @@ import { createChatResourceProvider } from '../features/chat/resource-provider'
 import { createResourceContextResolver } from '../features/context-fabric/resource-resolver'
 import { createHostRefResolver } from '../features/context-fabric/host-ref-resolver'
 import { CORE_CONTEXT_MAX_TOKENS } from '../features/context-fabric/contribution-validate'
-import { bumpCapabilityRevision } from '../features/capabilities/revision'
+import { capabilitiesChanged } from '../features/capabilities/revision'
 import { createMcpService } from '../features/mcp/service'
 import { createPluginService } from '../features/plugins/service'
 import { createContributionKindRegistry } from '../features/ext/contribution-kinds'
@@ -166,7 +166,7 @@ export function createDomainServicesPhase({
    * stale revision.
    */
   const announceCapabilityChange = () => {
-    bumpCapabilityRevision()
+    capabilitiesChanged()
     hostRefs.publishCapabilityChange?.()
   }
   const mcpService = createMcpService({
@@ -196,7 +196,7 @@ export function createDomainServicesPhase({
       // be stamped with the pre-mutation revision. The poke itself waits for the
       // backend host to settle (onBackendHostSettled below) — that is the invariant
       // that keeps a refetching client from observing a half-wired plugin.
-      bumpCapabilityRevision()
+      capabilitiesChanged()
       hostRefs.channelHost!.refresh()
       backendHost.refresh()
       hostRefs.monitorHost!.refresh()

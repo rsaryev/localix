@@ -53,19 +53,15 @@ describe('deleteSession', () => {
   })
 
   it('discards plugin session data for the whole tree, after the rows — project session or not', async () => {
-    // `makeCtx` files the session in a project, where the sandbox cleanup never runs: plugin data
-    // must go anyway, for the root and every descendant.
+    // Plugin data goes for the root and every descendant.
     const { ctx, calls } = makeCtx({
-      discardSessionSandbox: async () => {
-        calls.push('sandbox')
-      },
       discardSessionData: async (ids) => {
         calls.push(`data:${ids.join(',')}`)
       },
     })
     ctx.repo.listChildSessionIds = async (_user, id) => (id === 'parent' ? ['child'] : [])
     await deleteSession(ctx, 'u', 'parent')
-    expect(calls.slice(-3)).toEqual(['deleteRow', 'sandbox', expect.stringMatching(/^data:/)])
+    expect(calls.slice(-2)).toEqual(['deleteRow', expect.stringMatching(/^data:/)])
     expect(new Set(calls.at(-1)!.slice('data:'.length).split(','))).toEqual(
       new Set(['parent', 'child']),
     )

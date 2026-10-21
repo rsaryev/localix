@@ -26,8 +26,18 @@ export const CORE_REFS = {
   'chat.message': z.object({ id: z.string(), userId: z.string(), sessionId: z.string() }),
   skill: z.object({ name: z.string(), scope }),
   plugin: z.object({ id: z.string(), scope }),
-  mcp: z.object({ id: z.string(), scope }),
-  agent: z.object({ id: z.string(), scope }),
+  // `id` is the server's name (its catalog key); `serverId` its record id, on a deletion.
+  mcp: z.object({ id: z.string(), scope, serverId: z.string().optional() }),
+  // `id` is the agent's catalog key (its handle); `agentId` its stable id, when the owner knows it.
+  agent: z.object({ id: z.string(), scope, agentId: z.string().optional() }),
+  // One agent's rule list, replaced as a whole (its key: the agent it belongs to).
+  'capability.rule': z.object({ userId: z.string(), agentId: z.string() }),
+  // A project: created, moved, renamed, deleted or restored (settings-only writes are silent).
+  project: z.object({ id: z.string(), userId: z.string() }),
+  // A model installed on this computer (the `local` provider), by its id.
+  'local.model': z.object({ id: z.string() }),
+  // A provider account: created, signed in, a key enabled, or deleted.
+  'provider.connection': z.object({ id: z.string(), userId: z.string(), providerId: z.string() }),
 }
 
 export const CORE_CASCADES = {

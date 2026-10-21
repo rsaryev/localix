@@ -169,6 +169,19 @@ export function createMessageWriteQueries(
           .where('id', '=', id)
           .execute()
         await syncMessageUsage(trx, id, merged, stored, finalizing)
+        // An edit, a foreign write, a turn's end (its usage moved: the ledger follows) or the
+        // final flush is a change consumers re-read. The streaming checkpoints between (each
+        // carrying the `known` hint of the previous one) are not: they would announce one notice
+        // per flush of a reply still being written.
+        const usageMoved =
+          merged.role === 'assistant' &&
+          JSON.stringify(merged.usage) !== JSON.stringify(stored.usage)
+        if (!known || finalizing || usageMoved)
+          await recordCoreChanges(trx, {
+            entity: 'chat.message',
+            op: 'upserted',
+            ref: { id, userId, sessionId },
+          })
         return { payload: merged, payloadJson }
       })
     },

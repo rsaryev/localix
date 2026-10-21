@@ -1,21 +1,14 @@
 import type { AppDeps } from '../app'
 import { observeMutations } from '../features/realtime/observe-mutations'
 import type { RealtimeResource } from '../features/realtime/resources'
-import { bumpCapabilityRevision } from '../features/capabilities/revision'
+import { capabilitiesChanged, trackCapabilityChange } from '../features/capabilities/revision'
 import type { createChatService } from '../features/chat/service'
 import type { AgentsService } from '../features/agents/service'
 import type { SkillsCuratorService } from '../features/skills-curator/service'
 
 /** The composition root owns which read models a committed service mutation invalidates. */
 export function installResourceSync(
-  deps: Pick<
-    AppDeps,
-    | 'projectsService'
-    | 'userService'
-    | 'providerConnectionsService'
-    | 'secretsService'
-    | 'systemService'
-  > & {
+  deps: Pick<AppDeps, 'projectsService' | 'userService' | 'secretsService' | 'systemService'> & {
     chatService: ReturnType<typeof createChatService>
     agentsService: AgentsService
     skillsCuratorService: SkillsCuratorService
@@ -23,13 +16,23 @@ export function installResourceSync(
   },
 ): void {
   const publish = (userId: string, resources: readonly RealtimeResource[]) => {
-    if (resources.includes('capabilities')) bumpCapabilityRevision()
+    if (resources.includes('capabilities')) capabilitiesChanged()
     deps.chatService.streamRegistry.publish(userId, '', {
       type: 'resources.changed',
       resources: [...new Set(resources)],
     })
   }
-  observeMutations(
+  // Every observed call is one tracked mutation: one that already moved the revision (a rule
+  // write) is announced without a second bump.
+  const observe: typeof observeMutations = (service, mutations, sink) => {
+    observeMutations(service, mutations, sink)
+    const target = service as Record<string, unknown>
+    for (const name of Object.keys(mutations)) {
+      const call = target[name] as (...args: unknown[]) => unknown
+      target[name] = (...args: unknown[]) => trackCapabilityChange(() => call.apply(service, args))
+    }
+  }
+  observe(
     deps.projectsService,
     {
       createProject: ['projects'],
@@ -39,7 +42,7 @@ export function installResourceSync(
     },
     publish,
   )
-  observeMutations(
+  observe(
     deps.userService,
     {
       updateProfile: (_userId, patch) =>
@@ -55,20 +58,9 @@ export function installResourceSync(
     if (result.accepted) publish(args[0], ['view-state'])
     return result
   }
-  observeMutations(
-    deps.providerConnectionsService,
-    {
-      createConnection: ['providers', 'capabilities'],
-      updateConnection: ['providers', 'capabilities', 'sessions'],
-      deleteConnection: ['providers', 'capabilities', 'sessions'],
-      addKey: ['providers', 'vault'],
-      updateKey: ['providers', 'vault'],
-      removeKey: ['providers', 'vault'],
-      completeOAuth: ['providers', 'capabilities', 'vault'],
-    },
-    publish,
-  )
-  observeMutations(
+  // Provider connections announce every change on the core feed; the relay pokes their topics
+  // (`features/realtime/relay.ts`).
+  observe(
     deps.agentsService,
     {
       createAgent: ['capabilities'],
@@ -80,14 +72,14 @@ export function installResourceSync(
     },
     publish,
   )
-  observeMutations(deps.agentsService.registrationPolicy, { publish: ['capabilities'] }, publish)
+  observe(deps.agentsService.registrationPolicy, { publish: ['capabilities'] }, publish)
   // Skills are files: their writers had no hook, so neither clients nor the index heard of them.
-  observeMutations(
+  observe(
     deps.chatService,
     { createSkill: ['capabilities'], updateSkill: ['capabilities'], deleteSkill: ['capabilities'] },
     publish,
   )
-  observeMutations(
+  observe(
     deps.skillsCuratorService,
     {
       setPinned: ['capabilities'],
@@ -97,7 +89,7 @@ export function installResourceSync(
     },
     publish,
   )
-  observeMutations(
+  observe(
     deps.secretsService,
     {
       create: ['vault'],

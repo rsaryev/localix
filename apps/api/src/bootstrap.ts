@@ -1,4 +1,5 @@
 import { startSemantic } from './bootstrap/semantic-changes'
+import { startCoreReactors } from './bootstrap/core-reactors'
 import type { WebSocketHandler } from 'bun'
 import { websocket } from './features/realtime/ws'
 import { MAX_MESSAGE_BINDINGS_TOTAL_BYTES } from './features/chat/contracts'
@@ -178,7 +179,7 @@ export async function bootstrap(
   // The plugin hosts' late-bound references to chat, and the ONE wake delivery `wakes`.
   const { wakes } = bindChatHostRefs({ hostRefs, chatService, env, logger, notifications })
 
-  const { auxUsageRepo, startEngines } = await createEnginesPhase({
+  const { auxUsageRepo, startEngines, triggerConditions } = await createEnginesPhase({
     db,
     logger,
     serviceRefs,
@@ -311,6 +312,27 @@ export async function bootstrap(
       startEngines()
       startOpsTimers(signal)
       startSemantic({ db, logger, localModels, semanticService, changes: infra.changes, signal })
+      void startCoreReactors({
+        db,
+        feed: infra.changes.core,
+        defaultUserId: env.LOCALIX_DEFAULT_USER_ID,
+        catalogService,
+        providerConnectionsService,
+        projectsService,
+        userService,
+        agentsService,
+        secretsStore,
+        notifications,
+        sessionExists: async (...args) =>
+          Boolean(await bootRepo.getSession(...args).catch(() => true)),
+        providerConditions: infra.providerConditions,
+        triggerConditions,
+        refreshPluginBackends: () => backendHost.refresh(),
+        publish: (userId, resources) =>
+          chatService.streamRegistry.publish(userId, '', { type: 'resources.changed', resources }),
+      }).catch((err: unknown) =>
+        logger.warn({ event: 'core_reactors.start_failed', error: String(err) }),
+      )
     })
   }
   return {

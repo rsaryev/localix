@@ -346,3 +346,46 @@ describe('resolveLanguageModel — connection ownership', () => {
     expect(required).toEqual(['right'])
   })
 })
+
+describe('resolveLanguageModel — the route rule', () => {
+  test('a dead stored account moves to the provider’s usable one, past a disabled-key account', async () => {
+    const connections = [
+      { id: 'disabled', providerId: 'openrouter', keys: [{ id: 'k0', enabled: false }] },
+      { id: 'live', providerId: 'openrouter', keys: [{ id: 'k1', enabled: true }] },
+    ]
+    const required: string[] = []
+    const catalog = {
+      providers: [{ id: 'openrouter', name: 'OpenRouter' }],
+      models: [
+        { id: 'deepseek/deepseek-chat', providerId: 'openrouter', outputModalities: ['text'] },
+      ],
+    } as never
+    const deps = {
+      providerConnectionsService: {
+        listConnections: async () => ({ connections }),
+        requireConnection: async (_userId: string, id: string) => {
+          required.push(id)
+          return connections.find((connection) => connection.id === id)
+        },
+        ensureFreshKeys: async (_userId: string, connection: (typeof connections)[number]) => ({
+          ...connection,
+          keys: [{ id: 'k1', enabled: true, priority: 0, apiKey: 'key', authType: 'api-key' }],
+        }),
+        credentialStoreFor: async () => ({}),
+      },
+      catalogService: { getCatalog: async () => catalog },
+      languageModelFactory: { create: () => ({}) },
+    } as never
+
+    const resolved = await resolveLanguageModel({
+      deps,
+      userId: 'u',
+      modelId: 'deepseek/deepseek-chat',
+      preferredConnectionId: 'deleted-old',
+      catalog,
+    })
+
+    expect(resolved?.providerConnectionId).toBe('live')
+    expect(required).toEqual(['live'])
+  })
+})

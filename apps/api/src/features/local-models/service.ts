@@ -52,6 +52,12 @@ export interface LocalModelsDeps {
   routerIdleMs?: number
   /** The models kept on this computer; `REQUIRED_MODELS` in production. */
   requiredModels?: readonly LocalModelSpec[]
+  /**
+   * Announce what is installed on the core change feed (`local.model`): a model installed or
+   * removed by its id, and `resync` once boot has read what is on disk. Its files are the truth,
+   * so there is no transaction to join.
+   */
+  announce?: (change: { op: 'upserted' | 'deleted'; id: string } | { op: 'resync' }) => void
 }
 
 /** How often failed background downloads (the models Localix keeps) are tried again. */
@@ -132,12 +138,13 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
     paths,
     build,
     notify,
-    installed: async (_spec, runtimeAdded) => {
+    installed: async (spec, runtimeAdded) => {
       await refresh()
       // A first runtime install: llama.cpp can now report this computer's devices itself.
       if (runtimeAdded) await profileMachine()
       await router.reload()
       listChanged()
+      deps.announce?.({ op: 'upserted', id: spec.id })
     },
     stopped: refresh,
     log: deps.log,
@@ -158,6 +165,7 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
       await refresh()
       // What is installed is known only now; a catalog read before boot listed nothing local.
       listChanged()
+      deps.announce?.({ op: 'resync' })
       await profileMachine()
       // Downloads quitting cut short go on — quietly when they were fetched ahead of need —
       // and the ones a person paused wait for them.
@@ -266,6 +274,7 @@ export function createLocalModelsService(deps: LocalModelsDeps) {
       await refresh()
       await router.reload()
       listChanged()
+      deps.announce?.({ op: 'deleted', id: modelId })
       notify()
     },
 

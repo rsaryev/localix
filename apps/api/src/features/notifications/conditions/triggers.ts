@@ -31,6 +31,12 @@ export interface TriggerConditions {
   fireSettled(trigger: TriggerRecord, result: FireSettled): void
   /** The loop ended (cancelled, exhausted): nothing is left to fix. */
   loopEnded(userId: string, triggerId: string): void
+  /**
+   * The loop's chat has a seat whose provider account is gone and no live account can take it:
+   * every fire would fail until the person connects the provider again or picks another model.
+   * Settled with the loop's other rows by the next fire that succeeds.
+   */
+  routeStranded(trigger: TriggerRecord): void
 }
 
 /** Only loops are reported: a monitor's and an exit notice's failures belong to their own work. */
@@ -57,6 +63,26 @@ export function createTriggerConditions(journal: ConditionJournal): TriggerCondi
         ]
           .filter(Boolean)
           .join('\n'),
+        origin: { kind: 'session', sessionId: trigger.sessionId, projectId: null, label: 'Loop' },
+        actions: [
+          {
+            id: 'open-session',
+            label: 'Open chat',
+            kind: 'navigate',
+            target: { kind: 'session', sessionId: trigger.sessionId, projectId: null },
+            available: true,
+          },
+        ],
+      })
+    },
+    routeStranded(trigger) {
+      if (!reported(trigger)) return
+      conditions.raise(trigger.userId, {
+        subject: [...subject(trigger), 'route'],
+        problem: 'route-stranded',
+        severity: 'error',
+        title: 'A scheduled loop has no model to run on',
+        body: 'The provider account its chat used was removed. Connect the provider again or pick another model in the chat.',
         origin: { kind: 'session', sessionId: trigger.sessionId, projectId: null, label: 'Loop' },
         actions: [
           {

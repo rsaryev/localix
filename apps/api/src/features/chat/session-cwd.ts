@@ -25,7 +25,7 @@
  * One answer, shared by the agent run, the SCM tab, the terminal and the file browser, so a
  * session is rooted in the same place everywhere rather than in some places.
  */
-import { mkdir, rm } from 'node:fs/promises'
+import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 
 import { localixHome } from '../../lib/env'
@@ -104,36 +104,4 @@ export async function resolveBaseSessionCwd(
   const baseCwd = sandboxCwd(session)
   await mkdir(baseCwd, { recursive: true }).catch(() => {})
   return baseCwd
-}
-
-/**
- * Delete a session's sandbox when the session itself is deleted.
- *
- * A scratch directory has exactly one owner — the chat it was made for — so it goes when
- * that chat does. Without this the landfill comes back by another door: the sessions are
- * gone from the sidebar and their directories are not.
- *
- * Three refusals, all load-bearing:
- *   • a chosen project's working dir is the USER's directory, never ours to remove;
- *   • a sub-session (worker, fork, delegated child) shares the root's directory, so
- *     deleting one must not take the tree's workspace with it;
- *   • anything that is not a direct child of `~/.localix/workspace` — a computed path that
- *     escaped its parent is a bug, and `rm -r` is the wrong place to find out.
- *
- * Best-effort: a directory that will not delete (open handle, permissions) must not fail
- * the deletion of the session itself.
- */
-export async function discardSessionSandbox(
-  deps: BaseCwdDeps,
-  userId: string,
-  session: BaseCwdSession,
-): Promise<void> {
-  if (session.rootSessionId && session.rootSessionId !== session.id) return
-  const projectDir = await deps.getProjectWorkingDir(userId, session.projectId)
-  if (projectDir && !isScratchParent(projectDir)) return
-
-  const dir = sandboxCwd(session)
-  const parent = path.join(localixHome(), 'workspace')
-  if (dir === parent || path.dirname(dir) !== parent) return
-  await rm(dir, { recursive: true, force: true }).catch(() => {})
 }

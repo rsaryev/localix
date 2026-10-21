@@ -6,8 +6,6 @@ import type {
   SessionDetail,
 } from '../contracts'
 import { importSession, type ImportSessionInput } from './import-session'
-import * as loopOps from './loop-ops'
-import * as monitorOps from './monitor-ops'
 import type { ChatServiceGraph } from './service-graph'
 import type { SessionCore } from './session-core'
 import * as sessionDetail from './session-detail'
@@ -133,19 +131,9 @@ export function createChatSessionFacade({
     },
 
     async deleteSession(userId: string, id: string): Promise<void> {
+      // Its monitors and loops are reaped by the session-residue reactor once the deletion of
+      // every id in the tree has committed (`session-residue.ts`).
       await sessionLifecycle.deleteSession(sessionLifecycleCtx, userId, id)
-      // Same ordering rule as the loop reap below: kill the session's monitors once the row
-      // really is gone, so a failed delete does not leave the session alive with its watches
-      // already dead. A monitor is a live process — an orphan keeps tailing a file for a
-      // session nothing can wake.
-      monitorOps.stopSessionMonitors(id)
-      // Reap the session's loops AFTER the row is gone, not before. The loop rows are
-      // removed by the FK cascade either way; what this call clears is the loop engine's
-      // in-memory read model, and doing it first meant a delete that then FAILED left the
-      // engine with no loops while the rows (and the session) survived — and doing it first
-      // is also what made a failed reap restore loops that the cascade had already deleted.
-      // Ordered here, the reap runs exactly when the session really is gone.
-      await loopOps.cancelSessionLoops(id)
     },
   }
 }

@@ -6,7 +6,6 @@ import { resolveDefaultProject } from '../../projects/default-project'
 import type { SessionDetail } from '../contracts'
 import { createModelContextRepository } from '../model-context-repository'
 import { toSessionSummary, type SessionRecord } from '../repository'
-import { discardSessionSandbox, projectWorkingDirPort } from '../session-cwd'
 import type { ChatServiceDeps } from './context'
 import { rootChangeFanout } from './root-change-fanout'
 import { routeReasoningModel } from './route-reasoning-model'
@@ -140,13 +139,6 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
     // Close the deleted session's file-tree watcher (frees the inotify handle when the last
     // session sharing an isolated directory leaves it).
     releaseSessionWatch: (sessionId) => fileWatchService.release(sessionId),
-    // …and the scratch directory that chat owned, if it had one (see session-cwd.ts).
-    discardSessionSandbox: (userId, session) =>
-      discardSessionSandbox(
-        { getProjectWorkingDir: projectWorkingDirPort(projectsRepo) },
-        userId,
-        session,
-      ),
     // …and every plugin's session-owned data, for each session of the deleted tree.
     discardSessionData: (sessionIds) => discardSessionData(sessionIds),
     now,

@@ -16,12 +16,14 @@ import { buildLocalModels, localProviderHost } from './local-models'
 export function buildAgentEngine(deps: {
   logger: ReturnType<typeof createLogger>
   env: Pick<ReturnType<typeof loadEnv>, 'LOCALIX_MODELS_DIR' | 'HF_TOKEN'>
+  announceLocalModel?: Parameters<typeof buildLocalModels>[0]['announce']
 }) {
   const { logger, env } = deps
   const localModels = buildLocalModels({
     logger,
     root: env.LOCALIX_MODELS_DIR,
     hfToken: env.HF_TOKEN,
+    announce: deps.announceLocalModel,
   })
   const scripts = bundledScriptSandboxOptions(dirname(fileURLToPath(import.meta.url)))
   const engine = createEngine({

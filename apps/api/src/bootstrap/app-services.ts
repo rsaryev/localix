@@ -24,7 +24,7 @@ import type { CapabilityRoutesService } from '../features/capabilities/routes'
 import { createCapabilityServices, type CapabilityServices } from './capability-services'
 import { BUILTIN_TOOL_NAMES } from '../features/agent-core/tool-names'
 import { createConfigProposalService } from '../features/config-proposals/service'
-import { bumpCapabilityRevision } from '../features/capabilities/revision'
+import { capabilitiesChanged } from '../features/capabilities/revision'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import type { SemanticService } from '../features/embeddings/service'
 
@@ -193,7 +193,7 @@ export function createAppServicesPhase({
             null) as Record<string, unknown> | null,
       },
       bumpCapabilityRevision: () => {
-        bumpCapabilityRevision()
+        capabilitiesChanged()
       },
     },
   })
@@ -277,7 +277,6 @@ export function createAppServicesPhase({
     chatService,
     projectsService,
     userService,
-    providerConnectionsService,
     agentsService,
     skillsCuratorService,
     secretsService,

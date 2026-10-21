@@ -61,6 +61,8 @@ export interface InfraPhase {
   env: ReturnType<typeof loadEnv>
   logger: ReturnType<typeof createLogger>
   db: ReturnType<typeof createDatabase>
+  /** The connection conditions: one instance, shared by the run producers and the reactors. */
+  providerConditions: ReturnType<typeof createProviderConditions>
   /** The provider adapter, chosen ONCE here; everything below is typed by its ports. */
   engine: AgentEngine
   agentRuntime: AgentRuntime
@@ -109,7 +111,17 @@ export async function createInfraPhase(
   const db = createDatabase({ filename: env.LOCALIX_DB_FILE })
   await migrateToLatest(db, { defaultUserId: env.LOCALIX_DEFAULT_USER_ID })
   const changes = createChangeFeeds(db, logger)
-  const { localModels, engine } = buildAgentEngine({ logger, env })
+  const { localModels, engine } = buildAgentEngine({
+    logger,
+    env,
+    // A local model's id is its key: route repair rebinds routes that can run on it now.
+    announceLocalModel: (change) =>
+      changes.core.publish(
+        change.op === 'resync'
+          ? { entity: 'local.model', op: 'resync' }
+          : { entity: 'local.model', op: change.op, ref: { id: change.id } },
+      ),
+  })
   const { runtime: agentRuntime, languageModels: languageModelFactory } = engine
   // Forward holder: the terminal service is created below (it depends on
   // chatService for cwd resolution), but chatService needs it to run background
@@ -270,6 +282,7 @@ export async function createInfraPhase(
     env,
     logger,
     db,
+    providerConditions,
     engine,
     localModels,
     changes,

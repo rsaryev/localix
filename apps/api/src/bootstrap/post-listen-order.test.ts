@@ -50,8 +50,6 @@ describe('post-listen bootstrap order', () => {
       "{ name: 'plugin_monitors', run: () => monitorHost.start() }",
       "name: 'staging_report'",
       "{ name: 'delegation_recovery', run: recoverReports }",
-      "name: 'usage_reconcile'",
-      'reconcileUsageInSlices(',
       "name: 'session_data_sweep'",
       "{ name: 'skills_curator', run: runCuratorCheck }",
       'void runIdleTasks(idleTasks, {',

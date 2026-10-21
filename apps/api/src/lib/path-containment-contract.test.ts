@@ -88,7 +88,11 @@ const EXEMPTIONS: Exemptions = {
     reason:
       'Owns the MODEL-ID namespace check (`hasProviderPrefix`: `anthropic/…`). It compares catalog identifiers; it never resolves or accesses a filesystem path. Other model code calls it instead of repeating the idiom.',
   },
-  [exemptionKey('src/features/usage/usage-reconciliation.ts', 'sep-template')]: {
+  [exemptionKey('src/features/capabilities/cleanup.ts', 'sep-template')]: {
+    reason:
+      'Matches an MCP server’s per-tool rule actions (`mcp:<server>/<tool>`) when the server is removed. It compares rule identifiers only; no filesystem path is resolved or accessed.',
+  },
+  [exemptionKey('src/features/usage/ledger-rows.ts', 'sep-template')]: {
     reason:
       'Normalizes a persisted MODEL ID by removing its provider namespace (`openai/…`) before rebuilding a missing usage-ledger row. It compares catalog identifiers only; no filesystem path is resolved or accessed.',
   },

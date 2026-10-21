@@ -24,6 +24,8 @@ import { removeAgentRecordFiles, writeAgentRecordFile } from './registry-files'
 import type { AgentRecord, AgentSummary } from './contracts'
 import type { AgentsService, AgentsServiceDeps } from './service-contract'
 import { BUILTIN_OVERRIDE_FIELD, builtinOverrideHash } from './builtin-override'
+import { SEMANTIC_GLOBAL_SCOPE } from '@localixai/plugin-sdk/backend'
+import { recordCoreChanges, type CoreChange } from '../changes/core-entities'
 
 export type { AgentsService, AgentsServiceDeps } from './service-contract'
 
@@ -35,6 +37,19 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
   )
   // The one writer of availability, shared with every other kind.
   const availabilityWriter = createAvailabilityWriter(deps.db)
+  /**
+   * Announce an agent's catalog keys by its stable id: the first key is gone (deleted or renamed
+   * away from), a second one is where it lives now. Its files are the truth, so there is no
+   * transaction to join; the feed's reconcile covers a lost notice.
+   */
+  const announceAgent = (projectId: string, agentId: string, [gone, now]: string[]) => {
+    const scope = projectId || SEMANTIC_GLOBAL_SCOPE
+    const changes: CoreChange[] = [
+      { entity: 'agent', op: 'deleted', ref: { id: gone!, scope, agentId } },
+    ]
+    if (now) changes.push({ entity: 'agent', op: 'upserted', ref: { id: now, scope, agentId } })
+    return recordCoreChanges(deps.db, changes)
+  }
   const ruleRepository = createCapabilityRuleRepository(deps.db)
   const invocations = deps.invocations ?? createInvocationRegistry()
   const serialize = createKeyedSerializer()
@@ -212,6 +227,9 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
             [BUILTIN_OVERRIDE_FIELD]: builtinOverrideHash(record),
           })
         }
+        // A rename moves the agent's catalog key: the old one is gone, the new one exists.
+        if (record.handle !== existing.record.handle)
+          await announceAgent(owner, record.id, [existing.record.handle, record.handle])
         return pickEntry(await buildCatalog(userId, scope), record.id, scope)!
       })
     },
@@ -240,6 +258,7 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
         // snapshot still listed a role no screen could reach. One statement covers both the
         // `agent:<id>` switch and the role's own tool rules, because they are the same list now.
         await ruleRepository.replace(userId, existing.record.id, [])
+        await announceAgent(existing.projectId, existing.record.id, [existing.record.handle])
       })
     },
 

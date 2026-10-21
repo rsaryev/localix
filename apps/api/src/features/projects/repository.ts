@@ -1,7 +1,20 @@
 import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../../db'
 import { nextRefSeq } from '../../db'
+import { recordCoreChanges } from '../changes/core-entities'
 import { projectRef } from './contracts'
+
+/**
+ * A project announces what a consumer of its scope cares about: it exists, moved folder, was
+ * renamed, deleted or restored. A settings-only write is not announced — no consumer reads them
+ * from the feed, and each would reload every project's plugin backends.
+ */
+const announce = (
+  trx: Parameters<typeof recordCoreChanges>[0],
+  userId: string,
+  id: string,
+  op: 'upserted' | 'deleted',
+) => recordCoreChanges(trx, { entity: 'project', op, ref: { id, userId } })
 
 export interface ProjectRecord {
   id: string
@@ -102,20 +115,23 @@ export function createProjectsRepository(db: Kysely<AppDatabase>) {
     },
 
     async insertProject(record: ProjectRecord): Promise<void> {
-      await db
-        .insertInto('projects')
-        .values({
-          id: record.id,
-          seq: record.seq ?? 0,
-          user_id: record.userId,
-          name: record.name,
-          working_dir: record.workingDir,
-          settings: record.settings,
-          created_at: record.createdAt,
-          updated_at: record.updatedAt,
-          deleted_at: record.deletedAt,
-        })
-        .execute()
+      await db.transaction().execute(async (trx) => {
+        await trx
+          .insertInto('projects')
+          .values({
+            id: record.id,
+            seq: record.seq ?? 0,
+            user_id: record.userId,
+            name: record.name,
+            working_dir: record.workingDir,
+            settings: record.settings,
+            created_at: record.createdAt,
+            updated_at: record.updatedAt,
+            deleted_at: record.deletedAt,
+          })
+          .execute()
+        await announce(trx, record.userId, record.id, record.deletedAt ? 'deleted' : 'upserted')
+      })
     },
 
     async updateProject(
@@ -123,18 +139,26 @@ export function createProjectsRepository(db: Kysely<AppDatabase>) {
       id: string,
       patch: Partial<Omit<ProjectRecord, 'id' | 'userId' | 'createdAt'>>,
     ): Promise<void> {
-      await db
-        .updateTable('projects')
-        .set({
-          ...(patch.name !== undefined ? { name: patch.name } : {}),
-          ...(patch.workingDir !== undefined ? { working_dir: patch.workingDir } : {}),
-          ...(patch.settings !== undefined ? { settings: patch.settings } : {}),
-          ...(patch.updatedAt !== undefined ? { updated_at: patch.updatedAt } : {}),
-          ...(patch.deletedAt !== undefined ? { deleted_at: patch.deletedAt } : {}),
-        })
-        .where('user_id', '=', userId)
-        .where('id', '=', id)
-        .execute()
+      await db.transaction().execute(async (trx) => {
+        const result = await trx
+          .updateTable('projects')
+          .set({
+            ...(patch.name !== undefined ? { name: patch.name } : {}),
+            ...(patch.workingDir !== undefined ? { working_dir: patch.workingDir } : {}),
+            ...(patch.settings !== undefined ? { settings: patch.settings } : {}),
+            ...(patch.updatedAt !== undefined ? { updated_at: patch.updatedAt } : {}),
+            ...(patch.deletedAt !== undefined ? { deleted_at: patch.deletedAt } : {}),
+          })
+          .where('user_id', '=', userId)
+          .where('id', '=', id)
+          .executeTakeFirst()
+        const scoped =
+          patch.name !== undefined ||
+          patch.workingDir !== undefined ||
+          patch.deletedAt !== undefined
+        if (scoped && Number(result.numUpdatedRows) > 0)
+          await announce(trx, userId, id, patch.deletedAt ? 'deleted' : 'upserted')
+      })
     },
 
     /**
@@ -144,23 +168,29 @@ export function createProjectsRepository(db: Kysely<AppDatabase>) {
      * one deletion, and the first one is when it happened.
      */
     async deleteProject(userId: string, id: string, at: string): Promise<void> {
-      await db
-        .updateTable('projects')
-        .set({ deleted_at: at })
-        .where('user_id', '=', userId)
-        .where('id', '=', id)
-        .where('deleted_at', 'is', null)
-        .execute()
+      await db.transaction().execute(async (trx) => {
+        const result = await trx
+          .updateTable('projects')
+          .set({ deleted_at: at })
+          .where('user_id', '=', userId)
+          .where('id', '=', id)
+          .where('deleted_at', 'is', null)
+          .executeTakeFirst()
+        if (Number(result.numUpdatedRows) > 0) await announce(trx, userId, id, 'deleted')
+      })
     },
 
     /** Bring a soft-deleted project back, with everything that still points at it. */
     async restoreProject(userId: string, id: string): Promise<void> {
-      await db
-        .updateTable('projects')
-        .set({ deleted_at: null })
-        .where('user_id', '=', userId)
-        .where('id', '=', id)
-        .execute()
+      await db.transaction().execute(async (trx) => {
+        const result = await trx
+          .updateTable('projects')
+          .set({ deleted_at: null })
+          .where('user_id', '=', userId)
+          .where('id', '=', id)
+          .executeTakeFirst()
+        if (Number(result.numUpdatedRows) > 0) await announce(trx, userId, id, 'upserted')
+      })
     },
   }
 }

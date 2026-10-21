@@ -24,6 +24,8 @@ export interface NotificationJournal {
   record(userId: string, fact: RaiseFact): void
   /** Settle one row or a prefix of rows. Fire-and-forget. */
   settle(userId: string, fact: SettleFact): void
+  /** A chat was deleted: remove every row about it, pending or not. Fire-and-forget. */
+  forgetSession(userId: string, sessionId: string): void
   /** Apply a client's batch; a retried op id is a no-op. Resolves with what changed. */
   apply(userId: string, ops: readonly ClientJournalOp[]): Promise<InboxChange[]>
   sync(userId: string, since: number): Promise<InboxSyncResponse>

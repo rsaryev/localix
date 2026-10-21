@@ -5,8 +5,6 @@ import { createChannelWorkspace } from '../features/plugins/channel-workspace'
 import { createPluginMonitorHost } from '../features/plugins/monitor-host'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { readAvailability } from '../features/capabilities/availability'
-import { createUsageRepository } from '../features/usage/repository'
-import { reconcileUsageInSlices } from '../features/usage/reconcile-slices'
 import { runIdleTasks, type IdleTask, type IdleTaskContext } from '../lib/idle-tasks'
 import type { InfraPhase } from './infra'
 import type { DomainServicesPhase } from './domain-services'
@@ -223,15 +221,6 @@ export function createOpsTimersPhase({
         run: () => stagedRoot.then((root) => (root ? reportStagingFailures(root) : undefined)),
       },
       { name: 'delegation_recovery', run: recoverReports },
-      {
-        name: 'usage_reconcile',
-        run: (ctx) =>
-          reconcileUsageInSlices(createUsageRepository(db), ctx)
-            .then(({ repaired }) => {
-              if (repaired > 0) logger.info({ event: 'usage.reconciled', repaired })
-            })
-            .catch((err) => logger.warn({ event: 'usage.reconcile_failed', err })),
-      },
       // Session data whose session is gone (a crash mid-delete, a write racing the delete):
       // every user's, like the recovery. Once per start — deletion itself removes the folder.
       {

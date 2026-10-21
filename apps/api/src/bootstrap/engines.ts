@@ -5,6 +5,7 @@
  * The per-session services that also need a finished `chatService` are wired by
  * `./session-services`.
  */
+import type { TriggerConditions } from '../features/notifications/conditions/triggers'
 import type { createChatService } from '../features/chat/service'
 import type { LoopService } from '../features/loops/service'
 import { createUsageRepository } from '../features/usage/repository'
@@ -40,6 +41,7 @@ export interface EnginesPhaseInput
 export interface EnginesPhase {
   auxUsageRepo: ReturnType<typeof createUsageRepository>
   loops: LoopService
+  triggerConditions: TriggerConditions
   startEngines: () => void
 }
 
@@ -76,7 +78,7 @@ export async function createEnginesPhase({
 
   // Loops and monitors on the durable trigger engine (`./triggers`): hydrated here, deadlines set
   // post-listen.
-  const { triggerEngine, loops } = await wireTriggers({
+  const { triggerEngine, loops, triggerConditions } = await wireTriggers({
     db,
     logger,
     serviceRefs,
@@ -96,6 +98,7 @@ export async function createEnginesPhase({
   return {
     auxUsageRepo,
     loops,
+    triggerConditions,
     startEngines,
   }
 }

@@ -19,6 +19,8 @@
  * and bootstrap binds that hook to {@link bumpCapabilityRevision}.
  */
 
+import { AsyncLocalStorage } from 'node:async_hooks'
+
 /**
  * Where a process's revisions start: its boot time in milliseconds.
  *
@@ -55,6 +57,8 @@ export function capabilityRevision(): number {
  */
 export function bumpCapabilityRevision(): number {
   revision += 1
+  const current = mutation.getStore()
+  if (current) current.bumped = true
   for (const listener of listeners) {
     try {
       listener(revision)
@@ -63,6 +67,24 @@ export function bumpCapabilityRevision(): number {
     }
   }
   return revision
+}
+
+/** Whether the mutation running in this async context has bumped the revision yet. */
+const mutation = new AsyncLocalStorage<{ bumped: boolean }>()
+
+/** Run a mutation whose end announces "capabilities changed" ({@link capabilitiesChanged}). */
+export function trackCapabilityChange<T>(run: () => T): T {
+  return mutation.run({ bumped: false }, run)
+}
+
+/**
+ * THE entry point for "capabilities changed" after a service mutation: bump, unless the
+ * mutation already did. A rule write bumps by itself (`rule-repository.ts`), so enabling an agent
+ * moves the revision once, not twice. Only a bump made inside the same mutation counts: another
+ * client's concurrent change never stands in for this one.
+ */
+export function capabilitiesChanged(): number {
+  return mutation.getStore()?.bumped ? revision : bumpCapabilityRevision()
 }
 
 const listeners = new Set<(revision: number) => void>()

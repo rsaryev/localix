@@ -1,6 +1,7 @@
 import type { Kysely } from 'kysely'
 
 import type { AppDatabase, McpTransport } from '../../db'
+import { announceSourceRemoved } from '../capabilities/removal-notice'
 
 /**
  * MCP servers over the shared `capability_source` table.
@@ -186,12 +187,17 @@ export function createMcpRepository(db: Kysely<AppDatabase>): McpRepository {
     },
 
     async delete(userId, id) {
-      await db
-        .deleteFrom('capability_source')
-        .where('kind', '=', 'mcp')
-        .where('user_id', '=', userId)
-        .where('id', '=', id)
-        .execute()
+      const remove = async (trx: Kysely<AppDatabase>) => {
+        const row = await trx
+          .deleteFrom('capability_source')
+          .where('kind', '=', 'mcp')
+          .where('user_id', '=', userId)
+          .where('id', '=', id)
+          .returning(['id', 'name', 'project_id'])
+          .executeTakeFirst()
+        if (row) await announceSourceRemoved(trx, 'mcp', row)
+      }
+      await (db.isTransaction ? remove(db) : db.transaction().execute(remove))
     },
   }
 }

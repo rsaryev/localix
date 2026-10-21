@@ -117,6 +117,16 @@ export function createProviderConditions(
         Boolean(connectionId && open.has(connectionId)),
       )
     },
+    /** The connection was deleted: nothing about it is left to fix. */
+    connectionRemoved(userId: string, connectionId: string): void {
+      conditions.clear(userId, ['provider', connectionId], 'cancelled')
+      conditions.clear(userId, [REMOVED_SIGN_IN, connectionId], 'cancelled')
+    },
+    /** Settle the rows of every connection not in `live` (a deletion missed while down). */
+    async connectionsRemaining(userId: string, live: ReadonlySet<string>): Promise<void> {
+      for (const prefix of ['provider', REMOVED_SIGN_IN])
+        await conditions.sweep(userId, [prefix], ([id]) => Boolean(id && live.has(id)), 'cancelled')
+    },
     credentialRefreshed(event: ProviderCredentialEvent): void {
       const subject = ['provider', event.connectionId]
       if (event.ok) return conditions.clear(event.userId, subject)

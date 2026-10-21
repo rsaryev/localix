@@ -122,6 +122,27 @@ export function createNotificationRepository(db: Kysely<AppDatabase>) {
       return rows.map(toEntry)
     },
 
+    /** Every chat the inbox holds rows about (the session-residue reconcile). */
+    async sessionsWithRows(): Promise<Array<{ userId: string; sessionId: string }>> {
+      const rows = await db
+        .selectFrom('notification_inbox')
+        .select(['user_id', 'session_id'])
+        .distinct()
+        .where('session_id', 'is not', null)
+        .execute()
+      return rows.map((row) => ({ userId: row.user_id, sessionId: row.session_id! }))
+    },
+
+    async keysOfSession(trx: Db, userId: string, sessionId: string): Promise<string[]> {
+      const rows = await trx
+        .selectFrom('notification_inbox')
+        .select('subject_key')
+        .where('user_id', '=', userId)
+        .where('session_id', '=', sessionId)
+        .execute()
+      return rows.map((row) => row.subject_key)
+    },
+
     async all(trx: Db, userId: string): Promise<InboxEntry[]> {
       const rows = await trx
         .selectFrom('notification_inbox')

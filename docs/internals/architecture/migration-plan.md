@@ -14,22 +14,25 @@ The findings behind each item, with counts and paths, are in [the audit](audit.m
 
 | Item                    | Notice kind            | Consumer                                                       | Owner                                                          |
 | ----------------------- | ---------------------- | -------------------------------------------------------------- | -------------------------------------------------------------- |
-| [ ] Provider connection | `provider.connection`  | Route repair; provider condition cleanup                       | `apps/api/src/features/provider-connections/`                  |
-| [ ] Project             | `project`              | Plugin backend host refresh                                    | `apps/api/src/features/projects/`                              |
-| [ ] Agent               | `agent` by key         | Seat and handle repair                                         | `apps/api/src/features/agents/`                                |
-| [ ] MCP server, plugin  | `mcp`, `plugin` by key | Capability cleanup: rules, OAuth tokens, vault bindings        | `apps/api/src/features/mcp/`, `apps/api/src/features/plugins/` |
-| [ ] Capability rule     | `capability.rule`      | Relay; semantic index                                          | `apps/api/src/features/capabilities/`                          |
-| [ ] Message edit        | `chat.message`         | Semantic index                                                 | `apps/api/src/features/chat/`                                  |
-| [ ] Chat deletion       | `chat.session` cascade | Session residue: sandbox, child loops and monitors, inbox rows | `apps/api/src/features/chat/`                                  |
-| [ ] Local model         | `local.model`          | Route repair                                                   | `apps/api/src/features/local-models/`                          |
+| [x] Provider connection | `provider.connection`  | Route repair; provider condition cleanup                       | `apps/api/src/features/provider-connections/`                  |
+| [x] Project             | `project`              | Plugin backend host refresh                                    | `apps/api/src/features/projects/`                              |
+| [x] Agent               | `agent` by key         | Seat and handle repair                                         | `apps/api/src/features/agents/`                                |
+| [x] MCP server, plugin  | `mcp`, `plugin` by key | Capability cleanup: rules, OAuth tokens, vault bindings        | `apps/api/src/features/mcp/`, `apps/api/src/features/plugins/` |
+| [x] Capability rule     | `capability.rule`      | Relay; semantic index                                          | `apps/api/src/features/capabilities/`                          |
+| [x] Message edit        | `chat.message`         | Semantic index                                                 | `apps/api/src/features/chat/`                                  |
+| [x] Chat deletion       | `chat.session` cascade | Session residue: sandbox, child loops and monitors, inbox rows | `apps/api/src/features/chat/`                                  |
+| [x] Local model         | `local.model`          | Route repair                                                   | `apps/api/src/features/local-models/`                          |
 
 ## Stage 3: consumers replace writer-driven follow-ups
 
-- [ ] Relay from notices to client topics replaces the mutation wrappers in
-      `apps/api/src/bootstrap/resource-sync.ts`.
-- [ ] Usage ledger projector replaces the fire-and-forget usage write and the boot repair.
-- [ ] `resolveLanguageModel` picks its connection with `routeReadiness`; the server copy of the rule
-      and `resolveLiveCatalogModel` are removed.
+- [x] Relay from notices to client topics replaces the mutation wrappers in
+      `apps/api/src/bootstrap/resource-sync.ts`: provider connections and capability rules. The
+      wrappers for projects (settings), profile, view state, agents, skills, the vault and system
+      toggles stay until those owners announce every change.
+- [x] Usage ledger projector replaces the fire-and-forget usage write and the boot repair.
+- [x] `resolveLanguageModel` picks its connection with `routeReadiness`; the server copy of the rule
+      is removed.
+- [ ] `resolveLiveCatalogModel` (UI and `@localixai/agent/catalog`) is replaced by `routeReadiness`.
 
 Stays a command: plan approval, capability apply, stopping runs before a chat is deleted, trigger
 scheduling, terminal lifecycle and the session event stream.

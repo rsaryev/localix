@@ -6,7 +6,11 @@
  */
 import path from 'node:path'
 import type { LocalProviderHost } from '@localixai/agent/runtime'
-import { createLocalModelsService, type LocalModelsService } from '../features/local-models/service'
+import {
+  createLocalModelsService,
+  type LocalModelsDeps,
+  type LocalModelsService,
+} from '../features/local-models/service'
 import { CHAT_CONTEXT_FALLBACK } from '../features/local-models/router'
 import { localixHome } from '../lib/env'
 import type { createLogger } from '../lib/logger'
@@ -20,8 +24,10 @@ export function buildLocalModels(deps: {
   root?: string
   /** `HF_TOKEN`: higher Hugging Face rate limits for the catalog. */
   hfToken?: string
+  announce?: LocalModelsDeps['announce']
 }) {
   return createLocalModelsService({
+    announce: deps.announce,
     root: deps.root?.trim() || path.join(localixHome(), 'models'),
     log: (event, fields) => deps.logger.info({ event, ...fields }),
     hfToken: deps.hfToken?.trim() || undefined,

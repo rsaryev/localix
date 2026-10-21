@@ -11,7 +11,6 @@ import {
   createCapabilityRuleRepository,
   type VersionedCapabilityRuleRepository,
 } from './rule-repository'
-import { bumpCapabilityRevision } from './revision'
 import { applyRuleChanges, type RuleChange } from './rule-changes'
 import { matches, type Effect, type Rule } from './rule'
 import { trustFallback, type TrustClass } from '../ext/trust'
@@ -167,8 +166,8 @@ export function createAvailabilityWriter(db: Kysely<AppDatabase>): AvailabilityW
     agentId: string,
     change: (current: readonly Rule[]) => Rule[],
   ) => {
+    // The repository bumps the revision once the write commits.
     await rules.mutate(userId, agentId, change)
-    bumpCapabilityRevision()
   }
 
   return {
@@ -255,6 +254,5 @@ export function createPermissionRulePersister(db: Kysely<AppDatabase>) {
     rule: { action: string; resource: string },
   ): Promise<void> => {
     await persistPermissionRule(rules, userId, agentId, rule)
-    bumpCapabilityRevision()
   }
 }

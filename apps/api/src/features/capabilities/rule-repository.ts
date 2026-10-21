@@ -2,6 +2,8 @@ import type { Kysely } from 'kysely'
 
 import type { AppDatabase } from '../../db'
 import { ApiError } from '../../lib/errors'
+import { recordCoreChanges } from '../changes/core-entities'
+import { bumpCapabilityRevision } from './revision'
 import type { Effect, Rule, RuleOrigin } from './rule'
 
 /**
@@ -53,6 +55,15 @@ export function createCapabilityRuleRepository(
 ): VersionedCapabilityRuleRepository {
   const atomic = <T>(operation: (connection: Kysely<AppDatabase>) => Promise<T>): Promise<T> =>
     db.isTransaction ? operation(db) : db.transaction().execute(operation)
+  /**
+   * Every rule write is a capability change: the list is announced by its key in the write's own
+   * transaction, and the revision moves once, here, after it — the one place a rule write bumps.
+   */
+  const committed = async <T>(operation: Promise<T>): Promise<T> => {
+    const result = await operation
+    bumpCapabilityRevision()
+    return result
+  }
   const write = async (
     trx: Kysely<AppDatabase>,
     userId: string,
@@ -95,6 +106,11 @@ export function createCapabilityRuleRepository(
           })),
         )
         .execute()
+    await recordCoreChanges(trx, {
+      entity: 'capability.rule',
+      op: 'upserted',
+      ref: { userId, agentId },
+    })
     const version = await trx
       .selectFrom('capability_policy_revision')
       .select('revision')
@@ -139,13 +155,15 @@ export function createCapabilityRuleRepository(
           'invalid_revision',
           'Expected revision must be a non-negative integer',
         )
-      return atomic((trx) => write(trx, userId, agentId, rules, expectedRevision))
+      return committed(atomic((trx) => write(trx, userId, agentId, rules, expectedRevision)))
     },
     async mutate(userId, agentId, change) {
-      await atomic(async (trx) => {
-        const current = await createCapabilityRuleRepository(trx).read(userId, agentId)
-        await write(trx, userId, agentId, change(current))
-      })
+      await committed(
+        atomic(async (trx) => {
+          const current = await createCapabilityRuleRepository(trx).read(userId, agentId)
+          await write(trx, userId, agentId, change(current))
+        }),
+      )
     },
     async read(userId, agentId) {
       const rows = await db
@@ -174,7 +192,7 @@ export function createCapabilityRuleRepository(
     },
 
     async replace(userId, agentId, rules) {
-      await atomic((trx) => write(trx, userId, agentId, rules))
+      await committed(atomic((trx) => write(trx, userId, agentId, rules)))
     },
   }
   return repo
