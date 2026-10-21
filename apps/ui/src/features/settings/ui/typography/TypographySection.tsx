@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Select } from '@localixai/kit/select'
-import { useUserSettings } from '../../model/useUserSettings'
+import { useUserSettings } from '@/shared/lib/user-settings/useUserSettings'
 import {
   CODE_FONT_OPTIONS,
   FONT_SIZE_OPTIONS,

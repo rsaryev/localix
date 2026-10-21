@@ -9,7 +9,7 @@ import {
   targetAgentId,
   type PickerTarget,
 } from './pickerTarget'
-import { useUserSettings } from '@/features/settings/model/useUserSettings'
+import { useUserSettings } from '@/shared/lib/user-settings/useUserSettings'
 import type { ReasoningEffort } from '../../../model/reasoning'
 import type { useConnections } from '../useConnections'
 import {

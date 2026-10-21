@@ -11,7 +11,7 @@ afterAll(async () => teardown())
 async function mount() {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
-  const { useUserSettings } = await import('../model/useUserSettings')
+  const { useUserSettings } = await import('@/shared/lib/user-settings/useUserSettings')
   const { ContextExclusionsSection } = await import('./ContextExclusionsSection')
   const previous = useUserSettings.getState()
   useUserSettings.setState({

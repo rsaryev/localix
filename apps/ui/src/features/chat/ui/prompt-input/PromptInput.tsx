@@ -1,7 +1,7 @@
 import { cloneElement, lazy, Suspense, useCallback, useId, useMemo, useRef, useState } from 'react'
 
 import { isModelRoutingTaskEnabled } from '@localixai/api/model-task-catalog'
-import { useUserSettings } from '@/features/settings/model/useUserSettings'
+import { useUserSettings } from '@/shared/lib/user-settings/useUserSettings'
 import { acceptAttribute } from '@/shared/lib/attachment-policy'
 import { filesFromDesktopPick } from '@/shared/lib/attachments/file-staging'
 import { desktopPickFiles } from '@/shared/lib/desktopDialogs'

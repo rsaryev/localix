@@ -1,4 +1,4 @@
-import { useUserSettings } from '../../model/useUserSettings'
+import { useUserSettings } from '@/shared/lib/user-settings/useUserSettings'
 import { SwitchRow } from '../SwitchRow'
 import { SettingsRows, SettingsSection } from '../SettingsScaffold'
 

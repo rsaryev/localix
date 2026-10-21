@@ -8,7 +8,7 @@ import type { ConversationStartStrategy } from '@/features/chat/model/conversati
 import { useSidebarNewChat } from '@/features/chat/model/useSidebarNewChat'
 import { ChatSidebarHeader, HistorySearchField } from '@/features/chat/ui/ChatSidebarHeader'
 import { SessionRoster } from '@/features/chat/ui/SessionRoster'
-import { useAgents } from '@/features/settings/model/useAgents'
+import { useAgents } from '@/shared/contrib/useAgents'
 import { useSidebarSessions, type SortMode } from '@/features/chat/model/useSidebarSessions'
 import { useSidebarDisclosure } from '@/features/chat/model/useSidebarDisclosure'
 import { useSessionSelection, stepId } from '@/features/chat/model/useSessionSelection'

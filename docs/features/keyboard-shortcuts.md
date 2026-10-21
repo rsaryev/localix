@@ -155,5 +155,5 @@ automatically a Localix command.
 - [Default editor ownership](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/keybindings/editorKeyOwnership.ts)
 - [Terminal key ownership](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/terminal/model/terminalKeymap.ts)
 - [Recorder conflict confirmation](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/ui/keyboard/ChordRecorder.tsx)
-- [Profile save and retry](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/model/settingsStore.ts)
-- [Initial profile precedence](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/settings/model/settingsSyncBarrier.ts)
+- [Profile save and retry](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/user-settings/settingsStore.ts)
+- [Initial profile precedence](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/user-settings/settingsSyncBarrier.ts)

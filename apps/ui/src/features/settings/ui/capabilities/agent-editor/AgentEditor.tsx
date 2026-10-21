@@ -13,7 +13,7 @@ import { AgentContextFields } from './AgentContextFields'
 import { useAgentEditorForm } from './useAgentEditorForm'
 import { AGENT_FIELD_IDS } from './agentDraft'
 import { clampMaxTurns } from '@localixai/api/turn-budget'
-import { useSettingsStore } from '../../../model/settingsStore'
+import { useSettingsStore } from '@/shared/lib/user-settings/settingsStore'
 
 interface AgentEditorProps {
   /** Present when editing; absent when creating. */

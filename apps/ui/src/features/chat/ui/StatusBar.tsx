@@ -7,12 +7,14 @@ import {
   WorkbenchStatusButton,
   WorkbenchStatusItem,
 } from '@localixai/kit/workbench-statusbar'
-import { SemanticIndexStatusItem } from '@/features/settings/ui/SemanticIndexStatusItem'
+import type { ReactNode } from 'react'
 
 interface StatusBarProps {
   lspServers?: LspServerState[]
   /** Open the Problems panel — wired to the error/warning counts below. */
   onOpenProblems?: () => void
+  /** App-wide background work the page composes in (the semantic index), at the trailing edge. */
+  trailing?: ReactNode
 }
 
 function LspStatusItem({
@@ -76,7 +78,7 @@ function RealtimeStatusItem() {
   )
 }
 
-export function StatusBar({ lspServers, onOpenProblems }: StatusBarProps) {
+export function StatusBar({ lspServers, onOpenProblems, trailing }: StatusBarProps) {
   const hasLsp = Boolean(lspServers && lspServers.length > 0)
   const realtime = useRealtimeConnection()
 
@@ -88,7 +90,7 @@ export function StatusBar({ lspServers, onOpenProblems }: StatusBarProps) {
       {realtime === 'reconnecting' && <RealtimeStatusItem />}
       {hasLsp && <LspStatusItem servers={lspServers!} onOpenProblems={onOpenProblems} />}
       {/* App-wide background work sits at the trailing edge, as in an editor's status bar. */}
-      <SemanticIndexStatusItem className="ml-auto" />
+      {trailing}
     </WorkbenchStatusBar>
   )
 }

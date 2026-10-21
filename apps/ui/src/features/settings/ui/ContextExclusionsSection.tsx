@@ -3,7 +3,7 @@ import { Button } from '@localixai/kit/button'
 import { Field } from '@localixai/kit/field'
 import { Textarea } from '@localixai/kit/textarea'
 import { contextExclusionsSchema } from '@localixai/api/context-exclusions'
-import { useUserSettings } from '../model/useUserSettings'
+import { useUserSettings } from '@/shared/lib/user-settings/useUserSettings'
 import { SettingsSection } from './SettingsScaffold'
 
 function ExclusionsForm({ paths }: { paths: string[] }) {

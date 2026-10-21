@@ -9,7 +9,7 @@ import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
 import { trackCapabilityWrite } from '@/shared/contrib/capabilityWrites'
 import { applyCapabilityRules } from '@/shared/contrib/capabilityCache'
 import { availabilityChange } from '@/shared/contrib/capabilityRules'
-import { useCapabilityRegistry } from './useCapabilityRegistry'
+import { useCapabilityRegistry } from '@/shared/contrib/useCapabilityRegistry'
 
 export interface SkillsData {
   /** Catalog rows — no bodies. `loadSkill` fetches one when the editor opens it. */

@@ -46,7 +46,7 @@ async function surfaces() {
   ] = await Promise.all([
     import('./fontOptions'),
     import('./useFontFamily'),
-    import('./settingsStore'),
+    import('@/shared/lib/user-settings/settingsStore'),
   ])
   const React = await import('react')
   const { createRoot } = await import('react-dom/client')

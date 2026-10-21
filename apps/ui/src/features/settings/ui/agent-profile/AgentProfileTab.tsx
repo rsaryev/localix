@@ -6,7 +6,7 @@ import { ConfirmDialog } from '@localixai/kit/confirm-dialog'
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { useSettingsProjects } from '../../model/useSettingsProjects'
-import { useAgents } from '../../model/useAgents'
+import { useAgents } from '@/shared/contrib/useAgents'
 import {
   closeAgentProfile,
   newAgentTabId,

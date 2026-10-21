@@ -6,7 +6,7 @@ import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
 import { storageApi, type PruneResult, type StorageUsage } from '@/shared/api/storageApi'
 import { useResourceRevision } from '@/shared/api/useResourceRevision'
 import { inlineFailure } from '@/shared/lib/notifications/inlineReport'
-import { useUserSettings } from '../model/useUserSettings'
+import { useUserSettings } from '@/shared/lib/user-settings/useUserSettings'
 import {
   formatBytes,
   pruneSummary,

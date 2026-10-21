@@ -3,7 +3,7 @@ import { resourceSync } from '@/shared/api/resourceSync'
 import { startResourceSyncTransport } from '@/shared/api/resourceSyncTransport'
 import { useChatStore } from '@/features/chat/model/store'
 import { registerConnectionsSync } from '@/features/chat/model/connectionsSync'
-import { useSettingsStore } from '@/features/settings/model/settingsStore'
+import { useSettingsStore } from '@/shared/lib/user-settings/settingsStore'
 import { startPluginContribSync } from '@/shared/contrib/enabledPlugins'
 import { invalidateAllCapabilities } from '@/shared/contrib/capabilityCache'
 

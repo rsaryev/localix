@@ -1,6 +1,6 @@
 import { expect, spyOn, test } from 'bun:test'
 import { backendClient } from '@/shared/api/client'
-import { waitForRuntimeCapabilities } from '@/features/settings/model/runtimeCapabilityReadiness'
+import { waitForRuntimeCapabilities } from '@/shared/contrib/runtimeCapabilityReadiness'
 import { persistPinnedSkills } from './pinnedSkillMutations'
 
 test('an immediate run waits for the latest pinned-skill snapshot', async () => {

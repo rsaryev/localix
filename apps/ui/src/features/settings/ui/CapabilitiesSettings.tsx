@@ -16,7 +16,7 @@ import { settingsUiUri } from '@localixai/plugin-sdk/navigation'
 import { useUiTarget } from '@/shared/hooks/useUiTarget'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { agentScopeValue } from '@/shared/api/capabilityScope'
-import { useAgents } from '../model/useAgents'
+import { useAgents } from '@/shared/contrib/useAgents'
 import { useActiveSessionAgentId } from '@/features/chat/model/store'
 
 interface CapabilitiesSettingsProps {

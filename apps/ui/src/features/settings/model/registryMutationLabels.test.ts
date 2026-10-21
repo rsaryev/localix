@@ -5,7 +5,7 @@ const read = (relative: string) => readFileSync(new URL(relative, import.meta.ur
 
 test('extension registries announce exact mutation actions', () => {
   const plugins = read('./usePlugins.ts')
-  const agents = read('./useAgents.ts')
+  const agents = read('../../../shared/contrib/useAgents.ts')
   const sources = [plugins, agents].join('\n')
 
   expect(sources).toContain("'Disabling'")

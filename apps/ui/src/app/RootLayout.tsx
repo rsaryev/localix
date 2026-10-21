@@ -8,7 +8,7 @@ import { shouldMountBrowserHost } from '@/features/inspector/model/browserHostPo
 import { Outlet, useLocation } from 'react-router'
 import { ActionConfirm } from '@/shared/ui/ActionConfirm'
 import { useFontFamily } from '@/features/settings/model/useFontFamily'
-import { useSettingsStore } from '@/features/settings/model/settingsStore'
+import { useSettingsStore } from '@/shared/lib/user-settings/settingsStore'
 import { startSettingsBootstrap } from '@/features/settings/model/settingsBootstrap'
 import { useSyncKeybindings } from '@/features/settings/model/useKeybindings'
 import { setActiveEventRoute } from '@/shared/lib/notifications/context'

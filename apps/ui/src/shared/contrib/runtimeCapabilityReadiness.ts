@@ -1,5 +1,5 @@
 import { waitForCapabilityWrites } from '@/shared/contrib/capabilityWrites'
-import { useSettingsStore } from './settingsStore'
+import { useSettingsStore } from '@/shared/lib/user-settings/settingsStore'
 
 /**
  * Resolve the persistence that can still change what the next agent run receives.

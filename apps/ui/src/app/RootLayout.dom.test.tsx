@@ -21,7 +21,7 @@ describe('UI-first startup', () => {
     const { MemoryRouter, Route, Routes } = await import('react-router')
     const { backendClient } = await import('@/shared/api/client')
     const { RootLayout } = await import('./RootLayout')
-    const { useSettingsStore } = await import('@/features/settings/model/settingsStore')
+    const { useSettingsStore } = await import('@/shared/lib/user-settings/settingsStore')
 
     const getProfile = spyOn(backendClient, 'getUserProfile').mockRejectedValue(
       new Error('backend unavailable'),

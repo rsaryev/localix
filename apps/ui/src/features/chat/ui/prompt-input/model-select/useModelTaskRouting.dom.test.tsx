@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { CatalogModel } from '@localixai/agent/catalog'
 import { registerDom } from '@localixai/kit/testing/dom'
-import { useUserSettings } from '@/features/settings/model/useUserSettings'
+import { useUserSettings } from '@/shared/lib/user-settings/useUserSettings'
 
 const updateSettings = mock((_patch: unknown) => {})
 const initialState = useUserSettings.getState()

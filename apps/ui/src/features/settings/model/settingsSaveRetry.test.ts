@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { saveRetryDelayMs } from './settingsStore'
+import { saveRetryDelayMs } from '@/shared/lib/user-settings/settingsStore'
 
 // Pins the save-retry schedule it had before it moved onto the shared `backoffMs`.
 describe('saveRetryDelayMs', () => {
