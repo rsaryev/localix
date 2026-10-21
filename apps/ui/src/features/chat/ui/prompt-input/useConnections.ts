@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { toast } from '@/shared/lib/notify'
 import { useChatStore } from '@/features/chat/model/store'
+import { refreshConnections } from '@/features/chat/model/connectionsSync'
 import { backendClient } from '@/shared/api/client'
 import { WS_BASE_URL } from '@/shared/api/internal'
 import { useModelsCatalog } from '@/shared/hooks/useModelsCatalog'
@@ -43,10 +44,8 @@ export function useConnections(sessionId: string | null) {
   const modelId = useChatStore((state) => selectSessionModelId(state, activeSessionId))
   const { models } = useModelsCatalog()
   const replaceSession = useChatStore((state) => state._replaceSession)
-  // Connection mutations only change the connections list — refetch ONLY
-  // /rpc/provider-connections, never the whole workspace (sessions + projects +
-  // getSession). The old `mutate('workspace')` pulled all four endpoints.
-  const refreshConnections = useChatStore((state) => state.refreshConnections)
+  // Every connection write is followed by the server's 'providers' topic, which re-reads the list
+  // (`connectionsSync`). Only a flow that binds the connection it just created reads it now.
 
   // The connection the route RUNS on, by the server's rule (`routeReadiness`): the stored id is a
   // hint, and a route whose account was deleted and signed in again runs on the new one. Before
@@ -136,7 +135,7 @@ export function useConnections(sessionId: string | null) {
       }
       return connection
     },
-    [activeSessionId, replaceSession, refreshConnections],
+    [activeSessionId, replaceSession],
   )
 
   const addOAuthConnection = useCallback(
@@ -256,43 +255,26 @@ export function useConnections(sessionId: string | null) {
       pollForNewConnection()
       return { mode } as const
     },
-    [activeSessionId, replaceSession, refreshConnections],
+    [activeSessionId, replaceSession],
   )
 
-  const remove = useCallback(
-    async (id: string) => {
-      await backendClient.deleteConnection(id)
-      await refreshConnections()
-    },
-    [refreshConnections],
-  )
+  // These writes return once the server committed them; its 'providers' topic then re-reads the
+  // list through the one writer, so none of them patches the store itself.
+  const remove = useCallback(async (id: string) => {
+    await backendClient.deleteConnection(id)
+  }, [])
 
-  const updateLabel = useCallback(
-    async (id: string, label: string) => {
-      await backendClient.updateConnection(id, { label })
-      await refreshConnections()
-    },
-    [refreshConnections],
-  )
+  const updateLabel = useCallback(async (id: string, label: string) => {
+    await backendClient.updateConnection(id, { label })
+  }, [])
 
-  // Key mutations patch the single connection in place (the API returns the
-  // updated connection) rather than refetching the whole workspace — that keeps
-  // the model-select drawer open and is far cheaper.
-  const replaceConnection = useChatStore((state) => state._replaceConnection)
+  const addKey = useCallback(async (id: string, apiKey: string, label?: string) => {
+    await backendClient.addProviderKey(id, { apiKey, label })
+  }, [])
 
-  const addKey = useCallback(
-    async (id: string, apiKey: string, label?: string) => {
-      replaceConnection(await backendClient.addProviderKey(id, { apiKey, label }))
-    },
-    [replaceConnection],
-  )
-
-  const removeKey = useCallback(
-    async (id: string, keyId: string) => {
-      replaceConnection(await backendClient.removeProviderKey(id, keyId))
-    },
-    [replaceConnection],
-  )
+  const removeKey = useCallback(async (id: string, keyId: string) => {
+    await backendClient.removeProviderKey(id, keyId)
+  }, [])
 
   const updateKey = useCallback(
     async (
@@ -300,18 +282,15 @@ export function useConnections(sessionId: string | null) {
       keyId: string,
       patch: { label?: string; priority?: number; enabled?: boolean },
     ) => {
-      replaceConnection(await backendClient.updateProviderKey(id, keyId, patch))
+      await backendClient.updateProviderKey(id, keyId, patch)
     },
-    [replaceConnection],
+    [],
   )
 
-  /** A cloud connection's settings, replaced on every key; the connection is patched in place. */
-  const updateSettings = useCallback(
-    async (id: string, settings: Record<string, string>) => {
-      replaceConnection(await backendClient.updateConnection(id, { settings }))
-    },
-    [replaceConnection],
-  )
+  /** A cloud connection's settings, replaced on every key. */
+  const updateSettings = useCallback(async (id: string, settings: Record<string, string>) => {
+    await backendClient.updateConnection(id, { settings })
+  }, [])
 
   // Memoized: this object is passed WHOLE into the composer's model picker, so a
   // fresh literal per render would defeat every `memo()` downstream of it. Every

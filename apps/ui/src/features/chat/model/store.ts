@@ -181,9 +181,6 @@ export interface ChatStore {
    */
   _addSystemNotice: (sessionId: string, message: Message, anchor?: 'last' | 'lastUser') => void
   /** Patch a single connection in place (avoids a full workspace refetch). */
-  _replaceConnection: (connection: ProviderConnection) => void
-  /** Refresh only the connections list (key health) without touching sessions/streaming. */
-  refreshConnections: () => Promise<void>
 }
 
 export const useChatStore = create<ChatStore>()((set, get, api) => {
@@ -256,7 +253,6 @@ export const useChatStore = create<ChatStore>()((set, get, api) => {
           : (firstRootSession?.id ?? projectSessions[0]?.id ?? null)
 
       customSet({
-        connections: snapshot.connections,
         allSessions: snapshot.sessions,
         sessions: projectSessions,
         activeSessionId: nextActiveSessionId,
@@ -305,7 +301,7 @@ export const useChatStore = create<ChatStore>()((set, get, api) => {
           : (firstRootSession?.id ?? projectSessions[0]?.id ?? null)
 
       customSet({ activeProjectId })
-      get().hydrateWorkspace(createWorkspaceSnapshot(sessions, get().connections, activeSessionId))
+      get().hydrateWorkspace(createWorkspaceSnapshot(sessions, activeSessionId))
     },
 
     _hydrateProjects: (projects) => {
@@ -520,17 +516,6 @@ export const useChatStore = create<ChatStore>()((set, get, api) => {
           return { ...session, messages: [...session.messages, anchored] }
         }),
       )
-    },
-
-    _replaceConnection: (connection) => {
-      customSet((state) => ({
-        connections: state.connections.map((c) => (c.id === connection.id ? connection : c)),
-      }))
-    },
-
-    refreshConnections: async () => {
-      const connections = await backendClient.listConnections()
-      customSet({ connections })
     },
   }
 })

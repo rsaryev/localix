@@ -17,7 +17,7 @@ test('the OpenRouter slide offers sign-in until a connection to OpenRouter exist
   const { useChatStore } = await import('@/features/chat/model/store')
   const { DecisionAction } = await import('./DecisionScene')
   // No server behind the test: the connections are what the store holds.
-  useChatStore.setState({ refreshConnections: async () => {}, connections: [] })
+  useChatStore.setState({ connections: [] })
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)

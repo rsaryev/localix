@@ -1,7 +1,6 @@
-import { useEffect, useId, useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { ChevronDown, X } from 'lucide-react'
 import { findCatalogModel } from '@localixai/agent/catalog'
-import { useChatStore } from '@/features/chat/model/store'
 import { ModelPickerShell } from '@/features/chat/ui/prompt-input/model-select/ModelPickerShell'
 import { useConnections } from '@/features/chat/ui/prompt-input/useConnections'
 import { useModelsCatalog } from '@/shared/hooks/useModelsCatalog'
@@ -44,15 +43,9 @@ export function AgentModelField({
   // The agent editor belongs to no chat: a provider connected from here routes none.
   const connectionsState = useConnections(null)
   const { connections } = connectionsState
-  const refreshConnections = useChatStore((state) => state.refreshConnections)
   const [open, setOpen] = useState(false)
   const modelFieldId = useId()
   const modelHelpId = useId()
-
-  // Settings may be opened before the workspace hydrated the connection store.
-  useEffect(() => {
-    void refreshConnections()
-  }, [refreshConnections])
 
   const catalogModel = useMemo(
     () => findCatalogModel(models, provider || null, model || null),

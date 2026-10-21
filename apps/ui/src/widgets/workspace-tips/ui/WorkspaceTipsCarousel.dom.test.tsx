@@ -58,7 +58,7 @@ test('the tips carousel pages by buttons and arrows, ends by handing back to the
   const WORKSPACE_TIPS = visibleTips({ featuredCommand: false, island: false })
   const { useChatStore } = await import('@/features/chat/model/store')
   // The model slide reads live connections; the test has no server behind it.
-  useChatStore.setState({ refreshConnections: async () => {}, loadProjects: async () => {} })
+  useChatStore.setState({ loadProjects: async () => {} })
   localStorage.clear()
 
   const host = document.createElement('div')

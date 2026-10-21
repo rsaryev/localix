@@ -25,9 +25,9 @@ test('declining provider sign-in clears OAuth state, releases the form, and allo
     redirectUrl: 'https://auth.example.test/',
   })
   const update = spyOn(backendClient, 'updateSession')
-  const refresh = mock(async () => {})
+  const refresh = spyOn(backendClient, 'listConnections').mockResolvedValue([])
   const added = mock(() => {})
-  useChatStore.setState({ connections: [], refreshConnections: refresh })
+  useChatStore.setState({ connections: [] })
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)

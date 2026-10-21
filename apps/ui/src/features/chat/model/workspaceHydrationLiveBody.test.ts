@@ -67,7 +67,6 @@ describe('workspace hydration during a live stream', () => {
       updatedAt: 2,
     })
     useChatStore.getState().hydrateWorkspace({
-      connections: [],
       sessions: [summary],
       activeSessionId: 'session-1',
     })

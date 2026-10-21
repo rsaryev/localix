@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useChatStore } from '@/features/chat/model/store'
+import { registerConnectionsSync } from '@/features/chat/model/connectionsSync'
 import { backendClient } from '@/shared/api/client'
 import type { Project, UiSession } from '@/shared/api/contracts'
 import { eventSocket } from '@/shared/api/eventSocket'
@@ -60,11 +60,7 @@ export function useCompanionState() {
     }
     refreshRef.current = () => void read()
     const stops = [
-      resourceSync.register('providers', {
-        read: (signal) => backendClient.listConnections(signal),
-        apply: (connections) => useChatStore.setState({ connections }),
-        onError: () => setError(true),
-      }),
+      registerConnectionsSync(() => setError(true)),
       eventSocket.onConnected(() => {
         setConnected(true)
         void read()

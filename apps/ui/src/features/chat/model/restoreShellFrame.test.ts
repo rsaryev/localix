@@ -113,7 +113,6 @@ describe('the frame is a roster, never a body', () => {
     useChatStore.setState({ activeProjectId: PROJECT, allSessions: [body('LOCALIX-206')] })
     useChatStore.getState().hydrateWorkspace({
       sessions: [session('LOCALIX-206')],
-      connections: [],
       activeSessionId: null,
     })
 

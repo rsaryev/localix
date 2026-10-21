@@ -12,7 +12,7 @@ import { resumeApi } from './resume-client'
 import { attentionApi } from './attention-client'
 import { userApi } from './user-client'
 
-import type { CatalogResponse, ProviderConnection, UiSession } from './contracts'
+import type { CatalogResponse, UiSession } from './contracts'
 
 export { applyStreamEventToSession, needsSessionResync } from './applyStreamEvent'
 import { client, unwrap, ApiError, apiFetch, API_BASE_URL, WS_BASE_URL } from './internal'
@@ -39,17 +39,15 @@ export type { SendMessageResult } from './client/messages'
 export type { OpenedPreview, ResolvedPreviewEndpoint } from './client/terminals'
 
 export interface WorkspaceSnapshot {
-  connections: ProviderConnection[]
   sessions: UiSession[]
   activeSessionId: string | null
 }
 
 export function createWorkspaceSnapshot(
   sessions: UiSession[],
-  connections: ProviderConnection[],
   activeSessionId: string | null,
 ): WorkspaceSnapshot {
-  return { sessions, connections, activeSessionId }
+  return { sessions, activeSessionId }
 }
 
 export const backendClient = {

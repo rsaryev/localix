@@ -2,6 +2,7 @@ import { backendClient } from '@/shared/api/client'
 import { resourceSync } from '@/shared/api/resourceSync'
 import { startResourceSyncTransport } from '@/shared/api/resourceSyncTransport'
 import { useChatStore } from '@/features/chat/model/store'
+import { registerConnectionsSync } from '@/features/chat/model/connectionsSync'
 import { useSettingsStore } from '@/features/settings/model/settingsStore'
 import { startPluginContribSync } from '@/shared/contrib/enabledPlugins'
 import { invalidateAllCapabilities } from '@/shared/contrib/capabilityCache'
@@ -15,11 +16,7 @@ export function startWorkspaceResourceSync(): () => void {
       apply: (projects) => useChatStore.getState()._hydrateProjects(projects),
       onError: (error) => console.warn('[realtime] project sync failed', error),
     }),
-    resourceSync.register('providers', {
-      read: (signal) => backendClient.listConnections(signal),
-      apply: (connections) => useChatStore.setState({ connections }),
-      onError: (error) => console.warn('[realtime] provider sync failed', error),
-    }),
+    registerConnectionsSync(),
     resourceSync.register('profile', {
       read: async (signal) => {
         const state = useSettingsStore.getState()

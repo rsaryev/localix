@@ -22,6 +22,7 @@ test('retrying an abandoned browser sign-in returns once to the exact connection
   const previousStore = useChatStore.getState()
   const previousInitiate = Object.getOwnPropertyDescriptor(backendClient, 'initiateOAuth')!
   const previousUpdate = Object.getOwnPropertyDescriptor(backendClient, 'updateSession')!
+  const previousList = Object.getOwnPropertyDescriptor(backendClient, 'listConnections')!
   const previousHidden = Object.getOwnPropertyDescriptor(document, 'hidden')
   const savedState = sessionStorage.getItem('localix_oauth_state')
   const savedSession = sessionStorage.getItem('localix_oauth_session_id')
@@ -64,9 +65,10 @@ test('retrying an abandoned browser sign-in returns once to the exact connection
     Object.defineProperty(document, 'hidden', { configurable: true, value: true })
     useChatStore.setState({
       connections: [],
-      refreshConnections: async () => {},
       _replaceSession: () => {},
     })
+    // The server is the source of the list: it answers with what the store was told it holds.
+    backendClient.listConnections = async () => useChatStore.getState().connections
     let attempt = 0
     backendClient.initiateOAuth = async () => {
       attempt += 1
@@ -121,6 +123,7 @@ test('retrying an abandoned browser sign-in returns once to the exact connection
     restorePlatform()
     Object.defineProperty(backendClient, 'initiateOAuth', previousInitiate)
     Object.defineProperty(backendClient, 'updateSession', previousUpdate)
+    Object.defineProperty(backendClient, 'listConnections', previousList)
     useChatStore.setState(previousStore, true)
     if (previousHidden) Object.defineProperty(document, 'hidden', previousHidden)
     else Reflect.deleteProperty(document, 'hidden')
