@@ -1,9 +1,11 @@
+import { capabilityStores } from './capability-stores'
 import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../db/types'
 import { createCapabilitySourceRepository } from '../features/capabilities/source-repository'
 import { capabilitiesChanged } from '../features/capabilities/revision'
 import type { ChatFeaturePorts } from '../features/chat/feature-ports'
 import { createContextStoreRepository } from '../features/context-store/repository'
+import { createFileWatchService } from '../features/fs-watch/service'
 import { createMcpRepository } from '../features/mcp/repository'
 import { createMemoryRepository } from '../features/memory/repository'
 import { createPluginService, type PluginService } from '../features/plugins/service'
@@ -29,6 +31,7 @@ export function createChatFeaturePorts(
     options.pluginService ??
     createPluginService({
       db,
+      capabilityStores,
       homeDir: userHome(),
       now: options.now,
       resolveProjectCwd: async (...args) =>
@@ -46,5 +49,6 @@ export function createChatFeaturePorts(
     pluginRepo: createCapabilitySourceRepository(db, 'plugin'),
     contextStore: createContextStoreRepository(db),
     pluginService,
+    createFileWatcher: createFileWatchService,
   }
 }

@@ -1,3 +1,4 @@
+import { capabilityStores } from '../../bootstrap/capability-stores'
 import { afterEach, expect, test } from 'bun:test'
 import { mkdtemp, mkdir, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -38,7 +39,12 @@ async function fixture() {
   const kinds = createContributionKindRegistry()
   kinds.register('agent', agentContributionSchema)
   const store = createContributionStore(db, kinds)
-  const service = createAgentsService({ db, globalDir, resolveProjectCwd: async () => root })
+  const service = createAgentsService({
+    db,
+    capabilityStores,
+    globalDir,
+    resolveProjectCwd: async () => root,
+  })
   const availability = createAvailabilityWriter(db)
   const rules = createCapabilityRuleRepository(db)
   // Every switch about a registered agent — its source, itself, the hosts it may run in —

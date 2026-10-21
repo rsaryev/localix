@@ -1,3 +1,4 @@
+import { capabilityStores } from '../../bootstrap/capability-stores'
 import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdtemp, mkdir, writeFile, readFile, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -34,6 +35,7 @@ async function fixture() {
   const invocations = createInvocationRegistry()
   const service = createAgentsService({
     db,
+    capabilityStores,
     invocations,
     globalDir,
     resolveProjectCwd: async (_user, project) => (project === 'p' ? projectCwd : null),

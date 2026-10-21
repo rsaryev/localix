@@ -1,3 +1,4 @@
+import type { CapabilityStores } from '../capabilities/store-factory'
 import type { Kysely } from 'kysely'
 import type { AgentAuthoredBlueprint } from '@localixai/agent/agents'
 
@@ -18,6 +19,8 @@ import type { AgentAvailability, ApprovalAnswer, RunAgentDecision } from './invo
 
 export interface AgentsServiceDeps {
   db: Kysely<AppDatabase>
+  /** Opens the capability source and rule stores (supplied by the composition root). */
+  capabilityStores: CapabilityStores
   /** Host-owned registry shared by catalog reads and launch admission. */
   invocations?: InvocationRegistry
   /** Resolve a project's working directory (for project-scoped registry dirs). */

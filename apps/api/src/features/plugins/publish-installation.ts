@@ -4,10 +4,8 @@ import type { AppDatabase } from '../../db/types'
 import { ApiError } from '../../lib/errors'
 import { createAvailabilityWriter, readAvailability } from '../capabilities/availability'
 import { pluginTrustClass } from './enable'
-import {
-  createCapabilitySourceRepository,
-  type CapabilitySourceRecord,
-} from '../capabilities/source-repository'
+import type { CapabilitySourceRecord } from '../capabilities/source-repository'
+import type { CapabilityStores } from '../capabilities/store-factory'
 import { publishExtensionTrees } from '../ext/publish-trees'
 import { createContributionStore } from '../ext/contribution-store'
 import type { ContributionKindRegistry } from '../ext/contribution-kinds'
@@ -20,6 +18,7 @@ import { planDependencyEnables } from './dependencies-policy'
 /** One file publication and one database commit for the parent and its dependency plan. */
 export async function publishPluginInstallation(input: {
   db: Kysely<AppDatabase>
+  stores: CapabilityStores
   contributionKinds: ContributionKindRegistry
   userId: string
   projectId: string
@@ -47,7 +46,7 @@ export async function publishPluginInstallation(input: {
     const discovered = hasDependencies ? await input.discover() : []
     const warnings: string[] = []
     const state = await input.db.transaction().execute(async (transaction) => {
-      const repo = createCapabilitySourceRepository(transaction, 'plugin', input.now)
+      const repo = input.stores.sources(transaction, 'plugin', input.now)
       const dependencySources = (await publication?.write(repo)) ?? []
       const saved = await repo.upsert(input.userId, input.projectId, plugin.manifest.name, {
         source: input.source,

@@ -1,3 +1,4 @@
+import { capabilityStores } from '../../bootstrap/capability-stores'
 import { afterEach, expect, test } from 'bun:test'
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -28,6 +29,7 @@ async function fixture() {
   const create = () =>
     createAgentsService({
       db,
+      capabilityStores,
       globalDir: join(root, 'global'),
       resolveProjectCwd: async (_u, project) => (project === 'p' ? cwd : null),
     })

@@ -2,7 +2,6 @@ import { promises as fs } from 'node:fs'
 import { pluginLoadBlockReason } from './loadable'
 import { isAbsolute } from 'node:path'
 import {
-  createCapabilitySourceRepository,
   type CapabilitySourceRecord,
   type CapabilitySourceRepository,
   scalarConfig,
@@ -102,7 +101,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
     discoverPlugins({ ...scope, homeDir: home })
   const contributionKinds = deps.contributionKinds ?? createContributionKindRegistry()
   const now = deps.now ?? (() => new Date().toISOString())
-  const repo: CapabilitySourceRepository = createCapabilitySourceRepository(deps.db, 'plugin', now)
+  const repo: CapabilitySourceRepository = deps.capabilityStores.sources(deps.db, 'plugin', now)
   // Marketplace registry deps — one git clone primitive shared with plugin install.
   const registryDeps: MarketplaceRegistryDeps = { cloneRepo, now }
   // Tool rosters of enabled native plugins, remembered in memory and across restarts
@@ -258,6 +257,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         if (projectId && !cwd) return
         await syncBundledContributions({
           db: deps.db,
+          stores: deps.capabilityStores,
           kinds: contributionKinds,
           userId,
           projectId,
@@ -602,6 +602,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         (parent) =>
           publishPluginInstallation({
             db: deps.db,
+            stores: deps.capabilityStores,
             contributionKinds,
             userId,
             projectId,

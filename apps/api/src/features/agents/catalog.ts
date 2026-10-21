@@ -9,8 +9,7 @@ import { builtinAgentRecord } from './builtin'
 import type { AppDatabase } from '../../db/types'
 import { availabilityOf } from '../capabilities/availability'
 import { composeCapabilities, type ResolvedCapabilities } from '../capabilities/resolve'
-import { createCapabilitySourceRepository } from '../capabilities/source-repository'
-import { createCapabilityRuleRepository } from '../capabilities/rule-repository'
+import type { CapabilityStores } from '../capabilities/store-factory'
 import type { InvocationRegistry } from '../capabilities/invocation'
 import { createContributionReader, type ContributionReadError } from '../ext/contribution-reader'
 import { agentContributionSchema } from './contribution'
@@ -34,16 +33,17 @@ interface AgentCatalog {
 /** One scope's authored and registered definitions, evaluated against the same policy snapshot. */
 export async function buildAgentCatalog(input: {
   db: Kysely<AppDatabase>
+  stores: CapabilityStores
   invocations: InvocationRegistry
   userId: string
   projectId: string
   cwd: string | null
   globalDir?: string
 }): Promise<AgentCatalog> {
-  const { db, invocations, userId, projectId } = input
+  const { db, stores, invocations, userId, projectId } = input
   if (!db.isTransaction)
     return db.transaction().execute((connection) => buildAgentCatalog({ ...input, db: connection }))
-  const states = await createCapabilitySourceRepository(db, 'agent').listForScope(userId, projectId)
+  const states = await stores.sources(db, 'agent').listForScope(userId, projectId)
   const approvedBuiltinOverrides = new Map(
     states.flatMap((state) =>
       state.projectId === projectId && typeof state.config[BUILTIN_OVERRIDE_FIELD] === 'string'
@@ -65,13 +65,15 @@ export async function buildAgentCatalog(input: {
     builtin: true,
   }
   const discovered = everyone.filter((item) => item !== humanItem)
-  const byAgent = await createCapabilityRuleRepository(db).readMany(userId, [
-    ...new Set([
-      DEFAULT_AGENT_ID,
-      ...discovered.map((agent) => agent.record.id),
-      ...registered.registrations.map((entry) => entry.id),
-    ]),
-  ])
+  const byAgent = await stores
+    .rules(db)
+    .readMany(userId, [
+      ...new Set([
+        DEFAULT_AGENT_ID,
+        ...discovered.map((agent) => agent.record.id),
+        ...registered.registrations.map((entry) => entry.id),
+      ]),
+    ])
   const rulesFor = (id: string) => byAgent.get(id) ?? []
   const sourceAvailability = availabilityOf(composeCapabilities(rulesFor(DEFAULT_AGENT_ID)))
   const reviewed = await readBoundAgentRevisions(

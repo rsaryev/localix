@@ -1,7 +1,4 @@
-import {
-  createCapabilitySourceRepository,
-  type CapabilitySourceRepository,
-} from '../capabilities/source-repository'
+import type { CapabilitySourceRepository } from '../capabilities/source-repository'
 
 import { ApiError } from '../../lib/errors'
 import { createKeyedSerializer } from '../../lib/keyed-serializer'
@@ -12,7 +9,6 @@ import { createAgentInvocationService } from './invocation-service'
 import { createRegistrationPolicyService } from './registration-policy'
 import { applySwitches, createAvailabilityWriter } from '../capabilities/availability'
 import { createInvocationRegistry } from '../capabilities/invocation'
-import { createCapabilityRuleRepository } from '../capabilities/rule-repository'
 import { createNativeAgent } from './create-native-agent'
 import { createAgentAuthoring } from './authoring'
 import { globalAgentsDir, projectAgentsDir } from './discovery'
@@ -30,11 +26,7 @@ import { recordCoreChanges, type CoreChange } from '../changes/core-entities'
 export type { AgentsService, AgentsServiceDeps } from './service-contract'
 
 export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
-  const repo: CapabilitySourceRepository = createCapabilitySourceRepository(
-    deps.db,
-    'agent',
-    deps.now,
-  )
+  const repo: CapabilitySourceRepository = deps.capabilityStores.sources(deps.db, 'agent', deps.now)
   // The one writer of availability, shared with every other kind.
   const availabilityWriter = createAvailabilityWriter(deps.db)
   /**
@@ -50,7 +42,7 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
     if (now) changes.push({ entity: 'agent', op: 'upserted', ref: { id: now, scope, agentId } })
     return recordCoreChanges(deps.db, changes)
   }
-  const ruleRepository = createCapabilityRuleRepository(deps.db)
+  const ruleRepository = deps.capabilityStores.rules(deps.db)
   const invocations = deps.invocations ?? createInvocationRegistry()
   const serialize = createKeyedSerializer()
   const contributions = createContributionReader(deps.db, 'agent', agentContributionSchema)
@@ -73,6 +65,7 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
     await deps.syncBundledContributions?.(userId, projectId)
     return buildAgentCatalog({
       db: deps.db,
+      stores: deps.capabilityStores,
       invocations,
       userId,
       projectId,
@@ -126,7 +119,7 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
   return {
     ...createAgentAuthoring(creationPorts, serialize),
     ...createAgentInvocationService(buildCatalog, invocations),
-    registrationPolicy: createRegistrationPolicyService(deps.db),
+    registrationPolicy: createRegistrationPolicyService(deps.db, deps.capabilityStores),
     async listAgents(userId, opts) {
       const projectId = opts?.projectId ?? ''
       const catalog = await buildCatalog(userId, projectId)

@@ -1,3 +1,4 @@
+import { capabilityStores } from '../../bootstrap/capability-stores'
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { mkdtemp, mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -52,7 +53,12 @@ beforeAll(async () => {
 
   db = createDatabase()
   await migrateToLatest(db)
-  service = createPluginService({ db, homeDir, resolveProjectCwd: async () => workspaceDir })
+  service = createPluginService({
+    db,
+    capabilityStores,
+    homeDir,
+    resolveProjectCwd: async () => workspaceDir,
+  })
 })
 
 afterAll(async () => {

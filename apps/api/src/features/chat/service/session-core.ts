@@ -1,6 +1,5 @@
 import { ApiError } from '../../../lib/errors'
 import { readAvailability } from '../../capabilities/availability'
-import { createFileWatchService } from '../../fs-watch/service'
 import { discardSessionData } from '../../plugins/session-storage'
 import { resolveDefaultProject } from '../../projects/default-project'
 import type { SessionDetail } from '../contracts'
@@ -76,7 +75,7 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
 
   // Lazily-armed file-tree change watcher. Local sessions only; an ssh/docker tree
   // is invisible to a local fs.watch.
-  const fileWatchService = createFileWatchService({
+  const fileWatchService = deps.ports.createFileWatcher({
     streamRegistry,
     // Quick-open's file-list memo and the root's language servers (root-change-fanout.ts).
     onRootChanged: rootChangeFanout(deps.lspManager),

@@ -1,3 +1,4 @@
+import { capabilityStores } from '../../bootstrap/capability-stores'
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
@@ -619,6 +620,7 @@ describe('prepareDependenciesForInstall', () => {
         withPluginSource({ source: resolved.dir, installRoot }, (parent) =>
           publishPluginInstallation({
             db,
+            stores: capabilityStores,
             contributionKinds,
             userId: 'u1',
             projectId: '',

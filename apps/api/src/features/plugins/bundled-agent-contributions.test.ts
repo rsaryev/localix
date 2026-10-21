@@ -1,3 +1,4 @@
+import { capabilityStores } from '../../bootstrap/capability-stores'
 import { afterEach, expect, test } from 'bun:test'
 import { mkdtemp, mkdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -42,6 +43,7 @@ async function fixture() {
   const sync = (projectId = 'p') =>
     syncBundledContributions({
       db,
+      stores: capabilityStores,
       kinds,
       userId: 'u',
       projectId,
@@ -50,6 +52,7 @@ async function fixture() {
     })
   const agents = createAgentsService({
     db,
+    capabilityStores,
     globalDir: join(root, 'global'),
     resolveProjectCwd: async () => cwd,
     syncBundledContributions: async (_u, projectId) => sync(projectId),

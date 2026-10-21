@@ -1,18 +1,1 @@
-[
-  "apps/api/src/features/agents/catalog.ts calls createCapabilityRuleRepository (capabilities)",
-  "apps/api/src/features/agents/catalog.ts calls createCapabilitySourceRepository (capabilities)",
-  "apps/api/src/features/agents/registration-policy.ts calls createCapabilityRuleRepository (capabilities)",
-  "apps/api/src/features/agents/seed-bundled-contribution.ts calls createCapabilityRuleRepository (capabilities)",
-  "apps/api/src/features/agents/seed-bundled-contribution.ts calls createCapabilitySourceRepository (capabilities)",
-  "apps/api/src/features/agents/service.ts calls createCapabilityRuleRepository (capabilities)",
-  "apps/api/src/features/agents/service.ts calls createCapabilitySourceRepository (capabilities)",
-  "apps/api/src/features/chat/service/session-core.ts calls createFileWatchService (fs-watch)",
-  "apps/api/src/features/modes-e2e/plan-lifecycle-harness.ts calls createChatRepository (chat)",
-  "apps/api/src/features/modes-e2e/plan-lifecycle-harness.ts calls createCommentRepository (comments)",
-  "apps/api/src/features/modes-e2e/plan-lifecycle-harness.ts calls createMemoryWorkRepository (work)",
-  "apps/api/src/features/modes-e2e/plan-lifecycle-harness.ts calls createPlanRepository (plans)",
-  "apps/api/src/features/modes-e2e/plan-lifecycle-harness.ts calls createPlanService (plans)",
-  "apps/api/src/features/plugins/publish-installation.ts calls createCapabilitySourceRepository (capabilities)",
-  "apps/api/src/features/plugins/service.ts calls createCapabilitySourceRepository (capabilities)",
-  "apps/api/src/features/plugins/sync-bundled-contributions.ts calls createCapabilitySourceRepository (capabilities)"
-]
+[]

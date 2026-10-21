@@ -2,13 +2,14 @@ import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../../db/types'
 import { createContributionStore } from '../ext/contribution-store'
 import type { ContributionKindRegistry } from '../ext/contribution-kinds'
-import { createCapabilitySourceRepository } from '../capabilities/source-repository'
+import type { CapabilityStores } from '../capabilities/store-factory'
 import { seedBundledAgentContribution } from '../agents/seed-bundled-contribution'
 import type { DiscoveredPlugin } from './discovery'
 
 /** Reconcile only managed first-party manifests. A user-installed lookalike receives no grant. */
 export async function syncBundledContributions(input: {
   db: Kysely<AppDatabase>
+  stores: CapabilityStores
   kinds: ContributionKindRegistry
   userId: string
   projectId: string
@@ -29,7 +30,7 @@ export async function syncBundledContributions(input: {
     }
   })
   await input.db.transaction().execute(async (db) => {
-    const sources = createCapabilitySourceRepository(db, 'plugin', input.now)
+    const sources = input.stores.sources(db, 'plugin', input.now)
     const store = createContributionStore(db, input.kinds, input.now)
     const visible = new Set(managed.map((plugin) => plugin.manifest.name))
     for (const source of await sources.listForScope(input.userId, input.projectId)) {
@@ -61,7 +62,7 @@ export async function syncBundledContributions(input: {
         declarations,
       )
       for (const entry of published.contributions)
-        await seedBundledAgentContribution(db, input.userId, entry)
+        await seedBundledAgentContribution(db, input.stores, input.userId, entry)
     }
   })
 }

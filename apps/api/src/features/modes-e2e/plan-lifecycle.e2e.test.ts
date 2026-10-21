@@ -4,7 +4,7 @@ import { builtinAgentPreset } from '../capabilities/builtin-agent-presets'
 import { approvedPlanForRun } from '../chat/runtime/plan-view'
 import { planCommentScope } from '../comments/contracts'
 import { WORKSPACE } from './core-call-cases'
-import { CHILD, createPlanLifecycle, ROOT, type PlanLifecycle } from './plan-lifecycle-harness'
+import { CHILD, createPlanLifecycle, ROOT, type PlanLifecycle } from './plan-lifecycle-test-harness'
 import { modeSurface, runRegistry } from './run-surface'
 
 /**

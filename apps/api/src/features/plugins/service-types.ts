@@ -1,3 +1,4 @@
+import type { CapabilityStores } from '../capabilities/store-factory'
 import type { Kysely } from 'kysely'
 import type { ContributionKindRegistry } from '../ext/contribution-kinds'
 import { type CapabilitySourceRecord, scalarConfig } from '../capabilities/source-repository'
@@ -26,6 +27,8 @@ import type { PluginUiActionContext } from '@localixai/plugin-sdk/backend'
 
 export interface PluginServiceDeps {
   db: Kysely<AppDatabase>
+  /** Opens the capability source and rule stores (supplied by the composition root). */
+  capabilityStores: CapabilityStores
   /** Host-owned schemas. Without a registry, no contribution kind is accepted. */
   contributionKinds?: ContributionKindRegistry
   now?: () => string

@@ -1,4 +1,5 @@
 import type { CapabilitySourceRepository } from '../capabilities/source-repository'
+import type { FileWatchDeps, createFileWatchService } from '../fs-watch/service'
 import type { ContextStore } from '../context-store/repository'
 import type { McpRepository } from '../mcp/repository'
 import type { MemoryRepository } from '../memory/repository'
@@ -24,4 +25,6 @@ export interface ChatFeaturePorts {
   contextStore: ContextStore
   /** The host's plugin service: one per process, so one inspection cache and `onChanged` owner. */
   pluginService: PluginService
+  /** Builds the session file-tree watcher (`fs-watch`). */
+  createFileWatcher: (deps: FileWatchDeps) => ReturnType<typeof createFileWatchService>
 }
