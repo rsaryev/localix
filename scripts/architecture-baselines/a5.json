@@ -1,8 +1,6 @@
 [
   "apps/api/src/features/chat/message-search-reads.ts imports kysely",
   "apps/api/src/features/chat/semantic-sources.ts imports kysely",
-  "apps/api/src/features/chat/service/delegated-runs.ts imports kysely",
-  "apps/api/src/features/chat/service/recover-delegation.ts imports kysely",
   "apps/api/src/features/context-store/maintenance.ts imports kysely",
   "apps/api/src/features/context-store/participant-output.ts imports kysely",
   "apps/api/src/features/storage/service.ts imports kysely",

@@ -295,7 +295,7 @@ test('a run summary carries what the child consumed across all its runs, and its
   await sql`INSERT INTO agent_message_usage (message_id, total_tokens, total_cost)
     VALUES ('message-spender', 1500, 0.25)`.execute(db)
   await addChild('fresh')
-  const rows = await listDelegatedRuns(db, 'u', 'parent')
+  const rows = await listDelegatedRuns(db, createUsageRepository(db), 'u', 'parent')
   expect(rows.find((row) => row.sessionId === 'spender')).toMatchObject({
     usage: { tokens: 1500, costUsd: 0.25 },
     // Delegated before priorities were stored: it queues, and reads, as normal.
@@ -324,19 +324,22 @@ test('a child’s spend in runs is the SAME total its own chat shows — auxilia
     await createChatRepository(db).getActiveBranchUsage('u', 'spender'),
     await readSessionUsageRows(createUsageRepository(db), 'u', 'spender'),
   ).usage
-  const [run] = await listDelegatedRuns(db, 'u', 'parent')
+  const [run] = await listDelegatedRuns(db, createUsageRepository(db), 'u', 'parent')
   expect(run?.usage).toEqual({ tokens: 1600, costUsd: 0.26 })
   expect(run?.usage?.tokens).toBe(canonical?.totalTokens ?? -1)
   expect(run?.usage?.costUsd).toBe(canonical?.totalCost ?? -1)
   // A reader that shows no spend skips the reads.
-  expect((await listDelegatedRuns(db, 'u', 'parent', { usage: false }))[0]?.usage).toBeUndefined()
+  expect(
+    (await listDelegatedRuns(db, createUsageRepository(db), 'u', 'parent', { usage: false }))[0]
+      ?.usage,
+  ).toBeUndefined()
 })
 
 test('progress exposes public text or tool name, never reasoning or tool payloads', async () => {
   const { db, addChild } = await fixture()
   await addChild('reported')
   await addChild('working', 'running', '')
-  const rows = await listDelegatedRuns(db, 'u', 'parent')
+  const rows = await listDelegatedRuns(db, createUsageRepository(db), 'u', 'parent')
   expect(rows.find((row) => row.sessionId === 'reported')).toMatchObject({
     reportAvailable: true,
     progress: 'Responsive layout verified.',
@@ -346,7 +349,7 @@ test('progress exposes public text or tool name, never reasoning or tool payload
     progress: 'Last observed tool: browser',
   })
   expect(JSON.stringify(rows)).not.toContain('PRIVATE')
-  expect(await listDelegatedRuns(db, 'other-user', 'parent')).toEqual([])
+  expect(await listDelegatedRuns(db, createUsageRepository(db), 'other-user', 'parent')).toEqual([])
 })
 
 test('reopening the current schema does not falsely acknowledge undelivered reports', async () => {
@@ -367,13 +370,15 @@ test('progress reads only the latest assistant and emits one row per child', asy
   })
   await sql`INSERT INTO agent_messages (id,user_id,session_id,sequence,role,payload_json)
     VALUES ('latest','u','child',2,'assistant',${latest})`.execute(db)
-  const rows = await listDelegatedRuns(db, 'u', 'parent')
+  const rows = await listDelegatedRuns(db, createUsageRepository(db), 'u', 'parent')
   expect(rows).toHaveLength(1)
   expect(rows[0]).toMatchObject({ agentId: 'first', progress: 'Last observed tool: bash' })
   await sql`UPDATE agent_messages SET payload_json='{"content":"","items":[]}' WHERE id='latest'`.execute(
     db,
   )
-  expect((await listDelegatedRuns(db, 'u', 'parent'))[0]?.progress).toBe('No public progress yet')
+  expect((await listDelegatedRuns(db, createUsageRepository(db), 'u', 'parent'))[0]?.progress).toBe(
+    'No public progress yet',
+  )
 })
 
 test('a session sees its whole subtree, each row with its level — and nothing above it', async () => {
@@ -383,12 +388,12 @@ test('a session sees its whole subtree, each row with its level — and nothing 
     VALUES ('grandchild', 'u', 'grandchild', 'p', 'child', 'parent', 'subagent', 'running')`.execute(
     db,
   )
-  const fromRoot = await listDelegatedRuns(db, 'u', 'parent')
+  const fromRoot = await listDelegatedRuns(db, createUsageRepository(db), 'u', 'parent')
   expect(fromRoot.map((run) => [run.sessionId, run.level, run.parentSessionId])).toEqual([
     ['child', 1, 'parent'],
     ['grandchild', 2, 'child'],
   ])
   // The child sees its own child as level 1, and never the session that delegated to it.
-  const fromChild = await listDelegatedRuns(db, 'u', 'child')
+  const fromChild = await listDelegatedRuns(db, createUsageRepository(db), 'u', 'child')
   expect(fromChild.map((run) => [run.sessionId, run.level])).toEqual([['grandchild', 1]])
 })

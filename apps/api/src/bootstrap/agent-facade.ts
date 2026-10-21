@@ -15,6 +15,7 @@ import { createCapabilitySourceRepository } from '../features/capabilities/sourc
 import { seedStarterTeam } from '../features/agents/seed-starter-team'
 import { seedAgentPresets } from '../features/capabilities/seed-agent-presets'
 import { listDelegatedRuns } from '../features/chat/service/delegated-runs'
+import { createUsageRepository } from '../features/usage/repository'
 
 export interface AgentFacadePhaseInput {
   db: ReturnType<typeof createDatabase>
@@ -43,6 +44,7 @@ export async function createAgentFacadePhase({
   // The scoped verdict store this phase resolves against. Built here rather than passed in:
   // the facade is the only consumer, and a repository over the same `db` is not shared state.
   const capabilityRules = createCapabilityRuleRepository(db)
+  const usageRepo = createUsageRepository(db)
 
   // Each role's shipped defaults, applied to its own scope once. Here because this is the
   // module that already knows how a handle maps to a capability scope, and because the seed
@@ -124,7 +126,7 @@ export async function createAgentFacadePhase({
       createChatRepository(db).countDelegationsSinceHuman(...args),
     closeSubagent: (...args) => chatService.closeSubagent(...args),
     flushChildMessages: (...args) => chatService.flushChildMessages(...args),
-    listDelegatedRuns: (...args) => listDelegatedRuns(db, ...args),
+    listDelegatedRuns: (...args) => listDelegatedRuns(db, usageRepo, ...args),
     resolveRunAgent: (...args) => agentsService.resolveRunAgent(...args),
     // How `delegate` resolves the agent a task goes to (by id; a handle is accepted too), admitted
     // through its `delegation` host with the defaults its child run takes.

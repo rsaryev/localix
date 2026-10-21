@@ -2,11 +2,11 @@ import { afterEach, expect, test } from 'bun:test'
 import { sql, CompiledQuery } from 'kysely'
 import { createDatabase } from './connection'
 import { migrateToLatest } from './migrator'
-import { delegatedRunsQuery } from '../features/chat/service/delegated-runs'
+import { delegatedRunsQuery } from '../features/chat/repository-delegated-runs'
 import {
   delegationRecoveryQuery,
   recoveryUsersQuery,
-} from '../features/chat/service/recover-delegation'
+} from '../features/chat/repository-delegation-recovery'
 
 const databases: ReturnType<typeof createDatabase>[] = []
 afterEach(async () => {

@@ -15,7 +15,6 @@
   "apps/api/src/features/chat/runtime/run/runtime-tool-ports.ts calls createContextStoreRepository (context-store)",
   "apps/api/src/features/chat/runtime/run/stages/stream.ts calls createContextStoreRepository (context-store)",
   "apps/api/src/features/chat/service/agent-settings.ts calls createUserProfileRepository (user)",
-  "apps/api/src/features/chat/service/delegated-runs.ts calls createUsageRepository (usage)",
   "apps/api/src/features/chat/service/service-graph.ts calls createCapabilitySourceRepository (capabilities)",
   "apps/api/src/features/chat/service/service-graph.ts calls createMcpRepository (mcp)",
   "apps/api/src/features/chat/service/service-graph.ts calls createMemoryRepository (memory)",
