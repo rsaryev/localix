@@ -1,4 +1,9 @@
-import { REASONING_EFFORTS, resolveDeclaredReasoningEffort } from '../../db/types'
+import {
+  DECLARABLE_EFFORTS_TEXT,
+  REASONING_EFFORTS,
+  isDeclarableEffort,
+  resolveDeclaredReasoningEffort,
+} from '../../db/types'
 import { describe, it, expect } from 'bun:test'
 import {
   editDistance,
@@ -6,8 +11,6 @@ import {
   isRequiredConfigMissing,
   isUnsafeRelPath,
   isKebabCase,
-  DECLARABLE_EFFORTS_TEXT,
-  isDeclarableEffort,
   collectTextTokens,
 } from './manifest-validate'
 

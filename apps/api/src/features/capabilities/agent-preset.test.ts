@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { agentPresetRules, hasAgentPreset } from './agent-preset'
-import { evaluate, verdictIn as scopeVerdict, type Rule } from './rule'
+import { evaluate, verdictIn as scopeVerdict, type Rule } from '../agent-core/capability-rule'
 
 /**
  * What the scope answers for one capability, through the REAL matcher.

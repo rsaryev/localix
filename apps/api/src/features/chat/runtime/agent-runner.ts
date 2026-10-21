@@ -1,4 +1,3 @@
-import { createCapabilitySourceRepository } from '../../capabilities/source-repository'
 /**
  * Agent runner — composition root. Creates the runner-lifetime state and
  * repositories, wires the runtime infrastructure modules into the run/ application
@@ -46,11 +45,6 @@ import { decisionFloorStrategy } from './floor-decision'
 import { similarityFloorStrategy } from './floor-similarity'
 import { executeRun } from './run/execute-run'
 import type { RunEnv, RunParams } from './run/types'
-import { createUsageRepository } from '../../usage/repository'
-import { createMemoryRepository } from '../../memory/repository'
-import { createUserProfileRepository } from '../../user/repository'
-import { createProjectsRepository } from '../../projects/repository'
-import { createMcpRepository } from '../../mcp/repository'
 import { failedRun } from './run-outcome'
 import { classifyRunError } from './run/classify-run-error'
 import { createAgentRunRepository } from '../../../db/agent-run-repository'
@@ -60,12 +54,8 @@ import { awaitsReports, onReportSettled } from '../../agent-core/delegation-awai
 export function createAgentRunner(deps: RunnerDeps) {
   // Handed in, not built here: see `RunnerDeps.repo` for the turn that failed when it was.
   const repo = deps.repo
-  const usageRepo = createUsageRepository(deps.db)
-  const memoryRepo = createMemoryRepository(deps.db)
-  const userProfileRepo = createUserProfileRepository(deps.db)
-  const projectsRepo = createProjectsRepository(deps.db)
-  const mcpRepo = createMcpRepository(deps.db)
-  const pluginRepo = createCapabilitySourceRepository(deps.db, 'plugin')
+  // Other features' stores, built by the composition root (`bootstrap/chat-feature-ports.ts`).
+  const { usageRepo, memoryRepo, userProfileRepo, projectsRepo, mcpRepo, pluginRepo } = deps.ports
   const runs = createAgentRunRepository(deps.db)
   const agentRuns: typeof runs = {
     ...runs,

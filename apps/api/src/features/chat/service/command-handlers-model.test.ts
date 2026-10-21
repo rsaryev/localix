@@ -16,7 +16,7 @@ async function run(prompt: string) {
   })
   const ctx = {
     deps: {
-      db: {},
+      ports: { userProfileRepo: {} },
       catalogService: { getCatalog: async () => ({ providers: [{ id: 'openrouter' }], models }) },
     },
     repo: {

@@ -8,7 +8,7 @@ import {
   type CapabilityReactions,
 } from './apply'
 import type { AvailabilityWriter } from './availability'
-import type { CapabilitySnapshot } from './contracts'
+import type { CapabilitySnapshot } from '../../contracts/capability-snapshot'
 import type { RuleChange } from './rule-changes'
 import type { CapabilitySnapshotService } from './snapshot'
 

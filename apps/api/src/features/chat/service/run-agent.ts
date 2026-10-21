@@ -1,5 +1,5 @@
+import { InvalidRequestError } from '../../../lib/domain-errors'
 import { randomUUID } from 'node:crypto'
-import { ApiError } from '../../../lib/errors'
 
 import { USER_PARTICIPANT, type StoredMessagePayload } from '../../../db'
 import { agentParticipant } from '../../../db/participant'
@@ -139,7 +139,10 @@ export function createRunAgent(deps: RunAgentDeps): RunAgentFn {
     opts,
   ): Promise<MessageMutationResponse> => {
     if (!session.agents.length)
-      throw new ApiError(400, 'session_party_empty', 'Choose an agent before sending a message')
+      throw new InvalidRequestError(
+        'session_party_empty',
+        'Choose an agent before sending a message',
+      )
     const executionContext = opts?.executionContext ?? rootExecutionContext(opts?.toolSurface)
     const origin = invocationOrigin(executionContext.invocation)
     const userPayload: StoredMessagePayload = {

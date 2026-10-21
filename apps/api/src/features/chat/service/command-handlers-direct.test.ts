@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
+import { createChatFeaturePorts } from '../../../bootstrap/chat-feature-ports'
 import { __resetCapabilityRevision } from '../../capabilities/revision'
 import type { SessionRecord } from '../repository'
 import { createRunScopeCache } from '../runtime/run-scope'
@@ -103,10 +104,7 @@ describe('direct slash-command transcript reads', () => {
       loads += 1
       return edited ? ['edited_tool'] : []
     }
-    const pluginService = createChatServiceGraph({
-      db: {},
-      runner: {},
-    } as never).pluginService
+    const { pluginService } = createChatFeaturePorts({} as never)
     const ctx = directContext({ replies: [] })
     ctx.pluginService = pluginService
 
@@ -126,12 +124,13 @@ describe('direct slash-command transcript reads', () => {
    */
   test('the chat graph uses the host plugin service when it is given one', () => {
     const host = { marker: 'host-owned' } as never
-    const graph = createChatServiceGraph({ db: {}, runner: {}, pluginService: host } as never)
+    const ports = createChatFeaturePorts({} as never, { pluginService: host })
+    const graph = createChatServiceGraph({ db: {}, runner: {}, ports } as never)
     expect(graph.pluginService).toBe(host)
   })
 
   test('and falls back to its own only when nobody supplied one', () => {
-    const graph = createChatServiceGraph({ db: {}, runner: {} } as never)
+    const graph = createChatFeaturePorts({} as never)
     // The fallback must still announce mutations, or a toggle would never invalidate
     // the run-scope cache for a consumer with no host.
     expect(typeof graph.pluginService.onChanged).toBe('function')

@@ -1,6 +1,6 @@
 /** Normalize one hook handler, including timeout policy and safe substitutions. */
 import { mkdirSync } from 'node:fs'
-import { bindUserConfigInShell, substituteUserConfigInText } from '../plugins/mcp-substitute'
+import { bindUserConfigInShell, substituteUserConfigInText } from '../ext/user-config-substitute'
 import {
   CC_AGENT_HOOK_DEFAULT_TIMEOUT_SEC,
   CC_HOOK_DEFAULT_TIMEOUT_SEC,

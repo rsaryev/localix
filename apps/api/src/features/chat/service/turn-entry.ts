@@ -3,7 +3,7 @@
  * Both paths own their session mutation lock before validating and starting work.
  * Wake delivery is re-exported from turn-entry-wake.ts.
  */
-import { ApiError } from '../../../lib/errors'
+import { ConflictError } from '../../../lib/domain-errors'
 import { resolveMessageBindings } from './message-bindings'
 import { assertUserWritableSession } from './session-access'
 import {
@@ -246,14 +246,13 @@ export async function runJobTask(
   return ctx.withSessionMutationLock(sessionId, async () => {
     const session = await requireSession(userId, sessionId)
     if (session.sessionKind !== 'job' && session.sessionKind !== 'subagent') {
-      throw new ApiError(
-        409,
+      throw new ConflictError(
         'not_a_job_session',
         'runJobTask only accepts job or subagent sessions',
       )
     }
     // A child closed while it waited for its lane never starts (`subagent-close.ts`).
-    if (session.closedAt) throw new ApiError(409, 'session_closed', 'This sub-agent was closed')
+    if (session.closedAt) throw new ConflictError('session_closed', 'This sub-agent was closed')
     const allMessages = await repo.listMessages(userId, sessionId)
     return runAgent(userId, sessionId, session, allMessages, task, now(), opts?.bindings, {
       extraDisabledTools: opts?.extraDisabledTools,

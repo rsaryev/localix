@@ -1,5 +1,5 @@
+import { InvalidRequestError, NotFoundError } from '../../../lib/domain-errors'
 import { builtinAgentId, isHumanAgent, type AgentDefinition } from '@localixai/agent/agents'
-import { ApiError } from '../../../lib/errors'
 import { DEFAULT_AGENT_HANDLE } from '../../../db/participant'
 import { builtinAgentRecord } from '../../agents/builtin'
 import type { ModelRoute, SessionAgentRoute } from '../repository-types'
@@ -67,9 +67,9 @@ export async function resolveSessionParticipants(args: {
     const definition = existing
       ? { id: existing.agentId, handle: existing.handle }
       : await resolve(args.userId, selection, args.projectId, args.host)
-    if (!definition) throw new ApiError(404, 'agent_unavailable', 'Selected agent is unavailable')
+    if (!definition) throw new NotFoundError('agent_unavailable', 'Selected agent is unavailable')
     if (seen.has(definition.id))
-      throw new ApiError(400, 'agent_duplicate', 'Agent is already a participant')
+      throw new InvalidRequestError('agent_duplicate', 'Agent is already a participant')
     seen.add(definition.id)
     participants.push({
       agentId: definition.id,

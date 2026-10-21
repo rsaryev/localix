@@ -1,9 +1,9 @@
+import { ConflictError, NotFoundError } from '../../lib/domain-errors'
 import { promises as fs } from 'node:fs'
 import { errorMessage } from '../../lib/errors'
 import { homedir } from 'node:os'
 import { localixHome } from '../../lib/env'
 import { basename, dirname, join } from 'node:path'
-import { ApiError } from '../../lib/errors'
 import type { SkillUsageRepository, SkillScope, SkillUsageRecord } from './repository'
 import type { CuratorReport, CuratorSkillRecord } from './contracts'
 import type { DiscoveredSkill } from '../agent-core/skill-discovery'
@@ -195,9 +195,9 @@ export function createSkillsCuratorService(deps: SkillsCuratorServiceDeps): Skil
       const projectId = input.projectId ?? ''
       const entries = await inventory(userId, workingDir, projectId)
       const entry = entries.find((e) => e.skill.name === input.name)
-      if (!entry) throw new ApiError(404, 'skill_not_found', `Skill not found: "${input.name}"`)
+      if (!entry) throw new NotFoundError('skill_not_found', `Skill not found: "${input.name}"`)
       if (entry.archived)
-        throw new ApiError(409, 'skill_archived', `Skill "${input.name}" is already archived`)
+        throw new ConflictError('skill_archived', `Skill "${input.name}" is already archived`)
       return archiveEntry(userId, entry, now().toISOString(), projectId)
     },
 
@@ -207,10 +207,9 @@ export function createSkillsCuratorService(deps: SkillsCuratorServiceDeps): Skil
       const entries = await inventory(userId, workingDir, projectId)
       const entry = entries.find((e) => e.skill.name === input.name && e.archived)
       if (!entry)
-        throw new ApiError(404, 'skill_not_found', `Archived skill not found: "${input.name}"`)
+        throw new NotFoundError('skill_not_found', `Archived skill not found: "${input.name}"`)
       if (entries.some((e) => e.skill.name === input.name && !e.archived)) {
-        throw new ApiError(
-          409,
+        throw new ConflictError(
           'skill_exists',
           `An active skill named "${input.name}" already exists`,
         )

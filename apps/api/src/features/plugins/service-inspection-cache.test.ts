@@ -1,3 +1,4 @@
+import { capabilityStores } from '../../bootstrap/capability-stores'
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { mkdtemp, mkdir, readFile, rm, utimes, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -75,6 +76,7 @@ beforeAll(async () => {
   await migrateToLatest(db)
   service = createPluginService({
     db,
+    capabilityStores,
     homeDir: join(root, 'home'),
     resolveProjectCwd: async (_userId, projectId) => join(root, `workspace-${projectId}`),
   })
@@ -160,6 +162,7 @@ describe('plugin settings native inspection cache', () => {
     const restart = () =>
       createPluginService({
         db,
+        capabilityStores,
         homeDir: join(root, 'home'),
         resolveProjectCwd: async (_userId, projectId) => join(root, `workspace-${projectId}`),
       })

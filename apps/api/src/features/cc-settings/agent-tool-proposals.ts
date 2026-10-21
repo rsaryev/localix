@@ -1,4 +1,4 @@
-import type { Rule } from '../capabilities/rule'
+import type { Rule } from '../agent-core/capability-rule'
 import type { FormatDiagnostic } from '../ext/format-adapter'
 import { CC_SEMANTIC_GAPS, CC_TOOL_NAME_MAP, normalizeMcpToolAlias } from '../ext/cc-tool-names'
 import { splitTokenList } from '../agent-core/skill-frontmatter'

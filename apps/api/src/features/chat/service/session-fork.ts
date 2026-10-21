@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 
 import { forkSessionTitle } from '../session-title'
-import { chosenRoute } from '../session-route'
+import { chosenRoute } from '../../../contracts/session-route'
 import { walkPathToRoot, indexMessageTree } from './branching'
 import { messageNotFound, type BranchingOpsContext } from './branching-ops'
 import { toSessionSummary, type SessionRecord } from '../repository'

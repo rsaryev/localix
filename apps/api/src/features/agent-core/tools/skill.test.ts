@@ -317,7 +317,7 @@ describe('skill tool — filesystem', () => {
 
   describe('skill tool (curator usage telemetry)', () => {
     test('get fires a usage tick; misses and other actions do not', async () => {
-      const { setSkillUsageRecorder } = await import('../../skills-curator/usage-recorder')
+      const { setSkillUsageRecorder } = await import('../skill-usage-recorder')
       const ticks: Array<{ name: string; scope: string }> = []
       setSkillUsageRecorder((name, scope) => {
         ticks.push({ name, scope })
@@ -349,7 +349,7 @@ describe('skill tool — filesystem', () => {
     })
 
     test('a throwing sink never breaks get (best-effort)', async () => {
-      const { setSkillUsageRecorder } = await import('../../skills-curator/usage-recorder')
+      const { setSkillUsageRecorder } = await import('../skill-usage-recorder')
       setSkillUsageRecorder(() => {
         throw new Error('db down')
       })

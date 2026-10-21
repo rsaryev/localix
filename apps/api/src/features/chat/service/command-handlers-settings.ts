@@ -1,4 +1,4 @@
-import { withRoute } from '../session-route'
+import { withRoute } from '../../../contracts/session-route'
 import { commandTarget } from './command-participant'
 import { findCatalogModel } from '@localixai/agent/catalog'
 import { readAgentSettings } from './agent-settings'
@@ -128,7 +128,7 @@ export async function handleModelCommand(
   }
   // The level follows the model, as it does in the picker: the previous model's level never
   // carries over, and the stored level is one this model offers.
-  const settings = await readAgentSettings(deps.db, userId)
+  const settings = await readAgentSettings(deps.ports.userProfileRepo, userId)
   const reasoningEffort = effortForModelSwitch({
     previous: participant,
     next: matched,

@@ -13,7 +13,7 @@
  * "Module node:dns has been externalized" at render. The rule stays where the settings screen
  * can read it; the refusal lives here, on the server, beside the service that writes.
  */
-import { ApiError } from '../../lib/errors'
+import { InvalidRequestError } from '../../lib/domain-errors'
 import type { AgentSummary } from './contracts'
 import { agentPolicy } from './policy'
 
@@ -26,8 +26,7 @@ export function assertDisablable(
     // A rule may name an agent this scope has never heard of — another machine's registry, or
     // one since deleted. There is nothing here to protect.
     if (entry && !agentPolicy(entry).disable) {
-      throw new ApiError(
-        400,
+      throw new InvalidRequestError(
         'agent_always_enabled',
         'This agent cannot be switched off — the app runs on it. Duplicate it to get one you own.',
       )

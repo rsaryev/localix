@@ -9,7 +9,7 @@ import {
 import { skillPermissionRules } from '../chat/runtime/run/permission-gate-build'
 import { builtinAgentPreset } from './builtin-agent-presets'
 import { composeCapabilities, NO_ROSTERS, projectCapabilities } from './resolve'
-import type { Rule } from './rule'
+import type { Rule } from '../agent-core/capability-rule'
 
 // One literal serves as both the registered tool and the facts `evaluate` reads off it.
 const tool = { name: 'bash', mutates: true, effect: 'external' } as AgentTool & ToolFacts

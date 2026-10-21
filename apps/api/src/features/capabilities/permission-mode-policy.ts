@@ -1,7 +1,7 @@
-import type { PermissionMode } from './permission-modes'
+import type { PermissionMode } from '../../contracts/permission-modes'
 import { composeCapabilities, type ResolvedCapabilities } from './resolve'
-import { resourceClassOf } from './resource-classes'
-import type { Rule } from './rule'
+import { resourceClassOf } from '../agent-core/capability-resource-classes'
+import type { Rule } from '../agent-core/capability-rule'
 
 /**
  * WHAT A SESSION MODE DOES TO A RUN — a deterministic rewrite of the agent's rules, and nothing

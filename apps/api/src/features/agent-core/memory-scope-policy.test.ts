@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { memoryScopePolicy } from './scope-policy'
+import { memoryScopePolicy } from './memory-scope-policy'
 
 test('default recall preserves narrow-to-wide ordering and avoids implicit global writes', () => {
   expect(memoryScopePolicy('p', 's').scopes).toEqual(['session:s', 'p', ''])

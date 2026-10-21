@@ -1,4 +1,4 @@
-import { agentRoute, withRoute } from '../../session-route'
+import { agentRoute, withRoute } from '../../../../contracts/session-route'
 /**
  * Resolve one session model and credential through the engine-neutral runtime ports.
  */

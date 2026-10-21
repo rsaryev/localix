@@ -4,7 +4,7 @@ import type { VersionedCapabilityRuleRepository } from './rule-repository'
 import { ApiError } from '../../lib/errors'
 import type { CapabilitySourceRepository } from './source-repository'
 import { capabilityRuleSchema } from './rule-schema'
-import type { Rule } from './rule'
+import type { Rule } from '../agent-core/capability-rule'
 
 /**
  * Bump when shipped policy changes. Untouched defaults can advance; a customized ordered

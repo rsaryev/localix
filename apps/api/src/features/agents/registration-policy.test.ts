@@ -1,3 +1,4 @@
+import { capabilityStores } from '../../bootstrap/capability-stores'
 import { afterEach, expect, test } from 'bun:test'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -16,7 +17,7 @@ import { resolveCapabilities } from '../capabilities/resolve'
 import { agentContributionSchema } from './contribution'
 import { createAgentsService } from './service'
 import { createRegistrationPolicyService } from './registration-policy'
-import type { Rule } from '../capabilities/rule'
+import type { Rule } from '../agent-core/capability-rule'
 import { createAgentsRoutes } from './routes'
 
 const cleanup: Array<() => Promise<void>> = []
@@ -48,7 +49,7 @@ async function fixture() {
   const store = createContributionStore(db, kinds)
   const publication = await store.publish('u', source.id, 0, [item()])
   const id = publication.contributions[0]!.id
-  const agents = createAgentsService({ db, globalDir: root })
+  const agents = createAgentsService({ db, capabilityStores, globalDir: root })
   const policy = agents.registrationPolicy
   const rules = createCapabilityRuleRepository(db)
   const input = { expectedRegistrationRevision: 1, expectedPolicyRevision: 0, rules: proposals }
@@ -219,7 +220,12 @@ test('installation failure rolls back the policy and its review binding together
   const { db, id, rules, input } = await fixture()
   await expect(
     db.transaction().execute(async (transaction) => {
-      await createRegistrationPolicyService(transaction).publish('u', '', id, input)
+      await createRegistrationPolicyService(transaction, capabilityStores).publish(
+        'u',
+        '',
+        id,
+        input,
+      )
       throw new Error('installation failed')
     }),
   ).rejects.toThrow('installation failed')

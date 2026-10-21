@@ -1,11 +1,11 @@
+import { ConflictError, NotFoundError, UnprocessableError } from '../../lib/domain-errors'
 import type { Kysely } from 'kysely'
 import { z } from 'zod'
 import { stableStringify } from '@localixai/agent'
 import type { AppDatabase } from '../../db/types'
-import { ApiError } from '../../lib/errors'
 import { createContributionReader } from '../ext/contribution-reader'
 import { capabilityRuleSchema } from '../capabilities/rule-schema'
-import { createCapabilityRuleRepository } from '../capabilities/rule-repository'
+import type { CapabilityStores } from '../capabilities/store-factory'
 import { agentContributionSchema } from './contribution'
 
 export const publishRegistrationPolicySchema = z.strictObject({
@@ -17,7 +17,7 @@ export const publishRegistrationPolicySchema = z.strictObject({
 export type PublishRegistrationPolicy = z.infer<typeof publishRegistrationPolicySchema>
 
 /** Policy and registration are separately versioned. Neither snapshot can approve a newer one. */
-export function createRegistrationPolicyService(db: Kysely<AppDatabase>) {
+export function createRegistrationPolicyService(db: Kysely<AppDatabase>, stores: CapabilityStores) {
   const atomic = <T>(operation: (connection: Kysely<AppDatabase>) => Promise<T>): Promise<T> =>
     db.isTransaction ? operation(db) : db.transaction().execute(operation)
   const requireRegistration = async (
@@ -31,9 +31,9 @@ export function createRegistrationPolicyService(db: Kysely<AppDatabase>) {
       projectId,
       id,
     )
-    if (!result) throw new ApiError(404, 'agent_not_found', 'Registered agent not found')
+    if (!result) throw new NotFoundError('agent_not_found', 'Registered agent not found')
     if ('error' in result)
-      throw new ApiError(422, 'invalid_contribution', 'The registered definition is invalid')
+      throw new UnprocessableError('invalid_contribution', 'The registered definition is invalid')
     return result.registration
   }
   const service = {
@@ -49,13 +49,17 @@ export function createRegistrationPolicyService(db: Kysely<AppDatabase>) {
           .where('active', '=', 1)
           .executeTakeFirst()
         if (!row) return null
-        return createRegistrationPolicyService(connection).review(userId, row.project_id, id)
+        return createRegistrationPolicyService(connection, stores).review(
+          userId,
+          row.project_id,
+          id,
+        )
       })
     },
     async review(userId: string, projectId: string, id: string) {
       return atomic(async (connection) => {
         const registration = await requireRegistration(connection, userId, projectId, id)
-        const policy = await createCapabilityRuleRepository(connection).readSnapshot(userId, id)
+        const policy = await stores.rules(connection).readSnapshot(userId, id)
         return {
           agentId: id,
           projectId: registration.projectId,
@@ -72,12 +76,11 @@ export function createRegistrationPolicyService(db: Kysely<AppDatabase>) {
       return atomic(async (connection) => {
         const registration = await requireRegistration(connection, userId, projectId, id)
         if (registration.revision !== reviewed.expectedRegistrationRevision)
-          throw new ApiError(
-            409,
+          throw new ConflictError(
             'contribution_conflict',
             'The registered agent changed; review it again',
           )
-        const policies = createCapabilityRuleRepository(connection)
+        const policies = stores.rules(connection)
         const current = await policies.readSnapshot(userId, id)
         const switches = current.rules.filter(
           (rule) =>

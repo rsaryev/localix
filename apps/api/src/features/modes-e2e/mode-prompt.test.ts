@@ -10,7 +10,7 @@ import {
 } from '../agent-core/prompt/sections/plan'
 import { BUILTIN_TOOL_NAMES } from '../agent-core/tool-names'
 import { builtinAgentPreset } from '../capabilities/builtin-agent-presets'
-import { PERMISSION_MODES, type PermissionMode } from '../capabilities/permission-modes'
+import { PERMISSION_MODES, type PermissionMode } from '../../contracts/permission-modes'
 import { modeSurface, PLAN_DRAFT, runRegistry } from './run-surface'
 
 /**

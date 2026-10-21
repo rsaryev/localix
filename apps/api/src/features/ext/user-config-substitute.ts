@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 
-import type { PluginConfigValues } from './config'
-import { normalizeTokenKey } from '../ext/manifest-substitute'
+import type { PluginConfigValues } from '../plugins/config'
+import { normalizeTokenKey } from './manifest-substitute'
 
 /**
  * Section-aware `${KEY}` substitution for a plugin MCP server entry.

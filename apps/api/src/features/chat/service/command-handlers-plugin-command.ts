@@ -1,4 +1,4 @@
-import { sessionRoute } from '../session-route'
+import { sessionRoute } from '../../../contracts/session-route'
 import { commandTarget } from './command-participant'
 import { toolOverrideOptions } from './tool-override-options'
 import { parsePluginCommandArgs, renderPluginPrompt } from './plugin-commands'

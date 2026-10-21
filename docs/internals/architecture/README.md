@@ -99,10 +99,10 @@ the exceptions in prose.
 | A1  | No package imports `apps/*`, `@/` or a plugin; no cycle between workspace packages.         | Enforced; cycles with a baseline (0) |
 | A2  | The core imports no React, Hono, Kysely, `bun:sqlite`, `node:*` or provider SDK.            | Enforced with a baseline (0)         |
 | A3  | Provider SDKs and model-catalog packages are imported only in `packages/engine-models`.     | Enforced with a baseline (0)         |
-| A4  | Only `apps/api/src/bootstrap/` constructs another feature's repository or service.          | Enforced with a baseline (33)        |
-| A5  | Kysely is imported only by repository modules and migrations.                               | Enforced with a baseline (10)        |
-| A6  | No value-import cycle between API features.                                                 | Enforced with a baseline (89)        |
-| A7  | Domain and service code throws domain errors; only routes produce HTTP errors.              | Enforced with a baseline (69)        |
+| A4  | Only `apps/api/src/bootstrap/` constructs another feature's repository or service.          | Enforced with a baseline (0)         |
+| A5  | Kysely is imported only by repository modules and migrations.                               | Enforced with a baseline (0)         |
+| A6  | No value-import cycle between API features.                                                 | Enforced with a baseline (0)         |
+| A7  | Domain and service code throws domain errors; only routes produce HTTP errors.              | Enforced with a baseline (0)         |
 | A8  | UI slices on the same layer do not import each other; outsiders use a slice's public entry. | Enforced with a baseline (8)         |
 | C1  | A write to an owned entity records its notice in the same transaction.                      | Enforced with a baseline (3)         |
 | C2  | A notice names identity only: entity, op and ref.                                           | Enforced by the registry types       |
@@ -159,7 +159,11 @@ command and check that the diff only removes entries. Scope notes:
 - A5 counts value imports of `kysely`; an `import type { Kysely }` handle passed into a module is
   allowed.
 - A6 records every edge inside a cycle of value imports between features; type-only imports are
-  excluded.
+  excluded. A shape several features share lives in `apps/api/src/contracts/`, outside every
+  feature, and a value a lower feature needs from a higher one arrives as a port.
+- A7: services throw the domain errors in `apps/api/src/lib/domain-errors.ts` (`NotFoundError`,
+  `ConflictError`, …). `DOMAIN_ERROR_STATUS` is the one place a kind meets an HTTP status, and the
+  errors stay `ApiError`s, so every handler answers with the same status and body.
 - C1 knows the tables of registered entities from `FEED_TABLES` in
   `scripts/architecture/flow-rules.ts`; a new registry kind adds its tables there.
 - C6 allows the private store writers only in the chat store's sync layer

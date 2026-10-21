@@ -1,5 +1,5 @@
 import type { AgentSessionKind, ReasoningEffort } from '../../db'
-import type { PermissionMode } from '../capabilities/permission-modes'
+import type { PermissionMode } from '../../contracts/permission-modes'
 import type { SessionProvenance } from './session-provenance'
 import type { SessionModelChoices } from './session-model-choices'
 

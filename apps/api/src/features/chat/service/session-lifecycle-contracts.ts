@@ -1,6 +1,6 @@
 import type { ReasoningModel } from '@localixai/agent'
 import type { AgentSessionKind, ReasoningEffort } from '../../../db/types'
-import type { PermissionMode } from '../../capabilities/permission-modes'
+import type { PermissionMode } from '../../../contracts/permission-modes'
 import type { LastMessagePreview, ModelRoute } from '../repository-types'
 import type { SessionDeletionContext } from './session-deletion'
 import type { SeatRouteFor } from './session-route-defaults'

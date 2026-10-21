@@ -1,3 +1,4 @@
+import { capabilityStores } from './capability-stores'
 import { createChatResourceProvider } from '../features/chat/resource-provider'
 import { createResourceContextResolver } from '../features/context-fabric/resource-resolver'
 import { createHostRefResolver } from '../features/context-fabric/host-ref-resolver'
@@ -17,7 +18,7 @@ import { createProjectsService } from '../features/projects/service'
 import { createUserService } from '../features/user/service'
 import { createSkillUsageRepository } from '../features/skills-curator/repository'
 import { createSkillsCuratorService } from '../features/skills-curator/service'
-import { setSkillUsageRecorder } from '../features/skills-curator/usage-recorder'
+import { setSkillUsageRecorder } from '../features/agent-core/skill-usage-recorder'
 import { createToolUsageRepository } from '../features/tools/usage-repository'
 import { setToolRosterRecorder, setToolUsageRecorder } from '../features/tools/usage-recorder'
 import type { createDatabase } from '../db'
@@ -181,6 +182,7 @@ export function createDomainServicesPhase({
   contributionKinds.register('agent', agentContributionSchema)
   const pluginService = createPluginService({
     db,
+    capabilityStores,
     homeDir: userHome(),
     contributionKinds,
     resolveProjectCwd,
@@ -208,6 +210,7 @@ export function createDomainServicesPhase({
   const invocations = createInvocationRegistry()
   const agentsService = createAgentsService({
     db,
+    capabilityStores,
     resolveProjectCwd,
     invocations,
     syncBundledContributions: (...args) => pluginService.syncBundledContributions(...args),

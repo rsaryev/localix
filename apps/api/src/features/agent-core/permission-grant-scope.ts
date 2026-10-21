@@ -1,5 +1,5 @@
 import { allowPatternCoversCommands } from './permission-engine'
-import { matches } from '../capabilities/rule'
+import { matches } from './capability-rule'
 import { isSecretPath } from './secret-paths'
 import { splitCompoundCommand } from './tools/bash/bash-command-shape'
 

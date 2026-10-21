@@ -3,7 +3,8 @@ import { sql, type Kysely } from 'kysely'
 import type { AppDatabase } from '../../db'
 import { decodeArtifactText, encodeArtifactText } from './artifact-codec'
 import { chunkToolOutput, MAX_CHUNKS } from './chunking'
-import { participantOutputPredicate } from './participant-output'
+import { participantOutputPredicate } from './repository-participant-output'
+import { MAX_CHUNKS_PER_SESSION } from '../agent-core/context-index-policy'
 
 /**
  * Durable exact tool I/O plus its disposable FTS5 search projection. The exact
@@ -30,13 +31,6 @@ export interface ToolOutputArtifact {
 }
 
 export type ContextStore = ReturnType<typeof createContextStoreRepository>
-
-/** Oldest chunks are evicted past this per-session cap — the index must not outgrow its session. */
-/**
- * Session index cap. Exported because a searcher has to be able to tell "nothing in this
- * session matched" from "this session's index is full and older sections are gone".
- */
-export const MAX_CHUNKS_PER_SESSION = 5000
 
 export function createContextStoreRepository(db: Kysely<AppDatabase>) {
   return {

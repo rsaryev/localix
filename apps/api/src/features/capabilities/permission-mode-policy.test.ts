@@ -5,9 +5,9 @@ import { evaluate, extractCallFacts } from '../agent-core/permission-engine'
 import { skillPermissionRules } from '../chat/runtime/run/permission-gate-build'
 import { builtinAgentPreset } from './builtin-agent-presets'
 import { applyPermissionMode } from './permission-mode-policy'
-import { PERMISSION_MODES, type PermissionMode } from './permission-modes'
+import { PERMISSION_MODES, type PermissionMode } from '../../contracts/permission-modes'
 import { composeCapabilities, NO_ROSTERS, projectCapabilities } from './resolve'
-import type { Rule } from './rule'
+import type { Rule } from '../agent-core/capability-rule'
 
 const ROOT = '/tmp/workspace'
 const ROSTER = { ...NO_ROSTERS, tool: ['bash', 'write', 'read', 'board', 'ask', 'plan'] }

@@ -1,3 +1,4 @@
+import { capabilityStores } from '../../bootstrap/capability-stores'
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -57,6 +58,7 @@ describe('plugin UI action service boundary', () => {
     const calls: unknown[] = []
     const service = createPluginService({
       db,
+      capabilityStores,
       homeDir: join(root, 'home'),
       resolveProjectCwd: async () => join(root, 'workspace'),
       resolveSessionCwd: async () => join(root, 'session-isolated'),

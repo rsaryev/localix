@@ -2,6 +2,7 @@ import type { AgentRuntime, LanguageModel, LanguageModelFactory } from '@localix
 
 import type { CatalogResponse } from '../catalog/contracts'
 import { createCatalogService } from '../catalog/service'
+import { createChatFeaturePorts } from '../../bootstrap/chat-feature-ports'
 import { createChatRepository } from './repository'
 import type { AgentTurnAdmission } from './runtime/agent-turn-ticket'
 import { dispatchParams } from './runtime/run-params'
@@ -59,7 +60,9 @@ const wrappedDatabases = new WeakSet<object>()
  * unrelated test files. Keep the production lifecycle explicit, while making
  * the test fixture's database teardown own every service it created.
  */
-export function createTestChatService(deps: Omit<ChatServiceDeps, RuntimeDeps>) {
+export function createTestChatService(
+  deps: Omit<ChatServiceDeps, RuntimeDeps | 'ports'> & Partial<Pick<ChatServiceDeps, 'ports'>>,
+) {
   // Most service tests use small runner doubles because the model runtime is outside their scope.
   // Give those doubles the queue-facing operations introduced by the unified event loop while
   // preserving their existing `run` observation point.
@@ -96,6 +99,7 @@ export function createTestChatService(deps: Omit<ChatServiceDeps, RuntimeDeps>) 
     : undefined
   const service = createChatService({
     ...deps,
+    ports: deps.ports ?? createChatFeaturePorts(deps.db),
     ...(runner ? { runner } : {}),
     ...createTestRuntimeDeps(),
   })

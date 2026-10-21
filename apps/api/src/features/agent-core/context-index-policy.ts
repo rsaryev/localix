@@ -11,7 +11,7 @@
  * see is not a rule.
  */
 
-import { TOOL } from '../agent-core/tool-names'
+import { TOOL } from './tool-names'
 
 /**
  * Tools whose results must never enter the index: the search/recovery surface itself
@@ -34,3 +34,10 @@ export const INDEX_SKIPPED_TOOLS: ReadonlySet<string> = new Set<string>([
 export function isIndexSkippedTool(toolName: string): boolean {
   return INDEX_SKIPPED_TOOLS.has(toolName)
 }
+
+/**
+ * Session index cap: the oldest chunks are evicted past it, so the index never outgrows its
+ * session. Exported because a searcher has to be able to tell "nothing in this
+ * session matched" from "this session's index is full and older sections are gone".
+ */
+export const MAX_CHUNKS_PER_SESSION = 5000

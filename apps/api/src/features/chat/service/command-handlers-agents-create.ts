@@ -1,4 +1,4 @@
-import { ApiError } from '../../../lib/errors'
+import { InvalidRequestError } from '../../../lib/domain-errors'
 import { agentHandleSchema } from '@localixai/agent/agents'
 import { TOOL } from '../../agent-core/tool-names'
 import type { MessageMutationResponse } from '../contracts'
@@ -46,7 +46,7 @@ export function runAgentCreateRequest(
 ): Promise<MessageMutationResponse> {
   assertSessionNotBusy(ctx.runner, session.id, BUSY_STOP_FIRST)
   if (!session.agents.length) {
-    throw new ApiError(400, 'session_party_empty', 'Choose an agent before running a command')
+    throw new InvalidRequestError('session_party_empty', 'Choose an agent before running a command')
   }
   return ctx.runMacroCommand(
     userId,

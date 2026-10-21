@@ -1,9 +1,9 @@
 import { z } from 'zod'
-import { MAX_MAX_TURNS } from '../chat/turn-budget'
+import { MAX_MAX_TURNS } from '../../contracts/turn-budget'
 import { MAX_CONTEXT_LIMIT_TOKENS, MIN_CONTEXT_LIMIT_TOKENS } from '@localixai/agent'
-import { contextExclusionsSchema } from '../context-fabric/exclusion-schema'
+import { contextExclusionsSchema } from '../../contracts/context-exclusion-schema'
 import { REASONING_EFFORTS } from '../../db/types'
-import { isModelRoutingTaskKey } from '../chat/model-task-catalog'
+import { isModelRoutingTaskKey } from '../../contracts/model-task-catalog'
 import {
   AGENT_SETTINGS_MAX_SERIALIZED_CHARS,
   UI_SETTINGS_MAX_SERIALIZED_CHARS,

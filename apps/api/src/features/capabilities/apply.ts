@@ -3,7 +3,8 @@ import { whenCapabilitiesSettle } from './settle'
 import { ACTION_PREFIX, type CapabilityKind } from './resolve'
 import type { RuleChange } from './rule-changes'
 import type { AvailabilityWriter } from './availability'
-import type { CapabilityScope, CapabilityRulesApplyRequest, CapabilitySnapshot } from './contracts'
+import type { CapabilityScope, CapabilityRulesApplyRequest } from './contracts'
+import type { CapabilitySnapshot } from '../../contracts/capability-snapshot'
 import type { CapabilitySnapshotService } from './snapshot'
 
 /**

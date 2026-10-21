@@ -9,11 +9,11 @@
  * instead `status`/`install` report `onPath` + the dir so the UI can guide the user.
  */
 
+import { ConflictError } from '../../lib/domain-errors'
 import { chmod, mkdir, readFile, rm, stat } from 'node:fs/promises'
 
 import { atomicWriteFile } from '@localixai/plugin-sdk/backend'
 
-import { ApiError } from '../../lib/errors'
 import { isDirOnPath, planShellCommand, type ShellCommandPlanInput } from './plan'
 
 export type ShellCommandState = 'installed' | 'stale' | 'not-installed'
@@ -71,8 +71,7 @@ export function createShellCommandService(deps: ShellCommandServiceDeps) {
 
     async install(): Promise<ShellCommandStatus> {
       if (!available) {
-        throw new ApiError(
-          409,
+        throw new ConflictError(
           'shell_command_unavailable',
           'shell command install is unavailable in this runtime',
         )

@@ -27,7 +27,7 @@ import type { LoadedPlugins } from '../../../plugins/loader'
 import type { createMemoryRepository } from '../../../memory/repository'
 import type { ChatRepository, SessionRecord } from '../../repository'
 import type { SkillOverrides } from '../../../agent-core/skill-overrides'
-import type { MemoryScope } from '../../../memory/scope-policy'
+import type { MemoryScope } from '../../../agent-core/memory-scope-policy'
 
 export interface DirectToolInstanceDeps {
   agentProfile: RunProfile

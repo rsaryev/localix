@@ -118,7 +118,7 @@ facts, not compared against its text. That is what makes them robust where a glo
 `rm -r -f` and `rm --recursive --force` are one class and three different strings.
 
 The rules editor suggests the classes declared in
-[`resource-classes.ts`](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/resource-classes.ts).
+[`capability-resource-classes.ts`](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/capability-resource-classes.ts).
 That list defines their predicates and the capability kinds they apply to.
 
 An artifact's trust class (`bundled`, `opt-in`, `untrusted`) is in the same list and works the same

@@ -1,5 +1,5 @@
-import type { Effect } from '../capabilities/rule'
-import type { RESOURCE_CLASSES } from '../capabilities/resource-classes'
+import type { Effect } from '../agent-core/capability-rule'
+import type { RESOURCE_CLASSES } from '../agent-core/capability-resource-classes'
 
 /**
  * WHAT AN ARTIFACT IS, so a rule can say something about it.

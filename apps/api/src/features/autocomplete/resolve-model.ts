@@ -14,7 +14,7 @@
 import type { createAuxProviderHelpers } from '../chat/service/aux-provider'
 import type { ReasoningEffort } from '../../db/types'
 import type { AgentSettings } from '../user/contracts'
-import { isModelRoutingTaskEnabled, type AuxTaskKey } from '../chat/model-task-catalog'
+import { isModelRoutingTaskEnabled, type AuxTaskKey } from '../../contracts/model-task-catalog'
 
 type AuxHelpers = ReturnType<typeof createAuxProviderHelpers>
 

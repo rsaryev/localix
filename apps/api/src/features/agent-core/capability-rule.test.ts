@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { evaluate, matches, verdictIn, type Rule } from './rule'
+import { evaluate, matches, verdictIn, type Rule } from './capability-rule'
 
 const rule = (action: string, resource: string, effect: Rule['effect']): Rule => ({
   action,

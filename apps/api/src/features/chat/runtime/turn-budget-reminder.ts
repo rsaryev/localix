@@ -17,7 +17,7 @@
  *
  * A module of its own because it is the one reminder that is not read off the transcript: every
  * other builder in `reminders.ts` answers "what does this history say", and this one answers
- * "what is this run allowed to do" — a fact about the run, from `chat/turn-budget.ts`.
+ * "what is this run allowed to do" — a fact about the run, from `contracts/turn-budget.ts`.
  */
 import { plural } from '../../agent-core/tools/tool-output'
 import { wrapSystemReminder } from './system-reminder'

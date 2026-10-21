@@ -1,3 +1,9 @@
+import {
+  ForbiddenError,
+  InternalError,
+  InvalidRequestError,
+  NotFoundError,
+} from '../../lib/domain-errors'
 import { randomUUID } from 'node:crypto'
 
 import type { Kysely } from 'kysely'
@@ -9,7 +15,6 @@ import type {
 } from '@localixai/agent/runtime'
 
 import type { AppDatabase } from '../../db'
-import { ApiError } from '../../lib/errors'
 import type {
   AddProviderKeyRequest,
   CompleteOAuthRequest,
@@ -239,7 +244,7 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
   ): Promise<ProviderConnectionRecord> => {
     const record = await repo.getById(userId, id)
     if (!record)
-      throw new ApiError(404, 'provider_connection_not_found', 'Provider connection not found')
+      throw new NotFoundError('provider_connection_not_found', 'Provider connection not found')
     return record
   }
 
@@ -255,7 +260,7 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
     keyId: string,
   ): Promise<ProviderConnectionKeyRecord> => {
     const key = await repo.getKey(userId, connectionId, keyId)
-    if (!key) throw new ApiError(404, 'provider_key_not_found', 'API key not found')
+    if (!key) throw new NotFoundError('provider_key_not_found', 'API key not found')
     return key
   }
 
@@ -423,7 +428,10 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
     const seedKeys = [...(input.apiKey ? [input.apiKey] : []), ...(input.apiKeys ?? [])]
     const settings = cleanSettings(input.settings, await allowedFor(input.providerId))
     if (seedKeys.length === 0) {
-      throw new ApiError(400, 'provider_connection_no_key', 'At least one API key is required')
+      throw new InvalidRequestError(
+        'provider_connection_no_key',
+        'At least one API key is required',
+      )
     }
 
     await repo.insert({
@@ -563,8 +571,7 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
       if (patch.enabled === false) {
         const enabledCount = connection.keys.filter((k) => k.enabled).length
         if (enabledCount <= 1) {
-          throw new ApiError(
-            400,
+          throw new InvalidRequestError(
             'provider_key_last_enabled',
             'Cannot disable the only enabled key',
           )
@@ -580,8 +587,7 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
       const connection = await requireConnectionRecord(userId, id)
       await requireKeyRecord(userId, id, keyId)
       if (connection.keys.length <= 1) {
-        throw new ApiError(
-          400,
+        throw new InvalidRequestError(
           'provider_key_last',
           'Cannot remove the only key; delete the connection instead',
         )
@@ -594,7 +600,10 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
 
     async initiateOAuth(userId: string, input: InitiateOAuthRequest) {
       if (!oauthFlows) {
-        throw new ApiError(400, 'oauth_provider_unsupported', 'OAuth runtime is not configured')
+        throw new InvalidRequestError(
+          'oauth_provider_unsupported',
+          'OAuth runtime is not configured',
+        )
       }
       return oauthFlows.begin({
         userId,
@@ -612,17 +621,15 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'unknown'
         if (msg === 'oauth_state_not_found' || msg === 'oauth_state_expired') {
-          throw new ApiError(400, 'oauth_state_invalid', 'OAuth state is invalid or expired')
+          throw new InvalidRequestError('oauth_state_invalid', 'OAuth state is invalid or expired')
         }
         if (msg === 'oauth_state_user_mismatch') {
-          throw new ApiError(
-            403,
+          throw new ForbiddenError(
             'oauth_state_user_mismatch',
             'OAuth state belongs to a different user',
           )
         }
-        throw new ApiError(
-          500,
+        throw new InternalError(
           'oauth_key_exchange_failed',
           err instanceof Error ? err.message : 'OAuth login failed',
         )

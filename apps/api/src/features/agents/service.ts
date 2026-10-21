@@ -1,9 +1,6 @@
-import {
-  createCapabilitySourceRepository,
-  type CapabilitySourceRepository,
-} from '../capabilities/source-repository'
+import type { CapabilitySourceRepository } from '../capabilities/source-repository'
 
-import { ApiError } from '../../lib/errors'
+import { ConflictError, InvalidRequestError, NotFoundError } from '../../lib/domain-errors'
 import { createKeyedSerializer } from '../../lib/keyed-serializer'
 import { createContributionReader } from '../ext/contribution-reader'
 import { agentContributionSchema } from './contribution'
@@ -12,7 +9,6 @@ import { createAgentInvocationService } from './invocation-service'
 import { createRegistrationPolicyService } from './registration-policy'
 import { applySwitches, createAvailabilityWriter } from '../capabilities/availability'
 import { createInvocationRegistry } from '../capabilities/invocation'
-import { createCapabilityRuleRepository } from '../capabilities/rule-repository'
 import { createNativeAgent } from './create-native-agent'
 import { createAgentAuthoring } from './authoring'
 import { globalAgentsDir, projectAgentsDir } from './discovery'
@@ -29,15 +25,11 @@ import { createAgentAnnouncer } from './announce'
 export type { AgentsService, AgentsServiceDeps } from './service-contract'
 
 export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
-  const repo: CapabilitySourceRepository = createCapabilitySourceRepository(
-    deps.db,
-    'agent',
-    deps.now,
-  )
+  const repo: CapabilitySourceRepository = deps.capabilityStores.sources(deps.db, 'agent', deps.now)
   // The one writer of availability, shared with every other kind.
   const availabilityWriter = createAvailabilityWriter(deps.db)
   const { keys: announceAgent, write: announced } = createAgentAnnouncer(deps.db)
-  const ruleRepository = createCapabilityRuleRepository(deps.db)
+  const ruleRepository = deps.capabilityStores.rules(deps.db)
   const invocations = deps.invocations ?? createInvocationRegistry()
   const serialize = createKeyedSerializer()
   const contributions = createContributionReader(deps.db, 'agent', agentContributionSchema)
@@ -52,7 +44,7 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
     if (!projectId) return deps.globalDir ?? globalAgentsDir()
     const cwd = await cwdFor(userId, projectId)
     if (!cwd)
-      throw new ApiError(404, 'project_directory_missing', 'Project directory is unavailable')
+      throw new NotFoundError('project_directory_missing', 'Project directory is unavailable')
     return projectAgentsDir(cwd)
   }
 
@@ -60,6 +52,7 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
     await deps.syncBundledContributions?.(userId, projectId)
     return buildAgentCatalog({
       db: deps.db,
+      stores: deps.capabilityStores,
       invocations,
       userId,
       projectId,
@@ -79,7 +72,7 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
     const exact = scoped.find((agent) => agent.record.id === name)
     if (exact) return exact
     const matches = scoped.filter((agent) => agent.record.handle === name)
-    if (matches.length > 1) throw new ApiError(409, 'agent_ambiguous', 'Select an agent by ID')
+    if (matches.length > 1) throw new ConflictError('agent_ambiguous', 'Select an agent by ID')
     return matches[0]
   }
 
@@ -113,7 +106,7 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
   return {
     ...createAgentAuthoring(creationPorts, serialize),
     ...createAgentInvocationService(buildCatalog, invocations),
-    registrationPolicy: createRegistrationPolicyService(deps.db),
+    registrationPolicy: createRegistrationPolicyService(deps.db, deps.capabilityStores),
     async listAgents(userId, opts) {
       const projectId = opts?.projectId ?? ''
       const catalog = await buildCatalog(userId, projectId)
@@ -141,10 +134,9 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
         const scope = projectId ?? ''
         const catalog = await buildCatalog(userId, scope)
         const entry = pickEntry(catalog, name, scope)
-        if (!entry) throw new ApiError(404, 'agent_not_found', 'Agent not found')
+        if (!entry) throw new NotFoundError('agent_not_found', 'Agent not found')
         if (!enabled && !agentPolicy(entry).disable) {
-          throw new ApiError(
-            400,
+          throw new InvalidRequestError(
             'agent_always_enabled',
             'This agent cannot be switched off — the app runs on it. Duplicate it to get one you own.',
           )
@@ -176,10 +168,9 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
         serialize(JSON.stringify([userId, projectId ?? '']), async () => {
           const scope = projectId ?? ''
           const existing = pickEntry(await buildCatalog(userId, scope), name, scope)
-          if (!existing) throw new ApiError(404, 'agent_not_found', 'Agent not found')
+          if (!existing) throw new NotFoundError('agent_not_found', 'Agent not found')
           if (existing.registration) {
-            throw new ApiError(
-              400,
+            throw new InvalidRequestError(
               'agent_extension_owned',
               'Update this agent through its extension',
             )
@@ -194,8 +185,7 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
             record as AgentRecord,
           )
           if (locked.length > 0) {
-            throw new ApiError(
-              400,
+            throw new InvalidRequestError(
               'agent_field_locked',
               `This agent ships with the app: its ${locked
                 .map((field) => FIELD_LABELS[field])
@@ -205,8 +195,7 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
           const owner = existing.projectId
           const collision = await findEntry(userId, record.handle, owner)
           if (collision && collision.record.id !== record.id) {
-            throw new ApiError(
-              409,
+            throw new ConflictError(
               'agent_exists',
               `An agent named "${record.handle}" already exists.`,
             )
@@ -232,10 +221,9 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
         serialize(JSON.stringify([userId, projectId ?? '']), async () => {
           const scope = projectId ?? ''
           const existing = pickEntry(await buildCatalog(userId, scope), name, scope)
-          if (!existing) throw new ApiError(404, 'agent_not_found', 'Agent not found')
+          if (!existing) throw new NotFoundError('agent_not_found', 'Agent not found')
           if (!agentPolicy(existing).delete) {
-            throw new ApiError(
-              400,
+            throw new InvalidRequestError(
               'agent_builtin',
               'A system agent cannot be deleted. Restore its defaults or switch it off instead.',
             )
@@ -261,10 +249,9 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
         const scope = projectId ?? ''
         return serialize(JSON.stringify([userId, scope]), async () => {
           const existing = pickEntry(await buildCatalog(userId, scope), name, scope)
-          if (!existing) throw new ApiError(404, 'agent_not_found', 'Agent not found')
+          if (!existing) throw new NotFoundError('agent_not_found', 'Agent not found')
           if (!existing.builtin) {
-            throw new ApiError(
-              400,
+            throw new InvalidRequestError(
               'agent_not_builtin',
               'Only a system agent has a default to reset to.',
             )
@@ -292,12 +279,12 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
         return serialize(JSON.stringify([userId, scope]), async () => {
           const catalog = await buildCatalog(userId, scope)
           const source = pickEntry(catalog, name, scope)
-          if (!source) throw new ApiError(404, 'agent_not_found', 'Agent not found')
+          if (!source) throw new NotFoundError('agent_not_found', 'Agent not found')
           if (!agentPolicy(source).duplicate) {
-            throw new ApiError(400, 'agent_not_duplicable', 'This agent cannot be copied.')
+            throw new InvalidRequestError('agent_not_duplicable', 'This agent cannot be copied.')
           }
           if (pickInScope(catalog, newName, scope)) {
-            throw new ApiError(409, 'agent_exists', `An agent named "${newName}" already exists.`)
+            throw new ConflictError('agent_exists', `An agent named "${newName}" already exists.`)
           }
           // A copy is the user's own: the import provenance describes the SOURCE file, not this one.
           const { id: _origin, ...copied } = source.record
@@ -336,7 +323,7 @@ export function createAgentsService(deps: AgentsServiceDeps): AgentsService {
         own.length || !scope
           ? own
           : catalog.enabled.filter((agent) => !agent.projectId && named(agent))
-      if (matches.length > 1) throw new ApiError(409, 'agent_ambiguous', 'Select an agent by ID')
+      if (matches.length > 1) throw new ConflictError('agent_ambiguous', 'Select an agent by ID')
       return matches[0]?.record ?? null
     },
   }

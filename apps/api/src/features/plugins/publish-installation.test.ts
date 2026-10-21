@@ -1,3 +1,4 @@
+import { capabilityStores } from '../../bootstrap/capability-stores'
 import { afterEach, expect, test } from 'bun:test'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { promises as fs } from 'node:fs'
@@ -61,6 +62,7 @@ async function fixture(nativeDependency = false) {
     withPluginSource({ source: join(root, 'parent'), installRoot }, (parent) =>
       publishPluginInstallation({
         db,
+        stores: capabilityStores,
         contributionKinds: createContributionKindRegistry(),
         userId: 'u',
         projectId: '',

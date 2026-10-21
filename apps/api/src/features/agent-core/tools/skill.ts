@@ -10,7 +10,7 @@ import {
   deleteSkillByName,
   type DiscoveredSkill,
 } from '../skill-discovery'
-import { recordSkillUse } from '../../skills-curator/usage-recorder'
+import { recordSkillUse } from '../skill-usage-recorder'
 import { MAX_OUTPUT_BYTES } from './file/read-output'
 import { truncationMarker } from './tool-output'
 import { filterDisabledSkills, isSkillDisabled, type SkillOverrides } from '../skill-overrides'

@@ -17,7 +17,7 @@
  * Routes are never written here: a participant who stays keeps what it runs on
  * (`writeMembership`), and a re-route is its own verb.
  */
-import { ApiError } from '../../../lib/errors'
+import { ConflictError, InvalidRequestError, NotFoundError } from '../../../lib/domain-errors'
 import type { AgentStreamEvent, PersistedMessage } from '../contracts'
 import type { SessionRecord } from '../repository'
 import type { SessionAgentRoute } from '../repository-types'
@@ -64,11 +64,10 @@ export async function changeParticipants(
   },
 ): Promise<ParticipantsChange> {
   const before = await io.repo.getSession(input.userId, input.sessionId)
-  if (!before) throw new ApiError(404, 'session_not_found', 'Conversation no longer exists')
+  if (!before) throw new NotFoundError('session_not_found', 'Conversation no longer exists')
   const next = await input.decide(before)
   if (next.length === 0)
-    throw new ApiError(
-      400,
+    throw new InvalidRequestError(
       'session_party_empty',
       'A conversation must keep at least one participant',
     )
@@ -83,7 +82,7 @@ export async function changeParticipants(
 
   const active = io.activeAgentId?.(input.sessionId)
   if (active && left.some((member) => member.agentId === active))
-    throw new ApiError(409, 'agent_running', 'Stop the active agent before removing it')
+    throw new ConflictError('agent_running', 'Stop the active agent before removing it')
 
   const written = await io.repo.updateMembership(input.userId, input.sessionId, next, {
     updatedAt: io.now(),
@@ -92,8 +91,7 @@ export async function changeParticipants(
       : {}),
   })
   if (!written)
-    throw new ApiError(
-      409,
+    throw new ConflictError(
       'session_changed',
       'The conversation changed since it was loaded; reload and try again',
     )

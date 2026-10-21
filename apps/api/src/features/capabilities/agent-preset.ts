@@ -1,4 +1,4 @@
-import type { Rule } from './rule'
+import type { Rule } from '../agent-core/capability-rule'
 import { ACTION_PREFIX, type CapabilityKind } from './resolve'
 
 /**

@@ -9,7 +9,7 @@
  */
 import { AgentRunError } from '@localixai/agent/agents'
 
-import { agentRoute } from '../../../session-route'
+import { agentRoute } from '../../../../../contracts/session-route'
 import type { SessionRecord } from '../../../repository'
 import { publishAgentPhase } from '../../session-stream-registry'
 import { identityOf, identityOutlivesRun } from '../../run-params'

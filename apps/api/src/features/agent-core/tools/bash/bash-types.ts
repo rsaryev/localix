@@ -4,7 +4,7 @@ import { stringToArray } from '../tool-schema'
 import { isTerminationSignalExit } from '../../../../lib/process-exit'
 import type { ConfirmToolRequest, ConfirmToolResponse } from '../hitl/confirm'
 import type { SpawnTerminalJob } from '../terminal/terminal-job'
-import { MONITOR_MIN_INTERVAL_SECONDS } from '../../../monitors/contracts'
+import { MONITOR_MIN_INTERVAL_SECONDS } from './monitor-wait'
 import type { BashWaitHost } from './bash-until'
 import { terminalActionFields, type TerminalToolDeps } from '../terminal/terminal'
 

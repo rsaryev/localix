@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { decodeClaudeCodeAgent } from './agent-format'
-import { verdictIn } from '../capabilities/rule'
+import { verdictIn } from '../agent-core/capability-rule'
 
 const source = 'plugin/agents/reviewer.md'
 const markdown = (fields = '') =>

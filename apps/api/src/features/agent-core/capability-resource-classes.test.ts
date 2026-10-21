@@ -7,9 +7,9 @@ import {
   resourceClassOf,
   resourceClassesFor,
   type ClassifiedCall,
-} from './resource-classes'
-import { matchesCapabilityCall } from '../agent-core/capability-call-match'
-import { extractCallFacts, resourceOnlyCall } from '../agent-core/permission-facts'
+} from './capability-resource-classes'
+import { matchesCapabilityCall } from './capability-call-match'
+import { extractCallFacts, resourceOnlyCall } from './permission-facts'
 import { trustFallback } from '../ext/trust'
 
 /**

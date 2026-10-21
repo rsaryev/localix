@@ -7,7 +7,7 @@
  * `present` that trusted the admission-time mode would put a review card in front of someone who
  * has just told the agent to stop planning and work.
  */
-import { DEFAULT_PERMISSION_MODE } from '../../../capabilities/permission-modes'
+import { DEFAULT_PERMISSION_MODE } from '../../../../contracts/permission-modes'
 import type { PlanToolOptions } from '../../../agent-core/tools/plan/plan'
 import type {
   PlanOverview,

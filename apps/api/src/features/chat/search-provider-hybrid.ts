@@ -18,8 +18,8 @@ import {
   wordCoverage,
   type FusionInput,
 } from '../search/hybrid'
-import type { MessageSearchReads, MessageSearchRow } from './message-search-reads'
-import { MESSAGES_COLLECTION, SESSIONS_COLLECTION } from './semantic-sources'
+import type { MessageSearchReads, MessageSearchRow } from './repository-message-search'
+import { MESSAGES_COLLECTION, SESSIONS_COLLECTION } from './repository-semantic-sources'
 
 export interface HybridSessionRow {
   id: string

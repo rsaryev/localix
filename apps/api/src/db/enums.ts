@@ -80,3 +80,19 @@ export function resolveDeclaredReasoningEffort(
 // its own instructions. Forking: the `fork` tool, gated like every other tool. How often
 // to confirm: the permission rules, whose `ask` effect says
 // it directly, plus the per-session "Always allow" grants.
+
+/**
+ * Is this a reasoning-effort level a declaration may name?
+ *
+ * DERIVED, never hand-listed. This used to be a literal regex, and a second copy of it lived in
+ * `agent-core/skill-validate.ts` with the same values plus three hand-written "valid values: …"
+ * messages. All of them had drifted from the real vocabulary in BOTH directions: they rejected
+ * `minimal` (a level the runtime accepts and the model picker offers) and accepted `xhigh`
+ * (which the column cannot hold, so it needed normalizing rather than waving through).
+ */
+export function isDeclarableEffort(value: string): boolean {
+  return resolveDeclaredReasoningEffort(value) !== undefined
+}
+
+/** The values to name in a warning, so the message cannot drift from the check. */
+export const DECLARABLE_EFFORTS_TEXT = DECLARABLE_REASONING_EFFORTS.join(', ')

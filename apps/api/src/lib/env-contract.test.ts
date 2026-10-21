@@ -97,7 +97,7 @@ const EXEMPTIONS: Exemptions = {
     reason:
       'Expands ${VAR} references inside user-authored CC hook configs — the var NAME comes from the config, gated by an allowed-keys set. No fixed var to route.',
   },
-  [exemptionKey('src/features/plugins/mcp-substitute.ts', '<dynamic>')]: {
+  [exemptionKey('src/features/ext/user-config-substitute.ts', '<dynamic>')]: {
     reason:
       'Passes host env through to a plugin MCP server, but ONLY for keys the plugin manifest DECLARED. The var name comes from the manifest. (Was `mcp.ts`; the substitution logic was extracted to this module unchanged — same gate, same reason.)',
   },

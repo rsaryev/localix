@@ -1,15 +1,14 @@
-import type { Kysely } from 'kysely'
 import type { LanguageModelFactory } from '@localixai/agent/runtime'
 
 import { resolveLanguageModel } from '../runtime/model-resolution'
-import type { AppDatabase } from '../../../db'
 import type { AgentSettings } from '../../user/contracts'
+import type { UserProfileRepository } from '../../user/repository'
 import { readAgentSettings as readStoredAgentSettings } from './agent-settings'
 import type { CatalogService } from '../../catalog/service'
 import type { ProviderConnectionsService } from '../../provider-connections/service'
 
 export function createAuxProviderHelpers(deps: {
-  db: Kysely<AppDatabase>
+  userProfileRepo: UserProfileRepository
   catalogService: CatalogService
   providerConnectionsService: ProviderConnectionsService
   languageModelFactory: LanguageModelFactory
@@ -51,7 +50,7 @@ export function createAuxProviderHelpers(deps: {
 
   /** Full canonical routing state for every non-session model workload. */
   const readAgentSettings = (userId: string): Promise<AgentSettings | null> =>
-    readStoredAgentSettings(deps.db, userId)
+    readStoredAgentSettings(deps.userProfileRepo, userId)
 
   return { buildLanguageModel, readAgentSettings }
 }

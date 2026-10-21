@@ -1,7 +1,7 @@
+import { InvalidRequestError, NotFoundError } from '../../lib/domain-errors'
 import { promises as fs } from 'node:fs'
 import { resolve } from 'node:path'
 
-import { ApiError } from '../../lib/errors'
 import { isPathBelow } from '../../lib/path-containment'
 import type { PluginCatalog } from './catalog'
 import { PLUGIN_VIEW_HTML_CAP_BYTES, type PluginViewSpec } from './contracts'
@@ -42,7 +42,7 @@ export function listViewsFromCatalog(catalog: PluginCatalog, projectId: string):
  */
 export function requireEnabledPlugin(catalog: PluginCatalog, pluginName: string) {
   const entry = catalog.enabled.find(({ plugin }) => plugin.manifest.name === pluginName)
-  if (!entry) throw new ApiError(404, 'plugin_not_enabled', `Plugin "${pluginName}" is not enabled`)
+  if (!entry) throw new NotFoundError('plugin_not_enabled', `Plugin "${pluginName}" is not enabled`)
   return entry
 }
 
@@ -54,18 +54,20 @@ export function requireEnabledPlugin(catalog: PluginCatalog, pluginName: string)
 export async function readPluginHtmlFile(dir: string, file: string): Promise<{ html: string }> {
   const filePath = resolve(dir, file)
   if (!isPathBelow(dir, filePath)) {
-    throw new ApiError(400, 'view_path_escape', 'UI file must live inside the plugin directory')
+    throw new InvalidRequestError(
+      'view_path_escape',
+      'UI file must live inside the plugin directory',
+    )
   }
   let html: string
   try {
     html = await fs.readFile(filePath, 'utf8')
   } catch {
-    throw new ApiError(404, 'view_file_missing', `UI file not found: ${file}`)
+    throw new NotFoundError('view_file_missing', `UI file not found: ${file}`)
   }
-  if (!html.trim()) throw new ApiError(400, 'view_file_empty', 'UI file is empty')
+  if (!html.trim()) throw new InvalidRequestError('view_file_empty', 'UI file is empty')
   if (Buffer.byteLength(html) > PLUGIN_VIEW_HTML_CAP_BYTES) {
-    throw new ApiError(
-      400,
+    throw new InvalidRequestError(
       'view_file_too_large',
       `UI HTML exceeds ${PLUGIN_VIEW_HTML_CAP_BYTES} bytes`,
     )
@@ -81,8 +83,7 @@ export async function readViewHtml(
   const entry = requireEnabledPlugin(catalog, input.pluginName)
   const view = (entry.plugin.manifest.views ?? []).find((v) => v.id === input.viewId)
   if (!view)
-    throw new ApiError(
-      404,
+    throw new NotFoundError(
       'view_not_found',
       `Plugin "${input.pluginName}" declares no view "${input.viewId}"`,
     )

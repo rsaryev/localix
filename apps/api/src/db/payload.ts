@@ -1,8 +1,8 @@
 import type { AgentChatMessage } from '@localixai/agent/agents/chat'
 import type { ParticipantRef } from './participant'
-import type { MessageProviderMeta, MessageTiming } from '../features/chat/contracts'
-import type { Recovery } from '../features/notifications/recovery'
-import type { PermissionMode } from '../features/capabilities/permission-modes'
+import type { MessageProviderMeta, MessageTiming } from '../contracts/message-timing'
+import type { Recovery } from '@localixai/agent/agents'
+import type { PermissionMode } from '../contracts/permission-modes'
 
 /**
  * Durable, model-invisible presentation metadata for transcript events owned by
@@ -24,7 +24,7 @@ export interface StoredSystemNotice {
     | 'run_interrupted'
     /**
      * A run that stopped because it reached the person's turn limit
-     * (`features/chat/turn-budget.ts`). Its own kind rather than prose in the assistant row:
+     * (`contracts/turn-budget.ts`). Its own kind rather than prose in the assistant row:
      * the row above is an unfinished answer, and the line saying so is the system speaking
      * about what IT did — the finalizer refuses to fabricate anything in the model's voice.
      */

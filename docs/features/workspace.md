@@ -369,5 +369,5 @@ primary shortcut.
   [cross-platform contracts](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/keybindings/chord.test.ts)
 - [Composer context state](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/model/useContextRefs.ts)
 - [Live tab context](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/workspace-grid/model/liveTabMessageContext.ts)
-- [Context reference grammar](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/context-refs.ts)
+- [Context reference grammar](https://github.com/rsaryev/localix/blob/main/apps/api/src/contracts/context-refs.ts)
 - [Interactive terminal](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/terminal/ui/TerminalPane.tsx)

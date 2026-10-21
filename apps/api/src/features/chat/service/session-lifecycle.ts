@@ -1,5 +1,5 @@
+import { ConflictError, InvalidRequestError } from '../../../lib/domain-errors'
 import { conversationPolicy } from '../policy/session-policy'
-import { ApiError } from '../../../lib/errors'
 import { announceSessionChanges } from '../runtime/session-notice'
 import { changeParticipants } from '../runtime/conversation-participants'
 import { sessionFieldsPatch } from './session-patch'
@@ -47,26 +47,28 @@ export async function updateSession(
   const session = await ctx.requireSession(userId, id)
   if (patch.externalAgentProvider !== undefined) {
     if (session.sessionKind !== 'chat')
-      throw new ApiError(400, 'not_chat_session', 'Only an ordinary chat can have a linked agent.')
+      throw new InvalidRequestError(
+        'not_chat_session',
+        'Only an ordinary chat can have a linked agent.',
+      )
     if (
       session.externalAgentProvider &&
       session.externalAgentProvider !== patch.externalAgentProvider
     )
-      throw new ApiError(409, 'agent_already_linked', 'This chat already has a linked agent.')
+      throw new ConflictError('agent_already_linked', 'This chat already has a linked agent.')
   }
   await assertRoutePatch(ctx, userId, session, patch)
   // A child runs under its root's mode, so a mode set on the child alone would be overwritten by
   // the root's next change and, until then, make one worker in a plan conversation able to write.
   if (patch.permissionMode !== undefined && session.parentSessionId !== null) {
-    throw new ApiError(
-      409,
+    throw new ConflictError(
       'permission_mode_owned_by_root',
       "A delegated session runs under its root conversation's mode; change it there",
     )
   }
   // Only a chat's membership can change: a delegated child or a job IS its one agent's task.
   if (patch.agents !== undefined && !conversationPolicy(session).membershipEditable) {
-    throw new ApiError(409, 'membership_fixed', 'Only a chat conversation can change who is in it')
+    throw new ConflictError('membership_fixed', 'Only a chat conversation can change who is in it')
   }
   // WHO is in the conversation: the one participants writer, which guards the active speaker,
   // refuses a stale list, cancels the leavers' queued turns and announces the change.

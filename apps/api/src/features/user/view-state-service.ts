@@ -1,6 +1,6 @@
+import { NotFoundError } from '../../lib/domain-errors'
 import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../../db/types'
-import { ApiError } from '../../lib/errors'
 import { recordCoreChanges } from '../changes/core-entities'
 import { createKeyedSerializer } from '../../lib/keyed-serializer'
 import {
@@ -51,8 +51,7 @@ export function createViewStateService(db: Kysely<AppDatabase>, now: () => strin
           .where('user_id', '=', userId)
           .executeTakeFirst()
         if (!session)
-          throw new ApiError(
-            404,
+          throw new NotFoundError(
             'view_state_session_not_found',
             'This conversation is no longer available.',
           )

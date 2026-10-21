@@ -1,7 +1,7 @@
+import { ConflictError, UnprocessableError } from '../../lib/domain-errors'
 import { promises as fs, type Stats } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { createKeyedSerializer } from '../../lib/keyed-serializer'
-import { ApiError } from '../../lib/errors'
 import { copyExtensionTree, rmrf } from './install-tree'
 
 const PREFIX = '.extension-publish-'
@@ -50,9 +50,15 @@ export async function publishExtensionTrees(input: {
   const names = new Set<string>()
   for (const tree of input.trees) {
     if (!tree.name || tree.name === '.' || tree.name === '..' || /[/\\\0]/.test(tree.name))
-      throw new ApiError(422, 'invalid_extension_name', 'Extension name must be one path segment')
+      throw new UnprocessableError(
+        'invalid_extension_name',
+        'Extension name must be one path segment',
+      )
     if (names.has(tree.name))
-      throw new ApiError(422, 'duplicate_extension_destination', 'Duplicate extension destination')
+      throw new UnprocessableError(
+        'duplicate_extension_destination',
+        'Duplicate extension destination',
+      )
     names.add(tree.name)
   }
   const root = resolve(input.installRoot)
@@ -76,12 +82,14 @@ async function publish(
     for (const input of inputs) {
       const source = await fs.realpath(input.source)
       if (!(await fs.stat(source)).isDirectory())
-        throw new ApiError(422, 'invalid_extension_source', 'Extension source must be a directory')
+        throw new UnprocessableError(
+          'invalid_extension_source',
+          'Extension source must be a directory',
+        )
       const destination = join(root, input.name)
       const previous = await statIfPresent(destination)
       if (previous && !input.replace)
-        throw new ApiError(
-          409,
+        throw new ConflictError(
           'extension_exists',
           'An extension already exists at this destination',
         )
@@ -101,12 +109,14 @@ async function publish(
       await input.prepare?.(tree.staged)
       tree.identity = await fs.lstat(tree.staged)
       if (!tree.identity.isDirectory())
-        throw new ApiError(422, 'invalid_extension_tree', 'Prepared extension must be a directory')
+        throw new UnprocessableError(
+          'invalid_extension_tree',
+          'Prepared extension must be a directory',
+        )
     }
     for (const tree of prepared) {
       if (!sameIdentity(tree.previous, await statIfPresent(tree.destination)))
-        throw new ApiError(
-          409,
+        throw new ConflictError(
           'extension_changed',
           'Extension destination changed during preparation',
         )

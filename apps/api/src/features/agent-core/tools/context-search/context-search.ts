@@ -3,12 +3,8 @@ import { defineAgentTool } from '@localixai/agent/agents'
 import { TOOL } from '../../tool-names'
 
 import type { ChatRepository } from '../../../chat/repository'
-import {
-  MAX_CHUNKS_PER_SESSION,
-  type ContextChunkHit,
-  type ContextStore,
-} from '../../../context-store/repository'
-import { isIndexSkippedTool } from '../../../context-store/index-policy'
+import type { ContextChunkHit, ContextStore } from '../../../context-store/repository'
+import { isIndexSkippedTool, MAX_CHUNKS_PER_SESSION } from '../../context-index-policy'
 import { toFtsMatchQuery } from '../history/history-search-format'
 import { retrieveStoredOutput, storedToolCallOutput } from '../bash/retrieve-output'
 

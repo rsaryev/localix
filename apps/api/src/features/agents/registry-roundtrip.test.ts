@@ -1,3 +1,4 @@
+import { capabilityStores } from '../../bootstrap/capability-stores'
 import { afterEach, expect, test } from 'bun:test'
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -10,7 +11,7 @@ import { createCapabilityRuleRepository } from '../capabilities/rule-repository'
 import { createCapabilitySourceRepository } from '../capabilities/source-repository'
 import { seedAgentPresets } from '../capabilities/seed-agent-presets'
 import { copyAgentPolicy } from './create-native-agent'
-import type { Rule } from '../capabilities/rule'
+import type { Rule } from '../agent-core/capability-rule'
 
 const cleanup: Array<() => Promise<unknown>> = []
 afterEach(async () => {
@@ -28,6 +29,7 @@ async function fixture() {
   const create = () =>
     createAgentsService({
       db,
+      capabilityStores,
       globalDir: join(root, 'global'),
       resolveProjectCwd: async (_u, project) => (project === 'p' ? cwd : null),
     })

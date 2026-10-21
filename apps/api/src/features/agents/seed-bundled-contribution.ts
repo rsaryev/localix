@@ -2,8 +2,7 @@ import type { Kysely } from 'kysely'
 import { stableStringify } from '@localixai/agent'
 import type { AppDatabase } from '../../db/types'
 import type { RegisteredContribution } from '../ext/contribution-store'
-import { createCapabilitySourceRepository } from '../capabilities/source-repository'
-import { createCapabilityRuleRepository } from '../capabilities/rule-repository'
+import type { CapabilityStores } from '../capabilities/store-factory'
 import { capabilityRuleSchema } from '../capabilities/rule-schema'
 import { createRegistrationPolicyService, readBoundAgentRevisions } from './registration-policy'
 import { agentContributionSchema } from './contribution'
@@ -12,15 +11,16 @@ import { upgradeAgentPreset } from '../capabilities/seed-agent-presets'
 /** A verified bundled declaration can seed defaults; later user policy never gets overwritten. */
 export async function seedBundledAgentContribution(
   db: Kysely<AppDatabase>,
+  stores: CapabilityStores,
   userId: string,
   entry: RegisteredContribution,
 ) {
   if (entry.kind !== 'agent') return
   const contribution = agentContributionSchema.parse(entry.value)
-  const sources = createCapabilitySourceRepository(db, 'agent')
+  const sources = stores.sources(db, 'agent')
   const state = await sources.get(userId, entry.projectId, entry.id)
   if (state?.config.bundledRegistrationRevision === entry.revision) return
-  const policies = createCapabilityRuleRepository(db)
+  const policies = stores.rules(db)
   const current = await policies.readSnapshot(userId, entry.id)
   const defaults = [
     ...contribution.policyProposals,
@@ -45,7 +45,7 @@ export async function seedBundledAgentContribution(
       baseline.success &&
       stableStringify(baseline.data) === stableStringify(defaults))
   ) {
-    await createRegistrationPolicyService(db).publish(userId, entry.projectId, entry.id, {
+    await createRegistrationPolicyService(db, stores).publish(userId, entry.projectId, entry.id, {
       expectedRegistrationRevision: entry.revision,
       expectedPolicyRevision: current.revision,
       rules: next ?? current.rules,

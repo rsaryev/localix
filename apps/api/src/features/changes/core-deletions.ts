@@ -41,6 +41,12 @@ export function coreDeletionHandlers(
     mcp: 'ignore',
     'capability.rule': 'ignore',
     'local.model': 'ignore',
+    'project.settings': 'ignore',
+    'user.profile': 'ignore',
+    'user.agent-settings': 'ignore',
+    'user.view-state': 'ignore',
+    secret: 'ignore',
+    'system.toggle': 'ignore',
   }
 }
 

@@ -1,4 +1,5 @@
 import type { SemanticVectors } from '@localixai/plugin-sdk/backend'
+import type { ChatFeaturePorts } from '../feature-ports'
 import type { DecisionService } from '../../decisions/service'
 import type { GlobalSearchPort } from '../../agent-core/tools/global-search/global-search'
 import type { AgentRuntime, LanguageModelFactory, ScriptSandbox } from '@localixai/agent/runtime'
@@ -56,6 +57,8 @@ export interface RunnerDeps {
    * "No model selected" rows under three members whose models were in plain view.
    */
   repo: ChatRepository
+  /** Other features' stores, shared with the chat service graph. */
+  ports: ChatFeaturePorts
   providerConnectionsService: ProviderConnectionsService
   catalogService: CatalogService
   hitlRegistry: HitlRegistry

@@ -11,8 +11,8 @@
  *
  * The files are the user's (they sit in the project folder): the host never deletes them.
  */
-import { sessionRef } from '../chat/session-ref'
-import { planDraftDir, planDraftPath, planSnapshotPath } from './plan-paths'
+import { sessionRef } from '../../contracts/session-ref'
+import { planDraftDir, planDraftPath, planSnapshotPath } from '../agent-core/plan-paths'
 import type { PlanOwner } from './repository'
 
 /** The slice of an execution environment the plan needs. */

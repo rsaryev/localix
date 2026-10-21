@@ -1,5 +1,5 @@
+import { ConflictError, InvalidRequestError } from '../../../lib/domain-errors'
 import path from 'node:path'
-import { ApiError } from '../../../lib/errors'
 import { treeFsFor, trashDir, trashEntryName } from './fs-mutations'
 import {
   recordFileOp,
@@ -32,7 +32,7 @@ export async function deleteEntry(
   assertNotWorkspaceRoot(dir, target)
   // Never let an empty/blank path collapse to `rm -rf /` style damage.
   if (target === path.parse(target).root)
-    throw new ApiError(400, 'refused', 'Refusing to delete the filesystem root')
+    throw new InvalidRequestError('refused', 'Refusing to delete the filesystem root')
 
   const isLocal = !session.executionBackend || session.executionBackend === 'local'
   const useTrash = isLocal && !opts?.permanent
@@ -108,8 +108,7 @@ export async function undoLastFileOp(
       // The restore target must be free, else we'd clobber a newer entry.
       if (await tree.exists(dest)) {
         recordFileOp(sessionId, op) // keep it for a later retry
-        throw new ApiError(
-          409,
+        throw new ConflictError(
           'undo_conflict',
           `Cannot undo — “${path.basename(dest)}” already exists again.`,
         )

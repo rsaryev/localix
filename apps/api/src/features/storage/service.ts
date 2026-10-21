@@ -1,8 +1,9 @@
-import { sql, type Kysely } from 'kysely'
+import type { Kysely } from 'kysely'
 
 import type { AppDatabase } from '../../db'
 import { checkpointWal, reclaimFreePages, storageUsage, type StorageUsage } from '../../db/storage'
 import { errorMessage } from '../../lib/errors'
+import { createStorageRepository } from './repository'
 
 export const MIN_PRUNE_DAYS = 7
 
@@ -39,33 +40,13 @@ export function createStorageService(deps: {
   const { db, deleteSession } = deps
   const now = deps.now ?? (() => new Date())
 
-  const candidates = async (userId: string, olderThanDays: number): Promise<string[]> => {
-    const cutoff = new Date(now().getTime() - olderThanDays * 86_400_000).toISOString()
-    const rows = await db
-      .selectFrom('agent_sessions')
-      .select('id')
-      .where('user_id', '=', userId)
-      .where('parent_session_id', 'is', null)
-      .where('is_pinned', '=', 0)
-      .where('runtime_status', '<>', 'running')
-      .where('last_message_at', '<', cutoff)
-      .execute()
-    return rows.map((row) => row.id)
-  }
-
-  const bytesOf = async (userId: string, roots: readonly string[]): Promise<number> => {
-    let bytes = 0
-    for (let at = 0; at < roots.length; at += 200) {
-      const list = sql.join(roots.slice(at, at + 200))
-      const scope = sql`session_id IN (SELECT id FROM agent_sessions WHERE user_id = ${userId} AND (id IN (${list}) OR root_session_id IN (${list})))`
-      const messages = await sql<{ n: number | null }>`
-        SELECT SUM(LENGTH(payload_json)) AS n FROM agent_messages WHERE ${scope}`.execute(db)
-      const outputs = await sql<{ n: number | null }>`
-        SELECT SUM(byte_length) AS n FROM tool_output_artifacts WHERE ${scope}`.execute(db)
-      bytes += Number(messages.rows[0]?.n ?? 0) + Number(outputs.rows[0]?.n ?? 0)
-    }
-    return bytes
-  }
+  const store = createStorageRepository(db)
+  const candidates = (userId: string, olderThanDays: number): Promise<string[]> =>
+    store.pruneCandidates(
+      userId,
+      new Date(now().getTime() - olderThanDays * 86_400_000).toISOString(),
+    )
+  const bytesOf = (userId: string, roots: readonly string[]) => store.bytesOf(userId, roots)
 
   return {
     usage: () => storageUsage(db),

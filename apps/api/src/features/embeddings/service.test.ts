@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
-import { createMessagesSemanticSource } from '../chat/semantic-sources'
+import { createMessagesSemanticSource } from '../chat/repository-semantic-sources'
 import type { InstallJob } from '../local-models/contracts'
 import type { SemanticServiceDeps } from './service'
 import { createSemanticService } from './service'

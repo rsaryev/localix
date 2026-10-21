@@ -14,8 +14,9 @@
  * "Identical" ignores whitespace layout — a re-wrapped paragraph or a trailing newline is not a
  * revision a reviewer could see.
  */
-import { ApiError } from '../../lib/errors'
-import { PLAN_TITLE_MAX, type PlanRecord } from './contracts'
+import { ConflictError } from '../../lib/domain-errors'
+import type { PlanRecord } from './contracts'
+import { PLAN_TITLE_MAX } from '../agent-core/plan-limits'
 
 export type PresentDecision =
   | { kind: 'new' }
@@ -37,8 +38,7 @@ export function decidePresentation(draft: string, latest: PlanRecord | undefined
       return { kind: 'restore', plan: latest }
     case 'approved':
     case 'completed':
-      throw new ApiError(
-        409,
+      throw new ConflictError(
         'plan_already_decided',
         `Plan v${latest.version} with this text is already ${latest.status}; edit PLAN.md to ` +
           'propose a change.',

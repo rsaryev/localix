@@ -1,3 +1,4 @@
+import { NotFoundError } from '../../../lib/domain-errors'
 import { summarizeParticipantUsage } from '@localixai/agent'
 import { getLoopEngine } from '../../loops/runtime-binding'
 import { toLoopSummary } from '../../loops/contracts'
@@ -23,7 +24,6 @@ import {
 import { isUiNavigationOutput } from '@localixai/plugin-sdk/ui'
 import { isAlwaysStandaloneToolName } from '../item-format'
 import type { MessageToolDetails, PersistedMessage } from '../contracts'
-import { ApiError } from '../../../lib/errors'
 
 /**
  * Assembling a `SessionDetail` — the session READ MODEL a client hydrates a session
@@ -158,7 +158,7 @@ export async function getMessageToolDetails(
   messageId: string,
 ): Promise<MessageToolDetails> {
   const message = await ctx.repo.getMessage(userId, sessionId, messageId)
-  if (!message) throw new ApiError(404, 'message_not_found', 'Message not found')
+  if (!message) throw new NotFoundError('message_not_found', 'Message not found')
   return { items: (message.payload.items ?? []).filter(isToolBackedItem) }
 }
 

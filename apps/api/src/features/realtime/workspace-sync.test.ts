@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
-import { createTestChatService, createTestCatalogService } from '../chat/test-runtime'
+import { createTestChatService, createTestCatalogService } from '../chat/test-harness'
 import { createProviderConnectionsService } from '../provider-connections/service'
 import { testWork } from '../../testing/work-fixture'
 import type { AgentStreamEvent } from '../chat/contracts'

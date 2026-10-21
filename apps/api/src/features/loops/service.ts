@@ -12,7 +12,7 @@
  *   - the hold the strip shows, which is the trigger's own `rate-limited` hold the loop action's
  *     gate placed (`SessionLoop.heldUntil`), so the strip and the gate cannot disagree.
  */
-import { ApiError } from '../../lib/errors'
+import { InternalError } from '../../lib/domain-errors'
 import { triggerDeliveryKey, type TriggerRecord } from '../triggers/contracts'
 import type { TriggerEngine } from '../triggers/engine'
 import { clampDelaySeconds } from '../triggers/kinds/delay'
@@ -149,7 +149,7 @@ export function createLoopService(deps: LoopServiceDeps) {
       if (!trigger) return false
       const ended = await triggers.end(id, 'cancelled')
       if ('error' in ended)
-        throw new ApiError(500, 'loop_cancel_failed', `${ended.error} The loop is still running.`)
+        throw new InternalError('loop_cancel_failed', `${ended.error} The loop is still running.`)
       if (trigger.state === 'firing' && trigger.payload.target !== 'subsession')
         await deps.cancelWake?.(userId, trigger.sessionId, triggerDeliveryKey(id, trigger.fireSeq))
       return true

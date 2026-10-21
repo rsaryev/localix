@@ -45,11 +45,11 @@ scheduling, terminal lifecycle and the session event stream.
 
 ## Stage 4: layers
 
-- [ ] Only `apps/api/src/bootstrap/` builds another feature's repository or service (A4).
-- [ ] Kysely only in repositories (A5); HTTP errors only in routes (A7).
-- [ ] Agent tools reach memory and context search through ports.
-- [ ] `apps/api/src/db/payload.ts` imports no feature module.
-- [ ] Cross-feature cycles in the API shrink to zero (A6).
+- [x] Only `apps/api/src/bootstrap/` builds another feature's repository or service (A4).
+- [x] Kysely only in repositories (A5); HTTP errors only in routes (A7).
+- [x] Agent tools reach memory and context search through ports.
+- [x] `apps/api/src/db/payload.ts` imports no feature module.
+- [x] Cross-feature cycles in the API shrink to zero (A6).
 - [ ] UI slices stop importing each other and gain public entries (A8).
 - [x] Desktop calls go through `platformCapabilities` (the inspector and companion are guarded).
 

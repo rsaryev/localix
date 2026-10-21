@@ -1,3 +1,4 @@
+import { NotFoundError } from '../../lib/domain-errors'
 import { promises as fs } from 'node:fs'
 import { join, resolve } from 'node:path'
 
@@ -7,7 +8,6 @@ import {
   isPluginUiArtifactManifest,
 } from '@localixai/plugin-sdk/ui-artifact'
 
-import { ApiError } from '../../lib/errors'
 import { isPathBelow } from '../../lib/path-containment'
 import type { PluginCatalog } from './catalog'
 import type { PluginUiDescriptor } from './contracts'
@@ -76,12 +76,12 @@ export function resolvePluginUiFile(
 ): string {
   const entry = catalog.all.find(({ plugin }) => plugin.manifest.name === pluginName)
   if (!entry || (!entry.plugin.bundled && !entry.enabled)) {
-    throw new ApiError(404, 'plugin_ui_not_found', `Plugin "${pluginName}" ships no UI`)
+    throw new NotFoundError('plugin_ui_not_found', `Plugin "${pluginName}" ships no UI`)
   }
   const root = artifactDir(entry.plugin)
   const path = resolve(root, file)
   if (!isPathBelow(root, path)) {
-    throw new ApiError(404, 'plugin_ui_not_found', 'UI file must live inside the UI artifact')
+    throw new NotFoundError('plugin_ui_not_found', 'UI file must live inside the UI artifact')
   }
   return path
 }

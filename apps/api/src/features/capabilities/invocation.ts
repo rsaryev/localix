@@ -1,4 +1,4 @@
-import { evaluate, type Effect, type Rule, type Verdict } from './rule'
+import { evaluate, type Effect, type Rule, type Verdict } from '../agent-core/capability-rule'
 
 export interface InvocationHost {
   id: string

@@ -9,7 +9,7 @@ import { sessionFixture, routedParticipants } from '../../../testing/session-fix
 import { createSessionSnapshotCache } from './session-snapshot'
 import type { FrozenSessionContext } from './frozen-session-context'
 import { prepareRunContext, type PromptContextDeps } from './prompt-context'
-import type { MemoryScope } from '../../memory/scope-policy'
+import type { MemoryScope } from '../../agent-core/memory-scope-policy'
 
 test('per-agent skills and memory selection reach ordinary and delegated turns without leaking', async () => {
   const cwd = await mkdtemp(join(tmpdir(), 'localix-agent-context-'))

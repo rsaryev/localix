@@ -35,7 +35,7 @@
  * Zero server-graph imports: only value-free type imports from the projects
  * contract (pure zod) — safe to pull into a client bundle.
  */
-export type { ContextRef } from '../projects/contracts'
+export type { ContextRef } from '../features/projects/contracts'
 import { PARSEABLE_REF_KINDS, REF_RESERVED_WORDS, refKindSpec } from './context-ref-kinds'
 import type { ParsedContextRef } from './context-ref-payload'
 export {

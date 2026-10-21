@@ -1,5 +1,5 @@
 import { builtinAgentId, DEFAULT_AGENT_HANDLE } from '@localixai/agent/agents'
-import type { Rule } from './rule'
+import type { Rule } from '../agent-core/capability-rule'
 
 /** Only the installed Localix definition has a shipped policy. */
 const HOSTS = ['chat', 'delegation', 'automation', 'channel', 'verification']

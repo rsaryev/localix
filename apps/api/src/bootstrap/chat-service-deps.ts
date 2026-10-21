@@ -34,6 +34,8 @@ import { resolveCapabilities } from '../features/capabilities/resolve'
 import { createPermissionRulePersister } from '../features/capabilities/availability'
 import { createAgentDirectoryPorts } from './agent-directory-ports'
 import { createTerminalPorts } from './terminal-ports'
+import { createChatFeaturePorts } from './chat-feature-ports'
+import type { PluginService } from '../features/plugins/service-types'
 
 type ChatServiceDeps = Parameters<typeof createChatService>[0]
 
@@ -71,11 +73,12 @@ export interface ChatServicePhaseInput extends Pick<
   | 'agentRuntime'
   | 'languageModelFactory'
   | 'scripts'
-  | 'pluginService'
   | 'announceCapabilityChange'
   | 'externalAgents'
 > {
   uiLocationCatalogService: ChatServiceDeps['uiLocationCatalog']
+  /** The host's plugin service; chat shares it rather than building a second. */
+  pluginService?: PluginService
   agentNotifications: NonNullable<ChatServiceDeps['notifications']>
   logger: ReturnType<typeof createLogger>
   capabilityRegistry: ReturnType<typeof createCapabilityRegistry>
@@ -149,7 +152,7 @@ export function createChatServicePhase({
       const denied = (await resolveCapabilities(capabilityRules, at)).denied('skill', names)
       return Object.fromEntries(denied.map((name) => [name, 'off' as const]))
     },
-    pluginService,
+    ports: createChatFeaturePorts(db, { pluginService }),
     announceCapabilityChange,
     catalogService,
     uiLocationCatalog: uiLocationCatalogService,

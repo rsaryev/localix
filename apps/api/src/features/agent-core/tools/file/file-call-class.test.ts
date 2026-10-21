@@ -3,7 +3,7 @@ import { classifyToolCall, type AgentTool, type CallClass } from '@localixai/age
 
 import { createEditTool } from './edit'
 import { createWriteTool } from './write'
-import { isPlanFilePath } from '../../../plans/plan-paths'
+import { isPlanFilePath } from '../../plan-paths'
 import { createPermissionGate, type PermissionRule } from '../../permission-engine'
 import { scopeToOwnPlan } from './file-call-class'
 

@@ -1,5 +1,5 @@
+import { NotFoundError } from '../../../lib/domain-errors'
 import { readdir } from 'node:fs/promises'
-import { ApiError } from '../../../lib/errors'
 import { shellQuote, type ExecutionEnvironment } from '../../agent-core/tools/environment'
 import { openSessionEnv, resolveAgainst, type FileOpsContext } from './file-ops-context'
 import type { DirEntry, DirListing } from '../contracts'
@@ -96,12 +96,12 @@ export async function listDirectory(
       }))
       totalEntries = unsortedEntries.length
     } catch {
-      throw new ApiError(404, 'not_a_directory', `${target} is not a directory`)
+      throw new NotFoundError('not_a_directory', `${target} is not a directory`)
     }
   } else {
     const remote = await listRemoteDirectory(env, target)
     if (!remote) {
-      throw new ApiError(404, 'not_a_directory', `${target} is not a directory`)
+      throw new NotFoundError('not_a_directory', `${target} is not a directory`)
     }
     unsortedEntries = remote.entries
     totalEntries = remote.total

@@ -9,7 +9,7 @@ import {
   type ResourceRefProvider,
 } from './provider'
 import { expandContextRefs, type ResourceRefLoader } from '../../projects/expand-refs'
-import { parseContextRefs, toWireRef } from '../../chat/context-refs'
+import { parseContextRefs, toWireRef } from '../../../contracts/context-refs'
 import type { ContextRef } from '../../projects/contracts'
 
 /**

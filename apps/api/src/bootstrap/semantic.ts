@@ -12,7 +12,7 @@ import { createSemanticStore } from '../features/embeddings/store'
 import {
   createMessagesSemanticSource,
   createSessionsSemanticSource,
-} from '../features/chat/semantic-sources'
+} from '../features/chat/repository-semantic-sources'
 import type { LocalModelsService } from '../features/local-models/service'
 import type { createLogger } from '../lib/logger'
 

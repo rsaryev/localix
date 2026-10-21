@@ -9,7 +9,7 @@ import {
   type ExternalSessionsContext,
 } from './external-sessions'
 import { routedParticipants, sessionFixture } from '../../../testing/session-fixture'
-import { sessionRoute } from '../session-route'
+import { sessionRoute } from '../../../contracts/session-route'
 
 describe('external channel binding boundary', () => {
   test('passes user assets but drops context/invocation values after type erasure', async () => {

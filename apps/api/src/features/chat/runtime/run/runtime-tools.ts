@@ -26,7 +26,7 @@ import type { ToolSurface } from '@localixai/agent/agents'
 import type { SkillOverrides } from '../../../agent-core/skill-overrides'
 import type { ToolDenial } from '../../../capabilities/resolve'
 import type { SetTopicPort } from '../../../agent-core/tools/set-topic'
-import type { MemoryScope } from '../../../memory/scope-policy'
+import type { MemoryScope } from '../../../agent-core/memory-scope-policy'
 import type { RunPolicy } from '../../policy/run-policy'
 
 export interface RuntimeToolWiringContext {

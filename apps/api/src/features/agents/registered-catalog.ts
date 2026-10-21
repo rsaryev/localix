@@ -1,7 +1,7 @@
 import type { ContributionRegistration } from '../ext/contribution-reader'
 import { availabilityOf } from '../capabilities/availability'
 import { ACTION_PREFIX, composeCapabilities, type CapabilityKind } from '../capabilities/resolve'
-import type { Rule } from '../capabilities/rule'
+import type { Rule } from '../agent-core/capability-rule'
 import type { InvocationRegistry } from '../capabilities/invocation'
 import type { AgentContribution } from './contribution'
 import type { AgentSummary } from './contracts'

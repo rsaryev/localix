@@ -2,8 +2,8 @@ import { resolve as resolvePath } from 'node:path'
 
 import { CONTEXT_UNAVAILABLE_KIND } from '@localixai/plugin-sdk/backend'
 
-import { formatRefExpansionBlock } from '../chat/context-refs'
-import { refKindSpec } from '../chat/context-ref-kinds'
+import { formatRefExpansionBlock } from '../../contracts/context-refs'
+import { refKindSpec } from '../../contracts/context-ref-kinds'
 import { contextRefSchema, type ContextRef, type ContextRefExpansion } from '../projects/contracts'
 import type {
   ContextContribution,

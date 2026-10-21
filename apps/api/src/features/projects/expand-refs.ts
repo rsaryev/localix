@@ -1,6 +1,6 @@
 /**
  * Server-side expansion of composer context references — the EXPANSION layer of
- * the ref-kind registry (`features/chat/context-ref-kinds.ts` owns the grammar).
+ * the ref-kind registry (`contracts/context-ref-kinds.ts` owns the grammar).
  * One expander per kind, keyed by the same `kind` string; adding a kind =
  * registering one expander here. Filesystem kinds are strictly read-only and
  * path-confined to the given working directory (sensitive credential paths and

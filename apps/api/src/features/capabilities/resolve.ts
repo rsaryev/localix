@@ -1,5 +1,11 @@
-import { resourceClassOf } from './resource-classes'
-import { evaluate, matches, type Effect, type Rule, type Verdict } from './rule'
+import { resourceClassOf } from '../agent-core/capability-resource-classes'
+import {
+  evaluate,
+  matches,
+  type Effect,
+  type Rule,
+  type Verdict,
+} from '../agent-core/capability-rule'
 import type { CapabilityRuleRepository } from './rule-repository'
 
 /**

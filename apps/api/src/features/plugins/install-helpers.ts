@@ -1,3 +1,4 @@
+import { ConflictError, InvalidRequestError } from '../../lib/domain-errors'
 import { promises as fs } from 'node:fs'
 import { execFile } from 'node:child_process'
 import { tmpdir } from 'node:os'
@@ -48,15 +49,14 @@ export async function withPluginSource<T>(
     }
   }
   if (!isAbsolute(input.source))
-    throw new ApiError(
-      400,
+    throw new InvalidRequestError(
       'plugin_bad_source',
       'Local plugin source must be an absolute directory path or a git URL',
     )
   if (!(await fs.stat(input.source).catch(() => null))?.isDirectory())
-    throw new ApiError(400, 'plugin_bad_source', `Not a directory: ${input.source}`)
+    throw new InvalidRequestError('plugin_bad_source', `Not a directory: ${input.source}`)
   if (input.nameOverride !== undefined && !PLUGIN_NAME_RE.test(input.nameOverride))
-    throw new ApiError(400, 'plugin_invalid', 'Invalid plugin name override')
+    throw new InvalidRequestError('plugin_invalid', 'Invalid plugin name override')
   const name = input.nameOverride ?? (await manifestName(input.source))
   const directory = resolve(input.source)
   return operation({
@@ -77,7 +77,7 @@ export async function cloneRepo(url: string, dest: string, ref?: string): Promis
     await execFileAsync('git', args, { timeout: 120_000, env: childEnv(), windowsHide: true })
   } catch (err) {
     await rmrf(dest)
-    throw new ApiError(400, 'plugin_clone_failed', `git clone failed: ${errorMessage(err)}`)
+    throw new InvalidRequestError('plugin_clone_failed', `git clone failed: ${errorMessage(err)}`)
   }
 }
 
@@ -118,10 +118,10 @@ async function manifestName(dir: string): Promise<string> {
   // A Claude Code plugin is converted after staging; its name comes from its own manifest.
   const declared = (await readManifestName(manifestPath)) ?? (await readClaudeCodePluginName(dir))
   if (!declared && (await isClaudeCodeMarketplace(dir)))
-    throw new ApiError(400, 'plugin_claude_marketplace', CLAUDE_CODE_MARKETPLACE_HINT)
+    throw new InvalidRequestError('plugin_claude_marketplace', CLAUDE_CODE_MARKETPLACE_HINT)
   if (declared) {
     if (!PLUGIN_NAME_RE.test(declared))
-      throw new ApiError(400, 'plugin_invalid', 'Invalid plugin name in manifest')
+      throw new InvalidRequestError('plugin_invalid', 'Invalid plugin name in manifest')
     return declared
   }
   // The fallback becomes the install directory AND the manifest-facing name, so it
@@ -129,8 +129,7 @@ async function manifestName(dir: string): Promise<string> {
   // under a name the manifest schema rejects on every later discovery.
   const fallback = basename(dir)
   if (!PLUGIN_NAME_RE.test(fallback)) {
-    throw new ApiError(
-      400,
+    throw new InvalidRequestError(
       'plugin_invalid',
       `Cannot derive a valid plugin name: plugin.json has no "name" and the directory name "${fallback}" is not a valid plugin name.`,
     )
@@ -149,8 +148,7 @@ async function publishPluginTree(
     return await publishExtensionTree({ source, installRoot, name, replace, ...lifecycle })
   } catch (error) {
     if (error instanceof ApiError && error.code === 'extension_exists')
-      throw new ApiError(
-        409,
+      throw new ConflictError(
         'plugin_exists',
         'A plugin already exists at this destination. Remove it first.',
       )

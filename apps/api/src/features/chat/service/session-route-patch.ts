@@ -1,7 +1,7 @@
 import { reasoningForModel } from '@localixai/agent'
 import { ApiError } from '../../../lib/errors'
 import type { ModelRoute, SessionRecord } from '../repository'
-import { sessionRoute } from '../session-route'
+import { sessionRoute } from '../../../contracts/session-route'
 import { resolveSessionParticipants } from './session-agent-selection'
 import type { SessionLifecycleCtx, UpdateSessionPatch } from './session-lifecycle-contracts'
 

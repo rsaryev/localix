@@ -31,15 +31,13 @@ import { z } from 'zod'
 import { defineAgentTool } from '@localixai/agent/agents'
 
 import { TOOL } from '../../tool-names'
-import {
-  PLAN_BODY_MAX,
-  PLAN_SUMMARY_MAX,
-  PLAN_TITLE_MAX,
-  type PlanOverview,
-  type PlanPresentation,
-  type PresentInput,
-  type SessionPlan,
+import type {
+  PlanOverview,
+  PlanPresentation,
+  PresentInput,
+  SessionPlan,
 } from '../../../plans/contracts'
+import { PLAN_BODY_MAX, PLAN_SUMMARY_MAX, PLAN_TITLE_MAX } from '../../plan-limits'
 import { classifyPlanCall, PLAN_ACTIONS } from './plan-call-class'
 
 export interface PlanToolOptions {

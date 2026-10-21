@@ -62,7 +62,7 @@ export type {
   MessageProviderMeta,
   ToolTiming,
 } from './features/chat/contracts'
-export { sessionRef } from './features/chat/session-ref'
+export { sessionRef } from './contracts/session-ref'
 // The skills READ record and its WRITE payload — one owner, so no client can read
 // back a field it has no way to write. (Type-only module: nothing lands in the bundle.)
 export type { SkillRecord, SkillInput } from './features/chat/service/skills'
@@ -118,7 +118,7 @@ export {
   isAuxTaskKey,
   isModelRoutingTaskEnabled,
   isModelRoutingTaskKey,
-} from './features/chat/model-task-catalog'
+} from './contracts/model-task-catalog'
 export type {
   AuxModelTask,
   AuxTaskKey,
@@ -126,7 +126,7 @@ export type {
   ModelRoutingTaskKey,
   ModelTask,
   ModelRoutingTask,
-} from './features/chat/model-task-catalog'
+} from './contracts/model-task-catalog'
 
 export type {
   LspServerState,
@@ -242,14 +242,10 @@ export type {
 } from './features/effective-config/contracts'
 export type { ToolMeta } from './features/tools/routes'
 // The ONE versioned capability projection (`GET /rpc/capabilities/snapshot`) every
-// client surface reads — see features/capabilities/contracts.ts for why it is one
+// client surface reads — see contracts/capability-snapshot.ts for why it is one
 // document rather than four endpoints.
-export type {
-  CapabilitySnapshot,
-  CapabilityRules,
-  CapabilitySnapshotQuery,
-  CapabilityToolSurface,
-} from './features/capabilities/contracts'
+export type { CapabilityRules, CapabilitySnapshotQuery } from './features/capabilities/contracts'
+export type { CapabilitySnapshot, CapabilityToolSurface } from './contracts/capability-snapshot'
 // `TIP_SIGNALS` is a VALUE the browser needs, so it does NOT belong here: this barrel
 // is type-only on purpose, and one value re-export from it drags the module it lives in
 // — and everything that module imports — into the web bundle. Exporting the tip
@@ -370,7 +366,7 @@ export type {
 
 export type { EditPrediction } from './features/edit-prediction/contracts'
 
-export { contextExclusionsSchema } from './features/context-fabric/exclusion-schema'
+export { contextExclusionsSchema } from './contracts/context-exclusion-schema'
 
 export type {
   ViewStateKind,

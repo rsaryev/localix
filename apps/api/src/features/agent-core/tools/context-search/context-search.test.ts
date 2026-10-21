@@ -7,10 +7,8 @@ import { zodToJsonSchema } from '@localixai/agent'
 
 import { createDatabase } from '../../../../db/connection'
 import { migrateToLatest } from '../../../../db/migrator'
-import {
-  createContextStoreRepository,
-  MAX_CHUNKS_PER_SESSION,
-} from '../../../context-store/repository'
+import { createContextStoreRepository } from '../../../context-store/repository'
+import { MAX_CHUNKS_PER_SESSION } from '../../context-index-policy'
 import type { ChatRepository } from '../../../chat/repository'
 import { createToolOutputTool } from './context-search'
 

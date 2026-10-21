@@ -15,9 +15,9 @@
 import { classifyToolCall, type AgentTool } from '@localixai/agent/agents'
 
 import { extractCallFacts } from '../agent-core/permission-engine'
-import { PERMISSION_MODES } from '../capabilities/permission-modes'
-import type { Rule } from '../capabilities/rule'
-import type { PermissionMode } from '../capabilities/permission-modes'
+import { PERMISSION_MODES } from '../../contracts/permission-modes'
+import type { Rule } from '../agent-core/capability-rule'
+import type { PermissionMode } from '../../contracts/permission-modes'
 import { WORKSPACE, type CallCase } from './core-call-cases'
 import { expectedDecision, modeSurface, type ModeSurface } from './run-surface'
 

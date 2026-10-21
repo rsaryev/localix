@@ -1,3 +1,4 @@
+import { capabilityStores } from '../../bootstrap/capability-stores'
 import { afterEach, expect, test } from 'bun:test'
 import { promises as fs } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -39,11 +40,17 @@ async function fixture() {
   kinds.register('agent', agentContributionSchema)
   const service = createPluginService({
     db,
+    capabilityStores,
     homeDir: join(root, 'home'),
     contributionKinds: kinds,
     resolveProjectCwd: async () => project,
   })
-  const agents = createAgentsService({ db, globalDir, resolveProjectCwd: async () => project })
+  const agents = createAgentsService({
+    db,
+    capabilityStores,
+    globalDir,
+    resolveProjectCwd: async () => project,
+  })
   const sources = createCapabilitySourceRepository(db, 'plugin')
   const store = createContributionStore(db, kinds)
   const write = (contributions: ContributionInput[]) =>

@@ -124,7 +124,7 @@ supports argument patterns and order, which a whole-item switch cannot express.
 
 ## Source of truth
 
-- [Capability rules and evaluation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/rule.ts)
+- [Capability rules and evaluation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/capability-rule.ts)
 - [Capability resolver and whole-tool denial](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/capabilities/resolve.ts)
 - [Permission-rule composition](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/permission-gate-build.ts)
 - [The permission gate](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/permission-gate.ts)

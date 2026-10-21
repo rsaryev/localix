@@ -12,8 +12,7 @@ import { agentParticipant } from '../../../../../db/participant'
 
 import { TOOL } from '../../../../agent-core/tool-names'
 import { buildExternalizeAfterToolCall } from '../../../../context-store/externalize'
-import { createContextStoreRepository } from '../../../../context-store/repository'
-import { agentRoute } from '../../../session-route'
+import { agentRoute } from '../../../../../contracts/session-route'
 import { speakerPlace } from '../../../policy/axes/seat'
 import { createItemAccumulator } from '../../items'
 import { withMidRunReminders } from '../../mid-run-reminders'
@@ -149,7 +148,7 @@ export async function streamRun(
       { name: 'gateRefusalStorm', shouldStop: () => intake.refusalTracker.tripped() !== undefined },
     ],
     afterToolCall: withMidRunReminders(
-      buildExternalizeAfterToolCall(createContextStoreRepository(deps.db), {
+      buildExternalizeAfterToolCall(deps.ports.contextStore, {
         userId,
         sessionId: session.id,
         participant: agentParticipant(speakerAgentId),

@@ -24,8 +24,9 @@
 import { z } from 'zod'
 import { ALL_MENTION_HANDLE } from '@localixai/agent/agents'
 
-import type { PermissionMode } from '../capabilities/permission-modes'
-import { planSnapshotPath } from './plan-paths'
+import type { PermissionMode } from '../../contracts/permission-modes'
+import { planSnapshotPath } from '../agent-core/plan-paths'
+import { PLAN_BODY_MAX, PLAN_TITLE_MAX } from '../agent-core/plan-limits'
 
 export const PLAN_STATUSES = [
   'presented',
@@ -107,10 +108,6 @@ export interface PlanRecord extends Omit<SessionPlan, 'filePath'> {
   /** Review rounds sent so far. */
   reviewRound: number
 }
-
-export const PLAN_TITLE_MAX = 200
-export const PLAN_BODY_MAX = 50_000
-export const PLAN_SUMMARY_MAX = 4_000
 
 /** The modes an approval may hand the conversation to: implementing in plan mode is not one. */
 export const IMPLEMENTATION_MODES = [

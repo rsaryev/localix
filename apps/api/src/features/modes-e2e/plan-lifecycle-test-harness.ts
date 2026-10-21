@@ -23,7 +23,7 @@ import {
   updateSession,
   type SessionLifecycleCtx,
 } from '../chat/service/session-lifecycle'
-import type { PermissionMode } from '../capabilities/permission-modes'
+import type { PermissionMode } from '../../contracts/permission-modes'
 import { createCommentRepository } from '../comments/repository'
 import { createNotificationJournal } from '../notifications/journal'
 import { startAgentNotifications } from '../notifications/producers'

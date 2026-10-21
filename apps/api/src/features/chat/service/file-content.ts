@@ -1,6 +1,6 @@
+import { ConflictError, NotFoundError } from '../../../lib/domain-errors'
 import path from 'node:path'
 
-import { ApiError } from '../../../lib/errors'
 import { shellQuote, type ExecutionEnvironment } from '../../agent-core/tools/environment'
 import { atomicWriteLocal } from './fs-mutations'
 import { BINARY_DOC_MIME, BINARY_IMAGE_MIME } from './files'
@@ -77,7 +77,7 @@ export async function readFile(
       { uncapped: true, signal: opts?.signal },
     )
     if (res.exitCode !== 0) {
-      throw new ApiError(404, 'file_not_found', `Cannot read ${resolved}`)
+      throw new NotFoundError('file_not_found', `Cannot read ${resolved}`)
     }
     const header = res.stdout.slice(0, res.stdout.indexOf('\n') + 1 || res.stdout.length)
     // Split on a RUN of whitespace: BSD `wc -c` pads its count ("  4000000"), and the
@@ -140,7 +140,7 @@ export async function readFile(
     if (opts?.signal?.aborted) throw error
     const listing = await tryListDirectory(env, resolved)
     opts?.signal?.throwIfAborted()
-    if (listing === null) throw new ApiError(404, 'file_not_found', `Cannot read ${resolved}`)
+    if (listing === null) throw new NotFoundError('file_not_found', `Cannot read ${resolved}`)
     content = listing
   }
   opts?.signal?.throwIfAborted()
@@ -236,8 +236,7 @@ export async function writeResolvedFileUnderLock(
     current = ''
   }
   if (contentHash(current) !== baseHash) {
-    throw new ApiError(
-      409,
+    throw new ConflictError(
       'file_conflict',
       `${resolved} changed on disk since it was opened. Reload before saving.`,
     )

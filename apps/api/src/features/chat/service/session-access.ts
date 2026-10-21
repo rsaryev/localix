@@ -1,6 +1,6 @@
+import { ConflictError } from '../../../lib/domain-errors'
 import { isToolBackedItem } from '@localixai/agent/agents'
 
-import { ApiError } from '../../../lib/errors'
 import { TOOL } from '../../agent-core/tool-names'
 import type { createKeyedSerializer } from '../../../lib/keyed-serializer'
 import type { PersistedMessage, SessionSourceRuntime } from '../contracts'
@@ -17,7 +17,7 @@ export type SessionMutationLock = ReturnType<typeof createKeyedSerializer>
 
 export function assertMutableChatSession(session: SessionRecord) {
   if (session.sessionKind !== 'chat') {
-    throw new ApiError(409, 'runtime_session_readonly', 'Runtime sessions are read-only')
+    throw new ConflictError('runtime_session_readonly', 'Runtime sessions are read-only')
   }
 }
 
@@ -32,8 +32,7 @@ export function assertMutableChatSession(session: SessionRecord) {
  */
 export function assertUserWritableSession(session: SessionRecord) {
   if (session.closedAt) {
-    throw new ApiError(
-      409,
+    throw new ConflictError(
       'session_closed',
       'This sub-agent was closed and takes no more messages',
     )
@@ -41,7 +40,7 @@ export function assertUserWritableSession(session: SessionRecord) {
   const delegatedChild =
     session.sessionKind === 'subagent' && session.provenance.kind === 'task-delegation'
   if (session.sessionKind !== 'chat' && !delegatedChild) {
-    throw new ApiError(409, 'runtime_session_readonly', 'This runtime session is read-only')
+    throw new ConflictError('runtime_session_readonly', 'This runtime session is read-only')
   }
 }
 
@@ -69,7 +68,7 @@ export function assertSessionNotBusy(
 ) {
   const busy = runner.isBusy ? runner.isBusy(sessionId) : runner.isRunning(sessionId)
   if (busy) {
-    throw new ApiError(409, 'session_busy', message)
+    throw new ConflictError('session_busy', message)
   }
 }
 

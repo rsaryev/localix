@@ -1,4 +1,4 @@
-import { ApiError } from '../../../lib/errors'
+import { InvalidRequestError } from '../../../lib/domain-errors'
 import { PLUGIN_BUILD_TOOL } from '../../plugins/authoring/prose'
 import type { MessageMutationResponse } from '../contracts'
 import type { SessionRecord } from '../repository'
@@ -53,7 +53,7 @@ export async function handlePluginCreateSubcommand(
   // Reject what would fail the turn before it starts: an active session, an agentless one.
   assertSessionNotBusy(ctx.runner, session.id, BUSY_STOP_FIRST)
   if (!session.agents.length) {
-    throw new ApiError(400, 'session_party_empty', 'Choose an agent before running a command')
+    throw new InvalidRequestError('session_party_empty', 'Choose an agent before running a command')
   }
   // An agent turn, not a direct reply: the user's message stays in the transcript as the request
   // it is, and the run cannot start without the one tool that creates the plugin.

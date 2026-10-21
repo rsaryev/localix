@@ -1,4 +1,4 @@
-import { ApiError } from '../../../lib/errors'
+import { ConflictError } from '../../../lib/domain-errors'
 import { contentHash } from './file-ops-context'
 
 /** Outcome of a project-wide Replace all run. */
@@ -44,8 +44,7 @@ export async function commitReplacePlans(
       }
     }
     if (rollbackFailures.length > 0) {
-      throw new ApiError(
-        409,
+      throw new ConflictError(
         'replace_partial',
         `Replace failed and ${rollbackFailures.length} file${rollbackFailures.length === 1 ? '' : 's'} could not be safely restored: ${rollbackFailures.join(', ')}`,
       )

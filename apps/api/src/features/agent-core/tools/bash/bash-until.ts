@@ -17,7 +17,7 @@ import {
   MONITOR_MAX_TIMEOUT_MS,
   MONITOR_MIN_INTERVAL_SECONDS,
   monitorEndPhrase,
-} from '../../../monitors/contracts'
+} from './monitor-wait'
 
 /** How many polls must fit before the deadline; the interval is clamped to guarantee it. */
 const MIN_POLLS_BEFORE_DEADLINE = 4

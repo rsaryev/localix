@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { inclusiveFrom, inclusiveTo } from './usage-query-helpers'
+import { inclusiveFrom, inclusiveTo } from './repository-query-helpers'
 
 // Guards the iter12 fix: usage_events.created_at is SQLite CURRENT_TIMESTAMP
 // ('YYYY-MM-DD HH:MM:SS'). A bare-date upper bound string-compares BELOW every

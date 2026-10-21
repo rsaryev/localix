@@ -1,3 +1,4 @@
+import { InvalidRequestError } from '../../lib/domain-errors'
 import type { Kysely, Updateable } from 'kysely'
 import type { AppDatabase, UserProfilesTable } from '../../db/types'
 import { createUserProfileRepository, type UserProfileRow } from './repository'
@@ -20,7 +21,6 @@ import {
   isUiSettingsWithinIngressBudget,
 } from './profile-limits'
 import { createViewStateService } from './view-state-service'
-import { ApiError } from '../../lib/errors'
 
 export interface UserServiceDeps {
   db: Kysely<AppDatabase>
@@ -57,8 +57,7 @@ export function createUserService(deps: UserServiceDeps) {
     }
     const parsed = agentSettingsSchema.safeParse(next)
     if (!parsed.success || !isAgentSettingsWithinIngressBudget(parsed.data)) {
-      throw new ApiError(
-        400,
+      throw new InvalidRequestError(
         'agent_settings_invalid',
         'Merged agent settings are invalid or exceed the serialized size limit.',
       )
@@ -74,8 +73,7 @@ export function createUserService(deps: UserServiceDeps) {
     }
     const parsed = uiSettingsSchema.safeParse(next)
     if (!parsed.success || !isUiSettingsWithinIngressBudget(parsed.data)) {
-      throw new ApiError(
-        400,
+      throw new InvalidRequestError(
         'ui_settings_invalid',
         'Merged UI settings are invalid or exceed the serialized size limit.',
       )

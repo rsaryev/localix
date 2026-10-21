@@ -1,4 +1,4 @@
-import { sessionRoute } from '../session-route'
+import { sessionRoute } from '../../../contracts/session-route'
 import type { AgentRunner } from '../runtime/agent-runner'
 import type { ChatRepository } from '../repository'
 import type { SessionMutationLock } from './session-access'

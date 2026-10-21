@@ -23,8 +23,8 @@ import type { CallClass } from '@localixai/agent/agents'
 
 import { splitCompoundCommand } from './tools/bash/bash-command-shape'
 import type { PermissionRule as StoredPermissionRule } from '../projects/contracts'
-import { matches } from '../capabilities/rule'
-import { resourceClassOf } from '../capabilities/resource-classes'
+import { matches } from './capability-rule'
+import { resourceClassOf } from './capability-resource-classes'
 import { matchesCapabilityCall } from './capability-call-match'
 import type { CallFacts } from './permission-facts'
 

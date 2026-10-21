@@ -11,7 +11,7 @@ import {
   MODEL_ROUTING_TASKS,
   isModelRoutingTaskEnabled,
   type ModelRoutingTaskKey,
-} from '../chat/model-task-catalog'
+} from '../../contracts/model-task-catalog'
 
 /** A resolved model ({connectionId, modelId}) or null when nothing resolves. */
 export type ResolvedModel = { providerConnectionId: string; modelId: string } | null

@@ -24,7 +24,6 @@ import { buildConfigureOptions } from './configure-options'
 import { buildPlanOptions } from './plan-options'
 import type { RuntimeToolWiringContext } from './runtime-tools'
 import type { buildRunToolRegistry } from './runtime-tools'
-import { createContextStoreRepository } from '../../../context-store/repository'
 import { createSkipAnswerTool } from '../../../agent-core/tools/skip-answer'
 
 type RegistryParams = Parameters<typeof buildRunToolRegistry>[1]
@@ -64,7 +63,7 @@ export function buildOptionalToolPorts(
 ): { optional: OptionalToolPorts; ledgerRef: { current?: ToolLedger } } {
   const { deps, repo, memoryRepo } = ctx
   const { userId, session, defaultCwd, disabledTools, agentProfile, loadedPlugins } = params
-  const contextStore = createContextStoreRepository(deps.db)
+  const contextStore = deps.ports.contextStore
   // Filled by the caller once the registry (and so the ledger) exists — `configure` reads it
   // at call time.
   const ledgerRef: { current?: ToolLedger } = {}

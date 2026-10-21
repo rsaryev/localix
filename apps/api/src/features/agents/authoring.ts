@@ -1,3 +1,4 @@
+import { ConflictError, ForbiddenError, InvalidRequestError } from '../../lib/domain-errors'
 import {
   agentAuthoredBatchSchema,
   agentAuthoredBlueprintSchema,
@@ -36,15 +37,14 @@ export function createAgentAuthoring(
 ): Pick<AgentsService, 'createAgentFromAgent' | 'createAgentsFromAgent'> {
   const scopeOf = (origin: AgentCreationOrigin) => {
     if (!origin.agentId || !origin.sessionId || !origin.operationId) {
-      throw new ApiError(400, 'agent_creation_origin', 'Agent creation requires a run origin')
+      throw new InvalidRequestError('agent_creation_origin', 'Agent creation requires a run origin')
     }
     return origin.projectId ?? ''
   }
   const sourceOf = async (userId: string, origin: AgentCreationOrigin): Promise<Source> => {
     const actor = await ports.find(userId, origin.agentId, origin.projectId ?? '')
     if (!actor?.enabled || actor.record.id !== origin.agentId) {
-      throw new ApiError(
-        403,
+      throw new ForbiddenError(
         'agent_creator_unavailable',
         'The creating agent is unavailable in this registry',
       )
@@ -74,16 +74,14 @@ export function createAgentAuthoring(
         stored.fingerprint !== fingerprint ||
         stored.batchFingerprint !== batch?.batchFingerprint
       ) {
-        throw new ApiError(
-          409,
+        throw new ConflictError(
           'agent_creation_conflict',
           'This operation already created a different agent',
         )
       }
       const saved = await ports.find(userId, row.name, scope)
       if (saved) return saved
-      throw new ApiError(
-        409,
+      throw new ConflictError(
         'agent_creation_incomplete',
         'The earlier creation is unavailable; inspect the registry before retrying',
       )
@@ -124,8 +122,7 @@ export function createAgentAuthoring(
             stored.batchOperationId === batch.batchOperationId &&
             stored.batchFingerprint !== batch.batchFingerprint
           ) {
-            throw new ApiError(
-              409,
+            throw new ConflictError(
               'agent_creation_conflict',
               'This operation already created a different team',
             )

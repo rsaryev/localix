@@ -2,8 +2,8 @@ import { sql, type Kysely } from 'kysely'
 
 import type { AppDatabase } from '../../db'
 import { mutableColumns, insertColumns } from './usage-event-columns'
-import { createUsageQueries } from './usage-queries'
-import { createUsageReconciliation } from './usage-reconciliation'
+import { createUsageQueries } from './repository-queries'
+import { createUsageReconciliation } from './repository-reconciliation'
 import type { UsageEventInput } from './usage-types'
 
 // Type contracts live in usage-types.ts. Re-export them here so the historical

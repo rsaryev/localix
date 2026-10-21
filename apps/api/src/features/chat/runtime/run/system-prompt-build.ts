@@ -1,4 +1,4 @@
-import { agentRoute } from '../../session-route'
+import { agentRoute } from '../../../../contracts/session-route'
 /**
  * Per-run system-prompt assembly: gathers the volatile prompt sections
  * (plugins summary, active sub-agents, loop awareness,

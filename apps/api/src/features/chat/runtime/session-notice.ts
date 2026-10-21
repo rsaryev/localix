@@ -25,7 +25,7 @@ import { randomUUID } from 'node:crypto'
 
 import { SYSTEM_PARTICIPANT } from '../../../db'
 import type { StoredSystemNotice } from '../../../db/payload'
-import { PERMISSION_MODE_NOTICE, type PermissionMode } from '../../capabilities/permission-modes'
+import { PERMISSION_MODE_NOTICE, type PermissionMode } from '../../../contracts/permission-modes'
 import type { AgentStreamEvent, PersistedMessage } from '../contracts'
 import { toPersistedMessage } from './message-envelope'
 import { noticeVisibility } from '../system-notice-audience'

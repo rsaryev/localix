@@ -13,7 +13,7 @@
  *
  * Pure-ish module — Node fs + the shared contracts only, no chat/UI imports.
  */
-import { collectUserConfigShellTokens } from '../plugins/mcp-substitute'
+import { collectUserConfigShellTokens } from '../ext/user-config-substitute'
 import type {
   CcHookEvent,
   CcHookGroup,

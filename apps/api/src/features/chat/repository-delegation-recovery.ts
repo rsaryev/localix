@@ -1,0 +1,86 @@
+/** The recovery sweep's reads (`service/recover-delegation.ts`): which settled children lack a report receipt. */
+import { sql, type Kysely } from 'kysely'
+import type { AppDatabase } from '../../db/types'
+import { DELEGATION_REPORT_KEY_PREFIX } from './runtime/delegation-report'
+import { receiptHorizon } from './runtime/delivery-receipts'
+
+/** A child this young may still be reporting live; the sweep leaves it to that path. */
+const LIVE_GRACE_MS = 30_000
+
+/** The child's latest assistant row — its latest run's identity, as the live seam keys it. */
+const LATEST_RUN_ID = sql<string | null>`(SELECT m.id FROM agent_messages m
+  WHERE m.session_id = s.id AND m.role = 'assistant' ORDER BY m.sequence DESC LIMIT 1)`
+
+/** The window both queries read: settled past the grace period, inside the receipt horizon. */
+const settledWithin = (now: number) => ({
+  after: receiptHorizon(now),
+  before: new Date(now - LIVE_GRACE_MS).toISOString(),
+})
+
+/**
+ * The users owning a candidate child. Read first, because the per-user scan below is what the
+ * recovery index serves; a scan without the user leads with no key and reads every session.
+ */
+export function recoveryUsersQuery(db: Kysely<AppDatabase>, now = Date.now()) {
+  const window = settledWithin(now)
+  return db
+    .selectFrom('agent_sessions')
+    .select('user_id')
+    .distinct()
+    .where('session_kind', '=', 'subagent')
+    .where('runtime_status', 'in', ['completed', 'failed', 'stopped'])
+    .where('updated_at', '>', window.after)
+    .where('updated_at', '<', window.before)
+}
+
+/** Kept as a builder so query-plan tests exercise the production recovery scan. */
+export function delegationRecoveryQuery(db: Kysely<AppDatabase>, userId: string, now = Date.now()) {
+  const window = settledWithin(now)
+  return (
+    db
+      .selectFrom('agent_sessions as s')
+      .innerJoin('agent_sessions as parent', (join) =>
+        join
+          .onRef('parent.id', '=', 's.parent_session_id')
+          .onRef('parent.user_id', '=', 's.user_id'),
+      )
+      // Keyed by the latest run exactly as the live seam keys it; a child that never produced an
+      // assistant row failed at launch, which the continuation reports as the `launch` run.
+      .leftJoin('agent_delivery_receipts as receipt', (join) =>
+        join.onRef(
+          'receipt.delivery_key',
+          '=',
+          sql<string>`${DELEGATION_REPORT_KEY_PREFIX} || s.id || ':' || coalesce(${LATEST_RUN_ID}, 'launch')`,
+        ),
+      )
+      .select(['s.id', 's.title', 's.parent_session_id', 's.runtime_status'])
+      .select(sql<string | null>`${LATEST_RUN_ID}`.as('run_id'))
+      .select(
+        sql<string | null>`json_extract(s.invocation_json, '$.parentParticipant')`.as('recipient'),
+      )
+      // The delegating participant's handle in the session the report lands in — the delegator's
+      // own (`delegationReportSession`) — so a recovered report routes exactly like a live one.
+      .select(
+        sql<string | null>`(SELECT sa.handle FROM conversation_participants sa
+      WHERE sa.session_id = parent.id
+        AND 'agent:' || sa.agent_id = json_extract(s.invocation_json, '$.parentParticipant'))`.as(
+          'recipient_handle',
+        ),
+      )
+      .select(
+        sql<string | null>`(SELECT json_extract(m.payload_json, '$.content') FROM agent_messages m
+      WHERE m.session_id = s.id AND m.role = 'assistant' ORDER BY m.sequence DESC LIMIT 1)`.as(
+          'report',
+        ),
+      )
+      .where('s.user_id', '=', userId)
+      .where('s.session_kind', '=', 'subagent')
+      .where(sql<string>`json_extract(s.invocation_json, '$.kind')`, '=', 'task-delegation')
+      .where('s.runtime_status', 'in', ['completed', 'failed', 'stopped'])
+      .where('s.updated_at', '>', window.after)
+      .where('s.updated_at', '<', window.before)
+      .where('receipt.delivery_key', 'is', null)
+      .orderBy('s.updated_at', 'asc')
+      .limit(100)
+  )
+}

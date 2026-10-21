@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 
-import type { PermissionMode } from '../../capabilities/permission-modes'
+import type { PermissionMode } from '../../../contracts/permission-modes'
 import { permissionModeChangeNotice } from '../runtime/session-notice'
 import { updateSession, type SessionLifecycleCtx } from './session-lifecycle'
 import type { PersistedMessage } from '../contracts'

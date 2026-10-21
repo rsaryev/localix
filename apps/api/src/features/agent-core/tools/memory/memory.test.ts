@@ -7,7 +7,7 @@ import {
   type MemoryRepository,
 } from '../../../memory/repository'
 import { usageOf } from '../../../memory/file-store'
-import type { MemoryScope } from '../../../memory/scope-policy'
+import type { MemoryScope } from '../../memory-scope-policy'
 
 // In-memory stub: records every set() and serves a fixed getByKey/list result so
 // we can assert the tool's scope routing + read-preference without a database.

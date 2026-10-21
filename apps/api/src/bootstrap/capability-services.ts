@@ -3,13 +3,14 @@ import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../db'
 import { mcpClientManager } from '../features/mcp/client-manager'
 import { createCapabilitySnapshotService } from '../features/capabilities/snapshot'
+import { SLASH_COMMANDS } from '../features/chat/slash-catalog'
 import { createCapabilityApplyService, namesOf } from '../features/capabilities/apply'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { createCapabilityRuleRepository } from '../features/capabilities/rule-repository'
 import { resolveCapabilities } from '../features/capabilities/resolve'
 import { builtinAgentPresetFor } from '../features/capabilities/builtin-agent-presets'
 import { createAvailabilityWriter, readAvailability } from '../features/capabilities/availability'
-import type { Rule } from '../features/capabilities/rule'
+import type { Rule } from '../features/agent-core/capability-rule'
 import type { CapabilityScope } from '../features/capabilities/contracts'
 import type { CapabilityRoutesService } from '../features/capabilities/routes'
 import { toSkillSummary } from '../features/chat/service/skills'
@@ -65,6 +66,7 @@ export function createCapabilityServices({
   // toggle and the run that follows it read the same rows.
   const capabilityRules = createCapabilityRuleRepository(db)
   const capabilitySnapshotService = createCapabilitySnapshotService({
+    builtinCommands: SLASH_COMMANDS,
     listPluginContributions: (userId, projectId) =>
       pluginService.listPluginContributions(userId, { projectId }),
     listAgents: (userId, projectId) => agentsService.listAgents(userId, { projectId }),

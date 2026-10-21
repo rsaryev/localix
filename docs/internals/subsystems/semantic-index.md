@@ -61,8 +61,8 @@ old one is reconciled in full once at start, which catches what changed while it
 
 | Collection             | Source                                    | Category in the status bar |
 | ---------------------- | ----------------------------------------- | -------------------------- |
-| `chat.messages`        | `chat/semantic-sources.ts`                | Messages                   |
-| `chat.sessions`        | `chat/semantic-sources.ts`                | Chats                      |
+| `chat.messages`        | `chat/repository-semantic-sources.ts`     | Messages                   |
+| `chat.sessions`        | `chat/repository-semantic-sources.ts`     | Chats                      |
 | `capabilities.skills`  | `skills-curator/semantic.ts`              | Skills                     |
 | `capabilities.plugins` | `plugins/semantic.ts`                     | Plugins                    |
 | `capabilities.mcp`     | `mcp/semantic.ts`                         | MCP servers                |
@@ -125,7 +125,7 @@ share the downloader, catalog, router and status; a new kind adds only its flags
   [service.test.ts](../../../apps/api/src/features/local-models/service.test.ts)
 - [Semantic service](../../../apps/api/src/features/embeddings/service.ts) ·
   [semantic-pipeline.test.ts](../../../apps/api/src/features/chat/semantic-pipeline.test.ts)
-- [Chat sources](../../../apps/api/src/features/chat/semantic-sources.ts) ·
+- [Chat sources](../../../apps/api/src/features/chat/repository-semantic-sources.ts) ·
   [hybrid providers](../../../apps/api/src/features/chat/search-provider-hybrid.ts)
 - [Local provider port](../../../packages/agent/src/runtime/local-models.ts)
 - [Agent tool](../../../apps/api/src/features/agent-core/tools/global-search/global-search.ts)

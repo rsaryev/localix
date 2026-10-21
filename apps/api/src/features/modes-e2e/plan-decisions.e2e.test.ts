@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 
 import { PlanConflictError } from '../plans/conflict'
-import { createPlanLifecycle, type PlanLifecycle } from './plan-lifecycle-harness'
+import { createPlanLifecycle, type PlanLifecycle } from './plan-lifecycle-test-harness'
 
 /**
  * A DECISION AGAINST A LIST THAT MAY BE STALE, through the wired lifecycle.

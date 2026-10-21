@@ -64,7 +64,10 @@ export function createOperationContexts(
     sessionLifecycleCtx,
   } = core
 
-  const { buildLanguageModel, readAgentSettings } = createAuxProviderHelpers(deps)
+  const { buildLanguageModel, readAgentSettings } = createAuxProviderHelpers({
+    ...deps,
+    userProfileRepo: deps.ports.userProfileRepo,
+  })
 
   const maybeGenerateTitle = createTitleGenerator({
     repo,
