@@ -219,4 +219,4 @@ ends that watch. A wake shows at most 20 event entries and reports how many were
 - [Background deadline normalization](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/bash/bash.ts)
 - [Individual check deadline and result suppression](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/monitors/action.ts)
 - [Wake queue priority and coalescing](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/wake-queue.ts)
-- [Composer strip](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/prompt-input/WorkStrip.tsx)
+- [Composer strip](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/chat/ui/prompt-input/WorkStrip.tsx)

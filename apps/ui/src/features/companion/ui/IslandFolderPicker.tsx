@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { ProjectFolderMenu } from '@/features/chat/ui/ProjectFolderMenu'
+import { ProjectFolderMenu } from '@/entities/chat/ui/ProjectFolderMenu'
 import type { Project } from '@/shared/api/contracts'
 import { backendClient } from '@/shared/api/client'
-import { useChatStore } from '@/features/chat/model/store'
+import { useChatStore } from '@/entities/chat/model/store'
 import type { useQuickChat } from '../model/useQuickChat'
 
 export function IslandFolderPicker({

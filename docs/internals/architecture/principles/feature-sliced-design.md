@@ -28,7 +28,7 @@ imports past it expose internals and make refactoring harder.
 
 ## Rules we take
 
-- Import only from layers strictly below: app > pages > widgets > features > shared.
+- Import only from layers strictly below: app > pages > widgets > features > entities > shared.
 - Do not import from another slice on the same layer; lift the shared piece to a lower layer or pass
   it through a port or prop.
 - Import a slice through its public entry, not through `model/` or `ui/` internals.
@@ -37,22 +37,22 @@ imports past it expose internals and make refactoring harder.
 
 ## How Localix applies it today
 
-`apps/ui/src` has `app`, `pages`, `widgets`, `features` and `shared`, with no `entities` layer.
+`apps/ui/src` has `app`, `pages`, `widgets`, `features`, `entities` and `shared`. `entities/chat`
+(the chat store, transcript and composer) and `entities/workspace-grid` (the grid store) hold what
+several features read; `features/chat` and `features/workspace-grid` keep only their contributions.
 `uiLayers` and `uiLayer` in `scripts/check-architecture.mjs` rank them, and the checker reports "FSD
 <layer> cannot import outward from <layer>" for an upward import. The same script reports a relative
 import from `apps/ui/src` into `apps/api`, and a browser import of `@localixai/plugin-sdk/backend`.
 
-Slices use purpose segments, for example `apps/ui/src/features/chat/model` and
-`apps/ui/src/features/chat/ui`. Plugin UI meets the host through the kit, checked by
+Slices use purpose segments, for example `apps/ui/src/entities/chat/model` and
+`apps/ui/src/entities/chat/ui`. Plugin UI meets the host through the kit, checked by
 `pluginHostBoundaryProblem`.
 
 ## Known gaps
 
-- Same-layer slice imports are not checked. Non-test files under `apps/ui/src/features` import other
-  feature slices often (measured 2026-10-21): `companion` to `chat` 25 times, `inspector` to `chat`
-  17, `chat` to `settings` 10. `chat` and `settings`, `chat` and `inspector`, `chat` and `terminal`,
-  and `chat` and `external-agents` import each other.
+- Same-layer slice imports are checked by A8 in `scripts/architecture/flow-rules.ts`, with an empty
+  baseline. Test files are not counted.
 - Public APIs are not enforced. Feature slices have no `index.ts`, and other layers import paths
-  such as `@/features/chat/model/store` directly.
+  such as `@/entities/chat/model/store` directly.
 - In widgets, one same-layer edge exists: `editor-grid` imports `chat-workspace`.
 - Related: [layering](layering.md), [package principles](package-principles.md).

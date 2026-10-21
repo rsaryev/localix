@@ -6,9 +6,9 @@ import {
   messageBindingDragKind,
   WORKSPACE_TAB_DRAG_MIME,
 } from '@localixai/plugin-sdk/ui/message-binding-drag'
-import { acceptedDragKind } from '@/features/chat/ui/prompt-input/dropzoneState'
+import { acceptedDragKind } from '@/entities/chat/ui/prompt-input/dropzoneState'
 import { workItemKindRegistry } from '@/shared/contrib/uiContrib'
-import { workItemToMessageBinding } from '@/features/workspace-grid/model'
+import { workItemToMessageBinding } from '@/entities/workspace-grid/model'
 
 // A subsystem-contributed tab kind that links as a `@resource:` ref (stands in for the
 // database plugin's `db-console`, which registers the SAME mapping via the registry). Proves

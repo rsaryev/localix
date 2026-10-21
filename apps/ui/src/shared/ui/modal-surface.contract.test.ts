@@ -53,7 +53,7 @@ describe('modal surface regions', () => {
     // `overflow-x-hidden` is the mask, not the fix: the box is still an x scroll container, so
     // whatever overflowed became unreachable rather than absent. The shells use `clip` (the kit
     // half of this rule); the frame the product renders inside them must do the same.
-    const frame = read('../../features/chat/ui/hitl/HitlInteractionFrame.tsx')
+    const frame = read('../../entities/chat/ui/hitl/HitlInteractionFrame.tsx')
     expect(frame).toContain('overflow-x-clip overflow-y-auto')
     // The causes, not the clip: the header row, the detail line and the scroll region all
     // opt out of the `min-width: auto` that makes a flex/grid child refuse to shrink.
@@ -61,9 +61,9 @@ describe('modal surface regions', () => {
     expect(frame).toContain('<div className="min-w-0 flex-1">')
 
     // Every interaction view that can receive an unbreakable string states how it breaks it.
-    const ask = read('../../features/chat/ui/hitl/AskQuestionForm.tsx')
-    const secret = read('../../features/chat/ui/hitl/SecretInteractionView.tsx')
-    const confirm = read('../../features/chat/ui/hitl/ConfirmInteractionView.tsx')
+    const ask = read('../../entities/chat/ui/hitl/AskQuestionForm.tsx')
+    const secret = read('../../entities/chat/ui/hitl/SecretInteractionView.tsx')
+    const confirm = read('../../entities/chat/ui/hitl/ConfirmInteractionView.tsx')
     expect(ask).toContain('leading-snug wrap-anywhere')
     expect(ask).toContain('flex min-h-9 min-w-0 items-center')
     expect(secret).toContain('font-mono text-xs font-medium break-all')

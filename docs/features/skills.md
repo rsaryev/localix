@@ -160,4 +160,4 @@ same name. Curator pins protect automatic passes, but manual archive remains ava
 - [Skill manager operations](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/skill-ops.ts)
 - [Curator scheduling and policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/skills-curator/service.ts)
 - [Curator filesystem scope and archive moves](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/skills-curator/skill-fs.ts)
-- [Web skill-command selection](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/ui/prompt-input/useSkillCommands.tsx)
+- [Web skill-command selection](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/chat/ui/prompt-input/useSkillCommands.tsx)

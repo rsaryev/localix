@@ -43,8 +43,8 @@ Inside `apps/api/src/features/chat`, `routes.ts` and `routes-*.ts` are the prese
 `service.ts` and `service/` hold domain behaviour, and `repository.ts` and `repository-*.ts` hold
 data access. Contracts shared with clients live in `apps/api/src/features/chat/contracts/`.
 
-The UI follows the same idea through Feature-Sliced Design: `apps/ui/src/features/chat/model` holds
-state and API calls, `apps/ui/src/features/chat/ui` holds components. See
+The UI follows the same idea through Feature-Sliced Design: `apps/ui/src/entities/chat/model` holds
+state and API calls, `apps/ui/src/entities/chat/ui` holds components. See
 [Feature-Sliced Design](feature-sliced-design.md).
 
 `scripts/check-architecture.mjs` keeps UI access to the API in one place: a raw `fetch` to

@@ -52,7 +52,7 @@ async function mount(binding: MessageContextBindingDraft) {
   const { act } = React
   const { createRoot } = await import('react-dom/client')
   const { MemoryRouter } = await import('react-router')
-  const { useChatStore } = await import('@/features/chat/model/store')
+  const { useChatStore } = await import('@/entities/chat/model/store')
   const { backendClient } = await import('@/shared/api/client')
   const { PluginContextBindingPreview } = await import('../pluginBindingComponents')
   useChatStore.setState({ sessions: [session], allSessions: [session] })

@@ -5,7 +5,7 @@ import {
   closeGridTab,
   focusedVisibleTabId,
   type WorkItemKind,
-} from '@/features/workspace-grid/model'
+} from '@/entities/workspace-grid/model'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { requireOpenChat } from '@/shared/lib/pageOpenChat'
 import { openPageWorkItem } from './openPageWorkItem'

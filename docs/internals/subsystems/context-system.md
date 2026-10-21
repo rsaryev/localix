@@ -160,7 +160,7 @@ These are enforced bounds, not user-facing settings.
 - [Tool-result normalization](../../../packages/agent/src/agents/error-classification.ts)
 - [Tool item persistence flow](../../../apps/api/src/features/chat/runtime/run/event-handlers-tools.ts)
   · [item accumulator](../../../apps/api/src/features/chat/runtime/items.ts)
-- [Derived source collectors](../../../apps/ui/src/features/chat/model/sessionSources.ts)
-- [Message Sources action](../../../apps/ui/src/features/chat/ui/MessageSources.tsx) ·
+- [Derived source collectors](../../../apps/ui/src/entities/chat/model/sessionSources.ts)
+- [Message Sources action](../../../apps/ui/src/entities/chat/ui/MessageSources.tsx) ·
   [Activity inspector](../../../apps/ui/src/features/inspector/ui/MessageReplayTab.tsx)
-- [Source navigation](../../../apps/ui/src/features/chat/ui/sources/SourceRow.tsx)
+- [Source navigation](../../../apps/ui/src/entities/chat/ui/sources/SourceRow.tsx)

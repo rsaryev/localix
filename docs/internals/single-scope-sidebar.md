@@ -62,7 +62,7 @@ sessions.
 
 The grid uses the active session id as `activeScope` — for VISIBILITY only. Which scope a tab lives
 in is never taken from it: every open names its session, and `resolveOpenScope`
-(`features/workspace-grid/model/scope.ts`) stamps that session, or `@global` for an app-level kind,
+(`entities/workspace-grid/model/scope.ts`) stamps that session, or `@global` for an app-level kind,
 and refuses a session kind that names none. Session-scoped items are visible only in their scope,
 while items stamped `@global` remain visible. Every tab body reads its own session from
 `useWorkItemSessionId()`, provided by the grid around each body. That grid scope is a different
@@ -128,10 +128,10 @@ changed in Settings.
 - [Route grammar and builders](../../apps/ui/src/shared/routing/routes.ts)
 - [Routed navigation](../../apps/ui/src/shared/hooks/useRoutedNavigation.ts)
 - [URL-to-store synchronization](../../apps/ui/src/pages/chat/model/useUrlStoreSync.ts)
-- [Project scope reducer](../../apps/ui/src/features/chat/model/projectActionsSlice.ts)
-- [Pre-render shell restoration](../../apps/ui/src/features/chat/model/restoreShellFrame.ts)
-- [Sidebar projection](../../apps/ui/src/features/chat/model/useSidebarSessions.ts)
-- [Workspace location memory](../../apps/ui/src/features/chat/model/workspaceLocation.ts)
-- [Grid visibility rule](../../apps/ui/src/features/workspace-grid/model/scope.ts)
-- [Unified breadcrumb](../../apps/ui/src/features/chat/ui/UnifiedBreadcrumb.tsx)
-- [Scope source-of-truth tests](../../apps/ui/src/features/chat/model/scopeSourceOfTruth.test.ts)
+- [Project scope reducer](../../apps/ui/src/entities/chat/model/projectActionsSlice.ts)
+- [Pre-render shell restoration](../../apps/ui/src/entities/chat/model/restoreShellFrame.ts)
+- [Sidebar projection](../../apps/ui/src/entities/chat/model/useSidebarSessions.ts)
+- [Workspace location memory](../../apps/ui/src/entities/chat/model/workspaceLocation.ts)
+- [Grid visibility rule](../../apps/ui/src/entities/workspace-grid/model/scope.ts)
+- [Unified breadcrumb](../../apps/ui/src/entities/chat/ui/UnifiedBreadcrumb.tsx)
+- [Scope source-of-truth tests](../../apps/ui/src/entities/chat/model/scopeSourceOfTruth.test.ts)

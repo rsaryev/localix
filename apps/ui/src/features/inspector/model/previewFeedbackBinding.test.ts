@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { previewFeedbackBinding } from './previewFeedbackBinding'
-import { refFromContextBinding } from '@/features/chat/model/sendRefs'
+import { refFromContextBinding } from '@/entities/chat/model/sendRefs'
 
 const input = {
   id: 'first',

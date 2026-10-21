@@ -1,7 +1,7 @@
 import type { ReasoningEffort } from '@localixai/agent'
 import type { UiSession } from '@/shared/api/contracts'
-import { findSessionInState } from '@/features/chat/model/findSession'
-import { isEmptyDraftSession } from '@/features/chat/model/sessionListHelpers'
+import { findSessionInState } from '@/entities/chat/model/findSession'
+import { isEmptyDraftSession } from '@/entities/chat/model/sessionListHelpers'
 
 interface ChatState {
   activeSessionId: string | null

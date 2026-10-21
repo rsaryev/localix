@@ -1,9 +1,9 @@
 import { lazy, memo, Suspense, useCallback, useEffect } from 'react'
 import type { WorkItem } from '@/shared/lib/workItem'
 import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
-import { isCoreWorkItemKind, sessionOfScope } from '@/features/workspace-grid/model'
-import { publishLiveTabMessageContext } from '@/features/workspace-grid/model/liveTabMessageContext'
-import { useChatStore } from '@/features/chat/model/store'
+import { isCoreWorkItemKind, sessionOfScope } from '@/entities/workspace-grid/model'
+import { publishLiveTabMessageContext } from '@/entities/workspace-grid/model/liveTabMessageContext'
+import { useChatStore } from '@/entities/chat/model/store'
 import { WorkItemSessionProvider } from '@localixai/plugin-sdk/ui/work-item-session'
 import type { ResolvedTheme } from '@/shared/theme/useTheme'
 import { chatSurface } from '@/shared/ui/chatSurfaceSlot'
@@ -55,7 +55,7 @@ const AgentProfileTab = lazy(() =>
   })),
 )
 const TranscriptTab = lazy(() =>
-  import('@/features/chat/ui/TranscriptTab').then((m) => ({ default: m.TranscriptTab })),
+  import('@/entities/chat/ui/TranscriptTab').then((m) => ({ default: m.TranscriptTab })),
 )
 
 const MessageReplayTab = lazy(() =>

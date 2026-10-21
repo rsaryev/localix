@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { TerminalClientFrame } from '@localixai/api/client'
-import { useGridStore } from '@/features/workspace-grid/model'
+import { useGridStore } from '@/entities/workspace-grid/model'
 import { getTerminalLiveness } from '../api'
 import { workItemTransferState } from '@/shared/lib/workItemTransferState'
 import { terminalTransferReadyKey, workItemTransferReady } from '@/shared/lib/workItemTransferReady'

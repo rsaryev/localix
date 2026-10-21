@@ -4,11 +4,11 @@ import { toast } from '@/shared/lib/notify'
 import { useLatestRef } from '@/shared/lib/useLatestRef'
 
 import { backendClient } from '@/shared/api/client'
-import { useChatStore } from '@/features/chat/model/store'
-import { useForkSession } from '@/features/chat/model/useForkSession'
-import type { SessionRuntime, AgentOptions } from '@/features/chat/model/agent-runtime'
-import { findSessionInState } from '@/features/chat/model/findSession'
-import { applyServerSession } from '@/features/chat/model/sessionSync'
+import { useChatStore } from '@/entities/chat/model/store'
+import { useForkSession } from '@/entities/chat/model/useForkSession'
+import type { SessionRuntime, AgentOptions } from '@/entities/chat/model/agent-runtime'
+import { findSessionInState } from '@/entities/chat/model/findSession'
+import { applyServerSession } from '@/entities/chat/model/sessionSync'
 
 export interface MessageActionsDeps {
   activeSessionId: string | null

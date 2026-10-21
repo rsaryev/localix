@@ -206,8 +206,8 @@ state.
 Choosing among a few options, such as a mode, an agent, a version or a level, is a kit
 `DropdownMenu` (or `ContextMenu`) built from `MenuEntries`, the same family every menu in the app
 uses, so spacing, colour and keyboard behaviour cannot drift between pickers. The plan's Approve
-menu (`apps/ui/src/features/chat/ui/plan/ApprovePlanPopover.tsx`) and the composer's mode menu
-(`apps/ui/src/features/chat/ui/prompt-input/PermissionModeControl.tsx`) are the reference.
+menu (`apps/ui/src/entities/chat/ui/plan/ApprovePlanPopover.tsx`) and the composer's mode menu
+(`apps/ui/src/entities/chat/ui/prompt-input/PermissionModeControl.tsx`) are the reference.
 
 - An option row is `selected` (a radio: its icon stays in the leading slot, a ✓ sits at the end),
   never `checked`, which is a checkbox for a real multi-select or an on/off toggle. Both are drawn

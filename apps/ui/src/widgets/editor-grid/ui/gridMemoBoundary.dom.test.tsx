@@ -28,7 +28,7 @@ const read = (file: string) => readFileSync(new URL(`./${file}`, import.meta.url
 describe('editor grid memo boundaries', () => {
   test('a leaf keeps its identity across a resize — the precondition for the bail', async () => {
     const { makeLeaf, resizeAdjacentLeaves, leaves } =
-      await import('@/features/workspace-grid/model/tree')
+      await import('@/entities/workspace-grid/model/tree')
 
     const a = makeLeaf('g1')
     const b = makeLeaf('g2')

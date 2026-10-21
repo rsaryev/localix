@@ -1,5 +1,5 @@
 import { PanelRight, PanelRightDashed, RotateCcw } from 'lucide-react'
-import { leafIds, useGridStore } from '@/features/workspace-grid/model'
+import { leafIds, useGridStore } from '@/entities/workspace-grid/model'
 import { CMD } from '@/shared/lib/keybindings/catalog'
 import { useChordHint } from '@localixai/kit/keybindings'
 import { IconButton } from '@localixai/kit/icon-button'

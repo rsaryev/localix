@@ -111,7 +111,7 @@ Ctrl+Shift+Right accepts a line. Composition, inactive/read-only chat, caret pos
 automatic work. Late replies may survive exact prefix typing within the same session and context.
 
 An EMPTY chat composer predicts only one thing: the person's reply to the agent's last message
-([`replyPrediction.ts`](../../../apps/ui/src/features/chat/ui/prompt-input/replyPrediction.ts)).
+([`replyPrediction.ts`](../../../apps/ui/src/entities/chat/ui/prompt-input/replyPrediction.ts)).
 
 | Rule    | What it says                                                                                               |
 | ------- | ---------------------------------------------------------------------------------------------------------- |

@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
-import { useChatStore } from '@/features/chat/model/store'
-import { findSessionInState } from '@/features/chat/model/findSession'
+import { useChatStore } from '@/entities/chat/model/store'
+import { findSessionInState } from '@/entities/chat/model/findSession'
 import { openOwnedExternalSession } from './createSession'
 
 /** URL navigation, restored chats and palette selection all open the same session's agent pane. */

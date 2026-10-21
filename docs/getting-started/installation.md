@@ -144,5 +144,5 @@ is restored; see [startup logs](troubleshooting.md#read-the-logs-of-one-launch).
 - [Native release matrix](https://github.com/rsaryev/localix/blob/main/.github/workflows/release.yml)
 - [Native updater outcomes](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/src-tauri/src/updater.rs)
 - [Bounded save request](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/src-tauri/src/frontend_flush.rs)
-- [Restart warning roster](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/model/interruptibleWork.ts)
+- [Restart warning roster](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/chat/model/interruptibleWork.ts)
 - [Migration backup and retention](https://github.com/rsaryev/localix/blob/main/apps/api/src/db/connection.ts)

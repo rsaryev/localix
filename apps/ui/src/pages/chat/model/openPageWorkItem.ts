@@ -1,4 +1,4 @@
-import { scopeKindOf } from '@/features/workspace-grid/model'
+import { scopeKindOf } from '@/entities/workspace-grid/model'
 import { inspector, type OpenWorkItemRequest } from '@/shared/lib/inspectorBus'
 import { requireOpenChat } from '@/shared/lib/pageOpenChat'
 

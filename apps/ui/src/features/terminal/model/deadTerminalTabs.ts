@@ -1,4 +1,4 @@
-import { closeGridTab, useGridStore, type WorkItem } from '@/features/workspace-grid/model'
+import { closeGridTab, useGridStore, type WorkItem } from '@/entities/workspace-grid/model'
 import type { TerminalExit } from '@/shared/lib/terminalBus'
 import { backendClient } from '@/shared/api/client'
 import { useLiveTerminalsStore } from '@/shared/lib/terminals/liveTerminals'

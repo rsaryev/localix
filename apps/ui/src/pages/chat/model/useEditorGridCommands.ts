@@ -5,7 +5,7 @@ import {
   findLeaf,
   groupViewModel,
   useGridStore,
-} from '@/features/workspace-grid/model'
+} from '@/entities/workspace-grid/model'
 import { focusPart } from '@/shared/lib/focusRing'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { requireOpenChat } from '@/shared/lib/pageOpenChat'

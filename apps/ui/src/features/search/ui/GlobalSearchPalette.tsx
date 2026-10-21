@@ -14,7 +14,7 @@ import {
 } from '@localixai/kit/command'
 import { CommandHints } from '@/shared/ui/command-hints'
 import { inspector } from '@/shared/lib/inspectorBus'
-import { useChatStore } from '@/features/chat/model/store'
+import { useChatStore } from '@/entities/chat/model/store'
 import { useSearchProject } from '../model/useSearchProject'
 import { useGlobalSearch } from '../model/useGlobalSearch'
 import { useUiNavigation } from '@/shared/hooks/useUiNavigation'

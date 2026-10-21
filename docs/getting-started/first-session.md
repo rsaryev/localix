@@ -84,7 +84,7 @@ answers.
 
 ## Source of truth
 
-- [Project-folder selection](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/chat/model/useAddProjectFolder.ts)
+- [Project-folder selection](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/chat/model/useAddProjectFolder.ts)
 - [Session lifecycle](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/session-lifecycle.ts)
 - [Turn entry and durable queueing](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/turn-entry.ts)
 - [Queue selection and steering](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/wake-queue-selection.ts)

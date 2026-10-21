@@ -94,7 +94,7 @@ describe('ChatSurface', () => {
     expect(chatSurface).not.toMatch(
       /import\s+\{\s*MessageList\s*\}\s+from\s+['"]@\/features\/chat\/ui\/MessageList['"]/,
     )
-    expect(chatSurface).toContain("await import('@/features/chat/ui/MessageList')")
+    expect(chatSurface).toContain("await import('@/entities/chat/ui/MessageList')")
     expect(chatSurface).toContain('<Suspense')
     expect(chatSurface).toContain('<LazyMessageList')
   })
@@ -106,8 +106,8 @@ describe('ChatSurface', () => {
     expect(chatSurface).not.toMatch(
       /import\s+\{\s*ChatInteractionOverlay\s*\}\s+from\s+['"]@\/features\/chat\/ui\/hitl\/ChatInteractionOverlay['"]/,
     )
-    expect(chatSurface).toContain("await import('@/features/chat/ui/MessageSearch')")
-    expect(chatSurface).toContain("await import('@/features/chat/ui/hitl/ChatInteractionOverlay')")
+    expect(chatSurface).toContain("await import('@/entities/chat/ui/MessageSearch')")
+    expect(chatSurface).toContain("await import('@/entities/chat/ui/hitl/ChatInteractionOverlay')")
     expect(chatSurface).toContain('<LazyMessageSearch')
     expect(chatSurface).toContain('<LazyChatInteractionOverlay')
   })

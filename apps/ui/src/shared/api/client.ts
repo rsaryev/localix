@@ -88,7 +88,7 @@ export const backendClient = {
   ...runsApi,
 
   // Live session events arrive over the shared realtime WebSocket — see
-  // shared/api/eventSocket.ts (subscribed by features/chat/model/agent-runtime.ts).
+  // shared/api/eventSocket.ts (subscribed by entities/chat/model/agent-runtime.ts).
 
   ...projectsApi,
   ...plansApi,

@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { GridView } from '@/widgets/editor-grid'
-import { useGridStore, leaves } from '@/features/workspace-grid/model'
+import { useGridStore, leaves } from '@/entities/workspace-grid/model'
 import { useTheme } from '@/shared/theme/useTheme'
 import { useIsMobile } from '@/shared/hooks/useIsMobile'
 import { WorkbenchToolbar } from '@localixai/kit/workbench-toolbar'

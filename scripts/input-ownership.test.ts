@@ -13,8 +13,8 @@ const RAW_INPUT = /<input\b/g
  * fields from silently forking Input's geometry and interaction states again.
  */
 const NATIVE_INPUT_OWNERS = new Map<string, number>([
-  ['apps/ui/src/features/chat/ui/SessionItem.tsx', 1],
-  ['apps/ui/src/features/chat/ui/prompt-input/PromptInput.tsx', 1],
+  ['apps/ui/src/entities/chat/ui/SessionItem.tsx', 1],
+  ['apps/ui/src/entities/chat/ui/prompt-input/PromptInput.tsx', 1],
   // Hidden file picker behind the comment card's Attach button.
   ['apps/ui/src/shared/ui/comments/CommentDraftCard.tsx', 1],
   // Markdown forwards non-task document inputs with their original props and browser styling.

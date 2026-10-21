@@ -1,6 +1,6 @@
 import type { UiSession } from '@/shared/api/contracts'
 import { ApiError } from '@/shared/api/internal'
-import { findSessionInState } from '@/features/chat/model/findSession'
+import { findSessionInState } from '@/entities/chat/model/findSession'
 
 type SessionSelectionState = {
   activeSessionId: string | null

@@ -1,6 +1,6 @@
 import type { RosterRow } from '@localixai/api/external-agent-contracts'
-import type { SessionGroupingMode } from '@/features/chat/model/sessionGrouping'
-import type { SortMode } from '@/features/chat/model/useSidebarSessions'
+import type { SessionGroupingMode } from '@/entities/chat/model/sessionGrouping'
+import type { SortMode } from '@/entities/chat/model/useSidebarSessions'
 import type { externalHistoryGroups } from './historyGroups'
 
 export type HistoryGroup = ReturnType<typeof externalHistoryGroups>[number]

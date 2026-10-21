@@ -2,24 +2,24 @@ import type { ReactNode } from 'react'
 import { Download, Globe2, MoreHorizontal, SquareTerminal } from 'lucide-react'
 
 import { StatusItems, useLiveStatusItemCount } from '@/shared/contrib/statusItems'
-import { useChatStore } from '@/features/chat/model/store'
-import { useBreadcrumbDepth } from '@/features/chat/model/useBreadcrumbDepth'
+import { useChatStore } from '@/entities/chat/model/store'
+import { useBreadcrumbDepth } from '@/entities/chat/model/useBreadcrumbDepth'
 import { useDesktopUpdate } from '@/shared/hooks/useDesktopUpdate'
-import { restartToUpdate } from '@/features/chat/model/restartToUpdate'
+import { restartToUpdate } from '@/entities/chat/model/restartToUpdate'
 import { Spinner } from '@localixai/kit/spinner'
 import {
   useGridStore,
   focusedVisibleTabId,
   closeGridTab,
   type WorkItemKind,
-} from '@/features/workspace-grid/model'
+} from '@/entities/workspace-grid/model'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@localixai/kit/dropdown-menu'
-import { TitlebarOverflowItems } from '@/features/chat/ui/TitlebarOverflowItems'
-import { UpdateAnnouncement } from '@/features/chat/ui/update-dialog/UpdateAnnouncement'
+import { TitlebarOverflowItems } from '@/entities/chat/ui/TitlebarOverflowItems'
+import { UpdateAnnouncement } from '@/entities/chat/ui/update-dialog/UpdateAnnouncement'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { CMD, useChordHint } from '@/shared/lib/keybindings'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@localixai/kit/tooltip'

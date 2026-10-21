@@ -55,7 +55,7 @@ test('join routes are read again while the picker is open when agents change', a
   const { backendClient } = await import('@/shared/api/client')
   const { resourceSync } = await import('@/shared/api/resourceSync')
   const { useJoinRoutes } =
-    await import('@/features/chat/ui/prompt-input/model-select/useJoinRoutes')
+    await import('@/entities/chat/ui/prompt-input/model-select/useJoinRoutes')
   const read = spyOn(backendClient, 'getJoinRoutes').mockResolvedValue({} as never)
   function Picker() {
     useJoinRoutes('session-1', true)

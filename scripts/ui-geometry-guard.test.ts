@@ -96,8 +96,8 @@ describe('ui geometry scale', () => {
      */
     const MEASURE_SURFACES = [
       'apps/ui/src/widgets/chat-workspace/ui/ChatSurface.tsx',
-      'apps/ui/src/features/chat/ui/TranscriptView.tsx',
-      'apps/ui/src/features/chat/ui/TranscriptTab.tsx',
+      'apps/ui/src/entities/chat/ui/TranscriptView.tsx',
+      'apps/ui/src/entities/chat/ui/TranscriptTab.tsx',
     ]
     const offenders: string[] = []
     for (const repoPath of MEASURE_SURFACES) {

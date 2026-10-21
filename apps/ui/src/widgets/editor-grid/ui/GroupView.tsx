@@ -2,7 +2,7 @@ import { memo, useCallback, useMemo } from 'react'
 import { copyText } from '@localixai/plugin-sdk/ui/interactions'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 import { TabPanel, TabStrip, useTabPanelIds, type StripTabItem } from '@localixai/kit/tabs'
-import { useChatStore } from '@/features/chat/model/store'
+import { useChatStore } from '@/entities/chat/model/store'
 import { problemBadge } from '@/features/inspector/model/problemsCount'
 import { workItemDragBus } from '@/shared/lib/workItemDragBus'
 import {
@@ -23,10 +23,10 @@ import {
   activeWorkItemContribution,
   useWorkItemKindContributions,
   type LeafNode,
-} from '@/features/workspace-grid/model'
+} from '@/entities/workspace-grid/model'
 import type { ResolvedTheme } from '@/shared/theme/useTheme'
-import { EmptyState } from '@/features/chat/ui/EmptyState'
-import { sessionOfScope } from '@/features/workspace-grid/model'
+import { EmptyState } from '@/entities/chat/ui/EmptyState'
+import { sessionOfScope } from '@/entities/workspace-grid/model'
 import type { WorkItem } from '@/shared/lib/workItem'
 import { WorkItemBody } from './registry'
 import { workItemIcon } from './workItemIcon'

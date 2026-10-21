@@ -1,5 +1,5 @@
-import { clampModelReasoning, modelReasoningOptions } from '@/features/chat/model/modelReasoning'
-import { isReasoningEffort } from '@/features/chat/model/reasoning'
+import { clampModelReasoning, modelReasoningOptions } from '@/entities/chat/model/modelReasoning'
+import { isReasoningEffort } from '@/entities/chat/model/reasoning'
 
 /**
  * The agent editor's effort choices: "Inherit" plus the levels the pinned model really offers —

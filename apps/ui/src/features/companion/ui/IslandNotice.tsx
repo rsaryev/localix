@@ -1,6 +1,6 @@
 import { Button } from '@localixai/kit/button'
 import type { AttentionItem } from '@localixai/api/client'
-import { ATTENTION_PRESENTATION } from '@/features/chat/ui/attention/presentation'
+import { ATTENTION_PRESENTATION } from '@/entities/chat/ui/attention/presentation'
 
 /**
  * A card assigned to the person (`@human`) or a plan waiting for review. Neither blocks a run, so

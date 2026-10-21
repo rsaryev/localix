@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { AgentItem } from '@localixai/agent/agents'
 import { createBoundedCache } from '@localixai/kit/lib'
-import { useChatStore } from '@/features/chat/model/store'
+import { useChatStore } from '@/entities/chat/model/store'
 import { backendClient } from '@/shared/api/client'
 import { useResourceGeneration } from '@/shared/api/resourceGeneration'
 import type { Message, UiSession } from '@/shared/api/contracts'

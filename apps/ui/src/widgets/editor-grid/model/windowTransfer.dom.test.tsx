@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
-import { emptyEditorState, useGridStore, type WorkItem } from '@/features/workspace-grid/model'
-import { useChatStore } from '@/features/chat/model/store'
+import { emptyEditorState, useGridStore, type WorkItem } from '@/entities/workspace-grid/model'
+import { useChatStore } from '@/entities/chat/model/store'
 import type { UiSession } from '@/shared/api/ui-session'
 import {
   configurePlatformCapabilities,

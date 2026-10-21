@@ -1,6 +1,6 @@
 import { useEffect, type RefObject } from 'react'
 import type { Terminal } from '@xterm/xterm'
-import { useGridStore } from '@/features/workspace-grid/model'
+import { useGridStore } from '@/entities/workspace-grid/model'
 
 /**
  * Keeps an attached terminal in step with its pane: input locks once the process has exited, and a

@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { WorkItemSessionProvider } from '@localixai/plugin-sdk/ui/work-item-session'
 import type { LspDiagnostic, UiSession } from '@/shared/api/contracts'
-import { useChatStore } from '@/features/chat/model/store'
+import { useChatStore } from '@/entities/chat/model/store'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { ProblemsTab } from './ProblemsTab'
 

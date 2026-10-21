@@ -63,6 +63,6 @@ preference is already synchronized.
 | HITL requests, questions, answers, work and queue                         | Existing server domain APIs               | Shared forms/actions/transcript projection                                    |
 
 The implementation lives in `features/user/view-state-*`, `shared/lib/view-state`, and
-`features/chat/model/useComposerDraft.ts`. The decision is recorded in
+`entities/chat/model/useComposerDraft.ts`. The decision is recorded in
 `docs/adr/0001-shared-view-state.md`; resource synchronization is documented in
 `docs/internals/client-server-sync.md`.

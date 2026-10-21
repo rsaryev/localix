@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
-import { forgetLastWorkspace } from '@/features/chat/model/persistence'
-import { useChatStore } from '@/features/chat/model/store'
+import { forgetLastWorkspace } from '@/entities/chat/model/persistence'
+import { useChatStore } from '@/entities/chat/model/store'
 import { isDeadRoutedProject } from './urlSessionSelection'
 
 /**

@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { parsePluginViewTarget } from '@localixai/api/plugin-view-target'
-import { useChatStore } from '@/features/chat/model/store'
+import { useChatStore } from '@/entities/chat/model/store'
 import { backendClient } from '@/shared/api/client'
 import { previewControlBus } from '@/shared/lib/previewControlBus'
 import { runPluginViewCommand } from '../model/pluginViewHost'

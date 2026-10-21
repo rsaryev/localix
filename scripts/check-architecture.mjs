@@ -44,10 +44,11 @@ const skippedTrees = [
 ]
 const uiLayers = new Map([
   ['shared', 0],
-  ['features', 1],
-  ['widgets', 2],
-  ['pages', 3],
-  ['app', 4],
+  ['entities', 1],
+  ['features', 2],
+  ['widgets', 3],
+  ['pages', 4],
+  ['app', 5],
 ])
 const removedInternalProviderSchemes = [
   'capability',

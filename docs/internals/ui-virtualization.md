@@ -131,7 +131,7 @@ These values are implementation constants, not Settings controls.
 
 ## Source of truth
 
-- [Chat rows and geometry](../../apps/ui/src/features/chat/ui/MessageList.tsx) ·
+- [Chat rows and geometry](../../apps/ui/src/entities/chat/ui/MessageList.tsx) ·
   [scroll policy](../../apps/ui/src/shared/hooks/useAutoScroll.ts) ·
   [snapshot cache](../../apps/ui/src/shared/hooks/chatScrollState.ts)
 - [Content-search flattening](../../apps/ui/src/features/inspector/ui/search/searchTreeRows.ts) ·

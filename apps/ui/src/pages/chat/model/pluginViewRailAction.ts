@@ -1,6 +1,6 @@
 import { createElement } from 'react'
 import { capabilityResourceUri } from '@localixai/plugin-sdk/navigation'
-import { closeGridTab, isTabOpenedAs, useGridStore } from '@/features/workspace-grid/model'
+import { closeGridTab, isTabOpenedAs, useGridStore } from '@/entities/workspace-grid/model'
 import { resolveViewIcon } from '@/features/inspector/ui/viewIcon'
 import { requireOpenChat } from '@/shared/lib/pageOpenChat'
 import type { PluginViewSpec } from '@/shared/api/contracts'

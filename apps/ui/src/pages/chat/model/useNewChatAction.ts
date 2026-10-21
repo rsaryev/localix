@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 
-import { useChatStore, type ChatStore } from '@/features/chat/model/store'
-import { useGridStore } from '@/features/workspace-grid/model'
+import { useChatStore, type ChatStore } from '@/entities/chat/model/store'
+import { useGridStore } from '@/entities/workspace-grid/model'
 import type { RoutedNavigation } from '@/shared/hooks/useRoutedNavigation'
 import { subscribeChatChrome } from '@/shared/lib/chatChromeBus'
 import { toast } from '@/shared/lib/notify'
@@ -10,7 +10,7 @@ import { useChatPagePalette } from './useChatPagePalette'
 import {
   scopedNewConversation,
   type ConversationStartStrategy,
-} from '@/features/chat/model/conversationStartStrategy'
+} from '@/entities/chat/model/conversationStartStrategy'
 
 interface NewChatActionOptions {
   /** The chat the page has open — handed to the palette commands that act on it. */

@@ -1,6 +1,6 @@
 import type { WorkItem } from '@/shared/lib/workItem'
-import { TranscriptTab } from '@/features/chat/ui/TranscriptTab'
-import { readTranscript } from '@/features/chat/model/openTranscript'
+import { TranscriptTab } from '@/entities/chat/ui/TranscriptTab'
+import { readTranscript } from '@/entities/chat/model/openTranscript'
 import { LoadingHint, EmptyHint } from '@localixai/kit/empty-hint'
 import useSWR from 'swr'
 import { loadExternalSession, prepareExternalTranscript } from '../model/openSession'

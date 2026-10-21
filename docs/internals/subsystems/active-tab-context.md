@@ -143,11 +143,11 @@ These are code constants, not user settings.
 ## Source of truth
 
 - [Plugin publication types and normalization](../../../packages/plugin-sdk/src/ui/contrib.ts)
-- [Static/live binding merge](../../../apps/ui/src/features/workspace-grid/model/tabMessageBinding.ts)
-- [Live registry](../../../apps/ui/src/features/workspace-grid/model/liveTabMessageContext.ts)
-- [Candidate ranking](../../../apps/ui/src/features/workspace-grid/model/activeTabLink.ts)
-- [Composer derivation](../../../apps/ui/src/features/chat/ui/prompt-input/ambientTabLinks.ts)
-- [Send precedence and budgets](../../../apps/ui/src/features/chat/model/sendRefs.ts) ·
-  [context-ref hook](../../../apps/ui/src/features/chat/model/useContextRefs.ts)
+- [Static/live binding merge](../../../apps/ui/src/entities/workspace-grid/model/tabMessageBinding.ts)
+- [Live registry](../../../apps/ui/src/entities/workspace-grid/model/liveTabMessageContext.ts)
+- [Candidate ranking](../../../apps/ui/src/entities/workspace-grid/model/activeTabLink.ts)
+- [Composer derivation](../../../apps/ui/src/entities/chat/ui/prompt-input/ambientTabLinks.ts)
+- [Send precedence and budgets](../../../apps/ui/src/entities/chat/model/sendRefs.ts) ·
+  [context-ref hook](../../../apps/ui/src/entities/chat/model/useContextRefs.ts)
 - [Core file live state](../../../apps/ui/src/features/inspector/ui/FileTab.tsx)
 - [Sandboxed bridge action](../../../apps/ui/src/shared/contrib/pluginPanelActions.ts)

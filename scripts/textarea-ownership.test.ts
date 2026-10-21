@@ -16,7 +16,7 @@ const RAW_TEXTAREA = /<textarea\b/g
  *
  */
 const SPECIALIZED_OWNERS = new Map<string, number>([
-  ['apps/ui/src/features/chat/ui/prompt-input/TextArea.tsx', 1],
+  ['apps/ui/src/entities/chat/ui/prompt-input/TextArea.tsx', 1],
   // The plugin's commit box, for the same reason as core's above: an inline-completion ghost
   // is absolutely positioned over the field, so the two must share exact metrics that
   // `Textarea`'s own sizing would override.

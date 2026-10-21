@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import { groupViewModel, scopedViewRoot, useGridStore } from '@/features/workspace-grid/model'
-import { __resetGridForTests } from '@/features/workspace-grid/model/store'
+import { groupViewModel, scopedViewRoot, useGridStore } from '@/entities/workspace-grid/model'
+import { __resetGridForTests } from '@/entities/workspace-grid/model/store'
 import { makeTerminalItem, placeTerminal } from '@/features/terminal/model/terminalTabPlacement'
 import type { InspectorRequest } from '@/shared/lib/inspectorBus'
 import { resolveGridLayout } from '../ui/layout'

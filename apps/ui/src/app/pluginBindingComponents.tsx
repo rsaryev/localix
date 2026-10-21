@@ -9,7 +9,7 @@ import {
 } from '@localixai/plugin-sdk/ui'
 
 import { conversationPreview } from './binding-previews/LinkPreviews'
-import { refIcon } from '@/features/chat/ui/refKindPresentation'
+import { refIcon } from '@/entities/chat/ui/refKindPresentation'
 import { backendClient } from '@/shared/api/client'
 import { fileIcon } from '@/shared/ui/file-icon/fileIcon'
 import { mediaSrc } from '@/shared/lib/mediaSrc'

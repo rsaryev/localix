@@ -17,9 +17,9 @@ describe('a project route the database no longer has', () => {
   test('forgets the window record and lands home once the roster answers; a live one stays', async () => {
     const { act } = await import('react')
     const { createRoot } = await import('react-dom/client')
-    const { useChatStore } = await import('@/features/chat/model/store')
+    const { useChatStore } = await import('@/entities/chat/model/store')
     const { loadLastWorkspace, rememberLastWorkspace } =
-      await import('@/features/chat/model/persistence')
+      await import('@/entities/chat/model/persistence')
     const { useDeadProjectRoute } = await import('./useDeadProjectRoute')
     const redirects: string[] = []
     const goReplace = (path: string) => redirects.push(path)

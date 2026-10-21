@@ -7,7 +7,7 @@ import {
 } from '@localixai/plugin-sdk/ui/message-binding-drag'
 import { WorkspaceTabTransferTargets } from './WorkspaceTabTransferTargets'
 import type { UiSession } from '@/shared/api/ui-session'
-import { SessionItem } from '@/features/chat/ui/SessionItem'
+import { SessionItem } from '@/entities/chat/ui/SessionItem'
 
 let teardown: () => Promise<void>
 beforeAll(() => {

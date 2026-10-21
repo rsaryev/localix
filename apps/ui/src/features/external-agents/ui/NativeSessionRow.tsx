@@ -6,9 +6,9 @@ import {
   SessionRowContent,
   SessionRowTimestamp,
   SESSION_ROW_HEIGHT_CLASS,
-} from '@/features/chat/ui/SessionRowContent'
+} from '@/entities/chat/ui/SessionRowContent'
 import { externalAgentsApi } from '../api'
-import { useChatStore } from '@/features/chat/model/store'
+import { useChatStore } from '@/entities/chat/model/store'
 import { openOwnedExternalSession } from '../model/createSession'
 import { toast } from '@/shared/lib/notify'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'

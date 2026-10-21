@@ -1,4 +1,4 @@
-import { useGridStore } from '@/features/workspace-grid/model'
+import { useGridStore } from '@/entities/workspace-grid/model'
 
 /**
  * Attention (tab activity dot): raised when output arrives while this pane is

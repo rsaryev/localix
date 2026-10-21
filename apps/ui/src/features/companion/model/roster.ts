@@ -1,9 +1,9 @@
 import type { AttentionItem } from '@localixai/api/client'
 import type { AgentStreamEvent, UiSession } from '@/shared/api/contracts'
 import { toUiSessionSummary } from '@/shared/api/converters'
-import { mergeSessionListSummary } from '@/features/chat/model/reconnect-session-list'
-import { compareAttention } from '@/features/chat/model/attention/select'
-import { attentionPolicyOf } from '@/features/chat/model/attention/policy'
+import { mergeSessionListSummary } from '@/entities/chat/model/reconnect-session-list'
+import { compareAttention } from '@/entities/chat/model/attention/select'
+import { attentionPolicyOf } from '@/entities/chat/model/attention/policy'
 
 /** A summary projection only: no transcript subscription, terminal, or editor side effects. */
 export function applyCompanionEvent(

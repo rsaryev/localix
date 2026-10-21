@@ -394,6 +394,6 @@ Use `MarkdownRenderer` from `@localixai/kit/markdown` with source as `children`;
   [session surfaces](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/ui/contrib.ts)
 - [UI kit](https://github.com/rsaryev/localix/tree/main/apps/ui/src/app/kit)
 
-- [Tab scopes](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/workspace-grid/model/scope.ts)
+- [Tab scopes](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/workspace-grid/model/scope.ts)
   and
   [instance guard](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/contrib/uiContrib.ts).

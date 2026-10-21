@@ -147,7 +147,7 @@ describe('workbench foundation contracts', () => {
 
   test('keeps chat and editor status surfaces on one primitive', () => {
     for (const path of [
-      'features/chat/ui/StatusBar.tsx',
+      'entities/chat/ui/StatusBar.tsx',
       'features/inspector/ui/EditorStatusBar.tsx',
     ]) {
       const source = read(path)
@@ -164,7 +164,7 @@ describe('workbench foundation contracts', () => {
     expect(primitive).not.toContain('export const CHIP')
 
     for (const path of [
-      'features/chat/ui/ProjectFolderMenu.tsx',
+      'entities/chat/ui/ProjectFolderMenu.tsx',
       // A CONTRIBUTED pill is drawn by `status-item.tsx` on this same primitive, asserted above.
       // The one plugin surface that still draws its own holds the contract where it lives — core
       // cannot name a plugin's tree, which is the whole point of it being contributed.
@@ -243,7 +243,7 @@ describe('workbench foundation contracts', () => {
 
   test('keeps titlebar navigation fluid and trailing actions intrinsic', () => {
     const titlebar = read('pages/chat/ui/TitlebarContent.tsx')
-    const breadcrumb = read('features/chat/ui/UnifiedBreadcrumb.tsx')
+    const breadcrumb = read('entities/chat/ui/UnifiedBreadcrumb.tsx')
     expect(titlebar).toContain('grid-cols-[minmax(0,1fr)_auto]')
     expect(breadcrumb).toContain('aria-label="Session path"')
     expect(breadcrumb).toContain('className="flex-1"')
@@ -423,8 +423,8 @@ describe('workbench foundation contracts', () => {
     expect(primitive).not.toContain('role="status"')
 
     for (const path of [
-      'features/chat/ui/prompt-input/StatusTipStrip.tsx',
-      'features/chat/ui/prompt-input/SpendAlertStrip.tsx',
+      'entities/chat/ui/prompt-input/StatusTipStrip.tsx',
+      'entities/chat/ui/prompt-input/SpendAlertStrip.tsx',
       'features/inspector/ui/FileTab.tsx',
       'features/inspector/ui/ConflictCompareBar.tsx',
     ]) {

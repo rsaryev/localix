@@ -1,6 +1,6 @@
 import { pluginViewTarget } from '@localixai/api/plugin-view-target'
 import { platformCapabilities } from '@/shared/lib/platformCapabilities'
-import { isTabOpenedAs, scopeKindOf } from '@/features/workspace-grid/model'
+import { isTabOpenedAs, scopeKindOf } from '@/entities/workspace-grid/model'
 import type { PreviewCommand } from '@/shared/api/contracts'
 import { pluginLabel } from '@/shared/contrib/pluginAttribution'
 import { pluginErrorBuffer, watchPluginErrors } from '@/shared/contrib/pluginViewErrors'

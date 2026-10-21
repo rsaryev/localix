@@ -175,7 +175,7 @@ export interface UiSession {
   // `runtimeTurns`, `runtimeTools`, from `child_session.activity`) are deliberately NOT session
   // state. They arrive many times a second per running child, so holding them on the session made
   // every tick mint a new `allSessions` array and re-derive the whole sidebar. They live in
-  // `features/chat/model/sessionActivityStore.ts`, keyed by session id, subscribed per row.
+  // `entities/chat/model/sessionActivityStore.ts`, keyed by session id, subscribed per row.
   /** Ephemeral: current agnostic activity phase (titling, thinking, a terminal
    * wait, …) from the `agent.phase` event. Drives the loading status copy.
    * SSE-only, never persisted. */

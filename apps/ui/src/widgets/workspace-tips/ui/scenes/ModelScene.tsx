@@ -1,13 +1,13 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { ChevronUp, Link2, Search, UserPlus, X } from 'lucide-react'
 import type { ReasoningEffort } from '@localixai/agent'
-import { useChatStore } from '@/features/chat/model/store'
+import { useChatStore } from '@/entities/chat/model/store'
 import {
   defaultModelOf,
   defaultProject,
   saveDefaultModel,
-} from '@/features/chat/model/defaultProjectModel'
-import { useConnections } from '@/features/chat/ui/prompt-input/useConnections'
+} from '@/entities/chat/model/defaultProjectModel'
+import { useConnections } from '@/entities/chat/ui/prompt-input/useConnections'
 import { useModelsCatalog } from '@/shared/hooks/useModelsCatalog'
 import { providerIcon } from '@/shared/ui/providerPresentation'
 import { applyModelPickToOpenChat } from '../../model/applyModelPick'
@@ -15,7 +15,7 @@ import { TipPickTrigger } from '../TipPick'
 import './model-scene.css'
 
 const ModelPickerDrawer = lazy(() =>
-  import('@/features/chat/ui/prompt-input/ModelPickerDrawer').then((m) => ({
+  import('@/entities/chat/ui/prompt-input/ModelPickerDrawer').then((m) => ({
     default: m.ModelPickerDrawer,
   })),
 )

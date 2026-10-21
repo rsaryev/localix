@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useChatStore } from '@/features/chat/model/store'
+import { useChatStore } from '@/entities/chat/model/store'
 
 export interface SearchProjectOption {
   id: string

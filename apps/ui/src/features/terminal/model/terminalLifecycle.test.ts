@@ -1,10 +1,10 @@
 import { afterEach, expect, test } from 'bun:test'
-import { emptyEditorState, useGridStore } from '@/features/workspace-grid/model'
-import { useChatStore } from '@/features/chat/model/store'
+import { emptyEditorState, useGridStore } from '@/entities/workspace-grid/model'
+import { useChatStore } from '@/entities/chat/model/store'
 import {
   routeTerminalFinished,
   routeTerminalOpened,
-} from '@/features/chat/model/sessionEventRouters'
+} from '@/entities/chat/model/sessionEventRouters'
 import { terminal } from '@/shared/lib/terminalBus'
 import { adoptTerminal, openOwnedTerminal, revealTerminal } from './terminalTabs'
 import { finishTerminalTabs } from './deadTerminalTabs'

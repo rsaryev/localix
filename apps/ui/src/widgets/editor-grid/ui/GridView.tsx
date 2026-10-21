@@ -1,6 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { useGridStore, scopedViewRoot, leaves } from '@/features/workspace-grid/model'
-import { hasFixedPanelLayout } from '@/features/workspace-grid/model/arrangePanels'
+import { useGridStore, scopedViewRoot, leaves } from '@/entities/workspace-grid/model'
+import { hasFixedPanelLayout } from '@/entities/workspace-grid/model/arrangePanels'
 import type { ResolvedTheme } from '@/shared/theme/useTheme'
 import { GroupView } from './GroupView'
 import { WorkspaceTabTransferTargets } from './WorkspaceTabTransferTargets'
