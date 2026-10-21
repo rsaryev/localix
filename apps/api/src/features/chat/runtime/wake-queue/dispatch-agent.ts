@@ -41,6 +41,9 @@ export async function dispatchAgentTicket(
       message: 'This execution already produced activity; it was not repeated.',
     }
   }
+  // A missing slot is recreated here, so a ticket whose turn was taken back must not reach this
+  // line: rollback cancels the tickets answering or writing into what it deleted
+  // (`service/branching-ops.ts`, `rollback`).
   if (!prior) {
     const message = toPersistedMessage(
       userId,
