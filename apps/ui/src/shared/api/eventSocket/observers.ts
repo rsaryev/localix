@@ -37,6 +37,7 @@ export type ConnectionHandler = () => void
 export const reconnectHandlers = new Set<ConnectionHandler>()
 export const connectedHandlers = new Set<ConnectionHandler>()
 export const disconnectHandlers = new Set<ConnectionHandler>()
+export const resyncHandlers = new Set<ConnectionHandler>()
 export const rpcRequestEventHandlers = new Set<RpcRequestEventHandler>()
 export const realtimeDiagnosticHandlers = new Set<RealtimeDiagnosticEventHandler>()
 let realtimeDiagnosticSequence = 0
@@ -111,7 +112,17 @@ export function notifyDisconnectHandlers(): void {
   })
 }
 
+/** A resumed stream turned out to miss frames: a lag marker, or a restarted server. */
+export function notifyResyncHandlers(): void {
+  notifyEach(resyncHandlers, 'Realtime resync handler failed', {
+    kind: 'handler.resync',
+    summary: 'Realtime resynchronization handler failed',
+    message: 'One feature could not re-read after the stream missed updates.',
+  })
+}
+
 export function clearObservers(): void {
+  resyncHandlers.clear()
   reconnectHandlers.clear()
   connectedHandlers.clear()
   disconnectHandlers.clear()

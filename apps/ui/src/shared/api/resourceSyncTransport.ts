@@ -1,24 +1,45 @@
 import { eventSocket } from './eventSocket'
 import { resourceSync } from './resourceSync'
 
-/** The existing socket/cursor/replay remains the only delivery channel. */
-export function startResourceSyncTransport(): () => void {
-  const offConnected = eventSocket.onConnected(() => resourceSync.connected())
-  const offDisconnected = eventSocket.onDisconnect(() => resourceSync.disconnected())
-  const offEvent = eventSocket.onSessionEvent((_id, event) => {
-    if (event.type === 'resources.changed') resourceSync.invalidate(event.resources)
+type Socket = Pick<
+  typeof eventSocket,
+  | 'onConnected'
+  | 'onDisconnect'
+  | 'onSessionEvent'
+  | 'onResyncRequired'
+  | 'isConnected'
+  | 'resumedWithReplay'
+>
+type Sync = Pick<typeof resourceSync, 'connected' | 'disconnected' | 'invalidate'>
+
+/**
+ * The existing socket/cursor/replay remains the only delivery channel. A reconnect that resumed
+ * from its cursor replays the missed `resources.changed` frames, so the scheduler re-reads only
+ * what the outage interrupted; any other open, or a replay found incomplete, reads everything.
+ */
+export function startResourceSyncTransport(
+  socket: Socket = eventSocket,
+  sync: Sync = resourceSync,
+): () => void {
+  const opened = () => sync.connected({ replayed: socket.resumedWithReplay() })
+  const offConnected = socket.onConnected(opened)
+  const offDisconnected = socket.onDisconnect(() => sync.disconnected())
+  const offResync = socket.onResyncRequired(() => sync.connected())
+  const offEvent = socket.onSessionEvent((_id, event) => {
+    if (event.type === 'resources.changed') sync.invalidate(event.resources)
     if (event.type === 'session.updated' || event.type === 'child_session.updated')
-      resourceSync.invalidate(['sessions'], false)
+      sync.invalidate(['sessions'], false)
     if (event.type === 'session.deleted') {
-      resourceSync.invalidate(['sessions'], false)
-      resourceSync.invalidate(['storage'])
+      sync.invalidate(['sessions'], false)
+      sync.invalidate(['storage'])
     }
   })
-  if (eventSocket.isConnected()) resourceSync.connected()
+  if (socket.isConnected()) opened()
   return () => {
     offEvent()
+    offResync()
     offConnected()
     offDisconnected()
-    resourceSync.disconnected()
+    sync.disconnected()
   }
 }

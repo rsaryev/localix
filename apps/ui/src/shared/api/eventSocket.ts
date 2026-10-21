@@ -22,6 +22,7 @@ import {
   disconnectHandlers,
   realtimeDiagnosticHandlers,
   reconnectHandlers,
+  resyncHandlers,
   rpcRequestEventHandlers,
   type ConnectionHandler,
   type RealtimeDiagnosticEventHandler,
@@ -177,6 +178,20 @@ export const eventSocket = {
    */
   onDisconnect(handler: ConnectionHandler): () => void {
     return observed(disconnectHandlers, handler)
+  },
+  /**
+   * Whether the open socket resumed after a short outage from a cursor of the same server boot, so
+   * the server replayed every frame missed since. A later {@link onResyncRequired} withdraws it.
+   */
+  resumedWithReplay(): boolean {
+    return conn.openResumed
+  },
+  /**
+   * Fired when a resumed stream turns out to have missed frames: a lag marker arrived, or the first
+   * frame came from a restarted server. State that trusted the replay must be read again.
+   */
+  onResyncRequired(handler: ConnectionHandler): () => void {
+    return observed(resyncHandlers, handler)
   },
   /** Observer-only RPC instrumentation seam; never retains or mutates the transport. */
   onRequestEvent(handler: RpcRequestEventHandler): () => void {
