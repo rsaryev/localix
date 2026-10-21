@@ -8,6 +8,8 @@ import { RootErrorBoundary } from './RootErrorBoundary'
 import { CompanionPage } from '@/pages/companion/ui/CompanionPage'
 import { registerAgentRunPreflight } from '@/shared/api/agentRunPreflight'
 import { registerSessionPreviews } from '@/shared/lib/sessionPreviews'
+import { terminal as terminalBus } from '@/shared/lib/terminalBus'
+import { finishTerminalTabs } from '@/features/terminal/model/deadTerminalTabs'
 import { inspectorSessionPreviews } from '@/features/inspector/model/sessionPreviewRouters'
 import { waitForRuntimeCapabilities } from '@/shared/contrib/runtimeCapabilityReadiness'
 import { bindPluginUiToast } from '@localixai/plugin-sdk/ui'
@@ -26,6 +28,8 @@ applyPlatformDataset()
 document.documentElement.dataset.companion = 'true'
 registerAgentRunPreflight(waitForRuntimeCapabilities)
 registerSessionPreviews(inspectorSessionPreviews)
+// A finished terminal retires its transcript actions here too.
+terminalBus.setFinisher(finishTerminalTabs)
 // Plugin views in the shared transcript publish through the host's notifications here too; without
 // this binding their first toast throws.
 bindPluginUiToast(createPluginToast(toast))

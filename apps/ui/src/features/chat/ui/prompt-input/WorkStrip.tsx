@@ -17,7 +17,7 @@ import { toast } from '@/shared/lib/notify'
 import type { SessionWork } from '@/shared/api/contracts'
 import { sessionPreviews } from '@/shared/lib/sessionPreviews'
 import { terminal as terminalBus } from '@/shared/lib/terminalBus'
-import { useTerminalLiveness } from '@/features/terminal/model/useTerminalLiveness'
+import { useTerminalLiveness } from '@/shared/hooks/useTerminalLiveness'
 import { useChatStore } from '../../model/store'
 import { findSessionInState } from '../../model/findSession'
 

@@ -1,6 +1,4 @@
 [
-  "features/chat -> features/terminal",
-  "features/chat -> features/workspace-grid",
   "features/companion -> features/chat",
   "features/external-agents -> features/chat",
   "features/external-agents -> features/terminal",

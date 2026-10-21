@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import type { SessionWork, UiSession } from '@/shared/api/contracts'
-import { useLiveTerminalsStore } from '@/features/terminal/model/liveTerminals'
+import { useLiveTerminalsStore } from '@/shared/lib/terminals/liveTerminals'
 import { useChatStore } from '../../model/store'
 
 let teardown: () => Promise<void>

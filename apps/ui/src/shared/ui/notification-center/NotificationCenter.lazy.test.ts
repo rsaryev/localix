@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 
 const launcher = readFileSync(new URL('./NotificationCenterLauncher.tsx', import.meta.url), 'utf8')
 const titlebar = readFileSync(
-  new URL('../../../features/chat/ui/BreadcrumbTrailingActions.tsx', import.meta.url),
+  new URL('../../../pages/chat/ui/BreadcrumbTrailingActions.tsx', import.meta.url),
   'utf8',
 )
 

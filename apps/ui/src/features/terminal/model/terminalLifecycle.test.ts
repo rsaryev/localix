@@ -8,7 +8,7 @@ import {
 import { terminal } from '@/shared/lib/terminalBus'
 import { adoptTerminal, openOwnedTerminal, revealTerminal } from './terminalTabs'
 import { finishTerminalTabs } from './deadTerminalTabs'
-import { useLiveTerminalsStore } from './liveTerminals'
+import { useLiveTerminalsStore } from '@/shared/lib/terminals/liveTerminals'
 
 const originalGrid = useGridStore.getState()
 const originalChat = useChatStore.getState()
@@ -25,7 +25,13 @@ afterEach(() => {
 function setup() {
   useGridStore.setState(emptyEditorState('test-group'))
   useChatStore.setState({ activeSessionId: 's1' })
-  unsubscribe = terminal.setJobOpener(adoptTerminal)
+  const unopen = terminal.setJobOpener(adoptTerminal)
+  // The app installs the finisher; the chat stream reaches it through the terminal bus.
+  const unfinish = terminal.setFinisher(finishTerminalTabs)
+  unsubscribe = () => {
+    unopen()
+    unfinish()
+  }
 }
 
 const item = () => useGridStore.getState().items['terminal:failed']

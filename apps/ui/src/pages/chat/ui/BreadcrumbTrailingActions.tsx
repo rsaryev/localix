@@ -18,8 +18,8 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '@localixai/kit/dropdown-menu'
-import { TitlebarOverflowItems } from './TitlebarOverflowItems'
-import { UpdateAnnouncement } from './update-dialog/UpdateAnnouncement'
+import { TitlebarOverflowItems } from '@/features/chat/ui/TitlebarOverflowItems'
+import { UpdateAnnouncement } from '@/features/chat/ui/update-dialog/UpdateAnnouncement'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { CMD, useChordHint } from '@/shared/lib/keybindings'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@localixai/kit/tooltip'
