@@ -4,6 +4,7 @@ import { createPriorityQueue, type PriorityQueue } from '../../../../lib/priorit
 import type { RuntimeState } from '../agent-runner-state'
 import type { RunCompletion } from '../run-outcome'
 import type { DurableQueueItem, WakeQueueStore } from '../wake-queue-repository'
+import type { TurnStart } from '../wake-queue-store-contracts'
 import { readPendingTurn, type PendingTurn } from './entry'
 
 /**
@@ -236,8 +237,12 @@ export const createLeaseOperations = (
     return true
   }
 
-  const ack = async (userId: string, sessionId: string, ids: readonly string[]) =>
-    store ? store.ack(userId, sessionId, ids, leaseOwner) : true
+  const ack = async (
+    userId: string,
+    sessionId: string,
+    ids: readonly string[],
+    starting?: TurnStart,
+  ) => (store ? store.ack(userId, sessionId, ids, leaseOwner, starting) : true)
 
   const release = async (userId: string, sessionId: string, ids: readonly string[]) => {
     if (store) await store.release(userId, sessionId, ids, leaseOwner)

@@ -33,6 +33,13 @@ export type QueueAdmission<TPayload = unknown> = Omit<
   'sequence' | 'state' | 'batchId' | 'failure'
 > & { receipt?: true }
 
+/** A reply slot about to be filled by an acknowledged agent turn ticket. */
+export interface TurnStart {
+  assistantMessageId: string
+  agentId: string
+  at: string
+}
+
 export interface WakeQueueStore<TPayload = unknown> {
   /** False when a receipt says this delivery was already admitted. */
   enqueue(item: QueueAdmission<TPayload>): Promise<void | boolean>
@@ -51,12 +58,16 @@ export interface WakeQueueStore<TPayload = unknown> {
     leaseExpiresAt: string,
     batchId?: string,
   ): Promise<boolean>
+  /** `starting`: the reply slot an agent turn ticket fills, recorded with the acknowledgement. */
   ack(
     userId: string,
     sessionId: string,
     ids: readonly string[],
     leaseOwner: string,
+    starting?: TurnStart,
   ): Promise<boolean>
+  /** The run for this reply slot has returned: its start is no longer in doubt. */
+  turnStarted?(assistantMessageId: string): Promise<void>
   release(
     userId: string,
     sessionId: string,

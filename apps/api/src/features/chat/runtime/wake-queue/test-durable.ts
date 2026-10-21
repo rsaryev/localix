@@ -39,6 +39,14 @@ export async function durableStore(): Promise<DurableStore> {
     .addColumn('batch_id', 'text')
     .addColumn('failure', 'text')
     .execute()
+  await db.schema
+    .createTable('agent_turn_starts')
+    .addColumn('assistant_message_id', 'text', (c) => c.primaryKey())
+    .addColumn('user_id', 'text', (c) => c.notNull())
+    .addColumn('session_id', 'text', (c) => c.notNull())
+    .addColumn('agent_id', 'text', (c) => c.notNull())
+    .addColumn('created_at', 'text', (c) => c.notNull())
+    .execute()
   return createDatabaseWakeQueueStore<PendingTurn>(db)
 }
 

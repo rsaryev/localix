@@ -582,6 +582,7 @@ export interface AppDatabase {
   agent_runs: AgentRunsTable
   agent_queue_items: AgentQueueItemsTable
   agent_delivery_receipts: AgentDeliveryReceiptsTable
+  agent_turn_starts: AgentTurnStartsTable
   agent_memory: AgentMemoryTable
   user_view_state: UserViewStateTable
   semantic_settings: SemanticSettingsTable
@@ -619,6 +620,15 @@ export interface AgentDeliveryReceiptsTable {
   delivery_key: string
   user_id: string
   session_id: string
+  created_at: string
+}
+
+/** A reply slot whose agent turn ticket was acknowledged and whose run has not returned yet. */
+export interface AgentTurnStartsTable {
+  assistant_message_id: string
+  user_id: string
+  session_id: string
+  agent_id: string
   created_at: string
 }
 
