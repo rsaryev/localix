@@ -28,6 +28,7 @@ export function coreSemanticTargets(db: Kysely<AppDatabase>) {
     agent: agentsSemanticTarget,
     project: 'ignore',
     'capability.rule': 'ignore',
+    'local.model': 'ignore',
     'provider.connection': 'ignore',
   } satisfies SemanticTargets<CoreRefs>
 }

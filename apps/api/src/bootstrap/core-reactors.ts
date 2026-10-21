@@ -130,6 +130,7 @@ export function notificationsCleanupHandlers(
     agent: 'ignore',
     project: 'ignore',
     'capability.rule': 'ignore',
+    'local.model': 'ignore',
     'provider.connection': (change) => {
       if (change.op === 'deleted') conditions.connectionRemoved(change.ref.userId, change.ref.id)
     },
@@ -149,6 +150,7 @@ export function pluginBackendHandlers(
     agent: 'ignore',
     project: () => refresh(),
     'capability.rule': 'ignore',
+    'local.model': 'ignore',
     'provider.connection': 'ignore',
   }
 }

@@ -182,4 +182,13 @@ describe('route repair', () => {
     await t.repair.repairUser('u1')
     expect((await t.seats())[0]?.provider_connection_id).toBe('or-new')
   })
+
+  test('a local model installed repairs every user’s routes', async () => {
+    const t = await setup()
+    t.signIn([{ id: 'or-new', providerId: 'openrouter' }])
+    const handler = t.repair.handlers['local.model']
+    if (handler === 'ignore') throw new Error('expected a handler')
+    await handler({ entity: 'local.model', op: 'upserted', ref: { id: 'qwen' } })
+    expect((await t.seats())[0]?.provider_connection_id).toBe('or-new')
+  })
 })

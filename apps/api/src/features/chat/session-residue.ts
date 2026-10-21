@@ -67,6 +67,7 @@ export function createSessionResidue(ports: SessionResiduePorts) {
     agent: 'ignore',
     'capability.rule': 'ignore',
     project: 'ignore',
+    'local.model': 'ignore',
     'provider.connection': 'ignore',
   }
   return { handlers, reconcile, deleted }

@@ -21,7 +21,7 @@ The findings behind each item, with counts and paths, are in [the audit](audit.m
 | [x] Capability rule     | `capability.rule`      | Relay; semantic index                                          | `apps/api/src/features/capabilities/`                          |
 | [x] Message edit        | `chat.message`         | Semantic index                                                 | `apps/api/src/features/chat/`                                  |
 | [x] Chat deletion       | `chat.session` cascade | Session residue: sandbox, child loops and monitors, inbox rows | `apps/api/src/features/chat/`                                  |
-| [ ] Local model         | `local.model`          | Route repair                                                   | `apps/api/src/features/local-models/`                          |
+| [x] Local model         | `local.model`          | Route repair                                                   | `apps/api/src/features/local-models/`                          |
 
 ## Stage 3: consumers replace writer-driven follow-ups
 

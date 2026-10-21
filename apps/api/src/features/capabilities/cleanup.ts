@@ -77,6 +77,7 @@ export function createCapabilityCleanup(ports: CapabilityCleanupPorts) {
     agent: 'ignore',
     project: 'ignore',
     'capability.rule': 'ignore',
+    'local.model': 'ignore',
     'provider.connection': 'ignore',
   }
   return { handlers, removed }
