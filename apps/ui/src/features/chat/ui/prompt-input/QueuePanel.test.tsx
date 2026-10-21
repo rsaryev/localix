@@ -41,4 +41,21 @@ describe('QueuePanel server semantics', () => {
     expect(html).not.toContain('Send now')
     expect(html).not.toContain('>Return<')
   })
+
+  test('shows a delivery that failed every retry as failed, with retry and remove', () => {
+    const html = render({
+      id: 'wake-2',
+      text: 'monitor burst',
+      queueKind: 'wake',
+      delivery: 'failed',
+      failure: 'binding cannot be read',
+    })
+
+    expect(html).toContain('Failed to send')
+    expect(html).toContain('binding cannot be read')
+    // A failed wake is retried, never sent as the person's message.
+    expect(html).toContain('Retry queued item 1')
+    expect(html).not.toContain('Send now')
+    expect(html).toContain('Delete')
+  })
 })

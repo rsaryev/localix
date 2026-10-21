@@ -63,6 +63,11 @@ interface Envelope {
    * interrupted by a crash replays with exactly the entries — and the transcript row — it had.
    */
   batch?: string
+  /**
+   * Why its delivery failed every retry (`dead-letter.ts`). A failed entry is off the head: no
+   * drain or running turn takes it until the person retries it. Durable in its own column too.
+   */
+  failure?: string
 }
 
 export interface PersonTurn extends Envelope {
@@ -194,13 +199,13 @@ export function createPendingTurn(params: EnqueueParams, queuedAt: string): Pend
  * made each kind, so a queue that survived an upgrade drains exactly as it would have. A legacy
  * report carries only its worded text, not its facts, so it is delivered as the plain wake it was.
  */
-export function readPendingTurn(payload: unknown, batch?: string): PendingTurn {
+export function readPendingTurn(payload: unknown, batch?: string, failure?: string): PendingTurn {
   const row = payload as Partial<Envelope> & {
     entry?: EntryKind
     agentTurn?: AgentTurnTicket
     command?: QueuedCommand
   }
-  const sticky = batch ? { batch } : {}
+  const sticky = { ...(batch ? { batch } : {}), ...(failure ? { failure } : {}) }
   if (row.entry) return { ...(row as PendingTurn), ...sticky }
   const envelope = row as Envelope
   if (row.agentTurn) return { ...envelope, entry: 'ticket', agentTurn: row.agentTurn, ...sticky }

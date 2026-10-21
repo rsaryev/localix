@@ -279,6 +279,9 @@ export async function rollback(
     }
 
     const ids = messages.slice(index).map((message) => message.id)
+    // A queued ticket answering a rolled-back message, or writing into a rolled-back slot, would
+    // recreate that slot and bring the reply back (`dispatch-agent.ts`). Cancel it first.
+    await ctx.runner.cancelAgentTurns(userId, sessionId, { messageIds: ids })
     await repo.deleteMessagesByIds(userId, sessionId, ids)
     // Anchor the active leaf at the rolled-back message's PARENT. deleteMessagesByIds
     // already repairs a deleted leaf, but it repairs to the highest-sequence survivor

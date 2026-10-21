@@ -99,6 +99,7 @@ export function createWake(ctx: WakeQueueContext, deps: WakeDeps) {
       .find(
         (entry) =>
           ticketOf(entry.value)?.speakerAgentId === speaker &&
+          !entry.value.failure &&
           !leases.isLeased(params.session.id, entry.id),
       )
     const ticket = item && ticketOf(item.value)
@@ -137,10 +138,11 @@ export function createWake(ctx: WakeQueueContext, deps: WakeDeps) {
   }
 
   /**
-   * Persist. The in-memory queue shows the turn at once; a durable row the store refuses
-   * (`false`: a duplicate delivery key, or a once-ever `receipt` already spent) or fails to
-   * write takes the in-memory copy and its observers back with it, so the two never disagree
-   * about what is queued.
+   * Persist. The in-memory queue holds the turn at once (so a concurrent admission sees it);
+   * a durable row the store refuses (`false`: a duplicate delivery key, or a once-ever `receipt`
+   * already spent) or fails to write takes the in-memory copy and its observers back with it, so
+   * the two never disagree about what is queued. The queue is PUBLISHED only once the row is
+   * durable: a chip shown before the insert would flicker away when the insert fails.
    */
   const persistNewTurn = async (
     q: PriorityQueue<PendingTurn>,
@@ -152,13 +154,14 @@ export function createWake(ctx: WakeQueueContext, deps: WakeDeps) {
   ): Promise<boolean> => {
     const { userId, session } = params
     q.enqueue(value, { id, priority })
-    publishQueue(userId, session.id)
-    if (!store) return true
+    if (!store) {
+      publishQueue(userId, session.id)
+      return true
+    }
     const rollback = () => {
       q.remove(id)
       continuations.detachContinuations([id])
       release()
-      publishQueue(userId, session.id)
     }
     try {
       const admitted = await store.enqueue({
@@ -173,6 +176,7 @@ export function createWake(ctx: WakeQueueContext, deps: WakeDeps) {
         ...(params.receipt && id === params.deliveryKey ? { receipt: true } : {}),
       })
       if (admitted === false) rollback()
+      else publishQueue(userId, session.id)
       return admitted !== false
     } catch (error) {
       rollback()

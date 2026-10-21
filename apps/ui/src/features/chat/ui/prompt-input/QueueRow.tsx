@@ -6,8 +6,10 @@ import {
   Hourglass,
   LoaderCircle,
   MessageSquareText,
+  RotateCcw,
   SendHorizontal,
   Trash2,
+  TriangleAlert,
   Undo2,
   X,
 } from 'lucide-react'
@@ -34,6 +36,8 @@ export interface QueuePanelItem {
   delivery?: SessionQueueItem['delivery']
   /** A participant's queued turn: shown as who answers, not as the runtime's ticket text. */
   agent?: { handle: string; name: string }
+  /** Why a `failed` item's delivery failed every retry; it waits for retry or removal. */
+  failure?: string
 }
 
 /** What the row IS, in one 16px column: a face for a participant, a glyph for the rest. */
@@ -74,12 +78,20 @@ export function QueueItemRow({
     : deletesInternalWake
       ? `${confirmDelete ? 'Confirm delete' : 'Delete'} queued item ${index + 1}: ${item.text}`
       : `Return to input queued item ${index + 1}: ${item.text}`
-  // Two deliveries are worth a word: steering, and a report held until its siblings report.
-  // Everything else simply waits its turn.
+  const failed = item.delivery === 'failed'
+  // Three deliveries are worth a word: steering, a report held until its siblings report, and
+  // one that failed every retry. Everything else simply waits its turn.
   const steering =
-    item.delivery === 'next-tool' || item.delivery === 'held' ? (
-      <span className="flex items-center gap-1 text-2xs text-text-faint">
-        {item.delivery === 'held' ? (
+    item.delivery === 'next-tool' || item.delivery === 'held' || failed ? (
+      <span
+        className={[
+          'flex items-center gap-1 text-2xs',
+          failed ? 'text-destructive' : 'text-text-faint',
+        ].join(' ')}
+      >
+        {failed ? (
+          <TriangleAlert className="size-3" aria-hidden="true" />
+        ) : item.delivery === 'held' ? (
           <Hourglass className="size-3" aria-hidden="true" />
         ) : (
           <CornerDownRight className="size-3" aria-hidden="true" />
@@ -87,6 +99,8 @@ export function QueueItemRow({
         {queueDeliveryLabel(item.delivery)}
       </span>
     ) : undefined
+  // A failed item's one forward action is a retry, whatever its kind.
+  const canSend = failed || capabilities?.canPromote
 
   return (
     <WorkbenchListRow role="listitem" density="dense" aria-busy={busy} className="gap-2 px-2">
@@ -96,7 +110,10 @@ export function QueueItemRow({
       <span className="flex size-4 shrink-0 items-center justify-center">
         <QueueItemGlyph item={item} />
       </span>
-      <span className="min-w-0 flex-1 text-xs leading-snug text-text-soft" title={item.text}>
+      <span
+        className="min-w-0 flex-1 text-xs leading-snug text-text-soft"
+        title={item.failure ? `${item.text}\n${item.failure}` : item.text}
+      >
         <span className="block truncate">{item.agent ? item.agent.name : item.text}</span>
         {feedback && (
           <span role="status" className="block truncate text-text-faint">
@@ -109,17 +126,23 @@ export function QueueItemRow({
         visibility="hover"
         fallback={steering}
       >
-        {capabilities?.canPromote && onSendNow && (
+        {canSend && onSendNow && (
           <IconButton
             size="sm"
-            aria-label={`${capabilities.promoteLabel} queued item ${index + 1}: ${item.text}`}
-            tooltip="Stop the current response and send this message now"
+            aria-label={`${failed ? 'Retry' : capabilities?.promoteLabel} queued item ${index + 1}: ${item.text}`}
+            tooltip={
+              failed
+                ? 'Put this back in line and try again'
+                : 'Stop the current response and send this message now'
+            }
             tooltipSide="top"
             disabled={busy}
             onClick={onSendNow}
           >
             {pendingAction === 'send' ? (
               <LoaderCircle className="animate-spin" />
+            ) : failed ? (
+              <RotateCcw />
             ) : (
               <SendHorizontal />
             )}

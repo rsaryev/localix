@@ -40,7 +40,7 @@ export function heldEntries(
   const groups = new Map<string, QueueItem<ReportTurn>[]>()
   for (const item of listed) {
     const turn = item.value
-    if (turn.entry !== 'report' || turn.batch) continue
+    if (turn.entry !== 'report' || turn.batch || turn.failure) continue
     const key = batchRule(turn)!.key
     groups.set(key, [...(groups.get(key) ?? []), item as QueueItem<ReportTurn>])
   }

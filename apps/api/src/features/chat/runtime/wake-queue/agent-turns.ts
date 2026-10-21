@@ -12,7 +12,13 @@ export interface AgentTurnFilter {
   conversationId?: string
   agentId?: string
   source?: AgentTurnSource
+  /** Tickets answering, or writing into, any of these transcript rows (a rollback removed them). */
+  messageIds?: readonly string[]
 }
+
+const touches = (turn: AgentTurnTicket, messageIds: readonly string[]): boolean =>
+  messageIds.includes(turn.assistantMessageId) ||
+  turn.triggerMessageIds.some((id) => messageIds.includes(id))
 
 interface AgentTurnOperationsDeps {
   shared: ReturnType<typeof createWakeQueueSharedState>
@@ -37,6 +43,7 @@ export function createAgentTurnOperations(deps: AgentTurnOperationsDeps) {
       if (
         !turn ||
         item.value.userId !== userId ||
+        item.value.failure ||
         deps.leases.isLeased(sessionId, item.id) ||
         !select(turn, item.priority)
       )
@@ -67,7 +74,7 @@ export function createAgentTurnOperations(deps: AgentTurnOperationsDeps) {
     sessionId: string,
     filter: AgentTurnFilter = {},
   ): Promise<void> => {
-    const { conversationId, agentId, source } = filter
+    const { conversationId, agentId, source, messageIds } = filter
     await deps.leases.ready
     const queue = deps.shared.queues.get(sessionId)
     if (!queue) return
@@ -78,7 +85,8 @@ export function createAgentTurnOperations(deps: AgentTurnOperationsDeps) {
         item.value.userId !== userId ||
         (conversationId && turn.scope.conversationId !== conversationId) ||
         (agentId && turn.speakerAgentId !== agentId) ||
-        (source && turn.source !== source)
+        (source && turn.source !== source) ||
+        (messageIds && !touches(turn, messageIds))
       )
         continue
       if (leaseHolder(deps.shared, sessionId, item.id) === 'drain') continue

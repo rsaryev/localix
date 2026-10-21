@@ -18,6 +18,7 @@ import {
   messageTaskRequestSchema,
   pinRequestSchema,
   queueItemRequestSchema,
+  queueRemoveRequestSchema,
   reactionRequestSchema,
   stopMonitorRequestSchema,
 } from './routes-schemas'
@@ -207,13 +208,14 @@ export function createChatMessagesRoutes(service: ChatRoutesService) {
     .post(
       '/sessions/:id/queue/remove',
       zValidator('param', sessionParamsSchema),
-      zValidator('json', queueItemRequestSchema),
+      zValidator('json', queueRemoveRequestSchema),
       async (c) => {
-        const { itemId } = c.req.valid('json')
+        const { itemId, wholeBatch } = c.req.valid('json')
         const result = await service.removeQueuedMessage(
           c.get('userId'),
           c.req.valid('param').id,
           itemId,
+          wholeBatch ? { wholeBatch } : undefined,
         )
         return c.json(result, 200)
       },

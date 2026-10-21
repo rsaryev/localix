@@ -1,12 +1,6 @@
 import type { QueueItem } from '../../../../lib/priority-queue'
-import type {
-  QueueClearResult,
-  QueueRemovalResult,
-  SessionQueueItem,
-  WakeSource,
-} from '../../contracts'
+import type { SessionQueueItem, WakeSource } from '../../contracts'
 import type { WakeQueueStore } from '../wake-queue-store'
-import type { ContinuationOperations } from './continuations'
 import type { PendingTurn } from './entry'
 import type { HeldEntries } from './holds'
 import { renderBatch } from './kinds'
@@ -31,7 +25,6 @@ interface SteeringDependencies {
   store?: WakeQueueStore<PendingTurn>
   ready: Promise<void>
   leases: LeaseOperations
-  continuations: ContinuationOperations
   publishQueue: (userId: string, sessionId: string) => void
   toPublic: (item: QueueItem<PendingTurn>, held: HeldEntries) => SessionQueueItem
   /** What may not open a turn yet (`holds.ts`): listed as held, and not "waiting to be heard". */
@@ -40,10 +33,9 @@ interface SteeringDependencies {
 
 export const createSteeringOperations = (
   shared: WakeQueueSharedState,
-  { store, ready, leases, continuations, publishQueue, toPublic, holdsOf }: SteeringDependencies,
+  { store, ready, leases, publishQueue, toPublic, holdsOf }: SteeringDependencies,
 ) => {
-  const { claim, ack, release, isLeased } = leases
-  const { settleCompletion } = continuations
+  const { claim, ack, release } = leases
   const { nextJoinable, peekSteerable } = createSteerableSelection(shared)
   /** Reservation id → the entries it took, per session. */
   const reservations = new Map<string, Map<string, string[]>>()
@@ -52,7 +44,12 @@ export const createSteeringOperations = (
 
   const unlease = (sessionId: string, ids: readonly string[]) =>
     dropLeases(shared, sessionId, ids, 'steer')
+  /** Reservation → its lease renewal (`keepAlive`), stopped on acknowledgement or release. */
+  const renewals = new Map<string, () => void>()
   const forget = (sessionId: string, id: string) => {
+    const key = `${sessionId}\u0000${id}`
+    renewals.get(key)?.()
+    renewals.delete(key)
     const held = reservations.get(sessionId)
     held?.delete(id)
     if (held?.size === 0) reservations.delete(sessionId)
@@ -98,7 +95,14 @@ export const createSteeringOperations = (
       const first = candidate[0]
       if (!first) return []
       const ids = reservedIds(sessionId, first.id)
-      if (await claim(first.userId, sessionId, ids)) return candidate
+      if (await claim(first.userId, sessionId, ids)) {
+        // The run holds it until its transcript write commits, which may outlast one lease.
+        renewals.set(
+          `${sessionId}\u0000${first.id}`,
+          leases.keepAlive(first.userId, sessionId, ids),
+        )
+        return candidate
+      }
       unlease(sessionId, ids)
       forget(sessionId, first.id)
       return []
@@ -137,109 +141,6 @@ export const createSteeringOperations = (
     )
   }
 
-  /** Remove a queued item by id and return its full content for composer restoration. */
-  const removeLocal = (userId: string, sessionId: string, itemId: string): QueueRemovalResult => {
-    const q = shared.queues.get(sessionId)
-    if (!q) return { removed: false, reason: 'not_found' }
-    // Once steering persistence starts, cancellation would race a durable row that
-    // may already have committed. The chip disappears on acknowledgement instead.
-    if (isLeased(sessionId, itemId)) return { removed: false, reason: 'leased' }
-    const item = q.list().find((candidate) => candidate.id === itemId)
-    if (!item) return { removed: false, reason: 'not_found' }
-    // A band once claimed is being delivered as a whole; taking one entry out would change a
-    // delivery its transcript row may already hold.
-    if (item.value.batch) return { removed: false, reason: 'leased' }
-    if (!q.remove(itemId)) return { removed: false, reason: 'not_found' }
-    settleCompletion([itemId], {
-      status: 'failed',
-      kind: 'dismissed',
-      message: 'Queued run was cancelled before execution.',
-      retryable: false,
-      rateLimited: false,
-    })
-    publishQueue(userId, sessionId)
-    return {
-      removed: true,
-      content: item.value.content,
-      ...(item.value.bindings?.length ? { bindings: item.value.bindings } : {}),
-    }
-  }
-
-  const remove = (
-    userId: string,
-    sessionId: string,
-    itemId: string,
-  ): QueueRemovalResult | Promise<QueueRemovalResult> => {
-    if (!store) return removeLocal(userId, sessionId, itemId)
-    return (async () => {
-      await ready
-      const q = shared.queues.get(sessionId)
-      if (!q) return { removed: false, reason: 'not_found' }
-      if (isLeased(sessionId, itemId)) return { removed: false, reason: 'leased' }
-      const item = q.list().find((candidate) => candidate.id === itemId)
-      if (!item) return { removed: false, reason: 'not_found' }
-      if (item.value.batch) return { removed: false, reason: 'leased' }
-      if (!(await store.remove(userId, sessionId, itemId))) {
-        return { removed: false, reason: 'leased' }
-      }
-      return removeLocal(userId, sessionId, itemId)
-    })()
-  }
-
-  /** Clear every cancellable item; leased steering rows remain visible and are reported. */
-  const clearLocal = (userId: string, sessionId: string): QueueClearResult => {
-    const q = shared.queues.get(sessionId)
-    if (!q) return { removed: 0, retained: [] }
-    let removed = 0
-    const retained: string[] = []
-    for (const item of q.list()) {
-      if (isLeased(sessionId, item.id) || item.value.batch) retained.push(item.id)
-      else if (q.remove(item.id)) {
-        settleCompletion([item.id], {
-          status: 'failed',
-          kind: 'dismissed',
-          message: 'Queued run was cleared before execution.',
-          retryable: false,
-          rateLimited: false,
-        })
-        removed += 1
-      }
-    }
-    if (removed > 0) publishQueue(userId, sessionId)
-    return { removed, retained }
-  }
-
-  const clear = (
-    userId: string,
-    sessionId: string,
-  ): QueueClearResult | Promise<QueueClearResult> => {
-    if (!store) return clearLocal(userId, sessionId)
-    return (async () => {
-      await ready
-      const q = shared.queues.get(sessionId)
-      if (!q) return { removed: 0, retained: [] }
-      let removed = 0
-      const retained: string[] = []
-      for (const item of q.list()) {
-        if (isLeased(sessionId, item.id) || item.value.batch) retained.push(item.id)
-        else if (await store.remove(userId, sessionId, item.id)) {
-          if (q.remove(item.id)) {
-            settleCompletion([item.id], {
-              status: 'failed',
-              kind: 'dismissed',
-              message: 'Queued run was cleared before execution.',
-              retryable: false,
-              rateLimited: false,
-            })
-            removed += 1
-          }
-        } else retained.push(item.id)
-      }
-      if (removed > 0) publishQueue(userId, sessionId)
-      return { removed, retained }
-    })()
-  }
-
   /** Public snapshot for session list/detail hydration. */
   const listLocal = (sessionId: string): SessionQueueItem[] => {
     const q = shared.queues.get(sessionId)
@@ -256,7 +157,8 @@ export const createSteeringOperations = (
     const q = shared.queues.get(sessionId)
     if (!q || q.size() === 0) return false
     const held = holdsOf(sessionId)
-    return q.list().some((item) => !held.ids.has(item.id))
+    // A failed entry waits for the person, not for a turn (`dead-letter.ts`).
+    return q.list().some((item) => !held.ids.has(item.id) && !item.value.failure)
   }
   const hasPending = (sessionId: string): boolean | Promise<boolean> =>
     store ? ready.then(() => hasPendingLocal(sessionId)) : hasPendingLocal(sessionId)
@@ -266,8 +168,6 @@ export const createSteeringOperations = (
     peekSteerable,
     releaseSteerable,
     ackSteerable,
-    remove,
-    clear,
     list,
     hasPending,
   }

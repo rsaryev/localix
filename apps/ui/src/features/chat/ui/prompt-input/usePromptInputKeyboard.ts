@@ -41,6 +41,10 @@ function reportQueueReturn(outcome: QueueReturnOutcome): void {
     toast.info('This queued message is already being sent', {
       description: 'It was not returned to the composer.',
     })
+  else if (outcome === 'batched')
+    toast.info('This queued message is sent together with others', {
+      description: 'Remove the whole batch from the queue list to edit it.',
+    })
   else if (outcome === 'not_found') toast.info('This queued message is no longer available')
   else toast.info('No queued messages to return')
 }

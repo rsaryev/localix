@@ -154,3 +154,7 @@ export const stopMonitorRequestSchema = z.object({ monitorId: z.string().min(1) 
 export const loopIdRequestSchema = z.object({ id: z.string().min(1) })
 
 export const queueItemRequestSchema = z.object({ itemId: z.string().min(1) })
+/** `wholeBatch`: remove every item delivered together with this one (a `batched` refusal). */
+export const queueRemoveRequestSchema = queueItemRequestSchema.extend({
+  wholeBatch: z.boolean().optional(),
+})

@@ -80,6 +80,22 @@ describe('selectDrainBand', () => {
     expect(ids(selectDrainBand([...claimed, late]))).toEqual(['a', 'b'])
     expect(ids(selectDrainBand([late, ...claimed]))).toEqual(['late'])
   })
+
+  test('send-now on a line of a claimed batch takes the whole batch, never the line alone', () => {
+    const claimed = [person('a'), person('b')].map((item) => ({
+      ...item,
+      value: { ...item.value, batch: 'a' },
+    }))
+    expect(ids(selectDrainBand([event('x'), ...claimed], { preferredItemId: 'b' }))).toEqual([
+      'a',
+      'b',
+    ])
+  })
+
+  test('a failed entry is skipped: what is behind it is delivered', () => {
+    const failed = { ...person('a'), value: { ...person('a').value, failure: 'boom' } }
+    expect(ids(selectDrainBand([failed, person('b')]))).toEqual(['b'])
+  })
 })
 
 describe('bandRecipient', () => {

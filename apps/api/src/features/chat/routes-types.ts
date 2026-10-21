@@ -260,6 +260,7 @@ export interface ChatRoutesService {
     userId: string,
     sessionId: string,
     itemId: string,
+    options?: { wholeBatch?: boolean },
   ): Promise<QueueRemovalResult>
   /** Atomically interrupt the active run and deliver one selected queued item. */
   interruptAndPromoteQueuedMessage(

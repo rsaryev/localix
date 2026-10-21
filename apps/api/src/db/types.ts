@@ -398,7 +398,8 @@ export interface AgentQueueItemsTable {
   /** What the row is; every kind drains through the durable turn queue. */
   kind: 'user' | 'wake'
   payload_json: string
-  state: ColumnType<'pending' | 'leased', 'pending' | 'leased' | undefined, 'pending' | 'leased'>
+  /** `failed`: a delivery that exhausted its retries, parked until retried or removed. */
+  state: ColumnType<QueueItemState, QueueItemState | undefined, QueueItemState>
   lease_owner: string | null
   lease_expires_at: string | null
   /** Stable seed for deterministic transcript message ids on retry/restart. */
@@ -406,7 +407,11 @@ export interface AgentQueueItemsTable {
   queued_at: string
   /** The band it was claimed in with other items; null when claimed alone. */
   batch_id: ColumnType<string | null, string | null | undefined, string | null>
+  /** The last delivery error of a `failed` row; null otherwise. */
+  failure: ColumnType<string | null, string | null | undefined, string | null>
 }
+
+type QueueItemState = 'pending' | 'leased' | 'failed'
 
 export interface SqliteMasterTable {
   type: string

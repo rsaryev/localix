@@ -235,14 +235,24 @@ export interface SessionQueueItem {
   source?: WakeSource
   /**
    * Runtime delivery seam: Pi steering at the next tool/model boundary, a new turn, or HELD — a
-   * child's report waiting for its siblings, so their delegator answers them together.
+   * child's report waiting for its siblings, so their delegator answers them together — or
+   * FAILED: its delivery failed every retry and it waits for the person to retry or remove it.
    */
-  delivery?: 'next-tool' | 'next-turn' | 'held'
+  delivery?: 'next-tool' | 'next-turn' | 'held' | 'failed'
+  /** Why a `failed` item's last delivery attempt failed. */
+  failure?: string
+  /** Items claimed together share this: they are one delivery and leave the queue together. */
+  batchId?: string
 }
 
+/**
+ * `batched`: the item was claimed together with others and is delivered as one turn with them,
+ * so it leaves the queue only with its whole batch (`wholeBatch`); `batchSize` says how many.
+ */
 export type QueueRemovalResult =
   | { removed: true; content: string; bindings?: MessageBinding[] }
   | { removed: false; reason: 'leased' | 'not_found' }
+  | { removed: false; reason: 'batched'; batchSize: number }
 
 /** Result of the server-owned "interrupt and send now" queue operation. The
  * item is never removed merely to hand its payload back to a client: `promoted`
@@ -250,7 +260,7 @@ export type QueueRemovalResult =
  * to the queue drain; every failure leaves it queued. */
 export type QueuePromoteResult =
   | { promoted: true }
-  | { promoted: false; reason: 'leased' | 'not_found' | 'not_user' }
+  | { promoted: false; reason: 'leased' | 'not_found' | 'not_user' | 'batched' }
 
 export interface QueueClearResult {
   removed: number

@@ -10,14 +10,19 @@ export interface DurableQueueItem<TPayload = unknown> {
   priority: number
   kind: DurableQueueKind
   payload: TPayload
-  state: 'pending' | 'leased'
+  state: DurableQueueState
   leaseOwner?: string
   leaseExpiresAt?: string
   deliveryKey: string
   queuedAt: string
   /** The band it was claimed in with others; kept until acknowledgement (`claim`). */
   batchId?: string
+  /** The last delivery error of a `failed` row (`fail`). */
+  failure?: string
 }
+
+/** `failed`: a delivery that exhausted its retries — off the head, kept until retried or removed. */
+export type DurableQueueState = 'pending' | 'leased' | 'failed'
 
 /**
  * What admission takes: the row, plus whether its delivery key is admitted once EVER. A receipt is
@@ -25,7 +30,7 @@ export interface DurableQueueItem<TPayload = unknown> {
  */
 export type QueueAdmission<TPayload = unknown> = Omit<
   DurableQueueItem<TPayload>,
-  'sequence' | 'state' | 'batchId'
+  'sequence' | 'state' | 'batchId' | 'failure'
 > & { receipt?: true }
 
 export interface WakeQueueStore<TPayload = unknown> {
@@ -58,6 +63,27 @@ export interface WakeQueueStore<TPayload = unknown> {
     ids: readonly string[],
     leaseOwner: string,
   ): Promise<void>
+  /** Extend this owner's lease on every one of `ids`; false when any of them is no longer held. */
+  renew(
+    userId: string,
+    sessionId: string,
+    ids: readonly string[],
+    leaseOwner: string,
+    leaseExpiresAt: string,
+  ): Promise<boolean>
+  /** Park this owner's leased `ids` as failed with `failure`, all or none. */
+  fail(
+    userId: string,
+    sessionId: string,
+    ids: readonly string[],
+    leaseOwner: string,
+    failure: string,
+  ): Promise<boolean>
+  /** Return failed `ids` to pending, all or none. */
+  retry(userId: string, sessionId: string, ids: readonly string[]): Promise<boolean>
+  /** Delete pending or failed `ids`, all or none (a batch leaves the queue whole). */
+  removeMany(userId: string, sessionId: string, ids: readonly string[]): Promise<boolean>
+  /** Delete one pending or failed row. */
   remove(userId: string, sessionId: string, id: string): Promise<boolean>
   setPriority(userId: string, sessionId: string, id: string, priority: number): Promise<boolean>
   updatePending?(
@@ -84,12 +110,13 @@ interface PersistedQueueRow {
   priority: number
   kind: DurableQueueKind
   payload_json: string
-  state: 'pending' | 'leased'
+  state: DurableQueueState
   lease_owner: string | null
   lease_expires_at: string | null
   delivery_key: string
   queued_at: string
   batch_id: string | null
+  failure?: string | null
 }
 
 export function mapQueueRows<TPayload>(
@@ -113,6 +140,7 @@ export function mapQueueRows<TPayload>(
         deliveryKey: row.delivery_key,
         queuedAt: row.queued_at,
         ...(row.batch_id ? { batchId: row.batch_id } : {}),
+        ...(row.state === 'failed' ? { failure: row.failure || 'Delivery failed' } : {}),
       })
     } catch (error) {
       console.error(

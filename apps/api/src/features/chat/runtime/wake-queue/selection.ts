@@ -29,17 +29,24 @@ export function selectDrainBand(
   const preferred = options.preferredItemId
     ? listed.find((item) => item.id === options.preferredItemId)
     : undefined
-  if (preferred) return [preferred]
-  const at = listed.findIndex((item) => !options.held?.has(item.id))
+  // A preferred entry claimed in a batch before is delivered with its batch, never alone: the
+  // batch's transcript ids are its name's, and the rest would be acknowledged unsaid.
+  const sticky = (head: QueueItem<PendingTurn>) =>
+    head.value.batch ? listed.filter((item) => item.value.batch === head.value.batch) : undefined
+  if (preferred) return sticky(preferred) ?? [preferred]
+  // A failed entry (`dead-letter.ts`) waits for the person, not for the next drain.
+  const at = listed.findIndex((item) => !options.held?.has(item.id) && !item.value.failure)
   if (at < 0) return []
   const head = listed[at]!
-  if (head.value.batch) return listed.filter((item) => item.value.batch === head.value.batch)
+  const batch = sticky(head)
+  if (batch) return batch
   const rule = batchRule(head.value)
   if (!rule) return [head]
   const band = [head]
   for (const item of listed.slice(at + 1)) {
     if (item.priority !== head.priority) break
-    if (!item.value.batch && batchRule(item.value)?.key === rule.key) band.push(item)
+    if (!item.value.batch && !item.value.failure && batchRule(item.value)?.key === rule.key)
+      band.push(item)
     else if (rule.adjacent) break
   }
   return band

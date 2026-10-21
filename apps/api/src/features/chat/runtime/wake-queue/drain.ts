@@ -37,6 +37,7 @@ export function createDrainOperations(
     ageWaitingAgentTurns,
     holdsOf,
     holdUntil,
+    deadLetter,
   } = dependencies
 
   const drainPendingAndRunImpl = async (
@@ -89,10 +90,12 @@ export function createDrainOperations(
         // Durable acknowledgement precedes this synchronous local retirement.
         const retireAcknowledgedBand = (): void => {
           for (const item of band) q.remove(item.id)
+          deadLetter.delivered(bandIds)
           leases.resetDrainRetry(sessionId)
           leases.releaseDrainBand(sessionId, bandIds)
           publishQueue(next.userId, sessionId)
         }
+        let stopRenewal = () => {}
         try {
           if (
             !(bandIds.length === 1 && (promotedId ?? options.preclaimedItemId) === bandIds[0]) &&
@@ -107,8 +110,12 @@ export function createDrainOperations(
               message: 'Queued work is owned by another runtime process.',
             })
             leases.releaseDrainBand(sessionId, bandIds)
+            // Look again when that owner's lease runs out, in case it died holding it.
+            await leases.awaitForeignLease(next.userId, sessionId, bandIds).catch(onError)
             return
           }
+          // Delivery can outlast one lease (recipient resolution, slow writes): keep it held.
+          stopRenewal = leases.keepAlive(next.userId, sessionId, bandIds)
           const latestSession = await repo.getSession(next.userId, sessionId)
           if (!latestSession) {
             continuations.settleCompletion(
@@ -155,8 +162,10 @@ export function createDrainOperations(
                   ticket,
                   completion,
                   consume: async () => {
+                    stopRenewal()
                     if (!(await leases.ack(next.userId, sessionId, bandIds)))
                       throw new Error('Agent ticket lost its lease')
+                    deadLetter.delivered(bandIds)
                     for (const id of bandIds) q.remove(id)
                     leases.releaseDrainBand(sessionId, bandIds)
                     leases.resetDrainRetry(sessionId)
@@ -182,6 +191,19 @@ export function createDrainOperations(
           })
           if (step === 'stop') return
         } catch (error) {
+          // A head that fails every attempt is parked as failed so the rest of the queue moves.
+          if (
+            stillQueued() &&
+            (await deadLetter
+              .recordFailure(next.userId, sessionId, bandIds, error)
+              .catch((parkError: unknown) => (onError(parkError), false)))
+          ) {
+            leases.releaseDrainBand(sessionId, bandIds)
+            onError(error)
+            leases.resetDrainRetry(sessionId)
+            continuations.settleCompletion(bandIds, fatalDrainOutcome(error))
+            continue
+          }
           await leases.release(next.userId, sessionId, bandIds).catch(onError)
           leases.releaseDrainBand(sessionId, bandIds)
           onError(error)
@@ -193,6 +215,8 @@ export function createDrainOperations(
           }
           leases.scheduleDrainRetry(sessionId)
           return
+        } finally {
+          stopRenewal()
         }
       }
     } catch (error) {
