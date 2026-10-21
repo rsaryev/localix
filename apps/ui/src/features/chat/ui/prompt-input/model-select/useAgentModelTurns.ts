@@ -1,4 +1,4 @@
-import { useUserSettings } from '@/features/settings/model/useUserSettings'
+import { useUserSettings } from '@/shared/lib/user-settings/useUserSettings'
 import { agentModelSettingsFor, type ContextLimit } from '@localixai/agent'
 import { inheritedMaxTurns } from './modelSettingChoices'
 import { rememberAgentModelSettings, type ModelReasoningMemoryIo } from './rememberModelReasoning'

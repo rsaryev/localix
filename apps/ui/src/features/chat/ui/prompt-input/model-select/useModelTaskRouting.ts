@@ -1,9 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import {
-  findCatalogModelForConnection,
-  resolveLiveCatalogModel,
-  type CatalogModel,
-} from '@localixai/agent/catalog'
+import { findCatalogModelForConnection, type CatalogModel } from '@localixai/agent/catalog'
 import { isModelRoutingTaskEnabled } from '@localixai/api/model-task-catalog'
 import type { ModelRoutingTaskKey } from '@localixai/api/client'
 import {
@@ -13,10 +9,15 @@ import {
   targetAgentId,
   type PickerTarget,
 } from './pickerTarget'
-import { useUserSettings } from '@/features/settings/model/useUserSettings'
+import { useUserSettings } from '@/shared/lib/user-settings/useUserSettings'
 import type { ReasoningEffort } from '../../../model/reasoning'
 import type { useConnections } from '../useConnections'
-import { assignTaskModel, resolveLiveTaskModel, type ModelRoutingSlot } from './taskReasoning'
+import {
+  assignTaskModel,
+  liveRouteModel,
+  resolveLiveTaskModel,
+  type ModelRoutingSlot,
+} from './taskReasoning'
 import { getRecentModels, recordRecentModel } from './recentModels'
 import { useRowReasoning } from './useRowReasoning'
 
@@ -238,7 +239,7 @@ export function useModelTaskRouting({
     async (pickedConnectionId: string, modelId: string) => {
       // The model's own provider decides the connection: a pick never pairs a model with a
       // connection of another provider (a `local/…` model routed through OpenRouter).
-      const live = resolveLiveCatalogModel(models, connections, modelId, pickedConnectionId)
+      const live = liveRouteModel(models, connections, modelId, pickedConnectionId)
       const connectionId = live?.connection.id ?? pickedConnectionId
       const nextModel =
         live?.model ?? findCatalogModelForConnection(models, connections, connectionId, modelId)

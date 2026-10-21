@@ -7,7 +7,9 @@ import { applyPlatformDataset } from '@localixai/kit/environment'
 import { RootErrorBoundary } from './RootErrorBoundary'
 import { CompanionPage } from '@/pages/companion/ui/CompanionPage'
 import { registerAgentRunPreflight } from '@/shared/api/agentRunPreflight'
-import { waitForRuntimeCapabilities } from '@/features/settings/model/runtimeCapabilityReadiness'
+import { registerSessionPreviews } from '@/shared/lib/sessionPreviews'
+import { inspectorSessionPreviews } from '@/features/inspector/model/sessionPreviewRouters'
+import { waitForRuntimeCapabilities } from '@/shared/contrib/runtimeCapabilityReadiness'
 import { bindPluginUiToast } from '@localixai/plugin-sdk/ui'
 import { createPluginToast } from '@/shared/contrib/pluginToast'
 import { toast } from '@/shared/lib/notify'
@@ -23,6 +25,7 @@ if (import.meta.hot) import.meta.hot.dispose(stopQuitFlush)
 applyPlatformDataset()
 document.documentElement.dataset.companion = 'true'
 registerAgentRunPreflight(waitForRuntimeCapabilities)
+registerSessionPreviews(inspectorSessionPreviews)
 // Plugin views in the shared transcript publish through the host's notifications here too; without
 // this binding their first toast throws.
 bindPluginUiToast(createPluginToast(toast))

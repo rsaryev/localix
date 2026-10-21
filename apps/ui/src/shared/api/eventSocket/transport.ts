@@ -7,6 +7,7 @@ import {
   notifyDisconnectHandlers,
   notifyReconnectHandlers,
 } from './observers'
+import { parseSessionCursor } from '@localixai/api/ws-frame'
 import { cancelIdleDisconnect, failAllPending } from './refcount'
 import { conn, isOpen, reconnectDelayMs } from './state'
 import { declareWatchedAtConnect, reconcileWatchedSessions } from './subscription'
@@ -89,6 +90,20 @@ function reportUnaddressable(): void {
   })
 }
 
+/**
+ * The server replays every frame after `since` from its ring, within one boot. An outage longer
+ * than this may have outrun that ring, which sends no marker when it does, so the open is then
+ * treated as a fresh stream.
+ */
+export const REPLAY_TRUST_MS = 30_000
+
+function markResumed(): void {
+  const cursor = conn.dialCursor ? parseSessionCursor(conn.dialCursor) : null
+  conn.openResumed =
+    cursor !== null && conn.lastDownAt !== null && Date.now() - conn.lastDownAt <= REPLAY_TRUST_MS
+  conn.verifyEpoch = conn.openResumed ? cursor!.epoch : null
+}
+
 export function connect(): void {
   if (conn.socket) return
   if (parkBehindRuntime()) return
@@ -96,6 +111,7 @@ export function connect(): void {
   if (url === null) return reportUnaddressable()
   const ws = new WebSocket(url)
   conn.socket = ws
+  conn.dialCursor = conn.lastCursor
 
   // Every handler below mutates the shared state, so each must first confirm it
   // still belongs to the CURRENT socket. A socket close is delivered on a future
@@ -110,6 +126,7 @@ export function connect(): void {
   ws.onopen = () => {
     if (conn.socket !== ws) return
     conn.reconnectAttempt = 0
+    markResumed()
     // A reconnect (not the first open) may have missed events the server buffer
     // already evicted — let subscribers reconcile authoritative state.
     if (conn.everOpened) notifyReconnectHandlers()
@@ -135,6 +152,9 @@ export function connect(): void {
     // socket, so stay completely inert.
     if (conn.socket !== ws) return
     conn.socket = null
+    conn.lastDownAt = Date.now()
+    conn.openResumed = false
+    conn.verifyEpoch = null
     // Drop queued frames together with the requests rejected below. Sending a
     // stale queued frame after reconnect would double-apply a request whose
     // caller already saw a failure.

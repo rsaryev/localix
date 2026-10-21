@@ -33,7 +33,7 @@ export function useParticipantsEditing(
           agentIds,
           ...(revision ? { expectedUpdatedAt: revision } : {}),
         })
-        .then((updated) => useChatStore.getState()._replaceSession(updated))
+        // The stored seats come back as `session.updated` on the stream.
         .catch((err: unknown) =>
           toast.error('Could not update the participants', {
             description: errorMessage(err, '') || undefined,

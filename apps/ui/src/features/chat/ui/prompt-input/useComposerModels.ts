@@ -1,10 +1,7 @@
 import { useMemo } from 'react'
 
-import {
-  findCatalogModelForConnection,
-  resolveLiveCatalogModel,
-  type CatalogModel,
-} from '@localixai/agent/catalog'
+import { findCatalogModelForConnection, type CatalogModel } from '@localixai/agent/catalog'
+import { liveRouteModel } from './model-select/taskReasoning'
 import type { ProviderConnection } from '@/shared/api/contracts'
 
 interface RosterMember {
@@ -29,7 +26,7 @@ export function useComposerModels<P extends RosterMember>(
     () =>
       participants.map((participant) => ({
         ...participant,
-        contextWindow: resolveLiveCatalogModel(
+        contextWindow: liveRouteModel(
           models,
           connections,
           participant.modelId,

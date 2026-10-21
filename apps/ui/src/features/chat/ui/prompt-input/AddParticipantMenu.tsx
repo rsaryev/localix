@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@localixai/kit/dropdown-menu'
 import { MenuEntries } from '@localixai/kit/menu-entries'
-import { useAgents } from '@/features/settings/model/useAgents'
+import { useAgents } from '@/shared/contrib/useAgents'
 import { canJoinConversation } from '@localixai/api/agent-policy'
 
 export interface AddParticipantMenuProps {

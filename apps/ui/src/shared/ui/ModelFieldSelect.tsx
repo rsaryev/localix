@@ -1,5 +1,6 @@
 import { forwardRef, useMemo } from 'react'
 import useSWR from 'swr'
+import { useRevalidateOnResources } from '@/shared/api/resourceGeneration'
 import { Sparkles } from 'lucide-react'
 import { backendClient } from '@/shared/api/client'
 import { useModelsCatalog, type CatalogModel } from '@/shared/hooks/useModelsCatalog'
@@ -76,6 +77,8 @@ export const ModelFieldSelect = forwardRef<HTMLButtonElement, ModelFieldSelectPr
   function ModelFieldSelect({ value, onValueChange, className, ...triggerProps }, ref) {
     const { models, providers, isLoading: catalogLoading } = useModelsCatalog()
     // Connections are read-only here: choosing a config value must never switch the chat session.
+    // The 'providers' topic keeps this read current when a connection changes elsewhere.
+    useRevalidateOnResources('provider-connections', ['providers'])
     const { data: connections, isLoading: connectionsLoading } = useSWR(
       'provider-connections',
       () => backendClient.listConnections(),

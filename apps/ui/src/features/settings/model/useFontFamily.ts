@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { codeFontSize, setRootFontPx } from '@localixai/kit/lib'
 import type { FontSize } from './fontOptions'
 import { CODE_FONT_STACKS, DEFAULT_CODE_FONT, UI_FONT_STACKS } from './fontOptions'
-import { useSettingsStore } from './settingsStore'
+import { useSettingsStore } from '@/shared/lib/user-settings/settingsStore'
 
 // The font stacks live in ./fontOptions — ONE owner, shared with the settings preview.
 // Restating them here is what let the picker advertise a fallback chain the editor did

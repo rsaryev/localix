@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import useSWR, { useSWRConfig, type SWRConfiguration } from 'swr'
 import { useChatStore } from './store'
 import { backendClient } from '@/shared/api/client'
+import { resourceSync } from '@/shared/api/resourceSync'
 import { shouldSurfaceStartupFailure, startupRetryDelay } from '@/shared/lib/startupRetry'
 import { runtimeReadyBarrier } from '@/shared/lib/runtimeReady'
 
@@ -50,8 +51,8 @@ export function useWorkspaceReloader(): () => Promise<void> {
     const activeSessionId = useChatStore.getState().activeSessionId
     await Promise.all([
       mutate('workspace'),
-      mutate('workspace:connections'),
-      mutate('workspace:projects'),
+      // Connections and projects have one writer each, the realtime resource adapters.
+      resourceSync.refresh(['providers', 'projects']),
       ...(activeSessionId ? [mutate(['workspace:session', activeSessionId])] : []),
     ])
   }, [mutate])
@@ -79,26 +80,6 @@ export function useWorkspace() {
       // inheriting a count spent during startup.
       onSuccess: () => setFailures((count) => (count === 0 ? count : 0)),
     },
-  )
-  useSWR(
-    'workspace:connections',
-    () =>
-      withStartupDeadline(async (signal) => {
-        const next = await backendClient.listConnections(signal)
-        useChatStore.setState({ connections: next })
-      }),
-    startupSWRConfig,
-  )
-  useSWR(
-    'workspace:projects',
-    () =>
-      withStartupDeadline(async (signal) => {
-        const next = await backendClient.listProjects(signal)
-        // Not a bare setState: the launch-time workspace restore waits on `projectsLoaded`,
-        // which only the store's fetched-roster writer sets.
-        useChatStore.getState()._hydrateProjects(next)
-      }),
-    startupSWRConfig,
   )
   useSWR(
     hasHydrated && activeSessionId ? ['workspace:session', activeSessionId] : null,

@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { agentPolicy } from '@localixai/api/agent-policy'
-import type { Project } from '@/shared/api/contracts'
 import { backendClient } from '@/shared/api/client'
 import { Button } from '@localixai/kit/button'
 import { ConfirmDialog } from '@localixai/kit/confirm-dialog'
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
 import { inspector } from '@/shared/lib/inspectorBus'
-import { useAgents } from '../../model/useAgents'
+import { useSettingsProjects } from '../../model/useSettingsProjects'
+import { useAgents } from '@/shared/contrib/useAgents'
 import {
   closeAgentProfile,
   newAgentTabId,
@@ -61,7 +60,8 @@ export function AgentProfileTab({
   useEffect(() => {
     contentRef.current?.scrollTo({ top: 0, behavior: 'auto' })
   }, [tab])
-  const projects = useProjects()
+  // A failure to read the list costs the scope LABELS, never the lists themselves.
+  const projects = useSettingsProjects({ report: false })
   const draft = agentId === ''
   // Matched by id OR handle, because a link does not always carry an id. A mention in a message
   // is written `@handle`, and a chat group is keyed by handle too — the id is only known when
@@ -201,28 +201,4 @@ export function AgentProfileTab({
       />
     </SettingsWorkspace>
   )
-}
-
-/**
- * The project list the capability registries name scopes with (a skill's home, an MCP server's
- * install destination). Read once per visible profile — it is a short, rarely-changing list, and
- * a failure to read it costs the scope LABELS, never the lists themselves.
- */
-function useProjects(): Project[] {
-  const visible = useWorkItemVisible()
-  const [projects, setProjects] = useState<Project[]>([])
-  useEffect(() => {
-    if (!visible) return
-    let cancelled = false
-    backendClient
-      .listProjects()
-      .then((rows) => {
-        if (!cancelled) setProjects(rows)
-      })
-      .catch(() => {})
-    return () => {
-      cancelled = true
-    }
-  }, [visible])
-  return projects
 }

@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import { modelKindOf, type CatalogModel, type CatalogProvider } from '@localixai/agent/catalog'
 
 import { backendClient } from '@/shared/api/client'
+import { useRevalidateOnResources } from '@/shared/api/resourceGeneration'
 import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
 
 export type { CatalogModel }
@@ -16,6 +17,8 @@ export function useModelsCatalog() {
   // and the route answers a revalidation with a 304, so refetching is cheap — revalidate
   // on focus/reconnect so a new build (new models, reasoning levels, release order) shows
   // up without a hard refresh. Dedupe briefly to avoid refetch spam.
+  // A connection added or removed changes which providers and models the catalog answers with.
+  useRevalidateOnResources('catalog', ['providers'])
   const { data, isLoading, error, mutate } = useSWR(
     workItemVisible ? 'catalog' : null,
     () => backendClient.getCatalog(),

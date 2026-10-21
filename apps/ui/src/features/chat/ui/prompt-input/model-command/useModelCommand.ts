@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef } from 'react'
 import { sortProvidersByPopularity } from '@localixai/agent/catalog'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
-import { useUserSettings } from '@/features/settings/model/useUserSettings'
+import { useUserSettings } from '@/shared/lib/user-settings/useUserSettings'
 import { backendClient } from '@/shared/api/client'
 import { useModelsCatalog } from '@/shared/hooks/useModelsCatalog'
 import { toast } from '@/shared/lib/notify'

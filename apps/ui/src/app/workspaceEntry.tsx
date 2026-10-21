@@ -11,10 +11,12 @@ import { installFileDropGuard } from '@/shared/lib/fileDropGuard'
 import { installQuitFlush } from '@/shared/lib/quitFlush'
 import { isDesktop } from '@localixai/kit/environment'
 import { registerAgentRunPreflight } from '@/shared/api/agentRunPreflight'
+import { registerSessionPreviews } from '@/shared/lib/sessionPreviews'
+import { inspectorSessionPreviews } from '@/features/inspector/model/sessionPreviewRouters'
 import { registerCompletionWorkingSet } from '@/shared/api/completionWorkingSet'
 import { workspaceCompletionWorkingSet } from '@/features/workspace-grid/model/completionWorkingSet'
 import { restoreShellFrame } from '@/features/chat/model/restoreShellFrame'
-import { waitForRuntimeCapabilities } from '@/features/settings/model/runtimeCapabilityReadiness'
+import { waitForRuntimeCapabilities } from '@/shared/contrib/runtimeCapabilityReadiness'
 import { tauriFrontendLog } from '@/shared/lib/tauri'
 import './pluginRuntime'
 import { installPluginSharedModules } from './pluginSharedModules'
@@ -59,6 +61,7 @@ installQuitFlush()
 // composer all cross the same persisted runtime-capability barrier from their
 // first run.
 registerAgentRunPreflight(waitForRuntimeCapabilities)
+registerSessionPreviews(inspectorSessionPreviews)
 // Every completion surface (composer, commit subject, plugin fields, the code editor) carries
 // what is open on screen; the grid is the one thing that knows it.
 registerCompletionWorkingSet(workspaceCompletionWorkingSet)

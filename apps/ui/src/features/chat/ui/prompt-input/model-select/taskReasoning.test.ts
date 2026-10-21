@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'bun:test'
-import { assignTaskModel, resolveLiveTaskModel, selectedTaskModelId } from './taskReasoning'
+import {
+  assignTaskModel,
+  liveRouteModel,
+  resolveLiveTaskModel,
+  selectedTaskModelId,
+} from './taskReasoning'
 
 describe('task-aware reasoning settings', () => {
   test('changing a model restores the effort belonging to the new provider/model pair', () => {
@@ -39,6 +44,23 @@ describe('task-aware reasoning settings', () => {
         { providerConnectionId: 'deleted', modelId: 'shared' },
       ),
     ).toBeNull()
+  })
+
+  test('follows the server route rule: the stored connection wins while it owns the model', () => {
+    const models = [
+      { id: 'shared', name: 'Shared A', providerId: 'a' },
+      { id: 'shared', name: 'Shared B', providerId: 'b' },
+    ]
+    const a = { id: 'a-live', providerId: 'a' }
+    const b = { id: 'b-live', providerId: 'b' }
+    expect(liveRouteModel(models, [a, b], 'shared', 'b-live')).toEqual({
+      connection: b,
+      model: models[1],
+    })
+    // A bare id two providers list stays ambiguous even when only one of them is connected:
+    // the run would refuse it, so the picker must not show it as resolved.
+    expect(liveRouteModel(models, [b], 'shared', 'deleted')).toBeNull()
+    expect(liveRouteModel(models, [a, b], null, 'a-live')).toBeNull()
   })
 
   test('marks the active participant model rather than the first session model', () => {

@@ -33,7 +33,7 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
 
 describe('project settings presentation', () => {
   test('keeps destructive controls in a flat bounded section instead of a heavy card', () => {
-    const html = renderToStaticMarkup(<ProjectSettingsForm project={project} onSaved={() => {}} />)
+    const html = renderToStaticMarkup(<ProjectSettingsForm project={project} />)
 
     expect(html).toContain('Danger zone')
     expect(html).toContain('border-y')
@@ -55,7 +55,7 @@ describe('project settings presentation', () => {
     const container = document.createElement('div')
     const root = createRoot(container)
     await act(async () => {
-      root.render(<ProjectSettingsForm project={project} onSaved={() => {}} />)
+      root.render(<ProjectSettingsForm project={project} />)
     })
 
     await act(async () => {
@@ -90,7 +90,7 @@ describe('project settings presentation', () => {
     const container = document.createElement('div')
     const root = createRoot(container)
     await act(async () => {
-      root.render(<ProjectSettingsForm project={project} onSaved={() => {}} />)
+      root.render(<ProjectSettingsForm project={project} />)
     })
 
     await act(async () => {

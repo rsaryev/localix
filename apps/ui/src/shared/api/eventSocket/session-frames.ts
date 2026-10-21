@@ -1,7 +1,7 @@
-import { isSessionCursorNewer } from '@localixai/api/ws-frame'
+import { isSessionCursorNewer, parseSessionCursor } from '@localixai/api/ws-frame'
 
 import type { AgentStreamEvent } from '../contracts'
-import { emitRealtimeDiagnostic, notifyReconnectHandlers } from './observers'
+import { emitRealtimeDiagnostic, notifyReconnectHandlers, notifyResyncHandlers } from './observers'
 import { conn } from './state'
 import { sessionHandlers } from './subscription'
 
@@ -160,6 +160,22 @@ function parseSessionEvent(json: string) {
     : { event: parsed as AgentStreamEvent }
 }
 
+/** The stream missed frames after all: nothing it replayed can be taken as complete. */
+function withdrawReplay(): void {
+  conn.verifyEpoch = null
+  if (!conn.openResumed) return
+  conn.openResumed = false
+  notifyResyncHandlers()
+}
+
+/** A server restarted since the cursor replays its own boot from zero, not what was missed. */
+function checkResumedEpoch(cursor: string): void {
+  const epoch = parseSessionCursor(cursor)?.epoch
+  const expected = conn.verifyEpoch
+  conn.verifyEpoch = null
+  if (epoch !== expected) withdrawReplay()
+}
+
 function drainSessionFrames(): void {
   sessionFlushTimer = null
   // Consume from the front without swapping the whole queue out. Frames received
@@ -168,6 +184,7 @@ function drainSessionFrames(): void {
   let pending: ParsedSessionFrame | null = null
   let sawTransportLag = false
   for (const frame of frames) {
+    if (conn.verifyEpoch !== null) checkResumedEpoch(frame.cursor)
     // Reconnect replay and a superseded transport can overlap at the boundary.
     // Filter before delta coalescing: merging a duplicate append first would make
     // the repeated text indistinguishable from a legitimate larger delta.
@@ -203,6 +220,7 @@ function drainSessionFrames(): void {
       })
       conn.lastCursor = frame.cursor
       sawTransportLag = true
+      withdrawReplay()
       continue
     }
     const parsed = { cursor: frame.cursor, sessionId: frame.sessionId, event: decoded.event }

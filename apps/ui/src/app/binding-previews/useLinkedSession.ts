@@ -3,6 +3,7 @@ import type { AgentItem } from '@localixai/agent/agents'
 import { createBoundedCache } from '@localixai/kit/lib'
 import { useChatStore } from '@/features/chat/model/store'
 import { backendClient } from '@/shared/api/client'
+import { useResourceGeneration } from '@/shared/api/resourceGeneration'
 import type { Message, UiSession } from '@/shared/api/contracts'
 
 /**
@@ -11,7 +12,8 @@ import type { Message, UiSession } from '@/shared/api/contracts'
  *
  * The chat store holds only the sessions the person has opened; a link on a board usually points
  * at one they have not opened in this window. So the store is asked first, and otherwise the
- * session is read once from the server and kept for the next preview of the same session: a board
+ * session is read from the server and kept for the next preview of the same session until the
+ * 'sessions' topic says sessions changed: a board
  * holding twelve calls from one conversation reads that conversation once, not twelve times. The
  * store is never written — a preview must not make a session look opened to the chat.
  *
@@ -20,11 +22,13 @@ import type { Message, UiSession } from '@/shared/api/contracts'
  */
 const read = createBoundedCache<string, Promise<UiSession | null>>({ maxEntries: 24 })
 
-function fetchOnce(id: string): Promise<UiSession | null> {
-  const known = read.get(id)
+/** Keyed by the 'sessions' generation: a read from before a change is never served after it. */
+function fetchOnce(id: string, generation: number): Promise<UiSession | null> {
+  const key = `${generation}\n${id}`
+  const known = read.get(key)
   if (known) return known
   const next = backendClient.getSession(id).catch(() => null)
-  read.set(id, next)
+  read.set(key, next)
   return next
 }
 
@@ -51,17 +55,18 @@ export function useLinkedSession(ref: string | undefined): LinkedSession {
   const listed = useListedSession(ref)
   const loaded = listed && listed.bodyLoaded !== false ? listed : undefined
   const id = listed?.id ?? ref
+  const generation = useResourceGeneration('sessions')
   const [fetched, setFetched] = useState<{ id: string; session: UiSession | null } | null>(null)
   useEffect(() => {
     if (loaded || !id) return
     let live = true
-    void fetchOnce(id).then((session) => {
+    void fetchOnce(id, generation).then((session) => {
       if (live) setFetched({ id, session })
     })
     return () => {
       live = false
     }
-  }, [id, loaded])
+  }, [id, loaded, generation])
   if (loaded) return { state: 'ready', session: loaded }
   if (!id) return { state: 'missing' }
   if (fetched?.id !== id) return { state: 'loading' }

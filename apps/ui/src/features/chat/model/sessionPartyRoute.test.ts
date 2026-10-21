@@ -2,7 +2,7 @@ import { afterEach, describe, expect, spyOn, test } from 'bun:test'
 
 import { backendClient } from '@/shared/api/client'
 import type { UiSession } from '@/shared/api/contracts'
-import { useUserSettings } from '@/features/settings/model/useUserSettings'
+import { useUserSettings } from '@/shared/lib/user-settings/useUserSettings'
 import { createApplyPartyRoute, partyRouteEntries } from './sessionPartyRoute'
 
 const room = (): UiSession =>

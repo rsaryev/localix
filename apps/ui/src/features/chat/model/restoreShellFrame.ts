@@ -46,7 +46,7 @@ export function restoreShellFrame(): boolean {
   useChatStore
     .getState()
     .hydrateWorkspace(
-      createWorkspaceSnapshot(snapshot.sessions.map(uiSessionSummary), [], remembered.sessionId),
+      createWorkspaceSnapshot(snapshot.sessions.map(uiSessionSummary), remembered.sessionId),
     )
   return true
 }

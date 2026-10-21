@@ -20,7 +20,8 @@ import { useRoutedNavigation } from '@/shared/hooks/useRoutedNavigation'
 import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
 import { isSectionId } from '@/shared/routing/routes'
 import { StatusBar } from '@/features/chat/ui/StatusBar'
-import { ChatSidebar } from '@/features/chat/ui/ChatSidebar'
+import { ChatSidebar } from '@/widgets/chat-sidebar/ui/ChatSidebar'
+import { SemanticIndexStatusItem } from '@/features/settings/ui/SemanticIndexStatusItem'
 import { useTheme } from '@/shared/theme/useTheme'
 import { subscribeUiOverlay } from '@/shared/lib/uiOverlayBus'
 import { SOURCES_OVERLAY_ID } from '@/features/chat/ui/sources/Sources.surface'
@@ -531,7 +532,13 @@ export function ChatPage() {
         />
       }
       statusSessionId={activeSessionId}
-      footer={<StatusBar lspServers={lspServers} onOpenProblems={openProblems} />}
+      footer={
+        <StatusBar
+          lspServers={lspServers}
+          onOpenProblems={openProblems}
+          trailing={<SemanticIndexStatusItem className="ml-auto" />}
+        />
+      }
     >
       <Suspense fallback={<LoadingHint>Opening workspace…</LoadingHint>}>
         {workspaceTransferReady && <GridView resolvedTheme={resolvedTheme} isMobile={isMobile} />}

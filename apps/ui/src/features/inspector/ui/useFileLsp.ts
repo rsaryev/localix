@@ -8,7 +8,7 @@ import type {
 } from '@/shared/ui/code-editor/CodeEditor'
 import type { LspCodeAction } from '@/shared/api/contracts'
 import { languageFromPath } from '@/shared/ui/diff'
-import { useUserSettings } from '@/features/settings/model/useUserSettings'
+import { useUserSettings } from '@/shared/lib/user-settings/useUserSettings'
 import { isModelRoutingTaskEnabled } from '@localixai/api/model-task-catalog'
 import type { CompletionReference } from '@localixai/api/client'
 import { completionWorkingSet } from '@/shared/api/completionWorkingSet'

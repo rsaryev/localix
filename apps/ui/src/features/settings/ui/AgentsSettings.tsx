@@ -1,4 +1,4 @@
-import { useAgents } from '../model/useAgents'
+import { useAgents } from '@/shared/contrib/useAgents'
 import type { Project } from '@/shared/api/contracts'
 import { Button } from '@localixai/kit/button'
 import { SettingProblems } from './settingRegistry'

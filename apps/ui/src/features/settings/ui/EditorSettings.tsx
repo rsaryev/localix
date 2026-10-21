@@ -1,7 +1,7 @@
 import { SettingsPage, SettingsRows, SettingsSection } from './SettingsScaffold'
 import { setAutoSave, useAutoSave } from '@/shared/ui/code-editor/autoSave'
 import { useSyncExternalStore } from 'react'
-import { useUserSettings } from '../model/useUserSettings'
+import { useUserSettings } from '@/shared/lib/user-settings/useUserSettings'
 import { SwitchRow } from './SwitchRow'
 import { getWordWrap, setWordWrap, subscribeWordWrap } from '@/shared/ui/code-editor/wordWrap'
 import {

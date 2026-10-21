@@ -23,7 +23,8 @@ describe('MCP runtime availability mutations', () => {
     const { backendClient } = await import('@/shared/api/client')
     const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
     const { useMcpServers } = await import('./useMcpServers')
-    const { waitForRuntimeCapabilities } = await import('./runtimeCapabilityReadiness')
+    const { waitForRuntimeCapabilities } =
+      await import('@/shared/contrib/runtimeCapabilityReadiness')
 
     const server = {
       id: 'mcp-global',

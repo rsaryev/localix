@@ -2,8 +2,7 @@ import { backendClient } from '@/shared/api/client'
 import { ApiError } from '@/shared/api/failure'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { composerDrafts } from '@/shared/lib/composerDrafts'
-import { usePreviewStore } from '@/features/inspector/model/previewStore'
-import { closeNativePages } from '@/features/inspector/model/nativePages'
+import { sessionPreviews } from '@/shared/lib/sessionPreviews'
 import type { UiSession } from '@/shared/api/contracts'
 import type { ReasoningEffort } from './reasoning'
 import { patchSessionById, sessionBelongsToScope, sortSessions } from './sessionListHelpers'
@@ -86,16 +85,11 @@ export function createSessionActions({
   const actions: SessionActions = {
     _forgetSessions: (ids) => {
       for (const pending of pendingSelections) if (ids.includes(pending.id)) pending.removed = true
+      sessionPreviews().forget(ids)
       for (const id of ids) {
         drafts.forget(id)
         sessionBodyCache.delete(id)
         composerDrafts.forget(id)
-        const previews = usePreviewStore.getState()
-        closeNativePages(
-          (previews.previewTabsBySession[id] ?? []).map((entry) => entry.previewId),
-          'Could not close the pages of the deleted chat',
-        )
-        previews.discardSessionPreview(id)
         inspector.closeSession(id)
       }
     },
@@ -274,8 +268,8 @@ export function createSessionActions({
     },
 
     renameSession: async (id, title) => {
-      const session = await backendClient.updateSession(id, { title })
-      get()._replaceSession(session)
+      // Every surface, this one included, learns the change from the `session.updated` frame.
+      await backendClient.updateSession(id, { title })
     },
 
     togglePinSession: async (id) => {
@@ -283,8 +277,7 @@ export function createSessionActions({
       // the active project's working list, and `current` decided the NEW value.
       const current = findSessionInState(get(), id)
       if (!current) return
-      const session = await backendClient.updateSession(id, { isPinned: !current.isPinned })
-      get()._replaceSession(session)
+      await backendClient.updateSession(id, { isPinned: !current.isPinned })
     },
 
     toggleArchiveSession: async (id) => {
@@ -292,8 +285,7 @@ export function createSessionActions({
       // full set (allSessions) — not the project-scoped `sessions` list.
       const current = get().allSessions.find((session) => session.id === id)
       if (!current) return
-      const session = await backendClient.updateSession(id, { isArchived: !current.isArchived })
-      get()._replaceSession(session)
+      await backendClient.updateSession(id, { isArchived: !current.isArchived })
     },
 
     moveSessionToProject: async (id, projectId) => {
@@ -301,8 +293,7 @@ export function createSessionActions({
       // different project group than the one currently in view.
       const current = get().allSessions.find((session) => session.id === id)
       if (!current || (current.projectId ?? null) === projectId) return
-      const session = await backendClient.updateSession(id, { projectId })
-      get()._replaceSession(session)
+      await backendClient.updateSession(id, { projectId })
     },
 
     toggleUnreadSession: (id) => {

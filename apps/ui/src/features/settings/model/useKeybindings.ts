@@ -8,7 +8,7 @@ import {
   resolveBindings,
   useKeybindingsStore,
 } from '@/shared/lib/keybindings'
-import { useSettingsStore } from './settingsStore'
+import { useSettingsStore } from '@/shared/lib/user-settings/settingsStore'
 
 /**
  * Bridge between the persisted profile (`uiSettings.keybindings`) and the shared

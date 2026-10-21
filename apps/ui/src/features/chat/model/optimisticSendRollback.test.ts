@@ -5,7 +5,7 @@ import { eventSocket } from '@/shared/api/eventSocket'
 import type { UiSession } from '@/shared/api/contracts'
 import { applyCapabilityRules } from '@/shared/contrib/capabilityCache'
 import { availabilityChange } from '@/shared/contrib/capabilityRules'
-import { waitForRuntimeCapabilities } from '@/features/settings/model/runtimeCapabilityReadiness'
+import { waitForRuntimeCapabilities } from '@/shared/contrib/runtimeCapabilityReadiness'
 import { sendChatMessage } from './sendChatMessage'
 import { useChatStore } from './store'
 

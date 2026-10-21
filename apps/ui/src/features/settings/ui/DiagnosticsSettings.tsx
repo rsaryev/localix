@@ -6,11 +6,10 @@ import { ActivitySignal } from '@localixai/kit/activity-orb'
 import { Button } from '@localixai/kit/button'
 import { Input } from '@localixai/kit/input'
 import { Select } from '@localixai/kit/select'
-import { backendClient } from '@/shared/api/client'
 import { effectiveConfigApi } from '@/shared/api/effectiveConfigApi'
 import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
-import type { EffectiveConfigReport, Project } from '@localixai/api/client'
-import { reportProjectListFailure, reportProjectListLoaded } from '../model/projectListProblem'
+import type { EffectiveConfigReport } from '@localixai/api/client'
+import { useSettingsProjects } from '../model/useSettingsProjects'
 import { DiagnosticsReport } from './DiagnosticsReport'
 import { SettingProblems } from './settingRegistry'
 import { SettingsActionActivity } from './SettingsActionActivity'
@@ -29,27 +28,12 @@ export function DiagnosticsSettings({ embedded = false }: { embedded?: boolean }
   const workItemVisible = useWorkItemVisible()
   const projectLabelId = useId()
   const sessionLabelId = useId()
-  const [projects, setProjects] = useState<Project[]>([])
+  const projects = useSettingsProjects()
   const [projectId, setProjectId] = useState('')
   const [sessionId, setSessionId] = useState('')
   const [report, setReport] = useState<EffectiveConfigReport | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (!workItemVisible) return
-    let cancelled = false
-    backendClient
-      .listProjects()
-      .then((rows) => {
-        reportProjectListLoaded()
-        if (!cancelled) setProjects(rows)
-      })
-      .catch(reportProjectListFailure)
-    return () => {
-      cancelled = true
-    }
-  }, [workItemVisible])
 
   // Guards a stale in-flight resolve from overwriting a newer one: the scope inputs
   // (esp. the free-text session id) re-fire this per keystroke, so a slow earlier

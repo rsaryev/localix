@@ -84,10 +84,10 @@ describe('workspace startup recovery', () => {
     })
 
     expect(sessions).toHaveBeenCalledTimes(2)
-    // Optional slices succeeded on their first independent attempt; retrying the
-    // core roster does not refetch work that already converged.
-    expect(connections).toHaveBeenCalledTimes(1)
-    expect(projects).toHaveBeenCalledTimes(1)
+    // Connections and projects are not this hook's reads: each has one writer, its realtime
+    // resource adapter, so a retried roster cannot race a second copy of them.
+    expect(connections).not.toHaveBeenCalled()
+    expect(projects).not.toHaveBeenCalled()
     expect(useChatStore.getState()._hasHydrated).toBe(true)
     expect(host.textContent).toContain('Workspace ready')
 
@@ -160,68 +160,6 @@ describe('workspace startup recovery', () => {
     host.remove()
     sessions.mockRestore()
     connections.mockRestore()
-    projects.mockRestore()
-  })
-
-  test('an optional connection slice failure does not hold core workspace readiness', async () => {
-    const React = await import('react')
-    const { act } = React
-    const { createRoot } = await import('react-dom/client')
-    const { SWRConfig } = await import('swr')
-    const { backendClient } = await import('@/shared/api/client')
-    const { useWorkspace } = await import('./useWorkspace')
-    const { useChatStore, useHasHydrated } = await import('./store')
-
-    let connectionAttempt = 0
-    const connections = spyOn(backendClient, 'listConnections').mockImplementation(async () => {
-      connectionAttempt += 1
-      if (connectionAttempt === 1) throw new Error('provider store temporarily unavailable')
-      return []
-    })
-    const sessions = spyOn(backendClient, 'listSessions').mockResolvedValue([])
-    const projects = spyOn(backendClient, 'listProjects').mockResolvedValue([])
-
-    useChatStore.setState({
-      _hasHydrated: false,
-      connections: [],
-      allSessions: [],
-      sessions: [],
-      projects: [],
-      activeProjectId: null,
-      activeSessionId: null,
-    })
-
-    function Surface() {
-      useWorkspace()
-      return <main>{useHasHydrated() ? 'Core ready' : 'Connecting'}</main>
-    }
-
-    const host = document.createElement('div')
-    document.body.append(host)
-    const root = createRoot(host)
-    await act(async () => {
-      root.render(
-        <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
-          <Surface />
-        </SWRConfig>,
-      )
-      await new Promise((resolve) => setTimeout(resolve, 20))
-    })
-
-    expect(host.textContent).toContain('Core ready')
-    expect(useChatStore.getState()._hasHydrated).toBe(true)
-    expect(sessions).toHaveBeenCalledTimes(1)
-    expect(connections).toHaveBeenCalledTimes(1)
-
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 180))
-    })
-    expect(connections).toHaveBeenCalledTimes(2)
-
-    await act(async () => root.unmount())
-    host.remove()
-    connections.mockRestore()
-    sessions.mockRestore()
     projects.mockRestore()
   })
 
