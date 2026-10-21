@@ -18,7 +18,6 @@ import type { ConsumerHandlers } from '@localixai/change-feed'
 import type { AppDatabase } from '../../db'
 import type { CoreCascades, CoreRefs } from '../changes/core-entities'
 import { ACTION_PREFIX } from './resolve'
-import { bumpCapabilityRevision } from './revision'
 import { createCapabilityRuleRepository } from './rule-repository'
 
 export interface CapabilityCleanupPorts {
@@ -43,8 +42,8 @@ export function createCapabilityCleanup(ports: CapabilityCleanupPorts) {
         .executeTakeFirst(),
     )
 
-  /** Drop the name's switches from every agent's list; true when any row went. */
-  async function clearSwitches(kind: 'plugin' | 'mcp', name: string): Promise<boolean> {
+  /** Drop the name's switches from every agent's list (each write bumps the revision). */
+  async function clearSwitches(kind: 'plugin' | 'mcp', name: string): Promise<void> {
     const action = `${ACTION_PREFIX[kind]}${name}`
     const named = (rule: { action: string; resource: string }) =>
       rule.resource === '*' &&
@@ -59,15 +58,13 @@ export function createCapabilityCleanup(ports: CapabilityCleanupPorts) {
       .execute()
     for (const { agent_id } of holders)
       await rules.mutate(userId, agent_id, (current) => current.filter((rule) => !named(rule)))
-    return holders.length > 0
   }
 
   async function removed(kind: 'plugin' | 'mcp', name: string, serverId?: string): Promise<void> {
     if (await installed(kind, name)) return
-    const cleared = await clearSwitches(kind, name)
+    await clearSwitches(kind, name)
     if (kind === 'mcp' && serverId) await ports.clearMcpSignIn(userId, serverId)
     if (kind === 'plugin') await ports.unbindVaultConsumer(userId, 'plugin', name)
-    if (cleared) bumpCapabilityRevision()
   }
 
   const handlers: ConsumerHandlers<CoreRefs, CoreCascades> = {
@@ -79,6 +76,7 @@ export function createCapabilityCleanup(ports: CapabilityCleanupPorts) {
       change.op === 'deleted' ? removed('mcp', change.ref.id, change.ref.serverId) : undefined,
     agent: 'ignore',
     project: 'ignore',
+    'capability.rule': 'ignore',
     'provider.connection': 'ignore',
   }
   return { handlers, removed }

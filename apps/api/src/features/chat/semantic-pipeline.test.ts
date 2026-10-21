@@ -128,6 +128,7 @@ describe('semantic pipeline over chat', () => {
           mcp: 'ignore',
           agent: 'ignore',
           project: 'ignore',
+          'capability.rule': 'ignore',
           'provider.connection': 'ignore',
         },
         {

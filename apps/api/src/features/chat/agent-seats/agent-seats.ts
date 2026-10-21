@@ -64,6 +64,7 @@ export function createAgentSeats(ports: AgentSeatsPorts) {
     mcp: 'ignore',
     agent: (change) => (change.op === 'resync' ? reconcile() : changed(change.op, change.ref)),
     project: 'ignore',
+    'capability.rule': 'ignore',
     'provider.connection': 'ignore',
   }
 

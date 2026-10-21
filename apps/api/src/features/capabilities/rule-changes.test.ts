@@ -1,69 +1,62 @@
 import { describe, expect, test } from 'bun:test'
-import { applyRuleChanges } from './rule-changes'
-import type { Rule } from './rule'
 
-const rule = (action: string, resource: string, effect: Rule['effect']): Rule => ({
-  action,
-  resource,
-  effect,
-})
+import { createDatabase } from '../../db/connection'
+import { migrateToLatest } from '../../db/migrator'
+import { createAvailabilityWriter } from './availability'
+import {
+  __resetCapabilityRevision,
+  capabilitiesChanged,
+  capabilityRevision,
+  trackCapabilityChange,
+} from './revision'
+import { createCapabilityRuleRepository } from './rule-repository'
 
-describe('applying rule changes to a scope', () => {
-  test('replaces the row with the same action and resource', () => {
-    const next = applyRuleChanges(
-      [rule('tool:bash', '*', 'allow')],
-      [{ action: 'tool:bash', resource: '*', effect: 'deny' }],
-    )
+async function setup() {
+  const db = createDatabase()
+  await migrateToLatest(db)
+  __resetCapabilityRevision(0)
+  return db
+}
 
-    expect(next).toEqual([rule('tool:bash', '*', 'deny')])
+describe('capability rule changes', () => {
+  test('a rule write is announced by its key in its own transaction, and bumps once', async () => {
+    const db = await setup()
+    await createCapabilityRuleRepository(db).replace('u1', 'a1', [
+      { action: 'plugin:x', resource: '*', effect: 'allow' },
+    ])
+    expect(capabilityRevision()).toBe(1)
+    const rows = await db.selectFrom('change_events').select(['entity', 'op', 'ref_json']).execute()
+    expect(rows).toEqual([
+      {
+        entity: 'capability.rule',
+        op: 'upserted',
+        ref_json: JSON.stringify({ userId: 'u1', agentId: 'a1' }),
+      },
+    ])
   })
 
-  test('leaves an argument rule alone when the capability itself changes', () => {
-    const next = applyRuleChanges(
-      [rule('tool:bash', 'rm *', 'ask'), rule('tool:bash', '*', 'allow')],
-      [{ action: 'tool:bash', resource: '*', effect: 'deny' }],
-    )
-
-    expect(next).toEqual([rule('tool:bash', 'rm *', 'ask'), rule('tool:bash', '*', 'deny')])
+  test('enabling an agent moves the revision once', async () => {
+    const db = await setup()
+    const writer = createAvailabilityWriter(db)
+    // What the observed `setAgentEnabled` is: a rule write, then "capabilities changed".
+    await trackCapabilityChange(async () => {
+      await writer.set('u1', 'a1', 'agent', [{ name: 'a2', enabled: true }])
+      capabilitiesChanged()
+    })
+    expect(capabilityRevision()).toBe(1)
   })
 
-  /**
-   * The difference the fourth effect exists for: removing the row is not the same as allowing.
-   * A plugin nobody has ruled on is inert; one the user allowed runs.
-   */
-  test('`default` removes the row instead of writing one', () => {
-    const next = applyRuleChanges(
-      [rule('plugin:office', '*', 'allow'), rule('tool:read', '*', 'deny')],
-      [{ action: 'plugin:office', resource: '*', effect: 'default' }],
-    )
-
-    expect(next).toEqual([rule('tool:read', '*', 'deny')])
-  })
-
-  test('written rows go last, so a change beats the general rule it excepts', () => {
-    const next = applyRuleChanges(
-      [rule('tool:*', '*', 'deny')],
-      [{ action: 'tool:read', resource: '*', effect: 'allow' }],
-    )
-
-    expect(next).toEqual([rule('tool:*', '*', 'deny'), rule('tool:read', '*', 'allow')])
-  })
-
-  test('one request cannot contradict itself — the last change for a row wins', () => {
-    const next = applyRuleChanges(
-      [],
-      [
-        { action: 'skill:deploy', resource: '*', effect: 'allow' },
-        { action: 'skill:deploy', resource: '*', effect: 'deny' },
-      ],
-    )
-
-    expect(next).toEqual([rule('skill:deploy', '*', 'deny')])
-  })
-
-  test('no changes leaves the list untouched', () => {
-    const current = [rule('tool:bash', '*', 'deny')]
-
-    expect(applyRuleChanges(current, [])).toEqual(current)
+  test('a mutation that wrote no rule still announces; a concurrent bump does not stand in', async () => {
+    await setup()
+    let release!: () => void
+    const pending = trackCapabilityChange(async () => {
+      await new Promise<void>((resolve) => (release = resolve))
+      capabilitiesChanged()
+    })
+    // Another mutation bumps meanwhile, outside this one.
+    await trackCapabilityChange(async () => capabilitiesChanged())
+    release()
+    await pending
+    expect(capabilityRevision()).toBe(2)
   })
 })

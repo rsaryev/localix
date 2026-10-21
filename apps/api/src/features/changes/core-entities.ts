@@ -30,6 +30,8 @@ export const CORE_REFS = {
   mcp: z.object({ id: z.string(), scope, serverId: z.string().optional() }),
   // `id` is the agent's catalog key (its handle); `agentId` its stable id, when the owner knows it.
   agent: z.object({ id: z.string(), scope, agentId: z.string().optional() }),
+  // One agent's rule list, replaced as a whole (its key: the agent it belongs to).
+  'capability.rule': z.object({ userId: z.string(), agentId: z.string() }),
   // A project: created, moved, renamed, deleted or restored (settings-only writes are silent).
   project: z.object({ id: z.string(), userId: z.string() }),
   // A provider account: created, signed in, a key enabled, or deleted.

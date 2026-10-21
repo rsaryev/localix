@@ -18,7 +18,7 @@ The findings behind each item, with counts and paths, are in [the audit](audit.m
 | [x] Project             | `project`              | Plugin backend host refresh                                    | `apps/api/src/features/projects/`                              |
 | [x] Agent               | `agent` by key         | Seat and handle repair                                         | `apps/api/src/features/agents/`                                |
 | [x] MCP server, plugin  | `mcp`, `plugin` by key | Capability cleanup: rules, OAuth tokens, vault bindings        | `apps/api/src/features/mcp/`, `apps/api/src/features/plugins/` |
-| [ ] Capability rule     | `capability.rule`      | Relay; semantic index                                          | `apps/api/src/features/capabilities/`                          |
+| [x] Capability rule     | `capability.rule`      | Relay; semantic index                                          | `apps/api/src/features/capabilities/`                          |
 | [ ] Message edit        | `chat.message`         | Semantic index                                                 | `apps/api/src/features/chat/`                                  |
 | [ ] Chat deletion       | `chat.session` cascade | Session residue: sandbox, child loops and monitors, inbox rows | `apps/api/src/features/chat/`                                  |
 | [ ] Local model         | `local.model`          | Route repair                                                   | `apps/api/src/features/local-models/`                          |
@@ -59,7 +59,7 @@ scheduling, terminal lifecycle and the session event stream.
 
 ## Dead code and legacy
 
-- [ ] Enabling an agent bumps the capability revision once.
+- [x] Enabling an agent bumps the capability revision once.
 - [ ] Remove the `localStorage` exemption for a file that does not exist.
 - [ ] Drop the unread `agent_sessions.worktree_session_id` column with a new migration.
 - [ ] Rename one of the two `recordSessionChanges` functions.

@@ -36,7 +36,7 @@ import { createSessionStreamRegistry } from '../runtime/session-stream-registry'
 import { createKeyedSerializer } from '../../../lib/keyed-serializer'
 import { resolveDefaultUserId, userHome } from '../../../lib/env'
 import type { ChatServiceDeps } from './context'
-import { bumpCapabilityRevision } from '../../capabilities/revision'
+import { capabilitiesChanged } from '../../capabilities/revision'
 
 export function createChatServiceGraph(deps: ChatServiceDeps) {
   const now = deps.now ?? (() => new Date().toISOString())
@@ -82,7 +82,7 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
       now: deps.now,
       resolveProjectCwd,
       onChanged: () => {
-        bumpCapabilityRevision()
+        capabilitiesChanged()
       },
     })
   const streamRegistry = deps.streamRegistry ?? createSessionStreamRegistry()

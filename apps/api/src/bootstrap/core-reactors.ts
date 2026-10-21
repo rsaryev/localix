@@ -71,8 +71,8 @@ export function createRouteRepairReactor(deps: CoreReactorDeps) {
       },
     },
     routing: {
-      read: async (userId) =>
-        (await deps.userService.getProfile(userId)).agentSettings?.modelRouting,
+      read: async (...args) =>
+        (await deps.userService.getProfile(...args)).agentSettings?.modelRouting,
       async write(userId, modelRouting) {
         await deps.userService.updateProfile(userId, {
           agentSettingsPatch: { modelRouting: modelRouting as never },
@@ -123,6 +123,7 @@ export function notificationsCleanupHandlers(
     mcp: 'ignore',
     agent: 'ignore',
     project: 'ignore',
+    'capability.rule': 'ignore',
     'provider.connection': (change) => {
       if (change.op === 'deleted') conditions.connectionRemoved(change.ref.userId, change.ref.id)
     },
@@ -141,6 +142,7 @@ export function pluginBackendHandlers(
     mcp: 'ignore',
     agent: 'ignore',
     project: () => refresh(),
+    'capability.rule': 'ignore',
     'provider.connection': 'ignore',
   }
 }
@@ -159,7 +161,7 @@ export async function startCoreReactors(deps: CoreReactorDeps): Promise<void> {
   const cleanup = createCapabilityCleanup({
     db: deps.db,
     userId: deps.defaultUserId,
-    clearMcpSignIn: (userId, serverId) => mcpOAuthStore.clear(userId, serverId),
+    clearMcpSignIn: (...args) => mcpOAuthStore.clear(...args),
     unbindVaultConsumer: (...args) => deps.secretsStore.unbindConsumer(...args),
   })
   await deps.feed.subscribe('capability-cleanup', cleanup.handlers, { kind: 'reactor' })
