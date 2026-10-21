@@ -509,6 +509,7 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
         }
       }
 
+      await repo.announceUpserted(userId, id)
       return loadDto(userId, id)
     },
 
@@ -571,7 +572,7 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
       }
 
       await repo.updateKey(userId, id, keyId, { ...patch, updatedAt: now() })
-      if (patch.enabled === true) await repo.announceUpserted(userId, id)
+      await repo.announceUpserted(userId, id)
       return loadDto(userId, id)
     },
 
@@ -587,6 +588,7 @@ export function createProviderConnectionsService(deps: ProviderConnectionsServic
       }
       await repo.deleteKey(userId, id, keyId)
       await vault.delete(userId, vaultKey(keyId))
+      await repo.announceUpserted(userId, id)
       return loadDto(userId, id)
     },
 

@@ -277,7 +277,6 @@ export function createAppServicesPhase({
     chatService,
     projectsService,
     userService,
-    providerConnectionsService,
     agentsService,
     skillsCuratorService,
     secretsService,

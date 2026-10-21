@@ -25,7 +25,7 @@ The findings behind each item, with counts and paths, are in [the audit](audit.m
 
 ## Stage 3: consumers replace writer-driven follow-ups
 
-- [ ] Relay from notices to client topics replaces the mutation wrappers in
+- [x] Relay from notices to client topics replaces the mutation wrappers in
       `apps/api/src/bootstrap/resource-sync.ts`.
 - [x] Usage ledger projector replaces the fire-and-forget usage write and the boot repair.
 - [ ] `resolveLanguageModel` picks its connection with `routeReadiness`; the server copy of the rule

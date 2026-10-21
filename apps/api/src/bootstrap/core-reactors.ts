@@ -1,7 +1,8 @@
 /**
- * The reactors on the core change feed: follow-ups another feature performs when an owner
- * announces a change (C5). Each is a named consumer with its own cursor and reconcile; this file
- * only gives them their ports.
+ * The consumers on the core change feed besides the semantic index: the reactors (follow-ups
+ * another feature performs when an owner announces a change, C5) and the projectors (the relay
+ * to client topics, the usage ledger). Each is a named consumer with its own cursor and
+ * reconcile; this file only gives them their ports.
  */
 import type { Kysely } from 'kysely'
 import type { ConsumerHandlers } from '@localixai/change-feed'
@@ -20,6 +21,7 @@ import { stopSessionMonitors } from '../features/chat/service/monitor-ops'
 import type { NotificationJournal } from '../features/notifications/journal-contracts'
 import { createUsageLedgerProjector } from '../features/usage/ledger-projector'
 import { createUsageRepository } from '../features/usage/repository'
+import { createRelay } from '../features/realtime/relay'
 import { createRouteRepair } from '../features/chat/route-repair/route-repair'
 import { createRouteSeatsRepository } from '../features/chat/route-repair/seats-repository'
 import type { ProviderConditions } from '../features/notifications/conditions/providers'
@@ -188,6 +190,8 @@ export async function startCoreReactors(deps: CoreReactorDeps): Promise<void> {
     kind: 'reactor',
     reconcile: () => residue.reconcile(),
   })
+  const relay = createRelay({ defaultUserId: deps.defaultUserId, publish: deps.publish })
+  await deps.feed.subscribe('relay', relay.handlers, { kind: 'projector' })
   const ledger = createUsageLedgerProjector({ usage: createUsageRepository(deps.db) })
   await deps.feed.subscribe('usage-ledger', ledger.handlers, {
     kind: 'projector',

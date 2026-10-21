@@ -8,14 +8,7 @@ import type { SkillsCuratorService } from '../features/skills-curator/service'
 
 /** The composition root owns which read models a committed service mutation invalidates. */
 export function installResourceSync(
-  deps: Pick<
-    AppDeps,
-    | 'projectsService'
-    | 'userService'
-    | 'providerConnectionsService'
-    | 'secretsService'
-    | 'systemService'
-  > & {
+  deps: Pick<AppDeps, 'projectsService' | 'userService' | 'secretsService' | 'systemService'> & {
     chatService: ReturnType<typeof createChatService>
     agentsService: AgentsService
     skillsCuratorService: SkillsCuratorService
@@ -65,19 +58,8 @@ export function installResourceSync(
     if (result.accepted) publish(args[0], ['view-state'])
     return result
   }
-  observe(
-    deps.providerConnectionsService,
-    {
-      createConnection: ['providers', 'capabilities'],
-      updateConnection: ['providers', 'capabilities', 'sessions'],
-      deleteConnection: ['providers', 'capabilities', 'sessions'],
-      addKey: ['providers', 'vault'],
-      updateKey: ['providers', 'vault'],
-      removeKey: ['providers', 'vault'],
-      completeOAuth: ['providers', 'capabilities', 'vault'],
-    },
-    publish,
-  )
+  // Provider connections announce every change on the core feed; the relay pokes their topics
+  // (`features/realtime/relay.ts`).
   observe(
     deps.agentsService,
     {
