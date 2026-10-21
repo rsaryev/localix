@@ -13,10 +13,11 @@
  *                hand-written diff loop — the agent states the condition, not the
  *                bookkeeping around it.
  *
- * Pure module: no processes, no imports. Everything here is data + formatting, so the wake
- * wording has one home and cannot drift per caller (the mistake `wake-provenance.ts` was created
- * to undo). A running monitor is a trigger (`./record`) plus a work record; neither is shaped here.
+ * Pure module: no processes, and its one import is the pure wait vocabulary. Everything here is
+ * data + formatting, so the wake wording has one home and cannot drift per caller (the mistake
+ * `wake-provenance.ts` was created to undo). A running monitor is a trigger (`./record`) plus a work record; neither is shaped here.
  */
+import { monitorEndPhrase } from '../agent-core/tools/bash/monitor-wait'
 
 /** Which shape a monitor is. `watch` streams lines; `until` polls for a predicate. */
 export type MonitorMode = 'watch' | 'until'
@@ -91,33 +92,10 @@ export interface MonitorEvent {
   text: string
 }
 
-export const MONITOR_DEFAULT_TIMEOUT_MS = 300_000
-export const MONITOR_MAX_TIMEOUT_MS = 3_600_000
-export const MONITOR_MIN_INTERVAL_SECONDS = 5
 /** Concurrent monitors one session may hold. A wait needs a handful; a hundred is a bug. */
 export const MONITOR_MAX_PER_SESSION = 4
 /** Event lines carried in ONE wake. The rest stay on the tool card / `jobs read`. */
 export const MONITOR_WAKE_MAX_LINES = 20
-
-/** Human phrase for an end reason — used in the wake text and the tool card. */
-export function monitorEndPhrase(reason: MonitorEndReason): string {
-  switch (reason) {
-    case 'condition-met':
-      return 'the condition was met'
-    case 'exited':
-      return 'the watched command exited'
-    case 'timeout':
-      return 'it reached its timeout'
-    case 'killed':
-      return 'it was stopped'
-    case 'rate-limited':
-      return 'it produced too many events and was stopped'
-    case 'error':
-      return 'it failed to run'
-    case 'restart':
-      return 'the server restarted, and the watched command did not survive it'
-  }
-}
 
 /** How the work record of a monitor that ended this way reads. */
 export function monitorWorkStatus(

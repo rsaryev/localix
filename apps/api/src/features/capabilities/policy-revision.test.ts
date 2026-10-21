@@ -8,7 +8,7 @@ import { migrateToLatest } from '../../db/migrator'
 import { createCapabilityRuleRepository } from './rule-repository'
 import { createCapabilityRoutes } from './routes'
 import { createAvailabilityWriter } from './availability'
-import type { Rule } from './rule'
+import type { Rule } from '../agent-core/capability-rule'
 import { seedAgentPresets } from './seed-agent-presets'
 import { createCapabilitySourceRepository } from './source-repository'
 

@@ -322,8 +322,8 @@ availability gates; the client selects and paces eligible tips.
 
 ## Source of truth
 
-- [Rule shape and composition](../../../apps/api/src/features/capabilities/rule.ts) ·
-  [rule.test.ts](../../../apps/api/src/features/capabilities/rule.test.ts)
+- [Rule shape and composition](../../../apps/api/src/features/agent-core/capability-rule.ts) ·
+  [capability-rule.test.ts](../../../apps/api/src/features/agent-core/capability-rule.test.ts)
 - [The resolver](../../../apps/api/src/features/capabilities/resolve.ts) ·
   [resolve.test.ts](../../../apps/api/src/features/capabilities/resolve.test.ts)
 - [Availability read and write](../../../apps/api/src/features/capabilities/availability.ts)

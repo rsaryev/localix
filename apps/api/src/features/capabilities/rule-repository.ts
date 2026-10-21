@@ -4,7 +4,7 @@ import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../../db'
 import { recordCoreChanges } from '../changes/core-entities'
 import { bumpCapabilityRevision } from './revision'
-import type { Effect, Rule, RuleOrigin } from './rule'
+import type { Effect, Rule, RuleOrigin } from '../agent-core/capability-rule'
 
 /**
  * One agent's rules, read and replaced.

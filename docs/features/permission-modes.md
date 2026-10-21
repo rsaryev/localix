@@ -242,7 +242,7 @@ classes are available to your own rules as resources — `effect:files`, `effect
 - [Classification fallback](https://github.com/rsaryev/localix/blob/main/packages/agent/src/agents/call-class.ts)
 - [Bash call classification](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/bash/bash-call-class.ts)
 - [Memory scope classification](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/memory/memory.ts)
-- [Plan paths and file exception](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plans/plan-paths.ts)
+- [Plan paths and file exception](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/plan-paths.ts)
 - [Plan-file call classification](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/file/file-call-class.ts)
 - [Plan presentation and snapshots](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plans/service-present.ts)
 - [Plan approval](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plans/service-approve.ts)

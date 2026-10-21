@@ -1,7 +1,7 @@
 import type { CallClass } from '@localixai/agent/agents'
 
-import { matches, type Effect } from '../capabilities/rule'
-import { matchesResourceClass } from '../capabilities/resource-classes'
+import { matches, type Effect } from './capability-rule'
+import { matchesResourceClass } from './capability-resource-classes'
 import type { CallFacts } from './permission-facts'
 import { splitCompoundCommand } from './tools/bash/bash-command-shape'
 

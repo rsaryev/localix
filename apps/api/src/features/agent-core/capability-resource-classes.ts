@@ -1,6 +1,6 @@
 import { NON_MUTATING_EFFECTS, type CallEffect } from '@localixai/agent/agents'
 
-import type { CapabilityKind } from './resolve'
+import type { CapabilityKind } from '../capabilities/resolve'
 
 /**
  * THE named resource classes — defined here, matched from here, and suggested from here.

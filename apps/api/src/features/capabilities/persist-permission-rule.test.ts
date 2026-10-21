@@ -4,7 +4,7 @@ import { persistPermissionRule } from './availability'
 import { builtinAgentPreset } from './builtin-agent-presets'
 import { evaluate } from '../agent-core/permission-engine'
 import { extractCallFacts } from '../agent-core/permission-facts'
-import type { Rule } from './rule'
+import type { Rule } from '../agent-core/capability-rule'
 
 /** The repository reduced to the one call the writer makes, over an in-memory list. */
 function memoryRules(initial: Rule[]) {

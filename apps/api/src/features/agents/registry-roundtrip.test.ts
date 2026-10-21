@@ -11,7 +11,7 @@ import { createCapabilityRuleRepository } from '../capabilities/rule-repository'
 import { createCapabilitySourceRepository } from '../capabilities/source-repository'
 import { seedAgentPresets } from '../capabilities/seed-agent-presets'
 import { copyAgentPolicy } from './create-native-agent'
-import type { Rule } from '../capabilities/rule'
+import type { Rule } from '../agent-core/capability-rule'
 
 const cleanup: Array<() => Promise<unknown>> = []
 afterEach(async () => {

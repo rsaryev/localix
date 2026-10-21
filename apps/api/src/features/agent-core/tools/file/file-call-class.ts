@@ -1,6 +1,6 @@
 import type { CallClass } from '@localixai/agent/agents'
 
-import { isOwnPlanFile, isPlanFilePath } from '../../../plans/plan-paths'
+import { isOwnPlanFile, isPlanFilePath } from '../../plan-paths'
 
 /**
  * The class of a write/edit call, from its RESOLVED target paths.

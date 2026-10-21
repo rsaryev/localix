@@ -4,7 +4,7 @@ import { confineToDir } from '../ext/fs-discovery'
 import { AGENTS_MAX_PER_PLUGIN } from './contracts'
 import { BUILTIN_TOOL_NAMES } from '../agent-core/tool-names'
 import { CC_SEMANTIC_GAPS } from '../ext/cc-tool-names'
-import { DECLARABLE_EFFORTS_TEXT, isDeclarableEffort } from '../ext/manifest-validate'
+import { DECLARABLE_EFFORTS_TEXT, isDeclarableEffort } from '../../db/types'
 
 export interface FieldValidation {
   errors: string[]

@@ -12,7 +12,7 @@ import {
   type VersionedCapabilityRuleRepository,
 } from './rule-repository'
 import { applyRuleChanges, type RuleChange } from './rule-changes'
-import { matches, type Effect, type Rule } from './rule'
+import { matches, type Effect, type Rule } from '../agent-core/capability-rule'
 import { trustFallback, type TrustClass } from '../ext/trust'
 
 /**

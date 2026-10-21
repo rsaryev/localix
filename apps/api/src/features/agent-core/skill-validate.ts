@@ -1,4 +1,4 @@
-import { DECLARABLE_EFFORTS_TEXT, isDeclarableEffort } from '../ext/manifest-validate'
+import { DECLARABLE_EFFORTS_TEXT, isDeclarableEffort } from '../../db/types'
 import { basename, dirname } from 'node:path'
 
 import { parseMarkdownFrontmatter, scalarField, splitTokenList } from './skill-discovery'

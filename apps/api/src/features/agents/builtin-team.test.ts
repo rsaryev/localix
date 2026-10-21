@@ -6,7 +6,7 @@ import {
   builtinAgentPresetFor,
   inheritedAgentPreset,
 } from '../capabilities/builtin-agent-presets'
-import { evaluate } from '../capabilities/rule'
+import { evaluate } from '../agent-core/capability-rule'
 import { exposureLevel, shapeDefaultTools } from '../agent-core/run-shape'
 
 describe('Localix is the sole shipped preset', () => {

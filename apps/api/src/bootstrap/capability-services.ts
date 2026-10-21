@@ -9,7 +9,7 @@ import { createCapabilityRuleRepository } from '../features/capabilities/rule-re
 import { resolveCapabilities } from '../features/capabilities/resolve'
 import { builtinAgentPresetFor } from '../features/capabilities/builtin-agent-presets'
 import { createAvailabilityWriter, readAvailability } from '../features/capabilities/availability'
-import type { Rule } from '../features/capabilities/rule'
+import type { Rule } from '../features/agent-core/capability-rule'
 import type { CapabilityScope } from '../features/capabilities/contracts'
 import type { CapabilityRoutesService } from '../features/capabilities/routes'
 import { toSkillSummary } from '../features/chat/service/skills'

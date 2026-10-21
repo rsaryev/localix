@@ -7,7 +7,7 @@ import {
   resolveCapabilities,
   skillOverridesOf,
 } from './resolve'
-import type { Rule } from './rule'
+import type { Rule } from '../agent-core/capability-rule'
 import type { CapabilityRuleRepository } from './rule-repository'
 
 const deny = (action: string): Rule => ({ action, resource: '*', effect: 'deny' })

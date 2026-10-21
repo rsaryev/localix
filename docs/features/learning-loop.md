@@ -165,7 +165,7 @@ encoded keys.
 
 ## Source of truth
 
-- [Shared memory scope policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/memory/scope-policy.ts)
+- [Shared memory scope policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/memory-scope-policy.ts)
 - [Persisted prompt snapshot and refresh exceptions](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/prompt-snapshot.ts)
 - [Agent prompt and provider admission](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/prompt-agent-context.ts)
 - [Memory tool](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/memory/memory.ts),

@@ -2,8 +2,8 @@ import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { ruleGrammar } from './rule-grammar'
 import { ACTION_PREFIX } from './resolve'
-import { EFFECTS } from './rule'
-import { RESOURCE_CLASSES, resourceClassOf } from './resource-classes'
+import { EFFECTS } from '../agent-core/capability-rule'
+import { RESOURCE_CLASSES, resourceClassOf } from '../agent-core/capability-resource-classes'
 
 const grammar = ruleGrammar()
 

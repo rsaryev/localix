@@ -1,7 +1,7 @@
 import type { AgentRuntimeRunInput } from '@localixai/agent/runtime'
 import { formatSize, textEncoderByteLength } from '@localixai/agent'
 
-import { isIndexSkippedTool } from './index-policy'
+import { isIndexSkippedTool } from '../agent-core/context-index-policy'
 import type { ContextStore } from './repository'
 
 /**

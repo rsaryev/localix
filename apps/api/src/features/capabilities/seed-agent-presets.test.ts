@@ -7,7 +7,7 @@ import {
   upgradeAgentPreset,
   type AgentPresetSeedPorts,
 } from './seed-agent-presets'
-import type { Rule } from './rule'
+import type { Rule } from '../agent-core/capability-rule'
 
 const SEAT = { id: 'builtin:localix', handle: 'localix' }
 function ports(agents = [SEAT]) {

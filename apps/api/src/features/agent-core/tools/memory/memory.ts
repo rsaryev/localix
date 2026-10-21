@@ -1,8 +1,8 @@
 import { z } from 'zod'
 import { defineAgentTool, type CallClass } from '@localixai/agent/agents'
 import { TOOL } from '../../tool-names'
-import { MemoryBudgetError, type MemoryRepository } from '../../../memory/repository'
-import { memoryScopePolicy, type MemoryScope } from '../../../memory/scope-policy'
+import type { MemoryRepository } from '../../../memory/repository'
+import { memoryScopePolicy, type MemoryScope } from '../../memory-scope-policy'
 
 const memoryToolInputSchema = z.object({
   action: z.enum(['get', 'set', 'list', 'delete']),
@@ -16,6 +16,13 @@ function scopeLabel(projectId: string): 'session' | 'project' | 'global' {
   if (!projectId) return 'global'
   return projectId.startsWith('session:') ? 'session' : 'project'
 }
+
+/**
+ * The store's refusal of a write past its budget (`memory/repository.ts`). Recognised by name so
+ * the tool depends on the memory store's type only, never on its module.
+ */
+const isMemoryBudgetError = (error: unknown): error is Error =>
+  error instanceof Error && error.name === 'MemoryBudgetError'
 
 /**
  * What one memory call reaches. A note kept in THIS conversation's scope is deleted with it
@@ -100,7 +107,7 @@ export function createMemoryTool(
             await repo.set(userId, targetScope, input.key, input.value, new Date().toISOString())
             return { content: `Memory saved: "${input.key}" (${scopeLabel(targetScope)})` }
           } catch (error) {
-            if (error instanceof MemoryBudgetError) return { content: error.message, isError: true }
+            if (isMemoryBudgetError(error)) return { content: error.message, isError: true }
             if (error instanceof Error && error.message.startsWith('Memory scope ')) {
               return { content: error.message, isError: true }
             }

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { setSkillUsageRecorder, recordSkillUse } from './usage-recorder'
+import { setSkillUsageRecorder, recordSkillUse } from './skill-usage-recorder'
 
 afterEach(() => setSkillUsageRecorder(null)) // reset the singleton sink
 

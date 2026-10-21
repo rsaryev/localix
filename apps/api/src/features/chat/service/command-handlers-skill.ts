@@ -1,6 +1,6 @@
 import { sessionRoute } from '../session-route'
 import { dirname } from 'node:path'
-import { recordSkillUse } from '../../skills-curator/usage-recorder'
+import { recordSkillUse } from '../../agent-core/skill-usage-recorder'
 import { parseSkillCommand, applySkillArguments } from './slash-commands'
 import { commandTarget } from './command-participant'
 import { expandSkillContent } from './skill-commands'

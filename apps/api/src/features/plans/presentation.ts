@@ -15,7 +15,8 @@
  * revision a reviewer could see.
  */
 import { ConflictError } from '../../lib/domain-errors'
-import { PLAN_TITLE_MAX, type PlanRecord } from './contracts'
+import type { PlanRecord } from './contracts'
+import { PLAN_TITLE_MAX } from '../agent-core/plan-limits'
 
 export type PresentDecision =
   | { kind: 'new' }

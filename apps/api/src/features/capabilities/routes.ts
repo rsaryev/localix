@@ -13,7 +13,7 @@ import {
   type CapabilityScope,
   type CapabilityRules,
 } from './contracts'
-import type { Rule } from './rule'
+import type { Rule } from '../agent-core/capability-rule'
 import type { CapabilitySnapshotService } from './snapshot'
 import type { CapabilityApplyService } from './apply'
 

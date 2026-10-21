@@ -1,6 +1,6 @@
 import { ACTION_PREFIX, type CapabilityKind } from './resolve'
-import { EFFECTS, type Effect } from './rule'
-import { RESOURCE_CLASSES } from './resource-classes'
+import { EFFECTS, type Effect } from '../agent-core/capability-rule'
+import { RESOURCE_CLASSES } from '../agent-core/capability-resource-classes'
 
 /**
  * THE RULE GRAMMAR, as one document the editor renders.

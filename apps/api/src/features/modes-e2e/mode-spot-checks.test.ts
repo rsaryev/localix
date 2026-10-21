@@ -3,7 +3,7 @@ import type { AgentTool } from '@localixai/agent/agents'
 
 import { builtinAgentPreset } from '../capabilities/builtin-agent-presets'
 import { PERMISSION_MODES } from '../capabilities/permission-modes'
-import type { Rule } from '../capabilities/rule'
+import type { Rule } from '../agent-core/capability-rule'
 import { WORKSPACE } from './core-call-cases'
 import { modeSurface, runRegistry, type Decision } from './run-surface'
 

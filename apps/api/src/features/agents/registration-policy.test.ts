@@ -17,7 +17,7 @@ import { resolveCapabilities } from '../capabilities/resolve'
 import { agentContributionSchema } from './contribution'
 import { createAgentsService } from './service'
 import { createRegistrationPolicyService } from './registration-policy'
-import type { Rule } from '../capabilities/rule'
+import type { Rule } from '../agent-core/capability-rule'
 import { createAgentsRoutes } from './routes'
 
 const cleanup: Array<() => Promise<void>> = []

@@ -26,7 +26,7 @@ import { resolveBaseSessionCwd } from '../session-cwd'
 import { userHome } from '../../../lib/env'
 import type { PersistedMessage } from '../contracts'
 import { loadProjectStructureSnapshot } from '../../agent-core/project-structure'
-import { memoryScopePolicy } from '../../memory/scope-policy'
+import { memoryScopePolicy } from '../../agent-core/memory-scope-policy'
 import type { PromptContextDeps, PreparedRunContext } from './prompt-context-contracts'
 
 type UserSettingsContext = Awaited<ReturnType<typeof loadUserSettingsContext>>

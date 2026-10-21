@@ -1,6 +1,6 @@
 import type { z } from 'zod'
 import type { ProposalCard } from '../agent-core/tools/configure/configure-contracts'
-import type { Rule, RuleOrigin } from '../capabilities/rule'
+import type { Rule, RuleOrigin } from '../agent-core/capability-rule'
 import type { RuleChange } from '../capabilities/rule-changes'
 import type { AgentSummary } from '../agents/contracts'
 

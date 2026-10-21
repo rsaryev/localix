@@ -24,7 +24,7 @@ import type { PlanToolOptions } from '../agent-core/tools/plan/plan'
 import { capabilitiesInMode } from '../capabilities/permission-mode-policy'
 import type { PermissionMode } from '../capabilities/permission-modes'
 import { composeCapabilities, NO_ROSTERS, projectCapabilities } from '../capabilities/resolve'
-import type { Rule } from '../capabilities/rule'
+import type { Rule } from '../agent-core/capability-rule'
 import { WORKSPACE, type CallCase } from './core-call-cases'
 
 export type Decision = 'allow' | 'ask' | 'deny'

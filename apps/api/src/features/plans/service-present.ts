@@ -14,8 +14,8 @@
  */
 import { InvalidRequestError } from '../../lib/domain-errors'
 import type { StoredSystemNotice } from '../../db/payload'
+import { PLAN_BODY_MAX } from '../agent-core/plan-limits'
 import {
-  PLAN_BODY_MAX,
   toSessionPlan,
   type PlanOverview,
   type PlanPresentation,
@@ -24,7 +24,7 @@ import {
   type SessionPlan,
 } from './contracts'
 import { planNotice } from './notices'
-import { planDraftPath } from './plan-paths'
+import { planDraftPath } from '../agent-core/plan-paths'
 import { decidePresentation, samePlanText, versionTitle } from './presentation'
 import type { PlanOwner } from './repository'
 import type { PlanServiceCore } from './service-core'

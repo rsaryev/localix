@@ -9,7 +9,7 @@
 import type { ApprovedPlanPrompt } from '../../agent-core/prompt/sections/plan'
 import type { PlanService } from '../../plans/service'
 import { planRef } from '../../plans/plan-files'
-import { planDraftDir, planDraftPath } from '../../plans/plan-paths'
+import { planDraftDir, planDraftPath } from '../../agent-core/plan-paths'
 import type { SessionRecord } from '../repository'
 import { lineagePolicy, permissionPolicy } from '../policy/session-policy'
 
