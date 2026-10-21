@@ -43,7 +43,6 @@ export function useConnections(sessionId: string | null) {
   const storedId = useChatStore((state) => selectSessionConnectionId(state, activeSessionId))
   const modelId = useChatStore((state) => selectSessionModelId(state, activeSessionId))
   const { models } = useModelsCatalog()
-  const replaceSession = useChatStore((state) => state._replaceSession)
   // Every connection write is followed by the server's 'providers' topic, which re-reads the list
   // (`connectionsSync`). Only a flow that binds the connection it just created reads it now.
 
@@ -94,11 +93,11 @@ export function useConnections(sessionId: string | null) {
       .completeOAuth({ code, state })
       .then(async (connection) => {
         await refreshConnections()
+        // The re-routed session comes back as `session.updated` on the stream.
         if (savedSessionId) {
-          const session = await backendClient.updateSession(savedSessionId, {
+          await backendClient.updateSession(savedSessionId, {
             route: { providerConnectionId: connection.id },
           })
-          replaceSession(session)
         }
         returnToOAuthModels(connection, savedSessionId)
       })
@@ -128,14 +127,13 @@ export function useConnections(sessionId: string | null) {
       })
       await refreshConnections()
       if (activeSessionId) {
-        const session = await backendClient.updateSession(activeSessionId, {
+        await backendClient.updateSession(activeSessionId, {
           route: { providerConnectionId: connection.id },
         })
-        replaceSession(session)
       }
       return connection
     },
-    [activeSessionId, replaceSession],
+    [activeSessionId],
   )
 
   const addOAuthConnection = useCallback(
@@ -189,11 +187,10 @@ export function useConnections(sessionId: string | null) {
           read: () => useChatStore.getState().connections,
           async onConnected(fresh, signal) {
             if (activeSessionId) {
-              const session = await backendClient.updateSession(activeSessionId, {
+              await backendClient.updateSession(activeSessionId, {
                 route: { providerConnectionId: fresh.id },
               })
               if (signal.aborted) return
-              replaceSession(session)
             }
             // Each poll retains its originating session rather than reading another flow's
             // sessionStorage entry after the user starts a second sign-in.
@@ -255,7 +252,7 @@ export function useConnections(sessionId: string | null) {
       pollForNewConnection()
       return { mode } as const
     },
-    [activeSessionId, replaceSession],
+    [activeSessionId],
   )
 
   // These writes return once the server committed them; its 'providers' topic then re-reads the

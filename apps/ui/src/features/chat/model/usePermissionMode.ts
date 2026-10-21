@@ -40,14 +40,12 @@ export function usePermissionMode(sessionId: string | null) {
   const setMode = useCallback(
     (permissionMode: PermissionMode) => {
       if (!sessionId) return
-      void backendClient
-        .updateSession(sessionId, { permissionMode })
-        .then((updated) => useChatStore.getState()._replaceSession(updated))
-        .catch((err: unknown) =>
-          toast.error('Could not change the permission mode', {
-            description: errorMessage(err, '') || undefined,
-          }),
-        )
+      // The server publishes the stored session as `session.updated`; the stream applies it.
+      void backendClient.updateSession(sessionId, { permissionMode }).catch((err: unknown) =>
+        toast.error('Could not change the permission mode', {
+          description: errorMessage(err, '') || undefined,
+        }),
+      )
     },
     [sessionId],
   )

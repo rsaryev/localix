@@ -274,8 +274,8 @@ export function createSessionActions({
     },
 
     renameSession: async (id, title) => {
-      const session = await backendClient.updateSession(id, { title })
-      get()._replaceSession(session)
+      // Every surface, this one included, learns the change from the `session.updated` frame.
+      await backendClient.updateSession(id, { title })
     },
 
     togglePinSession: async (id) => {
@@ -283,8 +283,7 @@ export function createSessionActions({
       // the active project's working list, and `current` decided the NEW value.
       const current = findSessionInState(get(), id)
       if (!current) return
-      const session = await backendClient.updateSession(id, { isPinned: !current.isPinned })
-      get()._replaceSession(session)
+      await backendClient.updateSession(id, { isPinned: !current.isPinned })
     },
 
     toggleArchiveSession: async (id) => {
@@ -292,8 +291,7 @@ export function createSessionActions({
       // full set (allSessions) — not the project-scoped `sessions` list.
       const current = get().allSessions.find((session) => session.id === id)
       if (!current) return
-      const session = await backendClient.updateSession(id, { isArchived: !current.isArchived })
-      get()._replaceSession(session)
+      await backendClient.updateSession(id, { isArchived: !current.isArchived })
     },
 
     moveSessionToProject: async (id, projectId) => {
@@ -301,8 +299,7 @@ export function createSessionActions({
       // different project group than the one currently in view.
       const current = get().allSessions.find((session) => session.id === id)
       if (!current || (current.projectId ?? null) === projectId) return
-      const session = await backendClient.updateSession(id, { projectId })
-      get()._replaceSession(session)
+      await backendClient.updateSession(id, { projectId })
     },
 
     toggleUnreadSession: (id) => {

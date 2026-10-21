@@ -54,13 +54,12 @@ export function usePromptSessionView(
   const setSkills = useCallback(
     (names: string[]) => {
       if (!activeSessionId) return
-      void persistPinnedSkills(activeSessionId, names, activeProjectId)
-        .then((updated) => useChatStore.getState()._replaceSession(updated))
-        .catch((err: unknown) =>
-          toast.error('Could not update the pinned skills', {
-            description: errorMessage(err, '') || undefined,
-          }),
-        )
+      // The stored pins come back as `session.updated` on the stream.
+      void persistPinnedSkills(activeSessionId, names, activeProjectId).catch((err: unknown) =>
+        toast.error('Could not update the pinned skills', {
+          description: errorMessage(err, '') || undefined,
+        }),
+      )
     },
     [activeProjectId, activeSessionId],
   )
