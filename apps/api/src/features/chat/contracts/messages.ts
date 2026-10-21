@@ -53,3 +53,16 @@ export const toolInteractSchema = z.object({
   action: z.string().min(1),
   payload: z.unknown().optional(),
 })
+
+export interface MessageMutationResponse {
+  sessionId: string
+  messageId: string
+  /** Queued behind an in-flight run. `messageId` is empty until `message.created` arrives. */
+  queued?: true
+  /** The line answered the session's open `ask` card; no turn was started or queued. */
+  answeredInteraction?: true
+}
+
+export interface RollbackResponse {
+  restoredPrompt: string
+}

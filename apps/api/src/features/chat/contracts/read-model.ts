@@ -286,16 +286,3 @@ export interface SessionModelView {
   /** Messages up to and including this one are outside that view. */
   evictedThroughId: string
 }
-
-export interface MessageMutationResponse {
-  sessionId: string
-  messageId: string
-  /** Queued behind an in-flight run. `messageId` is empty until `message.created` arrives. */
-  queued?: true
-  /** The line answered the session's open `ask` card; no turn was started or queued. */
-  answeredInteraction?: true
-}
-
-export interface RollbackResponse {
-  restoredPrompt: string
-}
