@@ -104,8 +104,8 @@ Before every push, `.githooks/pre-push` runs the CI gates `check:release`, `type
 `check:tests`, and `test` for the packages that differ from `origin/main` and every package that
 depends on them (Turbo's `--affected`; a global input selects all of them), three tasks at a time.
 `TURBO_FILTER= git push` checks the whole tree. Pull-request CI runs the same selection against the
-pull request's base; the merge queue and `main` check the whole tree. The gates check the working
-tree, so commit or stash tracked changes before pushing.
+pull request's base; `main` checks the whole tree. The gates check the working tree, so commit or
+stash tracked changes before pushing.
 
 Hooks never pass git's repository variables (`GIT_DIR`, `GIT_INDEX_FILE` and the rest) to the tools
 and tests they start: a test that creates a scratch repository would otherwise act on this one,
@@ -121,14 +121,14 @@ reproduces native validation, including the full Rust test suite.
 
 | Workflow          | Runs when                                            | Jobs and result                                                                                                        |
 | ----------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `Checks`          | PR, merge queue, push to main, manual run            | Four parallel `App` jobs and `Desktop (Rust) and repository scans`, reported as `Checks passed`; nothing is published. |
-| `Desktop Release` | Manual run from main                                 | Prepare release → validate source and signing → create draft → build selected platforms → publish release.             |
+| `Checks`          | PR, push to main, manual run                         | Four parallel `App` jobs and `Desktop (Rust) and repository scans`, reported as `Checks passed`; nothing is published. |
+| `Desktop Release` | Manual run from main                                 | Prepare release and require green CI → validate changelog and signing → create draft → build → publish.                |
 | `Website Deploy`  | Website input changes, published release, manual run | Build and deploy the website; same-repository PRs get previews. Production requires `LANDING_PRODUCTION=true`.         |
 
 A push can start both `Checks` and `Website Deploy`, because source validation and website delivery
 have separate outcomes. It never starts a desktop release. A new push to a pull request cancels its
-unfinished run; every commit on main and every merge-queue group keeps a run of its own, because a
-release needs the run for its exact commit.
+unfinished run; every commit on main keeps a run of its own, because a release needs the run for its
+exact commit.
 
 `Checks passed` fails when any job fails or is cancelled and names each job's result, so branch
 protection needs to require only that status. The app jobs run in parallel, each building from its
@@ -138,14 +138,16 @@ own Turbo archive: `types` (source and test types), `unit tests` (`bun run test:
 
 A failing job lists its failing tests, type errors and Turbo tasks on the run's summary page
 (`scripts/ci-failure-summary.mjs`). The other job scans the history for secrets with gitleaks, lints
-every workflow with actionlint and zizmor, and checks the Rust shell. PRs can skip the Rust steps
-when the merge diff changes no desktop sources, root manifest, Bun lockfile, Node version, or shared
-CI setup.
+every workflow with actionlint and zizmor, and checks the Rust shell. The Rust steps are skipped
+when the change reaches none of the desktop sources, root manifest, Bun lockfile, Node version, or
+shared CI setup: a pull request's merge diff, or the commits a push to main added. A manual run, or
+a push whose previous commit is unknown, always runs them; a release compiles the Rust shell itself
+either way.
 
-Every job runs on a GitHub-hosted runner: `ubuntu-latest`, with the Rust job and the Linux release
-leg on `ubuntu-22.04` for an older glibc baseline, and the macOS release leg on `macos-15`.
-Workflows grant no default token permissions; each job names its own. Scanners are checksummed
-release binaries.
+Every job runs on a GitHub-hosted runner pinned to an image: `ubuntu-24.04`, with the Rust job and
+the Linux release leg on `ubuntu-22.04` for an older glibc baseline, and the macOS release leg on
+`macos-15`. Workflows grant no default token permissions; each job names its own. Scanners are
+checksummed release binaries.
 
 The Bun package cache, the Turbo cache, and the Rust target are restored from GitHub cache archives.
 Only pushes to `main` save CI's Turbo and Rust archives, so pull requests restore them without

@@ -2,7 +2,6 @@ name: Checks
 
 on:
   pull_request:
-  merge_group:
   push:
     branches: [main]
   workflow_dispatch:
@@ -14,8 +13,8 @@ env:
   RUST_TOOLCHAIN: 1.96.1
 
 # A pull request keeps only its newest run: a new push cancels the one in progress. Every commit
-# on main and every merge-queue group gets a run of its own (a group per sha) that nothing cancels:
-# a release needs the run for its exact commit, and a cancelled one would also skip the cache save.
+# on main gets a run of its own (a group per sha) that nothing cancels: a release needs the run for
+# its exact commit, and a cancelled one would also skip the cache save.
 concurrency:
   group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -27,7 +26,7 @@ concurrency:
 jobs:
   app:
     name: App (${{ matrix.check }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     permissions:
       contents: read
@@ -58,21 +57,23 @@ jobs:
             cache: bundle
             run: bun run check:bundle
     # A pull request checks and tests only the packages it changes and their dependents (Turbo's
-    # --affected against its base; a global input selects everything). The merge queue and main
-    # deliberately check the whole tree, unfiltered, so nothing unchecked reaches main and every
-    # main commit has a full run a release can rely on. The build is never filtered: the
-    # repository tests import built packages, and Turbo replays what main already built.
+    # --affected against its base; a global input selects everything). Main deliberately checks
+    # the whole tree, unfiltered, so every main commit has a full run a release can rely on. The
+    # build is never filtered: the repository tests import built packages, and Turbo replays what
+    # main already built.
     env:
       TURBO_FILTER: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
       TURBO_SCM_BASE: ${{ github.event.pull_request.base.sha }}
     steps:
+      # History only where it is read: --affected needs the pull request's base; main runs the
+      # whole tree from one commit.
       - name: Checkout source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-          fetch-depth: 0
+          fetch-depth: ${{ github.event_name == 'pull_request' && 0 || 1 }}
 
-      - name: Install test tools
+      - name: Install ripgrep and zsh for tests
         if: matrix.cache == 'unit' || matrix.cache == 'system'
         run: |
           for attempt in 1 2 3; do
@@ -100,23 +101,24 @@ jobs:
             turbo-${{ matrix.cache }}-${{ runner.os }}-
 
       # Type checks and tests read workspace declarations and bundles from the build output.
-      - name: Build app
+      - name: Build workspace packages
         run: bun run build
 
-      - name: Setup desktop bundle tools
+      - name: Setup Rust for the bundle check
         if: matrix.cache == 'bundle'
         uses: ./.github/actions/setup-desktop
         with:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
           build-native: 'false'
 
-      # The log is kept so a failure can be summarised below; `shell: bash` adds pipefail, so the
-      # pipe through tee still fails the step when the check does.
+      # A slice runs several commands, so they run under -e: the first to fail stops the slice
+      # (without it only the LAST command's status counted). The log is kept for the summary below,
+      # and the step's pipefail keeps the slice's status through tee.
       - name: Check ${{ matrix.check }}
         shell: bash
         env:
           CHECK: ${{ matrix.run }}
-        run: bash -c "$CHECK" 2>&1 | tee "$RUNNER_TEMP/check.log"
+        run: bash -eo pipefail -c "$CHECK" 2>&1 | tee "$RUNNER_TEMP/check.log"
 
       - name: Summarise failures
         if: failure()
@@ -196,30 +198,38 @@ jobs:
           "$RUNNER_TEMP/actionlint" -color
           "$RUNNER_TEMP/zizmor" --offline --min-severity medium .github
 
-      # Only a pull request may skip the Rust gate, and only when nothing it reads changed: the
-      # shell under apps/desktop-tauri, the lockfile and root manifest that pin the sidecar Bun,
-      # and shared CI setup. Pushes to main, merge queue groups and manual runs always run it.
-      - name: Detect desktop changes
+      # The Rust gate is skipped only when nothing it reads changed: the shell under
+      # apps/desktop-tauri, the lockfile and root manifest that pin the sidecar Bun, and shared CI
+      # setup. A pull request compares its merge commit's parents; a push to main compares the
+      # commits it added (`before`..HEAD). A manual run, or a push whose `before` is unknown (a new
+      # branch, a force-push), always runs it. A release compiles the Rust shell itself, so a
+      # skipped gate never ships unchecked Rust.
+      - name: Detect Rust input changes
         id: filter
         env:
           EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
         run: |
-          rust=true
+          base=''
           if [ "$EVENT" = pull_request ] && git rev-parse --verify --quiet 'HEAD^2' >/dev/null; then
-            changed=$(git diff --name-only 'HEAD^1' HEAD)
-            if ! printf '%s\n' "$changed" |
-              grep -Eq '^(apps/desktop-tauri/|package\.json$|bun\.lock$|\.nvmrc$|\.github/workflows/ci\.yml$|\.github/actions/(setup-workspace|setup-desktop)/)'; then
-              rust=false
-            fi
+            base='HEAD^1'
+          elif [ "$EVENT" = push ] && [ -n "${BEFORE//0/}" ] &&
+            git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            base="$BEFORE"
+          fi
+          rust=true
+          if [ -n "$base" ] && ! git diff --name-only "$base" HEAD |
+            grep -Eq '^(apps/desktop-tauri/|package\.json$|bun\.lock$|\.nvmrc$|\.github/workflows/ci\.yml$|\.github/actions/(setup-workspace|setup-desktop)/)'; then
+            rust=false
           fi
           echo "rust=$rust" >> "$GITHUB_OUTPUT"
-          echo "Rust gate: $rust"
+          echo "Rust gate: $rust (compared with ${base:-nothing})"
 
       - name: Setup workspace
         if: steps.filter.outputs.rust == 'true'
         uses: ./.github/actions/setup-workspace
 
-      - name: Setup desktop
+      - name: Setup Rust and native build dependencies
         if: steps.filter.outputs.rust == 'true'
         uses: ./.github/actions/setup-desktop
         with:
@@ -235,7 +245,7 @@ jobs:
     name: Checks passed
     if: always()
     needs: [app, desktop]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Require every check

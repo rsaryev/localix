@@ -57,11 +57,11 @@ describe('CI minute budget contract', () => {
         expect(JSON.stringify(job['runs-on'])).not.toContain('self-hosted')
       }
     }
-    expect(ci.jobs.app['runs-on']).toBe('ubuntu-latest')
+    expect(ci.jobs.app['runs-on']).toBe('ubuntu-24.04')
     expect(ci.jobs.desktop['runs-on']).toBe('ubuntu-22.04')
-    expect(landing.jobs.deploy['runs-on']).toBe('ubuntu-latest')
+    expect(landing.jobs.deploy['runs-on']).toBe('ubuntu-24.04')
     for (const [name, job] of Object.entries(release.jobs)) {
-      expect(job['runs-on']).toBe(name === 'build-desktop' ? '${{ matrix.os }}' : 'ubuntu-latest')
+      expect(job['runs-on']).toBe(name === 'build-desktop' ? '${{ matrix.os }}' : 'ubuntu-24.04')
     }
   })
 
@@ -131,6 +131,27 @@ describe('CI minute budget contract', () => {
     expect(steps[save]?.if).toContain("github.ref == 'refs/heads/main'")
   })
 
+  test('runs on pull requests, pushes to main and by hand; there is no merge queue', () => {
+    const on = Bun.YAML.parse(read('.github/workflows/ci.yml')).on as Record<string, unknown>
+    expect(Object.keys(on).sort()).toEqual(['pull_request', 'push', 'workflow_dispatch'])
+  })
+
+  test('history is fetched only where --affected reads it', () => {
+    expect(ci.jobs.app.steps[0]?.with?.['fetch-depth']).toBe(
+      "${{ github.event_name == 'pull_request' && 0 || 1 }}",
+    )
+  })
+
+  test('the Rust gate runs unless a pull request or push changed none of its inputs', () => {
+    const detect = ci.jobs.desktop.steps.find((step) => step.name === 'Detect Rust input changes')
+    expect(detect?.run).toContain("base='HEAD^1'")
+    expect(detect?.run).toContain('base="$BEFORE"')
+    // An unknown or all-zero `before` (a new branch, a force-push) leaves no base: the gate runs.
+    expect(detect?.run).toContain('[ -n "${BEFORE//0/}" ]')
+    expect(detect?.run).toContain('git cat-file -e "$BEFORE^{commit}"')
+    expect(detect?.run).toMatch(/^rust=true$/mu)
+  })
+
   test('dependencies are updated by hand: no Dependabot configuration', () => {
     expect(existsSync(join(root, '.github/dependabot.yml'))).toBe(false)
   })
@@ -159,15 +180,18 @@ describe('CI minute budget contract', () => {
     expect(app.steps[check]?.if).toBeUndefined()
     expect(app.steps[check]?.['continue-on-error']).toBeUndefined()
     // The bundle slice needs the Rust bundle tools; no other slice pays for them.
-    const tools = app.steps.find((step) => step.name === 'Setup desktop bundle tools')
+    const tools = app.steps.find((step) => step.name === 'Setup Rust for the bundle check')
     expect(tools?.if).toBe("matrix.cache == 'bundle'")
     expect(tools?.with?.['build-native']).toBe('false')
     expect(tools?.with?.toolchain).toBe('${{ env.RUST_TOOLCHAIN }}')
     expect(ci.env?.RUST_TOOLCHAIN).toBe('1.96.1')
     expect(app.steps.indexOf(tools!)).toBeLessThan(check)
-    // The slice runs under bash with pipefail, so piping its log through tee keeps its exit code.
+    // The step runs under bash with pipefail, so piping the log through tee keeps the exit code, and
+    // the slice's commands run under -e, so the first failing one fails the slice (not only the last).
     expect(app.steps[check]?.shell).toBe('bash')
-    expect(app.steps[check]?.run).toContain('| tee "$RUNNER_TEMP/check.log"')
+    expect(app.steps[check]?.run).toBe(
+      'bash -eo pipefail -c "$CHECK" 2>&1 | tee "$RUNNER_TEMP/check.log"',
+    )
     const summary = app.steps[check + 1]
     expect(summary?.if).toBe('failure()')
     expect(summary?.run).toContain('bun scripts/ci-failure-summary.mjs')
@@ -206,7 +230,7 @@ describe('CI minute budget contract', () => {
     for (const step of [scan, lint]) {
       expect(step?.if).toBeUndefined()
       expect(steps.indexOf(step!)).toBeLessThan(
-        steps.findIndex((s) => s.name === 'Detect desktop changes'),
+        steps.findIndex((s) => s.name === 'Detect Rust input changes'),
       )
     }
     const rustCheck = steps.find((step) => step.run === 'bun run check:rust')
@@ -230,7 +254,7 @@ describe('CI minute budget contract', () => {
       })
   })
 
-  test('a pull request checks what it changes; the merge queue and main check everything', () => {
+  test('a pull request checks what it changes; main checks everything', () => {
     expect(ci.jobs.app.env).toEqual({
       TURBO_FILTER: "${{ github.event_name == 'pull_request' && '--affected' || '' }}",
       TURBO_SCM_BASE: '${{ github.event.pull_request.base.sha }}',

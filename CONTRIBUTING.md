@@ -39,8 +39,8 @@ The hook does not rewrite or stage tracked files. Unstaged changes in packages b
 staged or stashed first, so the checks cannot validate an unstaged repair instead of the commit.
 Type checks may generate ignored build output. Every push runs the CI gates for the packages it
 changes and their dependents through `.githooks/pre-push`; commit or stash tracked changes first.
-The merge queue and `main` check the whole tree. Full builds remain in CI; optional architecture,
-documentation, and dependency audits run when relevant.
+`main` checks the whole tree. Full builds remain in CI; optional architecture, documentation, and
+dependency audits run when relevant.
 
 One development dependency is not OSI-licensed: `oxlint-plugin-react-doctor`, used only by the
 optional `bun run lint:react-doctor`, ships under a modified MIT license that restricts some uses of
@@ -79,21 +79,21 @@ and workflow contract tests. `check:tests` type-checks test files, while `test` 
 
 The workflows have separate responsibilities:
 
-| Workflow          | Trigger                                                | Result                                                                                     |
-| ----------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| `Checks`          | Pull requests, pushes to main, manual runs             | Four parallel `App` jobs and `Desktop (Rust)` validate the source.                         |
-| `Desktop Release` | Manual run from main                                   | Prepare → validate source and signing → create draft → build selected platforms → publish. |
-| `Website Deploy`  | Website input changes, published releases, manual runs | Build the website and deploy a preview or production site.                                 |
+| Workflow          | Trigger                                                | Result                                                                                          |
+| ----------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `Checks`          | Pull requests, pushes to main, manual runs             | Four parallel `App` jobs and `Desktop (Rust)` validate the source.                              |
+| `Desktop Release` | Manual run from main                                   | Prepare and require green CI → validate changelog and signing → create draft → build → publish. |
+| `Website Deploy`  | Website input changes, published releases, manual runs | Build the website and deploy a preview or production site.                                      |
 
 A push can therefore start both checks and a website deployment. It does not build a desktop
 release. A new push to a pull request cancels its older run; every commit on main keeps its own.
 
-Pushes to main and manual checks run pinned Rust formatting, Clippy, and tests. A PR can skip the
-Rust steps only when its merge diff changes none of the desktop sources, root manifest, Bun
-lockfile, Node version, or shared CI setup; an unavailable merge diff keeps them enabled. Use
-`bun run check:rust` locally when diagnosing native failures. All jobs run on GitHub-hosted runners:
-Linux on `ubuntu-latest` (the Rust job and Linux packaging on `ubuntu-22.04`), macOS release builds
-on `macos-15`.
+CI runs pinned Rust formatting, Clippy, and tests unless a change reaches none of the desktop
+sources, root manifest, Bun lockfile, Node version, or shared CI setup: a pull request's merge diff,
+or the commits a push to main added. A manual run, or an unknown previous commit, keeps them
+enabled. Use `bun run check:rust` locally when diagnosing native failures. All jobs run on
+GitHub-hosted runners: Linux on `ubuntu-24.04` (the Rust job and Linux packaging on `ubuntu-22.04`),
+macOS release builds on `macos-15`.
 
 Local composite actions in `.github/actions/` own Node/Bun installation, frozen dependency installs,
 Linux native dependencies, and Rust compilation caching. They keep checks and release toolchains

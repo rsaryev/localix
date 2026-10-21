@@ -70,7 +70,7 @@ jobs:
   # ── prepare: validate the tag and pin it to one source commit ─────────────────
   prepare:
     name: Prepare release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # Waits for CI on the tagged commit (up to 30 min, see require-green-ci.mjs) with room to report.
     timeout-minutes: 40
     permissions:
@@ -152,10 +152,10 @@ jobs:
 
   # ── verify: changelog and release signing (CI for the tag is checked in prepare) ──
   verify:
-    name: Validate source and signing
+    name: Validate changelog and signing
     environment: release
     needs: prepare
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: read
@@ -198,7 +198,7 @@ jobs:
   draft-release:
     name: Create draft
     needs: [prepare, verify]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment: release
     permissions:
@@ -623,7 +623,7 @@ jobs:
   publish-desktop:
     name: Publish release
     needs: [prepare, build-desktop]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: release
     permissions:

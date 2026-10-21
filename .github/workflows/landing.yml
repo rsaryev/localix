@@ -68,7 +68,7 @@ env:
 jobs:
   deploy:
     name: Deploy website
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     # A pull request from a fork has no access to secrets, so it cannot deploy.
     if:
@@ -178,7 +178,7 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           TARGET_FLAG: ${{ steps.target.outputs.flag }}
 
-      - name: Summary
+      - name: Write the deployment summary
         env:
           TARGET_ENVIRONMENT: ${{ steps.target.outputs.environment }}
           RELEASE_TAG: ${{ steps.release.outputs.tag || 'none' }}
