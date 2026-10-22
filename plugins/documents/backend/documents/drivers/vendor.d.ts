@@ -29,11 +29,6 @@ declare module 'turndown-plugin-gfm' {
   export { gfm, tables, strikethrough, taskListItems }
 }
 
-declare module 'pdfkit/js/pdfkit.standalone.js' {
-  import PDFDocument from 'pdfkit'
-  export default PDFDocument
-}
-
 declare module 'word-extractor' {
   class ExtractedDocument {
     getBody(): string

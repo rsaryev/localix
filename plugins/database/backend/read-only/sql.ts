@@ -244,7 +244,7 @@ function everyStatementReads(sql: string, grammar: SqlLiteralGrammar): boolean {
  *   SELECT $$'$$ AS q; DROP TABLE t        Postgres dollar-quoting was not handled at
  *                                          all, so the `'` inside opened a phantom literal.
  *   SELECT * FROM [my'table]; DROP TABLE t T-SQL `[ident]` was not handled, same mechanism.
- *   SELECT 1; /*!40000 DROP TABLE t *​/     MySQL EXECUTES `/*! … *​/`; treating it as inert
+ *   SELECT 1; /*!40000 DROP TABLE t *\/     MySQL EXECUTES `/*! … *\/`; treating it as inert
  *                                          hid a real statement.
  *   SELECT 1--2; DROP TABLE t              MySQL needs whitespace after `--`, so `--2` is
  *                                          minus-minus-two, not a comment to end of line.

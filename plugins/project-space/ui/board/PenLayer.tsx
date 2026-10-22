@@ -141,14 +141,13 @@ export function PenLayer({
         onPointerCancel={clear}
         onLostPointerCapture={clear}
       />
-      {erasing &&
-        doomed.size > 0 && (
-          // The strokes about to go, dimmed in place: a style rule over their nodes, no copy of them.
-          <style>
-            {[...doomed].map((id) => `.react-flow__node[data-id="${CSS.escape(id)}"]`).join(',') +
-              '{opacity:.25}'}
-          </style>
-        )}
+      {erasing && doomed.size > 0 && (
+        // The strokes about to go, dimmed in place: a style rule over their nodes, no copy of them.
+        <style>
+          {[...doomed].map((id) => `.react-flow__node[data-id="${CSS.escape(id)}"]`).join(',') +
+            '{opacity:.25}'}
+        </style>
+      )}
       {element && preview && (
         <ViewportPortal>
           <div

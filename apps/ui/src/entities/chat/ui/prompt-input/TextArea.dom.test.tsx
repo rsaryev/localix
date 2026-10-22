@@ -23,18 +23,18 @@ function stubMirrorLayout(mirror: HTMLElement): void {
   })
 }
 
-/** Records every write to `style.height` so a redundant write is visible. */
+/**
+ * Records every write to `style.height` so a redundant write is visible. happy-dom's `style` is a
+ * Proxy that refuses `defineProperty` and routes `style.height = x` through `setProperty`, so the
+ * writes are recorded there.
+ */
 function recordHeightWrites(el: HTMLElement): string[] {
   const writes: string[] = []
-  let current = ''
-  Object.defineProperty(el.style, 'height', {
-    configurable: true,
-    get: () => current,
-    set: (value: string) => {
-      current = value
-      writes.push(value)
-    },
-  })
+  const setProperty = el.style.setProperty.bind(el.style)
+  el.style.setProperty = (name: string, value: string | null, priority?: string) => {
+    if (name === 'height') writes.push(value ?? '')
+    setProperty(name, value, priority)
+  }
   return writes
 }
 

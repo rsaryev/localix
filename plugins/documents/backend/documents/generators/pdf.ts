@@ -7,7 +7,7 @@
  */
 import type { Block } from '../markdown/blocks'
 import type { InlineSpan } from '../markdown/inline'
-import { registerDocumentFonts } from './fonts'
+import { NO_STANDARD_FONT, registerDocumentFonts } from './fonts'
 
 /** Standard-14 font name for a span's styling. */
 function fontFor(span: InlineSpan): string {
@@ -85,11 +85,16 @@ function renderTable(doc: PDFKit.PDFDocument, header: string[], rows: string[][]
 
 /** Generate `.pdf` bytes from parsed Markdown blocks. */
 export async function blocksToPdf(blocks: Block[]): Promise<Uint8Array> {
-  // The standalone build embeds PDFKit's standard-font AFM/ICC assets. The regular Node build
-  // reads them through a build-machine `__dirname`; Bun preserves that absolute path in a
-  // bundle, so a packaged CLI moved off the builder could no longer generate even Helvetica.
-  const { default: PDFDocument } = await import('pdfkit/js/pdfkit.standalone.js')
-  const doc = new PDFDocument({ size: 'A4', margin: 54, autoFirstPage: true })
+  // PDFKit's Node build loads its standard-font metrics as modules, so a bundle carries them. Up
+  // to 0.19 it read them through a build-machine `__dirname`, which Bun kept as an absolute path:
+  // a packaged CLI moved off the builder could not generate even Helvetica.
+  const { default: PDFDocument } = await import('pdfkit')
+  const doc = new PDFDocument({
+    size: 'A4',
+    margin: 54,
+    autoFirstPage: true,
+    font: NO_STANDARD_FONT,
+  })
 
   await registerDocumentFonts(doc, ['inter', 'jetbrains-mono'])
 

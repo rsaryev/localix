@@ -170,9 +170,9 @@
 
   :root[data-window-transparency='off']:is([data-theme='dark'], [data-theme='light']),
   :root[data-desktop='true'][data-os='mac'][data-window-transparency='off']:is(
-    [data-theme='dark'],
-    [data-theme='light']
-  ) {
+      [data-theme='dark'],
+      [data-theme='light']
+    ) {
     background: var(--window-ground);
   }
 

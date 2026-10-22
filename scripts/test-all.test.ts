@@ -33,6 +33,28 @@ test('runs every command at once and names each one that failed', async () => {
   expect(printed).toContain('[test] second (failed)\nkept')
 })
 
+test('a buffered command that prints without end keeps only the tail of its output', async () => {
+  let printed = ''
+  const failed = await runConcurrently(
+    [
+      { label: 'streamed', command: bun, args: ['-e', ''] },
+      {
+        label: 'flood',
+        command: bun,
+        args: [
+          '-e',
+          `for (let i = 0; i < 4000; i += 1) console.log('x'.repeat(99)); console.log('last')`,
+        ],
+      },
+    ],
+    { write: (text) => (printed += text), maxOutputBytes: 64 * 1024 },
+  )
+  expect(failed).toEqual([])
+  expect(printed).toContain('earlier bytes of output were dropped')
+  expect(printed).toContain('last')
+  expect(printed.length).toBeLessThan(80 * 1024)
+})
+
 test('a command that cannot start fails instead of hanging', async () => {
   const failed = await runConcurrently(
     [

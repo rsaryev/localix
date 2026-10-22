@@ -18,9 +18,9 @@ import { SLASH_COMMANDS } from '../slash-catalog'
  */
 describe('catalog ⇄ parser coverage', () => {
   it('every server-scoped catalog command (and each alias) parses', () => {
-    const unparsed = SLASH_COMMANDS.filter((c) => c.scope === 'server')
-      .flatMap((c) => [c.name, ...(c.aliases ?? [])])
-      .filter((word) => parseControlCommand(`/${word}`) === null)
+    const unparsed = SLASH_COMMANDS.flatMap((c) =>
+      c.scope === 'server' ? [c.name, ...(c.aliases ?? [])] : [],
+    ).filter((word) => parseControlCommand(`/${word}`) === null)
     expect(unparsed).toEqual([])
   })
   it('client-scoped commands are NOT parsed server-side (/fork is intercepted by the composer)', () => {

@@ -50,19 +50,17 @@ export function participantRows(
     joinRoutes?: JoinRoutesView | null
   },
 ): ParticipantRow[] {
-  const seated = (participants ?? []).map(
-    (member): ParticipantRow => ({
-      ...recordFields(member.agentId, member.handle, recordFor(member.agentId)),
-      // What this member actually runs on, already resolved through the chain by the server —
-      // its level included, so the picker answers for the member it is pointed at.
-      route: {
-        providerConnectionId: member.providerConnectionId,
-        modelId: member.modelId,
-        ...(member.reasoningEffort ? { reasoningEffort: member.reasoningEffort } : {}),
-      },
-      ...(member.modelOrigin ? { modelOrigin: member.modelOrigin } : {}),
-    }),
-  )
+  const seated = (participants ?? []).map((member): ParticipantRow => ({
+    ...recordFields(member.agentId, member.handle, recordFor(member.agentId)),
+    // What this member actually runs on, already resolved through the chain by the server —
+    // its level included, so the picker answers for the member it is pointed at.
+    route: {
+      providerConnectionId: member.providerConnectionId,
+      modelId: member.modelId,
+      ...(member.reasoningEffort ? { reasoningEffort: member.reasoningEffort } : {}),
+    },
+    ...(member.modelOrigin ? { modelOrigin: member.modelOrigin } : {}),
+  }))
   const seatedIds = new Set(seated.map((row) => row.agentId))
   const others = (invitable?.agents ?? [])
     .filter(

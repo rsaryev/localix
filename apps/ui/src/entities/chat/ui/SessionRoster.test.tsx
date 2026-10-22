@@ -1,6 +1,12 @@
 import { describe, expect, test } from 'bun:test'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router'
 import type { UiSession } from '@/shared/api/contracts'
+// Static, not `await import()` inside the test: the preload holds a DOM only while a file's
+// static graph evaluates. Imported later, Radix bound its layout-effect hook to the no-op it
+// uses without a document, for the whole process, and the menus of later DOM suites lost
+// their roles.
+import { SessionRoster } from './SessionRoster'
 
 const chat = (id: string, handle: string, updatedAt: number) =>
   ({
@@ -10,9 +16,7 @@ const chat = (id: string, handle: string, updatedAt: number) =>
   }) as UiSession
 
 describe('SessionRoster', () => {
-  test('nests activity sections inside each agent group', async () => {
-    const { renderToStaticMarkup } = await import('react-dom/server')
-    const { SessionRoster } = await import('./SessionRoster')
+  test('nests activity sections inside each agent group', () => {
     const today = new Date()
     today.setHours(12, 0, 0, 0)
     const yesterday = new Date(today)

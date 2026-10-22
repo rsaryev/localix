@@ -1,5 +1,5 @@
 import { Send, X, MessageSquare } from 'lucide-react'
-import { highlight } from 'sugar-high'
+import { highlightScript } from '@/shared/ui/code-block/highlightCode'
 import type { CommentActionContribution } from '@localixai/plugin-sdk/ui'
 import { useCommentActions } from '@/shared/contrib/commentActions'
 import {
@@ -167,7 +167,7 @@ export function CommentsManager({
                             'min-w-0 flex-1 truncate text-2xs [font-family:JetBrains_Mono,ui-monospace,monospace]',
                             CODE_VIEWER_HIGHLIGHT,
                           )}
-                          dangerouslySetInnerHTML={{ __html: highlight(c.anchor.context) }}
+                          dangerouslySetInnerHTML={{ __html: highlightScript(c.anchor.context) }}
                         />
                       )}
                     </button>

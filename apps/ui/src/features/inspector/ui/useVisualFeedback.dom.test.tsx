@@ -3,6 +3,8 @@ import { registerDom } from '@localixai/kit/testing/dom'
 import { VF_BRIDGE_KEY, VF_PROTOCOL_VERSION } from '@localixai/visual-feedback/protocol'
 import type { VisualFeedbackBridge } from './useVisualFeedback'
 
+// happy-dom loads no iframe page, so a frame has a window only from `srcdoc`, where a browser
+// gives every frame one (`about:blank`).
 let teardown: () => Promise<void>
 beforeAll(() => {
   teardown = registerDom()
@@ -22,7 +24,7 @@ test('rejects stale channels and settles pending commands when the frame changes
   function Harness() {
     const frame = useRef<HTMLIFrameElement>(null)
     bridge = useVisualFeedback(frame)
-    return <iframe ref={frame} title="Preview test" />
+    return <iframe ref={frame} srcDoc="" title="Preview test" />
   }
   const emit = async (channel: string, payload: Record<string, unknown>) => {
     await act(async () => {
@@ -69,7 +71,7 @@ test('a comment being written survives a page reload, and a commented element op
   function Harness() {
     const frame = useRef<HTMLIFrameElement>(null)
     bridge = useVisualFeedback(frame)
-    return <iframe ref={frame} title="Preview reload test" />
+    return <iframe ref={frame} srcDoc="" title="Preview reload test" />
   }
   const emit = async (channel: string, payload: Record<string, unknown>) => {
     await act(async () => {

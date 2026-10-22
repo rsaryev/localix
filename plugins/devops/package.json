@@ -10,8 +10,8 @@
     "type-check": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@iconify-icons/vscode-icons": "^1.2.30",
-    "@kubernetes/client-node": "^1.4.0",
+    "@iconify-icons/vscode-icons": "^2.0.19",
+    "@kubernetes/client-node": "^2.0.1",
     "@tanstack/react-virtual": "^3.14.21",
     "hono": "^4.12.30",
     "isomorphic-ws": "^5.0.0",
@@ -22,7 +22,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@happy-dom/global-registrator": "20.11.2",
+    "@happy-dom/global-registrator": "21.0.4",
     "@localixai/plugin-sdk": "workspace:*",
     "@types/react": "^19.3.0",
     "radix-ui": "1.8.1",

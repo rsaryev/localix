@@ -102,6 +102,27 @@
     "react/self-closing-comp": "error",
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "warn",
+    // React Compiler diagnostics, new in the `react` plugin's correctness set with oxlint 1.89. Each
+    // marks a component the compiler skips or may miscompile; not enforced yet, with the count
+    // that made the call. Fix them one surface at a time, then promote the rule to "error".
+    // 208 — a ref read or written during render.
+    "react/refs": "warn",
+    // 125 — state set synchronously inside an effect.
+    "react/set-state-in-effect": "warn",
+    // 110 — a module-level value reassigned during render.
+    "react/globals": "warn",
+    // 40 — props, state or a hook result mutated in place.
+    "react/immutability": "warn",
+    // 15 — a manual useMemo/useCallback the compiler cannot preserve.
+    "react/preserve-manual-memoization": "warn",
+    // 9 — an impure call (Date.now, Math.random) during render.
+    "react/purity": "warn",
+    // 6 — a component created during render.
+    "react/static-components": "warn",
+    // 3 — a library API the compiler cannot memoize around.
+    "react/incompatible-library": "warn",
+    // 1 — a useMemo whose callback does not return a value.
+    "react/use-memo": "warn",
     "unicorn/error-message": "error",
     "unicorn/no-new-array": "error",
     "unicorn/no-useless-fallback-in-spread": "error",

@@ -449,16 +449,13 @@ describe('pruneWireMessages failed-mutation args', () => {
         timestamp: 0,
       },
       // Padding so the writes fall OUTSIDE the protected recent window.
-      ...Array.from(
-        { length: 12 },
-        (_, i): Message => ({
-          role: 'tool',
-          results: [
-            { type: 'tool_result', toolCallId: `p${i}`, toolName: 'read', content: big(`pad${i}`) },
-          ],
-          timestamp: 0,
-        }),
-      ),
+      ...Array.from({ length: 12 }, (_, i): Message => ({
+        role: 'tool',
+        results: [
+          { type: 'tool_result', toolCallId: `p${i}`, toolName: 'read', content: big(`pad${i}`) },
+        ],
+        timestamp: 0,
+      })),
     ]
     const out = pruneWireMessages(msgs, {
       keepRecentTokens: 100,

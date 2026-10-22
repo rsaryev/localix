@@ -164,16 +164,14 @@ export function frameSizeMenuEntries(
 ): MenuEntry[] {
   return [
     { header: 'Page frame' },
-    ...PREVIEW_VIEWPORT_PRESETS.map(
-      (item): MenuEntry => ({
-        id: `frame:${item.label}`,
-        label: item.label,
-        icon: deviceIcon(item),
-        hint: viewportSizeLabel(item) ?? 'Fill panel',
-        selected: item.label === preset.label,
-        onSelect: () => onChange(item),
-      }),
-    ),
+    ...PREVIEW_VIEWPORT_PRESETS.map((item): MenuEntry => ({
+      id: `frame:${item.label}`,
+      label: item.label,
+      icon: deviceIcon(item),
+      hint: viewportSizeLabel(item) ?? 'Fill panel',
+      selected: item.label === preset.label,
+      onSelect: () => onChange(item),
+    })),
     ...(isFixedViewport(preset)
       ? [
           { separator: true } as const,

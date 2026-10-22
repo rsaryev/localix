@@ -11,10 +11,51 @@ import { pathToFileURL } from 'node:url'
 import { repoRoot } from './lib/paths.mjs'
 
 /**
+ * How much of a buffered command's output is kept: its last 4 MiB. A test that printed without
+ * end (a focus loop overflowing the stack and printing the trace, over and over) grew one string
+ * until the runner died of "Out of memory" inside its `data` handler; that command's promise then
+ * never settled and the whole run hung long after its test processes were gone.
+ */
+export const MAX_BUFFERED_OUTPUT_BYTES = 4 * 1024 * 1024
+
+/**
+ * The newest `limit` bytes of a stream, with a line saying how much came before them.
+ *
+ * @param {number} limit
+ */
+function outputTail(limit) {
+  /** @type {Buffer[]} */
+  let chunks = []
+  let kept = 0
+  let dropped = 0
+  return {
+    /** @param {Buffer | string} chunk */
+    add: (chunk) => {
+      const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+      chunks.push(bytes)
+      kept += bytes.length
+      if (kept <= 2 * limit) return
+      const joined = Buffer.concat(chunks)
+      const cut = joined.length - limit
+      dropped += cut
+      chunks = [joined.subarray(cut)]
+      kept = limit
+    },
+    text: () => {
+      const all = Buffer.concat(chunks)
+      const cut = Math.max(0, all.length - limit)
+      const total = dropped + cut
+      const tail = all.subarray(cut).toString('utf8')
+      return total ? `[test] ${total} earlier bytes of output were dropped\n${tail}` : tail
+    },
+  }
+}
+
+/**
  * Run every command at once and resolve to the failed ones' labels.
  *
  * @param {{ label: string, command: string, args: string[] }[]} commands
- * @param {{ cwd?: string, write?: (text: string) => void }} [options]
+ * @param {{ cwd?: string, write?: (text: string) => void, maxOutputBytes?: number }} [options]
  * @returns {Promise<string[]>}
  */
 export async function runConcurrently(commands, options = {}) {
@@ -36,12 +77,12 @@ export async function runConcurrently(commands, options = {}) {
           stdio: streamed ? 'inherit' : ['ignore', 'pipe', 'pipe'],
         })
         children.push(child)
-        let output = ''
-        child.stdout?.on('data', (chunk) => (output += chunk))
-        child.stderr?.on('data', (chunk) => (output += chunk))
+        const output = outputTail(options.maxOutputBytes ?? MAX_BUFFERED_OUTPUT_BYTES)
+        child.stdout?.on('data', output.add)
+        child.stderr?.on('data', output.add)
         return new Promise((resolve) => {
           child.on('error', (error) => resolve({ label, ok: false, output: `${error}\n` }))
-          child.on('close', (code) => resolve({ label, ok: code === 0, output }))
+          child.on('close', (code) => resolve({ label, ok: code === 0, output: output.text() }))
         })
       }),
     )
@@ -93,6 +134,8 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   )
   if (failed.length) {
     console.error(`[test] Failed: ${failed.join(', ')}`)
-    process.exit(1)
+    // `exitCode`, not `exit()`: a buffered shard's output is one large write to a pipe, and
+    // exiting at once cut it off — the failures it named never reached the log.
+    process.exitCode = 1
   }
 }

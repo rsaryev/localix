@@ -44,21 +44,24 @@ async function renderTree() {
   const host = document.createElement('div')
   document.body.appendChild(host)
   const root = createRoot(host)
-  // happy-dom lays nothing out, and the virtualizer reads `offsetHeight`: the scroll root must
-  // report a viewport from its FIRST measurement, and a row its real 28px tier — a 0px row would
-  // make all 5,000 "fit" the viewport and loop the measurer.
-  const originalHeight = Object.getOwnPropertyDescriptor(
-    window.HTMLElement.prototype,
-    'offsetHeight',
+  // happy-dom lays nothing out, and the virtualizer sizes its viewport by `clientHeight` and a
+  // row by `offsetHeight`: the scroll root must report a viewport from its FIRST measurement,
+  // and a row its real 28px tier — a 0px row would make all 5,000 "fit" the viewport and loop
+  // the measurer.
+  const keys = ['offsetHeight', 'clientHeight'] as const
+  const originals = keys.map((key) =>
+    Object.getOwnPropertyDescriptor(window.HTMLElement.prototype, key),
   )
-  Object.defineProperty(window.HTMLElement.prototype, 'offsetHeight', {
-    configurable: true,
-    get(this: HTMLElement) {
-      if (this.hasAttribute('data-changes-scroll-root')) return VIEWPORT
-      if (this.hasAttribute('data-row-index')) return ROW
-      return originalHeight?.get?.call(this) ?? 0
-    },
-  })
+  keys.forEach((key, index) =>
+    Object.defineProperty(window.HTMLElement.prototype, key, {
+      configurable: true,
+      get(this: HTMLElement) {
+        if (this.hasAttribute('data-changes-scroll-root')) return VIEWPORT
+        if (this.hasAttribute('data-row-index')) return ROW
+        return originals[index]?.get?.call(this) ?? 0
+      },
+    }),
+  )
   await act(async () => {
     root.render(
       <ChangesScrollArea className="overflow-y-auto">
@@ -73,9 +76,10 @@ async function renderTree() {
     )
   })
   const cleanup = async () => {
-    if (originalHeight) {
-      Object.defineProperty(window.HTMLElement.prototype, 'offsetHeight', originalHeight)
-    }
+    keys.forEach((key, index) => {
+      const original = originals[index]
+      if (original) Object.defineProperty(window.HTMLElement.prototype, key, original)
+    })
     await act(async () => root.unmount())
     host.remove()
   }

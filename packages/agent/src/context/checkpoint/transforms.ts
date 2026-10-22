@@ -87,11 +87,10 @@ function applySuperseded<M extends ChatMessage>(
 ): M {
   if (!ids?.length || !message.items) return message
   const stale = new Set(ids)
-  const items = message.items.map(
-    (item): AgentItem =>
-      isToolBackedItem(item) && stale.has(item.toolCallId)
-        ? collapseSnapshot(item, recoveryToolAvailable)
-        : item,
+  const items = message.items.map((item): AgentItem =>
+    isToolBackedItem(item) && stale.has(item.toolCallId)
+      ? collapseSnapshot(item, recoveryToolAvailable)
+      : item,
   )
   return { ...message, items }
 }

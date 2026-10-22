@@ -11,23 +11,28 @@ let restoreRect: (() => void) | null = null
 beforeAll(() => {
   teardown = registerDom()
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
-  // happy-dom has no layout, so every element reports offsetHeight 0 — and that is the
-  // single value the virtualizer reads for both the viewport and each row. Give the
-  // scroll container a viewport and give every row a height derived from what it
-  // actually rendered (20px per rendered line), which is exactly the variability real
-  // context lines introduce.
-  const original = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight')
-  Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+  // happy-dom has no layout, so every element reports a height of 0 — and the virtualizer
+  // sizes its viewport by `clientHeight` and each row by `offsetHeight`. Give the scroll
+  // container a viewport and give every row a height derived from what it actually
+  // rendered (20px per rendered line), which is exactly the variability real context
+  // lines introduce.
+  const keys = ['offsetHeight', 'clientHeight'] as const
+  const originals = keys.map((key) => Object.getOwnPropertyDescriptor(HTMLElement.prototype, key))
+  const height: PropertyDescriptor = {
     configurable: true,
     get(this: HTMLElement): number {
       if (this.dataset.index !== undefined) return this.querySelectorAll('button').length * 20
       if (this.classList.contains('overflow-auto')) return 240
       return 0
     },
-  })
+  }
+  for (const key of keys) Object.defineProperty(HTMLElement.prototype, key, height)
   restoreRect = () => {
-    if (original) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', original)
-    else Reflect.deleteProperty(HTMLElement.prototype, 'offsetHeight')
+    keys.forEach((key, index) => {
+      const original = originals[index]
+      if (original) Object.defineProperty(HTMLElement.prototype, key, original)
+      else Reflect.deleteProperty(HTMLElement.prototype, key)
+    })
   }
 })
 afterAll(async () => {

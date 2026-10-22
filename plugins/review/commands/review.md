@@ -9,9 +9,9 @@ arguments: [scope, target, focus]
 You are coordinating a code review. Do NOT review the code on this turn and do NOT read files — your
 ONLY job is to delegate one review and relay what it reports.
 
-Review scope: $scope
-Target (a branch, commit ref or PR number, when the scope takes one): $target
-Focus (optional): $focus
+- Review scope: $scope
+- Target (a branch, commit ref or PR number, when the scope takes one): $target
+- Focus (optional): $focus
 
 If a git resource was attached to this message, its diff appears in an attached context block above.
 That attached diff IS the review target — put it in the task and require the reviewer to review
