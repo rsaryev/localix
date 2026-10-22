@@ -60,13 +60,15 @@ export async function assertContainedBuildInputs(input: {
       path: imported.path,
       from: dirname(resolve(key)),
     }))
-  // An import's recorded path is usually another input's key, which is relative to the build's
-  // working directory (as Bun 1.4 records it); only a path that is no key is resolved from the
-  // importing file.
+  // An import's recorded path is relative to the build's working directory (as Bun 1.4 records
+  // it), usually another input's key. A module the bundle reached only through re-exports, such as
+  // a package's `dist/index.js` barrel, is recorded the same way but is no input of its own, so a
+  // recorded path that names a file there is that file too. Only anything else is a specifier,
+  // resolved from the importing file.
   const realOf = async ({ path, from }: Edge) => {
     try {
       return await fs.realpath(
-        path in inputs
+        path in inputs || (!FILE_IMPORT.test(path) && (await Bun.file(resolve(path)).exists()))
           ? resolve(path)
           : FILE_IMPORT.test(path)
             ? resolve(from, path)
