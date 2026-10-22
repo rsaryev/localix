@@ -7,8 +7,12 @@ import { resolveShellConfig } from '../../agent-core/tools/environments/shell'
 import { alignToCharBoundary } from '../../agent-core/tools/file/file-utils'
 import { bindShellArgs, exitOneIsResult, type SkillShellArgs } from './skill-command-args'
 
-/** Max time a skill preprocessing command may run (10 s). */
-const SKILL_CMD_TIMEOUT_MS = 10_000
+/**
+ * Max time a skill preprocessing command may run: the Bash tool's default of 2 minutes, as Claude
+ * Code gives each injected command (skills.md, "How injected commands run"). A timeout aborts the
+ * invocation, so a shorter one would fail a setup script Claude Code runs to the end.
+ */
+const SKILL_CMD_TIMEOUT_MS = 120_000
 /** Max output bytes captured per command (32 KB). */
 const SKILL_CMD_MAX_BYTES = 32 * 1024
 /** Max dynamic shell commands authored into one skill body. */
