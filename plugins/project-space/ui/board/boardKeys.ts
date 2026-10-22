@@ -6,13 +6,18 @@ import { readingOrder } from '../../shared/ops/layout'
 import { spaceTypes } from '../../shared/types'
 import { duplicateOps } from '../content/clipboard'
 import { viewOf } from '../elements'
+import { frameSelection } from './frameSelection'
+import type { Presentation } from './usePresentation'
 import {
   alignOps,
   distributeOps,
   groupOps,
   lockOps,
+  pasteStyleOps,
   stackOps,
+  styleOf,
   ungroupOps,
+  type CopiedStyle,
   type Selected,
 } from './commands'
 import { nudgeOps } from './moves'
@@ -60,6 +65,15 @@ export interface BoardKeyDeps {
   }
   /** ⌘/Ctrl + arrow: a connected twin of the one selected element on that side. */
   grow: (id: string, side: 'top' | 'right' | 'bottom' | 'left') => void
+  /** The style ⌥⌘C copied, for ⌥⌘V: kept for the board's life, like the design tools'. */
+  style: StyleClipboard
+  /** While presenting, the keys walk the slides and nothing else edits the board. */
+  presentation?: Pick<Presentation, 'active' | 'index' | 'go' | 'stop'>
+}
+
+export interface StyleClipboard {
+  copied: () => CopiedStyle | null
+  copy: (style: CopiedStyle) => void
 }
 
 const ARROWS: Record<
@@ -105,6 +119,14 @@ export function boardKeyHandler(deps: BoardKeyDeps) {
       if (ops) deps.commit(ops)
       return true
     }
+    if (deps.presentation?.active) {
+      const { index, go, stop } = deps.presentation
+      if (['arrowright', 'arrowdown', 'pagedown', ' '].includes(key)) go(index + 1)
+      else if (['arrowleft', 'arrowup', 'pageup'].includes(key)) go(index - 1)
+      else if (key === 'escape') stop()
+      // A slide is not edited: every other key is swallowed rather than acting on the board.
+      return true
+    }
 
     if ((key === 'delete' || key === 'backspace') && !mod && deps.selected.size) {
       const gone = [...deps.selected].filter((id) => !deps.space.elements[id]?.locked)
@@ -129,6 +151,22 @@ export function boardKeyHandler(deps: BoardKeyDeps) {
           .map(([id]) => id),
       )
       return true
+    }
+    // ⌥ with ⌘: style and frame, asked before ⌘G alone would group.
+    if (mod && event.altKey && !event.shiftKey && ids.length) {
+      if (key === 'c' && ids.length === 1) {
+        const style = styleOf(deps.space, ids[0] as string)
+        if (style) deps.style.copy(style)
+        return true
+      }
+      if (key === 'v') {
+        const style = deps.style.copied()
+        return run(style ? pasteStyleOps(selection, style) : null)
+      }
+      if (key === 'g') {
+        frameSelection(deps, ids)
+        return true
+      }
     }
     if (mod && key === 'g' && ids.length)
       return run((event.shiftKey ? ungroupOps : groupOps)(selection))

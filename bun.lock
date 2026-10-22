@@ -736,6 +736,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@localixai/path-containment": "workspace:*",
+        "dagre": "^0.8.5",
         "fractional-indexing": "^3.2.0",
         "hono": "^4.12.30",
         "lucide-react": "^1.57.0",
@@ -744,6 +745,7 @@
       },
       "devDependencies": {
         "@localixai/plugin-sdk": "workspace:*",
+        "@types/dagre": "^0.7.53",
         "@types/react": "^19.3.0",
         "react-dom": "^19.3.1",
         "vite": "^8.3.4",

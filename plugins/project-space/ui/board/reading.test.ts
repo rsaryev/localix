@@ -72,11 +72,14 @@ describe('the right-click menu', () => {
     commit: () => undefined,
     edit: () => undefined,
     copyImage: () => undefined,
+    saveImage: () => undefined,
     addNote: () => undefined,
     selectAll: () => undefined,
     fit: () => undefined,
     openFind: () => undefined,
     openShortcuts: () => undefined,
+    style: { copied: () => null, copy: () => undefined },
+    frame: () => undefined,
   })
   const labels = (sections: ReturnType<typeof menuSections>) =>
     sections.flat().map((item) => item.label)
@@ -89,12 +92,16 @@ describe('the right-click menu', () => {
     expect(items).toContain('Copy as image')
     // One element is no group: grouping is left out, not greyed.
     expect(items).not.toContain('Group')
+    expect(items).toContain('Frame the selection')
+    expect(items).toContain('Copy style')
+    // Nothing was copied yet, so there is nothing to paste.
+    expect(items).not.toContain('Paste style')
     // Nothing flows into `web`, so it offers no upstream trace.
     const web = labels(menuSections({ kind: 'elements', ids: ['web'] }, context()))
     expect(web.some((label) => label.startsWith('Trace upstream'))).toBe(false)
   })
 
-  test('the ground offers the board, a connector its own two acts', () => {
+  test('the ground offers the board, a connector its own acts', () => {
     const ground = labels(menuSections({ kind: 'ground', at: { x: 0, y: 0 } }, context()))
     expect(ground).toEqual([
       'Add a note here',
@@ -102,10 +109,12 @@ describe('the right-click menu', () => {
       'Select all',
       'Fit the board',
       'Copy the board as image',
+      'Save the board as image…',
       'Keyboard shortcuts',
     ])
     expect(labels(menuSections({ kind: 'edge', id: 'e1' }, context()))).toEqual([
       'Reverse',
+      'Insert a shape',
       'Delete connector',
     ])
   })

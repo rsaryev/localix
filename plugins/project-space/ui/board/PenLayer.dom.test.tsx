@@ -113,3 +113,140 @@ test('pen saves only a completed stroke, cancels drafts and restores board keybo
     host.remove()
   }
 })
+
+test('a stroke is saved in the look its preview drew, the one last given to a stroke', async () => {
+  const { forgetLooks, rememberLook } = await import('./lastLook')
+  rememberLook('pen', { color: 'green', size: 'l' })
+  const host = document.createElement('div')
+  document.body.append(host)
+  const { createRoot } = await import('react-dom/client')
+  const root = createRoot(host)
+  const writes: (readonly SpaceOp[])[] = []
+  try {
+    await act(async () =>
+      root.render(
+        <CanvasProvider>
+          <div>
+            <div className="localix-canvas" tabIndex={0} />
+            <PenLayer
+              type="pen"
+              space={emptySpace()}
+              commit={(ops) => writes.push(ops)}
+              select={() => undefined}
+              finish={() => undefined}
+              cancel={() => undefined}
+              onBoardKey={() => false}
+            />
+          </div>
+        </CanvasProvider>,
+      ),
+    )
+    const layer = host.querySelector<HTMLElement>('[role="application"]')!
+    Object.assign(layer, {
+      setPointerCapture: () => undefined,
+      hasPointerCapture: () => false,
+      releasePointerCapture: () => undefined,
+    })
+    for (const [type, x] of [
+      ['pointerdown', 10],
+      ['pointermove', 60],
+      ['pointerup', 90],
+    ] as const)
+      await act(async () => {
+        layer.dispatchEvent(
+          new PointerEvent(type, {
+            bubbles: true,
+            pointerId: 1,
+            button: 0,
+            clientX: x,
+            clientY: 10,
+          }),
+        )
+      })
+    expect((writes[0]![0] as { props: Record<string, unknown> }).props).toMatchObject({
+      color: 'green',
+      size: 'l',
+    })
+  } finally {
+    forgetLooks()
+    await act(async () => root.unmount())
+    host.remove()
+  }
+})
+
+test('the eraser deletes the strokes its path crosses, in one write, and never a note', async () => {
+  const { applyOps } = await import('../../shared/ops/apply')
+  const { spaceTypes } = await import('../../shared/types')
+  const { penElement } = await import('../../shared/types/pen')
+  const across = penElement([
+    { x: 100, y: 150 },
+    { x: 300, y: 150 },
+  ])
+  const aside = penElement([
+    { x: 100, y: 400 },
+    { x: 300, y: 400 },
+  ])
+  const { space } = applyOps(
+    emptySpace(),
+    [
+      { op: 'create', id: 'across', type: 'pen', ...across },
+      { op: 'create', id: 'aside', type: 'pen', ...aside },
+      { op: 'create', id: 'note', type: 'note', x: 180, y: 100, w: 100, h: 100 },
+    ],
+    { registry: spaceTypes },
+  )
+  const host = document.createElement('div')
+  document.body.append(host)
+  const { createRoot } = await import('react-dom/client')
+  const root = createRoot(host)
+  const writes: (readonly SpaceOp[])[] = []
+  try {
+    await act(async () =>
+      root.render(
+        <CanvasProvider>
+          <div>
+            <div className="localix-canvas" tabIndex={0} />
+            <PenLayer
+              type="pen"
+              space={space}
+              toolProps={{ kind: 'eraser' }}
+              commit={(ops) => writes.push(ops)}
+              select={() => undefined}
+              finish={() => undefined}
+              cancel={() => undefined}
+              onBoardKey={() => false}
+            />
+          </div>
+        </CanvasProvider>,
+      ),
+    )
+    const layer = host.querySelector<HTMLElement>('[role="application"]')!
+    Object.assign(layer, {
+      setPointerCapture: () => undefined,
+      hasPointerCapture: () => false,
+      releasePointerCapture: () => undefined,
+    })
+    expect(layer.getAttribute('aria-label')).toContain('Eraser')
+    const pointer = (type: string, x: number, y: number) =>
+      act(async () => {
+        layer.dispatchEvent(
+          new PointerEvent(type, {
+            bubbles: true,
+            pointerId: 1,
+            button: 0,
+            clientX: x,
+            clientY: y,
+          }),
+        )
+      })
+    // Down through the first stroke and the note, never near the second stroke.
+    await pointer('pointerdown', 200, 120)
+    await pointer('pointermove', 200, 150)
+    await pointer('pointermove', 200, 180)
+    await pointer('pointerup', 200, 190)
+    expect(writes).toEqual([[{ op: 'delete', id: 'across' }]])
+  } finally {
+    await act(async () => root.unmount())
+    host.remove()
+  }
+})

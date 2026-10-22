@@ -75,6 +75,8 @@ function handles(chord: string, selected: readonly string[]): boolean {
     clearTrace: () => true,
     camera: { back: () => true, forward: () => true, toSelection: () => true },
     grow: () => undefined,
+    style: { copied: () => ({ color: 'red' }), copy: () => undefined },
+    presentation: { active: false, index: 0, go: () => undefined, stop: () => undefined },
   }
   return boardKeyHandler(deps)(press(chord))
 }

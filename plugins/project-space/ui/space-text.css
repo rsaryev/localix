@@ -1,0 +1,191 @@
+/*
+  How text and diagrams are SET on the board: faces, inline marks, task boxes, and the native
+  flowchart's paints. Beside `space.css` (the board's elements and chrome), over the same tokens.
+*/
+
+/* ── Text: faces are roles, resolved to what the platform has ───────────────
+   No font file travels with a board. `hand` falls through the handwriting faces each platform
+   ships; the board reads the same on a machine without the first of them. */
+.space-font-sans {
+  font-family: var(--font-sans);
+}
+.space-font-serif {
+  font-family: ui-serif, 'New York', 'Iowan Old Style', Charter, Georgia, serif;
+}
+.space-font-mono {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.92em;
+}
+.space-font-hand {
+  font-family:
+    'Chalkboard SE', 'Comic Neue', 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive;
+}
+/* Marks inside a note or a label: a highlight is the tone's own wash, code a quiet chip. */
+.space-mark {
+  background: color-mix(in oklab, var(--status-warning) 34%, transparent);
+  color: inherit;
+  border-radius: 0.15em;
+  padding: 0 0.1em;
+}
+.space-code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.88em;
+  background: color-mix(in oklab, var(--foreground) 8%, transparent);
+  border-radius: 0.25em;
+  padding: 0.05em 0.3em;
+}
+.space-quote {
+  border-left: 2px solid color-mix(in oklab, currentColor 30%, transparent);
+  padding-left: 0.6em;
+  opacity: 0.85;
+}
+
+/* A task box is set at the text's size, not the form control's: a 16px box beside 30px text
+   read as a stray dot. Its tick scales with it. */
+.space-task-box {
+  width: 0.78em;
+  height: 0.78em;
+  flex: none;
+  /* On the first line of a wrapped item: half the line's leading above the box. */
+  margin-top: calc((1lh - 0.78em) / 2);
+}
+.space-task-box::before {
+  width: 0.5em;
+  height: 0.5em;
+}
+
+/* ── Flowcharts: neutral steps, one or two focal ones in the element's tone ──
+   A step is the card's own ground a step denser, held by a hairline; a focal step takes the tone.
+   Every fill is opaque over the card (`--popover-solid`), so a line never shows through a box. */
+.space-flow-node {
+  fill: color-mix(in oklab, var(--foreground) 5%, var(--popover-solid));
+  stroke: color-mix(in oklab, var(--foreground) 30%, transparent);
+  stroke-width: 1;
+}
+.space-flow-focal {
+  fill: color-mix(in oklab, var(--space-tone) 14%, var(--popover-solid));
+  stroke: color-mix(in oklab, var(--space-tone) 80%, transparent);
+  stroke-width: 1.25;
+}
+.space-flow-store {
+  fill: color-mix(in oklab, var(--foreground) 9%, var(--popover-solid));
+}
+.space-flow-external {
+  fill: color-mix(in oklab, var(--foreground) 2.5%, var(--popover-solid));
+  stroke: color-mix(in oklab, var(--foreground) 22%, transparent);
+}
+.space-flow-optional {
+  fill: color-mix(in oklab, var(--foreground) 2%, var(--popover-solid));
+  stroke: color-mix(in oklab, var(--foreground) 24%, transparent);
+  stroke-dasharray: 4 3;
+}
+.space-flow-rule {
+  fill: none;
+  stroke: color-mix(in oklab, var(--foreground) 22%, transparent);
+}
+.space-flow-name {
+  fill: var(--space-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.space-flow-sub {
+  fill: var(--text-soft);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 10.5px;
+}
+.space-flow-edge {
+  fill: none;
+  stroke: color-mix(in oklab, var(--foreground) 45%, transparent);
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.space-flow-dotted {
+  stroke-dasharray: 5 4;
+}
+.space-flow-head {
+  fill: color-mix(in oklab, var(--foreground) 45%, transparent);
+}
+/* The headline path: a thick line, or one between two focal steps, takes the tone. */
+.space-flow-edge.space-flow-strong {
+  stroke: color-mix(in oklab, var(--space-tone) 85%, transparent);
+  stroke-width: 2;
+}
+.space-flow-head.space-flow-strong {
+  fill: color-mix(in oklab, var(--space-tone) 85%, transparent);
+}
+.space-flow-label {
+  fill: var(--text-soft);
+  font-size: 10.5px;
+  paint-order: stroke;
+  stroke: var(--popover-solid);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+}
+.space-flow-group {
+  fill: color-mix(in oklab, var(--foreground) 2.5%, transparent);
+  stroke: color-mix(in oklab, var(--foreground) 12%, transparent);
+  stroke-width: 1;
+}
+.space-flow-group-title {
+  fill: var(--text-faint);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ── 2×2 matrix: hairline axes, names in the corners, colour only for the focal items ── */
+.space-quad-axis {
+  stroke: color-mix(in oklab, var(--foreground) 28%, transparent);
+  stroke-width: 1;
+}
+.space-quad-end {
+  fill: var(--text-soft);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.space-quad-name {
+  fill: var(--text-faint);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.space-quad-name-hot {
+  fill: var(--space-tone);
+}
+.space-quad-wash {
+  fill: color-mix(in oklab, var(--space-tone) 7%, transparent);
+}
+/* A selected matrix's items are controls: focus is drawn on the dot itself, since an outline does
+   not reach an SVG group. */
+.space-quad-item {
+  outline: none;
+}
+.space-quad-item:focus-visible circle {
+  stroke: var(--ring);
+  stroke-width: 2.5px;
+  paint-order: stroke;
+}
+.space-quad-dot {
+  fill: var(--space-ink);
+}
+.space-quad-focal {
+  fill: var(--space-tone);
+}
+.space-quad-label {
+  fill: color-mix(in oklab, var(--foreground) 82%, transparent);
+  font-size: 12px;
+  paint-order: stroke;
+  stroke: var(--popover-solid);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+.space-quad-label-focal {
+  fill: var(--foreground);
+  font-weight: 600;
+}

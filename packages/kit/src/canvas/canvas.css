@@ -41,3 +41,12 @@
   --xy-edge-label-color: var(--text-soft);
   --xy-attribution-background-color: transparent;
 }
+
+/*
+  Edge labels above the nodes. The library paints its label layer before the nodes, so a caption
+  that reached a card's edge was cut by the card and read as a fragment. Nodes stack by their own
+  `z-index` (a board lifts its cards to 1000), so the layer takes one step above any of them.
+*/
+.localix-canvas .react-flow__edgelabel-renderer {
+  z-index: 2000;
+}

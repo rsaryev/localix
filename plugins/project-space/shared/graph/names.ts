@@ -25,6 +25,16 @@ export function excerpt(text: string, max: number): string {
   return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat
 }
 
+/** What a person reads: the type's `summary` when it has one, else its text. */
+export function elementSummary(space: SpaceDocument, registry: TypeRegistry, id: string): string {
+  const element = space.elements[id]
+  if (!element) return ''
+  const spec = registry.get(element.type)
+  if (!spec?.summary) return elementText(space, registry, id)
+  const read = registry.read(element.type, element.props, space.typeVersions[element.type])
+  return read.status === 'ok' ? spec.summary(read.props) : ''
+}
+
 /** The element's name: its text on one line, or — an empty note — its type's label. */
 export function elementName(
   space: SpaceDocument,
@@ -32,7 +42,7 @@ export function elementName(
   id: string,
   max = 48,
 ): string {
-  const text = excerpt(elementText(space, registry, id), max)
+  const text = excerpt(elementSummary(space, registry, id), max)
   if (text) return text
   const type = space.elements[id]?.type
   return type ? (registry.get(type)?.label ?? type) : id

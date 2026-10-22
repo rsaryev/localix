@@ -1,9 +1,9 @@
 # Project Space
 
-Project Space is one spatial board per project. It holds notes, text, shapes, tables, mind maps,
-freehand drawings, frames and connectors beside live references to the project's files, folders,
-images and documents. You and the agent edit the same board: lay out how a feature fits together,
-sketch a flow, or collect what a task touches.
+Project Space is one spatial board per project. It holds notes, text, shapes, flowcharts, 2×2
+matrices, tables, mind maps, freehand drawings, frames and connectors beside live references to the
+project's files, folders, images and documents. You and the agent edit the same board: lay out how a
+feature fits together, sketch a flow, or collect what a task touches.
 
 ## Terminology
 
@@ -19,32 +19,43 @@ sketch a flow, or collect what a task touches.
 
 ## What you can do
 
-| Operation            | How                                                                                                            | Boundary                                                                                                           |
-| -------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Open the board       | **Project Space** in the rail, or ask the agent to show it                                                     | Opened from a chat; the board is that chat's project's.                                                            |
-| Place an element     | Pick a tool on the left rail or in the searchable **+** catalog, then click the board                          | Back to Select after one; Q keeps the tool armed. Shortcuts: N note, T text, S shape, F frame, D sequence, C code. |
-| Add a note           | Double-click the empty ground                                                                                  | A new note opens for typing; choose Text size above the selection. Long text scrolls.                              |
-| Draw a flow          | Shapes (11 kinds: step, decision, database, document, cloud, …) and connectors                                 | The "+" on each side of a selected shape adds a connected twin; ⌘/Ctrl+arrow too.                                  |
-| Draw a sequence      | The sequence tool, or paste a Mermaid `sequenceDiagram` block                                                  | Participants, lifelines, calls, async messages and returns.                                                        |
-| Style                | The bar above a selection: colour, shape kind, fill, line, text size, lock, order                              | Only what every selected element shares is offered.                                                                |
-| Style a connector    | Select it; the bar above it sets label, route (curved, straight, elbow), caps, line, colour                    | Drop a connector on empty ground to create a connected element there.                                              |
-| Place files          | Drag from the file tree, an editor tab or the desktop, or **Add files** on the rail                            | Folders become folder cards; images, PDFs and Office files theirs.                                                 |
-| Paste                | ⌘/Ctrl+V: a screenshot, a URL, a fenced code block, Mermaid, or text                                           | A screenshot is saved in `.localix/project-space/files/`.                                                          |
-| Link anything        | Drag anything the chat can link: a session, a message, a tool call, a sent or composer link, a tab, a resource | See [App links](#app-links).                                                                                       |
-| Edit in place        | Double-click, or Enter on the selected element                                                                 | Double-clicking a file or folder opens it in the editor instead.                                                   |
-| Select and move      | Drag the ground to select; drag an element; Space + drag or H to pan                                           | A drag snaps to other elements' edges and centres; hold ⌘/Ctrl to place freely.                                    |
-| Nudge                | Arrow keys move the selection 1 px, Shift + arrow 10 px                                                        | Locked elements stay.                                                                                              |
-| Group                | ⌘/Ctrl+G, or the group button on the bar; ⇧⌘/Ctrl+Shift+G takes a group apart                                  | A click takes the whole group; click again (or Enter) to reach inside, Esc out.                                    |
-| Stack                | `⌘/Ctrl+]` forward, `⌘/Ctrl+[` backward; with ⌥/Alt or Shift, to the front or the back                         | A step goes past the next element that overlaps; frames always sit beneath.                                        |
-| Align and arrange    | The bar's align menu, or ⌥/Alt + A, H, D (left, centre, right), W, V, S (top, middle, bottom)                  | ⌥⇧H / ⌥⇧V distribute; Tidy up lays the selection out as a grid.                                                    |
-| Fade                 | The bar's opacity menu: 100 % to 10 %                                                                          | The element fades; its selection ring does not.                                                                    |
-| Lock                 | ⇧⌘/Ctrl+Shift+L, or the lock button                                                                            | A locked element lets the pointer through; its badge or the layers panel unlocks.                                  |
-| Layers               | L, or the layers button on the rail                                                                            | Every element as a row in its frame, top first; click a row (or Enter) to go to it.                                |
-| Use a picture        | Drop or paste it: it takes its own proportions; **Fill and crop** on the bar lets it fill any box              | For a background: fill and crop, send to the back, lock.                                                           |
-| Copy, duplicate      | ⌘/Ctrl+C then ⌘/Ctrl+V; ⌘/Ctrl+D duplicates                                                                    | Connectors come along when both ends are copied.                                                                   |
-| Undo and redo        | ⌘/Ctrl+Z and ⇧⌘/Ctrl+Shift+Z                                                                                   | Your own changes; the agent's are its own.                                                                         |
-| Share with the agent | Select elements; the selection is linked to the chat                                                           | The agent reads the rest with `space_read`.                                                                        |
-| Be shown something   | Ask the agent to show a part of the board                                                                      | It moves your camera there with `space_view`; the board itself is unchanged.                                       |
+| Operation            | How                                                                                                            | Boundary                                                                                                                          |
+| -------------------- | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Open the board       | **Project Space** in the rail, or ask the agent to show it                                                     | Opened from a chat; the board is that chat's project's.                                                                           |
+| Place an element     | Pick a tool on the left rail or in the searchable **+** catalog, then click the board                          | Back to Select after one; Q keeps the tool armed. Shortcuts: N note, T text, S shape, F frame, D sequence, C code.                |
+| Add a note           | Double-click the empty ground                                                                                  | A new note opens for typing; choose Text size above the selection. Long text scrolls.                                             |
+| Draw a flow          | Shapes (11 kinds: step, decision, database, document, cloud, …) and connectors                                 | The "+" on each side of a selected shape adds a connected twin; ⌘/Ctrl+arrow too.                                                 |
+| Draw a flowchart     | The flowchart tool (W), or paste a Mermaid `flowchart`; ask the agent for one                                  | It lays itself out; **Direction** and **Spacing** on the bar restyle it. See [Flowcharts](#flowcharts).                           |
+| Draw a sequence      | The sequence tool, or paste a Mermaid `sequenceDiagram` block                                                  | Participants, lifelines, calls, async messages and returns.                                                                       |
+| Style                | The bar above a selection: colour, shape kind, fill, line, the **Text** menu, lock, order                      | Only what every selected element shares is offered.                                                                               |
+| Set text             | **Text** on the bar: font (sans, serif, mono, handwritten), size, alignment, vertical alignment, text colour   | A note's **Fit to note** size (the default) shrinks the text as it grows.                                                         |
+| Format while writing | ⌘/Ctrl+B bold, I italic, U underline, E code; ⇧⌘/Ctrl+Shift+X strikethrough, H highlight                       | Notes and shape labels draw the marks; the text stays plain in the board file.                                                    |
+| Style a connector    | Select it (or click its label); the bar sets the label and, under **Line**, route, ends, style and weight      | Drop a connector on empty ground to create a connected element there.                                                             |
+| Move a label         | Drag a connector's label along its line                                                                        | The label sits beside the line, never on it.                                                                                      |
+| Insert into a line   | **Insert a shape** on the connector's bar or right-click menu                                                  | The connector becomes two through a new step; both keep its look.                                                                 |
+| Place files          | Drag from the file tree, an editor tab or the desktop, or **Add files** on the rail                            | Folders become folder cards; images, PDFs and Office files theirs.                                                                |
+| Paste                | ⌘/Ctrl+V: a screenshot, a URL, a fenced code block, Mermaid, or text                                           | A screenshot is saved in `.localix/project-space/files/`.                                                                         |
+| Link anything        | Drag anything the chat can link: a session, a message, a tool call, a sent or composer link, a tab, a resource | See [App links](#app-links).                                                                                                      |
+| Edit in place        | Double-click, or Enter on the selected element                                                                 | Double-clicking a file or folder opens it in the editor instead.                                                                  |
+| Select and move      | Drag the ground to select; drag an element; Space + drag or H to pan                                           | A drag snaps to other elements' edges and centres; hold ⌘/Ctrl to place freely.                                                   |
+| Nudge                | Arrow keys move the selection 1 px, Shift + arrow 10 px                                                        | Locked elements stay.                                                                                                             |
+| Frame a selection    | ⌥⌘/Ctrl+Alt+G, or **Frame the selection** in the right-click menu                                              | The new frame holds what it covers; its title opens for typing.                                                                   |
+| Keep a look          | Restyle an element or a connector from its bar                                                                 | The next one of that kind takes the same colour, font and size; a new connector takes the last line style. Until the app reloads. |
+| Copy a style         | ⌥⌘/Ctrl+Alt+C on one element, then ⌥⌘/Ctrl+Alt+V on others (also in the right-click menu)                      | Colour, fill, line, size, font and alignment, each only where the other kind takes it.                                            |
+| Switch type          | **Switch type** on the bar: sticky note, shape or text                                                         | Keeps the text, colour, place and connectors.                                                                                     |
+| Filter a selection   | **Filter the selection** on the bar when it mixes kinds                                                        | Keeps only the notes, the shapes, … of what you selected; each row counts them.                                                   |
+| Present              | **Present the frames** on the rail                                                                             | Frames in reading order, one per slide; ←/→ or Space to move, Esc returns to where you were.                                      |
+| Group                | ⌘/Ctrl+G, or the group button on the bar; ⇧⌘/Ctrl+Shift+G takes a group apart                                  | A click takes the whole group; click again (or Enter) to reach inside, Esc out.                                                   |
+| Stack                | `⌘/Ctrl+]` forward, `⌘/Ctrl+[` backward; with ⌥/Alt or Shift, to the front or the back                         | A step goes past the next element that overlaps; frames always sit beneath.                                                       |
+| Align and arrange    | The bar's align menu, or ⌥/Alt + A, H, D (left, centre, right), W, V, S (top, middle, bottom)                  | ⌥⇧H / ⌥⇧V distribute; Tidy up lays the selection out as a grid.                                                                   |
+| Fade                 | The bar's opacity menu: 100 % to 10 %                                                                          | The element fades; its selection ring does not.                                                                                   |
+| Lock                 | ⇧⌘/Ctrl+Shift+L, or the lock button                                                                            | A locked element lets the pointer through; its badge or the layers panel unlocks.                                                 |
+| Layers               | L, or the layers button on the rail                                                                            | Every element as a row in its frame, top first; click a row (or Enter) to go to it.                                               |
+| Use a picture        | Drop or paste it: it takes its own proportions; **Fill and crop** on the bar lets it fill any box              | For a background: fill and crop, send to the back, lock.                                                                          |
+| Copy, duplicate      | ⌘/Ctrl+C then ⌘/Ctrl+V; ⌘/Ctrl+D duplicates                                                                    | Connectors come along when both ends are copied.                                                                                  |
+| Undo and redo        | ⌘/Ctrl+Z and ⇧⌘/Ctrl+Shift+Z                                                                                   | Your own changes; the agent's are its own.                                                                                        |
+| Share with the agent | Select elements; the selection is linked to the chat                                                           | The agent reads the rest with `space_read`.                                                                                       |
+| Be shown something   | Ask the agent to show a part of the board                                                                      | It moves your camera there with `space_view`; the board itself is unchanged.                                                      |
 
 Paste a website URL to create a link card, or choose **Link** in the **+** catalog, enter its
 address and click the board to place it. The card's arrow opens the website; **Edit** changes its
@@ -101,13 +112,16 @@ The agent's broad `space_read` remains a compact roster. Reading explicit `ids` 
 complete validated properties, including code, table cells and image references, so an agent can
 inspect an imported fragment before changing it.
 
-Choose **Table / Grid** (B) in the catalog or paste a Markdown table. Double-click the card to
-enable its cells, then double-click a cell to edit it; Enter saves the value. **Add row** and the
-row's delete action change rows. **Add column** appends a column; double-click a column header to
-rename it. Its **Column options** menu inserts a column before or after it, moves it left or right,
-or deletes it together with its cells. The last column cannot be deleted. **Edit as Markdown** in
-the header edits the complete table as text; ⌘/Ctrl+Enter saves it and Escape cancels. Each cell or
-structural edit is one undo step.
+Choose **Table / Grid** (B) in the catalog, paste a Markdown table, or paste cells copied from a
+spreadsheet (the first row becomes the header). **Make sticky notes** on a table's bar puts each
+filled cell beside it as a note, one coloured column of notes per table column, grouped.
+
+Double-click the card to enable its cells, then double-click a cell to edit it; Enter saves the
+value. **Add row** and the row's delete action change rows. **Add column** appends a column;
+double-click a column header to rename it. Its **Column options** menu inserts a column before or
+after it, moves it left or right, or deletes it together with its cells. The last column cannot be
+deleted. **Edit as Markdown** in the header edits the complete table as text; ⌘/Ctrl+Enter saves it
+and Escape cancels. Each cell or structural edit is one undo step.
 
 Choose **Mind map** (M) or paste a Mermaid `mindmap` outline. Double-click the map to edit it
 visually: click an idea to select it, then double-click it or press Enter to edit its text. Use
@@ -136,6 +150,10 @@ its colour and stroke width, and the usual resize handles resize the drawing. Q 
 for more strokes. Tables, maps and drawings use the same board file and operations as other
 elements, so the agent can read and edit their native props.
 
+The pen tool on the rail also offers **Highlighter**, a wide translucent stroke in marker yellow,
+and **Eraser**: drag over freehand strokes and they fade as you pass, then disappear together when
+you let go, one undo step. The eraser takes only strokes, never a note or a shape.
+
 The camera works as on every board in the app: scroll pans, pinch or ⌘/Ctrl + scroll zooms, Shift+1
 fits everything and Shift+0 shows 100%. On this board it also helps:
 
@@ -150,6 +168,62 @@ fits everything and Shift+0 shows 100%. On this board it also helps:
 
 With reduced motion set on your system, the camera lands at once instead of flying. The trip is
 still remembered for ⌥/Alt+←, and what it came to show still glows.
+
+## Flowcharts
+
+A flowchart is one element written as Mermaid and drawn by the board: steps in boxes, decisions in
+diamonds, stores as cylinders, subgraphs as titled areas, every line at right angles with rounded
+corners and its label beside it. Double-click it to edit the Mermaid text; the drawing follows. On a
+selected flowchart, double-click a step to rename it in place: the first line is its name, the lines
+after it its sublabels.
+
+![A release flow with formatted shape labels and captioned elbow connectors, a native flowchart with a subgraph, styled sticky notes and a 2×2 matrix on one board](../assets/screenshots/project-space/text-and-lines--2026-10-22.png)
+
+| Mermaid                                  | Drawn as                                                     |
+| ---------------------------------------- | ------------------------------------------------------------ |
+| `A[Step]`, `B(Rounded)`, `C([Start])`    | A box, a rounded box, a pill                                 |
+| `D{Ready?}`, `E[(Database)]`, `F((Hub))` | A decision, a store, a circle                                |
+| `A -->`, `A -.->`, `A ==>`, `A ---`      | An arrow, a dotted arrow, the headline path, a plain line    |
+| `A -->\|yes\| B`, `A -- yes --> B`       | A labelled line                                              |
+| `A:::focal`, `:::store`, `:::optional`   | A focal step in the element's colour, a store, a dashed step |
+| `api[API<br/>hono:5151]`                 | A name with a technical sublabel                             |
+| `subgraph api [API] … end`               | A titled area around its steps                               |
+
+A decision's branch that turns aside leaves by its corner, and a line that runs back against the
+flow goes around the outside instead of through it. Pasting a Mermaid flowchart creates one when the
+board can draw every line of it. Lines that only style Mermaid's own renderer (`classDef`, `style`,
+`click`) are ignored; an unknown shape or another diagram type keeps the full Mermaid element. On a
+Mermaid element that holds a flowchart the board can read, **Draw natively** replaces it in place.
+
+**Convert to shapes** takes a flowchart apart into shapes, connectors and frames where it drew them,
+grouped, so you can move one step by hand or connect a step to a file. Connectors attached to the
+flowchart itself are removed with it.
+
+## 2×2 matrix
+
+**2×2 matrix** in the catalog, or a pasted Mermaid `quadrantChart`, places items by two judgements —
+impact against effort, by default. Each quarter is named in its corner; the one or two items marked
+focal are drawn in the element's colour and their quarter is tinted. Select the matrix and drag an
+item to move it, or Tab to an item and move it with the arrow keys (Shift for longer steps); each
+move is one undo step. Double-click to edit it as Mermaid (`Item:::focal: [0.3, 0.8]`, x and y from
+0 to 1).
+
+## Format text
+
+Notes, shape labels and text elements read light Markdown from their own text, so the board file
+stays readable to the agent and in git:
+
+| You type                                    | You see                                          |
+| ------------------------------------------- | ------------------------------------------------ |
+| `**bold**`, `*italic*`, `++underline++`     | Bold, italic, underlined words                   |
+| `~~strike~~`, `==highlight==`, `` `code` `` | Struck-through, highlighted and code words       |
+| `# Heading` (in a note)                     | A heading line                                   |
+| `- item`, `1. step` (in a note)             | Bullets and numbered steps; Enter continues them |
+| `- [ ] task` (in a note)                    | A task box you tick on the board                 |
+
+Only the box ticks a task; a click on its words selects the note. A ticked box is an edit of the
+note's text, one undo step. Fonts are roles, not files: **Handwritten** uses the handwriting face
+the system provides, so a board reads the same on another machine.
 
 ## App links
 
@@ -181,10 +255,12 @@ session, the card keeps its name and says the target is not there.
 | Its connections      | The connections button on the bar: where its arrows lead, where they come from    | Pick one to go to the element at its other end.                                                              |
 | Trace                | **Trace upstream** or **Trace downstream** in that menu or the right-click menu   | Everything reachable along the arrows stays lit and the rest fades; Esc ends it.                             |
 | Find                 | `/`, or the search button on the rail                                             | Matches every word of text, file path or type; the agent's `query` matches the same way.                     |
+| Replace              | `/`, then **Replace…**: the phrase and what replaces it                           | In notes, labels, frame titles and connector labels; never a diagram's text or a file path. One undo.        |
 | Every shortcut       | `?`, or the keyboard button on the rail                                           | The same list the board's keys are tested against.                                                           |
 | Small print          | Zoom out                                                                          | Below 90 % a card's line and item counts fade; below 50 % connector labels too. What is selected keeps them. |
 | Right-click          | An element, a connector or the empty ground                                       | Opens where the press ends; a right-drag still pans.                                                         |
 | Copy as image        | Right-click → **Copy as image** (the selection) or **Copy the board as image**    | A PNG at reading size, without the selection; saved as a file when the clipboard refuses it.                 |
+| Save as image        | Right-click → **Save as image…** or **Save the board as image…**                  | The same PNG, written to a file.                                                                             |
 | With a screen reader | The board says what the agent changed, what it showed you, and what a trace found | Politely, after what is being read.                                                                          |
 
 A trace follows the arrowheads you see, not the order a connector was drawn in. A connector with a

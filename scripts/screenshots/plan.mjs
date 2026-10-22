@@ -226,6 +226,12 @@ export const capturePlan = {
     purpose: 'Rendered answer components on the editable board',
     scenario: 'answer-board',
   },
+  'project-space/text-and-lines': {
+    guide: 'features/project-space.md',
+    purpose:
+      'A release flow with formatted shape labels, captioned elbow connectors and styled sticky notes',
+    scenario: 'diagram-board',
+  },
   'database/console': {
     guide: 'features/database.md',
     purpose: 'A real SQLite query and its result rows',

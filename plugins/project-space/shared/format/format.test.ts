@@ -27,7 +27,14 @@ describe('reading a board file', () => {
       spaceTypes,
     )
     expect(issues).toEqual([])
-    expect(space.elements.k3f9?.props).toEqual({ text: '', color: 'yellow', size: 'md' })
+    expect(space.elements.k3f9?.props).toEqual({
+      text: '',
+      color: 'yellow',
+      size: 'md',
+      font: 'sans',
+      align: 'start',
+      valign: 'top',
+    })
     expect(space.elements.k3f9?.z).not.toBe('')
     expect(serializeSpace(space)).toContain('"x": 10,')
   })

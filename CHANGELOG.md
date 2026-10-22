@@ -19,6 +19,14 @@ Changes land on `main`.
   conversations as its history, and starts Localix in the background when it is not running. See
   [Plugin apps](docs/features/plugin-apps.md).
 
+- **Project Space diagrams and text**: notes, shape labels and text take a font (sans, serif, mono,
+  handwritten), size, alignment and colour from one **Text** menu, draw **bold**, _italic_, lists
+  and task boxes, and a new note fits its text. Flowcharts and 2×2 matrices are native elements
+  written as Mermaid — laid out by the board with right-angled lines, renamed or dragged in place,
+  and turned into shapes when you want to move them by hand. Connector labels sit beside the line
+  and slide along it; frames present as slides; styles copy and paste; a highlighter, an eraser and
+  find-and-replace join the tools. See [Project Space](docs/features/project-space.md).
+
 ### Changed
 
 - **Claude Code plugins** load as they are: the same folder works in Claude Code and in Localix,

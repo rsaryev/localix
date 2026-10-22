@@ -135,6 +135,20 @@ export async function verifyEvidence(page, scenario) {
     await expect(
       page.getByRole('heading', { name: 'Release summary', exact: true }),
     ).toBeInViewport({ ratio: 1 })
+  } else if (scenario === 'diagram-board') {
+    // Marks are drawn, not printed: the bold heading and the ticked tasks are real elements.
+    await expect(page.locator('strong', { hasText: 'Before shipping' })).toBeVisible()
+    await expect(page.locator('input[type="checkbox"]:checked')).toHaveCount(2)
+    await expect(page.getByText('**', { exact: false })).toHaveCount(0)
+    await expect(page.locator('.space-font-hand', { hasText: 'Keep the release' })).toBeVisible()
+    // Captions sit beside their line, readable, never cut by a card.
+    // The Mermaid flowchart is drawn natively: its steps are the board's text, not a picture.
+    await expect(page.getByRole('img', { name: /^Release pipeline: 6 steps/ })).toBeVisible()
+    await expect(page.getByRole('img', { name: /^Next quarter: Offline mode/ })).toBeVisible()
+    for (const caption of ['scope', 'passes', 'fails', 'retry'])
+      await expect(page.locator('[data-canvas-edge-label]', { hasText: caption })).toBeInViewport({
+        ratio: 0.99,
+      })
   } else if (scenario === 'models') {
     await expect(page.getByText('API Key(s) (manual)', { exact: true })).toBeVisible()
     await expect(page.locator('input[type="password"]')).toHaveValue('')

@@ -158,6 +158,9 @@ export async function compose(page, scenario) {
   } else if (scenario === 'answer-board') {
     await openTool(page, 'Project Space')
     await page.getByRole('button', { name: /Fit everything/ }).click()
+  } else if (scenario === 'diagram-board') {
+    await openTool(page, 'Project Space')
+    await page.getByRole('button', { name: /Fit everything/ }).click()
   } else if (scenario === 'containers') {
     await openTool(page, 'DevOps')
     await page.getByText('Containers', { exact: true }).first().click()

@@ -13,6 +13,7 @@ import { spaceTypes } from '../shared/types'
 import { SpaceBoard } from './board/SpaceBoard'
 import { useSpace } from './useSpace'
 import './space.css'
+import './space-text.css'
 import './reading.css'
 
 /**

@@ -1,4 +1,4 @@
-import { Hand, Layers, Lock, MousePointer2, Redo2, Search, Undo2 } from 'lucide-react'
+import { Hand, Layers, Lock, MousePointer2, Redo2, Search, Undo2, Presentation } from 'lucide-react'
 import { IconButton } from '@localixai/kit/icon-button'
 import { FloatingActionDivider, FloatingActionGroup } from '@localixai/kit/workbench-toolbar'
 import { formatChordText } from '@localixai/kit/keybindings'
@@ -25,6 +25,7 @@ export function ToolRail({
   onLayers,
   onFind,
   onShortcuts,
+  onPresent,
 }: {
   sessionId: string
   tool: Tool
@@ -34,6 +35,8 @@ export function ToolRail({
   onLayers: () => void
   onFind: () => void
   onShortcuts: () => void
+  /** Present the frames as slides; absent when the board has none. */
+  onPresent?: () => void
   onTool: (tool: Tool, props?: Record<string, unknown>) => void
   onLock: () => void
   onAddFiles: () => void
@@ -43,7 +46,10 @@ export function ToolRail({
   canRedo: boolean
 }) {
   return (
-    <div className="nodrag nowheel pointer-events-none absolute left-3 top-1/2 z-(--z-controls) flex max-h-[calc(100%-1.5rem)] -translate-y-1/2 flex-col gap-2">
+    <div
+      data-canvas-chrome=""
+      className="nodrag nowheel pointer-events-none absolute left-3 top-1/2 z-(--z-controls) flex max-h-[calc(100%-1.5rem)] -translate-y-1/2 flex-col gap-2"
+    >
       <FloatingActionGroup
         aria-label="Board tools"
         className="scrollbar-thin static right-auto top-auto min-h-0 max-w-none flex-col gap-1 overflow-y-auto overscroll-contain rounded-xl p-1"
@@ -72,9 +78,11 @@ export function ToolRail({
         {INSERTABLE.filter((view) => view.insert?.primary).map((view) => {
           const label = spaceTypes.get(view.type)?.label ?? view.type
           const key = view.insert?.key?.toUpperCase()
-          const variant = view.controls?.find(
-            (control) => control.kind === 'choice' && control.prop === view.insert?.variantProp,
-          )
+          const variant =
+            view.insert?.variants ??
+            view.controls?.find(
+              (control) => control.kind === 'choice' && control.prop === view.insert?.variantProp,
+            )
           if (variant?.kind === 'choice')
             return (
               <ToolVariants
@@ -131,6 +139,17 @@ export function ToolRail({
         >
           <Search className="size-4" />
         </IconButton>
+        {onPresent && (
+          <IconButton
+            size="lg"
+            aria-label="Present the frames"
+            tooltip="Present the frames as slides"
+            tooltipSide="right"
+            onClick={onPresent}
+          >
+            <Presentation className="size-4" />
+          </IconButton>
+        )}
         <IconButton
           size="lg"
           aria-label={layersOpen ? 'Hide layers' : 'Show layers'}

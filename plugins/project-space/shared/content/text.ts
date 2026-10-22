@@ -23,9 +23,17 @@ export function contentFromText(text: string, registry: TypeRegistry): TextConte
   if (url && link?.claims?.fromUrl) return { type: link.type, props: link.claims.fromUrl(url) }
 
   const fenced = FENCE.exec(trimmed)
-  // A full Mermaid fence must not be reduced to the sequence type's smaller grammar.
-  if (fenced?.[1] === 'mermaid' && registry.get('mermaid'))
-    return { type: 'mermaid', props: { source: fenced[2] ?? '' } }
+  // A full Mermaid fence must not be reduced to a smaller grammar (the sequence type's skips what
+  // it cannot draw). Only a type that reads the block whole or refuses it takes it natively.
+  if (fenced?.[1] === 'mermaid' && registry.get('mermaid')) {
+    const source = fenced[2] ?? ''
+    for (const spec of registry.all()) {
+      if (!spec.exactText || !spec.claimsText?.(source) || !spec.fromText) continue
+      const read = spec.fromText(source)
+      if (typeof read !== 'string') return { type: spec.type, props: read }
+    }
+    return { type: 'mermaid', props: { source } }
+  }
 
   if (registry.get('text') && (fenced?.[1] === 'tree' || (!fenced && MARKDOWN_BLOCK.test(trimmed))))
     return { type: 'text', props: { text: trimmed } }

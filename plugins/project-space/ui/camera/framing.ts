@@ -82,3 +82,17 @@ export function selectionViewport(
   // min(100 %, the fit): 100 % when it all shows there, else as close as still shows all of it.
   return frameViewport(rect, size, 'many')
 }
+
+/**
+ * A frame presented as a slide: as large as the view holds it, a margin of 4 % round it — the one
+ * framing that may pass 100 %, because a slide is read from across a room, not edited.
+ */
+export function presentViewport(
+  rect: Box,
+  size: { width: number; height: number },
+): CameraViewport {
+  return fitViewport({ x: rect.x, y: rect.y, width: rect.w, height: rect.h }, size, {
+    maxZoom: CAMERA_ZOOM.max,
+    padding: 0.04,
+  })
+}

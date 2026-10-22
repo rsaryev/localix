@@ -75,7 +75,10 @@
 .space-shape-solid {
   --space-tint: color-mix(in oklab, var(--space-tone) 22%, transparent);
 }
+/* A filled shape is the card's opaque ground with its tone over it — no glass. Blur belongs to
+   panels floating over the app; under a thousand shapes it was a thousand blur passes a frame. */
 .space-shape-material {
+  background-color: var(--popover-solid);
   background-image: linear-gradient(var(--space-tint), var(--space-tint));
 }
 .space-swatch {
@@ -274,7 +277,7 @@
   position: absolute;
   z-index: 1002;
   pointer-events: none;
-  animation: space-ghost-in 140ms ease-out;
+  animation: space-ghost-in var(--dur-fast) var(--ease-soft);
 }
 .space-ghost-content {
   opacity: 0.55;
@@ -318,7 +321,7 @@
 }
 /* A freshly placed element arrives with a short settle, so the eye finds where it landed. */
 .space-board .react-flow__node.space-arrived > * {
-  animation: space-arrive 220ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  animation: space-arrive var(--dur-moderate) var(--ease-emphasized);
 }
 @keyframes space-arrive {
   from {
@@ -373,4 +376,11 @@
 /* A tool is armed: the ground takes a crosshair until the element is placed. */
 .space-board[data-tool]:not([data-tool='select']):not([data-tool='hand']) .react-flow__pane {
   cursor: crosshair;
+}
+
+/* Presenting: the frames are the slides and the board's chrome steps aside — the rail, the bars,
+   the camera chips and controls, the minimap. Only the presentation bar stays. */
+.space-board[data-presenting]
+  :is([data-canvas-chrome], .react-flow__minimap, .react-flow__node-toolbar) {
+  display: none;
 }

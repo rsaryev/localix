@@ -1,5 +1,6 @@
 import { spaceTypes } from '../../shared/types'
 import { INSERTABLE } from '../elements'
+import { FORMAT_KEYS } from '../elements/InlineText'
 
 /**
  * The board's keys as DATA — the list the shortcuts sheet (`?`) shows and `boardKeys.ts` answers.
@@ -65,6 +66,8 @@ export function boardShortcuts(): ShortcutGroup[] {
       title: 'Arrange',
       shortcuts: [
         { keys: ['mod+g', 'mod+shift+g'], does: 'Group, ungroup' },
+        { keys: ['mod+alt+g'], does: 'Put the selection in a new frame' },
+        { keys: ['mod+alt+c', 'mod+alt+v'], does: 'Copy the style, paste it onto the selection' },
         { keys: ['mod+]', 'mod+['], does: 'Forward, backward' },
         { keys: ['mod+alt+]', 'mod+alt+['], does: 'To the front, to the back' },
         { keys: ['mod+shift+l'], does: 'Lock or unlock' },
@@ -84,4 +87,34 @@ export function boardShortcuts(): ShortcutGroup[] {
       ],
     },
   ]
+}
+
+/**
+ * Keys inside a note or a label while it is being written. The text field answers them, not the
+ * board (`InlineText.tsx` holds the list), so they are their own group and their own test.
+ */
+export function writingShortcuts(): ShortcutGroup {
+  return {
+    title: 'While writing',
+    shortcuts: [
+      ...FORMAT_KEYS.map((entry) => ({
+        keys: [`mod+${entry.shift ? 'shift+' : ''}${entry.key}`],
+        does: entry.does,
+      })),
+      { keys: ['enter'], does: 'At the end of a list item, the next item' },
+      { keys: ['mod+enter', 'escape'], does: 'Done, or leave without saving' },
+    ],
+  }
+}
+
+/** Keys while the frames are presented as slides (`usePresentation.ts`); nothing else edits. */
+export function presentingShortcuts(): ShortcutGroup {
+  return {
+    title: 'While presenting',
+    shortcuts: [
+      { keys: ['arrowright', 'space'], does: 'Next frame' },
+      { keys: ['arrowleft'], does: 'Previous frame' },
+      { keys: ['escape'], does: 'Stop presenting, back to where you were' },
+    ],
+  }
 }

@@ -1,5 +1,6 @@
 import { useRef, type ClipboardEvent, type DragEvent, type PointerEvent } from 'react'
 import { runPluginAction } from '@localixai/plugin-sdk/ui'
+import { pluginFiles } from '@localixai/plugin-sdk/ui/runtime'
 import { useCanvasCamera } from '@localixai/kit/canvas'
 import type { SpaceDocument } from '../../shared/format/document'
 import type { SpaceOp } from '../../shared/ops/contract'
@@ -37,6 +38,14 @@ export function useBoardIO(deps: {
     runPluginAction(async () => deps.commit(await make()), 'Could not put that on the board')
 
   return {
+    /** The rail's Add files: the picked files land in the middle of the view. */
+    addFiles: () =>
+      runPluginAction(async () => {
+        const paths = await pluginFiles.pickFiles()
+        if (paths.length === 0) return
+        const items = paths.map((path) => ({ kind: 'path' as const, path, isDir: false }))
+        deps.commit(await opsFor(items, camera.centre(), deps.sessionId, deps.space))
+      }, 'Could not add those files'),
     onPointerMove: (event: PointerEvent) => {
       pointer.current = camera.toBoard(event.clientX, event.clientY)
     },

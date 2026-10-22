@@ -70,34 +70,40 @@ export function updateElement(draft: SpaceDraft, op: UpdateOp, ctx: OpContext): 
       `"${op.id}" is locked; add locked: false to this same update to change it (and locked: true in a later one to lock it again)`,
     )
   const next: SpaceElement = { ...element }
+  // A change of kind keeps the RECORD — id, stacking, groups, connectors — and only re-reads its
+  // props as the new kind's: a delete and a create lost the groups and lifted it to the top.
+  const retype = op.type !== undefined && op.type !== element.type
 
-  if (op.props !== undefined || op.text !== undefined) {
-    const spec = ctx.registry.get(element.type)
+  if (op.props !== undefined || op.text !== undefined || retype) {
+    const type = op.type ?? element.type
+    const spec = ctx.registry.get(type)
+    if (retype && !spec) return refuse(`there is no element type "${type}"`)
     const read = ctx.registry.read(
       element.type,
       element.props,
       draft.document().typeVersions[element.type],
     )
-    if (!spec || read.status === 'unknown' || read.status === 'newer')
+    if (!spec || (!retype && (read.status === 'unknown' || read.status === 'newer')))
       return refuse(
         `"${op.id}" is a ${element.type} this build cannot edit; move or delete it only`,
       )
-    const merged: Record<string, unknown> = {
-      ...(read.status === 'ok' ? read.props : element.props),
-    }
+    const merged: Record<string, unknown> = retype
+      ? {}
+      : { ...(read.status === 'ok' ? read.props : element.props) }
     for (const [key, value] of Object.entries(op.props ?? {}))
       if (value === null) delete merged[key]
       else merged[key] = value
     const props = withText(spec, merged, op.text)
     if (typeof props === 'string') return refuse(props)
     const parsed = spec.props.safeParse(props)
-    if (!parsed.success) return refuse(`${element.type} ${op.id}: ${reason(parsed.error)}`)
+    if (!parsed.success) return refuse(`${type} ${op.id}: ${reason(parsed.error)}`)
+    next.type = type
     next.props = parsed.data as Record<string, unknown>
   }
 
-  const spec = ctx.registry.get(element.type)
+  const spec = ctx.registry.get(next.type)
   // A content-sized type follows a change of its content; an explicit size still wins.
-  const contentChanged = op.props !== undefined || op.text !== undefined
+  const contentChanged = op.props !== undefined || op.text !== undefined || retype
   const natural = contentChanged && spec?.measure ? spec.measure(next.props) : element
   const size = spec ? clampSize(spec, op.w ?? natural.w, op.h ?? natural.h) : null
   next.w = size?.w ?? op.w ?? element.w
