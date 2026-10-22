@@ -52,6 +52,9 @@ if (real) {
 
 const failures = []
 const unmet = []
+// A scenario marked `known: '<the gap>'` asserts Claude Code's behaviour where Localix still
+// differs: its failure is listed, not counted, and a pass says the marker can go.
+const gaps = []
 try {
   for (const scenario of selected) {
     const started = Date.now()
@@ -67,9 +70,18 @@ try {
       if (real && session)
         for (const row of runtime.transcript(session))
           console.log(`      ${row.from}: ${row.text.replace(/\s+/g, ' ').slice(0, 400)}`)
+      if (scenario.known)
+        console.log(`      ! passes now — remove its known gap: ${scenario.known}`)
     } catch (error) {
-      failures.push(scenario.name)
       const trace = String(error?.stack ?? error)
+      if (scenario.known) {
+        gaps.push(scenario.name)
+        console.log(
+          `  ~ ${scenario.name} (known gap: ${scenario.known})\n    ${trace.split('\n')[0]}`,
+        )
+        continue
+      }
+      failures.push(scenario.name)
       console.log(`  ✗ ${scenario.name}\n    ${trace.split('\n').join('\n    ')}`)
     }
   }
@@ -77,7 +89,8 @@ try {
   await runtime.stop()
 }
 console.log(
-  `[session-e2e] ${selected.length - failures.length} passed, ${failures.length} failed` +
+  `[session-e2e] ${selected.length - failures.length - gaps.length} passed, ${failures.length} failed` +
+    (gaps.length ? `, ${gaps.length} known gap(s)` : '') +
     (unmet.length ? `, ${unmet.length} behaviour expectation(s) unmet` : '') +
     (keep && !real ? ` — logs kept in ${runtime.root} (requests.jsonl, api.log)` : ''),
 )

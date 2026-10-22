@@ -125,6 +125,11 @@ turn it started has settled), `send` and `waitRunning` (to act mid-turn), `detai
 `{ status, body }` for asserting a refusal). Every agent the harness knows is routed to the scripted
 model, including agents not yet seated, so an invited agent can answer.
 
+A scenario that asserts Claude Code's documented behaviour where Localix still differs carries
+`known: '<what Localix does instead>'`. Its failure is listed as a known gap and does not fail the
+run; when it passes, the runner says the marker can go. The `scenarios-cc-*.mjs` files test Claude
+Code plugins this way: hooks, agents, skills, MCP servers, real official plugins and the lifecycle.
+
 The model is a script, not a reasoner: a scenario proves what the runtime does with a reply
 (routing, invitations, silence, notices) and what it sends the model, not how a real model would
 answer it. For model behaviour, run the change against a real connection in the app.
