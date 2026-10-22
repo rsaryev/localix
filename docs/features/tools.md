@@ -104,10 +104,14 @@ It calls `read`, `bash`, `edit` and `write` (those the run has) as `await tools.
 call resolves to the tool's text result and rejects with its error.
 
 `text(value)`, `console.log()` and the returned value are what the model reads; the results of the
-calls stay in the script. The tool's description asks the model to use JavaScript to turn those
-results into a concise answer and to make the script fault-tolerant, so a whole file or listing
-never reaches the context when a count or a few lines would do, and one failed call does not lose
-the others.
+calls stay in the script. The tool's description asks for a concise answer and for
+`Promise.allSettled` or `try/catch`, so a whole file or listing never reaches the context when a
+count or a few lines would do, and one failed call does not lose the others.
+
+The agent is told to prefer a script when each call needs the previous result or a result is much
+larger than the answer: grep, read the hits and keep what matters; run several checks and report
+only the failures. Independent calls are still batched in one turn, and a single call or a file's
+new content goes to the tool directly rather than through a script.
 
 ```js
 const [readme, status] = await Promise.allSettled([

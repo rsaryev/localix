@@ -29,7 +29,7 @@ const signal = new AbortController().signal
 describe('codemode', () => {
   test('declares only the script tools this run has', () => {
     const codemode = createCodemodeTool(scripts, [tool('read'), tool('bash'), tool('memory')])
-    expect(codemode.description).toContain('Run JavaScript that calls other tools')
+    expect(codemode.description).toContain('Run JavaScript that calls tools')
     expect(codemode.description).toContain('The read tool.')
     expect(codemode.description).toContain('The bash tool.')
     expect(codemode.description).not.toContain('memory')

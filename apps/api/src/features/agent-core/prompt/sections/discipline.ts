@@ -3,6 +3,7 @@ import { TOOL } from '../../tool-names'
 import type { RunProfile } from '../../run-shape'
 import {
   batchLine,
+  codemodeLine,
   childReportLine,
   fileRoutingLine,
   lspDiagnosticsLine,
@@ -106,6 +107,7 @@ function buildSubagentExecutionDiscipline(toolNames: readonly string[] = []): st
     failureDiagnosisLine(has),
     fileRoutingLine(has),
     batchLine(has),
+    codemodeLine(has),
     lspDiagnosticsLine(has),
     editorBufferLine(has),
   )
@@ -156,7 +158,7 @@ export function buildExecutionDiscipline(
         : '- Non-interactive by default: pass unattended flags; a TTY prompt stalls the turn.',
     )
   }
-  pushPresent(lines, batchLine(has))
+  pushPresent(lines, batchLine(has), codemodeLine(has))
 
   // `background:true` itself is bash's own description; the cross-tool half is the manager.
   if (has(TOOL.bash) && has(TOOL.jobs)) {

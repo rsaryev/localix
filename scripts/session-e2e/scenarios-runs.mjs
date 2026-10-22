@@ -1,7 +1,7 @@
 /** Session E2E: what else a run inherits — commands, forks, permission modes, delegation. */
 import assert from 'node:assert/strict'
 
-import { lastRun, script } from './scenario-helpers.mjs'
+import { lastRun, runs, script } from './scenario-helpers.mjs'
 
 export const RUN_SCENARIOS = [
   {
@@ -76,6 +76,28 @@ export const RUN_SCENARIOS = [
       for (const tool of ['delegate', 'skip_answer', 'set_topic', 'ask'])
         assert.ok(!child.tools.includes(tool), `the child holds ${tool}`)
       assert.equal(rt.transcript(after).at(-1).text, 'The child counted 3 files.')
+    },
+  },
+  {
+    name: 'codemode: the prompt prefers a script for dependent calls, and the script runs its tools',
+    async run(rt) {
+      const session = await rt.createSession({ title: 'Codemode' })
+      const code =
+        "const out = await tools.bash({ command: 'echo scripted-ok' }); return out.trim()"
+      const steps = {
+        localix: [{ tool: 'codemode', args: { code } }, 'The script reported scripted-ok.'],
+      }
+      const after = await rt.say(session.id, `Run a script. ${script(steps)}`)
+      const [first, ...rest] = runs(rt, after, 'localix')
+      assert.ok(first.tools.includes('codemode'), 'codemode is not on the roster')
+      assert.ok(first.system.includes('Prefer one `codemode` script to a turn per call'))
+      const answered = rest.at(-1)
+      assert.ok(answered, 'the model never read the script result')
+      assert.ok(
+        answered.messages.some((message) => message.text.includes('scripted-ok')),
+        'the script result did not reach the model',
+      )
+      assert.equal(rt.transcript(after).at(-1).text, 'The script reported scripted-ok.')
     },
   },
   {

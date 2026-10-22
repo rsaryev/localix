@@ -77,6 +77,24 @@ export function batchLine(has: Has): string | null {
   return `- Batch independent tool calls into ONE turn${files}${batched}; never one file or one command per turn.`
 }
 
+/**
+ * When a script beats a turn per call. Batching covers INDEPENDENT calls; a chain whose next call
+ * needs the last result, or a result far larger than the answer, still cost a model round trip
+ * per step and put every raw result in context — and with only the batching rule stated, models
+ * read `codemode` as a second way to batch and almost never chose it. Measured on stored runs:
+ * a quarter of its calls failed, mostly a whole file carried through a JavaScript string into
+ * `write`/`edit`, or a lone call wrapped in a script; the line names both as what it is not for.
+ */
+export function codemodeLine(has: Has): string | null {
+  if (!has(TOOL.codemode) || !any(has, TOOL.read, TOOL.bash)) return null
+  const uses = has(TOOL.bash)
+    ? 'grep with `bash`, read the hits, keep what matters; run checks, return only the failures'
+    : 'read many files, keep what matters; count, compare or extract'
+  const writers = [TOOL.write, TOOL.edit].filter(has).map((name) => `\`${name}\``)
+  const carry = writers.length ? `, or file content for ${writers.join('/')}` : ''
+  return `- Prefer one \`codemode\` script to a turn per call when each call needs the last result or a result is far larger than the answer: ${uses}. Only its output enters context. Not for one call, independent calls${carry}.`
+}
+
 export function lspDiagnosticsLine(has: Has): string | null {
   if (!any(has, TOOL.write, TOOL.edit)) return null
   const tools = [TOOL.edit, TOOL.write]
