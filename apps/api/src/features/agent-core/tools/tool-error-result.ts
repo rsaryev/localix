@@ -18,6 +18,9 @@ import type { ToolErrorKind } from '@localixai/agent'
  * the cause, which the loop's own conversion drops); `userMessage` carries the
  * sentence.
  */
+/** A deliberate refusal by a hook layer: a plugin hook, a Claude Code hook, a mod's `{ deny }`. */
+const BLOCKED_ERRORS = new Set(['ToolCallBlockedError', 'CcHookBlockedError', 'ModToolDeniedError'])
+
 export function resultFromThrow(toolName: string, error: unknown): AgentToolResult {
   const err = error instanceof Error ? error : undefined
   const raw = (err?.message ?? String(error)).trim() || 'Tool call failed'
@@ -33,7 +36,7 @@ export function resultFromThrow(toolName: string, error: unknown): AgentToolResu
         ? 'dismissed'
         : err?.name === 'HumanInLoopTimeoutError'
           ? 'timeout'
-          : err?.name === 'ToolCallBlockedError' || err?.name === 'CcHookBlockedError'
+          : BLOCKED_ERRORS.has(err?.name ?? '')
             ? 'blocked'
             : 'execution'
   return {
@@ -61,5 +64,5 @@ export function resultFromThrow(toolName: string, error: unknown): AgentToolResu
  */
 export function isBlockedThrow(error: unknown): boolean {
   const name = error instanceof Error ? error.name : ''
-  return name === 'ToolCallBlockedError' || name === 'CcHookBlockedError'
+  return BLOCKED_ERRORS.has(name)
 }

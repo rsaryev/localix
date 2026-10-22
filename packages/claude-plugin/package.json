@@ -16,6 +16,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./mods": {
+      "types": "./dist/mods/index.d.ts",
+      "import": "./dist/mods/index.js"
     }
   },
   "scripts": {

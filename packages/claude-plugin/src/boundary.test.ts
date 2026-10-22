@@ -8,7 +8,7 @@ import { join } from 'node:path'
  * concept. A host composes it with its own manifest (`docs/internals/plugins-and-mini-apps.md`).
  */
 test('the plugin format imports nothing of Localix', () => {
-  const offenders = readdirSync(import.meta.dir)
+  const offenders = readdirSync(import.meta.dir, { recursive: true, encoding: 'utf8' })
     .filter((file) => file.endsWith('.ts') && !file.endsWith('.test.ts'))
     .flatMap((file) =>
       [...readFileSync(join(import.meta.dir, file), 'utf8').matchAll(/from '([^']+)'/g)]
