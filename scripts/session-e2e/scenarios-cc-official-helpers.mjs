@@ -8,6 +8,8 @@ import { execFileSync } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
+import { scratchGitEnv } from '@localixai/testing'
+
 import { script } from './scenario-helpers.mjs'
 
 export const SOURCE = process.env.CC_OFFICIAL_PLUGINS_DIR
@@ -107,7 +109,7 @@ export async function withPlugins(rt, names, { git = false, spy, patch = {} } = 
   const dir = path.join(rt.root, 'projects', tag)
   mkdirSync(dir, { recursive: true })
   if (git) {
-    execFileSync('git', ['init', '-q', '-b', 'main'], { cwd: dir })
+    execFileSync('git', ['init', '-q', '-b', 'main'], { cwd: dir, env: scratchGitEnv() })
     gitIn(dir, 'commit', '-q', '--allow-empty', '-m', 'init')
   }
   const project = await rt.api('/projects', { name: `cc-official ${tag}`, workingDir: dir })
@@ -132,9 +134,7 @@ export async function withPlugins(rt, names, { git = false, spy, patch = {} } = 
 }
 
 export const gitIn = (dir, ...args) =>
-  execFileSync('git', ['-c', 'user.email=e2e@example.com', '-c', 'user.name=E2E', ...args], {
-    cwd: dir,
-  }).toString()
+  execFileSync('git', args, { cwd: dir, env: scratchGitEnv() }).toString()
 
 /** Everything a request carried besides the system prompt: message starts and whole reminders. */
 export const read = (request) =>

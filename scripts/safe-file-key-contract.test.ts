@@ -100,6 +100,10 @@ const EXEMPTIONS: Exemptions = {
     reason:
       "Spells a mod's registered tool as Claude Code names it to the model, `mcp__<plugin>__<name>`, in the charset tool names allow on the wire (`[A-Za-z0-9_-]`). The name only travels in a request's tool list and back in a tool call; nothing joins it into a path.",
   },
+  [exemptionKey('apps/api/src/features/mcp/mcp-tools.ts', 'rule')]: {
+    reason:
+      "Spells an MCP tool as Claude Code names it, `mcp__<server>__<tool>`, with Claude Code's own replacement rule for the server and tool (`[A-Za-z0-9_-]`, every other character `_`). The name is a hook matcher alias and a wire tool name; nothing joins it into a path.",
+  },
   [exemptionKey('packages/visual-feedback/src/core/identify.ts', 'rule')]: {
     reason:
       'ESCAPES the same charset for a CSS SELECTOR (`\\${ch}`) rather than replacing it. The opposite operation: it PRESERVES every character so the selector still matches, where a file key must DESTROY them. Also in a package upstream of apps/api.',

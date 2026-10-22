@@ -286,15 +286,9 @@ export function createOpsTimersPhase({
    */
   const warmStartupCaches = (): void => {
     const userId = resolveDefaultUserId()
-    // Config an older build stored in plain text moves to the vault before the catalog is warmed,
-    // so the warm reads the repaired rows (`plugins/service-config.ts`).
+    // Plain-text secrets an older build stored move to the vault first (`plugins/service-config.ts`).
     void pluginService
       .reconcileStoredConfig(userId)
-      .then(
-        (rewritten) => rewritten && logger.info({ event: 'plugin_config.reconciled', rewritten }),
-        (error: unknown) =>
-          logger.warn({ event: 'plugin_config.reconcile_failed', error: String(error) }),
-      )
       .then(() => pluginService.listPlugins(userId, { projectId: null }))
       .then((result) => logger.debug({ event: 'startup.warm', plugins: result.plugins.length }))
       .catch(() => {})

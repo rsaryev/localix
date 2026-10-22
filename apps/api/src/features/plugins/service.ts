@@ -72,7 +72,7 @@ import { hydrateSecretOption } from './config-vault'
 import { reconcileStoredConfig, savePluginConfig } from './service-config'
 import {
   assertEnableChanges,
-  refreshLocalMarketplace,
+  reinstallFromSource,
   removeDataIfLastCopy,
   rowScopeOf,
   validatePluginDir,
@@ -248,31 +248,17 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
     userId: string,
     input: { name: string; projectId?: string | null },
     opts: { refreshMarketplace: boolean },
-  ): Promise<PluginRecord> => {
-    // Re-install from the original source (mirrors CC `plugin update`).
-    const projectId = input.projectId ?? ''
-    // The row of the plugin's own scope: a user-scope plugin updated from a project chat stays
-    // a user-scope plugin ("updates the plugin at the most specific scope it's installed at").
-    const plugin = await findPlugin(userId, input.name, projectId)
-    const state =
-      (plugin ? await repo.get(userId, rowScopeOf(plugin, projectId), input.name) : null) ??
-      (await repo.listForScope(userId, projectId)).find((s) => s.name === input.name)
-    if (!state?.source || state.source === 'local') {
-      throw new InvalidRequestError(
-        'plugin_no_source',
-        `Plugin "${input.name}" has no recorded install source — drop in the updated folder manually.`,
-      )
-    }
-
-    if (opts.refreshMarketplace) await refreshLocalMarketplace(state.source, registryDeps)
-    // Installation owns staging and rollback. Omitting enable preserves the existing
-    // rules rather than copying a stale availability decision into a new policy write.
-    return service.install(
+  ): Promise<PluginRecord> =>
+    reinstallFromSource({
+      repo,
       userId,
-      { source: state.source, projectId: state.projectId || null },
-      { replace: true },
-    )
-  }
+      name: input.name,
+      projectId: input.projectId ?? '',
+      plugin: await findPlugin(userId, input.name, input.projectId ?? ''),
+      registryDeps: opts.refreshMarketplace ? registryDeps : null,
+      install: (source, projectId) =>
+        service.install(userId, { source, projectId }, { replace: true }),
+    })
 
   const service: PluginService = {
     async syncBundledContributions(userId, projectId) {
@@ -599,19 +585,18 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       return toRecord(userId, plugin, state, await verdictFor(userId, plugin))
     },
 
-    async reconcileStoredConfig(userId) {
-      const rewritten = await reconcileStoredConfig({
+    reconcileStoredConfig: (userId) =>
+      reconcileStoredConfig({
         repo,
         userId,
         discover: async (projectId) =>
           discover({ cwd: projectId ? await cwdFor(userId, projectId) : null, projectId }),
-      })
-      if (rewritten > 0) {
-        invalidateInspection()
-        deps.onChanged?.()
-      }
-      return rewritten
-    },
+        onRewritten: () => {
+          invalidateInspection()
+          deps.onChanged?.()
+        },
+        warn: (message) => deps.logger?.warn(message),
+      }),
 
     async install(userId, input, opts?: { replace?: boolean }) {
       const scope: 'global' | 'project' = input.projectId ? 'project' : 'global'

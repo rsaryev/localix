@@ -62,6 +62,25 @@ export async function reconcileStoredConfig(input: {
   repo: CapabilitySourceRepository
   userId: string
   discover: (projectId: string) => Promise<DiscoveredPlugin[]>
+  /** After a pass that rewrote anything: caches and listeners re-read. */
+  onRewritten?: () => void
+  /** A pass that failed; it never throws, so the boot warm that runs it goes on. */
+  warn?: (message: string) => void
+}): Promise<number> {
+  try {
+    const rewritten = await reconcileRows(input)
+    if (rewritten > 0) input.onRewritten?.()
+    return rewritten
+  } catch (error) {
+    input.warn?.(`plugin config reconcile failed: ${String(error)}`)
+    return 0
+  }
+}
+
+async function reconcileRows(input: {
+  repo: CapabilitySourceRepository
+  userId: string
+  discover: (projectId: string) => Promise<DiscoveredPlugin[]>
 }): Promise<number> {
   const { repo, userId } = input
   const rows = ((await repo.listAll?.(userId)) ?? []).filter(

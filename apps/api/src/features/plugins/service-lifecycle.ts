@@ -5,7 +5,7 @@
  */
 import { promises as fs } from 'node:fs'
 
-import { ConflictError } from '../../lib/domain-errors'
+import { ConflictError, InvalidRequestError } from '../../lib/domain-errors'
 import type { AvailabilityReader } from '../capabilities/availability'
 import type { CapabilitySourceRepository } from '../capabilities/source-repository'
 import { pluginDataDir } from '../ext/user-config-substitute'
@@ -118,4 +118,34 @@ export async function refreshLocalMarketplace(
   const kind = known[ref.marketplace]?.source.source
   if (kind !== 'local' && kind !== 'file') return
   await updateMarketplace(ref.marketplace, deps).catch(() => undefined)
+}
+
+/**
+ * `plugin update`: re-install from the source the plugin was installed from, at the scope of its
+ * own row, so a user-scope plugin updated from a project chat stays a user-scope plugin ("updates
+ * the plugin at the most specific scope it's installed at"). With `registryDeps`, a plugin from a
+ * local-folder marketplace takes a fresh copy of that folder first. Installation owns staging and
+ * rollback; leaving `enable` out keeps the plugin's existing rules.
+ */
+export async function reinstallFromSource<R>(input: {
+  repo: CapabilitySourceRepository
+  userId: string
+  name: string
+  projectId: string
+  plugin: DiscoveredPlugin | null
+  registryDeps: MarketplaceRegistryDeps | null
+  install: (source: string, projectId: string | null) => Promise<R>
+}): Promise<R> {
+  const { repo, userId, name, projectId, plugin } = input
+  const state =
+    (plugin ? await repo.get(userId, rowScopeOf(plugin, projectId), name) : null) ??
+    (await repo.listForScope(userId, projectId)).find((s) => s.name === name)
+  if (!state?.source || state.source === 'local') {
+    throw new InvalidRequestError(
+      'plugin_no_source',
+      `Plugin "${name}" has no recorded install source — drop in the updated folder manually.`,
+    )
+  }
+  if (input.registryDeps) await refreshLocalMarketplace(state.source, input.registryDeps)
+  return input.install(state.source, state.projectId || null)
 }

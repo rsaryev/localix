@@ -1,8 +1,7 @@
 /**
- * Per-run tool assembly: gathers MCP tools onto
- * the built-in registry tools, wraps every tool with plugin tool-call hooks and
- * the repeat-failure guard, and populates the shared background-tool name set.
- * Driven by the tools stage (`stages/tools.ts`).
+ * Per-run tool assembly: gathers MCP tools onto the built-in registry tools, wraps every tool with
+ * plugin tool-call hooks and the repeat-failure guard, and populates the shared background-tool
+ * name set. Driven by the tools stage (`stages/tools.ts`).
  */
 import type { AgentTool, ToolSurface } from '@localixai/agent/agents'
 
@@ -93,10 +92,9 @@ export interface AssembledRunTools {
 export { claimSecondaryTools, indexToolPresentation } from './tool-namespace'
 
 /**
- * The tools whose start is stored at once (`handleToolExecutionStart`): every declared writer,
- * and a tool that calls tools (`codemode`) — it declares no effect of its own, but the calls it
- * makes write files and run commands without events of their own, so its start is all the
- * transcript can record of them.
+ * The tools whose start is stored at once (`handleToolExecutionStart`): every declared writer, and
+ * a tool that calls tools (`codemode`) — it declares no effect of its own, but the calls it makes
+ * write files and run commands without events of their own, so its start is all it records.
  */
 export function recordMutatingTools(tools: readonly AgentTool[], into: Set<string>): void {
   for (const t of tools) if (t.mutates || t.name === TOOL.codemode) into.add(t.name)
