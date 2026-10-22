@@ -1,6 +1,8 @@
 import { useCallback } from 'react'
 
 import { backendClient } from '@/shared/api/client'
+import { scopeThemes } from '@/shared/theme/pluginTheme'
+import { themeChoices } from '@/shared/theme/themeChoice'
 
 import { loadPluginCommandArgOptions } from './pluginCommandArgOptions'
 import { loadAgentCommandArgOptions } from './agentCommandArgOptions'
@@ -35,6 +37,16 @@ export function useSlashArgOptions(
       }
       if (command.id === 'plugin') {
         return loadPluginCommandArgOptions(argName, committed.action, query)
+      }
+      if (command.id === 'theme') {
+        // The open scope's looks, as Settings → Appearance lists them (`/theme`).
+        const wanted = query.trim().toLowerCase()
+        return themeChoices(scopeThemes()).filter(
+          (choice) =>
+            !wanted ||
+            choice.label.toLowerCase().includes(wanted) ||
+            choice.value.toLowerCase().includes(wanted),
+        )
       }
       if (command.id === 'agents' && argName === 'agent') {
         return loadAgentCommandArgOptions(committed.action, query, activeSessionId, activeProjectId)

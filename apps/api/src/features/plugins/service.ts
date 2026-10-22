@@ -35,18 +35,17 @@ import { syncBundledContributions } from './sync-bundled-contributions'
 import { createKeyedSerializer } from '../../lib/keyed-serializer'
 import { buildPluginCatalog, type PluginCatalog } from './catalog'
 import { createAvailabilityWriter, readAvailability } from '../capabilities/availability'
-import { listCommandsFromCatalog } from './commands'
+import { listCommandsFromCatalog, modCommandSpecs } from './commands'
+import { listScopeOutputStyles } from './output-style-listing'
 import {
-  addMarketplace,
-  listMarketplaces,
-  parseMarketplaceInput,
+  marketplacesRoot,
   parseMarketplaceRef,
-  removeMarketplace,
   resolveBareInstall,
   resolveMarketplaceInstall,
   type MarketplaceRegistryDeps,
   type ResolvedMarketplaceInstall,
 } from './marketplace-registry'
+import { createMarketplaceMethods } from './service-marketplaces'
 import { listDependents, normalizePluginDependencies } from './dependencies'
 import { planDependencyEnables } from './dependencies-policy'
 import { actionFor } from '../capabilities/resolve'
@@ -66,6 +65,7 @@ import type { PluginToolInspection } from './inspection-store'
 import { pluginTrustClass } from './enable'
 import { validatePluginFull } from './validate'
 import { listViewsFromCatalog, readViewHtml } from './views'
+import { listThemesFromCatalog } from './themes'
 import { readPluginUiDescriptor, resolvePluginUiFile } from './ui-artifact'
 import type { PluginViewSpec, PluginRecord } from './contracts'
 import { toConfigFields, type PluginService, type PluginServiceDeps } from './service-types'
@@ -114,7 +114,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
   const now = deps.now ?? (() => new Date().toISOString())
   const repo: CapabilitySourceRepository = deps.capabilityStores.sources(deps.db, 'plugin', now)
   // Marketplace registry deps — one git clone primitive shared with plugin install.
-  const registryDeps: MarketplaceRegistryDeps = { cloneRepo, now }
+  const registryDeps: MarketplaceRegistryDeps = { cloneRepo, now, root: marketplacesRoot(home) }
   // Tool rosters of enabled native plugins, remembered in memory and across restarts
   // (see `inspection-snapshots.ts`); every lifecycle mutation below invalidates them.
   const inspections = createPluginInspections({ homeDir: home, logger: deps.logger })
@@ -278,6 +278,8 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         })
       })
     },
+    listOutputStyles: (userId, opts) =>
+      listScopeOutputStyles({ catalogFor, cwdFor, homeDir: home }, userId, opts?.projectId ?? ''),
     async listPlugins(userId, opts) {
       const projectId = opts?.projectId ?? ''
       const runtimeCwd =
@@ -317,7 +319,11 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       return {
         plugins: await recordsFromCatalog(userId, catalog, projectId, runtimeCwd),
         views: listViewsFromCatalog(catalog, projectId),
-        commands: listCommandsFromCatalog(catalog, projectId),
+        themes: listThemesFromCatalog(catalog),
+        commands: [
+          ...listCommandsFromCatalog(catalog, projectId),
+          ...modCommandSpecs(catalog, deps.modCommands?.() ?? []),
+        ],
       }
     },
 
@@ -417,7 +423,12 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
     async listPluginCommands(userId, opts) {
       const projectId = opts?.projectId ?? ''
       const catalog = await catalogFor(userId, projectId)
-      return { commands: listCommandsFromCatalog(catalog, projectId) }
+      return {
+        commands: [
+          ...listCommandsFromCatalog(catalog, projectId),
+          ...modCommandSpecs(catalog, deps.modCommands?.() ?? []),
+        ],
+      }
     },
 
     /**
@@ -613,7 +624,10 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
             scope,
             installRoot,
             parent,
-            source,
+            // A marketplace install records its canonical `<plugin>@<marketplace>` reference.
+            source: resolvedMarket
+              ? `${resolvedMarket.entry.name}@${resolvedMarket.marketplace}`
+              : source,
             replace,
             enable: enabledValue,
             now,
@@ -682,35 +696,12 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       return undefined
     },
 
-    async addMarketplace(_userId, input) {
-      const parsed = parseMarketplaceInput(input.source)
-      if ('error' in parsed) throw new InvalidRequestError('marketplace_bad_source', parsed.error)
-      try {
-        return await addMarketplace(parsed, registryDeps)
-      } catch (err) {
-        // The raw text is an npm/git/HTTP failure, which on its own names no action at all —
-        // "fetch failed" told the user nothing about what they had just clicked.
-        throw new InvalidRequestError(
-          'marketplace_add_failed',
-          `That marketplace could not be added (${errorMessage(err)})`,
-        )
-      }
-    },
-
-    async listMarketplaces(_userId) {
-      return listMarketplaces(registryDeps)
-    },
-
-    async removeMarketplace(_userId, input) {
-      try {
-        await removeMarketplace(input.name, registryDeps)
-      } catch (err) {
-        throw new InvalidRequestError(
-          'marketplace_remove_failed',
-          `"${input.name}" could not be removed (${errorMessage(err)})`,
-        )
-      }
-    },
+    ...createMarketplaceMethods({
+      registryDeps,
+      repo,
+      update: (userId, name) => service.update(userId, { name }),
+      remove: (userId, name) => service.remove(userId, { name }),
+    }),
 
     // `/plugin reload` (CC's /reload-plugins) compat: fire the change notification so channels restart,
     // catalog caches clear, and the next run picks up fresh discovery results.

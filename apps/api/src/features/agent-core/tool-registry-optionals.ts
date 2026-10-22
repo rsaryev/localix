@@ -7,6 +7,7 @@ import { createSetTopicTool } from './tools/set-topic'
 import { createConfigureTool } from './tools/configure/configure'
 import { createPlanTool } from './tools/plan/plan'
 import { createCodemodeTool } from './tools/codemode/codemode'
+import { createWorkflowTool } from './tools/workflow/workflow'
 import type { RuntimeToolRegistryOptions } from './tool-registry'
 import type { RegistryContext, RegistryEntry } from './tool-registry-core'
 
@@ -120,6 +121,11 @@ export function buildNamedOptionals(
   // Scripts that call this run's tools. Rebuilt by the assembly from the live tools it declares.
   if (optional.codemode) {
     namedOptionals.push({ tool: createCodemodeTool(optional.codemode, []) })
+  }
+
+  // Plugin workflows: present once a workflow command activated it for the session.
+  if (optional.workflow) {
+    namedOptionals.push({ tool: createWorkflowTool(optional.workflow) })
   }
 
   return namedOptionals

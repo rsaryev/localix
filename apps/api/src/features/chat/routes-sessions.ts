@@ -64,6 +64,12 @@ export function createChatSessionsRoutes(service: ChatRoutesService) {
       .get('/sessions/:id/join-routes', zValidator('param', sessionParamsSchema), async (c) => {
         return c.json(await service.getJoinRoutes(c.get('userId'), c.req.valid('param').id), 200)
       })
+      // What a plugin's `subagentStatusLine` last drew in this conversation's subagent rows; the
+      // server redraws them and pokes `subagent-rows` when they change.
+      .get('/sessions/:id/subagent-rows', zValidator('param', sessionParamsSchema), async (c) => {
+        const { id } = c.req.valid('param')
+        return c.json(await service.getSubagentRows(c.get('userId'), id), 200)
+      })
       .get(
         '/sessions/:id/messages/:messageId/tool-details',
         zValidator('param', messageParamsSchema),

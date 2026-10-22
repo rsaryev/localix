@@ -15,6 +15,7 @@ import type { SessionRecord } from '../../repository'
 import type { PersistedMessage, MessageTiming } from '../../contracts'
 import type { LoadedPlugins } from '../../../plugins/loader'
 import type { CcHooksRuntime } from '../../../cc-hooks'
+import type { ModRunScope } from '../../../mods/run-scope'
 import { runAssistantMessageHooks, runMemoryProviderRunEnd } from '../../../plugins/hooks'
 import { finalizeTiming } from './turn-state'
 import { publishSessionTiming, type TurnEventContext } from './event-handlers'
@@ -25,7 +26,9 @@ import { maybeStartContinuation } from './run-continuations'
 import type { RunParams } from './types'
 import type { RunPolicy } from '../../policy/run-policy'
 import { routeConversationReply } from './conversation-routing'
+import { runTeammateIdle } from './teammate-idle'
 import { publishedText } from '../spoken-text'
+import { applyDisplayTexts } from './message-display'
 export { finalizeFailedRun, rateLimitBackoffMs } from './finalize-failure'
 
 export async function finalizeSuccessfulRun(args: {
@@ -36,6 +39,8 @@ export async function finalizeSuccessfulRun(args: {
   rawModelId: string
   loadedPlugins: LoadedPlugins
   ccHooks: CcHooksRuntime
+  /** Claude Code mods: `turn.complete`, whose `{ text }` is a line under the answer. */
+  mods?: ModRunScope
   promptMessage: PersistedMessage | undefined
   policy: RunPolicy
   publishRuntimeSession: (status: SessionRecord['runtimeStatus']) => Promise<void>
@@ -140,6 +145,9 @@ export async function finalizeSuccessfulRun(args: {
     }
   }
 
+  // Claude Code mods' `session.append`: the answer as stored, rewritten before the final write.
+  if (args.mods) state.currentPayload = await args.mods.storeResponse(state.currentPayload)
+
   // External memory provider: fire-and-forget extraction pass with the
   // completed turn (user prompt + final assistant text, post-hook).
   if (args.loadedPlugins.memory) {
@@ -159,6 +167,8 @@ export async function finalizeSuccessfulRun(args: {
     )
   }
 
+  // CC MessageDisplay: what the person is shown in place of each text block, in the same write.
+  if (!silentInConversation) await applyDisplayTexts(args.ccHooks, ctx, args.promptMessage?.id)
   // Fill the assistant row — or hide it, when this participant stayed out of the conversation.
   await settleConversationTurn(
     {
@@ -184,12 +194,27 @@ export async function finalizeSuccessfulRun(args: {
   // the turn said counts, not only its last model call: an address written before a tool call is
   // still an address (`spoken-text.ts`).
   const reply = silentInConversation ? '' : publishedText(state.currentPayload)
-  await routeConversationReply(env, params, {
-    content: reply,
-    passed: silentInConversation && isPass(state.currentPayload),
-  })
-  if (reply.trim()) {
-    await env.boostReferencedAgentTurns(userId, session, params.scope.speakerAgentId, reply)
+  // CC TeammateIdle, before the floor moves on: a member sent back to work keeps it.
+  const idle = await runTeammateIdle(
+    args.ccHooks,
+    args.policy,
+    session,
+    params.scope.speakerAgentId,
+    (message) =>
+      env.deps.streamRegistry.publish(userId, session.id, {
+        type: 'hook.notice',
+        sessionId: session.id,
+        message,
+        hookEvent: 'TeammateIdle',
+      }),
+  )
+  if (!idle.keepWorking) {
+    await routeConversationReply(env, params, {
+      content: reply,
+      passed: silentInConversation && isPass(state.currentPayload),
+    })
+    if (reply.trim())
+      await env.boostReferencedAgentTurns(userId, session, params.scope.speakerAgentId, reply)
   }
   publishSessionTiming(ctx)
 
@@ -201,8 +226,8 @@ export async function finalizeSuccessfulRun(args: {
   // per-hook timeout bounds it, and it never throws (executor isolates failures).
   // `stop_hook_active` tells a well-behaved hook it is already inside a hook-forced
   // continuation so it can decline to block again (CC's own loop protection).
-  let hookStopReason: string | undefined
-  if (args.ccHooks.active) {
+  let hookStopReason = idle.keepWorking
+  if (args.ccHooks.active && !idle.stopped && !idle.keepWorking) {
     const stopHookActive = params.chain.hookStopContinuationCount > 0
     const stop = await args.ccHooks.runStop({ stopHookActive })
     if (stop.blocked) {
@@ -227,6 +252,20 @@ export async function finalizeSuccessfulRun(args: {
       }
     }
   }
+
+  const modLine = await args.mods?.turnComplete({
+    answer: state.currentPayload.content ?? '',
+    turnId: args.promptMessage?.id ?? assistantMessageId,
+    durationMs: Math.max(0, Date.now() - Date.parse(state.assistantCreatedAt)),
+    reason: 'answer',
+  })
+  if (modLine)
+    env.deps.streamRegistry.publish(userId, session.id, {
+      type: 'hook.notice',
+      sessionId: session.id,
+      message: modLine,
+      hookEvent: 'turn.complete',
+    })
 
   env.deps.streamRegistry.publish(userId, session.id, {
     type: 'run.completed',

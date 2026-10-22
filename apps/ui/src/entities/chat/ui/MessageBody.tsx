@@ -180,7 +180,8 @@ function renderMessageBody({
       const text = isTextItem(item)
         ? isUser
           ? messageDisplayText(item.text, message.bindings)
-          : item.text
+          : // A MessageDisplay hook's text, shown in place of the stored one (display only).
+            (message.displayTexts?.[item.id] ?? item.text)
         : ''
       if (isTextItem(item) && !text.trim()) return
       flushRun()

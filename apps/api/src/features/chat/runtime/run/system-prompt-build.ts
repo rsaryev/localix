@@ -21,6 +21,7 @@ import type { PreparedRunContext } from '../prompt-context'
 import type { buildRunToolRegistry } from './runtime-tools'
 import type { SessionRecord } from '../../repository'
 import { buildPluginsPromptContext } from './plugins-prompt-context'
+import { resolveRunOutputStyle } from './output-style'
 import type { RunPolicy } from '../../policy/run-policy'
 import { activeDescendantSubagents } from './descendant-roster'
 import { getAgentService } from '../agent-service-binding'
@@ -80,6 +81,8 @@ export interface BuildRunSystemPromptOptions {
   now?: () => string
   /** The person's record, listed as `@human` in the volatile roster. */
   human?: HumanProfile
+  /** The person's default output style across chats (`outputStyle` in Settings). */
+  defaultOutputStyle?: string | null
 }
 
 export interface BuiltRunSystemPrompt {
@@ -87,6 +90,9 @@ export interface BuiltRunSystemPrompt {
   systemPrompt: string
   /** The volatile runtime sections, carried in the conversation as the turn's context. */
   runtimeSections: RuntimeSection[]
+  /** The cached prompt's sections by id, and the output style it carries (Claude Code mods). */
+  sections: readonly { id: string; text: string }[]
+  outputStyle: { name: string; isKeepingCodingInstructions: boolean } | null
 }
 
 // This instance's inbound-webhook URL, resolved ONCE from env at load (process.env
@@ -190,8 +196,19 @@ export async function buildRunSystemPrompt(
   // dynamic loops get rescheduled by id instead of duplicated. Engine-resolved via
   // runtime-binding so this module stays decoupled from the loop feature internals.
   const loopContext = toLoopPromptContext(getLoopEngine()?.listForSession(userId, session.id) ?? [])
+  // An output style shapes the conversation's own replies, as in Claude Code: a delegated child or
+  // a job runs its own prompt, so only a chat run carries it.
+  const style =
+    agentProfile.shape === 'chat'
+      ? await resolveRunOutputStyle({
+          chosen: session.outputStyle,
+          defaultStyle: options.defaultOutputStyle,
+          pluginStyles: loadedPlugins.outputStyles,
+          cwd: defaultCwd,
+        })
+      : null
 
-  const { stablePrompt, runtimeSections } = buildAgentSystemPromptParts({
+  const { stablePrompt, stableSections, runtimeSections } = buildAgentSystemPromptParts({
     sessionId: session.id,
     modelId: speakerRoute.modelId,
     sessionTopic: session,
@@ -203,6 +220,15 @@ export async function buildRunSystemPrompt(
     backgroundJobs: options.backgroundJobs,
     approvedPlan: options.approvedPlan,
     planMode: options.planMode,
+    ...(style
+      ? {
+          outputStyle: {
+            name: style.fullName,
+            prompt: style.style.prompt,
+            keepCodingInstructions: style.style.keepCodingInstructions,
+          },
+        }
+      : {}),
     now,
     toolRegistry: runtimeTools,
     agentProfile,
@@ -265,5 +291,8 @@ export async function buildRunSystemPrompt(
   })
   // The core assembler owns the cache boundary, so user/runtime content containing
   // a marker-like heading cannot move the partition.
-  return { systemPrompt: stablePrompt, runtimeSections }
+  const outputStyle = style
+    ? { name: style.fullName, isKeepingCodingInstructions: !!style.style.keepCodingInstructions }
+    : null
+  return { systemPrompt: stablePrompt, runtimeSections, sections: stableSections, outputStyle }
 }

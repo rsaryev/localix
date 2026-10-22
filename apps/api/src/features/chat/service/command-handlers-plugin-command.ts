@@ -6,6 +6,7 @@ import type { MessageBinding } from '@localixai/agent'
 import { resolveMessageBindings } from './message-bindings'
 import type { SessionRecord } from '../repository'
 import { resolveModelAlias } from '../../agent-core/model-alias'
+import { announceSkillInvoked } from '../../agent-core/skill-invocations'
 import { nextActivatedTools } from '../runtime/run/tool-deferral'
 import type { MessageMutationResponse } from '../contracts'
 import type { CommandHandlerContext } from './command-handlers-context'
@@ -92,6 +93,13 @@ export async function handlePluginCommand(
       )
       if (stored) session.activatedTools = stored.next
     }
+    // A command is a skill in Claude Code: a monitor `on-skill-invoke:<plugin>:<command>` starts.
+    announceSkillInvoked({
+      userId,
+      sessionId: session.rootSessionId ?? sessionId,
+      skillName: match.command.name,
+      pluginName: match.plugin,
+    })
     return runMacroCommand(
       userId,
       sessionId,

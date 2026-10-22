@@ -22,12 +22,13 @@ import { cursorStore, headOf } from './cursor'
 import { deadLetterStore, type DeadLetter } from './dead-letters'
 import { plannedDeliveries, type NoticeRow, type PlannedDelivery } from './deliveries'
 import type { ChangeFeedTables } from './tables'
+import { realTimers, type ConsumerTimers } from './timers'
+
+export type { ConsumerTimers } from './timers'
 
 const PAGE = 100
 /** A burst of writes wakes a consumer once, this long after the first. */
 const WAKE_DELAY_MS = 50
-/** In case a wake was missed (a write from another connection), look again this often. */
-const IDLE_POLL_MS = 30_000
 const MAX_ATTEMPTS = 5
 
 type Handler = (delivery: Record<string, unknown>) => Promise<void> | void
@@ -45,8 +46,10 @@ export function startConsumer<R extends RefSchemas, C extends Cascades<R>>(deps:
   /** The wait before retry number `attempt` (0-based) of a failed delivery. */
   retryDelayMs: (attempt: number) => number
   log?: Log
+  timers?: ConsumerTimers
 }) {
   const { db, stream, name, registry, options } = deps
+  const timers = deps.timers ?? realTimers
   const handlers = deps.handlers as unknown as Record<string, Handler | 'ignore'>
   const dead = deadLetterStore(db, name, stream)
   const cursors = cursorStore(db, name, stream)
@@ -54,8 +57,10 @@ export function startConsumer<R extends RefSchemas, C extends Cascades<R>>(deps:
   let attempts = 0
   let lastError: ConsumerHealth['lastError'] = null
   let reconcilePending = false
-  let timer: ReturnType<typeof setTimeout> | null = null
+  let timer: unknown = null
   let running: Promise<void> | null = null
+  /** A wake arrived while a run was in hand: its notice may be past that run's last read. */
+  let again = false
   let paused = false
   let stopped = false
 
@@ -150,7 +155,11 @@ export function startConsumer<R extends RefSchemas, C extends Cascades<R>>(deps:
 
   function tick() {
     timer = null
-    if (stopped || paused || running) return
+    if (stopped || paused) return
+    if (running) {
+      again = true
+      return
+    }
     running = run()
       .catch((error: unknown) => {
         failed(error, null)
@@ -159,24 +168,29 @@ export function startConsumer<R extends RefSchemas, C extends Cascades<R>>(deps:
       })
       .finally(() => {
         running = null
-        if (!stopped && !paused && !timer) timer = setTimeout(tick, IDLE_POLL_MS)
-        timer?.unref?.()
+        // Caught up: nothing is armed until a write wakes it. A wake heard during the run reads
+        // again now, unless a retry is armed (it reads anyway).
+        if (again && timer === null) wake(0)
+        again = false
       })
+  }
+
+  function disarm() {
+    if (timer !== null) timers.clear(timer)
+    timer = null
   }
 
   /** Read again soon (after a write), or after `delayMs`. */
   function wake(delayMs = WAKE_DELAY_MS) {
     if (stopped || paused) return
-    if (timer) clearTimeout(timer)
-    timer = setTimeout(tick, delayMs)
-    timer.unref?.()
+    disarm()
+    timer = timers.set(tick, delayMs)
   }
 
   /** Stop reading and wait for the page in hand, so a rebuild or replay has the consumer alone. */
   async function pause() {
     paused = true
-    if (timer) clearTimeout(timer)
-    timer = null
+    disarm()
     await running
   }
 
@@ -201,7 +215,7 @@ export function startConsumer<R extends RefSchemas, C extends Cascades<R>>(deps:
     /** Read now, and resolve once caught up with everything recorded so far (tests). */
     async settle() {
       await running
-      if (timer) clearTimeout(timer)
+      disarm()
       tick()
       await running
     },
@@ -267,8 +281,7 @@ export function startConsumer<R extends RefSchemas, C extends Cascades<R>>(deps:
 
     async stop() {
       stopped = true
-      if (timer) clearTimeout(timer)
-      timer = null
+      disarm()
       await running
     },
   }

@@ -32,15 +32,19 @@ export function buildAgentSystemPromptParts(
   params: BuildAgentSystemPromptParams = {},
 ): BuiltAgentSystemPromptParts {
   const facts = promptFacts(params)
-  const stable: string[] = []
+  const stableSections: { id: string; text: string }[] = []
   const runtimeSections: RuntimeSection[] = []
   for (const section of PROMPT_SECTIONS) {
     const text = section.render(facts)
     if (!text) continue
-    if (section.tier === 'stable') stable.push(text)
+    if (section.tier === 'stable') stableSections.push({ id: section.id, text })
     else runtimeSections.push({ key: section.id, scope: section.tier, text })
   }
-  return { stablePrompt: stable.join('\n\n').trimEnd(), runtimeSections }
+  const stablePrompt = stableSections
+    .map((section) => section.text)
+    .join('\n\n')
+    .trimEnd()
+  return { stablePrompt, stableSections, runtimeSections }
 }
 
 /** The complete prompt as one string, for callers that need it whole (the goldens, the lints). */

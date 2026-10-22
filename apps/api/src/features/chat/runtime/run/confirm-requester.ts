@@ -13,6 +13,7 @@ import { reachableHitlTarget } from './hitl-reachable'
 import { grantedScopes, grantScope as recordGrant } from '../session-grants'
 import { confirmTitle, readConfirmAnswer, wireGrants } from './confirm-answer'
 import { hostPolicy } from '../../policy/session-policy'
+import { hookConfirmOutcome, raceCardWithPermissionHooks } from './permission-request-hook'
 
 /**
  * Builds the per-run "request a tool-approval confirm" function: tracks the
@@ -25,10 +26,15 @@ export function createConfirmRequester(
     abortSignal: AbortSignal
     /** The run's closed-wait ledger (`RunTurnState.hitlWaitedMs`): approval time, not tool time. */
     hitlWaitedMs?: Map<string, number>
+    /** Stop the run: a PermissionRequest hook's deny with `interrupt: true`. */
+    stopRun?: () => void
   },
 ) {
   const { env, userId, session, assistantMessageId, ccHooks } = args
-  return async (confirmArgs: RequestConfirmArgs): Promise<ConfirmOutcome> => {
+  return async (
+    confirmArgs: RequestConfirmArgs,
+    call?: { input: unknown },
+  ): Promise<ConfirmOutcome> => {
     // Missing ancestors, cycles, ownership mismatches and parentless automation jobs
     // all mean "no human will see this card" — one shared rule, also used to set
     // `context.interactive` for tools that self-gate (see run/hitl-reachable.ts).
@@ -149,10 +155,22 @@ export function createConfirmRequester(
       ? AbortSignal.any([args.abortSignal, confirmArgs.signal])
       : args.abortSignal
     try {
-      const response = await env.deps.hitlRegistry.controller.request<
-        ConfirmToolRequest,
-        ConfirmToolResponse
-      >(request, signal)
+      // CC PermissionRequest hooks run beside the card; whichever decides first applies.
+      const raced = await raceCardWithPermissionHooks(
+        ccHooks,
+        { toolName: confirmArgs.toolName, input: call?.input },
+        signal,
+        (cardSignal) =>
+          env.deps.hitlRegistry.controller.request<ConfirmToolRequest, ConfirmToolResponse>(
+            request,
+            cardSignal,
+          ),
+      )
+      if (raced.kind === 'hook') {
+        fireHitlResolved({ dismissed: true })
+        return hookConfirmOutcome(ccHooks, confirmArgs.toolCallId, raced.decision, args.stopRun)
+      }
+      const response = raced.value
       // An answer to a withdrawn card approves nothing and records no grant or rule.
       if (signal.aborted) throw signal.reason
       fireHitlResolved({ response: response.payload.answers })

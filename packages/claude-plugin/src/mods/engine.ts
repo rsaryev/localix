@@ -1,5 +1,20 @@
 import { createBudget, HookTimeout, SYSTEM_CLOCK, type BudgetClock } from './budget'
+import { freezeDeep, interceptApi, type ModsApi } from './intercept'
 import { matchesEvent, matchesEventName, type Matcher } from './matcher'
+import {
+  MOD_TIER,
+  TIERS,
+  type Hook,
+  type HookFailure,
+  type HookOrigin,
+  type Next,
+  type On,
+  type RegisterFunction,
+  type Registration,
+  type TargetTier,
+} from './chain'
+
+export type * from './chain'
 
 /**
  * The mods engine: the middleware chain Claude Code runs every mod's hooks in, without a host.
@@ -13,35 +28,8 @@ import { matchesEvent, matchesEventName, type Matcher } from './matcher'
  * handler answers. Every mods API call is an event too (`fs.read`), which other mods may hook.
  */
 
-/** A mods API: namespaces of methods (`$.fs.read`) and values (`$.plugin.name`). */
-export type ModsApi = Record<string, Record<string, unknown>>
-
-export interface HookFailure {
-  kind: 'throw' | 'timeout'
-  message: string
-}
-
-export interface HookOrigin {
-  plugin: string
-  tier: 'user' | 'core'
-}
-
-export interface Next {
-  (event?: unknown): Promise<unknown>
-  readonly signal: AbortSignal
-  readonly origin: HookOrigin
-  readonly budget: { readonly ms: number; readonly remainingMs: number }
-  /** In a `.catch` handler: why the hook failed, and whether it had called `next`. */
-  readonly error?: HookFailure
-  readonly called?: boolean
-}
-
-export type Hook = ($: ModsApi, event: unknown, next: Next) => unknown
-export interface Registration {
-  catch(handler: Hook): Registration
-}
-export type On = (event: string, matcherOrHook: Matcher | Hook, hook?: Hook) => Registration
-export type RegisterFunction = (on: On, options: Record<string, unknown>) => unknown
+export type { ModsApi } from './intercept'
+export { freezeDeep } from './intercept'
 
 export class ModLoadError extends Error {}
 
@@ -58,6 +46,8 @@ export interface DispatchOptions {
   signal?: AbortSignal
   /** A mods API call fires its event past the hooks of the mod that made it (no re-entry). */
   skipPlugin?: string
+  /** The mods enabled where the event happens; the chain and the nouns its `$` sees. */
+  plugins?: ReadonlySet<string>
 }
 
 export interface ModsEngineOptions {
@@ -68,20 +58,16 @@ export interface ModsEngineOptions {
   report?: (plugin: string, event: string, reason: string) => void
   /** The clock budgets run on; injected by tests. */
   clock?: BudgetClock
+  /**
+   * The plugin a loaded mod belongs to, when a host loads one plugin's mod more than once (once
+   * per project): its loads may add the same noun; two plugins may not.
+   */
+  pluginOf?: (mod: string) => string
+  /** The mods a loaded mod's `$` calls reach: those running where it runs. Absent, every mod. */
+  peersOf?: (mod: string) => ReadonlySet<string> | undefined
 }
 
 const CORE: HookOrigin = { plugin: 'engine', tier: 'core' }
-
-/** A deep, frozen copy of plain data; anything else (a function, a class instance) as it is. */
-export function freezeDeep<T>(value: T): T {
-  if (Array.isArray(value)) return Object.freeze(value.map(freezeDeep)) as T
-  if (value && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype) {
-    const copy: Record<string, unknown> = {}
-    for (const [key, field] of Object.entries(value)) copy[key] = freezeDeep(field)
-    return Object.freeze(copy) as T
-  }
-  return value
-}
 
 export function createModsEngine(options: ModsEngineOptions = {}) {
   const budgetMs = options.budgetMs ?? 10_000
@@ -89,6 +75,47 @@ export function createModsEngine(options: ModsEngineOptions = {}) {
   const timed = createBudget(options.clock ?? SYSTEM_CLOCK)
   let hooks: HookEntry[] = []
   const apis = new Map<string, ModsApi>()
+  /** Nouns `engine.create` steps added (`$.telemetry`), by noun and then by the mod that did. */
+  const nouns = new Map<string, Map<string, Record<string, unknown>>>()
+  const pluginOf = options.pluginOf ?? ((mod: string) => mod)
+
+  /** A mod's `$`: its own API, and each noun added by a mod where the event happens. */
+  function apiFor(plugin: string, scope?: ReadonlySet<string>): ModsApi {
+    const own = apis.get(plugin) ?? {}
+    if (nouns.size === 0) return own
+    const added: ModsApi = {}
+    for (const [noun, byMod] of nouns) {
+      const owners = [...byMod.keys()]
+      const owner =
+        (byMod.has(plugin) ? plugin : undefined) ??
+        owners.find((mod) => scope?.has(mod)) ??
+        owners[0]
+      if (owner !== undefined && !(noun in own)) added[noun] = byMod.get(owner)!
+    }
+    return { ...added, ...own }
+  }
+
+  /** `engine.create`: the mod's steps build `$` from what is beneath; what they add is a noun. */
+  async function create(plugin: string): Promise<void> {
+    const base = apiFor(plugin)
+    const built = await engine.dispatch('engine.create', { plugins: [plugin] }, () => base, {
+      plugins: new Set([plugin]),
+    })
+    if (!built || typeof built !== 'object') return
+    const own = apis.get(plugin) ?? {}
+    for (const [noun, value] of Object.entries(built as Record<string, unknown>)) {
+      // Core's nouns, and one another mod added passed through as it was, are not this mod's.
+      if (noun in own || value === base[noun] || !value || typeof value !== 'object') continue
+      const byMod = nouns.get(noun) ?? new Map<string, Record<string, unknown>>()
+      const rival = [...byMod.keys()].find((mod) => pluginOf(mod) !== pluginOf(plugin))
+      if (rival !== undefined)
+        throw new ModLoadError(`engine.create: ${noun} is ${pluginOf(rival)}'s noun already`)
+      // A noun's methods are events too, which the mod that added it answers.
+      const wrapped = engine.interceptApi(plugin, { [noun]: value as Record<string, unknown> })
+      byMod.set(plugin, wrapped[noun]!)
+      nouns.set(noun, byMod)
+    }
+  }
 
   async function run(
     event: string,
@@ -106,14 +133,23 @@ export function createModsEngine(options: ModsEngineOptions = {}) {
       let downstream: Promise<unknown> | null = null
       const rest = (next?: unknown) =>
         (downstream ??= run(event, chain, i + 1, next === undefined ? input : next, core, opts))
+      const past = (next: unknown, tier: TargetTier) => {
+        if (!TIERS.includes(tier)) throw new Error(`next.to: no tier named ${String(tier)}`)
+        // Every hook here is a mod's; a tier beneath theirs is the host's behaviour.
+        const beyond = TIERS.indexOf(tier) > TIERS.indexOf(MOD_TIER)
+        return (downstream ??= beyond
+          ? Promise.resolve().then(() => core(next === undefined ? input : next))
+          : run(event, chain, i + 1, next === undefined ? input : next, core, opts))
+      }
       const makeNext = (pause: <T>(p: Promise<T>) => Promise<T>, extra = {}): Next =>
         Object.assign((next?: unknown) => pause(rest(next)), {
+          to: (next: unknown, tier: TargetTier) => pause(past(next, tier)),
           signal,
           origin: opts.origin ?? CORE,
           budget: { ms: budgetMs, remainingMs: budgetMs },
           ...extra,
         }) as Next
-      const api = apis.get(entry.plugin) ?? {}
+      const api = apiFor(entry.plugin, opts.plugins)
       try {
         const answer = await timed(budgetMs, (pause) => entry.hook(api, frozen, makeNext(pause)))
         return answer === undefined ? await rest() : answer
@@ -181,12 +217,20 @@ export function createModsEngine(options: ModsEngineOptions = {}) {
         throw error instanceof ModLoadError ? error : new ModLoadError(failureOf(error).message)
       }
       hooks = [...hooks, ...added]
+      if (added.some((entry) => matchesEventName(entry.pattern, 'engine.create')))
+        try {
+          await create(plugin)
+        } catch (error) {
+          engine.unload(plugin)
+          throw error instanceof ModLoadError ? error : new ModLoadError(failureOf(error).message)
+        }
       return [...new Set(added.map((entry) => entry.pattern))]
     },
 
     unload(plugin: string): void {
       hooks = hooks.filter((entry) => entry.plugin !== plugin)
       apis.delete(plugin)
+      for (const [noun, byMod] of nouns) if (byMod.delete(plugin) && !byMod.size) nouns.delete(noun)
     },
 
     plugins(): string[] {
@@ -195,7 +239,7 @@ export function createModsEngine(options: ModsEngineOptions = {}) {
 
     /** The API a mod's hooks receive, for calls the host makes on its behalf. */
     apiOf(plugin: string): ModsApi | undefined {
-      return apis.get(plugin)
+      return apis.has(plugin) ? apiFor(plugin) : undefined
     },
 
     /** True when some hook could see `event` (a host may skip building an event nobody hears). */
@@ -214,7 +258,7 @@ export function createModsEngine(options: ModsEngineOptions = {}) {
       event: string,
       input: unknown,
       core: (event: unknown) => unknown,
-      opts: DispatchOptions & { plugins?: ReadonlySet<string> } = {},
+      opts: DispatchOptions = {},
     ): Promise<unknown> {
       const chain = hooks.filter(
         (entry) =>
@@ -226,29 +270,13 @@ export function createModsEngine(options: ModsEngineOptions = {}) {
       return run(event, chain, 0, input, core, opts)
     },
 
-    /** Every method of `api` becomes an event other mods may hook (`fs.read`, `ui.toast`). */
+    /**
+     * Every method of `api` becomes an event other mods may hook (`fs.read`, `ui.toast`), and
+     * answers as Claude Code's does (`intercept.ts`).
+     */
     interceptApi(plugin: string, api: ModsApi): ModsApi {
-      const intercepted: ModsApi = {}
-      for (const [namespace, members] of Object.entries(api)) {
-        const wrapped: Record<string, unknown> = {}
-        for (const [name, member] of Object.entries(members)) {
-          if (typeof member !== 'function') {
-            wrapped[name] = member
-            continue
-          }
-          const event = `${namespace}.${name}`
-          const method = member as (...args: unknown[]) => unknown
-          wrapped[name] = (first?: unknown, ...rest: unknown[]) =>
-            engine.hears(event)
-              ? engine.dispatch(event, first ?? {}, (e) => method(e, ...rest), {
-                  origin: { plugin, tier: 'user' },
-                  skipPlugin: plugin,
-                })
-              : method(first, ...rest)
-        }
-        intercepted[namespace] = wrapped
-      }
-      return intercepted
+      const peersOf = options.peersOf
+      return interceptApi(engine, plugin, api, peersOf ? () => peersOf(plugin) : undefined)
     },
   }
   return engine

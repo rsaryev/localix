@@ -6,6 +6,11 @@
 import type { AgentTool, GateRefusalTracker } from '@localixai/agent/agents'
 
 import { createPermissionGate, type PermissionRule } from '../../../agent-core/permission-engine'
+import {
+  verdictOf,
+  type CallVerdict,
+  type ReviewVerdict,
+} from '../../../agent-core/permission-verdict'
 import { normalizeCcToolName } from '../../../plugins/discovery'
 import { nativeCommandPatterns } from '../../../cc-settings/native-command-patterns'
 import { createConfirmRequester } from './confirm-requester'
@@ -35,6 +40,16 @@ export interface BuildRunPermissionGateOptions extends RunHookContext {
    * approval latency was booked as TOOL time — a 12s `find` read as 233s.
    */
   hitlWaitedMs?: Map<string, number>
+  /** Stop the run (a PermissionRequest hook's `interrupt`). */
+  stopRun?: () => void
+  /**
+   * Claude Code mods' `tool.check`: `review` sees each verdict before the gate acts on it, and the
+   * gate's own verdict is lent for a mod's `$.tool.check`, which runs nothing.
+   */
+  toolCheck?: {
+    review?: ReviewVerdict
+    lend(verdict: (toolName: string, input: unknown) => CallVerdict): void
+  }
 }
 
 /**
@@ -90,20 +105,40 @@ export function buildRunPermissionGate(
     hookRunOptions,
     ccHooks,
     ...(options.hitlWaitedMs ? { hitlWaitedMs: options.hitlWaitedMs } : {}),
+    ...(options.stopRun ? { stopRun: options.stopRun } : {}),
   })
 
-  const toolsByName = new Map(tools.map((t) => [t.name, t]))
-
-  return createPermissionGate({
+  const verdictOptions = {
     rules: permissionRules,
     preapprovedRules: skillPermissionRules(extraAllowedTools),
-    toolsByName,
+    toolsByName: new Map(tools.map((t) => [t.name, t])),
     root: defaultCwd,
     // The conversation's own plan directory: a plan-shaped write anywhere else is a file write.
     ownPlanDir: ownPlanDirForRun(session, defaultCwd),
+  }
+  options.toolCheck?.lend(verdictOf(verdictOptions))
+
+  return createPermissionGate({
+    ...verdictOptions,
+    ...(options.toolCheck?.review ? { reviewVerdict: options.toolCheck.review } : {}),
     // Nobody answers a card when no verified chat can show it (a parentless job, broken ancestry)
     // or when the session is autonomous and nobody watches it (`policy/axes/human.ts`).
     requestConfirm: options.mayConfirm ? requestConfirm : undefined,
     ...(options.refusalTracker ? { refusalTracker: options.refusalTracker } : {}),
+    // CC PermissionDenied: a refusal made without asking anyone; `retry` tells the model it may
+    // try the call again (the refusal itself stands).
+    ...(ccHooks.hasHooks('PermissionDenied')
+      ? {
+          reviewAutomaticDenial: async (call, reason) =>
+            (await ccHooks.runPermissionDenied(call.toolName, call.input, call.toolCallId, reason))
+              .retry
+              ? PERMISSION_RETRY_NOTE
+              : undefined,
+        }
+      : {}),
   })
 }
+
+/** What the model reads when a PermissionDenied hook returned `retry: true`. */
+export const PERMISSION_RETRY_NOTE =
+  '[A permission hook reviewed this refusal: you may retry this tool call.]'

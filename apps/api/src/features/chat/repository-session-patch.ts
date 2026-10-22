@@ -41,6 +41,7 @@ export function sessionRowPatch(patch: Partial<SessionRecord>) {
     ...(patch.archivedAt !== undefined ? { archived_at: patch.archivedAt } : {}),
     ...(patch.closedAt !== undefined ? { closed_at: patch.closedAt } : {}),
     ...(patch.permissionMode !== undefined ? { permission_mode: patch.permissionMode } : {}),
+    ...(patch.outputStyle !== undefined ? { output_style: patch.outputStyle } : {}),
     ...(patch.updatedAt !== undefined ? { updated_at: patch.updatedAt } : {}),
     ...(patch.lastMessageAt !== undefined ? { last_message_at: patch.lastMessageAt } : {}),
   }

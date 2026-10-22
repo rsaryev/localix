@@ -78,6 +78,8 @@ export function suiteCommands(slice, { concurrency = '50%', filter = [] } = {}) 
       args: ['turbo', ...tasks, `--concurrency=${concurrency}`, ...filter],
     },
   ]
+  // The repository guards read every source file while the packages' suites load the machine;
+  // `test:repo` gives each guard 60 s for that, where bun's default 5 s timed them out.
   if (slice !== 'unit')
     commands.push({ label: 'repository', command: 'bun', args: ['run', 'test:repo'] })
   return commands

@@ -14,12 +14,14 @@
  *
  * Returns the SAME array untouched when the runtime is inert (zero overhead).
  */
-import type { AgentTool, AgentToolResult } from '@localixai/agent/agents'
+import type { AgentTool, AgentToolExecutionContext, AgentToolResult } from '@localixai/agent/agents'
 
 import { isBlockedThrow, resultFromThrow } from '../agent-core/tools/tool-error-result'
 import { CC_POST_APPEND_CAP_BYTES } from './contracts'
 import type { CcHooksRuntime } from './run'
 import type { HookLogger } from './executor'
+import { blockTaskCompletion, reviewTaskCreation, taskBoardEvent } from './task-events'
+import type { McpElicitationHookCarrier } from '../agent-core/tools/hitl/mcp-elicitation'
 
 /** Thrown when a CC PreToolUse hook denies a call — surfaces as the tool error. */
 export class CcHookBlockedError extends Error {
@@ -49,6 +51,24 @@ function reparse(
   return { ok: false, error: parsed.error?.message ?? 'schema re-parse failed' }
 }
 
+/**
+ * Hand the run's Elicitation / ElicitationResult hooks to the call: an MCP server may ask the
+ * person for input while its tool runs, and these hooks answer before, or review after, the card.
+ */
+function withElicitationHooks(
+  runtime: CcHooksRuntime,
+  context: AgentToolExecutionContext | undefined,
+): (AgentToolExecutionContext & McpElicitationHookCarrier) | undefined {
+  if (!runtime.hasHooks('Elicitation') && !runtime.hasHooks('ElicitationResult')) return context
+  return {
+    ...context,
+    mcpElicitationHooks: {
+      before: (request) => runtime.runElicitation(request),
+      after: (request, answer) => runtime.runElicitationResult(request, answer),
+    },
+  }
+}
+
 export function wrapToolsWithCcHooks(
   tools: readonly AgentTool[],
   runtime: CcHooksRuntime,
@@ -58,8 +78,21 @@ export function wrapToolsWithCcHooks(
 
   return tools.map((tool) => ({
     ...tool,
-    async execute(toolCallId, input, signal, onUpdate, context) {
+    async execute(toolCallId, input, signal, onUpdate, callContext) {
       let effectiveInput = input
+      const context = withElicitationHooks(runtime, callContext)
+
+      // ---- PermissionRequest `updatedInput` ----------------------------------
+      // The approval hook rewrote the call it allowed; re-validated like a PreToolUse rewrite.
+      const approved = runtime.takeApprovedInput(toolCallId)
+      if (approved) {
+        const reparsed = reparse(tool, approved.input)
+        if (reparsed.ok) effectiveInput = reparsed.input
+        else
+          logger.warn(
+            `[cc-hooks] PermissionRequest updatedInput for "${tool.name}" ignored (schema re-parse failed: ${reparsed.error})`,
+          )
+      }
 
       // ---- PreToolUse -----------------------------------------------------
       const pre = await runtime.runPreToolUse(tool.name, effectiveInput, toolCallId)
@@ -75,6 +108,14 @@ export function wrapToolsWithCcHooks(
             `[cc-hooks] PreToolUse updatedInput for "${tool.name}" ignored (schema re-parse failed: ${reparsed.error})`,
           )
         }
+      }
+
+      // ---- TaskCompleted: before the task board closes a card ---------------
+      const taskEvent = taskBoardEvent(runtime, tool.name, effectiveInput)
+      const call = [toolCallId, effectiveInput, signal, onUpdate, context] as const
+      if (taskEvent === 'TaskCompleted') {
+        const refused = await blockTaskCompletion(runtime, tool, call)
+        if (refused) throw new CcHookBlockedError(refused)
       }
 
       // A THROWN tool error becomes a result here, and PostToolUseFailure runs on it in
@@ -101,6 +142,13 @@ export function wrapToolsWithCcHooks(
           result = { ...result, content: `${result.content}\n\n[hook] ${note}` }
         }
         return result
+      }
+
+      // ---- TaskCreated: the new cards exist; a blocked one is taken off again
+      if (taskEvent === 'TaskCreated' && !result.isError) {
+        const reviewed = await reviewTaskCreation(runtime, tool, call, result)
+        if (reviewed.blocked) throw new CcHookBlockedError(reviewed.blocked)
+        result = reviewed.result
       }
 
       // ---- PostToolUse ----------------------------------------------------

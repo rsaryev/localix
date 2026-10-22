@@ -100,6 +100,14 @@ export interface AgentServiceBinding {
   closeSubagent?: (userId: string, sessionId: string) => Promise<SubagentCloseResult>
   /** After a child's run ends: start the next one for delegator messages no run took. */
   flushChildMessages?: (userId: string, sessionId: string) => Promise<void>
+  /**
+   * What one session has spent, the canonical total its composer shows (`readSessionSpend` in
+   * `service/delegated-runs.ts`): a workflow's `budget` counts its agents' output tokens by it.
+   */
+  sessionSpend?: (
+    userId: string,
+    sessionId: string,
+  ) => Promise<{ tokens: number; outputTokens: number; costUsd: number | null }>
   /** The children ONE session delegated (`service/delegated-runs.ts`). */
   listDelegatedRuns?: (
     userId: string,

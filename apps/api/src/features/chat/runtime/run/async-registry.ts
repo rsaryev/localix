@@ -118,7 +118,7 @@ export function createRunAsyncRegistry(args: RunAsyncRegistryArgs): AsyncToolReg
           // from this same registry's allocator, so adopting it cannot collide.
           ...(options?.jobId ? { displayId: options.jobId } : {}),
         })
-        if (pendingInput?.notify === true) armExitNotice(toolCallId, record)
+        if (pendingInput?.notify === true || options?.notify) armExitNotice(toolCallId, record)
       }
       return () => {
         actionRegistry.delete(toolCallId)

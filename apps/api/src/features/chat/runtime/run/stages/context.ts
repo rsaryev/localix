@@ -10,6 +10,7 @@
  */
 import type { HookRunOptions } from '../event-handlers'
 import { buildRunCcHooks } from '../cc-hooks-build'
+import { createModRunScope, NO_MODS } from '../../../../mods/run-scope'
 import { fireSessionStartHooks } from '../session-start-hooks'
 import { createParticipantLaneSnapshotRepository } from '../../../participant-lane-snapshot-repository'
 import { consoleWarnLogger } from '../../plugin-hook-logger'
@@ -21,6 +22,9 @@ import { createPluginAgentDirectory } from '../../../../plugins/agent-directory'
 import { runHumanAssignedHooks } from '../../../../plugins/hooks'
 import type { LoadedPluginHook } from '../../../../plugins/loader'
 import { publishHumanAssignment } from '../human-assignment'
+import { applyPluginMainAgent } from '../plugin-main-agent'
+import { applyPluginSubagent } from '../plugin-subagent'
+import { adoptPluginAgentModel } from '../plugin-main-agent-model'
 import type { ModelView } from '../../model-view/view'
 import type { RunFrame } from './frame'
 import type { ResolvedTurn } from './turn'
@@ -116,6 +120,17 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     human(userId, session.projectId ?? null),
   ])
   const { defaultCwd, loadedPlugins } = context
+  // A plugin's default `agent` setting runs the default agent's chat as that plugin agent, on its
+  // model unless the person picked one — settled before anything below reads the turn's model.
+  // A child delegated as a plugin agent type runs as that agent on every run (`plugin-subagent.ts`).
+  const asType = applyPluginSubagent(context, session.provenance, loadedPlugins.agents, (message) =>
+    env.deps.logger?.warn(message),
+  )
+  const main = applyPluginMainAgent(asType ?? context, asType ? null : loadedPlugins.mainAgent, {
+    speakerAgentId,
+    host: turn.policy.host.kind,
+  })
+  await adoptPluginAgentModel(frame, turn, main.mainAgent)
   frame.teardown.pluginHooks = loadedPlugins.hooks
   frame.teardown.defaultCwd = defaultCwd
   pluginHooks = loadedPlugins.hooks
@@ -144,8 +159,18 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     disabledTools: context.disabledTools,
     loadedPlugins,
     isContinuation: frame.isContinuation,
+    contextFiles: context.contextFiles,
   })
   frame.teardown.ccHooks = ccHooks
+  // Claude Code mods: the hooks modules of the plugins enabled for this run, in its project.
+  const mods = deps.mods
+    ? await createModRunScope(
+        deps.mods,
+        { userId, sessionId: session.id, cwd: defaultCwd },
+        new Set(loadedPlugins.loaded.map((plugin) => plugin.name)),
+        { model: turn.model.rawModelId },
+      )
+    : NO_MODS
 
   if (deps.lspManager && session.projectId) {
     frame.teardown.unsubLsp = deps.lspManager.onUpdate((projectRoot, states) => {
@@ -160,9 +185,12 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
 
   return {
     ...context,
+    agent: main.agent,
+    disabledTools: main.disabledTools,
     ...(humanProfile ? { human: humanProfile } : {}),
     hookRunOptions,
     ccHooks,
     ccSessionStartContext,
+    mods,
   }
 }

@@ -24,7 +24,7 @@ import {
   type CcHookInput,
   type CcHookOutcome,
 } from './contracts'
-import { foldHookOutput } from './output-parse'
+import { foldHookOutput, worktreePathFromText } from './output-parse'
 import { runHookCommand } from '../lifecycle-hooks/command'
 
 export interface HookLogger {
@@ -74,7 +74,13 @@ export async function executeHook(
     logger.warn(
       `[cc-hook:${label}] ${input.hook_event_name} hook timed out after ${handler.timeoutMs}ms — ignored`,
     )
-    return {}
+    return { failed: 'timeout' }
+  }
+  // WorktreeCreate reads stdout as a path, and any non-zero exit fails the creation (CC).
+  if (input.hook_event_name === 'WorktreeCreate') {
+    if (result.code === 0) return worktreePathFromText(result.stdout)
+    const why = result.stderr.trim().split('\n')[0]?.trim()
+    return { failed: 'error', reason: why || `the hook exited ${result.code ?? 'on an error'}` }
   }
   if (result.code === 2) {
     return { blocked: true, blockReason: result.stderr.trim() || 'blocked by hook (exit 2)' }
@@ -87,7 +93,7 @@ export async function executeHook(
   logger.warn(
     `[cc-hook:${label}] ${input.hook_event_name} hook exited ${result.code ?? 'error'}${firstLine ? `: ${firstLine}` : ''} — non-blocking, continuing`,
   )
-  return {}
+  return { failed: 'error' }
 }
 
 /**

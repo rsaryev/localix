@@ -3,6 +3,7 @@ import { handlePluginCommand } from './command-handlers'
 import type { CommandHandlerContext } from './command-handlers-context'
 import { sessionFixture } from '../../../testing/session-fixture'
 import { noLeadership } from '../runtime/conversation-strategy'
+import { workflowCommand } from '../../plugins/workflow-commands'
 
 const session = sessionFixture({ id: 'plugin-command', userId: 'u' })
 
@@ -122,4 +123,45 @@ test('a command that declares tools activates them for the chat before its run s
   await handlePluginCommand(ctx, 'u', run.id, run, '/planner ship it')
   expect(order).toEqual(['activate', 'run'])
   expect(stored).toEqual(['web_fetch', 'board'])
+})
+
+test('a plugin workflow runs as its command: the workflow tool is activated and asked for', async () => {
+  const run = sessionFixture({ id: 'plugin-workflow', userId: 'u' })
+  let instruction = ''
+  const ctx = {
+    now: () => 'now',
+    deps: {},
+    repo: {
+      listMessages: async () => [],
+      changeActivatedTools: async (
+        _u: string,
+        _s: string,
+        change: (current: string[]) => { next: string[] } | null,
+      ) => change([]),
+    },
+    runner: { leadership: () => noLeadership },
+    gatherEnabledPluginCommands: async () => [
+      {
+        plugin: 'acme',
+        pluginDir: '/fixture/acme',
+        command: workflowCommand('acme', {
+          name: 'release-audit',
+          description: 'Audit the release',
+          file: '/fixture/acme/workflows/audit.js',
+        }),
+      },
+    ],
+    resolveSessionWorkingDir: async () => '/work',
+    runMacroCommand: async (...args: unknown[]) => {
+      instruction = String(args[5])
+      return { sessionId: run.id, messageId: 'run' }
+    },
+    insertDirectReply: async () => {
+      throw new Error('a valid command must not reply directly')
+    },
+  } as unknown as CommandHandlerContext
+  await handlePluginCommand(ctx, 'u', run.id, run, '/acme:release-audit 1024, 1025')
+  expect(run.activatedTools).toEqual(['workflow'])
+  expect(instruction).toContain('`acme:release-audit` now with the `workflow` tool')
+  expect(instruction).toContain('Input: 1024, 1025')
 })

@@ -1,5 +1,6 @@
 import { promises as fs } from 'node:fs'
 import { dirname, isAbsolute, join, parse, resolve } from 'node:path'
+import { isPathBelow } from '../../../lib/path-containment'
 
 /**
  * `$.fs`: files, relative to the conversation's working directory (`cwd`). A mod acts with the
@@ -18,6 +19,13 @@ const pathOf = (input: unknown): string => {
   return path
 }
 
+/** A file's text, or null when it is missing, not a file or over the limit. */
+async function readSmall(path: string): Promise<string | null> {
+  const stat = await fs.stat(path).catch(() => null)
+  if (!stat?.isFile() || stat.size > MAX_FILE_BYTES) return null
+  return fs.readFile(path, 'utf8').catch(() => null)
+}
+
 export function createFsApi(cwd: () => string) {
   const at = (input: unknown) => {
     const path = pathOf(input)
@@ -33,7 +41,7 @@ export function createFsApi(cwd: () => string) {
       const stat = await fs.stat(file)
       if (stat.size > MAX_FILE_BYTES) throw new Error(`${file} is over the 4 MiB limit`)
       if (optionsOf(input, second)?.as === 'bytes')
-        return { bytes: new Uint8Array(await fs.readFile(file)) }
+        return { base64: (await fs.readFile(file)).toString('base64') }
       return fs.readFile(file, 'utf8')
     },
     async write(input: unknown, second?: unknown) {
@@ -81,16 +89,34 @@ export function createFsApi(cwd: () => string) {
         ...(link.isSymbolicLink() ? { realPath: await fs.realpath(file) } : {}),
       }
     },
-    /** The directories from the path up to the filesystem root, nearest first. */
-    async ancestors(input: unknown) {
-      const start = at(input ?? '.')
-      const root = parse(start).root
-      const out: { path: string }[] = []
-      for (let dir = start; ; dir = dirname(dir)) {
-        out.push({ path: dir })
-        if (dir === root) break
+    /**
+     * The memory files (`CLAUDE.md`, `AGENTS.md` …) named `names` in each directory from beneath
+     * `below` (or the filesystem root) down to the directory of `of` (or the working directory),
+     * outermost first, as Claude Code's memory loader reads nested ones.
+     */
+    async ancestors(request: unknown) {
+      const { names, of, below } = (request ?? {}) as {
+        names?: unknown
+        of?: unknown
+        below?: unknown
       }
-      return out
+      if (!Array.isArray(names)) throw new Error('ancestors takes the file names to look for')
+      const end = of === undefined ? cwd() : dirname(at(of))
+      const top = below === undefined ? undefined : at(below)
+      if (top !== undefined && !isPathBelow(top, end)) return []
+      const dirs: string[] = []
+      for (let dir = end; dir !== top; dir = dirname(dir)) {
+        dirs.unshift(dir)
+        if (dir === parse(dir).root) break
+      }
+      const found = []
+      for (const dir of dirs)
+        for (const name of names.filter((entry): entry is string => typeof entry === 'string')) {
+          const path = join(dir, name)
+          const content = await readSmall(path)
+          if (content !== null) found.push({ dir, name, content, parts: [{ path, content }] })
+        }
+      return found
     },
   }
 }

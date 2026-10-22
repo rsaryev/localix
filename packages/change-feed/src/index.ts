@@ -12,7 +12,7 @@ export type {
   EntityRegistry,
   RefSchemas,
 } from './contracts'
-export type { ChangeConsumer } from './consumer'
+export type { ChangeConsumer, ConsumerTimers } from './consumer'
 export type { DeadLetter } from './dead-letters'
 export { createChangeFeed, type ChangeFeed } from './feed'
 export { onRecorded, recordChanges, setChangeLog } from './record'

@@ -1,0 +1,134 @@
+import { client, unwrap } from './internal'
+
+/** One element of a mod's drawing, as the server serializes it (`@localixai/claude-plugin/mods`). */
+export interface ModElement {
+  type:
+    | 'Box'
+    | 'Text'
+    | 'Button'
+    | 'Link'
+    | 'Code'
+    | 'Markdown'
+    | 'Input'
+    | 'Select'
+    | 'Svg'
+    | 'Client'
+  props: Record<string, unknown>
+  children: Array<ModElement | string>
+  /** A `Client`'s surface module as the API built it: a new revision is new code. */
+  client?: { revision: string }
+}
+
+/** A `Client`'s surface module, bundled for its frame, or why it did not build. */
+export type ModClientModule = { module: string; revision: string } & (
+  | { code: string }
+  | { problem: string }
+)
+
+export type ModClientFault = { phase: 'load' | 'render' | 'run'; reason: string }
+
+export interface ModPaneDrawing {
+  /** The mod instance the pane belongs to: a mod runs once per project. */
+  instance: string
+  plugin: string
+  id: string
+  title?: string
+  tree: Array<ModElement | string> | null
+  problem?: string
+}
+
+/** An open pane: its mod instance, plugin and the project that instance runs in. */
+export interface ModPaneRef {
+  instance: string
+  plugin: string
+  id: string
+  title?: string
+  cwd: string | null
+}
+
+export interface ModsOverview {
+  mods: string[]
+  panes: ModPaneRef[]
+  failures: Record<string, string>
+}
+
+/** A conversation's prompt box and status line as its mods left them. */
+export interface ModSessionView {
+  fills: Array<{ id: string; text: string; mode: 'replace' | 'append' | 'insert' }>
+  suggestion: string | null
+  statuses: Record<string, string>
+}
+
+export type ModAction = {
+  kind: 'press' | 'input' | 'submit' | 'select'
+  element: string
+  value?: string
+}
+
+/** Claude Code mods loaded here: their panes and the controls drawn in them (`/rpc/mods`). */
+export const modsApi = {
+  async overview(): Promise<ModsOverview> {
+    return (await unwrap(await client.rpc.mods.$get())) as ModsOverview
+  },
+  async session(sessionId: string): Promise<ModSessionView> {
+    return (await unwrap(
+      await client.rpc.mods.sessions[':sessionId'].$get({ param: { sessionId } }),
+    )) as ModSessionView
+  },
+  async taken(sessionId: string, taken: { fills?: string[]; suggestion?: boolean }) {
+    await unwrap(
+      await client.rpc.mods.sessions[':sessionId'].taken.$post({
+        param: { sessionId },
+        json: taken,
+      }),
+    )
+  },
+  async pane(instance: string, id: string, columns: number): Promise<ModPaneDrawing> {
+    return (await unwrap(
+      await client.rpc.mods.panes[':instance'][':id'].$get({
+        param: { instance, id },
+        query: { columns: String(columns) },
+      }),
+    )) as ModPaneDrawing
+  },
+  async act(instance: string, id: string, action: ModAction): Promise<void> {
+    await unwrap(
+      await client.rpc.mods.panes[':instance'][':id'].actions.$post({
+        param: { instance, id },
+        json: action,
+      }),
+    )
+  },
+  async clientModule(instance: string, module: string): Promise<ModClientModule> {
+    return (await unwrap(
+      await client.rpc.mods.clients[':instance'].$get({ param: { instance }, query: { module } }),
+    )) as ModClientModule
+  },
+  /** What a `Client` posted (`ui.message`); a hook may answer with its next props. */
+  async message(
+    instance: string,
+    id: string,
+    key: string,
+    data: unknown,
+  ): Promise<{ props?: unknown }> {
+    return (await unwrap(
+      await client.rpc.mods.panes[':instance'][':id'].clients[':key'].messages.$post({
+        param: { instance, id, key },
+        json: { data },
+      }),
+    )) as { props?: unknown }
+  },
+  async fault(instance: string, id: string, key: string, fault: ModClientFault): Promise<void> {
+    await unwrap(
+      await client.rpc.mods.panes[':instance'][':id'].clients[':key'].faults.$post({
+        param: { instance, id, key },
+        json: fault,
+      }),
+    )
+  },
+  async close(instance: string, id: string): Promise<void> {
+    await unwrap(
+      await client.rpc.mods.panes[':instance'][':id'].$delete({ param: { instance, id } }),
+    )
+  },
+}

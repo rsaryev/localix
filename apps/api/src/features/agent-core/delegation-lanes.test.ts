@@ -3,6 +3,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import {
   __resetDelegationLanes,
   cancelLane,
+  hasChildrenAtWork,
   laneOf,
   releaseLane,
   requestLane,
@@ -135,5 +136,26 @@ describe('delegation lanes', () => {
     releaseLane('a')
     // `boom` got the lane, threw, and released it — `d` must not wait behind a dead start.
     expect(started).toEqual(['a', 'b', 'c', 'd'])
+  })
+
+  test('a workflow run has a pool of its own at its own cap, beside the chat’s three lanes', () => {
+    // Claude Code runs up to 16 workflow agents at once; in the chat's pool they would run three
+    // at a time and keep the chat's own delegations queued behind the fan-out.
+    const started: string[] = []
+    const lane = { key: 'workflow:run-1', cap: 16 }
+    const agents = Array.from({ length: 20 }, (_, i) => `w${i}`)
+    for (const child of agents) requestLane('p', child, () => started.push(child), 'normal', lane)
+    expect(started).toHaveLength(16)
+    expect(laneOf('w16')).toEqual({ state: 'queued', position: 1 })
+    expect(requestLane('p', 'delegated', () => started.push('delegated'))).toEqual({
+      state: 'running',
+    })
+    // The parent's subtree is at work while its workflow pool holds agents.
+    releaseLane('delegated')
+    expect(hasChildrenAtWork('p')).toBe(true)
+    releaseLane('w0')
+    expect(started.at(-1)).toBe('w16')
+    for (const child of agents) releaseLane(child)
+    expect(hasChildrenAtWork('p')).toBe(false)
   })
 })

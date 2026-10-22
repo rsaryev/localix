@@ -8,8 +8,10 @@ import {
   VIEWS_MAX_PER_PLUGIN,
 } from './contracts-contributions'
 import { pluginCommandOptionsSchema, pluginCommandSchema } from './contracts-commands'
-import { pluginAgentSchema, AGENTS_MAX_PER_PLUGIN } from './contracts-agents'
+import { pluginAgentSchema } from './contracts-agents'
 import { pluginMonitorSchema, MONITORS_MAX_PER_PLUGIN } from './contracts-monitors'
+
+const pathOrPaths = z.union([z.string(), z.array(z.string())])
 
 /**
  * `plugin.json` manifest. Unknown top-level keys are stripped (forward-compatible),
@@ -142,19 +144,17 @@ export const pluginManifestSchema = pluginManifestCoreSchema.extend({
    * objects (see {@link pluginAgentSchema}) OR — for Claude Code compatibility —
    * relative `./*.md` agent file paths (resolved in discovery, frontmatter
    * name/description + body→prompt). The default `agents/` directory is also
-   * scanned. Selected as `<plugin>:<name>`. Capped per plugin.
+   * scanned. Selected as `<plugin>:<name>`. Not capped, as in Claude Code: no prompt lists a
+   * plugin's roles, so their number costs no context.
    */
-  agents: z
-    .array(z.union([pluginAgentSchema, z.string()]))
-    .max(AGENTS_MAX_PER_PLUGIN)
-    .optional(),
+  agents: z.array(z.union([pluginAgentSchema, z.string()])).optional(),
   /**
    * Claude Code experimental background monitors — long-running commands whose
    * stdout lines surface to the model as notifications. Declared here (top-level)
    * or under `experimental.monitors` (promoted to this field before parse); absent →
    * the default `monitors/monitors.json` is read. A path string names another monitors file.
-   * `when: "always"` monitors spawn while the plugin is enabled; `on-skill-invoke:`
-   * monitors are parsed + registered but their lazy start is deferred (see monitor-host).
+   * `when: "always"` monitors spawn while the plugin is enabled; an `on-skill-invoke:` monitor
+   * starts the first time its skill runs in a chat (see monitor-host).
    */
   monitors: z
     .union([z.string(), z.array(pluginMonitorSchema).max(MONITORS_MAX_PER_PLUGIN)])
@@ -174,6 +174,22 @@ export const pluginManifestSchema = pluginManifestCoreSchema.extend({
    */
   dependencies: z
     .array(z.union([z.string(), z.object({ name: z.string(), version: z.string().optional() })]))
+    .optional(),
+  /**
+   * Claude Code output styles, themes and workflows: paths that REPLACE the default
+   * `output-styles/`, `themes/` and `workflows/` folders (`discovery-cc-components.ts`).
+   */
+  outputStyles: pathOrPaths.optional(),
+  themes: pathOrPaths.optional(),
+  workflows: pathOrPaths.optional(),
+  /** Claude Code default settings (`agent`, `subagentStatusLine`); a root `settings.json` wins. */
+  settings: z.record(z.string(), z.unknown()).optional(),
+  /**
+   * Claude Code channels: which of the plugin's MCP servers push messages into a chat. Their
+   * `userConfig` options join the plugin's settings form (`layout/claude-code.ts`).
+   */
+  channels: z
+    .array(z.object({ server: z.string(), displayName: z.string().optional() }))
     .optional(),
 })
 export type PluginManifest = z.infer<typeof pluginManifestSchema>

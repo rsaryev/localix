@@ -1,9 +1,6 @@
 import { z } from 'zod'
 import { PLUGIN_QUALIFIED_NAME_RE } from './contracts-base'
 
-/** Max custom sub-agent roles a single plugin may declare. */
-export const AGENTS_MAX_PER_PLUGIN = 8
-
 /**
  * A custom worker ROLE a plugin contributes — the same thing a registry agent is, declared in a
  * manifest instead of a file. Shape mirrors the dispatchable fields (name/description/prompt/
@@ -51,8 +48,8 @@ export const pluginAgentSchema = z.object({
    */
   maxTurns: z.number().int().positive().optional(),
   /**
-   * CC `background` — accepted for source compatibility. Localix delegation is
-   * always detached, so both omitted and explicit values use the background path.
+   * CC `background` — a `delegate` start as this agent never holds the call for its report, even
+   * with `wait: true` (`agent-core/tools/delegate-plugin-agent.ts`).
    */
   background: z.boolean().optional(),
   /**
@@ -63,8 +60,8 @@ export const pluginAgentSchema = z.object({
    */
   memory: z.enum(['user', 'project', 'local']).optional(),
   /**
-   * The agent asked to run in a directory of its own. RECORDED only: a Localix `delegate` child
-   * shares its parent's directory by design, and provisioning a fresh one per child is deferred.
+   * The agent asked to run in a directory of its own: a `delegate` start as this agent works in a
+   * fresh git worktree of the chat's repository, kept for the child's life.
    *
    * Claude Code spells this `worktree` in the file; `discovery-cc-files.ts` translates it at the
    * boundary, because what the agent is asking for is isolation — whether that turns out to be a
@@ -86,7 +83,7 @@ export const pluginAgentSchema = z.object({
   initialPrompt: z.string().optional(),
   /**
    * CC frontmatter `hooks` — lifecycle hooks scoped to this sub-agent. PARSED +
-   * RECORDED only (raw): hook execution is a later PR (not wired to cc-hooks here).
+   * RECORDED only (raw): Claude Code ignores `hooks` on a plugin agent, and so does `delegate`.
    * The line-based markdown frontmatter parser cannot extract nested hook objects,
    * so this is populated from the lossless `.json` / `--agents` JSON form.
    */

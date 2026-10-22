@@ -3,6 +3,7 @@ import { join } from 'node:path'
 
 import {
   marketplaceSchema,
+  usableEntries,
   validateMarketplace,
   type Marketplace,
   type MarketplaceRelevance,
@@ -14,7 +15,8 @@ import {
   MARKETPLACE_CATALOG_FILE,
   MARKETPLACE_MANIFEST_CANDIDATES,
 } from './manifest-locate'
-import { CLAUDE_CODE_MARKETPLACE_HINT, isClaudeCodeMarketplace } from './claude-code-marketplace'
+import { CLAUDE_CODE_MARKETPLACE } from './claude-code-marketplace'
+import { errorMessage } from '../../lib/errors'
 import type { MarketplaceRegistryDeps } from './marketplace-registry'
 
 /** A registered marketplace record (mirrors CC's known_marketplaces.json entries). */
@@ -46,19 +48,20 @@ export async function writeKnownMarketplaces(
   await fs.writeFile(knownFile(root), JSON.stringify(known, null, 2) + '\n')
 }
 
-/** Locate a marketplace catalog: `.localix-plugin/marketplace.json`. */
+/** Locate a marketplace catalog: `.localix-plugin/marketplace.json`, else Claude Code's. */
 export async function findMarketplaceManifest(dir: string): Promise<string | null> {
   return locateManifest(dir, MARKETPLACE_MANIFEST_CANDIDATES)
 }
 
-/** Read + deterministically validate a marketplace catalog from a materialized dir. */
+/**
+ * Read + deterministically validate a marketplace catalog from a materialized dir. As in Claude
+ * Code, each entry is validated on its own: an invalid one is left out, not the marketplace.
+ */
 export async function readMarketplace(dir: string): Promise<Marketplace> {
   const manifestPath = await findMarketplaceManifest(dir)
-  if (!manifestPath) {
-    if (await isClaudeCodeMarketplace(dir)) throw new Error(CLAUDE_CODE_MARKETPLACE_HINT)
-    throw new Error(`No ${MARKETPLACE_CATALOG_FILE} found in ${dir}`)
-  }
-  const raw = JSON.parse(await fs.readFile(manifestPath, 'utf8')) as unknown
+  if (!manifestPath)
+    throw new Error(`No ${MARKETPLACE_CATALOG_FILE} or ${CLAUDE_CODE_MARKETPLACE} found in ${dir}`)
+  const raw = usableEntries(JSON.parse(await fs.readFile(manifestPath, 'utf8')) as unknown)
   const { errors } = validateMarketplace(raw)
   if (errors.length) throw new Error(`Invalid marketplace.json: ${errors.join('; ')}`)
   return marketplaceSchema.parse(raw)
@@ -85,10 +88,7 @@ export interface MarketplaceListing {
   builtin: boolean
   count: number
   plugins: MarketplaceListingPlugin[]
-  /**
-   * Why this registered marketplace cannot be used — set for a source that carries only a
-   * Claude Code catalog (kept listed so the user sees it, with the install hint).
-   */
+  /** Why this registered marketplace cannot be read (kept listed so the user sees it). */
   unsupported?: string
 }
 
@@ -134,16 +134,13 @@ export async function listMarketplaces(
                   count: marketplace.plugins.length,
                   plugins: toListingPlugins(marketplace),
                 }
-              } catch {
-                const unsupported = (await isClaudeCodeMarketplace(rec.installLocation))
-                  ? CLAUDE_CODE_MARKETPLACE_HINT
-                  : undefined
+              } catch (err) {
                 return {
                   name,
                   builtin: false,
                   count: 0,
                   plugins: [],
-                  ...(unsupported ? { unsupported } : {}),
+                  unsupported: errorMessage(err),
                 }
               }
             })(),

@@ -3,6 +3,7 @@ import { resolveDefaultUserId, userHome } from '../lib/env'
 import { createPluginChannelHost } from '../features/plugins/channel-host'
 import { createChannelWorkspace } from '../features/plugins/channel-workspace'
 import { createPluginMonitorHost } from '../features/plugins/monitor-host'
+import { setSkillInvocationListener } from '../features/agent-core/skill-invocations'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { readAvailability } from '../features/capabilities/availability'
 import { runIdleTasks, type IdleTask, type IdleTaskContext } from '../lib/idle-tasks'
@@ -148,6 +149,12 @@ export function createOpsTimersPhase({
     },
   })
   hostRefs.monitorHost = monitorHost
+  // A skill that ran in a chat starts the plugin monitors waiting for it (`on-skill-invoke`).
+  setSkillInvocationListener((invocation) =>
+    monitorHost
+      .skillInvoked(invocation)
+      .catch((error) => logger.warn({ event: 'plugin_monitor.warn', msg: errorMessage(error) })),
+  )
 
   const startOpsTimers = (signal: AbortSignal = new AbortController().signal): void => {
     // Once, at startup: a report whose live delivery a dead process never finished.

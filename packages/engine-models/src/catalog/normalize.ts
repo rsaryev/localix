@@ -18,7 +18,7 @@ import { contextWindowOf, costOf, reasoningLevels } from './model-facts'
 import { settingsOf, type ProviderSetting } from './settings'
 
 /** Bumped whenever normalization changes what it keeps, so a stored copy is normalized again. */
-export const DOCUMENT_SCHEMA = 4
+export const DOCUMENT_SCHEMA = 5
 
 export interface ServedModel {
   id: string
@@ -196,12 +196,23 @@ export function normalize(providers: unknown): CatalogDocument {
         : undefined
       // A model's own address must not carry the provider's key anywhere else.
       if (own?.api && own.api !== api && !modelAddressAllowed(id, api, own.api)) continue
-      const modelRoute =
+      const kind = model.type ?? 'chat'
+      const ownRoute =
         own?.npm || own?.api || own?.shape
           ? routeOf(own.npm ?? npm, own.api ?? api, own.shape, settable)
           : route
+      // A decision model naming only its own SDK package (OpenRouter's Jev as
+      // `@ai-sdk/typesafe-ai`) is still served at its provider's address, through the
+      // provider's decision API: the package is the vendor's client, not another route.
+      const modelRoute =
+        kind === 'decision' &&
+        !own?.api &&
+        route &&
+        DECISION_FAMILIES.has(route.family) &&
+        !(ownRoute && DECISION_FAMILIES.has(ownRoute.family))
+          ? route
+          : ownRoute
       if (!modelRoute) continue
-      const kind = model.type ?? 'chat'
       if (kind === 'decision') {
         if (DECISION_FAMILIES.has(modelRoute.family))
           decision[modelId] = asDecision(servedModel(model, modelRoute))

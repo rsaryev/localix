@@ -12,6 +12,7 @@ import type { WorkRegistry } from '../../work/registry'
 import type { SessionGrants } from './session-grants'
 import type { RouteCooldowns } from './route-cooldowns'
 import type { ActiveRuns } from './active-runs'
+import type { CcHookSessions } from './cc-hook-sessions'
 
 /** One tool's registered actions plus the (userId, sessionId) that registered them. */
 export interface ActionRegistryEntry {
@@ -105,6 +106,12 @@ export interface RuntimeState {
    * per-run {@link createCcHooksRuntime} instances. Reaped on session delete.
    */
   ccHookOnceKeys: Map<string, Set<string>>
+  /**
+   * Claude Code hooks between runs: each session's hooks as its latest run assembled them, the
+   * context a between-run hook left for the next turn, and `FileChanged` watching. Reaped on
+   * session delete.
+   */
+  ccHookSessions: CcHookSessions
   contextSnapshots: ReturnType<typeof createSessionSnapshotCache<FrozenSessionContext>>
   /**
    * Scope-level discovery results (enabled plugins, filesystem skills, agent providers,

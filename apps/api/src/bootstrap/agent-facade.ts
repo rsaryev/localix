@@ -16,7 +16,7 @@ import { createCapabilityRuleRepository } from '../features/capabilities/rule-re
 import { createCapabilitySourceRepository } from '../features/capabilities/source-repository'
 import { seedStarterTeam } from '../features/agents/seed-starter-team'
 import { seedAgentPresets } from '../features/capabilities/seed-agent-presets'
-import { listDelegatedRuns } from '../features/chat/service/delegated-runs'
+import { listDelegatedRuns, readSessionSpend } from '../features/chat/service/delegated-runs'
 import { createUsageRepository } from '../features/usage/repository'
 
 export interface AgentFacadePhaseInput {
@@ -129,6 +129,7 @@ export async function createAgentFacadePhase({
     closeSubagent: (...args) => chatService.closeSubagent(...args),
     flushChildMessages: (...args) => chatService.flushChildMessages(...args),
     listDelegatedRuns: (...args) => listDelegatedRuns(db, usageRepo, ...args),
+    sessionSpend: (...args) => readSessionSpend(db, usageRepo, ...args),
     resolveRunAgent: (...args) => agentsService.resolveRunAgent(...args),
     // How `delegate` resolves the agent a task goes to (by id; a handle is accepted too), admitted
     // through its `delegation` host with the defaults its child run takes.

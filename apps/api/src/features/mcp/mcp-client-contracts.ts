@@ -86,7 +86,19 @@ export interface McpClientLike {
   ): void
   // Optional resource capability (present on the real SDK client) — used by the
   // consolidated mcp_resources tool for servers that advertise it.
-  getServerCapabilities?(): { resources?: unknown; prompts?: unknown } | undefined
+  getServerCapabilities?():
+    | { resources?: unknown; prompts?: unknown; experimental?: Record<string, unknown> }
+    | undefined
+  /** Hears every notification without a handler of its own: a channel's events (`mcp-channels.ts`). */
+  fallbackNotificationHandler?: (notification: {
+    method: string
+    params?: { [key: string]: unknown }
+  }) => Promise<void>
+  /** Send a notification to the server: a channel's permission requests (`mcp-channel-permissions.ts`). */
+  notification?(notification: {
+    method: string
+    params?: { [key: string]: unknown }
+  }): Promise<void>
   listResources?(
     params?: { cursor?: string },
     options?: { timeout?: number },

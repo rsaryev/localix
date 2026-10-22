@@ -25,17 +25,37 @@
  * One answer, shared by the agent run, the SCM tab, the terminal and the file browser, so a
  * session is rooted in the same place everywhere rather than in some places.
  */
-import { mkdir } from 'node:fs/promises'
+import { mkdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 
 import { localixHome } from '../../lib/env'
+import { isWorkflowWorktreeDir } from '../agent-core/tools/workflow/worktree'
 import { defaultProjectDir, normalizeProjectDir } from '../projects/default-project'
+import type { SessionProvenance } from './session-provenance'
 
 /** Minimal session shape the cwd resolver needs (a row from the sessions table). */
 export interface BaseCwdSession {
   id: string
   projectId: string | null
   rootSessionId: string | null
+  /** A workflow agent's worktree overrides the tree's folder (see {@link ownWorkingDir}). */
+  provenance?: SessionProvenance
+}
+
+/**
+ * The one exception to "a tree shares one folder": a workflow agent run with
+ * `isolation: 'worktree'` works in its own git worktree, named at its creation. Honoured only
+ * inside the worktree root and while the folder exists — a removed worktree (the agent changed
+ * nothing) leaves the child where its tree works, and a stored path elsewhere is never a cwd —
+ * unless a WorktreeCreate hook made it, which puts it where the hook chose (an absolute path).
+ */
+async function ownWorkingDir(session: BaseCwdSession): Promise<string | null> {
+  const provenance = session.provenance
+  if (provenance?.kind !== 'task-delegation' || !provenance.workingDir) return null
+  const byHook = provenance.worktreeByHook === true && path.isAbsolute(provenance.workingDir)
+  if (!byHook && !isWorkflowWorktreeDir(provenance.workingDir)) return null
+  const found = await stat(provenance.workingDir).catch(() => null)
+  return found?.isDirectory() ? provenance.workingDir : null
 }
 
 export interface BaseCwdDeps {
@@ -98,6 +118,8 @@ export async function resolveBaseSessionCwd(
   userId: string,
   session: BaseCwdSession,
 ): Promise<string> {
+  const own = await ownWorkingDir(session)
+  if (own) return own
   const projectDir = await deps.getProjectWorkingDir(userId, session.projectId)
   if (projectDir && !isScratchParent(projectDir)) return projectDir
 

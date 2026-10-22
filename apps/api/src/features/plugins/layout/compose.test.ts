@@ -34,9 +34,8 @@ describe('composeManifest', () => {
       monitors: [{ name: 'tail' }],
       origin: { format: 'claude-code' },
     })
-    expect(composed.issues).toEqual([
-      expect.objectContaining({ severity: 'warning', path: 'outputStyles' }),
-    ])
+    expect(composed.raw).toMatchObject({ outputStyles: './styles' })
+    expect(composed.issues).toEqual([])
   })
 
   test('a mini app adds the Localix layer over the plugin in its folder', () => {

@@ -1,7 +1,6 @@
 import { existsSync } from 'node:fs'
 import type { DiscoveredPlugin } from './discovery'
 import { confineToDir } from '../ext/fs-discovery'
-import { AGENTS_MAX_PER_PLUGIN } from './contracts'
 import { BUILTIN_TOOL_NAMES } from '../agent-core/tool-names'
 import { CC_SEMANTIC_GAPS } from '../ext/cc-tool-names'
 import { DECLARABLE_EFFORTS_TEXT, isDeclarableEffort } from '../../db/types'
@@ -215,18 +214,11 @@ function unknownToolNote(tool: string, verb: 'lists' | 'disallows'): string {
 /**
  * Validate a plugin's custom worker roles (sub-agents) — names must be
  * unique (the namespaced `<plugin>:<name>` is the address), prompts non-empty,
- * tools real engine tools. Warns when the raw manifest has more inline agents
- * than the cap (file-based agents are already capped silently in loadManifest).
+ * tools real engine tools. A plugin may declare any number, as in Claude Code.
  */
 export function validatePluginAgents(plugin: DiscoveredPlugin): FieldValidation {
   const errors: string[] = []
   const warnings: string[] = []
-  const inlineAgentCount = Array.isArray(plugin.manifest.agents) ? plugin.manifest.agents.length : 0
-  if (inlineAgentCount > AGENTS_MAX_PER_PLUGIN) {
-    warnings.push(
-      `Plugin declares ${inlineAgentCount} inline agent roles but only ${AGENTS_MAX_PER_PLUGIN} are loaded (cap per plugin). Move extras to a separate plugin.`,
-    )
-  }
   const seenAgentNames = new Set<string>()
   for (const agent of plugin.agents) {
     if (!agent.name) {

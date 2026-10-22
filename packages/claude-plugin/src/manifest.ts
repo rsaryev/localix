@@ -88,7 +88,7 @@ const FIELDS = {
     z.strictObject({
       server: z.string(),
       displayName: z.string().optional(),
-      userConfig: record.optional(),
+      userConfig: z.record(z.string(), userConfigOptionSchema).optional(),
     }),
   ),
   skills: pathOrPaths,

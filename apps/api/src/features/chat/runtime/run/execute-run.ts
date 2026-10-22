@@ -26,7 +26,7 @@ import { buildRunPrompt } from './stages/prompt'
 import { streamRun } from './stages/stream'
 import { assembleRunToolset } from './stages/tools'
 import { resolveRunTurn } from './stages/turn'
-import { resolveRunView } from './stages/view'
+import { resolveRunView, reviewRunView } from './stages/view'
 import type { RunEnv, RunParams } from './types'
 
 export async function executeRun(env: RunEnv, params: RunParams): Promise<RunExecutionOutcome> {
@@ -58,7 +58,7 @@ async function executeAdmittedRun(
       toolset,
       prompt,
       intake,
-      view,
+      await reviewRunView(view, inputs.mods),
       inputs.defaultCwd,
     )
     const streamed = await streamRun(frame, turn, inputs, toolset, prompt, intake, history)

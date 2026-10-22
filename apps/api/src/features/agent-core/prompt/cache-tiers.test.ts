@@ -98,6 +98,7 @@ function renderWith(
     projectStructure: 'src/\npackage.json',
     approvedPlan: { version: 2, title: 'Ship it', body: '# Goal\nShip it.' },
     planMode: { draftPath: '/w/.localix/plans/LOCALIX-1/PLAN.md' },
+    outputStyle: { name: 'terse', prompt: 'Keep it short.', keepCodingInstructions: true },
   } as never)
 }
 

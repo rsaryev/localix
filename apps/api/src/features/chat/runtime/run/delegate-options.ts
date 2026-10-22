@@ -6,6 +6,7 @@ import { dropExpectedReport } from '../../../agent-core/delegation-awaits'
 import { startDelegation } from '../../../agent-core/tools/delegate-start'
 import type { TaskDelegationOptions } from '../../../agent-core/tools/task-delegation'
 import type { DelegatedRunSummary } from '../../../agent-core/tools/delegate-control'
+import type { DelegatePluginPorts } from '../../../agent-core/tools/delegate-plugin-agent'
 import type { SessionRecord } from '../../repository'
 import { getAgentService } from '../agent-service-binding'
 
@@ -14,6 +15,8 @@ export interface DelegateOptionsInput {
   session: SessionRecord
   agentProfile: RunProfile
   taskDelegation?: TaskDelegationOptions
+  /** The enabled plugins' agents, delegable as subagent types (`plugin-subagent.ts`). */
+  plugins?: DelegatePluginPorts
 }
 
 /**
@@ -29,14 +32,14 @@ const withLaneState = (run: DelegatedRunSummary): DelegatedRunSummary => {
 
 /** Build `delegate` — the start, and the line to each child — for an interactive chat. */
 export function buildDelegateOptions(input: DelegateOptionsInput): OptionalToolPorts['delegate'] {
-  const { userId, session, agentProfile, taskDelegation } = input
+  const { userId, session, agentProfile, taskDelegation, plugins } = input
   if (!isToolDirect(agentProfile, TOOL.delegate) || !taskDelegation) return undefined
 
   const svc = getAgentService()
 
   return {
     delegate: (toolCallId, request, signal) =>
-      startDelegation(toolCallId, request, taskDelegation, signal),
+      startDelegation(toolCallId, request, taskDelegation, signal, plugins),
     // This session's own children: a deeper row is its own delegator's to manage.
     listRuns: async () =>
       ((await svc?.listDelegatedRuns?.(userId, session.id)) ?? [])

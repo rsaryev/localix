@@ -12,6 +12,7 @@ import { createModelContextRepository } from '../../../model-context-repository'
 import { sessionAgent } from '../../message-envelope'
 import { loadModelView, type ModelView } from '../../model-view/view'
 import { delegationPlace } from '../../../session-provenance'
+import type { ModRunScope } from '../../../../mods/run-scope'
 import type { RunFrame } from './frame'
 import type { ResolvedTurn } from './turn'
 
@@ -35,4 +36,18 @@ export async function resolveRunView(frame: RunFrame, turn: ResolvedTurn): Promi
     contextLimit: turn.contextLimit,
     ...(forced ? { forced } : {}),
   })
+}
+
+/**
+ * The view after Claude Code mods' `session.compact`, once the run's mods are known: a `skip`
+ * leaves the conversation whole this turn (the hard ceiling of an oversized request still
+ * applies), and a checkpoint a mod asked for (`$.session.compact`) is taken now.
+ */
+export async function reviewRunView(view: ModelView, mods: ModRunScope): Promise<ModelView> {
+  const verdict = await mods.compaction(view.due)
+  if (verdict === 'skip') {
+    const { due: _skipped, ...kept } = view
+    return kept
+  }
+  return verdict === 'take' ? { ...view, due: 'threshold' } : view
 }

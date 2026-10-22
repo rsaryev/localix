@@ -28,6 +28,8 @@ import type { ToolDenial } from '../../../capabilities/resolve'
 import type { SetTopicPort } from '../../../agent-core/tools/set-topic'
 import type { MemoryScope } from '../../../agent-core/memory-scope-policy'
 import type { RunPolicy } from '../../policy/run-policy'
+import type { WorkflowEntry } from '../../../agent-core/tools/workflow/workflow'
+import type { ChatModel } from '../../../agent-core/tools/workflow/agent-route'
 
 export interface RuntimeToolWiringContext {
   deps: RunnerDeps
@@ -91,6 +93,10 @@ export function buildRunToolRegistry(
     fileMtimes?: FileMtimeStore
     /** The host's live budget frame + last measurement for `context_budget`; read at call time. */
     readContextBudget?: () => ContextBudgetReading | undefined
+    /** The enabled plugins' workflows, read when `workflow` runs one. */
+    listWorkflows?: () => Promise<WorkflowEntry[]>
+    /** The chat's resolved model this turn: a workflow agent's `model` resolves against it. */
+    chatModel?: ChatModel
   },
 ): RuntimeToolRegistry & { setLedger?: (ledger: ToolLedger) => void } {
   const { deps, work, terminalWaits } = ctx

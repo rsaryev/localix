@@ -1,7 +1,7 @@
 import type { DiscoveredPlugin } from './discovery'
 import type { PluginValidation } from './contracts'
 import { editDistance, isUnsafeRelPath, isKebabCase } from '../ext/manifest-validate'
-import { CC_HOOK_EVENTS } from '../cc-hooks/contracts'
+import { CC_HOOK_EVENTS, CC_INERT_HOOK_EVENTS } from '../cc-hooks/contracts'
 import { pluginLspNotes, summarizePluginLspServers } from '../lsp'
 
 /**
@@ -15,8 +15,6 @@ import { pluginLspNotes, summarizePluginLspServers } from '../lsp'
  * won't run. Host-ignored fields are surfaced as warnings and never block.
  */
 const UNSUPPORTED_CC_FIELDS: Record<string, string> = {
-  outputStyles: 'output styles are not a plugin component in this host',
-  settings: 'plugin settings.json (default agent activation) is not supported',
   // The removed second loading path. A plugin could mirror its whole `register()` output
   // here and get deferred activation; the mirror had to be exact and complete, which no
   // plugin contributing a resource/search/context provider could satisfy. One loading
@@ -77,6 +75,8 @@ const KNOWN_FIELDS = new Set([
   'lspServers',
   'hooks',
   'outputStyles',
+  'themes',
+  'workflows',
   'bin',
   'settings',
   'dependencies',
@@ -143,12 +143,12 @@ export function validateCompatibility(plugin: DiscoveredPlugin): PluginValidatio
   // or an inline object) IS honored — resolved into the same cc-hooks pipeline the
   // settings-file hooks + `hooks/hooks.json` use. All five handler types run
   // (command, http, mcp_tool, prompt, agent — each on the events the CC matrix
-  // allows; see features/cc-hooks/contracts.ts). Only advisory: events this host
-  // does not dispatch (Setup, PostCompact, PermissionRequest, FileChanged, …)
-  // never fire. The event list is imported from cc-hooks so it can't drift.
+  // allows; see features/cc-hooks/contracts.ts). Only advisory: the few Claude Code
+  // events with no Localix lifecycle point never fire. Both lists are imported from
+  // cc-hooks so they can't drift.
   if (raw.hooks !== undefined) {
     warnings.push(
-      `Claude Code "hooks" are loaded: all handler types (command, http, mcp_tool, prompt, agent) run on the dispatched events — ${CC_HOOK_EVENTS.join(', ')}. Hooks on any other Claude Code event (e.g. Setup, PostCompact, PermissionRequest, FileChanged) are not dispatched by this host and never fire.`,
+      `Claude Code "hooks" are loaded: all handler types (command, http, mcp_tool, prompt, agent) run on the dispatched events — ${CC_HOOK_EVENTS.join(', ')}. Hooks on ${Object.keys(CC_INERT_HOOK_EVENTS).join(', ')} are accepted but never fire: Localix has no lifecycle point for them.`,
     )
   }
 
@@ -167,8 +167,7 @@ export function validateCompatibility(plugin: DiscoveredPlugin): PluginValidatio
   // `experimental.monitors` is promoted to top-level `monitors`; a `monitors/monitors.json`
   // file is read when neither is present. `when:"always"` monitors spawn while the plugin
   // is enabled and each stdout line is delivered to the model as a notification (via the
-  // wake primitive). Only advisory: `on-skill-invoke:<skill>` monitors are parsed +
-  // registered but their lazy start is deferred (no skill-invocation seam yet).
+  // wake primitive). An `on-skill-invoke:<skill>` monitor starts when its skill first runs.
   const experimental = raw.experimental
   const hasExpMonitors =
     experimental &&
@@ -181,12 +180,6 @@ export function validateCompatibility(plugin: DiscoveredPlugin): PluginValidatio
   } else if (hasExpMonitors && raw.monitors !== undefined) {
     warnings.push(
       'Both "experimental.monitors" and top-level "monitors" are declared — "experimental.monitors" is ignored when "monitors" is already at top level.',
-    )
-  }
-  const declaredMonitors = plugin.entrypoints.monitors ?? []
-  if (declaredMonitors.some((m) => m.when !== 'always')) {
-    warnings.push(
-      'Claude Code "on-skill-invoke:<skill>" monitors are parsed and registered, but their lazy start is deferred (this host does not yet hook skill invocation). "when: always" monitors run while the plugin is enabled.',
     )
   }
 

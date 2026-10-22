@@ -51,7 +51,7 @@ export const PLUGIN_ARGS: SlashArgSpec[] = [
       {
         value: 'marketplace',
         label: 'marketplace',
-        description: 'Add / list / remove marketplaces',
+        description: 'Add / list / update / remove marketplaces',
       },
     ],
   },
@@ -63,6 +63,7 @@ export const PLUGIN_ARGS: SlashArgSpec[] = [
     options: [
       { value: 'list', label: 'list', description: 'List registered marketplaces' },
       { value: 'add', label: 'add', description: 'Register a marketplace' },
+      { value: 'update', label: 'update', description: 'Refresh a marketplace and its plugins' },
       { value: 'remove', label: 'remove', description: 'Remove a marketplace' },
     ],
   },
@@ -115,6 +116,6 @@ export const PLUGIN_ARGS: SlashArgSpec[] = [
     name: 'msource',
     type: 'text',
     when: { arg: 'msub', equals: 'add' },
-    placeholder: '<owner/repo> · git URL · absolute path',
+    placeholder: '<owner/repo> · git URL · marketplace.json URL · path',
   },
 ]

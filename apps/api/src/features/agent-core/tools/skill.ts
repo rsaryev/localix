@@ -64,6 +64,8 @@ export function classifySkillCall(input: unknown): CallClass {
  *   next run's prompt could omit what the agent had just saved — until an unrelated plugin
  *   or MCP toggle happened to bump the revision. Injected rather than imported: the
  *   announcement (bump + client poke) belongs to the host, not to agent-core.
+ * @param onSkillLoaded Host port, called when `get` hands the agent a skill: the skill runs
+ *   (a plugin monitor waiting for it starts, see `skill-invocations.ts`).
  */
 export function createSkillTool(
   workingDir?: string | null,
@@ -71,6 +73,7 @@ export function createSkillTool(
   skillOverrides: SkillOverrides = {},
   projectId = '',
   onSkillsChanged?: () => void,
+  onSkillLoaded?: (skill: DiscoveredSkill) => void,
 ) {
   const announce = () => {
     try {
@@ -164,6 +167,7 @@ export function createSkillTool(
           }
           // Curator usage telemetry — best-effort, never blocks the get.
           recordSkillUse(skill.name, skill.scope, skill.scope === 'project' ? projectId : '')
+          onSkillLoaded?.(skill)
           // Progressive loading must retain provenance: bundled scripts,
           // references, and assets are relative to the skill directory. Pi
           // wraps explicit skill bodies with baseDir and Codex injects their

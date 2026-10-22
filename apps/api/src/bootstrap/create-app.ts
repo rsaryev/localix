@@ -166,6 +166,7 @@ export function createAppPhase({
     agentsService,
     skillsCuratorService,
     systemService,
+    modsHost: serviceRefs.modsHost,
     storageService,
     shellCommandService,
     // Assigned above (forward-held `let`); guaranteed present by this point.

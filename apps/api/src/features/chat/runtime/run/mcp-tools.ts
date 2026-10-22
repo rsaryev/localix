@@ -89,6 +89,10 @@ export async function resolveMcpTools(args: {
       // set, so invalidation would evict the other session's still-live client
       // every turn (churn + orphaned stdio respawns). Per-cwd scopes pin both.
       scope: `${userId}:${session.projectId ?? ''}:${defaultCwd}`,
+      // A Claude Code channel among these servers speaks into this conversation from now on. Only
+      // a chat's open toolset gathers MCP servers (`tool-assembly.ts`), so a delegated child's
+      // run never takes a channel from the chat that started it.
+      channelTarget: { userId, sessionId: session.id, projectId: session.projectId ?? '' },
       logger: prefixedWarnLogger('mcp'),
     })
     // Keep descriptors intact. Assembly's shared ledger owns tool policy, authority and

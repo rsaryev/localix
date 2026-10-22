@@ -61,7 +61,7 @@ export function TextBubble({
         'rounded-2xl text-sm leading-relaxed',
         isUser
           ? // A real container: its padding is the space between the text and its own edge.
-            'max-w-[min(85%,44rem)] rounded-br-sm bg-surface-active px-4 py-[0.7rem] text-foreground'
+            'max-w-[min(85%,44rem)] rounded-br-sm bg-user-message px-4 py-[0.7rem] text-foreground'
           : // No container, so no inset. Padding on a transparent box is not breathing room,
             // it is a third left edge — the card already has one, and the space between
             // stacked parts is the body column's gap. Line-height carries the rest.

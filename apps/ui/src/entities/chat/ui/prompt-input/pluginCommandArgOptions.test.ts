@@ -32,6 +32,7 @@ async function installed(plugins: PluginRecord[]): Promise<void> {
       plugins,
       tools: EMPTY_TOOLS,
       views: [],
+      themes: [],
       agents: [],
       commands: [],
       mcp: [],

@@ -114,6 +114,11 @@ describe('normalizing models.dev', () => {
       doc: 'https://docs',
       models: {
         'liquid/d1': model('liquid/d1', { type: 'decision', cost: { input: 0.02, output: 0.1 } }),
+        // models.dev names the vendor's own client package on some decision models (Jev).
+        '~typesafe/jev-latest': model('~typesafe/jev-latest', {
+          type: 'decision',
+          provider: { npm: '@ai-sdk/typesafe-ai' },
+        }),
       },
     },
     elsewhere: {
@@ -167,7 +172,14 @@ describe('normalizing models.dev', () => {
 
   test('keeps chat and the decision models a provider SDK can serve, in separate maps', () => {
     expect(Object.keys(document.copilot!.chat).sort()).toEqual(['claude-x', 'gemini-x', 'gpt-x'])
-    expect(Object.keys(document.openrouter!.decision)).toEqual(['liquid/d1'])
+    expect(Object.keys(document.openrouter!.decision)).toEqual([
+      'liquid/d1',
+      '~typesafe/jev-latest',
+    ])
+    // A decision model naming only its vendor's package is served at its provider's address.
+    expect(document.openrouter!.decision['~typesafe/jev-latest']?.route).toEqual(
+      document.openrouter!.route,
+    )
     expect(document.openrouter!.decision['liquid/d1']).toMatchObject({
       output: ['decisions'],
       tools: false,

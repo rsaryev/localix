@@ -13,6 +13,7 @@ const CONTROL_COMMANDS = [
   'help',
   'usage',
   'model',
+  'output-style',
   'memory',
   'skills',
   'mcp',

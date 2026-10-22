@@ -54,6 +54,7 @@ function snapshot(over: Partial<TipInput> = {}): TipInput {
       mcpUnprobedServers: [],
     },
     views: [],
+    themes: [],
     agents: [],
     commands: [],
     mcp: [],

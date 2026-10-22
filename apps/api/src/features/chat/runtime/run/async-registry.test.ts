@@ -224,6 +224,25 @@ describe('emitBackground — bounded snapshot fan-out', () => {
     expect(notices.arms).toEqual([])
   })
 
+  test('a registrant that reports in a later turn by design arms its notice itself', async () => {
+    // A background workflow run: no `notify` argument, yet its end is the news the agent awaits.
+    const notices = recordingNotices()
+    const { registry } = setup(undefined, notices, { name: 'acme:audit' })
+    registry.registerActions(
+      'tc-1',
+      { kill: { label: 'Stop', execute: () => {} } },
+      { label: 'workflow acme:audit', notify: true },
+    )
+    expect(notices.arms).toHaveLength(1)
+    registry.emitBackground('tc-1', 'Workflow acme:audit finished.', {
+      done: true,
+      jobStatus: 'completed',
+      notify: true,
+    })
+    await flushNotices()
+    expect(notices.fired[0]).toContain('Workflow acme:audit finished.')
+  })
+
   test('a failing snapshot write is reported, not left as an unhandled rejection', async () => {
     const rejection = Promise.reject(new Error('disk full'))
     const { registry, snapshots } = setup(rejection)

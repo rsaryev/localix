@@ -128,6 +128,7 @@ describe('the wrapper chain cannot drift from the code', () => {
     expect(report.wrappers).toEqual([
       'plugin-hooks',
       'cc-hooks',
+      'mods',
       'timeout-promoter',
       'stuck-run-breaker',
     ])

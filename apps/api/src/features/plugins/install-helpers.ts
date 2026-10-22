@@ -1,13 +1,10 @@
 import { ConflictError, InvalidRequestError } from '../../lib/domain-errors'
 import { promises as fs } from 'node:fs'
-import { execFile } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { basename, isAbsolute, join, resolve } from 'node:path'
-import { promisify } from 'node:util'
 import { randomUUID } from 'node:crypto'
 
-import { ApiError, errorMessage } from '../../lib/errors'
-import { childEnv } from '../../lib/login-shell-env'
+import { ApiError } from '../../lib/errors'
 import { gitUrl, isGitSource } from '../ext/git-source'
 import {
   copyExtensionTree,
@@ -18,11 +15,10 @@ import {
 } from '../ext/install-tree'
 import { findManifestPath } from './discovery'
 import { PLUGIN_NAME_RE } from './contracts'
-import { CLAUDE_CODE_MARKETPLACE_HINT, isClaudeCodeMarketplace } from './claude-code-marketplace'
+import { marketplaceOnlyHint } from './claude-code-marketplace'
+import { fetchGitTree } from './git-fetch'
 import { MINI_APP_MANIFEST_FILE } from '@localixai/plugin-sdk/app-manifest'
 import { publishExtensionTree, type ExtensionPublicationLifecycle } from '../ext/publish-tree'
-
-const execFileAsync = promisify(execFile)
 
 export interface MaterializedPluginSource {
   directory: string
@@ -65,17 +61,17 @@ export async function withPluginSource<T>(
 
 // ---- install helpers --------------------------------------------------------
 
-/** Shallow-clone a git repo (optional ref) into `dest`. Throws on failure. */
-export async function cloneRepo(url: string, dest: string, ref?: string): Promise<void> {
-  const args = ['clone', '--depth', '1', ...(ref ? ['--branch', ref] : []), url, dest]
-  try {
-    // Explicit env: a no-`env` spawn under Bun sees only the process-start
-    // snapshot — a GUI launch would hand git the bare PATH (login-shell-env.ts).
-    await execFileAsync('git', args, { timeout: 120_000, env: childEnv(), windowsHide: true })
-  } catch (err) {
-    await rmrf(dest)
-    throw new InvalidRequestError('plugin_clone_failed', `git clone failed: ${errorMessage(err)}`)
-  }
+/**
+ * Fetch a git repo at `ref` (a branch, tag or commit; the default branch when absent) into
+ * `dest`, optionally checking out only the `sparse` directory. Throws on failure.
+ */
+export async function cloneRepo(
+  url: string,
+  dest: string,
+  ref?: string,
+  sparse?: string,
+): Promise<void> {
+  await fetchGitTree(url, dest, { ...(ref ? { ref } : {}), ...(sparse ? { sparse } : {}) })
 }
 
 /**
@@ -116,8 +112,8 @@ async function manifestName(dir: string): Promise<string> {
   const declared =
     (await readManifestName(join(dir, MINI_APP_MANIFEST_FILE))) ??
     (pluginManifest ? await readManifestName(pluginManifest) : null)
-  if (!declared && (await isClaudeCodeMarketplace(dir)))
-    throw new InvalidRequestError('plugin_claude_marketplace', CLAUDE_CODE_MARKETPLACE_HINT)
+  const hint = declared ? null : await marketplaceOnlyHint(dir)
+  if (hint) throw new InvalidRequestError('plugin_claude_marketplace', hint)
   if (declared) {
     if (!PLUGIN_NAME_RE.test(declared))
       throw new InvalidRequestError('plugin_invalid', 'Invalid plugin name in manifest')

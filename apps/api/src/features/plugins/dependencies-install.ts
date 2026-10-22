@@ -87,8 +87,8 @@ function toDependencyStep(
   r: ResolvedMarketplaceInstall,
   probe: DiscoveredPlugin | null,
 ): ResolvedDependencyStep {
-  // Entry fields take precedence (CC: the catalog entry overrides plugin.json); the
-  // raw manifest is consulted for the DECLARED version (zod defaults to "0.0.0").
+  // The DECLARED plugin.json version wins over the entry's (Claude Code), so the raw manifest is
+  // read (zod defaults to "0.0.0"); entry dependencies take precedence over the manifest's.
   const rawVersion = probe?.rawManifest?.version
   const entryDeps = (r.entry as Record<string, unknown>).dependencies
   return {
@@ -97,7 +97,7 @@ function toDependencyStep(
     dir: r.dir,
     entry: r.entry,
     version:
-      r.entry.version ?? (typeof rawVersion === 'string' && rawVersion ? rawVersion : undefined),
+      (typeof rawVersion === 'string' && rawVersion ? rawVersion : undefined) ?? r.entry.version,
     dependencies: normalizePluginDependencies(entryDeps ?? probe?.manifest.dependencies),
   }
 }

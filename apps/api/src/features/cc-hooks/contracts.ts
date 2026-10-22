@@ -12,13 +12,12 @@
  *                   JSON, response body folded like a command hook's stdout);
  *   - `mcp_tool`  — every dispatched event (call a connected MCP tool, its result
  *                   text folded like a command hook's stdout);
- *   - `prompt`    — the four LLM-gate events (Stop / SubagentStop / UserPromptSubmit
- *                   / PreToolUse — see {@link CC_PROMPT_HOOK_EVENTS});
- *   - `agent`     — the same four gate events as `prompt` (a tool-using verifier
- *                   sub-agent, verdict mapped identically — {@link CC_AGENT_HOOK_EVENTS}).
+ *   - `prompt`    — the LLM-gate events ({@link CC_PROMPT_HOOK_EVENTS});
+ *   - `agent`     — the same events except `PermissionRequest`
+ *                   ({@link CC_AGENT_HOOK_EVENTS}).
  * A type on an unsupported event is dropped at parse time (recorded in `skipped`),
- * never thrown. `Notification` fires (observer-only) when a HITL request surfaces —
- * see the note in `run.ts`.
+ * never thrown. The Claude Code events with no Localix lifecycle point are accepted
+ * and never fire; {@link CC_INERT_HOOK_EVENTS} says why for each.
  *
  * Pure type + constant module — no chat/UI imports.
  */
@@ -27,17 +26,52 @@
 export const CC_HOOK_EVENTS = [
   'SessionStart',
   'UserPromptSubmit',
+  // A typed slash command or plugin command expanding into its prompt.
+  'UserPromptExpansion',
   'PreToolUse',
+  // A tool approval card is about to wait on the person; a hook may answer it first.
+  'PermissionRequest',
+  // A permission rule or the permission mode refused a call without asking anyone.
+  'PermissionDenied',
   'PostToolUse',
   // A tool that threw: in place of PostToolUse, as in Claude Code.
   'PostToolUseFailure',
+  // Every tool call of one model response resolved, before the next model request.
+  'PostToolBatch',
   'Stop',
+  // The turn ended on a provider error instead of an answer.
+  'StopFailure',
   'SessionEnd',
   'SubagentStart',
   'SubagentStop',
+  // The task board (the `kanban` tool) gained a card, or is about to close one.
+  'TaskCreated',
+  'TaskCompleted',
+  // A conversation member other than the primary agent finished its turn.
+  'TeammateIdle',
   'PreCompact',
+  // A context checkpoint (this host's compaction) was taken.
+  'PostCompact',
   // Notification fires (observer-only) when a HITL request surfaces — see run.ts.
   'Notification',
+  // A CLAUDE.md / AGENTS.md / rules file entered the prompt.
+  'InstructionsLoaded',
+  // The agent's `configure` tool, or a skill saved from Localix, changed configuration.
+  'ConfigChange',
+  // The session moved to a project with another working directory.
+  'CwdChanged',
+  // A file named by a FileChanged matcher, or by a hook's `watchPaths`, changed on disk.
+  'FileChanged',
+  // The session's model route changed on request (`/model`, the model picker).
+  'PreModelSwitch',
+  'PostModelSwitch',
+  // An MCP server asks the person for input mid tool call, and the answer before it goes back.
+  'Elicitation',
+  'ElicitationResult',
+  // The turn's text is settled; a hook may change only what is shown.
+  'MessageDisplay',
+  // A workflow agent with isolation: 'worktree' needs its folder: the hook makes it in git's place.
+  'WorktreeCreate',
 ] as const
 export type CcHookEvent = (typeof CC_HOOK_EVENTS)[number]
 
@@ -46,12 +80,36 @@ export function isCcHookEvent(value: string): value is CcHookEvent {
 }
 
 /**
+ * Claude Code events this host accepts in a hooks file but never fires, each with the reason a
+ * plugin author is shown. Only events with no lifecycle point here belong in this list.
+ */
+export const CC_INERT_HOOK_EVENTS = {
+  Setup:
+    'it fires only for the Claude Code CLI flags --init-only, -p --init and -p --maintenance; Localix starts no such one-time init or maintenance run (its first-run dialog is a UI tip with no session), so use SessionStart for per-session setup',
+  DirectoryAdded:
+    'a Localix session has exactly one working directory, its project folder: there is no /add-dir or register_repo_root, "Add folder" opens another project, and moving a session to another project fires CwdChanged',
+  WorktreeRemove:
+    "it fires only when a worktree session ends, ExitWorktree runs, claude remote-control cleans up or a background session is deleted, and Localix has none of these; a workflow agent's worktree that a WorktreeCreate hook made is kept when the agent finishes, as in Claude Code, so remove it yourself",
+} as const satisfies Record<string, string>
+export type CcInertHookEvent = keyof typeof CC_INERT_HOOK_EVENTS
+
+export function isInertCcHookEvent(value: string): value is CcInertHookEvent {
+  return Object.hasOwn(CC_INERT_HOOK_EVENTS, value)
+}
+
+/**
  * The subset of {@link CC_HOOK_EVENTS} whose matcher targets a TOOL name (so a
  * handler `if` guard is meaningful). On every other event a handler that carries
  * an `if` never runs (CC §3). SubagentStart/Stop match an AGENT type, not a tool,
  * so they are NOT tool events for `if` purposes.
  */
-export const CC_TOOL_EVENTS = ['PreToolUse', 'PostToolUse', 'PostToolUseFailure'] as const
+export const CC_TOOL_EVENTS = [
+  'PreToolUse',
+  'PostToolUse',
+  'PostToolUseFailure',
+  'PermissionRequest',
+  'PermissionDenied',
+] as const
 export function isToolEvent(event: CcHookEvent): boolean {
   return (CC_TOOL_EVENTS as readonly string[]).includes(event)
 }
@@ -64,16 +122,23 @@ export function isToolEvent(event: CcHookEvent): boolean {
 export type CcHookSource = 'user' | 'project' | 'local' | 'plugin' | 'skill' | 'agent'
 
 /**
- * Events on which a `type:"prompt"` (LLM-evaluated) handler is supported, per the
- * CC spec matrix (hooks.md §7). On every other event a prompt handler is dropped
- * at parse time (we do not fire it). Other handler types use their own event
- * policies below.
+ * Events on which a `type:"prompt"` (LLM-evaluated) handler is supported: the gate events of
+ * the CC spec matrix whose `ok:false` has an effect this host can apply (see `prompt-hook.ts`),
+ * plus `PermissionRequest` and `PermissionDenied`, where CC runs a prompt hook but discards its
+ * verdict. On every other event a prompt handler is dropped at parse time.
  */
 export const CC_PROMPT_HOOK_EVENTS = [
   'Stop',
   'SubagentStop',
   'UserPromptSubmit',
+  'UserPromptExpansion',
   'PreToolUse',
+  'PermissionRequest',
+  'PermissionDenied',
+  'PostToolBatch',
+  'TaskCreated',
+  'TaskCompleted',
+  'TeammateIdle',
 ] as const satisfies readonly CcHookEvent[]
 export function isPromptHookEvent(event: CcHookEvent): boolean {
   return (CC_PROMPT_HOOK_EVENTS as readonly string[]).includes(event)
@@ -82,13 +147,13 @@ export function isPromptHookEvent(event: CcHookEvent): boolean {
 export const CC_PROMPT_HOOK_DEFAULT_TIMEOUT_SEC = 30
 
 /**
- * Events on which a `type:"agent"` (tool-using verifier sub-agent) handler is
- * supported. CC's spec matrix lists `agent` among the "all five types" event set;
- * we scope it to the same four gate events as `prompt` because the verdict fold
- * ({@link CcHookEvent} → `{ok,reason}` mapping in `prompt-hook.ts`) is only
- * meaningful there. Elsewhere an `agent` handler is dropped at parse time.
+ * Events on which a `type:"agent"` (tool-using verifier sub-agent) handler is supported: the
+ * prompt events except `PermissionRequest`, as in CC. Elsewhere an `agent` handler is dropped at
+ * parse time.
  */
-export const CC_AGENT_HOOK_EVENTS = CC_PROMPT_HOOK_EVENTS
+export const CC_AGENT_HOOK_EVENTS = CC_PROMPT_HOOK_EVENTS.filter(
+  (event) => event !== 'PermissionRequest',
+)
 export function isAgentHookEvent(event: CcHookEvent): boolean {
   return (CC_AGENT_HOOK_EVENTS as readonly string[]).includes(event)
 }
@@ -104,10 +169,7 @@ export const CC_AGENT_HOOK_DEFAULT_TIMEOUT_SEC = 60
 export function isHttpHookEvent(event: CcHookEvent): boolean {
   return event !== 'SessionStart'
 }
-/**
- * Events on which an `mcp_tool` handler is supported — CC allows it on EVERY
- * event (SessionStart included, though servers may not be connected that early).
- */
+/** Events on which an `mcp_tool` handler is supported: every one, SessionStart included, as in CC. */
 export function isMcpToolHookEvent(_event: CcHookEvent): boolean {
   return true
 }
@@ -115,11 +177,18 @@ export function isMcpToolHookEvent(_event: CcHookEvent): boolean {
 /**
  * Default per-hook wall-clock timeout (seconds) when a `command` handler omits
  * `timeout`. CC's documented default for `command`/`http`/`mcp_tool` hooks is
- * 600 s (60 s is the `agent`-hook default). Event-
- * specific lower overrides (UserPromptSubmit → 30 s, SessionEnd budget) are not
- * modeled — the per-hook `timeout` field always wins over this default.
+ * 600 s (60 s is the `agent`-hook default); {@link CC_EVENT_DEFAULT_TIMEOUT_SEC} lowers it
+ * on the events CC lowers it on. The SessionEnd budget is not modeled — the per-hook `timeout`
+ * field always wins over either default.
  */
 export const CC_HOOK_DEFAULT_TIMEOUT_SEC = 600
+/** CC's lower `command`/`http`/`mcp_tool` default on events that hold up the person. */
+export const CC_EVENT_DEFAULT_TIMEOUT_SEC: Partial<Record<CcHookEvent, number>> = {
+  UserPromptSubmit: 30,
+  PreModelSwitch: 30,
+  PostModelSwitch: 30,
+  MessageDisplay: 10,
+}
 /**
  * Hard ceiling on a hook's `timeout`, however large it declares. CC documents no
  * hard cap; we pick 1800 s (30 min) as a sane runaway guard — well above the

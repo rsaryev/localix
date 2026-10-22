@@ -20,7 +20,9 @@ import { runUserMessageHooks } from '../../../plugins/hooks'
 import type { PersistedMessage } from '../../contracts'
 import type { SessionRecord } from '../../repository'
 import type { LoadedPlugins } from '../../../plugins/loader'
-import type { CcHooksRuntime } from '../../../cc-hooks'
+import type { CcHooksRuntime, CcPromptExpansion } from '../../../cc-hooks'
+import type { MessageInvocationBinding } from '../../contracts/message-bindings-input'
+import type { ModRunScope } from '../../../mods/run-scope'
 import type { RuntimeSection } from '../../../agent-core/prompt/runtime-sections'
 import { consoleWarnLogger } from '../plugin-hook-logger'
 import type { RunnerDeps } from '../agent-runner-types'
@@ -39,6 +41,8 @@ export interface IntakeArgs {
   historyMessages: PersistedMessage[]
   loadedPlugins: LoadedPlugins
   ccHooks: CcHooksRuntime
+  /** Claude Code mods: `prompt.submit` and `turn.start` for this run's prompt. */
+  mods?: ModRunScope
   /** SessionStart CC-hook context to inject once (this session's first run). */
   ccSessionStartContext: string | undefined
   /** The keyed runtime sections split off the cacheable system prompt. */
@@ -68,6 +72,25 @@ export function rewriteModelPrompt(
   ]
 }
 
+/**
+ * The typed command a prompt row carries, as Claude Code's UserPromptExpansion names it: a skill
+ * or plugin command the person invoked by `/name args` (its row keeps the line as typed, the
+ * expansion rides an invocation binding). System-made invocations are no typed command.
+ */
+function typedCommandExpansion(message: PersistedMessage): CcPromptExpansion | undefined {
+  const binding = message.payload.bindings?.find(
+    (b): b is MessageInvocationBinding => b.kind === 'invocation' && b.source !== 'system',
+  )
+  if (!binding) return undefined
+  const { kind, name, arguments: args } = binding.invocation
+  return {
+    commandName: name,
+    commandArgs: args ?? '',
+    commandSource: binding.source === 'plugin' || kind === 'plugin-command' ? 'plugin' : kind,
+    prompt: typeof message.payload.content === 'string' ? message.payload.content : `/${name}`,
+  }
+}
+
 export async function intakeTurn(args: IntakeArgs): Promise<IntakeResult> {
   const { userId, session, loadedPlugins, ccHooks } = args
 
@@ -95,6 +118,19 @@ export async function intakeTurn(args: IntakeArgs): Promise<IntakeResult> {
     }
   }
 
+  // Claude Code mods: `prompt.submit` may drop the prompt, rewrite what the model reads, or add
+  // notes for it; the settings hooks below run beneath it, as in Claude Code.
+  let modContext: readonly string[] = []
+  if (args.mods?.active && isRealUserPrompt && promptMessage) {
+    const current = messages[messages.length - 1]?.payload.content as string
+    const submitted = await args.mods.submit(current, promptMessage.id)
+    if (submitted.dropped) return { ok: false, blockedReason: submitted.reason, promptMessage }
+    if (submitted.text !== current)
+      messages = rewriteModelPrompt(modelHistory, promptMessage, submitted.text)
+    modContext = submitted.context
+    await args.mods.turnStart(submitted.text, promptMessage.id)
+  }
+
   // Claude Code UserPromptSubmit: may block (exit 2 / decision:"block") or add context.
   let ccPromptContext: string | undefined
   if (ccHooks.active && isRealUserPrompt && promptMessage) {
@@ -103,19 +139,32 @@ export async function intakeTurn(args: IntakeArgs): Promise<IntakeResult> {
       return { ok: false, blockedReason: result.reason ?? 'blocked', promptMessage }
     }
     ccPromptContext = result.additionalContext
+    // A typed command expands after the prompt is accepted, as in Claude Code: its hooks may
+    // still block the expansion or add context beside it.
+    const expansion = typedCommandExpansion(promptMessage)
+    if (expansion) {
+      const expanded = await ccHooks.runUserPromptExpansion(expansion)
+      if (expanded.blocked) {
+        return { ok: false, blockedReason: expanded.reason ?? 'blocked', promptMessage }
+      }
+      ccPromptContext = [ccPromptContext, expanded.additionalContext].filter(Boolean).join('\n\n')
+    }
   }
 
   // SessionStart + UserPromptSubmit context belong to this turn: a system reminder in its context.
-  const ccContextBody = [args.ccSessionStartContext, ccPromptContext]
+  const ccContextBody = [args.ccSessionStartContext, ccPromptContext, ...modContext]
     .filter((c): c is string => typeof c === 'string' && c.trim().length > 0)
     .join('\n\n')
-  const runtimeSections: RuntimeSection[] = [
+  const sections: RuntimeSection[] = [
     ...args.runtimeSections,
     ...reminderSections({ maxTurns: args.maxTurns }),
     ...(ccContextBody
       ? [{ key: 'hook-context', scope: 'turn' as const, text: wrapSystemReminder([ccContextBody]) }]
       : []),
   ]
+  // Claude Code mods: the standing sections are `prompt.context` blocks, this turn's own are the
+  // attachments the engine injects (`prompt.attachment`).
+  const runtimeSections = args.mods ? await args.mods.runtimeContext(sections) : sections
 
   return {
     ok: true,

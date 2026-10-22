@@ -6,7 +6,9 @@
  * itself legible in both light and dark themes — the loud row-only tint is
  * replaced by a lighter wash + a crisp edge marker.
  *
- * All colors are our CSS-var semantic status tokens; radii use the scale
+ * The washes are the kit's diff tokens (`--diff-added`, …: the status colors at a per-theme
+ * strength, which a plugin theme may repaint); the accent bars and signs are the status tokens.
+ * Radii use the scale
  * (`rounded-xs`), never arbitrary pixel values.
  */
 export type DiffChangeKind = 'add' | 'del'
@@ -17,8 +19,8 @@ export type DiffChangeKind = 'add' | 'del'
  * syntax-highlighted code stays readable on near-white and near-black alike.
  */
 export const DIFF_ROW_CLASS: Record<DiffChangeKind, string> = {
-  add: 'border-l-2 border-status-success/60 bg-status-success/15 dark:bg-status-success/10',
-  del: 'border-l-2 border-status-error/60 bg-status-error/15 dark:bg-status-error/10',
+  add: 'border-l-2 border-status-success/60 bg-diff-added',
+  del: 'border-l-2 border-status-error/60 bg-diff-removed',
 }
 
 /**
@@ -98,8 +100,8 @@ export function diffSignClass(kind: DiffLineKind): string {
  * changed within a modified line.
  */
 export const DIFF_WORD_MARK: Record<DiffChangeKind, string> = {
-  add: 'rounded-xs px-px bg-status-success/30 dark:bg-status-success/25',
-  del: 'rounded-xs px-px bg-status-error/30 dark:bg-status-error/25',
+  add: 'rounded-xs px-px bg-diff-added-word',
+  del: 'rounded-xs px-px bg-diff-removed-word',
 }
 
 /**

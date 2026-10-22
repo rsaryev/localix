@@ -201,6 +201,14 @@ const CORE_META: Record<ToolName, ToolMeta> = {
     icon: Forward,
     stackable: false,
   },
+  // A workflow's agents are child sessions of the chat; the card is the run, never folded away.
+  workflow: {
+    label: 'Ran a workflow',
+    noun: 'workflows',
+    verb: 'Running a workflow',
+    icon: ListTree,
+    stackable: false,
+  },
   loops: {
     label: 'Loops',
     noun: 'loops',

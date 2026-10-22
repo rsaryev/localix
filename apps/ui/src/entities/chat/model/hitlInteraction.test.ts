@@ -8,7 +8,7 @@ const event = (request: Record<string, unknown>): unknown => request
 
 describe('fromHitlRequest', () => {
   test('preserves the original deadline on every kind answered from the inbox', () => {
-    for (const kind of ['ask', 'confirm', 'config_change', 'request_secret']) {
+    for (const kind of ['ask', 'confirm', 'config_change', 'request_secret', 'mcp_elicitation']) {
       const mapped = fromHitlRequest({
         requestId: 'r1',
         kind,

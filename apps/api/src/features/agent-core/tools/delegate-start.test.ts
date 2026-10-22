@@ -132,3 +132,12 @@ test('a child cannot delegate again, and the budget refuses before any session e
   expect(result.content).toContain('`delegate` action:"message"')
   expect(spent.calls.create).toEqual([])
 })
+
+test('a model a host picked is the child’s; an inheriting alias leaves the parent’s', async () => {
+  const picked = host()
+  await startDelegation('c', request({ model: 'claude-haiku-4-5' }), picked.opts)
+  expect(picked.calls.create).toEqual([expect.objectContaining({ modelId: 'claude-haiku-4-5' })])
+  const inherited = host()
+  await startDelegation('c', request({ model: 'inherit' }), inherited.opts)
+  expect(inherited.calls.create![0]).not.toHaveProperty('modelId')
+})

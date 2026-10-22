@@ -9,7 +9,13 @@ import type { StreamReducers } from './types'
  * The HITL kinds this client can draw a card for. A kind absent here is dropped rather than
  * queued: an interaction nobody can render would block the queue behind it forever.
  */
-const RENDERABLE_HITL_KINDS = new Set(['ask', 'confirm', 'request_secret', 'config_change'])
+const RENDERABLE_HITL_KINDS = new Set([
+  'ask',
+  'confirm',
+  'request_secret',
+  'config_change',
+  'mcp_elicitation',
+])
 
 export const hitlReducers: StreamReducers<'hitl.requested' | 'hitl.resolved'> = {
   'hitl.requested': (session, event) => {

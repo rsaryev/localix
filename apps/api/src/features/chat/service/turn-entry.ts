@@ -6,6 +6,7 @@
 import { ConflictError } from '../../../lib/domain-errors'
 import { resolveMessageBindings } from './message-bindings'
 import { assertUserWritableSession } from './session-access'
+import { handleModCommand } from './command-handlers-mod-command'
 import {
   handleControlCommand,
   handlePluginCommand,
@@ -129,6 +130,10 @@ export async function sendMessage(
       bindings,
     )
     if (pluginResult) return pluginResult
+
+    // ---- Mods' commands (`$.command.register`), answered by their `command.run` hooks ----
+    const modResult = await handleModCommand(turnCommandCtx, userId, sessionId, session, prompt)
+    if (modResult) return modResult
 
     // ---- User skill commands (/<skill-name>) ----------------------------------
     const skillResult = await handleSkillCommand(turnCommandCtx, userId, sessionId, session, prompt)

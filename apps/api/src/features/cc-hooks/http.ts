@@ -81,7 +81,7 @@ export async function executeHttpHook(
       logger.warn(
         `[cc-hook:${label}] ${input.hook_event_name} http hook → HTTP ${result.status} — non-blocking, continuing`,
       )
-      return {}
+      return { failed: 'error' }
     }
     return foldHookOutput(result.body, allowPlainTextContext)
   }
@@ -94,5 +94,7 @@ export async function executeHttpHook(
   logger.warn(
     `[cc-hook:${label}] ${input.hook_event_name} http hook ${detail} — non-blocking, continuing`,
   )
-  return {}
+  return result.kind === 'aborted'
+    ? {}
+    : { failed: result.kind === 'timeout' ? 'timeout' : 'error' }
 }

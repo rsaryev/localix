@@ -113,6 +113,12 @@ Follow-ups driven by the writer instead of a consumer, most valuable first:
 | A reconnect invalidates every resource instead of catching up after a position.            | `packages/plugin-sdk/src/ui/resource-sync.ts`                                                                                |
 | Topic names are repeated in the API and the UI.                                            | `apps/api/src/features/realtime/resources.ts`, `apps/ui/src/shared/api/resourceSyncTransport.ts`                             |
 
+## Recorded exceptions
+
+| Exception                                                                                                                                                                                                                                         | Where                                                               |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Claude Code agent isolation: core creates git worktrees for a subagent's or workflow agent's `isolation: 'worktree'` and runs `WorktreeCreate` hooks, as part of the Claude Code format; the git-workspace plugin keeps its own worktree feature. | `scripts/git-workspace-ownership.test.ts` (`CLAUDE_CODE_ISOLATION`) |
+
 ## Next audit
 
 Re-run the import scans and the reference inventory after each roadmap stage, update the counts

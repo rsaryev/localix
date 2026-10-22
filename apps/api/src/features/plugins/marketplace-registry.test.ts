@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, spyOn } from 'bun:test'
 import { promises as fs } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { CLAUDE_CODE_MARKETPLACE, CLAUDE_CODE_MARKETPLACE_HINT } from './claude-code-marketplace'
+import { CLAUDE_CODE_MARKETPLACE } from './claude-code-marketplace'
 
 import {
   addMarketplace,
@@ -144,9 +144,13 @@ describe('resolveEntrySource', () => {
     })
     expect(r).toEqual({ git: { url: 'https://h/r.git', ref: 'deadbeef' } })
   })
-  it('resolves a relative source under the catalog pluginRoot', () => {
+  it('resolves a bare-name source under the catalog pluginRoot; ./ paths stay at the root', () => {
     expect(
-      resolveEntrySource('/mkt', { name: 'x', source: './x' }, { pluginRoot: './plugins' }),
+      resolveEntrySource('/mkt', { name: 'x', source: 'x' }, { pluginRoot: './plugins' }),
+    ).toEqual({ localPath: '/mkt/plugins/x' })
+    // Claude Code: pluginRoot has no effect on a source that already starts with `./`.
+    expect(
+      resolveEntrySource('/mkt', { name: 'x', source: './plugins/x' }, { pluginRoot: './plugins' }),
     ).toEqual({ localPath: '/mkt/plugins/x' })
   })
   it('a pluginRoot cannot let an entry escape the marketplace root', () => {
@@ -318,16 +322,23 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
     expect(res.entry.name).toBe('cool')
   })
 
-  it('refuses a Claude Code-only marketplace with the individual-install hint', async () => {
+  it('registers a Claude Code-only marketplace (.claude-plugin/marketplace.json)', async () => {
     await fs.rm(join(upstream, '.localix-plugin'), { recursive: true })
     await fs.mkdir(dirname(join(upstream, CLAUDE_CODE_MARKETPLACE)), { recursive: true })
     await fs.writeFile(
       join(upstream, CLAUDE_CODE_MARKETPLACE),
-      JSON.stringify({ name: 'cc', owner: { name: 'o' }, plugins: [] }),
+      JSON.stringify({
+        name: 'cc',
+        owner: { name: 'o' },
+        plugins: [{ name: 'cool', source: './plugins/cool' }],
+      }),
     )
-    expect(addMarketplace({ source: 'github', repo: 'o/cc' }, deps)).rejects.toThrow(
-      CLAUDE_CODE_MARKETPLACE_HINT,
-    )
+    expect(await addMarketplace({ source: 'github', repo: 'o/cc' }, deps)).toEqual({
+      name: 'cc',
+      count: 1,
+    })
+    const res = await resolveMarketplaceInstall({ plugin: 'cool', marketplace: 'cc' }, deps)
+    expect(res.dir).toBe(join(root, 'cc', 'plugins', 'cool'))
   })
 
   it('restores the previous marketplace when activation fails', async () => {

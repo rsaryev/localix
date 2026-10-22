@@ -178,6 +178,8 @@ export function createAgentRunner(deps: RunnerDeps) {
     leadership,
     floorAdvisor,
     inviteAddressed,
+    /** Claude Code hooks between runs (model switch, project move, watched files). */
+    ccHookSessions: state.ccHookSessions,
     ...createRunnerStatus(state),
     ...createRunnerQueue({ state, wakeQueue, stopCtx }),
     ...createRunnerInteraction({ deps, repo, state }),

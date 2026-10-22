@@ -185,6 +185,7 @@ export function createDomainServicesPhase({
     capabilityStores,
     homeDir: userHome(),
     contributionKinds,
+    modCommands: () => hostRefs.mods?.commands() ?? [],
     resolveProjectCwd,
     resolveSessionCwd: async (...args) =>
       (await hostRefs.chatServiceForCwd?.resolveSessionCwd(...args).catch(() => null)) ?? null,
@@ -202,6 +203,7 @@ export function createDomainServicesPhase({
       hostRefs.channelHost!.refresh()
       backendHost.refresh()
       hostRefs.monitorHost!.refresh()
+      hostRefs.mods?.refresh()
     },
   })
   // Managed-Agents registry: file-backed reusable agents + their `agents` ext-state. The

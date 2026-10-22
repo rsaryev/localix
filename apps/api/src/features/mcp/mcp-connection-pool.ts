@@ -7,6 +7,7 @@ import { mcpConnectionKey as keyFor } from './mcp-connection-key'
 import type { McpConnectionObserver } from '../notifications/conditions/mcp'
 import type { ToolMetadataStore } from './mcp-tool-metadata-store'
 import type { CacheEntry, ClientConnection, McpLogger } from './client-manager-types'
+import type { ChannelRouter } from './mcp-channels'
 
 /** CC caps server instructions at 2KB before they reach the model. */
 const MCP_INSTRUCTIONS_MAX_CHARS = 2_000
@@ -17,6 +18,8 @@ export interface ConnectionPoolDeps {
   startupTimeoutMs: number
   /** Read on every connect outcome; set once by the composition root. */
   observer: () => McpConnectionObserver | undefined
+  /** Claude Code channels: a channel server's events go to the chat that last gathered it. */
+  channels?: ChannelRouter
 }
 
 export interface AcquiredConnection {
@@ -95,8 +98,10 @@ export function createConnectionPool(deps: ConnectionPoolDeps): ConnectionPool {
             })
             .catch(() => {})
         })
+        // Before discovery: a channel may push as soon as it is initialized.
+        const channel = deps.channels?.listen(server, key, client, logger) ?? false
         const toolDefs = await withDiscoveryRetry(() => listToolDefs(client))
-        metadata.reconcile(key, server.name, toolDefs, logger)
+        metadata.reconcile(key, server.name, toolDefs, logger, channel)
         const instructions = capInstructions(client.getInstructions?.())
         const connection: ClientConnection = { client, toolDefs, instructions }
         entry.connection = connection

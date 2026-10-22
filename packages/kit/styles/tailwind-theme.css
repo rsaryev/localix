@@ -94,6 +94,11 @@
   --color-surface-sunken: var(--surface-sunken);
   --color-surface-hover: var(--surface-hover);
   --color-surface-active: var(--surface-active);
+  --color-user-message: var(--user-message);
+  --color-diff-added: var(--diff-added);
+  --color-diff-removed: var(--diff-removed);
+  --color-diff-added-word: var(--diff-added-word);
+  --color-diff-removed-word: var(--diff-removed-word);
   --color-text-strong: var(--text-strong);
   --color-text-soft: var(--text-soft);
   --color-text-faint: var(--text-faint);

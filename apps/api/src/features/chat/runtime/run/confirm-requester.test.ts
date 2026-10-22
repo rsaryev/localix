@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { INERT_CC_HOOKS } from '../../../cc-hooks'
 import { createConfirmRequester } from './confirm-requester'
 import type { SessionRecord } from '../../repository'
 import { createHitlRegistry } from '../hitl-registry'
@@ -99,6 +100,7 @@ const make = (env: unknown, session: SessionRecord, notifications: Notified[] = 
     pluginHooksForRun: [],
     hookRunOptions: { sessionId: session.id, logger: { warn: () => {} } },
     ccHooks: {
+      ...INERT_CC_HOOKS,
       active: true,
       runNotification: async (n: Notified) => {
         notifications.push(n)
@@ -177,7 +179,7 @@ describe('createConfirmRequester', () => {
       abortSignal: new AbortController().signal,
       pluginHooksForRun: [],
       hookRunOptions: {} as never,
-      ccHooks: { runNotification: async () => {} } as never,
+      ccHooks: { ...INERT_CC_HOOKS, runNotification: async () => {} } as never,
     })
     expect(await requester(req)).toBe(false)
     expect(h.tracked).toHaveLength(0)
@@ -447,6 +449,7 @@ describe('a confirm card is shielded end to end', () => {
       ] as never,
       hookRunOptions: {} as never,
       ccHooks: {
+        ...INERT_CC_HOOKS,
         active: true,
         runNotification: async (n: Notified) => {
           h.notifications.push(n)

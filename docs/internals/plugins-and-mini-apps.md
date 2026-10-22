@@ -83,8 +83,7 @@ gives plugins and mini apps separate records has one seam to cut.
 
 ## Not yet
 
-- **Hooks modules (mods).** `hooks/hooks.json` `modules` are reported as not run. Localix's own
-  JavaScript hooks remain a mini-app backend feature until a mods runtime exists.
-- Output styles, themes, workflows, plugin `settings.json` and channels are reported as unsupported.
-- Claude Code marketplaces (`.claude-plugin/marketplace.json`) are still refused; install their
-  plugins one by one.
+- Four hook events have no Localix moment and stay inert, each with its reason in
+  `apps/api/src/features/cc-hooks/contracts.ts` (`CC_INERT_HOOK_EVENTS`).
+- Mods know nothing of mini apps; a mini app's JavaScript hooks stay a mini-app backend feature.
+  Mods are `user`-tier only: Localix has no managed or bundled mods.

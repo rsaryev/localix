@@ -29,3 +29,7 @@ export {
   type MergedSource,
 } from './layout'
 export { HOOKS_MODULE_EXTENSIONS, parseHooksFile, type HooksFile } from './hooks'
+export { DEFAULT_OUTPUT_STYLE, outputStyleOf, type OutputStyle } from './output-style'
+export { PLUGIN_SETTINGS_KEYS, pluginSettingsOf, type PluginSettings } from './plugin-settings'
+export { parseTheme, THEME_BASES, themeColor, type ClaudeTheme, type ThemeBase } from './theme'
+export { parseWorkflowMeta, type WorkflowMeta, type WorkflowMetaResult } from './workflow-meta'

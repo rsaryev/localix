@@ -39,7 +39,7 @@ export const PLUGIN_FEATURES: FeatureRow[] = [
   {
     kicker: 'Same folder',
     title: 'Claude Code plugins work as they are',
-    body: 'Install one with /plugin install and Localix reads its manifest, skills, commands, hooks and MCP servers in place. The same folder still loads in Claude Code, and what Localix does not run yet is reported.',
+    body: 'Install one with /plugin install and Localix reads its manifest, skills, commands, hooks, mods and MCP servers in place. The same folder still loads in Claude Code, and what Localix does not run yet is reported.',
     slug: 'extending--claude-code-plugins',
     anchor: 'compatibility',
   },

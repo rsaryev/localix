@@ -20,6 +20,7 @@ import type { SpawnTerminalJob } from './tools/terminal/terminal-job'
 import type { RunProfile } from './run-shape'
 import { BUILTIN_TOOL_NAMES, TOOL } from './tool-names'
 import { createCodemodeTool } from './tools/codemode/codemode'
+import type { WorkflowToolPort } from './tools/workflow/workflow'
 import { buildCoreTools, buildRegistryContext, type RegistryEntry } from './tool-registry-core'
 import { buildNamedOptionals } from './tool-registry-optionals'
 import {
@@ -145,6 +146,8 @@ export interface OptionalToolPorts {
   plan?: PlanToolOptions
   /** The engine's script sandbox (`AgentEngine.scripts`), which `codemode` runs scripts in. */
   codemode?: ScriptSandbox
+  /** Plugin workflows: their sandbox and the chat's children (`tools/workflow/workflow.ts`). */
+  workflow?: WorkflowToolPort
 }
 
 /**

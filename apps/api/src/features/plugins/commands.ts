@@ -53,3 +53,29 @@ export function listCommandsFromCatalog(
   }
   return commands
 }
+
+/**
+ * The commands loaded mods registered, for the enabled plugins of the scope. A mod's command is
+ * typed bare (`/tally`), as in Claude Code; it takes its argument string whole.
+ */
+export function modCommandSpecs(
+  catalog: PluginCatalog,
+  commands: ReadonlyArray<{
+    plugin: string
+    name: string
+    description: string
+    argumentHint?: string
+  }>,
+): PluginCommandSpec[] {
+  const enabled = new Set(catalog.enabled.map((entry) => entry.plugin.manifest.name))
+  return commands
+    .filter((command) => enabled.has(command.plugin))
+    .map((command) => ({
+      pluginName: command.plugin,
+      name: command.name,
+      fullName: command.name,
+      description: command.description,
+      args: [],
+      ...(command.argumentHint ? { argumentHint: command.argumentHint } : {}),
+    }))
+}

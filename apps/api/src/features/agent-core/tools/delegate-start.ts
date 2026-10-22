@@ -2,9 +2,16 @@ import { errorMessage } from '../../../lib/errors'
 import { admitDelegation, DEFAULT_DELEGATION_BUDGET } from '../delegation-budget'
 import { holdReport, type HeldReport } from '../delegation-awaits'
 import { delegatesAt, delegationNote } from '../delegation-hierarchy'
+import { resolveModelAlias } from '../model-alias'
 import { ONE_SHOT_EXECUTION } from '../prompt/sections/team-contract'
 import { reportBody } from './child-report'
 import type { DelegateRequest } from './delegate'
+import {
+  preparePluginAgentChild,
+  resolveDelegateTarget,
+  type DelegatePluginPorts,
+  type DelegateTarget,
+} from './delegate-plugin-agent'
 import {
   describeStartedTask,
   type TaskDelegationOptions,
@@ -37,12 +44,16 @@ const OUTCOME_WORD: Record<HeldReport['status'], string> = {
   stopped: 'was STOPPED before finishing',
 }
 
-/** Start one delegated task: resolve the agent, create the child, give it context, and run it. */
+/**
+ * Start one delegated task: resolve the agent, create the child, give it context, and run it. An
+ * `agent` that names a plugin's subagent type runs as that agent (`delegate-plugin-agent.ts`).
+ */
 export async function startDelegation(
   toolCallId: string,
   request: DelegateRequest,
   opts: TaskDelegationOptions,
   signal?: AbortSignal,
+  plugins?: DelegatePluginPorts,
 ): Promise<TaskDelegationResult> {
   const title = request.title.trim()
   const task = request.task.trim()
@@ -60,12 +71,22 @@ export async function startDelegation(
     const scope = { projectId: opts.projectId }
     const delegator = await opts.resolveAgent(self, scope)
     if (!delegator) return refuse('Your own agent is unavailable, so it cannot delegate.')
-    const agent = request.agent ? await opts.resolveAgent(request.agent, scope) : delegator
-    if (!agent) {
-      return refuse(
-        `No enabled agent "${request.agent}" here. Name one from the agent directory, or omit agent to run the task yourself.`,
-      )
-    }
+    const target: DelegateTarget = request.agent
+      ? await resolveDelegateTarget(request.agent, delegator, opts, plugins)
+      : { agent: delegator }
+    if ('refusal' in target) return refuse(target.refusal)
+    const { agent, plugin } = target
+    // A host's pick of the child's model: an alias resolves to a concrete id, or to the parent's.
+    const modelId = request.model ? resolveModelAlias(request.model, undefined) : undefined
+    const typed =
+      plugin && plugins
+        ? await preparePluginAgentChild(plugin, plugins, { toolCallId, hostModel: !!modelId })
+        : null
+    // Claude Code's `background: true`: the call never holds for its report.
+    const wait = request.wait && !plugin?.background
+    const name = plugin?.fullName ?? agent.handle
+    const maxTurns = plugin?.maxTurns ?? agent.maxTurns
+    const notes = typed?.notes ?? []
     const child = await opts.createSession(opts.userId, {
       agents: [{ agentId: agent.agentId }],
       title,
@@ -79,30 +100,35 @@ export async function startDelegation(
         priority: 'normal',
         depth: depth + 1,
         chain: [...chain, self],
+        ...typed?.provenance,
       },
       ...(opts.projectId ? { projectId: opts.projectId } : {}),
+      ...typed?.route,
+      ...(typed?.pinnedSkills ? { pinnedSkills: typed.pinnedSkills } : {}),
+      ...(modelId ? { modelId } : {}),
     })
     // The copy precedes the run: the child's first model call must already see the conversation.
     if (request.context === 'conversation') await opts.copyConversation(child.id)
-    opts.onSubagentStart?.(agent.agentId, child.id)
+    const agentType = plugin?.fullName ?? agent.agentId
+    opts.onSubagentStart?.(agentType, child.id)
     // Held before the start, so a child that ends inside the launch's settle window still
     // reports to this call rather than to a wake.
     const giveUp = new AbortController()
-    const held = request.wait
+    const held = wait
       ? holdReport(child.id, {
           timeoutMs: DELEGATE_WAIT_MS,
           signal: signal ? AbortSignal.any([signal, giveUp.signal]) : giveUp.signal,
         })
       : null
-    const label = `agent ${agent.handle} (${child.taskName ? `name: ${child.taskName}, ` : ''}id: ${child.id})`
+    const label = `agent ${name} (${child.taskName ? `name: ${child.taskName}, ` : ''}id: ${child.id})`
     const early = await opts.startSubagentTask(
       opts.userId,
       child.id,
       `${delegationFraming(delegator.handle, request.context)}\n\n# Task\n${task}\n\n${ONE_SHOT_EXECUTION}\n${delegationNote(depth + 1)}`,
       {
-        ...(agent.maxTurns ? { maxTurns: agent.maxTurns } : {}),
-        agentType: agent.agentId,
-        label: `agent ${agent.handle}`,
+        ...(maxTurns ? { maxTurns } : {}),
+        agentType,
+        label: `agent ${name}`,
         priority: 'normal',
       },
     )
@@ -121,14 +147,24 @@ export async function startDelegation(
     const report = held ? await held : null
     if (report) {
       return {
-        content: `- ${label}: ${OUTCOME_WORD[report.status]} "${title}".\n\n${reportBody(report.text, child.id)}`,
+        content: [
+          `- ${label}: ${OUTCOME_WORD[report.status]} "${title}".`,
+          ...notes,
+          '',
+          reportBody(report.text, child.id),
+        ].join('\n'),
         ...extras,
         ...(report.status === 'completed' ? {} : { isError: true }),
       }
     }
-    const content = held
-      ? `${line.line}\nThe wait ended before its report; the report will arrive as a message.`
-      : line.line
+    const content = [
+      line.line,
+      ...(held ? ['The wait ended before its report; the report will arrive as a message.'] : []),
+      ...(request.wait && !wait
+        ? [`${name} always runs in the background; its report will arrive as a message.`]
+        : []),
+      ...notes,
+    ].join('\n')
     return { content, ...extras, ...(line.failed ? { isError: true } : {}) }
   } catch (error) {
     return refuse(`Could not delegate "${title}": ${errorMessage(error)}`)

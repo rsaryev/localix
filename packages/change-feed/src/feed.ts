@@ -8,7 +8,7 @@
  * holder of the feed (tests, a plugin host).
  */
 import type { Kysely } from 'kysely'
-import { startConsumer, type ChangeConsumer } from './consumer'
+import { startConsumer, type ChangeConsumer, type ConsumerTimers } from './consumer'
 import { headOf } from './cursor'
 import type {
   Cascades,
@@ -34,6 +34,8 @@ interface FeedDeps<R extends RefSchemas, C extends Cascades<R>> {
   /** The wait before retry number `attempt` (0-based) of a failed delivery. */
   retryDelayMs: (attempt: number) => number
   log?: (event: string, detail: Record<string, unknown>) => void
+  /** The consumers' wake and retry timers (tests). */
+  timers?: ConsumerTimers
 }
 
 /** One stream's feed over any database that has the feed's tables. */
@@ -94,9 +96,10 @@ function feedOver<R extends RefSchemas, C extends Cascades<R>>(
         options,
         retryDelayMs: deps.retryDelayMs,
         log,
+        timers: deps.timers,
       })
       // A stopped consumer leaves, so its name can be subscribed again (a plugin reloaded).
-      const stop = consumer.stop
+      const stop = () => consumer.stop()
       const handle: ChangeConsumer = {
         ...consumer,
         async stop() {

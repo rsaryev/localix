@@ -33,6 +33,61 @@ export const EMPTY_RUNTIME: CcHooksRuntime = {
   async runPreCompact() {
     return { blocked: false }
   },
+  async runUserPromptExpansion() {
+    return { blocked: false }
+  },
+  async runPermissionRequest() {
+    return {}
+  },
+  hasHooks: () => false,
+  approveWithInput() {},
+  takeApprovedInput: () => undefined,
+  async runPermissionDenied() {
+    return { retry: false }
+  },
+  async runPostToolBatch() {
+    return { stop: false }
+  },
+  runStopFailure: noop,
+  async runTaskCreated() {
+    return { blocked: false }
+  },
+  async runTaskCompleted() {
+    return { blocked: false }
+  },
+  async runTeammateIdle() {
+    return { blocked: false }
+  },
+  runPostCompact: noop,
+  runInstructionsLoaded: noop,
+  async runConfigChange() {
+    return { blocked: false }
+  },
+  async runCwdChanged() {
+    return {}
+  },
+  async runFileChanged() {
+    return {}
+  },
+  async runPreModelSwitch() {
+    return { decision: 'proceed' }
+  },
+  async runPostModelSwitch() {
+    return {}
+  },
+  fileChangedWatchNames: () => [],
+  async runElicitation() {
+    return undefined
+  },
+  async runElicitationResult() {
+    return undefined
+  },
+  async runMessageDisplay() {
+    return {}
+  },
+  async runWorktreeCreate() {
+    return undefined
+  },
 }
 
 /** Join non-empty context strings with a blank line. */

@@ -96,6 +96,10 @@ const EXEMPTIONS: Exemptions = {
     reason:
       'Maps a model-given TOOL-CALL ID into the form a strict provider accepts on the wire (Anthropic, Claude on Bedrock or Vertex: `[a-zA-Z0-9_-]{1,64}`). Same charset as the owner because the provider spec says so, not because it names a file: the id only ever travels inside a request body, and nothing joins it into a path. A collision is stepped past with a salted digest, so a call and its result stay paired. Pinned in wire/prompt.test.ts.',
   },
+  [exemptionKey('apps/api/src/features/mods/tool-call.ts', 'rule')]: {
+    reason:
+      "Spells a mod's registered tool as Claude Code names it to the model, `mcp__<plugin>__<name>`, in the charset tool names allow on the wire (`[A-Za-z0-9_-]`). The name only travels in a request's tool list and back in a tool call; nothing joins it into a path.",
+  },
   [exemptionKey('packages/visual-feedback/src/core/identify.ts', 'rule')]: {
     reason:
       'ESCAPES the same charset for a CSS SELECTOR (`\\${ch}`) rather than replacing it. The opposite operation: it PRESERVES every character so the selector still matches, where a file key must DESTROY them. Also in a package upstream of apps/api.',
@@ -105,6 +109,10 @@ const EXEMPTIONS: Exemptions = {
   [exemptionKey('apps/api/src/features/plugins/authoring/scaffold.ts', 'fileKey')]: {
     reason:
       '`toPluginName` slugs a model-proposed name into the PLUGIN NAME format (lower-kebab, `PLUGIN_NAME_RE`), and that name is the copy\'s folder. The owner\'s "_" would produce a name the format rejects, so the separator is the format\'s, not a choice. Traversal-safe: `[^a-z0-9]+` → "-" admits no `.` and no `/`, and the result is then VALIDATED against `PLUGIN_NAME_RE` with a fixed fallback (`my-plugin`) — reject-don\'t-coerce on top of the slug. Pinned in scaffold-name.test.ts.',
+  },
+  [exemptionKey('apps/api/src/features/plugins/claude-code-marketplace.ts', 'fileKey')]: {
+    reason:
+      "CLAIM 2 only. Its char-class replace (`canonical`) folds a marketplace name to compare it with Anthropic's reserved names, so `claude_plugins-official` reads as `claude-plugins-official`; the folded form is never a filename. The name that does become a folder is VALIDATED by `marketplaceNameProblem` (`MARKETPLACE_NAME_RE`, no `..`, no non-ASCII) and refused, not coerced. Its `join` calls read the catalog files of an already-resolved marketplace folder.",
   },
   [exemptionKey('apps/api/src/features/media/store.ts', 'fileKey')]: {
     reason:

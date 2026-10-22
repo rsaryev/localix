@@ -4,6 +4,7 @@ import { wrapToolsWithStuckRunBreaker } from '../../../agent-core/tools/stuck-ru
 import { wrapToolsWithTimeoutPromoter } from '../../../agent-core/tools/timeout-promoter'
 import { wrapToolsWithCcHooks } from '../../../cc-hooks'
 import { wrapToolsWithHooks } from '../../../plugins/hooks'
+import { wrapToolsWithMods, type ModRunScope } from '../../../mods/run-scope'
 
 /**
  * The wrapper chain, innermost-first, as a value rather than a sentence.
@@ -21,6 +22,7 @@ import { wrapToolsWithHooks } from '../../../plugins/hooks'
 export const TOOL_WRAPPER_CHAIN = [
   { wrapper: 'wrapToolsWithHooks', label: 'plugin-hooks' },
   { wrapper: 'wrapToolsWithCcHooks', label: 'cc-hooks' },
+  { wrapper: 'wrapToolsWithMods', label: 'mods' },
   { wrapper: 'wrapToolsWithTimeoutPromoter', label: 'timeout-promoter' },
   { wrapper: 'wrapToolsWithStuckRunBreaker', label: 'stuck-run-breaker' },
 ] as const
@@ -35,6 +37,8 @@ export const TOOL_WRAPPER_CHAIN = [
  * Why the order is what it is:
  *  - plugin hooks innermost, then CC hooks, so a PreToolUse deny happens before anything
  *    downstream gets to observe or time the call;
+ *  - mods around them: a mod's `tool.call` reaches the settings hooks through `next`, as in
+ *    Claude Code, and may answer or refuse before they run;
  *  - the timeout promoter next, so the breaker sees a promotion as the ordinary non-error
  *    result it is rather than as the timeout it replaced;
  *  - the stuck-run breaker outermost: it is also where a THROWN tool error becomes a result
@@ -47,6 +51,8 @@ export function applyToolWrapperChain(
     pluginHookOptions: Parameters<typeof wrapToolsWithHooks>[2]
     ccHooks: Parameters<typeof wrapToolsWithCcHooks>[1]
     logger: Parameters<typeof wrapToolsWithCcHooks>[2]
+    /** Claude Code mods enabled for the run; absent where a run has none. */
+    mods?: ModRunScope
     observe?: (event: {
       toolName: string
       input: unknown
@@ -78,5 +84,6 @@ export function applyToolWrapperChain(
       : tools
   const hooked = wrapToolsWithHooks(observed, input.pluginHooks, input.pluginHookOptions)
   const ccHooked = wrapToolsWithCcHooks(hooked, input.ccHooks, input.logger)
-  return wrapToolsWithStuckRunBreaker(wrapToolsWithTimeoutPromoter(ccHooked))
+  const modded = input.mods ? wrapToolsWithMods(ccHooked, input.mods) : ccHooked
+  return wrapToolsWithStuckRunBreaker(wrapToolsWithTimeoutPromoter(modded))
 }

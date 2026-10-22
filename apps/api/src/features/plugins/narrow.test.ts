@@ -33,6 +33,12 @@ function loadedFixture(): LoadedPlugins {
       { pluginName: DENIED, name: 'clerk' },
       { pluginName: KEPT, name: 'analyst' },
     ],
+    outputStyles: [
+      { pluginName: DENIED, fullName: `${DENIED}:terse` },
+      { pluginName: KEPT, fullName: `${KEPT}:plain` },
+    ],
+    // The denied plugin's default agent would otherwise run this agent's chat.
+    mainAgent: { pluginName: DENIED, name: 'clerk' },
     memory: null,
     backends: [],
     loaded: [
@@ -67,6 +73,8 @@ test('a denied plugin contributes nothing to the run', () => {
   expect(narrowed.binDirs).toEqual([`/plugins/${KEPT}/bin`])
   expect(narrowed.promptSections.map((s) => s.pluginName)).toEqual([KEPT])
   expect(narrowed.agents.map((a) => a.pluginName)).toEqual([KEPT])
+  expect(narrowed.outputStyles.map((s) => s.pluginName)).toEqual([KEPT])
+  expect(narrowed.mainAgent).toBeNull()
   expect(narrowed.loaded.map((p) => p.name)).toEqual([KEPT])
 })
 

@@ -17,6 +17,7 @@ import { TOOL } from '../../../agent-core/tool-names'
 import { agentParticipant } from '../../../../db/participant'
 import { createMemoryTool } from '../../../agent-core/tools/memory/memory'
 import { createSkillTool } from '../../../agent-core/tools/skill'
+import { announceSkillInvoked } from '../../../agent-core/skill-invocations'
 import { createToolOutputTool } from '../../../agent-core/tools/context-search/context-search'
 import {
   createGlobalSearchTool,
@@ -84,6 +85,13 @@ export function buildDirectToolInstances(
           deps.skillOverrides,
           session.projectId ?? '',
           deps.announceCapabilityChange,
+          (skill) =>
+            announceSkillInvoked({
+              userId,
+              sessionId: session.rootSessionId ?? session.id,
+              skillName: skill.name,
+              ...(skill.pluginName ? { pluginName: skill.pluginName } : {}),
+            }),
         )
       : undefined,
     global_search: isToolDirect(agentProfile, TOOL.global_search)

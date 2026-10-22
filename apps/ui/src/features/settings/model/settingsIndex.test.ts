@@ -31,6 +31,7 @@ function collectTsxFiles(dir: string): string[] {
 
 const CONTROL_FILES = [
   'PreferencesSettings.tsx',
+  'ThemeField.tsx',
   'EditorSettings.tsx',
   'typography/TypographySection.tsx',
   'ContextExclusionsSection.tsx',
@@ -83,7 +84,7 @@ describe('settings index anti-drift', () => {
 
   it('detects a missing control even when its section is still indexed', () => {
     expect(missingControls(SETTINGS_INDEX.filter((entry) => entry.id !== 'prefs.theme'))).toContain(
-      'PreferencesSettings.tsx: Theme',
+      'ThemeField.tsx: Theme',
     )
   })
   it('finds at least a handful of rendered anchors (scan sanity check)', () => {

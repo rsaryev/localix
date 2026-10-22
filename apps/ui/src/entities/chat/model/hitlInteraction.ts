@@ -4,6 +4,7 @@ import type {
   PendingAskInteraction,
   PendingConfigChangeInteraction,
   PendingConfirmInteraction,
+  PendingMcpElicitationInteraction,
   PendingRequestSecretInteraction,
   UiPendingHitlInteraction as PendingHitlInteraction,
 } from '@/shared/api/contracts'
@@ -71,6 +72,18 @@ export function fromHitlRequest(value: unknown): PendingHitlInteraction | null {
         kind: 'config_change',
         title: request.title,
         payload: request.payload as PendingConfigChangeInteraction['request']['payload'],
+      },
+    }
+  }
+  if (request.kind === 'mcp_elicitation') {
+    return {
+      kind: 'mcp_elicitation',
+      request: {
+        id: request.requestId,
+        ...deadline,
+        kind: 'mcp_elicitation',
+        title: request.title,
+        payload: request.payload as PendingMcpElicitationInteraction['request']['payload'],
       },
     }
   }

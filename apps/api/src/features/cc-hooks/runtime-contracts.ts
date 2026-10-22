@@ -3,6 +3,9 @@ import type { HookLogger, HookRewake } from './executor'
 import type { CcMcpToolCaller } from './mcp-tool-hook'
 import type { PromptHookEvaluator } from './prompt-hook'
 import type { AgentHookEvaluator } from './agent-hook'
+import type { CcAddedHooksRuntime } from './runtime-contracts-added'
+import type { CcDisplayHooksRuntime } from './runtime-display-hooks'
+import type { CcWorktreeHooksRuntime } from './runtime-worktree-hooks'
 
 /** Aggregated PreToolUse decision handed to the tool wrapper. */
 export interface PreToolUseResult {
@@ -34,16 +37,18 @@ export interface PreCompactResult {
   reason?: string
 }
 
-export interface CcHooksRuntime {
+export interface CcHooksRuntime
+  extends CcAddedHooksRuntime, CcDisplayHooksRuntime, CcWorktreeHooksRuntime {
   /** True when at least one supported hook is registered AND the feature is enabled. */
   readonly active: boolean
   /**
    * Fire the SessionStart hooks. `source` (CC: `startup` | `resume` | `clear` |
    * `compact`, default `startup`) is both reported in the hook input AND used as
    * the matcher value — a hook whose matcher is `compact` only fires on a `compact`
-   * source. Returns the joined `additionalContext` to inject into the model.
+   * source. Returns the joined `additionalContext` to inject into the model, and the
+   * `watchPaths` a handler named for `FileChanged`.
    */
-  runSessionStart(source?: string): Promise<{ additionalContext?: string }>
+  runSessionStart(source?: string): Promise<{ additionalContext?: string; watchPaths?: string[] }>
   runUserPromptSubmit(prompt: string): Promise<PromptSubmitResult>
   runPreToolUse(toolName: string, input: unknown, toolUseId?: string): Promise<PreToolUseResult>
   runPostToolUse(

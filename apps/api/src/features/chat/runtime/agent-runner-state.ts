@@ -9,6 +9,8 @@ import { forgetMidRunReminders } from './mid-run-reminders'
 import type { WorkRegistry } from '../../work/registry'
 import { createRouteCooldowns } from './route-cooldowns'
 import { createActiveRuns } from './active-runs'
+import { createCcHookSessions } from './cc-hook-sessions'
+import { watchFileNative } from './cc-hook-file-watch'
 import type { RuntimeState } from './agent-runner-state-contracts'
 export type {
   ActionRegistryEntry,
@@ -60,6 +62,7 @@ export function forgetSessionRuntimeState(
     | 'ccHooksStartedSessions'
     | 'ccHooksSessionStartSource'
     | 'ccHookOnceKeys'
+    | 'ccHookSessions'
     | 'contextSnapshots'
     | 'childRuntimeSessions'
     | 'drainingSessions'
@@ -94,6 +97,7 @@ export function forgetSessionRuntimeState(
   state.ccHooksStartedSessions.delete(sessionId)
   state.ccHooksSessionStartSource.delete(sessionId)
   state.ccHookOnceKeys.delete(sessionId)
+  state.ccHookSessions.forget(sessionId)
   state.contextSnapshots.invalidate(sessionId)
   state.childRuntimeSessions.delete(sessionId)
   state.drainingSessions.delete(sessionId)
@@ -158,6 +162,7 @@ export function createRuntimeState(work: WorkRegistry): RuntimeState {
     ccHooksStartedSessions: new Set(),
     ccHooksSessionStartSource: new Map(),
     ccHookOnceKeys: new Map(),
+    ccHookSessions: createCcHookSessions(watchFileNative),
     // Frozen per-session context snapshot (see
     // session-snapshot.ts). Opt out with LOCALIX_FREEZE_CONTEXT=0.
     contextSnapshots: createSessionSnapshotCache<FrozenSessionContext>({

@@ -1920,3 +1920,29 @@ describe('applyStreamEventToSession — request_secret rides the live hitl path'
     })
   })
 })
+
+describe('applyStreamEventToSession — an MCP elicitation rides the live hitl path', () => {
+  test("maps the server's request into the overlay slot", () => {
+    const payload = {
+      server: 'issue-tracker',
+      message: 'Which project?',
+      mode: 'form' as const,
+      requestedSchema: {
+        type: 'object' as const,
+        properties: { key: { type: 'string' as const } },
+      },
+    }
+    const s = applyStreamEventToSession(
+      makeSession(),
+      ev({
+        type: 'hitl.requested',
+        sessionId: 'sess-1',
+        request: { kind: 'mcp_elicitation', requestId: 'call-1', title: 'Asks', payload },
+      }),
+    )
+    expect(s.pendingInteraction).toEqual({
+      kind: 'mcp_elicitation',
+      request: { id: 'call-1', kind: 'mcp_elicitation', title: 'Asks', payload },
+    })
+  })
+})

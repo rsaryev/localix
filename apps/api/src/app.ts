@@ -47,6 +47,9 @@ import { createMediaRoutes } from './features/media/routes'
 import { MEDIA_SERVE_PREFIX } from './features/media/serve-path'
 import type { MediaStore } from './features/media/store'
 import { createSystemRoutes } from './features/system/routes'
+import { clientEvent } from './features/mods/conversation-events'
+import { createModRoutes } from './features/mods/routes'
+import { createModsHost, INERT_MOD_PORTS, type ModsHost } from './features/mods/host'
 import { createStorageRoutes } from './features/storage/routes'
 import type { StorageService } from './features/storage/service'
 import { createShellCommandRoutes } from './features/shell-command/routes'
@@ -123,6 +126,8 @@ export interface AppDeps extends ConversationRouteDeps {
   /** Filesystem media store — serves uploaded media bytes by content id. */
   mediaStore: MediaStore
   systemService: SystemService
+  /** Claude Code mods: their panes and controls (`/rpc/mods`). Absent in lightweight harnesses. */
+  modsHost?: ModsHost
   /** Disk usage and removal of old conversations (`/rpc/storage`). */
   storageService: StorageService
   /** `localix` shell-command install ("install in PATH"). */
@@ -271,6 +276,7 @@ h2{margin:0 0 .5rem}p{margin:0;color:#888;font-size:.9rem}</style></head>
     .route(MEDIA_SERVE_PREFIX, createMediaRoutes(deps.mediaStore))
     .route('/rpc/system', createSystemRoutes(deps.systemService))
     .route('/rpc/storage', createStorageRoutes(deps.storageService))
+    .route('/rpc/mods', createModRoutes(deps.modsHost ?? createModsHost(INERT_MOD_PORTS)))
     .route('/rpc/shell-command', createShellCommandRoutes(deps.shellCommandService))
     // Extension-owned routes are mounted through the generic subsystem registry below.
     .route('/rpc/secrets', createSecretsRoutes(deps.secretsService))
@@ -313,6 +319,10 @@ h2{margin:0 0 .5rem}p{margin:0;color:#888;font-size:.9rem}</style></head>
         notificationsSubscribe: (...args) => deps.notifications?.subscribe(...args) ?? (() => {}),
         sendMessage: (...args) => deps.chatService.sendMessage(...args),
         stop: (...args) => deps.chatService.stop(...args),
+        onWatch: (clientId, sessionIds, attached) => {
+          for (const sessionId of sessionIds)
+            void clientEvent(deps.modsHost, { sessionId, clientId, attached })
+        },
         // `interact`'s LAST parameter is `callerUserId` — the cross-tenant ownership
         // gate (`isInteractAllowedForOwner`: an ABSENT caller means "trusted internal
         // caller", so it allows everything). This binding used to name three

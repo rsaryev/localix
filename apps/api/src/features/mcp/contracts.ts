@@ -33,6 +33,12 @@ const mcpToolFilterFields = {
    * global default), matching the `.mcp.json` convention.
    */
   timeout: z.number().int().positive().optional(),
+  /**
+   * Hear this server as a Claude Code channel (`mcp-channels.ts`) when it declares one: its events
+   * become turns in the chat that last used it. Claude Code's `--channels server:<name>` opt-in; a
+   * plugin's server needs none, its plugin being enabled is the opt-in.
+   */
+  channel: z.boolean().optional(),
 }
 
 export const mcpStdioConfigSchema = z.object({

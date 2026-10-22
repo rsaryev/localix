@@ -1,6 +1,7 @@
 import type { KubernetesBackend } from './backend-port'
 import { createKubernetesApiBackend } from './api-backend'
 import { ApiPodWatchRegistry, type WatchSubscriber } from './api-watch'
+import { ApiCollectionWatchRegistry, type CollectionWatchSubscriber } from './api-collection-watch'
 import { ApiPortForwardRegistry, type StartPortForwardOptions } from './api-port-forward'
 import { ApiExecRegistry } from './api-exec'
 import type { PortForward } from './contracts'
@@ -42,6 +43,8 @@ export interface KubernetesService extends KubernetesBackend {
    * and liveness frames are fanned out to reference-counted subscribers.
    */
   watchPods(context: string, namespace: string, sub: WatchSubscriber): () => void
+  /** The same for deployments, services and nodes: `changed` frames name what to re-read. */
+  watchCollections(context: string, namespace: string, sub: CollectionWatchSubscriber): () => void
   /** Stop every live informer during shutdown. */
   stopAllWatches(): Promise<void>
   /** Close every pending/live pods/exec bridge. */
@@ -57,6 +60,7 @@ export function createKubernetesService(options: KubernetesServiceOptions = {}):
   const backend = options.backend ?? createKubernetesApiBackend()
   const portForwards = new ApiPortForwardRegistry()
   const watches = new ApiPodWatchRegistry()
+  const collections = new ApiCollectionWatchRegistry()
   const execs = new ApiExecRegistry()
   return {
     // The read/act surface is the backend port verbatim (KubernetesService repeats it
@@ -74,7 +78,10 @@ export function createKubernetesService(options: KubernetesServiceOptions = {}):
     watchPortForwards: (listener) => portForwards.onChange(listener),
     stopAllPortForwards: () => portForwards.stopAll(),
     watchPods: (context, namespace, sub) => watches.subscribe(context, namespace, sub),
-    stopAllWatches: () => watches.stopAll(),
+    watchCollections: (context, namespace, sub) => collections.subscribe(context, namespace, sub),
+    stopAllWatches: async () => {
+      await Promise.all([watches.stopAll(), collections.stopAll()])
+    },
     stopAllExecs: () => execs.stopAll(),
   }
 }

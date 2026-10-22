@@ -2,6 +2,7 @@ import type {
   AskToolRequest,
   ConfigChangeRequest,
   ConfirmToolRequest,
+  McpElicitationRequest,
   VaultItemType,
 } from '@localixai/api/client'
 
@@ -62,8 +63,18 @@ export interface PendingConfigChangeInteraction extends PendingHitlSource {
   request: Omit<ConfigChangeRequest, 'createdAt'> & { title?: string }
 }
 
+/**
+ * An MCP server asking, in the middle of one of its tool calls, for input (a form) or for a page
+ * to be opened (a URL). Submit accepts, Decline declines, Esc cancels — what the server receives.
+ */
+export interface PendingMcpElicitationInteraction extends PendingHitlSource {
+  kind: 'mcp_elicitation'
+  request: Omit<McpElicitationRequest, 'createdAt'> & { title?: string }
+}
+
 export type UiPendingHitlInteraction =
   | PendingAskInteraction
   | PendingConfirmInteraction
   | PendingRequestSecretInteraction
   | PendingConfigChangeInteraction
+  | PendingMcpElicitationInteraction

@@ -156,7 +156,7 @@ describe('marketplace entry-as-manifest synthesis (Part B)', () => {
     })
   })
 
-  it('mergeEntryOverrides unions skills and never overwrites the manifest authority', () => {
+  it('mergeEntryOverrides appends skills; entry servers do not apply over a plugin.json', () => {
     const merged = mergeEntryOverrides(
       { name: 'p', skills: ['./skills/a'], lspServers: { x: { command: 'x' } } },
       {
@@ -167,31 +167,28 @@ describe('marketplace entry-as-manifest synthesis (Part B)', () => {
       } as unknown as MarketplaceEntry,
     )
     expect(merged.skills).toEqual(['./skills/a', './skills/b'])
-    // existing lspServers.x wins; new y is added.
-    expect(merged.lspServers).toEqual({ x: { command: 'x' }, y: { command: 'y' } })
+    // Claude Code: entry mcpServers/lspServers apply only when the entry IS the manifest.
+    expect(merged.lspServers).toEqual({ x: { command: 'x' } })
   })
 
-  it('entry version OVERRIDES the manifest version (CC: "overrides plugin.json")', () => {
+  it('the plugin.json version wins over the entry version (Claude Code)', () => {
     const merged = mergeEntryOverrides({ name: 'p', version: '1.0.0' }, {
       name: 'p',
       source: './p',
       version: '2.0.0',
     } as unknown as MarketplaceEntry)
-    expect(merged.version).toBe('2.0.0')
-  })
-
-  it('entry displayName/description only FILL GAPS — the manifest keeps its own', () => {
+    expect(merged.version).toBe('1.0.0')
     const filled = mergeEntryOverrides({ name: 'p' }, {
       name: 'p',
       source: './p',
-      displayName: 'Pretty P',
-      description: 'from entry',
+      version: '2.0.0',
     } as unknown as MarketplaceEntry)
-    expect(filled.displayName).toBe('Pretty P')
-    expect(filled.description).toBe('from entry')
+    expect(filled.version).toBe('2.0.0')
+  })
 
-    const kept = mergeEntryOverrides(
-      { name: 'p', displayName: 'Own Name', description: 'own desc' },
+  it('entry display fields win over plugin.json (Claude Code)', () => {
+    const merged = mergeEntryOverrides(
+      { name: 'p', displayName: 'Own Name', description: 'own desc', license: 'MIT' },
       {
         name: 'p',
         source: './p',
@@ -199,8 +196,46 @@ describe('marketplace entry-as-manifest synthesis (Part B)', () => {
         description: 'entry desc',
       } as unknown as MarketplaceEntry,
     )
-    expect(kept.displayName).toBe('Own Name')
-    expect(kept.description).toBe('own desc')
+    expect(merged.displayName).toBe('Entry Name')
+    expect(merged.description).toBe('entry desc')
+    expect(merged.license).toBe('MIT')
+  })
+
+  it('a strict:false entry with components conflicts with a plugin.json', () => {
+    expect(() =>
+      mergeEntryOverrides({ name: 'p' }, {
+        name: 'p',
+        source: './p',
+        strict: false,
+        skills: ['./skills/b'],
+      } as unknown as MarketplaceEntry),
+    ).toThrow('has conflicting manifests')
+    // Without components, strict:false leaves plugin.json the manifest.
+    expect(
+      mergeEntryOverrides({ name: 'p', version: '1.0.0' }, {
+        name: 'p',
+        source: './p',
+        strict: false,
+        description: 'd',
+      } as unknown as MarketplaceEntry),
+    ).toEqual({ name: 'p', version: '1.0.0', description: 'd' })
+  })
+
+  it('entry hooks replace the manifest matchers per event; a hooks path is refused', () => {
+    const stop = [{ hooks: [{ type: 'command', command: 'entry' }] }]
+    const merged = mergeEntryOverrides({ name: 'p', hooks: { Stop: [], PreToolUse: [] } }, {
+      name: 'p',
+      source: './p',
+      hooks: { Stop: stop },
+    } as unknown as MarketplaceEntry)
+    expect(merged.hooks).toEqual({ Stop: stop, PreToolUse: [] })
+    expect(() =>
+      synthesizeEntryManifest({
+        name: 'p',
+        source: './p',
+        hooks: './hooks.json',
+      } as unknown as MarketplaceEntry),
+    ).toThrow('not yet supported in a marketplace entry')
   })
 
   it('a metadata-only entry (no components) still lands on the installed plugin.json', async () => {
@@ -218,8 +253,8 @@ describe('marketplace entry-as-manifest synthesis (Part B)', () => {
     } as unknown as MarketplaceEntry
     await applyEntryManifestOverrides(dir, entry)
     const written = JSON.parse(await fs.readFile(join(dir, 'plugin.json'), 'utf8'))
-    expect(written.version).toBe('3.1.4') // entry overrides
-    expect(written.description).toBe('own desc') // manifest keeps its own
+    expect(written.version).toBe('1.0.0') // plugin.json's version wins
+    expect(written.description).toBe('entry desc') // the entry's display field wins
   })
 
   it('synthesizes displayName onto an entry-as-manifest', () => {

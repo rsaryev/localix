@@ -8,6 +8,7 @@ import { ActionTooltip } from '@localixai/kit/tooltip'
 import { backendClient } from '@/shared/api/client'
 import { sessionRef, type UiSession } from '@/shared/api/contracts'
 import { useChatStore } from '@/entities/chat/model/store'
+import { useSubagentRows } from '@/entities/chat/model/useSubagentRows'
 import { useSessionActivity } from '@localixai/plugin-sdk/ui/session-activity'
 import { buildRuntimeSessionTree } from './runtimeSessionTree'
 import { kindStyle, titleFor } from './runtimeSessionMeta'
@@ -124,10 +125,19 @@ function RuntimeSessionsPanelComponent({
     () => [...withStopped].sort((a, b) => a.createdAt - b.createdAt || a.id.localeCompare(b.id))[0],
     [withStopped],
   )
+  // A plugin's `subagentStatusLine` redraws subagent rows; an empty body hides that row.
+  const rowBodies = useSubagentRows(
+    scopeRootId,
+    withStopped.some((session) => session.sessionKind === 'subagent'),
+  )
   // Expanded order: a hierarchy (parent then its children), siblings newest-first.
   const tree = useMemo(
-    () => buildRuntimeSessionTree(withStopped, collapsedIds),
-    [withStopped, collapsedIds],
+    () =>
+      buildRuntimeSessionTree(
+        withStopped.filter((session) => rowBodies.get(session.id) !== ''),
+        collapsedIds,
+      ),
+    [withStopped, collapsedIds, rowBodies],
   )
 
   // Stable across ticks so the memoized rows are not invalidated by a re-render of this panel.
@@ -209,6 +219,7 @@ function RuntimeSessionsPanelComponent({
           onToggle={toggleBranch}
           onSelect={onSelect}
           onStop={stopRuntime}
+          body={rowBodies.get(node.session.id)}
         />
       ))}
     </CollapsibleStrip>

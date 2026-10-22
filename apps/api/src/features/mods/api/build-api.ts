@@ -1,56 +1,75 @@
 import { elementTable, type ModsApi } from '@localixai/claude-plugin/mods'
-import { currentScene, type ModScene, type ModSource, type ModsPorts } from '../contracts'
+import { currentScene, stringOr, type ModScene, type ModSource, type ModsPorts } from '../contracts'
+import type { ModComposer } from '../composer'
+import { DESCRIBING_CORES, type ModEventCalls } from '../event-calls'
 import type { ModRegistry } from '../registry'
+import { createHash } from 'node:crypto'
+import { promises as fs } from 'node:fs'
+import { join } from 'node:path'
+import { createAgentApi } from './agent-api'
+import { createAudioApi } from './audio-api'
 import { createFsApi } from './fs-api'
+import { createModelApi } from './model-api'
+import { createRunApi, type RunSurface } from './run-api'
+import { createSettingsApi } from './settings-api'
+import { createSessionApi } from './session-api'
 import { createStoreApi } from './store-api'
 import { createSystemApi } from './system-api'
 
 /**
  * One mod's `$`: the mods API bound to Localix. Calls act in the scene of the event being handled
- * (its conversation and working directory), else in the workspace. What Localix does not offer
- * yet throws a clear error naming the call, so a mod can catch it and degrade.
+ * (its conversation and working directory), else in the workspace.
  */
 
-/** Namespaces Claude Code has that Localix does not run yet, by method. */
-const NOT_YET: Record<string, readonly string[]> = {
-  agent: ['register', 'spawn', 'list'],
-  turn: ['abort'],
-  config: ['list', 'set'],
-  settings: ['read'],
-  state: ['get', 'set'],
-  mcp: ['call', 'connect'],
-  audio: ['play', 'speak'],
-  telemetry: ['log', 'mark'],
-}
-
-const notYet = (call: string) => () => {
-  throw new Error(`$.${call} is not available in Localix yet`)
-}
+/** A screen call Claude Code answers with `{ deny }` when the surface cannot do it. */
+const denied = (reason: string) => () => ({ deny: reason })
 
 export interface ModApiDeps {
   source: ModSource
+  /** The instance this `$` belongs to (`instance-id.ts`) and the project it runs in. */
+  instance: { id: string; cwd: string }
   ports: ModsPorts
   registry: ModRegistry
   /** `$.command.run`: the command through `command.run`, as a person typing it would. */
-  runCommand(plugin: string, input: { command: string; args?: string }): Promise<unknown>
-  /** `$.tool.call` for a mod's own tool. */
-  callTool(plugin: string, input: Record<string, unknown>): Promise<unknown>
+  runCommand: (input: { command: string; args?: string }) => Promise<unknown>
+  /** The conversations' prompt boxes and status lines (`$.prompt.fill`, `$.ui.status`). */
+  composer: ModComposer
+  /** The element table resolved for a component as the instance joined (`ui.resolve`). */
+  tableOf: (component: string) => ReturnType<typeof elementTable> | undefined
+  /** The running turn of the scene's conversation, which lends `$.tool` and `$.mcp` its tools. */
+  runOf: (sessionId: string | undefined) => RunSurface | undefined
+  /** The engine's own events a call asks (`$.prompt.compose`, `$.session.compact`). */
+  calls: ModEventCalls
 }
 
-export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose(): void } {
+export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => void } {
   const { source, ports, registry } = deps
   const plugin = source.plugin
-  const fallback: ModScene = { userId: '', cwd: ports.workspaceDir }
+  const instance = deps.instance.id
+  // A timer's or a closure's call made outside any event acts in the instance's project.
+  const fallback: ModScene = { userId: '', cwd: deps.instance.cwd }
   const scene = () => currentScene(fallback)
   const system = createSystemApi({ cwd: () => scene().cwd })
   const textOf = (input: unknown) =>
-    typeof input === 'string' ? input : String((input as { text?: unknown } | null)?.text ?? '')
+    typeof input === 'string' ? input : stringOr((input as { text?: unknown } | null)?.text)
+
+  const run = createRunApi(() => deps.runOf(scene().sessionId))
+  const session = createSessionApi({
+    scene,
+    ports,
+    run: (argv, cwd) => system.process.run(argv, { cwd, timeoutMs: 5_000 }),
+    append: (sessionId, text) => {
+      deps.composer.note(sessionId, text)
+      ports.log(scene(), { plugin, text })
+    },
+    compact: () => deps.calls.compact(scene()),
+  })
 
   const api: ModsApi = {
     plugin: { name: plugin, root: source.root },
     command: {
       register: (spec: { name: string; description: string; argumentHint?: string }) =>
-        registry.addCommand(plugin, spec),
+        registry.addCommand(instance, spec),
       list: () =>
         registry.commands().map((command) => ({
           name: command.name,
@@ -58,45 +77,94 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose(): void }
           source: 'plugin',
           plugin: command.plugin,
         })),
-      run: (input: { command: string; args?: string }) => deps.runCommand(plugin, input),
+      run: (input: { command: string; args?: string }) => deps.runCommand(input),
+      describe: DESCRIBING_CORES.command.describe,
     },
     tool: {
       register: (spec: {
         name: string
         description: string
         inputSchema?: Record<string, unknown>
-      }) => registry.addTool(plugin, spec),
-      list: () =>
-        registry.tools().map(({ plugin: owner, name, description }) => ({
-          name: `mcp__${owner}__${name}`,
-          description,
-        })),
-      call: (input: Record<string, unknown>) => deps.callTool(plugin, input),
-      check: notYet('tool.check'),
+      }) => registry.addTool(instance, spec),
+      list: run.tool.list,
+      call: run.tool.call,
+      check: run.tool.check,
+      describe: DESCRIBING_CORES.tool.describe,
     },
+    mcp: run.mcp,
+    agent: {
+      ...createAgentApi({
+        instance,
+        registry,
+        scene,
+        surface: () => deps.runOf(scene().sessionId),
+        ...(ports.listAgentRuns ? { listRuns: ports.listAgentRuns } : {}),
+      }),
+      ...DESCRIBING_CORES.agent,
+    },
+    skill: DESCRIBING_CORES.skill,
+    attribution: DESCRIBING_CORES.attribution,
+    turn: {
+      abort: async () => {
+        if (!ports.abortTurn) throw new Error('turn.abort: no conversation to stop')
+        await ports.abortTurn(scene())
+      },
+    },
+    audio: createAudioApi({
+      run: (argv) => system.process.run(argv, { timeoutMs: 120_000 }),
+      root: source.root,
+      download: async (url) => {
+        const response = await fetch(url)
+        if (!response.ok) throw new Error(`audio.play: ${url} answered ${response.status}`)
+        const dir = join(ports.dataDir(plugin), 'audio')
+        const name = createHash('sha256').update(url).digest('hex').slice(0, 16)
+        await fs.mkdir(dir, { recursive: true })
+        const file = join(
+          dir,
+          `${name}${/\.[a-z0-9]{2,4}$/i.exec(new URL(url).pathname)?.[0] ?? ''}`,
+        )
+        await fs.writeFile(file, new Uint8Array(await response.arrayBuffer()))
+        return file
+      },
+    }),
+    // Claude Code's /config menu rows; Localix keeps its settings elsewhere, so it lists none.
+    config: {
+      list: () => [],
+      set: (args: { key?: unknown }) => {
+        throw new Error(`config.set: no row named ${String(args?.key)}`)
+      },
+    },
+    settings: createSettingsApi({ cwd: () => scene().cwd, homeDir: ports.homeDir ?? '' }),
     ui: {
-      resolve: () => elementTable(),
-      invalidate: () => ports.changed(),
+      resolve: (e?: { component?: unknown }) =>
+        (typeof e?.component === 'string' ? deps.tableOf(e.component) : undefined) ??
+        elementTable(),
+      invalidate: (event: unknown) => deps.calls.invalidate(event),
       open: (pane: { id: string; title?: string; rows?: number; columns?: number }) => {
-        registry.openPane(plugin, pane)
+        registry.openPane(instance, pane)
         return { isPlaced: true }
       },
       close: (pane: { id: string } | string) =>
-        registry.closePane(plugin, typeof pane === 'string' ? pane : pane.id),
-      panes: () => registry.panes(plugin).map(({ id, title }) => ({ id, title })),
+        registry.closePane(instance, typeof pane === 'string' ? pane : pane.id),
+      panes: () => registry.panes(instance).map(({ id, title }) => ({ id, title })),
       toast: (text: unknown) => ports.notify(scene(), { plugin, text: textOf(text), tone: 'info' }),
       notify: (text: unknown) =>
         ports.notify(scene(), { plugin, text: textOf(text), tone: 'attention' }),
-      status: (text: unknown) =>
-        ports.notify(scene(), { plugin, text: textOf(text), tone: 'info' }),
+      // The conversation's status line, a line per mod, as Claude Code's status bar shows it.
+      status: (text: unknown) => {
+        const sessionId = scene().sessionId
+        if (sessionId)
+          deps.composer.status(sessionId, plugin, text == null ? undefined : textOf(text))
+      },
       log: (text: unknown) => ports.log(scene(), { plugin, text: textOf(text) }),
-      notice: (text: unknown) => ports.log(scene(), { plugin, text: textOf(text) }),
-      ...Object.fromEntries(
-        ['focus', 'scroll', 'ask', 'copy', 'selection', 'blit'].map((name) => [
-          name,
-          notYet(`ui.${name}`),
-        ]),
-      ),
+      // A note under one tool call's card in Claude Code; a line in the conversation here.
+      notice: (_toolUseId: unknown, text: unknown) =>
+        text === undefined ? undefined : ports.log(scene(), { plugin, text: textOf(text) }),
+      // Localix scrolls and focuses a pane the way the person does, and draws no raster.
+      scroll: denied('Localix scrolls a pane as the person does'),
+      focus: denied('Localix moves focus as the person does'),
+      blit: denied('the desktop surface draws no terminal raster'),
+      ask: run.ui.ask,
     },
     store: createStoreApi(ports.dataDir(plugin)),
     fs: createFsApi(() => scene().cwd),
@@ -104,26 +172,7 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose(): void }
     process: system.process,
     env: system.env,
     clock: system.clock,
-    session: {
-      id: () => scene().sessionId ?? null,
-      cwd: () => scene().cwd,
-      root: () => scene().cwd,
-      ...Object.fromEntries(
-        [
-          'messages',
-          'model',
-          'turns',
-          'repo',
-          'surfaces',
-          'usage',
-          'version',
-          'compact',
-          'send',
-          'append',
-          'authorize',
-        ].map((name) => [name, notYet(`session.${name}`)]),
-      ),
-    },
+    session,
     prompt: {
       submit: (input: { text: string; asUser?: boolean }) =>
         ports.submitPrompt(scene(), {
@@ -131,26 +180,27 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose(): void }
           asUser: input?.asUser === true,
           plugin,
         }),
-      ...Object.fromEntries(
-        ['read', 'fill', 'suggest', 'compose'].map((name) => [name, notYet(`prompt.${name}`)]),
-      ),
+      // The box's draft lives in the window; a mod sees none, as where no box is mounted.
+      read: () => ({ text: '', cursor: 0 }),
+      fill: (input: { text?: unknown; mode?: unknown }) => {
+        const sessionId = scene().sessionId
+        const text = textOf(input)
+        if (!sessionId) return { isFilled: false, text: '', cursor: 0 }
+        deps.composer.fill(sessionId, text, input?.mode)
+        return { isFilled: true, text, cursor: text.length }
+      },
+      suggest: (input: { text?: unknown }) => {
+        const sessionId = scene().sessionId
+        if (sessionId) deps.composer.suggest(sessionId, textOf(input))
+        return { isShown: Boolean(sessionId) }
+      },
+      compose: (args: unknown) => deps.calls.compose(scene(), args),
+      ...DESCRIBING_CORES.prompt,
     },
-    model: {
-      complete: (request: {
-        model?: string
-        prompt: string
-        system?: string
-        maxTokens?: number
-      }) => ports.complete(scene(), request),
-      fork: notYet('model.fork'),
-      classify: notYet('model.classify'),
-    },
-    ...Object.fromEntries(
-      Object.entries(NOT_YET).map(([namespace, methods]) => [
-        namespace,
-        Object.fromEntries(methods.map((name) => [name, notYet(`${namespace}.${name}`)])),
-      ]),
-    ),
+    model: createModelApi({
+      complete: (request) => ports.complete(scene(), request),
+      messages: () => session.messages(),
+    }),
   }
   return { api, dispose: () => system.dispose() }
 }

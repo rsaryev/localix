@@ -4,10 +4,24 @@ import type { KubePod } from '../../backend/contracts'
 import { pollIntervalFor, SLOW_POLL_MS } from './watchPace'
 
 /**
- * Poll pods for the active namespace. When a live watch is streaming, pods update
- * from watch frames and polling drops to a slow SAFETY re-sync (catching any missed
- * delta). When the watch is down/unavailable it drives the whole feed with the
- * ADAPTIVE cadence (fast while a pod is in flux, slow once settled). A
+ * The poll's next delay, or `null` for none. Pods AND the other collections streaming
+ * (`covered`): every change arrives as a frame and a reconnect re-reads, so a timer would only
+ * re-list an unchanged cluster. Pods alone: the other collections keep a slow re-read. Neither:
+ * the poll is the feed, fast while a pod is in flux, slow once settled.
+ */
+export function podPollDelay(input: {
+  covered: boolean
+  podsLive: boolean
+  pods: KubePod[]
+}): number | null {
+  if (input.covered) return null
+  return input.podsLive ? SLOW_POLL_MS * 4 : pollIntervalFor(input.pods)
+}
+
+/**
+ * Poll pods for the active namespace. When the pod and collection watches both stream it reads
+ * once (on mount, a scope change, or coverage flipping) and then waits for frames. Otherwise it
+ * drives the feed with {@link podPollDelay}'s cadence. A
  * self-scheduling setTimeout (not setInterval) so the interval re-derives each cycle
  * and a slow refresh never overlaps the next tick. Honors the same visibility
  * contract as `useVisiblePolling` (which can't be reused here — its cadence is
@@ -22,31 +36,39 @@ export function usePodPollLoop({
   refresh,
   watchLiveRef,
   podsRef,
+  covered,
 }: {
   enabled: boolean
   namespace: string
-  refresh: (opts?: { forceSecondary?: boolean }) => Promise<void>
+  refresh: (opts?: { forceSecondary?: boolean; silent?: boolean }) => Promise<void>
   watchLiveRef: React.MutableRefObject<boolean>
   podsRef: React.MutableRefObject<KubePod[]>
+  /** The pod watch and the collection watch are both live. */
+  covered: boolean
 }): void {
   useEffect(() => {
     if (!enabled || !namespace) return
     let stopped = false
     let timer: ReturnType<typeof setTimeout> | undefined
     let inFlight = false
-    const nextDelay = () =>
-      watchLiveRef.current ? SLOW_POLL_MS * 4 : pollIntervalFor(podsRef.current)
-    const tick = async (opts?: { forceSecondary?: boolean }) => {
+    const tick = async (opts?: { forceSecondary?: boolean; silent?: boolean }) => {
       inFlight = true
       await refresh(opts)
       inFlight = false
       if (stopped || document.visibilityState !== 'visible') return
+      const delay = podPollDelay({
+        covered,
+        podsLive: watchLiveRef.current,
+        pods: podsRef.current,
+      })
+      if (delay === null) return
       timer = setTimeout(() => {
         timer = undefined
         void runAsBackgroundWork(tick)
-      }, nextDelay())
+      }, delay)
     }
-    void tick()
+    // Every collection: coverage flipping may have hidden a change from both the poll and the feed.
+    void tick({ forceSecondary: true, silent: true })
     // A focus refresh always pulls the full picture (secondary lists included) so a
     // returning user sees a fully fresh view without waiting for the slow-poll window.
     const onFocus = () => void refresh({ forceSecondary: true })
@@ -71,5 +93,5 @@ export function usePodPollLoop({
       window.removeEventListener('focus', onFocus)
       document.removeEventListener('visibilitychange', onVisibility)
     }
-  }, [enabled, namespace, refresh, watchLiveRef, podsRef])
+  }, [enabled, namespace, refresh, watchLiveRef, podsRef, covered])
 }

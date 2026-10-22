@@ -3,16 +3,17 @@ import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 
 import { resolveEntryName, type Marketplace, type MarketplaceEntry } from './marketplace'
-import { rmrf, stripDotGit } from '../ext/install-tree'
+import { rmrf } from '../ext/install-tree'
 import {
   hashString,
   marketplacesRoot,
   resolveEntrySource,
-  sourceCloneUrl,
   sourceMatchesRef,
   type MarketplaceSource,
 } from './marketplace-source'
-import { fetchNpmPlugin, type NpmEntrySource } from './marketplace-source-npm'
+import type { NpmEntrySource } from './marketplace-source-npm'
+import { fetchEntryPlugin, materializeMarketplace } from './marketplace-materialize'
+import { marketplaceNameProblem } from './claude-code-marketplace'
 
 import {
   LOCALIX_MARKETPLACE,
@@ -45,8 +46,9 @@ export {
 
 /**
  * Marketplace registry — the Claude Code `/plugin marketplace add` + `install
- * name@marketplace` flow. A marketplace is a git repo or local dir holding a
- * `.localix-plugin/marketplace.json` catalog. We materialize it under
+ * name@marketplace` flow. A marketplace is a git repo, local dir, catalog file or hosted
+ * catalog holding a `.localix-plugin/marketplace.json` or Claude Code
+ * `.claude-plugin/marketplace.json` catalog. We materialize it under
  * `~/.localix/marketplaces/<name>/` and track the set in `known.json` (keyed by name,
  * mirroring CC's `known_marketplaces.json`: `{ source, installLocation }`).
  *
@@ -58,10 +60,15 @@ export {
 
 /** Deps the registry needs from the host (kept injectable so the logic stays testable). */
 export interface MarketplaceRegistryDeps {
-  /** Shallow-clone `url` (optional `ref`) into `dest`; throws on failure. */
-  cloneRepo: (url: string, dest: string, ref?: string) => Promise<void>
-  /** Download an npm plugin source into `dest`. Defaults to {@link fetchNpmPlugin} (tests stub). */
+  /**
+   * Fetch `url` at `ref` (a branch, tag or commit; the default branch when absent) into `dest`,
+   * checking out only the `sparse` directory when given; throws on failure.
+   */
+  cloneRepo: (url: string, dest: string, ref?: string, sparse?: string) => Promise<void>
+  /** Download an npm plugin source into `dest`. Defaults to `fetchNpmPlugin` (tests stub). */
   fetchNpm?: (src: NpmEntrySource, dest: string) => Promise<void>
+  /** Download an archive plugin source into `dest`. Defaults to `fetchArchivePlugin`. */
+  fetchArchive?: (src: { url: string; sha256?: string }, dest: string) => Promise<void>
   /** Marketplaces root override (tests). Defaults to `~/.localix/marketplaces`. */
   root?: string
   /** Bundled plugins root, the built-in `localix` marketplace dir. Defaults to the bundled plugins root. */
@@ -103,33 +110,19 @@ async function addMarketplaceUnlocked(
   await fs.mkdir(root, { recursive: true })
 
   const staging = join(root, `.staging-${Math.abs(hashString(JSON.stringify(source)))}`)
-  await rmrf(staging)
-  if (source.source === 'local') {
-    await fs.cp(source.path, staging, { recursive: true })
-  } else if (source.source === 'npm') {
-    // Same staging helper as npm ENTRY sources — the tarball just needs a
-    // `.localix-plugin/marketplace.json` at its root. Failures are the npm path's
-    // typed ApiErrors (plugin_npm_fetch_failed / plugin_npm_no_version / …).
-    await (deps.fetchNpm ?? fetchNpmPlugin)(source, staging)
-  } else {
-    const url = sourceCloneUrl(source)
-    if (!url) throw new Error('Unsupported marketplace source')
-    await deps.cloneRepo(url, staging, source.ref)
-  }
-  await stripDotGit(staging)
-
   let market: Marketplace
   try {
+    await materializeMarketplace(source, staging, deps)
     market = await readMarketplace(staging)
+    if (market.name === LOCALIX_MARKETPLACE)
+      throw new Error(
+        `"${LOCALIX_MARKETPLACE}" is the built-in marketplace and cannot be overridden.`,
+      )
+    const refused = marketplaceNameProblem(market.name, source)
+    if (refused) throw new Error(refused)
   } catch (err) {
     await rmrf(staging)
     throw err
-  }
-  if (market.name === LOCALIX_MARKETPLACE) {
-    await rmrf(staging)
-    throw new Error(
-      `"${LOCALIX_MARKETPLACE}" is the built-in marketplace and cannot be overridden.`,
-    )
   }
 
   const installLocation = join(root, market.name)
@@ -290,20 +283,22 @@ export async function resolveMarketplaceInstall(
       : {}),
     ...(renamedFrom ? { renamedFrom } : {}),
   }
-  if ('localPath' in resolved) return { dir: resolved.localPath, ...base }
-
-  // Remote sources stage into a stable temp dir under the marketplaces root; git and
-  // npm land the same shape (a plain plugin dir handed to `installFromLocal`).
-  const staging = join(root, `.fetch-${Math.abs(hashString(ref.plugin + ref.marketplace))}`)
-  await rmrf(staging)
-  if ('npm' in resolved) {
-    await (deps.fetchNpm ?? fetchNpmPlugin)(resolved.npm, staging)
-    return { dir: staging, ...base }
+  if ('localPath' in resolved) {
+    // A hosted catalog brought only its marketplace.json: there is no tree to resolve against.
+    const hosted = ref.marketplace !== LOCALIX_MARKETPLACE && known[ref.marketplace]?.source
+    if (hosted && hosted.source === 'url')
+      throw new Error(
+        `Marketplace "${ref.marketplace}" was added from a URL, so its relative source "${String(entry.source)}" cannot be fetched; the entry needs a github, url or git-subdir source`,
+      )
+    if (!(await fs.stat(resolved.localPath).catch(() => null))?.isDirectory())
+      throw new Error(`Source path does not exist: ${resolved.localPath}`)
+    return { dir: resolved.localPath, ...base }
   }
-  await deps.cloneRepo(resolved.git.url, staging, resolved.git.ref)
-  await stripDotGit(staging)
-  const dir = resolved.git.subdir ? join(staging, resolved.git.subdir) : staging
-  return { dir, ...base }
+
+  // Remote sources stage into a stable temp dir under the marketplaces root; git, npm and
+  // archives land the same shape (a plain plugin dir handed to `installFromLocal`).
+  const staging = join(root, `.fetch-${Math.abs(hashString(ref.plugin + ref.marketplace))}`)
+  return { dir: await fetchEntryPlugin(resolved, staging, deps), ...base }
 }
 
 /**

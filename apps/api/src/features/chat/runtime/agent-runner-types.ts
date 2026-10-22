@@ -35,6 +35,7 @@ import type { WorkRegistry } from '../../work/registry'
 import type { AgentNotifications } from '../../notifications/producers'
 import type { AgentManagementPort } from '../../agents/service-contract'
 import type { HumanProfile } from '../../agent-core/prompt/sections/conversation'
+import type { ModsHost } from '../../mods/host'
 
 export interface RunnerDeps {
   agentManagement?: AgentManagementPort
@@ -105,6 +106,11 @@ export interface RunnerDeps {
    * notify job's finish rides the mid-run reminder instead, and a rewake hook wakes nobody.
    */
   exitNotices?: ExitNotices
+  /**
+   * The mods host (`features/mods`): Claude Code hooks modules of the enabled plugins. Absent
+   * (tests, hosts without it): no mod sees a turn.
+   */
+  mods?: ModsHost
   /** Filesystem media store — generated/uploaded media bytes live here (by content id), not as base64 in the db. */
   mediaStore?: MediaStore
   /** Optional document-extraction capability resolved from the capability registry. */

@@ -1,5 +1,6 @@
 import { promises as fs } from 'node:fs'
 import { dirname, join } from 'node:path'
+import { stringOr } from '../contracts'
 
 /**
  * `$.store`: a mod's key-value store, kept as one JSON file in its data directory and shared by
@@ -31,7 +32,7 @@ export function createStoreApi(dataDir: string) {
     return queue
   }
   const keyOf = (input: unknown) =>
-    typeof input === 'string' ? input : String((input as { key?: unknown } | null)?.key ?? '')
+    typeof input === 'string' ? input : stringOr((input as { key?: unknown } | null)?.key)
   return {
     async get(key: unknown) {
       return (await load())[keyOf(key)]

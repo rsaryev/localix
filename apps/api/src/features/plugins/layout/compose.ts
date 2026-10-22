@@ -147,7 +147,9 @@ function withMiniApp(
 const dependencyName = (dependency: unknown): string =>
   typeof dependency === 'string'
     ? dependency
-    : String((dependency as { name?: unknown } | null)?.name ?? '')
+    : typeof (dependency as { name?: unknown } | null)?.name === 'string'
+      ? (dependency as { name: string }).name
+      : ''
 
 /** A root `plugin.json` an earlier Localix wrote beside a Claude Code plugin it imported. */
 function isImportArtifact(file: ManifestFile): boolean {

@@ -1,4 +1,5 @@
 import type { CcHookEvent } from './contracts'
+import type { CcAddedHookInput } from './protocol-event-inputs'
 
 // ---------------------------------------------------------------------------
 // Command-hook JSON protocol
@@ -99,6 +100,7 @@ export type CcHookInput =
   | CcSubagentStopInput
   | CcPreCompactInput
   | CcNotificationInput
+  | CcAddedHookInput
 
 /**
  * The normalized outcome of ONE command-hook invocation, folded from its exit
@@ -126,4 +128,29 @@ export interface CcHookOutcome {
   permissionDecisionReason?: string
   /** PreToolUse `updatedInput` / `hookSpecificOutput.updatedInput`. */
   updatedInput?: unknown
+  /** PermissionRequest `hookSpecificOutput.decision`. */
+  permissionRequest?: {
+    behavior: 'allow' | 'deny'
+    updatedInput?: unknown
+    message?: string
+    interrupt?: boolean
+  }
+  /** PermissionDenied `hookSpecificOutput.retry`. */
+  retry?: boolean
+  /** Elicitation / ElicitationResult `hookSpecificOutput.action` (+ `content`). */
+  elicitation?: { action: 'accept' | 'decline' | 'cancel'; content?: Record<string, unknown> }
+  /** MessageDisplay `hookSpecificOutput.displayContent`: what is shown in place of the text. */
+  displayContent?: string
+  /**
+   * WorktreeCreate: the folder the hook made, as it returned it — a command's last non-empty stdout
+   * line, an MCP tool's text read the same way, an http body's `hookSpecificOutput.worktreePath`.
+   */
+  worktreePath?: string
+  /** CwdChanged / FileChanged `watchPaths` (top level or in `hookSpecificOutput`). */
+  watchPaths?: string[]
+  /**
+   * The hook did not finish its work: a timeout, an exit code other than 0/2, a non-2xx HTTP
+   * response, a failed MCP call. Most events ignore it; PreModelSwitch reads a timeout as a block.
+   */
+  failed?: 'timeout' | 'error'
 }

@@ -72,3 +72,18 @@ test('metadata write failures warn without discarding the in-memory entries', as
     expect(await readFile(file, 'utf8')).toBe('existing file')
   })
 })
+
+test('a channel server stays marked across launches, so it starts with the next chat', async () => {
+  await withCacheFile(async (file) => {
+    writeToolMetadataCache(
+      file,
+      new Map([
+        ['channel', { ...metadata, channel: true }],
+        ['plain', metadata],
+      ]),
+    )
+    const read = readToolMetadataCache(file)
+    expect(read.get('channel')?.channel).toBe(true)
+    expect(read.get('plain')).toEqual(metadata)
+  })
+})

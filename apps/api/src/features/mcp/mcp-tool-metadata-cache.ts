@@ -6,6 +6,8 @@ import type { McpToolDef } from './mcp-client-contracts'
 export interface ToolMetadataEntry {
   serverName: string
   toolDefs: McpToolDef[]
+  /** The server is a channel (`mcp-channels.ts`): it starts with the chat, not on first use. */
+  channel?: boolean
 }
 
 interface StoredToolMetadataCache {
@@ -43,7 +45,8 @@ export function readToolMetadataCache(file: string): Map<string, ToolMetadataEnt
       ) {
         return []
       }
-      return [[key, { serverName: record.serverName, toolDefs: record.toolDefs }]]
+      const entry = { serverName: record.serverName, toolDefs: record.toolDefs }
+      return [[key, record.channel === true ? { ...entry, channel: true } : entry]]
     })
     return new Map(entries.slice(-MAX_PERSISTED_TOOL_LISTS))
   } catch {

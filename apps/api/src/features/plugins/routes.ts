@@ -4,6 +4,7 @@ import { z } from 'zod'
 
 import { defaultErrorHandler } from '../../lib/http'
 import { argOptionSchema, type ArgOption } from './arg-options'
+import { listOutputStylesResponseSchema, type OutputStyleSummary } from './output-style-listing'
 import type { AppContext } from '../../app'
 import {
   addMarketplaceRequestSchema,
@@ -49,6 +50,10 @@ export interface PluginRoutesService {
     userId: string,
     opts?: { projectId?: string | null },
   ): Promise<{ views: PluginViewSpec[] }>
+  listOutputStyles(
+    userId: string,
+    opts?: { projectId?: string | null },
+  ): Promise<{ styles: OutputStyleSummary[] }>
   getViewHtml(
     userId: string,
     input: { pluginName: string; viewId: string; projectId?: string | null },
@@ -66,7 +71,7 @@ export interface PluginRoutesService {
     input: { source: string },
   ): Promise<{ name: string; count: number }>
   listMarketplaces(userId: string): Promise<{ name: string; builtin: boolean; count: number }[]>
-  removeMarketplace(userId: string, input: { name: string }): Promise<void>
+  removeMarketplace(userId: string, input: { name: string }): Promise<unknown>
 }
 
 export function createPluginRoutes(service: PluginRoutesService) {
@@ -155,6 +160,17 @@ export function createPluginRoutes(service: PluginRoutesService) {
       await service.remove(c.get('userId'), c.req.valid('json'))
       return c.body(null, 204)
     })
+    .get(
+      '/output-styles',
+      zValidator('query', z.object({ projectId: z.string().optional() })),
+      async (c) => {
+        const { projectId } = c.req.valid('query')
+        const response = await service.listOutputStyles(c.get('userId'), {
+          projectId: projectId ?? null,
+        })
+        return c.json(listOutputStylesResponseSchema.parse(response), 200)
+      },
+    )
     .get('/marketplaces', async (c) => {
       const marketplaces = await service.listMarketplaces(c.get('userId'))
       return c.json(listMarketplacesResponseSchema.parse({ marketplaces }))

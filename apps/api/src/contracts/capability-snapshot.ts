@@ -9,6 +9,7 @@ import {
   pluginRecordSchema,
   pluginViewSpecSchema,
 } from '../features/plugins/contracts'
+import { pluginThemeSpecSchema } from '../features/plugins/contracts-themes'
 import { toolMetaSchema } from '../features/tools/catalog'
 
 /**
@@ -89,6 +90,8 @@ export const capabilitySnapshotSchema = z.object({
   tools: capabilityToolSurfaceSchema,
   /** Sandboxed UI views of enabled plugins — each opens as a work-item tab. */
   views: z.array(pluginViewSpecSchema),
+  /** Color themes of enabled global plugins, offered in Settings → Preferences → Appearance. */
+  themes: z.array(pluginThemeSpecSchema),
   /** Managed sub-agents visible to the scope, with their enable state. */
   agents: z.array(agentSummarySchema),
   /** Slash commands declared by enabled plugins, flattened + namespaced. */

@@ -8,11 +8,16 @@ import type { SessionRecord } from '../repository'
 import type { AgentStreamEvent, PersistedMessage, SessionDetail } from '../contracts'
 import type { SessionProvenance } from '../session-provenance'
 import type { ResolveSessionAgent, SessionAgentSelection } from './session-agent-selection'
+import type { CcHookSessions } from '../runtime/cc-hook-sessions'
 
 type RuntimeStatus = 'idle' | 'running' | 'completed' | 'failed' | 'stopped'
 
 /** Closure values the session-lifecycle operations need from createChatService. */
 export interface SessionLifecycleCtx extends Omit<SessionDeletionContext, 'repo'> {
+  /** Claude Code hooks a session edit raises between turns (model switch, project move). */
+  ccHookSessions?: CcHookSessions
+  /** The session's working directory, for CwdChanged when a project move changes it. */
+  resolveSessionWorkingDir?: (userId: string, session: SessionRecord) => Promise<string>
   activeAgentId?: (sessionId: string) => string | undefined
   cancelAgentTurn?: (userId: string, sessionId: string, agentId: string) => Promise<void>
   resolveSessionAgent?: ResolveSessionAgent

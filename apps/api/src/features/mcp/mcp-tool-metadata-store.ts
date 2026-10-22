@@ -12,7 +12,13 @@ import type { McpLogger } from './client-manager-types'
 
 export interface ToolMetadataStore {
   get(key: string): ToolMetadataEntry | undefined
-  reconcile(key: string, serverName: string, liveToolDefs: McpToolDef[], logger?: McpLogger): void
+  reconcile(
+    key: string,
+    serverName: string,
+    liveToolDefs: McpToolDef[],
+    logger?: McpLogger,
+    channel?: boolean,
+  ): void
 }
 
 /**
@@ -29,6 +35,9 @@ export function createToolMetadataStore(persist: boolean): ToolMetadataStore {
     ? readToolMetadataCache(metadataFile)
     : new Map<string, ToolMetadataEntry>()
 
+  /** A re-list after `tools/list_changed` keeps what the connect learned about the server. */
+  const previousChannel = (key: string) => toolMetadata.get(key)?.channel === true
+
   function get(key: string): ToolMetadataEntry | undefined {
     const metadata = toolMetadata.get(key)
     if (!metadata) return undefined
@@ -43,6 +52,7 @@ export function createToolMetadataStore(persist: boolean): ToolMetadataStore {
     serverName: string,
     liveToolDefs: McpToolDef[],
     logger?: McpLogger,
+    channel = previousChannel(key),
   ): void {
     const previous = get(key)
     if (previous && stableStringify(previous.toolDefs) !== stableStringify(liveToolDefs)) {
@@ -55,7 +65,11 @@ export function createToolMetadataStore(persist: boolean): ToolMetadataStore {
       else console.warn(`[mcp] ${message}`, meta)
     }
     toolMetadata.delete(key)
-    toolMetadata.set(key, { serverName, toolDefs: liveToolDefs })
+    toolMetadata.set(key, {
+      serverName,
+      toolDefs: liveToolDefs,
+      ...(channel ? { channel: true } : {}),
+    })
     while (toolMetadata.size > MAX_PERSISTED_TOOL_LISTS) {
       const oldest = toolMetadata.keys().next().value
       if (oldest === undefined) break

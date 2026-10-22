@@ -15,7 +15,8 @@ import {
 /**
  * `delegate` — hand one task to an agent in a child session, and keep a line to each child.
  *
- * The child is the delegating agent itself or another enabled agent (`agent`). It starts from the
+ * The child is the delegating agent itself, another enabled agent, or the delegating agent run as
+ * a plugin's subagent type (`agent`, `delegate-plugin-agent.ts`). It starts from the
  * task alone, or with this conversation as filtered context (`context: "conversation"`,
  * `run/delegate-context.ts`). By default the call returns at once and the child's report arrives
  * as a later message; `wait: true` holds the call until the child reports
@@ -37,6 +38,11 @@ export interface DelegateRequest {
   agent?: string
   context: DelegateContext
   wait: boolean
+  /**
+   * The child's model, an alias or an id, when the host picked one (a Claude Code mod's
+   * `agent.spawn`); never a parameter the model passes. Absent, the child runs on the parent's.
+   */
+  model?: string
 }
 
 export interface DelegateToolPort extends DelegateControlPorts {
@@ -69,7 +75,7 @@ const inputSchema = z
       .min(1)
       .max(120)
       .optional()
-      .describe('Start: agent handle; omit to run it yourself.'),
+      .describe('Start: agent handle or agent type; omit to run it yourself.'),
     context: z
       .enum(DELEGATE_CONTEXTS)
       .optional()
@@ -125,7 +131,7 @@ export function createDelegateTool(port: DelegateToolPort) {
     label: 'Delegate',
     activeVerb: 'Delegating',
     description: [
-      'Hand one well-scoped task to a child session, run by you or by a directory agent (`agent`): broad investigations, reviews, long independent work — their detail stays out of this context. It sees only the task unless context:"conversation", so state what it needs. Its report arrives as a new message; integrate it. wait:true returns the report as this result instead — only when your next step needs it. 3 run at once; the rest wait.',
+      'Hand one well-scoped task to a child session, run by you, a directory agent or an agent type (`agent`): broad investigations, reviews, long independent work — their detail stays out of this context. It sees only the task unless context:"conversation", so state what it needs. Its report arrives as a new message; integrate it. wait:true returns the report as this result instead — only when your next step needs it. 3 run at once; the rest wait.',
       'message amends a child (a finished one runs again and reports again); prefer it to a new task for follow-ups. stop ends a current run; close ends a child for good. list only to recover a missed report, never to poll.',
     ].join(' '),
     inputSchema,
@@ -147,6 +153,7 @@ export function createDelegateTool(port: DelegateToolPort) {
               ...(input.agent ? { agent: input.agent } : {}),
               context: input.context ?? 'none',
               wait: input.wait ?? false,
+              ...hostModel(input),
             },
             signal,
           )
@@ -171,4 +178,10 @@ export function createDelegateTool(port: DelegateToolPort) {
       }
     },
   })
+}
+
+/** The child's model a host set on the call (`DelegateRequest.model`); the schema offers none. */
+const hostModel = (input: object): { model?: string } => {
+  const model = (input as { model?: unknown }).model
+  return typeof model === 'string' && model ? { model } : {}
 }

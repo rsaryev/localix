@@ -23,6 +23,7 @@ import { workspaceCompletionWorkingSet } from '@/entities/workspace-grid/model/c
 import { restoreShellFrame } from '@/entities/chat/model/restoreShellFrame'
 import { waitForRuntimeCapabilities } from '@/shared/contrib/runtimeCapabilityReadiness'
 import { tauriFrontendLog } from '@/shared/lib/tauri'
+import { installPluginTheme } from '@/shared/theme/pluginTheme'
 import './pluginRuntime'
 import { installPluginSharedModules } from './pluginSharedModules'
 
@@ -38,7 +39,8 @@ tauriFrontendLog(
   'startup',
   `entry.script epochMs=${Date.now()} docStart=${window.__LOCALIX_DOC_START ?? 0}`,
 )
-// Re-apply the persisted theme preset (plugin palette overlay) before first paint.
+// Re-apply the persisted plugin color theme (an overlay on the appearance) before first paint.
+installPluginTheme()
 // Stamp data-os / data-desktop on <html> so CSS can key native-feel styling off
 // the platform (native scrollbars, font stacks, chrome) before first paint.
 applyPlatformDataset()

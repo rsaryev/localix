@@ -55,10 +55,13 @@ describe('locateManifest', () => {
     )
   })
 
-  it('marketplace candidates: only .localix-plugin/marketplace.json', async () => {
+  it("marketplace candidates: .localix-plugin/marketplace.json, then Claude Code's", async () => {
     await touch('marketplace.json')
-    await touch(CLAUDE_CODE_MARKETPLACE)
     expect(await locateManifest(dir, MARKETPLACE_MANIFEST_CANDIDATES)).toBeNull()
+    await touch(CLAUDE_CODE_MARKETPLACE)
+    expect(await locateManifest(dir, MARKETPLACE_MANIFEST_CANDIDATES)).toBe(
+      join(dir, CLAUDE_CODE_MARKETPLACE),
+    )
     await touch('.localix-plugin/marketplace.json')
     expect(await locateManifest(dir, MARKETPLACE_MANIFEST_CANDIDATES)).toBe(
       join(dir, '.localix-plugin', 'marketplace.json'),

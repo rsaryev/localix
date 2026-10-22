@@ -21,6 +21,15 @@ export const PREFERENCES_SETTINGS_INDEX: SettingsIndexEntry[] = [
     anchor: 'prefs-rail-recents',
   },
   {
+    id: 'prefs.output-style',
+    tab: 'preferences',
+    tabLabel: 'Preferences',
+    title: 'Output style',
+    description: 'The style every chat starts in: Concise, Explanatory, Learning or your own.',
+    keywords: ['output style', 'tone', 'concise', 'explanatory', 'learning', 'proactive', 'format'],
+    anchor: 'prefs-output-style',
+  },
+  {
     id: 'prefs.spend-alert',
     tab: 'preferences',
     tabLabel: 'Preferences',

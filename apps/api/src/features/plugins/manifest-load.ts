@@ -5,7 +5,6 @@ import type { PluginIssue } from '@localixai/claude-plugin'
 import { listSubdirs, pathExists } from '../ext/fs-discovery'
 
 import {
-  AGENTS_MAX_PER_PLUGIN,
   pluginCommandSchema,
   type PluginAgent,
   type PluginCommand,
@@ -16,10 +15,10 @@ import { mapCcTools, parseAgentFile, parseCommandFile } from './discovery-cc-fil
 import type { DiscoveredPlugin } from './discovery-types'
 import { resolveEntrypoints } from './discovery-entrypoints'
 import { parseComposedManifest } from './discovery-manifest-recovery'
-import { composeManifest } from './layout/compose'
+import { composeManifest, type ManifestFiles } from './layout/compose'
 import { readManifestFiles } from './layout/read'
 import { agentContributionSchema } from '../agents/contribution'
-import { isCcHookEvent } from '../cc-hooks/contracts'
+import { CC_INERT_HOOK_EVENTS, isCcHookEvent, isInertCcHookEvent } from '../cc-hooks/contracts'
 import { isRecord } from '../../lib/record'
 
 /** Parse the inline command objects from a manifest `commands` field. */
@@ -43,34 +42,34 @@ function parseInlineCommands(field: PluginManifest['commands']): PluginCommand[]
 }
 
 /**
- * What the plugin's hooks ask for that Localix does not run: events it does not dispatch, and a
- * hooks module (a mod), whose runtime is not here yet.
+ * Hook events the plugin's hooks files name that never fire here: a Claude Code event with no
+ * Localix lifecycle point (said with the reason), or a name that is no Claude Code event at all.
  */
 function hookIssues(configs: readonly unknown[]): PluginIssue[] {
   const events = new Set<string>()
-  let modules = false
   for (const config of configs) {
     if (!isRecord(config)) continue
-    if (Array.isArray(config.modules) && config.modules.length) modules = true
     const map = isRecord(config.hooks) ? config.hooks : config.modules ? {} : config
-    for (const event of Object.keys(map)) if (!isCcHookEvent(event)) events.add(event)
+    // An event names an array of matcher groups; `description` and the like are not events.
+    for (const [event, groups] of Object.entries(map))
+      if (Array.isArray(groups) && !isCcHookEvent(event)) events.add(event)
   }
+  const sorted = [...events].sort()
+  const unknown = sorted.filter((event) => !isInertCcHookEvent(event))
   return [
-    ...(events.size
+    ...sorted.filter(isInertCcHookEvent).map(
+      (event): PluginIssue => ({
+        severity: 'warning',
+        path: 'hooks',
+        message: `Hook event ${event} never fires in Localix: ${CC_INERT_HOOK_EVENTS[event]}`,
+      }),
+    ),
+    ...(unknown.length
       ? [
           {
             severity: 'warning' as const,
             path: 'hooks',
-            message: `Hook events not dispatched by Localix: ${[...events].sort().join(', ')}`,
-          },
-        ]
-      : []),
-    ...(modules
-      ? [
-          {
-            severity: 'warning' as const,
-            path: 'hooks#modules',
-            message: 'The hooks module (mod) does not run in Localix yet; its hooks.json hooks do',
+            message: `Not Claude Code hook events, never fired: ${unknown.join(', ')}`,
           },
         ]
       : []),
@@ -115,14 +114,19 @@ async function readSkillNames(skillDirs: string[]): Promise<string[]> {
  * (`.claude-plugin/plugin.json`), mini app (`.localix-app/app.json`) or legacy root `plugin.json`
  * is composed into one runtime manifest (`layout/compose.ts`); a folder with none is a plugin named
  * after itself (Claude Code parity), as long as it holds a recognized component.
+ *
+ * `withManifests` lets a caller that reads a folder in place combine what it holds with what
+ * Claude Code would combine it with — its marketplace entry (`claude-code-installs.ts`).
  */
 export async function loadManifest(
   dir: string,
   scope: 'global' | 'project',
   projectId: string,
   bundled = false,
+  withManifests?: (files: ManifestFiles) => ManifestFiles,
 ): Promise<DiscoveredPlugin> {
-  const composed = composeManifest(await readManifestFiles(dir), basename(dir))
+  const files = await readManifestFiles(dir)
+  const composed = composeManifest(withManifests ? withManifests(files) : files, basename(dir))
   // Promote, validate and recover live in parseComposedManifest: a malformed manifest errors, a
   // missing one does not.
   const { manifest, rawManifest, error, manifestRecovered } = parseComposedManifest(
@@ -158,7 +162,6 @@ export async function loadManifest(
     : []
   const seenAgentNames = new Set(agents.map((a) => a.name))
   for (const agent of parsedAgentFiles) {
-    if (agents.length >= AGENTS_MAX_PER_PLUGIN) break
     if (agent && !seenAgentNames.has(agent.name)) {
       agents.push(agent)
       seenAgentNames.add(agent.name)

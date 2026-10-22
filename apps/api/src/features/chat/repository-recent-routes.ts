@@ -46,6 +46,22 @@ export function createRecentRouteQueries(db: Kysely<AppDatabase>) {
       .execute()
 
   return {
+    /**
+     * Whether a seat's model is the person's own pick (stamped when picked, or stated when the
+     * seat was born) rather than a default filled in from a card, the project or a plugin.
+     */
+    async isSeatModelChosen(userId: string, sessionId: string, agentId: string) {
+      const row = await db
+        .selectFrom('agent_sessions')
+        .innerJoin('conversation_participants as route', 'route.session_id', 'agent_sessions.id')
+        .select('route.model_selected_at')
+        .where('agent_sessions.user_id', '=', userId)
+        .where('agent_sessions.id', '=', sessionId)
+        .where('route.agent_id', '=', agentId)
+        .executeTakeFirst()
+      return Boolean(row?.model_selected_at)
+    },
+
     async listRecentRoutes(userId: string): Promise<RecentRoutes> {
       const [seats, maps] = await Promise.all([seatPicks(userId), choiceMaps(userId)])
       const newest = new Map<string, { at: string; route: RecentRoute }>()

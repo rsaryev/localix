@@ -29,14 +29,20 @@ function commandHook(command: string, timeoutMs: number): CcHookHandler {
   return { kind: 'command', source: 'project', command, timeoutMs } as CcHookHandler
 }
 
-/** A hook that exits immediately, leaving a daemon holding the stdout pipe. */
-const DAEMON_HOLDER = 'perl -e "setpgrp; sleep 5" & echo hook-ran; exit 0'
+/** A hook that exits immediately, leaving a daemon holding the stdout pipe for 20 s. */
+const DAEMON_HOLDER = 'perl -e "setpgrp; sleep 20" & echo hook-ran; exit 0'
+/**
+ * The hook's own timeout, and the bound on the wait. Both sit far below the daemon's 20 s, so a
+ * pass proves the wait ended on the hook's exit, and far above a loaded machine's spawn time.
+ */
+const HOOK_TIMEOUT_MS = 15_000
+const WAIT_BOUND_MS = 10_000
 
 describe('cc-hook executor: the wait is bounded by the hook, not by what it left behind', () => {
   test('a hook whose leftover daemon holds stdout still resolves — and is NOT lost', async () => {
     const started = Date.now()
     const outcome = await executeHook(
-      commandHook(DAEMON_HOLDER, 2_000),
+      commandHook(DAEMON_HOLDER, HOOK_TIMEOUT_MS),
       input,
       process.cwd(),
       logger,
@@ -44,7 +50,7 @@ describe('cc-hook executor: the wait is bounded by the hook, not by what it left
     )
     const elapsed = Date.now() - started
 
-    expect(elapsed).toBeLessThan(2_000) // before the fix: never resolved at all
+    expect(elapsed).toBeLessThan(WAIT_BOUND_MS) // before the fix: never resolved at all
     // The hook exited 0 in time, so its output is honoured — not discarded as a
     // timeout. (The kill cap must not fire during the drain window.)
     expect(outcome.blocked).toBeUndefined()
@@ -53,7 +59,7 @@ describe('cc-hook executor: the wait is bounded by the hook, not by what it left
 
   test('a BLOCKING hook (exit 2) still blocks when a leftover holds the pipe', async () => {
     const outcome = await executeHook(
-      commandHook('perl -e "setpgrp; sleep 5" & echo "nope" >&2; exit 2', 2_000),
+      commandHook('perl -e "setpgrp; sleep 20" & echo "nope" >&2; exit 2', HOOK_TIMEOUT_MS),
       input,
       process.cwd(),
       logger,
@@ -75,7 +81,7 @@ describe('cc-hook executor: the wait is bounded by the hook, not by what it left
     const elapsed = Date.now() - started
 
     expect(elapsed).toBeLessThan(3_000)
-    expect(outcome).toEqual({}) // timed out → non-blocking, ignored
+    expect(outcome).toEqual({ failed: 'timeout' }) // timed out → non-blocking, ignored
   }, 20_000)
 
   test('a normal hook is unaffected — settles on close, keeps all its output', async () => {

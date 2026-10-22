@@ -18,7 +18,14 @@ import type { CcHookHandler, CcHookRegistry } from './contracts'
 const silentLogger = { warn: () => {}, info: () => {} }
 
 // Wait for microtask/async work spawned by a fire-and-forget hook to settle.
-const settle = (ms = 250) => new Promise((r) => setTimeout(r, ms))
+/**
+ * Until an async hook's process has reported (it outlives the call that started it), checked on
+ * each tick and bounded by a deadline, never a guessed sleep that a loaded machine overruns.
+ */
+async function settled(done: () => boolean, deadlineMs = 10_000) {
+  const until = Date.now() + deadlineMs
+  while (!done() && Date.now() < until) await new Promise((r) => setTimeout(r, 10))
+}
 
 function reg(handlers: Partial<Record<keyof CcHookRegistry, CcHookHandler[]>>): CcHookRegistry {
   const out: CcHookRegistry = {}
@@ -181,7 +188,7 @@ describe('async + asyncRewake', () => {
     )
     const r = await rt.runStop()
     expect(r.blocked).toBe(false) // async hook doesn't block Stop
-    await settle()
+    await settled(() => woke.length + dismissed.length > 0)
     expect(dismissed).toEqual([])
     expect(woke).toHaveLength(1)
     expect(woke[0]).toContain('Review:')
@@ -203,7 +210,7 @@ describe('async + asyncRewake', () => {
       { rewake: rewakeInto(woke, dismissed) },
     )
     await rt.runStop()
-    await settle()
+    await settled(() => woke.length + dismissed.length > 0)
     expect(woke).toHaveLength(0)
     expect(dismissed).toEqual(['passed'])
   })
@@ -244,7 +251,7 @@ describe('new events', () => {
       { rewake: rewakeInto(woke) },
     )
     await rt.runSessionEnd('logout')
-    await settle()
+    await settled(() => woke.length > 0)
     expect(woke[0]).toContain('logout')
   })
   it('SubagentStop: matches the agent type + surfaces last_assistant_message', async () => {

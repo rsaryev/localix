@@ -11,6 +11,7 @@ import { syncBundledPlugins } from './bundled-install'
 import { scanDirsCached } from './discovery-cached-scan'
 
 import { scanDirs } from './discovery-directory-scan'
+import { discoverClaudeCodePlugins } from './claude-code-installs'
 export { findManifestPath } from './discovery-directory-scan'
 
 // Re-export so importers (loader.ts, discovery.test.ts) keep their existing
@@ -24,9 +25,10 @@ export { resolveEntrypoints, type ResolvedEntrypoints } from './discovery-entryp
  *   ~/.localix/plugins/<name>/      (sessions without a project)
  *   <project>/.localix/plugins/<name>/   (project-scoped)
  *
- * In project scopes, project copies take precedence over home copies of the same
- * name. Home plugins are projected into the requested projectId so their enable/config
- * state remains exact-scope. Managed first-party artifacts are synchronized into
+ * and, read in place, the plugins installed and turned on in Claude Code
+ * (`claude-code-installs.ts`). In project scopes, project copies take precedence over home
+ * copies of the same name, and Localix's own installs over Claude Code's. Home plugins are
+ * projected into the requested projectId so their enable/config state remains exact-scope. Managed first-party artifacts are synchronized into
  * the home root before discovery, while their code remains shared across scopes.
  */
 
@@ -114,8 +116,17 @@ export async function discoverPlugins(opts: {
       ? scanDirsCached(absCwd, PLUGIN_SUBDIRS, 'project', projectId)
       : Promise.resolve([])
   const homeScan = scanDirsCached(home, PLUGIN_SUBDIRS, 'global', '', { bundledNames })
-  const [projectPlugins, homePlugins] = await Promise.all([projectScan, homeScan])
-  if (!projectId) return mergeByPrecedence([homePlugins])
+  const claudeCodeScan = discoverClaudeCodePlugins({
+    homeDir: home,
+    cwd: projectId ? absCwd : null,
+    projectId,
+  })
+  const [projectPlugins, homePlugins, claudeCodePlugins] = await Promise.all([
+    projectScan,
+    homeScan,
+    claudeCodeScan,
+  ])
+  if (!projectId) return mergeByPrecedence([homePlugins, claudeCodePlugins])
 
   // EVERYTHING the user has, project copies first so a repository's own plugin shadows a
   // personal one of the same name.
@@ -129,7 +140,7 @@ export async function discoverPlugins(opts: {
   // The state key still follows the active project: a plugin's config and its rules belong to
   // where it is used, which is what keeps two projects from sharing one plugin's settings.
   const homeForProject = homePlugins.map((plugin) => ({ ...plugin, projectId }))
-  return mergeByPrecedence([projectPlugins, homeForProject])
+  return mergeByPrecedence([projectPlugins, homeForProject, claudeCodePlugins])
 }
 
 /**

@@ -66,6 +66,12 @@ const maximalRegistryOptions = {
       overview: async () => ({}) as never,
       complete: async () => ({}) as never,
     },
+    workflow: {
+      scripts: { run: async () => ({ ok: true, value: undefined, output: [] }), declare: () => '' },
+      list: async () => [],
+      read: async () => null,
+      runAgent: async () => null,
+    },
   },
 } satisfies RuntimeToolRegistryOptions
 

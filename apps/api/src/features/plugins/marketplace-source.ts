@@ -2,9 +2,7 @@ import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 
 import { errorMessage } from '../../lib/errors'
-import { isPathWithin } from '../../lib/path-containment'
 import { parseNpmEntrySource, type NpmEntrySource } from './marketplace-source-npm'
-import type { MarketplaceEntry } from './marketplace'
 
 /**
  * Pure source-parsing + path helpers for the marketplace registry — no I/O, no host
@@ -12,11 +10,17 @@ import type { MarketplaceEntry } from './marketplace'
  * from the clone/fs/known.json machinery in `marketplace-registry.ts`.
  */
 
-/** A marketplace source, tagged by kind. */
+/**
+ * A marketplace source, tagged by kind (Claude Code's marketplace sources): a GitHub repo, a git
+ * repo, a local directory (`local`, Claude Code's `directory`), a local catalog file (`file`), a
+ * hosted catalog (`url`, only the `marketplace.json` is fetched), or an npm package.
+ */
 export type MarketplaceSource =
   | { source: 'github'; repo: string; ref?: string }
   | { source: 'git'; url: string; ref?: string }
   | { source: 'local'; path: string }
+  | { source: 'file'; path: string }
+  | { source: 'url'; url: string }
   | ({ source: 'npm' } & NpmEntrySource)
 
 /**
@@ -71,13 +75,14 @@ export function parseMarketplaceInput(
   if (ssh)
     return ssh[2] ? { source: 'git', url: ssh[1], ref: ssh[2] } : { source: 'git', url: ssh[1] }
 
-  // HTTP(S) URL.
+  // HTTP(S) URL: a git repository when it reads as one, else a hosted marketplace.json.
   if (/^https?:\/\//.test(trimmed)) {
     const [urlPart, ref] = trimmed.split('#', 2)
+    if (!isGitRepoUrl(urlPart)) return { source: 'url', url: trimmed }
     return ref ? { source: 'git', url: urlPart, ref } : { source: 'git', url: urlPart }
   }
 
-  // Local path.
+  // Local path: a directory holding the catalog, or the catalog `.json` file itself.
   if (
     trimmed.startsWith('/') ||
     trimmed.startsWith('./') ||
@@ -85,11 +90,11 @@ export function parseMarketplaceInput(
     trimmed.startsWith('~')
   ) {
     const path = resolve(trimmed.startsWith('~') ? trimmed.replace(/^~/, homedir()) : trimmed)
-    return { source: 'local', path }
+    return /\.json$/i.test(path) ? { source: 'file', path } : { source: 'local', path }
   }
 
-  // owner/repo GitHub shorthand (optionally #ref).
-  const gh = trimmed.match(/^([\w.-]+\/[\w.-]+)(?:#(.+))?$/)
+  // owner/repo GitHub shorthand (optionally #ref or @ref).
+  const gh = trimmed.match(/^([\w.-]+\/[\w.-]+)(?:[#@](.+))?$/)
   if (gh)
     return gh[2] ? { source: 'github', repo: gh[1], ref: gh[2] } : { source: 'github', repo: gh[1] }
 
@@ -102,6 +107,26 @@ export function parseMarketplaceInput(
   return {
     error: `Invalid marketplace source "${input}". Use owner/repo, https://…, git@…, npm:package, or an absolute path.`,
   }
+}
+
+/**
+ * Claude Code's rule for an http(s) `marketplace add` input: a git repository when the URL ends
+ * in `.git`, contains `/_git/` (Azure DevOps), or names a github.com or gitlab.com repository;
+ * any other URL is a hosted `marketplace.json`.
+ */
+export function isGitRepoUrl(url: string): boolean {
+  if (/\.git\/?$/i.test(url) || url.includes('/_git/')) return true
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    return false
+  }
+  const segments = parsed.pathname.split('/').filter(Boolean)
+  const host = parsed.hostname.toLowerCase()
+  if (host === 'github.com' || host === 'www.github.com') return segments.length === 2
+  if (host === 'gitlab.com') return segments.length >= 2 && !/\.json$/i.test(parsed.pathname)
+  return false
 }
 
 /**
@@ -120,6 +145,7 @@ export function sourceMatchesRef(src: MarketplaceSource, ref: string): boolean {
   if (src.source === 'github') return norm(src.repo) === want
   if (src.source === 'git') return norm(src.url) === want
   if (src.source === 'npm') return src.package.toLowerCase() === want
+  if (src.source === 'url') return src.url.trim() === ref.trim()
   return false
 }
 
@@ -140,67 +166,8 @@ export function parseMarketplaceRef(ref: string): { plugin: string; marketplace:
   return m ? { plugin: m[1], marketplace: m[2] } : null
 }
 
-/**
- * Resolve a marketplace entry's `source` to either a local plugin directory (relative
- * `./path` inside the materialized marketplace, `..`-escapes rejected) or git
- * coordinates the caller clones.
- *
- * A relative string source resolves against `opts.pluginRoot` (the catalog's
- * `metadata.pluginRoot`, e.g. `./plugins`) when given, else the marketplace dir — but
- * always stays confined to the marketplace root. Object git sources honor a `sha` pin
- * (preferred over `ref`). An `npm` source returns registry coordinates the caller
- * downloads via `fetchNpmPlugin` (marketplace-source-npm.ts).
- */
-export function resolveEntrySource(
-  marketplaceDir: string,
-  entry: MarketplaceEntry,
-  opts?: { pluginRoot?: string },
-):
-  | { localPath: string }
-  | { git: { url: string; subdir?: string; ref?: string } }
-  | { npm: NpmEntrySource } {
-  const root = resolve(marketplaceDir)
-  // Base dir for relative sources: marketplace root + optional pluginRoot prefix.
-  const base = opts?.pluginRoot ? resolve(marketplaceDir, opts.pluginRoot) : root
-  const src = entry.source
-  if (typeof src === 'string') {
-    if (src.includes('..'))
-      throw new Error(`Entry "${entry.name}" source "${src}" escapes the marketplace root`)
-    const abs = resolve(base, src)
-    if (!isPathWithin(root, abs))
-      throw new Error(`Entry "${entry.name}" source resolves outside the marketplace`)
-    return { localPath: abs }
-  }
-  const obj = src as Record<string, unknown>
-  // npm source → registry coordinates (parse throws per-entry on a bad package name).
-  const npm = parseNpmEntrySource(entry.name, obj)
-  if (npm) return { npm }
-  const url =
-    typeof obj.url === 'string'
-      ? obj.url
-      : typeof obj.repo === 'string'
-        ? `https://github.com/${obj.repo}.git`
-        : undefined
-  if (!url) throw new Error(`Entry "${entry.name}" has an unrecognized source`)
-  // Git checkout target, precedence `sha > commit > ref` (spec/marketplaces.md §2):
-  // a full `sha` is the effective pin (fetchable even if the ref was deleted upstream);
-  // the `github` variant spells its pinned commit `commit`; `ref` is a branch/tag.
-  const ref =
-    typeof obj.sha === 'string'
-      ? obj.sha
-      : typeof obj.commit === 'string'
-        ? obj.commit
-        : typeof obj.ref === 'string'
-          ? obj.ref
-          : undefined
-  return {
-    git: {
-      url,
-      subdir: typeof obj.path === 'string' ? obj.path : undefined,
-      ...(ref ? { ref } : {}),
-    },
-  }
-}
+// Entry-source resolution lives in its own module; re-exported for the existing import surface.
+export { resolveEntrySource, type ResolvedEntrySource } from './marketplace-entry-source'
 
 /** Tiny stable hash for temp-dir names (avoids Date.now()/Math.random() in resumable paths). */
 export function hashString(s: string): number {

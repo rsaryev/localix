@@ -40,6 +40,8 @@ export interface McpClientManagerOptions {
   logger?: McpLogger
   /** Overall connect + discovery deadline; injectable only to keep timeout tests fast. */
   startupTimeoutMs?: number
+  /** Source of a channel permission request's id letters; injectable for tests. */
+  random?: () => number
 }
 
 export interface McpGatherOptions {
@@ -65,6 +67,11 @@ export interface McpGatherOptions {
    * narrowing, which is what a caller with no scope (a health probe) wants.
    */
   toolPolicy?: (serverName: string, toolName: string) => boolean
+  /**
+   * The conversation this gather runs for. Its plugin servers' channel events go there until
+   * another conversation gathers them (`mcp-channels.ts`); absent for a gather that is no chat's.
+   */
+  channelTarget?: { userId: string; sessionId: string; projectId?: string }
 }
 
 export interface McpProbeResult {

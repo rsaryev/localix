@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { agentDefinitionSchema } from '@localixai/agent/agents'
 import { composeCapabilities } from '../../capabilities/resolve'
+import { emptyLoadedPlugins } from '../../plugins/loader-contract'
 import type { AgentsService } from '../../agents/service-contract'
 import { requireRunAgent } from './run/require-run-agent'
 import { runTurnLimit } from './run/turn-limit'
@@ -174,6 +175,7 @@ test('a denied skill, plugin tool and plugin are absent from the turn', async ()
             },
           ],
           {
+            ...emptyLoadedPlugins(),
             tools: [{ name: 'first_convert' }, { name: 'second_quote' }],
             binDirs: [],
             mcpServers: [],

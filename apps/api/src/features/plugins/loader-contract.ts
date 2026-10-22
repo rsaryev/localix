@@ -7,6 +7,7 @@ import type { BackendSubsystem } from '../ext/subsystem-contrib'
 import { normalizeCcToolName } from './discovery'
 import type { MemoryProvider, PluginChannel, PluginContext, PluginHooks } from './native'
 import type { PluginAgent, PluginMonitor } from './contracts'
+import type { PluginOutputStyle } from './output-styles'
 
 /**
  * WHAT A LOAD PRODUCES — the shape every consumer of `loadEnabledPlugins` reads.
@@ -37,6 +38,12 @@ export interface LoadedPluginAgent {
   pinnedSkills?: string[]
   /** CC `effort:` — advisory reasoning effort hint. */
   preferredEffort?: string
+  /** CC `maxTurns:` — the most turns a delegated run of it takes. */
+  maxTurns?: number
+  /** CC `background:` — a delegated run never holds the delegating call, even when asked to. */
+  background?: boolean
+  /** CC `isolation: worktree` — a delegated run works in a git worktree of its own. */
+  isolation?: 'isolated'
 }
 
 export interface LoadedPluginHook {
@@ -98,10 +105,21 @@ export interface LoadedPlugins {
   promptSections: Array<{ pluginName: string; title: string; content: string }>
   /**
    * Custom worker ROLES (sub-agents) from enabled plugins — manifest data,
-   * namespaced `<plugin>:<name>`. Listed for the catalog only: nothing starts one any more — a
-   * forked skill runs as the agent that invoked it, and agents do not start other agents.
+   * namespaced `<plugin>:<name>`: the subagent types `delegate` runs a task as, as Claude Code's
+   * Agent tool does (`agent-core/tools/delegate-plugin-agent.ts`).
    */
   agents: LoadedPluginAgent[]
+  /**
+   * Claude Code output styles from enabled plugins, offered as `<plugin>:<name>` (`/output-style`).
+   * One marked `forceForPlugin` applies whenever its plugin is enabled; the first loaded wins.
+   */
+  outputStyles: PluginOutputStyle[]
+  /**
+   * The agent an enabled plugin's default settings (`settings.json` `agent`) run the main thread
+   * as, while the person has not chosen another agent for the chat. The last loaded wins, as in
+   * Claude Code.
+   */
+  mainAgent: LoadedPluginAgent | null
   /** The active external memory provider, or null. At most ONE — first enabled plugin wins. */
   memory: { pluginName: string; provider: MemoryProvider; ctx: PluginContext } | null
   /**
@@ -155,6 +173,8 @@ export function emptyLoadedPlugins(): LoadedPlugins {
     channels: [],
     promptSections: [],
     agents: [],
+    outputStyles: [],
+    mainAgent: null,
     memory: null,
     backends: [],
     loaded: [],
@@ -196,5 +216,8 @@ export function buildLoadedAgent(
     ...(agent.preferredModel ? { preferredModel: agent.preferredModel } : {}),
     ...(agent.pinnedSkills?.length ? { pinnedSkills: agent.pinnedSkills } : {}),
     ...(agent.preferredEffort ? { preferredEffort: agent.preferredEffort } : {}),
+    ...(agent.maxTurns ? { maxTurns: agent.maxTurns } : {}),
+    ...(agent.background ? { background: true } : {}),
+    ...(agent.isolation ? { isolation: agent.isolation } : {}),
   }
 }

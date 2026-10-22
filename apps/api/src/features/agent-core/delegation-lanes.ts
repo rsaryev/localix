@@ -40,12 +40,29 @@ interface Waiting {
 }
 
 interface Pool {
+  /** The parent session whose children the pool holds. */
+  owner: string
+  /** How many of them run at once. */
+  cap: number
   running: Set<string>
   waiting: Waiting[]
 }
 
+/**
+ * Which pool a child asks in. A parent's delegated children share one pool, keyed by the parent,
+ * at `DELEGATION_SLOT_CAP`. A workflow run's agents are the same parent's children in a pool of
+ * their own (`key`), at the workflow's limit: Claude Code runs up to 16 of them at once, and
+ * sharing the chat's three lanes would both slow the run and leave the chat's own `delegate`
+ * calls queued behind a fan-out of hundreds.
+ */
+export interface LaneSpec {
+  key?: string
+  cap?: number
+}
+
+/** Pools by key (the parent's id, or a workflow run's key). */
 const pools = new Map<string, Pool>()
-/** childId → the parent whose lane it holds or waits for. */
+/** childId → the key of the pool it holds or waits in. */
 const parentOf = new Map<string, string>()
 
 export type LaneAdmission =
@@ -54,11 +71,17 @@ export type LaneAdmission =
   /** Waits; `start` runs when a lane frees. `position` is 1-based. */
   | { state: 'queued'; position: number }
 
-function poolOf(parentId: string): Pool {
-  let pool = pools.get(parentId)
+function poolOf(parentId: string, lane: LaneSpec): Pool {
+  const key = lane.key ?? parentId
+  let pool = pools.get(key)
   if (!pool) {
-    pool = { running: new Set(), waiting: [] }
-    pools.set(parentId, pool)
+    pool = {
+      owner: parentId,
+      cap: lane.cap ?? DELEGATION_SLOT_CAP,
+      running: new Set(),
+      waiting: [],
+    }
+    pools.set(key, pool)
   }
   return pool
 }
@@ -98,17 +121,18 @@ export function requestLane(
   childId: string,
   start: () => void,
   priority: DelegationPriority = 'normal',
-  cap = DELEGATION_SLOT_CAP,
+  lane: LaneSpec = {},
 ): LaneAdmission {
-  const pool = poolOf(parentId)
+  const key = lane.key ?? parentId
+  const pool = poolOf(parentId, lane)
   if (pool.running.has(childId)) return { state: 'running' }
   const waitingAt = pool.waiting.findIndex((entry) => entry.childId === childId)
   if (waitingAt >= 0) {
     const [entry] = pool.waiting.splice(waitingAt, 1)
     return { state: 'queued', position: enqueue(pool, { ...entry!, priority }) }
   }
-  parentOf.set(childId, parentId)
-  if (pool.running.size < cap) {
+  parentOf.set(childId, key)
+  if (pool.running.size < pool.cap) {
     pool.running.add(childId)
     begin(childId, start)
     return { state: 'running' }
@@ -117,39 +141,39 @@ export function requestLane(
 }
 
 /** Start waiting children, oldest first, while lanes are free. */
-function pump(parentId: string, cap: number): void {
-  const pool = pools.get(parentId)
+function pump(key: string): void {
+  const pool = pools.get(key)
   if (!pool) return
-  while (pool.running.size < cap && pool.waiting.length > 0) {
+  while (pool.running.size < pool.cap && pool.waiting.length > 0) {
     const next = pool.waiting.shift()!
     pool.running.add(next.childId)
     begin(next.childId, next.start)
   }
-  if (pool.running.size === 0 && pool.waiting.length === 0) pools.delete(parentId)
+  if (pool.running.size === 0 && pool.waiting.length === 0) pools.delete(key)
 }
 
 /**
  * The child's run is over: give its lane to the next in line. Idempotent — a child releases from
  * wherever its end is seen (the run's end, a launch that threw), and only the first counts.
  */
-export function releaseLane(childId: string, cap = DELEGATION_SLOT_CAP): void {
-  const parentId = parentOf.get(childId)
-  if (!parentId) return
-  const pool = pools.get(parentId)
+export function releaseLane(childId: string): void {
+  const key = parentOf.get(childId)
+  if (!key) return
+  const pool = pools.get(key)
   if (!pool?.running.delete(childId)) return
   parentOf.delete(childId)
-  pump(parentId, cap)
+  pump(key)
 }
 
 /** Withdraw a child that is still WAITING (it was closed). A running child is stopped instead. */
 export function cancelLane(childId: string): boolean {
-  const parentId = parentOf.get(childId)
-  const pool = parentId ? pools.get(parentId) : undefined
+  const key = parentOf.get(childId)
+  const pool = key ? pools.get(key) : undefined
   const at = pool?.waiting.findIndex((entry) => entry.childId === childId) ?? -1
   if (!pool || at < 0) return false
   pool.waiting.splice(at, 1)
   parentOf.delete(childId)
-  if (pool.running.size === 0 && pool.waiting.length === 0) pools.delete(parentId!)
+  if (pool.running.size === 0 && pool.waiting.length === 0) pools.delete(key!)
   return true
 }
 
@@ -157,8 +181,8 @@ export function cancelLane(childId: string): boolean {
 export function laneOf(
   childId: string,
 ): { state: 'running' } | { state: 'queued'; position: number } | undefined {
-  const parentId = parentOf.get(childId)
-  const pool = parentId ? pools.get(parentId) : undefined
+  const key = parentOf.get(childId)
+  const pool = key ? pools.get(key) : undefined
   if (!pool) return undefined
   if (pool.running.has(childId)) return { state: 'running' }
   const at = pool.waiting.findIndex((entry) => entry.childId === childId)
@@ -166,12 +190,13 @@ export function laneOf(
 }
 
 /**
- * Has `parentId` children of its own still running or waiting? A pool exists only while it holds
- * one (it is dropped when the last leaves), so this is whether the parent's subtree is still at
- * work — what a child's report waits on before it calls itself done (`run/child-run-report.ts`).
+ * Has `parentId` children of its own still running or waiting, in any of its pools? A pool exists
+ * only while it holds one (it is dropped when the last leaves), so this is whether the parent's
+ * subtree is still at work — what a child's report waits on before it calls itself done (`run/child-run-report.ts`).
  */
 export function hasChildrenAtWork(parentId: string): boolean {
-  return pools.has(parentId)
+  for (const pool of pools.values()) if (pool.owner === parentId) return true
+  return false
 }
 
 /** Test seam: forget every lane. Never call this from production code. */

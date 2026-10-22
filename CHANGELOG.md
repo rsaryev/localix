@@ -19,20 +19,43 @@ Changes land on `main`.
   conversations as its history, and starts Localix in the background when it is not running. See
   [Plugin apps](docs/features/plugin-apps.md).
 
+- **Mods**: a Claude Code plugin with a hooks module runs it, once per project as in a Claude Code
+  session. A mod can guard or rewrite tool calls and model requests, shape the system prompt, read
+  the conversation, add slash commands, tools and agents, fill the message box, and draw panes in
+  the **Mods** view from the rail's overflow menu. Claude Code's own `diff` mod shows a project's
+  changes there. See [Claude Code plugins](docs/extending/claude-code-plugins.md#mods).
+- **Claude Code marketplaces**: `/plugin marketplace add owner/repo` adds one, and
+  `/plugin install <name>@<marketplace>` installs from it; `list`, `update` and `remove` manage it.
+  Plugins you installed in Claude Code itself also appear, waiting for your approval.
+- **Output styles**: Default, Proactive, Concise, Explanatory, Learning, a plugin's and your own.
+  Pick the default in Settings → Preferences → Output style, or switch a chat with `/output-style`.
+- **Plugin themes** in Settings → Preferences → Appearance and through `/theme`.
+- **Plugin workflows** run in the background as `/<plugin>:<name>`, each agent a child task on the
+  model and effort it asks for, optionally in its own git worktree; a stopped run resumes.
+- **Channels**: a plugin's MCP server can speak into the chat that last used it and answer approval
+  prompts; turn it on for your own servers with **Listen as a channel** in Settings → MCP.
+- **MCP servers can ask you for input**: their request opens a form card in the chat.
+
 ### Changed
 
 - **Claude Code plugins** load as they are: the same folder works in Claude Code and in Localix,
   with nothing converted at install. Hooks on `PostToolUseFailure` run when a tool fails, and
-  `${VAR}` in a plugin's MCP servers reads the environment as in Claude Code. What Localix does not
-  run yet, such as hooks modules and output styles, is listed in the plugin's validation. Settings →
-  Capabilities → Plugins labels each entry **Claude Code plugin**, **mini app** or **legacy
-  manifest**. See [Claude Code plugins](docs/extending/claude-code-plugins.md).
+  `${VAR}` in a plugin's MCP servers reads the environment as in Claude Code. Hooks run on every
+  Claude Code event that has a moment in Localix; a plugin's agents are subagent types the agent
+  delegates to, with no limit per plugin. Settings → Capabilities → Plugins labels each entry
+  **Claude Code plugin**, **mini app** or **legacy manifest**. See
+  [Claude Code plugins](docs/extending/claude-code-plugins.md).
 - **Status updates when it changes**: local model downloads and semantic search indexing in
   Settings, a provider sign-in started from the message box, and an external agent waiting on
   terminal output now follow the change as it happens instead of checking on a timer, with fewer
-  background requests.
+  background requests. Kubernetes lists and logs and Docker logs follow their sources too.
 - **Context chips** above the message box stay on one line and scroll sideways instead of wrapping
   into a second row.
+
+### Fixed
+
+- **Group chats** keep routing a message to the right participant after the model catalog refreshes:
+  the decision model was dropped when the catalog named its vendor's own package.
 
 ## v0.1.0-beta.15 — 2026-10-21
 

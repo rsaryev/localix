@@ -17,18 +17,33 @@ const isDelegationPriority = (value: unknown): value is DelegationPriority =>
  * It was a second sum, over every branch and without the auxiliary calls, so one agent carried
  * two different numbers — one in its parent's `list`, another in its own chat.
  */
+export async function readSessionSpend(
+  db: Kysely<AppDatabase>,
+  usageRepo: UsageRepository,
+  userId: string,
+  sessionId: string,
+): Promise<{ tokens: number; outputTokens: number; costUsd: number | null }> {
+  const [turns, ledger] = await Promise.all([
+    createChatRepository(db).getActiveBranchUsage(userId, sessionId),
+    readSessionUsageRows(usageRepo, userId, sessionId),
+  ])
+  const usage = summarizeSessionUsageFromTurns(turns, ledger).usage
+  return {
+    tokens: usage?.totalTokens ?? 0,
+    // What a workflow's `budget.spent()` counts, as Claude Code counts it: output tokens.
+    outputTokens: usage?.outputTokens ?? 0,
+    costUsd: usage?.totalCost ?? null,
+  }
+}
+
 async function sessionSpend(
   db: Kysely<AppDatabase>,
   usageRepo: UsageRepository,
   userId: string,
   sessionId: string,
 ): Promise<NonNullable<DelegatedRunSummary['usage']>> {
-  const [turns, ledger] = await Promise.all([
-    createChatRepository(db).getActiveBranchUsage(userId, sessionId),
-    readSessionUsageRows(usageRepo, userId, sessionId),
-  ])
-  const usage = summarizeSessionUsageFromTurns(turns, ledger).usage
-  return { tokens: usage?.totalTokens ?? 0, costUsd: usage?.totalCost ?? null }
+  const { tokens, costUsd } = await readSessionSpend(db, usageRepo, userId, sessionId)
+  return { tokens, costUsd }
 }
 
 /** One public projection for the tool and prompt; never copy reasoning or full tool traces. */

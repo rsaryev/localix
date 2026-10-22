@@ -12,6 +12,8 @@ import { createChatUsageFacade } from './service/usage-facade'
 import { createChatQueryFacade } from './service/query-facade'
 import { createChatInboundFacade } from './service/inbound-facade'
 import { createChatSkillFacade } from './service/skill-facade'
+import { listDelegatedRuns } from './service/delegated-runs'
+import { createSubagentRows } from './service/subagent-rows'
 
 /**
  * The chat service: one API surface assembled from facades over one object graph.
@@ -95,6 +97,16 @@ export function createChatService(deps: ChatServiceDeps) {
     }),
 
     ...createChatUsageFacade({ repo, usageRepo, streamRegistry, requireSession }),
+
+    // A plugin's `subagentStatusLine` over this conversation's subagent rows.
+    ...createSubagentRows({
+      requireSession,
+      getSession: (userId, id) => repo.getSession(userId, id),
+      buildSessionPluginCatalog: core.buildSessionPluginCatalog,
+      resolveSessionWorkingDir: core.resolveSessionWorkingDir,
+      listDelegatedRuns: (userId, id) => listDelegatedRuns(deps.db, usageRepo, userId, id),
+      streamRegistry,
+    }),
   }
 }
 

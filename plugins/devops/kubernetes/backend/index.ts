@@ -4,7 +4,8 @@
  * `register()` constructs the Kubernetes API service and contributes it as a `BackendSubsystem`: the
  * boot-time loader (`loadPluginBackends`) mounts the route (`/rpc/kubernetes`),
  * registers the resource (`localix://resource/k8s`) + global-search providers, wires the live
- * pod-watch and the port-forward changes as generic WS-frame streams, and calls `onShutdown` on shutdown.
+ * pod-watch, the deployment/service/node changes, the port-forward changes and the followed pod
+ * logs (`logs-follow.ts`) as generic WS-frame streams, and calls `onShutdown` on shutdown.
  * It contributes NO agent tool; see the reasoning at the `register()` body below.
  *
  * It owns API informer, port-forward, and exec websocket lifecycles and closes them
@@ -27,6 +28,12 @@ import {
   PORT_FORWARDS_UNSUBSCRIBE,
   type PortForwardsFrame,
 } from './forwards-contract'
+import {
+  COLLECTIONS_FRAME_TAG,
+  COLLECTIONS_SUBSCRIBE,
+  COLLECTIONS_UNSUBSCRIBE,
+} from './collections-contract'
+import { createKubeLogsHub, createKubeLogsWsFrame } from './logs-follow'
 import type { PluginRegistration, WsFrameContribution } from '@localixai/plugin-sdk/backend'
 
 /**
@@ -49,8 +56,32 @@ export function createPortForwardsWsFrame(
   }
 }
 
+/** Deployment, service and node changes for one (context, namespace), as `o` frames. */
+export function createCollectionsWsFrame(
+  service: Pick<KubernetesService, 'watchCollections'>,
+): WsFrameContribution {
+  return {
+    subscribeCommand: COLLECTIONS_SUBSCRIBE,
+    unsubscribeCommand: COLLECTIONS_UNSUBSCRIBE,
+    frameTag: COLLECTIONS_FRAME_TAG,
+    key: (params) =>
+      `${(params.context as string | undefined) ?? ''}\n${(params.namespace as string | undefined) ?? ''}`,
+    start: (params, send) => {
+      const context = typeof params.context === 'string' ? params.context : ''
+      const namespace = typeof params.namespace === 'string' ? params.namespace : ''
+      return service.watchCollections(context, namespace, {
+        onFrame: (frame) => send(JSON.stringify(frame)),
+      })
+    },
+    stop: (handle) => {
+      if (typeof handle === 'function') (handle as () => void)()
+    },
+  }
+}
+
 export async function register(): Promise<PluginRegistration> {
   const service = createKubernetesService()
+  const logs = createKubeLogsHub()
 
   // NO agent tools. `kubernetes_get` and `kubernetes_manage` cost ~930 tokens of schema on
   // every request to wrap verbs of a CLI the agent already drives through `bash`. The
@@ -91,8 +122,14 @@ export async function register(): Promise<PluginRegistration> {
           listNamespaces: (context) => service.listNamespaces(context),
           listPods: (namespace, context) => service.listPods(namespace, context),
         }),
-        wsFrames: [podWatch, createPortForwardsWsFrame(service)],
+        wsFrames: [
+          podWatch,
+          createPortForwardsWsFrame(service),
+          createCollectionsWsFrame(service),
+          createKubeLogsWsFrame(logs),
+        ],
         onShutdown: async () => {
+          logs.stopAll()
           await service.stopAllExecs()
           await service.stopAllPortForwards()
           await service.stopAllWatches()

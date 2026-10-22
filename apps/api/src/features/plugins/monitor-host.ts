@@ -10,6 +10,7 @@ import { loadEnabledPluginMonitors } from './loader-declarative'
 import type { AvailabilityReader } from '../capabilities/availability'
 import { isAlwaysMonitor, monitorSkillTrigger } from './contracts-monitors'
 import { createMonitorArms } from './monitor-arms'
+import { monitorWaitsForSkill, type SkillInvocationInput } from './monitor-skill-trigger'
 import {
   MAX_LINES_PER_WINDOW,
   createRateGate,
@@ -42,11 +43,9 @@ export type { MonitorNotification, MonitorProc, MonitorSpawner } from './monitor
  * monitor-arms.ts for the broadcast this replaced. A line with no armed session is
  * handed to {@link MonitorHostOptions.unaddressed} once per silent stretch.
  *
- * DEFERRED: `on-skill-invoke:<skill>` monitors are parsed + validated + registered but
- * NOT started here — the skill-invocation seam is not yet hooked. They are logged so
- * the author knows the lazy start is pending; `when:"always"` monitors run today.
+ * An `on-skill-invoke:<skill>` monitor starts the first time its skill runs in a chat, armed
+ * for it (`skillInvoked`), then runs like an `always` one until its plugin goes away.
  */
-
 export interface MonitorHostOptions {
   /**
    * What the rules say about this user's plugins. A PORT: this host owns no storage, and
@@ -89,6 +88,8 @@ export interface PluginMonitorHost {
   disarm(input: MonitorArmInput): void
   /** A session that cannot take a wake any more leaves every monitor. */
   disarmSession(sessionId: string): void
+  /** A skill ran in a chat: start the monitors waiting for it, arm them; resolves their keys. */
+  skillInvoked(input: SkillInvocationInput): Promise<string[]>
 }
 
 export interface MonitorArmInput {
@@ -121,6 +122,9 @@ export function createPluginMonitorHost(options: MonitorHostOptions): PluginMoni
   // A plugin backend may arm while its own register() runs at boot, before the idle start has
   // read anything — an empty set then would refuse a monitor the plugin does declare.
   let declaredRead = false
+  let declared: LoadedPluginMonitor[] = []
+  /** The lazy monitors a skill has started: they run from then on, across refreshes. */
+  const triggered = new Set<string>()
   const arms = createMonitorArms()
   const refreshDebouncer = createDebouncer(REFRESH_DEBOUNCE_MS)
   let lifecycle: Promise<void> = Promise.resolve()
@@ -191,12 +195,10 @@ export function createPluginMonitorHost(options: MonitorHostOptions): PluginMoni
     await stopRunning(stopping)
   }
 
-  // Declarative-only: a monitor is manifest data, so reading them must not import
-  // and `register()` every enabled plugin. This ran the FULL loader at boot —
-  // ~9 MB of bundled plugin JS imported and every register() executed — to read an
-  // array that no bundled plugin even declares.
+  // Declarative-only: a monitor is manifest data, so reading them must not import and
+  // `register()` every enabled plugin (the full loader at boot imported ~9 MB of plugin JS).
   async function readDeclared(): Promise<LoadedPluginMonitor[]> {
-    const declared = await loadEnabledPluginMonitors({
+    declared = await loadEnabledPluginMonitors({
       repo,
       availability: await availabilityFor(userId),
       userId,
@@ -205,6 +207,7 @@ export function createPluginMonitorHost(options: MonitorHostOptions): PluginMoni
       homeDir: options.homeDir,
     })
     declaredKeys = new Set(declared.map((m) => `${m.pluginName}:${m.monitor.name}`))
+    for (const key of triggered) if (!declaredKeys.has(key)) triggered.delete(key)
     declaredRead = true
     return declared
   }
@@ -214,12 +217,11 @@ export function createPluginMonitorHost(options: MonitorHostOptions): PluginMoni
     const started: RunningMonitor[] = []
     try {
       for (const m of declared) {
-        if (isAlwaysMonitor(m.monitor)) {
+        if (isAlwaysMonitor(m.monitor) || triggered.has(`${m.pluginName}:${m.monitor.name}`)) {
           started.push(startMonitor(m))
         } else {
-          // on-skill-invoke:<skill> — lazy start deferred (no skill-invocation seam yet).
           logger?.info?.(
-            `monitor "${m.pluginName}:${m.monitor.name}" deferred (waits for skill "${monitorSkillTrigger(m.monitor)}" — lazy start not yet wired)`,
+            `monitor "${m.pluginName}:${m.monitor.name}" waits for skill "${monitorSkillTrigger(m.monitor)}"`,
           )
         }
       }
@@ -231,23 +233,25 @@ export function createPluginMonitorHost(options: MonitorHostOptions): PluginMoni
     monitors = started
   }
 
+  async function restart(): Promise<void> {
+    await stopAll()
+    await startAll()
+  }
+
   function enqueue(task: () => Promise<void>): Promise<void> {
     lifecycle = lifecycle.catch(() => undefined).then(task)
     return lifecycle
   }
 
   return {
-    start: () => enqueue(startAll),
+    // A skill may have started a monitor before the boot start; a start replaces what runs.
+    start: () => enqueue(restart),
     refresh() {
-      refreshDebouncer.schedule(() => {
-        void enqueue(async () => {
-          await stopAll()
-          await startAll()
-        })
-      })
+      refreshDebouncer.schedule(() => void enqueue(restart))
     },
     stop: () => {
       refreshDebouncer.cancel()
+      triggered.clear()
       return enqueue(stopAll)
     },
     running: () => monitors.map((r) => r.key),
@@ -271,5 +275,23 @@ export function createPluginMonitorHost(options: MonitorHostOptions): PluginMoni
       arms.disarm(`${input.pluginName}:${input.monitorName}`, input.sessionId)
     },
     disarmSession: (sessionId) => arms.disarmSession(sessionId),
+    async skillInvoked(input) {
+      if (input.userId !== userId) return []
+      let armed: string[] = []
+      await enqueue(async () => {
+        if (!declaredRead) await readDeclared()
+        const waiting = declared.filter(
+          (m) => !isAlwaysMonitor(m.monitor) && monitorWaitsForSkill(m, input),
+        )
+        armed = waiting.map((m) => `${m.pluginName}:${m.monitor.name}`)
+        for (const [i, m] of waiting.entries()) {
+          arms.arm(armed[i], input.sessionId)
+          if (triggered.has(armed[i])) continue
+          triggered.add(armed[i])
+          monitors.push(startMonitor(m))
+        }
+      })
+      return armed
+    },
   }
 }

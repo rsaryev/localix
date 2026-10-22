@@ -258,6 +258,7 @@ export function createCapabilitySnapshotService(
           },
         }),
         views: contributions.views,
+        themes: contributions.themes,
         // An agent record's row is keyed by its own name, one level in.
         // An agent record's row is keyed by its own id, one level in.
         agents: agents.map((agent) => {

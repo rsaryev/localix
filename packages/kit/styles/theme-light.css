@@ -53,6 +53,11 @@
   --status-error: oklch(0.53 0.21 20);
   --status-warning: oklch(0.52 0.12 75); /* amber is the hardest hue here; ~5.2:1 */
   --status-info: oklch(0.53 0.17 255);
+  /* Diff washes read stronger on the light shell. */
+  --diff-added: color-mix(in oklab, var(--status-success) 15%, transparent);
+  --diff-removed: color-mix(in oklab, var(--status-error) 15%, transparent);
+  --diff-added-word: color-mix(in oklab, var(--status-success) 30%, transparent);
+  --diff-removed-word: color-mix(in oklab, var(--status-error) 30%, transparent);
 
   --conn-red: oklch(0.53 0.21 20);
   --conn-amber: oklch(0.6 0.13 75);

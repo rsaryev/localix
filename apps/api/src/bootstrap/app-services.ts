@@ -21,6 +21,7 @@ import {
 } from '../features/capabilities/resolve'
 import type { CapabilityRoutesService } from '../features/capabilities/routes'
 import { createCapabilityServices, type CapabilityServices } from './capability-services'
+import { describeCommands } from '../features/mods/conversation-events'
 import { BUILTIN_TOOL_NAMES } from '../features/agent-core/tool-names'
 import { createConfigProposalService } from '../features/config-proposals/service'
 import { capabilitiesChanged } from '../features/capabilities/revision'
@@ -172,6 +173,8 @@ export function createAppServicesPhase({
     mcpService,
     pluginService,
     agentsService,
+    // Read when a listing is asked for: the mods host is bound after this phase is composed.
+    describeCommands: (commands) => describeCommands(serviceRefs.modsHost, commands),
   })
 
   // The `configure` tool's host. Every write path it delegates to already exists above or in

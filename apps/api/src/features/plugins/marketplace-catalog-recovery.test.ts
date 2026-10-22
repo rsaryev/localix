@@ -30,8 +30,15 @@ test('an unreadable registered catalog stays listed but contributes no plugins o
       },
     }
 
+    // Listed with the reason it cannot be read, so the picker can say why it is empty.
     expect(await listMarketplaces(deps)).toEqual([
-      { name: 'broken', builtin: false, count: 0, plugins: [] },
+      {
+        name: 'broken',
+        builtin: false,
+        count: 0,
+        plugins: [],
+        unsupported: expect.stringContaining('No .localix-plugin/marketplace.json'),
+      },
     ])
     expect(await findMarketplacesWithPlugin('anything', deps)).toEqual([])
     expect(await marketplaceDependencyAllowList('broken', deps)).toEqual([])

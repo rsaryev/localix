@@ -35,6 +35,28 @@ test('while live, sampled data and an unknown container keep the tick', () => {
   )
 })
 
+test('a followed log tail is read when it grows, not on the tick', () => {
+  expect(
+    containerPollNeeded({
+      live: true,
+      panel: 'logs',
+      logsLive: true,
+      state: 'running',
+      logsFollowed: true,
+    }),
+  ).toBe(false)
+  // Stats are a gauge: following the log does not announce them.
+  expect(
+    containerPollNeeded({
+      live: true,
+      panel: 'stats',
+      logsLive: true,
+      state: 'running',
+      logsFollowed: true,
+    }),
+  ).toBe(true)
+})
+
 test('an event names the tab’s container in either id form', () => {
   expect(sameContainer('abcdef123456', 'abcdef')).toBe(true)
   expect(sameContainer('abcdef', 'abcdef123456')).toBe(true)

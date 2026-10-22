@@ -1,31 +1,15 @@
 import type { ToolExposure } from '@localixai/agent/agents'
+import {
+  CHAT_AND_CHILD,
+  CHAT_DEFAULT,
+  CHAT_ONLY,
+  CONVERSATION_TREE,
+  EVERYWHERE,
+  type BuiltinToolDefinition,
+} from './tool-exposure'
 import { HISTORICAL_TOOL_NAMES, RESERVED_NON_TOOL_NAMES } from './tool-names-reserved'
 
-export type BuiltinToolCategory = 'core' | 'filesystem' | 'knowledge' | 'automation' | 'ui'
-
-export interface BuiltinToolDefinition {
-  name: string
-  label: string
-  description: string
-  category: BuiltinToolCategory
-  /** Which run shapes may carry the tool — the ledger's first gate and the source of each
-   *  shape's default surface (`run-shape.ts`). There is no other list of "what a child gets". */
-  exposure: ToolExposure
-  /** Conversation protocol primitives remain available wherever their host offers them. */
-  protocol?: boolean
-}
-
-// The exposure vocabulary, spelled once. `never` is the structural bound: a child is never
-// TOLD about such a tool either, so it cannot spend a turn discovering it cannot have it.
-const EVERYWHERE: ToolExposure = { chat: 'default', subagent: 'default', automation: 'default' }
-const CHAT_AND_CHILD: ToolExposure = { chat: 'default', subagent: 'default', automation: 'opt-in' }
-const CHAT_DEFAULT: ToolExposure = { chat: 'default', subagent: 'opt-in', automation: 'opt-in' }
-const CHAT_ONLY: ToolExposure = { chat: 'default', subagent: 'never', automation: 'never' }
-const CONVERSATION_TREE: ToolExposure = {
-  chat: 'default',
-  subagent: 'never',
-  automation: 'never',
-}
+export type { BuiltinToolCategory, BuiltinToolDefinition } from './tool-exposure'
 
 /**
  * The ONE declarative inventory of every core-owned model tool.
@@ -190,6 +174,15 @@ export const BUILTIN_TOOL_CATALOG = {
       'Hand a task to yourself or another agent in a child session, and message, stop or close it.',
     category: 'automation',
     // Delegation is a root chat's: the child it creates may not delegate again.
+    exposure: CONVERSATION_TREE,
+  },
+  workflow: {
+    name: 'workflow',
+    label: 'Workflow',
+    description:
+      'Run a plugin workflow: a script that runs many agents in child sessions and returns one result.',
+    category: 'automation',
+    // Its agents are children of the chat that runs it, and a child may not create children.
     exposure: CONVERSATION_TREE,
   },
   loops: {

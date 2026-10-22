@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { MANIFEST_FILE } from '@localixai/claude-plugin'
+import { MANIFEST_FILE, MARKETPLACE_FILE } from '@localixai/claude-plugin'
 
 import { pathExists } from '../ext/fs-discovery'
 
@@ -22,8 +22,14 @@ export const MARKETPLACE_DIR = '.localix-plugin'
 export const MARKETPLACE_CATALOG_FILE = `${MARKETPLACE_DIR}/marketplace.json`
 export const MARKETPLACE_METADATA_FILE = `${MARKETPLACE_DIR}/marketplace.metadata.json`
 
-/** Marketplace catalog location: only the branded `.localix-plugin/marketplace.json`. */
-export const MARKETPLACE_MANIFEST_CANDIDATES: readonly string[] = [MARKETPLACE_CATALOG_FILE]
+/**
+ * Marketplace catalog locations: the branded `.localix-plugin/marketplace.json`, else Claude Code's
+ * `.claude-plugin/marketplace.json` (the same schema, read the same way).
+ */
+export const MARKETPLACE_MANIFEST_CANDIDATES: readonly string[] = [
+  MARKETPLACE_CATALOG_FILE,
+  MARKETPLACE_FILE,
+]
 
 /**
  * Return the absolute path of the first candidate (relative to `dir`) that exists,

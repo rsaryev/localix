@@ -20,7 +20,9 @@ export {
   type Registration,
 } from './engine'
 export { matchesEvent, matchesEventName, type Matcher, type MatcherValue } from './matcher'
+export { PLAIN_DATA_LIMITS, plainDataProblem } from './plain-data'
 export {
+  CLIENT_ELEMENT_NAMES,
   ELEMENT_NAMES,
   elementTable,
   Fragment,
@@ -33,4 +35,5 @@ export {
   type JsonElement,
   type RenderChild,
   type RenderElement,
+  type SerializeOptions,
 } from './elements'

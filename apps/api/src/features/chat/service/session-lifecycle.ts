@@ -9,6 +9,13 @@ import { toSessionSummary } from '../repository'
 import type { SessionDetail, SessionSummary } from '../contracts'
 import { assertRoutePatch, clampRoutePatch, writeRoutePatch } from './session-route-patch'
 import type { SessionLifecycleCtx, UpdateSessionPatch } from './session-lifecycle-contracts'
+import { sessionRoute } from '../../../contracts/session-route'
+import {
+  announceCwdChange,
+  announceModelSwitches,
+  guardModelSwitches,
+  modelSwitches,
+} from './cc-session-events'
 
 export { deleteSession } from './session-deletion'
 export type {
@@ -58,6 +65,15 @@ export async function updateSession(
       throw new ConflictError('agent_already_linked', 'This chat already has a linked agent.')
   }
   await assertRoutePatch(ctx, userId, session, patch)
+  // CC PreModelSwitch may refuse the picker's switch before anything is written.
+  const switches = modelSwitches(
+    session.agents,
+    patch.routes ?? (patch.route ? [patch.route] : []),
+    sessionRoute(session).agentId,
+  )
+  await guardModelSwitches(ctx.ccHookSessions, id, switches, 'picker')
+  const moved = patch.projectId !== undefined && patch.projectId !== session.projectId
+  const cwdBefore = moved ? await ctx.resolveSessionWorkingDir?.(userId, session) : undefined
   // A child runs under its root's mode, so a mode set on the child alone would be overwritten by
   // the root's next change and, until then, make one worker in a plan conversation able to write.
   if (patch.permissionMode !== undefined && session.parentSessionId !== null) {
@@ -119,6 +135,11 @@ export async function updateSession(
   const modeBefore = afterMembership.permissionMode
   if (persisted.permissionMode !== undefined && persisted.permissionMode !== modeBefore)
     await ctx.onPermissionModeChanged?.(userId, id, modeBefore, persisted.permissionMode)
+  announceModelSwitches(ctx.ccHookSessions, id, switches, 'picker')
+  if (cwdBefore !== undefined) {
+    const cwdAfter = await ctx.resolveSessionWorkingDir?.(userId, persisted)
+    if (cwdAfter !== undefined) announceCwdChange(ctx.ccHookSessions, id, cwdBefore, cwdAfter)
+  }
   ctx.publishSession(persisted)
   return ctx.getSessionDetail(userId, id)
 }

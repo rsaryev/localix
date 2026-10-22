@@ -522,12 +522,20 @@ describe('validatePlugin — sensitive keys in hook commands', () => {
 })
 
 describe('validateCompatibility', () => {
-  it('warns on Claude Code fields this host still ignores (outputStyles)', async () => {
+  it('does not warn on the Claude Code components Localix runs', async () => {
     const plugin = await writePlugin('cc-fields', 'cc-fields', {
       outputStyles: './output-styles/',
+      workflows: './workflows/',
+      themes: './themes/',
+      settings: { agent: 'reviewer' },
     })
     const { warnings } = validateCompatibility(plugin)
-    expect(warnings.some((w) => w.includes('"outputStyles"') && w.includes('ignores'))).toBe(true)
+    expect(warnings.filter((w) => w.includes('ignores') || w.includes('Unrecognized'))).toEqual([])
+  })
+
+  it('still warns on a field this host ignores (contributes)', async () => {
+    const plugin = await writePlugin('cc-contributes', 'cc-contributes', { contributes: {} })
+    expect(validateCompatibility(plugin).warnings.join('\n')).toContain('"contributes"')
   })
 
   it('promotes experimental.monitors to top-level monitors (honored, not ignored)', async () => {

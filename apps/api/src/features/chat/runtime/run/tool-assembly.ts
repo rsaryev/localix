@@ -12,6 +12,7 @@ import type { LoadedPlugins } from '../../../plugins/loader'
 import type { SessionRecord } from '../../repository'
 import { TOOL } from '../../../agent-core/tool-names'
 import { applyToolWrapperChain } from './tool-wrapper-chain'
+import type { ModRunScope } from '../../../mods/run-scope'
 import { consoleWarnLogger } from '../plugin-hook-logger'
 import { resolveMcpTools, type McpInventoryEntry } from './mcp-tools'
 import { createActivateToolsTool } from '../../../agent-core/tools/activate-tools/activate-tools'
@@ -34,6 +35,8 @@ export interface AssembleRunToolsOptions {
   loadedPlugins: LoadedPlugins
   /** Per-run CC declarative-hook runtime (PreToolUse/PostToolUse tool wrapping). */
   ccHooks: CcHooksRuntime
+  /** Claude Code mods: `tool.call` around every tool, and the tools they registered. */
+  mods?: ModRunScope
   defaultCwd: string
   disabledTools: string[]
   /** What the run's rules say about its MCP servers. */
@@ -172,18 +175,23 @@ export async function assembleRunTools(
     const tools = entry.tools.filter((name) => acceptedMcpModelNames.has(name))
     return tools.length > 0 ? [{ ...entry, tools }] : []
   })
+  // ---- Mods' tools (`$.tool.register`) — an open toolset only, like MCP ----------------
+  const modTools = agentProfile.openToolset ? (options.mods?.tools() ?? []) : []
+  const claimedMods = claimSecondaryTools(allTools, modTools)
+  allTools.push(...claimedMods.tools)
   // ---------------------------------------------------------------------
 
   // Every wrapper, in the order tool-wrapper-chain.ts declares — plugin hooks and CC hooks
   // innermost, then the timeout promoter, then the three no-progress guards. The order and
   // its reasons live with the list, so the composition dump and the code cannot disagree.
-  const wrapped = applyToolWrapperChain(allTools, {
+  const chained = applyToolWrapperChain(allTools, {
     observe: env.deps?.externalAgents?.observe,
     sessionId: session.id,
     pluginHooks: loadedPlugins.hooks,
     pluginHookOptions: { sessionId: session.id, logger: consoleWarnLogger },
     ccHooks,
     logger: consoleWarnLogger,
+    mods: options.mods,
   })
 
   // Populate the shared background-tool set from the assembled tools' declared
@@ -205,10 +213,25 @@ export async function assembleRunTools(
   const sourceByTool = new Map<string, string>()
   for (const [name, server] of Object.entries(mcp.gather?.serverByTool ?? {}))
     if (acceptedMcpModelNames.has(name)) sourceByTool.set(name, server)
-  for (const tool of loadedPlugins.tools)
+  for (const tool of [...loadedPlugins.tools, ...claimedMods.tools])
     if (!sourceByTool.has(tool.name)) sourceByTool.set(tool.name, 'plugins')
   const activatedForSession = session.activatedTools ?? []
-  const split = splitDeferredTools(wrapped, sourceByTool, activatedForSession, surfaceTools)
+  // Claude Code mods' `tool.describe`: a description rewritten, a tool moved behind the
+  // activator (`isDeferred: true`) or onto the wire (`false`).
+  const onSurface = surfaceTools ?? []
+  const described = await (options.mods?.describeTools(chained, {
+    sources: sourceByTool,
+    deferred: (name) =>
+      sourceByTool.has(name) && !activatedForSession.includes(name) && !onSurface.includes(name),
+  }) ?? { tools: chained, placed: new Map<string, boolean>() })
+  const wrapped = described.tools
+  const placed = [...described.placed]
+  for (const [name] of placed.filter(([, deferred]) => deferred))
+    sourceByTool.set(name, sourceByTool.get(name) ?? 'mods')
+  const split = splitDeferredTools(wrapped, sourceByTool, activatedForSession, [
+    ...onSurface,
+    ...placed.filter(([, deferred]) => !deferred).map(([name]) => name),
+  ])
 
   // The activator lives as long as this run has ANY external tool, even when the session has already
   // activated every one of them. Two reasons, both learned rather than assumed: a tool that vanishes from

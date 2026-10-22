@@ -1,6 +1,7 @@
 import { useCallback, type Dispatch, type SetStateAction } from 'react'
 
 import { toast } from '@/shared/lib/notify'
+import { runThemeCommand, themeCommandArgument } from '@/shared/theme/themeChoice'
 import { composerBus } from '@/shared/lib/composerBus'
 import { sendFailure } from '@/entities/chat/model/sendFailure'
 import { sendChatMessage } from '@/entities/chat/model/sendChatMessage'
@@ -111,8 +112,8 @@ export function clearSubmittedPrompt(current: string, submitted: string): string
 }
 
 /**
- * Builds the composer's send handler — handles the client-side `/fork` control
- * command and the immediate-send path. Extracted from ChatSurface.
+ * Builds the composer's send handler — handles the client-side `/fork` and `/theme`
+ * control commands and the immediate-send path. Extracted from ChatSurface.
  */
 export function useSendMessage({
   createSession,
@@ -146,6 +147,17 @@ export function useSendMessage({
         setPrompt((current) => clearSubmittedPrompt(current, prompt))
         clearAttachments(submittedAttachmentIds)
         forkSession()
+        return
+      }
+
+      // `/theme [name]` changes this device's look, so it never reaches the agent either.
+      const themeArgument = wire.length === 0 ? themeCommandArgument(text) : null
+      if (themeArgument !== null) {
+        setPrompt((current) => clearSubmittedPrompt(current, prompt))
+        clearAttachments(submittedAttachmentIds)
+        const result = runThemeCommand(themeArgument)
+        if (result.kind === 'unknown') toast.error(result.title, { description: result.detail })
+        else toast.message(result.title, result.detail ? { description: result.detail } : undefined)
         return
       }
 

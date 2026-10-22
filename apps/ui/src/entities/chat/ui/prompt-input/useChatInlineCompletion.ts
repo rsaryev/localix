@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 
-import { useInlineCompletion } from '@/shared/hooks/useInlineCompletion'
+import {
+  useInlineCompletion,
+  type InlineCompletionController,
+} from '@/shared/hooks/useInlineCompletion'
+import { useComposerSuggestion, type ComposerSuggestion } from '@/shared/lib/composerSuggestions'
 
 import { useChatStore } from '../../model/store'
 import { chatCompletionPayload } from './chatCompletionPayload'
@@ -21,6 +25,9 @@ import {
  *   empty    predict their reply to the agent's last message (`replyPrediction.ts`): once per
  *            message, a short pause after it settles, whether or not the input has focus — so the
  *            ghost is already there when they reach it — and never for anything else.
+ *
+ * An extension's offered suggestion (`composerSuggestions.ts`, a Claude Code mod's
+ * `$.prompt.suggest`) takes the empty box's ghost in place of a prediction.
  */
 export function useChatInlineCompletion(input: {
   prompt: string
@@ -97,7 +104,8 @@ export function useChatInlineCompletion(input: {
     [replyMode, subjectId, sessionContextVersion, completionRefsKey],
   )
 
-  return useInlineCompletion({
+  const offered = useComposerSuggestion(sessionId)
+  const completion = useInlineCompletion({
     surface: 'chat',
     sessionId,
     value: prompt,
@@ -105,12 +113,44 @@ export function useChatInlineCompletion(input: {
     payload: chatCompletionPayload(prompt, completionRefs),
     contextKey: chatCompletionContextKey,
     enabled: input.enabled,
-    // An empty composer asks for nothing but a reply prediction.
-    active: input.active && (!empty || replyMode),
+    // An empty composer asks for nothing but a reply prediction, and not while one is offered.
+    active: input.active && (!empty || (replyMode && !offered)),
     focused: replyMode || input.focused,
     caretAtEnd: replyMode || input.caretAtEnd,
     ...(replyMode
       ? { debounceMs: replyPredictionDelayMs(settledAt.current.get(subjectId) ?? now, now) }
       : {}),
   })
+  return offered && empty ? offeredCompletion(offered, completion, setPrompt) : completion
+}
+
+/** The offered text as the ghost: Tab writes it into the box, Escape lets it go. */
+export function offeredCompletion(
+  offered: ComposerSuggestion,
+  completion: InlineCompletionController,
+  setPrompt: (value: string) => void,
+): InlineCompletionController {
+  const accept = () => {
+    setPrompt(offered.text)
+    offered.settle()
+    return true
+  }
+  const dismiss = () => {
+    offered.settle()
+    return true
+  }
+  return {
+    ...completion,
+    suggestion: offered.text,
+    accept,
+    dismiss,
+    handleKeyDown(event) {
+      if (event.key === 'Tab' && !event.shiftKey) {
+        event.preventDefault()
+        return accept()
+      }
+      if (event.key === 'Escape') return dismiss()
+      return completion.handleKeyDown(event)
+    },
+  }
 }

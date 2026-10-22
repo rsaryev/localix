@@ -10,6 +10,7 @@ import { TASK_BOARD_TOOL } from './facts'
 import { RUNTIME_CONTEXT_PROTOCOL } from './runtime-sections'
 import { ANSWER_FORMS_PRINCIPLE, buildAnswerFormatSection } from './sections/answer-format'
 import { buildCollaborationSection } from './sections/collaboration'
+import { buildOutputStyleSection } from './sections/output-style'
 import { buildTurnControlSection } from './sections/conversation'
 import { buildCorePrinciples, buildExecutionDiscipline } from './sections/discipline'
 import {
@@ -73,7 +74,12 @@ export const CACHED_SECTIONS: readonly PromptSection[] = [
     id: 'discipline',
     tier: 'stable',
     heading: '# Execution discipline',
-    render: (f) => buildExecutionDiscipline(f.registry.toolNames, f.profile),
+    // An output style without `keep-coding-instructions` leaves out the software-engineering lines,
+    // as Claude Code leaves out its own; the tool routing stays.
+    render: (f) =>
+      buildExecutionDiscipline(f.registry.toolNames, f.profile, {
+        codingInstructions: f.params.outputStyle?.keepCodingInstructions ?? true,
+      }),
   },
   {
     id: 'tools',
@@ -211,6 +217,14 @@ export const CACHED_SECTIONS: readonly PromptSection[] = [
     tier: 'stable',
     heading: '# Answer formatting',
     render: (f) => (f.rendersAnswers ? buildAnswerFormatSection() : null),
+  },
+  {
+    // The person picks a style between turns (`/output-style`), so it closes the formatting rules
+    // and leaves the prefix above it — tools, workspace, skills — cached when it changes.
+    id: 'output-style',
+    tier: 'stable',
+    heading: '# Output style',
+    render: (f) => (f.params.outputStyle ? buildOutputStyleSection(f.params.outputStyle) : null),
   },
   {
     // Persistent memory belongs in the stable prefix.

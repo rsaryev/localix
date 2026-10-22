@@ -124,6 +124,9 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
       get exitNotices() {
         return deps.exitNotices
       },
+      get mods() {
+        return deps.mods
+      },
       get configProposals() {
         return deps.configProposals
       },

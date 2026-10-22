@@ -140,6 +140,25 @@ function checkSourceTraversal(value: string, where: string, errors: string[]): v
     errors.push(`${where} contains ".." — sources must stay inside the marketplace root: ${value}`)
 }
 
+/** True when one raw entry parses and its source stays inside the marketplace. */
+function entryIsUsable(entry: unknown): boolean {
+  if (!marketplaceEntrySchema.safeParse(entry).success) return false
+  const source = (entry as { source: unknown }).source
+  const path = typeof source === 'string' ? source : (source as { path?: unknown } | null)?.path
+  return typeof path !== 'string' || !path.includes('..')
+}
+
+/**
+ * Drop the entries that are invalid on their own (Claude Code: one invalid entry doesn't fail
+ * the marketplace). Anything that is not a catalog object passes through for the validator.
+ */
+export function usableEntries(raw: unknown): unknown {
+  if (!raw || typeof raw !== 'object' || !Array.isArray((raw as { plugins?: unknown }).plugins))
+    return raw
+  const obj = raw as { plugins: unknown[] }
+  return { ...obj, plugins: obj.plugins.filter(entryIsUsable) }
+}
+
 /**
  * Deterministically validate a raw (pre-zod) marketplace object — the same kind of
  * check `claude plugin validate` runs, rebuilt for our pipeline. Errors block; warnings

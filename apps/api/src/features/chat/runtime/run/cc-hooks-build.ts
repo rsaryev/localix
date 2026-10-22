@@ -15,6 +15,10 @@
  * Layer rule: run/ may import runtime infrastructure + agent-core, never
  * features/chat/service*.
  */
+import { homedir } from 'node:os'
+import { join } from 'node:path'
+
+import { isPathBelow } from '../../../../lib/path-containment'
 import type { AvailabilityReader } from '../../../capabilities/availability'
 import type { ResolvedCapabilities } from '../../../capabilities/resolve'
 import {
@@ -54,11 +58,16 @@ export interface BuildRunCcHooksInput {
   loadedPlugins: LoadedPlugins
   /** A continuation segment never re-fires SessionStart. */
   isContinuation: boolean
+  /** The instruction files this run's prompt carries (InstructionsLoaded, with SessionStart). */
+  contextFiles?: readonly { path: string }[]
 }
 
 export interface RunCcHooks {
   ccHooks: CcHooksRuntime
-  /** SessionStart stdout/additionalContext — injected into the model context; once per session. */
+  /**
+   * SessionStart stdout/additionalContext (once per session), plus what a between-run hook left
+   * for the next request (PostModelSwitch) — injected into the model context.
+   */
   ccSessionStartContext?: string
 }
 
@@ -78,11 +87,22 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
     isContinuation,
   } = input
   const { deps } = env
-  const { ccHooksStartedSessions, ccHooksSessionStartSource, ccHookOnceKeys } = env.state
+  const { ccHooksStartedSessions, ccHooksSessionStartSource, ccHookOnceKeys, ccHookSessions } =
+    env.state
+  const onceKeys = ensureCcHookOnceKeys(ccHookOnceKeys, session.id)
+  const emitNotice = ccHookNoticeEmitter(deps.streamRegistry, userId, session.id)
 
   const { registry: ccHookRegistry } = await buildCcHookRegistry({
     projectDir: defaultCwd,
     pluginHooks: loadedPlugins.ccHooks,
+  })
+  // The session's own hooks — before this run's scoped ones merge in — are what its between-run
+  // events fire (a model switch, a project move, a watched file). See cc-hook-sessions.ts.
+  ccHookSessions.remember(session.id, {
+    registry: structuredClone(ccHookRegistry),
+    projectDir: defaultCwd,
+    onceKeys,
+    emitNotice,
   })
   // Run-SCOPED frontmatter hooks: a skill's or a delegated sub-agent's `hooks`
   // block, active only for THIS run (merged in, converting Stop→SubagentStop for
@@ -106,7 +126,7 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
     enabled: true,
     logger: ccHooksConsoleLogger,
     // Per-session `once` tracker (survives across the per-run runtimes).
-    onceKeys: ensureCcHookOnceKeys(ccHookOnceKeys, session.id),
+    onceKeys,
     evaluatePromptHook: createPromptHookEvaluator({
       env,
       userId,
@@ -137,7 +157,7 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
         agentId: speakerAgentId,
         source: 'hook',
       })) ?? null,
-    emitNotice: ccHookNoticeEmitter(deps.streamRegistry, userId, session.id),
+    emitNotice,
   })
 
   // SessionStart CC hooks — once per session (their stdout/additionalContext is
@@ -151,8 +171,22 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
     // context checkpoint (consumed once so a later run reverts to `startup`).
     const startSource = ccHooksSessionStartSource.get(session.id) ?? 'startup'
     ccHooksSessionStartSource.delete(session.id)
-    ccSessionStartContext = (await ccHooks.runSessionStart(startSource)).additionalContext
+    const started = await ccHooks.runSessionStart(startSource)
+    ccSessionStartContext = started.additionalContext
+    if (started.watchPaths) ccHookSessions.setWatchPaths(session.id, started.watchPaths)
+    // The instruction files load with the session, and again after a checkpoint rewrote the
+    // view (CC's `compact`). Observability only: never awaited.
+    const loadReason = startSource === 'compact' ? 'compact' : 'session_start'
+    for (const file of input.contextFiles ?? [])
+      void ccHooks.runInstructionsLoaded({
+        path: file.path,
+        memoryType: isUserInstructionFile(file.path) ? 'User' : 'Project',
+        loadReason,
+      })
   }
+  // A between-run hook's context (PostModelSwitch) reaches the model with this request.
+  const queued = ccHookSessions.takeContext(session.id)
+  if (queued) ccSessionStartContext = [ccSessionStartContext, queued].filter(Boolean).join('\n\n')
 
   return { ccHooks, ccSessionStartContext }
 }
@@ -175,6 +209,11 @@ function ensureCcHookOnceKeys(
     ccHookOnceKeys.set(sessionId, onceKeys)
   }
   return onceKeys
+}
+
+/** The files under `~/.localix` are the person's own (CC `User`); the rest are the project's. */
+function isUserInstructionFile(path: string): boolean {
+  return isPathBelow(join(homedir(), '.localix'), path)
 }
 
 /** The console sink `createCcHooksRuntime` logs through (the hook layer prefixes its tags). */

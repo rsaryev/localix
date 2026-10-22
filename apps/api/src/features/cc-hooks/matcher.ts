@@ -82,6 +82,42 @@ export function matchesField(matcher: string | undefined, value: string): boolea
   return matchAny(matcher!, [value])
 }
 
+/** A matcher value against several spellings of one thing (a model's id and canonical name). */
+export function matchesAnyField(matcher: string | undefined, values: readonly string[]): boolean {
+  if (isMatchAll(matcher)) return true
+  return matchAny(matcher!, values)
+}
+
+/** The exact-match set of `FileChanged` and `StopFailure`: no hyphen, space or comma. */
+const NARROW_EXACT_ONLY = /^[A-Za-z0-9_|]*$/
+
+/**
+ * `FileChanged` and `StopFailure` matchers: exact only for letters, digits, `_` and `|`, split on
+ * `|` alone; any other character (`.env` included) makes the matcher a regex, as in CC.
+ */
+export function matchesNarrowField(matcher: string | undefined, value: string): boolean {
+  if (isMatchAll(matcher)) return true
+  const source = matcher!.trim()
+  if (NARROW_EXACT_ONLY.test(source)) return source.split('|').some((alt) => alt === value)
+  try {
+    return new RegExp(source).test(value)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * The literal filenames a `FileChanged` matcher asks to watch: its value split on `|`, each
+ * segment a filename in the working directory (a regex would name a file literally, as in CC).
+ */
+export function fileChangedWatchNames(matcher: string | undefined): string[] {
+  if (matcher === undefined || matcher.trim() === '') return []
+  return matcher
+    .split('|')
+    .map((name) => name.trim())
+    .filter((name) => name.length > 0)
+}
+
 /** Reverse index: engine tool name → every lowercased CC name that maps to it. */
 const ENGINE_TO_CC: Readonly<Record<string, string[]>> = (() => {
   const out: Record<string, string[]> = {}

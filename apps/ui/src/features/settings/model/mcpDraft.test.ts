@@ -27,6 +27,7 @@ const everyConfigField: Required<McpServerConfig> = {
   disabledTools: ['denied_tool'],
   required: true,
   timeout: 45_000,
+  channel: true,
 }
 
 /** The ONE field a save is allowed to drop: the *other* transport's identity field. */

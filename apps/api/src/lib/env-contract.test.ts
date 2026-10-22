@@ -96,6 +96,10 @@ const EXEMPTIONS: Exemptions = {
     reason:
       'IS the process.env boundary: repairs a GUI launch by folding the login-shell env INTO process.env. It writes ambient env by design.',
   },
+  [exemptionKey('src/features/mods/api/system-api.ts', '<dynamic>')]: {
+    reason:
+      "A mod's `$.env.get(name)`: Claude Code's mods API reads the variable the mod names, as its processes would see it. No fixed var to route.",
+  },
   [exemptionKey('src/features/cc-hooks/http.ts', '<dynamic>')]: {
     reason:
       'Expands ${VAR} references inside user-authored CC hook configs — the var NAME comes from the config, gated by an allowed-keys set. No fixed var to route.',

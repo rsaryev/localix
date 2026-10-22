@@ -14,6 +14,7 @@ import { intakeTurn, rewriteModelPrompt } from './intake'
 import { freshLane, freshView, TEST_IDENTITY } from './test-fixtures'
 import { USER_PARTICIPANT } from '../../../../db'
 import { systemNoticeBinding } from '../../system-notice-bindings'
+import { INERT_CC_HOOKS, type CcHooksRuntime, type CcPromptExpansion } from '../../../cc-hooks'
 
 function message(id: string, content: string, uiOnly = false): PersistedMessage {
   return {
@@ -211,5 +212,70 @@ describe('intake → strategy', () => {
     expect(taken.frame.systemBindings).toHaveLength(1)
     expect(JSON.stringify(taken.frame.systemBindings)).toContain('NEW_SYSTEM_EVENT')
     expect(JSON.stringify(taken.frame.systemBindings)).not.toContain('OLD_SYSTEM_EVENT')
+  })
+})
+
+describe('UserPromptExpansion at intake', () => {
+  const typed = (): PersistedMessage => {
+    const row = message('prompt', '/deploy staging')
+    row.payload.bindings = [
+      {
+        kind: 'invocation',
+        id: 'b1',
+        source: 'plugin',
+        invocation: {
+          kind: 'plugin-command',
+          name: 'ops:deploy',
+          arguments: 'staging',
+          lifetime: 'turn',
+        },
+        presentation: { label: 'deploy' },
+        instruction: 'Deploy to staging.',
+      },
+    ]
+    return row
+  }
+  const run = (ccHooks: Partial<CcHooksRuntime>) =>
+    intakeTurn({
+      deps: {} as never,
+      userId: 'user-1',
+      session: { id: 'session-1' } as never,
+      assistantMessageId: 'assistant-1',
+      assistantCreatedAt: '2026-07-28T00:00:00.000Z',
+      historyMessages: [typed()],
+      loadedPlugins: { hooks: [] } as never,
+      ccHooks: { ...INERT_CC_HOOKS, active: true, ...ccHooks },
+      ccSessionStartContext: undefined,
+      runtimeSections: [],
+      defaultCwd: '/repo',
+      now: () => '2026-07-28T00:00:00.000Z',
+    })
+
+  test('a typed command fires after UserPromptSubmit; its context joins the turn', async () => {
+    const seen: CcPromptExpansion[] = []
+    const result = await run({
+      runUserPromptExpansion: async (expansion) => {
+        seen.push(expansion)
+        return { blocked: false, additionalContext: 'deploy checklist' }
+      },
+    })
+    expect(seen).toEqual([
+      {
+        commandName: 'ops:deploy',
+        commandArgs: 'staging',
+        commandSource: 'plugin',
+        prompt: '/deploy staging',
+      },
+    ])
+    expect(
+      result.ok && result.frame.runtimeSections.find((s) => s.key === 'hook-context')?.text,
+    ).toContain('deploy checklist')
+  })
+
+  test('a block fails the turn before any model call', async () => {
+    const result = await run({
+      runUserPromptExpansion: async () => ({ blocked: true, reason: 'needs approval file' }),
+    })
+    expect(result).toMatchObject({ ok: false, blockedReason: 'needs approval file' })
   })
 })

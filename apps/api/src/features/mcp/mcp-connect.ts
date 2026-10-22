@@ -1,6 +1,6 @@
 import { errorMessage } from '../../lib/errors'
 
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
+import type { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { UnauthorizedError } from '@modelcontextprotocol/sdk/client/auth.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
@@ -12,6 +12,7 @@ import type { McpServerRecord } from './repository'
 import { expandServerConfig } from './expand'
 import { resolveConnectTimeoutMs } from './mcp-tools'
 import { silentAuthProvider } from './oauth/runtime'
+import { createElicitingClient } from './mcp-elicitation'
 
 // How long a single gather waits for a server to connect before backgrounding it.
 // Kept well below typical model prefill so a cold/slow MCP server (e.g. a remote
@@ -103,7 +104,8 @@ function filterEnv(env: NodeJS.ProcessEnv): Record<string, string> {
 
 /** Connect a client, falling back from Streamable HTTP to SSE for remote servers. */
 export async function connectClient(server: McpServerRecord, cwd: string): Promise<Client> {
-  const client = new Client({ name: CLIENT_NAME, version: CLIENT_VERSION })
+  // Offers elicitation: the server may ask the person for input during a tool call.
+  const client = createElicitingClient({ name: CLIENT_NAME, version: CLIENT_VERSION })
   const deadline = Date.now() + resolveConnectTimeoutMs()
 
   if (server.transport === 'ws') {

@@ -32,5 +32,6 @@ describe.skipIf(!Bun.which('rg'))('loadProjectFileIndex', () => {
     } finally {
       rmSync(root, { recursive: true, force: true })
     }
-  })
+    // A real ripgrep process: its spawn alone can outlast bun's 5 s on a loaded machine.
+  }, 30_000)
 })

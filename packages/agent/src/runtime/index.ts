@@ -3,6 +3,7 @@ import type {
   AgentMessage,
   AgentTool,
   AgentToolExecutionContext,
+  AgentToolResult,
   AfterToolCallContext,
   AfterToolCallResult,
   BeforeToolCallContext,
@@ -14,9 +15,11 @@ export * from './engine'
 export * from './local-models'
 export * from './model'
 export * from './model-session'
+export * from './model-steps'
 export * from './scripts'
 
 import type { RuntimeCredential, RuntimeCredentialStore } from './auth'
+import type { ModelStepHook } from './model-steps'
 import type { RuntimeModelRef } from './model'
 import type { AssistantMessage, Message, ReasoningEffort, Usage } from '../types'
 
@@ -108,6 +111,23 @@ export interface SteeringBoundary {
   completedToolTurnIndex?: number
 }
 
+/** One response's tool calls, each with the result the model will read. */
+export interface ToolBatchContext {
+  calls: readonly {
+    toolCallId: string
+    toolName: string
+    input: unknown
+    result: AgentToolResult
+  }[]
+}
+
+export interface ToolBatchVerdict {
+  /** Delivered to the model before its next request, once. */
+  messages?: AgentMessage[]
+  /** End the run before the next request; the name is reported as `stoppedBy`. */
+  stop?: string
+}
+
 export interface AgentRuntimeRunInput {
   sessionId: string
   messages: readonly AgentMessage[]
@@ -148,6 +168,15 @@ export interface AgentRuntimeRunInput {
     context: AfterToolCallContext,
     signal: AbortSignal,
   ) => Promise<AfterToolCallResult | undefined>
+  /**
+   * Every call of one response has settled, before the next model request. The host may add
+   * messages the model reads first, or end the run here (`stop` names the reason, reported as
+   * {@link AgentRuntimeResult.stoppedBy}). Not asked when the batch ended the run itself.
+   */
+  afterToolBatch?: (
+    batch: ToolBatchContext,
+    signal: AbortSignal,
+  ) => Promise<ToolBatchVerdict | undefined>
   takeSteering?: (boundary?: SteeringBoundary) => AgentMessage[] | Promise<AgentMessage[]>
   /**
    * Is a message waiting that {@link takeSteering} would deliver? Asked before each tool call of
@@ -167,6 +196,12 @@ export interface AgentRuntimeRunInput {
    * counter that has seen enough.
    */
   stopWhen?: readonly { name: string; shouldStop: () => boolean | Promise<boolean> }[]
+  /**
+   * Around each model request of the run (`model-steps.ts`): the host observes the response,
+   * sends the request on another model of the run's provider or with another effort, or answers
+   * it without sending.
+   */
+  modelStep?: ModelStepHook
 }
 
 export interface AgentRuntimeResult {

@@ -4,10 +4,12 @@ import { defineAgentTool, type AgentTool } from '@localixai/agent/agents'
 
 import { CcHookBlockedError, wrapToolsWithCcHooks } from './wrap-tools'
 import type { CcHooksRuntime } from './run'
+import { EMPTY_RUNTIME } from './runtime-results'
 
-/** A runtime with only the tool hooks the wrapper calls; the rest is never reached. */
+/** A runtime with only the tool hooks the wrapper calls; the rest stays inert. */
 function runtime(over: Partial<CcHooksRuntime>): CcHooksRuntime {
   return {
+    ...EMPTY_RUNTIME,
     active: true,
     runPreToolUse: () => Promise.resolve({ decision: 'proceed' as const }),
     runPostToolUse: () => Promise.resolve({}),

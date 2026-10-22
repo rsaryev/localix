@@ -209,7 +209,7 @@ export function buildTaskDelegationOptions(
         ...(input.agentId ? { participant: agentParticipant(input.agentId) } : {}),
       })
       // Over the cap the child WAITS, and says so in this turn's result; it starts on its own.
-      const lane = requestLane(session.id, sid, launch, taskOpts.priority)
+      const lane = requestLane(session.id, sid, launch, taskOpts.priority, taskOpts.lane)
       if (lane.state === 'queued') return { queued: lane.position }
 
       // Watch the child through a short settle window so a role that fails to resolve,

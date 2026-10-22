@@ -53,6 +53,16 @@ export const sessionsApi = {
     )
   },
 
+  /** What a plugin's `subagentStatusLine` last drew in this conversation's subagent rows. */
+  async getSubagentRows(id: string, signal?: AbortSignal) {
+    return unwrap(
+      await client.rpc.sessions[':id']['subagent-rows'].$get(
+        { param: { id } },
+        { init: { signal } },
+      ),
+    )
+  },
+
   async getSession(id: string, signal?: AbortSignal): Promise<UiSession> {
     const json = await unwrap(
       // The web UI loads the full message list, but collapsed tool cards resolve

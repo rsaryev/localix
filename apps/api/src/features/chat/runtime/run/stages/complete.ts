@@ -87,6 +87,7 @@ export async function completeRun(
     rawModelId: turn.model.rawModelId,
     loadedPlugins: inputs.loadedPlugins,
     ccHooks,
+    mods: inputs.mods,
     promptMessage: intake.turnFrame.promptMessage,
     policy: turn.policy,
     publishRuntimeSession: frame.publishRuntimeSession,

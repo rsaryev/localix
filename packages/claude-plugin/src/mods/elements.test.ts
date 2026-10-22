@@ -43,3 +43,15 @@ describe('mod elements', () => {
     ).toThrow('share the key')
   })
 })
+
+test('an Svg carries its markup and alt text, and is refused without them', () => {
+  const { Svg, Box } = elementTable()
+  const drawn = serializeTree(
+    Box({ children: [Svg({ source: '<svg viewBox="0 0 1 1"></svg>', alt: 'A dot', width: 8 })] }),
+  )
+  expect(drawn.tree[0]).toMatchObject({
+    children: [{ type: 'Svg', props: { alt: 'A dot', width: 8 } }],
+  })
+  expect(() => serializeTree(Svg({ source: '<script/>', alt: 'x' }))).toThrow('<svg> markup')
+  expect(() => serializeTree(Svg({ source: '<svg/>' }))).toThrow('alt text')
+})

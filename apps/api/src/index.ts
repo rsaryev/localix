@@ -311,6 +311,8 @@ export async function startServer(options: StartServerOptions = {}): Promise<Emb
       // Stop plugin background monitors — kill their spawned child processes so they
       // don't orphan (mirrors channelHost teardown; both run before aborting runs).
       await cleanup('monitorHost.stop', () => runtime.monitorHost.stop())
+      // Mods end their session (`session.end`) and drop their timers.
+      await cleanup('modsHost.stop', () => runtime.modsHost.stop())
       // Abort in-flight agent runs and kill tracked child processes (background
       // jobs, sub-agents) before tearing down the server — otherwise detached
       // process-group children survive the parent and orphan.

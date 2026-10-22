@@ -31,6 +31,7 @@ function snapshot(tools: Partial<ToolSurface>): CapabilitySnapshot {
       ...tools,
     } as ToolSurface,
     views: [],
+    themes: [],
     agents: [],
     commands: [],
     mcp: [],

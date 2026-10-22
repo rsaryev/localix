@@ -75,9 +75,8 @@ export async function resolveAgentPromptContext(input: {
     skillsContext,
     projectInstructions: projectInstructions,
     skillOverridesRevision: currentSkillOverridesRevision,
-    // Output-style files now live under `.localix/output-styles`, but no native
-    // selection setting exists yet. Keep the prompt neutral until one does rather
-    // than importing the selected name from another application's settings.
+    // The output style is not frozen here: the run resolves it every turn
+    // (`run/output-style.ts`), so a `/output-style` switch applies from the next message.
   }
   let frozenContext = freshContext
   if (hostPolicy(session).freezesPromptContext) {

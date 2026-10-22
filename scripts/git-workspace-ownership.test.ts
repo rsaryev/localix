@@ -34,10 +34,33 @@ const EXTERNAL_FORMAT_LITERALS = new Map([
   ['apps/api/src/features/cc-settings/agent-format.test.ts', "'isolation: worktree\\n'"],
 ])
 
+/**
+ * Claude Code's agent isolation is a different word from the plugin's worktree feature: a
+ * subagent's or workflow agent's `isolation: 'worktree'` and the `WorktreeCreate` hook are part of
+ * the Claude Code format core implements (audit: "Claude Code agent isolation"). These modules may
+ * say `worktree` for that contract alone; every other legacy term (`source-control`, `git://`,
+ * `git-workspace`) still fails in them, and no other core file gains the word.
+ */
+const CLAUDE_CODE_ISOLATION = [
+  'apps/api/src/features/agent-core/tools/workflow/',
+  'apps/api/src/features/agent-core/tools/delegate-plugin-agent',
+  'apps/api/src/features/cc-hooks/',
+  'apps/api/src/features/chat/session-cwd',
+  'apps/api/src/features/chat/session-provenance',
+  'apps/api/src/features/chat/runtime/run/plugin-subagent',
+  'apps/api/src/features/chat/runtime/run/workflow-options',
+]
+const WORKTREE_WORD = /\bworktrees?\b/giu
+
 function hasLegacyVocabulary(file: string, code: string): boolean {
   const externalLiteral = EXTERNAL_FORMAT_LITERALS.get(file)
-  const nativeCode = externalLiteral ? code.replace(externalLiteral, '') : code
-  return LEGACY_PLUGIN_VOCABULARY.test(file) || LEGACY_PLUGIN_VOCABULARY.test(nativeCode)
+  let nativeCode = externalLiteral ? code.replace(externalLiteral, '') : code
+  let name = file
+  if (CLAUDE_CODE_ISOLATION.some((prefix) => file.startsWith(prefix))) {
+    nativeCode = nativeCode.replace(WORKTREE_WORD, '')
+    name = name.replace(WORKTREE_WORD, '')
+  }
+  return LEGACY_PLUGIN_VOCABULARY.test(name) || LEGACY_PLUGIN_VOCABULARY.test(nativeCode)
 }
 
 describe('Git Workspace ownership boundary', () => {
@@ -92,6 +115,14 @@ describe('Git Workspace ownership boundary', () => {
       return !file || !file.code.includes(EXTERNAL_FORMAT_LITERALS.get(path)!)
     })
     expect(stale).toEqual([])
+  })
+
+  test('the Claude Code isolation modules may say worktree, and nothing else of the plugin', () => {
+    const workflow = 'apps/api/src/features/agent-core/tools/workflow/worktree.ts'
+    expect(hasLegacyVocabulary(workflow, "isolation: 'worktree'")).toBe(false)
+    expect(hasLegacyVocabulary(workflow, "const route = 'git://status'")).toBe(true)
+    expect(hasLegacyVocabulary(workflow, "import x from 'source-control'")).toBe(true)
+    expect(hasLegacyVocabulary('apps/api/src/features/agents/native.ts', 'worktree')).toBe(true)
   })
 
   test('external literals cannot hide vocabulary elsewhere in the adapter or native core', () => {

@@ -189,6 +189,12 @@ export interface StoredMessagePayload extends AgentChatMessage {
    */
   taskStates?: Record<string, boolean>
   /**
+   * What a Claude Code `MessageDisplay` hook asked to show in place of a text item, keyed by the
+   * item id. Display only: `content` and the items keep the original, which is what the model
+   * reads back, what a reply hands on, and what copy and export take.
+   */
+  displayTexts?: Record<string, string>
+  /**
    * UI-only: origin annotation for messages injected by a slash command that
    * forwarded to the agent (e.g. `/loop 5m <task>` → the first immediate run, or
    * `/mode yolo <task>`). Rendered as a small badge in the timeline so the user can

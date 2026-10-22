@@ -39,6 +39,19 @@ export const pluginsApi = {
 
   /** Sandboxed UI views declared by enabled plugins — each opens as a work-item tab. */
 
+  /**
+   * Every output style a scope offers — built-in, the person's, the project's and the enabled
+   * plugins' — for the default style in Settings.
+   */
+  async listOutputStyles(opts?: { projectId?: string | null }) {
+    const json = await unwrap(
+      await client.rpc.plugins['output-styles'].$get({
+        query: cleanQuery({ projectId: opts?.projectId }),
+      }),
+    )
+    return json.styles
+  },
+
   /** One enabled view's sandboxed HTML. */
   async getPluginViewHtml(
     pluginName: string,

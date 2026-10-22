@@ -16,6 +16,8 @@ import { createCapabilityCleanup } from '../features/capabilities/cleanup'
 import { mcpOAuthStore } from '../features/mcp/oauth/runtime'
 import type { SecretsStore } from '../features/secrets/store-contracts'
 import { createSessionResidue } from '../features/chat/session-residue'
+import { createSubagentRowsChanges } from '../features/chat/service/subagent-rows-changes'
+import type { SubagentRowsLive } from '../features/chat/service/subagent-rows-live'
 import { cancelSessionLoops } from '../features/chat/service/loop-ops'
 import { stopSessionMonitors } from '../features/chat/service/monitor-ops'
 import type { NotificationJournal } from '../features/notifications/journal-contracts'
@@ -49,6 +51,8 @@ export interface CoreReactorDeps {
   publish(userId: string, resources: RealtimeResource[]): void
   /** Re-converge the plugin backends (debounced by the host). */
   refreshPluginBackends(): void
+  /** The subagent rows the chat service keeps: their inputs' notices redraw them. */
+  subagentRows: SubagentRowsLive
 }
 
 export function createRouteRepairReactor(deps: CoreReactorDeps) {
@@ -201,6 +205,11 @@ export async function startCoreReactors(deps: CoreReactorDeps): Promise<void> {
   await deps.feed.subscribe('session-residue', residue.handlers, {
     kind: 'reactor',
     reconcile: () => residue.reconcile(),
+  })
+  const subagentRows = createSubagentRowsChanges(deps.subagentRows)
+  await deps.feed.subscribe('subagent-rows', subagentRows.handlers, {
+    kind: 'projector',
+    reconcile: subagentRows.reconcile,
   })
   const relay = createRelay({ defaultUserId: deps.defaultUserId, publish: deps.publish })
   await deps.feed.subscribe('relay', relay.handlers, { kind: 'projector' })

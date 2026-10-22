@@ -23,6 +23,8 @@ import { resolveRunDisabledTools } from '../run-tool-policy'
 import { surfacePlugins, surfaceTools } from '../surface-tools'
 import { assembleRunTools } from '../tool-assembly'
 import { assertRunToolRequirements } from '../tool-requirements'
+import { listEnabledPluginWorkflows } from '../../../../plugins/workflow-commands'
+import { userHome } from '../../../../../lib/env'
 import type { RunInputs } from './context'
 import { currentAssistantMessageId, type RunFrame } from './frame'
 import type { ResolvedTurn } from './turn'
@@ -81,6 +83,20 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
       // CC SubagentStart/SubagentStop hooks fire around delegate sub-agent runs.
       ccHooks,
       fileMtimes: frame.stores.fileMtimes,
+      chatModel: {
+        providerId: turn.model.providerId,
+        connectionId: turn.model.connection.id,
+        modelId: turn.model.effectiveModelId,
+      },
+      listWorkflows: () =>
+        listEnabledPluginWorkflows({
+          repo: env.pluginRepo,
+          availability: inputs.availability,
+          userId,
+          projectId: session.projectId ?? '',
+          cwd: defaultCwd,
+          homeDir: userHome(),
+        }),
       // Read lazily: the frame is resolved after the registry is built, and the measurement
       // moves with every turn. The model and the usage ring read the same numbers.
       readContextBudget: () =>
@@ -128,6 +144,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     runtimeTools,
     loadedPlugins,
     ccHooks,
+    mods: inputs.mods,
     defaultCwd,
     availability: inputs.availability,
     capabilities: inputs.capabilities,

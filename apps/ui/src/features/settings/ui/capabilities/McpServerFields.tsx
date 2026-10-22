@@ -6,6 +6,7 @@ import { buildProjectScopeOptions } from '@/shared/lib/projectScope'
 import { Field } from '@localixai/kit/field'
 import { Input } from '@localixai/kit/input'
 import { Select } from '@localixai/kit/select'
+import { Switch } from '@localixai/kit/switch'
 import { SegmentedControl, SegmentedControlItem } from '@localixai/plugin-sdk/ui/segmented-control'
 import { EnvEditor } from '../mcpFormParts'
 
@@ -157,6 +158,19 @@ export function McpServerFields({
           placeholder="What this server provides"
           value={draft.description ?? ''}
           onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+        />
+      </Field>
+
+      <Field
+        layout="inline"
+        label="Listen as a channel"
+        description="When the server declares a Claude Code channel, its messages start turns in the chat that last used it, and approval prompts can be answered through it."
+        disabled={saving}
+      >
+        <Switch
+          size="sm"
+          checked={draft.config.channel === true}
+          onChange={() => setConfig({ channel: draft.config.channel === true ? undefined : true })}
         />
       </Field>
     </>

@@ -1,3 +1,4 @@
+import type { OutputStyleSummary } from './output-style-listing'
 import type { CapabilityStores } from '../capabilities/store-factory'
 import type { Kysely } from 'kysely'
 import type { ContributionKindRegistry } from '../ext/contribution-kinds'
@@ -24,6 +25,7 @@ import type {
   InvokePluginUiActionRequest,
 } from './contracts'
 import type { PluginUiActionContext } from '@localixai/plugin-sdk/backend'
+import type { PluginThemeSpec } from './contracts-themes'
 
 export interface PluginServiceDeps {
   db: Kysely<AppDatabase>
@@ -47,6 +49,16 @@ export interface PluginServiceDeps {
    * tests that did it staged their fixture plugins into the real home.
    */
   homeDir: string
+  /**
+   * The commands loaded mods registered (`$.command.register`), listed beside the plugins'
+   * own; a mods host supplies them (`bootstrap/mods.ts`).
+   */
+  modCommands?: () => ReadonlyArray<{
+    plugin: string
+    name: string
+    description: string
+    argumentHint?: string
+  }>
   invokeUiAction?: (input: {
     pluginName: string
     action: string
@@ -65,6 +77,8 @@ export interface PluginContributions {
   plugins: PluginRecord[]
   views: PluginViewSpec[]
   commands: PluginCommandSpec[]
+  /** Color themes of enabled global plugins (`themes.ts`). */
+  themes: PluginThemeSpec[]
 }
 
 export interface PluginService {
@@ -97,6 +111,11 @@ export interface PluginService {
     userId: string,
     opts?: { projectId?: string | null },
   ): Promise<{ views: PluginViewSpec[] }>
+  /** Every output style the scope offers (`output-style-listing.ts`). */
+  listOutputStyles(
+    userId: string,
+    opts?: { projectId?: string | null },
+  ): Promise<{ styles: OutputStyleSummary[] }>
   getViewHtml(
     userId: string,
     input: { pluginName: string; viewId: string; projectId?: string | null },
@@ -142,8 +161,19 @@ export interface PluginService {
   ): Promise<{ name: string; count: number }>
   /** List marketplaces — the built-in `localix` first, then registered ones. */
   listMarketplaces(userId: string): Promise<MarketplaceListing[]>
-  /** Remove a registered marketplace (the built-in `localix` cannot be removed). */
-  removeMarketplace(userId: string, input: { name: string }): Promise<void>
+  /**
+   * Refresh a registered marketplace's listing from its source, then update the plugins installed
+   * from it (Claude Code's "Update marketplace"). `warnings` names the ones that failed.
+   */
+  updateMarketplace(
+    userId: string,
+    input: { name: string },
+  ): Promise<{ name: string; count: number; updated: string[]; warnings: string[] }>
+  /**
+   * Remove a registered marketplace (the built-in `localix` cannot be removed) and, as Claude Code
+   * does, uninstall the plugins installed from it.
+   */
+  removeMarketplace(userId: string, input: { name: string }): Promise<{ uninstalled: string[] }>
   /** Notify all subscribers that plugins changed (mirrors CC's /reload-plugins; exposed as `/plugin reload`). */
   onChanged?(): void
   /** Creating and building the user's own plugins (`/plugin create`, the `plugin_build` tool). */

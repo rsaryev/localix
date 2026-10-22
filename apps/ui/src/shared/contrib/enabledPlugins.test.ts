@@ -52,6 +52,7 @@ function snapshot(over: Partial<CapabilitySnapshot> = {}): CapabilitySnapshot {
     plugins: [],
     tools: EMPTY_TOOLS,
     views: [],
+    themes: [],
     agents: [],
     commands: [],
     mcp: [],

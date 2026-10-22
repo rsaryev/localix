@@ -18,7 +18,7 @@
  */
 import { SLASH_COMMANDS, type SlashCommandSpec } from '@localixai/api/slash-catalog'
 import type { SlashCommand } from './SlashCommandMenu'
-import { Bot } from 'lucide-react'
+import { Bot, Palette, Type } from 'lucide-react'
 import {
   LoopIcon,
   ModelIcon,
@@ -52,6 +52,11 @@ const PRESENTATION: Record<string, CommandPresentation> = {
   },
   loop: { icon: <LoopIcon />, placeholder: 'Task — e.g. check the deployment every 5 minutes' },
   model: { icon: <ModelIcon />, placeholder: 'Pick an agent, a provider and a model…' },
+  'output-style': {
+    icon: <Type size={14} />,
+    placeholder: 'A style name, default, or Enter to list the styles',
+  },
+  theme: { icon: <Palette size={14} />, placeholder: 'A theme, or Enter to list them' },
   compact: { icon: <CompactIcon />, placeholder: 'Press Enter to compact the conversation' },
   clear: { icon: <ClearIcon />, placeholder: 'Press Enter to clear context' },
   fork: { icon: <ForkIcon />, placeholder: 'Press Enter to fork this conversation' },

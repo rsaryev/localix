@@ -6,7 +6,9 @@ import type { ClaudePluginManifest, PluginIssue, UserConfigOption } from '@local
  *  - `userConfig` → `config`, with `sensitive` → `secret`;
  *  - `experimental.monitors` (or the top-level alias) → `monitors`;
  *  - listed `commands` / `agents` REPLACE their default folder → `defaultDirs: { <field>: false }`;
- *  - the `commands` object map → inline commands (`content`) or command files (`source`).
+ *  - the `commands` object map → inline commands (`content`) or command files (`source`);
+ *  - `experimental.themes` (or the top-level alias) → `themes`;
+ *  - each `channels` entry's `userConfig` → options in the plugin's `config`.
  * What Localix does not run is reported, never dropped silently.
  */
 export function fromClaudePlugin(
@@ -52,22 +54,29 @@ export function fromClaudePlugin(
   }
   if (Object.keys(defaultDirs).length) out.defaultDirs = defaultDirs
 
-  for (const [field, why] of UNSUPPORTED) {
-    if (field(manifest)) issues.push({ severity: 'warning', path: why[0], message: why[1] })
+  // Output styles, themes and workflows replace their default folder; `settings` yields to a root
+  // `settings.json` (both read in `discovery-cc-components.ts`).
+  if (manifest.outputStyles !== undefined) out.outputStyles = manifest.outputStyles
+  if (manifest.workflows !== undefined) out.workflows = manifest.workflows
+  const themes = manifest.experimental?.themes ?? manifest.themes
+  if (themes !== undefined) out.themes = themes
+  if (manifest.settings !== undefined) out.settings = manifest.settings
+  if (manifest.channels) {
+    out.channels = manifest.channels.map(({ server, displayName }) => ({
+      server,
+      ...(displayName ? { displayName } : {}),
+    }))
+    // A channel's options substitute into its server's `${user_config.KEY}`, as the plugin's own
+    // do: one settings form holds both, the plugin's option winning a shared key.
+    const channelOptions = Object.assign(
+      {},
+      ...manifest.channels.map((channel) => channel.userConfig ?? {}),
+    ) as Record<string, UserConfigOption>
+    if (Object.keys(channelOptions).length)
+      out.config = { ...configOf(channelOptions, issues), ...(out.config as object | undefined) }
   }
   return out
 }
-
-const UNSUPPORTED: Array<[(manifest: ClaudePluginManifest) => unknown, [string, string]]> = [
-  [(m) => m.outputStyles, ['outputStyles', 'Output styles are not used by Localix']],
-  [(m) => m.workflows, ['workflows', 'Workflows are not used by Localix']],
-  [(m) => m.experimental?.themes ?? m.themes, ['themes', 'Themes are not used by Localix']],
-  [(m) => m.channels, ['channels', 'Claude Code channels are not used by Localix']],
-  [
-    (m) => m.settings,
-    ['settings', 'Plugin settings (agent, subagentStatusLine) are not used by Localix'],
-  ],
-]
 
 function configOf(
   options: Record<string, UserConfigOption>,

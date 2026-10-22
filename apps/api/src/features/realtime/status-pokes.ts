@@ -7,7 +7,7 @@ const STATUS_POKE_MS = 1000
 export interface StatusSource {
   resource: RealtimeResource
   /** The owner's in-process signal: fires on every change of what its status read returns. */
-  subscribe(listener: () => void): () => void
+  subscribe: (listener: () => void) => () => void
 }
 
 /**

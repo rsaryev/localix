@@ -71,8 +71,9 @@
 ## Plugins and mini apps
 
 An extension has two layers. The **plugin** is the Claude Code format — skills, commands, agents,
-hooks, MCP and LSP servers — and the same folder loads in Claude Code and in Localix. The **mini
-app** is Localix's layer around it: screens, a backend, and agent tools over Localix's own APIs.
+hooks, mods, MCP and LSP servers — and the same folder loads in Claude Code and in Localix. The
+**mini app** is Localix's layer around it: screens, a backend, and agent tools over Localix's own
+APIs.
 
 - **Claude Code plugins work as they are.** `/plugin install owner/repo` reads
   `.claude-plugin/plugin.json` in place, with Claude Code's rules for commands, skills, hooks and

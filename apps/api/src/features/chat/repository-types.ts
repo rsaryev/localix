@@ -153,6 +153,13 @@ export interface SessionRecord {
    * record built in memory before it is stored, which is the default mode.
    */
   permissionMode?: PermissionMode
+  /**
+   * The conversation's output style (`/output-style`): a style's full name (`Explanatory`, a local
+   * style's name, a plugin's `<plugin>:<name>`), `default` for an explicit choice of none, or null
+   * when the chat made no choice and follows the person's default (`outputStyle` in Settings).
+   * Read by every chat run of this session (`runtime/run/output-style.ts`).
+   */
+  outputStyle?: string | null
   /** Optional conversation description. */
   description: string | null
   /** A group's avatar ref (media id or emoji); null = generated from the title. */

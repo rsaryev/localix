@@ -36,4 +36,21 @@ export interface PluginHostRefs {
   publishCapabilityChange?: () => void
   channelHost?: { refresh: () => void }
   monitorHost?: Pick<PluginMonitorHost, 'refresh' | 'arm' | 'disarm'>
+  /** The mods host: reloaded after a plugin change; its commands listed with the plugins'. */
+  mods?: {
+    refresh: () => void
+    commands: () => ReadonlyArray<{
+      plugin: string
+      name: string
+      description: string
+      argumentHint?: string
+    }>
+    /** `session.receive`: a delivery's text as it is queued, or taken by a mod. */
+    receive?: (delivery: {
+      userId: string
+      sessionId: string
+      text: string
+      source?: string
+    }) => Promise<{ text: string } | { consumed: string }>
+  }
 }

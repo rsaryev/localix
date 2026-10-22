@@ -7,14 +7,15 @@
 import { createRequire } from 'node:module'
 
 import type { AgentMessageDelta } from '@localixai/agent/agents'
-import type {
-  AgentEngine,
-  AgentRuntime,
-  AgentRuntimeRunInput,
-  EngineCatalogStore,
-  LocalProviderHost,
-  ModelSession,
-  ModelTurn,
+import {
+  withModelSteps,
+  type AgentEngine,
+  type AgentRuntime,
+  type AgentRuntimeRunInput,
+  type EngineCatalogStore,
+  type LocalProviderHost,
+  type ModelSession,
+  type ModelTurn,
 } from '@localixai/agent/runtime'
 import { runAgentLoop } from '@localixai/engine-loop'
 import {
@@ -137,17 +138,23 @@ export function createEngine(options: EngineOptions = {}): AgentEngine {
   const runtime: AgentRuntime = {
     adapter,
     run(input) {
-      const session = lazySession(input, (signal) =>
-        openSession(access, {
-          model: input.model,
-          credential: input.credential,
-          ...(input.credentialStore ? { credentialStore: input.credentialStore } : {}),
-          sessionId: input.sessionId,
-          ...(input.promptCacheIdleMs !== undefined ? { idleMs: input.promptCacheIdleMs } : {}),
-          messages: input.messages.filter((message) => 'content' in message) as never,
-          signal,
-        }),
-      )
+      const sessionOf = (model: AgentRuntimeRunInput['model']) =>
+        lazySession({ ...input, model }, (signal) =>
+          openSession(access, {
+            model,
+            credential: input.credential,
+            ...(input.credentialStore ? { credentialStore: input.credentialStore } : {}),
+            sessionId: input.sessionId,
+            ...(input.promptCacheIdleMs !== undefined ? { idleMs: input.promptCacheIdleMs } : {}),
+            messages: input.messages.filter((message) => 'content' in message) as never,
+            signal,
+          }),
+        )
+      const own = sessionOf(input.model)
+      // A host's step hook may send a request on another model of the same provider connection.
+      const session = input.modelStep
+        ? withModelSteps(own, input.modelStep, (modelId) => sessionOf({ ...input.model, modelId }))
+        : own
       return runAgentLoop(
         { ...input, session },
         options.maxBufferedEvents !== undefined

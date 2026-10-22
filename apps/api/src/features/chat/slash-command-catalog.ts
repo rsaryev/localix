@@ -82,6 +82,31 @@ export const SLASH_COMMANDS: readonly SlashCommandSpec[] = [
     category: 'config',
     args: MODEL_ARGS,
   },
+  {
+    name: 'output-style',
+    title: 'Output style',
+    description:
+      'Change how replies sound and look — Concise, Explanatory, Learning, your own — or list them',
+    scope: 'server',
+    category: 'config',
+  },
+  {
+    // The look is this device's, so the composer runs it (`apps/ui/src/shared/theme/themeChoice`).
+    name: 'theme',
+    title: 'Theme',
+    description: 'Switch the appearance or a plugin’s color theme — or list them',
+    scope: 'client',
+    category: 'config',
+    args: [
+      {
+        name: 'theme',
+        type: 'choice',
+        dynamic: true,
+        optional: true,
+        placeholder: 'A theme, or Enter to list them…',
+      },
+    ],
+  },
   // Context management
   {
     name: 'fork',

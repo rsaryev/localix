@@ -225,8 +225,13 @@ if (typeof window !== 'undefined') {
   import.meta.hot?.dispose(() => window.removeEventListener('storage', onStoredTheme))
 }
 
+/** The appearance outside React (`/theme`). */
+export function currentThemeSelection(): ThemeSnapshot {
+  return snapshot
+}
+
 /** Change the theme mode (optionally with a circular reveal from `origin`). */
-function setThemeMode(mode: ThemeMode, origin?: ThemeChangeOrigin) {
+export function setThemeMode(mode: ThemeMode, origin?: ThemeChangeOrigin) {
   const apply = () => commit(mode, applyThemeModeToDom(mode))
   if (origin && canRevealThemeChange(origin)) revealThemeChange(origin, apply)
   else applyThemeChangeInstantly(apply)

@@ -34,7 +34,7 @@ export function buildCachedToolForServer(
      * manager's idempotent, single-flight equivalent: concurrent first calls share one start,
      * and a rejected start is evicted so the next call can retry.
      */
-    async execute(toolCallId, input, signal) {
+    async execute(toolCallId, input, signal, onUpdate, context) {
       let acquired: AcquiredConnection
       try {
         acquired = await pool.acquire(server, cwd, logger)
@@ -81,7 +81,7 @@ export function buildCachedToolForServer(
 
       return buildToolForServer(server, acquired.connection.client, liveDef, () => {
         acquired.entry.broken = true
-      }).execute(toolCallId, input, signal)
+      }).execute(toolCallId, input, signal, onUpdate, context)
     },
   }
 }

@@ -9,6 +9,7 @@ import type { ModelRoute, SessionRecord } from '../repository'
 import type { MessageMutationResponse } from '../contracts'
 import type { CommandHandlerContext, DirectReply } from './command-handlers'
 import type { ExistingMessages } from './run-agent'
+import { announceModelSwitches, modelSwitchRefusal } from './cc-session-events'
 
 /** The slice of {@link CommandHandlerContext} the session-setting commands need. */
 type SettingCommandContext = Pick<
@@ -138,6 +139,19 @@ export async function handleModelCommand(
       matched.id,
     ),
   })
+  // CC PreModelSwitch may keep the current model; PostModelSwitch follows the write.
+  const switches =
+    matched.id === participant.modelId
+      ? []
+      : [{ fromModel: participant.modelId, toModel: matched.id, requestedModel: arg }]
+  const refusal = await modelSwitchRefusal(
+    ctx.runner.ccHookSessions,
+    sessionId,
+    switches,
+    'command',
+  )
+  if (refusal)
+    return directReply(`The model stays ${shortModelName(participant.modelId)}: ${refusal}`)
   // `/model` re-routes ONE participant, never the whole conversation.
   const updated: SessionRecord = {
     ...withRoute(session, { modelId: matched.id, reasoningEffort }, participant.agentId),
@@ -147,6 +161,7 @@ export async function handleModelCommand(
     modelId: matched.id,
     reasoningEffort,
   })
+  announceModelSwitches(ctx.runner.ccHookSessions, sessionId, switches, 'command')
   // The level moved with the model, so the agents hear it too: their context reduces each
   // participant's notices to the latest, and a stale level line would outlive the switch.
   const levelChanged = reasoningEffort !== participant.reasoningEffort

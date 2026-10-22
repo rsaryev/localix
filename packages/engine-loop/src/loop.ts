@@ -167,6 +167,21 @@ export async function runLoop(input: LoopInput, run: RunContext): Promise<AgentR
       terminated =
         settled.length > 0 && settled.every((entry) => entry.outcome.result.terminate === true)
       moreToolCalls = calls.length > 0 && !terminated
+      // The whole batch has settled and another request would follow: the host may add to it.
+      const batch =
+        input.afterToolBatch && settled.length > 0 && !terminated && !signal.aborted
+          ? await input.afterToolBatch(
+              {
+                calls: settled.map(({ call, outcome }) => ({
+                  toolCallId: call.id,
+                  toolName: call.name,
+                  input: call.arguments,
+                  result: outcome.result,
+                })),
+              },
+              signal,
+            )
+          : undefined
 
       const verdict = await judgeTurnBoundary({
         turnsStarted,
@@ -181,11 +196,11 @@ export async function runLoop(input: LoopInput, run: RunContext): Promise<AgentR
       transcript.settled = transcript.messages.length
       boundary.completedTurnIndex = turnIndex
       boundary.completedToolTurnIndex = settled.length > 0 ? turnIndex : undefined
-      if (verdict.stop) {
-        stoppedBy = verdict.name
+      if (verdict.stop || batch?.stop) {
+        stoppedBy = verdict.stop ? verdict.name : batch?.stop
         break outer
       }
-      pending = await steering()
+      pending = [...(batch?.messages ?? []), ...(await steering())]
     }
     // The model is done. A host protocol may still require messages before the run may finish.
     const required = await followUps()

@@ -10,7 +10,8 @@ import { contextFrom, joinContext } from './runtime-results'
 import type { createHookSelector, SelectOptions } from './runtime-selection'
 import type { createHookHandlerRunner } from './runtime-handler'
 
-interface ToolHookDeps {
+/** What every event runner of one runtime shares (built once in `run.ts`). */
+export interface HookDispatchDeps {
   select: ReturnType<typeof createHookSelector>
   runHandler: ReturnType<typeof createHookHandlerRunner>
   fireAsync: (handlers: CcHookHandler[], input: CcHookInput) => void
@@ -32,7 +33,7 @@ export function createToolHookRunners({
   fireAsync,
   runAll,
   baseInput,
-}: ToolHookDeps): Pick<
+}: HookDispatchDeps): Pick<
   CcHooksRuntime,
   'runPreToolUse' | 'runPostToolUse' | 'runPostToolUseFailure'
 > {

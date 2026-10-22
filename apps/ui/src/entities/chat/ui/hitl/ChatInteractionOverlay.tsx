@@ -5,6 +5,7 @@ import type { HitlFrameChrome } from './HitlInteractionFrame'
 import { ConfirmInteractionView } from './ConfirmInteractionView'
 import { ConfigChangeInteractionView } from './ConfigChangeInteractionView'
 import { SecretInteractionView } from './SecretInteractionView'
+import { McpElicitationInteractionView } from './McpElicitationInteractionView'
 
 interface HitlRendererProps<TInteraction extends PendingHitlInteraction = PendingHitlInteraction> {
   interaction: TInteraction
@@ -69,6 +70,20 @@ const renderers: HitlRenderer[] = [
     render: ({ interaction, submitting, keyboardActive, chrome, onAnswer, onDismiss }) => (
       <ConfigChangeInteractionView
         interaction={interaction as Extract<PendingHitlInteraction, { kind: 'config_change' }>}
+        submitting={submitting}
+        keyboardActive={keyboardActive}
+        chrome={chrome}
+        onSubmit={onAnswer}
+        onDismiss={onDismiss}
+      />
+    ),
+  },
+  {
+    kind: 'mcp_elicitation',
+    render: ({ interaction, submitting, keyboardActive, chrome, onAnswer, onDismiss }) => (
+      <McpElicitationInteractionView
+        key={interaction.request.id}
+        interaction={interaction as Extract<PendingHitlInteraction, { kind: 'mcp_elicitation' }>}
         submitting={submitting}
         keyboardActive={keyboardActive}
         chrome={chrome}

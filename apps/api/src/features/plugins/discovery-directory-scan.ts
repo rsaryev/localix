@@ -5,6 +5,7 @@ import { COMPONENT_MARKERS } from '@localixai/claude-plugin'
 import { MINI_APP_MANIFEST_FILE } from '@localixai/plugin-sdk/app-manifest'
 import { locateManifest, PLUGIN_MANIFEST_CANDIDATES } from './manifest-locate'
 import { loadManifest } from './manifest-load'
+import { withWorkflowCommands } from './workflow-commands'
 import type { DiscoveredPlugin } from './discovery-types'
 
 /** Locate a plugin's manifest (`.claude-plugin/plugin.json`, else a legacy `plugin.json`), or null. */
@@ -60,7 +61,15 @@ export async function scanDirs(
           const dir = join(root, name)
           const valid = await isPluginDir(dir)
           return valid
-            ? loadManifest(dir, scope, projectId, opts?.bundled ?? opts?.bundledNames?.has(name))
+            ? // A plugin's workflows run as its commands (`workflow-commands.ts`).
+              withWorkflowCommands(
+                await loadManifest(
+                  dir,
+                  scope,
+                  projectId,
+                  opts?.bundled ?? opts?.bundledNames?.has(name),
+                ),
+              )
             : null
         }),
       )

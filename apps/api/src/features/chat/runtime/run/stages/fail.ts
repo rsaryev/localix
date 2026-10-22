@@ -20,6 +20,7 @@ import { attemptOverflowRecovery, attemptTransientRetry } from '../recovery'
 import { classifyRunError } from '../classify-run-error'
 import { finalizeFailedRun } from '../finalize'
 import { sendChildRunReport } from '../child-run-report'
+import { fireStopFailure } from '../stop-failure'
 import { currentAssistantMessageId, type RunFrame } from './frame'
 
 export async function failRun(frame: RunFrame, error: unknown): Promise<RunExecutionOutcome> {
@@ -57,6 +58,8 @@ export async function failRun(frame: RunFrame, error: unknown): Promise<RunExecu
   })
   // The run's LOGICAL end: both retries declined above, so this failure is final.
   const outcome = env.state.stoppedRuntimeSessionIds.has(session.id) ? 'stopped' : 'failed'
+  // CC StopFailure, in place of Stop: the hooks built for this run, if it got that far.
+  fireStopFailure(frame.teardown.ccHooks, failure, error, outcome === 'stopped')
   // A delegated child reports every run to its parent — a failed or stopped one included.
   sendChildRunReport(env, { userId, session, runId: currentAssistantMessageId(frame), outcome })
   env.deps.notifications?.runs.ended({

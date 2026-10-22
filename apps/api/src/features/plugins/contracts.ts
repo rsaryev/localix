@@ -44,7 +44,7 @@ export type {
   PluginCommandSpec,
   ListPluginCommandsResponse,
 } from './contracts-commands'
-export { AGENTS_MAX_PER_PLUGIN, pluginAgentSchema } from './contracts-agents'
+export { pluginAgentSchema } from './contracts-agents'
 export type { PluginAgent } from './contracts-agents'
 
 export type { PluginMonitor } from './contracts-monitors'

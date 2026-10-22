@@ -4,7 +4,8 @@ import { pluginDataDir } from './mcp'
 import type { PluginManifest } from './contracts'
 import type { PluginConfigValues } from './config'
 import type { DiscoveredPlugin } from './discovery'
-import type { LoadedPlugins } from './loader-contract'
+import { buildLoadedAgent, type LoadedPlugins } from './loader-contract'
+import { pluginOutputStyles } from './output-styles'
 
 /**
  * Build a per-plugin substituter closure for the prompt/skill path.
@@ -104,4 +105,19 @@ export function appendPluginRuntimeDeclarations({
       monitor,
     })
   }
+
+  // ---- Output styles and default settings (Claude Code) -----------------
+  // A style's instructions are prompt text, so they take the plugin's path and config variables
+  // like an agent's prompt does. `settings.agent` names one of the plugin's own agents; one that
+  // names none is reported in the plugin's validation instead (`validate.ts`).
+  const components = plugin.entrypoints.components
+  result.outputStyles.push(...pluginOutputStyles(plugin, subst))
+  const mainAgent = components?.settings.agent
+  const agent = mainAgent
+    ? plugin.agents.find(
+        (entry) =>
+          entry.name === mainAgent || `${plugin.manifest.name}:${entry.name}` === mainAgent,
+      )
+    : undefined
+  if (agent) result.mainAgent = buildLoadedAgent(plugin.manifest.name, agent, subst)
 }

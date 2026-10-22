@@ -280,6 +280,8 @@ globalThis.fetch = Object.assign(async function scriptedFetch(input, init) {
         at: new Date().toISOString(),
         sessionId,
         speaker,
+        // The model the run was routed to, as the provider received it.
+        model: body.model,
         stream: Boolean(body.stream),
         tools,
         system,
@@ -292,6 +294,15 @@ globalThis.fetch = Object.assign(async function scriptedFetch(input, init) {
               .flatMap((text) => text.split('\n').filter((line) => line.startsWith('# '))),
           ),
         ],
+        // The system reminders the turn carried (hook and mod context), whole.
+        reminders: (Array.isArray(body.input) ? body.input : [])
+          .filter((item) => item.role !== 'system' && item.role !== 'developer')
+          .flatMap(textsOf)
+          .flatMap((text) =>
+            [...text.matchAll(/<system-reminder>([\s\S]*?)<\/system-reminder>/g)].map((match) =>
+              match[1].trim(),
+            ),
+          ),
         answered: item.type === 'function_call' ? { tool: item.name } : { text: textsOf(item)[0] },
         // What the model read besides the system prompt: role and the start of each message.
         messages,

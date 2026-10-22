@@ -54,6 +54,56 @@ export function foldHookOutput(text: string, allowPlainTextContext: boolean): Cc
       outcome.permissionDecisionReason = hso.permissionDecisionReason
     }
     if ('updatedInput' in hso) outcome.updatedInput = hso.updatedInput
+    const decision = permissionRequestDecision(hso.decision)
+    if (decision) outcome.permissionRequest = decision
+    if (hso.retry === true) outcome.retry = true
+    const action = hso.action
+    if (action === 'accept' || action === 'decline' || action === 'cancel') {
+      outcome.elicitation = {
+        action,
+        ...(isRecord(hso.content) ? { content: hso.content } : {}),
+      }
+    }
+    if (typeof hso.displayContent === 'string') outcome.displayContent = hso.displayContent
+    if (typeof hso.worktreePath === 'string' && hso.worktreePath.trim())
+      outcome.worktreePath = hso.worktreePath.trim()
   }
+  const watchPaths = stringArray(hso?.watchPaths) ?? stringArray(json.watchPaths)
+  if (watchPaths) outcome.watchPaths = watchPaths
   return outcome
+}
+
+/** PermissionRequest's `decision` object; anything without a valid `behavior` is no decision. */
+function permissionRequestDecision(raw: unknown): CcHookOutcome['permissionRequest'] {
+  if (!isRecord(raw) || (raw.behavior !== 'allow' && raw.behavior !== 'deny')) return undefined
+  return {
+    behavior: raw.behavior,
+    ...(raw.behavior === 'allow' && 'updatedInput' in raw
+      ? { updatedInput: raw.updatedInput }
+      : {}),
+    ...(raw.behavior === 'deny' && typeof raw.message === 'string' ? { message: raw.message } : {}),
+    ...(raw.behavior === 'deny' && raw.interrupt === true ? { interrupt: true } : {}),
+  }
+}
+
+function stringArray(raw: unknown): string[] | undefined {
+  return Array.isArray(raw) ? raw.filter((p): p is string => typeof p === 'string') : undefined
+}
+
+// oxlint-disable-next-line no-control-regex -- matches ESC-introduced CSI and OSC sequences
+const ANSI_ESCAPE = /\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\)?)/g
+
+/**
+ * A WorktreeCreate command hook's stdout (or an MCP tool's text, read the same way) is not the
+ * JSON dialect: the path is its last non-empty line once ANSI escapes are stripped, so a shell
+ * banner printed before the hook's `echo` is ignored, as in Claude Code.
+ */
+export function worktreePathFromText(text: string): CcHookOutcome {
+  const lines = text
+    .replace(ANSI_ESCAPE, '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+  const last = lines[lines.length - 1]
+  return last ? { worktreePath: last } : {}
 }

@@ -1,8 +1,11 @@
 import { afterAll, describe, expect, test } from 'bun:test'
-import { rm } from 'node:fs/promises'
+import { mkdir, rm } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import path from 'node:path'
 
+import { tempDirPerTest } from '@localixai/testing'
+
+import { workflowWorktreesRoot } from '../agent-core/tools/workflow/worktree'
 import { defaultProjectDir } from '../projects/default-project'
 import { resolveBaseSessionCwd, sandboxCwd, type BaseCwdSession } from './session-cwd'
 
@@ -14,6 +17,8 @@ const created: string[] = []
 afterAll(async () => {
   for (const dir of created) await rm(dir, { recursive: true, force: true }).catch(() => {})
 })
+
+const tempDir = tempDirPerTest('session-cwd-')
 
 const session = (over: Partial<BaseCwdSession> = {}): BaseCwdSession => ({
   id: 's1',
@@ -58,5 +63,53 @@ describe('resolveBaseSessionCwd', () => {
     created.push(dir)
     expect(dir).toBe(sandboxCwd(s))
     expect(path.dirname(dir)).toBe(defaultProjectDir())
+  })
+
+  test('a workflow agent works in its own worktree while it exists, and only under the root', async () => {
+    const workingDir = path.join(workflowWorktreesRoot(), `test-${Date.now()}`, 'wf-1-1', 'pkg')
+    const child = (dir: string) =>
+      session({
+        id: 'child',
+        rootSessionId: 'root',
+        projectId: 'p1',
+        provenance: {
+          kind: 'task-delegation',
+          parentSessionId: 'root',
+          toolCallId: 'call',
+          workingDir: dir,
+        },
+      })
+    const deps = { getProjectWorkingDir: async () => '/repo/proj' }
+    // Removed (the agent changed nothing): the child works where its tree works.
+    expect(await resolveBaseSessionCwd(deps, 'u1', child(workingDir))).toBe('/repo/proj')
+    await mkdir(workingDir, { recursive: true })
+    created.push(path.dirname(path.dirname(workingDir)))
+    expect(await resolveBaseSessionCwd(deps, 'u1', child(workingDir))).toBe(workingDir)
+    // A stored folder outside the worktree root is never a cwd.
+    expect(await resolveBaseSessionCwd(deps, 'u1', child(homedir()))).toBe('/repo/proj')
+  })
+
+  test('a worktree a WorktreeCreate hook made is honoured where the hook put it, while it exists', async () => {
+    const workingDir = path.join(tempDir(), 'checkout')
+    const child = (mark: { worktreeByHook?: true }) =>
+      session({
+        id: 'child',
+        rootSessionId: 'root',
+        projectId: 'p1',
+        provenance: {
+          kind: 'task-delegation',
+          parentSessionId: 'root',
+          toolCallId: 'call',
+          workingDir,
+          ...mark,
+        },
+      })
+    const deps = { getProjectWorkingDir: async () => '/repo/proj' }
+    const byHook = child({ worktreeByHook: true })
+    expect(await resolveBaseSessionCwd(deps, 'u1', byHook)).toBe('/repo/proj')
+    await mkdir(workingDir, { recursive: true })
+    expect(await resolveBaseSessionCwd(deps, 'u1', byHook)).toBe(workingDir)
+    // Without the mark, a folder outside the worktree root stays refused.
+    expect(await resolveBaseSessionCwd(deps, 'u1', child({}))).toBe('/repo/proj')
   })
 })

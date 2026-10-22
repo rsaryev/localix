@@ -1,10 +1,14 @@
+import { readdir, stat } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
+
 import { localixWorkspaceDir } from '../../lib/env'
 import { buildPluginCatalog } from './catalog'
 import type { AvailabilityReader } from '../capabilities/availability'
 import { pluginLoadBlockReason } from './loadable'
 import { pluginDataDir } from './mcp'
 import type { LoadedPluginMonitor } from './loader'
-import type { CapabilitySourceRepository } from '../capabilities/source-repository'
+import { scalarConfig, type CapabilitySourceRepository } from '../capabilities/source-repository'
+import { resolvePluginConfig } from './config'
 
 /**
  * Contributions that are pure MANIFEST DATA — collected without importing a single
@@ -65,4 +69,61 @@ export async function loadEnabledPluginMonitors(
     }
   }
   return monitors
+}
+
+/** An enabled plugin's hooks module, as the mods host loads it. */
+export interface LoadedPluginMod {
+  plugin: string
+  root: string
+  module: string
+  /** Its `userConfig` values, defaults filled in (`register`'s `options`). */
+  options: Record<string, unknown>
+  /** Changes when a file beside the module (its own imports) or the options change. */
+  revision: string
+}
+
+/**
+ * The enabled plugins that are mods. Like monitors, read from discovery without importing plugin
+ * code: the mods host builds and imports each module itself.
+ */
+export async function loadEnabledPluginMods(
+  opts: DeclarativeLoadOptions,
+): Promise<LoadedPluginMod[]> {
+  const catalog = await buildPluginCatalog({
+    repo: opts.repo,
+    availability: opts.availability,
+    userId: opts.userId,
+    projectId: opts.projectId ?? '',
+    cwd: opts.cwd ?? localixWorkspaceDir(),
+    homeDir: opts.homeDir,
+  })
+  const mods: LoadedPluginMod[] = []
+  for (const { plugin, state } of catalog.enabled) {
+    const module = plugin.entrypoints.hookModule
+    if (!module || pluginLoadBlockReason(plugin)) continue
+    const options = resolvePluginConfig(plugin.manifest, scalarConfig(state?.config))
+    const mtime = await newestChange(dirname(module))
+    mods.push({
+      plugin: plugin.manifest.name,
+      root: plugin.dir,
+      module,
+      options,
+      revision: `${mtime}:${JSON.stringify(options)}`,
+    })
+  }
+  return mods
+}
+
+/** The newest modification time under `dir`: a hooks module and the files it imports. */
+async function newestChange(dir: string): Promise<number> {
+  const files = await readdir(dir, { recursive: true }).catch(() => [] as string[])
+  const times = await Promise.all(
+    files.map((file) =>
+      stat(join(dir, file)).then(
+        (info) => info.mtimeMs,
+        () => 0,
+      ),
+    ),
+  )
+  return Math.max(0, ...times)
 }

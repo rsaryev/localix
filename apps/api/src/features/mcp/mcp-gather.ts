@@ -14,6 +14,7 @@ import { mcpConnectionKey as keyFor } from './mcp-connection-key'
 import { buildCachedToolForServer } from './mcp-cached-tool'
 import type { ConnectionPool } from './mcp-connection-pool'
 import type { ToolMetadataStore } from './mcp-tool-metadata-store'
+import type { ChannelRouter } from './mcp-channels'
 import {
   isRequiredServer,
   RequiredMcpServersError,
@@ -29,6 +30,7 @@ export interface GatherState {
   /** scope → keys referenced by that scope's latest gather. */
   scopeKeys: Map<string, Set<string>>
   defaultLogger?: McpLogger
+  channels?: ChannelRouter
 }
 
 type ConnectOutcome =
@@ -54,6 +56,9 @@ async function connectOne(
     // metadata skips discovery here; `buildCachedToolForServer` starts it on first use.
     if (!isRequiredServer(server) && !liveEntry?.connection) {
       const metadata = state.metadata.get(key)
+      // A channel has to be running to push, so it starts now, off this turn's critical path,
+      // as Claude Code starts a channel with the session; its tools stay lazy until it is up.
+      if (metadata?.channel) void pool.acquire(server, gatherOptions.cwd, logger).catch(() => {})
       if (metadata) return { kind: 'available', server, source: { state: 'Cached', metadata } }
     }
 
@@ -126,6 +131,21 @@ export async function gatherTools(
   const currentKeys = new Set(enabled.map((s) => keyFor(s, gatherOptions.cwd)))
   if (currentKeys.size === 0) state.scopeKeys.delete(gatherOptions.scope ?? '')
   else state.scopeKeys.set(gatherOptions.scope ?? '', currentKeys)
+
+  const channelTarget = gatherOptions.channelTarget
+  if (channelTarget)
+    state.channels?.bind(
+      enabled.map((server) => {
+        const key = keyFor(server, gatherOptions.cwd)
+        return { key, server, channel: state.metadata.get(key)?.channel === true }
+      }),
+      {
+        target: { userId: channelTarget.userId, sessionId: channelTarget.sessionId },
+        cwd: gatherOptions.cwd,
+        projectId: channelTarget.projectId ?? '',
+        scope: gatherOptions.scope ?? '',
+      },
+    )
 
   const connectBudgetMs = gatherOptions.connectBudgetMs ?? DEFAULT_CONNECT_BUDGET_MS
 

@@ -23,6 +23,7 @@ import type {
   QueueRemovalResult,
 } from './contracts'
 import type { ToolSurface } from '@localixai/agent/agents'
+import type { SubagentRowsView } from './service/subagent-rows'
 import type {
   createSessionRequestSchema,
   importSessionRequestSchema,
@@ -70,6 +71,7 @@ export interface ChatRoutesService {
     opts?: { messageLimit?: number; deferToolDetails?: boolean },
   ): Promise<SessionDetail>
   getJoinRoutes(userId: string, id: string): Promise<JoinRoutesView>
+  getSubagentRows(userId: string, id: string): Promise<SubagentRowsView>
   getMessageToolDetails(
     userId: string,
     sessionId: string,

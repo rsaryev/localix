@@ -20,6 +20,15 @@ import type {
   NotificationOpReceiptsTable,
 } from './notification-types'
 import type { CommentsTable, SessionPlansTable } from './plan-types'
+import type { McpChannelBindingsTable } from './mcp-channel-types'
+import type {
+  VaultAliasesTable,
+  VaultAuditTable,
+  VaultFoldersTable,
+  VaultItemBindingsTable,
+  VaultItemsTable,
+  VaultItemVersionsTable,
+} from './vault-types'
 
 export type { CommentsTable, SessionPlansTable }
 
@@ -27,6 +36,7 @@ export type { CommentsTable, SessionPlansTable }
 // this registry and are re-exported so every importer keeps taking table types from one place.
 export type { CapabilityRuleTable, ConfigProposalsTable }
 export type * from './notification-types'
+export type * from './vault-types'
 
 // The vocabulary the columns below are derived from moved to `enums.ts` so this module
 // erases at compile time. Re-exported here because ~1030 files import it from `db/types`.
@@ -74,85 +84,6 @@ export interface ProviderConnectionKeysTable {
   enabled: ColumnType<number, number | undefined, number | undefined>
   created_at: ColumnType<string, string | undefined, never>
   updated_at: ColumnType<string, string | undefined, string | undefined>
-}
-
-/** Non-secret catalog row for one item in the unified Localix Vault. */
-export interface VaultItemsTable {
-  id: string
-  user_id: string
-  kind: string
-  name: string
-  description: string
-  folder_id: string | null
-  backend: string
-  external_ref: string | null
-  source: string
-  schema_version: number
-  current_version: number
-  favorite: number
-  tags_json: string
-  created_at: string
-  updated_at: string
-  deleted_at: string | null
-}
-
-/** Immutable encrypted snapshots. Restore always appends another version. */
-export interface VaultItemVersionsTable {
-  id: string
-  item_id: string
-  version: number
-  encrypted_payload: string | null
-  payload_ref: string | null
-  payload_schema: string
-  reason: string
-  created_at: string
-  redacted_at: string | null
-}
-
-/** Stable config-facing aliases such as `OPENAI_API_KEY` → item id + field. */
-export interface VaultAliasesTable {
-  user_id: string
-  alias: string
-  item_id: string
-  field: string
-  created_at: string
-}
-
-export interface VaultFoldersTable {
-  id: string
-  user_id: string
-  parent_id: string | null
-  name: string
-  description: string
-  created_at: string
-  updated_at: string
-}
-
-/** Value-free reverse references used for usage UI and guarded deletion. */
-export interface VaultItemBindingsTable {
-  user_id: string
-  item_id: string
-  consumer_type: string
-  consumer_id: string
-  field: string
-  label: string
-  created_at: string
-  updated_at: string
-}
-
-/** Metadata-only audit; secret material and request bodies never enter this table. */
-export interface VaultAuditTable {
-  id: Generated<number>
-  user_id: string
-  item_id: string | null
-  actor_type: string
-  actor_id: string
-  consumer_type: string
-  consumer_id: string
-  operation: string
-  result: string
-  context_json: string
-  created_at: string
 }
 
 export interface AgentSessionsTable {
@@ -205,6 +136,8 @@ export interface AgentSessionsTable {
   closed_at: ColumnType<string | null, string | null | undefined, string | null | undefined>
   /** The session's permission mode (`capabilities/permission-modes.ts`); see the 20261003 migration. */
   permission_mode: ColumnType<string, string | undefined, string | undefined>
+  /** The conversation's output style, `<plugin>:<name>`; null is the default. See the 20261104 migration. */
+  output_style: ColumnType<string | null, string | null | undefined, string | null | undefined>
   /** The session's model choices per agent and for all agents (`session-model-choices.ts`). */
   model_choices: ColumnType<string | null, string | null | undefined, string | null | undefined>
   /** User-visible chat-message branch leaf (`agent_messages.id`). THE message tree's tip — the
@@ -584,6 +517,7 @@ export interface AppDatabase {
   agent_delivery_receipts: AgentDeliveryReceiptsTable
   agent_turn_starts: AgentTurnStartsTable
   wake_outbox: WakeOutboxTable
+  mcp_channel_bindings: McpChannelBindingsTable
   agent_memory: AgentMemoryTable
   user_view_state: UserViewStateTable
   semantic_settings: SemanticSettingsTable

@@ -14,10 +14,18 @@ import type { McpConnectionObserver } from '../notifications/conditions/mcp'
 import { createToolMetadataStore } from './mcp-tool-metadata-store'
 import { createConnectionPool } from './mcp-connection-pool'
 import { gatherTools, type GatherState } from './mcp-gather'
+import {
+  createChannelRouter,
+  type ChannelBinding,
+  type ChannelBindingStore,
+  type ChannelSink,
+} from './mcp-channels'
+import type { PermissionAnswerer, PermissionPrompt } from './mcp-channel-permissions'
 import * as resources from './mcp-resource-access'
 import type {
   McpClientManagerOptions,
   McpGatherOptions,
+  McpLogger,
   McpProbeResult,
 } from './client-manager-types'
 
@@ -59,11 +67,13 @@ export function createMcpClientManager(options: McpClientManagerOptions = {}) {
   let connectionObserver: McpConnectionObserver | undefined
   // Injected test managers stay process-local so tests cannot read or mutate the user's cache.
   const metadata = createToolMetadataStore(!options.connect)
+  const channels = createChannelRouter({ random: options.random })
   const pool = createConnectionPool({
     connect: options.connect ?? connectClient,
     metadata,
     startupTimeoutMs: Math.max(1, options.startupTimeoutMs ?? resolveConnectTimeoutMs()),
     observer: () => connectionObserver,
+    channels,
   })
   const { cache, acquire, evict } = pool
   const gatherState: GatherState = {
@@ -71,6 +81,7 @@ export function createMcpClientManager(options: McpClientManagerOptions = {}) {
     metadata,
     scopeKeys: new Map(),
     defaultLogger: options.logger,
+    channels,
   }
 
   /**
@@ -158,6 +169,42 @@ export function createMcpClientManager(options: McpClientManagerOptions = {}) {
     return { servers: withTools, unprobed }
   }
 
+  /**
+   * Start every kept channel binding again (boot): a server `resolve` still offers — enabled and
+   * available in its scope — is bound to its chat and connected now, so its events arrive before
+   * that chat's next turn. Its key joins the binding's gather scope, so the chat's next gather
+   * keeps it or lets it go exactly as it would its own. One that no longer resolves is forgotten.
+   */
+  async function restoreChannels(
+    store: ChannelBindingStore,
+    resolve: (binding: ChannelBinding) => Promise<McpServerRecord | null>,
+    logger: McpLogger | undefined = options.logger,
+  ): Promise<number> {
+    const starts: Array<Promise<unknown>> = []
+    for (const binding of await store.list()) {
+      const server = await resolve(binding).catch(() => null)
+      if (!server) {
+        await store.remove(binding).catch(() => {})
+        continue
+      }
+      const key = keyFor(server, binding.cwd)
+      channels.restore(binding, key, server)
+      const scoped = gatherState.scopeKeys.get(binding.scope) ?? new Set<string>()
+      scoped.add(key)
+      gatherState.scopeKeys.set(binding.scope, scoped)
+      starts.push(
+        acquire(server, binding.cwd, logger).catch((err: unknown) =>
+          logger?.warn(`MCP channel "${server.name}" did not start again`, {
+            error: errorMessage(err),
+          }),
+        ),
+      )
+    }
+    // Settled together, each on its own: one channel that cannot start holds up none of the rest.
+    await Promise.all(starts)
+    return starts.length
+  }
+
   /** Close every cached client (kills stdio children). For server shutdown. */
   async function disposeAll(): Promise<void> {
     gatherState.scopeKeys.clear()
@@ -180,6 +227,23 @@ export function createMcpClientManager(options: McpClientManagerOptions = {}) {
     disposeAll,
     observeConnections(observer: McpConnectionObserver | undefined) {
       connectionObserver = observer
+    },
+    /** Where Claude Code channel events go; set once by the composition root. */
+    deliverChannelEvents(sink: ChannelSink | undefined) {
+      channels.deliverTo(sink)
+    },
+    /** Keep channel bindings across restarts; set once by the composition root. */
+    keepChannelBindings(store: ChannelBindingStore | undefined, now?: () => string) {
+      channels.keepBindingsIn(store, now)
+    },
+    restoreChannels,
+    /** A tool approval card opened in a chat: relay it to that chat's permission channels. */
+    channelPermissionOpened: (prompt: PermissionPrompt) => channels.permissions.open(prompt),
+    /** The card closed here: a channel's later verdict for it is dropped. */
+    channelPermissionClosed: (hostRequestId: string) => channels.permissions.close(hostRequestId),
+    /** How a channel's verdict settles the card; set once by the composition root. */
+    answerChannelPermissions(answerer: PermissionAnswerer | undefined) {
+      channels.permissions.answerWith(answerer)
     },
     /** Number of cached (or in-flight) clients — exposed for tests/diagnostics. */
     size: () => cache.size,

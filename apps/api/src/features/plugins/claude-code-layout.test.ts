@@ -5,7 +5,8 @@ import { dirname, join } from 'node:path'
 
 import { MANIFEST_FILE as CLAUDE_CODE_PLUGIN_MANIFEST } from '@localixai/claude-plugin'
 
-import { CLAUDE_CODE_MARKETPLACE, isClaudeCodeMarketplace } from './claude-code-marketplace'
+import { CC_INERT_HOOK_EVENTS } from '../cc-hooks/contracts'
+import { CLAUDE_CODE_MARKETPLACE, marketplaceOnlyHint } from './claude-code-marketplace'
 import { loadManifest } from './discovery'
 import { validatePlugin } from './validate'
 
@@ -39,11 +40,10 @@ async function writeAndLoad(manifest: Record<string, unknown>) {
 }
 
 describe('Claude Code marketplace detection', () => {
-  it('recognizes a Claude Code-only marketplace', async () => {
+  it('names a marketplace-only folder so installing it by path points at marketplace add', async () => {
+    expect(await marketplaceOnlyHint(dir)).toBeNull()
     await write(CLAUDE_CODE_MARKETPLACE, { name: 'm', owner: { name: 'o' }, plugins: [] })
-    expect(await isClaudeCodeMarketplace(dir)).toBe(true)
-    await write('.localix-plugin/marketplace.json', { name: 'm', plugins: [] })
-    expect(await isClaudeCodeMarketplace(dir)).toBe(false)
+    expect(await marketplaceOnlyHint(dir)).toContain('/plugin marketplace add')
   })
 })
 
@@ -123,13 +123,22 @@ describe('a Claude Code plugin in place', () => {
         Notification: handler,
         SessionEnd: handler,
         PermissionRequest: handler,
+        Setup: handler,
+        // Dispatched: a workflow agent's worktree; WorktreeRemove has no lifecycle point here.
+        WorktreeCreate: handler,
+        WorktreeRemove: handler,
+        NotAnEvent: handler,
       },
     })
     const { notes, plugin } = await writeAndLoad({ name: 'hooked' })
     expect(plugin.entrypoints.hookConfigs).toHaveLength(1)
     // Plugin variables are native substitution variables: carried over verbatim.
     expect(JSON.stringify(plugin.entrypoints.hookConfigs)).toContain('${CLAUDE_PLUGIN_ROOT}')
-    expect(notes).toEqual(['hooks: Hook events not dispatched by Localix: PermissionRequest'])
+    expect(notes).toEqual([
+      `hooks: Hook event Setup never fires in Localix: ${CC_INERT_HOOK_EVENTS.Setup}`,
+      `hooks: Hook event WorktreeRemove never fires in Localix: ${CC_INERT_HOOK_EVENTS.WorktreeRemove}`,
+      'hooks: Not Claude Code hook events, never fired: NotAnEvent',
+    ])
   })
 
   it('resolves .mcp.json and lspServers', async () => {
@@ -149,24 +158,77 @@ describe('a Claude Code plugin in place', () => {
   })
 
   it('reads userConfig (sensitive → secret) and experimental.monitors', async () => {
-    const { notes, plugin } = await writeAndLoad({
+    const { plugin } = await writeAndLoad({
       name: 'configured',
       userConfig: {
         api_token: { type: 'string', title: 'Token', description: 'API token', sensitive: true },
       },
       experimental: {
         monitors: [{ name: 'tail', command: 'tail -f log', description: 'Log lines' }],
-        themes: './themes/',
       },
-      outputStyles: './styles/',
-      channels: [{ server: 'telegram' }],
     })
     expect(plugin.error).toBeUndefined()
     expect(plugin.manifest.config?.api_token?.secret).toBe(true)
     expect(plugin.entrypoints.monitors.map((m) => m.name)).toEqual(['tail'])
-    expect(notes.join('\n')).toContain('Output styles are not used')
-    expect(notes.join('\n')).toContain('channels are not used')
-    expect(notes.join('\n')).toContain('Themes are not used')
+  })
+
+  it('reads output styles, themes, workflows, settings and channels without reporting them', async () => {
+    await write(
+      'styles/terse.md',
+      md('name: terse\ndescription: Short\nkeep-coding-instructions: true', 'Keep it short.'),
+    )
+    await write('output-styles/ignored.md', md('name: ignored', 'Replaced by the listed folder.'))
+    await write('themes/dracula.json', {
+      name: 'Dracula',
+      overrides: { claude: '#bd93f9', error: 'ansi:red', nope: 'oops' },
+    })
+    await write(
+      'workflows/audit.js',
+      "export const meta = { name: 'audit', description: 'Audit routes' }\nreturn 1\n",
+    )
+    await write('settings.json', { agent: 'reviewer', theme: 'dark' })
+    await write('agents/reviewer.md', md('name: reviewer\ndescription: Reviews', 'You review.'))
+    const { notes, plugin } = await writeAndLoad({
+      name: 'styled',
+      outputStyles: './styles/',
+      experimental: { themes: './themes/' },
+      settings: { agent: 'ignored-by-the-file' },
+      mcpServers: { chat: { command: 'bun', args: ['server.ts'] } },
+      channels: [
+        {
+          server: 'chat',
+          userConfig: {
+            bot_token: { type: 'string', title: 'Token', description: 'Bot', sensitive: true },
+          },
+        },
+      ],
+    })
+    const components = plugin.entrypoints.components!
+    expect(components.outputStyles).toEqual([
+      expect.objectContaining({
+        name: 'terse',
+        keepCodingInstructions: true,
+        prompt: 'Keep it short.',
+      }),
+    ])
+    expect(components.themes).toEqual([
+      {
+        slug: 'dracula',
+        name: 'Dracula',
+        base: 'dark',
+        overrides: { claude: '#bd93f9', error: '#cd0000' },
+      },
+    ])
+    expect(components.workflows.map((workflow) => workflow.name)).toEqual(['audit'])
+    // The file wins over the manifest key; a key plugins cannot set is dropped with a note.
+    expect(components.settings).toEqual({ agent: 'reviewer' })
+    expect(components.issues.map((found) => found.message)).toEqual([
+      'Plugin settings ignore "theme"',
+    ])
+    expect(plugin.manifest.channels).toEqual([{ server: 'chat' }])
+    expect(plugin.manifest.config?.bot_token?.secret).toBe(true)
+    expect(notes.join('\n')).not.toMatch(/not used/)
+    expect(validatePlugin(plugin).warnings.join('\n')).not.toMatch(/ignores it|Unrecognized/)
   })
 
   it('loads an LSP-only plugin (manifest without component dirs)', async () => {
@@ -216,11 +278,12 @@ describe('a Claude Code plugin in place', () => {
     expect(warnings).not.toContain('argumentHint')
   })
 
-  it('a hooks module is reported until mods run here', async () => {
+  it('a hooks module makes the plugin a mod: discovery resolves it inside the plugin', async () => {
     await write('hooks/hooks.json', { hooks: {}, modules: ['./register.ts'] })
-    const { notes } = await writeAndLoad({ name: 'a-mod' })
-    expect(notes).toEqual([
-      'hooks#modules: The hooks module (mod) does not run in Localix yet; its hooks.json hooks do',
-    ])
+    const { notes, plugin } = await writeAndLoad({ name: 'a-mod' })
+    expect(notes).toEqual([])
+    expect(plugin.entrypoints.hookModule).toBe(join(dir, 'hooks', 'register.ts'))
+    await write('hooks/hooks.json', { hooks: {}, modules: ['../../outside.ts'] })
+    expect((await loadManifest(dir, 'global', '')).entrypoints.hookModule).toBeUndefined()
   })
 })

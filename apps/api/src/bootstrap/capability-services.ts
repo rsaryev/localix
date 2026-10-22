@@ -1,3 +1,4 @@
+import type { PluginCommandSpec } from '../features/plugins/contracts-commands'
 import type { Kysely } from 'kysely'
 
 import type { AppDatabase } from '../db'
@@ -37,6 +38,8 @@ export interface CapabilityServicesInput extends Pick<
 > {
   db: Kysely<AppDatabase>
   chatService: ReturnType<typeof createChatService>
+  /** Claude Code mods' `command.describe` over the listed commands. */
+  describeCommands?: <C extends PluginCommandSpec>(commands: readonly C[]) => Promise<C[]>
 }
 
 export interface CapabilityServices {
@@ -56,6 +59,7 @@ export function createCapabilityServices({
   mcpService,
   pluginService,
   agentsService,
+  describeCommands,
 }: CapabilityServicesInput): CapabilityServices {
   // ONE versioned capability snapshot (`GET /rpc/capabilities/snapshot`). Read-only,
   // and the only projection of "what can this scope do" the clients consume: the
@@ -67,8 +71,12 @@ export function createCapabilityServices({
   const capabilityRules = createCapabilityRuleRepository(db)
   const capabilitySnapshotService = createCapabilitySnapshotService({
     builtinCommands: SLASH_COMMANDS,
-    listPluginContributions: (userId, projectId) =>
-      pluginService.listPluginContributions(userId, { projectId }),
+    listPluginContributions: async (userId, projectId) => {
+      const contributions = await pluginService.listPluginContributions(userId, { projectId })
+      return describeCommands
+        ? { ...contributions, commands: await describeCommands(contributions.commands) }
+        : contributions
+    },
     listAgents: (userId, projectId) => agentsService.listAgents(userId, { projectId }),
     listMcpServers: async (userId, projectId) =>
       (await mcpService.listServers(userId, { projectId })).servers,

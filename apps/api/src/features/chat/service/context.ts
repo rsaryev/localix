@@ -38,6 +38,7 @@ import type { ModelRoute } from '../repository-types'
 import type { WorkRegistry } from '../../work/registry'
 import type { AgentManagementPort } from '../../agents/service-contract'
 import type { HumanProfile } from '../../agent-core/prompt/sections/conversation'
+import type { ModsHost } from '../../mods/host'
 
 export const DEFAULT_TITLE = 'New Chat'
 
@@ -163,6 +164,8 @@ export interface ChatServiceDeps {
   monitors?: MonitorService
   /** Exactly-once exit notices — the same forward-holder shape as `monitors`. */
   exitNotices?: ExitNotices
+  /** The mods host: Claude Code hooks modules — commands, tools and turn events of mods. */
+  mods?: ModsHost
   /**
    * The `configure` tool's host (features/config-proposals). Same forward-holder shape as
    * `monitors`: it is composed after chat because it writes through the toggle service.

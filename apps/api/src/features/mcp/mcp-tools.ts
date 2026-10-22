@@ -16,6 +16,7 @@ export type {
 } from './mcp-client-contracts'
 
 import type { McpServerRecord } from './repository'
+import { createCallDeadline, withElicitationRoute } from './mcp-elicitation'
 import {
   capMcpErrorMessage,
   type McpContentPart,
@@ -183,6 +184,12 @@ export function classifyMcpTool(annotations: McpToolAnnotations | undefined): Ca
   return destructive ? { effect: 'external', irreversible: true } : { effect: 'external' }
 }
 
+/** A server as Claude Code names it in a tool's address; plugin records are `plugin:<p>:<s>`. */
+function claudeCodeServerName(server: McpServerRecord): string {
+  const plugin = /^plugin:([^:]+):(.+)$/.exec(server.id)
+  return plugin ? `plugin_${plugin[1]}_${plugin[2]}` : server.name
+}
+
 export function buildToolForServer(
   server: McpServerRecord,
   client: McpClientLike,
@@ -202,17 +209,37 @@ export function buildToolForServer(
     name: toolName,
     description,
     label: `${server.name} · ${def.name}`,
+    // Claude Code's address for it: a plugin's server as `plugin_<plugin>_<server>`.
+    aliases: [`mcp__${claudeCodeServerName(server)}__${def.name}`],
     inputSchema: mcpInputSchema(def.inputSchema),
     activeVerb: 'Running',
     mutates,
     classify: () => callClass,
     ...(def.annotations ? { behaviorHints: def.annotations } : {}),
-    async execute(_toolCallId, input, signal) {
+    async execute(toolCallId, input, signal, _onUpdate, context) {
+      // The call's timeout stops while its server waits on the person (elicitation).
+      const deadline = createCallDeadline(timeout, signal, () =>
+        McpError.fromError(ErrorCode.RequestTimeout, 'Request timed out', { timeout }),
+      )
       try {
-        const result = await client.callTool(
-          { name: def.name, arguments: (input ?? {}) as Record<string, unknown> },
-          undefined,
-          { timeout, resetTimeoutOnProgress: true, signal },
+        const call = {
+          server: server.id.startsWith('plugin:') ? server.id : server.name,
+          displayName: server.name,
+          toolCallId,
+          context,
+          signal,
+          hold: deadline.hold,
+        }
+        const result = await withElicitationRoute(client, call, () =>
+          client.callTool(
+            { name: def.name, arguments: (input ?? {}) as Record<string, unknown> },
+            undefined,
+            {
+              timeout: deadline.sdkTimeoutMs,
+              resetTimeoutOnProgress: true,
+              signal: deadline.signal,
+            },
+          ),
         )
         const content = (result.content ?? []) as McpContentPart[]
         return mapCallResult(content, result.isError === true, maxResultChars, {
@@ -234,6 +261,8 @@ export function buildToolForServer(
             fatal: false,
           },
         }
+      } finally {
+        deadline.clear()
       }
     },
   }

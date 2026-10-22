@@ -5,6 +5,7 @@ import type {
   PendingAskInteraction,
   PendingConfirmInteraction,
   PendingHitlInteraction,
+  PendingMcpElicitationInteraction,
   PendingRequestSecretInteraction,
   PersistedMessage,
   SessionDetail,
@@ -34,6 +35,7 @@ export function toUiMessage(message: PersistedMessage): Message {
     reactions: (message.payload as { reactions?: Message['reactions'] }).reactions,
     pinned: (message.payload as { pinned?: true }).pinned === true ? true : undefined,
     taskStates: message.payload.taskStates,
+    displayTexts: message.payload.displayTexts,
     content: message.payload.content,
     systemNotice: presentation.systemNotice,
     commandOutput: presentation.commandOutput
@@ -102,6 +104,19 @@ function toUiPendingInteraction(
         kind: 'request_secret',
         title: interaction.title,
         payload: interaction.payload as PendingRequestSecretInteraction['request']['payload'],
+      },
+    }
+  }
+  if (interaction.kind === 'mcp_elicitation') {
+    return {
+      kind: 'mcp_elicitation',
+      sourceSessionId: interaction.sourceSessionId,
+      request: {
+        id: interaction.requestId,
+        kind: 'mcp_elicitation',
+        title: interaction.title,
+        payload: interaction.payload as PendingMcpElicitationInteraction['request']['payload'],
+        ...(interaction.expiresAt ? { expiresAt: interaction.expiresAt } : {}),
       },
     }
   }

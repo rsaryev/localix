@@ -43,6 +43,7 @@ export const mapSession = (row: {
   agents_json?: string | null
   closed_at?: string | null
   permission_mode?: string | null
+  output_style?: string | null
   model_choices?: string | null
   description?: string | null
   avatar?: string | null
@@ -77,6 +78,7 @@ export const mapSession = (row: {
   modelChoices: unstampedChoices(parseModelChoices(row.model_choices)),
   closedAt: row.closed_at ?? null,
   permissionMode: parsePermissionMode(row.permission_mode),
+  outputStyle: row.output_style ?? null,
   description: row.description ?? null,
   avatar: row.avatar ?? null,
   pinnedSkills: parsePinnedSkills(row.pinned_skills),

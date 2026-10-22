@@ -19,6 +19,8 @@ import { buildDirectToolInstances } from './runtime-tool-instances'
 import { buildBrowserOptions } from './browser-options'
 import { buildTaskDelegationOptions } from './task-delegation-options'
 import { buildDelegateOptions } from './delegate-options'
+import { delegatePluginPorts } from './plugin-subagent'
+import { buildWorkflowOptions } from './workflow-options'
 import { buildAgentsOptions } from './agents-options'
 import { buildConfigureOptions } from './configure-options'
 import { buildPlanOptions } from './plan-options'
@@ -43,6 +45,8 @@ const EMPTY_PORT_CAPABILITY: Readonly<Record<string, string>> = {
   [TOOL.plugin_build]: 'plugins.authoring',
   [TOOL.plan]: 'plans',
   [TOOL.codemode]: 'scripts',
+  // Children and a workflow command that activated it (`workflow-options.ts`).
+  [TOOL.workflow]: 'plugins.workflows',
   // Seat-bound protocol ports (`chat/policy`): a pass needs a colleague, a topic needs its owner.
   [TOOL.skip_answer]: 'conversation.colleagues',
   [TOOL.set_topic]: 'conversation.topic-owner',
@@ -63,6 +67,7 @@ export function buildOptionalToolPorts(
 ): { optional: OptionalToolPorts; ledgerRef: { current?: ToolLedger } } {
   const { deps, repo, memoryRepo } = ctx
   const { userId, session, defaultCwd, disabledTools, agentProfile, loadedPlugins } = params
+  const { ccHooks } = params
   const contextStore = deps.ports.contextStore
   // Filled by the caller once the registry (and so the ledger) exists — `configure` reads it
   // at call time.
@@ -92,6 +97,20 @@ export function buildOptionalToolPorts(
     decisionsAvailable: params.decisionsAvailable,
   })
 
+  // The run's WorktreeCreate hooks make an isolated agent's worktree when it has any (CC).
+  const worktreeHook = ccHooks?.hasHooks('WorktreeCreate')
+    ? (name: string) => ccHooks.runWorktreeCreate(name)
+    : undefined
+  // A plugin's agents are subagent types for `delegate` and a workflow's `agent()` alike.
+  const pluginAgents = delegatePluginPorts({
+    agents: loadedPlugins.agents,
+    ...(params.chatModel ? { chatModel: params.chatModel } : {}),
+    catalog: params.catalog?.models ?? [],
+    defaultCwd,
+    rootSessionId: session.rootSessionId ?? session.id,
+    ...(worktreeHook ? { worktreeHook } : {}),
+  })
+
   const optional: OptionalToolPorts = {
     // A budget the model can read before it overflows.
     context_budget: params.readContextBudget
@@ -117,7 +136,13 @@ export function buildOptionalToolPorts(
       globalSearch: deps.globalSearch,
     }),
     jobs: isToolDirect(agentProfile, TOOL.jobs) ? jobsTool : undefined,
-    delegate: buildDelegateOptions({ userId, session, agentProfile, taskDelegation }),
+    delegate: buildDelegateOptions({
+      userId,
+      session,
+      agentProfile,
+      taskDelegation,
+      plugins: pluginAgents,
+    }),
     agents: buildAgentsOptions(ctx, params),
     loops: isToolDirect(agentProfile, TOOL.loops)
       ? { userId, sessionId: session.id, agentId: params.agentId }
@@ -142,6 +167,7 @@ export function buildOptionalToolPorts(
       agentId: params.agentId,
       agentProfile,
       ledgerRef,
+      ccHooks: params.ccHooks,
     }),
     // The conversation's plan lives on its ROOT, whose mode an approval changes. Absent in a host
     // that did not compose plans; the ledger then names `plans` as what the run lacked.
@@ -155,6 +181,19 @@ export function buildOptionalToolPorts(
         : undefined,
     // Scripts run in the engine's sandbox; an engine without one has no `codemode`.
     codemode: deps.scripts,
+    workflow: buildWorkflowOptions({
+      userId,
+      session,
+      agentProfile,
+      taskDelegation,
+      scripts: deps.scripts,
+      listWorkflows: params.listWorkflows,
+      ...(params.chatModel ? { chatModel: params.chatModel } : {}),
+      catalog: params.catalog?.models ?? [],
+      defaultCwd,
+      ...(worktreeHook ? { worktreeHook } : {}),
+      pluginAgents,
+    }),
   }
   return { optional, ledgerRef }
 }

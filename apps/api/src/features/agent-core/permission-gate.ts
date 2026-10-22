@@ -11,25 +11,25 @@
  * Two reasons to change, so two modules: "the rule grammar grew a pattern" is not
  * "the confirm flow gained an outcome".
  */
-import {
-  classifyToolCall,
-  type AgentTool,
-  type BeforeToolCallResult,
-  type GateRefusalTracker,
-} from '@localixai/agent/agents'
-import { localixHome } from '../../lib/env'
-import { isPathBelow } from '../../lib/path-containment'
-import { extractCallFacts, writeTargets } from './permission-facts'
-import { hostRootDenial } from './host-root-guard'
-import { scopeToOwnPlan } from './tools/file/file-call-class'
-import { RESERVED_NON_TOOL_NAMES } from './tool-names-reserved'
-import { isProtocolTool } from './tool-names'
+import type { BeforeToolCallResult, GateRefusalTracker } from '@localixai/agent/agents'
 import { withRefusalBreaker } from './permission-gate-breaker'
-import { describeRule, evaluate, type PermissionRule, type ToolFacts } from './permission-engine'
+import { describeRule } from './permission-engine'
+import {
+  decisionOf,
+  judgeCall,
+  verdictOfDecision,
+  type ReviewVerdict,
+  type VerdictOptions,
+} from './permission-verdict'
 import { confirmSubject } from './permission-confirm-subject'
 import type { GrantOption } from './permission-grant-scope'
 import { UNANSWERED_CALL_TAIL, unansweredRefusal } from './tools/hitl/decision-deadline'
 import * as person from './permission-refusal-person'
+import {
+  hookConfirmVerdict,
+  reviewedRefusal,
+  type ReviewAutomaticDenial,
+} from './permission-hook-verdicts'
 
 export interface RequestConfirmArgs {
   toolCallId: string
@@ -64,34 +64,26 @@ export interface RequestConfirmArgs {
  */
 export type ConfirmOutcome =
   | boolean
-  | { approved: boolean; via?: 'user' | 'session-grant' | 'timeout'; message?: string }
+  | { approved: boolean; via?: 'user' | 'session-grant' | 'timeout' | 'hook'; message?: string }
 
 /** The person's own words, quoted on their own line so the model cannot mistake whose they are. */
 const withReply = (sentence: string, reply: string | undefined): string =>
   reply ? `${sentence}\nThe user replied: ${reply}` : sentence
 
-export interface PermissionGateOptions {
-  rules: readonly PermissionRule[]
-  /** Task-local skill grants may preapprove named questions, never class guards or denials. */
-  preapprovedRules?: readonly PermissionRule[]
-  toolsByName: Map<string, AgentTool>
-  root?: string
-  /** Surfaces an 'ask' to the user; resolves approved/denied (see {@link ConfirmOutcome}). Omitted → 'ask' denies. */
-  requestConfirm?: (args: RequestConfirmArgs) => Promise<ConfirmOutcome>
+export interface PermissionGateOptions extends VerdictOptions {
+  /**
+   * Surfaces an 'ask' to the user; resolves approved/denied (see {@link ConfirmOutcome}). Omitted
+   * → 'ask' denies. `call` is the raw call, for a host approval hook that judges the call itself;
+   * it never reaches the card, which is built from `args` alone.
+   */
+  requestConfirm?: (args: RequestConfirmArgs, call?: { input: unknown }) => Promise<ConfirmOutcome>
   /** Run-scoped memory of refusals; absent leaves the gate exactly as it was. */
   refusalTracker?: GateRefusalTracker
-  /** Test seam for the host application's roots; production uses `lib/host-roots.ts`. */
-  hostRoots?: readonly string[]
-  /**
-   * The run's own conversation plan directory (`plans/plan-paths.ts`). A file tool classes any
-   * plan-shaped write as `session`; only one inside this directory stays so (`scopeToOwnPlan`).
-   * Absent → no plan file is the run's own.
-   */
-  ownPlanDir?: string
+  /** Reviews each verdict before the gate acts on it (Claude Code mods' `tool.check`). */
+  reviewVerdict?: ReviewVerdict
+  /** Sees each refusal a permission mode made on its own (`permission-hook-verdicts.ts`). */
+  reviewAutomaticDenial?: ReviewAutomaticDenial
 }
-
-/** The tools whose `session` class rests on a plan-file path test (`file-call-class.ts`). */
-const PLAN_FILE_WRITERS: ReadonlySet<string> = new Set(['write', 'edit'])
 
 interface GateContext {
   toolCallId: string
@@ -115,81 +107,27 @@ export type PermissionGateFn = (ctx: GateContext, signal?: AbortSignal) => Promi
  */
 export function createPermissionGate(opts: PermissionGateOptions): PermissionGateFn {
   const decide = async (ctx: GateContext, signal?: AbortSignal): Promise<GateResult> => {
-    // A call is judged on the tool's own verdict about THIS input (`AgentTool.classify`), not on
-    // a static flag: a dual-purpose tool declaring `mutates: true` would otherwise have every
-    // rule about writes confirm or refuse its reads too. A tool that declares nothing is
-    // `external` — fail-closed, because this class is a permission input.
-    const tool = opts.toolsByName.get(ctx.toolName)
-    const declared = classifyToolCall(tool, ctx.input)
-    // A file tool cannot tell its conversation's plan from another's; the gate can.
-    const callClass = PLAN_FILE_WRITERS.has(ctx.toolName)
-      ? scopeToOwnPlan(declared, writeTargets(ctx.toolName, ctx.input, opts.root), opts.ownPlanDir)
-      : declared
-    const facts: ToolFacts = { name: ctx.toolName, ...callClass }
-    const call = extractCallFacts(ctx.toolName, ctx.input, opts.root, tool)
-
-    // THE RULES ARBITRATE CAPABILITIES, AND A CAPABILITY IS A CATALOG ENTRY.
-    //
-    // A denied tool is REMOVED — the projection subtracts it from the roster and the registry
-    // never builds it, so it is not on the wire and no call can reach this gate. That is the
-    // whole enforcement path for anything the catalog names.
-    //
-    // `RESERVED_NON_TOOL_NAMES` is the set the catalog deliberately does NOT name: core-owned
-    // names that are mechanisms rather than capabilities, built from the run's own deferred set
-    // after assembly. The roster never offers them, so the projection can never deny them —
-    // yet evaluating them HERE answered anyway, from a blanket `tool:*` deny that was written
-    // about capabilities. Observed live: a member holding a deferred core tool called the
-    // activator to reach it and was told "Blocked: activate_tools is not permitted here", which
-    // made an allowed tool unreachable. It grants nothing either way — every name it can reveal
-    // is already in this run's registry, past the rules, and each revealed call is checked here
-    // on its own.
-    //
-    // A set, not a name, and owned by the module that owns tool-name policy: the gate holds no
-    // list of specific tools.
-    if (RESERVED_NON_TOOL_NAMES.includes(ctx.toolName) || isProtocolTool(ctx.toolName))
-      return undefined
-
-    // The host application is not a permission question: no rule, preset or mode reaches
-    // past this line into Localix's own source or install tree (`host-root-guard.ts`).
-    const hostDenial = hostRootDenial(ctx.input, call, opts.root, opts.hostRoots)
-    if (hostDenial) {
+    const judged = judgeCall(opts, ctx)
+    if (judged.kind === 'exempt') return undefined
+    if (judged.kind === 'host') {
       return {
         block: true,
-        blockedMessage: hostDenial,
+        blockedMessage: judged.message,
         personMessage: person.hostRootByPerson(ctx.toolName),
       }
     }
-
-    // ONE evaluation, because there is one list. A session mode that stops asking does it by
-    // rewriting that list before the run (`capabilities/permission-mode.ts`), never by a flag
-    // here: a gate that knows about modes is a second answer to the question the rules answer.
-    const decision = evaluate(opts.rules, facts, call, opts.preapprovedRules)
-    const allowed = decision.action === 'allow'
-
-    // The agent's own system directories (workspace, scratch, etc.) are always
-    // writable without approval, regardless of workspace boundary rules. The dir
-    // comes from the ONE `~/.localix` owner (`lib/env.ts`) — the same root
-    // `tools/workspace.ts` actually writes to. Deriving it
-    // here from `process.env.HOME` (as this once did) let a scrubbed or spoofed
-    // HOME point the carve-out at a directory the agent never writes to.
-    if (ctx.toolName === 'write' || ctx.toolName === 'edit') {
-      const targets = writeTargets(ctx.toolName, ctx.input, opts.root)
-      // Containment via the ONE owner (`lib/path-containment.ts`) — never a sibling like
-      // `~/.localix-evil`, which a bare `startsWith` would wrongly admit, auto-writing
-      // outside the protected dir with no approval.
-      //
-      // STRICTLY BELOW (`isPathBelow`, not `isPathWithin`): this carve-out GRANTS an
-      // unprompted mutation, so it must ask the membership question — "is this target a
-      // FILE the agent owns inside its state dir" — not the containment question, which
-      // also answers yes to the directory itself. `writeTargets` only ever yields file
-      // paths (the `path` of write and edit), so the two agree on every
-      // reachable input; they part company exactly where a future destructive caller
-      // would want them to.
-      const localixDir = localixHome()
-      if (targets.length > 0 && targets.every((t) => isPathBelow(localixDir, t))) {
-        if (allowed) return undefined
-      }
-    }
+    const { facts, call } = judged
+    // A host's review (Claude Code mods' `tool.check`) may answer any verdict, either way; the
+    // gate then acts on what it answered, as on a rule's.
+    const decision = opts.reviewVerdict
+      ? decisionOf(
+          await opts.reviewVerdict(ctx, verdictOfDecision(judged.decision)),
+          judged.decision,
+        )
+      : judged.decision
+    // The agent's own files in `~/.localix` are written without asking (`permission-verdict.ts`).
+    if (judged.ownTree && decision === judged.decision && decision.action === 'allow')
+      return undefined
 
     const { action, message } = decision
 
@@ -204,9 +142,14 @@ export function createPermissionGate(opts: PermissionGateOptions): PermissionGat
       return undefined
     }
     if (action === 'deny') {
+      const reason = message ?? `Blocked: ${ctx.toolName} is not permitted here.`
       return {
         block: true,
-        blockedMessage: message ?? `Blocked: ${ctx.toolName} is not permitted here.`,
+        // Only a built-in (mode) rule carries its own person sentence; the user's own deny is
+        // their decision, not one made on their behalf.
+        blockedMessage: decision.rule?.personMessage
+          ? await reviewedRefusal(opts.reviewAutomaticDenial, ctx, reason)
+          : reason,
         personMessage: person.deniedByPolicy(ctx.toolName, decision.rule),
       }
     }
@@ -218,23 +161,32 @@ export function createPermissionGate(opts: PermissionGateOptions): PermissionGat
       const why = message ?? `${ctx.toolName} needs approval`
       return {
         block: true,
-        blockedMessage: `${why} — this is an unattended run with no human to approve it.`,
+        blockedMessage: await reviewedRefusal(
+          opts.reviewAutomaticDenial,
+          ctx,
+          `${why} — this is an unattended run with no human to approve it.`,
+        ),
         personMessage: person.needsAbsentPerson(ctx.toolName),
       }
     }
-    const outcome = await opts.requestConfirm({
-      toolCallId: ctx.toolCallId,
-      toolName: ctx.toolName,
-      // Only when the rule said something. The card's title already reads "Approve write?";
-      // a `Allow write?` under it was the same sentence twice.
-      ...(message ? { message } : {}),
-      ...confirmSubject(call, ctx.toolName, facts),
-      cwd: opts.root,
-      sourceTitle: ctx.sourceTitle ?? call.sourceTitle,
-      ...(signal ? { signal } : {}),
-    })
+    const outcome = await opts.requestConfirm(
+      {
+        toolCallId: ctx.toolCallId,
+        toolName: ctx.toolName,
+        // Only when the rule said something. The card's title already reads "Approve write?";
+        // a `Allow write?` under it was the same sentence twice.
+        ...(message ? { message } : {}),
+        ...confirmSubject(call, ctx.toolName, facts),
+        cwd: opts.root,
+        sourceTitle: ctx.sourceTitle ?? call.sourceTitle,
+        ...(signal ? { signal } : {}),
+      },
+      { input: ctx.input },
+    )
     const approved = typeof outcome === 'boolean' ? outcome : outcome.approved
     const reply = typeof outcome === 'object' ? outcome.message : undefined
+    if (typeof outcome === 'object' && outcome.via === 'hook')
+      return hookConfirmVerdict(ctx.toolName, approved, reply)
     // The one refusal a person made. Tagged so the refusal breaker does not count a human
     // steering their own run — see permission-gate-breaker.ts. An expired card carries the
     // same tag for the same reason (the model did nothing wrong) and a different sentence:

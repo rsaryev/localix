@@ -34,6 +34,19 @@ export type SessionProvenance =
       depth?: number
       /** Agent ids that delegated down to it, root first — the agents it may never hand work to. */
       chain?: string[]
+      /**
+       * The folder it works in instead of its tree's (`session-cwd.ts`): the git worktree a
+       * workflow agent with `isolation: 'worktree'` was given. Honoured only inside Localix's
+       * worktree root and while the folder exists.
+       */
+      workingDir?: string
+      /** A WorktreeCreate hook made {@link workingDir}: honoured wherever the hook put it. */
+      worktreeByHook?: true
+      /**
+       * The plugin subagent type it runs as (`<plugin>:<name>`): every run of the child takes that
+       * agent's prompt and tool limits while the plugin is enabled (`run/plugin-subagent.ts`).
+       */
+      pluginAgent?: string
     }
   | { kind: 'loop'; parentSessionId: string; loopId: string }
   | { kind: 'hook'; parentSessionId: string; phase: 'verifier' }
@@ -107,13 +120,19 @@ export function parseSessionProvenance(raw: string): SessionProvenance {
         'priority',
         'depth',
         'chain',
+        'workingDir',
+        'worktreeByHook',
+        'pluginAgent',
       ]) &&
         isString(value.parentSessionId) &&
         isString(value.toolCallId) &&
         optionalString(value.parentParticipant) &&
         (value.priority === undefined || isDelegationPriority(value.priority)) &&
         (value.depth === undefined || isDepth(value.depth)) &&
-        (value.chain === undefined || isStringList(value.chain))
+        (value.chain === undefined || isStringList(value.chain)) &&
+        optionalString(value.workingDir) &&
+        (value.worktreeByHook === undefined || value.worktreeByHook === true) &&
+        optionalString(value.pluginAgent)
         ? {
             kind: 'task-delegation',
             parentSessionId: value.parentSessionId,
@@ -122,6 +141,9 @@ export function parseSessionProvenance(raw: string): SessionProvenance {
             ...(isDelegationPriority(value.priority) ? { priority: value.priority } : {}),
             ...(isDepth(value.depth) ? { depth: value.depth } : {}),
             ...(isStringList(value.chain) ? { chain: value.chain } : {}),
+            ...(value.workingDir ? { workingDir: value.workingDir } : {}),
+            ...(value.worktreeByHook === true ? { worktreeByHook: true as const } : {}),
+            ...(value.pluginAgent ? { pluginAgent: value.pluginAgent } : {}),
           }
         : reject(raw)
     case 'loop':

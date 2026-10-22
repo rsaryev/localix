@@ -25,6 +25,10 @@ import { EMPTY_RUNTIME, joinContext, contextFrom, blockedFrom } from './runtime-
 import { createHookSelector, type SelectOptions } from './runtime-selection'
 import { createHookHandlerRunner } from './runtime-handler'
 import { createToolHookRunners } from './runtime-tool-hooks'
+import { createGateHookRunners } from './runtime-gate-hooks'
+import { createSessionHookRunners, watchPathsFrom } from './runtime-session-hooks'
+import { createDisplayHookRunners } from './runtime-display-hooks'
+import { createWorktreeHookRunners } from './runtime-worktree-hooks'
 
 export type { CcHooksRuntime, CreateCcHooksRuntimeOptions } from './runtime-contracts'
 
@@ -107,15 +111,18 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
     return outcomes
   }
 
+  const dispatch = { select, runHandler, fireAsync, runAll, baseInput }
+  // Inputs a PermissionRequest hook rewrote, by tool call, until the call runs.
+  const approvedInputs = new Map<string, unknown>()
+
   return {
     active: true,
 
     async runSessionStart(source = 'startup') {
       const input: CcHookInput = { ...baseInput('SessionStart'), source }
-      const additionalContext = contextFrom(
-        await runAll('SessionStart', (m) => matchesField(m, source), input, true),
-      )
-      return additionalContext ? { additionalContext } : {}
+      const outcomes = await runAll('SessionStart', (m) => matchesField(m, source), input, true)
+      const additionalContext = contextFrom(outcomes)
+      return { ...(additionalContext ? { additionalContext } : {}), ...watchPathsFrom(outcomes) }
     },
 
     async runUserPromptSubmit(prompt: string) {
@@ -138,7 +145,21 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
       return { blocked: false, additionalContext: joinContext(contexts) }
     },
 
-    ...createToolHookRunners({ select, runHandler, fireAsync, runAll, baseInput }),
+    ...createToolHookRunners(dispatch),
+    ...createGateHookRunners(dispatch),
+    hasHooks: (event) => (registry[event]?.length ?? 0) > 0,
+    approveWithInput(toolCallId, input) {
+      approvedInputs.set(toolCallId, input)
+    },
+    takeApprovedInput(toolCallId) {
+      if (!approvedInputs.has(toolCallId)) return undefined
+      const input = approvedInputs.get(toolCallId)
+      approvedInputs.delete(toolCallId)
+      return { input }
+    },
+    ...createSessionHookRunners(dispatch, registry),
+    ...createDisplayHookRunners(dispatch),
+    ...createWorktreeHookRunners(dispatch),
 
     async runStop(stopOpts) {
       const input: CcHookInput = {

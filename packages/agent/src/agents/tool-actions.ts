@@ -71,6 +71,13 @@ export interface AsyncToolRegistry {
        * ids and ends every kind the same way; the kind is what a listing shows the reader.
        */
       kind?: 'monitor' | 'promoted'
+      /**
+       * Wake the owning session when the job ends (its final `emitBackground` carries `notify`),
+       * armed now, as `bash notify:true` arms it from its input. For work that reports its result
+       * in a later turn by design — a background workflow run — rather than by an argument the
+       * model chose.
+       */
+      notify?: boolean
     },
   ): () => void
 

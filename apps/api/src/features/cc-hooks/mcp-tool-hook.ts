@@ -16,7 +16,7 @@
  */
 import type { CcHookHandler, CcHookInput, CcHookOutcome } from './contracts'
 import type { HookLogger } from './executor'
-import { foldHookOutput } from './output-parse'
+import { foldHookOutput, worktreePathFromText } from './output-parse'
 
 /** The result of one injected MCP tool call. */
 export type CcMcpToolResult = { text: string; isError?: boolean } | { notConnected: true }
@@ -53,19 +53,21 @@ export async function runMcpToolHook(
     logger.warn(
       `[cc-hook:${label}] ${input.hook_event_name} mcp_tool "${handler.mcpTool}" threw: ${String(err)} — non-blocking`,
     )
-    return {}
+    return { failed: 'error' }
   }
   if ('notConnected' in result) {
     logger.warn(
       `[cc-hook:${label}] ${input.hook_event_name} mcp_tool "${handler.mcpTool}" not connected — non-blocking`,
     )
-    return {}
+    return { failed: 'error' }
   }
   if (result.isError) {
     logger.warn(
       `[cc-hook:${label}] ${input.hook_event_name} mcp_tool "${handler.mcpTool}" returned isError — non-blocking`,
     )
-    return {}
+    return { failed: 'error' }
   }
+  // The tool's text is read like a command hook's stdout: on WorktreeCreate, a path.
+  if (input.hook_event_name === 'WorktreeCreate') return worktreePathFromText(result.text)
   return foldHookOutput(result.text, allowPlainTextContext)
 }

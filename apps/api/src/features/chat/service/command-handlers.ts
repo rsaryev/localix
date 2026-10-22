@@ -8,6 +8,7 @@ import {
   handleMcpControlCommand,
 } from './command-handlers-listings'
 import { handleModelCommand } from './command-handlers-settings'
+import { handleOutputStyleCommand } from './command-handlers-output-style'
 import { handlePluginsControlCommand } from './command-handlers-plugins'
 import { handleAgentsControlCommand } from './command-handlers-agents'
 import type { SessionRecord } from '../repository'
@@ -75,6 +76,10 @@ export async function handleControlCommand(
       ts,
       directReply,
     )
+  }
+
+  if (control === 'output-style') {
+    return handleOutputStyleCommand(ctx, userId, sessionId, session, prompt, ts, directReply)
   }
 
   if (control === 'loop') {

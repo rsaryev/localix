@@ -122,6 +122,8 @@ export interface Message {
   pinned?: boolean
   /** Ticked boxes of the reply's checklist, by `<text item>:<source offset>` (`MarkdownTaskList`). */
   taskStates?: Record<string, boolean>
+  /** What a MessageDisplay hook shows in place of a text item, by item id; display only. */
+  displayTexts?: Record<string, string>
   content?: string
   /** Present iff this is an inline system notice (role === 'system'). */
   systemNotice?: SystemNotice

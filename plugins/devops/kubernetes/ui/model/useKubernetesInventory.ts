@@ -1,4 +1,10 @@
-import { useCallback, type Dispatch, type MutableRefObject, type SetStateAction } from 'react'
+import {
+  useCallback,
+  useRef,
+  type Dispatch,
+  type MutableRefObject,
+  type SetStateAction,
+} from 'react'
 import type { KubePod } from '../../backend/contracts'
 import { kubernetesApi } from '../api/kubernetesApi'
 import { degrade, type KubernetesState } from './kubernetesState'
@@ -20,6 +26,18 @@ interface KubernetesInventoryOptions {
   lastSecondaryFetchAtRef: MutableRefObject<number>
 }
 
+/** Two asks for a read folded into one: every collection if either wanted them, quiet if both were. */
+export function mergeRefreshOptions(
+  queued: KubernetesRefreshOptions | null,
+  next: KubernetesRefreshOptions | undefined,
+): KubernetesRefreshOptions {
+  if (!queued) return { forceSecondary: next?.forceSecondary, silent: next?.silent }
+  return {
+    forceSecondary: queued.forceSecondary === true || next?.forceSecondary === true,
+    silent: queued.silent === true && next?.silent === true,
+  }
+}
+
 /** Adaptive pod refresh plus slow, independently settled secondary collections. */
 export function useKubernetesInventory(options: KubernetesInventoryOptions) {
   const {
@@ -30,8 +48,9 @@ export function useKubernetesInventory(options: KubernetesInventoryOptions) {
     busyGenerationRef,
     lastSecondaryFetchAtRef,
   } = options
+  const queuedRef = useRef<KubernetesRefreshOptions | null>(null)
 
-  return useCallback(
+  const read = useCallback(
     async (refreshOptions?: KubernetesRefreshOptions) => {
       const { context, namespace } = activeRef.current
       const generation = generationRef.current
@@ -127,5 +146,23 @@ export function useKubernetesInventory(options: KubernetesInventoryOptions) {
       }
     },
     [activeRef, busyGenerationRef, generationRef, lastSecondaryFetchAtRef, podsRef, setState],
+  )
+
+  // An ask that lands while a read is in flight is not dropped: a change frame heard then may
+  // postdate what that read saw, and with the watches live no timer would read it later.
+  return useCallback(
+    async (refreshOptions?: KubernetesRefreshOptions) => {
+      if (busyGenerationRef.current === generationRef.current) {
+        queuedRef.current = mergeRefreshOptions(queuedRef.current, refreshOptions)
+        return
+      }
+      await read(refreshOptions)
+      while (queuedRef.current && busyGenerationRef.current !== generationRef.current) {
+        const next = queuedRef.current
+        queuedRef.current = null
+        await read(next)
+      }
+    },
+    [busyGenerationRef, generationRef, read],
   )
 }

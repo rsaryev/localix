@@ -30,6 +30,7 @@ import type { RunToolset } from './tools'
 import type { ResolvedTurn } from './turn'
 import { approvedPlanForRun, planModeForRun } from '../../plan-view'
 import { installedAgentsPrompt } from '../../../../external-agents/installed'
+import { agentTypesSection } from '../plugin-subagent'
 
 export type RunPrompt = Awaited<ReturnType<typeof buildRunPrompt>>
 
@@ -46,7 +47,7 @@ export async function buildRunPrompt(
   // The descendant snapshot was read earlier in the run; read siblings now so a chat
   // started during preflight can still appear on this turn. Never delay the run on failure.
   const otherChats = await env.repo.listRunningChatWorkspaces(userId).catch(() => [])
-  const { systemPrompt, runtimeSections: baseSections } = await buildRunSystemPrompt({
+  const built = await buildRunSystemPrompt({
     userId,
     session,
     speakerAgentId,
@@ -77,11 +78,24 @@ export async function buildRunPrompt(
     ),
     now: deps.now,
     historyMessages,
-    agentDirectory: toolset.agentDirectory,
+    // Claude Code mods' `agent.offer`: an agent a mod keeps out is not listed.
+    agentDirectory:
+      toolset.agentDirectory && (await inputs.mods.offerAgents(toolset.agentDirectory)),
     approvedPlan: await approvedPlanForRun(deps.plans, userId, session),
     // The mode the run was admitted under — the same record its rules were rewritten from.
     planMode: planModeForRun(session, inputs.defaultCwd),
+    defaultOutputStyle: turn.globalAgentSettings?.outputStyle,
   })
+  const baseSections = built.runtimeSections
+  // Claude Code mods' `prompt.section`, `attribution.text` and `prompt.compose`, kept per
+  // conversation until a mod invalidates them, so the cached prefix stays byte-stable.
+  const systemPrompt =
+    (await inputs.mods.composePrompt({
+      sections: built.sections,
+      model: turn.model.rawModelId,
+      tools: toolset.tools,
+      outputStyle: built.outputStyle,
+    })) ?? built.systemPrompt
   const triggerContext = buildTurnTriggerContext(params.scope, session, historyMessages)
   const installedAgents = (await deps.externalAgents?.installed().catch(() => [])) ?? []
   const externalAgentsText = installedAgentsPrompt(installedAgents)
@@ -92,6 +106,21 @@ export async function buildRunPrompt(
       text: externalAgentsText,
     })
   }
+  // Claude Code's subagent types: the enabled plugins' agents `delegate` runs a task as, past the
+  // mods' `agent.offer`.
+  const agentTypes = toolset.tools.some((tool) => tool.name === TOOL.delegate)
+    ? agentTypesSection(
+        await inputs.mods.offerAgents(
+          inputs.loadedPlugins.agents.map((agent) => ({
+            ...agent,
+            agentId: agent.fullName,
+            name: agent.fullName,
+            source: 'plugin' as const,
+          })),
+        ),
+      )
+    : null
+  if (agentTypes) baseSections.push({ key: 'agent-types', scope: 'state', text: agentTypes })
   const otherSessions = otherWorkspaceSessionsSection(
     session,
     inputs.defaultCwd,

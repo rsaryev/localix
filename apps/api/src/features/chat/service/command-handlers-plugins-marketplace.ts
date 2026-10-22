@@ -3,7 +3,7 @@ import type { MessageMutationResponse } from '../contracts'
 import type { CommandHandlerContext, DirectReply } from './command-handlers'
 
 /**
- * The `/plugin marketplace …` registry sub-commands (list, add, remove), split out of
+ * The `/plugin marketplace …` registry sub-commands (list, add, update, remove), split out of
  * the `/plugin` dispatcher.
  *
  * They are the one branch with a sub-action of their own — a second verb, its own
@@ -26,7 +26,9 @@ export async function handleMarketplaceSubcommand(
   if (action === 'add') {
     const source = tokens.slice(3).join(' ').trim()
     if (!source) {
-      return directReply('Usage: `/plugin marketplace add <owner/repo | git-url | /absolute/path>`')
+      return directReply(
+        'Usage: `/plugin marketplace add <owner/repo[#ref] | git-url | https://…/marketplace.json | ./path>`',
+      )
     }
     try {
       const { name, count } = await pluginService.addMarketplace(userId, { source })
@@ -38,12 +40,30 @@ export async function handleMarketplaceSubcommand(
     }
   }
 
+  if (action === 'update') {
+    const name = tokens.slice(3).join(' ').trim()
+    if (!name) return directReply('Usage: `/plugin marketplace update <name>`')
+    try {
+      const res = await pluginService.updateMarketplace(userId, { name })
+      const lines = [`Updated marketplace \`${res.name}\` (${res.count} plugins).`]
+      if (res.updated.length)
+        lines.push(`Updated plugins: ${res.updated.map((p) => `\`${p}\``).join(', ')}.`)
+      if (res.warnings.length) lines.push(`Not updated: ${res.warnings.join('; ')}`)
+      return directReply(lines.join(' '))
+    } catch (err) {
+      return directReply(`Marketplace update failed: ${errorMessage(err)}`)
+    }
+  }
+
   if (action === 'remove') {
     const name = tokens.slice(3).join(' ').trim()
     if (!name) return directReply('Usage: `/plugin marketplace remove <name>`')
     try {
-      await pluginService.removeMarketplace(userId, { name })
-      return directReply(`Removed marketplace \`${name}\`.`)
+      const { uninstalled } = await pluginService.removeMarketplace(userId, { name })
+      const also = uninstalled.length
+        ? ` and uninstalled its plugins: ${uninstalled.map((p) => `\`${p}\``).join(', ')}`
+        : ''
+      return directReply(`Removed marketplace \`${name}\`${also}.`)
     } catch (err) {
       return directReply(`Marketplace remove failed: ${errorMessage(err)}`)
     }
@@ -53,11 +73,27 @@ export async function handleMarketplaceSubcommand(
   // silent fall-through the top-level dispatcher no longer allows.
   if (action !== 'list') {
     return directReply(
-      `Unknown marketplace action \`${action}\`. Use \`list\`, \`add <source>\`, or \`remove <name>\`.`,
+      `Unknown marketplace action \`${action}\`. Use \`list [<name>]\`, \`add <source>\`, \`update <name>\`, or \`remove <name>\`.`,
     )
   }
 
   const markets = await pluginService.listMarketplaces(userId)
+  // `list <name>` shows one marketplace's plugins (Claude Code's Discover tab, as text).
+  const only = tokens[3]?.trim()
+  if (only) {
+    const market = markets.find((m) => m.name === only)
+    if (!market) return directReply(`Unknown marketplace \`${only}\`.`)
+    if (market.unsupported) return directReply(`\`${only}\` cannot be read: ${market.unsupported}`)
+    return directReply(
+      [
+        `**${market.name}** — install with \`/plugin install <name>@${market.name}\`:`,
+        '',
+        ...market.plugins.map(
+          (p) => `- \`${p.name}\`${p.description ? ` — ${p.description}` : ''}`,
+        ),
+      ].join('\n'),
+    )
+  }
   return directReply(
     [
       '**Marketplaces** — install from one with `/plugin install <name>@<marketplace>`:',
@@ -67,7 +103,7 @@ export async function handleMarketplaceSubcommand(
           `- \`${m.name}\`${m.builtin ? ' _(built-in)_' : ''} — ${m.unsupported ? `unsupported: ${m.unsupported}` : `${m.count} plugins`}`,
       ),
       '',
-      'Add one: `/plugin marketplace add <owner/repo>`.',
+      'Add one: `/plugin marketplace add <owner/repo>`; see its plugins: `/plugin marketplace list <name>`.',
     ].join('\n'),
   )
 }

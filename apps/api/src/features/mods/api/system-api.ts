@@ -1,3 +1,5 @@
+import { childEnv } from '../../../lib/login-shell-env'
+
 /**
  * `$.http`, `$.process`, `$.env` and `$.clock`, with Claude Code's limits: a fetch takes 30 s,
  * 5 redirects and 4 MiB each way; a process runs 30 s by default and 10 min at most, with no
@@ -76,7 +78,8 @@ export function createSystemApi(input: { cwd: () => string; fetcher?: typeof fet
         if (!Array.isArray(argv) || argv.length === 0) throw new Error('run takes an argv list')
         const proc = Bun.spawn([...argv], {
           cwd: init.cwd ?? input.cwd(),
-          env: { ...process.env, ...env, ...init.env },
+          env: childEnv({ ...env, ...init.env }) as Record<string, string | undefined>,
+          windowsHide: true,
           stdin: init.stdin === undefined ? 'ignore' : new Blob([init.stdin]),
           stdout: 'pipe',
           stderr: 'pipe',

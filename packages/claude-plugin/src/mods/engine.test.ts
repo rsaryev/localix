@@ -200,4 +200,119 @@ describe('mods API calls are events', () => {
     await engine.dispatch('session.start', {}, () => ({}), { plugins: new Set(['reader']) })
     expect(reads).toEqual(['"content of notes.md"', '{"deny":"secrets stay put"}'])
   })
+
+  test('a call reaches only the hooks of the mods running where its mod runs', async () => {
+    const engine = createModsEngine({
+      peersOf: (mod) => new Set(mod.endsWith('@a') ? ['guard@a', 'reader@a'] : [mod]),
+    })
+    const api = { fs: { read: () => 'content' } }
+    const guard = (on: Parameters<Parameters<typeof engine.load>[1]>[0]) =>
+      void on('fs.read', () => ({ deny: 'guarded' }))
+    await engine.load('guard@a', guard, {}, api)
+    await engine.load('reader@a', () => {}, {}, api)
+    await engine.load('reader@b', () => {}, {}, api)
+    const read = (mod: string) =>
+      (engine.apiOf(mod) as unknown as { fs: { read: () => Promise<unknown> } }).fs.read()
+    expect(await read('reader@a')).toEqual({ deny: 'guarded' })
+    expect(await read('reader@b')).toBe('content')
+  })
+
+  test('calls answer with a promise, as Claude Code’s do, except the synchronous ui calls', async () => {
+    const engine = createModsEngine()
+    const api = {
+      command: { register: () => undefined },
+      fs: {
+        read: () => {
+          throw new Error('no such file')
+        },
+      },
+      ui: { toast: () => 'shown' },
+    }
+    await engine.load('m', () => {}, {}, api)
+    const $ = engine.apiOf('m') as unknown as {
+      command: { register: () => Promise<unknown> }
+      fs: { read: () => Promise<unknown> }
+      ui: { toast: () => unknown }
+    }
+    // A mod chains `.catch` on a registration, which a bare `undefined` would crash.
+    expect($.command.register()).toBeInstanceOf(Promise)
+    await expect($.fs.read()).rejects.toThrow('no such file')
+    expect($.ui.toast()).toBe('shown')
+  })
+
+  test('engine.create adds a noun every mod’s $ has; its calls are events; a rival is refused', async () => {
+    const engine = createModsEngine({ pluginOf: (mod) => mod.split('~')[0]! })
+    await engine.load(
+      'voice~a',
+      (on) => {
+        on('engine.create', async ($, e, next) => {
+          const beneath = (await next(e)) as Record<string, unknown>
+          return { ...beneath, voice: { say: (input: { text: string }) => `said ${input.text}` } }
+        })
+      },
+      {},
+      { fs: { read: () => 'x' } },
+    )
+    await engine.load('caller', () => {}, {}, {})
+    const $ = engine.apiOf('caller') as unknown as {
+      voice: { say: (input: { text: string }) => Promise<string> }
+    }
+    expect(await $.voice.say({ text: 'hi' })).toBe('said hi')
+
+    // Another project's load of the same plugin adds it again; another plugin may not.
+    await engine.load(
+      'voice~b',
+      (on) =>
+        void on('engine.create', async ($, e, next) => {
+          const beneath = (await next(e)) as Record<string, unknown>
+          return { ...beneath, voice: { say: () => 'b' } }
+        }),
+      {},
+      {},
+    )
+    await expect(
+      engine.load(
+        'rival',
+        (on) =>
+          void on('engine.create', async ($, e, next) => {
+            const beneath = (await next(e)) as Record<string, unknown>
+            return { ...beneath, voice: { say: () => 'rival' } }
+          }),
+        {},
+        {},
+      ),
+    ).rejects.toThrow("voice is voice's noun already")
+    expect(engine.plugins()).not.toContain('rival')
+
+    engine.unload('voice~a')
+    engine.unload('voice~b')
+    expect((engine.apiOf('caller') as Record<string, unknown>).voice).toBeUndefined()
+  })
+
+  test('next.to past the user tier skips the other mods and reaches the host', async () => {
+    const engine = createModsEngine()
+    const seen: string[] = []
+    await engine.load(
+      'policy',
+      (on) => void on('prompt.section', ($, e, next) => next.to(e, 'append')),
+      {},
+      {},
+    )
+    await engine.load(
+      'later',
+      (on) =>
+        void on('prompt.section', ($, e, next) => {
+          seen.push('later')
+          return next(e)
+        }),
+      {},
+      {},
+    )
+    expect(
+      await engine.dispatch('prompt.section', { id: 'intro' }, () => ({ text: 'core' })),
+    ).toEqual({
+      text: 'core',
+    })
+    expect(seen).toEqual([])
+  })
 })

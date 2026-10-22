@@ -48,7 +48,7 @@ function pluginRecord(over: {
 }
 
 function contributions(plugins: PluginRecord[]): PluginContributions {
-  return { plugins, views: [], commands: [] }
+  return { plugins, views: [], commands: [], themes: [] }
 }
 
 function makePorts(over: Partial<CapabilitySnapshotPorts> = {}): CapabilitySnapshotPorts {

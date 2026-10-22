@@ -82,6 +82,11 @@ const agentSettingsShape = {
    */
   toolBudgetWarn: z.number().int().positive().optional(),
   /**
+   * The output style every chat runs in unless it picks its own (`/output-style`), as Claude Code's
+   * `outputStyle` setting: a style's exact, case-sensitive name. Absent or unmatched → Default.
+   */
+  outputStyle: z.string().trim().min(1).max(200).optional(),
+  /**
    * Canonical per-workload route. Availability, exact provider/model assignment,
    * and reasoning live together; switching a workload off preserves the rest of
    * its record. Missing assignment fields mean the catalog fallback.

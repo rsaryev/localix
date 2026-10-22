@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { INERT_CC_HOOKS } from '../../../cc-hooks'
 import type { AgentTool } from '@localixai/agent/agents'
 import { z } from 'zod'
 
@@ -7,10 +8,13 @@ import {
   extractCallFacts,
   type PermissionRule,
 } from '../../../agent-core/permission-engine'
-import { buildRunPermissionGate, skillPermissionRules } from './permission-gate-build'
+import {
+  buildRunPermissionGate,
+  PERMISSION_RETRY_NOTE,
+  skillPermissionRules,
+} from './permission-gate-build'
 import type { SessionRecord } from '../../repository'
 import type { RunEnv } from './types'
-import type { CcHooksRuntime } from '../../../cc-hooks'
 import { createWriteTool } from '../../../agent-core/tools/file/write'
 
 const tool = { name: 'bash', effect: 'external' as const }
@@ -31,7 +35,7 @@ function unattendedGate(
     session,
     agentId: 'agent',
     env: {} as RunEnv,
-    ccHooks: {} as CcHooksRuntime,
+    ccHooks: INERT_CC_HOOKS,
     userId: 'user',
     hitlTargetSessionId: null,
     assistantMessageId: 'message',
@@ -178,5 +182,44 @@ describe('skill preapprovals', () => {
         grants,
       ).action,
     ).toBe('deny')
+  })
+})
+
+describe('PermissionDenied on the assembled gate', () => {
+  test('a refusal nobody was asked about tells the model it may retry when a hook says so', async () => {
+    const asked: unknown[][] = []
+    const gate = buildRunPermissionGate({
+      tools: [],
+      session: {
+        id: 'job',
+        sessionKind: 'job',
+        parentSessionId: null,
+        provenance: { kind: 'unknown-origin' },
+      } as SessionRecord,
+      agentId: 'agent',
+      env: {} as RunEnv,
+      ccHooks: {
+        ...INERT_CC_HOOKS,
+        active: true,
+        hasHooks: (event) => event === 'PermissionDenied',
+        runPermissionDenied: async (...args) => {
+          asked.push(args)
+          return { retry: true }
+        },
+      },
+      userId: 'user',
+      hitlTargetSessionId: null,
+      assistantMessageId: 'message',
+      abortSignal: new AbortController().signal,
+      pluginHooksForRun: [],
+      hookRunOptions: { sessionId: 'job', logger: { warn: () => {} } },
+      extraAllowedTools: undefined,
+      permissionRules: [{ permission: '*', pattern: '*', action: 'ask' }],
+      mayConfirm: false,
+      defaultCwd: root,
+    })
+    const verdict = await gate({ toolCallId: 'c1', toolName: 'bash', input: { command: 'ls' } })
+    expect(verdict?.blockedMessage).toContain(PERMISSION_RETRY_NOTE)
+    expect(asked[0]?.slice(0, 3)).toEqual(['bash', { command: 'ls' }, 'c1'])
   })
 })

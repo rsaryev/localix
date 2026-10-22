@@ -5,7 +5,8 @@ import { IslandSection } from './IslandSection'
 import { TypographySection } from './typography/TypographySection'
 import { Input } from '@localixai/kit/input'
 import { getSpendThreshold, setSpendThreshold } from '@/shared/lib/spendAlert'
-import { useTheme, type ThemeMode } from '@/shared/theme/useTheme'
+import { ThemeField } from './ThemeField'
+import { OutputStyleField } from './OutputStyleField'
 import {
   DEFAULT_WINDOW_TRANSPARENCY,
   WINDOW_TRANSPARENCY_LABELS,
@@ -102,29 +103,6 @@ function SpendAlertField() {
   )
 }
 
-function ThemeField() {
-  const { themeMode, setThemeMode } = useTheme()
-  return (
-    <SettingsControlRow
-      title="Theme"
-      description="Appearance on this device. System follows your operating system."
-    >
-      <Select
-        aria-label="Theme"
-        size="xl"
-        className="w-full @xl:w-44"
-        value={themeMode}
-        onValueChange={(value) => setThemeMode(value as ThemeMode)}
-        options={[
-          { value: 'system', label: 'System' },
-          { value: 'light', label: 'Light' },
-          { value: 'dark', label: 'Dark' },
-        ]}
-      />
-    </SettingsControlRow>
-  )
-}
-
 function TransparencyField() {
   const level = useWindowTransparency()
   return (
@@ -165,6 +143,8 @@ export function PreferencesSettings() {
           }
         />
       </SettingsSection>
+
+      <OutputStyleField />
 
       <RailRecentsField />
 

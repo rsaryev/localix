@@ -1,5 +1,5 @@
-import type { AgentRuntimeStatus } from '../../../db/types'
-import type { DelegationPriority } from '../delegation-lanes'
+import type { AgentRuntimeStatus, ReasoningEffort } from '../../../db/types'
+import type { DelegationPriority, LaneSpec } from '../delegation-lanes'
 import type { DelegationPosition } from '../delegation-hierarchy'
 
 export type ChildRuntimeStatus = AgentRuntimeStatus
@@ -59,9 +59,19 @@ export interface TaskDelegationOptions {
         priority: DelegationPriority
         depth: number
         chain: string[]
+        /** Where the child works instead of the chat's folder: a workflow agent's worktree. */
+        workingDir?: string
+        /** A WorktreeCreate hook made that worktree, wherever it put it. */
+        worktreeByHook?: true
+        /** The plugin subagent type the child runs as (`<plugin>:<name>`). */
+        pluginAgent?: string
       }
       projectId?: string
       pinnedSkills?: string[]
+      /** A route of its own (a workflow `agent()`'s `model` and `effort`); else the parent's. */
+      providerConnectionId?: string | null
+      modelId?: string
+      reasoningEffort?: ReasoningEffort
     },
   ) => Promise<{ id: string; taskName?: string | null }>
   startSubagentTask: (
@@ -73,6 +83,8 @@ export interface TaskDelegationOptions {
       agentType: string
       label: string
       priority: DelegationPriority
+      /** The pool the child runs in, when not the parent's own (a workflow run's). */
+      lane?: LaneSpec
     },
   ) => Promise<EarlyDelegationOutcome | QueuedDelegation | undefined>
   onSubagentStart?: (agentType: string, agentId: string) => void

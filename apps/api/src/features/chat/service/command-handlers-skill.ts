@@ -1,6 +1,7 @@
 import { sessionRoute } from '../../../contracts/session-route'
 import { dirname } from 'node:path'
 import { recordSkillUse } from '../../agent-core/skill-usage-recorder'
+import { announceSkillInvoked } from '../../agent-core/skill-invocations'
 import { parseSkillCommand, applySkillArguments } from './slash-commands'
 import { commandTarget } from './command-participant'
 import { expandSkillContent } from './skill-commands'
@@ -8,6 +9,7 @@ import { expandFileReferences } from './file-references'
 import { toolOverrideOptions } from './tool-override-options'
 import type { SessionRecord } from '../repository'
 import type { MessageMutationResponse } from '../contracts'
+import { skillPrompt } from '../../mods/conversation-events'
 import type { CommandHandlerContext } from './command-handlers-context'
 import { errorMessage } from '../../../lib/errors'
 import { filterDisabledSkills } from '../../agent-core/skill-overrides'
@@ -106,19 +108,32 @@ export async function handleSkillCommand(
           [workingDir, ...(skill.path ? [dirname(skill.path)] : [])],
         )
       : rawSkillContent
-  const instruction = applySkillArguments(expandedContent, skillCmd.arg, {
+  const expanded = applySkillArguments(expandedContent, skillCmd.arg, {
     argumentNames: skill.argumentNames,
     skillDir: skill.path ? dirname(skill.path) : undefined,
     sessionId,
     effort: (speaker ?? sessionRoute(session)).reasoningEffort ?? 'low',
     projectDir: workingDir,
   })
+  // Claude Code mods' `skill.prompt`: the text the model reads for the skill.
+  const instruction = await skillPrompt(
+    ctx.deps?.mods,
+    { userId, sessionId, cwd: workingDir },
+    skill.name,
+    expanded,
+  )
   // Curator usage telemetry — a slash-command invocation counts as a use.
   recordSkillUse(
     skill.name,
     skill.scope,
     skill.scope === 'project' ? (session.projectId ?? '') : '',
   )
+  // A plugin monitor waiting for this skill starts now (`on-skill-invoke:<skill>`).
+  announceSkillInvoked({
+    userId,
+    sessionId: session.rootSessionId ?? sessionId,
+    skillName: skill.name,
+  })
 
   // CC `context: fork` — run the skill in a child session, as the invoking agent itself.
   if (skill.contextFork && spawnForkSkill) {

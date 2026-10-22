@@ -8,6 +8,7 @@ import { mergeLogSnapshots } from '../../../ui/model/logStream'
 import { appendStatSample, statSampleOf, type StatSample } from './statsHistory'
 import { containerPollNeeded, sameContainer, type DockerContainerPanel } from './containerPanel'
 import { createEventRefreshBatcher, useDockerEvents } from './dockerEventsClient'
+import { useLogFollow } from '../../../ui/model/logFollowFeed'
 
 type LogResult =
   | { status: 'ok'; lines: string }
@@ -198,6 +199,16 @@ export function useDockerContainerData({
     resync: () => eventsBatcher.push('read'),
   })
 
+  // A running container's live log view follows the log: new lines are read when they arrive.
+  const following =
+    active &&
+    panel === 'logs' &&
+    logsLive &&
+    (container?.state === 'running' || container?.state === 'restarting')
+  const logsFollowed = useLogFollow(following ? { provider: 'docker', containerId } : null, () =>
+    eventsBatcher.push('read'),
+  )
+
   useVisiblePolling({
     enabled:
       active &&
@@ -206,6 +217,7 @@ export function useDockerContainerData({
         panel,
         logsLive,
         state: container?.state ?? null,
+        logsFollowed,
       }),
     intervalMs: 3000,
     onTick: () => refresh(panel, panel === 'logs' && logsLive),

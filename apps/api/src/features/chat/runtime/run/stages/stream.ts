@@ -18,6 +18,7 @@ import { createItemAccumulator } from '../../items'
 import { withMidRunReminders } from '../../mid-run-reminders'
 import { consoleWarnLogger } from '../../plugin-hook-logger'
 import { createRunAsyncRegistry, describeToolActions } from '../async-registry'
+import { ccAfterToolBatch } from '../cc-tool-batch'
 import { handleAgentEvent, type TurnEventContext } from '../event-handlers'
 import { persistNow } from '../event-handlers-flush'
 import { buildRuntimeToolContext } from '../runtime-execution'
@@ -160,8 +161,19 @@ export async function streamRun(
       () => env.drainMidRunReminders({ sessionId: session.id, agentId: speakerAgentId }),
     ),
     takeSteering,
+    // CC PostToolBatch: context before the next request, or the run ends here.
+    afterToolBatch: ccAfterToolBatch(inputs.ccHooks, (reason) =>
+      deps.streamRegistry.publish(userId, session.id, {
+        type: 'hook.notice',
+        sessionId: session.id,
+        message: reason,
+        hookEvent: 'PostToolBatch',
+      }),
+    ),
     ...deferral,
     toolExecutionContext,
+    // Claude Code mods' `turn.step` around each model request of the turn.
+    modelStep: inputs.mods.modelStep(intake.turnFrame.activeInvocationId ?? assistantMessageId),
   })
 
   // Presentation is indexed from the FULL dispatch registry: indexing only the initially

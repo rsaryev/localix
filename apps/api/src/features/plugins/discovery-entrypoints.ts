@@ -9,11 +9,12 @@ import {
   componentSources,
   DEFAULT_LOCATIONS,
   type ClaudePluginManifest,
-  type MergedSource,
 } from '@localixai/claude-plugin'
 import { parseMonitors, type PluginMonitor } from './contracts-monitors'
 import { toAbsList } from './discovery-paths'
+import { findHookModule, mergedConfigs, readJson, readMcpJson } from './discovery-entrypoint-files'
 import { collectMarkdownFiles, type CollectedMarkdownFile } from './discovery-cc-files'
+import { resolveCcComponents, type PluginCcComponents } from './discovery-cc-components'
 
 /**
  * Manifest → absolute artifact paths. Given a plugin directory and its parsed
@@ -40,6 +41,11 @@ export interface ResolvedEntrypoints {
    */
   hookConfigs: unknown[]
   /**
+   * The hooks module (Claude Code `modules` in a hooks file), absolute and inside the plugin: the
+   * plugin is a mod. At most one, as Claude Code allows; the mods host loads it.
+   */
+  hookModule?: string
+  /**
    * Claude Code LSP server configs — raw parsed map from the manifest `lspServers`
    * field (string path / array of paths / inline object) or the default `.lsp.json`.
    * Merged, keyed by server id; parsed into runtime servers by the loader/LSP feature.
@@ -51,6 +57,8 @@ export interface ResolvedEntrypoints {
    * `monitors/monitors.json`. Spawned (enabled plugins only) by the monitor host.
    */
   monitors: PluginMonitor[]
+  /** Output styles, themes, workflows and default settings (`discovery-cc-components.ts`). */
+  components?: PluginCcComponents
   /**
    * Fields where CC REPLACE semantics actually hid an existing default dir: set for a
    * CC-origin plugin whose manifest lists `commands`/`agents` paths while the default
@@ -66,53 +74,6 @@ export interface PluginArtifactDiagnostic {
   kind: 'command' | 'agent' | 'entrypoint'
   path: string
   message: string
-}
-
-/** Read + JSON-parse a file, returning `undefined` on any read/parse error (contributes nothing). */
-async function readJson(file: string): Promise<unknown> {
-  try {
-    return JSON.parse(await fs.readFile(file, 'utf8')) as unknown
-  } catch {
-    return undefined
-  }
-}
-
-/** Read an `.mcp.json`-style file: accepts `{ mcpServers: {…} }` or a bare `{ name: {…} }`. */
-async function readMcpJson(file: string): Promise<Record<string, Record<string, unknown>>> {
-  try {
-    const raw = await fs.readFile(file, 'utf8')
-    const parsed = JSON.parse(raw) as Record<string, unknown>
-    const servers = (parsed.mcpServers ?? parsed) as Record<string, unknown>
-    const out: Record<string, Record<string, unknown>> = {}
-    for (const [k, v] of Object.entries(servers)) {
-      if (v && typeof v === 'object') out[k] = v as Record<string, unknown>
-    }
-    return out
-  } catch {
-    return {}
-  }
-}
-
-/**
- * A merged component's configs in Claude Code's order: the default file when it exists, then
- * each listed file (read with `read`) and inline map as the manifest lists them.
- */
-async function mergedConfigs<T>(
-  dir: string,
-  defaultFile: string,
-  source: MergedSource,
-  read: (file: string) => Promise<T | undefined>,
-): Promise<Array<T | Record<string, unknown>>> {
-  const fallback = join(dir, defaultFile)
-  const files = toAbsList(dir, source.files).filter((file) => file !== fallback)
-  const [first, ...listed] = await Promise.all([
-    pathExists(fallback).then((exists) => (exists ? read(fallback) : undefined)),
-    ...files.map(read),
-  ])
-  return [
-    ...[first, ...listed].filter((config): config is Awaited<T> => config !== undefined),
-    ...source.inline,
-  ]
 }
 
 /**
@@ -236,6 +197,7 @@ export async function resolveEntrypoints(
   // CC: `hooks/hooks.json` loads first, then each listed hooks file or inline event map; all of
   // them run. Loaded (with substitution) only for ENABLED plugins by the loader.
   const hookConfigs = await mergedConfigs(dir, DEFAULT_LOCATIONS.hooks, sources.hooks, readJson)
+  const hookModule = await findHookModule(dir, sources.hooks.files)
 
   // ---- Claude Code LSP servers ---------------------------------------------
   // CC: `.lsp.json` loads first, then each listed file or inline map; merged, keyed by server
@@ -274,6 +236,8 @@ export async function resolveEntrypoints(
     }
   }
 
+  const components = await resolveCcComponents(dir, manifest)
+
   return {
     toolEntries,
     skillDirs,
@@ -281,8 +245,10 @@ export async function resolveEntrypoints(
     commandFiles,
     agentFiles,
     hookConfigs,
+    ...(hookModule ? { hookModule } : {}),
     lspServers,
     monitors,
+    components,
     diagnostics,
     ...(ccReplacedDefaults.length > 0 ? { ccReplacedDefaults } : {}),
   }

@@ -154,12 +154,20 @@ export interface BuildAgentSystemPromptParams {
   approvedPlan?: ApprovedPlanPrompt
   /** Set when the run was admitted in plan mode — `# Plan mode`, cached prefix; names the draft. */
   planMode?: { draftPath?: string }
+  /**
+   * The conversation's output style (Claude Code's `/output-style`): instructions for the role,
+   * tone and format of every reply — `# Output style`, cached prefix. Without
+   * `keepCodingInstructions` the software-engineering lines of `# Execution discipline` drop out.
+   */
+  outputStyle?: { name: string; prompt: string; keepCodingInstructions: boolean }
 }
 
 /** Structurally separated cache tiers produced by the system-prompt assembler. */
 export interface BuiltAgentSystemPromptParts {
   /** Session-invariant prefix suitable for provider prefix caching. */
   stablePrompt: string
+  /** The prefix's sections by catalog id, in order: `stablePrompt` is their texts joined. */
+  stableSections: { id: string; text: string }[]
   /** Volatile runtime sections, carried inside the conversation as the turn's context. */
   runtimeSections: RuntimeSection[]
 }

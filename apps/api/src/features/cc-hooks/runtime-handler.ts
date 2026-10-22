@@ -11,6 +11,18 @@ type HandlerRunnerOptions = Pick<
   'projectDir' | 'logger' | 'evaluatePromptHook' | 'runAgentHook' | 'callMcpTool' | 'emitNotice'
 > & { signalFor: (event: CcHookEvent) => AbortSignal | undefined }
 
+/** Added events whose `systemMessage` CC discards; the earlier events keep today's notices. */
+const DISCARDS_SYSTEM_MESSAGE: ReadonlySet<CcHookEvent> = new Set([
+  'InstructionsLoaded',
+  'ConfigChange',
+  'PostCompact',
+  'StopFailure',
+  'Elicitation',
+  'ElicitationResult',
+  'MessageDisplay',
+  'WorktreeCreate',
+])
+
 /** Bound handler capabilities and notice state for one runtime. */
 export function createHookHandlerRunner(options: HandlerRunnerOptions) {
   const {
@@ -48,12 +60,14 @@ export function createHookHandlerRunner(options: HandlerRunnerOptions) {
     })
     if (result.kind !== 'completed') {
       logger.warn(`[cc-hooks] ${event} ${h.kind ?? 'command'} handler ${result.kind} — ignored`)
-      return {}
+      return result.kind === 'aborted'
+        ? {}
+        : { failed: result.kind === 'timeout' ? 'timeout' : 'error' }
     }
     const outcome = result.value
     // Surface a non-blocking `systemMessage` warning (CC: shown to the user in the
     // transcript). Fires for EVERY event, deduping identical consecutive messages.
-    const notice = outcome.systemMessage?.trim()
+    const notice = DISCARDS_SYSTEM_MESSAGE.has(event) ? undefined : outcome.systemMessage?.trim()
     if (emitNotice && notice && notice !== lastNotice) {
       lastNotice = notice
       try {

@@ -107,6 +107,15 @@
   --status-warning: oklch(0.8 0.14 80);
   --status-info: oklch(0.7 0.15 250);
 
+  /* Diff rows: the wash behind an added or removed line and the mark on the words that changed in
+     it. Tokens, not per-file alphas of the status colors, so a theme (a Claude Code plugin's
+     `diffAdded`, …) can repaint a diff without recoloring every success and error text. The light
+     sheet retunes the strength. */
+  --diff-added: color-mix(in oklab, var(--status-success) 10%, transparent);
+  --diff-removed: color-mix(in oklab, var(--status-error) 10%, transparent);
+  --diff-added-word: color-mix(in oklab, var(--status-success) 25%, transparent);
+  --diff-removed-word: color-mix(in oklab, var(--status-error) 25%, transparent);
+
   /* Connection color tags — a small curated palette for the database workbench so
      several databases are told apart at a glance (a prod-safety cue). Tuned to read
      on the dark shell; the light theme re-tunes below. Metadata only — never a fill. */
@@ -165,6 +174,11 @@
   --surface-sunken: oklch(0.105 0 0);
   --surface-hover: oklch(0.185 0 0);
   --surface-active: oklch(0.21 0 0);
+  /* The person's own message bubble, and text selected with the mouse. Named roles over shared
+     tokens so a theme can recolor them alone; both themes and the window material retune the
+     tokens they point at. */
+  --user-message: var(--surface-active);
+  --selection: color-mix(in srgb, var(--foreground) 24%, transparent);
   /* The resting fill of anything you TYPE INTO — Input, Textarea, InputGroup, SearchInput, the
      select trigger, a checkbox. A token rather than a per-file alpha because it was written as
      `bg-foreground/[0.04]` in thirteen places, and 4% of the ink over a dense strip is under two

@@ -42,7 +42,7 @@
      foreground-tinted highlight that reads on both dark and light, keeping the
      app's monochrome identity. Text color is left untouched for legibility. */
   ::selection {
-    background: color-mix(in srgb, var(--foreground) 24%, transparent);
+    background: var(--selection);
   }
 
   /* Browser/WebView autofill paints a stock pale-yellow fill with black text —

@@ -11,8 +11,9 @@
  * It contributes NO agent tool. `docker_inspect` wrapped read verbs of a CLI the agent
  * already runs through `bash`, and paid ~220 tokens of schema on every request to do it.
  *
- * The one long-lived child is the `docker events` stream (`events-stream.ts`), contributed as a
- * `k`-tagged WS-frame stream and spawned only while a surface follows it; `onShutdown` stops it.
+ * The long-lived children are the `docker events` stream (`events-stream.ts`), contributed as a
+ * `k`-tagged WS-frame stream, and one `docker logs --follow` per container tab showing live logs
+ * (`logs-follow.ts`, tag `l`); each runs only while a surface follows it and `onShutdown` stops them.
  */
 import { createDockerService } from './service'
 import { createDockerRoutes } from './routes'
@@ -26,6 +27,7 @@ import {
   DOCKER_EVENTS_SUBSCRIBE,
   DOCKER_EVENTS_UNSUBSCRIBE,
 } from './events-contract'
+import { createDockerLogsHub, createDockerLogsWsFrame } from './logs-follow'
 import type { PluginRegistration, WsFrameContribution } from '@localixai/plugin-sdk/backend'
 
 /** The daemon's events are host-wide and carry no user data, so every socket shares one key. */
@@ -45,6 +47,7 @@ export function createDockerEventsWsFrame(hub: DockerEventsHub): WsFrameContribu
 export async function register(): Promise<PluginRegistration> {
   const service = createDockerService({ backend: createLazyDockerBackend() })
   const events = createDockerEventsHub()
+  const logs = createDockerLogsHub()
 
   return {
     backend: [
@@ -65,8 +68,11 @@ export async function register(): Promise<PluginRegistration> {
               .listImages()
               .then((is) => is.map((i) => ({ id: i.id, repository: i.repository, tag: i.tag }))),
         }),
-        wsFrames: [createDockerEventsWsFrame(events)],
-        onShutdown: () => events.stopAll(),
+        wsFrames: [createDockerEventsWsFrame(events), createDockerLogsWsFrame(logs)],
+        onShutdown: () => {
+          events.stopAll()
+          logs.stopAll()
+        },
       },
     ],
     tools: [],

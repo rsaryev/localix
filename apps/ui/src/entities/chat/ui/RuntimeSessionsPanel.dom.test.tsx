@@ -2,13 +2,23 @@ import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import type { UiSession } from '@/shared/api/contracts'
 import { useChatStore } from '@/entities/chat/model/store'
+import { backendClient } from '@/shared/api/client'
 
 let teardown: () => Promise<void>
+const originalRows = backendClient.getSubagentRows
 beforeAll(() => {
+  // No plugin status line here: the panel reads the rows once and draws its own.
+  backendClient.getSubagentRows = (async () => ({
+    active: false,
+    rows: [],
+  })) as typeof backendClient.getSubagentRows
   teardown = registerDom()
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 })
-afterAll(() => teardown())
+afterAll(() => {
+  backendClient.getSubagentRows = originalRows
+  return teardown()
+})
 
 describe('RuntimeSessionsPanel lifecycle rows', () => {
   test('folds a branch independently and keeps completed names and status dots readable', async () => {

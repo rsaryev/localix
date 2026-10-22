@@ -1,128 +1,288 @@
 import { join } from 'node:path'
 import {
   createModsEngine,
+  type HookOrigin,
   type ModsEngineOptions,
   type RegisterFunction,
 } from '@localixai/claude-plugin/mods'
+import { createAnswerCache } from './answer-cache'
 import { buildModApi } from './api/build-api'
+import { bundleClientModules, type ClientBundle } from './client-modules'
+import type { RunSurface } from './api/run-api'
+import { commandAnswer, commandRunEvent, type CommandInput } from './command-run'
+import { createModComposer } from './composer'
+import { createModConversations } from './conversations'
+import { createEventCalls } from './event-calls'
 import { inScene, type ModScene, type ModSource, type ModsPorts } from './contracts'
-import { buildHooksModule } from './module-build'
+import { instanceIdOf, pluginOfInstance } from './instance-id'
+import { judgeJoin, resolveTables } from './joining'
+import { createMeasurer } from './measure'
+import { bundleHooksModule, clearHooksCopies, importHooksModule } from './module-build'
 import { createModPanes } from './panes'
 import { createModRegistry } from './registry'
 
 /**
- * The process-wide mods host: every enabled plugin with a hooks module is loaded here once, keeps
- * its hooks and what it registered across conversations, and is reloaded when its module or
- * options change. `session.start` fires once per load, `session.end` when a mod unloads (the
- * plugin turned off or changed, or Localix stopping) — a Localix process is the session a mod
- * lives in. Conversations fire the rest through `dispatch`, limited to the mods enabled there.
+ * The process-wide mods host. Every enabled plugin with a hooks module is bundled here once, and
+ * runs once per project, as a Claude Code session runs in one directory: an instance per working
+ * directory, started (`session.start` with that `cwd`) the first time a conversation there needs
+ * it, and one for the workspace at load, so a mod's commands and panes are there before any chat.
+ * An instance keeps its own module state; `session.end` fires when it goes — its plugin turned off
+ * or changed, Localix stopping, or the instance the least recently used past the per-plugin limit.
  */
 
-interface LoadedMod {
-  revision: string
+/** Projects a plugin's mod runs in at once; the least recently used beyond them stops. */
+const INSTANCES_PER_PLUGIN = 8
+
+interface Instance {
+  plugin: string
+  cwd: string
+  usedAt: number
   dispose(): void
+}
+
+/** Why the mods running in a project refused one more (`plugin.register`). */
+class ModRefusedError extends Error {}
+
+interface Loaded {
+  source: ModSource
+  code: string
+  clients: Map<string, ClientBundle>
 }
 
 export interface ModsHostOptions {
   engine?: ModsEngineOptions
-  /** Builds and imports a hooks module; tests supply their own. */
-  build?: (source: ModSource, outDir: string) => Promise<RegisterFunction>
+  /** Imports one load of a plugin's hooks module; tests supply their own. */
+  build?: (source: ModSource, load: string) => Promise<RegisterFunction>
 }
 
 export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) {
-  const engine = createModsEngine({ report: ports.report, ...options.engine })
+  const engine = createModsEngine({
+    report: (instance, event, reason) =>
+      ports.report(pluginOfInstance(instance), `${event}: ${reason}`),
+    pluginOf: pluginOfInstance,
+    // A mod's `$` calls reach the hooks of the mods running in its project, not another's.
+    peersOf: (id) => sceneOf(id).instances,
+    ...options.engine,
+  })
   const registry = createModRegistry(() => ports.changed())
-  const loaded = new Map<string, LoadedMod>()
+  const composer = createModComposer(() => ports.changed())
+  const answers = createAnswerCache()
+  const conversations = createModConversations()
+  const sources = new Map<string, Loaded>()
+  const instances = new Map<string, Instance>()
+  const starting = new Map<string, Promise<string | null>>()
   const failures = new Map<string, string>()
-  const background: ModScene = { userId: '', cwd: ports.workspaceDir }
-  const build =
-    options.build ??
-    ((source: ModSource, outDir: string) =>
-      buildHooksModule({ module: source.module, root: source.root, outDir }))
+  /** The running turn of each conversation with mods, lending them its tools. */
+  const runs = new Map<string, RunSurface>()
+  let loads = 0
+  const cleared = new Set<string>()
   let lifecycle: Promise<void> = Promise.resolve()
 
   const dispatch = (
     event: string,
     input: unknown,
     core: (event: unknown) => unknown,
-    scene: ModScene = background,
-    plugins?: ReadonlySet<string>,
-  ) => inScene(scene, () => engine.dispatch(event, input, core, { plugins }))
+    scene: ModScene,
+    ids?: ReadonlySet<string>,
+    origin?: HookOrigin,
+  ) => inScene(scene, () => engine.dispatch(event, input, core, { plugins: ids, origin }))
 
-  async function unload(plugin: string, reason: string) {
-    const mod = loaded.get(plugin)
-    if (!mod) return
-    await dispatch('session.end', { reason }, () => ({}), background, new Set([plugin])).catch(
-      () => {},
-    )
-    engine.unload(plugin)
-    registry.clear(plugin)
-    panes.forget(plugin)
-    mod.dispose()
-    loaded.delete(plugin)
+  const sceneOf = (id: string) => {
+    const cwd = instances.get(id)?.cwd ?? ports.workspaceDir
+    const peers = [...instances].filter(([, instance]) => instance.cwd === cwd)
+    return { scene: { userId: '', cwd }, instances: new Set(peers.map(([peer]) => peer)) }
   }
 
-  async function load(source: ModSource) {
+  const importOf = (loaded: Loaded, id: string) => {
+    const load = `${id}-${++loads}`
+    return options.build
+      ? options.build(loaded.source, load)
+      : importHooksModule(loaded.code, join(ports.dataDir(loaded.source.plugin), 'mod'), load)
+  }
+
+  async function start(plugin: string, cwd: string): Promise<string | null> {
+    const loaded = sources.get(plugin)
+    if (!loaded) return null
+    const id = instanceIdOf(plugin, cwd)
+    const scene: ModScene = { userId: '', cwd }
+    let tables: Awaited<ReturnType<typeof resolveTables>> | undefined
     const { api, dispose } = buildModApi({
-      source,
+      source: loaded.source,
+      instance: { id, cwd },
       ports,
       registry,
-      runCommand: (_caller, input) => host.runCommand(input, background),
-      callTool: async () => {
-        throw new Error('$.tool.call is not available in Localix yet')
-      },
+      composer,
+      runCommand: (input) => host.runCommand(input, scene, new Set([plugin])),
+      runOf: (sessionId) => (sessionId ? runs.get(sessionId) : undefined),
+      tableOf: (component) => tables?.get(component),
+      calls,
     })
     try {
-      const register = await build(source, join(ports.dataDir(source.plugin), 'mod'))
-      await engine.load(source.plugin, register, source.options, api)
-      loaded.set(source.plugin, { revision: source.revision, dispose })
-      failures.delete(source.plugin)
-      await dispatch('session.start', {}, () => ({}), background, new Set([source.plugin]))
+      const judges = sceneOf(id).instances
+      const events = await engine.load(id, await importOf(loaded, id), loaded.source.options, api)
+      const refused = await judgeJoin(dispatch, scene, judges, {
+        plugin,
+        root: loaded.source.root,
+        events,
+      })
+      if (refused !== undefined) throw new ModRefusedError(`refused by a mod: ${refused}`)
+      instances.set(id, { plugin, cwd, usedAt: Date.now(), dispose })
+      tables = await resolveTables(dispatch, scene, sceneOf(id).instances)
+      failures.delete(plugin)
+      await dispatch(
+        'session.start',
+        { cwd, surface: 'desktop', isInteractive: true },
+        () => ({ cwd }),
+        scene,
+        new Set([id]),
+      )
+      await evictBeyondLimit(plugin)
+      return id
     } catch (error) {
       dispose()
-      engine.unload(source.plugin)
-      registry.clear(source.plugin)
+      engine.unload(id)
+      registry.clear(id)
+      instances.delete(id)
       const message = error instanceof Error ? error.message : String(error)
-      failures.set(source.plugin, message)
-      ports.report(source.plugin, `the hooks module did not load: ${message}`)
+      failures.set(plugin, message)
+      ports.report(plugin, `the hooks module did not load: ${message}`)
+      return null
     }
   }
 
-  const panes = createModPanes({ dispatch, registry, changed: ports.changed })
+  /** The plugin's instance in `cwd`, started once however many conversations ask at once. */
+  function instanceIn(plugin: string, cwd: string): Promise<string | null> {
+    const id = instanceIdOf(plugin, cwd)
+    const running = instances.get(id)
+    if (running) {
+      running.usedAt = Date.now()
+      return Promise.resolve(id)
+    }
+    const pending = starting.get(id) ?? start(plugin, cwd).finally(() => starting.delete(id))
+    starting.set(id, pending)
+    return pending
+  }
+
+  async function stopInstance(id: string, reason: string) {
+    const instance = instances.get(id)
+    if (!instance) return
+    await dispatch('session.end', { reason }, () => ({}), sceneOf(id).scene, new Set([id])).catch(
+      () => {},
+    )
+    engine.unload(id)
+    registry.clear(id)
+    panes.forget(id)
+    instance.dispose()
+    instances.delete(id)
+  }
+
+  async function evictBeyondLimit(plugin: string) {
+    const own = [...instances]
+      .filter(([, instance]) => instance.plugin === plugin && instance.cwd !== ports.workspaceDir)
+      .sort(([, a], [, b]) => a.usedAt - b.usedAt)
+    for (const [id] of own.slice(0, Math.max(0, own.length - INSTANCES_PER_PLUGIN)))
+      await stopInstance(id, 'other')
+  }
+
+  async function unload(plugin: string, reason: string) {
+    for (const [id, instance] of Array.from(instances))
+      if (instance.plugin === plugin) await stopInstance(id, reason)
+    composer.forget(plugin)
+    sources.delete(plugin)
+  }
+
+  async function load(source: ModSource) {
+    try {
+      const found = new Set<string>()
+      const code = options.build ? '' : await bundleHooksModule(source, { clients: found })
+      const clients = await bundleClientModules(source.root, found)
+      if (!options.build && !cleared.has(source.plugin)) {
+        cleared.add(source.plugin)
+        await clearHooksCopies(join(ports.dataDir(source.plugin), 'mod'))
+      }
+      sources.set(source.plugin, { source, code, clients })
+      failures.delete(source.plugin)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      failures.set(source.plugin, message)
+      ports.report(source.plugin, `the hooks module did not load: ${message}`)
+      return
+    }
+    await instanceIn(source.plugin, ports.workspaceDir)
+  }
+
+  /** A surface module an instance's `Client`s may run (`client-modules.ts`). */
+  const clientOf = (id: string, module: string) =>
+    sources.get(pluginOfInstance(id))?.clients.get(module)
+  const calls = createEventCalls(() => host)
+  const panes = createModPanes({ dispatch, registry, changed: ports.changed, sceneOf, clientOf })
 
   const host = {
     registry,
     panes,
+    composer,
+    ports,
+    /** The describing events' answers, kept per conversation (`answer-cache.ts`). */
+    answers,
+    conversations,
     /** Load what is new or changed, unload what is gone; serialized, so loads never overlap. */
-    reconcile(sources: readonly ModSource[]): Promise<void> {
+    reconcile(wanted: readonly ModSource[]): Promise<void> {
       lifecycle = lifecycle.then(async () => {
-        const wanted = new Map(sources.map((source) => [source.plugin, source]))
-        for (const [plugin, mod] of loaded)
-          if (wanted.get(plugin)?.revision !== mod.revision)
-            await unload(plugin, wanted.has(plugin) ? 'resume' : 'other')
-        for (const source of sources) if (!loaded.has(source.plugin)) await load(source)
-        for (const plugin of failures.keys()) if (!wanted.has(plugin)) failures.delete(plugin)
+        const byPlugin = new Map(wanted.map((source) => [source.plugin, source]))
+        for (const [plugin, loaded] of Array.from(sources))
+          if (byPlugin.get(plugin)?.revision !== loaded.source.revision)
+            await unload(plugin, byPlugin.has(plugin) ? 'resume' : 'other')
+        for (const source of wanted) if (!sources.has(source.plugin)) await load(source)
+        for (const plugin of failures.keys()) if (!byPlugin.has(plugin)) failures.delete(plugin)
       })
       return lifecycle
     },
+    /**
+     * The instances a conversation's events go to: each enabled plugin's mod in the scene's
+     * working directory, started when it is not running yet.
+     */
+    async instancesFor(scene: ModScene, plugins: ReadonlySet<string>): Promise<Set<string>> {
+      const ids = await Promise.all(
+        [...sources.keys()]
+          // A module that failed to start is not retried every turn; a change reloads it.
+          .filter((plugin) => plugins.has(plugin) && !failures.has(plugin))
+          .map((plugin) => instanceIn(plugin, scene.cwd)),
+      )
+      return new Set(ids.filter((id): id is string => id !== null))
+    },
     dispatch,
-    hears: (event: string, plugins?: ReadonlySet<string>) => engine.hears(event, plugins),
-    loaded: () => [...loaded.keys()],
+    /** After a turn: the conversation's usage to the mods that hear `session.measure`. */
+    measure: createMeasurer({
+      ...(ports.readSession ? { read: ports.readSession } : {}),
+      dispatch,
+      hears: (event, ids) => engine.hears(event, ids),
+    }),
+    /** A conversation's turn lends its tools to `$.tool` and `$.mcp` while it runs. */
+    attachRun: (sessionId: string, surface: RunSurface) => void runs.set(sessionId, surface),
+    detachRun: (sessionId: string) => void runs.delete(sessionId),
+    hears: (event: string, ids?: ReadonlySet<string>) => engine.hears(event, ids),
+    /** `$.ui.invalidate(event)`: the event's kept answers go, and clients re-read the mods. */
+    invalidate(event: unknown) {
+      if (typeof event === 'string') answers.invalidate(event)
+      ports.changed()
+    },
+    /** The plugins whose mod is loaded. */
+    loaded: () => [...sources.keys()].filter((plugin) => !failures.has(plugin)),
+    /** Where each instance runs, by instance. */
+    instances: () => new Map([...instances].map(([id, { plugin, cwd }]) => [id, { plugin, cwd }])),
     /** Why a mod that should run did not load, by plugin. */
     failures: () => new Map(failures),
-    /** A mod's command, through `command.run`: its hooks answer it; nothing else runs it. */
-    async runCommand(
-      input: { command: string; args?: string; plugin?: string },
-      scene: ModScene,
-      plugins?: ReadonlySet<string>,
-    ): Promise<{ text?: string; context?: readonly string[] }> {
-      const event = { command: input.command, args: input.args ?? '', origin: { kind: 'composer' } }
-      const result = await dispatch('command.run', event, () => ({}), scene, plugins)
-      return (result && typeof result === 'object' ? result : {}) as { text?: string }
+    clientModule: clientOf,
+    /** A mod's command, through `command.run` in the scene's project: only mods answer it. */
+    async runCommand(input: CommandInput, scene: ModScene, plugins: ReadonlySet<string>) {
+      const ids = await host.instancesFor(scene, plugins)
+      return commandAnswer(
+        await dispatch('command.run', commandRunEvent(input), () => ({}), scene, ids),
+      )
     },
     stop(): Promise<void> {
       lifecycle = lifecycle.then(async () => {
-        for (const plugin of Array.from(loaded.keys())) await unload(plugin, 'other')
+        for (const plugin of Array.from(sources.keys())) await unload(plugin, 'other')
       })
       return lifecycle
     },
@@ -131,3 +291,5 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
 }
 
 export type ModsHost = ReturnType<typeof createModsHost>
+
+export { INERT_MOD_PORTS } from './contracts'

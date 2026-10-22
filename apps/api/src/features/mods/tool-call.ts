@@ -1,26 +1,15 @@
 import { mcpInputSchema, type AgentTool, type AgentToolResult } from '@localixai/agent/agents'
 import type { ModScene } from './contracts'
 import type { ModsHost } from './host'
+import { toolCallEvent, toolInputOf } from './tool-shapes'
 
 /**
  * `tool.call` in Localix. Every tool call of a conversation goes through the mods enabled there:
  * `e.tool` is Claude Code's name for the tool (`Bash`, `Read`, `mcp__<plugin>__<tool>`), its
- * arguments are fields of `e` (a path also as `file_path`, as Claude Code's file tools take it),
- * and `next(e)` runs the tool, resolving to `{ result, isError }`. A hook that answers `{ deny }`
+ * arguments are fields of `e` in Claude Code's shape (`tool-shapes.ts`), and `next(e)` runs the tool, resolving to `{ result, isError }`. A hook that answers `{ deny }`
  * refuses the call — the model reads the reason — and `{ result }` answers it in the tool's place.
  * A mod's own tools (`$.tool.register`) have no core behind them: a `tool.call` hook answers them.
  */
-
-/** Localix's core tools under the names a mod matches them by. */
-const CLAUDE_CODE_NAMES: Record<string, string> = {
-  bash: 'Bash',
-  read: 'Read',
-  write: 'Write',
-  edit: 'Edit',
-  search: 'Grep',
-  ask: 'AskUserQuestion',
-  research: 'WebFetch',
-}
 
 /** A mod's tool, named as Claude Code names it, characters outside `[A-Za-z0-9_-]` as `_`. */
 export const modToolName = (plugin: string, name: string) =>
@@ -35,24 +24,6 @@ export class ModToolDeniedError extends Error {
 }
 
 type Fields = Record<string, unknown>
-
-function eventOf(tool: string, input: unknown, toolUseId: string): Fields {
-  const fields: Fields = input && typeof input === 'object' ? { ...(input as Fields) } : {}
-  if (typeof fields.path === 'string' && fields.file_path === undefined)
-    fields.file_path = fields.path
-  return { ...fields, tool: CLAUDE_CODE_NAMES[tool] ?? tool, tool_use_id: toolUseId }
-}
-
-/** The tool's input back from an event a hook may have rewritten. */
-function inputOf(event: Fields, original: unknown): unknown {
-  const { tool: _tool, tool_use_id: _id, ...fields } = event
-  const had = original && typeof original === 'object' ? (original as Fields) : {}
-  if (had.file_path === undefined && 'file_path' in fields) {
-    if (fields.file_path !== had.path) fields.path = fields.file_path
-    delete fields.file_path
-  }
-  return fields
-}
 
 /** What `next(e)` resolves to and what a hook may answer, as one tool result. */
 function resultOf(answer: unknown, fallback: AgentToolResult): AgentToolResult {
@@ -70,43 +41,54 @@ function resultOf(answer: unknown, fallback: AgentToolResult): AgentToolResult {
 export interface ModToolScope {
   host: ModsHost
   scene: ModScene
-  /** The mods enabled where the call happens. */
+  /** The mod instances of the project where the call happens. */
   plugins: ReadonlySet<string>
 }
 
 /** Run each tool through `tool.call`; the same array when no enabled mod hooks it. */
-export function wrapToolsWithMods(tools: readonly AgentTool[], scope: ModToolScope): AgentTool[] {
+export function wrapInToolCall(tools: readonly AgentTool[], scope: ModToolScope): AgentTool[] {
   if (!scope.host.hears('tool.call', scope.plugins)) return [...tools]
-  return tools.map((tool) => ({
-    ...tool,
-    async execute(toolCallId, input, signal, onUpdate, context) {
-      let ran: AgentToolResult = { content: '' }
-      const answer = await scope.host.dispatch(
-        'tool.call',
-        eventOf(tool.name, input, toolCallId),
-        async (event) => {
-          ran = await tool.execute(
-            toolCallId,
-            inputOf(event as Fields, input),
-            signal,
-            onUpdate,
-            context,
-          )
-          return { result: ran, ...(ran.isError ? { isError: true } : {}) }
+  // A mod's own tool fires `tool.call` itself (`modTools`): wrapping it again would fire it twice.
+  const own = new Set(
+    scope.host.registry
+      .tools()
+      .filter((tool) => scope.plugins.has(tool.instance))
+      .map((tool) => modToolName(tool.plugin, tool.name)),
+  )
+  return tools.map((tool) =>
+    own.has(tool.name)
+      ? tool
+      : {
+          ...tool,
+          async execute(toolCallId, input, signal, onUpdate, context) {
+            let ran: AgentToolResult = { content: '' }
+            const answer = await scope.host.dispatch(
+              'tool.call',
+              toolCallEvent(tool, input, toolCallId),
+              async (event) => {
+                ran = await tool.execute(
+                  toolCallId,
+                  toolInputOf(tool.name, event as Fields),
+                  signal,
+                  onUpdate,
+                  context,
+                )
+                return { result: ran, ...(ran.isError ? { isError: true } : {}) }
+              },
+              scope.scene,
+              scope.plugins,
+            )
+            return resultOf(answer, ran)
+          },
         },
-        scope.scene,
-        scope.plugins,
-      )
-      return resultOf(answer, ran)
-    },
-  }))
+  )
 }
 
 /** The tools the enabled mods registered, each answered by their `tool.call` hooks. */
 export function modTools(scope: ModToolScope): AgentTool[] {
   return scope.host.registry
     .tools()
-    .filter((tool) => scope.plugins.has(tool.plugin))
+    .filter((tool) => scope.plugins.has(tool.instance))
     .map((spec) => {
       const name = modToolName(spec.plugin, spec.name)
       return {
@@ -122,7 +104,7 @@ export function modTools(scope: ModToolScope): AgentTool[] {
           }
           const answer = await scope.host.dispatch(
             'tool.call',
-            eventOf(name, input, toolCallId),
+            toolCallEvent({ name }, input, toolCallId),
             () => ({ result: unanswered, isError: true }),
             scope.scene,
             scope.plugins,

@@ -210,7 +210,12 @@ describe('buildRunSystemPrompt pinned skills', () => {
         providerId: 'test',
         agentProfile,
         runtimeTools,
-        loadedPlugins: { loaded: [], agents: [], promptSections: [] } as unknown as LoadedPlugins,
+        loadedPlugins: {
+          loaded: [],
+          agents: [],
+          promptSections: [],
+          outputStyles: [],
+        } as unknown as LoadedPlugins,
         frozenContext: {},
         pinnedSkills: [],
         triggeredSkills: [],
@@ -235,6 +240,43 @@ describe('buildRunSystemPrompt pinned skills', () => {
     expect(next.systemPrompt).toContain('Deploy the parser.')
     expect(next.systemPrompt).not.toContain(chat.goal!)
     expect(next.systemPrompt).toContain(chat.previousTopicSummary!)
+  })
+
+  test("a chat with no style of its own speaks in the person's default style; `default` opts out", async () => {
+    const agentProfile = resolveRunProfile({ sessionKind: 'chat' })
+    const runtimeTools = createRuntimeToolRegistry({ policy: { agentProfile } })
+    const build = (outputStyle: string | null) => {
+      const chat = { ...sessionFixture(), outputStyle }
+      const speaker = chat.agents[0]!.agentId
+      return buildRunSystemPrompt({
+        userId: chat.userId,
+        session: chat,
+        speakerAgentId: speaker,
+        policy: runPolicyFixture(chat, speaker),
+        providerId: 'test',
+        agentProfile,
+        runtimeTools,
+        loadedPlugins: {
+          loaded: [],
+          agents: [],
+          promptSections: [],
+          outputStyles: [],
+        } as unknown as LoadedPlugins,
+        frozenContext: {},
+        pinnedSkills: [],
+        triggeredSkills: [],
+        contextFiles: [],
+        defaultCwd: '/',
+        scratchDir: '/tmp/localix-test',
+        childRuntimeSessions: new Map(),
+        now: () => '2026-10-08',
+        defaultOutputStyle: 'Explanatory',
+      })
+    }
+    expect((await build(null)).systemPrompt).toContain(
+      'This conversation uses the "Explanatory" output style.',
+    )
+    expect((await build('default')).systemPrompt).not.toContain('# Output style')
   })
 
   test('keeps inline pinned instructions when the runtime has no skill tool', async () => {

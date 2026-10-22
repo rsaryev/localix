@@ -55,6 +55,7 @@ export async function intakeRunTurn(
     historyMessages: params.historyMessages,
     loadedPlugins: inputs.loadedPlugins,
     ccHooks,
+    mods: inputs.mods,
     ccSessionStartContext: inputs.ccSessionStartContext,
     runtimeSections: prompt.runtimeSections,
     defaultCwd,
@@ -76,6 +77,10 @@ export async function intakeRunTurn(
     hitlTargetSessionId: frame.hitl.targetSessionId,
     assistantMessageId,
     abortSignal: frame.abort.signal,
+    stopRun: () => {
+      env.state.stoppedRuntimeSessionIds.add(session.id)
+      frame.abort.abort()
+    },
     pluginHooksForRun: frame.teardown.pluginHooks,
     hookRunOptions: inputs.hookRunOptions,
     ccHooks,
@@ -85,6 +90,8 @@ export async function intakeRunTurn(
     tools: toolset.dispatchTools,
     defaultCwd,
     hitlWaitedMs: turn.state.hitlWaitedMs,
+    // Claude Code mods' `tool.check` reviews each verdict; `$.tool.check` reads the gate's own.
+    toolCheck: inputs.mods.toolCheck(),
   })
 
   return { maxTurns, turnFrame: intake.frame, refusalTracker, permissionGate }

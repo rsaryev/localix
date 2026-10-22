@@ -67,6 +67,8 @@ export interface RealtimeDeps {
     clientMessageId?: string,
   ) => Promise<unknown>
   stop: (sessionId: string, callerUserId?: string) => Promise<boolean>
+  /** A window began or stopped rendering sessions (Claude Code mods' `session.attach`/`detach`). */
+  onWatch?: (clientId: string, sessionIds: readonly string[], attached: boolean) => void
   interact: (
     toolCallId: string,
     action: string,
@@ -429,6 +431,8 @@ export function createRealtimeRoute(deps: RealtimeDeps) {
     // registry holds this exact reference and re-reads it per frame, so `session.watch` takes
     // effect on the next published event without touching the subscription or its cursor.
     const watching = parseWatchQuery(c.req.query('watch') ?? null)
+    // The window, as the sessions it attaches to know it: one per socket.
+    const clientId = `desktop:${randomUUID()}`
 
     let unsubChat: (() => void) | null = null
     let unsubNotifications: (() => void) | null = null
@@ -506,6 +510,7 @@ export function createRealtimeRoute(deps: RealtimeDeps) {
         // sessions this connection declared it is rendering, each tagged with its routing key
         // (publish session id) so the client demuxes per session. Unscoped, one session's fan-out
         // of background sub-agents was enough to freeze the tab.
+        deps.onWatch?.(clientId, [...watching], true)
         unsubChat = deps.subscribeScoped(
           userId,
           (envelope) => {
@@ -671,11 +676,22 @@ export function createRealtimeRoute(deps: RealtimeDeps) {
           // Mutate the set the registry already holds — no re-subscribe, so the resume cursor is
           // untouched (a re-subscribe would replay the ring and double-deliver every roster frame
           // in it; see the exactly-once contract on the registry).
+          const before = new Set(watching)
           if (command.kind === 'session.watch') {
             admitWatchedSessions(watching, command.sessionIds)
           } else {
             for (const sessionId of command.sessionIds) watching.delete(sessionId)
           }
+          deps.onWatch?.(
+            clientId,
+            [...watching].filter((id) => !before.has(id)),
+            true,
+          )
+          deps.onWatch?.(
+            clientId,
+            [...before].filter((id) => !watching.has(id)),
+            false,
+          )
           reply({ ok: true, result: { watching: watching.size } })
           return
         }
@@ -782,6 +798,7 @@ export function createRealtimeRoute(deps: RealtimeDeps) {
         reply({ ok: false, error: 'Unknown command', code: 'unknown_command', status: 404 })
       },
       onClose() {
+        deps.onWatch?.(clientId, [...watching], false)
         if (sessionFlushTimer) clearTimeout(sessionFlushTimer)
         sessionFlushTimer = null
         pendingSessionFrames = []

@@ -6,6 +6,7 @@ import { KubeApiError } from '../api/transport'
 import { ALL_CONTAINERS, logRequestFor } from './podContainers'
 import type { PodTabView } from './podTabView'
 import { mergeLogSnapshots } from '../../../ui/model/logStream'
+import { useLogFollow, type LogFollowTarget } from '../../../ui/model/logFollowFeed'
 
 interface PodTabContentOptions {
   active: boolean
@@ -15,6 +16,33 @@ interface PodTabContentOptions {
   pod: KubePod | null
   view: PodTabView
   container: string
+}
+
+/** The poll a live log view keeps: none while the log is followed, or for a finished instance. */
+export function podLogPollMs(input: { followed: boolean; previous: boolean }): number | null {
+  return input.followed || input.previous ? null : 3000
+}
+
+/** What to follow for the selected container; the interleaved view follows every app container. */
+export function logFollowTargetOf(input: {
+  following: boolean
+  context?: string
+  namespace: string
+  podName: string
+  pod: KubePod | null
+  container: string
+}): LogFollowTarget | null {
+  if (!input.following || !input.pod) return null
+  const selected = input.container || input.pod.containers[0] || ''
+  const containers = selected === ALL_CONTAINERS ? input.pod.containers : [selected]
+  if (containers.length === 0 || containers.some((name) => !name)) return null
+  return {
+    provider: 'k8s',
+    context: input.context ?? '',
+    namespace: input.namespace,
+    pod: input.podName,
+    containers,
+  }
 }
 
 /** Fetch and sequence the selected pod view, keeping log snapshots race-safe and bounded. */
@@ -95,9 +123,21 @@ export function usePodTabContent(options: PodTabContentOptions) {
     setPreviousLogs(false)
   }, [resetTarget])
 
+  // The current instance's live log view follows the log: new lines are read when they arrive.
+  // A previous instance's log is finished — read once, never polled.
+  const followTarget = logFollowTargetOf({
+    following: active && view === 'logs' && logsLive && !previousLogs,
+    context,
+    namespace,
+    podName,
+    pod,
+    container,
+  })
+  const followed = useLogFollow(followTarget, () => void refreshView())
+
   useVisiblePolling({
     enabled: active && view === 'logs' && logsLive,
-    intervalMs: 3000,
+    intervalMs: podLogPollMs({ followed, previous: previousLogs }),
     onTick: refreshView,
     immediate: true,
     resetKey: `${podName}/${namespace}/${context ?? ''}/${container}/${previousLogs}`,

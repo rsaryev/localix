@@ -1,4 +1,5 @@
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
+import { withChannelPermissionRelay } from './mcp-channels'
 import { createSessionSeatResolver } from '../features/agents/session-seat'
 import { agentModelDefaultsPort } from '../features/agents/agent-model-defaults'
 import type { createTerminalService } from '../features/terminal/service'
@@ -36,6 +37,7 @@ import { createAgentDirectoryPorts } from './agent-directory-ports'
 import { createTerminalPorts } from './terminal-ports'
 import { createChatFeaturePorts } from './chat-feature-ports'
 import type { PluginService } from '../features/plugins/service-types'
+import type { ModsHost } from '../features/mods/host'
 
 type ChatServiceDeps = Parameters<typeof createChatService>[0]
 
@@ -51,6 +53,8 @@ export interface BootstrapServiceRefs {
   terminalService?: ReturnType<typeof createTerminalService>
   monitorService?: MonitorService
   exitNotices?: ExitNotices
+  /** The mods host, built before chat but read through the refs like the services above. */
+  modsHost?: ModsHost
   lspDocumentService?: ReturnType<typeof createLspDocumentService>
   configProposals?: ConfigProposalService
   /** Built with the session services (it changes a session's mode and wakes through chat). */
@@ -144,7 +148,11 @@ export function createChatServicePhase({
     externalAgents,
     db,
     work,
-    notifications: agentNotifications,
+    // A channel that relays approvals hears each card its chat opens (`mcp-channels.ts`).
+    notifications: {
+      ...agentNotifications,
+      hitl: withChannelPermissionRelay(agentNotifications.hitl),
+    },
     logger,
     // A listing has no turn of its own, so it answers for the agent that always exists.
     loadSkillOverrides: async (userId, _projectId, names) => {
@@ -283,6 +291,9 @@ export function createChatServicePhase({
     },
     get exitNotices() {
       return serviceRefs.exitNotices
+    },
+    get mods() {
+      return serviceRefs.modsHost
     },
     get configProposals() {
       return serviceRefs.configProposals

@@ -29,6 +29,29 @@ const cases: Array<
     'child',
     'isolated-worker',
   ],
+  // A workflow agent run in a worktree keeps the folder it works in.
+  [
+    {
+      kind: 'task-delegation',
+      parentSessionId: 'p',
+      toolCallId: 'tool',
+      workingDir: '/home/me/.localix/worktrees/root/wf-1-1',
+    },
+    'child',
+    'isolated-worker',
+  ],
+  // …or the one a WorktreeCreate hook made, wherever it put it.
+  [
+    {
+      kind: 'task-delegation',
+      parentSessionId: 'p',
+      toolCallId: 'tool',
+      workingDir: '/srv/checkouts/wf-1-1',
+      worktreeByHook: true,
+    },
+    'child',
+    'isolated-worker',
+  ],
   [{ kind: 'loop', parentSessionId: 'p', loopId: 'loop' }, 'child', 'isolated-worker'],
   [{ kind: 'hook', parentSessionId: 'p', phase: 'verifier' }, 'child', 'isolated-worker'],
   [{ kind: 'skill-fork', parentSessionId: 'p' }, 'child', 'isolated-worker'],

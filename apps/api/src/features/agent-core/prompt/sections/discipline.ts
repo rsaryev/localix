@@ -114,18 +114,25 @@ function buildSubagentExecutionDiscipline(toolNames: readonly string[] = []): st
   return lines.join('\n')
 }
 
+/**
+ * `codingInstructions: false` is an output style that did not keep them (Claude Code's
+ * `keep-coding-instructions`): the lines about doing and verifying engineering work drop out, and
+ * the tool routing — how this run's tools are used at all — stays.
+ */
 export function buildExecutionDiscipline(
   toolNames: readonly string[] = [],
   agentProfile?: RunProfile,
+  opts: { codingInstructions?: boolean } = {},
 ): string {
   if (agentProfile?.shape === 'subagent') {
     return buildSubagentExecutionDiscipline(toolNames)
   }
 
+  const coding = opts.codingInstructions ?? true
   const has = (name: string) => toolNames.includes(name)
   const hasAny = (...names: string[]) => names.some(has)
   const lines: string[] = ['# Execution discipline']
-  pushPresent(lines, previewVerificationLine(has, agentProfile?.shape === 'automation'))
+  if (coding) pushPresent(lines, previewVerificationLine(has, agentProfile?.shape === 'automation'))
 
   if (toolNames.length > 0) {
     lines.push(
@@ -135,10 +142,12 @@ export function buildExecutionDiscipline(
     )
   }
 
-  lines.push(
-    '- Complete your part of the requested outcome and verify what you did — format, evidence and side effects — before replying; do not stop at planning or assignment. Act, hand off, or report a concrete blocker. Evidence in a report you receive counts: build on it instead of repeating its checks.',
-  )
-  pushPresent(lines, failureDiagnosisLine(has))
+  if (coding) {
+    lines.push(
+      '- Complete your part of the requested outcome and verify what you did — format, evidence and side effects — before replying; do not stop at planning or assignment. Act, hand off, or report a concrete blocker. Evidence in a report you receive counts: build on it instead of repeating its checks.',
+    )
+    pushPresent(lines, failureDiagnosisLine(has))
+  }
 
   // The role-invariant behavioral rules (verify-don't-recall, honesty,
   // pragmatism, reasoning-channel, language, system-reminder handling) are NOT here —

@@ -3,6 +3,7 @@ import { mkdirSync } from 'node:fs'
 import { bindUserConfigInShell, substituteUserConfigInText } from '../ext/user-config-substitute'
 import {
   CC_AGENT_HOOK_DEFAULT_TIMEOUT_SEC,
+  CC_EVENT_DEFAULT_TIMEOUT_SEC,
   CC_HOOK_DEFAULT_TIMEOUT_SEC,
   CC_HOOK_MAX_TIMEOUT_SEC,
   CC_PROMPT_HOOK_DEFAULT_TIMEOUT_SEC,
@@ -120,6 +121,8 @@ export function parseHandler(
   skipped: SkippedHandler[],
 ): CcHookHandler | undefined {
   const type = typeof hRaw.type === 'string' ? hRaw.type : 'command'
+  // command / http / mcp_tool: CC's 600 s default, lowered on the events that hold up the person.
+  const eventDefaultSec = CC_EVENT_DEFAULT_TIMEOUT_SEC[event] ?? CC_HOOK_DEFAULT_TIMEOUT_SEC
   const pluginName = opts.pluginName ? { pluginName: opts.pluginName } : {}
 
   if (type === 'prompt' || type === 'agent') {
@@ -178,7 +181,7 @@ export function parseHandler(
       ...(allowedEnvVars && allowedEnvVars.length > 0
         ? { httpAllowedEnvVars: allowedEnvVars }
         : {}),
-      timeoutMs: clampTimeoutMs(hRaw.timeout),
+      timeoutMs: clampTimeoutMs(hRaw.timeout, eventDefaultSec),
       ...commonHandlerFields(hRaw),
     }
   }
@@ -208,7 +211,7 @@ export function parseHandler(
       ...pluginName,
       command: '', // unused for mcp_tool handlers
       mcpTool,
-      timeoutMs: clampTimeoutMs(hRaw.timeout),
+      timeoutMs: clampTimeoutMs(hRaw.timeout, eventDefaultSec),
       ...commonHandlerFields(hRaw),
     }
   }
@@ -228,7 +231,7 @@ export function parseHandler(
     ...(opts.pluginRoot ? { pluginRoot: opts.pluginRoot } : {}),
     ...(opts.pluginDataDir ? { pluginDataDir: opts.pluginDataDir } : {}),
     ...bindShellCommand(hRaw.command, opts),
-    timeoutMs: clampTimeoutMs(hRaw.timeout),
+    timeoutMs: clampTimeoutMs(hRaw.timeout, eventDefaultSec),
     ...(typeof hRaw.if === 'string' && hRaw.if.trim() ? { if: hRaw.if.trim() } : {}),
     ...(isAsync ? { async: true } : {}),
     ...(asyncRewake ? { asyncRewake: true } : {}),

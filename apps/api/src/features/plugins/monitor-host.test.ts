@@ -477,7 +477,7 @@ describe('monitor host lifecycle + delivery', () => {
     await host.stop()
   })
 
-  it('does NOT spawn on-skill-invoke monitors (deferred)', async () => {
+  it('does not spawn an on-skill-invoke monitor before its skill runs', async () => {
     const captured: string[] = []
     const host = createPluginMonitorHost({
       availabilityFor: async () => on('skill-mon'),

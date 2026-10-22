@@ -126,6 +126,8 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
     repo,
     streamRegistry,
     runner,
+    ccHookSessions: runner.ccHookSessions,
+    resolveSessionWorkingDir,
     closeSessionTerminals: deps.closeSessionTerminals,
     // Clear any pending relay (`browser` tool) commands when a session is deleted —
     // otherwise they only clear via their 22s timeout.

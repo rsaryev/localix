@@ -23,7 +23,7 @@ type PluginsCommandContext = Pick<
 const PLUGIN_SUBCOMMAND_USAGE = [
   '/plugin list',
   '/plugin create <what it should do>',
-  '/plugin install <name>@<marketplace> | <git-url> | <owner/repo> | </absolute/path> [--project]',
+  '/plugin install <name>@<marketplace> | <name> --marketplace <source> | <git-url> | <owner/repo> | </absolute/path> [--project]',
   '/plugin enable <name>',
   '/plugin disable <name>',
   '/plugin remove <name>',
@@ -31,7 +31,7 @@ const PLUGIN_SUBCOMMAND_USAGE = [
   '/plugin update <name>',
   '/plugin details <name>',
   '/plugin reload',
-  '/plugin marketplace list | add <source> | remove <name>',
+  '/plugin marketplace list [<name>] | add <source> | update <name> | remove <name>',
 ] as const
 
 /**
@@ -100,18 +100,22 @@ export async function handlePluginsControlCommand(
     // Global by default (~/.localix/plugins); `--project` targets this chat's project.
     const args = tokens.slice(2)
     const toProject = args.includes('--project')
+    // `--marketplace <source>` adds (or refreshes) that marketplace first, as in Claude Code.
+    const at = args.indexOf('--marketplace')
+    const marketplace = at >= 0 ? args[at + 1] : undefined
     const source = args
-      .filter((arg) => arg !== '--project')
+      .filter((arg, i) => arg !== '--project' && (at < 0 || (i !== at && i !== at + 1)))
       .join(' ')
       .trim()
-    if (!source) {
-      return directReply(
-        'Usage: `/plugin install <name>@<marketplace> | <git-url> | <owner/repo> | </absolute/path> [--project]`',
-      )
+    if (!source || (at >= 0 && !marketplace)) {
+      return directReply(`Usage: \`${PLUGIN_SUBCOMMAND_USAGE[2]}\``)
     }
     try {
+      const added = marketplace
+        ? await pluginService.addMarketplace(userId, { source: marketplace })
+        : null
       const rec = await pluginService.install(userId, {
-        source,
+        source: added ? `${source}@${added.name}` : source,
         projectId: toProject ? (session.projectId ?? null) : null,
         enable: true,
       })
