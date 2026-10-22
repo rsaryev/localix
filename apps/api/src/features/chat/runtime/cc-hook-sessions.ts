@@ -24,6 +24,7 @@ import {
   type CcHookRegistry,
   type CcHooksRuntime,
   type CcSessionEnvFiles,
+  type CcTranscript,
 } from '../../cc-hooks'
 import type { ScopedCcHooks } from './run-contract'
 
@@ -37,6 +38,8 @@ export interface CcHookSessionEntry {
   emitNotice?: (message: string, event: CcHookEvent) => void
   /** The session's `CLAUDE_ENV_FILE`s: CwdChanged and FileChanged hooks write theirs there. */
   envFiles?: CcSessionEnvFiles
+  /** The session's transcript file (`transcript_path`), refreshed before a hook reads it. */
+  transcript?: CcTranscript
 }
 
 /** Sessions watched at once; the oldest watch is dropped beyond it. */
@@ -65,6 +68,7 @@ export function createCcHookSessions(watchFile?: WatchFile) {
       ...(entry.onceKeys ? { onceKeys: entry.onceKeys } : {}),
       ...(entry.emitNotice ? { emitNotice: entry.emitNotice } : {}),
       ...(entry.envFiles ? { envFiles: entry.envFiles } : {}),
+      ...(entry.transcript ? { transcript: entry.transcript } : {}),
       onAsyncContext: (text) => appendAsyncContext(sessionId, text),
     })
   }

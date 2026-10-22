@@ -122,7 +122,6 @@ export const CC_OFFICIAL_HOOKIFY_SCENARIOS = [
   },
   {
     name: 'cc-official: hookify — its Stop hook gets a transcript_path to the conversation',
-    known: 'Localix keeps no transcript file and sends transcript_path empty.',
     async run(rt) {
       await withPlugins(rt, ['hookify'], { spy: ['Stop'] }, async ({ session, spy }) => {
         await rt.say(session.id, `Fix it. ${script({ localix: ['Finished.'] })}`)
@@ -135,7 +134,6 @@ export const CC_OFFICIAL_HOOKIFY_SCENARIOS = [
   },
   {
     name: 'cc-official: hookify — a stop rule on the transcript holds the turn open until the tests ran',
-    known: 'Localix sends Stop hooks an empty transcript_path, so a transcript rule never matches.',
     async run(rt) {
       await withPlugins(rt, ['hookify'], { spy: ['Stop'] }, async ({ dir, session, spy }) => {
         mkdirSync(path.join(dir, '.claude'), { recursive: true })

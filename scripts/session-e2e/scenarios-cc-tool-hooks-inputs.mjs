@@ -49,8 +49,6 @@ export const CC_TOOL_HOOK_INPUT_SCENARIOS = [
   },
   {
     name: 'cc-tool-hooks: PreToolUse stdin carries transcript_path, permission_mode and absolute file paths',
-    known:
-      'transcript_path is an empty string: no conversation transcript file is written for hooks',
     async run(rt) {
       const calls = [{ tool: 'write', args: { files: [{ path: 'ccth-abs.txt', content: 'x' }] } }]
       const hooks = (h) => on('PreToolUse', 'Write', h('pre'))

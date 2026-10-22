@@ -160,8 +160,6 @@ export const CC_AGENT_HOOK_SCENARIOS = [
   },
   {
     name: 'cc-agents: SubagentStop input carries agent_transcript_path, the subagent’s own transcript',
-    known:
-      'Localix keeps no transcript files: `agent_transcript_path` is sent empty, as `transcript_path` is',
     async run(rt) {
       const files = agentPlugin('scribe', ['tools: Read'], 'TRANSCRIPT-SCRIBE body.', {
         SubagentStop: [[null, hookCommand(rt, 'ag-stoppath')]],

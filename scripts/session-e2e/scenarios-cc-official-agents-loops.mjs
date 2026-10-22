@@ -79,6 +79,30 @@ export const CC_OFFICIAL_AGENT_LOOP_SCENARIOS = [
     },
   },
   {
+    name: 'cc-official: ralph-loop — its Stop hook reads the transcript, feeds the prompt back, and ends the loop at the completion promise',
+    async run(rt) {
+      await withPlugins(rt, ['ralph-loop'], {}, async ({ dir, session }) => {
+        const replies = ['Ready.', 'Pass one.', 'Pass two. <promise>DONE</promise>', 'Pass three.']
+        const ready = await rt.say(session.id, `Get ready. ${script({ localix: replies })}`)
+        const before = runs(rt, ready, 'localix').length
+        const after = await rt.say(
+          session.id,
+          '/ralph-loop:ralph-loop Polish the README --max-iterations 5 --completion-promise DONE',
+        )
+        // ralph's Stop hook takes the last assistant text out of transcript_path ("grep
+        // '"role":"assistant"' … jq '.message.content[] | select(.type == "text")'"): without the
+        // promise it blocks with the prompt as the reason, so the agent goes again; with it, the
+        // loop ends and the state file goes.
+        const turn = runs(rt, after, 'localix').slice(before)
+        assert.deepEqual(
+          turn.map((request) => request.answered.text),
+          ['Pass one.', 'Pass two. <promise>DONE</promise>'],
+        )
+        assert.ok(!existsSync(path.join(dir, '.claude/ralph-loop.local.md')), 'the loop ended')
+      })
+    },
+  },
+  {
     name: 'cc-official: ralph-loop — a setup script that fails aborts /ralph-loop:ralph-loop before the model is asked',
     async run(rt) {
       await withPlugins(rt, ['ralph-loop'], {}, async ({ dir, session }) => {

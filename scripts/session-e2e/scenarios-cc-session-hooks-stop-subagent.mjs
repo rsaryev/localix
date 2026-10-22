@@ -55,7 +55,6 @@ export const CC_SESSION_HOOK_STOP_SUBAGENT_SCENARIOS = [
   },
   {
     name: 'cc-session-hooks: a UserPromptSubmit input carries a transcript_path',
-    known: 'Localix keeps no transcript file and sends transcript_path ""',
     async run(rt) {
       const p = hookPlugin(rt, 'ccs-transcript').on('UserPromptSubmit', 'ups')
       await p.run(async () => {

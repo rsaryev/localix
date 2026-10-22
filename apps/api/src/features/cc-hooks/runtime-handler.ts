@@ -5,6 +5,7 @@ import { executeHttpHook } from './http'
 import { runMcpToolHook } from './mcp-tool-hook'
 import { mapPromptOutcome } from './prompt-hook'
 import { spendOnce } from './runtime-selection'
+import { refreshTranscriptFor } from './transcript'
 import { runHookOperation } from '../lifecycle-hooks/operation'
 
 type HandlerRunnerOptions = Pick<
@@ -16,6 +17,7 @@ type HandlerRunnerOptions = Pick<
   | 'callMcpTool'
   | 'emitNotice'
   | 'onceKeys'
+  | 'transcript'
 > & {
   signalFor: (event: CcHookEvent) => AbortSignal | undefined
   /** What an event adds to a command hook's environment (`CLAUDE_ENV_FILE`). */
@@ -66,6 +68,7 @@ export function createHookHandlerRunner(options: HandlerRunnerOptions) {
     input: CcHookInput,
     addContextOnZero: boolean,
   ): Promise<CcHookOutcome> {
+    await refreshTranscriptFor(options.transcript, [h], input)
     const result = await runHookOperation({
       timeoutMs: h.timeoutMs,
       signal: signalFor(event),

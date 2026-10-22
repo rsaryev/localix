@@ -41,6 +41,7 @@ import {
 } from './cc-hook-evaluators'
 import type { RunCatalog, RunEnv, RunParams } from './types'
 import { ccPermissionMode, ccSessionEnvFilesOf, ccSubagentOf } from './cc-hook-session-facts'
+import { createCcTranscript } from './cc-transcript'
 import type { PermissionMode } from '../../../../contracts/permission-modes'
 
 export interface BuildRunCcHooksInput {
@@ -97,6 +98,13 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
   const onceKeys = ensureCcHookOnceKeys(ccHookOnceKeys, session.id)
   const emitNotice = ccHookNoticeEmitter(deps.streamRegistry, userId, session.id)
   const envFiles = ccSessionEnvFilesOf(session)
+  const transcript = createCcTranscript({
+    repo: env.repo,
+    userId,
+    session,
+    cwd: defaultCwd,
+    warn: ccHooksConsoleLogger.warn,
+  })
   const subagent = ccSubagentOf(session, speakerAgentId)
 
   const { registry: ccHookRegistry } = await buildCcHookRegistry({
@@ -111,6 +119,7 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
     onceKeys,
     emitNotice,
     envFiles,
+    transcript,
   })
   // Run-SCOPED frontmatter hooks: a skill's or a delegated sub-agent's `hooks`
   // block, active only for THIS run (merged in, converting Stop→SubagentStop for
@@ -145,6 +154,7 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
     // A delegated child's hooks fire inside its subagent (`agent_id`, `agent_type`).
     ...(subagent ? { agent: subagent } : {}),
     envFiles,
+    transcript,
     logger: ccHooksConsoleLogger,
     // Per-session `once` tracker (survives across the per-run runtimes).
     onceKeys,

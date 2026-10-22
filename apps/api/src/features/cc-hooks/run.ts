@@ -20,6 +20,8 @@
 import type { CcHookEvent, CcHookHandler, CcHookInput, CcHookOutcome } from './contracts'
 import { executeHookInBackground } from './executor'
 import { matchesField } from './matcher'
+import { PERMISSION_MODE_EVENTS } from './protocol-types'
+import { readsTranscript } from './transcript'
 import type { CcHooksRuntime, CcRunStop, CreateCcHooksRuntimeOptions } from './runtime-contracts'
 import {
   EMPTY_RUNTIME,
@@ -39,22 +41,6 @@ import { envFileForEvent } from './session-env'
 
 export type { CcHooksRuntime, CreateCcHooksRuntimeOptions } from './runtime-contracts'
 
-/** The events whose documented input carries `permission_mode` (hooks.md, each event's example). */
-const PERMISSION_MODE_EVENTS: ReadonlySet<CcHookEvent> = new Set<CcHookEvent>([
-  'UserPromptSubmit',
-  'UserPromptExpansion',
-  'PreToolUse',
-  'PermissionRequest',
-  'PostToolUse',
-  'PostToolUseFailure',
-  'PostToolBatch',
-  'PermissionDenied',
-  'SubagentStop',
-  'TaskCompleted',
-  'Stop',
-  'TeammateIdle',
-])
-
 export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooksRuntime {
   const {
     registry,
@@ -73,6 +59,7 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
     agent,
     envFiles,
     onAsyncContext,
+    transcript,
   } = opts
   const hasAny = Object.values(registry).some((groups) => groups && groups.length > 0)
   if (!enabled || !hasAny) return EMPTY_RUNTIME
@@ -82,8 +69,8 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
 
   const baseInput = <E extends CcHookEvent>(event: E) => ({
     session_id: sessionId,
-    // No transcript file is kept by this host: the documented field is sent, empty.
-    transcript_path: '',
+    // A projection of the stored conversation, refreshed before a hook that can read it runs.
+    transcript_path: transcript?.path ?? '',
     cwd: projectDir,
     ...(permissionMode && PERMISSION_MODE_EVENTS.has(event)
       ? { permission_mode: permissionMode }
@@ -109,24 +96,29 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
     signalFor,
     envFor,
     onceKeys,
+    transcript,
   })
 
   /** Fire background (`async`) handlers — never awaited, never affect the decision. */
   function fireAsync(handlers: CcHookHandler[], input: CcHookInput): void {
-    for (const h of handlers)
-      executeHookInBackground(
-        h,
-        input,
-        projectDir,
-        logger,
-        rewake,
-        signalFor(input.hook_event_name),
-        envFor(input.hook_event_name),
-        (context) => {
-          spendOnce(onceKeys, input.hook_event_name, h)
-          if (context) onAsyncContext?.(context)
-        },
-      )
+    for (const h of handlers) {
+      const start = () =>
+        executeHookInBackground(
+          h,
+          input,
+          projectDir,
+          logger,
+          rewake,
+          signalFor(input.hook_event_name),
+          envFor(input.hook_event_name),
+          (context) => {
+            spendOnce(onceKeys, input.hook_event_name, h)
+            if (context) onAsyncContext?.(context)
+          },
+        )
+      if (transcript && readsTranscript(h)) void transcript.refresh(input).then(start)
+      else start()
+    }
   }
 
   /**
@@ -276,8 +268,7 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
         agent_type: agentType,
         ...(lastMessage ? { last_assistant_message: lastMessage } : {}),
         stop_hook_active: Boolean(subOpts?.stopHookActive),
-        // The subagent's own transcript: empty, as `transcript_path` is (no transcript file).
-        agent_transcript_path: '',
+        agent_transcript_path: transcript?.agentPath(agentId) ?? '',
       }
       return stopVerdictFrom(
         await runAll('SubagentStop', (m) => matchesField(m, agentType), input, false, {

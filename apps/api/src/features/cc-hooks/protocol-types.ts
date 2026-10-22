@@ -5,6 +5,22 @@ import type { CcAddedHookInput } from './protocol-event-inputs'
 // Command-hook JSON protocol
 // ---------------------------------------------------------------------------
 
+/** The events whose documented input carries `permission_mode` (hooks.md, each event's example). */
+export const PERMISSION_MODE_EVENTS: ReadonlySet<CcHookEvent> = new Set<CcHookEvent>([
+  'UserPromptSubmit',
+  'UserPromptExpansion',
+  'PreToolUse',
+  'PermissionRequest',
+  'PostToolUse',
+  'PostToolUseFailure',
+  'PostToolBatch',
+  'PermissionDenied',
+  'SubagentStop',
+  'TaskCompleted',
+  'Stop',
+  'TeammateIdle',
+])
+
 /** Common fields every hook receives as JSON on stdin. */
 export interface CcHookInputBase {
   session_id: string

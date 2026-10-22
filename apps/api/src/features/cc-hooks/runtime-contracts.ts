@@ -7,6 +7,7 @@ import type { CcAddedHooksRuntime } from './runtime-contracts-added'
 import type { CcDisplayHooksRuntime } from './runtime-display-hooks'
 import type { CcWorktreeHooksRuntime } from './runtime-worktree-hooks'
 import type { CcSessionEnvFiles } from './session-env'
+import type { CcTranscript } from './transcript'
 
 /** Aggregated PreToolUse decision handed to the tool wrapper. */
 export interface PreToolUseResult {
@@ -162,6 +163,8 @@ export interface CreateCcHooksRuntimeOptions {
   agent?: { id: string; type: string }
   /** The session's `CLAUDE_ENV_FILE`s (session-env.ts); absent → hooks get none. */
   envFiles?: CcSessionEnvFiles
+  /** The session's transcript file and how to refresh it (transcript.ts); absent → paths are ''. */
+  transcript?: CcTranscript
   logger: HookLogger
   /**
    * Arms the one wake an `asyncRewake` hook may send, as it starts; the hook's exit 2 fires it
