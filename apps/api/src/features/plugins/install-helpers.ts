@@ -24,11 +24,13 @@ export interface MaterializedPluginSource {
   directory: string
   name: string
   inPlace: boolean
+  /** The marketplace the source was resolved from; see `copyExtensionTree`. */
+  linkRoot?: string
 }
 
 /** Source acquisition owns temporary clones; publication owns installed files and state. */
 export async function withPluginSource<T>(
-  input: { source: string; installRoot: string; nameOverride?: string },
+  input: { source: string; installRoot: string; nameOverride?: string; linkRoot?: string },
   operation: (source: MaterializedPluginSource) => Promise<T>,
 ): Promise<T> {
   if (isGitSource(input.source)) {
@@ -36,7 +38,8 @@ export async function withPluginSource<T>(
     try {
       await cloneRepo(gitUrl(input.source), temporary)
       await stripDotGit(temporary)
-      return await withPluginSource({ ...input, source: temporary }, operation)
+      // A cloned repository is the plugin itself; nothing outside it may be linked in.
+      return await withPluginSource({ ...input, source: temporary, linkRoot: undefined }, operation)
     } finally {
       await rmrf(temporary)
     }
@@ -56,6 +59,7 @@ export async function withPluginSource<T>(
     directory,
     name,
     inPlace: isUnderInstallRoot(directory, resolve(input.installRoot), name),
+    ...(input.linkRoot ? { linkRoot: input.linkRoot } : {}),
   })
 }
 
@@ -103,7 +107,7 @@ export async function installFromLocal(
   })
 }
 
-/** Copy a plugin source tree, skipping VCS/dependency/build cruft and following no symlinks. */
+/** Copy a plugin source tree whole (VCS metadata aside), handling symlinks as Claude Code does. */
 export const copyPluginTree = copyExtensionTree
 
 async function manifestName(dir: string): Promise<string> {

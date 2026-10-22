@@ -132,7 +132,7 @@ export async function loadManifest(
     basename(dir),
   )
 
-  const entrypoints = await resolveEntrypoints(dir, manifest)
+  const entrypoints = await resolveEntrypoints(dir, manifest, composed.layout)
   // Parse command and agent files in parallel (independent reads).
   const [parsedCmdFiles, parsedAgentFiles, skillNames] = await Promise.all([
     Promise.all(
@@ -186,7 +186,16 @@ export async function loadManifest(
       ? { lspServers: Object.keys(entrypoints.lspServers) }
       : {}),
   }
-  const layoutIssues = [...composed.issues, ...hookIssues(entrypoints.hookConfigs)]
+  const layoutIssues = [
+    ...composed.issues,
+    // A hooks file that failed to load: the plugin runs without the hooks in it.
+    ...(entrypoints.hookErrors ?? []).map((message): PluginIssue => ({
+      severity: 'error',
+      path: 'hooks',
+      message,
+    })),
+    ...hookIssues(entrypoints.hookConfigs),
+  ]
   entrypoints.diagnostics?.sort((a, b) =>
     `${a.kind}\0${a.path}\0${a.message}`.localeCompare(`${b.kind}\0${b.path}\0${b.message}`),
   )

@@ -52,6 +52,29 @@ function reparse(
 }
 
 /**
+ * The call as a PermissionRequest hook's `updatedInput` rewrote it when it allowed the call,
+ * taken once and re-validated like a PreToolUse rewrite; undefined when no hook rewrote it. Read
+ * where the gate has decided: here when the loop's gate ran before the call, and after the gate
+ * when the gate runs inside the tool-call chain (`chat/runtime/run/chain-gate.ts`).
+ */
+export function approvedInputFor(
+  runtime: CcHooksRuntime,
+  tool: AgentTool,
+  toolCallId: string,
+  logger: HookLogger,
+): { input: unknown } | undefined {
+  if (!runtime.active) return undefined
+  const approved = runtime.takeApprovedInput(toolCallId)
+  if (!approved) return undefined
+  const reparsed = reparse(tool, approved.input)
+  if (reparsed.ok) return { input: reparsed.input }
+  logger.warn(
+    `[cc-hooks] PermissionRequest updatedInput for "${tool.name}" ignored (schema re-parse failed: ${reparsed.error})`,
+  )
+  return undefined
+}
+
+/**
  * Hand the run's Elicitation / ElicitationResult hooks to the call: an MCP server may ask the
  * person for input while its tool runs, and these hooks answer before, or review after, the card.
  */
@@ -84,15 +107,8 @@ export function wrapToolsWithCcHooks(
 
       // ---- PermissionRequest `updatedInput` ----------------------------------
       // The approval hook rewrote the call it allowed; re-validated like a PreToolUse rewrite.
-      const approved = runtime.takeApprovedInput(toolCallId)
-      if (approved) {
-        const reparsed = reparse(tool, approved.input)
-        if (reparsed.ok) effectiveInput = reparsed.input
-        else
-          logger.warn(
-            `[cc-hooks] PermissionRequest updatedInput for "${tool.name}" ignored (schema re-parse failed: ${reparsed.error})`,
-          )
-      }
+      const approved = approvedInputFor(runtime, tool, toolCallId, logger)
+      if (approved) effectiveInput = approved.input
 
       // ---- PreToolUse -----------------------------------------------------
       const pre = await runtime.runPreToolUse(tool.name, effectiveInput, toolCallId)

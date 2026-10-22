@@ -1,6 +1,6 @@
 import type { DiscoveredPlugin } from './discovery'
 import type { PluginConfigValues } from './config'
-import { collectMcpConfigTokens, collectMcpTokensOutsideEnv } from './mcp'
+import { collectMcpConfigTokens, mcpShellFieldReferencingOption } from './mcp'
 import { collectHookUserConfigTokens } from '../cc-hooks/config'
 import { isRequiredConfigMissing } from '../ext/manifest-validate'
 
@@ -48,13 +48,13 @@ export function validatePluginConfig(
     }
   }
 
-  // Sensitive (`secret: true`) config keys are substituted ONLY into an MCP server's
-  // `env` block (CC spec: `${user_config.KEY}` excludes sensitive values elsewhere).
-  // A sensitive token in command/args/url/headers is left unsubstituted at load time.
-  for (const token of collectMcpTokensOutsideEnv(plugin.entrypoints.mcpServers)) {
-    if (plugin.manifest.config?.[token]?.secret) {
+  // Options, sensitive ones included, substitute anywhere in an MCP server's config, as in Claude
+  // Code — except `headersHelper`, which runs through a shell: such a server does not load.
+  for (const [name, server] of Object.entries(plugin.entrypoints.mcpServers)) {
+    const field = mcpShellFieldReferencingOption(server)
+    if (field) {
       warnings.push(
-        `MCP config references sensitive key "\${${token}}" outside "env" — sensitive values are only substituted into the server's "env" block; the token is left unsubstituted. Move it to "env".`,
+        `MCP server "${name}" references \${user_config.*} in "${field}" — the value would be re-parsed by a shell, so the server does not load. Read the value inside the helper script (e.g. from an env var set in the server's "env" block).`,
       )
     }
   }

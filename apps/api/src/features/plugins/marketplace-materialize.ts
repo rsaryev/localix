@@ -4,12 +4,13 @@ import { basename, dirname, join, resolve } from 'node:path'
 import { MANIFEST_DIR, MARKETPLACE_FILE } from '@localixai/claude-plugin'
 
 import { isPathWithin } from '../../lib/path-containment'
-import { rmrf, stripDotGit } from '../ext/install-tree'
+import { copyExtensionTree, rmrf, stripDotGit } from '../ext/install-tree'
 import {
   sourceCloneUrl,
   type MarketplaceSource,
   type ResolvedEntrySource,
 } from './marketplace-source'
+import { assertGitArgs } from './marketplace-git-args'
 import { fetchNpmPlugin } from './marketplace-source-npm'
 import { fetchArchivePlugin, fetchCatalogText } from './marketplace-source-archive'
 import type { MarketplaceRegistryDeps } from './marketplace-registry'
@@ -21,7 +22,8 @@ import type { MarketplaceRegistryDeps } from './marketplace-registry'
  */
 
 /**
- * Materialize a marketplace source into `staging` (replaced). A directory is copied; a catalog
+ * Materialize a marketplace source into `staging` (replaced). A directory is copied, keeping only
+ * the symlinks that resolve inside it (installing a plugin later dereferences those); a catalog
  * file brings its marketplace root (two levels up, when it sits in `.claude-plugin/`) or else only
  * itself; a hosted catalog (`url`) is just its `marketplace.json`, so its relative plugin sources
  * cannot resolve; git and npm sources are fetched.
@@ -33,12 +35,11 @@ export async function materializeMarketplace(
 ): Promise<void> {
   await rmrf(staging)
   if (source.source === 'local') {
-    await fs.cp(source.path, staging, { recursive: true, verbatimSymlinks: true })
+    await copyExtensionTree(source.path, staging)
   } else if (source.source === 'file') {
     const file = resolve(source.path)
     const inLayout = basename(dirname(file)) === MANIFEST_DIR
-    if (inLayout)
-      await fs.cp(dirname(dirname(file)), staging, { recursive: true, verbatimSymlinks: true })
+    if (inLayout) await copyExtensionTree(dirname(dirname(file)), staging)
     await writeCatalog(staging, await fs.readFile(file, 'utf8'))
   } else if (source.source === 'url') {
     await writeCatalog(staging, await fetchCatalogText(source.url))
@@ -48,6 +49,7 @@ export async function materializeMarketplace(
   } else {
     const url = sourceCloneUrl(source)
     if (!url) throw new Error('Unsupported marketplace source')
+    assertGitArgs('Marketplace source', url, source.ref)
     await deps.cloneRepo(url, staging, source.ref)
   }
   await stripDotGit(staging)
@@ -78,6 +80,7 @@ export async function fetchEntryPlugin(
     return staging
   }
   const { url, ref, subdir } = resolved.git
+  assertGitArgs('Plugin source', url, ref)
   await deps.cloneRepo(url, staging, ref, subdir)
   await stripDotGit(staging)
   if (!subdir) return staging

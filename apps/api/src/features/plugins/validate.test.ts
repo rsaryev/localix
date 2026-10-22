@@ -452,33 +452,29 @@ describe('validatePlugin — sensitive keys in MCP config', () => {
     REGION: { type: 'string', description: 'a region' },
   }
 
-  it('warns when a sensitive key is referenced outside "env" (args/url/headers)', async () => {
+  it('does NOT warn when a sensitive key is referenced in args/url/headers (it substitutes there)', async () => {
     const plugin = await writePlugin('mcp-secret-out', 'mcp-secret-out', {
       config,
       mcpServers: {
-        a: { command: 'node', args: ['--key=${SECRET}'] },
+        a: { command: 'node', args: ['--key=${SECRET}'], env: { TOKEN: '${SECRET}' } },
         b: { url: 'https://x.example', headers: { Authorization: 'Bearer ${user_config.SECRET}' } },
       },
     })
     const { warnings } = validatePlugin(plugin)
-    const hits = warnings.filter((w) => w.includes('sensitive key "${SECRET}"'))
-    expect(hits).toHaveLength(1)
-    expect(hits[0]).toContain('"env"')
+    expect(warnings.some((w) => w.includes('SECRET') || w.includes('user_config'))).toBe(false)
   })
 
-  it('does NOT warn when the sensitive key stays inside "env" or when a non-sensitive key is used anywhere', async () => {
-    const plugin = await writePlugin('mcp-secret-ok', 'mcp-secret-ok', {
+  it('warns when a headersHelper references ${user_config.*} (it runs through a shell)', async () => {
+    const plugin = await writePlugin('mcp-helper', 'mcp-helper', {
       config,
       mcpServers: {
-        a: {
-          command: 'node',
-          args: ['--region=${REGION}'],
-          env: { TOKEN: '${SECRET}' },
-        },
+        api: { url: 'https://x.example', headersHelper: './auth.sh ${user_config.REGION}' },
       },
     })
     const { warnings } = validatePlugin(plugin)
-    expect(warnings.some((w) => w.includes('sensitive key'))).toBe(false)
+    const hits = warnings.filter((w) => w.includes('MCP server "api"'))
+    expect(hits).toHaveLength(1)
+    expect(hits[0]).toContain('"headersHelper"')
   })
 })
 

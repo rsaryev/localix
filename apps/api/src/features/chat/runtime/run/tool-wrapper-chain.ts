@@ -5,6 +5,7 @@ import { wrapToolsWithTimeoutPromoter } from '../../../agent-core/tools/timeout-
 import { wrapToolsWithCcHooks } from '../../../cc-hooks'
 import { wrapToolsWithHooks } from '../../../plugins/hooks'
 import { wrapToolsWithMods, type ModRunScope } from '../../../mods/run-scope'
+import { wrapToolsWithPermissionGate, type ChainGate } from './chain-gate'
 
 /**
  * The wrapper chain, innermost-first, as a value rather than a sentence.
@@ -20,6 +21,7 @@ import { wrapToolsWithMods, type ModRunScope } from '../../../mods/run-scope'
  * the list describes, so the two cannot disagree.
  */
 export const TOOL_WRAPPER_CHAIN = [
+  { wrapper: 'wrapToolsWithPermissionGate', label: 'permission-gate' },
   { wrapper: 'wrapToolsWithHooks', label: 'plugin-hooks' },
   { wrapper: 'wrapToolsWithCcHooks', label: 'cc-hooks' },
   { wrapper: 'wrapToolsWithMods', label: 'mods' },
@@ -35,7 +37,10 @@ export const TOOL_WRAPPER_CHAIN = [
  * place and built in another is the drift the anti-drift test exists to catch.
  *
  * Why the order is what it is:
- *  - plugin hooks innermost, then CC hooks, so a PreToolUse deny happens before anything
+ *  - the permission gate innermost, and only for a run whose mods hear `tool.call` or
+ *    `tool.check` (otherwise it is the loop's `beforeToolCall`, before every wrapper): Claude
+ *    Code decides a call after the `tool.call` and `PreToolUse` hooks (`chain-gate.ts`);
+ *  - plugin hooks next, then CC hooks, so a PreToolUse deny happens before anything
  *    downstream gets to observe or time the call;
  *  - mods around them: a mod's `tool.call` reaches the settings hooks through `next`, as in
  *    Claude Code, and may answer or refuse before they run;
@@ -53,6 +58,8 @@ export function applyToolWrapperChain(
     logger: Parameters<typeof wrapToolsWithCcHooks>[2]
     /** Claude Code mods enabled for the run; absent where a run has none. */
     mods?: ModRunScope
+    /** The run's permission gate, when it sits inside the chain (`chain-gate.ts`). */
+    gate?: ChainGate
     observe?: (event: {
       toolName: string
       input: unknown
@@ -82,7 +89,8 @@ export function applyToolWrapperChain(
           },
         }))
       : tools
-  const hooked = wrapToolsWithHooks(observed, input.pluginHooks, input.pluginHookOptions)
+  const gated = wrapToolsWithPermissionGate(observed, input.gate)
+  const hooked = wrapToolsWithHooks(gated, input.pluginHooks, input.pluginHookOptions)
   const ccHooked = wrapToolsWithCcHooks(hooked, input.ccHooks, input.logger)
   const modded = input.mods ? wrapToolsWithMods(ccHooked, input.mods) : ccHooked
   return wrapToolsWithStuckRunBreaker(wrapToolsWithTimeoutPromoter(modded))

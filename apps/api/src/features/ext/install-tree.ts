@@ -1,56 +1,12 @@
 import { promises as fs } from 'node:fs'
-import { basename, join, resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 
 import { isPathBelow } from '../../lib/path-containment'
 
-// Install-tree copy primitive for the plugin installer.
-// Both subsystems copy a source extension directory under a managed install root,
-// skipping the same VCS/dependency/build cruft — so the allowlist + copy lives here
-// (in features/ext) rather than in one feature that the other reaches sideways into.
+// Install-tree primitives for the plugin installer: removal, naming and root containment.
+// The copy itself lives in `copy-tree.ts` and is re-exported here for existing importers.
 
-/**
- * Directory/file names never copied into an installed extension — VCS metadata,
- * dependency trees, and build/editor cruft. Keeps installs lean and avoids dragging
- * a `.env`/`.git` from the source into the install root.
- */
-const COPY_IGNORE = new Set([
-  // VCS
-  '.git',
-  '.svn',
-  '.hg',
-  // dependencies
-  'node_modules',
-  '.venv',
-  'venv',
-  '__pycache__',
-  '.pytest_cache',
-  // Python eggs (.eggs dir; .egg-info dirs are suffix-matched below)
-  '.eggs',
-  // build output
-  'dist',
-  'build',
-  'out',
-  '.next',
-  '.nuxt',
-  '.svelte-kit',
-  // caches and misc tooling
-  '.turbo',
-  '.cache',
-  'coverage',
-  '.nyc_output',
-  '.tox',
-  // editor configs
-  '.vscode',
-  '.idea',
-  '.DS_Store',
-  'Thumbs.db',
-  // secrets (never copy these into a shared install)
-  '.env',
-  '.env.local',
-  '.env.production',
-  '.env.development',
-])
-const COPY_IGNORE_SUFFIXES = ['.egg-info', '.pyc', '.pyo', '.class']
+export { copyExtensionTree, type CopyTreeOptions } from './copy-tree'
 
 /**
  * Recursively delete a path, swallowing a missing-target (or any) error. The
@@ -66,21 +22,6 @@ export const rmrf = (path: string): Promise<void> =>
 
 /** Strip a materialized clone's `.git` so the installed copy is a plain directory. */
 export const stripDotGit = (dir: string): Promise<void> => rmrf(join(dir, '.git'))
-
-/**
- * Copy an extension source tree, skipping VCS/dependency/build cruft and
- * following no symlinks (the link is copied, never its possibly out-of-tree target).
- */
-export async function copyExtensionTree(src: string, dest: string): Promise<void> {
-  await fs.cp(src, dest, {
-    recursive: true,
-    verbatimSymlinks: true,
-    filter: (source) => {
-      const base = basename(source)
-      return !COPY_IGNORE.has(base) && !COPY_IGNORE_SUFFIXES.some((s) => base.endsWith(s))
-    },
-  })
-}
 
 /**
  * Read an extension manifest file and return its trimmed `name` string, or null

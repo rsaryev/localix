@@ -173,11 +173,13 @@ describe('config parsing', () => {
     // Non-sensitive keys become variables the shell expands (a value is never parsed as
     // source); sensitive left verbatim (shell-form rule); an unset key is bound EMPTY so its
     // :-fallback applies and an ambient variable cannot stand in; bare ${HOME} is untouched.
+    // Every option, sensitive included, also reaches the process as CLAUDE_PLUGIN_OPTION_<KEY>.
     expect(h?.command).toBe(
       'deploy --region ${CLAUDE_PLUGIN_OPTION_REGION} --token ${user_config.API_TOKEN} --tries ${CLAUDE_PLUGIN_OPTION_MISSING:-3} --home ${HOME}',
     )
     expect(h?.shellEnv).toEqual({
       CLAUDE_PLUGIN_OPTION_REGION: 'eu-1',
+      CLAUDE_PLUGIN_OPTION_API_TOKEN: 's3cret',
       CLAUDE_PLUGIN_OPTION_MISSING: '',
     })
   })
@@ -318,7 +320,10 @@ describe('config parsing', () => {
     expect(h?.command).toBe(
       'sync ${CLAUDE_PLUGIN_DATA} --region ${CLAUDE_PLUGIN_OPTION_REGION} --token ${user_config.API_TOKEN}',
     )
-    expect(h?.shellEnv).toEqual({ CLAUDE_PLUGIN_OPTION_REGION: 'eu-1' })
+    expect(h?.shellEnv).toEqual({
+      CLAUDE_PLUGIN_OPTION_REGION: 'eu-1',
+      CLAUDE_PLUGIN_OPTION_API_TOKEN: 's3cret',
+    })
     expect(h?.pluginDataDir).toBe(dataDir)
     expect((await fs.stat(dataDir)).isDirectory()).toBe(true)
   })

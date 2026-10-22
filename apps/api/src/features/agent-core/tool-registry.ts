@@ -89,7 +89,7 @@ export interface CoreToolDeps {
   terminalControl?: TerminalToolDeps
   /** Record a dev-server URL a background bash job advertised, for the lazy browser
    *  auto-open, along with the command that produced it so a stopped preview can be relaunched. */
-  /** Enabled plugins' `bin/` directories, prepended to PATH for bash subprocesses. Injected as DATA. */
+  /** Enabled plugins' `bin/` directories, appended to PATH for bash subprocesses. Injected as DATA. */
   bashPluginBinDirs?: string[]
   /** Engine for `bash` `until` waits (poll + wake). Bound to user+session; absent → unavailable. */
   bashWaitHost?: BashWaitHost

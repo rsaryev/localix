@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'bun:test'
 
-import { expandString, expandServerConfig } from './expand'
+import { connectServerConfig, expandString, expandServerConfig } from './expand'
 
 describe('expandString', () => {
   const env = { FOO: 'bar', EMPTY: '', HOME_DIR: '/home/u' }
@@ -56,5 +56,20 @@ describe('expandServerConfig', () => {
       { env: {}, extraEnv: { CLAUDE_PROJECT_DIR: '/repo' } },
     )
     expect(out.command).toEqual(['echo', '/repo'])
+  })
+})
+
+describe('connectServerConfig', () => {
+  const env = { GITHUB_TOKEN: 'ghp_HOSTSECRET' }
+  const config = { url: 'https://x.example', headers: { X: '${GITHUB_TOKEN}' } }
+
+  it('expands a record whose config was stored with its tokens', () => {
+    expect(connectServerConfig({ config }, { env }).headers).toEqual({ X: 'ghp_HOSTSECRET' })
+  })
+
+  it('leaves an already-resolved config (a plugin server) as built', () => {
+    const out = connectServerConfig({ config, configExpanded: true }, { env })
+    expect(out).toEqual(config)
+    expect(out).not.toBe(config)
   })
 })

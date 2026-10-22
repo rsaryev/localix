@@ -57,6 +57,7 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
     resolveSessionWorkingDir,
     gatherSessionSkills,
     gatherEnabledPluginCommands,
+    gatherEnabledPluginSkills,
     buildSessionPluginCatalog,
   } = createSessionWorkspace({
     projectsRepo,
@@ -174,6 +175,7 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
     resolveSessionWorkingDir,
     gatherSessionSkills,
     gatherEnabledPluginCommands,
+    gatherEnabledPluginSkills,
     buildSessionPluginCatalog,
     resolveSessionWorkspaceMetadata,
     fileWatchService,

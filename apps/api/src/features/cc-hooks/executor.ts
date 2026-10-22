@@ -9,10 +9,11 @@
  *   - Exit 2  → BLOCKING error; stdout/JSON ignored, stderr text is the reason.
  *   - other   → non-blocking error; a warning is logged, execution continues.
  *
- * The child runs `sh -c <command>` with the user's full login-shell environment
+ * Shell form runs `sh -c <command>` (or PowerShell); exec form (`args`) spawns the
+ * executable directly with no shell. Either gets the user's full login-shell environment
  * (via `childEnv`, so a GUI-launched app still finds the user's PATH/tools) plus
- * `CLAUDE_PROJECT_DIR` (and `CLAUDE_PLUGIN_ROOT` + `CLAUDE_PLUGIN_DATA` for plugin
- * hooks). A per-hook
+ * `CLAUDE_PROJECT_DIR` (and `CLAUDE_PLUGIN_ROOT`, `CLAUDE_PLUGIN_DATA` and every
+ * `CLAUDE_PLUGIN_OPTION_<KEY>` for plugin hooks). A per-hook
  * timeout kills a stuck child.
  *
  * Layer: api feature module. Reuses the shared `childEnv` login-shell primitive.
@@ -24,6 +25,7 @@ import {
   type CcHookInput,
   type CcHookOutcome,
 } from './contracts'
+import { powershellPlaceholders } from './config-command'
 import { foldHookOutput, worktreePathFromText } from './output-parse'
 import { runHookCommand } from '../lifecycle-hooks/command'
 
@@ -36,13 +38,19 @@ export interface HookLogger {
 function runCommandHook(handler: CcHookHandler, input: string, cwd: string, signal?: AbortSignal) {
   return runHookCommand({
     command: handler.command,
+    ...(handler.args ? { args: handler.args } : {}),
+    ...(handler.shell ? { shell: handler.shell } : {}),
+    // Placeholders stay environment reads under PowerShell too (`shell: "powershell"`, or Windows
+    // without Git Bash), spelled `${env:NAME}` there.
+    forPowerShell: powershellPlaceholders,
     input,
     cwd,
     timeoutMs: handler.timeoutMs,
     maxOutputBytes: CC_HOOK_MAX_OUTPUT_BYTES,
     signal,
     env: childEnv({
-      // The command's `${user_config.KEY}` values, bound as variables rather than pasted into it.
+      // Every plugin option as `CLAUDE_PLUGIN_OPTION_<KEY>`, plus a shell-form command's
+      // `${user_config.KEY}` values, bound as variables rather than pasted into it.
       ...handler.shellEnv,
       CLAUDE_PROJECT_DIR: cwd,
       ...(handler.pluginRoot ? { CLAUDE_PLUGIN_ROOT: handler.pluginRoot } : {}),

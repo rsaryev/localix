@@ -9,6 +9,7 @@ import type { SessionStreamRegistry } from '../runtime/session-stream-registry'
 import type { MessageBinding } from '../contracts'
 import type { RunInvocation } from '../runtime/execution-context'
 import type { AnswerPendingAsk } from './composer-ask-answer'
+import type { ScopedCcHooks } from '../runtime/run-contract'
 
 export interface TurnEntryContext {
   deps: ChatServiceDeps
@@ -34,10 +35,5 @@ export interface RunJobTaskOptions {
   wait?: boolean
   bindings?: MessageBinding[]
   maxTurns?: number
-  ccScopedHooks?: {
-    raw: unknown
-    source: 'skill' | 'agent'
-    asSubagent?: boolean
-    agentType?: string
-  }[]
+  ccScopedHooks?: ScopedCcHooks[]
 }

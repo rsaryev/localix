@@ -8,6 +8,7 @@ import {
   type RenderChild,
 } from '@localixai/claude-plugin/mods'
 import { UnprocessableError } from '../../lib/domain-errors'
+import { whileDrawing } from './api/state-api'
 import type { ClientBundle } from './client-modules'
 import type { ModScene } from './contracts'
 import type { ModRegistry } from './registry'
@@ -86,7 +87,10 @@ export function createModPanes(deps: {
       },
       viewport: { ...viewport, isFullscreen: false },
     }
-    const drawn = await send(instance, 'ui.render', event, () => ({ type: 'engine' }))
+    // The state its hooks read subscribes the pane: a write to it draws the pane again.
+    const drawn = await whileDrawing(paneKey(instance, id), () =>
+      send(instance, 'ui.render', event, () => ({ type: 'engine' })),
+    )
     const drawing = { instance, plugin, id, title: pane.title }
     if (!drawn || (drawn as { type?: unknown }).type === 'engine') return { ...drawing, tree: null }
     try {

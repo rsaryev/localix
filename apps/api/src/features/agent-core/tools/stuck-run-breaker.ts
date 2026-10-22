@@ -1,6 +1,6 @@
 import type { AgentTool, AgentToolResult } from '@localixai/agent/agents'
 
-import { resultFromThrow } from './tool-error-result'
+import { PermissionGateBlockedError, resultFromThrow } from './tool-error-result'
 
 /**
  * THE ONE BRAKE ON A STUCK TOOL LOOP — limits, not advice.
@@ -90,6 +90,9 @@ export function wrapToolsWithStuckRunBreaker(
       try {
         result = await tool.execute(toolCallId, input, signal, onUpdate, context)
       } catch (error) {
+        // The gate counts its own refusals (`permission-gate-breaker.ts`), a person's apart, as it
+        // does when it refuses at the loop, where no refusal reaches this breaker.
+        if (error instanceof PermissionGateBlockedError) return error.result
         result = resultFromThrow(tool.name, error)
       }
       // A terminating tool (or an inner stop) ends the run anyway.

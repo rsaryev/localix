@@ -7,6 +7,7 @@ import {
 } from '@localixai/claude-plugin/mods'
 import { createAnswerCache } from './answer-cache'
 import { buildModApi } from './api/build-api'
+import { createStateSpaces } from './api/state-api'
 import { bundleClientModules, type ClientBundle } from './client-modules'
 import type { RunSurface } from './api/run-api'
 import { commandAnswer, commandRunEvent, type CommandInput } from './command-run'
@@ -68,6 +69,7 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
   const composer = createModComposer(() => ports.changed())
   const answers = createAnswerCache()
   const conversations = createModConversations()
+  const state = createStateSpaces({ changed: () => ports.changed() })
   const sources = new Map<string, Loaded>()
   const instances = new Map<string, Instance>()
   const starting = new Map<string, Promise<string | null>>()
@@ -116,6 +118,7 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
       runOf: (sessionId) => (sessionId ? runs.get(sessionId) : undefined),
       tableOf: (component) => tables?.get(component),
       calls,
+      state,
     })
     try {
       const judges = sceneOf(id).instances
@@ -225,6 +228,7 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
     /** The describing events' answers, kept per conversation (`answer-cache.ts`). */
     answers,
     conversations,
+    state, // `$.state` by project; `state.reset(cwd)` is Claude Code's `/clear` of one
     /** Load what is new or changed, unload what is gone; serialized, so loads never overlap. */
     reconcile(wanted: readonly ModSource[]): Promise<void> {
       lifecycle = lifecycle.then(async () => {

@@ -81,7 +81,12 @@ beforeAll(async () => {
   await fs.mkdir(join(chan, 'tools'), { recursive: true })
   await fs.writeFile(
     join(chan, 'plugin.json'),
-    JSON.stringify({ name: 'chan', version: '1.0.0', description: 'channel plugin' }),
+    JSON.stringify({
+      name: 'chan',
+      version: '1.0.0',
+      description: 'channel plugin',
+      tools: './tools/index.mjs',
+    }),
   )
   // A channel that immediately posts one inbound message, echoes the reply into
   // globalThis for assertions, then waits for the stop signal.

@@ -9,7 +9,7 @@ import { WebSocketClientTransport } from '@modelcontextprotocol/sdk/client/webso
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
 
 import type { McpServerRecord } from './repository'
-import { expandServerConfig } from './expand'
+import { connectServerConfig } from './expand'
 import { resolveConnectTimeoutMs } from './mcp-tools'
 import { silentAuthProvider } from './oauth/runtime'
 import { createElicitingClient } from './mcp-elicitation'
@@ -45,7 +45,7 @@ export function isMcpAuthenticationRequiredError(error: unknown): boolean {
  * project root) to the expansion so a config can reference it without a default.
  */
 function expandedConfig(server: McpServerRecord, cwd: string): Record<string, unknown> {
-  return expandServerConfig(server.config, { extraEnv: { CLAUDE_PROJECT_DIR: cwd } })
+  return connectServerConfig(server, { extraEnv: { CLAUDE_PROJECT_DIR: cwd } })
 }
 
 /**

@@ -5,6 +5,7 @@ import { asStringArray } from '../../lib/coerce'
 import { pathExists } from '../ext/fs-discovery'
 
 import type { PluginManifest } from './contracts'
+import type { ExtensionLayout } from './layout/compose'
 import {
   componentSources,
   DEFAULT_LOCATIONS,
@@ -13,6 +14,7 @@ import {
 import { parseMonitors, type PluginMonitor } from './contracts-monitors'
 import { toAbsList } from './discovery-paths'
 import { findHookModule, mergedConfigs, readJson, readMcpJson } from './discovery-entrypoint-files'
+import { readPluginHookFiles } from './discovery-hook-files'
 import { collectMarkdownFiles, type CollectedMarkdownFile } from './discovery-cc-files'
 import { resolveCcComponents, type PluginCcComponents } from './discovery-cc-components'
 
@@ -40,6 +42,8 @@ export interface ResolvedEntrypoints {
    * `hooks/hooks.json`. Each entry is fed to the cc-hooks pipeline by the loader.
    */
   hookConfigs: unknown[]
+  /** Hooks files that failed to load, in Claude Code's words (`discovery-hook-files.ts`). */
+  hookErrors?: string[]
   /**
    * The hooks module (Claude Code `modules` in a hooks file), absolute and inside the plugin: the
    * plugin is a mod. At most one, as Claude Code allows; the mods host loads it.
@@ -77,18 +81,31 @@ export interface PluginArtifactDiagnostic {
 }
 
 /**
+ * Whether a folder may have its native entrypoint found by convention (`tools/index.*`,
+ * `tools.*`): only a mini app (`.localix-app/app.json`). Every other folder could be a Claude Code
+ * plugin to the person who installed it — a root `plugin.json` is the plugin's own claim, which
+ * Claude Code ignores — and Claude Code never imports a file it ships. A legacy root `plugin.json`
+ * still runs the entrypoint its `tools` field names.
+ */
+export const searchesNativeDefaults = (layout: ExtensionLayout | undefined): boolean =>
+  layout === 'mini-app'
+
+/**
  * Resolve a manifest's declared artifacts to absolute paths, applying directory
- * defaults (./tools, ./skills, ./.mcp.json) when the manifest is silent. Commands are
- * inline manifest objects — no filesystem default.
+ * defaults (./tools for a mini app only — see {@link searchesNativeDefaults}, ./skills,
+ * ./.mcp.json) when the manifest is silent. Commands are inline manifest objects — no
+ * filesystem default. Without `layout` no native default is searched.
  */
 export async function resolveEntrypoints(
   dir: string,
   manifest: PluginManifest,
+  layout?: ExtensionLayout,
 ): Promise<ResolvedEntrypoints> {
   const diagnostics: PluginArtifactDiagnostic[] = []
   // ---- Native tool entrypoints --------------------------------------------
+  // Declared entrypoints come only from a mini app's `backend` or a legacy `tools` field.
   let toolEntries = toAbsList(dir, manifest.tools)
-  if (toolEntries.length === 0) {
+  if (toolEntries.length === 0 && searchesNativeDefaults(layout)) {
     // Check default tool entrypoints in parallel, take the first that exists.
     const candidates = [
       'tools/index.ts',
@@ -196,7 +213,12 @@ export async function resolveEntrypoints(
   // ---- Claude Code declarative hooks ---------------------------------------
   // CC: `hooks/hooks.json` loads first, then each listed hooks file or inline event map; all of
   // them run. Loaded (with substitution) only for ENABLED plugins by the loader.
-  const hookConfigs = await mergedConfigs(dir, DEFAULT_LOCATIONS.hooks, sources.hooks, readJson)
+  // A file that fails to load contributes nothing and reports why (`hookErrors`).
+  const { configs: hookConfigs, errors: hookErrors } = await readPluginHookFiles(
+    dir,
+    DEFAULT_LOCATIONS.hooks,
+    sources.hooks,
+  )
   const hookModule = await findHookModule(dir, sources.hooks.files)
 
   // ---- Claude Code LSP servers ---------------------------------------------
@@ -245,6 +267,7 @@ export async function resolveEntrypoints(
     commandFiles,
     agentFiles,
     hookConfigs,
+    ...(hookErrors.length > 0 ? { hookErrors } : {}),
     ...(hookModule ? { hookModule } : {}),
     lspServers,
     monitors,

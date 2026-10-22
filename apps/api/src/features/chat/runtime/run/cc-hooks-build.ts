@@ -114,6 +114,7 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
       parseScopedHooks(scoped.raw, scoped.source, {
         projectDir: defaultCwd,
         asSubagent: scoped.asSubagent,
+        ...(scoped.plugin ? { plugin: scoped.plugin } : {}),
       }),
     )
   }

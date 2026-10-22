@@ -38,6 +38,11 @@ export interface ScopedCcHooks {
   asSubagent?: boolean
   /** Agent type surfaced on a self-fired SubagentStop (delegated agent / fork skill). */
   agentType?: string
+  /**
+   * The plugin that ships the skill or agent: its hooks get `${CLAUDE_PLUGIN_ROOT}` and
+   * `${CLAUDE_PLUGIN_DATA}` like the plugin's own `hooks.json`.
+   */
+  plugin?: { name: string; root: string; dataDir: string }
 }
 
 /**

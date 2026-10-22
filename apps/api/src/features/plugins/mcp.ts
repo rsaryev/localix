@@ -6,12 +6,12 @@ import { declaredConfigKeys, type PluginConfigValues } from './config'
 import { pluginDataDir, substituteMcpServerEntry } from '../ext/user-config-substitute'
 
 // Substitution internals + token collectors + `pluginDataDir` live in
-// `../ext/user-config-substitute` (section-aware secret policy; shared with cc-hooks);
-// re-exported here so historical importers keep working.
+// `../ext/user-config-substitute` (shared with cc-hooks); re-exported here so historical
+// importers keep working.
 export {
   isPlainObject,
   collectMcpConfigTokens,
-  collectMcpTokensOutsideEnv,
+  mcpShellFieldReferencingOption,
   pluginDataDir,
 } from '../ext/user-config-substitute'
 
@@ -19,9 +19,9 @@ export {
  * Build the `CLAUDE_PLUGIN_OPTION_<KEY>` env-var map for a plugin's resolved config.
  *
  * Per the CC spec, each declared config key is exported to spawned MCP server processes
- * as `CLAUDE_PLUGIN_OPTION_<KEY>` (KEY = the exact declared key, case preserved). Secrets
- * ARE included — env is the sanctioned secret channel (the only MCP config section where
- * `${KEY}` substitution reveals sensitive values). Only keys with a resolved value are emitted.
+ * as `CLAUDE_PLUGIN_OPTION_<KEY>` (KEY = the exact declared key, case preserved). Sensitive
+ * options ARE included, as they are wherever `${user_config.KEY}` substitutes in an MCP server's
+ * config. Only keys with a resolved value are emitted.
  *
  * The caller merges this map AFTER the manifest-declared `env` block so that an explicit
  * manifest env var for the same name is never clobbered.
@@ -63,26 +63,19 @@ export function buildMcpRecords(
   // (not enrichedConfig — path vars are not user config and should not be emitted).
   const pluginOptionEnv = buildPluginOptionEnv(config)
 
-  // Sensitive (secret) keys are substituted ONLY into the server's `env` block;
-  // anywhere else (command/args/url/headers) the token is left as-is + warned.
-  const isSensitive = (key: string): boolean => Boolean(plugin.manifest.config?.[key]?.secret)
-
+  // Sensitive options substitute like any other, as in Claude Code: none of these fields reaches
+  // a shell. A `headersHelper` that references one throws, and the server is skipped below.
   const records: McpServerRecord[] = []
   for (const [serverName, raw] of Object.entries(plugin.entrypoints.mcpServers)) {
     try {
-      const { value: substituted, blockedSensitiveKeys } = substituteMcpServerEntry(
+      const { value: substituted } = substituteMcpServerEntry(
+        serverName,
         raw,
         enrichedConfig,
         allowedEnvKeys,
-        isSensitive,
         // A plugin in the Claude Code format expands environment variables as Claude Code does.
         plugin.layout === 'legacy' ? 'declared' : 'claude-code',
       )
-      if (blockedSensitiveKeys.length > 0) {
-        logger?.warn(
-          `plugin "${plugin.manifest.name}" MCP server "${serverName}" references sensitive config key(s) outside "env": ${blockedSensitiveKeys.join(', ')} — left unsubstituted; sensitive values are only injected via the server's "env" block`,
-        )
-      }
       // Namespace with the plugin name so tools surface as mcp_<plugin>_<server>_<tool>
       // and never collide with the user's own MCP servers.
       const input = normalizeMcpServerEntry(
@@ -114,6 +107,9 @@ export function buildMcpRecords(
         description: input.description ?? '',
         transport: input.transport,
         config: finalConfig,
+        // Every `${…}` token was resolved above; connecting must not expand the VALUES again (an
+        // option set to `${GITHUB_TOKEN}` would read the host credential into a remote header).
+        configExpanded: true,
         createdAt: timestamp,
         updatedAt: timestamp,
       })

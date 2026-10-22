@@ -22,6 +22,21 @@ export function register(on) {
 }
 `
 
+/**
+ * Claude Code's order for one call: `tool.call`, whose `next(e)` runs the permission check, then
+ * `tool.check`. The check reads the command as `tool.call` rewrote it, and its refusal comes back
+ * to the `tool.call` hook as `{ deny }`.
+ */
+const ORDER = `
+export function register(on) {
+  on('tool.call', { tool: 'Bash' }, async ($, e, next) => {
+    const answer = await next({ ...e, command: 'echo E2E-REWRITTEN' })
+    return answer.deny ? { deny: 'E2E-NEXT-DENY ' + answer.deny } : answer
+  })
+  on('tool.check', { tool: 'Bash' }, ($, e) => ({ decision: 'deny', reason: 'E2E-CHECKED ' + e.input.command }))
+}
+`
+
 function writeTree(dir, files) {
   for (const [file, text] of Object.entries(files)) {
     mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
@@ -66,6 +81,34 @@ export const MOD_SCENARIOS = [
         assert.ok(read.includes('E2E-MOD-DENIED'), 'tool.check refused the shell call')
         assert.notEqual(first.model, 'gpt-4o-mini')
         assert.equal(second.model, 'gpt-4o-mini', 'turn.step sent the second request elsewhere')
+      } finally {
+        await rt.api('/plugins/remove', { name })
+      }
+    },
+  },
+  {
+    name: 'mods: tool.call runs before tool.check, and next(e) resolves a refusal to { deny }',
+    async run(rt) {
+      const name = 'e2e-mod-order'
+      const dir = path.join(rt.root, name)
+      writeTree(dir, {
+        '.claude-plugin/plugin.json': JSON.stringify({ name, version: '1.0.0' }),
+        'hooks/hooks.json': JSON.stringify({ modules: ['./register.js'] }),
+        'hooks/register.js': ORDER,
+      })
+      await rt.api('/plugins/install', { source: dir, enable: true })
+      try {
+        await untilLoaded(rt, name)
+        const session = await rt.createSession({ title: 'Mods order' })
+        const steps = { localix: [{ tool: 'bash', args: { command: 'ls' } }, 'Refused.'] }
+        await rt.say(session.id, `List the files. ${script(steps)}`)
+        const [, second] = runs(rt, session)
+        assert.ok(second, 'the turn made a second model request')
+        const read = second.messages.map((message) => message.text).join('\n')
+        assert.ok(
+          read.includes('E2E-NEXT-DENY E2E-CHECKED echo E2E-REWRITTEN'),
+          `tool.check judged the rewritten call and its refusal reached tool.call: ${read}`,
+        )
       } finally {
         await rt.api('/plugins/remove', { name })
       }

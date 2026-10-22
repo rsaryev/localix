@@ -175,7 +175,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
   mkdirSync(scratchDir, { recursive: true })
 
   const [
-    { tools, dispatchTools, preflightTools, mcpInstructions, mcpInventory, ledger },
+    { tools, dispatchTools, preflightTools, mcpInstructions, mcpInventory, ledger, gate },
     descendantSessions,
   ] = await Promise.all([assembledPromise, frame.loadSessionSnapshot()])
   recordToolRoster(
@@ -200,6 +200,8 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     tools,
     /** A SUPERSET of `tools`: deferred plugin/MCP implementations stay dispatchable. */
     dispatchTools,
+    /** Where calls meet the permission gate: the loop, or inside the chain (`chain-gate.ts`). */
+    gate,
     mcpInstructions,
     mcpInventory,
     descendantSessions,

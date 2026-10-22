@@ -1,10 +1,11 @@
 import { createHash } from 'node:crypto'
 import { statSync } from 'node:fs'
 import { homedir, userInfo } from 'node:os'
-import { delimiter, join } from 'node:path'
+import { join } from 'node:path'
 
 import { withoutAppImageEnv } from './appimage-env'
 import { probeShellEnv, probeShellEnvSync } from './login-shell-probe'
+import { appendToPath } from './path-append'
 import { CACHE_VERSION, readSnapshot, setSnapshotFile, writeSnapshot } from './login-shell-snapshot'
 
 /**
@@ -228,22 +229,20 @@ export function __resetLoginShellEnvCache(file?: string): void {
  * PORT/HOST/LOCALIX_*) → login env (authoritative for PATH + every stack's vars,
  * so it WINS over the bare GUI values) → caller `overrides`.
  *
- * `pathPrefix` (applied LAST) is PREPENDED to the resolved PATH — the seam for
- * putting extra executable dirs ahead of everything (e.g. an enabled plugin's
- * `bin/`). It composes with the login PATH rather than replacing it (an
- * `overrides.PATH` would clobber). Fully agnostic — just "these dirs go first".
+ * `extraPath` (applied LAST) is APPENDED to the resolved PATH — the seam for an
+ * enabled plugin's `bin/`. Appended, as Claude Code does, so a plugin adds commands
+ * but never shadows the user's own (`git`, `node`). It composes with the login PATH
+ * rather than replacing it (an `overrides.PATH` would clobber).
  *
  * Under an AppImage the result is stripped of what the AppImage runtime injected for the
  * BUNDLED libraries (`lib/appimage-env.ts`) — last, so no source can put it back.
  */
-export function childEnv(overrides?: NodeJS.ProcessEnv, pathPrefix?: string[]): NodeJS.ProcessEnv {
+export function childEnv(overrides?: NodeJS.ProcessEnv, extraPath?: string[]): NodeJS.ProcessEnv {
   const login = resolveLoginEnv()
   const merged: NodeJS.ProcessEnv = login
     ? { ...process.env, ...login, ...overrides }
     : { ...process.env, ...overrides }
-  if (pathPrefix?.length) {
-    merged.PATH = [...pathPrefix, merged.PATH].filter(Boolean).join(delimiter)
-  }
+  if (extraPath?.length) merged.PATH = appendToPath(merged.PATH, extraPath)
   return withoutAppImageEnv(merged)
 }
 
@@ -251,11 +250,11 @@ export function childEnv(overrides?: NodeJS.ProcessEnv, pathPrefix?: string[]): 
  * `childEnv` plus the non-interactive overlay for UNATTENDED command execution
  * (the agent's bash tool has no TTY): make scaffolders/git fail fast instead of
  * blocking forever on a prompt no human will answer. `overrides` still win and
- * `pathPrefix` is prepended to the final PATH.
+ * `extraPath` is appended to the final PATH.
  */
 export function childEnvNonInteractive(
   overrides?: NodeJS.ProcessEnv,
-  pathPrefix?: string[],
+  extraPath?: string[],
 ): NodeJS.ProcessEnv {
   return childEnv(
     {
@@ -265,7 +264,7 @@ export function childEnvNonInteractive(
       GIT_ASKPASS: '',
       ...overrides,
     },
-    pathPrefix,
+    extraPath,
   )
 }
 

@@ -67,6 +67,8 @@ const allowing = (...names: string[]): AvailabilityReader => ({
 
 let dir: string
 const NOW = () => '2026-01-01T00:00:00.000Z'
+/** A root plugin.json names its native entrypoint: only a mini app finds one by convention. */
+const TOOLS = './tools/index.mjs'
 const opts = (repo: CapabilitySourceRepository, availability: AvailabilityReader = UNDECIDED) => ({
   repo,
   availability,
@@ -95,6 +97,7 @@ beforeAll(async () => {
       name: 'demo',
       version: '1.0.0',
       description: 'Demo plugin',
+      tools: './tools/index.mjs',
       config: { TOKEN: { type: 'string', secret: true } },
       mcpServers: { api: { command: 'echo run', env: { TOKEN: '${TOKEN}' } } },
     }),
@@ -121,7 +124,7 @@ beforeAll(async () => {
   await fs.mkdir(join(off, 'tools'), { recursive: true })
   await fs.writeFile(
     join(off, 'plugin.json'),
-    JSON.stringify({ name: 'off', version: '1.0.0', description: 'disabled' }),
+    JSON.stringify({ name: 'off', version: '1.0.0', description: 'disabled', tools: TOOLS }),
   )
   await fs.writeFile(
     join(off, 'tools', 'index.mjs'),
@@ -133,7 +136,12 @@ beforeAll(async () => {
   await fs.mkdir(join(probe, 'tools'), { recursive: true })
   await fs.writeFile(
     join(probe, 'plugin.json'),
-    JSON.stringify({ name: 'cwd-probe', version: '1.0.0', description: 'echoes cwd' }),
+    JSON.stringify({
+      name: 'cwd-probe',
+      version: '1.0.0',
+      description: 'echoes cwd',
+      tools: TOOLS,
+    }),
   )
   await fs.writeFile(
     join(probe, 'tools', 'index.mjs'),
@@ -152,6 +160,7 @@ beforeAll(async () => {
       name: 'verbose-tool',
       version: '1.0.0',
       description: 'oversized tool metadata fixture',
+      tools: TOOLS,
     }),
   )
   await fs.writeFile(
@@ -226,7 +235,12 @@ beforeAll(async () => {
   await fs.mkdir(join(classer, 'tools'), { recursive: true })
   await fs.writeFile(
     join(classer, 'plugin.json'),
-    JSON.stringify({ name: 'classer', version: '1.0.0', description: 'context-class probe' }),
+    JSON.stringify({
+      name: 'classer',
+      version: '1.0.0',
+      description: 'context-class probe',
+      tools: TOOLS,
+    }),
   )
   await fs.writeFile(
     join(classer, 'tools', 'index.mjs'),
@@ -239,7 +253,7 @@ beforeAll(async () => {
     await fs.mkdir(join(memDir, 'tools'), { recursive: true })
     await fs.writeFile(
       join(memDir, 'plugin.json'),
-      JSON.stringify({ name, version: '1.0.0', description: 'memory provider' }),
+      JSON.stringify({ name, version: '1.0.0', description: 'memory provider', tools: TOOLS }),
     )
     await fs.writeFile(
       join(memDir, 'tools', 'index.mjs'),
@@ -544,13 +558,13 @@ describe('custom worker roles (plugin agents)', () => {
  *
  * The substituter (`makePluginSubstituter`) replaces `${KEY}` tokens with config values
  * in promptSections, skill content, and agent prompts. Its `isSecret` predicate guards
- * this: if `manifest.config[key].secret` is true the value is replaced with `''`.
+ * this: if `manifest.config[key].secret` is true the token becomes a placeholder naming the option.
  *
  * Before the fix: `sensitive: true` was stripped by Zod as an unknown field → the
  * option ended up with `secret: false` → the value was substituted into the prompt.
  *
  * After the fix: `applyManifestPromotions` maps `sensitive → secret` before Zod runs
- * → `isSecret` returns true → the value is NOT substituted (stays `''`).
+ * → `isSecret` returns true → the value is NOT substituted (a placeholder instead).
  */
 describe('B2 — sensitive:true userConfig key is NOT substituted into model-facing text', () => {
   it('keeps sensitive CC config values out of prompt sections; substitutes non-sensitive ones', async () => {
@@ -565,9 +579,9 @@ describe('B2 — sensitive:true userConfig key is NOT substituted into model-fac
     expect(section).toBeDefined()
     // The non-sensitive key must be substituted.
     expect(section!.content).toContain('URL=https://api.example.com')
-    // The sensitive key must NOT appear — replaced with empty string.
+    // The sensitive key must NOT appear — a placeholder naming the option stands in.
     expect(section!.content).not.toContain('super-secret-token')
-    expect(section!.content).toContain('Token=')
+    expect(section!.content).toContain("Token=[sensitive option 'API_TOKEN' not available")
   })
 
   it('keeps sensitive CC config values out of skill content', async () => {
@@ -579,8 +593,9 @@ describe('B2 — sensitive:true userConfig key is NOT substituted into model-fac
     expect(skill).toBeDefined()
     // Non-sensitive value substituted.
     expect(skill!.content).toContain('https://service.io')
-    // Sensitive value NOT present anywhere in the skill text.
+    // Sensitive value NOT present anywhere in the skill text; a placeholder stands in.
     expect(skill!.content).not.toContain('my-private-key')
+    expect(skill!.content).toContain("auth [sensitive option 'API_TOKEN' not available")
   })
 
   it('MCP config still injects the sensitive value (secrets are allowed there)', async () => {

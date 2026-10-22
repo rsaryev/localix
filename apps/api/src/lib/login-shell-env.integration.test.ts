@@ -33,25 +33,23 @@ describe('childEnv', () => {
   })
 })
 
-describe('childEnv pathPrefix', () => {
-  it('prepends dirs while preserving the resolved PATH', () => {
+describe('childEnv extra PATH dirs', () => {
+  it('appends dirs after the resolved PATH so a plugin never shadows a user command', () => {
     const before = childEnv().PATH ?? ''
     const env = childEnv(undefined, ['/opt/plugin-a/bin', '/opt/plugin-b/bin'])
-    expect(env.PATH!.startsWith(`/opt/plugin-a/bin${delimiter}/opt/plugin-b/bin${delimiter}`)).toBe(
-      true,
-    )
-    if (before) expect(env.PATH!.endsWith(before)).toBe(true)
+    expect(env.PATH!.endsWith(`/opt/plugin-a/bin${delimiter}/opt/plugin-b/bin`)).toBe(true)
+    if (before) expect(env.PATH!.startsWith(before)).toBe(true)
   })
 
-  it('is a no-op for an empty or absent prefix', () => {
+  it('is a no-op for an empty or absent list', () => {
     const base = childEnv().PATH
     expect(childEnv(undefined, []).PATH).toBe(base)
     expect(childEnv(undefined, undefined).PATH).toBe(base)
   })
 
-  it('non-interactive children keep the fail-fast overlay and path prefix', () => {
+  it('non-interactive children keep the fail-fast overlay and extra PATH dirs', () => {
     const env = childEnvNonInteractive(undefined, ['/opt/plugin-c/bin'])
-    expect(env.PATH!.startsWith(`/opt/plugin-c/bin${delimiter}`)).toBe(true)
+    expect(env.PATH!.endsWith(`${delimiter}/opt/plugin-c/bin`)).toBe(true)
     expect(env.CI).toBe('1')
     expect(env.GIT_TERMINAL_PROMPT).toBe('0')
   })

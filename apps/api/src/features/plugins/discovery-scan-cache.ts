@@ -2,7 +2,9 @@ import { promises as fs } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { DiscoveredPlugin } from './discovery-types'
 
-export const SCAN_CACHE_VERSION = 1
+/** Bump when a scan of the same files would now resolve differently (2: no native default
+ * entrypoint for a Claude Code plugin), so a cached scan from before is discarded. */
+export const SCAN_CACHE_VERSION = 2
 export const SCAN_CACHE_FILE = 'plugin-scan-cache-v1.json'
 
 interface ScanFingerprintEntry {

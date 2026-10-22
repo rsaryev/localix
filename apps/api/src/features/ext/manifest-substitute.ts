@@ -25,11 +25,11 @@
  * ## Secret boundary
  *
  * The caller supplies `isSecret(key: string) => boolean`. The prompt/skill path passes
- * a real predicate that excludes keys whose manifest declares `secret: true`. The MCP
- * path does NOT use this module — it has its own section-aware substituter
- * (`ext/user-config-substitute.ts`) that reveals secrets only inside a server's `env`
- * block and blocks them everywhere else (command/args/url/headers).
- * The security boundary stays with the caller; this module is policy-agnostic.
+ * a real predicate that excludes keys whose manifest declares `secret: true`: such a token
+ * becomes a placeholder naming the option, as Claude Code does in skill and agent content, so
+ * the model sees that a value exists without seeing it. The MCP path does NOT use this module —
+ * it has its own substituter (`ext/user-config-substitute.ts`) where sensitive options do
+ * substitute. The security boundary stays with the caller; this module is policy-agnostic.
  *
  * Pure module — no chat/UI imports, Node built-ins only.
  */
@@ -51,6 +51,11 @@ export interface SubstituterOptions {
    * (The MCP path uses `ext/user-config-substitute.ts` instead — env-only secrets.)
    */
   isSecret: (key: string) => boolean
+}
+
+/** What a sensitive option's token reads as in model-facing content (Claude Code's wording). */
+export function sensitiveOptionPlaceholder(key: string): string {
+  return `[sensitive option '${key}' not available in skill content]`
 }
 
 /**
@@ -75,7 +80,7 @@ export function normalizeTokenKey(token: string): string {
  * plugin and reuse across all texts that belong to that plugin.
  *
  * Tokens that reference an unknown config key resolve to `''` (same as before).
- * Tokens blocked by `isSecret` also resolve to `''` (unchanged secret policy).
+ * Tokens blocked by `isSecret` resolve to {@link sensitiveOptionPlaceholder}.
  */
 export function makeSubstituter(opts: SubstituterOptions): (text: string) => string {
   const { pluginRoot, dataDir, projectDir, config, isSecret } = opts
@@ -98,7 +103,7 @@ export function makeSubstituter(opts: SubstituterOptions): (text: string) => str
     //    We iterate the config entries so each key is applied once. The isSecret
     //    predicate controls whether the value is revealed in this context.
     for (const [key, rawVal] of configEntries) {
-      const val = isSecret(key) ? '' : String(rawVal)
+      const val = isSecret(key) ? sensitiveOptionPlaceholder(key) : String(rawVal)
       out = out
         .split(`\${user_config.${key}}`)
         .join(val)

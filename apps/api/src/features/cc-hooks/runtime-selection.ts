@@ -23,7 +23,7 @@ export function createHookSelector(options: HookSelectionOptions) {
   const { registry, sessionId, logger, onceKeys, signalFor } = options
   /** `once` per-session key for a handler (stable across the per-run runtimes). */
   const onceKey = (event: CcHookEvent, h: CcHookHandler): string =>
-    `${event}::${h.source}::${h.pluginName ?? ''}::${h.command || h.prompt || ''}`
+    `${event}::${h.source}::${h.pluginName ?? ''}::${h.command || h.prompt || ''}${h.args ? `\0${h.args.join('\0')}` : ''}`
 
   /**
    * The handlers that will actually RUN for one event — or `null` when the event is

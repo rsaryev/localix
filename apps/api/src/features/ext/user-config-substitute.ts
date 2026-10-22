@@ -4,20 +4,17 @@ import type { PluginConfigValues } from '../plugins/config'
 import { normalizeTokenKey } from './manifest-substitute'
 
 /**
- * Section-aware `${KEY}` substitution for a plugin MCP server entry.
+ * `${KEY}` substitution for a plugin MCP server entry.
  *
- * ## Secret boundary (CC spec parity)
+ * ## Plugin options (Claude Code parity)
  *
- * Per the Claude Code plugin spec, `${user_config.KEY}` substitution in MCP
- * server configs excludes sensitive values EXCEPT inside the server's `env`
- * block — env is the sanctioned channel for secrets to reach the spawned
- * server process. Concretely:
- *
- *   - `env` values MAY substitute sensitive config keys;
- *   - every other string field (command, args, url, headers, headersHelper, …)
- *     substitutes only NON-sensitive keys — a sensitive key referenced there is
- *     left UNSUBSTITUTED (the literal `${…}` token survives) and reported in
- *     {@link McpSubstitutionResult.blockedSensitiveKeys} so the caller can warn.
+ * Claude Code substitutes `${user_config.KEY}` everywhere in an MCP server's config — `command`,
+ * `args`, `env`, `url`, `headers` — sensitive options included: none of those strings reaches a
+ * shell, so a value stays data. The one exception is `headersHelper`, a command Claude Code hands
+ * to a shell, where a value containing `$(…)`, a backtick or `;` would run as code. A server whose
+ * `headersHelper` references `${user_config.*}` (or `${CLAUDE_PLUGIN_OPTION_*}`) therefore fails
+ * to load with {@link McpShellUserConfigError}; the check runs on the template, so it fails even
+ * before a value is configured.
  *
  * A key resolves from plugin config first; if unset, from host `process.env` by the
  * `environment` policy:
@@ -65,10 +62,8 @@ export function pluginStateDir(pluginName: string, home: string): string {
 }
 
 export interface McpSubstitutionResult {
-  /** The server entry with tokens substituted (secret policy applied). */
+  /** The server entry with tokens substituted. */
   value: Record<string, unknown>
-  /** Sensitive config keys referenced OUTSIDE `env` — left unsubstituted. */
-  blockedSensitiveKeys: string[]
 }
 
 export type McpEnvironmentPolicy = 'declared' | 'claude-code'
@@ -84,22 +79,38 @@ interface SubstituteCtx {
   environment: McpEnvironmentPolicy
   /** The top-level field being substituted (`url`, `args`, …). */
   field: string
-  isSensitive: (key: string) => boolean
-  blocked: Set<string>
 }
 
 const TOKEN_RE = /\$\{([\w.]+)(?::-([^}]*))?\}/g
 
-function substituteString(text: string, inEnv: boolean, ctx: SubstituteCtx): string {
-  return text.replace(TOKEN_RE, (full, key: string, fallback: string | undefined) => {
+/** Server fields Claude Code runs through a shell: a plugin option there would be re-parsed. */
+const SHELL_FIELDS = ['headersHelper'] as const
+
+/** A plugin-option token — `${user_config.KEY}` or its `${CLAUDE_PLUGIN_OPTION_KEY}` alias. */
+const OPTION_TOKEN_RE = /\$\{(?:user_config\.|CLAUDE_PLUGIN_OPTION_)[\w.-]+(?::-[^}]*)?\}/
+
+/** An MCP server whose shell-run field references a plugin option: it does not load. */
+export class McpShellUserConfigError extends Error {
+  constructor(serverName: string) {
+    super(
+      `headersHelper for MCP server '${serverName}' references \${user_config.*}. The substituted value would be passed to a shell; read the value inside the helper script instead (e.g. from an env var set in the server's "env" block).`,
+    )
+    this.name = 'McpShellUserConfigError'
+  }
+}
+
+/** The shell-run field of a raw server entry that references a plugin option, if any. */
+export function mcpShellFieldReferencingOption(raw: Record<string, unknown>): string | null {
+  for (const field of SHELL_FIELDS) {
+    const value = raw[field]
+    if (typeof value === 'string' && OPTION_TOKEN_RE.test(value)) return field
+  }
+  return null
+}
+
+function substituteString(text: string, ctx: SubstituteCtx): string {
+  return text.replace(TOKEN_RE, (_full, key: string, fallback: string | undefined) => {
     const bare = normalizeTokenKey(key)
-    if (!inEnv && ctx.isSensitive(bare)) {
-      // Sensitive value outside the sanctioned env channel: keep the literal
-      // token (never leak the value into command/args/url/headers) and record
-      // the key so the caller can surface a warning.
-      ctx.blocked.add(bare)
-      return full
-    }
     const v = ctx.config[bare]
     if (v !== undefined && v !== '') return String(v)
     const fromEnv = envAllowed(bare, ctx) ? process.env[bare] : undefined
@@ -113,40 +124,34 @@ function envAllowed(key: string, ctx: SubstituteCtx): boolean {
   return !(REMOTE_FIELDS.has(ctx.field) && CREDENTIAL_NAME.test(key))
 }
 
-function walk(value: unknown, inEnv: boolean, ctx: SubstituteCtx): unknown {
-  if (typeof value === 'string') return substituteString(value, inEnv, ctx)
-  if (Array.isArray(value)) return value.map((v) => walk(v, inEnv, ctx))
+function walk(value: unknown, ctx: SubstituteCtx): unknown {
+  if (typeof value === 'string') return substituteString(value, ctx)
+  if (Array.isArray(value)) return value.map((v) => walk(v, ctx))
   if (isPlainObject(value)) {
     const out: Record<string, unknown> = {}
-    for (const [k, v] of Object.entries(value)) out[k] = walk(v, inEnv, ctx)
+    for (const [k, v] of Object.entries(value)) out[k] = walk(v, ctx)
     return out
   }
   return value
 }
 
-/** Substitute `${KEY}` tokens in one raw MCP server entry (secret policy applied). */
+/**
+ * Substitute `${KEY}` tokens in one raw MCP server entry. Throws {@link McpShellUserConfigError}
+ * when `headersHelper` references a plugin option.
+ */
 export function substituteMcpServerEntry(
+  serverName: string,
   raw: Record<string, unknown>,
   config: PluginConfigValues,
   allowedEnvKeys: ReadonlySet<string>,
-  isSensitive: (key: string) => boolean,
   environment: McpEnvironmentPolicy = 'declared',
 ): McpSubstitutionResult {
-  const blocked = new Set<string>()
+  if (mcpShellFieldReferencingOption(raw)) throw new McpShellUserConfigError(serverName)
   const out: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(raw)) {
-    const ctx: SubstituteCtx = {
-      config,
-      allowedEnvKeys,
-      isSensitive,
-      blocked,
-      environment,
-      field: k,
-    }
-    // Only the server's TOP-LEVEL `env` object is the sanctioned secret channel.
-    out[k] = walk(v, k === 'env', ctx)
+    out[k] = walk(v, { config, allowedEnvKeys, environment, field: k })
   }
-  return { value: out, blockedSensitiveKeys: [...blocked].sort() }
+  return { value: out }
 }
 
 /** Collect every `${KEY}` token referenced anywhere in a plugin's MCP config (for validation). */
@@ -261,21 +266,4 @@ export function collectUserConfigShellTokens(text: string): Set<string> {
   const keys = new Set<string>()
   for (const m of text.matchAll(USER_CONFIG_TOKEN_RE)) keys.add(m[1])
   return keys
-}
-
-/**
- * Collect `${KEY}` tokens referenced OUTSIDE the servers' top-level `env` blocks —
- * the positions where sensitive config keys are NOT substituted. Static validation
- * intersects this with the manifest's `secret: true` keys to warn authors.
- */
-export function collectMcpTokensOutsideEnv(
-  servers: Record<string, Record<string, unknown>>,
-): Set<string> {
-  const outside: Record<string, Record<string, unknown>> = {}
-  for (const [name, server] of Object.entries(servers)) {
-    if (!isPlainObject(server)) continue
-    const { env: _env, ...rest } = server
-    outside[name] = rest
-  }
-  return collectMcpConfigTokens(outside)
 }

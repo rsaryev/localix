@@ -13,6 +13,7 @@ import { createModelApi } from './model-api'
 import { createRunApi, type RunSurface } from './run-api'
 import { createSettingsApi } from './settings-api'
 import { createSessionApi } from './session-api'
+import { createStateApi, type StateSpaces } from './state-api'
 import { createStoreApi } from './store-api'
 import { createSystemApi } from './system-api'
 
@@ -40,6 +41,8 @@ export interface ModApiDeps {
   runOf: (sessionId: string | undefined) => RunSurface | undefined
   /** The engine's own events a call asks (`$.prompt.compose`, `$.session.compact`). */
   calls: ModEventCalls
+  /** `$.state`: the host's, so a value outlives a reload; this instance's project is its space. */
+  state: StateSpaces
 }
 
 export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => void } {
@@ -49,7 +52,11 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
   // A timer's or a closure's call made outside any event acts in the instance's project.
   const fallback: ModScene = { userId: '', cwd: deps.instance.cwd }
   const scene = () => currentScene(fallback)
-  const system = createSystemApi({ cwd: () => scene().cwd })
+  const system = createSystemApi({
+    cwd: () => scene().cwd,
+    onTimerError: (call, error) =>
+      ports.report(plugin, `${call}: ${error instanceof Error ? error.message : String(error)}`),
+  })
   const textOf = (input: unknown) =>
     typeof input === 'string' ? input : stringOr((input as { text?: unknown } | null)?.text)
 
@@ -167,6 +174,7 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
       ask: run.ui.ask,
     },
     store: createStoreApi(ports.dataDir(plugin)),
+    state: createStateApi({ plugin, space: deps.instance.cwd, spaces: deps.state }),
     fs: createFsApi(() => scene().cwd),
     http: system.http,
     process: system.process,

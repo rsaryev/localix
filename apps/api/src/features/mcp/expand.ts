@@ -78,3 +78,17 @@ export function expandServerConfig(
 
   return out
 }
+
+/**
+ * The config a server connects with: {@link expandServerConfig} applied, unless the record's
+ * config was resolved when it was built (`configExpanded`, a plugin's server). Expanding that
+ * one again would read `${VAR}` out of a substituted VALUE — a plugin option whose value is
+ * `${GITHUB_TOKEN}` would put the host credential in a remote server's headers.
+ */
+export function connectServerConfig(
+  server: { config: Record<string, unknown>; configExpanded?: boolean },
+  options: Parameters<typeof expandServerConfig>[1] = {},
+): Record<string, unknown> {
+  if (server.configExpanded) return { ...server.config }
+  return expandServerConfig(server.config, options)
+}

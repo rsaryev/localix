@@ -1,47 +1,15 @@
 import { childEnv } from '../../../lib/login-shell-env'
+import { modFetch, type HttpInit } from './http-api'
 
 /**
- * `$.http`, `$.process`, `$.env` and `$.clock`, with Claude Code's limits: a fetch takes 30 s,
- * 5 redirects and 4 MiB each way; a process runs 30 s by default and 10 min at most, with no
- * shell. `$.env.set` changes only what this mod's own processes see. A mod's timers stop when the
- * mod unloads (`dispose`).
+ * `$.http`, `$.process`, `$.env` and `$.clock`, with Claude Code's limits: a fetch is bounded in
+ * `http-api.ts`; a process runs 30 s by default and 10 min at most, with no shell. `$.env.set`
+ * changes only what this mod's own processes see. `$.clock.after` and `every` answer a timer whose
+ * `cancel()` stops it; a timer's callback that throws is reported, never left unhandled. A mod's
+ * timers stop when the mod unloads (`dispose`).
  */
-const FETCH_MS = 30_000
-const MAX_BODY = 4 * 1024 * 1024
-const MAX_REDIRECTS = 5
 const PROCESS_MS = 30_000
 const PROCESS_MAX_MS = 10 * 60_000
-
-export interface HttpInit {
-  method?: string
-  headers?: Record<string, string>
-  body?: string
-}
-
-export async function modFetch(url: string, init: HttpInit = {}, fetcher: typeof fetch = fetch) {
-  if (init.body && init.body.length > MAX_BODY) throw new Error('the request body is over 4 MiB')
-  const signal = AbortSignal.timeout(FETCH_MS)
-  let target = url
-  for (let hop = 0; ; hop++) {
-    const response = await fetcher(target, { ...init, redirect: 'manual', signal })
-    const location = response.headers.get('location')
-    if (response.status >= 300 && response.status < 400 && location) {
-      if (hop >= MAX_REDIRECTS) throw new Error(`more than ${MAX_REDIRECTS} redirects`)
-      target = new URL(location, target).href
-      continue
-    }
-    const declared = Number(response.headers.get('content-length') ?? 0)
-    if (declared > MAX_BODY && (init.method ?? 'GET').toUpperCase() !== 'HEAD')
-      throw new Error(`the response is over the ${MAX_BODY}-byte limit`)
-    const text = (await response.text()).slice(0, MAX_BODY)
-    return {
-      status: response.status,
-      ok: response.ok,
-      headers: Object.fromEntries(response.headers.entries()),
-      text,
-    }
-  }
-}
 
 export interface ProcessInit {
   cwd?: string
@@ -50,18 +18,63 @@ export interface ProcessInit {
   timeoutMs?: number
 }
 
-export function createSystemApi(input: { cwd: () => string; fetcher?: typeof fetch }) {
+/** Starts `fire` after `ms`, once or every `ms`, and answers how to stop it. */
+export type Schedule = (fire: () => void, ms: number, repeat: boolean) => () => void
+
+const realSchedule: Schedule = (fire, ms, repeat) => {
+  if (repeat) {
+    const handle = setInterval(fire, ms)
+    return () => clearInterval(handle)
+  }
+  const handle = setTimeout(fire, ms)
+  return () => clearTimeout(handle)
+}
+
+/** A pending timer from `$.clock.after` / `$.clock.every`, as Claude Code answers it. */
+export interface ModTimer {
+  cancel: () => void
+}
+
+export function createSystemApi(input: {
+  cwd: () => string
+  fetcher?: typeof fetch
+  /** A timer's callback threw or rejected: `call` is `clock.after` or `clock.every`. */
+  onTimerError?: (call: string, error: unknown) => void
+  schedule?: Schedule
+}) {
   const env: Record<string, string> = {}
+  const schedule = input.schedule ?? realSchedule
   const timers = new Set<() => void>()
   const later = (fire: () => void, ms: number, repeat: boolean) => {
-    const handle = repeat ? setInterval(fire, ms) : setTimeout(fire, ms)
+    let stop: (() => void) | null = null
     const cancel = () => {
-      clearTimeout(handle as ReturnType<typeof setTimeout>)
-      clearInterval(handle as ReturnType<typeof setInterval>)
+      stop?.()
+      stop = null
       timers.delete(cancel)
     }
+    stop = schedule(
+      () => {
+        if (!repeat) cancel()
+        fire()
+      },
+      ms,
+      repeat,
+    )
     timers.add(cancel)
     return cancel
+  }
+  const timer = (call: string, repeat: boolean) => (ms: unknown, fire: unknown) => {
+    if (typeof fire !== 'function') throw new Error(`${call} takes a function to call`)
+    const wait = Math.max(repeat ? 1 : 0, typeof ms === 'number' && ms > 0 ? ms : 0)
+    const report = (error: unknown) => input.onTimerError?.(call, error)
+    const run = () => {
+      try {
+        void Promise.resolve((fire as () => unknown)()).catch(report)
+      } catch (error) {
+        report(error)
+      }
+    }
+    return { cancel: later(run, wait, repeat) } satisfies ModTimer
   }
   return {
     http: {
@@ -116,8 +129,8 @@ export function createSystemApi(input: { cwd: () => string; fetcher?: typeof fet
         new Promise<void>((resolve) => {
           later(resolve, typeof ms === 'number' ? ms : (ms as { ms: number }).ms, false)
         }),
-      after: (ms: number, fire: () => unknown) => later(() => void fire(), ms, false),
-      every: (ms: number, fire: () => unknown) => later(() => void fire(), ms, true),
+      after: timer('clock.after', false),
+      every: timer('clock.every', true),
     },
     dispose() {
       for (const cancel of Array.from(timers)) cancel()

@@ -7,8 +7,10 @@ import { toolCallEvent } from './tool-shapes'
  * permission verdict — the rules and the mode, before anyone is asked (`permission-verdict.ts`) —
  * and a hook may answer any verdict, either way: `allow` runs the call, `ask` puts it to the
  * person on a card, `deny` refuses it, its reason what the model reads. `$.tool.check` runs the
- * same chain over a call nobody makes. Localix decides permissions before the call reaches the
- * tool wrappers, so a call meets `tool.check` before `tool.call`.
+ * same chain over a call nobody makes. As in Claude Code, a call meets `tool.check` after the
+ * `tool.call` hooks and the `PreToolUse` hooks they reach through `next(e)`, and before the mode
+ * decides or anyone is asked: while a mod hears either event, the run's permission gate sits
+ * inside the tool-call chain (`chat/runtime/run/chain-gate.ts`).
  */
 
 export interface ModVerdict {

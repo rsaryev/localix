@@ -146,6 +146,16 @@ describe('spawnForkSkill — a fork of the invoking agent', () => {
     expect(getInserted()?.agents[0]?.providerConnectionId).toBe('qa-connection')
     expect(getInserted()?.provenance).toMatchObject({ parentParticipant: 'agent:native:global:qa' })
   })
+
+  it("a plugin skill's hooks run in the child with that plugin's root and data dir", async () => {
+    const { deps, getRunOptions } = makeDeps(parentSession())
+    const hooks = { Stop: [{ hooks: [{ type: 'command', command: 'x' }] }] }
+    const plugin = { name: 'kit', root: '/plugins/kit', dataDir: '/data/kit' }
+    await createSpawnForkSkill(deps)('u1', 'parent', 'work', { hooks, hooksPlugin: plugin })
+    expect(getRunOptions()?.ccScopedHooks).toEqual([
+      { raw: hooks, source: 'skill', asSubagent: true, agentType: 'general-purpose', plugin },
+    ])
+  })
 })
 
 describe('a declared effort must take effect or be ignored — never mean something else', () => {

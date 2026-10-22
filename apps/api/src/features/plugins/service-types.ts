@@ -151,9 +151,14 @@ export interface PluginService {
   update(userId: string, input: RemovePluginRequest): Promise<PluginRecord>
   /**
    * Remove a plugin (never cascades to dependents). When other installed plugins still
-   * declare a dependency on it, returns `warnings` naming them (also logged).
+   * declare a dependency on it, returns `warnings` naming them (also logged). A name that is not
+   * installed is a `plugin_not_found` error. A plugin Claude Code installed is not deleted: it is
+   * disabled here, and `claudeCodeInstall` names it so the caller can say so.
    */
-  remove(userId: string, input: RemovePluginRequest): Promise<{ warnings: string[] } | void>
+  remove(
+    userId: string,
+    input: RemovePluginRequest,
+  ): Promise<{ warnings: string[]; claudeCodeInstall?: string } | void>
   /** Register a marketplace from a source (owner/repo, git/https URL, or absolute path). */
   addMarketplace(
     userId: string,

@@ -91,7 +91,7 @@ export interface ExecutionEnvironment {
   writeFile(path: string, content: string): Promise<void>
   /** Run a shell command. Returns { stdout, stderr, exitCode }. `uncapped` keeps the
    *  FULL stdout (the default tail-caps at ~2 MB) — needed for reads that must round-trip
-   *  intact, e.g. base64 of a binary. `pathPrefix` dirs are PREPENDED to PATH
+   *  intact, e.g. base64 of a binary. `pathPrefix` dirs are APPENDED to PATH
    *  (e.g. enabled plugins' `bin/`) — local
    *  backend only; remote backends run far-side and ignore local paths. */
   exec(

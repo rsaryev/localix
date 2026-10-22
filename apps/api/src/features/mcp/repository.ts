@@ -25,6 +25,12 @@ export interface McpServerRecord {
   transport: McpTransport
   /** Transport-specific connection details (stdio: command/env; http: url/headers). */
   config: Record<string, unknown>
+  /**
+   * The config's `${…}` tokens were already resolved when the record was built (a plugin's
+   * server, `plugins/mcp.ts`), so connecting must not expand them again: a resolved value such
+   * as an option set to `${GITHUB_TOKEN}` would otherwise read the host environment.
+   */
+  configExpanded?: boolean
   createdAt: string
   updatedAt: string
 }

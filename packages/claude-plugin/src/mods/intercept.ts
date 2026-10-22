@@ -1,3 +1,4 @@
+import type { Pause } from './budget'
 import type { DispatchOptions } from './engine'
 
 /**
@@ -70,6 +71,40 @@ export function interceptApi(
   }
   return intercepted
 }
+
+/** `$` calls whose wait is the hook's own time (Claude Code counts a sleep against the budget). */
+const COUNTED_CALLS: ReadonlySet<string> = new Set(['clock.sleep'])
+
+/**
+ * `$` as one hook run receives it: the clock of that run stops while any of its asynchronous calls
+ * is in flight (`$.ui.ask`, `$.model.complete`, `$.process.run`), as Claude Code's does, so a
+ * guard waiting on a person or a model is not skipped for running out of time.
+ */
+export function pausedApi(api: ModsApi, pause: Pause): ModsApi {
+  const paused: ModsApi = {}
+  for (const [namespace, members] of Object.entries(api)) {
+    const wrapped: Record<string, unknown> = {}
+    for (const [name, member] of Object.entries(members)) {
+      const event = `${namespace}.${name}`
+      if (typeof member !== 'function' || SYNC_CALLS.has(event) || COUNTED_CALLS.has(event)) {
+        wrapped[name] = member
+        continue
+      }
+      const method = member as (...args: unknown[]) => unknown
+      wrapped[name] = (...args: unknown[]) => {
+        const answer = method.apply(members, args)
+        return isThenable(answer) ? pause(answer) : answer
+      }
+    }
+    paused[namespace] = wrapped
+  }
+  return paused
+}
+
+const isThenable = (value: unknown): value is PromiseLike<unknown> =>
+  !!value &&
+  (typeof value === 'object' || typeof value === 'function') &&
+  typeof (value as { then?: unknown }).then === 'function'
 
 /** A deep, frozen copy of plain data; anything else (a function, a class instance) as it is. */
 export function freezeDeep<T>(value: T): T {

@@ -16,8 +16,20 @@ export interface HookOrigin {
   tier: 'user' | 'core'
 }
 
+/**
+ * What `next(e)` returns on a streaming event (`turn.step`): the stream of everything beneath,
+ * chunk by chunk, returning the result from beneath. `yield* next(e)` forwards the chunks and
+ * evaluates to that result; `await next(e)` (it is thenable) and `.result` read the result alone.
+ */
+export type HookStream = AsyncGenerator<unknown, unknown, unknown> &
+  PromiseLike<unknown> & { readonly result: Promise<unknown> }
+
 export interface Next {
-  (event?: unknown): Promise<unknown>
+  /**
+   * Runs the rest of the chain and then the host. Each call runs what is beneath afresh (a retry
+   * re-runs it); on a streaming event it is a HookStream.
+   */
+  (event?: unknown): Promise<unknown> | HookStream
   readonly signal: AbortSignal
   readonly origin: HookOrigin
   readonly budget: { readonly ms: number; readonly remainingMs: number }
@@ -26,8 +38,12 @@ export interface Next {
    * it (`append`, `builtin`, `core`). Every mod a person installs is `user`; Localix has no
    * managed or bundled mods, so past the user tier is the host's own behaviour.
    */
-  readonly to: (event: unknown, tier: TargetTier) => Promise<unknown>
-  /** In a `.catch` handler: why the hook failed, and whether it had called `next`. */
+  readonly to: (event: unknown, tier: TargetTier) => Promise<unknown> | HookStream
+  /**
+   * In a `.catch` handler: why the hook failed, and whether it had called `next`. There `next`
+   * is replay-safe: when `called`, it answers what the hook's last call settled to without
+   * running anything again; when not, it runs what is beneath once and later calls replay.
+   */
   readonly error?: HookFailure
   readonly called?: boolean
 }

@@ -164,8 +164,15 @@ export async function handlePluginsControlCommand(
     const name = tokens.slice(2).join(' ').trim()
     if (!name) return directReply('Usage: `/plugin remove <name>`')
     try {
-      await pluginService.remove(userId, { name, projectId: session.projectId ?? null })
-      return directReply(`Removed \`${name}\`.`)
+      const removed = await pluginService.remove(userId, {
+        name,
+        projectId: session.projectId ?? null,
+      })
+      if (removed?.claudeCodeInstall)
+        return directReply(
+          `\`${name}\` was installed by Claude Code, so Localix did not delete it. It is disabled here. To uninstall it, run \`claude plugin uninstall ${removed.claudeCodeInstall}\`.`,
+        )
+      return directReply([`Removed \`${name}\`.`, ...(removed?.warnings ?? [])].join('\n\n'))
     } catch (err) {
       return directReply(`Remove failed: ${errorMessage(err)}`)
     }

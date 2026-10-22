@@ -151,7 +151,7 @@ describe('makeSubstituter — token forms', () => {
 describe('makeSubstituter — secret boundary', () => {
   const config = { PUBLIC_KEY: 'pub-value', SECRET_KEY: 'my-secret' }
 
-  it('[prompt path] secret key is NOT substituted (empty string)', () => {
+  it('[prompt path] secret key becomes a placeholder naming the option, never the value', () => {
     const subst = makeSubstituter({
       pluginRoot: '/p',
       dataDir: '/d',
@@ -159,9 +159,10 @@ describe('makeSubstituter — secret boundary', () => {
       config,
       isSecret: (key) => key === 'SECRET_KEY',
     })
-    expect(subst('pub=${PUBLIC_KEY} sec=${SECRET_KEY}')).toBe('pub=pub-value sec=')
-    expect(subst('sec=${user_config.SECRET_KEY}')).toBe('sec=')
-    expect(subst('sec=${CLAUDE_PLUGIN_OPTION_SECRET_KEY}')).toBe('sec=')
+    const placeholder = "[sensitive option 'SECRET_KEY' not available in skill content]"
+    expect(subst('pub=${PUBLIC_KEY} sec=${SECRET_KEY}')).toBe(`pub=pub-value sec=${placeholder}`)
+    expect(subst('sec=${user_config.SECRET_KEY}')).toBe(`sec=${placeholder}`)
+    expect(subst('sec=${CLAUDE_PLUGIN_OPTION_SECRET_KEY}')).toBe(`sec=${placeholder}`)
   })
 
   it('[mcp path] secret key IS substituted with isSecret: () => false', () => {

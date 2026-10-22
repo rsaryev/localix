@@ -6,7 +6,7 @@ import { UnauthorizedError } from '@modelcontextprotocol/sdk/client/auth.js'
 
 import { errorMessage } from '../../../lib/errors'
 import type { McpServerRecord } from '../repository'
-import { expandServerConfig } from '../expand'
+import { connectServerConfig } from '../expand'
 import { createMcpOAuthProvider } from './provider'
 import { createPendingOAuthRegistry } from './pending-flow-registry'
 import {
@@ -61,7 +61,7 @@ export async function startMcpOAuth(
   pending.sweep(now)
   if (server.transport !== 'http')
     throw new Error('OAuth is only supported for remote (http) MCP servers')
-  const config = expandServerConfig(server.config, {})
+  const config = connectServerConfig(server)
   const url = config.url as string | undefined
   if (!url) throw new Error('server has no url')
 

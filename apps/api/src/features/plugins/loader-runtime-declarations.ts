@@ -1,4 +1,3 @@
-import { errorMessage } from '../../lib/errors'
 import { makeSubstituter } from '../ext/manifest-substitute'
 import { pluginDataDir } from './mcp'
 import type { PluginManifest } from './contracts'
@@ -30,6 +29,20 @@ export function makePluginSubstituter(
   })
 }
 
+/** Every string in a JSON-shaped value (object keys included) passed through `subst`. */
+function substituteStrings(value: unknown, subst: (text: string) => string): unknown {
+  if (typeof value === 'string') return subst(value)
+  if (Array.isArray(value)) return value.map((item) => substituteStrings(item, subst))
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {}
+    for (const [key, item] of Object.entries(value)) {
+      out[subst(key)] = substituteStrings(item, subst)
+    }
+    return out
+  }
+  return value
+}
+
 /** Append already-discovered declarations in the loader's existing order. */
 export function appendPluginRuntimeDeclarations({
   plugin,
@@ -44,7 +57,12 @@ export function appendPluginRuntimeDeclarations({
   subst: (text: string) => string
   result: LoadedPlugins
   summary: LoadedPlugins['loaded'][number]
-  opts: { homeDir: string; logger?: { warn: (message: string, meta?: unknown) => void } }
+  opts: {
+    homeDir: string
+    /** The session project directory → `${CLAUDE_PROJECT_DIR}`. */
+    cwd?: string
+    logger?: { warn: (message: string, meta?: unknown) => void }
+  }
 }): void {
   // ---- Declarative CC hooks (manifest `hooks` / hooks/hooks.json) -------
   // Raw JSON only — the cc-hooks runtime binds ${CLAUDE_PLUGIN_ROOT} /
@@ -54,7 +72,12 @@ export function appendPluginRuntimeDeclarations({
   // commands are shell strings, so `secret: true` keys are NEVER substituted
   // there (the cc-hooks side needs the key list to enforce that). Each resolved
   // config (file paths, an array of them, or an inline manifest object) is
-  // contributed independently; a broken source just contributes nothing.
+  // contributed independently; a broken file contributes nothing and its load
+  // failure is the plugin's error (Claude Code's Errors tab), the rest still loads.
+  for (const message of plugin.entrypoints.hookErrors ?? []) {
+    summary.error = summary.error ? `${summary.error}; ${message}` : message
+    opts.logger?.warn(`plugin "${plugin.manifest.name}": ${message}`)
+  }
   const sensitiveKeys = Object.entries(plugin.manifest.config ?? {}).flatMap(([key, option]) =>
     option.secret ? [key] : [],
   )
@@ -70,27 +93,27 @@ export function appendPluginRuntimeDeclarations({
   }
 
   // ---- Declarative CC LSP servers (manifest `lspServers` / .lsp.json) ---
-  // Path vars (${CLAUDE_PLUGIN_ROOT}/${CLAUDE_PROJECT_DIR}/config) are substituted
-  // via the shared subst closure by round-tripping the raw JSON. Registered with
+  // Path vars (${CLAUDE_PLUGIN_ROOT}/${CLAUDE_PLUGIN_DATA}/${CLAUDE_PROJECT_DIR}) and
+  // `${user_config.KEY}` are substituted in every string of the config. Unlike skill and agent
+  // content, a sensitive option substitutes its real value here, as in Claude Code: the config
+  // goes to a language server process, never to the model or a shell. Each string is substituted
+  // on its own (no JSON round-trip), so a value holding a quote stays one string. Registered with
   // the LSP feature (project-root scoped) by the chat runtime — enabled only.
   if (Object.keys(plugin.entrypoints.lspServers).length > 0) {
-    try {
-      const substituted = JSON.parse(
-        subst(JSON.stringify(plugin.entrypoints.lspServers)),
-      ) as Record<string, unknown>
-      result.lspServers.push({ pluginName: plugin.manifest.name, servers: substituted })
-    } catch (err) {
-      // NOT a fallback to the raw servers: those still contain `${CLAUDE_PLUGIN_ROOT}` verbatim,
-      // so the plugin registered as valid and then failed to spawn with a literal `${…}` in the
-      // binary's path — a failure that surfaces later, elsewhere, and blames the wrong thing.
-      // Contribute nothing and say why.
-      const message = errorMessage(err)
-      summary.error = summary.error ? `${summary.error}; ${message}` : message
-      opts.logger?.warn(
-        `plugin "${plugin.manifest.name}" contributed no LSP servers: their paths could not be resolved`,
-        { error: message },
-      )
-    }
+    const lspSubst = makeSubstituter({
+      pluginRoot: plugin.dir,
+      dataDir: pluginDataDir(plugin.manifest.name, opts.homeDir),
+      projectDir: opts.cwd || '',
+      config,
+      isSecret: () => false,
+    })
+    result.lspServers.push({
+      pluginName: plugin.manifest.name,
+      servers: substituteStrings(plugin.entrypoints.lspServers, lspSubst) as Record<
+        string,
+        unknown
+      >,
+    })
   }
 
   // ---- Background monitors (manifest `monitors` / monitors/monitors.json) -

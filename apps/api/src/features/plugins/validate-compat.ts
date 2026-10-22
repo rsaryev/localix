@@ -27,7 +27,7 @@ const UNSUPPORTED_CC_FIELDS: Record<string, string> = {
 // ({plugin}--v{version}) are deferred, and version ranges are advisory (warn-only) —
 // neither warrants a per-manifest warning here.
 // NOTE: a plugin's `bin/` DIRECTORY is supported — an enabled plugin's `<dir>/bin`
-// is prepended to the bash tool's PATH (see plugins/loader.ts `binDirs`). The
+// is appended to the bash tool's PATH (see plugins/loader.ts `binDirs`). The
 // mechanism keys off the directory convention, so `bin` is not flagged here.
 
 /**

@@ -126,6 +126,7 @@ describe('the wrapper chain cannot drift from the code', () => {
   test('the report exposes readable labels, not function names', () => {
     const report = describeComposition({ assembled, loadedPlugins, wrappers: WRAPPERS })
     expect(report.wrappers).toEqual([
+      'permission-gate',
       'plugin-hooks',
       'cc-hooks',
       'mods',

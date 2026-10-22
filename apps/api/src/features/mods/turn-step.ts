@@ -4,8 +4,12 @@ import { fieldOf, fireIn, hearsIn, type ModEventScope } from './event-scope'
 import { claudeCodeToolName, localToolName, toolCallEvent, toolInputOf } from './tool-shapes'
 
 /**
- * `turn.step`: each model request of a turn, before it is sent. `next(e)` sends it and resolves
- * to the whole response (`{ turnId, index, answer, toolUses, stopReason, usage }`); `next` with
+ * `turn.step`: each model request of a turn, before it is sent. The event streams: a hook is an
+ * async generator, and `next(e)` sends the request and is the stream of the response, whose
+ * result (`yield* next(e)`, or `await next(e)` in a plain hook) is the whole response
+ * (`{ turnId, index, answer, toolUses, stopReason, usage }`); the engine drives the generators
+ * (`@localixai/claude-plugin/mods` `stream.ts`), and the chunks a hook yields without `next` make
+ * its answer. `next` with
  * another `model` (of the conversation's provider) or `effort` sends that instead, and a hook
  * that answers without `next` sends nothing — its answer is the response the turn goes on with.
  * Once a request was sent, what it streamed stands: a hook's own value changes only what the

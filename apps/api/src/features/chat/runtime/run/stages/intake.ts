@@ -68,7 +68,7 @@ export async function intakeRunTurn(
 
   // permission-gate-breaker.ts documents what the tracker counts.
   const refusalTracker = createGateRefusalTracker()
-  const permissionGate = buildRunPermissionGate({
+  const gate = buildRunPermissionGate({
     refusalTracker,
     env,
     userId,
@@ -93,6 +93,9 @@ export async function intakeRunTurn(
     // Claude Code mods' `tool.check` reviews each verdict; `$.tool.check` reads the gate's own.
     toolCheck: inputs.mods.toolCheck(),
   })
+
+  // The loop's `beforeToolCall`; a tool the chain gates itself (`chain-gate.ts`) is passed by.
+  const permissionGate = toolset.gate.bind(gate)
 
   return { maxTurns, turnFrame: intake.frame, refusalTracker, permissionGate }
 }

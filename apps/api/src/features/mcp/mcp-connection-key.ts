@@ -1,10 +1,10 @@
 import { createHash } from 'node:crypto'
 import { stableStringify } from '@localixai/agent'
 import type { McpServerRecord } from './repository'
-import { expandServerConfig } from './expand'
+import { connectServerConfig } from './expand'
 
 export function mcpConnectionKey(server: McpServerRecord, cwd: string): string {
-  const config = expandServerConfig(server.config, {
+  const config = connectServerConfig(server, {
     extraEnv: { CLAUDE_PROJECT_DIR: cwd },
   })
   return createHash('sha256')

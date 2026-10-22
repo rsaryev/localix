@@ -30,6 +30,7 @@ import {
 import { createPendingTurn } from '../runtime/wake-queue/entry'
 import { personSpeaks, routeEvent } from '../runtime/wake-queue/kinds'
 import { createRunCompletion } from '../runtime/run-outcome'
+import type { ScopedCcHooks } from '../runtime/run-contract'
 
 export interface RunAgentDeps {
   repo: ReturnType<typeof createChatRepository>
@@ -53,12 +54,7 @@ export interface RunAgentOptions {
    * Run-scoped CC hooks from a sub-agent's / forked skill's frontmatter `hooks`
    * block (active for this child run only). `asSubagent` converts Stop→SubagentStop.
    */
-  ccScopedHooks?: {
-    raw: unknown
-    source: 'skill' | 'agent'
-    asSubagent?: boolean
-    agentType?: string
-  }[]
+  ccScopedHooks?: ScopedCcHooks[]
   commandOrigin?: { command: string; label: string }
   /**
    * Hide this trigger prompt from the transcript (the UI filters `isInternal`)

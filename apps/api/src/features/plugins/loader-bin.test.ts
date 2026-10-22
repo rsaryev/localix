@@ -8,7 +8,7 @@ import type { CapabilitySourceRepository } from '../capabilities/source-reposito
 import { loadEnabledPlugins } from './loader'
 
 // An enabled plugin's `<dir>/bin` directory is collected into LoadedPlugins.binDirs
-// so the bash tool can prepend it to PATH (Claude Code's `bin/`-on-PATH convention).
+// so the bash tool can append it to PATH (Claude Code's `bin/`-on-PATH convention).
 // A plugin without a `bin/` dir contributes nothing.
 
 const emptyRepo: CapabilitySourceRepository = {

@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { Fragment, h, type RegisterFunction } from '@localixai/claude-plugin/mods'
 import { readClientModules } from './client-source'
+import { STATE_LIBRARY } from './state-library'
 
 /**
  * A hooks module as Claude Code loads it: an ES module (`.js` … `.tsx`) importing only files of its
@@ -23,15 +24,7 @@ export const CLAUDE_CODE_RUNTIME = `
 const runtime = globalThis[Symbol.for('localix.mods.claude-code')]
 export const h = runtime.h
 export const Fragment = runtime.Fragment
-const missing = (name) => () => {
-  throw new Error(name + ' from claude-code is not available in Localix yet')
-}
-export const atom = missing('atom')
-export const read = missing('read')
-export const update = missing('update')
-export const derive = missing('derive')
-export const memberOf = missing('memberOf')
-`
+${STATE_LIBRARY}`
 
 /** The globals a hooks module may use unbound, as in Claude Code. */
 const GLOBALS = ['h', 'Fragment'] as const

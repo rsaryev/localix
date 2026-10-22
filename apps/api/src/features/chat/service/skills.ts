@@ -1,4 +1,5 @@
 import type { DiscoveredSkill } from '../../agent-core/skill-discovery'
+import type { PluginSkill } from '../../plugins/plugin-skills'
 import type { SkillCatalogEntry } from '../contracts/skills'
 
 export interface SkillRecord {
@@ -34,6 +35,10 @@ export interface SkillRecord {
   version?: string
   /** CC skill frontmatter `hooks` — raw CC hooks map, activated for the skill's run. */
   hooks?: unknown
+  /** The plugin that ships this skill; its `name` is then `<plugin>:<skill>`. */
+  pluginName?: string
+  /** That plugin's directory (`CLAUDE_PLUGIN_ROOT`). */
+  pluginDir?: string
 }
 
 export interface SkillInput {
@@ -83,6 +88,16 @@ export function toFileSkillRecord(f: DiscoveredSkill, projectId: string): SkillR
     enumerable: true,
     get: () => f.content,
   })
+  return record
+}
+
+/** A plugin's skill as a record named `<plugin>:<skill>`; its body stays lazy. */
+export function toPluginSkillRecord(entry: PluginSkill, projectId: string): SkillRecord {
+  const record = toFileSkillRecord(entry.skill, projectId)
+  record.id = `plugin:${entry.fullName}`
+  record.name = entry.fullName
+  record.pluginName = entry.pluginName
+  record.pluginDir = entry.pluginDir
   return record
 }
 

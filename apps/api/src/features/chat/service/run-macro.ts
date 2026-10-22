@@ -27,6 +27,7 @@ import {
 import type { QueuedCommand } from '../runtime/wake-queue-contracts'
 import type { ToolRequirement } from '../../agent-core/required-tools'
 import { agentParticipant } from '../../../db/participant'
+import type { ScopedCcHooks } from '../runtime/run-contract'
 
 export interface RunMacroDeps {
   repo: ReturnType<typeof createChatRepository>
@@ -46,12 +47,7 @@ export interface RunMacroOptions {
   /** Provenance badge rendered on the visible user message ("via /loop · every 5m"). */
   commandOrigin?: { command: string; label: string }
   /** Run-scoped CC hooks from a skill's frontmatter `hooks` block (active this run only). */
-  ccScopedHooks?: {
-    raw: unknown
-    source: 'skill' | 'agent'
-    asSubagent?: boolean
-    agentType?: string
-  }[]
+  ccScopedHooks?: ScopedCcHooks[]
   /** Client surface inherited from the initiating send. */
   toolSurface?: ToolSurface
   /** Additional assets/context linked to the command invocation. */

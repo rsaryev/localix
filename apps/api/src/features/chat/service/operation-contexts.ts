@@ -58,6 +58,7 @@ export function createOperationContexts(
     resolveSessionWorkingDir,
     gatherSessionSkills,
     gatherEnabledPluginCommands,
+    gatherEnabledPluginSkills,
     buildSessionPluginCatalog,
     getSessionDetail,
     publishSession,
@@ -162,6 +163,7 @@ export function createOperationContexts(
     gatherSessionSkills,
     loadSkillOverrides,
     gatherEnabledPluginCommands,
+    gatherEnabledPluginSkills,
     resolveSessionWorkingDir,
     buildSessionPluginCatalog,
     // CC `context: fork` — run the skill in a child session, as the invoking agent.

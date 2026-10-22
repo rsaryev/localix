@@ -72,6 +72,8 @@ export interface ResolvedDependencyStep {
   marketplace: string
   /** Local dir ready for `installFromLocal` (marketplace-relative or staged remote). */
   dir: string
+  /** Where `dir`'s symlinks may be dereferenced from: its marketplace or fetched checkout. */
+  linkRoot?: string
   entry: MarketplaceEntry
   version?: string
   /** The step's OWN dependencies (for transitive planning). */

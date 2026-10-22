@@ -14,6 +14,7 @@ import {
 import type { NpmEntrySource } from './marketplace-source-npm'
 import { fetchEntryPlugin, materializeMarketplace } from './marketplace-materialize'
 import { marketplaceNameProblem } from './claude-code-marketplace'
+import { differentSourceMessage, sameMarketplaceSource } from './marketplace-source-identity'
 
 import {
   LOCALIX_MARKETPLACE,
@@ -120,6 +121,11 @@ async function addMarketplaceUnlocked(
       )
     const refused = marketplaceNameProblem(market.name, source)
     if (refused) throw new Error(refused)
+    // A name registered from another source keeps it: re-pointing it would move where the
+    // plugins installed from it update from. Replacing it takes an explicit remove first.
+    const existing = (await readKnownMarketplaces(root))[market.name]
+    if (existing && !sameMarketplaceSource(existing.source, source))
+      throw new Error(differentSourceMessage(market.name, existing.source))
   } catch (err) {
     await rmrf(staging)
     throw err
@@ -218,6 +224,11 @@ export async function removeMarketplace(
 export interface ResolvedMarketplaceInstall {
   /** Absolute local directory containing the plugin (ready to pass to `install`). */
   dir: string
+  /**
+   * The marketplace (or fetched checkout) holding `dir`. Copying the plugin dereferences its
+   * symlinks into this root and drops links that leave it, as Claude Code does.
+   */
+  linkRoot: string
   /** The resolved marketplace entry (carries `defaultEnabled` and other metadata). */
   entry: MarketplaceEntry
   /** The marketplace the entry came from (dependency resolution's parent catalog). */
@@ -292,13 +303,13 @@ export async function resolveMarketplaceInstall(
       )
     if (!(await fs.stat(resolved.localPath).catch(() => null))?.isDirectory())
       throw new Error(`Source path does not exist: ${resolved.localPath}`)
-    return { dir: resolved.localPath, ...base }
+    return { dir: resolved.localPath, linkRoot: marketplaceDir, ...base }
   }
 
   // Remote sources stage into a stable temp dir under the marketplaces root; git, npm and
   // archives land the same shape (a plain plugin dir handed to `installFromLocal`).
   const staging = join(root, `.fetch-${Math.abs(hashString(ref.plugin + ref.marketplace))}`)
-  return { dir: await fetchEntryPlugin(resolved, staging, deps), ...base }
+  return { dir: await fetchEntryPlugin(resolved, staging, deps), linkRoot: staging, ...base }
 }
 
 /**

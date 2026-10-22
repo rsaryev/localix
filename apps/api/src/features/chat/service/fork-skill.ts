@@ -11,6 +11,7 @@ import type { createChatRepository, SessionRecord } from '../repository'
 import * as sessionLifecycle from './session-lifecycle'
 import type { SessionLifecycleCtx } from './session-lifecycle-contracts'
 import type { RunAgentFn } from './run-agent'
+import type { ScopedCcHooks } from '../runtime/run-contract'
 
 export interface ForkSkillDeps {
   repo: ReturnType<typeof createChatRepository>
@@ -37,6 +38,8 @@ export type SpawnForkSkillFn = (
     preferredEffort?: string
     /** CC skill frontmatter `hooks` — activated for the forked child run (Stop→SubagentStop). */
     hooks?: unknown
+    /** The plugin shipping the skill: its `hooks` get that plugin's root and data dir. */
+    hooksPlugin?: ScopedCcHooks['plugin']
     /**
      * The participant the fork is for — and the agent that runs it: its route is inherited and
      * its report comes back to it. Absent means the conversation's first participant — the
@@ -112,6 +115,7 @@ export function createSpawnForkSkill(deps: ForkSkillDeps): SpawnForkSkillFn {
                 source: 'skill' as const,
                 asSubagent: true,
                 agentType: GENERAL_PURPOSE_AGENT,
+                ...(opts.hooksPlugin ? { plugin: opts.hooksPlugin } : {}),
               },
             ],
           }

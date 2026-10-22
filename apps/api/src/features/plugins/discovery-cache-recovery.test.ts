@@ -3,6 +3,7 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { discoverPlugins } from './discovery'
+import { SCAN_CACHE_VERSION } from './discovery-scan-cache'
 
 test('a malformed scan cache falls back to discovery and is replaced with a readable cache', async () => {
   const homeDir = await mkdtemp(join(tmpdir(), 'plugin-cache-recovery-'))
@@ -20,7 +21,7 @@ test('a malformed scan cache falls back to discovery and is replaced with a read
     const found = await discoverPlugins({ homeDir, includeBundled: false })
     expect(found.map((plugin) => plugin.manifest.name)).toEqual(['fixture'])
     const repaired = JSON.parse(await readFile(cacheFile, 'utf8'))
-    expect(repaired.version).toBe(1)
+    expect(repaired.version).toBe(SCAN_CACHE_VERSION)
     expect(repaired.fingerprint.length).toBeGreaterThan(0)
     expect(
       repaired.plugins.map((plugin: { manifest: { name: string } }) => plugin.manifest.name),

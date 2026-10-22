@@ -69,6 +69,24 @@ describe('native hook command transport', () => {
     expect(result.aborted).toBe(false)
   })
 
+  test('exec form passes each argument verbatim, with no shell to expand it', async () => {
+    const result = await runHookCommand(
+      options(process.execPath, {
+        args: ['-e', 'process.stdout.write(JSON.stringify(process.argv.slice(-2)))', '$HOME', '*'],
+      }),
+    )
+    expect(result.code).toBe(0)
+    expect(JSON.parse(result.stdout)).toEqual(['$HOME', '*'])
+  })
+
+  test('exec form reports a missing executable as stderr without throwing', async () => {
+    const result = await runHookCommand(
+      options('/nonexistent-hook-binary', { args: [], env: { PATH: '' } }),
+    )
+    expect(result.code).not.toBe(0)
+    expect(result.stderr).toContain('nonexistent-hook-binary')
+  })
+
   test('invalid limits cannot create an unbounded execution', () => {
     expect(() => runHookCommand(options('exit 0', { timeoutMs: Infinity }))).toThrow('limits')
     expect(() => runHookCommand(options('exit 0', { maxOutputBytes: -1 }))).toThrow('limits')

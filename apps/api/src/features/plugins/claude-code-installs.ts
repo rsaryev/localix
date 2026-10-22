@@ -157,9 +157,12 @@ async function marketplaceListing(known: unknown, id: string): Promise<Listing |
  * its cache folder (a version).
  */
 function withEntry(id: string, entry: MarketplaceEntry | undefined) {
-  return (files: ManifestFiles): ManifestFiles => {
+  return (read: ManifestFiles): ManifestFiles => {
+    // Claude Code never reads a root `plugin.json`, so neither its fields nor its `tools`
+    // entrypoint (Localix native code) count for a plugin Claude Code installed.
+    const { legacy: _ignored, ...files } = read
     const plugin = files.plugin
-    if (!plugin && !files.app && !files.legacy) {
+    if (!plugin && !files.app) {
       let json: Record<string, unknown> = { name: id.slice(0, id.lastIndexOf('@')) || id }
       try {
         if (entry) json = synthesizeEntryManifest(entry)
@@ -224,7 +227,7 @@ export async function discoverClaudeCodePlugins(opts: {
 }): Promise<DiscoveredPlugin[]> {
   const installs = await readClaudeCodeInstalls(opts).catch(() => [])
   const plugins = await Promise.all(
-    installs.map(async (install) => {
+    installs.map(async (install): Promise<DiscoveredPlugin | null> => {
       const scope = install.scope === 'project' && opts.projectId ? 'project' : 'global'
       const plugin = withWorkflowCommands(
         await loadManifest(
@@ -235,7 +238,8 @@ export async function discoverClaudeCodePlugins(opts: {
           withEntry(install.id, install.entry),
         ),
       )
-      return install.enabledBy || plugin.manifest.defaultEnabled !== false ? plugin : null
+      if (!install.enabledBy && plugin.manifest.defaultEnabled === false) return null
+      return { ...plugin, claudeCodeInstall: install.id }
     }),
   )
   return plugins.filter((plugin): plugin is DiscoveredPlugin => plugin !== null)

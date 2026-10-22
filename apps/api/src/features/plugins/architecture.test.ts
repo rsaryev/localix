@@ -286,74 +286,28 @@ describe('defaultEnabled flag + the trust gate', () => {
   })
 })
 
-describe('install copy allowlist', () => {
-  it('skips .git / node_modules / build cruft when copying a plugin tree', async () => {
+describe('install copy', () => {
+  it('copies a plugin tree whole, skipping only version control metadata', async () => {
     const src = await fs.mkdtemp(join(tmpdir(), 'plug-src-'))
     const dest = await fs.mkdtemp(join(tmpdir(), 'plug-dst-'))
     try {
       await fs.writeFile(join(src, 'plugin.json'), '{"name":"x"}')
-      await fs.mkdir(join(src, 'tools'), { recursive: true })
-      await fs.writeFile(join(src, 'tools', 'index.mjs'), '// tool')
       await fs.mkdir(join(src, '.git'), { recursive: true })
       await fs.writeFile(join(src, '.git', 'config'), 'secret')
       await fs.mkdir(join(src, 'node_modules', 'dep'), { recursive: true })
       await fs.writeFile(join(src, 'node_modules', 'dep', 'i.js'), 'x')
-      await fs.writeFile(join(src, '.env'), 'TOKEN=shh')
+      await fs.mkdir(join(src, 'server', 'dist'), { recursive: true })
+      await fs.writeFile(join(src, 'server', 'dist', 'index.js'), '// server')
+      await fs.writeFile(join(src, 'server.pyc'), 'bytecode')
 
       await fs.rm(dest, { recursive: true, force: true }) // cp wants a fresh dest
       await copyPluginTree(src, dest)
 
-      expect(await fs.access(join(dest, 'plugin.json')).then(() => true)).toBe(true)
-      expect(await fs.access(join(dest, 'tools', 'index.mjs')).then(() => true)).toBe(true)
+      for (const kept of ['plugin.json', 'node_modules/dep/i.js', 'server/dist/index.js'])
+        expect(await fs.access(join(dest, kept)).then(() => true)).toBe(true)
+      expect(await fs.access(join(dest, 'server.pyc')).then(() => true)).toBe(true)
       expect(
         await fs.access(join(dest, '.git')).then(
-          () => true,
-          () => false,
-        ),
-      ).toBe(false)
-      expect(
-        await fs.access(join(dest, 'node_modules')).then(
-          () => true,
-          () => false,
-        ),
-      ).toBe(false)
-      expect(
-        await fs.access(join(dest, '.env')).then(
-          () => true,
-          () => false,
-        ),
-      ).toBe(false)
-    } finally {
-      await fs.rm(src, { recursive: true, force: true })
-      await fs.rm(dest, { recursive: true, force: true })
-    }
-  })
-
-  it('skips Python .egg-info directories and .pyc compiled files (suffix-match)', async () => {
-    const src = await fs.mkdtemp(join(tmpdir(), 'plug-src-'))
-    const dest = await fs.mkdtemp(join(tmpdir(), 'plug-dst-'))
-    try {
-      await fs.writeFile(join(src, 'plugin.json'), '{"name":"x"}')
-      await fs.writeFile(join(src, 'server.py'), '# python server')
-      // Python .egg-info dir (suffix pattern)
-      await fs.mkdir(join(src, 'my_plugin.egg-info'), { recursive: true })
-      await fs.writeFile(join(src, 'my_plugin.egg-info', 'PKG-INFO'), 'metadata')
-      // Python compiled bytecode
-      await fs.writeFile(join(src, 'server.pyc'), 'bytecode')
-
-      await fs.rm(dest, { recursive: true, force: true })
-      await copyPluginTree(src, dest)
-
-      expect(await fs.access(join(dest, 'plugin.json')).then(() => true)).toBe(true)
-      expect(await fs.access(join(dest, 'server.py')).then(() => true)).toBe(true)
-      expect(
-        await fs.access(join(dest, 'my_plugin.egg-info')).then(
-          () => true,
-          () => false,
-        ),
-      ).toBe(false)
-      expect(
-        await fs.access(join(dest, 'server.pyc')).then(
           () => true,
           () => false,
         ),

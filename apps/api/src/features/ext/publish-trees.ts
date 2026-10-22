@@ -12,6 +12,8 @@ export interface ExtensionTreeInput {
   source: string
   name: string
   replace?: boolean
+  /** The marketplace the source came from: links into it are dereferenced, not dropped. */
+  linkRoot?: string
   prepare?: (stagedDirectory: string) => Promise<void>
 }
 
@@ -105,7 +107,7 @@ async function publish(
         retain: false,
       }
       prepared.push(tree)
-      await copyExtensionTree(source, tree.staged)
+      await copyExtensionTree(source, tree.staged, { linkRoot: input.linkRoot })
       await input.prepare?.(tree.staged)
       tree.identity = await fs.lstat(tree.staged)
       if (!tree.identity.isDirectory())

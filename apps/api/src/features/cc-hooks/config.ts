@@ -51,6 +51,15 @@ export interface PluginHookConfig {
   raw: unknown
 }
 
+/** The plugin a skill's or an agent's frontmatter `hooks` block ships in. */
+export interface ScopedHookPlugin {
+  name: string
+  /** Plugin install dir → `${CLAUDE_PLUGIN_ROOT}`. */
+  root: string
+  /** Persistent plugin data dir → `${CLAUDE_PLUGIN_DATA}`. */
+  dataDir: string
+}
+
 export interface BuildRegistryResult {
   registry: CcHookRegistry
   skipped: SkippedHandler[]
@@ -58,7 +67,7 @@ export interface BuildRegistryResult {
 
 /**
  * Collect the `${user_config.KEY}` keys referenced by a raw hooks block's
- * substitutable strings (`command` + http `url`) — the positions where sensitive
+ * substitutable strings (shell-form `command` + http `url`) — the positions where sensitive
  * keys are NEVER substituted. Static plugin validation intersects this with the
  * manifest's `secret: true` keys to warn authors (mirror of the MCP check).
  */
@@ -73,7 +82,8 @@ export function collectHookUserConfigTokens(raw: unknown): Set<string> {
       if (!isRecord(groupRaw)) continue
       const handlersRaw = Array.isArray(groupRaw.hooks) ? groupRaw.hooks : []
       for (const hRaw of handlersRaw) {
-        if (!isRecord(hRaw)) continue
+        // An exec-form command (`args`) is never parsed by a shell: every value substitutes there.
+        if (!isRecord(hRaw) || Array.isArray(hRaw.args)) continue
         for (const field of [hRaw.command, hRaw.url]) {
           if (typeof field !== 'string') continue
           for (const key of collectUserConfigShellTokens(field)) keys.add(key)
@@ -127,15 +137,29 @@ export function parseHooksBlock(
  * raw CC `hooks` map). Reuses {@link parseHooksBlock}, then — when the component
  * runs as a sub-agent (`asSubagent`, i.e. a `context: fork` skill or a delegated
  * agent) — auto-converts any `Stop` groups to `SubagentStop`, per CC (a subagent's
- * `Stop` hooks fire as `SubagentStop`). Path placeholders resolve against `projectDir`.
+ * `Stop` hooks fire as `SubagentStop`). Path placeholders resolve against `projectDir`; a
+ * component shipped by a plugin (`plugin`) also gets that plugin's `${CLAUDE_PLUGIN_ROOT}` and
+ * `${CLAUDE_PLUGIN_DATA}`, in its http urls and its commands' environment, as Claude Code gives
+ * every plugin component.
  */
 export function parseScopedHooks(
   raw: unknown,
   source: Extract<CcHookSource, 'skill' | 'agent'>,
-  opts: { projectDir: string; asSubagent?: boolean },
+  opts: { projectDir: string; asSubagent?: boolean; plugin?: ScopedHookPlugin },
   skipped: SkippedHandler[] = [],
 ): CcHookRegistry {
-  const registry = parseHooksBlock(raw, source, { projectDir: opts.projectDir }, skipped)
+  const { plugin } = opts
+  const registry = parseHooksBlock(
+    raw,
+    source,
+    {
+      projectDir: opts.projectDir,
+      ...(plugin
+        ? { pluginName: plugin.name, pluginRoot: plugin.root, pluginDataDir: plugin.dataDir }
+        : {}),
+    },
+    skipped,
+  )
   if (opts.asSubagent && registry.Stop?.length) {
     // Move Stop → SubagentStop (append after any existing SubagentStop groups).
     ;(registry.SubagentStop ??= []).push(...registry.Stop)

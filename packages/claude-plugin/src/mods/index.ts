@@ -11,6 +11,7 @@ export {
   type Hook,
   type HookFailure,
   type HookOrigin,
+  type HookStream,
   type ModsApi,
   type ModsEngine,
   type ModsEngineOptions,

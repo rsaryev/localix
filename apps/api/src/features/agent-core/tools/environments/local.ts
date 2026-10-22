@@ -50,7 +50,7 @@ export class LocalEnvironment implements ExecutionEnvironment {
       // The agent's shell has no TTY — hand it the user's real login-shell env
       // (repaired PATH + every stack's vars under a GUI launch) plus the
       // fail-fast non-interactive overlay so a scaffolder/git prompt can't hang.
-      // Enabled plugins' `bin/` dirs (pathPrefix) go to the FRONT of PATH.
+      // Enabled plugins' `bin/` dirs (pathPrefix) go AFTER the user's PATH.
       env: childEnvNonInteractive(undefined, opts?.pathPrefix),
     })
   }

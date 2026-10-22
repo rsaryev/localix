@@ -7,6 +7,8 @@ import type { SessionRecord } from '../repository'
 import type { SkillRecord } from './skills'
 import { routedParticipants, sessionFixture } from '../../../testing/session-fixture'
 import { noLeadership } from '../runtime/conversation-strategy'
+import { pluginDataDir } from '../../plugins/mcp'
+import { userHome } from '../../../lib/env'
 
 const session: SessionRecord = sessionFixture({
   id: 's1',
@@ -121,6 +123,7 @@ describe('handleSkillCommand', () => {
   test('treats an off skill as unavailable and never starts an agent run', async () => {
     const ctx = {
       gatherSessionSkills: async () => [skill],
+      gatherEnabledPluginSkills: async () => [],
       loadSkillOverrides: async () => ({ 'sample-skill': 'off' as const }),
       runMacroCommand: () => {
         throw new Error('must not run')
@@ -128,6 +131,100 @@ describe('handleSkillCommand', () => {
     } as unknown as CommandHandlerContext
 
     expect(await handleSkillCommand(ctx, 'u1', 's1', session, '/sample-skill')).toBeNull()
+  })
+})
+
+const pluginSkill = (plugin: string, name: string): SkillRecord => ({
+  ...skill,
+  id: `plugin:${plugin}:${name}`,
+  name: `${plugin}:${name}`,
+  content: `Plugin ${plugin} handles $ARGUMENTS.`,
+  source: 'file',
+  pluginName: plugin,
+  pluginDir: `/plugins/${plugin}`,
+})
+
+function pluginCtx(plugins: SkillRecord[], macroCalls: unknown[][]) {
+  return {
+    repo: { listMessages: async () => [] },
+    runner: { isBusy: () => false, isRunning: () => false, leadership: () => noLeadership },
+    now: () => 'now',
+    gatherSessionSkills: async () => [skill],
+    gatherEnabledPluginSkills: async () => plugins,
+    loadSkillOverrides: async () => ({}),
+    resolveSessionWorkingDir: async () => '/repo',
+    runMacroCommand: async (...args: unknown[]) => {
+      macroCalls.push(args)
+      return { sessionId: 's1', messageId: 'a1' }
+    },
+    insertDirectReply: async () => ({ sessionId: 's1', messageId: 'a1' }),
+  } as unknown as CommandHandlerContext
+}
+
+describe('plugin skills run as /<plugin>:<skill>', () => {
+  test('the namespaced name runs the plugin skill with its arguments', async () => {
+    const calls: unknown[][] = []
+    const ctx = pluginCtx([pluginSkill('kit', 'review')], calls)
+
+    await handleSkillCommand(ctx, 'u1', 's1', session, '/kit:review the auth flow')
+
+    expect(calls).toHaveLength(1)
+    expect(calls[0]?.[5]).toBe('Plugin kit handles the auth flow.')
+    expect(calls[0]?.[7]).toMatchObject({
+      invocation: {
+        invocation: { kind: 'skill', name: 'kit:review', arguments: 'the auth flow' },
+        presentation: { label: '/kit:review', token: '/kit:review' },
+      },
+    })
+  })
+
+  test('the bare name runs it when one plugin has it, and nothing guesses between two', async () => {
+    const calls: unknown[][] = []
+    const one = pluginCtx([pluginSkill('kit', 'review')], calls)
+    await handleSkillCommand(one, 'u1', 's1', session, '/review now')
+    expect(calls[0]?.[5]).toBe('Plugin kit handles now.')
+
+    const two = pluginCtx([pluginSkill('kit', 'review'), pluginSkill('other', 'review')], calls)
+    expect(await handleSkillCommand(two, 'u1', 's1', session, '/review now')).toBeNull()
+    expect(calls).toHaveLength(1)
+  })
+
+  test("its frontmatter hooks carry the plugin's root and data dir, inline and forked", async () => {
+    const hooks = { PreToolUse: [{ hooks: [{ type: 'command', command: 'x' }] }] }
+    const plugin = {
+      name: 'kit',
+      root: '/plugins/kit',
+      dataDir: pluginDataDir('kit', userHome()),
+    }
+    const calls: unknown[][] = []
+    await handleSkillCommand(
+      pluginCtx([{ ...pluginSkill('kit', 'review'), hooks }], calls),
+      'u1',
+      's1',
+      session,
+      '/kit:review',
+    )
+    expect(calls[0]?.[7]).toMatchObject({
+      ccScopedHooks: [{ raw: hooks, source: 'skill', plugin }],
+    })
+
+    const forks: unknown[] = []
+    const forkCtx = {
+      ...pluginCtx([{ ...pluginSkill('kit', 'review'), hooks, contextFork: true }], calls),
+      spawnForkSkill: async (...args: unknown[]) => {
+        forks.push(args[3])
+        return 'child-session'
+      },
+    } as unknown as CommandHandlerContext
+    await handleSkillCommand(forkCtx, 'u1', 's1', session, '/kit:review')
+    expect(forks[0]).toMatchObject({ hooks, hooksPlugin: plugin })
+  })
+
+  test("the person's own skill keeps its bare name over a plugin's", async () => {
+    const calls: unknown[][] = []
+    const ctx = pluginCtx([pluginSkill('kit', 'sample-skill')], calls)
+    await handleSkillCommand(ctx, 'u1', 's1', session, '/sample-skill x')
+    expect(calls[0]?.[5]).toBe('Handle x carefully.')
   })
 })
 

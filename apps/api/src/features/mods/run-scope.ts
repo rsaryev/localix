@@ -36,6 +36,11 @@ export type PromptOutcome =
 
 export interface ModRunScope {
   readonly active: boolean
+  /**
+   * Whether the run's calls meet the permission gate inside `tool.call`, after the `PreToolUse`
+   * hooks, as in Claude Code: true when a mod hears `tool.call` or `tool.check`.
+   */
+  readonly gateInChain: boolean
   /** `prompt.submit`: the prompt as the model will read it, notes for it, or a drop. */
   submit(text: string, turnId: string): Promise<PromptOutcome>
   turnStart(text: string, turnId: string): Promise<void>
@@ -95,6 +100,7 @@ export async function createModRunScope(
   let directory: readonly DirectoryAgent[] = []
   return {
     active,
+    gateInChain: active && (host.hears('tool.call', plugins) || host.hears('tool.check', plugins)),
     async submit(text, turnId) {
       // Rows a mod appended since the last prompt reach the model with this one.
       const appended = scene.sessionId ? host.composer.takeNotes(scene.sessionId) : []
@@ -180,6 +186,7 @@ export async function createModRunScope(
 /** The scope of a run with no mods: what a host without a mods host gets. */
 export const NO_MODS: ModRunScope = {
   active: false,
+  gateInChain: false,
   submit: async (text) => ({ dropped: false, text, context: [] }),
   turnStart: async () => {},
   turnComplete: async () => undefined,

@@ -95,6 +95,7 @@ function toDependencyStep(
     name: r.entry.name,
     marketplace: r.marketplace,
     dir: r.dir,
+    linkRoot: r.linkRoot,
     entry: r.entry,
     version:
       (typeof rawVersion === 'string' && rawVersion ? rawVersion : undefined) ?? r.entry.version,
@@ -135,6 +136,7 @@ export async function prepareDependenciesForInstall(
         trees: plan.steps.map((step, index) => ({
           source: step.dir,
           name: step.entry.name,
+          linkRoot: step.linkRoot,
           prepare: async (staged) => {
             await applyEntryManifestOverrides(staged, step.entry)
             const plugin = await loadManifest(staged, ops.scope, ops.projectId)

@@ -9,6 +9,10 @@ import { promisify } from 'node:util'
 import { ApiError, errorMessage } from '../../lib/errors'
 import { childEnv } from '../../lib/login-shell-env'
 import { rmrf } from '../ext/install-tree'
+import { fetchChecked } from './marketplace-download'
+import { DEFAULT_NPM_REGISTRY, npmHop, userDefaultNpmRegistry } from './marketplace-npm-registry'
+
+export { DEFAULT_NPM_REGISTRY } from './marketplace-npm-registry'
 
 const execFileAsync = promisify(execFile)
 
@@ -25,7 +29,6 @@ const execFileAsync = promisify(execFile)
  * `ApiError`, so one bad npm entry never breaks the rest of the marketplace.
  */
 
-export const DEFAULT_NPM_REGISTRY = 'https://registry.npmjs.org'
 /** Compressed tarball ceiling; extraction has separate manifest/install validation. */
 export const MAX_NPM_TARBALL_BYTES = 50 * 1024 * 1024
 
@@ -213,20 +216,18 @@ export async function downloadNpmTarball(
   return total
 }
 
-async function fetchOk(url: string, what: string): Promise<Response> {
-  let res: Response
-  try {
-    res = await fetch(url)
-  } catch (err) {
-    throw new InvalidRequestError('plugin_npm_fetch_failed', `${what} failed: ${errorMessage(err)}`)
-  }
-  if (!res.ok) {
-    throw new InvalidRequestError(
-      'plugin_npm_fetch_failed',
-      `${what} failed: HTTP ${res.status} ${url}`,
-    )
-  }
-  return res
+const NPM_METADATA_TIMEOUT_MS = 60_000
+const NPM_TARBALL_TIMEOUT_MS = 120_000
+
+/** GET an npm URL, every redirect hop https (or http on the user's own default registry). */
+async function fetchNpm(
+  url: string,
+  what: string,
+  defaultRegistry: string,
+  timeoutMs: number,
+): Promise<Response> {
+  const download = { what, timeoutMs, checkHop: npmHop(defaultRegistry) }
+  return (await fetchChecked(url, { ...download, code: 'plugin_npm_fetch_failed' })).response
 }
 
 /**
@@ -235,10 +236,18 @@ async function fetchOk(url: string, what: string): Promise<Response> {
  * npm-published tarballs) is stripped so `dest` IS the plugin dir — the same shape the
  * git clone path stages, ready for `installFromLocal`.
  */
-export async function fetchNpmPlugin(src: NpmEntrySource, dest: string): Promise<void> {
-  const metaRes = await fetchOk(
+export async function fetchNpmPlugin(
+  src: NpmEntrySource,
+  dest: string,
+  opts: { defaultRegistry?: string } = {},
+): Promise<void> {
+  // Plain http only on the user's own default registry, checked before anything is contacted.
+  const defaultRegistry = opts.defaultRegistry ?? (await userDefaultNpmRegistry())
+  const metaRes = await fetchNpm(
     npmMetadataUrl(src.package, src.registry),
     `npm metadata for "${src.package}"`,
+    defaultRegistry,
+    NPM_METADATA_TIMEOUT_MS,
   )
   const meta = (await metaRes.json()) as Packument
   const version = pickNpmVersion(src.package, meta, src.version)
@@ -249,7 +258,12 @@ export async function fetchNpmPlugin(src: NpmEntrySource, dest: string): Promise
       `npm package "${src.package}@${version}" has no dist.tarball.`,
     )
   }
-  const tarRes = await fetchOk(dist.tarball, `npm tarball for "${src.package}@${version}"`)
+  const tarRes = await fetchNpm(
+    dist.tarball,
+    `npm tarball for "${src.package}@${version}"`,
+    defaultRegistry,
+    NPM_TARBALL_TIMEOUT_MS,
+  )
   const packageVersion = `${src.package}@${version}`
   const tmpFile = join(tmpdir(), `localix-npm-${randomUUID()}.tgz`)
   try {

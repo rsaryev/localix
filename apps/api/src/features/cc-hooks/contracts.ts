@@ -246,15 +246,16 @@ export interface CcHookHandler {
   /** Plugin persistent data dir → `CLAUDE_PLUGIN_DATA` env for the spawned child. */
   pluginDataDir?: string
   /**
-   * Shell command (`sh -c <command>`). Empty for prompt handlers. Its `${CLAUDE_*}` placeholders
-   * are NOT substituted: the shell expands them from the child env, so a project path is never
-   * parsed as shell source (`config-handler.ts` `bindShellCommand`).
+   * Shell form: the command the shell runs; its `${CLAUDE_*}` placeholders are left for the shell
+   * to expand from the child env (`config-handler.ts`). Exec form: the executable, placeholders
+   * substituted. Empty for non-command handlers.
    */
   command: string
-  /**
-   * Variables the command reads in place of its `${user_config.KEY}` tokens
-   * (`CLAUDE_PLUGIN_OPTION_<KEY>`), merged into the child env by the executor.
-   */
+  /** CC exec form: the argument vector, placeholders substituted; spawned with no shell. */
+  args?: string[]
+  /** CC `shell` (shell form only): `powershell` runs the command through PowerShell. */
+  shell?: 'bash' | 'powershell'
+  /** Extra child env: every `CLAUDE_PLUGIN_OPTION_<KEY>`, plus the shell-form config bindings. */
   shellEnv?: Record<string, string>
   /** Resolved timeout in milliseconds (default + cap already applied). */
   timeoutMs: number

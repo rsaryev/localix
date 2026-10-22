@@ -191,7 +191,7 @@ export interface BashToolOptions {
    */
   terminalControl?: TerminalToolDeps
   /**
-   * Enabled plugins' `bin/` directories, prepended to PATH for bash subprocesses
+   * Enabled plugins' `bin/` directories, appended to PATH for bash subprocesses
    * so bundled plugin CLIs resolve by bare name (see {@link BashRunContext}).
    */
   pluginBinDirs?: string[]

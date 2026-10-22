@@ -64,6 +64,32 @@ describe('plugin command system output', () => {
     expect(reply.text()).not.toMatch(decorativeGlyph)
   })
 
+  test('remove says when nothing was installed, and when Claude Code owns the plugin', async () => {
+    const run = async (remove: () => Promise<unknown>) => {
+      const reply = replyCapture()
+      await handlePluginsControlCommand(
+        { pluginService: { remove } } as never,
+        'user',
+        session,
+        '/plugin remove review',
+        reply.directReply,
+      )
+      return reply.text()
+    }
+
+    expect(
+      await run(async () => {
+        throw new Error('Plugin "review" is not installed')
+      }),
+    ).toBe('Remove failed: Plugin "review" is not installed')
+    const owned = await run(async () => ({ warnings: [], claudeCodeInstall: 'review@mkt' }))
+    expect(owned).not.toContain('Removed')
+    expect(owned).toContain('installed by Claude Code')
+    expect(owned).toContain('disabled here')
+    expect(owned).toContain('claude plugin uninstall review@mkt')
+    expect(await run(async () => undefined)).toBe('Removed `review`.')
+  })
+
   /**
    * The mutation's own notification is what invalidates the run-scope cache, and it
    * belongs to the SERVICE — every `createPluginService` mutation fires `deps.onChanged`

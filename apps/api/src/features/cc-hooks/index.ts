@@ -13,13 +13,14 @@ export {
   parseScopedHooks,
   mergeCcHookRegistries,
   type PluginHookConfig,
+  type ScopedHookPlugin,
 } from './config'
 export { createCcHooksRuntime, type CcHooksRuntime } from './run'
 export { EMPTY_RUNTIME as INERT_CC_HOOKS } from './runtime-results'
 export type * from './runtime-contracts-added'
 export type { WorktreeCreateResult } from './runtime-worktree-hooks'
 export type { CcToolBatchCall } from './protocol-event-inputs'
-export { wrapToolsWithCcHooks } from './wrap-tools'
+export { approvedInputFor, wrapToolsWithCcHooks } from './wrap-tools'
 export { parsePromptHookResult, type PromptHookResult } from './prompt-hook'
 
 export { type CcMcpToolResult } from './mcp-tool-hook'

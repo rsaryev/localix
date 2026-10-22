@@ -204,7 +204,13 @@ describe('the loader answers for each plugin it loads', () => {
     await fs.mkdir(join(root, 'tools'), { recursive: true })
     await fs.writeFile(
       join(root, 'plugin.json'),
-      JSON.stringify({ name: 'broken', version: '1.0.0', description: 'd', displayName: 'Broken' }),
+      JSON.stringify({
+        name: 'broken',
+        version: '1.0.0',
+        description: 'd',
+        displayName: 'Broken',
+        tools: './tools/index.mjs',
+      }),
     )
     await fs.writeFile(
       join(root, 'tools', 'index.mjs'),

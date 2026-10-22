@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
+import { connectServerConfig } from '../mcp/expand'
 import type { PluginConfigValues } from './config'
 import {
   pluginDataDir,
@@ -67,7 +68,7 @@ describe('buildMcpRecords', () => {
     ).toBe('sk-1')
   })
 
-  test('sensitive key in env IS substituted (env is the sanctioned secret channel)', () => {
+  test('sensitive key in env IS substituted', () => {
     const recs = buildMcpRecords(
       secretPlugin({ srv: { command: 'node', env: { TOKEN: '${user_config.SECRET}' } } }),
       { SECRET: 'sk-live', REGION: 'eu' },
@@ -78,7 +79,10 @@ describe('buildMcpRecords', () => {
     expect((recs[0].config as { env?: Record<string, string> }).env?.TOKEN).toBe('sk-live')
   })
 
-  test('sensitive key in command/args/url/headers is NOT substituted and warns', () => {
+  // Claude Code substitutes a sensitive option anywhere in an MCP server's config: none of these
+  // strings reaches a shell. Localix left the token literal, so `Authorization: Bearer
+  // ${user_config.SECRET}` reached the server verbatim and every request failed to authenticate.
+  test('sensitive key in url and headers IS substituted, without a warning', () => {
     const warns: string[] = []
     const recs = buildMcpRecords(
       secretPlugin({
@@ -94,32 +98,55 @@ describe('buildMcpRecords', () => {
       { warn: (m) => warns.push(String(m)) },
     )
     const cfg = recs[0].config as { url?: string; headers?: Record<string, string> }
-    // Token survives verbatim — the secret value never leaks outside env.
-    expect(cfg.url).toBe('https://x.example/${SECRET}')
-    expect(cfg.headers?.Authorization).toBe('Bearer ${user_config.SECRET}')
-    expect(JSON.stringify(recs[0].config)).not.toContain('sk-live')
-    // One warning naming the key and pointing at env.
-    expect(warns).toHaveLength(1)
-    expect(warns[0]).toContain('SECRET')
-    expect(warns[0]).toContain('"env"')
+    expect(cfg.url).toBe('https://x.example/sk-live')
+    expect(cfg.headers?.Authorization).toBe('Bearer sk-live')
+    expect(warns).toEqual([])
   })
 
-  test('sensitive key in stdio args is NOT substituted and warns', () => {
-    const warns: string[] = []
+  test('sensitive key in stdio args IS substituted', () => {
     const recs = buildMcpRecords(
-      secretPlugin({ srv: { command: 'node', args: ['--key=${CLAUDE_PLUGIN_OPTION_SECRET}'] } }),
+      secretPlugin({
+        srv: {
+          command: 'node',
+          args: ['--key=${CLAUDE_PLUGIN_OPTION_SECRET}', '${user_config.SECRET}'],
+        },
+      }),
       { SECRET: 'sk-live' },
       'u',
       'ts',
       '/home/u',
-      { warn: (m) => warns.push(String(m)) },
     )
     // normalizeMcpServerEntry flattens command+args into config.command
     expect((recs[0].config as { command?: string[] }).command).toEqual([
       'node',
-      '--key=${CLAUDE_PLUGIN_OPTION_SECRET}',
+      '--key=sk-live',
+      'sk-live',
     ])
-    expect(warns.some((w) => w.includes('SECRET') && w.includes('"env"'))).toBe(true)
+  })
+
+  test('a headersHelper that references ${user_config.*} fails the server, configured or not', () => {
+    const configs: PluginConfigValues[] = [{ REGION: 'eu' }, {}]
+    for (const config of configs) {
+      const warns: unknown[] = []
+      const recs = buildMcpRecords(
+        secretPlugin({
+          api: {
+            url: 'https://x.example',
+            headersHelper: './auth.sh ${user_config.REGION}',
+          },
+          other: { url: 'https://y.example', headersHelper: './auth.sh ${CLAUDE_PLUGIN_ROOT}' },
+        }),
+        config,
+        'u',
+        'ts',
+        '/home/u',
+        { warn: (m, meta) => warns.push([m, meta]) },
+      )
+      expect(recs.map((r) => r.name)).toEqual(['p_other'])
+      expect(JSON.stringify(warns)).toContain(
+        "headersHelper for MCP server 'api' references ${user_config.*}",
+      )
+    }
   })
 
   test('non-sensitive key substitutes everywhere (args, url, headers, env) without warning', () => {
@@ -141,6 +168,34 @@ describe('buildMcpRecords', () => {
     expect(b.url).toBe('https://x.example/eu')
     expect(b.headers?.['X-Region']).toBe('eu')
     expect(warns).toEqual([])
+  })
+
+  // An option VALUE is data. The record used to be expanded a second time at connect, so an option
+  // (or its manifest default) set to `${GITHUB_TOKEN}` read the host credential into the plugin's
+  // remote headers, past the credential-name rule that blanks a direct `${GITHUB_TOKEN}` there.
+  test('a substituted value is not expanded again when the server connects', () => {
+    const recs = buildMcpRecords(
+      secretPlugin({
+        srv: {
+          url: 'https://x.example/${REGION}',
+          headers: { 'X-Key': '${user_config.SECRET}', Direct: '${GITHUB_TOKEN}' },
+        },
+      }),
+      { SECRET: '${GITHUB_TOKEN}', REGION: '${HOME}' },
+      'u',
+      'ts',
+      '/home/u',
+    )
+    expect(recs[0].configExpanded).toBe(true)
+    const connect = connectServerConfig(recs[0], {
+      env: { GITHUB_TOKEN: 'ghp_HOSTSECRET', HOME: '/Users/someone' },
+    })
+    expect(JSON.stringify(connect)).not.toContain('ghp_HOSTSECRET')
+    expect(JSON.stringify(connect)).not.toContain('/Users/someone')
+    const headers = connect.headers as Record<string, string>
+    expect(headers['X-Key']).toBe('${GITHUB_TOKEN}')
+    expect(headers.Direct).toBe('')
+    expect(connect.url).toBe('https://x.example/${HOME}')
   })
 
   test('an invalid server is logged and skipped, not thrown', () => {

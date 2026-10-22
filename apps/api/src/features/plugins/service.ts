@@ -35,7 +35,7 @@ import { syncBundledContributions } from './sync-bundled-contributions'
 import { createKeyedSerializer } from '../../lib/keyed-serializer'
 import { buildPluginCatalog, type PluginCatalog } from './catalog'
 import { createAvailabilityWriter, readAvailability } from '../capabilities/availability'
-import { listCommandsFromCatalog, modCommandSpecs } from './commands'
+import { listCatalogCommandSpecs } from './plugin-skills'
 import { listScopeOutputStyles } from './output-style-listing'
 import {
   marketplacesRoot,
@@ -320,10 +320,13 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         plugins: await recordsFromCatalog(userId, catalog, projectId, runtimeCwd),
         views: listViewsFromCatalog(catalog, projectId),
         themes: listThemesFromCatalog(catalog),
-        commands: [
-          ...listCommandsFromCatalog(catalog, projectId),
-          ...modCommandSpecs(catalog, deps.modCommands?.() ?? []),
-        ],
+        commands: await listCatalogCommandSpecs(catalog, {
+          projectId,
+          projectDir: runtimeCwd,
+          homeDir: home,
+          modCommands: deps.modCommands?.() ?? [],
+          logger: deps.logger,
+        }),
       }
     },
 
@@ -424,10 +427,13 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       const projectId = opts?.projectId ?? ''
       const catalog = await catalogFor(userId, projectId)
       return {
-        commands: [
-          ...listCommandsFromCatalog(catalog, projectId),
-          ...modCommandSpecs(catalog, deps.modCommands?.() ?? []),
-        ],
+        commands: await listCatalogCommandSpecs(catalog, {
+          projectId,
+          projectDir: (projectId ? await cwdFor(userId, projectId) : null) ?? localixWorkspaceDir(),
+          homeDir: home,
+          modCommands: deps.modCommands?.() ?? [],
+          logger: deps.logger,
+        }),
       }
     },
 
@@ -613,6 +619,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
           source: resolvedMarket?.dir ?? source,
           installRoot,
           nameOverride: resolvedMarket?.entry.name,
+          linkRoot: resolvedMarket?.linkRoot,
         },
         (parent) =>
           publishPluginInstallation({
@@ -677,6 +684,19 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       const discovered = await discover({ cwd, projectId })
       const plugin =
         discovered.find((p) => p.manifest.name === input.name && p.projectId === projectId) ?? null
+      // Nothing to remove used to answer like a removal, so `/plugin remove typo` said "Removed".
+      if (!plugin && !(await repo.get(userId, projectId, input.name)))
+        throw new NotFoundError('plugin_not_found', `Plugin "${input.name}" is not installed`)
+      // Claude Code owns what it installed; Localix reads that folder in place. Turning the
+      // plugin off here is the part that is ours to change.
+      if (plugin?.claudeCodeInstall) {
+        await service.setEnabled(userId, {
+          name: input.name,
+          projectId: projectId || null,
+          enabled: false,
+        })
+        return { warnings: [], claudeCodeInstall: plugin.claudeCodeInstall }
+      }
       // NO cascade on remove — dependents keep working off their own state — but WARN
       // when other installed plugins still declare a dependency on the removed one.
       const dependents = listDependents(input.name, discovered)

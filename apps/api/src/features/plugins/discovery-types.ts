@@ -25,6 +25,12 @@ export interface DiscoveredPlugin {
   agents: PluginAgent[]
   /** True for a managed first-party copy synchronized into the global Localix root. */
   bundled: boolean
+  /**
+   * Claude Code's `<name>@<marketplace>` when the folder is one Claude Code installed and Localix
+   * reads in place (`claude-code-installs.ts`). Claude Code owns it: Localix may turn it off here,
+   * never delete it.
+   */
+  claudeCodeInstall?: string
   /** A plugin (Claude Code format), a mini app with its plugin, or a legacy root `plugin.json`. */
   layout: ExtensionLayout
   /** What the plugin and mini-app formats' own rules found (unknown fields, unsupported parts). */

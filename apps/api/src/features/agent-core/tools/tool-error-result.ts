@@ -18,10 +18,31 @@ import type { ToolErrorKind } from '@localixai/agent'
  * the cause, which the loop's own conversion drops); `userMessage` carries the
  * sentence.
  */
-/** A deliberate refusal by a hook layer: a plugin hook, a Claude Code hook, a mod's `{ deny }`. */
-const BLOCKED_ERRORS = new Set(['ToolCallBlockedError', 'CcHookBlockedError', 'ModToolDeniedError'])
+/**
+ * The permission gate's refusal, met inside the tool-call chain rather than at the loop
+ * (`chat/runtime/run/chain-gate.ts`): it carries the gate's own result — the sentence the model
+ * reads, the one the person sees, whether a person refused — which a hook layer passes on as it
+ * passes on any block.
+ */
+export class PermissionGateBlockedError extends Error {
+  readonly result: AgentToolResult
+  constructor(result: AgentToolResult) {
+    super(result.content)
+    this.name = 'PermissionGateBlockedError'
+    this.result = result
+  }
+}
+
+/** A deliberate refusal: a plugin hook, a Claude Code hook, a mod's `{ deny }`, the gate. */
+const BLOCKED_ERRORS = new Set([
+  'ToolCallBlockedError',
+  'CcHookBlockedError',
+  'ModToolDeniedError',
+  'PermissionGateBlockedError',
+])
 
 export function resultFromThrow(toolName: string, error: unknown): AgentToolResult {
+  if (error instanceof PermissionGateBlockedError) return error.result
   const err = error instanceof Error ? error : undefined
   const raw = (err?.message ?? String(error)).trim() || 'Tool call failed'
   const cause = err?.cause

@@ -182,7 +182,7 @@ export function buildRunToolRegistry(
         agentProfile,
         terminalWaits,
       }),
-      // Enabled plugins' `bin/` directories → prepended to PATH for bash subprocesses
+      // Enabled plugins' `bin/` directories → appended to PATH for bash subprocesses
       // so bundled plugin CLIs resolve by bare name. Shared by the orchestrator AND
       // sub-agent runs because both build the registry here.
       bashPluginBinDirs: loadedPlugins.binDirs,

@@ -15,7 +15,7 @@ export interface BashRunContext {
   allowBackground?: boolean
   spawnTerminalJob?: SpawnTerminalJob
   /**
-   * Enabled plugins' `bin/` directories, PREPENDED to PATH for every bash
+   * Enabled plugins' `bin/` directories, APPENDED to PATH for every bash
    * subprocess (foreground/batch/bg) so a plugin's bundled CLIs resolve by bare
    * name — matching Claude Code, where an enabled plugin's `bin/` is on the Bash
    * tool's PATH. Collected once from the loaded-plugins set; absent in tests.

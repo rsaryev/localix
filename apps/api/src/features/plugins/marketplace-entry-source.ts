@@ -1,6 +1,7 @@
 import { resolve } from 'node:path'
 
 import { isPathWithin } from '../../lib/path-containment'
+import { assertGitArgs } from './marketplace-git-args'
 import { parseNpmEntrySource, type NpmEntrySource } from './marketplace-source-npm'
 import type { MarketplaceEntry } from './marketplace'
 
@@ -88,6 +89,8 @@ export function resolveEntrySource(
         : undefined
   if (!url) throw new Error(`Entry "${entry.name}" has an unrecognized source`)
   const ref = checkoutRef(obj)
+  // Both become git arguments: no option-shaped value, no `ext::` command transport.
+  assertGitArgs(`Entry "${entry.name}" source`, url, ref)
   return {
     git: {
       url,

@@ -81,6 +81,7 @@ beforeAll(async () => {
       name: 'weather',
       version: '1.2.3',
       description: 'Weather tools',
+      tools: './tools/index.mjs',
       config: { API_KEY: { type: 'string', secret: true, required: true } },
       mcpServers: { wx: { command: 'echo hi' } },
     }),
@@ -934,14 +935,14 @@ describe('B2 — CC userConfig sensitive → secret promotion', () => {
 })
 
 describe('resolveEntrypoints', () => {
-  it('applies directory defaults (./tools, ./skills) when the manifest is silent', async () => {
+  it('applies directory defaults (./tools for a mini app, ./skills) when the manifest is silent', async () => {
     const pluginDir = join(dir, '.localix', 'plugins', 'weather')
     const plugin = await loadManifest(pluginDir, 'project', 'proj1')
-    const eps = await resolveEntrypoints(pluginDir, {
-      name: 'weather',
-      version: '0',
-      description: '',
-    })
+    const eps = await resolveEntrypoints(
+      pluginDir,
+      { name: 'weather', version: '0', description: '' },
+      'mini-app',
+    )
     expect(eps.toolEntries.some((p) => p.endsWith('tools/index.mjs'))).toBe(true)
     expect(eps.skillDirs.some((p) => p.endsWith('/skills'))).toBe(true)
     // The manifest-declared MCP server is resolved through loadManifest.

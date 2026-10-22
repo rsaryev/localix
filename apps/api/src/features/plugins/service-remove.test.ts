@@ -100,4 +100,36 @@ describe('plugin remove', () => {
     expect(await names('p1')).not.toContain('project-tool')
     expect(await readdir(join(workspaceDir, '.localix', 'plugins'))).toEqual([])
   })
+
+  test('a name that is not installed is an error, not a removal', async () => {
+    await expect(
+      service.remove('u1', { name: 'never-installed', projectId: null }),
+    ).rejects.toThrow('Plugin "never-installed" is not installed')
+  })
+
+  test('a Claude Code install is disabled here and left on disk for Claude Code', async () => {
+    const installPath = join(homeDir, '.claude', 'plugins', 'cache', 'mkt', 'cc-tool', '1.0.0')
+    await mkdir(join(installPath, '.claude-plugin'), { recursive: true })
+    await writeFile(
+      join(installPath, '.claude-plugin', 'plugin.json'),
+      JSON.stringify({ name: 'cc-tool', description: 'cc-tool plugin' }),
+    )
+    await writeFile(
+      join(homeDir, '.claude', 'plugins', 'installed_plugins.json'),
+      JSON.stringify({
+        version: 2,
+        plugins: { 'cc-tool@mkt': [{ scope: 'user', installPath, version: '1.0.0' }] },
+      }),
+    )
+    await service.setEnabled('u1', { name: 'cc-tool', projectId: null, enabled: true })
+
+    const result = await service.remove('u1', { name: 'cc-tool', projectId: null })
+
+    expect(result).toEqual({ warnings: [], claudeCodeInstall: 'cc-tool@mkt' })
+    expect(await exists(installPath)).toBe(true)
+    const listed = (await service.listPlugins('u1', { projectId: null })).plugins.find(
+      (plugin) => plugin.name === 'cc-tool',
+    )
+    expect(listed?.enabled).toBe(false)
+  })
 })

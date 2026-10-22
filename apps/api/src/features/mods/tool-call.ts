@@ -1,4 +1,5 @@
 import { mcpInputSchema, type AgentTool, type AgentToolResult } from '@localixai/agent/agents'
+import { isBlockedThrow } from '../agent-core/tools/tool-error-result'
 import type { ModScene } from './contracts'
 import type { ModsHost } from './host'
 import { toolCallEvent, toolInputOf } from './tool-shapes'
@@ -6,8 +7,11 @@ import { toolCallEvent, toolInputOf } from './tool-shapes'
 /**
  * `tool.call` in Localix. Every tool call of a conversation goes through the mods enabled there:
  * `e.tool` is Claude Code's name for the tool (`Bash`, `Read`, `mcp__<plugin>__<tool>`), its
- * arguments are fields of `e` in Claude Code's shape (`tool-shapes.ts`), and `next(e)` runs the tool, resolving to `{ result, isError }`. A hook that answers `{ deny }`
- * refuses the call — the model reads the reason — and `{ result }` answers it in the tool's place.
+ * arguments are fields of `e` in Claude Code's shape (`tool-shapes.ts`), and `next(e)` runs the
+ * `PreToolUse` hooks, the permission check (`tool.check`, then the mode: `chain-gate.ts` in the
+ * chat runtime) and the tool, resolving to `{ result, isError }`, or to `{ deny }` when a hook or
+ * the check refused it. A hook that answers `{ deny }` refuses the call — the model reads the
+ * reason, and nobody is asked — and `{ result }` answers it in the tool's place.
  * A mod's own tools (`$.tool.register`) have no core behind them: a `tool.call` hook answers them.
  */
 
@@ -62,22 +66,38 @@ export function wrapInToolCall(tools: readonly AgentTool[], scope: ModToolScope)
           ...tool,
           async execute(toolCallId, input, signal, onUpdate, context) {
             let ran: AgentToolResult = { content: '' }
+            let refused = undefined as { error: unknown; reason: string } | undefined
             const answer = await scope.host.dispatch(
               'tool.call',
               toolCallEvent(tool, input, toolCallId),
               async (event) => {
-                ran = await tool.execute(
-                  toolCallId,
-                  toolInputOf(tool.name, event as Fields),
-                  signal,
-                  onUpdate,
-                  context,
-                )
+                try {
+                  ran = await tool.execute(
+                    toolCallId,
+                    toolInputOf(tool.name, event as Fields),
+                    signal,
+                    onUpdate,
+                    context,
+                  )
+                } catch (error) {
+                  // A `PreToolUse` hook or the permission check refused the call: `next(e)`
+                  // resolves to `{ deny }`, as in Claude Code, rather than throwing at the hook.
+                  if (!isBlockedThrow(error)) throw error
+                  refused = {
+                    error,
+                    reason: error instanceof Error ? error.message : String(error),
+                  }
+                  return { deny: refused.reason }
+                }
                 return { result: ran, ...(ran.isError ? { isError: true } : {}) }
               },
               scope.scene,
               scope.plugins,
             )
+            // The refusal handed back as it came keeps its own shape (whose refusal, the
+            // sentence the person sees); a mod's own `deny` is the mod's.
+            const deny = (answer as { deny?: unknown } | undefined)?.deny
+            if (refused && deny === refused.reason) throw refused.error
             return resultOf(answer, ran)
           },
         },

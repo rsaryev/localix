@@ -6,12 +6,13 @@
  */
 import type { AgentTool, ToolSurface } from '@localixai/agent/agents'
 
-import type { CcHooksRuntime } from '../../../cc-hooks'
+import { approvedInputFor, type CcHooksRuntime } from '../../../cc-hooks'
 import type { RunProfile } from '../../../agent-core/run-shape'
 import type { LoadedPlugins } from '../../../plugins/loader'
 import type { SessionRecord } from '../../repository'
 import { TOOL } from '../../../agent-core/tool-names'
 import { applyToolWrapperChain } from './tool-wrapper-chain'
+import { createChainGate, type ChainGate } from './chain-gate'
 import type { ModRunScope } from '../../../mods/run-scope'
 import { consoleWarnLogger } from '../plugin-hook-logger'
 import { resolveMcpTools, type McpInventoryEntry } from './mcp-tools'
@@ -78,6 +79,8 @@ export interface AssembledRunTools {
    * the composition dump reads what the roster was BUILT from, not a second opinion about it.
    */
   sourceByTool: ReadonlyMap<string, string>
+  /** Where the run's calls meet the permission gate; intake binds the gate to it. */
+  gate: ChainGate
   /** On-wire tool names, in wire order. */
   wireToolNames: string[]
   /** Per-server MCP capability instructions to surface in the prompt (CC parity). */
@@ -184,7 +187,13 @@ export async function assembleRunTools(
   // Every wrapper, in the order tool-wrapper-chain.ts declares — plugin hooks and CC hooks
   // innermost, then the timeout promoter, then the three no-progress guards. The order and
   // its reasons live with the list, so the composition dump and the code cannot disagree.
+  // Inside the chain while a mod hears `tool.call` or `tool.check` (`chain-gate.ts`).
+  const gate = createChainGate(options.mods?.gateInChain ?? false, {
+    approvedInput: (tool, toolCallId) =>
+      approvedInputFor(ccHooks, tool, toolCallId, consoleWarnLogger),
+  })
   const chained = applyToolWrapperChain(allTools, {
+    gate,
     observe: env.deps?.externalAgents?.observe,
     sessionId: session.id,
     pluginHooks: loadedPlugins.hooks,
@@ -280,6 +289,7 @@ export async function assembleRunTools(
      * would be a second opinion about the same question.
      */
     sourceByTool: sourceByTool as ReadonlyMap<string, string>,
+    gate,
     /** On-wire tool names, in wire order. */
     wireToolNames: tools.map((tool) => tool.name),
   }

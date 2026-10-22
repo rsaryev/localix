@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, expect, test } from 'bun:test'
+import { afterAll, afterEach, beforeAll, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { buildClientFrameDoc, CLIENT_FRAME_CSP, jsonForScript } from './clientFrameDoc'
 import { CLIENT_FRAME_DRAW } from './clientFrameDraw'
@@ -7,6 +7,10 @@ import { CLIENT_FRAME_RUNTIME } from './clientFrameRuntime'
 let teardown: () => Promise<void>
 beforeAll(() => {
   teardown = registerDom()
+})
+// The frame's boot (`window.__lxClient`) lands on globalThis here: each test removes its own.
+afterEach(() => {
+  delete (globalThis as { __lxClient?: unknown }).__lxClient
 })
 afterAll(async () => {
   await teardown()
@@ -189,4 +193,10 @@ test('the frame document loads nothing, connects nowhere, and carries the code a
   expect(doc).toContain(CLIENT_FRAME_CSP)
   expect(doc).not.toContain('</script><script>alert(1)')
   expect(jsonForScript('</script>\u2028')).toBe('"\\u003c/script>\\u2028"')
+})
+
+// Last in the file: the tests above booted frames, and none left its boot on globalThis, which
+// the root run's globals guard (`scripts/test-globals-guard.ts`) would report as a leak.
+test('a booted frame leaves no __lxClient on globalThis', () => {
+  expect(Object.hasOwn(globalThis, '__lxClient')).toBe(false)
 })

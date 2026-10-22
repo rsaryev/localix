@@ -106,6 +106,7 @@ export async function publishPluginInstallation(input: {
                 source: input.parent.directory,
                 name: input.parent.name,
                 replace: input.replace,
+                linkRoot: input.parent.linkRoot,
                 prepare: input.prepare,
               },
             ]

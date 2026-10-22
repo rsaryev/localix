@@ -1,18 +1,8 @@
-import { createBudget, HookTimeout, SYSTEM_CLOCK, type BudgetClock } from './budget'
-import { freezeDeep, interceptApi, type ModsApi } from './intercept'
-import { matchesEvent, matchesEventName, type Matcher } from './matcher'
-import {
-  MOD_TIER,
-  TIERS,
-  type Hook,
-  type HookFailure,
-  type HookOrigin,
-  type Next,
-  type On,
-  type RegisterFunction,
-  type Registration,
-  type TargetTier,
-} from './chain'
+import { createBudget, SYSTEM_CLOCK, type BudgetClock } from './budget'
+import { createChainRunner, failureOf, type HookEntry } from './chain-run'
+import { interceptApi, type ModsApi } from './intercept'
+import { matchesEventName } from './matcher'
+import type { HookOrigin, On, RegisterFunction, Registration } from './chain'
 
 export type * from './chain'
 
@@ -24,22 +14,18 @@ export type * from './chain'
  * gets the mods API (`$`), the event (`e`, deeply frozen) and `next`, which runs the rest of the
  * chain and then the host's own behaviour (`core`). A hook observes (`return next(e)`), rewrites
  * (`next({ ...e, text })`) or answers (returns without calling `next`). A hook that throws or runs
- * out of time is skipped — or, after its `next` resolved, that result stands — unless its `.catch`
- * handler answers. Every mods API call is an event too (`fs.read`), which other mods may hook.
+ * out of time is skipped — or, after its `next` resolved, its last call's result stands — unless
+ * its `.catch` handler answers. Each `next` call runs what is beneath afresh, so a hook may retry.
+ * A hook's budget stops while it waits on `next` or on a `$` call (but `$.clock.sleep`). Hooks on
+ * a streaming event (`turn.step`) are async generators (`stream.ts`); `chain-run.ts` runs a
+ * dispatch down the chain. Every mods API call is an event too (`fs.read`), which other mods may
+ * hook.
  */
 
 export type { ModsApi } from './intercept'
 export { freezeDeep } from './intercept'
 
 export class ModLoadError extends Error {}
-
-interface HookEntry {
-  plugin: string
-  pattern: string
-  matcher?: Matcher
-  hook: Hook
-  onError?: Hook
-}
 
 export interface DispatchOptions {
   origin?: HookOrigin
@@ -51,7 +37,7 @@ export interface DispatchOptions {
 }
 
 export interface ModsEngineOptions {
-  /** A hook's own time, not counting time inside `next` or a mods API call. */
+  /** A hook's own time, not counting time inside `next` or a mods API call (but a sleep). */
   budgetMs?: number
   catchBudgetMs?: number
   /** One line per skipped hook: the mod, the event and why. */
@@ -67,8 +53,6 @@ export interface ModsEngineOptions {
   peersOf?: (mod: string) => ReadonlySet<string> | undefined
 }
 
-const CORE: HookOrigin = { plugin: 'engine', tier: 'core' }
-
 export function createModsEngine(options: ModsEngineOptions = {}) {
   const budgetMs = options.budgetMs ?? 10_000
   const catchBudgetMs = options.catchBudgetMs ?? 1_000
@@ -78,6 +62,13 @@ export function createModsEngine(options: ModsEngineOptions = {}) {
   /** Nouns `engine.create` steps added (`$.telemetry`), by noun and then by the mod that did. */
   const nouns = new Map<string, Map<string, Record<string, unknown>>>()
   const pluginOf = options.pluginOf ?? ((mod: string) => mod)
+  const run = createChainRunner({
+    budgetMs,
+    catchBudgetMs,
+    timed,
+    apiFor,
+    ...(options.report ? { report: options.report } : {}),
+  })
 
   /** A mod's `$`: its own API, and each noun added by a mod where the event happens. */
   function apiFor(plugin: string, scope?: ReadonlySet<string>): ModsApi {
@@ -115,66 +106,6 @@ export function createModsEngine(options: ModsEngineOptions = {}) {
       byMod.set(plugin, wrapped[noun]!)
       nouns.set(noun, byMod)
     }
-  }
-
-  async function run(
-    event: string,
-    chain: readonly HookEntry[],
-    index: number,
-    input: unknown,
-    core: (event: unknown) => unknown,
-    opts: DispatchOptions,
-  ): Promise<unknown> {
-    const signal = opts.signal ?? new AbortController().signal
-    for (let i = index; i < chain.length; i++) {
-      const entry = chain[i]!
-      if (!matchesEvent(entry.matcher, input)) continue
-      const frozen = freezeDeep(input)
-      let downstream: Promise<unknown> | null = null
-      const rest = (next?: unknown) =>
-        (downstream ??= run(event, chain, i + 1, next === undefined ? input : next, core, opts))
-      const past = (next: unknown, tier: TargetTier) => {
-        if (!TIERS.includes(tier)) throw new Error(`next.to: no tier named ${String(tier)}`)
-        // Every hook here is a mod's; a tier beneath theirs is the host's behaviour.
-        const beyond = TIERS.indexOf(tier) > TIERS.indexOf(MOD_TIER)
-        return (downstream ??= beyond
-          ? Promise.resolve().then(() => core(next === undefined ? input : next))
-          : run(event, chain, i + 1, next === undefined ? input : next, core, opts))
-      }
-      const makeNext = (pause: <T>(p: Promise<T>) => Promise<T>, extra = {}): Next =>
-        Object.assign((next?: unknown) => pause(rest(next)), {
-          to: (next: unknown, tier: TargetTier) => pause(past(next, tier)),
-          signal,
-          origin: opts.origin ?? CORE,
-          budget: { ms: budgetMs, remainingMs: budgetMs },
-          ...extra,
-        }) as Next
-      const api = apiFor(entry.plugin, opts.plugins)
-      try {
-        const answer = await timed(budgetMs, (pause) => entry.hook(api, frozen, makeNext(pause)))
-        return answer === undefined ? await rest() : answer
-      } catch (error) {
-        const failure = failureOf(error)
-        if (entry.onError) {
-          try {
-            const caught = await timed(catchBudgetMs, (pause) =>
-              entry.onError!(
-                api,
-                frozen,
-                makeNext(pause, { error: failure, called: downstream !== null }),
-              ),
-            )
-            if (caught !== undefined) return caught
-          } catch (catchError) {
-            options.report?.(entry.plugin, event, `.catch failed: ${failureOf(catchError).message}`)
-          }
-        }
-        options.report?.(entry.plugin, event, `hook skipped: ${failure.kind} ${failure.message}`)
-        // Before `next`: the hook is skipped. After `next` resolved: that result stands.
-        return await rest()
-      }
-    }
-    return core(input)
   }
 
   const engine = {
@@ -267,7 +198,7 @@ export function createModsEngine(options: ModsEngineOptions = {}) {
           (!opts.plugins || opts.plugins.has(entry.plugin)),
       )
       if (chain.length === 0) return Promise.resolve().then(() => core(input))
-      return run(event, chain, 0, input, core, opts)
+      return run(event, chain, 0, input, core, opts).then((outcome) => outcome.value)
     },
 
     /**
@@ -283,8 +214,3 @@ export function createModsEngine(options: ModsEngineOptions = {}) {
 }
 
 export type ModsEngine = ReturnType<typeof createModsEngine>
-
-function failureOf(error: unknown): HookFailure {
-  if (error instanceof HookTimeout) return { kind: 'timeout', message: 'ran out of time' }
-  return { kind: 'throw', message: error instanceof Error ? error.message : String(error) }
-}

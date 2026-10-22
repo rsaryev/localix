@@ -42,6 +42,28 @@ async function waitFor(check, what, timeoutMs = 20_000) {
   throw new Error(`timed out waiting until ${what}`)
 }
 
+/** The guard-mod turn: prompt.submit rewrites, tool.call refuses bash, /tally counts it. */
+async function guardModTurn(rt) {
+  const session = await rt.createSession({ title: 'Mod guard' })
+  const steps = { localix: [{ tool: 'bash', args: { command: 'ls' } }, 'Bash was refused.'] }
+  const after = await rt.say(session.id, `List the files. ${script(steps)}`)
+  const [first, second] = runs(rt, after, 'localix')
+  assert.ok(
+    first.messages.some((message) => message.text.includes('guard-mod was here')),
+    'prompt.submit rewrote the prompt the model reads',
+  )
+  assert.ok(
+    first.reminders.some((reminder) => reminder.includes('A note from guard-mod.')),
+    'prompt.submit added its note as a system reminder',
+  )
+  assert.ok(
+    second.messages.some((message) => message.text.includes('Bash is off in this chat')),
+    'tool.call refused bash and the model read why',
+  )
+  const tallied = await rt.say(session.id, '/tally')
+  assert.match(rt.transcript(tallied).at(-1).text, /guard-mod: 1 refused/)
+}
+
 export const RUN_SCENARIOS = [
   {
     name: '/agents add seats the named agent',
@@ -160,26 +182,16 @@ export const RUN_SCENARIOS = [
         'hooks/register.js': GUARD_MOD,
       })
       await rt.api('/plugins/install', { source: dir, enable: true })
-      await waitFor(async () => (await rt.api('/mods')).mods.includes('guard-mod'), 'the mod loads')
-
-      const session = await rt.createSession({ title: 'Mod guard' })
-      const steps = { localix: [{ tool: 'bash', args: { command: 'ls' } }, 'Bash was refused.'] }
-      const after = await rt.say(session.id, `List the files. ${script(steps)}`)
-      const [first, second] = runs(rt, after, 'localix')
-      assert.ok(
-        first.messages.some((message) => message.text.includes('guard-mod was here')),
-        'prompt.submit rewrote the prompt the model reads',
-      )
-      assert.ok(
-        first.reminders.some((reminder) => reminder.includes('A note from guard-mod.')),
-        'prompt.submit added its note as a system reminder',
-      )
-      assert.ok(
-        second.messages.some((message) => message.text.includes('Bash is off in this chat')),
-        'tool.call refused bash and the model read why',
-      )
-      const tallied = await rt.say(session.id, '/tally')
-      assert.match(rt.transcript(tallied).at(-1).text, /guard-mod: 1 refused/)
+      try {
+        await waitFor(
+          async () => (await rt.api('/mods')).mods.includes('guard-mod'),
+          'the mod loads',
+        )
+        await guardModTurn(rt)
+      } finally {
+        // Later scenarios share the runtime: a mod left installed would refuse their bash calls.
+        await rt.api('/plugins/remove', { name: 'guard-mod' })
+      }
     },
   },
   {

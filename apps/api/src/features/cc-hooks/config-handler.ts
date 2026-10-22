@@ -1,6 +1,6 @@
 /** Normalize one hook handler, including timeout policy and safe substitutions. */
-import { mkdirSync } from 'node:fs'
-import { bindUserConfigInShell, substituteUserConfigInText } from '../ext/user-config-substitute'
+import { substituteUserConfigInText } from '../ext/user-config-substitute'
+import { commandSpawnFields } from './config-command'
 import {
   CC_AGENT_HOOK_DEFAULT_TIMEOUT_SEC,
   CC_EVENT_DEFAULT_TIMEOUT_SEC,
@@ -36,23 +36,10 @@ export interface SubstOpts {
   isSensitive?: (key: string) => boolean
 }
 
-/** Data dirs already ensured this process — mkdir once per dir, best-effort. */
-const ensuredDataDirs = new Set<string>()
-
-function ensureDataDir(dir: string): void {
-  if (ensuredDataDirs.has(dir)) return
-  ensuredDataDirs.add(dir)
-  try {
-    mkdirSync(dir, { recursive: true })
-  } catch {
-    // best-effort — a hook referencing a dir we can't create still runs
-  }
-}
-
 /**
  * Resolve CC path placeholders + `${user_config.KEY}` in a hook http url — TEXT, not run by a
  * shell, so values are pasted. Sensitive config keys are NEVER substituted — the literal token
- * survives (static validation warns). A command goes through {@link bindShellCommand} instead.
+ * survives (static validation warns). A command goes through `config-command.ts` instead.
  */
 function substituteUrl(url: string, opts: SubstOpts): string {
   let out = url.split('${CLAUDE_PROJECT_DIR}').join(opts.projectDir)
@@ -62,33 +49,6 @@ function substituteUrl(url: string, opts: SubstOpts): string {
     out = substituteUserConfigInText(out, opts.config, opts.isSensitive ?? (() => false)).value
   }
   return out
-}
-
-/**
- * Prepare a hook COMMAND, which `sh -c` parses as source: nothing user-controlled is pasted in.
- *
- * THE DEFECT THIS STOPS. `${CLAUDE_PROJECT_DIR}` used to be replaced by the project path before
- * the shell saw the command, so a project cloned into a folder named `x$(touch PWNED)` ran
- * `touch PWNED` on every hook — and a non-secret `${user_config.KEY}` value did the same. Both are
- * now left for the SHELL to expand from the child environment (the executor sets
- * `CLAUDE_PROJECT_DIR`/`CLAUDE_PLUGIN_ROOT`/`CLAUDE_PLUGIN_DATA`; config values ride in
- * `shellEnv`), and a shell never re-parses an expansion. This is Claude Code's own contract:
- * `${CLAUDE_PROJECT_DIR}` is ordinary shell parameter syntax, and `"$CLAUDE_PROJECT_DIR"` in a hook
- * keeps working because it already read the same variable.
- */
-function bindShellCommand(
-  command: string,
-  opts: SubstOpts,
-): { command: string; shellEnv?: Record<string, string> } {
-  // Referenced → make sure the dir exists before the hook's shell resolves it.
-  if (opts.pluginDataDir && command.includes('CLAUDE_PLUGIN_DATA')) {
-    ensureDataDir(opts.pluginDataDir)
-  }
-  if (!opts.config || !command.includes('${user_config.')) return { command }
-  const bound = bindUserConfigInShell(command, opts.config, opts.isSensitive ?? (() => false))
-  return Object.keys(bound.env).length > 0
-    ? { command: bound.value, shellEnv: bound.env }
-    : { command: bound.value }
 }
 
 function clampTimeoutMs(rawSeconds: unknown, defaultSec = CC_HOOK_DEFAULT_TIMEOUT_SEC): number {
@@ -221,7 +181,9 @@ export function parseHandler(
     return undefined
   }
 
-  if (typeof hRaw.command !== 'string' || !hRaw.command.trim()) return undefined
+  // Exec form (`args`) or shell form, with the plugin's options in the child env.
+  const spawnFields = commandSpawnFields(hRaw, opts)
+  if (!spawnFields) return undefined
   // asyncRewake implies async (CC: it is a superset of the background mode).
   const asyncRewake = hRaw.asyncRewake === true
   const isAsync = asyncRewake || hRaw.async === true
@@ -230,7 +192,7 @@ export function parseHandler(
     ...(opts.pluginName ? { pluginName: opts.pluginName } : {}),
     ...(opts.pluginRoot ? { pluginRoot: opts.pluginRoot } : {}),
     ...(opts.pluginDataDir ? { pluginDataDir: opts.pluginDataDir } : {}),
-    ...bindShellCommand(hRaw.command, opts),
+    ...spawnFields,
     timeoutMs: clampTimeoutMs(hRaw.timeout, eventDefaultSec),
     ...(typeof hRaw.if === 'string' && hRaw.if.trim() ? { if: hRaw.if.trim() } : {}),
     ...(isAsync ? { async: true } : {}),
