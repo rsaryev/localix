@@ -33,6 +33,7 @@ import {
   SCRIPT_WASM_FILE,
   SCRIPT_WORKER_FILE,
 } from '../../../packages/engine-scripts/src/assets.ts'
+import { MOD_WORKER_FILE } from '../../api/src/features/mods/isolation/worker-file.ts'
 import {
   stageSidecarBun,
   binariesDir,
@@ -144,6 +145,7 @@ const runtimeReady =
   cache.runtimeVariant === runtimeVariant &&
   existsSync(join(resources, 'server.js')) &&
   existsSync(join(resources, SCRIPT_WORKER_FILE)) &&
+  existsSync(join(resources, MOD_WORKER_FILE)) &&
   existsSync(join(resources, SCRIPT_WASM_FILE)) &&
   existsSync(join(resources, 'visual-feedback-probe.js')) &&
   existsSync(join(resources, 'visual-feedback-native-probe.js')) &&
@@ -226,6 +228,22 @@ if (!runtimeReady) {
     ),
     join(resources, SCRIPT_WASM_FILE),
   )
+  // ── 1c. the worker each mod instance runs in: started from a file beside the module that
+  //        creates it, which server.js does not have, so it is bundled here, where the mods
+  //        bootstrap's `modWorkerUrl` finds it. ──
+  const modWorker = await Bun.build({
+    entrypoints: [
+      join(repo, 'apps', 'api', 'src', 'features', 'mods', 'isolation', 'worker-main.ts'),
+    ],
+    target: 'bun',
+    outdir: resources,
+    naming: { entry: MOD_WORKER_FILE },
+    minify: { syntax: true, whitespace: true, identifiers: false },
+  })
+  if (!modWorker.success) {
+    for (const message of modWorker.logs) console.error(message)
+    throw new Error('bundling the mods worker failed')
+  }
   buildVisualFeedbackProbe({
     repoRoot: repo,
     outFile: join(resources, 'visual-feedback-probe.js'),

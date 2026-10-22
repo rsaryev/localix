@@ -6,10 +6,14 @@ import { modFetch, type HttpInit } from './http-api'
  * `http-api.ts`; a process runs 30 s by default and 10 min at most, with no shell. `$.env.set`
  * changes only what this mod's own processes see. `$.clock.after` and `every` answer a timer whose
  * `cancel()` stops it; a timer's callback that throws is reported, never left unhandled. A mod's
- * timers stop when the mod unloads (`dispose`).
+ * timers stop when the mod unloads (`dispose`). `every` fires at most every `MIN_EVERY_MS`, and an
+ * instance has at most `MAX_TIMERS` timers and sleeps pending at once: each firing crosses into
+ * the mod's worker, so a timer every millisecond would flood Localix's own thread.
  */
 const PROCESS_MS = 30_000
 const PROCESS_MAX_MS = 10 * 60_000
+export const MIN_EVERY_MS = 100
+export const MAX_TIMERS = 100
 
 export interface ProcessInit {
   cwd?: string
@@ -46,6 +50,8 @@ export function createSystemApi(input: {
   const schedule = input.schedule ?? realSchedule
   const timers = new Set<() => void>()
   const later = (fire: () => void, ms: number, repeat: boolean) => {
+    if (timers.size >= MAX_TIMERS)
+      throw new Error(`a mod has at most ${MAX_TIMERS} timers and sleeps pending at once`)
     let stop: (() => void) | null = null
     const cancel = () => {
       stop?.()
@@ -65,7 +71,7 @@ export function createSystemApi(input: {
   }
   const timer = (call: string, repeat: boolean) => (ms: unknown, fire: unknown) => {
     if (typeof fire !== 'function') throw new Error(`${call} takes a function to call`)
-    const wait = Math.max(repeat ? 1 : 0, typeof ms === 'number' && ms > 0 ? ms : 0)
+    const wait = Math.max(repeat ? MIN_EVERY_MS : 0, typeof ms === 'number' && ms > 0 ? ms : 0)
     const report = (error: unknown) => input.onTimerError?.(call, error)
     const run = () => {
       try {

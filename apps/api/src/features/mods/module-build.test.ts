@@ -1,12 +1,13 @@
 import { expect, test } from 'bun:test'
-import { readdirSync } from 'node:fs'
+import { mkdirSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
-import { bundleHooksModule, clearHooksCopies, importHooksModule } from './module-build'
+import { bundleHooksModule, clearHooksCopies } from './module-build'
+import { runBundle } from './testing-bundle'
 
 const scratch = tempDirPerTest('mods-build', {})
 
-test('each load imports its own copy, with its own state, however many share the data dir', async () => {
+test('each run of one bundle has its own module state', async () => {
   const root = scratch()
   writeTree(root, {
     'hooks/register.tsx': `
@@ -18,21 +19,22 @@ test('each load imports its own copy, with its own state, however many share the
     'hooks/count.ts': 'let n = 0\nexport const count = () => ++n',
   })
   const code = await bundleHooksModule({ module: join(root, 'hooks/register.tsx'), root })
-  const out = join(root, 'data')
-  const results: { tree: unknown }[] = []
-  for (const load of ['a-1', 'a-2', 'b-3']) {
-    const register = (await importHooksModule(code, out, load)) as unknown as () => {
-      tree: unknown
-    }
-    results.push(register())
-  }
-  expect(results.map((result) => JSON.stringify(result.tree))).toEqual([
+  const results = [1, 2, 3].map(() => (runBundle(code).register as () => { tree: unknown })().tree)
+  expect(results.map((tree) => JSON.stringify(tree))).toEqual([
     expect.stringContaining('[1]'),
     expect.stringContaining('[1]'),
     expect.stringContaining('[1]'),
   ])
+})
+
+test('the copies earlier versions wrote to disk are removed', async () => {
+  const out = scratch()
+  mkdirSync(join(out, 'load-0123456789abcdef'))
+  writeFileSync(join(out, 'load-0123456789abcdef', 'hooks-1.cjs'), '')
+  writeFileSync(join(out, 'hooks-2.mjs'), '')
+  writeFileSync(join(out, 'kept.json'), '{}')
   await clearHooksCopies(out)
-  expect(readdirSync(out)).toEqual([])
+  expect(readdirSync(out)).toEqual(['kept.json'])
 })
 
 test('a module importing a package is refused at build, naming it', async () => {
@@ -41,4 +43,37 @@ test('a module importing a package is refused at build, naming it', async () => 
   await expect(
     bundleHooksModule({ module: join(root, 'hooks/register.js'), root }),
   ).rejects.toThrow('left-pad')
+})
+
+test('a module that would import at run time is refused at build', async () => {
+  for (const body of [
+    "const name = 'node:' + 'fs'\nexport const register = () => import(name)",
+    'export const register = () => import.meta.require',
+    // Bun's scanner names only a literal specifier; these hide the import in code it reads past.
+    "const p = ['fs'][0]\nexport const register = () => [...import(p)]",
+    "const p = 'fs'\nexport const register = () => `${import(p)}` / 2",
+    "const p = 'fs'\nexport const register = (a) => a / 2 / import(p)",
+  ]) {
+    const root = scratch()
+    writeTree(root, { 'hooks/register.js': body })
+    await expect(
+      bundleHooksModule({ module: join(root, 'hooks/register.js'), root }),
+    ).rejects.toThrow('imports nothing at run time')
+  }
+})
+
+test('text that only spells an import is no import: the module builds', async () => {
+  const root = scratch()
+  writeTree(root, {
+    'hooks/register.js': `
+      // import(x) and import.meta in a comment
+      const pattern = /import\\(x\\)/
+      const config = { import: 'x', other: 1 }
+      export const register = () => ({
+        text: 'use import("x") or import.meta.url ' + pattern.source + config.import,
+      })
+    `,
+  })
+  const code = await bundleHooksModule({ module: join(root, 'hooks/register.js'), root })
+  expect((runBundle(code).register as () => { text: string })().text).toContain('import(')
 })

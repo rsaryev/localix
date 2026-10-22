@@ -101,9 +101,10 @@ describe('mods host', () => {
 
     const [read, bash] = scope.wrapTools([tool('read'), tool('bash')])
     expect((await read!.execute('t1', {})).content).toBe('read ran')
-    await expect(bash!.execute('t2', { command: 'ls' })).rejects.toThrow(
-      'Bash is off: use the file tools',
-    )
+    // Awaited before `expect`: Bun's `expect(promise).rejects` waits without taking the messages
+    // a worker posts, and the mod runs in one.
+    const denied = await bash!.execute('t2', { command: 'ls' }).catch((error: Error) => error)
+    expect(String(denied)).toContain('Bash is off: use the file tools')
 
     const [count] = scope.tools()
     expect(count!.name).toBe('mcp__first-mod__count')

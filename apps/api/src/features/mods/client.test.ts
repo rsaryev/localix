@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from 'bun:test'
+import { describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
 import { Hono } from 'hono'
 import { defaultErrorHandler } from '@localixai/plugin-sdk/backend'
@@ -10,14 +10,10 @@ import { createModRoutes } from './routes'
 
 const scratch = tempDirPerTest('mods-client', {})
 
-// The test mod records what its hooks heard on a global the test reads; nothing else may see it.
-afterEach(() => {
-  delete (globalThis as { __heard?: unknown[] }).__heard
-})
-
 /** A pane with a spinner its surface module draws; posts come back as `ui.message`. */
 const SPINNER_MOD = `
-const heard = globalThis.__heard
+// What its hooks heard goes to the conversation's log, which the test reads.
+const heard = ($, line) => $.ui.log(JSON.stringify(line))
 export function register(on) {
   on('session.start', async ($, e, next) => {
     await $.ui.open({ id: 'spin', title: 'Spin' })
@@ -28,12 +24,12 @@ export function register(on) {
     return <Box><Client key="wheel" module="./client/wheel.tsx" props={{ speed: 2 }} height={3} /></Box>
   })
   on('ui.message', async ($, e, next) => {
-    heard.push({ plugin: 'spinner', event: e, origin: next.origin })
+    heard($, { plugin: 'spinner', event: e, origin: next.origin })
     const answered = await next(e)
     return { ...answered, props: { speed: e.data.faster ? 9 : 1 } }
   })
   on('ui.fault', async ($, e, next) => {
-    heard.push({ plugin: 'spinner', fault: e })
+    heard($, { plugin: 'spinner', fault: e })
     return next(e)
   })
 }
@@ -52,7 +48,7 @@ export default function Wheel(props, surface) {
 const BYSTANDER_MOD = `
 export function register(on) {
   on('ui.message', async ($, e, next) => {
-    globalThis.__heard.push({ plugin: 'bystander' })
+    $.ui.log(JSON.stringify({ plugin: 'bystander' }))
     return next(e)
   })
 }
@@ -61,7 +57,6 @@ export function register(on) {
 function setup(files: Record<string, string>, extra: Record<string, string> = {}) {
   const dir = scratch()
   const heard: unknown[] = []
-  ;(globalThis as { __heard?: unknown[] }).__heard = heard
   const changes: number[] = []
   const reports: string[] = []
   const ports: ModsPorts = {
@@ -69,7 +64,7 @@ function setup(files: Record<string, string>, extra: Record<string, string> = {}
     workspaceDir: dir,
     submitPrompt: async () => {},
     complete: async () => ({ isAnswered: false, reason: 'no model' }),
-    log: () => {},
+    log: (_scene, line) => heard.push(JSON.parse(line.text)),
     notify: () => {},
     changed: () => changes.push(1),
     report: (plugin, message) => reports.push(`${plugin}: ${message}`),

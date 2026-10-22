@@ -119,6 +119,8 @@ export function createModsEngine(options: ModsEngineOptions = {}) {
       const added: HookEntry[] = []
       const unmatched = new Set<string>()
       const on: On = (event, matcherOrHook, hook) => {
+        // A name that is no string would throw in every later dispatch, for every mod.
+        if (typeof event !== 'string') throw new ModLoadError('on() takes an event name first')
         const entry: HookEntry =
           typeof matcherOrHook === 'function'
             ? { plugin, pattern: event, hook: matcherOrHook }

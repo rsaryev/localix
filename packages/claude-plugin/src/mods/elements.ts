@@ -55,10 +55,28 @@ function element(type: RenderElement['type'], props: Record<string, unknown> = {
   return Object.freeze({ type, props: Object.freeze(rest), children: Object.freeze(list.flat()) })
 }
 
+/** The constructors `elementTable` made, by the element each makes. */
+const CONSTRUCTORS = new WeakMap<object, ElementName>()
+
+/** A constructor of `name`, as `elementTable` hands it out. */
+export function elementConstructor(name: ElementName): ElementConstructor {
+  const construct = (props?: Record<string, unknown>) => element(name, props)
+  CONSTRUCTORS.set(construct, name)
+  return construct
+}
+
+/**
+ * The element `value` constructs when it is one of `elementTable`'s own constructors, else
+ * undefined: such a constructor is pure, so a host may hand it across a boundary by name.
+ */
+export function elementNameOf(value: unknown): ElementName | undefined {
+  return typeof value === 'function' ? CONSTRUCTORS.get(value) : undefined
+}
+
 /** The constructor table `$.ui.resolve(e)` returns. */
 export function elementTable(): ElementTable {
   return Object.fromEntries(
-    ELEMENT_NAMES.map((name) => [name, (props?: Record<string, unknown>) => element(name, props)]),
+    ELEMENT_NAMES.map((name) => [name, elementConstructor(name)]),
   ) as ElementTable
 }
 

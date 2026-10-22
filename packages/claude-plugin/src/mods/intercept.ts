@@ -11,7 +11,7 @@ import type { DispatchOptions } from './engine'
 export type ModsApi = Record<string, Record<string, unknown>>
 
 /** The `$` calls Claude Code answers at once rather than with a promise; none is an event. */
-const SYNC_CALLS: ReadonlySet<string> = new Set([
+export const SYNC_CALLS: ReadonlySet<string> = new Set([
   'ui.notice',
   'ui.invalidate',
   'ui.resolve',
@@ -73,7 +73,7 @@ export function interceptApi(
 }
 
 /** `$` calls whose wait is the hook's own time (Claude Code counts a sleep against the budget). */
-const COUNTED_CALLS: ReadonlySet<string> = new Set(['clock.sleep'])
+export const COUNTED_CALLS: ReadonlySet<string> = new Set(['clock.sleep'])
 
 /**
  * `$` as one hook run receives it: the clock of that run stops while any of its asynchronous calls

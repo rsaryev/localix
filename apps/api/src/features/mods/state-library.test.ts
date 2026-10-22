@@ -2,7 +2,8 @@ import { expect, test } from 'bun:test'
 import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 import { createStateApi, createStateSpaces } from './api/state-api'
-import { bundleHooksModule, importHooksModule } from './module-build'
+import { bundleHooksModule } from './module-build'
+import { runBundle } from './testing-bundle'
 
 const scratch = tempDirPerTest('mods-state-library', {})
 
@@ -38,7 +39,7 @@ async function load() {
   const root = scratch()
   writeTree(root, { 'hooks/register.js': MODULE })
   const code = await bundleHooksModule({ module: join(root, 'hooks/register.js'), root })
-  const register = await importHooksModule(code, join(root, 'data'), 'a-1')
+  const register = runBundle(code).register
   const spaces = createStateSpaces({ changed: () => {} })
   const $ = { state: createStateApi({ plugin: 'hello-tabs', space: root, spaces }) }
   return { mod: (register as unknown as () => Helpers)(), $, spaces, root }

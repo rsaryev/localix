@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { createSystemApi, type Schedule } from './system-api'
+import { createSystemApi, MAX_TIMERS, MIN_EVERY_MS, type Schedule } from './system-api'
 
 /** A hand-driven schedule: `tick()` fires every pending timer once. */
 function manualSchedule() {
@@ -68,4 +68,24 @@ test('a timer callback that throws or rejects is reported, never left unhandled'
   await flush()
   tick.cancel()
   expect(errors.sort()).toEqual(['clock.after: sync', 'clock.every: async'])
+})
+
+test('clock.every fires at most every 100 ms, and a mod holds at most 100 timers', async () => {
+  const intervals: number[] = []
+  const clock = manualSchedule()
+  const system = createSystemApi({
+    cwd: () => '/',
+    schedule: (fire, ms, repeat) => (intervals.push(ms), clock.schedule(fire, ms, repeat)),
+  })
+  system.clock.every(1, () => {})
+  system.clock.every(0, () => {})
+  system.clock.every(250, () => {})
+  expect(intervals).toEqual([MIN_EVERY_MS, MIN_EVERY_MS, 250])
+  for (let i = intervals.length; i < MAX_TIMERS; i++) system.clock.after(10, () => {})
+  expect(() => system.clock.every(100, () => {})).toThrow('at most 100 timers')
+  await expect(system.clock.sleep(10)).rejects.toThrow('at most 100 timers')
+  // A timer that fired, or was cancelled, leaves room for another.
+  clock.tick()
+  expect(() => system.clock.after(10, () => {}).cancel()).not.toThrow()
+  system.dispose()
 })

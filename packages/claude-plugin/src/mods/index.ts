@@ -20,11 +20,16 @@ export {
   type RegisterFunction,
   type Registration,
 } from './engine'
+export { COUNTED_CALLS, SYNC_CALLS } from './intercept'
+export type { BudgetClock } from './budget'
 export { matchesEvent, matchesEventName, type Matcher, type MatcherValue } from './matcher'
+export { isHookBody } from './stream'
 export { PLAIN_DATA_LIMITS, plainDataProblem } from './plain-data'
 export {
   CLIENT_ELEMENT_NAMES,
   ELEMENT_NAMES,
+  elementConstructor,
+  elementNameOf,
   elementTable,
   Fragment,
   h,

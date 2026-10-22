@@ -1,23 +1,18 @@
-import { createHash } from 'node:crypto'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
-import { Fragment, h, type RegisterFunction } from '@localixai/claude-plugin/mods'
 import { readClientModules } from './client-source'
+import { compileHooksBundle } from './isolation/lockdown'
 import { STATE_LIBRARY } from './state-library'
 
 /**
  * A hooks module as Claude Code loads it: an ES module (`.js` … `.tsx`) importing only files of its
  * own plugin and `claude-code`, its JSX compiled against the globals `h` and `Fragment` (or what a
- * file's `@jsx` pragma names). It is bundled into one file under the mod's data directory — which
- * resolves its relative imports and gives `claude-code` its runtime half — and imported from
- * there. The bundle is built once; each instance of the mod imports its own copy, named by the
- * content and the instance, so instances keep their own module state and an edit imports anew.
+ * file's `@jsx` pragma names). It is bundled into one CommonJS file — which resolves its relative
+ * imports and gives `claude-code` its runtime half — and each instance of the mod runs its own copy
+ * in a worker of its own (`isolation/`), so instances keep their own module state and an edit
+ * loads anew. The bundle is built once and handed to each load's worker as text: nothing a mod
+ * could write (`$.fs.write`) is ever read back as code.
  */
-
-/** Where the host hands bundled modules the runtime half of `claude-code`. */
-const RUNTIME = Symbol.for('localix.mods.claude-code')
-;(globalThis as Record<symbol, unknown>)[RUNTIME] = { h, Fragment }
 
 /** What `import … from 'claude-code'` gives a hooks module (or a surface module) at run time. */
 export const CLAUDE_CODE_RUNTIME = `
@@ -26,20 +21,41 @@ export const h = runtime.h
 export const Fragment = runtime.Fragment
 ${STATE_LIBRARY}`
 
-/** The globals a hooks module may use unbound, as in Claude Code. */
-const GLOBALS = ['h', 'Fragment'] as const
-
 /**
- * Binds the globals the bundle uses unbound. The bundler renames every top-level declaration of a
- * name some module uses unbound, so a bundle declaring one at the top uses none unbound.
+ * What a module may not do at run time, though it builds: import (`import(x)` of a name the build
+ * cannot see), or read `import.meta`, Bun's door to `require`. A string, comment or regular
+ * expression that only spells either is no import, so the bundle is read as JavaScript reads it:
+ * Bun's scanner names each `import("literal")`, but not `import(name)`, so the engine decides the
+ * rest. Every `import` the text spells where the keyword could stand becomes characters no code may
+ * hold but a string, comment or regular expression may; when the text still compiles as the worker
+ * compiles it (a function body), none of them was code. `import.meta` does not compile there.
  */
-function preludeOf(code: string): string {
-  return GLOBALS.filter(
-    (name) =>
-      !new RegExp(`^(?:var|let|const|(?:async )?function\\*?|class) ${name}\\b`, 'm').test(code),
-  )
-    .map((name) => `var ${name} = globalThis[Symbol.for('localix.mods.claude-code')].${name};\n`)
-    .join('')
+const RUNTIME_IMPORT_REFUSED =
+  'a hooks module imports nothing at run time (import(…), import.meta); it reaches files, ' +
+  'processes and the network through $'
+
+/** `import` where the keyword could stand: not part of a name, a member (`x.import`) or a key. */
+const IMPORT_WORD =
+  /(?<![\p{ID_Continue}$\\])(?<!(?:^|[^.])\.)import(?![\p{ID_Continue}$])(?!\s*:)/gu
+
+/** Why `bundled` cannot run as the worker runs it, or undefined when it can. */
+function runtimeProblem(bundled: string): string | undefined {
+  const { imports } = new Bun.Transpiler({ loader: 'js' }).scan(bundled)
+  if (imports.some((one) => one.kind === 'dynamic-import')) return RUNTIME_IMPORT_REFUSED
+  try {
+    compileHooksBundle(bundled, 'hooks.cjs')
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return /import\.meta/.test(message)
+      ? RUNTIME_IMPORT_REFUSED
+      : `the bundle does not compile: ${message}`
+  }
+  try {
+    compileHooksBundle(bundled.replace(IMPORT_WORD, '@@@@@@'), 'hooks.cjs')
+  } catch {
+    return RUNTIME_IMPORT_REFUSED
+  }
+  return undefined
 }
 
 /** A specifier a module may import besides its own files. */
@@ -59,8 +75,10 @@ export async function bundleHooksModule(
     // The build's own messages name the file and line; a thrown `Bundle failed` names neither.
     throw: false,
     entrypoints: [input.module],
-    target: 'bun',
-    format: 'esm',
+    // Plain CommonJS statements the worker compiles as a function body: no `import.meta` or
+    // `require('node:module')` of a Bun or Node runtime helper.
+    target: 'browser',
+    format: 'cjs',
     jsx: { runtime: 'classic', factory: 'h', fragment: 'Fragment' },
     plugins: [
       {
@@ -100,38 +118,17 @@ export async function bundleHooksModule(
   if (!build.success)
     throw new ModBuildError(build.logs.map((log) => log.message).join('\n') || 'build failed')
   const bundled = await build.outputs[0]!.text()
-  return preludeOf(bundled) + bundled
+  const problem = runtimeProblem(bundled)
+  if (problem) throw new ModBuildError(problem)
+  return bundled
 }
 
-/**
- * One load of a bundled module: a copy in a directory no earlier load used, imported. The runtime
- * keeps a module by its path, and its resolver caches a directory's listing once it has read it,
- * so a new file in a known directory would not be found. The copy stays while the process runs —
- * a watching dev server restarts when a file it imported goes — and `clearHooksCopies` removes
- * what earlier processes left.
- */
-export async function importHooksModule(
-  code: string,
-  outDir: string,
-  load: string,
-): Promise<RegisterFunction> {
-  const digest = createHash('sha256').update(code).digest('hex').slice(0, 16)
-  const dir = join(outDir, `load-${createHash('sha256').update(load).digest('hex').slice(0, 16)}`)
-  const file = join(dir, `hooks-${digest}.mjs`)
-  await fs.mkdir(dir, { recursive: true })
-  await fs.writeFile(file, code)
-  const loaded = (await import(pathToFileURL(file).href)) as { register?: unknown }
-  if (typeof loaded.register !== 'function')
-    throw new ModBuildError('The hooks module does not export a register function')
-  return loaded.register as RegisterFunction
-}
-
-/** Removes the copies an earlier process imported; call before this process imports any. */
+/** Removes the copies of a module earlier versions of Localix wrote to disk for each load. */
 export async function clearHooksCopies(outDir: string): Promise<void> {
   const names = await fs.readdir(outDir).catch(() => [] as string[])
   await Promise.all(
     names
-      .filter((name) => name.startsWith('load-') || /^hooks-.*\.mjs$/.test(name))
+      .filter((name) => name.startsWith('load-') || /^hooks-.*\.(?:mjs|cjs)$/.test(name))
       .map((name) => fs.rm(join(outDir, name), { recursive: true, force: true })),
   )
 }

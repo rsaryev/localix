@@ -1,3 +1,5 @@
+import { dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import type { Kysely } from 'kysely'
 import type { LanguageModelFactory } from '@localixai/agent/runtime'
@@ -14,6 +16,7 @@ import { pluginDataDir } from '../features/ext/user-config-substitute'
 import type { ModelCompletion, ModsPorts } from '../features/mods/contracts'
 import { receiveDelivery } from '../features/mods/conversation-events'
 import { createModsHost, type ModsHost } from '../features/mods/host'
+import { modWorkerUrl } from '../features/mods/isolation/worker-file'
 import { loadEnabledPluginMods } from '../features/plugins/loader-declarative'
 import type { ProviderConnectionsService } from '../features/provider-connections/service'
 import type { RealtimeResource } from '../features/realtime/resources'
@@ -213,7 +216,10 @@ export function createModsPhase(input: {
     report: (plugin, message) => logger.warn({ event: 'mod.problem', plugin, message }),
   }
 
-  const modsHost = createModsHost(ports)
+  // A bundled server carries each mod's worker beside it; from source, the worker is this tree's.
+  const modsHost = createModsHost(ports, {
+    workerUrl: modWorkerUrl(dirname(fileURLToPath(import.meta.url))),
+  })
   const repo = createCapabilitySourceRepository(deps.db, 'plugin')
   const debounce = createDebouncer(REFRESH_DEBOUNCE_MS)
   const reconcile = async () => {

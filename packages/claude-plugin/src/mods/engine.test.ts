@@ -164,6 +164,15 @@ describe('the hook chain', () => {
     expect(engine.plugins()).toEqual([])
   })
 
+  test('an event name that is no string refuses the module, and other mods still dispatch', async () => {
+    const engine = await load((on) => void on('turn.start', () => 'answered'))
+    const register = ((on: (event: unknown, hook: Hook) => void) =>
+      void on(123, () => 'never')) as unknown as RegisterFunction
+    await expect(engine.load('bad', register, {}, {})).rejects.toThrow('takes an event name')
+    expect(engine.plugins()).toEqual(['mod'])
+    expect(await engine.dispatch('turn.start', {}, () => 'core')).toBe('answered')
+  })
+
   test('a wildcard misses telemetry, and limiting the plugins limits the chain', async () => {
     const engine = await load((on) => void on('*', () => 'answered'))
     expect(await engine.dispatch('telemetry.log', {}, () => 'core')).toBe('core')
