@@ -46,7 +46,7 @@ describe('lifecycle bounds at the compatibility adapter', () => {
         return new Promise(() => {})
       }
       const handler: CcHookHandler = {
-        source: 'agent',
+        source: 'skill',
         kind,
         command: '',
         prompt: 'Review',
@@ -71,8 +71,9 @@ describe('lifecycle bounds at the compatibility adapter', () => {
       })
       expect((await runtime.runPreToolUse('read', {})).decision).toBe('proceed')
       expect(signals[0]?.aborted).toBe(true)
+      // A `once` hook that timed out stays in place (hooks.md) and runs on the next event.
       await runtime.runPreToolUse('read', {})
-      expect(calls).toBe(1)
+      expect(calls).toBe(2)
     },
   )
 
@@ -85,7 +86,7 @@ describe('lifecycle bounds at the compatibility adapter', () => {
           {
             handlers: [
               {
-                source: 'agent',
+                source: 'skill',
                 kind: 'prompt',
                 prompt: 'Review',
                 command: '',

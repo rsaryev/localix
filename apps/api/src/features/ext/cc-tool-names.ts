@@ -31,8 +31,11 @@ export const CC_TOOL_NAME_MAP: Readonly<Record<string, string>> = {
   // CC notebook / shell tools → closest engine equivalents
   notebookread: 'read', // reads notebook cells → read
   notebookedit: 'edit', // edits notebook cells → edit on the .ipynb JSON
-  killshell: 'bash', // kills background processes → bash
-  bashoutput: 'bash', // reads bash output → bash
+  // `KillShell` / `BashOutput` (now TaskStop / TaskOutput) stop or read a background job; neither
+  // runs a command, so they stay unmapped. Mapping them to `bash` handed an agent whose author
+  // made it read-only the whole shell.
+  // CC `Skill` invokes skills; leaving it out of a subagent's `tools` switches skills off (CC).
+  skill: 'skill',
   // CC task management (TodoWrite/TodoRead, TaskCreate/TaskUpdate/TaskList/TaskGet) and team
   // lifecycle (TeamCreate/TeamDelete) have no core equivalent: a task board is a plugin's tool,
   // and naming one here would make core resolve a CC name to a plugin it cannot know is there.

@@ -15,6 +15,7 @@ import { loadManifest, type DiscoveredPlugin } from './discovery'
 import type { MaterializedPluginSource } from './install-helpers'
 import { normalizePluginDependencies } from './dependencies'
 import { planDependencyEnables } from './dependencies-policy'
+import { actionFor } from '../capabilities/resolve'
 
 /** One file publication and one database commit for the parent and its dependency plan. */
 export async function publishPluginInstallation(input: {
@@ -66,9 +67,10 @@ export async function publishPluginInstallation(input: {
           entry.contributions,
         )
       }
-      if (input.enable !== undefined)
+      const enable = await installedSwitch(input, plugin, transaction)
+      if (enable !== undefined)
         await createAvailabilityWriter(transaction).set(input.userId, DEFAULT_AGENT_ID, 'plugin', [
-          { name: plugin.manifest.name, enabled: input.enable },
+          { name: plugin.manifest.name, enabled: enable },
         ])
       const enabled =
         (
@@ -125,12 +127,41 @@ export async function publishPluginInstallation(input: {
         commit(input.parent.inPlace ? input.parent.directory : directories[0]!),
     })
   } catch (error) {
-    if (error instanceof ApiError && error.code === 'extension_exists')
+    if (error instanceof ApiError && error.code === 'extension_exists') {
+      // Claude Code: "Already installed at that scope: the output is `Plugin "…" is already
+      // installed (scope: project)`". A folder there with no install record is something else.
+      if (
+        await input.stores
+          .sources(input.db, 'plugin')
+          .get(input.userId, input.projectId, input.parent.name)
+      )
+        throw new ConflictError(
+          'plugin_already_installed',
+          `Plugin "${input.parent.name}" is already installed (scope: ${input.scope === 'project' ? 'project' : 'user'})`,
+        )
       throw new ConflictError(
         'plugin_exists',
         'A plugin already exists at this destination. Remove it first.',
       )
+    }
     throw error
   }
   return result!
+}
+
+/**
+ * The switch an install writes. `defaultEnabled: false` (the manifest's or the marketplace
+ * entry's, already merged into the manifest) keeps a fresh install off, as Claude Code does,
+ * "unless … you haven't enabled it yourself": a switch the person already set is left alone.
+ * A dependency is not installed through here; the cascade below enables it regardless.
+ */
+async function installedSwitch(
+  input: { stores: CapabilityStores; userId: string; enable?: boolean },
+  plugin: DiscoveredPlugin,
+  transaction: Kysely<AppDatabase>,
+): Promise<boolean | undefined> {
+  if (input.enable !== true || plugin.manifest.defaultEnabled !== false) return input.enable
+  const action = actionFor('plugin', plugin.manifest.name)
+  const rules = await input.stores.rules(transaction).read(input.userId, DEFAULT_AGENT_ID)
+  return rules.some((rule) => rule.action === action && rule.resource === '*') ? undefined : false
 }

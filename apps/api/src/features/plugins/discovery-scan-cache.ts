@@ -106,8 +106,17 @@ export async function readScanCache(cacheFile: string): Promise<PluginScanCache 
   }
 }
 
-export async function writeScanCache(cacheFile: string, cache: PluginScanCache): Promise<void> {
+/**
+ * Write the cache under `baseDir` (`<baseDir>/.localix/cache/…`), but only while `baseDir` still
+ * exists: a scan that outlives a deleted project must not recreate its folder.
+ */
+export async function writeScanCache(
+  baseDir: string,
+  cacheFile: string,
+  cache: PluginScanCache,
+): Promise<void> {
   try {
+    if (!(await fingerprintPath(baseDir))?.directory) return
     await fs.mkdir(dirname(cacheFile), { recursive: true })
     const temp = `${cacheFile}.${process.pid}.${crypto.randomUUID()}.tmp`
     await fs.writeFile(temp, JSON.stringify(cache))

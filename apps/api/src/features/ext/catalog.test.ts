@@ -141,6 +141,19 @@ describe('buildExtCatalog', () => {
     expect(catalog.find('shared', 'proj-1')?.item.projectId).toBe('proj-1')
   })
 
+  it('a user-scope item read from a project uses the user row; a project item does not', () => {
+    // Claude Code keeps one `pluginConfigs` value per user. A home plugin is projected into the
+    // project (its projectId is the project's), and used to miss the row saved without one.
+    const user: Item = { ...makeItem('home', 'proj-1'), scope: 'global' }
+    const own: Item = { ...makeItem('local', 'proj-1'), scope: 'project' }
+    const catalog = build([user, own], {}, [makeState('home'), makeState('local')])
+    expect(catalog.find('home', 'proj-1')?.state).toEqual(makeState('home'))
+    expect(catalog.find('local', 'proj-1')?.state).toBeUndefined()
+    // A row written for the project itself still answers first.
+    const both = build([user], {}, [makeState('home'), makeState('home', 'proj-1')])
+    expect(both.find('home', 'proj-1')?.state).toEqual(makeState('home', 'proj-1'))
+  })
+
   it('preserves discovery order in .all', () => {
     const catalog = build(['c', 'a', 'b'].map((n) => makeItem(n)))
     expect(catalog.all.map((e) => e.item.manifest.name)).toEqual(['c', 'a', 'b'])

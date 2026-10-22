@@ -4,7 +4,7 @@
  */
 import type { CcHookEvent } from './contracts'
 import type { CcToolBatchCall } from './protocol-event-inputs'
-import type { StopResult } from './runtime-contracts'
+import type { CcHookToolRef, StopResult } from './runtime-contracts'
 
 /** A typed command that expanded into its prompt (UserPromptExpansion). */
 export interface CcPromptExpansion {
@@ -75,7 +75,8 @@ export interface CcAddedHooksRuntime {
   }>
   /** An approval card is about to wait on the person. Exit 2 is not honoured, as in CC. */
   runPermissionRequest(
-    toolName: string,
+    /** The tool itself carries its `mcp__…` aliases and MCP server; a bare name has neither. */
+    tool: CcHookToolRef,
     input: unknown,
     opts?: { suggestions?: unknown[] },
   ): Promise<PermissionRequestResult>
@@ -85,7 +86,7 @@ export interface CcAddedHooksRuntime {
   takeApprovedInput(toolCallId: string): { input: unknown } | undefined
   /** A call was refused without asking anyone; `retry` tells the model it may try again. */
   runPermissionDenied(
-    toolName: string,
+    tool: CcHookToolRef,
     input: unknown,
     toolUseId: string,
     reason: string,

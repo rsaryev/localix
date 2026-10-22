@@ -296,6 +296,7 @@ export async function loadEnabledPlugins(opts: {
           // Descriptions are roster metadata and remain eagerly substituted.
           if (skill.description) skill.description = subst(skill.description)
           skill.pluginName = plugin.manifest.name
+          skill.pluginRoot = plugin.dir
           result.skills.push(skill)
         }
       } catch (err) {

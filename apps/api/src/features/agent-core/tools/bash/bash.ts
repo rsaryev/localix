@@ -25,6 +25,7 @@ import {
   type BashToolOptions,
 } from './bash-types'
 import { runBatchCommands, runForegroundCommand, resolveCwd, type BashRunContext } from './bash-run'
+import { withEnvScripts } from './bash-run-context'
 import { runBackgroundCommand } from './bash-background'
 import { refuseAtJobCap } from './bash-promote'
 import { runUntilWait } from './bash-until'
@@ -56,6 +57,7 @@ export function createBashTool(
     allowBackground,
     spawnTerminalJob,
     pluginBinDirs: options.pluginBinDirs,
+    envScripts: options.envScripts,
     waitHost: options.waitHost,
     backgroundSettle: options.backgroundSettle,
   }
@@ -171,7 +173,7 @@ export function createBashTool(
             : (input.timeout ?? 60)
       // Executed string may carry the `timeout` shim; the model-facing/displayed
       // command stays the original (input.command) everywhere.
-      const execCommand = withCommandShims(input.command)
+      const execCommand = withEnvScripts(runCtx, withCommandShims(input.command))
       const startMs = Date.now()
 
       // Permission checks (workspace boundary, dangerous commands) are enforced

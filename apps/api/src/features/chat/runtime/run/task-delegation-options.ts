@@ -15,7 +15,9 @@ import {
   expectReport,
   settleReport,
   takeExpectedReport,
+  takeTurnLimit,
 } from '../../../agent-core/delegation-awaits'
+import { wrapSystemReminder } from '../system-reminder'
 import { delegationPlace } from '../../session-provenance'
 import { endSubagentWork, type SubagentWorkDeps } from './subagent-work'
 import { releaseChildSurfaces, type ChildSurfaceDeps } from './child-surfaces'
@@ -112,10 +114,14 @@ export function buildTaskDelegationOptions(
     delegationsSinceHuman: svc.countDelegationsSinceHuman
       ? () => svc.countDelegationsSinceHuman!(userId, session.rootSessionId ?? session.id)
       : undefined,
-    // CC SubagentStart shell hook. SubagentStop belongs to the detached completion
-    // watcher below, where the child's final text and terminal status are available.
+    // CC SubagentStart, awaited: its `additionalContext` is put ahead of the child's first
+    // prompt. SubagentStop fires in the child's own finalize (`finalize-stop-hooks.ts`), where a
+    // block can still keep it working.
     onSubagentStart: ccHooks?.active
-      ? (agentType, agentId) => void ccHooks.runSubagentStart(agentType, agentId)
+      ? async (agentType, agentId) => {
+          const { additionalContext } = await ccHooks.runSubagentStart(agentType, agentId)
+          return additionalContext ? wrapSystemReminder([additionalContext]) : undefined
+        }
       : undefined,
     // NON-BLOCKING delegation: every child is detached, including a child of a child.
     // Return as soon as it is launched. The REPORT is not sent from here: every run of a
@@ -156,12 +162,19 @@ export function buildTaskDelegationOptions(
               (await svc.finalAssistantText?.(uid, sid).catch(() => null))?.trim() || null
             const status = (await svc.childRuntimeStatus?.(sid).catch(() => null)) ?? null
             endSubagentWork(input.subagentWork, sid, status)
-            // SubagentStop fires on every terminal outcome, same as the sync path.
-            if (ccHooks?.active) void ccHooks.runSubagentStop(taskOpts.agentType, sid, text)
+            // A child that ran fired SubagentStop in its own finalize; one whose launch threw
+            // never ran, so its SubagentStart is closed here (observer-only: nothing to continue).
+            if (!launched && ccHooks?.active)
+              void ccHooks.runSubagentStop(taskOpts.agentType, sid, text)
             // If the child is already over while the delegating turn is still open, say so
             // through the tool RESULT rather than only through a later wake. A resolve
-            // after the settle window has passed is a no-op.
-            reportEarlyExit?.({ status, hasReport: Boolean(text?.trim()) })
+            // after the settle window has passed is a no-op. A run cut off at its turn limit
+            // is partial output, not a failure (CC `maxTurns`).
+            reportEarlyExit?.({
+              status,
+              hasReport: Boolean(text?.trim()),
+              ...(takeTurnLimit(sid) ? { partial: true } : {}),
+            })
             // A launch that threw never became a run, so no run end will report it — and the
             // parent would wait for a report that never comes. Only that case reports from here:
             // to the delegating call when it waits (`wait: true`), as a wake otherwise.

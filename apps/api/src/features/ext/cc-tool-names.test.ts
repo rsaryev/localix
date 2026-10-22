@@ -135,6 +135,20 @@ describe('mapCcToolList', () => {
     expect(result).toEqual(['bash', 'unknowncctool'])
   })
 
+  it('never turns BashOutput/KillShell into the shell: a read-only list stays read-only', () => {
+    // feature-dev's code-explorer list; neither name runs a command (now TaskOutput/TaskStop).
+    const list = ['Glob', 'Grep', 'LS', 'Read', 'NotebookRead', 'WebFetch', 'TodoWrite']
+    const result = mapCcToolList([...list, 'WebSearch', 'KillShell', 'BashOutput'], {
+      dropUnknown: true,
+    })
+    expect(result).toEqual(['search', 'read', 'research'])
+  })
+
+  it('keeps Skill, so a `tools` list that omits it switches skills off', () => {
+    expect(mapCcToolList(['Read', 'Skill'], { dropUnknown: true })).toEqual(['read', 'skill'])
+    expect(mapCcToolList(['Read'], { dropUnknown: true })).toEqual(['read'])
+  })
+
   it('returns empty array for an empty input list', () => {
     expect(mapCcToolList([], { dropUnknown: true })).toEqual([])
   })

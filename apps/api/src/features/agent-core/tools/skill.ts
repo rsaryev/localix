@@ -11,7 +11,7 @@ import {
   type DiscoveredSkill,
 } from '../skill-discovery'
 import { recordSkillUse } from '../skill-usage-recorder'
-import { findSkillByName, skillCallName } from './skill-names'
+import { ambiguousSkillNames, findSkillByName, skillCallName } from './skill-names'
 import { MAX_OUTPUT_BYTES } from './file/read-output'
 import { truncationMarker } from './tool-output'
 import { filterDisabledSkills, isSkillDisabled, type SkillOverrides } from '../skill-overrides'
@@ -21,6 +21,10 @@ const skillToolInputSchema = z.object({
   name: z.string().optional().describe('e.g. "deploy-staging". Required except for list.'),
   description: z.string().optional().describe('save: one line.'),
   content: z.string().optional().describe('save: the full procedure.'),
+  arguments: z
+    .string()
+    .optional()
+    .describe('get: the arguments to run the skill with, as typed after /name.'),
   scope: z
     .enum(['project', 'global'])
     .optional()
@@ -31,7 +35,10 @@ const skillToolInputSchema = z.object({
 
 /**
  * Discovery stays available under a read-only rule: an agent should be able to SEE which skills
- * exist before proposing one, so only the two writing actions are blocked there. Both write a
+ * exist before proposing one, so only the two writing actions are blocked there. A `get` may run
+ * the skill's injected commands, but each one meets the run's permission rules as a shell call
+ * first (the host's `renderSkill`, `skill-tool-ports.ts`), so a read-only mode still refuses a
+ * command that writes. Both write a
  * SKILL.md directory (`files`); a delete removes it recursively and cannot be redone. An unknown
  * action is answered with the widest effect — on the permission path a guess must not open a door.
  */
@@ -66,7 +73,11 @@ export function classifySkillCall(input: unknown): CallClass {
  *   or MCP toggle happened to bump the revision. Injected rather than imported: the
  *   announcement (bump + client poke) belongs to the host, not to agent-core.
  * @param onSkillLoaded Host port, called when `get` hands the agent a skill: the skill runs
- *   (a plugin monitor waiting for it starts, see `skill-invocations.ts`).
+ *   (a plugin monitor waiting for it starts, see `skill-invocations.ts`; its hooks register).
+ * @param renderSkill Host port: the skill's content as the model reads it — its injected commands
+ *   run, its arguments and `${CLAUDE_*}` variables substituted — exactly as a `/name` typed by the
+ *   person renders it. A throw (a failed command) refuses the load with its message. Absent: the
+ *   content as written.
  */
 export function createSkillTool(
   workingDir?: string | null,
@@ -75,6 +86,7 @@ export function createSkillTool(
   projectId = '',
   onSkillsChanged?: () => void,
   onSkillLoaded?: (skill: DiscoveredSkill) => void,
+  renderSkill?: (skill: DiscoveredSkill, args: string) => Promise<string>,
 ) {
   const announce = () => {
     try {
@@ -86,19 +98,25 @@ export function createSkillTool(
   const projectBase = workingDir && workingDir !== '/' ? workingDir : null
 
   // Filesystem skills win on a name clash (same precedence the system prompt uses
-  // in agent-runner: fileSkills before loadedPlugins.skills).
+  // in agent-runner: fileSkills before loadedPlugins.skills). Keyed by the name a skill is called
+  // by, so two plugins' `lookup` stay two skills: `/a:lookup` and `/b:lookup`. The sort is for the
+  // list only: `findSkillByName` matches a call name exactly before any bare plugin name.
   const allSkills = async (): Promise<DiscoveredSkill[]> => {
     const fileSkills = await discoverFilesystemSkills(projectBase)
     const byName = new Map<string, DiscoveredSkill>()
     for (const s of [...fileSkills, ...extraSkills]) {
-      if (!byName.has(s.name)) byName.set(s.name, s)
+      if (!byName.has(skillCallName(s))) byName.set(skillCallName(s), s)
     }
     return filterDisabledSkills([...byName.values()], skillOverrides).sort((a, b) =>
-      a.name.localeCompare(b.name),
+      skillCallName(a).localeCompare(skillCallName(b)),
     )
   }
 
   const notFoundMessage = (name: string, skills: DiscoveredSkill[]): string => {
+    const ambiguous = ambiguousSkillNames(skills, name)
+    if (ambiguous.length > 0) {
+      return `Skill name "${name}" is ambiguous: ${ambiguous.map((n) => `/${n}`).join(', ')}. Ask for one by its full name.`
+    }
     if (skills.length === 0) return `Skill not found: "${name}". No skills are available.`
     const names = skills.map(skillCallName)
     const shown = names.slice(0, 30)
@@ -157,12 +175,21 @@ export function createSkillTool(
           const skills = await allSkills()
           const skill = findSkillByName(skills, input.name)
           if (!skill) return { content: notFoundMessage(input.name, skills), isError: true }
+          // CC `disable-model-invocation: true`: only the person runs it. "If Claude tries anyway,
+          // Claude Code blocks the call and instructs it not to reproduce the ... steps another way."
+          if (skill.disableModelInvocation) {
+            const called = skillCallName(skill)
+            return {
+              content: `Skill "${called}" can only be run by the user as /${called}. Do not carry out its steps another way; ask the user to run it.`,
+              isError: true,
+            }
+          }
           let body: string
           try {
-            body = skill.content
+            body = renderSkill ? await renderSkill(skill, input.arguments ?? '') : skill.content
           } catch (error) {
             return {
-              content: `Skill "${skill.name}" could not be loaded: ${errorMessage(error).slice(0, 500)}`,
+              content: `Skill "${skillCallName(skill)}" could not be loaded: ${errorMessage(error).slice(0, 4000)}`,
               isError: true,
             }
           }
@@ -188,7 +215,7 @@ export function createSkillTool(
             : body
           return {
             content: [
-              `# Skill: ${skill.name}`,
+              `# Skill: ${skillCallName(skill)}`,
               `Source: ${JSON.stringify(skill.path)}`,
               `Resolve relative references from: ${JSON.stringify(skill.dir)}`,
               '',
@@ -198,10 +225,14 @@ export function createSkillTool(
         }
 
         case 'list': {
-          const skills = await allSkills()
+          // A `disable-model-invocation` skill is not the model's to see: "Description not in
+          // context" (Claude Code).
+          const skills = (await allSkills()).filter((s) => !s.disableModelInvocation)
           if (skills.length === 0) return { content: 'No skills found.' }
           return {
-            content: skills.map((s) => `- /${s.name} (${s.scope}): ${s.description}`).join('\n'),
+            content: skills
+              .map((s) => `- /${skillCallName(s)} (${s.scope}): ${s.description}`)
+              .join('\n'),
           }
         }
 
@@ -218,7 +249,7 @@ export function createSkillTool(
             announce()
             return { content: `Skill deleted: "${input.name}"` }
           }
-          if (extraSkills.some((s) => s.name === input.name)) {
+          if (findSkillByName(extraSkills, input.name)) {
             return {
               content: `Skill "${input.name}" is plugin-provided and read-only — disable the plugin to remove it.`,
               isError: true,

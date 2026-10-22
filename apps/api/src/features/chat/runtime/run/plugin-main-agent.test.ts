@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 
-import { applyPluginMainAgent } from './plugin-main-agent'
+import { applyPluginMainAgent, runAsPluginAgent } from './plugin-main-agent'
 import type { LoadedPluginAgent } from '../../../plugins/loader-contract'
 
 const reviewer: LoadedPluginAgent = {
@@ -33,6 +33,12 @@ describe('a plugin’s default agent setting', () => {
     )
     expect(applied.disabledTools).not.toContain('read')
     expect(applied.disabledTools).not.toContain('search')
+  })
+
+  test('a tools list switches skills off unless it names Skill (CC sub-agents)', () => {
+    expect(runAsPluginAgent(input, reviewer).disabledTools).toContain('skill')
+    const withSkill = { ...reviewer, tools: ['read', 'skill'] }
+    expect(runAsPluginAgent(input, withSkill).disabledTools).not.toContain('skill')
   })
 
   test('an agent without a tools list keeps every tool', () => {

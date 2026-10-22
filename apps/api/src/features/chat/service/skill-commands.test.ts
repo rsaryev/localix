@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
   expandSkillContent,
+  SkillCommandFailedError,
   SKILL_CMD_MAX_COUNT,
   SKILL_CMD_TOTAL_MAX_BYTES,
 } from './skill-commands'
@@ -42,10 +43,46 @@ describe('expandSkillContent', () => {
     expect(result).toBe(content) // unchanged
   })
 
-  it('inserts [Error:...] for a failing command', async () => {
-    const content = 'Result: !`exit 1`'
-    const result = await expandSkillContent(content, cwd)
-    expect(result).toContain('[Error:')
+  // CC skills.md: "A failed command aborts the entire skill invocation ... The abort shows
+  // `Shell command failed for pattern "..."`. The error message includes the command's output."
+  it('aborts the expansion when a command fails, naming the pattern and its output', async () => {
+    const failing = expandSkillContent('Result: !`echo partial; exit 3`', cwd)
+    await expect(failing).rejects.toBeInstanceOf(SkillCommandFailedError)
+    await expect(failing).rejects.toThrow(
+      'Shell command failed for pattern "!`echo partial; exit 3`"',
+    )
+    await expect(failing).rejects.toThrow(/partial[\s\S]*exit code 3/)
+  })
+
+  it('takes exit 1 from a search or comparison command as a result', async () => {
+    expect(await expandSkillContent('none: !`grep -q nothing /dev/null`', cwd)).toBe('none: ')
+    await expect(expandSkillContent('!`false`', cwd)).rejects.toBeInstanceOf(
+      SkillCommandFailedError,
+    )
+    await expect(expandSkillContent('!`grep -q x /no/such/file`', cwd)).rejects.toBeInstanceOf(
+      SkillCommandFailedError,
+    )
+  })
+
+  // CC skills.md: "with the default `bash` shell, Claude Code merges stderr into stdout".
+  it('merges stderr into the injected text', async () => {
+    expect(await expandSkillContent('out: !`echo ERR-OUT; echo ERR-2 >&2`', cwd)).toBe(
+      'out: ERR-OUT\nERR-2',
+    )
+  })
+
+  it('hands a command the arguments as quoted shell words', async () => {
+    const args = { raw: `alpha "b c" "it's"`, names: ['first'] }
+    expect(await expandSkillContent('!`printf "[%s]" $ARGUMENTS`', cwd, {}, args)).toBe(
+      "[alpha][b c][it's]",
+    )
+    expect(await expandSkillContent('!`printf "[%s]" $1 $first $5`', cwd, {}, args)).toBe(
+      '[b c][alpha]',
+    )
+    const injection = { raw: '"$(echo PWNED)" ;id' }
+    expect(await expandSkillContent('!`printf "[%s]" $ARGUMENTS`', cwd, {}, injection)).toBe(
+      '[$(echo PWNED)][;id]',
+    )
   })
 
   it('injects env vars so !cmd scripts can read CLAUDE_SESSION_ID', async () => {

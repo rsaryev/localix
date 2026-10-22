@@ -6,36 +6,70 @@ import type { AgentHookEvaluator } from './agent-hook'
 import type { CcAddedHooksRuntime } from './runtime-contracts-added'
 import type { CcDisplayHooksRuntime } from './runtime-display-hooks'
 import type { CcWorktreeHooksRuntime } from './runtime-worktree-hooks'
+import type { CcSessionEnvFiles } from './session-env'
 
 /** Aggregated PreToolUse decision handed to the tool wrapper. */
 export interface PreToolUseResult {
-  /** `deny` blocks the call; `allow`/`ask` are advisory; `proceed` = no opinion. */
+  /**
+   * `deny` blocks the call; `allow` skips the permission card and `ask` forces one (the gate
+   * reads both, `agent-core/permission-hook-decision.ts`); `proceed` = no opinion.
+   */
   decision: 'deny' | 'allow' | 'ask' | 'proceed'
+  /** The deny reason for the model, or the `permissionDecisionReason` an ask shows the person. */
   reason?: string
   /** Composed input rewrite (re-validated by the caller against the tool schema). */
   updatedInput?: unknown
   didRewrite: boolean
+  /** Every handler's `additionalContext`, for the model beside the tool result. */
+  additionalContext?: string
+  /** `continue:false`: the call is refused and the run ends; `reason` was shown to the person. */
+  stop?: { reason: string }
+}
+
+/**
+ * A hook ended this run: a PreToolUse `continue:false` or a PostToolBatch block. Claude Code
+ * "stops processing entirely", so no end-of-turn hook or continuation may restart the agent.
+ */
+export interface CcRunStop {
+  event: 'PreToolUse' | 'PostToolBatch'
+  reason: string
 }
 
 export interface PromptSubmitResult {
   blocked: boolean
   reason?: string
   additionalContext?: string
+  /** `hookSpecificOutput.sessionTitle`: rename the session, as `/rename` does. */
+  sessionTitle?: string
 }
 
 export interface StopResult {
   blocked: boolean
   reason?: string
+  /** The agent continues on a hook's `additionalContext` (feedback), not on a block. */
+  feedback?: true
 }
 
 /**
- * What `PreCompact` handlers answered. A context checkpoint is announced to them but never
- * waits on or yields to them — see `run/stages/history.ts` — so `blocked` is reported, not obeyed.
+ * What `PreCompact` handlers answered. A block skips a proactive context checkpoint and fails a
+ * turn whose checkpoint recovers from a context-limit error — see `run/stages/view.ts`.
  */
 export interface PreCompactResult {
   blocked: boolean
   reason?: string
 }
+
+/**
+ * A tool as the tool events receive it: its engine name, or the tool itself, whose aliases
+ * (an MCP tool's `mcp__<server>__<tool>`) a matcher may name and whose `mcpServer` a hook reads.
+ */
+export type CcHookToolRef =
+  | string
+  | {
+      name: string
+      aliases?: readonly string[]
+      mcpServer?: { readonly name: string; readonly source: string }
+    }
 
 export interface CcHooksRuntime
   extends CcAddedHooksRuntime, CcDisplayHooksRuntime, CcWorktreeHooksRuntime {
@@ -46,19 +80,23 @@ export interface CcHooksRuntime
    * `compact`, default `startup`) is both reported in the hook input AND used as
    * the matcher value — a hook whose matcher is `compact` only fires on a `compact`
    * source. Returns the joined `additionalContext` to inject into the model, and the
-   * `watchPaths` a handler named for `FileChanged`.
+   * `watchPaths` a handler named for `FileChanged`, and the `sessionTitle` one gave (not on a
+   * `clear` or `compact` source).
    */
-  runSessionStart(source?: string): Promise<{ additionalContext?: string; watchPaths?: string[] }>
+  runSessionStart(
+    source?: string,
+  ): Promise<{ additionalContext?: string; watchPaths?: string[]; sessionTitle?: string }>
   runUserPromptSubmit(prompt: string): Promise<PromptSubmitResult>
-  runPreToolUse(toolName: string, input: unknown, toolUseId?: string): Promise<PreToolUseResult>
+  runPreToolUse(tool: CcHookToolRef, input: unknown, toolUseId?: string): Promise<PreToolUseResult>
   runPostToolUse(
-    toolName: string,
+    tool: CcHookToolRef,
     input: unknown,
     result: { content: string; details?: unknown },
+    toolUseId?: string,
   ): Promise<{ additionalContext?: string; updatedToolOutput?: string }>
   /** Fire the PostToolUseFailure hooks for a tool that threw; they may add context. */
   runPostToolUseFailure(
-    toolName: string,
+    tool: CcHookToolRef,
     input: unknown,
     failure: { error: string; isInterrupt: boolean },
   ): Promise<{ additionalContext?: string }>
@@ -68,7 +106,7 @@ export interface CcHooksRuntime
    * protection). A `decision:"block"` outcome is surfaced as `{blocked, reason}` for
    * the caller to re-enter the run with.
    */
-  runStop(opts?: { stopHookActive?: boolean }): Promise<StopResult>
+  runStop(opts?: { stopHookActive?: boolean; lastAssistantMessage?: string }): Promise<StopResult>
   /** Session-terminating side-effect hooks. Fire-and-forget (no decision control). */
   runSessionEnd(reason: string): Promise<void>
   /**
@@ -99,11 +137,12 @@ export interface CcHooksRuntime
     opts?: { sourcesOnly?: readonly CcHookSource[]; stopHookActive?: boolean },
   ): Promise<StopResult>
   /**
-   * Claude Code's PreCompact: exit 2 / `decision:block` reports a block. This host fires it
-   * with `auto` when a context checkpoint is taken, after the view is already decided, so it
-   * reads the result as a notice and never lets a block stop the turn.
+   * Claude Code's PreCompact: exit 2 / `decision:block` blocks the compaction. This host fires
+   * it with `auto` before a context checkpoint is committed (`run/stages/view.ts`).
    */
   runPreCompact(trigger: 'manual' | 'auto', customInstructions?: string): Promise<PreCompactResult>
+  /** The hook that ended this run, the first one to; undefined while none has. */
+  stoppedBy(): CcRunStop | undefined
 }
 
 export interface CreateCcHooksRuntimeOptions {
@@ -114,6 +153,15 @@ export interface CreateCcHooksRuntimeOptions {
   projectDir: string
   /** Kill switch — when false the runtime is inert. */
   enabled: boolean
+  /**
+   * The session's mode in Claude Code's spelling (`default`, `plan`, `bypassPermissions` …),
+   * reported as `permission_mode` on the events whose documented input carries it.
+   */
+  permissionMode?: string
+  /** The run is a delegated subagent's: every input names it (`agent_id`, `agent_type`). */
+  agent?: { id: string; type: string }
+  /** The session's `CLAUDE_ENV_FILE`s (session-env.ts); absent → hooks get none. */
+  envFiles?: CcSessionEnvFiles
   logger: HookLogger
   /**
    * Arms the one wake an `asyncRewake` hook may send, as it starts; the hook's exit 2 fires it
@@ -122,10 +170,16 @@ export interface CreateCcHooksRuntimeOptions {
    */
   rewake?: HookRewake
   /**
-   * Per-SESSION set of `once`-handler keys that already ran (owned by the caller
-   * so it survives across the per-run runtimes). Absent → `once` is not enforced.
+   * Per-SESSION set of spent `once`-handler keys (owned by the caller so it survives
+   * across the per-run runtimes). Only a skill's hooks honour `once`, spent after their first
+   * successful run. Absent → `once` is not enforced.
    */
   onceKeys?: Set<string>
+  /**
+   * What an `async` hook's JSON response said to Claude (`additionalContext`, `systemMessage`)
+   * once it exited 0 — for the session's next turn. Absent → it is dropped.
+   */
+  onAsyncContext?: (context: string) => void
   /**
    * Injected single-shot LLM evaluator for `type:"prompt"` handlers. Absent → prompt
    * handlers fail open (treated as `ok`, never block). Keeps cc-hooks chat-agnostic.

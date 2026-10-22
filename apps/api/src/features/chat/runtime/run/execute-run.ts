@@ -58,7 +58,7 @@ async function executeAdmittedRun(
       toolset,
       prompt,
       intake,
-      await reviewRunView(view, inputs.mods),
+      await reviewRunView(view, inputs.mods, inputs.ccHooks),
       inputs.defaultCwd,
     )
     const streamed = await streamRun(frame, turn, inputs, toolset, prompt, intake, history)
@@ -72,7 +72,6 @@ async function executeAdmittedRun(
       session: frame.session,
       abort: frame.abort,
       pluginHooksForRun: frame.teardown.pluginHooks,
-      ccHooksForRun: frame.teardown.ccHooks,
       runLiveResolverKeys: frame.teardown.liveResolverKeys,
       unsubLsp: frame.teardown.unsubLsp,
       defaultCwd: frame.teardown.defaultCwd,

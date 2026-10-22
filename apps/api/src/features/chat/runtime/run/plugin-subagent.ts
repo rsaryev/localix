@@ -67,9 +67,10 @@ export function delegatePluginPorts(input: {
 
 /**
  * Run a child created as a plugin agent as that agent: its prompt is the run's identity and its
- * tool limits apply, on this run and every later one. Null when the session is not one, or when its
- * plugin is no longer enabled here — the child then runs as the agent seated in it, and the log
- * says so.
+ * tool limits apply, on this run and every later one. A delegated child names its type, and so does
+ * a `context: fork` skill's `agent:` — by `<plugin>:<name>`, or by a name only one enabled agent
+ * has. Null when the session is not one, or when no enabled agent has that type — the child then
+ * runs as the agent seated in it, and the log says so.
  */
 export function applyPluginSubagent<Agent extends { instructions?: string | null }>(
   input: { agent: Agent; disabledTools: readonly string[] },
@@ -77,9 +78,14 @@ export function applyPluginSubagent<Agent extends { instructions?: string | null
   agents: readonly LoadedPluginAgent[],
   warn: (message: string) => void = () => {},
 ): { agent: Agent; disabledTools: string[]; subagent: LoadedPluginAgent } | null {
-  const type = provenance.kind === 'task-delegation' ? provenance.pluginAgent : undefined
+  const type =
+    provenance.kind === 'task-delegation' || provenance.kind === 'skill-fork'
+      ? provenance.pluginAgent
+      : undefined
   if (!type) return null
-  const subagent = agents.find((agent) => agent.fullName === type)
+  const byName = agents.filter((agent) => agent.name === type)
+  const subagent =
+    agents.find((agent) => agent.fullName === type) ?? (byName.length === 1 ? byName[0] : undefined)
   if (!subagent) {
     warn(`plugin agent "${type}" is not enabled here; the child runs as its seated agent`)
     return null

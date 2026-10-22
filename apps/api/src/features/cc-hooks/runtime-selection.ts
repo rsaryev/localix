@@ -5,7 +5,7 @@ import { plural } from '../../lib/plural'
 
 export interface SelectOptions {
   /** Tool-event context for `if` guards. */
-  ifCtx?: { toolName: string; toolInput: unknown }
+  ifCtx?: { toolName: string; toolInput: unknown; aliases?: readonly string[] | undefined }
   /** Extra restriction applied BEFORE the guards (SubagentStop's `sourcesOnly`). */
   filter?: (h: CcHookHandler) => boolean
 }
@@ -18,12 +18,34 @@ interface HookSelectionOptions {
   signalFor: (event: CcHookEvent) => AbortSignal | undefined
 }
 
+/** `once` per-session key for a handler (stable across the per-run runtimes). */
+function onceKey(event: CcHookEvent, h: CcHookHandler): string {
+  const args = h.args ? `\0${h.args.join('\0')}` : ''
+  return `${event}::${h.source}::${h.pluginName ?? ''}::${h.command || h.prompt || ''}${args}`
+}
+
+/**
+ * hooks.md, common fields: `once` is "Only honored for hooks declared in skill frontmatter;
+ * ignored in settings files and agent frontmatter" — and so in a plugin's hooks.json.
+ */
+const honorsOnce = (h: CcHookHandler): boolean => h.once === true && h.source === 'skill'
+
+/**
+ * Spend a `once` handler after a SUCCESSFUL run: "Claude Code removes the hook after its first
+ * successful run. A run that fails, blocks with exit code 2, or times out leaves the hook in
+ * place" (hooks.md). The caller decides what succeeded.
+ */
+export function spendOnce(
+  onceKeys: Set<string> | undefined,
+  event: CcHookEvent,
+  h: CcHookHandler,
+): void {
+  if (onceKeys && honorsOnce(h)) onceKeys.add(onceKey(event, h))
+}
+
 /** Select handlers against the live registry, retaining guard and once ordering. */
 export function createHookSelector(options: HookSelectionOptions) {
   const { registry, sessionId, logger, onceKeys, signalFor } = options
-  /** `once` per-session key for a handler (stable across the per-run runtimes). */
-  const onceKey = (event: CcHookEvent, h: CcHookHandler): string =>
-    `${event}::${h.source}::${h.pluginName ?? ''}::${h.command || h.prompt || ''}${h.args ? `\0${h.args.join('\0')}` : ''}`
 
   /**
    * The handlers that will actually RUN for one event — or `null` when the event is
@@ -36,8 +58,8 @@ export function createHookSelector(options: HookSelectionOptions) {
    *   - caller `filter`;
    *   - `if` guard: on tool events keep a handler only if its guard passes; on
    *     non-tool events a handler carrying an `if` never runs (CC §3);
-   *   - `once`: skip handlers whose key already ran this session; MARK the rest as
-   *     run — a selected `once` handler is spent whether or not it later blocks;
+   *   - `once` (skill frontmatter only): skip a handler already spent this session. It is
+   *     spent after its first successful run ({@link spendOnce}), not here;
    *   - partition into `sync` (block-capable) and `async` (fire-and-forget).
    */
   function select(
@@ -54,13 +76,10 @@ export function createHookSelector(options: HookSelectionOptions) {
         if (opts.filter && !opts.filter(h)) continue
         if (h.if) {
           if (!isToolEvent(event) || !opts.ifCtx) continue // `if` only applies on tool events
-          if (!evaluateIfGuard(h.if, opts.ifCtx.toolName, opts.ifCtx.toolInput)) continue
+          if (!evaluateIfGuard(h.if, opts.ifCtx.toolName, opts.ifCtx.toolInput, opts.ifCtx.aliases))
+            continue
         }
-        if (h.once && onceKeys) {
-          const key = onceKey(event, h)
-          if (onceKeys.has(key)) continue
-          onceKeys.add(key)
-        }
+        if (honorsOnce(h) && onceKeys?.has(onceKey(event, h))) continue
         ;(h.async ? asyncH : sync).push(h)
       }
     }

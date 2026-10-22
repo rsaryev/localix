@@ -46,14 +46,20 @@ export type SpawnForkSkillFn = (
      * direct-chat case.
      */
     invokedBy?: string
+    /**
+     * CC `agent:` — the subagent type the fork runs as. A plugin agent's prompt and tool limits
+     * apply to the child (`run/plugin-subagent.ts`); the invoking agent still seats it.
+     */
+    pluginAgent?: string
   },
 ) => Promise<string>
 
 /**
- * Run a skill task in its own child session, as the INVOKING agent itself. The child shares the
- * parent's workspace. A skill's `agent:` frontmatter is not honoured any more: no path starts a
- * different agent on a skill's or a model's behalf (the caller warns when a skill declares one).
- * The factory closes over the required service ports instead of the full chat service.
+ * Run a skill task in its own child session, seated by the INVOKING agent. The child shares the
+ * parent's workspace. A skill's `agent:` naming a plugin agent is recorded on the child, whose
+ * runs then take that agent's prompt and tool limits — Claude Code: "The `agent` field determines
+ * the execution environment". The factory closes over the required service ports instead of the
+ * full chat service.
  */
 export function createSpawnForkSkill(deps: ForkSkillDeps): SpawnForkSkillFn {
   const { now, requireSession, runAgent, sessionLifecycleCtx } = deps
@@ -94,6 +100,7 @@ export function createSpawnForkSkill(deps: ForkSkillDeps): SpawnForkSkillFn {
         ...(parentSession.agents?.length
           ? { parentParticipant: agentParticipant(parentRoute.agentId) }
           : {}),
+        ...(opts?.pluginAgent ? { pluginAgent: opts.pluginAgent } : {}),
       },
       providerConnectionId,
       // A fork is created fresh, so it must not end up holding authority its parent did not have.
@@ -114,7 +121,7 @@ export function createSpawnForkSkill(deps: ForkSkillDeps): SpawnForkSkillFn {
                 raw: opts.hooks,
                 source: 'skill' as const,
                 asSubagent: true,
-                agentType: GENERAL_PURPOSE_AGENT,
+                agentType: opts.pluginAgent ?? GENERAL_PURPOSE_AGENT,
                 ...(opts.hooksPlugin ? { plugin: opts.hooksPlugin } : {}),
               },
             ],

@@ -56,6 +56,13 @@ export function describeStartedTask(
       'idle',
     )
   }
+  // CC `maxTurns`: a child cut off at its turn limit returns partial output, not a failure.
+  if (early?.partial && early.status === 'completed') {
+    return line(
+      `reached its turn limit on "${child.title}"; its output is partial. Review its report.`,
+      'completed',
+    )
+  }
   if (early && (early.status !== 'completed' || !early.hasReport)) {
     const status = early.status === 'stopped' ? 'stopped' : 'failed'
     return line(`${status} before completing "${child.title}".`, status, true)

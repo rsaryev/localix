@@ -56,7 +56,6 @@ function baseArgs(
     session,
     abort,
     pluginHooksForRun: [],
-    ccHooksForRun: undefined,
     runLiveResolverKeys: new Set<string>(),
     unsubLsp: undefined,
     defaultCwd: undefined,

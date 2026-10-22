@@ -4,6 +4,23 @@ import { buildSkillsContext, type SkillListingEntry } from './prompt-skills'
 const cwd = '/work/project'
 
 describe('buildSkillsContext', () => {
+  // skills.md: a plugin skill is available "as `/plugin-name:skill-name`".
+  it('lists a plugin skill by its namespaced name, one line per plugin', () => {
+    const out = buildSkillsContext(
+      [
+        { name: 'lookup', pluginName: 'nsa', description: 'A lookup' },
+        { name: 'lookup', pluginName: 'nsb', description: 'B lookup' },
+        { name: 'nsc:prefixed', pluginName: 'nsc', description: 'Already prefixed' },
+      ],
+      {},
+      cwd,
+    )
+    expect(out).toContain('- /nsa:lookup: A lookup')
+    expect(out).toContain('- /nsb:lookup: B lookup')
+    expect(out).toContain('- /nsc:prefixed: Already prefixed')
+    expect(out).not.toContain('- /lookup')
+  })
+
   it('lists ordinary skills and omits disable-model-invocation ones', () => {
     const skills: SkillListingEntry[] = [
       { name: 'deploy', description: 'Deploy the app' },

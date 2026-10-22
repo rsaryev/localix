@@ -13,6 +13,7 @@ import { sessionAgent } from '../../message-envelope'
 import { loadModelView, type ModelView } from '../../model-view/view'
 import { delegationPlace } from '../../../session-provenance'
 import type { ModRunScope } from '../../../../mods/run-scope'
+import type { CcHooksRuntime } from '../../../../cc-hooks'
 import type { RunFrame } from './frame'
 import type { ResolvedTurn } from './turn'
 
@@ -42,12 +43,35 @@ export async function resolveRunView(frame: RunFrame, turn: ResolvedTurn): Promi
  * The view after Claude Code mods' `session.compact`, once the run's mods are known: a `skip`
  * leaves the conversation whole this turn (the hard ceiling of an oversized request still
  * applies), and a checkpoint a mod asked for (`$.session.compact`) is taken now.
+ *
+ * Then Claude Code's `PreCompact` hooks, before the checkpoint is committed (a checkpoint is this
+ * runtime's compaction, trigger `auto`). hooks.md: a block on a proactive compaction skips it
+ * and "the conversation continues uncompacted"; on one recovering from a context-limit error
+ * "the underlying error surfaces and the current request fails".
  */
-export async function reviewRunView(view: ModelView, mods: ModRunScope): Promise<ModelView> {
+export async function reviewRunView(
+  view: ModelView,
+  mods: ModRunScope,
+  ccHooks?: CcHooksRuntime,
+): Promise<ModelView> {
   const verdict = await mods.compaction(view.due)
-  if (verdict === 'skip') {
-    const { due: _skipped, ...kept } = view
-    return kept
-  }
-  return verdict === 'take' ? { ...view, due: 'threshold' } : view
+  const reviewed: ModelView =
+    verdict === 'skip'
+      ? withoutCheckpoint(view)
+      : verdict === 'take'
+        ? { ...view, due: 'threshold' }
+        : view
+  if (!reviewed.due || !ccHooks?.active) return reviewed
+  const preCompact = await ccHooks.runPreCompact('auto')
+  if (!preCompact.blocked) return { ...reviewed, preCompactRan: true }
+  if (reviewed.due === 'overflow')
+    throw new Error(
+      `Context limit reached; a PreCompact hook blocked the checkpoint: ${preCompact.reason ?? 'blocked'}`,
+    )
+  return withoutCheckpoint(reviewed)
+}
+
+function withoutCheckpoint(view: ModelView): ModelView {
+  const { due: _skipped, ...kept } = view
+  return kept
 }

@@ -111,8 +111,17 @@ export function buildMcpInstructionsSection(
   ].join('\n')
 }
 
+/** A failed server's connection error, as much of it as the inventory line carries. */
+const MCP_ERROR_MAX_CHARS = 300
+
 export function buildMcpInventorySection(
-  inventory: { server: string; tools: string[]; pending?: boolean; failed?: boolean }[],
+  inventory: {
+    server: string
+    tools: string[]
+    pending?: boolean
+    failed?: boolean
+    error?: string
+  }[],
 ): string {
   const lines = inventory.map((entry) => {
     const server = entry.server.replace(/\s+/g, ' ').trim().slice(0, 128)
@@ -120,7 +129,10 @@ export function buildMcpInventorySection(
       return `- ${server}: connecting in the background; optional tools may join on the next turn`
     }
     if (entry.failed) {
-      return `- ${server}: FAILED to load this turn; its tools are unavailable right now. If the user asks for something it provides, say the server failed to load — do not say you lack the capability.`
+      // Claude Code tells Claude which server failed and its connection error.
+      const error = entry.error?.replace(/\s+/g, ' ').trim().slice(0, MCP_ERROR_MAX_CHARS)
+      const cause = error ? ` (connection error: ${error})` : ''
+      return `- ${server}: FAILED to load this turn${cause}; its tools are unavailable right now. If the user asks for something it provides, say the server failed to load — do not say you lack the capability.`
     }
     return entry.tools.length > 0
       ? `- ${server}: ${entry.tools.length} tools loaded`

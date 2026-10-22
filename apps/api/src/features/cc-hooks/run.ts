@@ -20,17 +20,40 @@
 import type { CcHookEvent, CcHookHandler, CcHookInput, CcHookOutcome } from './contracts'
 import { executeHookInBackground } from './executor'
 import { matchesField } from './matcher'
-import type { CcHooksRuntime, CreateCcHooksRuntimeOptions } from './runtime-contracts'
-import { EMPTY_RUNTIME, joinContext, contextFrom, blockedFrom } from './runtime-results'
-import { createHookSelector, type SelectOptions } from './runtime-selection'
+import type { CcHooksRuntime, CcRunStop, CreateCcHooksRuntimeOptions } from './runtime-contracts'
+import {
+  EMPTY_RUNTIME,
+  joinContext,
+  contextFrom,
+  blockedFrom,
+  stopVerdictFrom,
+} from './runtime-results'
+import { createHookSelector, spendOnce, type SelectOptions } from './runtime-selection'
 import { createHookHandlerRunner } from './runtime-handler'
 import { createToolHookRunners } from './runtime-tool-hooks'
 import { createGateHookRunners } from './runtime-gate-hooks'
 import { createSessionHookRunners, watchPathsFrom } from './runtime-session-hooks'
 import { createDisplayHookRunners } from './runtime-display-hooks'
 import { createWorktreeHookRunners } from './runtime-worktree-hooks'
+import { envFileForEvent } from './session-env'
 
 export type { CcHooksRuntime, CreateCcHooksRuntimeOptions } from './runtime-contracts'
+
+/** The events whose documented input carries `permission_mode` (hooks.md, each event's example). */
+const PERMISSION_MODE_EVENTS: ReadonlySet<CcHookEvent> = new Set<CcHookEvent>([
+  'UserPromptSubmit',
+  'UserPromptExpansion',
+  'PreToolUse',
+  'PermissionRequest',
+  'PostToolUse',
+  'PostToolUseFailure',
+  'PostToolBatch',
+  'PermissionDenied',
+  'SubagentStop',
+  'TaskCompleted',
+  'Stop',
+  'TeammateIdle',
+])
 
 export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooksRuntime {
   const {
@@ -46,6 +69,10 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
     callMcpTool,
     emitNotice,
     signal: runSignal,
+    permissionMode,
+    agent,
+    envFiles,
+    onAsyncContext,
   } = opts
   const hasAny = Object.values(registry).some((groups) => groups && groups.length > 0)
   if (!enabled || !hasAny) return EMPTY_RUNTIME
@@ -55,10 +82,21 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
 
   const baseInput = <E extends CcHookEvent>(event: E) => ({
     session_id: sessionId,
+    // No transcript file is kept by this host: the documented field is sent, empty.
     transcript_path: '',
     cwd: projectDir,
+    ...(permissionMode && PERMISSION_MODE_EVENTS.has(event)
+      ? { permission_mode: permissionMode }
+      : {}),
     hook_event_name: event,
+    // hooks.md: tool events inside a subagent carry "the agent_id and agent_type common input
+    // fields that identify the subagent".
+    ...(agent ? { agent_id: agent.id, agent_type: agent.type } : {}),
   })
+  const envFor = (event: CcHookEvent) => {
+    const envFile = envFileForEvent(envFiles, event)
+    return envFile ? { envFile } : undefined
+  }
 
   const select = createHookSelector({ registry, sessionId, logger, onceKeys, signalFor })
   const runHandler = createHookHandlerRunner({
@@ -69,6 +107,8 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
     callMcpTool,
     emitNotice,
     signalFor,
+    envFor,
+    onceKeys,
   })
 
   /** Fire background (`async`) handlers — never awaited, never affect the decision. */
@@ -81,6 +121,11 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
         logger,
         rewake,
         signalFor(input.hook_event_name),
+        envFor(input.hook_event_name),
+        (context) => {
+          spendOnce(onceKeys, input.hook_event_name, h)
+          if (context) onAsyncContext?.(context)
+        },
       )
   }
 
@@ -111,18 +156,33 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
     return outcomes
   }
 
-  const dispatch = { select, runHandler, fireAsync, runAll, baseInput }
+  // The hook that ended this run (PreToolUse `continue:false`, a PostToolBatch block).
+  let runStop: CcRunStop | undefined
+  const stopRun = (stop: CcRunStop) => {
+    runStop ??= stop
+  }
+  const dispatch = { select, runHandler, fireAsync, runAll, baseInput, emitNotice, stopRun }
   // Inputs a PermissionRequest hook rewrote, by tool call, until the call runs.
   const approvedInputs = new Map<string, unknown>()
 
   return {
     active: true,
+    stoppedBy: () => runStop,
 
     async runSessionStart(source = 'startup') {
       const input: CcHookInput = { ...baseInput('SessionStart'), source }
       const outcomes = await runAll('SessionStart', (m) => matchesField(m, source), input, true)
       const additionalContext = contextFrom(outcomes)
-      return { ...(additionalContext ? { additionalContext } : {}), ...watchPathsFrom(outcomes) }
+      // `sessionTitle` "applies when source is startup, resume, or fork" — the last one named.
+      const sessionTitle =
+        source === 'clear' || source === 'compact'
+          ? undefined
+          : outcomes.reduce<string | undefined>((title, o) => o.sessionTitle ?? title, undefined)
+      return {
+        ...(additionalContext ? { additionalContext } : {}),
+        ...watchPathsFrom(outcomes),
+        ...(sessionTitle ? { sessionTitle } : {}),
+      }
     },
 
     async runUserPromptSubmit(prompt: string) {
@@ -132,17 +192,22 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
       const input: CcHookInput = { ...baseInput('UserPromptSubmit'), prompt }
       fireAsync(selected.async, input)
       const contexts: (string | undefined)[] = []
+      // `sessionTitle` names the session from the prompt; the last handler to give one wins.
+      let sessionTitle: string | undefined
+      const titled = () => (sessionTitle ? { sessionTitle } : {})
       for (const h of selected.sync) {
         const o = await runHandler('UserPromptSubmit', h, input, true)
+        sessionTitle = o.sessionTitle ?? sessionTitle
         if (o.blocked || o.decision === 'block' || o.continue === false) {
           return {
             blocked: true,
             reason: o.blockReason || o.reason || o.stopReason || 'Prompt blocked by hook',
+            ...titled(),
           }
         }
         contexts.push(o.additionalContext)
       }
-      return { blocked: false, additionalContext: joinContext(contexts) }
+      return { blocked: false, additionalContext: joinContext(contexts), ...titled() }
     },
 
     ...createToolHookRunners(dispatch),
@@ -157,16 +222,20 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
       approvedInputs.delete(toolCallId)
       return { input }
     },
-    ...createSessionHookRunners(dispatch, registry),
+    ...createSessionHookRunners(dispatch, registry, envFiles),
     ...createDisplayHookRunners(dispatch),
     ...createWorktreeHookRunners(dispatch),
 
     async runStop(stopOpts) {
       const input: CcHookInput = {
         ...baseInput('Stop'),
-        ...(stopOpts?.stopHookActive ? { stop_hook_active: true } : {}),
+        stop_hook_active: Boolean(stopOpts?.stopHookActive),
+        last_assistant_message: stopOpts?.lastAssistantMessage ?? '',
+        // Claude Code's background tasks and crons: this host reports none to a Stop hook.
+        background_tasks: [],
+        session_crons: [],
       }
-      return blockedFrom(await runAll('Stop', () => true, input, false))
+      return stopVerdictFrom(await runAll('Stop', () => true, input, false))
     },
 
     async runSessionEnd(reason: string) {
@@ -206,9 +275,11 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
         agent_id: agentId,
         agent_type: agentType,
         ...(lastMessage ? { last_assistant_message: lastMessage } : {}),
-        ...(subOpts?.stopHookActive ? { stop_hook_active: true } : {}),
+        stop_hook_active: Boolean(subOpts?.stopHookActive),
+        // The subagent's own transcript: empty, as `transcript_path` is (no transcript file).
+        agent_transcript_path: '',
       }
-      return blockedFrom(
+      return stopVerdictFrom(
         await runAll('SubagentStop', (m) => matchesField(m, agentType), input, false, {
           filter: (h) => !sourcesOnly || sourcesOnly.includes(h.source),
         }),
@@ -219,7 +290,8 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
       const input: CcHookInput = {
         ...baseInput('PreCompact'),
         trigger,
-        custom_instructions: customInstructions ?? '',
+        // hooks.md: "For `auto`, `custom_instructions` is `null`", as for a bare `/compact`.
+        custom_instructions: customInstructions ?? null,
       }
       return blockedFrom(await runAll('PreCompact', (m) => matchesField(m, trigger), input, false))
     },

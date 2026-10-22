@@ -73,11 +73,18 @@ function stringField(input: unknown, key: string): string | undefined {
  * Evaluate a handler `if` guard. Returns true when the hook SHOULD run.
  * Fails OPEN (returns true) whenever the rule can't be confidently applied.
  */
-export function evaluateIfGuard(rule: string, engineToolName: string, toolInput: unknown): boolean {
+export function evaluateIfGuard(
+  rule: string,
+  engineToolName: string,
+  toolInput: unknown,
+  /** The tool's other names (an MCP tool's `mcp__…`), matched as the hook matcher matches them. */
+  aliases?: readonly string[],
+): boolean {
   const parsed = parseRuleString(rule)
   if (!parsed) return true // unparseable rule → fail open
-  // Tool part must match this call's tool (CC↔engine aware).
-  if (!matchesToolName(parsed.tool, engineToolName)) return false
+  // Tool part must match this call's tool (CC↔engine aware); hooks.md: "Use the same scoped
+  // tool name in a handler's `if` field" — a plugin MCP tool's `mcp__plugin_<p>_<s>__<t>`.
+  if (!matchesToolName(parsed.tool, engineToolName, aliases)) return false
   if (specifierIsAll(parsed.specifier)) return true
   const specifier = parsed.specifier!
 

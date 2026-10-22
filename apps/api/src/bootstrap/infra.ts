@@ -36,6 +36,8 @@ import type { BootstrapServiceRefs } from './chat-service-deps'
 import { createWorkRegistry, type WorkRegistry } from '../features/work/registry'
 import { createWorkRepository } from '../features/work/repository'
 import { installBackendHostModules } from '../features/plugins/backend-host-modules'
+import { observePluginConfigVault } from '../features/plugins/config-vault'
+import { pluginConfigVaultOf } from './plugin-config-vault'
 
 export interface BootstrapRuntimeInfo {
   instanceId: string
@@ -197,6 +199,12 @@ export async function createInfraPhase(
   // persisted and streamed verbatim. Registered here because both provider construction sites are
   // process-lifetime module functions no dependency graph reaches.
   observeMcpOAuthSecrets((...args) => secretExposureShield.remember(...args))
+  // A plugin's sensitive userConfig values live in the vault; every plugin catalog reads them
+  // back through this one registration (`features/plugins/config-vault.ts`).
+  // An item it cannot read reads as unset and is reported here, once per item version.
+  observePluginConfigVault(pluginConfigVaultOf(secretsStore, secretExposureShield), (entry) =>
+    logger.warn(entry),
+  )
   // An MCP server that does not connect is a standing Event Center row, not a log line per turn.
   // The same process-lifetime singleton reason as above.
   mcpClientManager.observeConnections(createMcpConditions(notifications))

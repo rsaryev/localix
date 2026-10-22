@@ -103,6 +103,7 @@ describe('handleSkillCommand', () => {
       now: () => 'now',
       gatherSessionSkills: async () => [stale],
       loadSkillOverrides: async () => ({}),
+      resolveSessionWorkingDir: async () => '/repo',
       runMacroCommand: () => {
         throw new Error('must not run')
       },

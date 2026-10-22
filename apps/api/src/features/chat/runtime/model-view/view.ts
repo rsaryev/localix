@@ -31,6 +31,8 @@ export interface ModelView {
   previous?: { state: TurnContextState; bindingIds: ReadonlySet<string> }
   /** Why this turn takes a checkpoint, when it must. */
   due?: CheckpointReason
+  /** Claude Code's PreCompact hooks already allowed this turn's checkpoint (`run/stages/view.ts`). */
+  preCompactRan?: true
   /** The view is past the warning mark: the next checkpoint is a turn or two away. */
   checkpointNear?: true
   /**

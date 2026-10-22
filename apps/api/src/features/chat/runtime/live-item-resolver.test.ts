@@ -321,7 +321,6 @@ describe('liveItemResolvers lifecycle — through the real run teardown', () => 
       }),
       abort: new AbortController(),
       pluginHooksForRun: [],
-      ccHooksForRun: undefined,
       runLiveResolverKeys,
       unsubLsp: undefined,
       defaultCwd: undefined,

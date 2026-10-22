@@ -13,7 +13,8 @@ import { announcePtyOpen } from './pty-announce'
 import { buildTerminalToolOptions } from './terminal-tool-options'
 import { buildJobsTool } from './jobs-tool'
 import { buildOptionalToolPorts, explainEmptyPorts } from './runtime-tool-ports'
-import type { CcHooksRuntime } from '../../../cc-hooks'
+import { ccSessionEnvScripts, type CcHooksRuntime } from '../../../cc-hooks'
+import { ccSessionEnvFilesOf } from './cc-hook-session-facts'
 import type { createEnvironment } from '../../../agent-core/tools/environments'
 import type { LoadedPlugins } from '../../../plugins/loader'
 import type { RunnerDeps } from '../agent-runner-types'
@@ -30,6 +31,7 @@ import type { MemoryScope } from '../../../agent-core/memory-scope-policy'
 import type { RunPolicy } from '../../policy/run-policy'
 import type { WorkflowEntry } from '../../../agent-core/tools/workflow/workflow'
 import type { ChatModel } from '../../../agent-core/tools/workflow/agent-route'
+import type { SkillCommandPolicyRef } from './skill-tool-ports'
 
 export interface RuntimeToolWiringContext {
   deps: RunnerDeps
@@ -40,6 +42,8 @@ export interface RuntimeToolWiringContext {
   actionRegistry: RuntimeState['actionRegistry']
   terminalWaits: RuntimeState['terminalWaits']
   executeToolAction: (toolCallId: string, actionName: string, payload?: unknown) => boolean
+  /** Where a skill the model loads registers its hooks for the rest of the session. */
+  ccHookSessions?: RuntimeState['ccHookSessions']
 }
 
 // Small plugin surfaces stay direct. Larger workbench stacks are indexed and
@@ -97,6 +101,8 @@ export function buildRunToolRegistry(
     listWorkflows?: () => Promise<WorkflowEntry[]>
     /** The chat's resolved model this turn: a workflow agent's `model` resolves against it. */
     chatModel?: ChatModel
+    /** Filled by the run's gate: the rules a skill's injected commands are checked against. */
+    skillCommandPolicy?: SkillCommandPolicyRef
   },
 ): RuntimeToolRegistry & { setLedger?: (ledger: ToolLedger) => void } {
   const { deps, work, terminalWaits } = ctx
@@ -186,6 +192,9 @@ export function buildRunToolRegistry(
       // so bundled plugin CLIs resolve by bare name. Shared by the orchestrator AND
       // sub-agent runs because both build the registry here.
       bashPluginBinDirs: loadedPlugins.binDirs,
+      // Claude Code's CLAUDE_ENV_FILE: what SessionStart / CwdChanged / FileChanged hooks export
+      // reaches every later command of the session.
+      bashEnvScripts: ccSessionEnvScripts(ccSessionEnvFilesOf(session)),
       // Research is tokenless. Only its SSRF policy is configurable; every search
       // engine works without secrets and every page/redirect passes the same guard.
       researchConfig: {

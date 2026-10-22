@@ -91,13 +91,15 @@ describe('renderPluginPrompt', () => {
     )
   })
 
-  it('renders an out-of-range index as empty', async () => {
-    expect(await renderPluginPrompt('Only $5 here.', {}, 'one two')).toBe('Only  here.')
+  it('leaves an out-of-range index as written, and appends the unplaced arguments', async () => {
+    expect(await renderPluginPrompt('Only $5 here.', {}, 'one two')).toBe(
+      'Only $5 here.\n\nARGUMENTS: one two',
+    )
   })
 
   it('leaves a backslash-escaped token literal', async () => {
     expect(await renderPluginPrompt('Price is \\$1.00 today.', {}, 'ignored')).toBe(
-      'Price is $1.00 today.',
+      'Price is $1.00 today.\n\nARGUMENTS: ignored',
     )
   })
 
@@ -126,7 +128,7 @@ describe('renderPluginPrompt', () => {
 
   it('appends raw input when the template has no argument placeholder', async () => {
     expect(await renderPluginPrompt('Do the task carefully.', {}, 'IMPORTANT USER ARG')).toBe(
-      'Do the task carefully.\n\nArguments: IMPORTANT USER ARG',
+      'Do the task carefully.\n\nARGUMENTS: IMPORTANT USER ARG',
     )
   })
 
@@ -135,7 +137,7 @@ describe('renderPluginPrompt', () => {
       await renderPluginPrompt('Project: ${CLAUDE_PROJECT_DIR}', {}, 'review src', {
         projectDir: '/repo',
       }),
-    ).toBe('Project: /repo\n\nArguments: review src')
+    ).toBe('Project: /repo\n\nARGUMENTS: review src')
   })
 
   it('does not append raw input twice when a declared placeholder consumes it', async () => {

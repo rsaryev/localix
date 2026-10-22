@@ -263,3 +263,12 @@ describe('buildTriggeredSkillsSection', () => {
     expect(section).toContain('aggregate prompt budget reached')
   })
 })
+
+test('names a failed MCP server with its connection error, as Claude Code tells Claude', () => {
+  const out = buildMcpInventorySection([
+    { server: 'brokenkit_broken', tools: [], failed: true, error: 'spawn node\n ENOENT' },
+  ])
+  expect(out).toContain(
+    'brokenkit_broken: FAILED to load this turn (connection error: spawn node ENOENT)',
+  )
+})

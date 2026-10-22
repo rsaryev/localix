@@ -96,7 +96,14 @@ export async function completeRun(
   // The run's LOGICAL end — no segment follows.
   const outcome = env.state.stoppedRuntimeSessionIds.has(session.id) ? 'stopped' : 'completed'
   // A delegated child reports every run to its parent, not only the one it was launched with.
-  sendChildRunReport(env, { userId, session, runId: currentAssistantMessageId(frame), outcome })
+  // One stopped at its turn limit reports partial output (CC `maxTurns`), not a failure.
+  sendChildRunReport(env, {
+    userId,
+    session,
+    runId: currentAssistantMessageId(frame),
+    outcome,
+    ...(state.stopReason === 'max_turns' ? { partial: true } : {}),
+  })
   env.deps.notifications?.runs.ended({
     userId,
     session,

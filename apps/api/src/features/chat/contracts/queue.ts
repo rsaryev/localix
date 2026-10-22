@@ -208,6 +208,8 @@ export interface DelegatedReport {
   status: string | null
   /** The run's final assistant text; empty or absent means it produced none. */
   text: string | null | undefined
+  /** The run stopped at its turn limit (CC `maxTurns`): the text is partial output. */
+  partial?: boolean
 }
 
 /**

@@ -8,10 +8,15 @@ import type { CcAddedHookInput } from './protocol-event-inputs'
 /** Common fields every hook receives as JSON on stdin. */
 export interface CcHookInputBase {
   session_id: string
-  /** We do not persist a transcript file — passed empty. */
+  /** The session's transcript file, or empty where the host keeps none. */
   transcript_path: string
   cwd: string
+  /** Claude Code's spelling of the session's mode, on the events whose examples carry it. */
+  permission_mode?: string
   hook_event_name: CcHookEvent
+  /** The subagent the hook fires in (a delegated child's id and type). */
+  agent_id?: string
+  agent_type?: string
 }
 
 export interface CcSessionStartInput extends CcHookInputBase {
@@ -38,6 +43,7 @@ export interface CcPostToolUseInput extends CcHookInputBase {
   tool_name: string
   tool_input: unknown
   tool_response: unknown
+  tool_use_id?: string
 }
 export interface CcPostToolUseFailureInput extends CcHookInputBase {
   hook_event_name: 'PostToolUseFailure'
@@ -52,7 +58,12 @@ export interface CcStopInput extends CcHookInputBase {
   hook_event_name: 'Stop'
   /** True when this Stop fires on a run that is ALREADY a Stop-hook-forced
    *  continuation — a hook should check it and not block again (CC loop protection). */
-  stop_hook_active?: boolean
+  stop_hook_active: boolean
+  /** The turn's final answer text. */
+  last_assistant_message: string
+  /** Claude Code's running background tasks and session crons: none are reported here. */
+  background_tasks: unknown[]
+  session_crons: unknown[]
 }
 export interface CcSessionEndInput extends CcHookInputBase {
   hook_event_name: 'SessionEnd'
@@ -72,14 +83,16 @@ export interface CcSubagentStopInput extends CcHookInputBase {
   /** The subagent's final response text (when it produced one). */
   last_assistant_message?: string
   /** True when this SubagentStop fires on a run already forced by a prior block. */
-  stop_hook_active?: boolean
+  stop_hook_active: boolean
+  /** The subagent's own transcript (the host's `transcript_path` for it). */
+  agent_transcript_path: string
 }
 export interface CcPreCompactInput extends CcHookInputBase {
   hook_event_name: 'PreCompact'
   /** Claude Code's `manual` (its `/compact`) | `auto` (size-triggered — a checkpoint, here). */
   trigger: string
-  /** Claude Code's `/compact` argument; always empty from this host, which has no such command. */
-  custom_instructions: string
+  /** Claude Code's `/compact` argument; `null` from this host, which has no such command. */
+  custom_instructions: string | null
 }
 export interface CcNotificationInput extends CcHookInputBase {
   hook_event_name: 'Notification'
@@ -121,8 +134,15 @@ export interface CcHookOutcome {
   reason?: string
   /** `hookSpecificOutput.additionalContext`, or plain-text stdout for context events. */
   additionalContext?: string
-  /** PostToolUse `hookSpecificOutput.updatedToolOutput` — REPLACES the model-facing tool result content. */
-  updatedToolOutput?: string
+  /**
+   * PostToolUse `hookSpecificOutput.updatedToolOutput`, as the hook wrote it: a string or the
+   * tool's own output shape (`{stdout, stderr, …}` for Bash). `tool-output-replacement.ts` reads it.
+   */
+  updatedToolOutput?: unknown
+  /** PostToolUse `hookSpecificOutput.updatedMCPToolOutput`: an MCP tool's output, unvalidated. */
+  updatedMCPToolOutput?: unknown
+  /** SessionStart / UserPromptSubmit `hookSpecificOutput.sessionTitle`: names the session. */
+  sessionTitle?: string
   /** PreToolUse `hookSpecificOutput.permissionDecision` + reason. */
   permissionDecision?: 'allow' | 'deny' | 'ask'
   permissionDecisionReason?: string

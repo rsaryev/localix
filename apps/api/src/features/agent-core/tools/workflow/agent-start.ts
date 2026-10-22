@@ -164,7 +164,8 @@ async function runChild(
 ): Promise<string | null> {
   const { opts } = deps
   const { depth } = await opts.position()
-  opts.onSubagentStart?.(agent.agentId, childId)
+  // CC: a SubagentStart hook's `additionalContext` reaches the child before its first prompt.
+  const startContext = await opts.onSubagentStart?.(agent.agentId, childId)
   // Held before the start, so a child that ends at once still reports to this call.
   const giveUp = new AbortController()
   const held = holdReport(childId, {
@@ -178,7 +179,7 @@ async function runChild(
     const early = await opts.startSubagentTask(
       opts.userId,
       childId,
-      `${workflowAgentFraming(delegator, workflow)}\n\n# Task\n${request.prompt}\n\n${ONE_SHOT_EXECUTION}\n${delegationNote(depth + 1)}`,
+      `${workflowAgentFraming(delegator, workflow)}\n\n${startContext ? `${startContext}\n\n` : ''}# Task\n${request.prompt}\n\n${ONE_SHOT_EXECUTION}\n${delegationNote(depth + 1)}`,
       {
         ...(agent.maxTurns ? { maxTurns: agent.maxTurns } : {}),
         agentType: agent.agentId,

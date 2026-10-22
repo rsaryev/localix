@@ -1,6 +1,7 @@
 import { discoverPlugins, type DiscoveredPlugin } from './discovery'
 import { pluginTrustClass } from './enable'
 import { buildScopedExtCatalog } from '../ext/catalog'
+import { hydrateSecretOptions } from './config-vault'
 import type { AvailabilityReader } from '../capabilities/availability'
 import type {
   CapabilitySourceRecord,
@@ -62,7 +63,9 @@ export async function buildPluginCatalog(opts: {
     projectId: opts.projectId,
     cwd: opts.cwd,
     discover: (scope) => discoverPlugins({ ...scope, homeDir: opts.homeDir }),
-    listForScope: (userId, projectId) => opts.repo.listForScope(userId, projectId),
+    // A sensitive option is a vault handle in the row; every consumer of a catalog gets its value.
+    listForScope: async (userId, projectId) =>
+      hydrateSecretOptions(userId, await opts.repo.listForScope(userId, projectId)),
     kind: 'plugin',
     availability: opts.availability,
     trustOf: pluginTrustClass,

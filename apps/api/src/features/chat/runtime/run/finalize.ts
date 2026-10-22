@@ -9,7 +9,7 @@
 import { stopNotice } from './stop-notice'
 import { announceEmptyReply, announceRunStopped } from './finalize-notices'
 import { isPass, isSilentConversationTurn, settleConversationTurn } from './conversation-silence'
-import { GENERAL_PURPOSE_AGENT } from '../../../ext/cc-agent-selection'
+import { runStopHooks } from './finalize-stop-hooks'
 
 import type { SessionRecord } from '../../repository'
 import type { PersistedMessage, MessageTiming } from '../../contracts'
@@ -26,7 +26,7 @@ import { maybeStartContinuation } from './run-continuations'
 import type { RunParams } from './types'
 import type { RunPolicy } from '../../policy/run-policy'
 import { routeConversationReply } from './conversation-routing'
-import { runTeammateIdle } from './teammate-idle'
+import { runTeammateIdle, type TeammateIdleOutcome } from './teammate-idle'
 import { publishedText } from '../spoken-text'
 import { applyDisplayTexts } from './message-display'
 export { finalizeFailedRun, rateLimitBackoffMs } from './finalize-failure'
@@ -194,20 +194,26 @@ export async function finalizeSuccessfulRun(args: {
   // the turn said counts, not only its last model call: an address written before a tool call is
   // still an address (`spoken-text.ts`).
   const reply = silentInConversation ? '' : publishedText(state.currentPayload)
+  // A PreToolUse `continue:false` or a PostToolBatch block ended the run: Claude Code "stops
+  // processing entirely", so no TeammateIdle, Stop or SubagentStop hook and no continuation may
+  // send the agent back to work.
+  const hookStopped = args.ccHooks.stoppedBy() !== undefined
   // CC TeammateIdle, before the floor moves on: a member sent back to work keeps it.
-  const idle = await runTeammateIdle(
-    args.ccHooks,
-    args.policy,
-    session,
-    params.scope.speakerAgentId,
-    (message) =>
-      env.deps.streamRegistry.publish(userId, session.id, {
-        type: 'hook.notice',
-        sessionId: session.id,
-        message,
-        hookEvent: 'TeammateIdle',
-      }),
-  )
+  const idle: TeammateIdleOutcome = hookStopped
+    ? {}
+    : await runTeammateIdle(
+        args.ccHooks,
+        args.policy,
+        session,
+        params.scope.speakerAgentId,
+        (message) =>
+          env.deps.streamRegistry.publish(userId, session.id, {
+            type: 'hook.notice',
+            sessionId: session.id,
+            message,
+            hookEvent: 'TeammateIdle',
+          }),
+      )
   if (!idle.keepWorking) {
     await routeConversationReply(env, params, {
       content: reply,
@@ -218,39 +224,17 @@ export async function finalizeSuccessfulRun(args: {
   }
   publishSessionTiming(ctx)
 
-  // Claude Code Stop hooks — fire when the turn's response is complete. Primary
-  // use is side effects (desktop notifications, logging). A `decision:"block"` asks
-  // the agent to KEEP WORKING with the reason fed back to it (CC: "prevents Claude
-  // from stopping, continues the conversation"); we honor it via the continuation
-  // seam below (maybeStartContinuation, gated + hard-capped). Best-effort; a
-  // per-hook timeout bounds it, and it never throws (executor isolates failures).
-  // `stop_hook_active` tells a well-behaved hook it is already inside a hook-forced
-  // continuation so it can decline to block again (CC's own loop protection).
+  // Claude Code Stop hooks — SubagentStop for a delegated child (`finalize-stop-hooks.ts`). A
+  // block keeps the agent working through the continuation seam below (gated + hard-capped).
   let hookStopReason = idle.keepWorking
   if (args.ccHooks.active && !idle.stopped && !idle.keepWorking) {
-    const stopHookActive = params.chain.hookStopContinuationCount > 0
-    const stop = await args.ccHooks.runStop({ stopHookActive })
-    if (stop.blocked) {
-      hookStopReason = stop.reason || 'A Stop hook asked you to keep working. Continue the task.'
-    }
-    // A delegated sub-agent (or a `context: fork` skill) whose frontmatter `Stop`
-    // hooks were converted to `SubagentStop` fires them on its OWN completion —
-    // scoped to skill/agent sources so the generic SubagentStop hooks the PARENT
-    // already fired (via the delegate seam) are not double-fired. A block here rides
-    // the SAME session continuation seam as Stop.
-    const subScoped = (params.scope.ccScopedHooks ?? []).find((s) => s.asSubagent)
-    if (subScoped) {
-      const selfStop = await args.ccHooks.runSubagentStop(
-        subScoped.agentType ?? GENERAL_PURPOSE_AGENT,
-        session.id,
-        state.currentPayload.content ?? null,
-        { sourcesOnly: ['skill', 'agent'], stopHookActive },
-      )
-      if (selfStop.blocked && !hookStopReason) {
-        hookStopReason =
-          selfStop.reason || 'A SubagentStop hook asked you to keep working. Continue the task.'
-      }
-    }
+    hookStopReason = await runStopHooks({
+      ccHooks: args.ccHooks,
+      session,
+      scope: params.scope,
+      stopHookActive: params.chain.hookStopContinuationCount > 0,
+      content: state.currentPayload.content ?? null,
+    })
   }
 
   const modLine = await args.mods?.turnComplete({
@@ -277,15 +261,17 @@ export async function finalizeSuccessfulRun(args: {
   // Auto-continuation chain (configuration reload / Stop-hook block):
   // when one fires it re-enters the runner and owns the next run's terminal
   // status — so we must NOT publish one here.
-  const continued = await maybeStartContinuation({
-    env,
-    userId,
-    session,
-    state,
-    params,
-    abort,
-    hookStopReason,
-  })
+  const continued =
+    !hookStopped &&
+    (await maybeStartContinuation({
+      env,
+      userId,
+      session,
+      state,
+      params,
+      abort,
+      hookStopReason,
+    }))
   if (continued) return true
 
   await args.publishRuntimeSession(

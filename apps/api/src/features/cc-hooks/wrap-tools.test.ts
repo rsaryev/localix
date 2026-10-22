@@ -43,8 +43,8 @@ describe('wrapToolsWithCcHooks', () => {
           posts.push(result.content)
           return Promise.resolve({})
         },
-        runPostToolUseFailure: (name, _input, failure) => {
-          failures.push({ name, ...failure })
+        runPostToolUseFailure: (tool, _input, failure) => {
+          failures.push({ name: typeof tool === 'string' ? tool : tool.name, ...failure })
           return Promise.resolve({ additionalContext: 'noted' })
         },
       }),
@@ -56,7 +56,7 @@ describe('wrapToolsWithCcHooks', () => {
     expect(result.isError).toBe(true)
     expect(result.error?.kind).toBe('execution')
     expect(result.content).toContain('disk on fire')
-    expect(result.content).toContain('[hook] noted')
+    expect(result.content).toContain('<system-reminder>\nnoted\n</system-reminder>')
   })
 
   it('a PreToolUse deny still throws, so the failure guard can stamp kind:blocked', async () => {

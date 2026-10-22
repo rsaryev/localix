@@ -15,9 +15,16 @@ import {
 const SCAN_CACHE_REVALIDATE_MS = 3_000
 
 const scanCacheRevalidations = new Map<string, Promise<void>>()
+type ScanFingerprint = Awaited<ReturnType<typeof buildScanFingerprint>>
+/** What a scan found, and the files as they were when it STARTED reading them. */
+interface ScanResult {
+  plugins: DiscoveredPlugin[]
+  fingerprint: ScanFingerprint
+}
+
 // A boot's backend host, cache warm and first snapshots may request the same scope
 // together. Share only in-flight scans; a later call must still check the filesystem.
-const scansInFlight = new Map<string, Promise<DiscoveredPlugin[]>>()
+const scansInFlight = new Map<string, Promise<ScanResult>>()
 
 export async function scanDirsCached(
   baseDir: string,
@@ -26,11 +33,14 @@ export async function scanDirsCached(
   projectId: string,
   opts?: {
     bundledNames?: ReadonlySet<string>
+    /** The directory scan itself; tests stand in for it to change files while it runs. */
+    scan?: typeof scanDirs
   },
 ): Promise<DiscoveredPlugin[]> {
+  const { scan = scanDirs, ...scanOpts } = opts ?? {}
   const roots = subdirs.map((sub) => (sub ? join(baseDir, sub) : baseDir))
   const cacheFile = join(baseDir, '.localix', 'cache', SCAN_CACHE_FILE)
-  const bundledNames = [...(opts?.bundledNames ?? [])].sort()
+  const bundledNames = [...(scanOpts.bundledNames ?? [])].sort()
   const scanKey = JSON.stringify({
     version: SCAN_CACHE_VERSION,
     roots,
@@ -39,9 +49,14 @@ export async function scanDirsCached(
     bundledNames,
   })
   const inFlightKey = JSON.stringify([cacheFile, scanKey])
+  // A scan already running may have read the folders before a change this caller must see (a
+  // plugin install that just returned): its result is shared only while nothing it read changed.
   const existing = scansInFlight.get(inFlightKey)
-  if (existing) return existing
-  const pending = (async () => {
+  if (existing) {
+    const shared = await existing.catch(() => undefined)
+    if (shared && (await fingerprintMatches(shared.fingerprint))) return shared.plugins
+  }
+  const pending = (async (): Promise<ScanResult> => {
     const cached = await readScanCache(cacheFile)
 
     if (
@@ -63,13 +78,15 @@ export async function scanDirsCached(
           .then(async () => {
             // Test fixtures and deleted workspaces can disappear before the deferred pass.
             if (!(await fingerprintPath(baseDir))) return
-            const actual = await scanDirs(baseDir, subdirs, scope, projectId, opts)
+            // Fingerprint first: a change during the scan then leaves a mismatch, never a stale
+            // list stored under the new files' fingerprint.
             const fingerprint = await buildScanFingerprint(roots)
+            const actual = await scan(baseDir, subdirs, scope, projectId, scanOpts)
             if (
               JSON.stringify(actual) !== JSON.stringify(cached.plugins) ||
               JSON.stringify(fingerprint) !== JSON.stringify(cached.fingerprint)
             ) {
-              await writeScanCache(cacheFile, {
+              await writeScanCache(baseDir, cacheFile, {
                 version: SCAN_CACHE_VERSION,
                 scanKey,
                 fingerprint,
@@ -80,23 +97,25 @@ export async function scanDirsCached(
           .finally(() => scanCacheRevalidations.delete(cacheFile))
         scanCacheRevalidations.set(cacheFile, validation)
       }
-      return cached.plugins
+      return { plugins: cached.plugins, fingerprint: cached.fingerprint }
     }
 
     // Any version/key/mtime mismatch takes the full-scan path; stale cache data is
-    // never returned after a fingerprint mismatch.
-    const plugins = await scanDirs(baseDir, subdirs, scope, projectId, opts)
-    await writeScanCache(cacheFile, {
+    // never returned after a fingerprint mismatch. The fingerprint is taken BEFORE the scan, so a
+    // plugin added while it runs leaves a mismatch and the next call scans again.
+    const fingerprint = await buildScanFingerprint(roots)
+    const plugins = await scan(baseDir, subdirs, scope, projectId, scanOpts)
+    await writeScanCache(baseDir, cacheFile, {
       version: SCAN_CACHE_VERSION,
       scanKey,
-      fingerprint: await buildScanFingerprint(roots),
+      fingerprint,
       plugins,
     })
-    return plugins
+    return { plugins, fingerprint }
   })()
   scansInFlight.set(inFlightKey, pending)
   try {
-    return await pending
+    return (await pending).plugins
   } finally {
     if (scansInFlight.get(inFlightKey) === pending) scansInFlight.delete(inFlightKey)
   }

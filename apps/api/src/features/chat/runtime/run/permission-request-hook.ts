@@ -4,7 +4,7 @@
  * first leaves the hook's later verdict unread. A hook with no decision leaves the card to the
  * person, so a slow hook (one that waits to deny a card left unanswered) races the person fairly.
  */
-import type { CcHooksRuntime, PermissionRequestResult } from '../../../cc-hooks'
+import type { CcHookToolRef, CcHooksRuntime, PermissionRequestResult } from '../../../cc-hooks'
 import type { ConfirmOutcome } from '../../../agent-core/permission-engine'
 
 export type CardRace<T> =
@@ -20,7 +20,8 @@ export type CardRace<T> =
  */
 export async function raceCardWithPermissionHooks<T>(
   ccHooks: CcHooksRuntime,
-  call: { toolName: string; input: unknown },
+  /** `tool`, when known, carries the MCP aliases and server a hook matcher and input read. */
+  call: { toolName: string; tool?: CcHookToolRef; input: unknown },
   signal: AbortSignal,
   ask: (signal: AbortSignal) => Promise<T>,
 ): Promise<CardRace<T>> {
@@ -28,7 +29,7 @@ export async function raceCardWithPermissionHooks<T>(
   const hookDecided = new AbortController()
   let decided: CardRace<T> | undefined
   void ccHooks
-    .runPermissionRequest(call.toolName, call.input)
+    .runPermissionRequest(call.tool ?? call.toolName, call.input)
     .then((decision) => {
       if (!decision.behavior || decided || signal.aborted) return
       decided = { kind: 'hook', decision: { ...decision, behavior: decision.behavior } }

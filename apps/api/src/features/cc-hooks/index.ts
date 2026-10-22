@@ -16,11 +16,13 @@ export {
   type ScopedHookPlugin,
 } from './config'
 export { createCcHooksRuntime, type CcHooksRuntime } from './run'
+export { ccSessionEnvFiles, ccSessionEnvScripts, type CcSessionEnvFiles } from './session-env'
 export { EMPTY_RUNTIME as INERT_CC_HOOKS } from './runtime-results'
 export type * from './runtime-contracts-added'
+export type { CcHookToolRef } from './runtime-contracts'
 export type { WorktreeCreateResult } from './runtime-worktree-hooks'
 export type { CcToolBatchCall } from './protocol-event-inputs'
 export { approvedInputFor, wrapToolsWithCcHooks } from './wrap-tools'
-export { parsePromptHookResult, type PromptHookResult } from './prompt-hook'
+export { hookPromptText, parsePromptHookResult, type PromptHookResult } from './prompt-hook'
 
 export { type CcMcpToolResult } from './mcp-tool-hook'

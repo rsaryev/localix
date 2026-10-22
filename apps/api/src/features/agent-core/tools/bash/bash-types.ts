@@ -196,6 +196,11 @@ export interface BashToolOptions {
    */
   pluginBinDirs?: string[]
   /**
+   * Shell files sourced before every command, when they exist: the session's Claude Code
+   * `CLAUDE_ENV_FILE`s, whose exports persist into later commands. Absent in tests.
+   */
+  envScripts?: string[]
+  /**
    * The engine behind `until`: polls the command and wakes the session when it exits 0.
    * Bound to user + session at wiring time. Absent → `until` reports unavailable.
    */

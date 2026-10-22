@@ -10,6 +10,8 @@ import { announceSkillInvoked } from '../../agent-core/skill-invocations'
 import { nextActivatedTools } from '../runtime/run/tool-deferral'
 import type { MessageMutationResponse } from '../contracts'
 import type { CommandHandlerContext } from './command-handlers-context'
+import { findPluginSkill } from './command-handlers-skill'
+import { SkillCommandFailedError } from './skill-commands'
 
 /**
  * Handles namespaced plugin slash commands (`/<plugin>:<command>`). Plugins
@@ -58,6 +60,15 @@ export async function handlePluginCommand(
   const match = available.find(
     (c) => c.plugin.toLowerCase() === pluginName && c.command.name.toLowerCase() === commandName,
   )
+  // A skill and a command of the same name: the skill runs (Claude Code, "Resolve skills that
+  // share a name"). The skill handler, later in the dispatch, takes it.
+  const sameNameSkill = match
+    ? findPluginSkill(
+        await ctx.gatherEnabledPluginSkills(userId, session),
+        `${match.plugin}:${match.command.name}`.toLowerCase(),
+      )
+    : undefined
+  if (sameNameSkill && sameNameSkill.userInvocable !== false) return null
   if (match) {
     // No busy refusal: a command sent while the session works waits in the queue whole
     // (`run-macro.ts`). The participant the person is talking to answers it.
@@ -75,16 +86,24 @@ export async function handlePluginCommand(
       return insertDirectReply(userId, sessionId, prompt, parsed.usage, ts, 'warning')
     }
     const projectDir = await ctx.resolveSessionWorkingDir(userId, session)
-    const instruction = await renderPluginPrompt(match.command.prompt, parsed.values, argString, {
-      sessionId,
-      effort: speakerRoute.reasoningEffort ?? undefined,
-      pluginDir: match.pluginDir,
-      pluginName: match.plugin,
-      projectDir,
-      // CC dynamic content (`!\`cmd\``, `@path`) runs in the session working dir.
-      cwd: projectDir,
-      arguments: match.command.arguments,
-    })
+    let instruction: string
+    try {
+      instruction = await renderPluginPrompt(match.command.prompt, parsed.values, argString, {
+        sessionId,
+        effort: speakerRoute.reasoningEffort ?? undefined,
+        pluginDir: match.pluginDir,
+        pluginName: match.plugin,
+        projectDir,
+        // CC dynamic content (`!\`cmd\``, `@path`) runs in the session working dir.
+        cwd: projectDir,
+        arguments: match.command.arguments,
+      })
+    } catch (error) {
+      // CC: a failed injected command aborts the invocation; the model never sees the command.
+      if (!(error instanceof SkillCommandFailedError)) throw error
+      const reply = `\`${firstToken}\`: ${error.message.slice(0, 4000)}`
+      return insertDirectReply(userId, sessionId, prompt, reply, ts, 'error')
+    }
     const resolvedBindings = await resolveMessageBindings(deps, userId, session, bindings)
     if (match.command.activateTools?.length) {
       const tools = match.command.activateTools

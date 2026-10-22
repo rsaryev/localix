@@ -1,3 +1,4 @@
+import { mkdirSync } from 'node:fs'
 import { errorMessage } from '../../lib/errors'
 
 import type { Client } from '@modelcontextprotocol/sdk/client/index.js'
@@ -74,6 +75,7 @@ function buildTransport(server: McpServerRecord, cwd: string): Transport {
     if (command.length === 0) throw new Error('stdio server has no command')
     const [cmd, ...args] = command
     const env = (config.env as Record<string, string> | undefined) ?? undefined
+    ensurePluginDataDir(server, env)
     return new StdioClientTransport({
       command: cmd,
       args,
@@ -91,6 +93,20 @@ function buildTransport(server: McpServerRecord, cwd: string): Transport {
   return new StreamableHTTPClientTransport(new URL(url), {
     requestInit: headers ? { headers } : undefined,
   })
+}
+
+/**
+ * A plugin's `${CLAUDE_PLUGIN_DATA}` "is created when first referenced" (Claude Code's plugin
+ * reference): its stdio server is handed the directory, so the directory exists before it starts.
+ */
+function ensurePluginDataDir(server: McpServerRecord, env: Record<string, string> | undefined) {
+  const dir = env?.CLAUDE_PLUGIN_DATA
+  if (!server.id.startsWith('plugin:') || !dir) return
+  try {
+    mkdirSync(dir, { recursive: true })
+  } catch {
+    // The server starts all the same; one that needs the directory reports it.
+  }
 }
 
 /** Drop undefined values so the spawned process gets a clean string env. */

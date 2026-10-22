@@ -31,15 +31,19 @@ const REPORT_FOLLOW_UP =
 
 /** One child's part of a report: how its run ended, and its bounded final text. */
 function reportSection(input: DelegationReportInput): string {
+  // A run cut off at its turn limit (CC `maxTurns`) reports what it has, marked partial.
+  const partial = input.partial === true && input.status === 'completed'
   const outcome =
     input.status === 'failed'
       ? 'FAILED'
       : input.status === 'stopped'
         ? 'was STOPPED before finishing'
-        : 'finished'
+        : partial
+          ? 'reached its turn limit'
+          : 'finished'
   return (
     `[Delegated task ${outcome}] ${input.label} (id: ${input.childSessionId}) ${outcome}.\n\n` +
-    reportBody(input.text, input.childSessionId)
+    reportBody(input.text, input.childSessionId, { partial })
   )
 }
 
@@ -124,7 +128,7 @@ export function delegationReportWake(
   },
 ): WakeRequest {
   const to = delegationReportRecipient(input.delegatingAgentId, input.handle)
-  const { label, childSessionId, runId, status, text } = input
+  const { label, childSessionId, runId, status, text, partial } = input
   return {
     userId: input.userId,
     sessionId: delegationReportSession(input.parent),
@@ -132,7 +136,7 @@ export function delegationReportWake(
     source: 'subagent',
     deliveryKey: delegationReportKey(input.childSessionId, input.runId),
     receipt: true,
-    report: { label, childSessionId, runId, status, text },
+    report: { label, childSessionId, runId, status, text, ...(partial ? { partial } : {}) },
     ...(to ? { to } : {}),
   }
 }

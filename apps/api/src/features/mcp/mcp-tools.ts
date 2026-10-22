@@ -190,6 +190,24 @@ function claudeCodeServerName(server: McpServerRecord): string {
   return plugin ? `plugin_${plugin[1]}_${plugin[2]}` : server.name
 }
 
+/**
+ * Claude Code's callable name for one server's tool, `mcp__<server>__<tool>`: "any character
+ * outside `A-Z`, `a-z`, `0-9`, `_`, and `-` is replaced with `_`" (Claude Code's MCP reference).
+ */
+export function claudeCodeMcpToolName(server: McpServerRecord, tool: string): string {
+  return `mcp__${claudeCodeServerName(server)}__${tool}`.replace(/[^A-Za-z0-9_-]/g, '_')
+}
+
+/**
+ * Where a server's definition came from, as a Claude Code hook's `mcp_server` reports it: a
+ * plugin's server under its scoped `plugin:<plugin>:<server>` name, a server the person added
+ * under its own name, `user` when it serves every chat and `local` when it serves one project.
+ */
+export function mcpServerProvenance(server: McpServerRecord): { name: string; source: string } {
+  if (server.id.startsWith('plugin:')) return { name: server.id, source: 'plugin' }
+  return { name: server.name, source: server.projectId ? 'local' : 'user' }
+}
+
 export function buildToolForServer(
   server: McpServerRecord,
   client: McpClientLike,
@@ -210,7 +228,8 @@ export function buildToolForServer(
     description,
     label: `${server.name} · ${def.name}`,
     // Claude Code's address for it: a plugin's server as `plugin_<plugin>_<server>`.
-    aliases: [`mcp__${claudeCodeServerName(server)}__${def.name}`],
+    aliases: [claudeCodeMcpToolName(server, def.name)],
+    mcpServer: mcpServerProvenance(server),
     inputSchema: mcpInputSchema(def.inputSchema),
     activeVerb: 'Running',
     mutates,

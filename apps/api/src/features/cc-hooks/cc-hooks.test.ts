@@ -50,6 +50,13 @@ describe('matcher', () => {
     expect(matchesToolName('Bash', 'search')).toBe(false)
   })
 
+  it("a regex matcher sees Claude Code's cased name (`^Bash$`, `Edit.*`)", () => {
+    expect(matchesToolName('^Bash$', 'bash')).toBe(true)
+    expect(matchesToolName('Edit.*', 'edit')).toBe(true)
+    expect(matchesToolName('^(Edit|Write)$', 'write')).toBe(true)
+    expect(matchesToolName('^Bash$', 'search')).toBe(false)
+  })
+
   it('candidate set includes engine + CC aliases', () => {
     const c = toolNameCandidates('search')
     expect(c).toContain('search')
@@ -614,9 +621,10 @@ describe('runtime protocol', () => {
           cmd(
             `echo '{"hookSpecificOutput":{"hookEventName":"PostToolUse","updatedToolOutput":"AAA"}}'`,
           ),
-          // second hook's stdin must now carry "content":"AAA" (the replaced value), not the original
+          // second hook's stdin must now carry "stdout":"AAA" (the replaced value, in Bash's
+          // response shape), not the original
           cmd(
-            `grep -q '"content":"AAA"' && echo '{"hookSpecificOutput":{"hookEventName":"PostToolUse","updatedToolOutput":"chained"}}' || echo '{"hookSpecificOutput":{"hookEventName":"PostToolUse","updatedToolOutput":"unchained"}}'`,
+            `grep -q '"stdout":"AAA"' && echo '{"hookSpecificOutput":{"hookEventName":"PostToolUse","updatedToolOutput":"chained"}}' || echo '{"hookSpecificOutput":{"hookEventName":"PostToolUse","updatedToolOutput":"unchained"}}'`,
           ),
         ],
       }),

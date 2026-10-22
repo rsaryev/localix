@@ -123,9 +123,29 @@ export function onReportSettled(listener: (sessionId: string) => void): () => vo
 export interface HeldReport {
   status: 'completed' | 'failed' | 'stopped'
   text: string | null
+  /** The run stopped at its turn limit (CC `maxTurns`): the text is partial output. */
+  partial?: boolean
 }
 
 const held = new Map<string, (report: HeldReport) => void>()
+
+/**
+ * Children whose latest run stopped at its turn limit. Recorded at the run's logical end
+ * (`child-run-report.ts`) and taken by the launch that watches the child's first run, so the
+ * delegating call can say "partial" rather than "failed" (CC: a subagent at `maxTurns` returns
+ * its output marked as partial).
+ */
+const turnLimited = new Set<string>()
+
+export function noteTurnLimit(childId: string, partial: boolean): void {
+  if (partial) turnLimited.add(childId)
+  else turnLimited.delete(childId)
+}
+
+/** True once when the child's latest run stopped at its turn limit. */
+export function takeTurnLimit(childId: string): boolean {
+  return turnLimited.delete(childId)
+}
 
 /**
  * Hold the child's next report for a call that waits on it. Registered BEFORE the child starts,
@@ -165,5 +185,6 @@ export function deliverHeldReport(childId: string, report: HeldReport): boolean 
 export function __resetExpectedReports(): void {
   expecting.clear()
   held.clear()
+  turnLimited.clear()
   settledListeners.clear()
 }

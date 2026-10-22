@@ -23,7 +23,9 @@ import {
   type CcHookEvent,
   type CcHookRegistry,
   type CcHooksRuntime,
+  type CcSessionEnvFiles,
 } from '../../cc-hooks'
+import type { ScopedCcHooks } from './run-contract'
 
 /** Watch one file; `onChange` fires on any change to it. Returns the disposer. */
 export type WatchFile = (path: string, onChange: () => void) => () => void
@@ -33,6 +35,8 @@ export interface CcHookSessionEntry {
   projectDir: string
   onceKeys?: Set<string>
   emitNotice?: (message: string, event: CcHookEvent) => void
+  /** The session's `CLAUDE_ENV_FILE`s: CwdChanged and FileChanged hooks write theirs there. */
+  envFiles?: CcSessionEnvFiles
 }
 
 /** Sessions watched at once; the oldest watch is dropped beyond it. */
@@ -43,8 +47,11 @@ const logger = { warn: (m: string) => console.warn(m), info: (m: string) => cons
 export function createCcHookSessions(watchFile?: WatchFile) {
   const entries = new Map<string, CcHookSessionEntry>()
   const pendingContext = new Map<string, string>()
+  /** What `async` hooks said after they exited, oldest first; every one reaches the next turn. */
+  const asyncContext = new Map<string, string[]>()
   const dynamicWatch = new Map<string, string[]>()
   const watches = new Map<string, Map<string, { dispose: () => void; existed: boolean }>>()
+  const skillHooks = new Map<string, Map<string, ScopedCcHooks>>()
 
   function runtimeFor(sessionId: string): CcHooksRuntime {
     const entry = entries.get(sessionId)
@@ -57,7 +64,13 @@ export function createCcHookSessions(watchFile?: WatchFile) {
       logger,
       ...(entry.onceKeys ? { onceKeys: entry.onceKeys } : {}),
       ...(entry.emitNotice ? { emitNotice: entry.emitNotice } : {}),
+      ...(entry.envFiles ? { envFiles: entry.envFiles } : {}),
+      onAsyncContext: (text) => appendAsyncContext(sessionId, text),
     })
+  }
+
+  function appendAsyncContext(sessionId: string, text: string): void {
+    asyncContext.set(sessionId, [...(asyncContext.get(sessionId) ?? []), text])
   }
 
   async function fileChanged(sessionId: string, path: string): Promise<void> {
@@ -125,14 +138,37 @@ export function createCcHookSessions(watchFile?: WatchFile) {
       if (text) pendingContext.set(sessionId, text)
       else pendingContext.delete(sessionId)
     },
+    /**
+     * What an `async` hook said after it exited (hooks.md: delivered "to Claude on the next
+     * conversation turn"). Added to what is already waiting, never replacing it.
+     */
+    appendAsyncContext,
     takeContext(sessionId: string): string | undefined {
-      const pending = pendingContext.get(sessionId)
+      const parts = [pendingContext.get(sessionId), ...(asyncContext.get(sessionId) ?? [])]
       pendingContext.delete(sessionId)
-      return pending
+      asyncContext.delete(sessionId)
+      const kept = parts.filter((part): part is string => Boolean(part))
+      return kept.length > 0 ? kept.join('\n\n') : undefined
+    },
+    /**
+     * An invoked skill's frontmatter `hooks`, kept for "the rest of the session once the skill is
+     * invoked" (Claude Code). Invoking the same skill again registers nothing new.
+     */
+    addSkillHooks(sessionId: string, hooks: ScopedCcHooks): void {
+      const key = JSON.stringify([hooks.plugin?.name ?? null, hooks.raw])
+      const kept = skillHooks.get(sessionId) ?? new Map<string, ScopedCcHooks>()
+      if (!kept.has(key)) kept.set(key, hooks)
+      skillHooks.set(sessionId, kept)
+    },
+    /** The skill hooks the session's runs merge, in the order the skills were invoked. */
+    skillHooks(sessionId: string): ScopedCcHooks[] {
+      return [...(skillHooks.get(sessionId)?.values() ?? [])]
     },
     forget(sessionId: string): void {
+      skillHooks.delete(sessionId)
       entries.delete(sessionId)
       pendingContext.delete(sessionId)
+      asyncContext.delete(sessionId)
       dynamicWatch.delete(sessionId)
       for (const watch of watches.get(sessionId)?.values() ?? []) watch.dispose()
       watches.delete(sessionId)

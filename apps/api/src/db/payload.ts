@@ -168,6 +168,12 @@ export interface StoredMessagePayload extends AgentChatMessage {
    * marker. Filtered out when assembling the per-run effective history.
    */
   uiOnly?: boolean
+  /**
+   * A Claude Code `UserPromptSubmit` hook (or a mod's `prompt.submit`) refused this prompt. The
+   * person still sees it as their message; the model never reads it, except when a Retry of the
+   * turn it started submits it again and the hooks decide again (`chat/runtime/history/intake.ts`).
+   */
+  promptBlocked?: true
   /** Compact one-line application event, persisted across reloads. */
   systemNotice?: StoredSystemNotice
   /** Multi-line slash-command result rendered as system chrome, never as agent prose. */

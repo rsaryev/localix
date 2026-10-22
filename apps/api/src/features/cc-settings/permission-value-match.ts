@@ -2,7 +2,7 @@ import { splitCompoundCommand } from '../agent-core/tools/bash/bash-command-shap
 import type { CcRuleCall, CcTier } from './permission-rules'
 
 /**
- * Compile a COMMAND/VALUE specifier (Bash, Skill, Agent, MCP) to a regex SOURCE: `**\/` →
+ * Compile a VALUE specifier (Skill, Agent, MCP; Bash has its own) to a regex SOURCE: `**\/` →
  * optional intermediate dirs, `**` → any, `*` → one segment, `?` → one char — and
  * everything else escaped. This stays wildcard-only on purpose: a command is not a path,
  * and `Bash(echo {a,b} *)` or `Bash(python -c print(1) *)` must match the braces and
@@ -41,6 +41,19 @@ function fullGlobMatch(pattern: string, value: string): boolean {
   }
 }
 
+/**
+ * A Bash specifier's wildcard match: every `*` stands in for any text, slashes included
+ * (permissions.md: "Bash rules match the whole command text, with `*` standing in for any
+ * text"); every other character is literal. A command is not a path, so `*` is not `[^/]*`.
+ */
+function bashWildcardMatch(pattern: string, command: string): boolean {
+  const source = pattern
+    .split('*')
+    .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, '\\$&'))
+    .join('.*')
+  return new RegExp(`^${source}$`, 's').test(command)
+}
+
 /** True when a specifier means "any invocation" (absent, empty, or `*`). */
 export function specifierIsAll(specifier: string | undefined): boolean {
   if (specifier === undefined) return true
@@ -62,8 +75,9 @@ export function specifierMatchesValue(specifier: string, value: string): boolean
 export function matchBashSpecifier(specifier: string, cmd: string): boolean {
   const spec = specifier.trim()
   const v = cmd.trim()
-  // `prefix:*` and `prefix *` both mean a word-boundary prefix.
-  if (spec.endsWith(':*') || spec.endsWith(' *')) {
+  // `prefix:*` and `prefix *` both mean a word-boundary prefix — when that trailing `*` is the
+  // rule's only wildcard: `Bash(* --help *)` matches `npm --help x` but not `npm --help`.
+  if ((spec.endsWith(':*') || spec.endsWith(' *')) && !spec.slice(0, -2).includes('*')) {
     const prefix = spec.slice(0, -2).trim()
     return v === prefix || v.startsWith(prefix + ' ')
   }
@@ -71,7 +85,7 @@ export function matchBashSpecifier(specifier: string, cmd: string): boolean {
   if (spec.endsWith('*') && !spec.slice(0, -1).includes('*')) {
     return v.startsWith(spec.slice(0, -1))
   }
-  if (spec.includes('*')) return fullGlobMatch(spec, v)
+  if (spec.includes('*')) return bashWildcardMatch(spec, v)
   return v === spec
 }
 

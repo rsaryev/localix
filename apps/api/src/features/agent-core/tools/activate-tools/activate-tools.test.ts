@@ -163,3 +163,35 @@ describe('giving a tool back', () => {
     expect(result.content).not.toContain('Released')
   })
 })
+
+describe('a tool requested by its Claude Code name', () => {
+  // A plugin's MCP tool: Localix's own name, and the name Claude Code's docs and skills use.
+  const mcpTool = {
+    ...tool('mcp_namekit_db_echo', 'Echo the text back.'),
+    aliases: ['mcp__plugin_namekit_db__echo'],
+  }
+  const entries = [buildDeferredEntry(mcpTool, 'namekit_db'), ...ENTRIES]
+
+  test('activates the tool and tells the model the name to call it by', async () => {
+    const activate = createActivateToolsTool({ entries })
+    const result = await activate.execute(
+      'call-1',
+      { names: ['mcp__plugin_namekit_db__echo'] },
+      {} as never,
+    )
+    expect(result.details?.activated).toEqual(['mcp_namekit_db_echo'])
+    expect(result.details?.unknown).toEqual([])
+    expect(result.content).toContain('mcp__plugin_namekit_db__echo is mcp_namekit_db_echo')
+  })
+
+  test('activates it once when asked under both names', async () => {
+    const activate = createActivateToolsTool({ entries })
+    const result = await activate.execute(
+      'call-1',
+      { names: ['mcp__plugin_namekit_db__echo', 'mcp_namekit_db_echo'] },
+      {} as never,
+    )
+    expect(result.details?.activated).toEqual(['mcp_namekit_db_echo'])
+    expect(result.details?.alreadyActive).toEqual([])
+  })
+})

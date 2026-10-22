@@ -134,6 +134,9 @@ export function buildOptionalToolPorts(
       memoryScope: params.memoryScope,
       announceCapabilityChange: deps.announceCapabilityChange,
       globalSearch: deps.globalSearch,
+      renderSkill: deps.renderSkill,
+      ccHookSessions: ctx.ccHookSessions,
+      skillCommandPolicy: params.skillCommandPolicy,
     }),
     jobs: isToolDirect(agentProfile, TOOL.jobs) ? jobsTool : undefined,
     delegate: buildDelegateOptions({

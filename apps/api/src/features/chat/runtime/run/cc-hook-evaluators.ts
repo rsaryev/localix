@@ -20,7 +20,7 @@ import { agentRoute, sessionRoute } from '../../../../contracts/session-route'
  * at all that their policy stopped running. Every fail-open path here says why.
  */
 
-import { parsePromptHookResult, type PromptHookResult } from '../../../cc-hooks'
+import { hookPromptText, parsePromptHookResult, type PromptHookResult } from '../../../cc-hooks'
 import { TOOL } from '../../../agent-core/tool-names'
 import { resolveRunProfile, type RunProfile } from '../../../agent-core/run-shape'
 import type { SessionRecord } from '../../repository'
@@ -89,7 +89,7 @@ export function createPromptHookEvaluator(input: {
         messages: [
           {
             role: 'user',
-            content: `${opts.prompt}\n\n${opts.inputJson}`,
+            content: hookPromptText(opts.prompt, opts.inputJson),
             timestamp: Date.now(),
           },
         ],
@@ -195,7 +195,7 @@ export function createAgentHookRunner(input: {
         stop()
         return { ok: true }
       }
-      await svc.runJobTask(userId, child.id, `${opts.prompt}\n\n${opts.inputJson}`, {
+      await svc.runJobTask(userId, child.id, hookPromptText(opts.prompt, opts.inputJson), {
         invocation: { kind: 'hook', parentSessionId: session.id },
         wait: true,
         profileOverride: verifierProfile(),

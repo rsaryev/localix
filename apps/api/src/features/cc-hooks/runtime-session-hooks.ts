@@ -12,6 +12,7 @@ import type {
 } from './runtime-contracts-added'
 import { contextFrom } from './runtime-results'
 import type { HookDispatchDeps } from './runtime-tool-hooks'
+import { clearCwdEnvFile, type CcSessionEnvFiles } from './session-env'
 
 type SessionRunners = Omit<
   CcAddedHooksRuntime,
@@ -49,6 +50,7 @@ export function watchPathsFrom(outcomes: CcHookOutcome[]): { watchPaths?: string
 export function createSessionHookRunners(
   deps: HookDispatchDeps,
   registry: CcHookRegistry,
+  envFiles?: CcSessionEnvFiles,
 ): SessionRunners {
   const { runAll, baseInput } = deps
 
@@ -111,6 +113,9 @@ export function createSessionHookRunners(
 
     async runCwdChanged(oldCwd, newCwd) {
       const input: CcHookInput = { ...baseInput('CwdChanged'), old_cwd: oldCwd, new_cwd: newCwd }
+      // hooks.md: what CwdChanged and FileChanged hooks wrote to CLAUDE_ENV_FILE lasts "until the
+      // next CwdChanged event, when Claude Code clears them".
+      clearCwdEnvFile(envFiles)
       return watchPathsFrom(await runAll('CwdChanged', () => true, input, false))
     },
 

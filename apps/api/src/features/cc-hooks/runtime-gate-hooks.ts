@@ -12,7 +12,7 @@ import type {
   PermissionRequestResult,
 } from './runtime-contracts-added'
 import { contextFrom, joinContext } from './runtime-results'
-import type { HookDispatchDeps } from './runtime-tool-hooks'
+import { toolRefOf, type HookDispatchDeps } from './runtime-tool-hooks'
 
 type GateRunners = Pick<
   CcAddedHooksRuntime,
@@ -88,18 +88,21 @@ export function createGateHookRunners(deps: HookDispatchDeps): GateRunners {
       return { blocked: false, additionalContext: joinContext(contexts) }
     },
 
-    async runPermissionRequest(toolName, toolInput, opts) {
+    async runPermissionRequest(tool, toolInput, opts) {
+      const ref = toolRefOf(tool)
+      const toolName = ref.name
+      const base = baseInput('PermissionRequest')
       const input: CcHookInput = {
-        ...baseInput('PermissionRequest'),
-        ...claudeCodeHookCall({ name: toolName }, toolInput),
+        ...base,
+        ...claudeCodeHookCall(ref, toolInput, base.cwd),
         ...(opts?.suggestions?.length ? { permission_suggestions: opts.suggestions } : {}),
       }
       const outcomes = await runAll(
         'PermissionRequest',
-        (m) => matchesToolName(m, toolName),
+        (m) => matchesToolName(m, toolName, ref.aliases),
         input,
         false,
-        { ifCtx: { toolName, toolInput } },
+        { ifCtx: { toolName, toolInput, aliases: ref.aliases } },
       )
       // Only the `decision` object decides (exit 2 is not honoured); a deny from any handler
       // beats an allow from another, and the first allow's rewrite is the one applied.
@@ -111,23 +114,29 @@ export function createGateHookRunners(deps: HookDispatchDeps): GateRunners {
       }
       // The hook rewrote the call in Claude Code's shape: fold it back into Localix's.
       return result.updatedInput !== undefined
-        ? { ...result, updatedInput: localInputFromHook(toolName, toolInput, result.updatedInput) }
+        ? {
+            ...result,
+            updatedInput: localInputFromHook(toolName, toolInput, result.updatedInput, base.cwd),
+          }
         : result
     },
 
-    async runPermissionDenied(toolName, toolInput, toolUseId, reason) {
+    async runPermissionDenied(tool, toolInput, toolUseId, reason) {
+      const ref = toolRefOf(tool)
+      const toolName = ref.name
+      const base = baseInput('PermissionDenied')
       const input: CcHookInput = {
-        ...baseInput('PermissionDenied'),
-        ...claudeCodeHookCall({ name: toolName }, toolInput),
+        ...base,
+        ...claudeCodeHookCall(ref, toolInput, base.cwd),
         tool_use_id: toolUseId,
         reason,
       }
       const outcomes = await runAll(
         'PermissionDenied',
-        (m) => matchesToolName(m, toolName),
+        (m) => matchesToolName(m, toolName, ref.aliases),
         input,
         false,
-        { ifCtx: { toolName, toolInput } },
+        { ifCtx: { toolName, toolInput, aliases: ref.aliases } },
       )
       return { retry: outcomes.some((o) => o.retry === true) }
     },
@@ -137,9 +146,16 @@ export function createGateHookRunners(deps: HookDispatchDeps): GateRunners {
       const outcomes = await runAll('PostToolBatch', all, input, false)
       const stopping = outcomes.filter((o) => refuses(o) || o.continue === false)
       const additionalContext = contextFrom(outcomes)
+      const reason = stopping.map(reasonOf).find(Boolean)
+      // The run ends here, and nothing after it may restart the agent (`stoppedBy`).
+      if (stopping.length > 0)
+        deps.stopRun?.({
+          event: 'PostToolBatch',
+          reason: reason || 'A PostToolBatch hook stopped the run.',
+        })
       return {
         stop: stopping.length > 0,
-        ...(stopping.length ? { reason: stopping.map(reasonOf).find(Boolean) } : {}),
+        ...(stopping.length ? { reason } : {}),
         ...(additionalContext ? { additionalContext } : {}),
       }
     },

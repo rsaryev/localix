@@ -90,3 +90,21 @@ test('a hook’s updatedInput in Claude Code’s shape folds back into Localix�
     command: 'ls -la',
   })
 })
+
+test('a hook reads a file path absolute against its cwd, and an unchanged one folds back as written', () => {
+  const write = { files: [{ path: 'notes/a.md', content: 'x' }] }
+  expect(claudeCodeHookCall({ name: 'write' }, write, '/work').tool_input).toMatchObject({
+    file_path: '/work/notes/a.md',
+  })
+  expect(
+    claudeCodeHookCall({ name: 'read' }, { path: '/abs/b.ts' }, '/work').tool_input,
+  ).toMatchObject({ file_path: '/abs/b.ts' })
+  const same = { file_path: '/work/notes/a.md', content: 'y' }
+  expect(localInputFromHook('write', write, same, '/work')).toEqual({
+    files: [{ path: 'notes/a.md', content: 'y' }],
+  })
+  const moved = { file_path: '/work/other.md', content: 'x' }
+  expect(localInputFromHook('write', write, moved, '/work')).toEqual({
+    files: [{ path: '/work/other.md', content: 'x' }],
+  })
+})

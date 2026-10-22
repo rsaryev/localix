@@ -3,9 +3,10 @@
  *
  * A plugin or an MCP server is addressed by name everywhere but its own row: every agent's
  * switches (`plugin:<name>`, `mcp:<name>`, and an MCP server's per-tool `mcp:<name>/<tool>`), the
- * MCP sign-in tokens, and the vault bindings a plugin recorded. Its removal left all of them, so a
- * same-named newcomer inherited an old `allow` and the vault kept reporting a consumer that was
- * gone. On a deletion notice whose name is installed in no scope any more, they go.
+ * MCP sign-in tokens, the vault bindings a plugin recorded and the vault items holding its
+ * sensitive options. Its removal left all of them, so a same-named newcomer inherited an old
+ * `allow` and the vault kept reporting a consumer that was gone. On a deletion notice whose name
+ * is installed in no scope any more, they go.
  *
  * Only the switch rows go: a rule the person wrote about particular arguments stays theirs, inert
  * (as `AvailabilityWriter.clear` does). There is no reconcile: what a removed capability left is
@@ -25,6 +26,8 @@ export interface CapabilityCleanupPorts {
   userId: string
   clearMcpSignIn(userId: string, serverId: string): Promise<void>
   unbindVaultConsumer(userId: string, type: string, id: string): Promise<number>
+  /** Delete the vault items a plugin's sensitive options were stored in (absent: none are). */
+  forgetPluginSecrets?(userId: string, name: string): Promise<void>
 }
 
 export function createCapabilityCleanup(ports: CapabilityCleanupPorts) {
@@ -64,7 +67,10 @@ export function createCapabilityCleanup(ports: CapabilityCleanupPorts) {
     if (await installed(kind, name)) return
     await clearSwitches(kind, name)
     if (kind === 'mcp' && serverId) await ports.clearMcpSignIn(userId, serverId)
-    if (kind === 'plugin') await ports.unbindVaultConsumer(userId, 'plugin', name)
+    if (kind === 'plugin') {
+      await ports.forgetPluginSecrets?.(userId, name)
+      await ports.unbindVaultConsumer(userId, 'plugin', name)
+    }
   }
 
   const handlers: ConsumerHandlers<CoreRefs, CoreCascades> = {

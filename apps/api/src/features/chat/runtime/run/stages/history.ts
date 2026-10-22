@@ -107,7 +107,7 @@ export async function materializeRunHistory(
       now: now(),
     })
   }
-  if (checkpoint) announceCheckpoint(frame, checkpoint)
+  if (checkpoint) announceCheckpoint(frame, checkpoint, view.preCompactRan === true)
 
   // Final pre-token phase: the model is now being called (prefill/TTFT wait).
   frame.publishPhase('thinking')
@@ -129,13 +129,19 @@ export async function materializeRunHistory(
 /**
  * Tell whoever watches that the view moved. The transcript redraws its divider from
  * `session_model_view.updated`. And a checkpoint is this runtime's compaction, so Claude Code
- * hooks see it as one: `PreCompact` then `PostCompact` fire with `trigger: "auto"` (the epoch
- * cards are `compact_summary`), and the next run re-fires
- * `SessionStart` with source `compact` so a hook can re-inject what the rewritten view no longer
- * carries. The hook cannot block — the view is already decided and durable, and a failing hook
- * must cost the turn nothing.
+ * hooks see it as one: `PostCompact` fires with `trigger: "auto"` (the epoch cards are
+ * `compact_summary`), and the next run re-fires `SessionStart` with source `compact` so a hook
+ * can re-inject what the rewritten view no longer carries.
+ *
+ * `PreCompact` normally ran before the checkpoint was decided, where a block skips it
+ * (`stages/view.ts`). A checkpoint taken only because the history did not fit the request at all
+ * was not asked first: it is announced to PreCompact here, where it can no longer block.
  */
-export function announceCheckpoint(frame: RunFrame, checkpoint: ContextCheckpoint): void {
+export function announceCheckpoint(
+  frame: RunFrame,
+  checkpoint: ContextCheckpoint,
+  preCompactRan = false,
+): void {
   const { env, userId, session, speakerAgentId } = frame
   if (checkpoint.evictedThroughId) {
     env.deps.streamRegistry.publish(userId, session.id, {
@@ -148,8 +154,7 @@ export function announceCheckpoint(frame: RunFrame, checkpoint: ContextCheckpoin
   if (hooks?.active) {
     // PostCompact follows once PreCompact is done, with the cards as the compaction's summary.
     const summary = checkpoint.cards.map((card) => card.text).join('\n\n')
-    void hooks
-      .runPreCompact('auto')
+    void (preCompactRan ? Promise.resolve() : hooks.runPreCompact('auto'))
       .then(() => hooks.runPostCompact('auto', summary))
       .catch((error: unknown) => console.warn('[checkpoint] compaction hooks failed', error))
   }

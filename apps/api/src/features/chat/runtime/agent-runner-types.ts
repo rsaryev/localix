@@ -120,6 +120,24 @@ export interface RunnerDeps {
    * run (the `skill` tool's save/delete). Absent in isolated hosts: nothing is announced.
    */
   announceCapabilityChange?: () => void
+  /**
+   * A skill's content as the model reads it (`service/skill-render.ts`): its injected commands
+   * run, its arguments and `${CLAUDE_*}` variables substituted — the `skill` tool's `get` renders
+   * through it as a typed `/name` does. Absent in isolated hosts: the content as written.
+   */
+  renderSkill?: (
+    skill: { content: string; path?: string; argumentNames?: string[] },
+    args: string,
+    ctx: {
+      sessionId: string
+      workingDir: string
+      effort: string
+      env?: Record<string, string>
+      dynamic: boolean
+      /** Each injected command's permission check: `undefined` allows it, a string refuses. */
+      authorize?: (command: string) => string | undefined
+    },
+  ) => Promise<string>
   /** Resolve-only secrets-vault port for runtime features that explicitly need it. */
   resolveSecret?: (userId: string, key: string) => Promise<string | undefined>
   /** User-bound, value-free universal Vault manager contributed by the secrets feature. */

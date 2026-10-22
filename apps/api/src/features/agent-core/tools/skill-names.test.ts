@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import type { DiscoveredSkill } from '../skill-frontmatter'
-import { findSkillByName, skillCallName } from './skill-names'
+import { ambiguousSkillNames, findSkillByName, skillCallName } from './skill-names'
 
 const skill = (name: string, dir: string, pluginName?: string): DiscoveredSkill => ({
   name,
@@ -29,4 +29,16 @@ test('hookify’s command finds its skill by <plugin>:<folder>, as well as by it
   expect(findSkillByName(skills, '/deploy')).toBe(own)
   // A folder name alone does not reach a plugin skill: another plugin's could share it.
   expect(findSkillByName(skills, 'writing-rules')).toBeUndefined()
+})
+
+test('a call name wins over a plugin skill’s bare name, and a shared bare name finds nothing', () => {
+  const pluginLookup = skill('lookup', '/p/aplug/skills/lookup', 'aplug')
+  const ownLookup = skill('lookup', '/home/.localix/skills/lookup')
+  expect(findSkillByName([pluginLookup, ownLookup], 'lookup')).toBe(ownLookup)
+  const other = skill('lookup', '/p/bplug/skills/lookup', 'bplug')
+  expect(findSkillByName([pluginLookup, other], 'lookup')).toBeUndefined()
+  expect(ambiguousSkillNames([pluginLookup, other], 'lookup')).toEqual([
+    'aplug:lookup',
+    'bplug:lookup',
+  ])
 })

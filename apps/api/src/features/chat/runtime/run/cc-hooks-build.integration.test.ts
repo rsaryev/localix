@@ -70,13 +70,14 @@ const lines = (name: string) =>
     .map((l) => JSON.parse(l))
 
 describe('a run starting', () => {
-  test('announces each instruction file with SessionStart, by scope', async () => {
+  test('announces each instruction file with SessionStart, by scope, but not AGENTS.md', async () => {
     const { build } = input(
       { InstructionsLoaded: capture('il.jsonl') },
       {
         contextFiles: [
-          { path: join(homedir(), '.localix', 'context.md') },
           { path: join(dir(), 'AGENTS.md') },
+          { path: join(homedir(), '.localix', 'context.md') },
+          { path: join(dir(), 'CLAUDE.md') },
         ],
       },
     )
@@ -92,7 +93,7 @@ describe('a run starting', () => {
         .map((l) => `${l.memory_type} ${l.load_reason} ${l.file_path}`)
         .sort(),
     ).toEqual([
-      `Project session_start ${join(dir(), 'AGENTS.md')}`,
+      `Project session_start ${join(dir(), 'CLAUDE.md')}`,
       `User session_start ${join(homedir(), '.localix', 'context.md')}`,
     ])
   })

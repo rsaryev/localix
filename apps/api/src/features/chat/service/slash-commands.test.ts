@@ -170,7 +170,7 @@ describe('applySkillArguments', () => {
   })
 
   it('appends arguments when no placeholder present', () => {
-    expect(applySkillArguments('Do the thing', 'fast')).toBe('Do the thing\n\nArguments: fast')
+    expect(applySkillArguments('Do the thing', 'fast')).toBe('Do the thing\n\nARGUMENTS: fast')
     expect(applySkillArguments('Do the thing', '')).toBe('Do the thing')
   })
 
@@ -192,9 +192,12 @@ describe('applySkillArguments', () => {
     ).toBe('Deploy staging with v2.0')
   })
 
-  it('respects \\$ escape — even when the ONLY token reference is escaped', () => {
-    // \$ARGUMENTS should emit literal $ARGUMENTS (not append args)
-    expect(applySkillArguments('Use \\$ARGUMENTS literally', 'x')).toBe('Use $ARGUMENTS literally')
+  it('respects \\$ escape — an escaped token receives nothing, so the arguments append', () => {
+    // CC: "A placeholder is `$ARGUMENTS`, an indexed form ... or a named argument"; an escaped
+    // one is literal text and receives no argument.
+    expect(applySkillArguments('Use \\$ARGUMENTS literally', 'x')).toBe(
+      'Use $ARGUMENTS literally\n\nARGUMENTS: x',
+    )
     // Mixed: escaped stays literal, unescaped substitutes
     expect(applySkillArguments('literal: \\$ARGUMENTS; first: $0', 'hello world')).toBe(
       'literal: $ARGUMENTS; first: hello',
@@ -212,6 +215,34 @@ describe('applySkillArguments', () => {
 
   it('does not append arguments when the template is empty and arg is non-empty', () => {
     // An empty body still gets the argument appended
-    expect(applySkillArguments('', 'x')).toBe('\n\nArguments: x')
+    expect(applySkillArguments('', 'x')).toBe('\n\nARGUMENTS: x')
+  })
+
+  // CC skills.md: "An indexed placeholder with no corresponding argument ... stays in the content
+  // unchanged"; "When no placeholder receives an argument, Claude Code appends them as
+  // `ARGUMENTS: <value>`" — `${CLAUDE_*}` and a shell's own `$NAME` are not placeholders.
+  it('leaves a missing indexed argument as written, and it receives nothing', () => {
+    expect(applySkillArguments('IDX first=$0 third=$2 sixth=$ARGUMENTS[5]', 'only')).toBe(
+      'IDX first=only third=$2 sixth=$ARGUMENTS[5]',
+    )
+    expect(applySkillArguments('third=$2', 'only')).toBe('third=$2\n\nARGUMENTS: only')
+  })
+
+  it('appends when only ${CLAUDE_*} variables or unknown $NAMEs appear', () => {
+    expect(applySkillArguments('dir ${CLAUDE_SKILL_DIR}', 'one two', { skillDir: '/s' })).toBe(
+      'dir /s\n\nARGUMENTS: one two',
+    )
+    expect(applySkillArguments('kill $VIEWER_PID', '42')).toBe('kill $VIEWER_PID\n\nARGUMENTS: 42')
+  })
+
+  it('decides from the authored source: a command that consumed $ARGUMENTS counts', () => {
+    expect(applySkillArguments('ran: ok', 'a b', { sourceTemplate: '!`run $ARGUMENTS`' })).toBe(
+      'ran: ok',
+    )
+  })
+
+  it('counts a declared name even with no argument at its position', () => {
+    expect(applySkillArguments('to $env', '', { argumentNames: ['env'] })).toBe('to ')
+    expect(applySkillArguments('a=$a b=$b', 'x', { argumentNames: ['a', 'b'] })).toBe('a=x b=')
   })
 })

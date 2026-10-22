@@ -47,7 +47,13 @@ export function foldHookOutput(text: string, allowPlainTextContext: boolean): Cc
   const hso = isRecord(json.hookSpecificOutput) ? json.hookSpecificOutput : undefined
   if (hso) {
     if (typeof hso.additionalContext === 'string') outcome.additionalContext = hso.additionalContext
-    if (typeof hso.updatedToolOutput === 'string') outcome.updatedToolOutput = hso.updatedToolOutput
+    // Either form is kept as written; the tool it replaces decides what it may be.
+    if (hso.updatedToolOutput !== undefined && hso.updatedToolOutput !== null)
+      outcome.updatedToolOutput = hso.updatedToolOutput
+    if (hso.updatedMCPToolOutput !== undefined && hso.updatedMCPToolOutput !== null)
+      outcome.updatedMCPToolOutput = hso.updatedMCPToolOutput
+    if (typeof hso.sessionTitle === 'string' && hso.sessionTitle.trim())
+      outcome.sessionTitle = hso.sessionTitle.trim()
     const pd = hso.permissionDecision
     if (pd === 'allow' || pd === 'deny' || pd === 'ask') outcome.permissionDecision = pd
     if (typeof hso.permissionDecisionReason === 'string') {
@@ -106,4 +112,24 @@ export function worktreePathFromText(text: string): CcHookOutcome {
     .filter(Boolean)
   const last = lines[lines.length - 1]
   return last ? { worktreePath: last } : {}
+}
+
+/**
+ * What an `async` hook says to Claude after it exits 0 (hooks.md, How async hooks execute): its
+ * `additionalContext` and `systemMessage`, from a JSON response printed alone on stdout (it may
+ * span several lines) or on one line of its own beside other text. Plain text says nothing.
+ */
+export function asyncHookContext(stdout: string): string | undefined {
+  const fields = (outcome: CcHookOutcome) =>
+    [outcome.additionalContext, outcome.systemMessage]
+      .filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
+      .join('\n\n')
+  const whole = fields(foldHookOutput(stdout, false))
+  if (whole) return whole
+  const lines = stdout.split(/\r?\n/).filter((line) => line.trim().startsWith('{'))
+  for (const line of lines.reverse()) {
+    const said = fields(foldHookOutput(line, false))
+    if (said) return said
+  }
+  return undefined
 }

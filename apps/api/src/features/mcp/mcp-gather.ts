@@ -31,6 +31,16 @@ export interface GatherState {
   scopeKeys: Map<string, Set<string>>
   defaultLogger?: McpLogger
   channels?: ChannelRouter
+  /** Each server's outcome in the latest gather that included it, by {@link serverStatusKey}. */
+  lastStatus?: Map<string, McpServerOutcome>
+}
+
+/** One server's outcome in a gather: connected, cached, still connecting, or failed. */
+export type McpServerOutcome = McpGatherResult['servers'][number]
+
+/** Whose server a status belongs to: a plugin's record id is the same for every user. */
+export function serverStatusKey(server: Pick<McpServerRecord, 'userId' | 'id'>): string {
+  return `${server.userId}\u0000${server.id}`
 }
 
 type ConnectOutcome =
@@ -185,6 +195,7 @@ export async function gatherTools(
   for (const outcome of outcomes) {
     if (outcome.kind === 'skipped') {
       serverResults.push(outcome.result)
+      state.lastStatus?.set(serverStatusKey(outcome.server), outcome.result)
       continue
     }
     const { server, source } = outcome
@@ -217,14 +228,16 @@ export async function gatherTools(
       tools.push(name === built.name ? built : { ...built, name })
       serverByTool[name] = server.name
     }
-    serverResults.push({
+    const result: McpServerOutcome = {
       name: server.name,
       ok: true,
       toolCount: visibleDefs.length,
       // Existing wire field, now the explicit Cached-vs-Live distinction: true
       // means persisted metadata with no live transport; false means Live.
       cached: source.state === 'Cached',
-    })
+    }
+    serverResults.push(result)
+    state.lastStatus?.set(serverStatusKey(server), result)
   }
 
   // Invalidation: a config that no scope's latest gather references anymore

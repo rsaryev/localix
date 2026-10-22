@@ -12,6 +12,18 @@ import { wrapSystemReminder } from '../system-reminder'
 
 /** The `stoppedBy` name a PostToolBatch block ends the run under. */
 export const POST_TOOL_BATCH_STOP = 'postToolBatchHook'
+/** The `stoppedBy` name of a run a hook ended mid-batch (`ccHookStopRule`). */
+export const CC_HOOK_STOP = 'ccHookStop'
+
+/**
+ * Ends the run at the batch boundary once a hook stopped it (`CcHooksRuntime.stoppedBy`). A
+ * PreToolUse `continue:false` refuses only its own call, and the loop ends on `terminate` only
+ * when every call of the batch asked to: a sibling call that ran would otherwise send the model
+ * another request, where Claude Code "stops processing entirely".
+ */
+export function ccHookStopRule(ccHooks: CcHooksRuntime) {
+  return { name: CC_HOOK_STOP, shouldStop: () => ccHooks.stoppedBy() !== undefined }
+}
 
 export function ccAfterToolBatch(
   ccHooks: CcHooksRuntime,
@@ -19,6 +31,8 @@ export function ccAfterToolBatch(
 ): AgentRuntimeRunInput['afterToolBatch'] {
   if (!ccHooks.hasHooks('PostToolBatch')) return undefined
   return async ({ calls }) => {
+    // A PreToolUse `continue:false` already ended processing; no later hook runs.
+    if (ccHooks.stoppedBy()) return undefined
     const verdict = await ccHooks.runPostToolBatch(
       calls.map((call) => ({
         ...claudeCodeHookCall({ name: call.toolName }, call.input),

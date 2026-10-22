@@ -127,10 +127,15 @@ export async function loadManifest(
   const composed = composeManifest(withManifests ? withManifests(files) : files, basename(dir))
   // Promote, validate and recover live in parseComposedManifest: a malformed manifest errors, a
   // missing one does not.
-  const { manifest, rawManifest, error, manifestRecovered } = parseComposedManifest(
-    composed,
-    basename(dir),
+  const parsed = parseComposedManifest(composed, basename(dir))
+  const { manifest, rawManifest, manifestRecovered } = parsed
+  // "`userConfig` options … are strict. An unknown key inside one is an error, and the plugin
+  // doesn't load." The option used to be dropped with an issue and the plugin loaded anyway.
+  const strictIssue = composed.issues.find(
+    (found) => found.severity === 'error' && /(^|#)userConfig\./.test(found.path),
   )
+  const promoted = parsed.error ? undefined : strictIssue
+  const error = parsed.error ?? (promoted ? `${promoted.message} (${promoted.path})` : undefined)
 
   const entrypoints = await resolveEntrypoints(dir, manifest, composed.layout)
   // Parse command and agent files in parallel (independent reads).
@@ -187,7 +192,8 @@ export async function loadManifest(
       : {}),
   }
   const layoutIssues = [
-    ...composed.issues,
+    // A promoted issue is the plugin's error now; listing it twice would count it twice.
+    ...composed.issues.filter((found) => found !== promoted),
     // A hooks file that failed to load: the plugin runs without the hooks in it.
     ...(entrypoints.hookErrors ?? []).map((message): PluginIssue => ({
       severity: 'error',

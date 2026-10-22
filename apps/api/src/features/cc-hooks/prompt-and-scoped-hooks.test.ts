@@ -2,7 +2,12 @@ import { describe, it, expect } from 'bun:test'
 
 import { parseHooksBlock, parseScopedHooks } from './config'
 import { createCcHooksRuntime } from './run'
-import { parsePromptHookResult, mapPromptOutcome, type PromptHookEvaluator } from './prompt-hook'
+import {
+  hookPromptText,
+  parsePromptHookResult,
+  mapPromptOutcome,
+  type PromptHookEvaluator,
+} from './prompt-hook'
 import type { CcHookRegistry } from './contracts'
 import type { SkippedHandler } from './config'
 
@@ -124,6 +129,19 @@ describe('parsePromptHookResult', () => {
       ok: false,
       reason: 'use } carefully',
     })
+  })
+})
+
+describe('hookPromptText', () => {
+  it('substitutes every $ARGUMENTS and keeps escaped dollars literal', () => {
+    const json = '{"cost":"\\\\$5"}'
+    expect(hookPromptText('A $ARGUMENTS B $ARGUMENTS \\$ARGUMENTS \\$1', json)).toBe(
+      `A ${json} B ${json} $ARGUMENTS $1`,
+    )
+  })
+
+  it('appends the input when the prompt has no placeholder', () => {
+    expect(hookPromptText('Pay \\$1.00', '{}')).toBe('Pay $1.00\n\n{}')
   })
 })
 

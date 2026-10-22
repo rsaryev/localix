@@ -52,16 +52,22 @@ export function buildMcpRecords(
 ): McpServerRecord[] {
   const allowedEnvKeys = declaredConfigKeys(plugin.manifest)
   // Inject CC plugin path variables into config so they resolve in MCP entries.
+  const dataDir = pluginDataDir(plugin.manifest.name, home)
   const enrichedConfig: PluginConfigValues = {
     ...config,
     CLAUDE_PLUGIN_ROOT: plugin.dir,
-    CLAUDE_PLUGIN_DATA: pluginDataDir(plugin.manifest.name, home),
+    CLAUDE_PLUGIN_DATA: dataDir,
     ...(opts?.projectDir ? { CLAUDE_PROJECT_DIR: opts.projectDir } : {}),
   }
 
-  // Build the CLAUDE_PLUGIN_OPTION_<KEY> env map from the plugin's user config values
-  // (not enrichedConfig — path vars are not user config and should not be emitted).
-  const pluginOptionEnv = buildPluginOptionEnv(config)
+  // What a stdio server's process is given beneath its manifest `env`: the plugin's two path
+  // variables, which Claude Code exports to the process (manifest reference, "Exported to the
+  // process"), and the CLAUDE_PLUGIN_OPTION_<KEY> map of the user's config values.
+  const processEnv: Record<string, string> = {
+    CLAUDE_PLUGIN_ROOT: plugin.dir,
+    CLAUDE_PLUGIN_DATA: dataDir,
+    ...buildPluginOptionEnv(config),
+  }
 
   // Sensitive options substitute like any other, as in Claude Code: none of these fields reaches
   // a shell. A `headersHelper` that references one throws, and the server is skipped below.
@@ -85,18 +91,11 @@ export function buildMcpRecords(
       )
       const baseConfig = input.config as Record<string, unknown>
 
-      // Inject CLAUDE_PLUGIN_OPTION_<KEY> into the MCP server's env block.
-      // Manifest-declared env vars take priority — we only add keys not already set.
+      // Manifest-declared env vars take priority — the exported ones only fill keys not set.
       let finalConfig = baseConfig
-      if (input.transport === 'stdio' && Object.keys(pluginOptionEnv).length > 0) {
+      if (input.transport === 'stdio') {
         const manifestEnv = (baseConfig.env as Record<string, string> | undefined) ?? {}
-        const mergedEnv: Record<string, string> = {
-          // Plugin option vars first (lower priority)
-          ...pluginOptionEnv,
-          // Manifest env vars override (higher priority — never clobbered)
-          ...manifestEnv,
-        }
-        finalConfig = { ...baseConfig, env: mergedEnv }
+        finalConfig = { ...baseConfig, env: { ...processEnv, ...manifestEnv } }
       }
 
       records.push({

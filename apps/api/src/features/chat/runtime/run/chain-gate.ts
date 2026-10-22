@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 import type { AgentTool, AgentToolResult, BeforeToolCallResult } from '@localixai/agent/agents'
 
 import type { PermissionGateFn } from '../../../agent-core/permission-gate'
+import type { PreToolUseVerdictCarrier } from '../../../agent-core/permission-hook-decision'
 import { PermissionGateBlockedError } from '../../../agent-core/tools/tool-error-result'
 
 /**
@@ -113,11 +114,14 @@ export function createChainGate(inChain: boolean, options: ChainGateOptions = {}
             const loop = pending.get(toolCallId)
             pending.delete(toolCallId)
             const parent = loop?.parentToolCallId
+            // A PreToolUse hook's allow/ask, handed on by the hook wrapper outside this one.
+            const hook = (context as PreToolUseVerdictCarrier | undefined)?.preToolUseVerdict
             const call: GateCall = {
               toolCallId,
               toolName: tool.name,
               input,
               ...(parent ? { parentToolCallId: parent } : {}),
+              ...(hook ? { hookVerdict: hook } : {}),
             }
             const verdict = await decide(call, signal)
             if (signal?.aborted) throw stopped()

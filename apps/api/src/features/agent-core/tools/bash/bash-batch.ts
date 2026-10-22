@@ -4,7 +4,7 @@ import type {
   AgentToolExecutionContext,
   AgentToolUpdateCallback,
 } from '@localixai/agent/agents'
-import { resolveCwd, type BashRunContext } from './bash-run-context'
+import { resolveCwd, withEnvScripts, type BashRunContext } from './bash-run-context'
 import { withCommandShims } from './bash-shims'
 import {
   BATCH_OUTPUT_BUDGET_BYTES,
@@ -114,7 +114,7 @@ export async function runBatchCommands(
     let exitCode: number
     let combined: string
     try {
-      const r = await ctx.env.exec(withCommandShims(cmds[i]), {
+      const r = await ctx.env.exec(withEnvScripts(ctx, withCommandShims(cmds[i])), {
         cwd,
         timeout: timeoutSecs,
         signal,

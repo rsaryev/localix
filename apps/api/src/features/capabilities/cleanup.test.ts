@@ -13,11 +13,13 @@ async function setup() {
   await migrateToLatest(db)
   const signOuts: string[] = []
   const unbound: string[] = []
+  const forgotten: string[] = []
   const cleanup = createCapabilityCleanup({
     db,
     userId: 'u1',
     clearMcpSignIn: async (_u, id) => void signOuts.push(id),
     unbindVaultConsumer: async (_u, type, id) => (unbound.push(`${type}:${id}`), 1),
+    forgetPluginSecrets: async (_u, name) => void forgotten.push(name),
   })
   const rules = createCapabilityRuleRepository(db)
   await rules.replace('u1', 'a1', [
@@ -27,7 +29,7 @@ async function setup() {
     { action: 'mcp:github', resource: 'repo:x', effect: 'ask' },
     { action: 'mcp:gitlab', resource: '*', effect: 'allow' },
   ])
-  return { db, cleanup, rules, signOuts, unbound }
+  return { db, cleanup, rules, signOuts, unbound, forgotten }
 }
 
 describe('capability cleanup', () => {
@@ -71,9 +73,12 @@ describe('capability cleanup', () => {
     await plugins.remove('u1', 'p1', 'acme-board')
     await feed.settle()
     expect(t.unbound).toEqual([])
+    expect(t.forgotten).toEqual([])
     await plugins.remove('u1', '', 'acme-board')
     await feed.settle()
     expect(t.unbound).toEqual(['plugin:acme-board'])
+    // The vault items holding its sensitive options go with the last copy.
+    expect(t.forgotten).toEqual(['acme-board'])
     expect((await t.rules.read('u1', 'a1')).some((r) => r.action === 'plugin:acme-board')).toBe(
       false,
     )

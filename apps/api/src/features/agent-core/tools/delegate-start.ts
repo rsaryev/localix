@@ -110,7 +110,8 @@ export async function startDelegation(
     // The copy precedes the run: the child's first model call must already see the conversation.
     if (request.context === 'conversation') await opts.copyConversation(child.id)
     const agentType = plugin?.fullName ?? agent.agentId
-    opts.onSubagentStart?.(agentType, child.id)
+    // CC: a SubagentStart hook's `additionalContext` reaches the child before its first prompt.
+    const startContext = await opts.onSubagentStart?.(agentType, child.id)
     // Held before the start, so a child that ends inside the launch's settle window still
     // reports to this call rather than to a wake.
     const giveUp = new AbortController()
@@ -124,7 +125,7 @@ export async function startDelegation(
     const early = await opts.startSubagentTask(
       opts.userId,
       child.id,
-      `${delegationFraming(delegator.handle, request.context)}\n\n# Task\n${task}\n\n${ONE_SHOT_EXECUTION}\n${delegationNote(depth + 1)}`,
+      `${delegationFraming(delegator.handle, request.context)}\n\n${startContext ? `${startContext}\n\n` : ''}# Task\n${task}\n\n${ONE_SHOT_EXECUTION}\n${delegationNote(depth + 1)}`,
       {
         ...(maxTurns ? { maxTurns } : {}),
         agentType,
@@ -146,12 +147,14 @@ export async function startDelegation(
     if (line.failed) giveUp.abort()
     const report = held ? await held : null
     if (report) {
+      // CC `maxTurns`: a child cut off at its turn limit hands back its output marked partial.
+      const partial = report.partial === true && report.status === 'completed'
       return {
         content: [
-          `- ${label}: ${OUTCOME_WORD[report.status]} "${title}".`,
+          `- ${label}: ${partial ? 'reached its turn limit on' : OUTCOME_WORD[report.status]} "${title}".`,
           ...notes,
           '',
-          reportBody(report.text, child.id),
+          reportBody(report.text, child.id, { partial }),
         ].join('\n'),
         ...extras,
         ...(report.status === 'completed' ? {} : { isError: true }),

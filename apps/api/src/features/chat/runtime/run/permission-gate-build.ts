@@ -10,6 +10,7 @@ import {
   verdictOf,
   type CallVerdict,
   type ReviewVerdict,
+  type VerdictOptions,
 } from '../../../agent-core/permission-verdict'
 import { normalizeCcToolName } from '../../../plugins/discovery'
 import { nativeCommandPatterns } from '../../../cc-settings/native-command-patterns'
@@ -50,6 +51,8 @@ export interface BuildRunPermissionGateOptions extends RunHookContext {
     review?: ReviewVerdict
     lend(verdict: (toolName: string, input: unknown) => CallVerdict): void
   }
+  /** Receives the gate's inputs: a skill the model loads checks its injected commands on them. */
+  onVerdictOptions?: (options: VerdictOptions) => void
 }
 
 /**
@@ -91,6 +94,10 @@ export function buildRunPermissionGate(
     defaultCwd,
   } = options
 
+  // A hook reads a tool by its Claude Code names (an MCP tool's `mcp__…`), which the tool carries.
+  const toolsByName = new Map(tools.map((t) => [t.name, t]))
+  const hookTool = (name: string) => toolsByName.get(name) ?? name
+
   // One declarative engine (workspace boundary, dangerous commands, scope rules)
   // evaluated at beforeToolCall.
   const requestConfirm = createConfirmRequester({
@@ -104,6 +111,7 @@ export function buildRunPermissionGate(
     pluginHooksForRun,
     hookRunOptions,
     ccHooks,
+    hookTool,
     ...(options.hitlWaitedMs ? { hitlWaitedMs: options.hitlWaitedMs } : {}),
     ...(options.stopRun ? { stopRun: options.stopRun } : {}),
   })
@@ -111,12 +119,13 @@ export function buildRunPermissionGate(
   const verdictOptions = {
     rules: permissionRules,
     preapprovedRules: skillPermissionRules(extraAllowedTools),
-    toolsByName: new Map(tools.map((t) => [t.name, t])),
+    toolsByName,
     root: defaultCwd,
     // The conversation's own plan directory: a plan-shaped write anywhere else is a file write.
     ownPlanDir: ownPlanDirForRun(session, defaultCwd),
   }
   options.toolCheck?.lend(verdictOf(verdictOptions))
+  options.onVerdictOptions?.(verdictOptions)
 
   return createPermissionGate({
     ...verdictOptions,
@@ -130,8 +139,14 @@ export function buildRunPermissionGate(
     ...(ccHooks.hasHooks('PermissionDenied')
       ? {
           reviewAutomaticDenial: async (call, reason) =>
-            (await ccHooks.runPermissionDenied(call.toolName, call.input, call.toolCallId, reason))
-              .retry
+            (
+              await ccHooks.runPermissionDenied(
+                hookTool(call.toolName),
+                call.input,
+                call.toolCallId,
+                reason,
+              )
+            ).retry
               ? PERMISSION_RETRY_NOTE
               : undefined,
         }

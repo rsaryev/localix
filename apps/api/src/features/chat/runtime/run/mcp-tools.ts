@@ -26,6 +26,8 @@ export interface McpInventoryEntry {
    * the user as a product limitation rather than the transient failure it is.
    */
   failed?: boolean
+  /** Why the server failed to connect, as its connection reported it (Claude Code tells Claude). */
+  error?: string
 }
 
 export interface ResolvedMcpTools {
@@ -52,6 +54,8 @@ export async function resolveMcpTools(args: {
   defaultCwd: string
   /** What the run's rules say about its MCP servers. */
   availability: AvailabilityReader
+  /** The agent those rules belong to: its servers are its own gather scope. */
+  agentId?: string
 }): Promise<ResolvedMcpTools> {
   const { env, userId, session, pluginMcpServers, defaultCwd, availability } = args
   const empty: ResolvedMcpTools = {
@@ -74,8 +78,8 @@ export async function resolveMcpTools(args: {
     enabledServers = [...mcpServers, ...pluginMcpServers].filter(
       (server) => availability.effectFor('mcp', server.name) !== 'deny',
     )
-    if (enabledServers.length === 0) return empty
-
+    // No early return for an empty list: the gather is what drops this scope's servers and
+    // stops the stdio children no scope references any more (a plugin disabled mid-session).
     const gather = await mcpClientManager.gather(enabledServers, {
       cwd: defaultCwd,
       // Per-tool policy, from the same chain that admitted the server. A server nobody has
@@ -88,7 +92,10 @@ export async function resolveMcpTools(args: {
       // project only would make each session's gather overwrite the other's scope
       // set, so invalidation would evict the other session's still-live client
       // every turn (churn + orphaned stdio respawns). Per-cwd scopes pin both.
-      scope: `${userId}:${session.projectId ?? ''}:${defaultCwd}`,
+      // The agent too: availability is read per agent, so two chats in one project and cwd can
+      // reach different servers. A shared scope let one chat's gather (an empty one, when its
+      // agent reaches no server) drop and stop the other chat's live clients mid-call.
+      scope: `${userId}:${session.projectId ?? ''}:${defaultCwd}:${args.agentId ?? ''}`,
       // A Claude Code channel among these servers speaks into this conversation from now on. Only
       // a chat's open toolset gathers MCP servers (`tool-assembly.ts`), so a delegated child's
       // run never takes a channel from the chat that started it.
@@ -119,6 +126,8 @@ export async function resolveMcpTools(args: {
     for (const server of gather.servers) {
       const tools = directByServer.get(server.name) ?? []
       if (server.pending) inventory.push({ server: server.name, tools: [], pending: true })
+      else if (server.error)
+        inventory.push({ server: server.name, tools: [], failed: true, error: server.error })
       else if (tools.length > 0) inventory.push({ server: server.name, tools })
     }
     return {

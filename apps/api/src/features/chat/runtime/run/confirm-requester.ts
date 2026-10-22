@@ -5,6 +5,7 @@ import type {
 import type { ConfirmOutcome, RequestConfirmArgs } from '../../../agent-core/permission-engine'
 import { runHitlRequestHooks, runHitlResolvedHooks } from '../../../plugins/hooks'
 import type { RunHookContext } from './run-hook-context'
+import type { CcHookToolRef } from '../../../cc-hooks'
 import { isDangerous } from '../../../agent-core/tools/bash/bash-command-safety'
 import { grantCoversCall } from '../../../agent-core/permission-grant-scope'
 import { surfaceConfirmRequest } from '../hitl-confirm'
@@ -28,6 +29,8 @@ export function createConfirmRequester(
     hitlWaitedMs?: Map<string, number>
     /** Stop the run: a PermissionRequest hook's deny with `interrupt: true`. */
     stopRun?: () => void
+    /** The run's tool by name, so a PermissionRequest hook sees an MCP tool's `mcp__…` name. */
+    hookTool?: (toolName: string) => CcHookToolRef
   },
 ) {
   const { env, userId, session, assistantMessageId, ccHooks } = args
@@ -158,7 +161,11 @@ export function createConfirmRequester(
       // CC PermissionRequest hooks run beside the card; whichever decides first applies.
       const raced = await raceCardWithPermissionHooks(
         ccHooks,
-        { toolName: confirmArgs.toolName, input: call?.input },
+        {
+          toolName: confirmArgs.toolName,
+          ...(args.hookTool ? { tool: args.hookTool(confirmArgs.toolName) } : {}),
+          input: call?.input,
+        },
         signal,
         (cardSignal) =>
           env.deps.hitlRegistry.controller.request<ConfirmToolRequest, ConfirmToolResponse>(

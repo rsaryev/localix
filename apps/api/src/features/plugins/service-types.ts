@@ -19,6 +19,7 @@ import type {
   ListPluginsResponse,
   PluginConfigField,
   PluginRecord,
+  PluginValidation,
   RemovePluginRequest,
   SetPluginConfigRequest,
   SetPluginEnabledRequest,
@@ -122,7 +123,16 @@ export interface PluginService {
   ): Promise<{ html: string }>
   resolveUiFile(userId: string, input: { pluginName: string; file: string }): Promise<string>
   invokeUiAction(userId: string, input: InvokePluginUiActionRequest): Promise<{ result: unknown }>
-  setEnabled(userId: string, input: SetPluginEnabledRequest): Promise<PluginRecord>
+  /**
+   * Switch a plugin on or off. Disabling one that another enabled plugin depends on is refused
+   * (`plugin_has_dependents`) unless `ignoreDependents`; `refuseNoop` also refuses a switch that
+   * changes nothing (`plugin_already_in_state`), as `claude plugin enable|disable` does.
+   */
+  setEnabled(
+    userId: string,
+    input: SetPluginEnabledRequest,
+    opts?: { refuseNoop?: boolean; ignoreDependents?: boolean },
+  ): Promise<PluginRecord>
   /**
    * The extra rule changes an allow on these plugins implies — their installed, still-inert
    * dependencies. Planned rather than written so the caller lands them in ONE transaction
@@ -142,11 +152,21 @@ export interface PluginService {
     names: readonly string[],
   ): Promise<void>
   setConfig(userId: string, input: SetPluginConfigRequest): Promise<PluginRecord>
+  /**
+   * Rewrite config an older build stored in a shape `setConfig` no longer writes (a sensitive
+   * value in plain text, a user-scope plugin's per-project copy). Run at boot; idempotent.
+   */
+  reconcileStoredConfig(userId: string): Promise<number>
   install(
     userId: string,
     input: Omit<InstallPluginRequest, 'enable'> & { enable?: boolean },
     opts?: { replace?: boolean },
   ): Promise<PluginRecord>
+  /** Validate a plugin folder in place, installed or not (`claude plugin validate <path>`). */
+  validatePath(
+    dir: string,
+    opts?: { strict?: boolean },
+  ): Promise<{ name: string; validation: PluginValidation }>
   /** Re-install from the original source (CC `plugin update` parity). */
   update(userId: string, input: RemovePluginRequest): Promise<PluginRecord>
   /**

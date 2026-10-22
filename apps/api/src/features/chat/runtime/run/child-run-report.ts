@@ -27,6 +27,7 @@ import { hasChildrenAtWork, releaseLane } from '../../../agent-core/delegation-l
 import {
   deliverHeldReport,
   dropExpectedReport,
+  noteTurnLimit,
   settleReport,
   takeExpectedReport,
 } from '../../../agent-core/delegation-awaits'
@@ -49,6 +50,8 @@ export interface EndedChildRun {
   /** The run's final assistant message id — what the report is keyed by. */
   runId: string
   outcome: 'completed' | 'failed' | 'stopped'
+  /** The run stopped at its turn limit (CC `maxTurns`): its text is partial output. */
+  partial?: boolean
 }
 
 /** Is this session a child whose runs report to a delegator? */
@@ -57,6 +60,8 @@ const reportsToParent = (session: SessionRecord) => lineagePolicy(session).repor
 export async function reportChildRun(env: RunEnv, run: EndedChildRun): Promise<void> {
   const { session, userId } = run
   if (!reportsToParent(session) || session.provenance.kind !== 'task-delegation') return
+  // Before any await: the launch watching this run reads it as soon as the run returns.
+  noteTurnLimit(session.id, run.partial === true)
   // The run is over whatever happens next: its record and its lane go first, unconditionally,
   // or a missing binding below would hold the lane for good.
   endSubagentWork(env.state, session.id, run.outcome)
@@ -124,7 +129,8 @@ async function sendReport(
   const provenance = session.provenance
   const message = await env.repo.getMessage(userId, session.id, run.runId).catch(() => null)
   const text = message?.payload.role === 'assistant' ? (message.payload.content ?? null) : null
-  if (deliverHeldReport(session.id, { status: run.outcome, text })) return false
+  const partial = run.partial ? { partial: true } : {}
+  if (deliverHeldReport(session.id, { status: run.outcome, text, ...partial })) return false
   const delegatingAgentId = provenance.parentParticipant
     ? participantAgentId(provenance.parentParticipant)
     : null
@@ -143,6 +149,7 @@ async function sendReport(
       runId: run.runId,
       status: run.outcome,
       text,
+      ...partial,
     }),
   )
   return true

@@ -48,7 +48,10 @@ function host(plugins: Partial<DelegatePluginPorts> = {}) {
       calls.start!.push({ sid, task, ...taskOpts })
       return undefined
     },
-    onSubagentStart: (agentType, id) => void calls.subagent!.push({ agentType, id }),
+    onSubagentStart: async (agentType, id) => {
+      calls.subagent!.push({ agentType, id })
+      return undefined
+    },
   }
   const ports: DelegatePluginPorts = {
     agents: () => [REVIEWER, TESTER],

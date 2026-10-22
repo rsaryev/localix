@@ -30,6 +30,11 @@ import type { TrustClass } from './trust'
 export interface ExtCatalogItem {
   /** Scope identifier: `''` for global, non-empty string for project-scoped. */
   projectId: string
+  /**
+   * Where the item itself lives. A `global` item is projected into every project (its
+   * `projectId` is then the project's), but its state is the user's one no-project row.
+   */
+  scope?: 'global' | 'project'
   manifest: { name: string }
 }
 
@@ -97,7 +102,11 @@ export function buildExtCatalog<TItem extends ExtCatalogItem, TState extends Ext
   const { discovered, stateByKey, kind, availability, trustOf } = opts
 
   const all: CatalogEntry<TItem, TState>[] = discovered.map((item) => {
-    const state = stateByKey.get(`${item.projectId}:${item.manifest.name}`)
+    // A user-scope item read from a project falls back to the no-project row: one config per
+    // user, as Claude Code's `pluginConfigs` is. A row written for the project still wins.
+    const state =
+      stateByKey.get(`${item.projectId}:${item.manifest.name}`) ??
+      (item.scope !== 'project' ? stateByKey.get(`:${item.manifest.name}`) : undefined)
     const effect = availability.effectFor(kind, item.manifest.name, trustOf(item))
     return {
       item,

@@ -21,6 +21,18 @@ A Claude Code marketplace is a repository, folder or hosted file whose catalog i
 `/plugin marketplace update <name>` refreshes it and updates what was installed from it, and
 `/plugin marketplace remove <name>` removes it with the plugins installed from it.
 
+`/plugin install` leaves a plugin whose manifest or marketplace entry sets `defaultEnabled: false`
+off until you enable it, and names the dependencies it installed. `/plugin disable` refuses while
+another enabled plugin depends on the one named, and `/plugin enable` or `/plugin disable` on a
+plugin already in that state says so. Removing a plugin from the last place it is installed also
+deletes its `${CLAUDE_PLUGIN_DATA}` folder and its vault-held settings. `/plugin validate <path>`
+validates a folder that is not installed and ends with Claude Code's verdict line.
+
+A user-scope plugin has one configuration in every project, as Claude Code's `pluginConfigs` does. A
+`sensitive` userConfig value is stored in the [vault](../features/secrets.md), encrypted and bound
+to the plugin; the plugin's settings keep only a reference, and the value reaches its hooks, MCP
+servers and `CLAUDE_PLUGIN_OPTION_<KEY>` when they run.
+
 To give a plugin screens, a backend or agent tools over Localix's APIs, add a mini app beside it;
 see [Build a plugin or a mini app](plugins.md).
 

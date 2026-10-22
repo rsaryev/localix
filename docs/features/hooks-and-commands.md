@@ -88,23 +88,30 @@ the invoked skill or delegated agent. Localix dispatches these events:
 error and can add context to the failed result. A plugin's hooks on any other event are listed in
 its validation and never fire.
 
-`PreCompact` fires with trigger `auto` when a [context checkpoint](context-checkpoints.md) is taken.
-The view is already decided by then, so a block is logged and never stops the turn; the next run
-fires `SessionStart` with source `compact`.
+`PreCompact` fires with trigger `auto` before a [context checkpoint](context-checkpoints.md) is
+committed. A block skips a proactive checkpoint, and the turn continues with the uncompacted view. A
+block on a checkpoint that recovers from a context-limit error fails the turn. A checkpoint taken
+only because the history does not fit the request is announced to `PreCompact` after it is taken,
+and that call cannot block. After a checkpoint, the next run fires `SessionStart` with source
+`compact`.
+
+`SessionEnd` fires when a session ends, not when a run ends. Deleting a session fires it with reason
+`other`.
 
 Matching synchronous handlers run in declaration and plugin load order. `PreToolUse` input rewrites
 compose and the first deny stops the call. `PostToolUse` replacements are visible to later handlers.
 
-| Event                       | Effect of a blocking verdict                                                                    |
-| --------------------------- | ----------------------------------------------------------------------------------------------- |
-| `UserPromptSubmit`          | Rejects the prompt at the first block.                                                          |
-| `PreToolUse`                | Stops the tool at the first deny; `allow` and `ask` remain advisory.                            |
-| `PostToolUse`               | Cannot undo execution; a block reason becomes added result context.                             |
-| `PostToolUseFailure`        | Cannot block; added context is appended to the failed result.                                   |
-| `Stop`                      | Requests another run with the reason, subject to continuation gates and a five-run cap.         |
-| Scoped child `SubagentStop` | Can request the same bounded continuation in the child; parent observation does not restart it. |
-| `PreCompact`                | Reports the block without stopping the checkpoint.                                              |
-| Other lifecycle events      | Do not stop the run; context or observer effects depend on the event.                           |
+| Event                       | Effect of a blocking verdict                                                                     |
+| --------------------------- | ------------------------------------------------------------------------------------------------ |
+| `UserPromptSubmit`          | Rejects the prompt at the first block.                                                           |
+| `PreToolUse`                | Stops the tool at the first deny; `allow` and `ask` remain advisory.                             |
+| `PostToolUse`               | Cannot undo execution; a block reason becomes added result context.                              |
+| `PostToolUseFailure`        | Cannot block; added context is appended to the failed result.                                    |
+| `Stop`                      | Requests another run with the reason, subject to continuation gates and a five-run cap.          |
+| `Stop` `additionalContext`  | Requests the same bounded run as feedback, without a block.                                      |
+| Scoped child `SubagentStop` | Can request the same bounded continuation in the child; parent observation does not restart it.  |
+| `PreCompact`                | Skips a proactive checkpoint; fails a turn whose checkpoint recovers from a context-limit error. |
+| Other lifecycle events      | Do not stop the run; context or observer effects depend on the event.                            |
 
 ### Matcher, `if`, and `once`
 
@@ -119,10 +126,11 @@ rewrites. It applies only to `PreToolUse`, `PostToolUse` and `PostToolUseFailure
 another event prevents that handler from running. Unparseable rules or unavailable comparison fields
 let the handler run. This filter does not grant tool permission.
 
-`once: true` is tracked per session in API-process memory. Selection consumes the marker even if the
-handler later fails or an earlier handler blocks. The key combines event, source, plugin name, and
-command or prompt text; identical keys share a marker, including HTTP/MCP handlers with empty
-command and prompt fields. API restart or session runtime cleanup clears these markers.
+`once: true` applies only to hooks in skill frontmatter; a plugin's `hooks.json` and agent
+frontmatter ignore it. The hook is removed after its first successful run. A run that fails, blocks
+with exit code 2, or times out leaves it in place for the next matching event. The marker is tracked
+per session in API-process memory, and its key combines event, source, plugin name, and command or
+prompt text. API restart or session runtime cleanup clears these markers.
 
 ## Configuration
 
@@ -191,6 +199,9 @@ outside Bash tool approval. Treat it as executable plugin code, rather than a sa
 | `prompt`                      | 30 seconds      | Declared timeouts are capped at 1,800 seconds.                   |
 | `agent`                       | 60 seconds      | Default 50 turns; declared timeouts are capped at 1,800 seconds. |
 
+A `prompt` or `agent` hook's `$ARGUMENTS` is replaced by the event JSON; without it, the JSON is
+appended to the prompt. A backslash keeps a dollar sign literal (`\$1.00` reads `$1.00`).
+
 A `command` handler's `${CLAUDE_PROJECT_DIR}`, `${CLAUDE_PLUGIN_ROOT}` and `${CLAUDE_PLUGIN_DATA}`
 are expanded by the shell from the child environment, not pasted into the command text, and a
 non-secret `${user_config.KEY}` becomes `${CLAUDE_PLUGIN_OPTION_<KEY>}` with its value in the
@@ -201,9 +212,11 @@ placeholders are substituted directly.
 
 Command-hook stdout and stderr capture is capped at 64 KiB each. Declarative post-tool appended
 context has a separate aggregate cap of 4,096 UTF-16 code units. A command handler with
-`async: true` cannot affect the current event. `asyncRewake` can wake an idle session when that
-command exits with code 2. That wake is armed when the hook starts and delivered at most once; a
-hook that exits any other way, or is lost to an API restart, wakes nobody.
+`async: true` cannot affect the current event. When it exits 0, the `additionalContext` and
+`systemMessage` of its JSON response reach the model with the session's next turn; print the JSON
+alone on stdout or on a line of its own. `asyncRewake` can wake an idle session when that command
+exits with code 2. That wake is armed when the hook starts and delivered at most once; a hook that
+exits any other way, or is lost to an API restart, wakes nobody.
 
 ## Limits
 

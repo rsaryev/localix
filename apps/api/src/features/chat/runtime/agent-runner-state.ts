@@ -42,6 +42,23 @@ export function evictSessionStateOverCap(
 }
 
 /**
+ * Claude Code's `SessionEnd` (hooks.md: "When a session terminates"): the hooks the session's
+ * latest run assembled run with the reason it ended. A run ending is not the session ending, so
+ * this fires only from the seams where the session does end (`/clear`, deletion). Side effects
+ * only, never awaited; a session that has not run in this process has no hooks to end.
+ */
+export function endCcHookSession(
+  state: Pick<RuntimeState, 'ccHookSessions'>,
+  sessionId: string,
+  reason: 'clear' | 'other',
+): void {
+  void state.ccHookSessions
+    .runtimeFor(sessionId)
+    .runSessionEnd(reason)
+    .catch(() => {})
+}
+
+/**
  * Reap PROCESS-LIFETIME per-session entries when a session is DELETED (not
  * merely stopped — a stopped session can resume, so it keeps these). Run-scoped
  * maps (activeRuns, liveItemResolvers) are cleaned by the run's own
@@ -97,6 +114,8 @@ export function forgetSessionRuntimeState(
   state.ccHooksStartedSessions.delete(sessionId)
   state.ccHooksSessionStartSource.delete(sessionId)
   state.ccHookOnceKeys.delete(sessionId)
+  // Deleting the session ends it: its SessionEnd hooks run before its hooks are forgotten.
+  endCcHookSession(state, sessionId, 'other')
   state.ccHookSessions.forget(sessionId)
   state.contextSnapshots.invalidate(sessionId)
   state.childRuntimeSessions.delete(sessionId)

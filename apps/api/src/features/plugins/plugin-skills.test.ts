@@ -120,4 +120,33 @@ describe('plugin skills as slash commands', () => {
     expect(specs.map((spec) => spec.fullName)).toContain('kit:review')
     expect(specs.map((spec) => spec.fullName)).not.toContain('off:nope')
   })
+
+  // skills.md, "Resolve skills that share a name": "A skill and a file in `.claude/commands/` |
+  // The skill" — the skill is what `/dup:review` runs, so it is the entry the menu shows.
+  test('a skill and a command of the same name list once, as the skill', async () => {
+    const dir = join(root(), 'dup')
+    writeTree(dir, {
+      '.claude-plugin/plugin.json': JSON.stringify({ name: 'dup', description: 'dup plugin' }),
+      'commands/review.md': skill('description: The command', 'DUP-COMMAND'),
+      'commands/other.md': skill('description: Only a command', 'OTHER'),
+      'skills/review/SKILL.md': skill('description: The skill', 'DUP-SKILL'),
+    })
+    const catalog = catalogOf([
+      {
+        plugin: await loadManifest(dir, 'global', ''),
+        state: undefined,
+        enabled: true,
+        awaitingConsent: false,
+      },
+    ])
+    const specs = await listCatalogCommandSpecs(catalog, {
+      projectId: '',
+      projectDir: join(root(), 'project'),
+      homeDir: join(root(), 'home'),
+      modCommands: [],
+    })
+    const review = specs.filter((spec) => spec.fullName === 'dup:review')
+    expect(review.map((spec) => spec.description)).toEqual(['The skill'])
+    expect(specs.map((spec) => spec.fullName)).toContain('dup:other')
+  })
 })

@@ -19,6 +19,7 @@ import { checkpointAtTokens } from '../../model-view/checkpoint-policy'
 import { resolveExecutionProfile } from '../../run-profile'
 import { createSetTopicPort } from '../set-topic-port'
 import { buildRunToolRegistry } from '../runtime-tools'
+import type { SkillCommandPolicyRef } from '../skill-tool-ports'
 import { resolveRunDisabledTools } from '../run-tool-policy'
 import { surfacePlugins, surfaceTools } from '../surface-tools'
 import { assembleRunTools } from '../tool-assembly'
@@ -49,6 +50,8 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
   const decisionsAvailable = deps.decisions
     ? !!(await deps.decisions.available(userId).catch(() => null))
     : false
+  // The permission gate is built after the roster (it reads it); it fills this for the skill tool.
+  const skillCommandPolicy: SkillCommandPolicyRef = {}
   const runtimeTools = buildRunToolRegistry(
     {
       deps,
@@ -57,6 +60,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
       work: runtimeState.work,
       actionRegistry: runtimeState.actionRegistry,
       terminalWaits: runtimeState.terminalWaits,
+      ccHookSessions: runtimeState.ccHookSessions,
       executeToolAction: (toolCallId, actionName, actionPayload) =>
         env.executeToolAction(toolCallId, actionName, actionPayload),
     },
@@ -83,6 +87,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
       // CC SubagentStart/SubagentStop hooks fire around delegate sub-agent runs.
       ccHooks,
       fileMtimes: frame.stores.fileMtimes,
+      skillCommandPolicy,
       chatModel: {
         providerId: turn.model.providerId,
         connectionId: turn.model.connection.id,
@@ -147,6 +152,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     mods: inputs.mods,
     defaultCwd,
     availability: inputs.availability,
+    agentId: frame.speakerAgentId,
     capabilities: inputs.capabilities,
     modelInput: turn.modelInput,
     disabledTools,
@@ -202,6 +208,8 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     dispatchTools,
     /** Where calls meet the permission gate: the loop, or inside the chain (`chain-gate.ts`). */
     gate,
+    /** The gate's inputs once built: a skill's injected commands are checked against them. */
+    skillCommandPolicy,
     mcpInstructions,
     mcpInventory,
     descendantSessions,

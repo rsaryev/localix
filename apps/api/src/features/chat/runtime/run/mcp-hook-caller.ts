@@ -52,6 +52,7 @@ export function createMcpHookCaller(input: {
         pluginMcpServers: loadedPlugins.mcpServers,
         defaultCwd,
         availability,
+        agentId: input.agentId,
       })
         .then(
           (r) =>

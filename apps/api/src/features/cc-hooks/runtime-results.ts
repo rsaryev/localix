@@ -88,6 +88,7 @@ export const EMPTY_RUNTIME: CcHooksRuntime = {
   async runWorktreeCreate() {
     return undefined
   },
+  stoppedBy: () => undefined,
 }
 
 /** Join non-empty context strings with a blank line. */
@@ -116,4 +117,17 @@ export function blockedFrom(outcomes: CcHookOutcome[]): StopResult {
     }
   }
   return { blocked, ...(reason ? { reason } : {}) }
+}
+
+/**
+ * Stop / SubagentStop: a block keeps the agent working, and so does a hook's
+ * `hookSpecificOutput.additionalContext` without one (hooks.md, Stop decision control: "Non-error
+ * feedback for Claude. The conversation continues so Claude can act on it"). The feedback rides
+ * the same bounded continuation as a block, marked as feedback rather than a refusal.
+ */
+export function stopVerdictFrom(outcomes: CcHookOutcome[]): StopResult {
+  const verdict = blockedFrom(outcomes)
+  if (verdict.blocked) return verdict
+  const feedback = contextFrom(outcomes)
+  return feedback ? { blocked: true, reason: feedback, feedback: true } : verdict
 }

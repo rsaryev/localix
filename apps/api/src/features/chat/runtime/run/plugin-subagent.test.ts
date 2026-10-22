@@ -141,3 +141,26 @@ test("a type's isolated child works where the run's WorktreeCreate hook made its
   expect(worktree).toMatchObject({ byHook: true })
   expect(await realpath(worktree.workingDir)).toBe(await realpath(dir))
 })
+
+// skills.md: "Claude Code starts a new subagent of the type set in the `agent` field"; "The `agent`
+// field determines the execution environment (model, tools, and permissions)".
+test('a context: fork skill whose agent names a plugin agent runs as that agent', () => {
+  const fork = (pluginAgent?: string) =>
+    parseSessionProvenance(
+      serializeSessionProvenance({
+        kind: 'skill-fork',
+        parentSessionId: 'parent',
+        ...(pluginAgent ? { pluginAgent } : {}),
+      }),
+    )
+  const input = { agent: { instructions: 'You are Localix.' }, disabledTools: [] }
+  expect(fork('sec:reviewer')).toEqual(expect.objectContaining({ pluginAgent: 'sec:reviewer' }))
+  expect(applyPluginSubagent(input, fork('sec:reviewer'), [REVIEWER])?.agent.instructions).toBe(
+    'You are the security reviewer.',
+  )
+  // By a bare name only one enabled agent has.
+  expect(applyPluginSubagent(input, fork('reviewer'), [REVIEWER])?.subagent).toBe(REVIEWER)
+  const other = { ...REVIEWER, pluginName: 'ops', fullName: 'ops:reviewer' }
+  expect(applyPluginSubagent(input, fork('reviewer'), [REVIEWER, other])).toBeNull()
+  expect(applyPluginSubagent(input, fork(), [REVIEWER])).toBeNull()
+})

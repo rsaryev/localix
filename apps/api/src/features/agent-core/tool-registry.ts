@@ -91,6 +91,8 @@ export interface CoreToolDeps {
    *  auto-open, along with the command that produced it so a stopped preview can be relaunched. */
   /** Enabled plugins' `bin/` directories, appended to PATH for bash subprocesses. Injected as DATA. */
   bashPluginBinDirs?: string[]
+  /** Shell files sourced before each bash command (the session's `CLAUDE_ENV_FILE`s). DATA. */
+  bashEnvScripts?: string[]
   /** Engine for `bash` `until` waits (poll + wake). Bound to user+session; absent → unavailable. */
   bashWaitHost?: BashWaitHost
   /** Keyless research runtime policy. No provider credentials are accepted. */

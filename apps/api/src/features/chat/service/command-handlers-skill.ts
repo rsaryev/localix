@@ -1,11 +1,11 @@
 import { sessionRoute } from '../../../contracts/session-route'
-import { dirname } from 'node:path'
 import { recordSkillUse } from '../../agent-core/skill-usage-recorder'
 import { announceSkillInvoked } from '../../agent-core/skill-invocations'
-import { parseSkillCommand, applySkillArguments } from './slash-commands'
+import { resolveModelAlias } from '../../agent-core/model-alias'
+import { parseSkillCommand } from './slash-commands'
 import { commandTarget } from './command-participant'
-import { expandSkillContent } from './skill-commands'
-import { expandFileReferences } from './file-references'
+import { SkillCommandFailedError } from './skill-commands'
+import { renderSkillBody } from './skill-render'
 import { toolOverrideOptions } from './tool-override-options'
 import type { SessionRecord } from '../repository'
 import type { SkillRecord } from './skills'
@@ -93,24 +93,6 @@ export async function handleSkillCommand(
       ctx.runner.leadership(userId, session.projectId),
     )
   )?.participant
-  let rawSkillContent: string
-  try {
-    rawSkillContent = skill.content
-  } catch (error) {
-    return insertDirectReply(
-      userId,
-      sessionId,
-      prompt,
-      `Skill \`/${skill.name}\` could not be loaded: ${errorMessage(error).slice(0, 500)}`,
-      now(),
-      'error',
-    )
-  }
-  // CC dynamic context injection: !`cmd` and ```!\n...\n``` blocks are pre-expanded
-  // before argument substitution so command output can reference $ARGUMENTS etc.
-  // SECURITY: only expand for SKILL.md files (source='file'): the user's own, and an ENABLED
-  // plugin's — Claude Code runs a plugin skill's commands too, as `/<plugin>:<command>` already
-  // does here.
   const workingDir = await ctx.resolveSessionWorkingDir(userId, session)
   // A plugin's skill is a plugin component: its `!cmd` lines and its frontmatter `hooks` both get
   // the plugin's `${CLAUDE_PLUGIN_ROOT}` and `${CLAUDE_PLUGIN_DATA}`, as Claude Code gives them.
@@ -122,32 +104,36 @@ export async function handleSkillCommand(
           dataDir: pluginDataDir(skill.pluginName, userHome()),
         }
       : undefined
-  // Inject CC skill env vars so !`cmd` scripts can reference them.
-  const skillEnv: Record<string, string> = {
-    CLAUDE_SESSION_ID: sessionId,
-    CLAUDE_EFFORT: (speaker ?? sessionRoute(session)).reasoningEffort ?? 'low',
-    CLAUDE_PROJECT_DIR: workingDir,
-    ...(skill.path ? { CLAUDE_SKILL_DIR: dirname(skill.path) } : {}),
-    ...(plugin ? { CLAUDE_PLUGIN_ROOT: plugin.root, CLAUDE_PLUGIN_DATA: plugin.dataDir } : {}),
+  const speakerRoute = speaker ?? sessionRoute(session)
+  // CC rendering: `!cmd` and ```! blocks run (seeing the arguments), `@path` references inline,
+  // then arguments and `${CLAUDE_*}` substitute. SECURITY: commands and @refs only for SKILL.md
+  // files (source='file'): the user's own, and an ENABLED plugin's — Claude Code runs a plugin
+  // skill's commands too. A failed command aborts the invocation before the model is asked.
+  let expanded: string
+  try {
+    expanded = await renderSkillBody(skill, skillCmd.arg, {
+      sessionId,
+      workingDir,
+      effort: speakerRoute.reasoningEffort ?? 'low',
+      ...(plugin
+        ? { env: { CLAUDE_PLUGIN_ROOT: plugin.root, CLAUDE_PLUGIN_DATA: plugin.dataDir } }
+        : {}),
+      dynamic: skill.source === 'file',
+    })
+  } catch (error) {
+    const reason =
+      error instanceof SkillCommandFailedError
+        ? error.message.slice(0, 4000)
+        : `could not be loaded: ${errorMessage(error).slice(0, 500)}`
+    return insertDirectReply(
+      userId,
+      sessionId,
+      prompt,
+      `Skill \`/${skill.name}\`: ${reason}`,
+      now(),
+      'error',
+    )
   }
-  // CC @path file references — inline referenced file content after !`cmd` expansion.
-  // SECURITY: only for filesystem skills (source='file'); plugin/MCP/remote bodies are
-  // never scanned for @refs. Bases: the session working dir + the skill's own dir (so a
-  // skill can reference its bundled `@reference.md`), both confinement-gated.
-  const expandedContent =
-    skill.source === 'file'
-      ? await expandFileReferences(
-          await expandSkillContent(rawSkillContent, workingDir, skillEnv),
-          [workingDir, ...(skill.path ? [dirname(skill.path)] : [])],
-        )
-      : rawSkillContent
-  const expanded = applySkillArguments(expandedContent, skillCmd.arg, {
-    argumentNames: skill.argumentNames,
-    skillDir: skill.path ? dirname(skill.path) : undefined,
-    sessionId,
-    effort: (speaker ?? sessionRoute(session)).reasoningEffort ?? 'low',
-    projectDir: workingDir,
-  })
   // Claude Code mods' `skill.prompt`: the text the model reads for the skill.
   const instruction = await skillPrompt(
     ctx.deps?.mods,
@@ -172,18 +158,13 @@ export async function handleSkillCommand(
       : { skillName: skill.name }),
   })
 
-  // CC `context: fork` — run the skill in a child session, as the invoking agent itself.
+  // CC `context: fork` — run the skill in a child session, seated by the invoking agent and run
+  // as the subagent type its `agent:` names (a plugin agent; general-purpose when omitted).
   if (skill.contextFork && spawnForkSkill) {
-    // `agent:` used to start a different agent for the skill. No path starts another agent on a
-    // skill's behalf any more, so the declaration is ignored — and said so, not silently.
-    const ignoredAgent = roleNameOfSubagentType(skill.forkAgent)
-    if (ignoredAgent) {
-      console.warn(
-        `[skill-fork] /${skill.name}: "agent: ${ignoredAgent}" is no longer honoured; the skill runs as the invoking agent.`,
-      )
-    }
+    const forkAgent = roleNameOfSubagentType(skill.forkAgent)
     const childId = await spawnForkSkill(userId, sessionId, instruction, {
       ...(speaker ? { invokedBy: speaker.agentId } : {}),
+      ...(forkAgent ? { pluginAgent: forkAgent } : {}),
       title: `/${skill.name}${skillCmd.arg ? ' ' + skillCmd.arg : ''}`,
       preferredModel: skill.preferredModel,
       preferredEffort: skill.preferredEffort,
@@ -194,11 +175,7 @@ export async function handleSkillCommand(
       userId,
       sessionId,
       prompt,
-      `Skill \`/${skill.name}\` started in a fork (session \`${childId.slice(0, 8)}…\`). Results will appear in the runtime panel.${
-        ignoredAgent
-          ? ` Its \`agent: ${ignoredAgent}\` is no longer honoured: the fork runs as the invoking agent.`
-          : ''
-      }`,
+      `Skill \`/${skill.name}\` started in a fork (session \`${childId.slice(0, 8)}…\`). Results will appear in the runtime panel.`,
       now(),
     )
   }
@@ -215,15 +192,25 @@ export async function handleSkillCommand(
       // CC disallowed-tools removes tools; allowed-tools auto-approves them.
       // ${CLAUDE_PROJECT_DIR} in allowed-tools resolves to the session working dir.
       ...toolOverrideOptions(skill, workingDir),
-      // CC skill frontmatter `hooks` — active for this (inline) skill run only. No
-      // Stop→SubagentStop conversion: the skill runs in THIS session's turn, so its
-      // `Stop` hooks fire on this run's stop, exactly when the skill is done.
+      // CC skill frontmatter `hooks` — registered for "the rest of the session once the skill is
+      // invoked": from this run on, every later run of the session keeps them. No
+      // Stop→SubagentStop conversion: the skill runs in THIS session's turn.
       ...(skill.hooks
         ? {
             ccScopedHooks: [
-              { raw: skill.hooks, source: 'skill' as const, ...(plugin ? { plugin } : {}) },
+              {
+                raw: skill.hooks,
+                source: 'skill' as const,
+                lifetime: 'session' as const,
+                ...(plugin ? { plugin } : {}),
+              },
             ],
           }
+        : {}),
+      // CC skill `model:` — "applies for the rest of the current turn"; the next prompt runs on
+      // the session model again. An alias resolves like a command's; `inherit` keeps the model.
+      ...(skill.preferredModel
+        ? { modelId: resolveModelAlias(skill.preferredModel, speakerRoute.modelId ?? undefined) }
         : {}),
       invocation: {
         source: 'slash',

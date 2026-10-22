@@ -18,7 +18,7 @@ test('a failed guard leaves a once hook available, while a selected denial spend
         {
           handlers: [
             {
-              source: 'plugin',
+              source: 'skill',
               kind: 'prompt',
               command: '',
               prompt: 'check',
@@ -58,7 +58,7 @@ test('source filtering happens before inspecting guards or spending once hooks',
   let guardReads = 0
   let evaluated = 0
   const handler: CcHookHandler = {
-    source: 'user',
+    source: 'skill',
     kind: 'prompt',
     command: '',
     prompt: 'check',
@@ -81,13 +81,13 @@ test('source filtering happens before inspecting guards or spending once hooks',
       return { ok: true }
     },
   })
-  expect(await runtime.runSubagentStop('child', 'id', null, { sourcesOnly: ['skill'] })).toEqual({
+  expect(await runtime.runSubagentStop('child', 'id', null, { sourcesOnly: ['agent'] })).toEqual({
     blocked: false,
   })
   expect(guardReads).toBe(0)
   expect(onceKeys.size).toBe(0)
   expect(evaluated).toBe(0)
-  await runtime.runSubagentStop('child', 'id', null, { sourcesOnly: ['user'] })
+  await runtime.runSubagentStop('child', 'id', null, { sourcesOnly: ['skill'] })
   expect(guardReads).toBe(1)
   expect(onceKeys.size).toBe(1)
   expect(evaluated).toBe(1)

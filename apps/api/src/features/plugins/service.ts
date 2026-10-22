@@ -3,8 +3,8 @@ import {
   InvalidRequestError,
   NotFoundError,
   UnavailableError,
-  UnprocessableError,
 } from '../../lib/domain-errors'
+import { jsonValueWithinCap } from './ui-action-json'
 import { promises as fs } from 'node:fs'
 import { pluginLoadBlockReason } from './loadable'
 import { isAbsolute } from 'node:path'
@@ -19,7 +19,6 @@ import { errorMessage } from '../../lib/errors'
 import { localixWorkspaceDir } from '../../lib/env'
 import { createContributionKindRegistry } from '../ext/contribution-kinds'
 import { isGitSource } from '../ext/git-source'
-import { configPatchValues } from '../ext/config-fields'
 import { removeIfUnderRoot } from '../ext/install-tree'
 import {
   discoverPlugins,
@@ -69,6 +68,15 @@ import { listThemesFromCatalog } from './themes'
 import { readPluginUiDescriptor, resolvePluginUiFile } from './ui-artifact'
 import type { PluginViewSpec, PluginRecord } from './contracts'
 import { toConfigFields, type PluginService, type PluginServiceDeps } from './service-types'
+import { hydrateSecretOption } from './config-vault'
+import { reconcileStoredConfig, savePluginConfig } from './service-config'
+import {
+  assertEnableChanges,
+  refreshLocalMarketplace,
+  removeDataIfLastCopy,
+  rowScopeOf,
+  validatePluginDir,
+} from './service-lifecycle'
 
 // Repo-clone + tree-copy install primitives live in ./install-helpers; re-exported
 // here so existing importers of `./service` keep their import surface unchanged.
@@ -76,33 +84,6 @@ export { copyPluginTree } from './install-helpers'
 // Service interface + deps live in ./service-types; re-exported
 // here so the historical `./service` import surface stays unchanged.
 export type { PluginService, PluginServiceDeps } from './service-types'
-
-const PLUGIN_UI_ACTION_JSON_CAP_BYTES = 256 * 1024
-
-function jsonValueWithinCap(value: unknown, label: string): unknown {
-  let encoded: string | undefined
-  try {
-    encoded = JSON.stringify(value ?? null)
-  } catch {
-    throw new UnprocessableError(
-      'plugin_ui_action_invalid_json',
-      `${label} must be JSON-serializable`,
-    )
-  }
-  if (encoded === undefined) {
-    throw new UnprocessableError(
-      'plugin_ui_action_invalid_json',
-      `${label} must be JSON-serializable`,
-    )
-  }
-  if (Buffer.byteLength(encoded) > PLUGIN_UI_ACTION_JSON_CAP_BYTES) {
-    throw new UnprocessableError(
-      'plugin_ui_action_too_large',
-      `${label} exceeds ${PLUGIN_UI_ACTION_JSON_CAP_BYTES} bytes`,
-    )
-  }
-  return JSON.parse(encoded) as unknown
-}
 
 export function createPluginService(deps: PluginServiceDeps): PluginService {
   const serializeContributions = createKeyedSerializer()
@@ -261,6 +242,37 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
           : [],
       ),
     )
+
+  /** `update`; a marketplace update has just refreshed the marketplace and says so. */
+  const updatePlugin = async (
+    userId: string,
+    input: { name: string; projectId?: string | null },
+    opts: { refreshMarketplace: boolean },
+  ): Promise<PluginRecord> => {
+    // Re-install from the original source (mirrors CC `plugin update`).
+    const projectId = input.projectId ?? ''
+    // The row of the plugin's own scope: a user-scope plugin updated from a project chat stays
+    // a user-scope plugin ("updates the plugin at the most specific scope it's installed at").
+    const plugin = await findPlugin(userId, input.name, projectId)
+    const state =
+      (plugin ? await repo.get(userId, rowScopeOf(plugin, projectId), input.name) : null) ??
+      (await repo.listForScope(userId, projectId)).find((s) => s.name === input.name)
+    if (!state?.source || state.source === 'local') {
+      throw new InvalidRequestError(
+        'plugin_no_source',
+        `Plugin "${input.name}" has no recorded install source — drop in the updated folder manually.`,
+      )
+    }
+
+    if (opts.refreshMarketplace) await refreshLocalMarketplace(state.source, registryDeps)
+    // Installation owns staging and rollback. Omitting enable preserves the existing
+    // rules rather than copying a stale availability decision into a new policy write.
+    return service.install(
+      userId,
+      { source: state.source, projectId: state.projectId || null },
+      { replace: true },
+    )
+  }
 
   const service: PluginService = {
     async syncBundledContributions(userId, projectId) {
@@ -514,9 +526,20 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       deps.onChanged?.()
     },
 
-    async setEnabled(userId, input) {
+    async setEnabled(userId, input, opts) {
       const projectId = input.projectId ?? ''
       const plugin = await requirePlugin(userId, input.name, projectId)
+      assertEnableChanges({
+        plugin,
+        enabled: input.enabled,
+        availability: await readAvailability(deps.db, {
+          userId,
+          agentId: input.agentId || DEFAULT_AGENT_ID,
+        }),
+        catalog:
+          input.enabled || opts?.ignoreDependents ? null : await catalogFor(userId, projectId),
+        refuseNoop: opts?.refuseNoop ?? false,
+      })
       // Whose list the switch lands in. A plugin toggle is a rule like any other, so it
       // belongs to an agent; a caller that names none means the one that always exists.
       const targetAgentId = input.agentId || DEFAULT_AGENT_ID
@@ -543,7 +566,10 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         own,
         ...(cascade?.changes ?? []),
       ])
-      const state = (await repo.get(userId, projectId, input.name)) ?? undefined
+      const state = await hydrateSecretOption(
+        userId,
+        await repo.get(userId, rowScopeOf(plugin, projectId), input.name),
+      )
       invalidateInspection(plugin.manifest.name, projectId)
       deps.onChanged?.()
       const record = await toRecord(
@@ -561,11 +587,30 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
     async setConfig(userId, input) {
       const projectId = input.projectId ?? ''
       const plugin = await requirePlugin(userId, input.name, projectId)
-      const patch = configPatchValues(plugin.manifest.config ?? {}, input.values)
-      const state = await repo.patchConfig(userId, projectId, input.name, patch)
-      invalidateInspection(plugin.manifest.name, projectId)
+      const { state, rowScope } = await savePluginConfig({
+        repo,
+        userId,
+        plugin,
+        projectId,
+        values: input.values,
+      })
+      invalidateInspection(plugin.manifest.name, rowScope ? projectId : undefined)
       deps.onChanged?.()
       return toRecord(userId, plugin, state, await verdictFor(userId, plugin))
+    },
+
+    async reconcileStoredConfig(userId) {
+      const rewritten = await reconcileStoredConfig({
+        repo,
+        userId,
+        discover: async (projectId) =>
+          discover({ cwd: projectId ? await cwdFor(userId, projectId) : null, projectId }),
+      })
+      if (rewritten > 0) {
+        invalidateInspection()
+        deps.onChanged?.()
+      }
+      return rewritten
     },
 
     async install(userId, input, opts?: { replace?: boolean }) {
@@ -648,35 +693,17 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       const record = await toRecord(
         userId,
         plugin,
-        state,
+        await hydrateSecretOption(userId, state),
         await verdictFor(userId, plugin),
         cwd ?? localixWorkspaceDir(),
       )
+      if (depInstall?.toInstall.length) record.installedDependencies = depInstall.toInstall
       installNotes.push(...warnings)
       if (installNotes.length) record.validation.warnings.push(...installNotes)
       return record
     },
 
-    async update(userId, input) {
-      // Re-install from the original source (mirrors CC `plugin update`).
-      const projectId = input.projectId ?? ''
-      const states = await repo.listForScope(userId, projectId)
-      const state = states.find((s) => s.name === input.name)
-      if (!state?.source || state.source === 'local') {
-        throw new InvalidRequestError(
-          'plugin_no_source',
-          `Plugin "${input.name}" has no recorded install source — drop in the updated folder manually.`,
-        )
-      }
-
-      // Installation owns staging and rollback. Omitting enable preserves the existing
-      // rules rather than copying a stale availability decision into a new policy write.
-      return service.install(
-        userId,
-        { source: state.source, projectId: projectId || null },
-        { replace: true },
-      )
-    },
+    update: (userId, input) => updatePlugin(userId, input, { refreshMarketplace: true }),
 
     async remove(userId, input) {
       const projectId = input.projectId ?? ''
@@ -685,27 +712,37 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       const plugin =
         discovered.find((p) => p.manifest.name === input.name && p.projectId === projectId) ?? null
       // Nothing to remove used to answer like a removal, so `/plugin remove typo` said "Removed".
+      const rowScope = rowScopeOf(plugin, projectId)
       if (!plugin && !(await repo.get(userId, projectId, input.name)))
         throw new NotFoundError('plugin_not_found', `Plugin "${input.name}" is not installed`)
       // Claude Code owns what it installed; Localix reads that folder in place. Turning the
       // plugin off here is the part that is ours to change.
       if (plugin?.claudeCodeInstall) {
-        await service.setEnabled(userId, {
-          name: input.name,
-          projectId: projectId || null,
-          enabled: false,
-        })
+        await service.setEnabled(
+          userId,
+          { name: input.name, projectId: projectId || null, enabled: false },
+          { ignoreDependents: true },
+        )
         return { warnings: [], claudeCodeInstall: plugin.claudeCodeInstall }
       }
       // NO cascade on remove — dependents keep working off their own state — but WARN
       // when other installed plugins still declare a dependency on the removed one.
       const dependents = listDependents(input.name, discovered)
-      await repo.remove(userId, projectId, input.name)
+      await repo.remove(userId, rowScope, input.name)
+      // An older build kept a user-scope plugin's options in a per-project row as well.
+      if (rowScope !== projectId) await repo.remove(userId, projectId, input.name)
       // A bundled plugin is a shared managed artifact projected into every
       // scope. Removing one scope must never delete the code used by the others.
       if (plugin && !plugin.bundled) {
         await removeIfUnderRoot(plugin.dir, pluginInstallRoot(plugin.scope, cwd, home))
       }
+      await removeDataIfLastCopy({
+        userId,
+        name: input.name,
+        home,
+        repo,
+        discoverHome: () => discover({ cwd: null, projectId: '' }),
+      })
       invalidateInspection(input.name, projectId)
       deps.onChanged?.()
       if (dependents.length) {
@@ -716,10 +753,12 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       return undefined
     },
 
+    validatePath: (dir, opts) => validatePluginDir(dir, opts),
+
     ...createMarketplaceMethods({
       registryDeps,
       repo,
-      update: (userId, name) => service.update(userId, { name }),
+      update: (userId, name) => updatePlugin(userId, { name }, { refreshMarketplace: false }),
       remove: (userId, name) => service.remove(userId, { name }),
     }),
 

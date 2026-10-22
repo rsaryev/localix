@@ -17,7 +17,7 @@ import { TOOL } from '../../../agent-core/tool-names'
 import { agentParticipant } from '../../../../db/participant'
 import { createMemoryTool } from '../../../agent-core/tools/memory/memory'
 import { createSkillTool } from '../../../agent-core/tools/skill'
-import { announceSkillInvoked } from '../../../agent-core/skill-invocations'
+import { skillToolPorts, type SkillCommandPolicyRef } from './skill-tool-ports'
 import { createToolOutputTool } from '../../../agent-core/tools/context-search/context-search'
 import {
   createGlobalSearchTool,
@@ -29,6 +29,8 @@ import type { createMemoryRepository } from '../../../memory/repository'
 import type { ChatRepository, SessionRecord } from '../../repository'
 import type { SkillOverrides } from '../../../agent-core/skill-overrides'
 import type { MemoryScope } from '../../../agent-core/memory-scope-policy'
+import type { RunnerDeps } from '../agent-runner-types'
+import type { CcHookSessions } from '../cc-hook-sessions'
 
 export interface DirectToolInstanceDeps {
   agentProfile: RunProfile
@@ -49,6 +51,12 @@ export interface DirectToolInstanceDeps {
   announceCapabilityChange?: () => void
   /** The search palette's service; absent in hosts built without global search. */
   globalSearch?: GlobalSearchPort
+  /** Renders a skill the model loads as a typed `/name` renders it (see `skill-tool-ports.ts`). */
+  renderSkill?: RunnerDeps['renderSkill']
+  /** Where a loaded skill's hooks are kept for the rest of the session. */
+  ccHookSessions?: CcHookSessions
+  /** The run's permission inputs, which every command a loaded skill injects must pass. */
+  skillCommandPolicy?: SkillCommandPolicyRef
 }
 
 /** The pre-built tool slots of `createRuntimeToolRegistry`, ready to spread into it. */
@@ -66,6 +74,14 @@ export function buildDirectToolInstances(
     session,
     userId,
   } = deps
+  const skillPorts = skillToolPorts({
+    userId,
+    session,
+    defaultCwd,
+    renderSkill: deps.renderSkill,
+    ccHookSessions: deps.ccHookSessions,
+    commandPolicy: deps.skillCommandPolicy,
+  })
   return {
     memory: isToolDirect(agentProfile, TOOL.memory)
       ? createMemoryTool(
@@ -85,13 +101,8 @@ export function buildDirectToolInstances(
           deps.skillOverrides,
           session.projectId ?? '',
           deps.announceCapabilityChange,
-          (skill) =>
-            announceSkillInvoked({
-              userId,
-              sessionId: session.rootSessionId ?? session.id,
-              skillName: skill.name,
-              ...(skill.pluginName ? { pluginName: skill.pluginName } : {}),
-            }),
+          skillPorts.onSkillLoaded,
+          skillPorts.renderSkill,
         )
       : undefined,
     global_search: isToolDirect(agentProfile, TOOL.global_search)

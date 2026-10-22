@@ -14,7 +14,7 @@
 import { agentModelSettingsFor } from '@localixai/agent'
 import { createGateRefusalTracker } from '@localixai/agent/agents'
 
-import { intakeTurn } from '../../history/intake'
+import { intakeTurn, markPromptBlocked } from '../../history/intake'
 import { buildRunPermissionGate } from '../permission-gate-build'
 import { runTurnLimitFor } from '../turn-limit'
 import type { RunInputs } from './context'
@@ -63,8 +63,15 @@ export async function intakeRunTurn(
     now,
   })
   // A UserPromptSubmit hook denied the prompt (exit 2 / decision:"block"): no model call is
-  // made, and the run fails with the hook's reason so the user sees why.
-  if (!intake.ok) throw new Error(`Prompt blocked by hook: ${intake.blockedReason}`)
+  // made, and the run fails with the hook's reason so the user sees why. The prompt stays out of
+  // every later turn's history too, until a Retry of this turn gets it accepted.
+  if (!intake.ok) {
+    if (intake.promptMessage)
+      await markPromptBlocked(deps, userId, intake.promptMessage, true, now())
+    throw new Error(`Prompt blocked by hook: ${intake.blockedReason}`)
+  }
+  const accepted = intake.frame.promptMessage
+  if (accepted) await markPromptBlocked(deps, userId, accepted, false, now())
 
   // permission-gate-breaker.ts documents what the tracker counts.
   const refusalTracker = createGateRefusalTracker()
@@ -92,6 +99,9 @@ export async function intakeRunTurn(
     hitlWaitedMs: turn.state.hitlWaitedMs,
     // Claude Code mods' `tool.check` reviews each verdict; `$.tool.check` reads the gate's own.
     toolCheck: inputs.mods.toolCheck(),
+    onVerdictOptions: (options) => {
+      toolset.skillCommandPolicy.current = options
+    },
   })
 
   // The loop's `beforeToolCall`; a tool the chain gates itself (`chain-gate.ts`) is passed by.

@@ -1,15 +1,26 @@
 import type { CcHookEvent, CcHookHandler, CcHookInput, CcHookOutcome } from './contracts'
 import type { CreateCcHooksRuntimeOptions } from './runtime-contracts'
-import { executeHook } from './executor'
+import { executeHook, type HookEnv } from './executor'
 import { executeHttpHook } from './http'
 import { runMcpToolHook } from './mcp-tool-hook'
 import { mapPromptOutcome } from './prompt-hook'
+import { spendOnce } from './runtime-selection'
 import { runHookOperation } from '../lifecycle-hooks/operation'
 
 type HandlerRunnerOptions = Pick<
   CreateCcHooksRuntimeOptions,
-  'projectDir' | 'logger' | 'evaluatePromptHook' | 'runAgentHook' | 'callMcpTool' | 'emitNotice'
-> & { signalFor: (event: CcHookEvent) => AbortSignal | undefined }
+  | 'projectDir'
+  | 'logger'
+  | 'evaluatePromptHook'
+  | 'runAgentHook'
+  | 'callMcpTool'
+  | 'emitNotice'
+  | 'onceKeys'
+> & {
+  signalFor: (event: CcHookEvent) => AbortSignal | undefined
+  /** What an event adds to a command hook's environment (`CLAUDE_ENV_FILE`). */
+  envFor?: (event: CcHookEvent) => HookEnv | undefined
+}
 
 /** Added events whose `systemMessage` CC discards; the earlier events keep today's notices. */
 const DISCARDS_SYSTEM_MESSAGE: ReadonlySet<CcHookEvent> = new Set([
@@ -33,6 +44,8 @@ export function createHookHandlerRunner(options: HandlerRunnerOptions) {
     callMcpTool,
     emitNotice,
     signalFor,
+    envFor,
+    onceKeys,
   } = options
   // Last non-blocking `systemMessage` surfaced this run — used to drop identical
   // consecutive warnings (e.g. one hook that fires on every tool call).
@@ -65,6 +78,8 @@ export function createHookHandlerRunner(options: HandlerRunnerOptions) {
         : { failed: result.kind === 'timeout' ? 'timeout' : 'error' }
     }
     const outcome = result.value
+    // A skill's `once` hook is spent by a run that neither failed nor blocked (exit 2).
+    if (!outcome.failed && !outcome.blocked) spendOnce(onceKeys, event, h)
     // Surface a non-blocking `systemMessage` warning (CC: shown to the user in the
     // transcript). Fires for EVERY event, deduping identical consecutive messages.
     const notice = DISCARDS_SYSTEM_MESSAGE.has(event) ? undefined : outcome.systemMessage?.trim()
@@ -105,7 +120,7 @@ export function createHookHandlerRunner(options: HandlerRunnerOptions) {
     if (h.kind === 'mcp_tool') {
       return runMcpToolHook(h, input, callMcpTool, addContextOnZero, logger, signal)
     }
-    return executeHook(h, input, projectDir, logger, addContextOnZero, signal)
+    return executeHook(h, input, projectDir, logger, addContextOnZero, signal, envFor?.(event))
   }
 
   return runHandler

@@ -12,7 +12,11 @@ import {
   releaseLane,
   requestLane,
 } from '../../../agent-core/delegation-lanes'
-import { __resetExpectedReports, expectReport } from '../../../agent-core/delegation-awaits'
+import {
+  __resetExpectedReports,
+  expectReport,
+  takeTurnLimit,
+} from '../../../agent-core/delegation-awaits'
 import { reportChildRun } from './child-run-report'
 import { subagentWorkKey } from './subagent-work'
 
@@ -128,6 +132,18 @@ describe('a delegated child reports every run', () => {
       'child-terminal:child:m2',
     ])
     expect(h.woken[1]!.content).toContain('answer of m2')
+  })
+
+  test('a run stopped at its turn limit reports its output marked partial (CC maxTurns)', async () => {
+    const h = harness()
+    const run = { userId: 'u', session: child, runId: 'm4', outcome: 'completed' as const }
+    const ended = reportChildRun(h.env, { ...run, partial: true })
+    // Noted before the first await: the launch watching the child reads it as the run returns.
+    expect(takeTurnLimit('child')).toBe(true)
+    await ended
+    expect(h.woken[0]!.report).toMatchObject({ status: 'completed', partial: true })
+    expect(h.woken[0]!.content).toContain('reached its turn limit')
+    expect(h.woken[0]!.content).toContain('Its partial output:\nanswer of m4')
   })
 
   test('a failed run reports — the parent must know the work did not happen', async () => {

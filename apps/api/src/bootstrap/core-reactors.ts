@@ -15,6 +15,7 @@ import type { AgentsService } from '../features/agents/service'
 import { createCapabilityCleanup } from '../features/capabilities/cleanup'
 import { mcpOAuthStore } from '../features/mcp/oauth/runtime'
 import type { SecretsStore } from '../features/secrets/store-contracts'
+import { forgetSecretOptions } from '../features/plugins/config-vault'
 import { createSessionResidue } from '../features/chat/session-residue'
 import { createSubagentRowsChanges } from '../features/chat/service/subagent-rows-changes'
 import type { SubagentRowsLive } from '../features/chat/service/subagent-rows-live'
@@ -191,6 +192,7 @@ export async function startCoreReactors(deps: CoreReactorDeps): Promise<void> {
     userId: deps.defaultUserId,
     clearMcpSignIn: (...args) => mcpOAuthStore.clear(...args),
     unbindVaultConsumer: (...args) => deps.secretsStore.unbindConsumer(...args),
+    forgetPluginSecrets: forgetSecretOptions,
   })
   await deps.feed.subscribe('capability-cleanup', cleanup.handlers, { kind: 'reactor' })
   const residue = createSessionResidue({

@@ -147,6 +147,14 @@ describe('Bash specifier grammar', () => {
     expect(evalRule('deny', ['Bash(git * --force)'], mk('git push --force'))!.action).toBe('deny')
   })
 
+  it('a `*` stands in for any text, slashes included (permissions.md)', () => {
+    expect(evalRule('deny', ['Bash(cat *secret*)'], mk('cat ./dir/secret.txt'))!.action).toBe(
+      'deny',
+    )
+    expect(evalRule('deny', ['Bash(* --help *)'], mk('npm --help x'))!.action).toBe('deny')
+    expect(evalRule('deny', ['Bash(* --help *)'], mk('npm --help'))).toBeUndefined()
+  })
+
   it('deny/ask match ANY subcommand of a compound command', () => {
     expect(evalRule('deny', ['Bash(rm:*)'], mk('cd /tmp && rm -rf x'))!.action).toBe('deny')
   })

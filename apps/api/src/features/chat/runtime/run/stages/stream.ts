@@ -18,7 +18,7 @@ import { createItemAccumulator } from '../../items'
 import { withMidRunReminders } from '../../mid-run-reminders'
 import { consoleWarnLogger } from '../../plugin-hook-logger'
 import { createRunAsyncRegistry, describeToolActions } from '../async-registry'
-import { ccAfterToolBatch } from '../cc-tool-batch'
+import { ccAfterToolBatch, ccHookStopRule } from '../cc-tool-batch'
 import { handleAgentEvent, type TurnEventContext } from '../event-handlers'
 import { persistNow } from '../event-handlers-flush'
 import { buildRuntimeToolContext } from '../runtime-execution'
@@ -147,6 +147,8 @@ export async function streamRun(
     // is the only thing that can notice a run refused over and over.
     stopWhen: [
       { name: 'gateRefusalStorm', shouldStop: () => intake.refusalTracker.tripped() !== undefined },
+      // A hook's `continue:false` ends the run even when a sibling call of the batch ran.
+      ccHookStopRule(inputs.ccHooks),
     ],
     afterToolCall: withMidRunReminders(
       buildExternalizeAfterToolCall(deps.ports.contextStore, {

@@ -7,7 +7,7 @@ import { pluginManifestSchema, type PluginManifest } from './contracts'
 import type { DiscoveredPlugin, ResolvedEntrypoints } from './discovery'
 import { normalizeCcToolName } from './discovery'
 import { isAcceptableToolName, isReservedToolName, TOOL_NAME_RE } from './tool-policy'
-import { buildMcpRecords, buildPluginOptionEnv, collectMcpConfigTokens } from './mcp'
+import { buildMcpRecords, buildPluginOptionEnv, collectMcpConfigTokens, pluginDataDir } from './mcp'
 import { pluginConfigOptionSchema } from './contracts'
 import { validatePlugin } from './validate'
 import { pluginTrustClass } from './enable'
@@ -451,7 +451,7 @@ describe('C-UC Part B — buildMcpRecords injects CLAUDE_PLUGIN_OPTION_<KEY> int
     expect(env!['CLAUDE_PLUGIN_OPTION_API_KEY']).toBe('manifest-explicit')
   })
 
-  it('produces no env block when config is empty and manifest has no env', () => {
+  it('exports only the plugin path variables when config is empty and manifest has no env', () => {
     const plugin = mkPlugin(
       {
         name: 'no-config',
@@ -464,8 +464,24 @@ describe('C-UC Part B — buildMcpRecords injects CLAUDE_PLUGIN_OPTION_<KEY> int
       },
     )
     const [record] = buildMcpRecords(plugin, {}, 'user-1', '2026-01-01T00:00:00.000Z', '/home/u')
-    // No env in config when there's nothing to inject.
-    const env = record.config.env as Record<string, string> | undefined
-    expect(!env || Object.keys(env).length === 0).toBe(true)
+    // Claude Code exports CLAUDE_PLUGIN_ROOT and CLAUDE_PLUGIN_DATA to a stdio server's process
+    // (plugin manifest reference, "Exported to the process"); no option keys without options.
+    expect(record.config.env).toEqual({
+      CLAUDE_PLUGIN_ROOT: plugin.dir,
+      CLAUDE_PLUGIN_DATA: pluginDataDir('no-config', '/home/u'),
+    })
+  })
+
+  it('lets a manifest env value override an exported plugin path variable', () => {
+    const entry = { command: 'run-server', env: { CLAUDE_PLUGIN_DATA: '/elsewhere' } }
+    const plugin = mkPlugin(
+      { name: 'own-data', mcpServers: { srv: entry } },
+      { entrypoints: mkEntrypoints({ mcpServers: { srv: entry } }) },
+    )
+    const [record] = buildMcpRecords(plugin, {}, 'user-1', '2026-01-01T00:00:00.000Z', '/home/u')
+    expect(record.config.env).toMatchObject({
+      CLAUDE_PLUGIN_ROOT: plugin.dir,
+      CLAUDE_PLUGIN_DATA: '/elsewhere',
+    })
   })
 })

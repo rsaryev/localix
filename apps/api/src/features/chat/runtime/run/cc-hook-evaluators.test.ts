@@ -77,6 +77,21 @@ describe('agent hook verifier', () => {
     )
   })
 
+  test('puts the hook input where the prompt names $ARGUMENTS', async () => {
+    const tasks: string[] = []
+    setAgentService({
+      createSession: async () => ({ id: 'hook-child' }),
+      runJobTask: async (_u: string, _s: string, text: string) => {
+        tasks.push(text)
+      },
+      finalAssistantText: async () => '{"ok":true}',
+    } as unknown as AgentServiceBinding)
+    const run = createAgentHookRunner({ userId: 'u', session })
+    await run({ prompt: 'Judge $ARGUMENTS for \\$1.00', inputJson: '{"a":1}', timeoutMs: 1000 })
+    await run({ prompt: 'Judge it', inputJson: '{"a":1}', timeoutMs: 1000 })
+    expect(tasks).toEqual(['Judge {"a":1} for $1.00', 'Judge it\n\n{"a":1}'])
+  })
+
   test('runs its child on a read-only profile it resolved itself', async () => {
     const runs: Record<string, unknown>[] = []
     setAgentService({

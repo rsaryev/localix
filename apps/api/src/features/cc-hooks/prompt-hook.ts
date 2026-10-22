@@ -33,6 +33,20 @@ export type PromptHookEvaluator = (opts: {
   signal?: AbortSignal
 }) => Promise<PromptHookResult>
 
+/** `$ARGUMENTS` not preceded by a backslash: the placeholder a prompt or agent hook names. */
+const ARGUMENTS_PLACEHOLDER = /(?<!\\)\$ARGUMENTS/
+
+/**
+ * The text a `prompt` or `agent` hook sends (hooks.md, prompt hook configuration): `$ARGUMENTS`
+ * becomes the hook input JSON, and without it the JSON is appended. A backslash escapes a dollar
+ * sign (`\$1.00` reads `$1.00`, `\$ARGUMENTS` stays literal); the input JSON is never unescaped.
+ */
+export function hookPromptText(prompt: string, inputJson: string): string {
+  const unescape = (text: string) => text.replace(/\\\$/g, '$')
+  if (!ARGUMENTS_PLACEHOLDER.test(prompt)) return `${unescape(prompt)}\n\n${inputJson}`
+  return prompt.split(new RegExp(ARGUMENTS_PLACEHOLDER, 'g')).map(unescape).join(inputJson)
+}
+
 /**
  * Extract `{ok, reason}` from a model reply. Lenient: scans for the FIRST balanced
  * `{…}` JSON object anywhere in the text (models like to wrap JSON in prose/fences).

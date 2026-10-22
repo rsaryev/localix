@@ -151,11 +151,38 @@ export function splitSkillArgs(raw: string): string[] {
 }
 
 /**
- * Substitutes argument tokens into a skill template — mirrors Claude Code behaviour.
- * Handles: `$ARGUMENTS` (full string), `$ARGUMENTS[N]` (Nth token), `$N` (Nth token),
- * `$name` (named from `argumentNames`), `${CLAUDE_SKILL_DIR}`, `${CLAUDE_SESSION_ID}`,
- * `${CLAUDE_EFFORT}`, `\$` escape.
- * Falls back to appending `Arguments: <arg>` when no token appears in the template.
+ * Whether a skill's content has a placeholder that RECEIVES the arguments: `$ARGUMENTS`, an
+ * indexed `$ARGUMENTS[N]` / `$N` with an argument at that position, or a declared `$name` (which
+ * counts even with no argument there). Claude Code appends `ARGUMENTS: <value>` only when none
+ * does; `${CLAUDE_*}` variables and a shell's own `$NAME` are not placeholders.
+ * Read from the content AS AUTHORED: an injected command that consumed `$ARGUMENTS` has left the
+ * rendered text by the time arguments are substituted.
+ */
+export function receivesArguments(
+  template: string,
+  tokens: readonly string[],
+  argumentNames: readonly string[] = [],
+): boolean {
+  const re = /(\\?)\$(ARGUMENTS(?:\[(\d+)\])?|(\d+)|([a-zA-Z_][a-zA-Z0-9_]*))/g
+  let m: RegExpExecArray | null
+  while ((m = re.exec(template)) !== null) {
+    const [, esc, token, bracketIdx, bareIdx, name] = m
+    if (esc) continue
+    if (token === 'ARGUMENTS') return true
+    const index = bracketIdx ?? bareIdx
+    if (index !== undefined ? tokens[Number(index)] !== undefined : argumentNames.includes(name!))
+      return true
+  }
+  return false
+}
+
+/**
+ * Substitutes argument tokens into a skill template, as Claude Code does:
+ * `$ARGUMENTS` (full string), `$ARGUMENTS[N]` / `$N` (Nth token; left as written when there is
+ * none), `$name` (named from `argumentNames`, empty when absent), `${CLAUDE_SKILL_DIR}`,
+ * `${CLAUDE_SESSION_ID}`, `${CLAUDE_EFFORT}`, `${CLAUDE_PROJECT_DIR}`, and the `\$` escape.
+ * When no placeholder receives the arguments, appends `ARGUMENTS: <arg>`. `sourceTemplate` is the
+ * content as authored, before its injected commands ran (see {@link receivesArguments}).
  */
 export function applySkillArguments(
   template: string,
@@ -166,6 +193,7 @@ export function applySkillArguments(
     sessionId?: string
     effort?: string
     projectDir?: string
+    sourceTemplate?: string
   },
 ): string {
   const trimmed = arg.trim()
@@ -175,25 +203,11 @@ export function applySkillArguments(
   for (const [i, name] of (opts?.argumentNames ?? []).entries()) {
     namedValues[name] = tokens[i] ?? ''
   }
-  // Check for ANY argument token (escaped or not) — the replacement loop handles
-  // the \$ escape itself; removing the lookbehind here ensures a template that
-  // contains ONLY escaped tokens (e.g. "\$ARGUMENTS") still enters the replacement
-  // path and emits the literal "$ARGUMENTS" instead of appending arguments.
-  const hasToken =
-    /\$(?:ARGUMENTS(?:\[\d+\])?|\d+|[a-zA-Z_][a-zA-Z0-9_]*)/.test(template) ||
-    template.includes('${CLAUDE_SKILL_DIR}') ||
-    template.includes('${CLAUDE_PROJECT_DIR}') ||
-    template.includes('${CLAUDE_SESSION_ID}') ||
-    template.includes('${CLAUDE_EFFORT}')
-  if (!hasToken) return trimmed ? `${template}\n\nArguments: ${trimmed}` : template
+  const received = receivesArguments(opts?.sourceTemplate ?? template, tokens, opts?.argumentNames)
 
   let out = template
-  // CC environment substitutions.
-  if (opts?.skillDir) out = out.split('${CLAUDE_SKILL_DIR}').join(opts.skillDir)
-  if (opts?.sessionId) out = out.split('${CLAUDE_SESSION_ID}').join(opts.sessionId)
-  if (opts?.effort) out = out.split('${CLAUDE_EFFORT}').join(opts.effort)
-  if (opts?.projectDir) out = out.split('${CLAUDE_PROJECT_DIR}').join(opts.projectDir)
-  // Argument tokens (ordered: named first, then positional + $ARGUMENTS).
+  // Argument tokens first (named, positional, $ARGUMENTS), then the CC environment variables:
+  // "Claude Code still replaces `${CLAUDE_*}` variables ... after it inserts the arguments".
   out = out.replace(
     /(\\?)\$(ARGUMENTS(?:\[(\d+)\])?|(\d+)|([a-zA-Z_][a-zA-Z0-9_]*))/g,
     (
@@ -204,13 +218,20 @@ export function applySkillArguments(
       bareIdx?: string,
       name?: string,
     ) => {
-      if (esc) return full.slice(1) // \$… → literal $…
+      if (esc)
+        return token === 'ARGUMENTS' || bracketIdx || bareIdx || (name && name in namedValues)
+          ? full.slice(1)
+          : full
       if (token === 'ARGUMENTS') return trimmed // bare $ARGUMENTS
-      if (bracketIdx !== undefined) return tokens[Number(bracketIdx)] ?? '' // $ARGUMENTS[N]
-      if (bareIdx !== undefined) return tokens[Number(bareIdx)] ?? '' // $N
+      const index = bracketIdx ?? bareIdx
+      if (index !== undefined) return tokens[Number(index)] ?? full // missing: stays as written
       if (name && name in namedValues) return namedValues[name] // $name
       return full // unknown $name — leave as-is
     },
   )
-  return out
+  if (opts?.skillDir) out = out.split('${CLAUDE_SKILL_DIR}').join(opts.skillDir)
+  if (opts?.sessionId) out = out.split('${CLAUDE_SESSION_ID}').join(opts.sessionId)
+  if (opts?.effort) out = out.split('${CLAUDE_EFFORT}').join(opts.effort)
+  if (opts?.projectDir) out = out.split('${CLAUDE_PROJECT_DIR}').join(opts.projectDir)
+  return trimmed && !received ? `${out}\n\nARGUMENTS: ${trimmed}` : out
 }

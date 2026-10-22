@@ -25,6 +25,21 @@ export interface BashRunContext {
   waitHost?: BashWaitHost
   /** Background settle window (see {@link BashToolOptions.backgroundSettle}). */
   backgroundSettle?: BackgroundSettleWindow
+  /** Shell files run before each command (see {@link BashToolOptions.envScripts}). */
+  envScripts?: string[]
+}
+
+const quote = (value: string) => `'${value.replace(/'/g, `'\\''`)}'`
+
+/**
+ * The command as the shell runs it: each env script that exists sourced first, in the same shell,
+ * so its exports reach the command (Claude Code's `CLAUDE_ENV_FILE`). Local backend only: the
+ * files are on this machine.
+ */
+export function withEnvScripts(ctx: BashRunContext, command: string): string {
+  if (!ctx.envScripts?.length || ctx.env.config.kind !== 'local') return command
+  const sourced = ctx.envScripts.map((file) => `[ -f ${quote(file)} ] && . ${quote(file)}`)
+  return `${sourced.join('\n')}\n${command}`
 }
 
 /** How long a background spawn watches its early output before the call returns. */

@@ -7,10 +7,13 @@
 
 import { globToRegExpSource } from '../../cc-settings/permission-rules'
 import { isSkillDisabled, type SkillOverrides } from '../../agent-core/skill-overrides'
+import { skillCallName } from '../../agent-core/tools/skill-names'
 
 /** Minimal shape of a skill entry needed to build its listing line. */
 export interface SkillListingEntry {
   name: string
+  /** The plugin that ships it: listed as Claude Code names it, `/<plugin>:<name>`. */
+  pluginName?: string
   description?: string
   disableModelInvocation?: boolean
   /** CC `hide-from-slash-command-tool` — hidden from this listing, still user-invocable. */
@@ -143,10 +146,12 @@ export function buildSkillsContext(
     if (f.activationPaths?.length && !cwdMatchesActivationPaths(f.activationPaths, defaultCwd)) {
       continue
     }
-    if (!skillLineByName.has(f.name)) {
+    // Keyed and shown by the name it is called by: two plugins' `lookup` are two skills.
+    const called = skillCallName(f)
+    if (!skillLineByName.has(called)) {
       const desc = (f.description || 'Skill').slice(0, SKILL_DESC_MAX)
-      const minimum = `- /${f.name}`
-      skillLineByName.set(f.name, {
+      const minimum = `- /${called}`
+      skillLineByName.set(called, {
         full: desc ? `${minimum}: ${desc}` : minimum,
         minimum,
       })

@@ -25,6 +25,7 @@ import { confirmSubject } from './permission-confirm-subject'
 import type { GrantOption } from './permission-grant-scope'
 import { UNANSWERED_CALL_TAIL, unansweredRefusal } from './tools/hitl/decision-deadline'
 import * as person from './permission-refusal-person'
+import { withHookVerdict, type PreToolUseVerdict } from './permission-hook-decision'
 import {
   hookConfirmVerdict,
   reviewedRefusal,
@@ -90,6 +91,8 @@ interface GateContext {
   toolName: string
   input: unknown
   sourceTitle?: string
+  /** A Claude Code PreToolUse hook's allow/ask on this call (`permission-hook-decision.ts`). */
+  hookVerdict?: PreToolUseVerdict
 }
 /**
  * The loop's own verdict shape rather than a local restatement of it: this value is handed
@@ -117,14 +120,16 @@ export function createPermissionGate(opts: PermissionGateOptions): PermissionGat
       }
     }
     const { facts, call } = judged
+    // A PreToolUse hook's allow lifts the mode's own questions; its ask forces a card.
+    const hooked = withHookVerdict(opts, judged, ctx.hookVerdict)
     // A host's review (Claude Code mods' `tool.check`) may answer any verdict, either way; the
     // gate then acts on what it answered, as on a rule's.
     const decision = opts.reviewVerdict
       ? decisionOf(
-          await opts.reviewVerdict(ctx, verdictOfDecision(judged.decision)),
-          judged.decision,
+          await opts.reviewVerdict(ctx, verdictOfDecision(hooked.decision)),
+          hooked.decision,
         )
-      : judged.decision
+      : hooked.decision
     // The agent's own files in `~/.localix` are written without asking (`permission-verdict.ts`).
     if (judged.ownTree && decision === judged.decision && decision.action === 'allow')
       return undefined
@@ -134,6 +139,8 @@ export function createPermissionGate(opts: PermissionGateOptions): PermissionGat
     if (action === 'allow') {
       // Attribute non-default allows so the UI can explain why no confirm was
       // shown. A plain default allow (no matching rule) stays silent.
+      if (hooked.byHook && decision === hooked.decision)
+        return { provenance: { decision: 'rule-allow', detail: 'PreToolUse hook' } }
       if (decision.rule) {
         return {
           provenance: { decision: 'rule-allow', detail: describeRule(decision.rule) },

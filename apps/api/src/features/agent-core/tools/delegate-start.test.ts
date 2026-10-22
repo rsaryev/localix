@@ -141,3 +141,27 @@ test('a model a host picked is the child’s; an inheriting alias leaves the par
   await startDelegation('c', request({ model: 'inherit' }), inherited.opts)
   expect(inherited.calls.create![0]).not.toHaveProperty('modelId')
 })
+
+test('a SubagentStart hook’s context reaches the child ahead of its task', async () => {
+  const { opts, calls } = host({
+    onSubagentStart: async () => '<system-reminder>\nUse the staging DB.\n</system-reminder>',
+  })
+  await startDelegation('c', request(), opts)
+  const { task } = calls.start![0] as { task: string }
+  expect(task).toContain('<system-reminder>\nUse the staging DB.\n</system-reminder>\n\n# Task')
+})
+
+test('a child stopped at its turn limit hands back partial output, not a failure', async () => {
+  const { opts } = host({
+    // The run ends inside the settle window at its turn limit; its report reaches the waiting call.
+    startSubagentTask: async (_u, sid) => {
+      deliverHeldReport(sid, { status: 'completed', text: 'Read 3 of 5 files.', partial: true })
+      return { status: 'completed', hasReport: false, partial: true }
+    },
+  })
+  const result = await startDelegation('c', request({ wait: true }), opts)
+  expect(result.isError).toBeUndefined()
+  expect(result.content).toContain('reached its turn limit on "Check login"')
+  expect(result.content).toContain('Its partial output:\nRead 3 of 5 files.')
+  expect(result.content).not.toContain('The wait ended')
+})

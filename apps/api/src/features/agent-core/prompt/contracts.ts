@@ -122,7 +122,14 @@ export interface BuildAgentSystemPromptParams {
    * optional servers still connecting. This keeps pending servers distinct from
    * the complete MCP capability surface.
    */
-  mcpInventory?: { server: string; tools: string[]; pending?: boolean; failed?: boolean }[]
+  mcpInventory?: {
+    server: string
+    tools: string[]
+    pending?: boolean
+    failed?: boolean
+    /** The failed server's connection error, when it reported one. */
+    error?: string
+  }[]
   /**
    * Per-server MCP capability instructions (the server's `InitializeResult.instructions`,
    * capped 2KB) — CC parity. Volatile (depends on which servers connected this run),

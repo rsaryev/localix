@@ -97,8 +97,8 @@ export async function readCatalogPluginSkills(
 }
 
 /**
- * Plugin skills as composer commands, beside the plugin's own commands. A model-only skill
- * (`user-invocable: false`) is not offered, and a command of the same full name keeps its entry.
+ * Plugin skills as composer commands. A model-only skill (`user-invocable: false`) is not offered,
+ * and a `taken` command of the same full name keeps its entry.
  */
 export function pluginSkillCommandSpecs(
   skills: readonly PluginSkill[],
@@ -132,7 +132,9 @@ export function pluginSkillCommandSpecs(
 
 /**
  * Every composer command of a scope: plugin commands, mods' commands, then plugin skills. One
- * function so the capability snapshot and the commands route cannot list different things.
+ * function so the capability snapshot and the commands route cannot list different things. A
+ * plugin skill and a plugin command of the same name list once, as the skill: the skill is what
+ * runs (Claude Code, "Resolve skills that share a name").
  */
 export async function listCatalogCommandSpecs(
   catalog: PluginCatalog,
@@ -144,10 +146,17 @@ export async function listCatalogCommandSpecs(
     logger?: SkillDiscoveryLogger
   },
 ): Promise<PluginCommandSpec[]> {
-  const commands = [
-    ...listCommandsFromCatalog(catalog, opts.projectId),
-    ...modCommandSpecs(catalog, opts.modCommands),
-  ]
-  const skills = await readCatalogPluginSkills(catalog, opts)
-  return [...commands, ...pluginSkillCommandSpecs(skills, commands)]
+  const mods = modCommandSpecs(catalog, opts.modCommands)
+  const skills = pluginSkillCommandSpecs(await readCatalogPluginSkills(catalog, opts), mods)
+  const bySkill = new Set(skills.map((spec) => spec.fullName.toLowerCase()))
+  // A command named after its plugin also answers `/<plugin>:<plugin>`, which a skill may take.
+  const commands = listCommandsFromCatalog(catalog, opts.projectId).filter(
+    (spec) =>
+      !bySkill.has(spec.fullName.toLowerCase()) &&
+      !(
+        spec.fullName === spec.pluginName &&
+        bySkill.has(`${spec.pluginName}:${spec.name}`.toLowerCase())
+      ),
+  )
+  return [...commands, ...mods, ...skills]
 }

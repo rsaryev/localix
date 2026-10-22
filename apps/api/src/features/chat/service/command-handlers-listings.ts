@@ -1,6 +1,4 @@
-import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { MemoryBudgetError } from '../../memory/repository'
-import { readAvailability } from '../../capabilities/availability'
 import type { SessionRecord } from '../repository'
 import type { MessageMutationResponse } from '../contracts'
 import type { CommandHandlerContext, DirectReply } from './command-handlers'
@@ -170,44 +168,4 @@ export async function handleSkillsControlCommand(
   return directReply(reply)
 }
 
-/**
- * Handles `/mcp`: lists configured MCP servers visible to the session (global +
- * project). Pure listing — no live connect (a down server would block); the
- * Settings → MCP "Test" button does a live tool probe. Extracted verbatim from
- * handleControlCommand.
- */
-export async function handleMcpControlCommand(
-  ctx: Pick<CommandHandlerContext, 'mcpRepo' | 'deps'>,
-  userId: string,
-  session: SessionRecord,
-  directReply: DirectReply,
-): Promise<MessageMutationResponse> {
-  const { mcpRepo } = ctx
-  const projectId = session.projectId ?? ''
-  const [servers, availability] = await Promise.all([
-    mcpRepo.listForScope(userId, projectId),
-    // The listing states availability, and availability is a rule now — the record it
-    // reads no longer carries one.
-    readAvailability(ctx.deps.db, {
-      userId,
-      agentId: session.agents?.[0]?.agentId || DEFAULT_AGENT_ID,
-    }),
-  ])
-  const reply =
-    servers.length === 0
-      ? 'No MCP servers configured. Add one in Settings → MCP (manual form, paste a `mcpServers` JSON blob, or a one-line `npx …` command).'
-      : [
-          '**MCP servers** — tools appear in chat as `mcp_<server>_<tool>`:',
-          '',
-          ...servers.map((s) => {
-            const scope = s.projectId ? 'project' : 'global'
-            const detail =
-              s.transport === 'stdio'
-                ? ((s.config.command as string[] | undefined) ?? []).join(' ')
-                : ((s.config.url as string | undefined) ?? '')
-            const state = availability.effectFor('mcp', s.name) !== 'deny' ? 'enabled' : 'disabled'
-            return `- ${state} \`${s.name}\` _(${s.transport}, ${scope})_ — ${detail || 'no config'}`
-          }),
-        ].join('\n')
-  return directReply(reply)
-}
+export { handleMcpControlCommand } from './command-handlers-mcp'

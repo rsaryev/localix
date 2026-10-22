@@ -42,6 +42,7 @@ export interface AssembleRunToolsOptions {
   disabledTools: string[]
   /** What the run's rules say about its MCP servers. */
   availability: AvailabilityReader
+  agentId?: string // whose rules `availability` holds: the MCP gather scope (`mcp-tools.ts`)
   capabilities: ResolvedCapabilities
   modelInput?: readonly string[]
   toolSurface?: ToolSurface
@@ -146,6 +147,7 @@ export async function assembleRunTools(
         pluginMcpServers: loadedPlugins.mcpServers,
         defaultCwd,
         availability,
+        agentId: options.agentId,
       })
     : {
         gather: undefined,

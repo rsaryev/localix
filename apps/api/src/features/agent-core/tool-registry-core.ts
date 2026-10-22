@@ -62,6 +62,7 @@ export function buildRegistryContext(options: RuntimeToolRegistryOptions): Regis
     spawnTerminalJob: core.spawnTerminalJob,
     terminalControl: core.terminalControl,
     pluginBinDirs: core.bashPluginBinDirs,
+    envScripts: core.bashEnvScripts,
     waitHost: core.bashWaitHost,
   })
 

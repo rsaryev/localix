@@ -4,7 +4,7 @@ import { resolveWebhookUrl } from '../../../lib/runtime-address'
 import { userHome } from '../../../lib/env'
 import { expandFileReferences } from './file-references'
 import { expandSkillContent } from './skill-commands'
-import { splitSkillArgs } from './slash-commands'
+import { receivesArguments, splitSkillArgs } from './slash-commands'
 
 /**
  * Parse positional args from a namespaced plugin command's argument string against
@@ -92,8 +92,9 @@ export function parsePluginCommandArgs(
  * - `${CLAUDE_WEBHOOK_URL}` — this instance's inbound-webhook URL (host runtime
  *   context), so a command can hand a delegated process the real address instead
  *   of reconstructing it. Also exported to `!\`cmd\`` shell embeds as `$CLAUDE_WEBHOOK_URL`.
- * - `$ARGUMENTS` (full raw arg string), `$ARGUMENTS[N]` / `$N` (Nth token).
- * - If the template has no argument placeholder, appends `Arguments: <rawArgs>`.
+ * - `$ARGUMENTS` (full raw arg string), `$ARGUMENTS[N]` / `$N` (Nth token; left as written when
+ *   there is none).
+ * - If no placeholder receives the arguments, appends `ARGUMENTS: <rawArgs>`.
  * - `\$` — backslash-escape for literal `$`.
  * - CC dynamic content (only when a `cwd` is provided): `` !`cmd` `` / ` ```! ` bash-embeds
  *   (executed in `cwd`, reusing the skill-command runner — 10s timeout, output-capped) and
@@ -126,27 +127,36 @@ export const renderPluginPrompt = async (
     template.includes(`\${${name}}`),
   )
   const named = namedArguments(values, ctx?.arguments)
-  const hasClaudeArgumentPlaceholder =
-    /\$(?:ARGUMENTS(?:\[\d+\])?|\d+)/.test(template) ||
-    named.some((name) => namedPattern(name).test(template))
-  const consumesArguments = hasDeclaredArgumentPlaceholder || hasClaudeArgumentPlaceholder
+  const trimmed = rawArgs.trim()
+  const tokens = splitSkillArgs(trimmed)
+  const consumesArguments =
+    hasDeclaredArgumentPlaceholder || receivesArguments(template, tokens, named)
   let out = template
   // 1) CC dynamic content — run FIRST, over the TEMPLATE, before any user-controlled
   //    arg values are substituted in. Otherwise a `${argName}` value containing an
   //    `` !`cmd` `` / `` ```! `` embed (or an `@path` file reference) would be executed
   //    or inlined server-side (render-time shell injection). Template-authored embeds
   //    read their inputs from the process env (`$CLAUDE_WEBHOOK_URL` etc.) below, never
-  //    from args, so running them first is safe and closes the injection vector.
+  //    from args, so running them first is safe and closes the injection vector. The arguments
+  //    still reach a command's `$ARGUMENTS` / `$N` / `$name`, each as one quoted shell word, as
+  //    Claude Code inserts them before its commands run.
   //    Only when a working dir is available (dispatch path).
   if (ctx?.cwd) {
     const env: Record<string, string> = {}
-    if (ctx.sessionId) env.CLAUDE_SESSION_ID = ctx.sessionId
+    // env-vars.md: CLAUDE_CODE_SESSION_ID is the session id in every Bash subprocess.
+    if (ctx.sessionId) {
+      env.CLAUDE_SESSION_ID = ctx.sessionId
+      env.CLAUDE_CODE_SESSION_ID = ctx.sessionId
+    }
     if (ctx.effort) env.CLAUDE_EFFORT = ctx.effort
     env.CLAUDE_WEBHOOK_URL = resolveWebhookUrl()
     if (ctx.pluginDir) env.CLAUDE_PLUGIN_ROOT = ctx.pluginDir
     if (dataDir) env.CLAUDE_PLUGIN_DATA = dataDir
     if (ctx.projectDir) env.CLAUDE_PROJECT_DIR = ctx.projectDir
-    out = await expandSkillContent(out, ctx.cwd, env)
+    out = await expandSkillContent(out, ctx.cwd, env, {
+      raw: trimmed,
+      ...(ctx.arguments ? { names: ctx.arguments } : {}),
+    })
     out = await expandFileReferences(out, [ctx.cwd, ...(ctx.pluginDir ? [ctx.pluginDir] : [])])
   }
   // 2) Declared ${argName} placeholders + CC env vars (path vars + session env).
@@ -161,8 +171,6 @@ export const renderPluginPrompt = async (
   })
   // 3) Claude Code argument tokens from the raw arg string: `$name` (a declared arg's value, else
   //    its position in `arguments`), then `$ARGUMENTS`, `$ARGUMENTS[N]` and `$N`.
-  const trimmed = rawArgs.trim()
-  const tokens = splitSkillArgs(trimmed)
   for (const name of named) {
     const position = ctx?.arguments?.indexOf(name) ?? -1
     const value = values[name] ?? (position >= 0 ? (tokens[position] ?? '') : '')
@@ -174,12 +182,12 @@ export const renderPluginPrompt = async (
     /(\\?)\$(?:ARGUMENTS(?:\[(\d+)\])?|(\d+))/g,
     (full: string, esc: string, bracketIdx?: string, bareIdx?: string) => {
       if (esc) return full.slice(1) // \$… → literal $…
-      if (bareIdx !== undefined) return tokens[Number(bareIdx)] ?? ''
-      if (bracketIdx !== undefined) return tokens[Number(bracketIdx)] ?? ''
+      if (bareIdx !== undefined) return tokens[Number(bareIdx)] ?? full
+      if (bracketIdx !== undefined) return tokens[Number(bracketIdx)] ?? full
       return trimmed // bare $ARGUMENTS
     },
   )
-  if (trimmed && !consumesArguments) out = `${out}\n\nArguments: ${trimmed}`
+  if (trimmed && !consumesArguments) out = `${out}\n\nARGUMENTS: ${trimmed}`
   return out
 }
 

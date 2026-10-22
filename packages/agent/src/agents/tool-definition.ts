@@ -107,6 +107,13 @@ export interface AgentTool<TInput = unknown, TDetails = unknown> {
    */
   aliases?: readonly string[]
   /**
+   * The MCP server an MCP tool comes from: the name it is registered under and where its
+   * definition came from (`plugin`, or a configuration scope such as `user`). Extensions written
+   * for another agent read it as provenance (a Claude Code hook's `mcp_server`). Absent for
+   * every other tool.
+   */
+  mcpServer?: { readonly name: string; readonly source: string }
+  /**
    * How this tool's calls are scheduled within one assistant turn. `parallel` calls run
    * concurrently with each other (subject to {@link parallelScopePaths}); a `sequential` call
    * waits for every earlier call of the turn and finishes before any later call starts. It

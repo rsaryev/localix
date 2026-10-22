@@ -37,7 +37,8 @@ export async function copyConversationForDelegate(
   const delegator = input.delegatingAgentId ? agentParticipant(input.delegatingAgentId) : null
   let copied = 0
   for (const row of rows) {
-    if (excluded.has(row.id) || row.payload.uiOnly || row.payload.systemNotice) continue
+    const { uiOnly, systemNotice, promptBlocked } = row.payload
+    if (excluded.has(row.id) || uiOnly || systemNotice || promptBlocked) continue
     const payload = carried(row.payload, delegator)
     if (!payload) continue
     const id = randomUUID()

@@ -43,6 +43,12 @@ export interface ScopedCcHooks {
    * `${CLAUDE_PLUGIN_DATA}` like the plugin's own `hooks.json`.
    */
   plugin?: { name: string; root: string; dataDir: string }
+  /**
+   * `session`: a skill's hooks, which Claude Code keeps for "the rest of the session once the
+   * skill is invoked" — this run registers them and every later run of the session merges them
+   * (`RuntimeState.ccSessionSkillHooks`). Absent: this run only.
+   */
+  lifetime?: 'session'
 }
 
 /**

@@ -78,6 +78,14 @@ export interface ActivateToolsToolOptions {
 export function createActivateToolsTool(options: ActivateToolsToolOptions) {
   const entries = [...options.entries].sort((a, b) => a.tool.name.localeCompare(b.tool.name))
   const availableByName = new Map(entries.map((entry) => [entry.tool.name, entry]))
+  // A tool's other names resolve to it: an MCP tool's Claude Code name `mcp__<server>__<tool>`
+  // (a plugin's server as `plugin_<plugin>_<server>`) is the one the person's docs and skills
+  // use. A tool's own name always wins over another tool's alias.
+  const nameByAlias = new Map<string, string>()
+  for (const entry of entries)
+    for (const alias of entry.tool.aliases ?? [])
+      if (!availableByName.has(alias) && !nameByAlias.has(alias))
+        nameByAlias.set(alias, entry.tool.name)
   // Seeded from the session, so a name activated on an earlier turn is reported as already active
   // rather than re-announced — and the model is told the truth either way.
   const active = new Set<string>(options.sessionActive ?? [])
@@ -106,10 +114,21 @@ export function createActivateToolsTool(options: ActivateToolsToolOptions) {
     // Runtime adapters use this declarative marker to reveal the activated model schemas.
     activatesTools: true,
     async execute(_toolCallId, input) {
-      const requested = [...new Set(input.names.map((name) => name.trim()))]
       const activated: string[] = []
       const alreadyActive: string[] = []
       const unknown: string[] = []
+      // Requested under another name: the model must call the tool by the name it has.
+      const renamed: string[] = []
+      const requested = [
+        ...new Set(
+          input.names.map((raw) => {
+            const name = raw.trim()
+            const own = nameByAlias.get(name)
+            if (own) renamed.push(`${name} is ${own}`)
+            return own ?? name
+          }),
+        ),
+      ]
 
       for (const name of requested) {
         if (!availableByName.has(name)) {
@@ -139,6 +158,9 @@ export function createActivateToolsTool(options: ActivateToolsToolOptions) {
           `Activated: ${activated.join(', ')}. Their full schemas will be available on the next model turn, ` +
             'and stay available for the rest of this session — do not activate them again.',
         )
+      }
+      if (renamed.length > 0) {
+        lines.push(`Call these by their names here: ${[...new Set(renamed)].join('; ')}.`)
       }
       if (alreadyActive.length > 0) {
         lines.push(

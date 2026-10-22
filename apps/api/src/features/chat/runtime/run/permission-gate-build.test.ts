@@ -186,10 +186,11 @@ describe('skill preapprovals', () => {
 })
 
 describe('PermissionDenied on the assembled gate', () => {
-  test('a refusal nobody was asked about tells the model it may retry when a hook says so', async () => {
+  /** A gate whose every call is refused without asking anyone, and the hook calls it made. */
+  function deniedGate(tools: readonly AgentTool[]) {
     const asked: unknown[][] = []
     const gate = buildRunPermissionGate({
-      tools: [],
+      tools,
       session: {
         id: 'job',
         sessionKind: 'job',
@@ -218,8 +219,27 @@ describe('PermissionDenied on the assembled gate', () => {
       mayConfirm: false,
       defaultCwd: root,
     })
+    return { gate, asked }
+  }
+
+  test('a refusal nobody was asked about tells the model it may retry when a hook says so', async () => {
+    const { gate, asked } = deniedGate([])
     const verdict = await gate({ toolCallId: 'c1', toolName: 'bash', input: { command: 'ls' } })
     expect(verdict?.blockedMessage).toContain(PERMISSION_RETRY_NOTE)
     expect(asked[0]?.slice(0, 3)).toEqual(['bash', { command: 'ls' }, 'c1'])
+  })
+
+  test('hands the hook an MCP tool itself, so its matcher sees the Claude Code name', async () => {
+    const mcpTool = {
+      name: 'mcp_lin_mcp_echo_echo',
+      description: 'echo',
+      inputSchema: z.object({}),
+      execute: async () => ({ content: 'ok' }),
+      aliases: ['mcp__plugin_lin-mcp_echo__echo'],
+      mcpServer: { name: 'plugin:lin-mcp:echo', source: 'plugin' },
+    } as unknown as AgentTool
+    const { gate, asked } = deniedGate([mcpTool])
+    await gate({ toolCallId: 'c2', toolName: mcpTool.name, input: {} })
+    expect(asked[0]?.[0]).toBe(mcpTool)
   })
 })

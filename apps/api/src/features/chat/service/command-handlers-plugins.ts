@@ -6,6 +6,8 @@ import type { CommandHandlerContext, DirectReply } from './command-handlers'
 import { handleMarketplaceSubcommand } from './command-handlers-plugins-marketplace'
 import { formatPluginCheck } from '../../plugins/authoring/check'
 import { handlePluginCreateSubcommand } from './command-handlers-plugins-create'
+import { errorCode, installReply, validatePathReply } from './command-handlers-plugins-replies'
+import { isAbsolute } from 'node:path'
 
 /** The slice of {@link CommandHandlerContext} the `/plugin` sub-commands need. */
 type PluginsCommandContext = Pick<
@@ -27,7 +29,7 @@ const PLUGIN_SUBCOMMAND_USAGE = [
   '/plugin enable <name>',
   '/plugin disable <name>',
   '/plugin remove <name>',
-  '/plugin validate [<name>] [--strict]',
+  '/plugin validate [<name> | </absolute/path>] [--strict]',
   '/plugin update <name>',
   '/plugin details <name>',
   '/plugin reload',
@@ -119,12 +121,10 @@ export async function handlePluginsControlCommand(
         projectId: toProject ? (session.projectId ?? null) : null,
         enable: true,
       })
-      const note = rec.provides.hasNativeTools ? ' — it runs native in-process code' : ''
-      const where = rec.scope === 'project' ? 'this project' : 'all chats'
-      return directReply(
-        `Installed \`${rec.name}\` v${rec.version} for ${where} (\`${rec.dir}\`) and enabled it${note}. Start a new turn to use it.`,
-      )
+      return directReply(installReply(rec))
     } catch (err) {
+      // "Already installed at that scope: … `Plugin "…" is already installed (scope: project)`".
+      if (errorCode(err) === 'plugin_already_installed') return directReply(`${errorMessage(err)}.`)
       return directReply(`Install failed: ${errorMessage(err)}`)
     }
   }
@@ -133,15 +133,17 @@ export async function handlePluginsControlCommand(
     const name = tokens.slice(2).join(' ').trim()
     if (!name) return directReply(`Usage: \`/plugin ${sub} <name>\``)
     try {
-      const rec = await pluginService.setEnabled(userId, {
-        name,
-        projectId: session.projectId ?? null,
-        enabled: sub === 'enable',
-      })
+      const rec = await pluginService.setEnabled(
+        userId,
+        { name, projectId: session.projectId ?? null, enabled: sub === 'enable' },
+        { refuseNoop: true },
+      )
       return directReply(
         `${sub === 'enable' ? 'Enabled' : 'Disabled'} \`${rec.name}\`. Start a new turn for it to take effect.`,
       )
     } catch (err) {
+      // `Plugin "formatter" is already enabled`, as `claude plugin enable` prints it.
+      if (errorCode(err) === 'plugin_already_in_state') return directReply(`${errorMessage(err)}.`)
       return directReply(`${sub} failed: ${errorMessage(err)}`)
     }
   }
@@ -224,6 +226,8 @@ export async function handlePluginsControlCommand(
       .filter((a) => a !== '--strict')
       .join(' ')
       .trim()
+    // `/plugin validate <path>`: "Prints the same report as `claude plugin validate`, inline".
+    if (isAbsolute(name)) return directReply(await validatePathReply(ctx, name, strict))
     const { plugins } = await pluginService.listPlugins(userId, {
       projectId: session.projectId ?? null,
     })

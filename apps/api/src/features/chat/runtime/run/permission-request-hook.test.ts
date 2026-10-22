@@ -60,6 +60,25 @@ describe('PermissionRequest beside the approval card', () => {
     h.decide({ behavior: 'deny', message: 'too late' })
   })
 
+  test('the hooks receive the tool itself when the call carries it (an MCP tool’s aliases)', async () => {
+    const seen: unknown[] = []
+    const runtime: CcHooksRuntime = {
+      ...hooks().runtime,
+      runPermissionRequest: async (tool) => (seen.push(tool), {}),
+    }
+    const tool = { name: 'mcp_lin_mcp_echo_echo', aliases: ['mcp__plugin_lin-mcp_echo__echo'] }
+    const c = card()
+    const raced = raceCardWithPermissionHooks(
+      runtime,
+      { toolName: tool.name, tool, input: {} },
+      new AbortController().signal,
+      c.ask,
+    )
+    c.answer('person')
+    await raced
+    expect(seen).toEqual([tool])
+  })
+
   test('a hook with no decision leaves the card to the person', async () => {
     const h = hooks()
     const c = card()

@@ -14,6 +14,8 @@ export interface TaskDelegationDetails {
 export interface EarlyDelegationOutcome {
   status: ChildRuntimeStatus | null
   hasReport: boolean
+  /** The run stopped at its turn limit (CC `maxTurns`): its output is partial, not a failure. */
+  partial?: boolean
 }
 
 /** The child waits for a lane (`delegation-lanes.ts`): it starts when one of the running ends. */
@@ -87,7 +89,12 @@ export interface TaskDelegationOptions {
       lane?: LaneSpec
     },
   ) => Promise<EarlyDelegationOutcome | QueuedDelegation | undefined>
-  onSubagentStart?: (agentType: string, agentId: string) => void
+  /**
+   * CC SubagentStart, awaited before the child's first prompt is written: what the hooks add to
+   * the child's context (their `additionalContext`, already wrapped as a system reminder), or
+   * nothing.
+   */
+  onSubagentStart?: (agentType: string, agentId: string) => Promise<string | undefined>
   /** Copy this conversation, filtered, into a child started with `context: "conversation"`. */
   copyConversation: (childSessionId: string) => Promise<void>
 }

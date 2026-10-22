@@ -50,7 +50,16 @@ export type SessionProvenance =
     }
   | { kind: 'loop'; parentSessionId: string; loopId: string }
   | { kind: 'hook'; parentSessionId: string; phase: 'verifier' }
-  | { kind: 'skill-fork'; parentSessionId: string; parentParticipant?: string }
+  | {
+      kind: 'skill-fork'
+      parentSessionId: string
+      parentParticipant?: string
+      /**
+       * The plugin subagent type a `context: fork` skill's `agent:` names: the fork runs with that
+       * agent's prompt and tool limits, as a delegated one does (`run/plugin-subagent.ts`).
+       */
+      pluginAgent?: string
+    }
   | { kind: 'thread'; parentSessionId: string; phase: 'message' }
   | { kind: 'fork'; parentSessionId: string }
   | { kind: 'external-agent'; parentSessionId: string; toolCallId: string }
@@ -159,13 +168,15 @@ export function parseSessionProvenance(raw: string): SessionProvenance {
         ? { kind: 'hook', parentSessionId: value.parentSessionId, phase: 'verifier' }
         : reject(raw)
     case 'skill-fork':
-      return hasOnlyKeys(value, ['kind', 'parentSessionId', 'parentParticipant']) &&
+      return hasOnlyKeys(value, ['kind', 'parentSessionId', 'parentParticipant', 'pluginAgent']) &&
         isString(value.parentSessionId) &&
-        optionalString(value.parentParticipant)
+        optionalString(value.parentParticipant) &&
+        optionalString(value.pluginAgent)
         ? {
             kind: 'skill-fork',
             parentSessionId: value.parentSessionId,
             ...(value.parentParticipant ? { parentParticipant: value.parentParticipant } : {}),
+            ...(value.pluginAgent ? { pluginAgent: value.pluginAgent } : {}),
           }
         : reject(raw)
     case 'thread':

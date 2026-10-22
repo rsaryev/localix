@@ -25,6 +25,8 @@ import type { MessageInvocationBinding } from '../../contracts/message-bindings-
 import type { ModRunScope } from '../../../mods/run-scope'
 import type { RuntimeSection } from '../../../agent-core/prompt/runtime-sections'
 import { consoleWarnLogger } from '../plugin-hook-logger'
+import { applyHookSessionTitle } from '../hook-session-title'
+import { publishMessageSnapshot } from '../message-persistence'
 import type { RunnerDeps } from '../agent-runner-types'
 import { reminderSections } from '../reminders'
 import { wrapSystemReminder } from '../system-reminder'
@@ -59,6 +61,38 @@ export type IntakeResult =
   | { ok: true; frame: ChatTurnFrame }
   /** A UserPromptSubmit hook denied the prompt — the caller fails the run before any model call. */
   | { ok: false; blockedReason: string; promptMessage: PersistedMessage | undefined }
+
+/**
+ * A blocked prompt never reaches the model, on this turn or a later one (hooks.md: "A blocked
+ * prompt never reaches Claude"): its row stays in the transcript for the person, as their message,
+ * but is marked `promptBlocked`, which every later intake filters out of the model's history.
+ *
+ * Not `uiOnly`: that turns the row into a divider and drops it for good, so a Retry of the blocked
+ * turn would answer the previous reply. A Retry submits the prompt again ({@link intakeTurn}), and
+ * when the hooks now accept it the mark is lifted (`blocked: false`) and the prompt joins history.
+ */
+export async function markPromptBlocked(
+  deps: Pick<RunnerDeps, 'repo' | 'streamRegistry'>,
+  userId: string,
+  promptMessage: PersistedMessage,
+  blocked: boolean,
+  updatedAt: string,
+): Promise<void> {
+  if (Boolean(promptMessage.payload.promptBlocked) === blocked) return
+  const { sessionId, id } = promptMessage
+  const patch = { promptBlocked: blocked ? (true as const) : undefined }
+  const written = await deps.repo.updateMessage(userId, sessionId, id, patch, updatedAt)
+  if (!written) return
+  publishMessageSnapshot({
+    streamRegistry: deps.streamRegistry,
+    userId,
+    sessionId,
+    messageId: id,
+    payload: written.payload,
+    createdAt: promptMessage.createdAt,
+    updatedAt,
+  })
+}
 
 /** Replace the active prompt on the already model-filtered history copy. */
 export function rewriteModelPrompt(
@@ -97,7 +131,11 @@ export async function intakeTurn(args: IntakeArgs): Promise<IntakeResult> {
   // System notices reach the model only through their deduplicated context bindings below.
   // Also exclude legacy model-visible notice rows so upgrading does not duplicate their prose.
   const topicHistory = historyAfterBoundary(args.historyMessages).rows
-  const modelHistory = topicHistory.filter((m) => !m.payload.uiOnly && !m.payload.systemNotice)
+  const visible = topicHistory.filter((m) => !m.payload.uiOnly && !m.payload.systemNotice)
+  // A prompt a hook blocked stays out of the model's history, unless it is this run's trigger: a
+  // Retry of the blocked turn submits it again, and the hooks below decide again.
+  const trigger = visible[visible.length - 1]
+  const modelHistory = visible.filter((m) => !m.payload.promptBlocked || m === trigger)
   const promptMessage = modelHistory[modelHistory.length - 1]
   const isRealUserPrompt =
     promptMessage?.payload.role === 'user' &&
@@ -135,6 +173,7 @@ export async function intakeTurn(args: IntakeArgs): Promise<IntakeResult> {
   let ccPromptContext: string | undefined
   if (ccHooks.active && isRealUserPrompt && promptMessage) {
     const result = await ccHooks.runUserPromptSubmit(promptMessage.payload.content as string)
+    await applyHookSessionTitle(args.deps, args.userId, args.session.id, result.sessionTitle)
     if (result.blocked) {
       return { ok: false, blockedReason: result.reason ?? 'blocked', promptMessage }
     }

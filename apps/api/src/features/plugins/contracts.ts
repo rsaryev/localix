@@ -150,6 +150,8 @@ export const pluginRecordSchema = z.object({
   error: z.string().optional(),
   /** Structured manifest/command/skill validation outcome surfaced in the UI. */
   validation: pluginValidationSchema,
+  /** On an install: the dependencies it installed alongside, which the success message names. */
+  installedDependencies: z.array(z.string()).optional(),
 })
 export type PluginRecord = z.infer<typeof pluginRecordSchema>
 

@@ -1,6 +1,10 @@
 import { mcpClientManager } from '../../mcp/client-manager'
 import type { RunnerDeps } from './agent-runner-types'
-import { forgetSessionRuntimeState, type RuntimeState } from './agent-runner-state'
+import {
+  endCcHookSession,
+  forgetSessionRuntimeState,
+  type RuntimeState,
+} from './agent-runner-state'
 import { waitForRunSettlement } from './stop-session'
 import type { createWakeQueue } from './wake-queue'
 
@@ -10,12 +14,16 @@ import type { createWakeQueue } from './wake-queue'
  * context checkpoint: the view the hooks injected into was rewritten). Dropping the
  * session from `ccHooksStartedSessions` is what makes that next run re-fire SessionStart (and
  * re-inject its context).
+ *
+ * A `/clear` also ENDS the session it clears, as in Claude Code: its `SessionEnd` hooks run with
+ * reason `clear` before the next run's SessionStart. A checkpoint ends nothing.
  */
 export function noteNextSessionStartSource(
   state: RuntimeState,
   sessionId: string,
   source: 'clear' | 'compact',
 ): void {
+  if (source === 'clear') endCcHookSession(state, sessionId, 'clear')
   state.ccHooksStartedSessions.delete(sessionId)
   state.ccHooksSessionStartSource.set(sessionId, source)
 }

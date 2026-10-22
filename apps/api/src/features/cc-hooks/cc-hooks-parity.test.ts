@@ -222,7 +222,9 @@ describe('async + asyncRewake', () => {
 describe('once', () => {
   it('a once handler runs at most once per session (shared onceKeys)', async () => {
     const onceKeys = new Set<string>()
-    const r = reg({ SessionStart: [cmd('cat >/dev/null; echo "hi"', { once: true })] })
+    const r = reg({
+      SessionStart: [cmd('cat >/dev/null; echo "hi"', { once: true, source: 'skill' })],
+    })
     const first = make(r, { onceKeys })
     expect((await first.runSessionStart()).additionalContext).toBe('hi')
     // A NEW per-run runtime sharing the same onceKeys must NOT re-fire it.

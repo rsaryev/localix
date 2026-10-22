@@ -13,7 +13,7 @@ import { mcpConnectionKey as keyFor } from './mcp-connection-key'
 import type { McpConnectionObserver } from '../notifications/conditions/mcp'
 import { createToolMetadataStore } from './mcp-tool-metadata-store'
 import { createConnectionPool } from './mcp-connection-pool'
-import { gatherTools, type GatherState } from './mcp-gather'
+import { gatherTools, serverStatusKey, type GatherState, type McpServerOutcome } from './mcp-gather'
 import {
   createChannelRouter,
   type ChannelBinding,
@@ -82,6 +82,7 @@ export function createMcpClientManager(options: McpClientManagerOptions = {}) {
     scopeKeys: new Map(),
     defaultLogger: options.logger,
     channels,
+    lastStatus: new Map(),
   }
 
   /**
@@ -217,6 +218,12 @@ export function createMcpClientManager(options: McpClientManagerOptions = {}) {
     gather: (servers: McpServerRecord[], gatherOptions: McpGatherOptions) =>
       gatherTools(gatherState, servers, gatherOptions),
     cachedToolNames,
+    /**
+     * A server's outcome in the latest gather that included it — what `/mcp` shows beside it.
+     * Read only: it never connects. Undefined until a run has gathered the server.
+     */
+    serverStatus: (server: Pick<McpServerRecord, 'userId' | 'id'>): McpServerOutcome | undefined =>
+      gatherState.lastStatus?.get(serverStatusKey(server)),
     listResources: (servers: McpServerRecord[], cwd: string) =>
       resources.listResources(pool, servers, cwd),
     listResourceTemplates: (servers: McpServerRecord[], cwd: string) =>

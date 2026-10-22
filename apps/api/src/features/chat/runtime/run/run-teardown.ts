@@ -11,7 +11,6 @@ import { rm } from 'node:fs/promises'
 
 import type { LoadedPluginHook } from '../../../plugins/loader'
 import { runSessionEndHooks } from '../../../plugins/hooks'
-import type { CcHooksRuntime } from '../../../cc-hooks'
 import type { SessionRecord } from '../../repository'
 import { consoleWarnLogger } from '../plugin-hook-logger'
 import type { RuntimeState } from '../agent-runner-state'
@@ -24,8 +23,6 @@ export interface RunTeardownArgs {
   session: SessionRecord
   abort: AbortController
   pluginHooksForRun: readonly LoadedPluginHook[]
-  /** Per-run CC-hook runtime → fires SessionEnd hooks (inert when no hooks). */
-  ccHooksForRun: CcHooksRuntime | undefined
   runLiveResolverKeys: Set<string>
   unsubLsp: (() => void) | undefined
   /** Session cwd — used to clean up this session's spilled-attachment dir. */
@@ -38,7 +35,6 @@ export function teardownRun({
   session,
   abort,
   pluginHooksForRun,
-  ccHooksForRun,
   runLiveResolverKeys,
   unsubLsp,
   defaultCwd,
@@ -54,13 +50,8 @@ export function teardownRun({
       logger: consoleWarnLogger,
     })
   }
-  // CC SessionEnd shell hooks — fired once per RUN, mirroring the plugin
-  // onSessionEnd cadence above (Localix has no distinct session-close event; a
-  // run ending IS the session-terminating seam). Side-effects only (no decision
-  // control), so fire-and-forget with reason `other`.
-  if (ccHooksForRun?.active) {
-    void ccHooksForRun.runSessionEnd('other')
-  }
+  // Claude Code's SessionEnd is NOT fired here: a run ending is not the session ending. It fires
+  // when the session really ends (`/clear`, deletion) — see agent-runner-lifecycle.ts.
   // Deregister any live item resolvers this run registered but whose child
   // hasn't completed yet (the child outlived the parent run). After this,
   // resolveParentToolItem falls back to the DB-walk path, which is still

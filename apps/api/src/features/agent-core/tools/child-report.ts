@@ -29,8 +29,22 @@ export function childReport(text: string, childSessionId: string): string {
   })}\n${truncated.content}`
 }
 
-/** The report section a delegator reads: the bounded final text, or a notice that there is none. */
-export function reportBody(text: string | null | undefined, childSessionId: string): string {
+/** What a delegator reads about a child that stopped at its turn limit (CC `maxTurns`). */
+export const PARTIAL_NOTICE =
+  'It stopped at its turn limit, so its output is partial. To let it continue, send it `delegate` action:"message".'
+
+/**
+ * The report section a delegator reads: the bounded final text, or a notice that there is none.
+ * A `partial` run (stopped at its turn limit) is said so first, and its text is its partial output.
+ */
+export function reportBody(
+  text: string | null | undefined,
+  childSessionId: string,
+  opts: { partial?: boolean } = {},
+): string {
   const trimmed = text?.trim()
-  return trimmed ? `Its final report:\n${childReport(trimmed, childSessionId)}` : NO_REPORT_NOTICE
+  const body = trimmed
+    ? `${opts.partial ? 'Its partial output' : 'Its final report'}:\n${childReport(trimmed, childSessionId)}`
+    : NO_REPORT_NOTICE
+  return opts.partial ? `${PARTIAL_NOTICE}\n${body}` : body
 }

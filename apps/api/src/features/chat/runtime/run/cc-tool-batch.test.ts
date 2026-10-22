@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
 import { INERT_CC_HOOKS, type CcHooksRuntime, type CcToolBatchCall } from '../../../cc-hooks'
-import { ccAfterToolBatch, POST_TOOL_BATCH_STOP } from './cc-tool-batch'
+import { ccAfterToolBatch, ccHookStopRule, POST_TOOL_BATCH_STOP } from './cc-tool-batch'
 
 const batch = {
   calls: [
@@ -53,5 +53,25 @@ describe('PostToolBatch on the loop seam', () => {
       stop: POST_TOOL_BATCH_STOP,
     })
     expect(notices).toEqual(['lint failed'])
+  })
+
+  test('after a PreToolUse continue:false, no PostToolBatch hook runs', async () => {
+    const h = hooks({ stop: false, additionalContext: 'run pytest' })
+    const runtime: CcHooksRuntime = {
+      ...h.runtime,
+      stoppedBy: () => ({ event: 'PreToolUse', reason: 'Build failed' }),
+    }
+    expect(await ccAfterToolBatch(runtime, () => {})!(batch, signal)).toBeUndefined()
+    expect(h.seen).toEqual([])
+  })
+})
+
+describe('a hook stop at the batch boundary', () => {
+  test('ends the run once a hook stopped it, even when a sibling call ran', async () => {
+    let stop: ReturnType<CcHooksRuntime['stoppedBy']>
+    const rule = ccHookStopRule({ ...INERT_CC_HOOKS, stoppedBy: () => stop })
+    expect(rule.shouldStop()).toBe(false)
+    stop = { event: 'PreToolUse', reason: 'Build failed' }
+    expect(rule.shouldStop()).toBe(true)
   })
 })

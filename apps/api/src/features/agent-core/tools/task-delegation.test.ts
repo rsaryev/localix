@@ -34,3 +34,11 @@ describe('what became of a started fork', () => {
     expect(line.line).toContain('Review its report')
   })
 })
+
+test('a fork stopped at its turn limit reads as partial output, not as failed', () => {
+  const line = describeStartedTask({ status: 'completed', hasReport: false, partial: true }, child)
+  expect(line.failed).toBe(false)
+  expect(line.details?.status).toBe('completed')
+  expect(line.line).toContain('reached its turn limit')
+  expect(line.line).toContain('partial')
+})
