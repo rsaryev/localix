@@ -97,12 +97,13 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
     env.state
   const onceKeys = ensureCcHookOnceKeys(ccHookOnceKeys, session.id)
   const emitNotice = ccHookNoticeEmitter(deps.streamRegistry, userId, session.id)
-  const envFiles = ccSessionEnvFilesOf(session)
+  const envFiles = ccSessionEnvFilesOf(session, deps.sessionDataRoot)
   const transcript = createCcTranscript({
     repo: env.repo,
     userId,
     session,
     cwd: defaultCwd,
+    dataRoot: deps.sessionDataRoot,
     warn: ccHooksConsoleLogger.warn,
   })
   const subagent = ccSubagentOf(session, speakerAgentId)

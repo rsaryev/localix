@@ -194,7 +194,7 @@ export function buildRunToolRegistry(
       bashPluginBinDirs: loadedPlugins.binDirs,
       // Claude Code's CLAUDE_ENV_FILE: what SessionStart / CwdChanged / FileChanged hooks export
       // reaches every later command of the session.
-      bashEnvScripts: ccSessionEnvScripts(ccSessionEnvFilesOf(session)),
+      bashEnvScripts: ccSessionEnvScripts(ccSessionEnvFilesOf(session, deps.sessionDataRoot)),
       // Research is tokenless. Only its SSRF policy is configurable; every search
       // engine works without secrets and every page/redirect passes the same guard.
       researchConfig: {

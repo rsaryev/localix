@@ -33,7 +33,12 @@ function input(hooks: Record<string, unknown>, extra: Partial<BuildRunCcHooksInp
     ccHookSessions,
   }
   const build: BuildRunCcHooksInput = {
-    env: { deps: { streamRegistry: { publish: () => {} } }, state } as never,
+    // Hook files go to this test's folder, never the developer's ~/.localix.
+    env: {
+      deps: { streamRegistry: { publish: () => {} }, sessionDataRoot: dir() },
+      repo: { listMessages: async () => [] },
+      state,
+    } as never,
     userId: 'u1',
     session: { id: 's1', projectId: null, agents: [] } as never,
     speakerAgentId: 'a1',

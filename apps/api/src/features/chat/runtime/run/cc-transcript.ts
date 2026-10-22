@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 
@@ -24,10 +25,12 @@ export function createCcTranscript(input: {
   userId: string
   session: Pick<SessionRecord, 'id' | 'rootSessionId'>
   cwd: string
+  /** The session data root (`RunnerDeps.sessionDataRoot`); the default one if absent. */
+  dataRoot?: string
   warn?: (message: string) => void
 }): CcTranscript {
   const rootId = input.session.rootSessionId ?? input.session.id
-  const dir = join(sessionDataDir(rootId), '.claude-code')
+  const dir = join(sessionDataDir(rootId, input.dataRoot), '.claude-code')
   const path = join(dir, `${rootId}.jsonl`)
   const agentPath = (agentId: string) => join(dir, 'subagents', `agent-${agentId}.jsonl`)
 
@@ -40,7 +43,8 @@ export function createCcTranscript(input: {
     })
     if ((await readFile(file, 'utf8').catch(() => null)) === text) return
     await mkdir(dirname(file), { recursive: true })
-    const staged = `${file}.${process.pid}.tmp`
+    // Hooks of one event refresh at once: each write stages its own file, and the last rename wins.
+    const staged = `${file}.${randomUUID()}.tmp`
     await writeFile(staged, text, { mode: 0o600 })
     await rename(staged, file)
   }

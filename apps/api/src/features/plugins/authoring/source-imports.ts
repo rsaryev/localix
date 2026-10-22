@@ -42,8 +42,12 @@ export async function assertContainedBuildInputs(input: {
   kitDir: string
   virtualInputs?: ReadonlySet<string>
   sharedSpecifiers?: ReadonlySet<string>
+  /** The build's working directory, which the metafile's paths are relative to. */
+  cwd?: string
 }): Promise<void> {
   const { metafile, virtualInputs } = input
+  const base = input.cwd ?? process.cwd()
+  const at = (path: string) => resolve(base, path)
   if (!metafile) throw new Error('The plugin build returned no import graph to validate')
   const [pluginRoot, kitRoot] = await Promise.all([
     fs.realpath(input.pluginDir),
@@ -58,7 +62,7 @@ export async function assertContainedBuildInputs(input: {
   const edgesOf = (key: string): Edge[] =>
     (inputs[key]?.imports ?? []).map((imported) => ({
       path: imported.path,
-      from: dirname(resolve(key)),
+      from: dirname(at(key)),
     }))
   // An import's recorded path is relative to the build's working directory (as Bun 1.4 records
   // it), usually another input's key. A module the bundle reached only through re-exports, such as
@@ -68,8 +72,8 @@ export async function assertContainedBuildInputs(input: {
   const realOf = async ({ path, from }: Edge) => {
     try {
       return await fs.realpath(
-        path in inputs || (!FILE_IMPORT.test(path) && (await Bun.file(resolve(path)).exists()))
-          ? resolve(path)
+        path in inputs || (!FILE_IMPORT.test(path) && (await Bun.file(at(path)).exists()))
+          ? at(path)
           : FILE_IMPORT.test(path)
             ? resolve(from, path)
             : Bun.resolveSync(path, from),
@@ -83,7 +87,7 @@ export async function assertContainedBuildInputs(input: {
   await Promise.all(
     Object.keys(inputs).map(async (key) => {
       if (virtualInputs?.has(key)) return
-      const realFile = await fs.realpath(resolve(key))
+      const realFile = await fs.realpath(at(key))
       if (isPathWithin(pluginRoot, realFile)) pluginFiles.push(key)
       else if (isPathWithin(kitRoot, realFile)) packageEntries.push(...edgesOf(key))
       else outside.add(key)
@@ -92,7 +96,7 @@ export async function assertContainedBuildInputs(input: {
 
   await Promise.all(
     pluginFiles.map(async (key) => {
-      const file = resolve(key)
+      const file = at(key)
       for (const imported of inputs[key]!.imports) {
         const specifier = imported.original ?? imported.path
         if (input.sharedSpecifiers?.has(specifier)) continue
@@ -140,7 +144,7 @@ export async function assertContainedBuildInputs(input: {
     return undefined
   }
   const realKeys = await Promise.all(
-    [...outside].map(async (key) => ({ key, real: await fs.realpath(resolve(key)) })),
+    [...outside].map(async (key) => ({ key, real: await fs.realpath(at(key)) })),
   )
   const trustedRoots = new Set<string>()
   const pending = [...packageEntries]

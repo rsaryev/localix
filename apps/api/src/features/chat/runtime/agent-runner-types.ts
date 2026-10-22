@@ -38,6 +38,8 @@ import type { HumanProfile } from '../../agent-core/prompt/sections/conversation
 import type { ModsHost } from '../../mods/host'
 
 export interface RunnerDeps {
+  /** Where session data lives (plugin data, Claude Code hook files); `sessionDataRoot()` if absent. */
+  sessionDataRoot?: string
   agentManagement?: AgentManagementPort
   externalAgents?: ExternalAgentsPort
   db: Kysely<AppDatabase>

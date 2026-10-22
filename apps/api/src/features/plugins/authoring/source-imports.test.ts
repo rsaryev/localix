@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from 'bun:test'
+import { describe, expect, test } from 'bun:test'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
@@ -7,8 +7,6 @@ import { tempDirPerTest } from '@localixai/testing'
 import { assertContainedBuildInputs } from './source-imports'
 
 const scratch = tempDirPerTest('source-imports-')
-const cwd = process.cwd()
-afterEach(() => process.chdir(cwd))
 
 function write(root: string, file: string, text = '') {
   mkdirSync(dirname(join(root, file)), { recursive: true })
@@ -23,7 +21,6 @@ function layout() {
   write(root, 'node_modules/@x/pkg/package.json', '{"name":"@x/pkg"}')
   write(root, 'node_modules/@x/pkg/dist/index.js')
   write(root, 'node_modules/@x/pkg/dist/parse.js')
-  process.chdir(root)
   return root
 }
 
@@ -51,6 +48,7 @@ describe('assertContainedBuildInputs', () => {
         metafile,
         pluginDir: join(root, 'plugin'),
         kitDir: join(root, 'kit'),
+        cwd: root,
       }),
     ).resolves.toBeUndefined()
   })
@@ -70,6 +68,7 @@ describe('assertContainedBuildInputs', () => {
         metafile,
         pluginDir: join(root, 'plugin'),
         kitDir: join(root, 'kit'),
+        cwd: root,
       }),
     ).rejects.toThrow(/outside the plugin/)
   })

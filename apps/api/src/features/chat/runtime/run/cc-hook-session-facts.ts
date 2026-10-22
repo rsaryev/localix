@@ -46,8 +46,9 @@ export function ccSubagentOf(
  */
 export function ccSessionEnvFilesOf(
   session: Pick<SessionRecord, 'id' | 'rootSessionId'>,
+  dataRoot?: string,
 ): CcSessionEnvFiles {
   return ccSessionEnvFiles(
-    join(sessionDataDir(session.rootSessionId ?? session.id), '.claude-code'),
+    join(sessionDataDir(session.rootSessionId ?? session.id, dataRoot), '.claude-code'),
   )
 }
