@@ -28,18 +28,16 @@ const home = tempDirPerTest('monitor-skill-invoke-')
 const ON: AvailabilityReader = { effectFor: () => 'allow' }
 
 function repo(names: string[]): CapabilitySourceRepository {
-  const rows = names.map(
-    (name): CapabilitySourceRecord => ({
-      id: name,
-      userId: 'u1',
-      projectId: '',
-      name,
-      config: {},
-      source: 'local',
-      createdAt: '2026-01-01T00:00:00.000Z',
-      updatedAt: '2026-01-01T00:00:00.000Z',
-    }),
-  )
+  const rows = names.map((name): CapabilitySourceRecord => ({
+    id: name,
+    userId: 'u1',
+    projectId: '',
+    name,
+    config: {},
+    source: 'local',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+  }))
   return {
     listForScope: async () => rows,
     get: async (_u, _p, name) => rows.find((row) => row.name === name) ?? null,

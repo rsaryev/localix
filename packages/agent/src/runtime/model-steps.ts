@@ -128,17 +128,15 @@ export function withModelSteps(
       }
       const message = Promise.resolve()
         .then(() => hook(step, send))
-        .catch(
-          (error: unknown): AssistantMessage => ({
-            role: 'assistant',
-            content: [],
-            provider: session.ref.providerId,
-            model: session.ref.modelId,
-            stopReason: 'error',
-            errorMessage: error instanceof Error ? error.message : String(error),
-            timestamp: Date.now(),
-          }),
-        )
+        .catch((error: unknown): AssistantMessage => ({
+          role: 'assistant',
+          content: [],
+          provider: session.ref.providerId,
+          model: session.ref.modelId,
+          stopReason: 'error',
+          errorMessage: error instanceof Error ? error.message : String(error),
+          timestamp: Date.now(),
+        }))
         .then((answer) => {
           // An answer no request streamed reaches the loop's readers as the model's would.
           if (!sent) for (const delta of deltasOf(answer)) queue.push(delta)

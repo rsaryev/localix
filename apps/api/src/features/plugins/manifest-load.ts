@@ -57,13 +57,11 @@ function hookIssues(configs: readonly unknown[]): PluginIssue[] {
   const sorted = [...events].sort()
   const unknown = sorted.filter((event) => !isInertCcHookEvent(event))
   return [
-    ...sorted.filter(isInertCcHookEvent).map(
-      (event): PluginIssue => ({
-        severity: 'warning',
-        path: 'hooks',
-        message: `Hook event ${event} never fires in Localix: ${CC_INERT_HOOK_EVENTS[event]}`,
-      }),
-    ),
+    ...sorted.filter(isInertCcHookEvent).map((event): PluginIssue => ({
+      severity: 'warning',
+      path: 'hooks',
+      message: `Hook event ${event} never fires in Localix: ${CC_INERT_HOOK_EVENTS[event]}`,
+    })),
     ...(unknown.length
       ? [
           {

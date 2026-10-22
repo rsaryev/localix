@@ -29,13 +29,19 @@ export const BOARD_SCENARIOS = [
       const dir = await mkdtemp(path.join(tmpdir(), 'localix-board-e2e-'))
       const project = await rt.api('/projects', { name: 'Board E2E', workingDir: dir })
       try {
+        // The board's write tool, as plugin discovery names it to the agent.
+        const snapshot = await rt.api(`/capabilities/snapshot?projectId=${project.id}`)
+        const apply = snapshot.tools.catalog.find(
+          (tool) => tool.provider?.id === 'project-space' && tool.name.endsWith('_apply'),
+        )?.name
+        assert.ok(apply, 'the board plugin offers its write tool')
         const session = await rt.createSession({ title: 'Board', projectId: project.id })
         const steps = {
           localix: [
             // Plugin tools wait behind activation, as a real model finds them.
-            { tool: 'activate_tools', args: { names: ['space_apply'] } },
+            { tool: 'activate_tools', args: { names: [apply] } },
             {
-              tool: 'space_apply',
+              tool: apply,
               args: {
                 ops: [
                   { op: 'create', id: 'release', type: 'flow', text: FLOW },
@@ -48,7 +54,7 @@ export const BOARD_SCENARIOS = [
         }
         const after = await rt.say(session.id, `Draw it. ${script(steps)}`)
         const request = lastRun(rt, after)
-        assert.ok(request.tools.includes('space_apply'), 'the board tool is offered once activated')
+        assert.ok(request.tools.includes(apply), 'the board tool is offered once activated')
         const { space } = await rt.api(`/project-space/space?sessionId=${session.id}`)
         const flow = space.elements.release
         const matrix = space.elements.bets
