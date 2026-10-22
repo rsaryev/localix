@@ -63,7 +63,13 @@ if (partial.length) {
 
 if (formatted.length) {
   console.log(`[pre-commit] Checking formatting of ${formatted.length} staged files`)
-  run(join('node_modules', '.bin', 'oxfmt'), ['--check', '--', ...formatted])
+  // Migrations and other formatter-ignored files may be all a commit stages: that is no error.
+  run(join('node_modules', '.bin', 'oxfmt'), [
+    '--check',
+    '--no-error-on-unmatched-pattern',
+    '--',
+    ...formatted,
+  ])
 }
 const sources = formatted.filter((path) => /\.[cm]?[jt]sx?$/.test(path))
 if (sources.length) {

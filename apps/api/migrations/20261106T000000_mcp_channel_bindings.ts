@@ -17,7 +17,4 @@ export async function up(db: Kysely<unknown>): Promise<void> {
       PRIMARY KEY (user_id, server_id, cwd)
     )
   `.execute(db)
-  await sql`CREATE INDEX mcp_channel_bindings_session_idx ON mcp_channel_bindings(session_id)`.execute(
-    db,
-  )
 }
