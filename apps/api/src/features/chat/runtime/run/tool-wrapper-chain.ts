@@ -38,7 +38,7 @@ export const TOOL_WRAPPER_CHAIN = [
  *
  * Why the order is what it is:
  *  - the permission gate innermost, and only for a run whose mods hear `tool.call` or
- *    `tool.check` (otherwise it is the loop's `beforeToolCall`, before every wrapper): Claude
+ *    `tool.check` or whose Claude Code hooks hear `PreToolUse` (otherwise it is the loop's `beforeToolCall`, before every wrapper): Claude
  *    Code decides a call after the `tool.call` and `PreToolUse` hooks (`chain-gate.ts`);
  *  - plugin hooks next, then CC hooks, so a PreToolUse deny happens before anything
  *    downstream gets to observe or time the call;

@@ -11,6 +11,7 @@ import {
   type DiscoveredSkill,
 } from '../skill-discovery'
 import { recordSkillUse } from '../skill-usage-recorder'
+import { findSkillByName, skillCallName } from './skill-names'
 import { MAX_OUTPUT_BYTES } from './file/read-output'
 import { truncationMarker } from './tool-output'
 import { filterDisabledSkills, isSkillDisabled, type SkillOverrides } from '../skill-overrides'
@@ -99,7 +100,7 @@ export function createSkillTool(
 
   const notFoundMessage = (name: string, skills: DiscoveredSkill[]): string => {
     if (skills.length === 0) return `Skill not found: "${name}". No skills are available.`
-    const names = skills.map((s) => s.name)
+    const names = skills.map(skillCallName)
     const shown = names.slice(0, 30)
     const more = names.length > shown.length ? ` (+${names.length - shown.length} more)` : ''
     return `Skill not found: "${name}". Available skills: ${shown.join(', ')}${more}`
@@ -154,7 +155,7 @@ export function createSkillTool(
         case 'get': {
           if (!input.name) return { content: 'name is required for action="get".', isError: true }
           const skills = await allSkills()
-          const skill = skills.find((s) => s.name === input.name)
+          const skill = findSkillByName(skills, input.name)
           if (!skill) return { content: notFoundMessage(input.name, skills), isError: true }
           let body: string
           try {

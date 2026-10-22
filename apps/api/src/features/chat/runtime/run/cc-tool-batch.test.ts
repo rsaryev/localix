@@ -33,7 +33,14 @@ describe('PostToolBatch on the loop seam', () => {
     const h = hooks({ stop: false, additionalContext: 'run pytest' })
     const verdict = await ccAfterToolBatch(h.runtime, () => {})!(batch, signal)
     expect(h.seen).toEqual([
-      [{ tool_name: 'read', tool_input: { path: 'a' }, tool_use_id: 't1', tool_response: '1\ta' }],
+      [
+        {
+          tool_name: 'Read',
+          tool_input: { path: 'a', file_path: 'a' },
+          tool_use_id: 't1',
+          tool_response: '1\ta',
+        },
+      ],
     ])
     expect(verdict?.messages).toHaveLength(1)
     expect(JSON.stringify(verdict?.messages)).toContain('run pytest')

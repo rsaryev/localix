@@ -3,6 +3,7 @@
  * approval card, an automatic denial, a tool batch, a task-board write, a member going idle.
  * Each fold follows the CC reference's decision control for its event.
  */
+import { claudeCodeHookCall, localInputFromHook } from '../ext/cc-tool-shapes'
 import type { CcHookInput, CcHookOutcome } from './contracts'
 import { matchesField, matchesToolName } from './matcher'
 import type {
@@ -90,8 +91,7 @@ export function createGateHookRunners(deps: HookDispatchDeps): GateRunners {
     async runPermissionRequest(toolName, toolInput, opts) {
       const input: CcHookInput = {
         ...baseInput('PermissionRequest'),
-        tool_name: toolName,
-        tool_input: toolInput,
+        ...claudeCodeHookCall({ name: toolName }, toolInput),
         ...(opts?.suggestions?.length ? { permission_suggestions: opts.suggestions } : {}),
       }
       const outcomes = await runAll(
@@ -109,14 +109,16 @@ export function createGateHookRunners(deps: HookDispatchDeps): GateRunners {
         if (d.behavior === 'deny') return d
         if (!result.behavior) result = d
       }
-      return result
+      // The hook rewrote the call in Claude Code's shape: fold it back into Localix's.
+      return result.updatedInput !== undefined
+        ? { ...result, updatedInput: localInputFromHook(toolName, toolInput, result.updatedInput) }
+        : result
     },
 
     async runPermissionDenied(toolName, toolInput, toolUseId, reason) {
       const input: CcHookInput = {
         ...baseInput('PermissionDenied'),
-        tool_name: toolName,
-        tool_input: toolInput,
+        ...claudeCodeHookCall({ name: toolName }, toolInput),
         tool_use_id: toolUseId,
         reason,
       }

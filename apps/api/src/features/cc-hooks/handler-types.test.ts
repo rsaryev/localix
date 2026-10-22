@@ -192,7 +192,7 @@ describe('http hooks fire through the runtime (live server)', () => {
       }),
     )
     await rt.runPreToolUse('bash', { command: 'ls' })
-    expect((seenBody as { tool_name?: string }).tool_name).toBe('bash')
+    expect((seenBody as { tool_name?: string }).tool_name).toBe('Bash')
     expect(seenHeaders).toEqual(['Bearer tok-123'])
     delete process.env.CC_HOOK_HDR
   })
@@ -273,7 +273,7 @@ describe('mcp_tool hooks fire through the runtime (stubbed caller)', () => {
       callMcpTool: caller,
     })
     await rt.runPreToolUse('write', { file_path: '/a.ts' })
-    expect((seenInput as { tool_name?: string }).tool_name).toBe('write')
+    expect((seenInput as { tool_name?: string }).tool_name).toBe('Write')
   })
 
   it('notConnected fails open (proceed)', async () => {
@@ -350,7 +350,7 @@ describe('agent hooks fire through the runtime (stubbed evaluator)', () => {
     await rt.runPreToolUse('bash', { command: 'echo hi' })
     expect(seen!.timeoutMs).toBe(45_000)
     expect(seen!.maxTurns).toBe(12)
-    expect(JSON.parse(seen!.inputJson).tool_name).toBe('bash')
+    expect(JSON.parse(seen!.inputJson).tool_name).toBe('Bash')
   })
 
   it('fails open when NO evaluator is injected', async () => {

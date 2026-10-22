@@ -187,8 +187,12 @@ export async function assembleRunTools(
   // Every wrapper, in the order tool-wrapper-chain.ts declares — plugin hooks and CC hooks
   // innermost, then the timeout promoter, then the three no-progress guards. The order and
   // its reasons live with the list, so the composition dump and the code cannot disagree.
-  // Inside the chain while a mod hears `tool.call` or `tool.check` (`chain-gate.ts`).
-  const gate = createChainGate(options.mods?.gateInChain ?? false, {
+  // Inside the chain while a mod hears `tool.call` or `tool.check`, or a Claude Code hook hears
+  // PreToolUse (`chain-gate.ts`): Claude Code runs PreToolUse before it asks anyone, so hookify's
+  // warning or refusal comes ahead of the permission card.
+  const gateInChain =
+    (options.mods?.gateInChain ?? false) || (ccHooks.active && ccHooks.hasHooks('PreToolUse'))
+  const gate = createChainGate(gateInChain, {
     approvedInput: (tool, toolCallId) =>
       approvedInputFor(ccHooks, tool, toolCallId, consoleWarnLogger),
   })

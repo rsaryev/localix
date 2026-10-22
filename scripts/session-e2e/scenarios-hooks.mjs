@@ -1,10 +1,10 @@
-/** Session E2E: Claude Code hooks that change what the person sees, never what the model reads. */
+/** Session E2E: Claude Code hooks — what the person sees, and the call a hook script reads. */
 import assert from 'node:assert/strict'
 
 import { mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
-import { lastRun, script } from './scenario-helpers.mjs'
+import { lastRun, runs, script } from './scenario-helpers.mjs'
 
 function writeTree(dir, files) {
   for (const [file, text] of Object.entries(files)) {
@@ -50,6 +50,52 @@ export const HOOK_SCENARIOS = [
         .join('\n')
       assert.ok(read.includes('ORIGINAL-REPLY'), 'the next turn reads the original reply')
       assert.ok(!read.includes('SHOWN-BY-HOOK'), 'the shown text never reaches the model')
+    },
+  },
+  {
+    name: 'claude code hooks: a PreToolUse script reads Bash in Claude Code’s shape and denies rm -rf',
+    async run(rt) {
+      const dir = path.join(rt.root, 'cc-pretool-e2e')
+      const deny = {
+        hookSpecificOutput: {
+          hookEventName: 'PreToolUse',
+          permissionDecision: 'deny',
+          permissionDecisionReason: 'RM-RF-GUARD refused it',
+        },
+      }
+      // As hookify does: the script tests `tool_name == "Bash"` and reads `tool_input.command`.
+      const guard = [
+        'input=$(cat)',
+        'case "$input" in',
+        `  *'"tool_name":"Bash"'*'"command":"rm -rf'*) echo '${JSON.stringify(deny)}' ;;`,
+        'esac',
+      ].join('\n')
+      writeTree(dir, {
+        '.claude-plugin/plugin.json': JSON.stringify({ name: 'ccpretool', version: '1.0.0' }),
+        'hooks/guard.sh': guard,
+        'hooks/hooks.json': JSON.stringify({
+          hooks: {
+            PreToolUse: [
+              {
+                matcher: 'Bash',
+                hooks: [{ type: 'command', command: 'sh "${CLAUDE_PLUGIN_ROOT}/hooks/guard.sh"' }],
+              },
+            ],
+          },
+        }),
+      })
+      await rt.api('/plugins/install', { source: dir, enable: true })
+      try {
+        const session = await rt.createSession({ title: 'PreToolUse guard' })
+        const call = { tool: 'bash', args: { command: 'rm -rf ./nothing-here' } }
+        const after = await rt.say(session.id, `Clean up. ${script({ localix: [call, 'Done.'] })}`)
+        const [, second] = runs(rt, after, 'localix')
+        assert.ok(second, 'the turn made a second model request')
+        const read = second.messages.map((message) => message.text).join('\n')
+        assert.ok(read.includes('RM-RF-GUARD refused it'), `the hook denied the call: ${read}`)
+      } finally {
+        await rt.api('/plugins/remove', { name: 'ccpretool' })
+      }
     },
   },
 ]

@@ -87,7 +87,7 @@ describe('PermissionRequest', () => {
     })
     expect(input('pr.json')).toMatchObject({
       hook_event_name: 'PermissionRequest',
-      tool_name: 'bash',
+      tool_name: 'Bash',
       tool_input: { command: 'ls' },
     })
     expect(input('pr.json').tool_use_id).toBeUndefined()
@@ -128,7 +128,7 @@ describe('PermissionDenied', () => {
       retry: true,
     })
     expect(input('pd.json')).toMatchObject({
-      tool_name: 'bash',
+      tool_name: 'Bash',
       tool_use_id: 'tc9',
       reason: 'Plan mode',
     })
@@ -143,7 +143,12 @@ describe('PostToolBatch', () => {
       PostToolBatch: [{ matcher: 'ignored', handlers: [capture('pb.json', json(context))] }],
     })
     const calls = [
-      { tool_name: 'read', tool_input: { path: 'a' }, tool_use_id: 't1', tool_response: '1 a' },
+      {
+        tool_name: 'Read',
+        tool_input: { path: 'a', file_path: 'a' },
+        tool_use_id: 't1',
+        tool_response: '1 a',
+      },
     ]
     expect(await rt.runPostToolBatch(calls)).toEqual({
       stop: false,

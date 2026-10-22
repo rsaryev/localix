@@ -220,7 +220,7 @@ describe('prompt hooks fire through the runtime', () => {
     const rt = runtimeWith(promptBlock('PreToolUse'), stub)
     await rt.runPreToolUse('bash', { command: 'echo hi' })
     expect(seen!.prompt).toBe('gate')
-    expect(JSON.parse(seen!.inputJson).tool_name).toBe('bash')
+    expect(JSON.parse(seen!.inputJson).tool_name).toBe('Bash')
   })
 
   it('fails open when NO evaluator is injected', async () => {

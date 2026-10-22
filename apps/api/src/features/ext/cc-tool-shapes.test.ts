@@ -1,5 +1,10 @@
 import { expect, test } from 'bun:test'
-import { toolCallEvent, toolInputOf } from './tool-shapes'
+import {
+  claudeCodeHookCall,
+  localInputFromHook,
+  toolCallEvent,
+  toolInputOf,
+} from './cc-tool-shapes'
 
 test('a one-file edit reads as Claude Code’s Edit, and a rewrite lands on the edit', () => {
   const input = { edits: [{ path: 'a.ts', old_string: 'x', new_string: 'y' }], cwd: '/p' }
@@ -53,5 +58,35 @@ test('write, read, search and bash take Claude Code’s names and units', () => 
     a: 1,
     tool: 'mcp__x__y',
     tool_use_id: 'm',
+  })
+})
+
+test('a hook reads the call as Claude Code names it: hookify tests `tool_name == "Bash"`', () => {
+  expect(claudeCodeHookCall({ name: 'bash' }, { command: 'rm -rf build' })).toEqual({
+    tool_name: 'Bash',
+    tool_input: { command: 'rm -rf build' },
+  })
+  expect(
+    claudeCodeHookCall({ name: 'write' }, { files: [{ path: 'a.ts', content: 'x' }] }),
+  ).toEqual({
+    tool_name: 'Write',
+    tool_input: { files: [{ path: 'a.ts', content: 'x' }], file_path: 'a.ts', content: 'x' },
+  })
+  // A tool with no Claude Code counterpart keeps its own name and input.
+  expect(claudeCodeHookCall({ name: 'kanban_add' }, { title: 't' })).toEqual({
+    tool_name: 'kanban_add',
+    tool_input: { title: 't' },
+  })
+})
+
+test('a hook’s updatedInput in Claude Code’s shape folds back into Localix’s', () => {
+  const seen = { edits: [{ path: 'a.ts', old_string: 'x', new_string: 'y' }] }
+  // Claude Code's hook replaces the input with its own fields only.
+  const updated = { file_path: 'b.ts', old_string: 'x', new_string: 'z' }
+  expect(localInputFromHook('edit', seen, updated)).toEqual({
+    edits: [{ path: 'b.ts', old_string: 'x', new_string: 'z' }],
+  })
+  expect(localInputFromHook('bash', { command: 'ls' }, { command: 'ls -la' })).toEqual({
+    command: 'ls -la',
   })
 })

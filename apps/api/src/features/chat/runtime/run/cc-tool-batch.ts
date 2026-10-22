@@ -7,6 +7,7 @@
 import type { AgentRuntimeRunInput } from '@localixai/agent/runtime'
 
 import type { CcHooksRuntime } from '../../../cc-hooks'
+import { claudeCodeHookCall } from '../../../ext/cc-tool-shapes'
 import { wrapSystemReminder } from '../system-reminder'
 
 /** The `stoppedBy` name a PostToolBatch block ends the run under. */
@@ -20,8 +21,7 @@ export function ccAfterToolBatch(
   return async ({ calls }) => {
     const verdict = await ccHooks.runPostToolBatch(
       calls.map((call) => ({
-        tool_name: call.toolName,
-        tool_input: call.input,
+        ...claudeCodeHookCall({ name: call.toolName }, call.input),
         tool_use_id: call.toolCallId,
         // The content the model reads in the call's tool result.
         tool_response: call.result.content,

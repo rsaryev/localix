@@ -3,6 +3,7 @@
  * PostToolUseFailure. PreToolUse and PostToolUse drive `select` + `fireAsync` + `runHandler`
  * by hand, because each handler sees the previous one's rewrite (and a deny cuts PreToolUse short).
  */
+import { claudeCodeHookCall, localInputFromHook } from '../ext/cc-tool-shapes'
 import type { CcHookEvent, CcHookHandler, CcHookInput, CcHookOutcome } from './contracts'
 import { matchesToolName } from './matcher'
 import type { CcHooksRuntime, PreToolUseResult } from './runtime-contracts'
@@ -45,10 +46,10 @@ export function createToolHookRunners({
         ifCtx: { toolName, toolInput: input },
       })
       if (!selected) return { decision: 'proceed', didRewrite: false }
+      // The hook reads the call as Claude Code names and shapes it (`Bash`, `file_path`).
       const inputFor = (toolInput: unknown): CcHookInput => ({
         ...baseInput('PreToolUse'),
-        tool_name: toolName,
-        tool_input: toolInput,
+        ...claudeCodeHookCall({ name: toolName }, toolInput),
         ...(toolUseId ? { tool_use_id: toolUseId } : {}),
       })
       // async PreToolUse hooks can't block (fire against the pre-rewrite input).
@@ -77,7 +78,7 @@ export function createToolHookRunners({
           }
         }
         if ('updatedInput' in o && o.updatedInput !== undefined) {
-          effectiveInput = o.updatedInput
+          effectiveInput = localInputFromHook(toolName, effectiveInput, o.updatedInput)
           didRewrite = true
         }
         // allow beats ask beats proceed (deny already returned above).
@@ -100,8 +101,7 @@ export function createToolHookRunners({
       if (!selected) return {}
       const inputFor = (content: string): CcHookInput => ({
         ...baseInput('PostToolUse'),
-        tool_name: toolName,
-        tool_input: input,
+        ...claudeCodeHookCall({ name: toolName }, input),
         tool_response: { content, details: result.details },
       })
       fireAsync(selected.async, inputFor(result.content))
@@ -127,8 +127,7 @@ export function createToolHookRunners({
     async runPostToolUseFailure(toolName, input, failure) {
       const hookInput: CcHookInput = {
         ...baseInput('PostToolUseFailure'),
-        tool_name: toolName,
-        tool_input: input,
+        ...claudeCodeHookCall({ name: toolName }, input),
         error: failure.error,
         is_interrupt: failure.isInterrupt,
       }
