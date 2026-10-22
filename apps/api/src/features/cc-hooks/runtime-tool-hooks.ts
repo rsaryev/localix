@@ -72,6 +72,8 @@ export function createToolHookRunners({
               o.permissionDecisionReason ||
               o.reason ||
               o.stopReason ||
+              // hookify's block gives its rule's text only as the `systemMessage`.
+              o.systemMessage?.trim() ||
               'Tool call denied by hook',
             didRewrite,
             ...(didRewrite ? { updatedInput: effectiveInput } : {}),

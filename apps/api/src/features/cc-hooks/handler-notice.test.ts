@@ -70,3 +70,22 @@ test('a failed notice sink is logged and does not retry an identical notice', as
   expect(attempts).toBe(1)
   expect(warnings).toEqual(['[cc-hooks] emitNotice failed: Error: sink failed'])
 })
+
+test('a deny that words its reason only as a systemMessage, as hookify does, gives the model that reason', async () => {
+  const blocked = {
+    hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny' },
+    systemMessage: '**[block-rm]**\nrm -rf is off here',
+  }
+  const runtime = createCcHooksRuntime({
+    registry: { PreToolUse: [{ handlers: [handler] }] },
+    sessionId: 'deny-reason',
+    projectDir: '.',
+    enabled: true,
+    logger: { warn: () => {} },
+    callMcpTool: async () => ({ text: JSON.stringify(blocked) }),
+  })
+  expect(await runtime.runPreToolUse('bash', { command: 'rm -rf x' })).toMatchObject({
+    decision: 'deny',
+    reason: '**[block-rm]**\nrm -rf is off here',
+  })
+})
