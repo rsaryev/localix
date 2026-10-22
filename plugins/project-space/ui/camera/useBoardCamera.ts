@@ -1,6 +1,6 @@
 import type { RefObject } from 'react'
 import { useCameraPlacement, useCanvasCamera } from '@localixai/kit/canvas'
-import type { SpaceDocument, SpaceElement } from '../../shared/format/document'
+import type { SpaceElement } from '../../shared/format/document'
 import { visibleRect } from '../../shared/camera'
 import { subjectOf } from '../../shared/camera-target'
 import { contains } from '../../shared/ops/geometry'
@@ -12,6 +12,7 @@ import { useCameraBridge } from './useCameraBridge'
 import { useCameraDirector } from './useCameraDirector'
 import { useFollow } from './useFollow'
 import { useFollowFocus } from './useFollowFocus'
+import type { SpaceView } from '../../shared/api'
 
 /**
  * The board's camera, whole: the one place the board asks for it, so the parts of it — who moves
@@ -26,9 +27,8 @@ import { useFollowFocus } from './useFollowFocus'
 export interface BoardCameraInput {
   root: RefObject<HTMLElement | null>
   sessionId: string
-  /** The backend streams the board (`SpaceView.liveUpdates`), so the agent's moves can arrive. */
-  live: boolean
-  space: SpaceDocument
+  /** The board, and whether the backend streams it (`liveUpdates`): the agent's moves arrive then. */
+  view: Pick<SpaceView, 'space' | 'liveUpdates'>
   remote: RemoteChange | null
   selected: ReadonlySet<string>
   select: (ids: Iterable<string>) => void
@@ -39,7 +39,9 @@ export interface BoardCameraInput {
 }
 
 export function useBoardCamera(input: BoardCameraInput) {
-  const { root, sessionId, live, space, remote, selected, select, still, onAgentShown } = input
+  const { root, sessionId, view, remote, selected, select, still, onAgentShown } = input
+  const { space } = view
+  const live = view.liveUpdates === true
   const camera = useCanvasCamera()
   // The board is not hidden while its first placement waits: one frame at the default camera
   // costs a whiteboard nothing, and a surface that never reports a size (the agent's capture of

@@ -17,13 +17,12 @@ import type { SemanticSource } from '@localixai/plugin-sdk/backend'
 import type { EmbeddingEngine } from './engine'
 import { ingestItems, removeKeys, type IngestStats } from './ingest'
 import type { SemanticStore } from './store'
+import { createIndexRate, unrefTimer } from './indexer-rate'
 import type { VectorCache } from './vector-cache'
 
 const SCAN_PAGE = 64
 const OUTBOX_PAGE = 128
 const RETRY_MS = [5_000, 15_000, 60_000]
-/** The rate shown (and the ETA built on it) covers this much recent work, not the whole run. */
-const RATE_WINDOW_MS = 30_000
 
 export type IndexerPhase = 'stopped' | 'idle' | 'reconciling' | 'updating' | 'retrying' | 'paused'
 
@@ -55,12 +54,6 @@ export interface IndexerDeps {
   setTimer?: (fire: () => void, ms: number) => () => void
 }
 
-function unrefTimer(fire: () => void, ms: number): () => void {
-  const timer = setTimeout(fire, ms)
-  timer.unref?.()
-  return () => clearTimeout(timer)
-}
-
 export function createIndexer(deps: IndexerDeps) {
   const { store, cache } = deps
   let engine: EmbeddingEngine | null = null
@@ -75,18 +68,7 @@ export function createIndexer(deps: IndexerDeps) {
   let paused = false
   let pendingChanges = 0
   const reconcile = new Map<string, { scanned: number; total: number | null }>()
-  // Recent batches: when each finished, its chunks and how long it took.
-  const batches: Array<{ at: number; chunks: number; ms: number }> = []
-
-  function chunksPerSecond(): number | null {
-    let chunks = 0
-    let ms = 0
-    for (const b of batches) {
-      chunks += b.chunks
-      ms += b.ms
-    }
-    return ms > 0 ? Math.round((chunks / ms) * 10_000) / 10 : null
-  }
+  const rate = createIndexRate()
 
   const setPhase = (next: IndexerPhase) => {
     if (phase === next) return
@@ -103,9 +85,7 @@ export function createIndexer(deps: IndexerDeps) {
     const started = performance.now()
     const stats = await work()
     if (stats.chunks > 0) {
-      const now = Date.now()
-      batches.push({ at: now, chunks: stats.chunks, ms: performance.now() - started })
-      while (batches.length > 0 && now - batches[0]!.at > RATE_WINDOW_MS) batches.shift()
+      rate.record(stats.chunks, performance.now() - started)
       deps.log?.('semantic.indexed', { collection, ...stats })
     }
     return stats
@@ -247,7 +227,7 @@ export function createIndexer(deps: IndexerDeps) {
     start(next: EmbeddingEngine) {
       engine = next
       paused = false
-      batches.length = 0
+      rate.reset()
       setPhase('idle')
       kick()
     },
@@ -306,7 +286,7 @@ export function createIndexer(deps: IndexerDeps) {
           }
         }),
         pendingChanges,
-        chunksPerSecond: chunksPerSecond(),
+        chunksPerSecond: rate.perSecond(),
         lastError,
       }
     },
