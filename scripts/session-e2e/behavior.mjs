@@ -8,6 +8,9 @@
  * so a run costs a handful of turns on a cheap model.
  */
 import assert from 'node:assert/strict'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 
 /**
  * Replies that talk ABOUT the person in front of them, or recount the board's bookkeeping, instead
@@ -88,6 +91,59 @@ export const BEHAVIOR = [
       const reply = rt.transcript(after).at(-1)?.text ?? ''
       expect('the reply names a choice', /sqlite|postgres/i.test(reply), reply)
       return after
+    },
+  },
+  {
+    name: "board: a flow and a prioritisation are drawn as the board's own diagrams",
+    async run(rt, expect) {
+      // A throwaway project: the board is a file in the project, never the repository's.
+      const dir = await mkdtemp(path.join(tmpdir(), 'localix-board-behaviour-'))
+      const project = await rt.api('/projects', { name: 'Board behaviour', workingDir: dir })
+      try {
+        const session = await rt.createSession({ title: 'Real: board', projectId: project.id })
+        const after = await rt.say(
+          session.id,
+          'On the project board, draw our release process: a pull request runs CI; green goes to review, then tag, then publish to the registry; red goes to a fix and back to CI. Beside it, place these ideas by impact and effort and mark the one to do first: offline mode, dark theme, new editor, rename settings, rewrite sync. Keep replies short and create no files.',
+          { timeoutMs: 300_000 },
+        )
+        const { space } = await rt.api(`/project-space/space?sessionId=${session.id}`)
+        const elements = Object.values(space.elements)
+        const flows = elements.filter((element) => element.type === 'flow')
+        const matrices = elements.filter((element) => element.type === 'quadrant')
+        const steps = flows.flatMap((element) => element.props?.nodes ?? [])
+        const points = matrices.flatMap((element) => element.props?.points ?? [])
+        expect(
+          'the process is one native flowchart',
+          flows.length === 1,
+          elements.map((e) => e.type),
+        )
+        expect(
+          'it has the steps that were named',
+          steps.length >= 5,
+          steps.map((n) => n.label),
+        )
+        expect('the ideas are one native 2×2 matrix', matrices.length === 1, matrices.length)
+        expect(
+          'every idea is placed',
+          points.length === 5,
+          points.map((p) => p.label),
+        )
+        expect('the one to do first is focal', points.filter((p) => p.focal).length === 1, points)
+        expect(
+          'no loose shapes stand in for a diagram',
+          !elements.some((element) => element.type === 'shape'),
+          elements.map((e) => e.type),
+        )
+        expect(
+          'the replies speak to the person, not over their head',
+          !overTheHead(rt, after).length,
+          overTheHead(rt, after),
+        )
+        return after
+      } finally {
+        await rt.call(`/projects/${project.id}`, undefined, 'DELETE')
+        await rm(dir, { recursive: true, force: true })
+      }
     },
   },
 ]

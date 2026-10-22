@@ -47,7 +47,7 @@ export interface CatalogModel {
    * Published because a preference is stored per provider/model pair and outlives the model it
    * was chosen for: without this the picker offers a level the runtime will quietly clamp, and
    * before the clamp existed it ended the run. The capability belongs to the model, so it
-   * travels with it — the same shape pi and opencode give their model entries.
+   * travels with it — the same shape opencode gives its model entries.
    */
   reasoningEfforts?: string[]
   /**

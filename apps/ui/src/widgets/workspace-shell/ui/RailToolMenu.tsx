@@ -84,25 +84,23 @@ export function RailToolMenu({
   }
   const menu: MenuEntry[] = groupRailTools(entries, categories).flatMap((group) => [
     { header: group.label },
-    ...group.entries.map(
-      (entry): MenuEntry => ({
-        id: entry.id,
-        label: entry.label.split(' — ')[0],
-        icon: () => entry.icon,
-        selected: entry.active,
-        onSelect: () => entry.onClick(),
-        ...(onPinChange
-          ? {
-              trailingAction: {
-                label: `${pinnedIds?.has(entry.id) ? 'Unpin' : 'Pin'} ${entry.label.split(' — ')[0]}`,
-                icon: Pin,
-                checked: pinnedIds?.has(entry.id) ?? false,
-                onSelect: () => onPinChange(entry.id, !pinnedIds?.has(entry.id)),
-              },
-            }
-          : {}),
-      }),
-    ),
+    ...group.entries.map((entry): MenuEntry => ({
+      id: entry.id,
+      label: entry.label.split(' — ')[0],
+      icon: () => entry.icon,
+      selected: entry.active,
+      onSelect: () => entry.onClick(),
+      ...(onPinChange
+        ? {
+            trailingAction: {
+              label: `${pinnedIds?.has(entry.id) ? 'Unpin' : 'Pin'} ${entry.label.split(' — ')[0]}`,
+              icon: Pin,
+              checked: pinnedIds?.has(entry.id) ?? false,
+              onSelect: () => onPinChange(entry.id, !pinnedIds?.has(entry.id)),
+            },
+          }
+        : {}),
+    })),
   ])
   if (menu.length === 0)
     menu.push({

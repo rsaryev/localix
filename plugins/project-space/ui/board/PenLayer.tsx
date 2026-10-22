@@ -5,11 +5,22 @@ import { cn } from '@localixai/plugin-sdk/ui/classes'
 import type { SpaceDocument } from '../../shared/format/document'
 import { newId, takenIn } from '../../shared/format/ids'
 import type { SpaceOp } from '../../shared/ops/contract'
-import { penElement, PEN_POINTS, type PenPoint } from '../../shared/types/pen'
+import { penElement, PEN_POINTS, strokesHit, type PenPoint } from '../../shared/types/pen'
 import { placementOf } from './placement'
 import { PlacementPreview } from './PlacementGhost'
 
-/** Capture a stroke above the canvas, but beneath the toolbars. No writes until pointer-up. */
+/**
+ * Capture a stroke above the canvas, but beneath the toolbars. No writes until pointer-up. With
+ * the eraser, the path draws nothing: the strokes it passes over fade as it goes and are deleted,
+ * in one write and one undo step, when the pointer lifts.
+ */
+const ERASER_RADIUS = 6
+
+/** What a new stroke is drawn with: a highlighter left at the pen's colour takes marker yellow. */
+const strokeProps = (toolProps?: Record<string, unknown>) =>
+  toolProps?.kind === 'highlighter' && !toolProps.color
+    ? { ...toolProps, color: 'yellow' }
+    : { ...toolProps }
 export function PenLayer({
   type,
   toolProps,
@@ -34,6 +45,8 @@ export function PenLayer({
   const pointer = useRef<number | null>(null)
   const draft = useRef<PenPoint[]>([])
   const [points, setPoints] = useState<PenPoint[]>([])
+  const erasing = toolProps?.kind === 'eraser'
+  const [doomed, setDoomed] = useState<ReadonlySet<string>>(new Set())
   // The rail owns focus when the tool is armed. Move it to the drawing layer so Q and Escape
   // work before the first stroke, then return it to the canvas when drawing ends.
   useEffect(() => root.current?.focus({ preventScroll: true }), [])
@@ -47,18 +60,24 @@ export function PenLayer({
       return
     draft.current.push(at)
     setPoints([...draft.current])
+    if (erasing) {
+      const radius = ERASER_RADIUS / camera.get().zoom
+      const hit = strokesHit(Object.entries(space.elements), [at], radius)
+      if (hit.some((id) => !doomed.has(id))) setDoomed((now) => new Set([...now, ...hit]))
+    }
   }
   const clear = () => {
     pointer.current = null
     draft.current = []
     setPoints([])
+    setDoomed(new Set())
   }
   const focusBoard = (element: HTMLElement) =>
     element.parentElement
       ?.querySelector<HTMLElement>('.localix-canvas')
       ?.focus({ preventScroll: true })
-  const element = points.length ? penElement(points) : null
-  const recipe = element ? placementOf(type, { ...toolProps, ...element.props }) : null
+  const element = points.length && !erasing ? penElement(points) : null
+  const recipe = element ? placementOf(type, { ...strokeProps(toolProps), ...element.props }) : null
   const preview = recipe && element ? { ...recipe, size: { w: element.w, h: element.h } } : null
   return (
     <>
@@ -67,7 +86,11 @@ export function PenLayer({
         className="absolute inset-0 z-(--z-raised) cursor-crosshair touch-none outline-none"
         tabIndex={0}
         role="application"
-        aria-label="Pen: drag to draw, Escape to cancel"
+        aria-label={
+          erasing
+            ? 'Eraser: drag over strokes to erase them, Escape to cancel'
+            : 'Pen: drag to draw, Escape to cancel'
+        }
         onKeyDown={(event) => {
           if (event.key === 'Escape') {
             event.preventDefault()
@@ -98,10 +121,17 @@ export function PenLayer({
           event.preventDefault()
           event.stopPropagation()
           add(event)
-          const stroke = penElement(draft.current)
-          const id = newId(takenIn(space))
-          commit([{ op: 'create', type, id, ...stroke, props: { ...toolProps, ...stroke.props } }])
-          select([id])
+          if (erasing) {
+            if (doomed.size) commit([...doomed].map((id) => ({ op: 'delete' as const, id })))
+          } else {
+            const stroke = penElement(draft.current)
+            const id = newId(takenIn(space))
+            // What the preview drew is what is saved: the remembered look, the tool's, the stroke's.
+            const asked = { ...strokeProps(toolProps), ...stroke.props }
+            const props = placementOf(type, asked)?.props ?? asked
+            commit([{ op: 'create', type, id, ...stroke, props }])
+            select([id])
+          }
           clear()
           focusBoard(event.currentTarget)
           finish()
@@ -111,6 +141,13 @@ export function PenLayer({
         onPointerCancel={clear}
         onLostPointerCapture={clear}
       />
+      {erasing && doomed.size > 0 && (
+        // The strokes about to go, dimmed in place: a style rule over their nodes, no copy of them.
+        <style>
+          {[...doomed].map((id) => `.react-flow__node[data-id="${CSS.escape(id)}"]`).join(',') +
+            '{opacity:.25}'}
+        </style>
+      )}
       {element && preview && (
         <ViewportPortal>
           <div
@@ -130,7 +167,7 @@ export function PenLayer({
           'pointer-events-none absolute bottom-3 left-1/2 z-(--z-raised) -translate-x-1/2 rounded-md border px-2 py-1 text-2xs text-text-soft',
         )}
       >
-        Drag to draw · Esc to cancel
+        {erasing ? 'Drag over strokes to erase · Esc to cancel' : 'Drag to draw · Esc to cancel'}
       </span>
     </>
   )

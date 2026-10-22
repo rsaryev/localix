@@ -92,9 +92,11 @@ export function flattenConnectionRows(input: ConnectionRowsInput): SchemaTreeRow
         ([name, items]) =>
           [
             name,
-            items.map(
-              (item): SchemaItemMatch => ({ item, reason: 'name', matchedColumns: NO_COLUMNS }),
-            ),
+            items.map((item): SchemaItemMatch => ({
+              item,
+              reason: 'name',
+              matchedColumns: NO_COLUMNS,
+            })),
           ] as const,
       )
       if (groups.length === 0) status('no-objects')

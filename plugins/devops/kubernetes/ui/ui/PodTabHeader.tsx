@@ -79,38 +79,37 @@ export function PodTabHeader({
         </span>
       </div>
       <div className="ml-auto flex items-center gap-1 @max-sm:ml-0 @max-sm:w-full @max-sm:flex-wrap">
-        {view === 'logs' &&
-          containerOptions.length > 0 && (
-            // A quiet menu, not a framed `Select`: which container's logs to read is secondary
-            // navigation in a header, and a form field there out-shouted the pod it belongs to.
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  aria-label={`Container: ${containerLabel(container)}. Change`}
-                  className="min-w-0 font-normal text-text-soft"
-                >
-                  <span className="max-w-40 truncate">
-                    {containerOptions.find((option) => option.value === container)?.label ??
-                      containerLabel(container)}
-                  </span>
-                  <ChevronDown data-icon="inline-end" className="opacity-60" aria-hidden />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <MenuEntries
-                  family="dropdown"
-                  entries={containerOptions.map((option) => ({
-                    id: option.value,
-                    label: option.label,
-                    selected: option.value === container,
-                    onSelect: () => setContainer(option.value),
-                  }))}
-                />
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+        {view === 'logs' && containerOptions.length > 0 && (
+          // A quiet menu, not a framed `Select`: which container's logs to read is secondary
+          // navigation in a header, and a form field there out-shouted the pod it belongs to.
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label={`Container: ${containerLabel(container)}. Change`}
+                className="min-w-0 font-normal text-text-soft"
+              >
+                <span className="max-w-40 truncate">
+                  {containerOptions.find((option) => option.value === container)?.label ??
+                    containerLabel(container)}
+                </span>
+                <ChevronDown data-icon="inline-end" className="opacity-60" aria-hidden />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <MenuEntries
+                family="dropdown"
+                entries={containerOptions.map((option) => ({
+                  id: option.value,
+                  label: option.label,
+                  selected: option.value === container,
+                  onSelect: () => setContainer(option.value),
+                }))}
+              />
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         <SegmentedControl aria-label="View">
           <SegmentedControlItem active={view === 'logs'} onClick={() => setView('logs')}>
             Logs

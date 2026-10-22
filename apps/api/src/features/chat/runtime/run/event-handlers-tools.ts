@@ -172,8 +172,8 @@ export async function handleToolExecutionUpdate(
   event: EventOf<'tool_execution_update'>,
 ) {
   const { env, state, acc } = ctx
-  // Streaming progress reaches the item and the wire BEFORE `sanitizeResult` ever runs (the pi
-  // bridge calls `onUpdate` inside `execute`), so a value the final result would have redacted was
+  // Streaming progress reaches the item and the wire BEFORE `sanitizeResult` ever runs (the
+  // loop calls `onUpdate` inside `execute`), so a value the final result would have redacted was
   // already on screen. Same shield, applied where the details become presentation.
   const details = env.deps.sanitizeToolInput?.(ctx.userId, event.details) ?? event.details
   if (details && typeof details === 'object') {

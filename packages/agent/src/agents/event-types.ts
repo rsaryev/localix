@@ -14,11 +14,11 @@ export type AgentStopReason =
   /** A tool returned `terminate: true` (sleep, a game move that ends the turn). */
   | 'tool_terminate'
   /**
-   * Burned every turn in `maxTurns` without finishing. Under the pi loop this is
-   * ALSO the only in-loop no-progress brake left: the home-grown loop's guard
+   * Burned every turn in `maxTurns` without finishing. Under the current loop this
+   * is ALSO the only in-loop no-progress brake left: the home-grown loop's guard
    * reasons (consecutive_tool_errors / repeated_tool_calls / oscillating_tool_calls /
    * content_loop / exploration_stall / output_cap_stall) were deleted with that loop
-   * — pi has no such guards, so the union no longer advertises stops that can never
+   * — the loop has no such guards, so the union no longer advertises stops that can never
    * happen. Anti-thrash now lives in the host's stuck-run breaker
    * (`apps/api/src/features/agent-core/tools/stuck-run-breaker.ts`).
    */

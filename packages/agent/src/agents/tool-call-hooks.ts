@@ -31,7 +31,7 @@ export interface ToolGateProvenance {
 }
 
 // NB: neither hook context carries the conversation `messages`. It used to — and the
-// pi adapter paid a FULL history conversion per tool call, twice, for a field no
+// runtime adapter paid a FULL history conversion per tool call, twice, for a field no
 // consumer (permission gate, externalizer, plugin hooks) ever read. A hook that one
 // day needs history should get a lazy accessor, not a pre-built copy.
 export interface AfterToolCallContext {

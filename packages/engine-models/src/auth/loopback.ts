@@ -3,19 +3,18 @@
  * redirects to, and a race between that redirect and a pasted redirect URL for when the browser
  * cannot reach this computer.
  *
- * Ported from pi's OAuth helpers (github.com/earendil-works/pi, MIT, © Mario Zechner), with the
- * Codex CLI's `/cancel` route that lets a newer login free a port an older one still holds.
+ * The server also answers the Codex CLI's `/cancel` route, so a newer login frees a port an older
+ * one still holds.
  */
-import { createServer, type ServerResponse } from 'node:http'
+import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 
 import type { RuntimeAuthInteraction } from '@localixai/agent/runtime'
 
 import { oauthErrorHtml, oauthSuccessHtml } from './oauth-page'
 
 function base64url(bytes: Uint8Array): string {
-  let binary = ''
-  for (const byte of bytes) binary += String.fromCharCode(byte)
-  return btoa(binary).replace(/\+/gu, '-').replace(/\//gu, '_').replace(/=+$/u, '')
+  const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join('')
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
 export function randomToken(bytes = 32): string {
@@ -24,8 +23,8 @@ export function randomToken(bytes = 32): string {
 
 export async function generatePkce(): Promise<{ verifier: string; challenge: string }> {
   const verifier = randomToken()
-  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))
-  return { verifier, challenge: base64url(new Uint8Array(digest)) }
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))
+  return { verifier, challenge: base64url(new Uint8Array(hash)) }
 }
 
 export interface CallbackServerOptions<T> {
@@ -56,122 +55,148 @@ export interface CallbackServer<T> {
   close(): void
 }
 
-function sendPage(response: ServerResponse, status: number, html: string) {
+function html(response: ServerResponse, status: number, page: string): void {
   response.writeHead(status, {
     'content-type': 'text/html; charset=utf-8',
     'cache-control': 'no-store',
   })
-  response.end(html)
+  response.end(page)
 }
+
+/** Settles once; later outcomes are ignored. */
+function oneOutcome<T>() {
+  const { promise, resolve, reject } = Promise.withResolvers<T | undefined>()
+  // Nobody may be waiting yet when it fails.
+  promise.catch(() => undefined)
+  let open = true
+  return {
+    promise,
+    get open() {
+      return open
+    },
+    succeed(value: T | undefined) {
+      if (!open) return false
+      open = false
+      resolve(value)
+      return true
+    },
+    fail(error: Error) {
+      if (!open) return false
+      open = false
+      reject(error)
+      return true
+    },
+  }
+}
+
+const isFromBrowser = (request: IncomingMessage) =>
+  request.headers.origin !== undefined || request.headers['sec-fetch-site'] !== undefined
+
+const LOGIN_CANCELLED = 'Login cancelled'
 
 export async function startCallbackServer<T>(
   options: CallbackServerOptions<T>,
 ): Promise<CallbackServer<T>> {
   const { providerName, signal } = options
-  if (signal?.aborted) throw new Error('Login cancelled')
-  let resolveWait: (value: T | undefined) => void = () => {}
-  let rejectWait: (error: Error) => void = () => {}
-  const waiting = new Promise<T | undefined>((resolve, reject) => {
-    resolveWait = resolve
-    rejectWait = reject
-  })
-  waiting.catch(() => undefined)
-  let claimed = false
-  let settled = false
-  let timer: ReturnType<typeof setTimeout> | undefined
-  const onAbort = () => finish({ error: new Error('Login cancelled') })
-  const finish = (result: { value: T | undefined } | { error: Error }) => {
-    if (settled) return
-    settled = true
-    clearTimeout(timer)
+  if (signal?.aborted) throw new Error(LOGIN_CANCELLED)
+
+  const outcome = oneOutcome<T>()
+  // Set once a redirect with a code is being completed; from then on only that redirect decides.
+  let completing = false
+  let deadline: ReturnType<typeof setTimeout> | undefined
+  const onAbort = () => end(new Error(LOGIN_CANCELLED))
+  const cleanUp = () => {
+    clearTimeout(deadline)
     signal?.removeEventListener('abort', onAbort)
-    if ('error' in result) rejectWait(result.error)
-    else resolveWait(result.value)
+  }
+  const end = (result: Error | { value: T | undefined }) => {
+    const changed = result instanceof Error ? outcome.fail(result) : outcome.succeed(result.value)
+    if (changed) cleanUp()
   }
 
-  const server = createServer((request, response) => {
-    void (async () => {
-      const url = new URL(request.url ?? '/', 'http://localhost')
-      // A newer login (ours or the Codex CLI's) asks over plain HTTP. A browser's request — a web
-      // page loading this address to break a sign-in — names its origin, and is refused.
-      const fromBrowser =
-        request.headers.origin !== undefined || request.headers['sec-fetch-site'] !== undefined
-      if (
-        options.cancel &&
-        request.method === 'GET' &&
-        url.pathname === options.cancel.path &&
-        !fromBrowser
-      ) {
-        response.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' })
-        response.end('Cancelled', () => server.close())
-        finish({ error: new Error(options.cancel.message) })
-        return
-      }
-      if (request.method !== 'GET' || url.pathname !== options.path)
-        return sendPage(response, 404, oauthErrorHtml('Callback route not found.'))
-      if (options.state !== undefined && url.searchParams.get('state') !== options.state)
-        return sendPage(response, 400, oauthErrorHtml('State mismatch.'))
-      if (claimed || settled)
-        return sendPage(response, 409, oauthErrorHtml('This sign-in has already been handled.'))
-      const error = url.searchParams.get('error')
-      if (error) {
-        const description = url.searchParams.get('error_description') ?? error
-        sendPage(
-          response,
-          400,
-          oauthErrorHtml(`${providerName} authorization failed.`, description),
-        )
-        finish({ error: new Error(`${providerName} authorization failed: ${description}`) })
-        return
-      }
-      if (!url.searchParams.get('code'))
-        return sendPage(response, 400, oauthErrorHtml('Missing authorization code.'))
-      claimed = true
-      try {
-        const value = await options.complete(url.searchParams)
-        sendPage(
-          response,
-          200,
-          oauthSuccessHtml(`Signed in to ${providerName}. You may now close this page.`),
-        )
-        finish({ value })
-      } catch (thrown) {
-        const failure = thrown instanceof Error ? thrown : new Error(String(thrown))
-        sendPage(response, 502, oauthErrorHtml(`${providerName} sign-in failed.`, failure.message))
-        finish({ error: failure })
-      }
-    })()
-  })
+  const handle = async (request: IncomingMessage, response: ServerResponse) => {
+    const url = new URL(request.url ?? '/', 'http://localhost')
+    const isGet = request.method === 'GET'
+    // A newer login (ours or the Codex CLI's) asks over plain HTTP. A browser's request — a web page
+    // loading this address to break a sign-in — names its origin, and is refused.
+    if (
+      options.cancel &&
+      isGet &&
+      url.pathname === options.cancel.path &&
+      !isFromBrowser(request)
+    ) {
+      response.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' })
+      response.end('Cancelled', () => server.close())
+      end(new Error(options.cancel.message))
+      return
+    }
+    if (!isGet || url.pathname !== options.path) {
+      return html(response, 404, oauthErrorHtml('Callback route not found.'))
+    }
+    const params = url.searchParams
+    if (options.state !== undefined && params.get('state') !== options.state) {
+      return html(response, 400, oauthErrorHtml('State mismatch.'))
+    }
+    if (completing || !outcome.open) {
+      return html(response, 409, oauthErrorHtml('This sign-in has already been handled.'))
+    }
+    const refused = params.get('error')
+    if (refused) {
+      const reason = params.get('error_description') ?? refused
+      html(response, 400, oauthErrorHtml(`${providerName} authorization failed.`, reason))
+      end(new Error(`${providerName} authorization failed: ${reason}`))
+      return
+    }
+    if (!params.get('code'))
+      return html(response, 400, oauthErrorHtml('Missing authorization code.'))
 
+    completing = true
+    let value: T
+    try {
+      value = await options.complete(params)
+    } catch (thrown) {
+      const failure = thrown instanceof Error ? thrown : new Error(String(thrown))
+      html(response, 502, oauthErrorHtml(`${providerName} sign-in failed.`, failure.message))
+      end(failure)
+      return
+    }
+    const done = `Signed in to ${providerName}. You may now close this page.`
+    html(response, 200, oauthSuccessHtml(done))
+    end({ value })
+  }
+
+  const server = createServer((request, response) => void handle(request, response))
   await new Promise<void>((resolve, reject) => {
-    server.once('error', reject)
+    const failToListen = (error: Error) => reject(error)
+    server.once('error', failToListen)
     server.listen(options.port, options.host, () => {
-      server.off('error', reject)
+      server.off('error', failToListen)
       resolve()
     })
   })
   const address = server.address()
-  if (!address || typeof address === 'string') {
+  if (address === null || typeof address === 'string') {
     server.close()
     throw new Error('OAuth callback server did not bind to TCP')
   }
-  server.on('error', (error) => finish({ error }))
+
+  server.on('error', (error) => end(error))
   signal?.addEventListener('abort', onAbort, { once: true })
   if (options.timeoutMs !== undefined) {
-    timer = setTimeout(
-      () => finish({ error: new Error(`${providerName} sign-in timed out`) }),
-      options.timeoutMs,
-    )
+    const timedOut = new Error(`${providerName} sign-in timed out`)
+    deadline = setTimeout(() => end(timedOut), options.timeoutMs)
   }
+
   const host = options.redirectHost ?? options.host
+  const authority = host.includes(':') ? `[${host}]` : host
   return {
-    redirectUri: `http://${host.includes(':') ? `[${host}]` : host}:${address.port}${options.path}`,
-    wait: () => waiting,
-    cancel: () => {
-      if (!claimed) finish({ value: undefined })
+    redirectUri: `http://${authority}:${address.port}${options.path}`,
+    wait: () => outcome.promise,
+    cancel() {
+      if (!completing) end({ value: undefined })
     },
-    close: () => {
-      finish({ error: new Error('OAuth callback server closed') })
+    close() {
+      end(new Error('OAuth callback server closed'))
       server.close()
       // A browser keeps spare connections open; one could carry a LATER login's redirect here.
       server.closeAllConnections()
@@ -188,64 +213,60 @@ export async function callbackOrPasted<T>(
   callback: CallbackServer<T> | undefined,
   prompt: { message: string; placeholder: string },
 ): Promise<{ type: 'callback'; value: T } | { type: 'pasted'; input: string }> {
-  const stopPrompt = new AbortController()
-  let promptError: Error | undefined
-  const pasted = interaction
-    .prompt({
-      type: 'manual-code',
-      ...prompt,
-      signal: interaction.signal
-        ? AbortSignal.any([stopPrompt.signal, interaction.signal])
-        : stopPrompt.signal,
-    })
-    .then((input) => {
+  const withdraw = new AbortController()
+  const promptSignal = interaction.signal
+    ? AbortSignal.any([withdraw.signal, interaction.signal])
+    : withdraw.signal
+  let promptFailure: Error | undefined
+  // Whatever the person does with the prompt, the browser is no longer awaited.
+  const typed = interaction.prompt({ type: 'manual-code', ...prompt, signal: promptSignal }).then(
+    (input) => {
       callback?.cancel()
       return input
-    })
-    .catch((error: unknown) => {
-      promptError = error instanceof Error ? error : new Error(String(error))
+    },
+    (error: unknown) => {
+      promptFailure = error instanceof Error ? error : new Error(String(error))
       callback?.cancel()
       return undefined
-    })
+    },
+  )
   try {
-    const value = await callback?.wait()
-    if (promptError) throw promptError
-    if (value !== undefined) return { type: 'callback', value }
-    const input = await pasted
-    if (promptError) throw promptError
+    const redirected = callback ? await callback.wait() : undefined
+    if (promptFailure) throw promptFailure
+    if (redirected !== undefined) return { type: 'callback', value: redirected }
+    const input = await typed
+    if (promptFailure) throw promptFailure
     return { type: 'pasted', input: input ?? '' }
   } finally {
-    stopPrompt.abort()
+    withdraw.abort()
+  }
+}
+
+type PastedAuthorization = { code?: string; state?: string; params?: URLSearchParams }
+
+function fromParams(params: URLSearchParams): PastedAuthorization {
+  const code = params.get('code')
+  const state = params.get('state')
+  return { ...(code ? { code } : {}), ...(state ? { state } : {}), params }
+}
+
+function asUrl(value: string): URL | undefined {
+  try {
+    return new URL(value)
+  } catch {
+    return undefined
   }
 }
 
 /** The `code` (and `state`) of a pasted redirect URL, query string or bare code. */
-export function parsePastedAuthorization(input: string): {
-  code?: string
-  state?: string
-  params?: URLSearchParams
-} {
+export function parsePastedAuthorization(input: string): PastedAuthorization {
   const value = input.trim()
-  if (!value) return {}
-  try {
-    const url = new URL(value)
-    return {
-      ...(url.searchParams.get('code') ? { code: url.searchParams.get('code')! } : {}),
-      ...(url.searchParams.get('state') ? { state: url.searchParams.get('state')! } : {}),
-      params: url.searchParams,
-    }
-  } catch {
-    // Not a URL.
-  }
-  if (value.includes('code=')) {
-    const params = new URLSearchParams(value)
-    return {
-      ...(params.get('code') ? { code: params.get('code')! } : {}),
-      ...(params.get('state') ? { state: params.get('state')! } : {}),
-      params,
-    }
-  }
+  if (value === '') return {}
+  const url = asUrl(value)
+  if (url) return fromParams(url.searchParams)
+  if (value.includes('code=')) return fromParams(new URLSearchParams(value))
   if (value.includes('#')) {
+    // `code#state`, as some providers show it for copying.
     const [code, state] = value.split('#', 2)
     return { ...(code ? { code } : {}), ...(state ? { state } : {}) }
   }
@@ -257,17 +278,18 @@ export function parsePastedAuthorization(input: string): {
  * does; never throws. Plain `node:http`, so no browser headers go with it.
  */
 export async function askToFreePort(port: number, path = '/cancel'): Promise<void> {
-  const http = await import('node:http')
+  const { request } = await import('node:http')
   await new Promise<void>((resolve) => {
-    const request = http.request(
-      { host: '127.0.0.1', port, path, method: 'GET', timeout: 1_000 },
-      (response) => {
-        response.resume()
-        response.once('end', resolve)
-      },
-    )
-    request.once('timeout', () => (request.destroy(), resolve()))
-    request.once('error', () => resolve())
-    request.end()
+    const asked = request({ host: '127.0.0.1', port, path, method: 'GET', timeout: 1_000 })
+    asked.once('response', (response) => {
+      response.resume()
+      response.once('end', resolve)
+    })
+    asked.once('timeout', () => {
+      asked.destroy()
+      resolve()
+    })
+    asked.once('error', () => resolve())
+    asked.end()
   })
 }

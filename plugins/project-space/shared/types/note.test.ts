@@ -7,11 +7,36 @@ import { spaceTypes } from './index'
 
 test('legacy notes migrate without losing their text or colour', () => {
   const read = spaceTypes.read('note', { text: 'Old plan', color: 'purple' }, 1)
-  expect(read).toEqual({ status: 'ok', props: { text: 'Old plan', color: 'purple', size: 'md' } })
+  // A note from before text styles reads as it always drew: its size, the default face and place.
+  expect(read).toEqual({
+    status: 'ok',
+    props: {
+      text: 'Old plan',
+      color: 'purple',
+      size: 'md',
+      font: 'sans',
+      align: 'start',
+      valign: 'top',
+    },
+  })
+})
+
+test('a new note fits its text, and its face and place survive a file round trip', () => {
+  const { space } = applyOps(
+    emptySpace(),
+    [
+      { op: 'create', id: 'note', type: 'note', x: 0, y: 0, text: '**Ship** it' },
+      { op: 'update', id: 'note', props: { font: 'hand', align: 'center', valign: 'middle' } },
+    ],
+    { registry: spaceTypes },
+  )
+  const props = parseSpace(serializeSpace(space), spaceTypes).space.elements.note?.props
+  expect(props).toMatchObject({ size: 'auto', font: 'hand', align: 'center', valign: 'middle' })
+  expect(props?.text).toBe('**Ship** it')
 })
 
 test('a chosen font size survives text edits, resizing and a file round trip', () => {
-  for (const size of ['sm', 'md', 'lg', 'xl']) {
+  for (const size of ['auto', 'sm', 'md', 'lg', 'xl']) {
     const { space, results } = applyOps(
       emptySpace(),
       [

@@ -2,8 +2,6 @@
  * GitHub Copilot: a device-code sign-in to GitHub (github.com or an Enterprise domain), whose token
  * is exchanged for a short-lived Copilot token. The Copilot token names its own API host
  * (`proxy-ep`), and models that need a policy switched on are enabled at sign-in.
- *
- * Ported from pi (github.com/earendil-works/pi, MIT, © Mario Zechner).
  */
 import type { RuntimeOAuthCredential } from '@localixai/agent/runtime'
 
@@ -151,7 +149,7 @@ export const gitHubCopilotFlow: OAuthFlow = {
   async login({ interaction, signal }) {
     const input = await interaction.prompt({
       type: 'text',
-      message: 'GitHub Enterprise URL/domain (blank for github.com)',
+      message: 'GitHub Enterprise address, or leave blank for github.com',
       placeholder: 'company.ghe.com',
       signal,
     })

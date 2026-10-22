@@ -40,11 +40,14 @@ describe('Tooltip portal contract', () => {
 
       const trigger = host.querySelector<HTMLButtonElement>('button')!
       const content = document.body.querySelector<HTMLElement>('[data-slot="tooltip-content"]')!
-      const accessibleDescription = content.querySelector<HTMLElement>('[role="tooltip"]')!
+      // Radix puts the role and id on the surface itself; it no longer copies the text into a
+      // visually hidden child.
+      const accessibleDescription = content
 
       expect(content).not.toBeNull()
       expect(content.getAttribute('data-state')).not.toBe('closed')
       expect(host.contains(content)).toBe(false)
+      expect(content.getAttribute('role')).toBe('tooltip')
       expect(trigger.getAttribute('aria-describedby')).toBe(accessibleDescription.id)
       expect(accessibleDescription.textContent).toContain('Context usage')
       expect(content.className).toContain('w-64')

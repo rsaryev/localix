@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, Code2, Table2 } from 'lucide-react'
+import { Check, Code2, StickyNote, Table2 } from 'lucide-react'
 import { TableGrid, toast, type PluginStagedTableChanges } from '@localixai/plugin-sdk/ui'
 import { IconButton } from '@localixai/kit/icon-button'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
@@ -7,7 +7,12 @@ import { readTable, writeTable, TABLE_LIMIT, type TableProps } from '../../share
 import { CardTitle } from './CardTitle'
 import { CodeArea } from './CodeArea'
 import { codeHighlighter } from './highlight'
-import { editTableColumn, type TableColumnEdit } from '../../shared/types/table-ops'
+import {
+  editTableColumn,
+  tableToNotesOps,
+  type TableColumnEdit,
+} from '../../shared/types/table-ops'
+import { newId, takenIn } from '../../shared/format/ids'
 import { defineView, type ElementViewProps } from './contract'
 
 /** Translate the host grid's edits into native board rows, preserving original row order. */
@@ -172,7 +177,24 @@ export const tableViews = [
     insert: {
       order: 7,
       key: 'b',
-      description: 'Editable cells, rows and columns; paste Markdown tables',
+      description: 'Editable cells, rows and columns; paste Markdown tables or spreadsheet cells',
     },
+    actions: [
+      {
+        label: 'Make sticky notes',
+        Icon: StickyNote,
+        ops: ({ element, props, space }) => {
+          const taken = takenIn(space)
+          const made = new Set<string>()
+          const fresh = () => {
+            const id = newId((candidate) => taken(candidate) || made.has(candidate))
+            made.add(id)
+            return id
+          }
+          const ops = tableToNotesOps(element, props, fresh)
+          return ops.length ? ops : null
+        },
+      },
+    ],
   }),
 ]

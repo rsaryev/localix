@@ -4,29 +4,75 @@ import { cn } from '@localixai/plugin-sdk/ui/classes'
 import { MarkdownRenderer } from '@localixai/kit/markdown'
 import { ActionSurfaceProvider } from '@localixai/plugin-sdk/ui'
 import type { SpaceColor } from '../../shared/format/schema'
+import { toggleTask } from '../../shared/content/rich-text'
+import type { NOTE_SIZES } from '../../shared/types/drawing'
+import type { TextAlign, TextFont, TextValign } from '../../shared/types/text-style'
 import { defineView, type ElementViewProps } from './contract'
 import { colorControl, sizeControl } from './controls'
+import { useFitFont } from './fit-text'
 import { InlineText } from './InlineText'
-import { LinkedText } from './WebLink'
+import { RichText } from './RichText'
+import {
+  ALIGN_CLASS,
+  alignControl,
+  FONT_CLASS,
+  fontControl,
+  inkControl,
+  textStyleClass,
+  VALIGN_CLASS,
+  valignControl,
+} from './text-style'
 
 /**
  * Sticky notes and free text. Each draws its content only; the node around it does selection,
  * resizing and connectors (see `contract.ts`).
  */
-type NoteProps = { text: string; color: SpaceColor; size: 'sm' | 'md' | 'lg' | 'xl' }
-const NOTE_SIZE: Record<NoteProps['size'], string> = {
+type NoteProps = {
+  text: string
+  color: SpaceColor
+  size: (typeof NOTE_SIZES)[number]
+  font: TextFont
+  align: TextAlign
+  valign: TextValign
+}
+const NOTE_SIZE: Record<Exclude<NoteProps['size'], 'auto'>, string> = {
   sm: 'text-base',
   md: 'text-xl',
   lg: 'text-2xl',
   xl: 'text-3xl',
 }
 
-function NoteView({ props, editing, commit, stopEditing }: ElementViewProps<NoteProps>) {
-  const typography = cn(NOTE_SIZE[props.size], 'leading-[1.35] text-inherit')
+/**
+ * A sticky note: its text with its marks, set in the note's face and place. `auto` (a new note's
+ * size) fits the text to the note as it grows, like writing smaller to fit a paper note; a fixed
+ * size keeps the size and scrolls. A ticked task box is an edit of the text, one undo step.
+ */
+function NoteView({
+  props,
+  editing,
+  commit,
+  stopEditing,
+  width,
+  height,
+}: ElementViewProps<NoteProps>) {
+  const box = useRef<HTMLDivElement>(null)
+  const content = useRef<HTMLDivElement>(null)
+  const auto = props.size === 'auto'
+  const fitted = useFitFont(box, content, {
+    active: auto && !editing,
+    key: `${props.text}|${props.font}|${width}x${height}`,
+  })
+  const typography = cn(
+    props.size === 'auto' ? undefined : NOTE_SIZE[props.size],
+    'leading-[1.35] text-inherit',
+    FONT_CLASS[props.font],
+    ALIGN_CLASS[props.align],
+  )
+  const fontSize = auto ? { fontSize: fitted } : undefined
   return (
     <div
       className={cn(
-        'space-note h-full w-full overflow-hidden rounded-sm border p-4',
+        'space-note flex h-full w-full flex-col overflow-hidden rounded-sm border p-4',
         `space-tone-${props.color}`,
       )}
     >
@@ -36,23 +82,41 @@ function NoteView({ props, editing, commit, stopEditing }: ElementViewProps<Note
           onCommit={(text) => commit({ text })}
           onDone={stopEditing}
           className={typography}
+          style={fontSize}
           placeholder="Write…"
+          formatting
         />
       ) : (
-        <p
+        <div
+          ref={box}
           className={cn(
-            'nowheel scrollbar-thin h-full w-full overflow-y-auto overscroll-contain whitespace-pre-wrap break-words',
-            typography,
+            'nowheel scrollbar-thin flex min-h-0 flex-1 flex-col overscroll-contain',
+            auto ? 'overflow-hidden' : 'overflow-y-auto',
           )}
         >
-          <LinkedText text={props.text} />
-        </p>
+          <div
+            ref={content}
+            className={cn('break-words', VALIGN_CLASS[props.valign], typography)}
+            style={fontSize}
+          >
+            <RichText
+              text={props.text}
+              onToggleTask={(line) => commit({ text: toggleTask(props.text, line) })}
+            />
+          </div>
+        </div>
       )}
     </div>
   )
 }
 
-type TextProps = { text: string; size: 'sm' | 'md' | 'lg' | 'xl' }
+type TextProps = {
+  text: string
+  size: 'sm' | 'md' | 'lg' | 'xl'
+  font: TextFont
+  align: TextAlign
+  ink?: SpaceColor
+}
 const TEXT_SIZE: Record<TextProps['size'], string> = {
   sm: 'text-sm',
   md: 'text-base',
@@ -121,12 +185,19 @@ function TextView({
         value={props.text}
         onCommit={(text) => commit({ text })}
         onDone={stopEditing}
-        className={TEXT_SIZE[props.size]}
+        className={cn(TEXT_SIZE[props.size], textStyleClass(props))}
         placeholder="Text, Markdown allowed"
+        formatting
       />
     )
   return (
-    <div className={cn('h-full w-full overflow-hidden text-foreground', TEXT_SIZE[props.size])}>
+    <div
+      className={cn(
+        'h-full w-full overflow-hidden text-foreground',
+        TEXT_SIZE[props.size],
+        textStyleClass(props),
+      )}
+    >
       {props.text ? (
         // The text is the element's store: a ticked checklist box is an edit of it, one undo step.
         <div
@@ -166,7 +237,13 @@ export const drawingViews = [
     editable: true,
     chrome: 'bare',
     insert: { order: 0, key: 'n', primary: true, description: 'Capture an idea on a sticky note' },
-    controls: [colorControl, sizeControl(['sm', 'md', 'lg', 'xl'])],
+    controls: [
+      colorControl,
+      fontControl,
+      sizeControl(['auto', 'sm', 'md', 'lg', 'xl']),
+      alignControl,
+      valignControl,
+    ],
   }),
   defineView({
     type: 'text',
@@ -180,6 +257,6 @@ export const drawingViews = [
       primary: true,
       description: 'Add text or a heading to the board',
     },
-    controls: [sizeControl(['sm', 'md', 'lg', 'xl'])],
+    controls: [fontControl, sizeControl(['sm', 'md', 'lg', 'xl']), alignControl, inkControl],
   }),
 ]

@@ -98,16 +98,20 @@ A repeated search returns its full results again. The tool card shows a row per 
 ### Run a script over tools
 
 `codemode` lets the model write one script that chains calls, runs them in parallel, or filters a
-large result down to what it needs, instead of spending a model round trip on each call. It follows
-pi's codemode: the script is the body of an async function in a QuickJS sandbox with no Node, file
-system, network or timers. It calls `read`, `bash`, `edit` and `write` (those the run has) as
-`await tools.<name>(args)`; a call resolves to the tool's text result and rejects with its error.
+large result down to what it needs, instead of spending a model round trip on each call. The script
+is the body of an async function in a QuickJS sandbox with no Node, file system, network or timers.
+It calls `read`, `bash`, `edit` and `write` (those the run has) as `await tools.<name>(args)`; a
+call resolves to the tool's text result and rejects with its error.
 
 `text(value)`, `console.log()` and the returned value are what the model reads; the results of the
-calls stay in the script. The tool's description asks the model to use JavaScript to turn those
-results into a concise answer and to make the script fault-tolerant, so a whole file or listing
-never reaches the context when a count or a few lines would do, and one failed call does not lose
-the others.
+calls stay in the script. The tool's description asks for a concise answer and for
+`Promise.allSettled` or `try/catch`, so a whole file or listing never reaches the context when a
+count or a few lines would do, and one failed call does not lose the others.
+
+The agent is told to prefer a script when each call needs the previous result or a result is much
+larger than the answer: grep, read the hits and keep what matters; run several checks and report
+only the failures. Independent calls are still batched in one turn, and a single call or a file's
+new content goes to the tool directly rather than through a script.
 
 ```js
 const [readme, status] = await Promise.allSettled([

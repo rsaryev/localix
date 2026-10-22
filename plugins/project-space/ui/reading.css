@@ -30,6 +30,11 @@
 .space-board .react-flow__node.selected [data-detail] {
   opacity: 1;
 }
+/* From afar a note's lift is a pixel no one sees, and a thousand soft shadows are repainted on
+   every frame of a pan: the map draws notes flat. */
+.space-board[data-depth='map'] .space-note {
+  box-shadow: none;
+}
 
 /* ── An image copy in progress (`board/copyImage.ts`) ──
    The copy is the board, not the person's hands on it: the selection, the handles, the "+" and

@@ -32,5 +32,13 @@ test('short Markdown forms and file trees remain rendered text when pasted onto 
   }
   expect(contentFromText('A short idea', spaceTypes).type).toBe('note')
   expect(contentFromText('```ts\n// > [!TIP]\nconst n = 1\n```', spaceTypes).type).toBe('code')
-  expect(contentFromText('```mermaid\nflowchart LR\nA-->B\n```', spaceTypes).type).toBe('mermaid')
+  // A flowchart the board reads whole is drawn natively; one with anything it cannot draw stays
+  // a full Mermaid element, so a paste never loses a line.
+  expect(contentFromText('```mermaid\nflowchart LR\nA-->B\n```', spaceTypes).type).toBe('flow')
+  expect(
+    contentFromText('```mermaid\nflowchart LR\nA@{ shape: cloud } --> B\n```', spaceTypes).type,
+  ).toBe('mermaid')
+  expect(contentFromText('```mermaid\nclassDiagram\nA <|-- B\n```', spaceTypes).type).toBe(
+    'mermaid',
+  )
 })

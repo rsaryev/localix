@@ -35,6 +35,13 @@ Changes land on `main`.
 - **Channels**: a plugin's MCP server can speak into the chat that last used it and answer approval
   prompts; turn it on for your own servers with **Listen as a channel** in Settings → MCP.
 - **MCP servers can ask you for input**: their request opens a form card in the chat.
+- **Project Space diagrams and text**: notes, shape labels and text take a font (sans, serif, mono,
+  handwritten), size, alignment and colour from one **Text** menu, draw **bold**, _italic_, lists
+  and task boxes, and a new note fits its text. Flowcharts and 2×2 matrices are native elements
+  written as Mermaid — laid out by the board with right-angled lines, renamed or dragged in place,
+  and turned into shapes when you want to move them by hand. Connector labels sit beside the line
+  and slide along it; frames present as slides; styles copy and paste; a highlighter, an eraser and
+  find-and-replace join the tools. See [Project Space](docs/features/project-space.md).
 
 ### Changed
 
@@ -189,7 +196,7 @@ installers were removed; this release replaces them.
 
 - Providers connect only through credentials stored in the encrypted vault; API keys are never read
   from environment variables.
-- Updated dependencies, the pi runtime (v1.2.0) and Monaco (0.57.0).
+- Updated dependencies, the agent runtime (v1.2.0) and Monaco (0.57.0).
 
 ### Removed
 

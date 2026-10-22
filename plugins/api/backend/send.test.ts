@@ -748,20 +748,28 @@ describe('a response is decoded as the SERVER encoded it, not as we hope', () =>
     expect(res.charsetProblem).toBeUndefined()
   })
 
-  test('windows-1251 is beyond the runtime — so the body is garbled and SAYS SO', async () => {
-    // The honest half. Bun's TextDecoder has no windows-1251, so this cannot be decoded. What it
-    // must never do is hand back nonsense with nothing to indicate it.
+  test('windows-1251 comes back as the Cyrillic it carries', async () => {
+    // Bun 1.3 had no windows-1251 decoder, and this body came back garbled with a warning.
     stubBytes([0xcf, 0xf0, 0xe8, 0xe2, 0xe5, 0xf2], 'text/plain; charset=windows-1251')
     const res = await sendRequest(spec(), OPTS)
+    expect(res.body).toBe(GREETING.slice(0, 6))
+    expect(res.charsetProblem).toBeUndefined()
+  })
+
+  test('a charset beyond the runtime is garbled and SAYS SO', async () => {
+    // The honest half. Bun's TextDecoder has no utf-7, so this cannot be decoded. What it must
+    // never do is hand back nonsense with nothing to indicate it.
+    stubBytes([...new TextEncoder().encode('+BB8EQAQ4BDIENQRC-')], 'text/plain; charset=utf-7')
+    const res = await sendRequest(spec(), OPTS)
     expect(res.body).not.toBe(GREETING.slice(0, 6))
-    expect(res.charsetProblem).toContain('windows-1251')
+    expect(res.charsetProblem).toContain('utf-7')
     expect(res.charsetProblem).toContain("not the server's fault")
   })
 
   test('an unsupported charset does not THROW — a garbled body beats a failed send', async () => {
-    // `new TextDecoder('windows-1251')` raises RangeError. Passing a charset through unchecked
-    // would turn a mojibake response into a failed request, which is strictly worse.
-    stubBytes([0x61], 'text/plain; charset=koi8-r')
+    // `new TextDecoder('utf-7')` raises RangeError. Passing a charset through unchecked would
+    // turn a mojibake response into a failed request, which is strictly worse.
+    stubBytes([0x61], 'text/plain; charset=iso-2022-kr')
     expect((await sendRequest(spec(), OPTS)).status).toBe(200)
   })
 })

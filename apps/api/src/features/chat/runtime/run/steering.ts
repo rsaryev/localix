@@ -138,7 +138,7 @@ export function createSteeringTaker(input: {
       joinFilter(accepts, surface, subagent?.canDeliver() ? subagent.address : undefined),
     )
     if (taken.length === 0) return []
-    // The queue leases one row per poll. This makes the Pi callback failure-atomic:
+    // The queue leases one row per poll. This makes the steering callback failure-atomic:
     // no later reservation can be stranded when persistence of the head fails.
     const t = taken[0]!
     try {
@@ -188,7 +188,7 @@ export function createSteeringTaker(input: {
     } catch (error) {
       await env.releaseSteerableTurn(sessionId, t.id)
       onError(error)
-      // Pi's getSteeringMessages contract is non-rejecting. The leased row stays
+      // The loop's steering contract is non-rejecting. The leased row stays
       // queued and is retryable at a later boundary or by the normal post-run drain.
       return []
     }

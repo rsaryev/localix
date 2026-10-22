@@ -26,7 +26,7 @@
     "clean": "shx rm -rf dist .turbo"
   },
   "devDependencies": {
-    "@types/bun": "1.3.14",
+    "@types/bun": "1.4.3",
     "shx": "^0.4.0",
     "typescript": "^7.0.2"
   }

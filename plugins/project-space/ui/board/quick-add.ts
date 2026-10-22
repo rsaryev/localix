@@ -1,3 +1,4 @@
+import { lastLine } from './lastLook'
 import type { SpaceDocument } from '../../shared/format/document'
 import type { Side } from '../../shared/format/schema'
 import type { SpaceOp } from '../../shared/ops/contract'
@@ -37,6 +38,6 @@ export function quickAddOps(
   }
   return [
     { op: 'create', type: source.type, id: newId, x, y, w: source.w, h: source.h, props },
-    { op: 'connect', from: id, to: newId },
+    { op: 'connect', from: id, to: newId, ...lastLine() },
   ]
 }

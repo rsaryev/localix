@@ -391,6 +391,30 @@ describe('buildExecutionDiscipline — the batching rule reaches a read-only ros
   it('says nothing about batching when the role has no file tools at all', () => {
     expect(buildExecutionDiscipline(['ask'])).not.toContain('Batch independent')
   })
+
+  it('sends dependent chains to a `codemode` script, beside batching', () => {
+    const out = buildExecutionDiscipline(['read', 'bash', 'edit', 'write', 'codemode'])
+    expect(out).toContain('Prefer one `codemode` script to a turn per call')
+    expect(out).toContain('return only the failures')
+    expect(out).toContain('file content for `write`/`edit`')
+    expect(out.indexOf('Batch independent')).toBeLessThan(out.indexOf('`codemode` script'))
+  })
+
+  it('gives a delegated child the same `codemode` rule', () => {
+    const child = buildExecutionDiscipline(
+      ['read', 'bash', 'codemode'],
+      resolveRunProfile({ sessionKind: 'subagent' }),
+    )
+    expect(child).toContain('Prefer one `codemode` script')
+  })
+
+  it('names only what a read-only script roster can do, and nothing without `codemode`', () => {
+    const readOnly = buildExecutionDiscipline(['read', 'codemode'])
+    expect(readOnly).toContain('read many files, keep what matters')
+    expect(readOnly).not.toContain('`bash`')
+    expect(readOnly).not.toContain('file content for')
+    expect(buildExecutionDiscipline(['read', 'bash', 'edit'])).not.toContain('codemode')
+  })
 })
 
 describe('# Collaboration — one rule for who does the work', () => {

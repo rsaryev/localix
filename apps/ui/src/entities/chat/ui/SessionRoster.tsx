@@ -101,19 +101,18 @@ export function SessionRoster({
             />
             {isOpen && (
               <div className={GROUP_BODY}>
-                {group.sessions.length === 0 &&
-                  !isConversation && (
-                    // The empty state IS the affordance: a line that says there is nothing here
-                    // and starts the thing that would fix it. A placeholder plus a button
-                    // somewhere else would be two pieces of chrome for one idea.
-                    <button
-                      type="button"
-                      onClick={() => onNewChatWith(group.handle)}
-                      className="focus-ring flex h-8 items-center rounded-lg px-2 text-xs text-sidebar-foreground/35 transition-colors hover:bg-sidebar-accent/40 hover:text-sidebar-foreground/70"
-                    >
-                      Start a chat
-                    </button>
-                  )}
+                {group.sessions.length === 0 && !isConversation && (
+                  // The empty state IS the affordance: a line that says there is nothing here
+                  // and starts the thing that would fix it. A placeholder plus a button
+                  // somewhere else would be two pieces of chrome for one idea.
+                  <button
+                    type="button"
+                    onClick={() => onNewChatWith(group.handle)}
+                    className="focus-ring flex h-8 items-center rounded-lg px-2 text-xs text-sidebar-foreground/35 transition-colors hover:bg-sidebar-accent/40 hover:text-sidebar-foreground/70"
+                  >
+                    Start a chat
+                  </button>
+                )}
                 <ActivitySections sessions={view.shown} renderSession={renderSession} />
                 {(view.hidden > 0 || all) && (
                   <BranchMoreRow

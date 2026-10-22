@@ -97,8 +97,18 @@ export function fontBytes(font: DocumentFont, face = 0): Promise<Buffer> {
   if (!cache.has(file)) cache.set(file, readFile(new URL(file, import.meta.url)))
   return cache.get(file)!
 }
+/**
+ * `PDFDocument`'s `font` option for a document that only draws with the fonts registered here.
+ * Left unset, PDFKit opens Helvetica, and its Node build loads that through a runtime `require`
+ * of its own `#standard-fonts/*` import a bundle cannot carry, so a packaged generator failed
+ * before it drew anything. `null` opens no font; `registerDocumentFonts` selects regular Inter.
+ */
+export const NO_STANDARD_FONT = null as unknown as string
+
 export async function registerDocumentFonts(doc: PDFKit.PDFDocument, fonts: DocumentFont[]) {
   for (const font of new Set([...fonts, 'inter', 'jetbrains-mono'] as DocumentFont[]))
     for (let face = 0; face < 4; face++)
       doc.registerFont(`${font}-${face}`, await fontBytes(font, face))
+  // The document opens on regular Inter; see NO_STANDARD_FONT.
+  doc.font('inter-0')
 }

@@ -3,6 +3,8 @@ import type { SpaceDocument } from '../../shared/format/document'
 import { newId, takenIn } from '../../shared/format/ids'
 import type { SpaceOp } from '../../shared/ops/contract'
 import { spaceTypes } from '../../shared/types'
+import { lastLine } from './lastLook'
+import { placementOf } from './placement'
 import { quickAddOps } from './quick-add'
 
 /**
@@ -53,10 +55,15 @@ export function useCreate({
   const noteAt = (at: { x: number; y: number }) => {
     const size = spaceTypes.get('note')?.size ?? { w: 200, h: 200 }
     const id = fresh()
-    commit([{ op: 'create', type: 'note', id, x: at.x - size.w / 2, y: at.y - size.h / 2 }])
+    // The note takes the look last given to a note, as one placed from the rail does.
+    const props = placementOf('note')?.props
+    commit([{ op: 'create', type: 'note', id, x: at.x - size.w / 2, y: at.y - size.h / 2, props }])
     select([id])
     setEditing(id)
   }
 
-  return { grow, connectEnd, noteAt }
+  /** A connector drawn between two elements, in the line style last chosen. */
+  const connect = (from: string, to: string) => commit([{ op: 'connect', from, to, ...lastLine() }])
+
+  return { grow, connectEnd, noteAt, connect }
 }

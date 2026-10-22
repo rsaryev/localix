@@ -1,5 +1,5 @@
 import type { DocumentLayout, DocumentParagraph } from '@localixai/plugin-sdk/document-layout'
-import { registerDocumentFonts } from './fonts'
+import { NO_STANDARD_FONT, registerDocumentFonts } from './fonts'
 import { drawContactIcon } from './contact-icon'
 import { coveredParagraph } from './font-coverage'
 
@@ -27,8 +27,9 @@ export async function layoutToPdf(layout: DocumentLayout): Promise<Uint8Array> {
       }),
     ),
   }
-  const { default: PDFDocument } = await import('pdfkit/js/pdfkit.standalone.js')
+  const { default: PDFDocument } = await import('pdfkit')
   const doc = new PDFDocument({
+    font: NO_STANDARD_FONT,
     size: 'A4',
     margin: layout.margin,
     bufferPages: true,

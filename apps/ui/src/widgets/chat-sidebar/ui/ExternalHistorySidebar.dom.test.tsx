@@ -19,17 +19,23 @@ let restoreHeight: () => void
 beforeAll(() => {
   teardown = registerDom()
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
-  // The virtualized list needs a viewport; happy-dom does not calculate layout.
-  const original = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight')
-  Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+  // The virtualized list needs a viewport; happy-dom does not calculate layout. The
+  // virtualizer sizes its viewport by `clientHeight` and each row by `offsetHeight`.
+  const keys = ['offsetHeight', 'clientHeight'] as const
+  const originals = keys.map((key) => Object.getOwnPropertyDescriptor(HTMLElement.prototype, key))
+  const height: PropertyDescriptor = {
     configurable: true,
     get(this: HTMLElement) {
       return this.getAttribute('aria-label') === 'Agent sessions' ? 640 : 32
     },
-  })
+  }
+  for (const key of keys) Object.defineProperty(HTMLElement.prototype, key, height)
   restoreHeight = () => {
-    if (original) Object.defineProperty(HTMLElement.prototype, 'offsetHeight', original)
-    else Reflect.deleteProperty(HTMLElement.prototype, 'offsetHeight')
+    keys.forEach((key, index) => {
+      const original = originals[index]
+      if (original) Object.defineProperty(HTMLElement.prototype, key, original)
+      else Reflect.deleteProperty(HTMLElement.prototype, key)
+    })
   }
 })
 afterAll(async () => {

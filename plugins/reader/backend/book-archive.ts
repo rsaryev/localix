@@ -2,6 +2,7 @@ import { posix } from 'node:path'
 import { isAtOrUnder } from '@localixai/path-containment'
 import { mediaTypeForPath } from '@localixai/plugin-sdk/backend'
 import { strFromU8, unzipSync } from 'fflate'
+import type { Document as XmlDocument } from '@xmldom/xmldom'
 
 /** Virtual root every archive-internal entry name is resolved inside. */
 const ARCHIVE_ROOT = '/__archive__'
@@ -92,7 +93,7 @@ export function unzipBounded(bytes: Uint8Array, label: string): Record<string, U
   return files
 }
 
-export function xmlText(document: Document, names: string[]): string | undefined {
+export function xmlText(document: XmlDocument, names: string[]): string | undefined {
   for (const name of names) {
     const value = document.getElementsByTagName(name)[0]?.textContent?.trim()
     if (value) return value

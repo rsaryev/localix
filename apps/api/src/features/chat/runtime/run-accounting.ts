@@ -43,7 +43,7 @@ export function calcUsageWithCost(
 ) {
   const payload = usageToChatUsagePayload(usage)
   // Only the runtime adapter can declare a provider-reported cost authoritative.
-  // Pi also supplies positive catalog estimates in `usage.cost`; inferring
+  // The engine also supplies positive catalog estimates in `usage.cost`; inferring
   // `actual` from the number alone would misclassify those estimates.
   const providerPriced = payload.costSource === 'actual' && payload.totalCost !== undefined
   if (modelCost && !providerPriced) {

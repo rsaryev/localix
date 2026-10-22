@@ -6,10 +6,10 @@ import type { ScriptRunResult, ScriptSandbox, ScriptTool } from '@localixai/agen
 import { TOOL } from '../../tool-names'
 import { createCallRecord, type CodemodeDetails } from './call-record'
 
-/** The tools a script calls: pi's default coding tools, as many of them as this run has. */
+/** The tools a script calls: the core coding tools, as many of them as this run has. */
 export const SCRIPT_TOOL_NAMES: readonly string[] = [TOOL.read, TOOL.bash, TOOL.edit, TOOL.write]
 
-/** As in pi's codemode example: a script that runs longer than this is stopped. */
+/** A script that runs longer than this is stopped. */
 const TIMEOUT_MS = 120_000
 
 /** The script itself reads nothing; each call it makes is judged on its own at the gate. */
@@ -20,10 +20,9 @@ const inputSchema = z.object({
 })
 
 /**
- * `codemode`, as pi's codemode example builds it (github.com/earendil-works/pi, `mcp-codemode`):
- * the model writes JavaScript, and the script calls `tools.<name>(args)` for the run's `read`,
- * `bash`, `edit` and `write`. Only the script's output and return value reach the model, not the
- * results of the calls.
+ * `codemode`: the model writes JavaScript, and the script calls `tools.<name>(args)` for the
+ * run's `read`, `bash`, `edit` and `write`. Only the script's output and return value reach the
+ * model, not the results of the calls.
  *
  * The description declares the tools as TypeScript; `tools` are this run's live tools, so a tool
  * the run does not have is never declared. Every call goes through `context.callTool` — the
@@ -42,11 +41,10 @@ export function createCodemodeTool(scripts: ScriptSandbox, tools: readonly Agent
     label: 'Codemode',
     activeVerb: 'Running a script',
     description: [
-      'Run JavaScript that calls other tools, to chain calls, run them in parallel, or filter large results.',
+      'Run JavaScript that calls tools: chain calls that depend on earlier results, or cut a large result down to the answer, in one script rather than several turns. Not for a single call or for file content.',
       'The code is the body of an async function. There is no Node, file system, network, or timers.',
-      "Call tools as `await tools.<name>(args)`: a call resolves to the tool's text and rejects with its error.",
-      'Output with `text(value)` or `console.log()`, or `return` a value. Only the output and the return value reach you, not the results of the tool calls.',
-      'Use everything JavaScript offers to turn the results into a concise, meaningful answer, and make the script fault-tolerant.',
+      "Call tools as `await tools.<name>(args)`: a call resolves to the tool's text and rejects with its error; use Promise.allSettled or try/catch so one failure keeps the rest.",
+      'Only what you output with `text(value)` or `console.log()`, or `return`, reaches you, never the raw call results: return a concise answer.',
       '',
       '```ts',
       scripts.declare(declared),
@@ -89,7 +87,7 @@ export function createCodemodeTool(scripts: ScriptSandbox, tools: readonly Agent
 
 const MODEL_IMAGE_TYPES = new Set<string>(['image/png', 'image/jpeg', 'image/gif', 'image/webp'])
 
-/** The output items in order, then the return value, then the failure — as pi's example returns. */
+/** The output items in order, then the return value, then the failure. */
 function scriptResult(run: ScriptRunResult, details: CodemodeDetails) {
   const parts: (TextContent | ImageContent)[] = []
   for (const item of run.output) {

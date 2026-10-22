@@ -22,6 +22,10 @@ export function copyBoardImage(
   root: HTMLElement | null,
   space: SpaceDocument,
   ids: readonly string[],
+  /** Draw every element, also those out of view, until the returned release is called. */
+  drawAll: () => Promise<() => void> = async () => () => {},
+  /** `save` writes a PNG file instead of trying the clipboard first. */
+  mode: 'copy' | 'save' = 'copy',
 ) {
   runPluginAction(async () => {
     if (!root) return
@@ -30,12 +34,17 @@ export function copyBoardImage(
       ? boundsOfBoxes(live.map((id) => space.elements[id] as SpaceElement))
       : contentBounds(space)
     if (!box) return void toast.info('The board is empty: there is nothing to copy')
+    const release = await drawAll()
     const blob = await captureBoard(
       root,
       { x: box.x, y: box.y, width: box.w, height: box.h },
       { prepare: () => drawForTheCopy(root) },
-    )
+    ).finally(release)
     const what = live.length ? `${live.length} element${live.length === 1 ? '' : 's'}` : 'The board'
+    if (mode === 'save') {
+      await pluginFiles.saveBlob('project-space.png', blob)
+      return void toast.success(`${what} saved as project-space.png`)
+    }
     if (await platformCapabilities().clipboard.writeBlob(blob, 'image/png'))
       return void toast.success(`${what} copied as an image`)
     await pluginFiles.saveBlob('project-space.png', blob)

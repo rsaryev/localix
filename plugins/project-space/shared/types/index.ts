@@ -2,6 +2,8 @@ import { createTypeRegistry } from '../registry/registry'
 import { refType } from './app-links'
 import { codeType, frameType, noteType, shapeType, textType } from './drawing'
 import { documentType, fileType, folderType, imageType, linkType } from './references'
+import { flowType } from './flow'
+import { quadrantType } from './quadrant'
 import { sequenceType } from './sequence'
 import { tableType } from './table'
 import { mindmapType } from './mindmap'
@@ -18,7 +20,9 @@ export const ELEMENT_TYPES = [
   textType,
   shapeType,
   frameType,
+  flowType,
   sequenceType,
+  quadrantType,
   mermaidType,
   tableType,
   mindmapType,

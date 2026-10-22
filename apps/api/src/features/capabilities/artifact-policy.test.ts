@@ -35,9 +35,11 @@ const artifactPolicy = (handle: string): Rule[] => {
     ...builtinAgentPreset('localix'),
     ...['write', 'edit'].flatMap((tool): Rule[] => [
       { action: `tool:${tool}`, resource: 'effect:files', effect: 'deny' },
-      ...classes[handle]!.map(
-        (resource): Rule => ({ action: `tool:${tool}`, resource, effect: 'allow' }),
-      ),
+      ...classes[handle]!.map((resource): Rule => ({
+        action: `tool:${tool}`,
+        resource,
+        effect: 'allow',
+      })),
     ]),
     { action: 'tool:*', resource: 'outside-workspace', effect: 'deny' },
     ...(handle === 'pm'

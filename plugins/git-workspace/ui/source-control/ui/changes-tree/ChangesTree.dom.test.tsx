@@ -44,21 +44,24 @@ async function renderTree() {
   const host = document.createElement('div')
   document.body.appendChild(host)
   const root = createRoot(host)
-  // happy-dom lays nothing out, and the virtualizer reads `offsetHeight`: the scroll root must
-  // report a viewport from its FIRST measurement, and a row its real 28px tier — a 0px row would
-  // make all 5,000 "fit" the viewport and loop the measurer.
-  const originalHeight = Object.getOwnPropertyDescriptor(
-    window.HTMLElement.prototype,
-    'offsetHeight',
+  // happy-dom lays nothing out, and the virtualizer sizes its viewport by `clientHeight` and a
+  // row by `offsetHeight`: the scroll root must report a viewport from its FIRST measurement,
+  // and a row its real 28px tier — a 0px row would make all 5,000 "fit" the viewport and loop
+  // the measurer.
+  const keys = ['offsetHeight', 'clientHeight'] as const
+  const originals = keys.map((key) =>
+    Object.getOwnPropertyDescriptor(window.HTMLElement.prototype, key),
   )
-  Object.defineProperty(window.HTMLElement.prototype, 'offsetHeight', {
-    configurable: true,
-    get(this: HTMLElement) {
-      if (this.hasAttribute('data-changes-scroll-root')) return VIEWPORT
-      if (this.hasAttribute('data-row-index')) return ROW
-      return originalHeight?.get?.call(this) ?? 0
-    },
-  })
+  keys.forEach((key, index) =>
+    Object.defineProperty(window.HTMLElement.prototype, key, {
+      configurable: true,
+      get(this: HTMLElement) {
+        if (this.hasAttribute('data-changes-scroll-root')) return VIEWPORT
+        if (this.hasAttribute('data-row-index')) return ROW
+        return originals[index]?.get?.call(this) ?? 0
+      },
+    }),
+  )
   await act(async () => {
     root.render(
       <ChangesScrollArea className="overflow-y-auto">
@@ -73,10 +76,16 @@ async function renderTree() {
     )
   })
   const cleanup = async () => {
-    if (originalHeight) {
-      Object.defineProperty(window.HTMLElement.prototype, 'offsetHeight', originalHeight)
-    }
+    keys.forEach((key, index) => {
+      const original = originals[index]
+      if (original) Object.defineProperty(window.HTMLElement.prototype, key, original)
+    })
     await act(async () => root.unmount())
+    // An unmounted Radix menu hands focus back in a `setTimeout(0)`; let it fire here, not inside
+    // the next test, where it pulled focus off the row that test had just focused.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
     host.remove()
   }
   return { host, act, cleanup }
@@ -130,8 +139,14 @@ describe('virtualized ChangesTree', () => {
         first.focus()
         first.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'End', bubbles: true }))
       })
+      // The jump scrolls first and focuses on a later frame, once the row is mounted; the
+      // virtualizer may take several frames to settle, so wait on the focus, not on a clock.
       await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 20))
+        const focused = () =>
+          (document.activeElement as HTMLElement | null)?.dataset?.treePath === 'file-4999.ts'
+        for (let frame = 0; frame < 30 && !focused(); frame++) {
+          await new Promise((resolve) => requestAnimationFrame(resolve))
+        }
       })
       const last = host.querySelector<HTMLElement>('[data-tree-path="file-4999.ts"]')
       expect(last).not.toBeNull()

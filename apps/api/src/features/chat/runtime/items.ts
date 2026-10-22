@@ -32,7 +32,7 @@ export interface ItemAccumulatorOptions {
    * Applied to every tool `input` and `details` this accumulator records, before the spec is stored.
    *
    * It belongs HERE and not only at the event handlers because the handlers are not the first writer.
-   * pi emits `message_end` BEFORE any `tool_execution_start` (`agent-loop.ts`), and `message_end`
+   * The loop emits `message_end` BEFORE any `tool_execution_start`, and `message_end`
    * runs `syncAssistantParts` → `streamTool`, which takes `input` straight from
    * `toolCall.arguments`. So a `bash` command carrying an inline credential was already persisted to
    * `agent_messages` and streamed to every client by the time `handleToolExecutionStart` overwrote it

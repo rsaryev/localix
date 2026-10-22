@@ -1,11 +1,8 @@
 import { useRef, useState } from 'react'
-import { runPluginAction } from '@localixai/plugin-sdk/ui'
-import { pluginFiles } from '@localixai/plugin-sdk/ui/runtime'
 import { Canvas, useCanvasCamera } from '@localixai/kit/canvas'
 import { useNativeEditTarget } from '@localixai/kit/keybindings'
 import type { SpaceView } from '../../shared/api'
 import type { SpaceOp } from '../../shared/ops/contract'
-import { opsFor } from '../content/pipeline'
 import { Announcer, namesOf, useAnnouncer, useBoardAnnouncements } from './Announcer'
 import { BoardMenu, useBoardMenu } from './BoardMenu'
 import { BoardOverlay, groupOutlines } from './BoardOverlay'
@@ -19,10 +16,10 @@ import { ElementNode } from './ElementNode'
 import { isElementControl } from './interaction'
 import { FindDialog } from './FindDialog'
 import { LayersPanel } from './LayersPanel'
+import { frameSelection } from './frameSelection'
 import type { MenuContext } from './menuItems'
-import { PlacementGhost } from './PlacementGhost'
-import { PenLayer } from './PenLayer'
-import { viewOf } from '../elements'
+import { PresentBar } from './PresentBar'
+import { ToolLayer } from './ToolLayer'
 import { SelectionBar } from './SelectionBar'
 import { ShortcutsDialog } from './ShortcutsDialog'
 import { ELEMENT_NODE, type ElementNode as ElementNodeType } from './toFlow'
@@ -35,6 +32,9 @@ import { useBoardCamera } from '../camera/useBoardCamera'
 import type { RemoteChange } from '../useSpace'
 import { useLiveBoard } from './useLiveBoard'
 import { useReading, useReadingFlow } from './useReading'
+import { usePresentation, useSlide } from './usePresentation'
+import { useRenderWindow } from './useRenderWindow'
+import { useStyleClipboard } from './useStyleClipboard'
 import { useTools } from './useTools'
 import { ZoomVar } from './ZoomVar'
 
@@ -101,6 +101,10 @@ export function SpaceBoard({
     selected: board.selected,
     space,
   })
+  const styleClipboard = useStyleClipboard()
+  const present = usePresentation(space, boardCamera.director, board.select)
+  const scene = useSlide(flow, present.slide)
+  const renderWindow = useRenderWindow(board.nodes.length)
   const unlocked = () => Object.keys(space.elements).filter((id) => !space.elements[id]?.locked)
   const onBoardKey = boardKeyHandler({
     space,
@@ -121,6 +125,8 @@ export function SpaceBoard({
     clearTrace: reading.clearTrace,
     grow: create.grow,
     camera: boardCamera.keys,
+    style: styleClipboard,
+    presentation: present,
   })
 
   useNativeEditTarget(root, (command) => {
@@ -135,37 +141,34 @@ export function SpaceBoard({
     select: board.select,
     toBoard: (x, y) => camera.toBoard(x, y),
   })
-  const copyImage = (ids: readonly string[]) => copyBoardImage(root.current, space, ids)
+  const image = (mode: 'copy' | 'save') => (ids: readonly string[]) =>
+    copyBoardImage(root.current, space, ids, renderWindow.drawAll, mode)
   const menuContext: MenuContext = {
     space,
-    entered: board.entered,
     sessionId,
     reading,
-    commit: board.commit,
+    copyImage: image('copy'),
+    saveImage: image('save'),
     edit: setEditing,
-    copyImage,
+    style: styleClipboard,
+    entered: board.entered,
+    commit: board.commit,
     addNote: create.noteAt,
     selectAll: () => board.select(unlocked()),
     fit: () => camera.fit(),
     openFind: () => setFinding(true),
     openShortcuts: () => setSheet(true),
+    frame: (ids) => frameSelection({ ...board, space, setEditing }, ids),
   }
 
   const outlines = groupOutlines(space, board.nodes, board.selected, board.entered)
-  const addFiles = () =>
-    runPluginAction(async () => {
-      const paths = await pluginFiles.pickFiles()
-      if (paths.length === 0) return
-      const items = paths.map((path) => ({ kind: 'path' as const, path, isDir: false }))
-      board.commit(await opsFor(items, camera.centre(), sessionId, space))
-    }, 'Could not add those files')
-
   return (
     <BoardContext.Provider value={actions}>
       <div
         ref={root}
         data-osfile-attach
         data-tool={tools.tool}
+        data-presenting={present.active || undefined}
         className="space-board relative h-full min-h-0 w-full"
         onPointerMove={io.onPointerMove}
         onPointerLeave={io.onPointerLeave}
@@ -178,10 +181,11 @@ export function SpaceBoard({
         <Canvas<ElementNodeType>
           label="Project Space board. Pick a tool on the left and click the board to place it; drop files, folders or text. Press / to find an element, ? for every shortcut"
           interaction={tools.tool === 'hand' ? 'navigate' : 'edit'}
-          nodes={flow.nodes}
-          edges={flow.edges}
+          nodes={scene.nodes}
+          edges={scene.edges}
           nodeTypes={nodeTypes}
           zIndexMode="manual"
+          onlyRenderVisibleElements={renderWindow.windowed}
           snapZoom
           // The layers panel takes the right edge, where the minimap would sit under it.
           minimap={!layers && board.nodes.length >= 12}
@@ -200,9 +204,7 @@ export function SpaceBoard({
           onNodeDragStop={board.finishDrag}
           onSelectionDragStart={(_event, nodes) => board.startDrag(nodes)}
           onSelectionDragStop={board.finishDrag}
-          onConnect={(connection) =>
-            board.commit([{ op: 'connect', from: connection.source, to: connection.target }])
-          }
+          onConnect={(connection) => create.connect(connection.source, connection.target)}
           onConnectEnd={create.connectEnd}
           onPaneClick={(event) => {
             setEditing(null)
@@ -218,25 +220,14 @@ export function SpaceBoard({
           follow={boardCamera.follow}
           lead={trace ? <TraceChip space={space} reading={reading} /> : null}
         />
-        {viewOf(tools.tool)?.insert?.gesture === 'draw' ? (
-          <PenLayer
-            onBoardKey={onBoardKey}
-            type={tools.tool}
-            toolProps={tools.toolProps}
-            space={space}
-            commit={board.commit}
-            select={board.select}
-            finish={() => {
-              if (!tools.locked) tools.setTool('select')
-            }}
-            cancel={() => tools.setTool('select')}
-          />
-        ) : (
-          tools.tool !== 'select' &&
-          tools.tool !== 'hand' && (
-            <PlacementGhost root={root} tool={tools.tool} toolProps={tools.toolProps} />
-          )
-        )}
+        <ToolLayer
+          root={root}
+          tools={tools}
+          space={space}
+          commit={board.commit}
+          select={board.select}
+          onBoardKey={onBoardKey}
+        />
         <BoardOverlay guides={board.guides} outlines={outlines} />
         {selectedElements.length > 0 && !editing && (
           <SelectionBar
@@ -248,11 +239,13 @@ export function SpaceBoard({
             onEdit={setEditing}
             reading={reading}
             focus={boardCamera.focusOn}
+            select={board.select}
           />
         )}
         {selectedEdge && selectedElements.length === 0 && space.edges[selectedEdge] && (
           <EdgeBar
             key={selectedEdge}
+            space={space}
             id={selectedEdge}
             edge={space.edges[selectedEdge]}
             commit={board.commit}
@@ -265,7 +258,7 @@ export function SpaceBoard({
           locked={tools.locked}
           onTool={tools.setTool}
           onLock={() => tools.setLocked((current) => !current)}
-          onAddFiles={addFiles}
+          onAddFiles={io.addFiles}
           undo={undo}
           redo={redo}
           canUndo={view.canUndo}
@@ -274,7 +267,9 @@ export function SpaceBoard({
           onLayers={() => setLayers((open) => !open)}
           onFind={() => setFinding(true)}
           onShortcuts={() => setSheet(true)}
+          onPresent={present.frames.length ? () => present.start(root.current) : undefined}
         />
+        <PresentBar presentation={present} space={space} />
         {layers && (
           <LayersPanel
             space={space}
@@ -291,6 +286,7 @@ export function SpaceBoard({
           open={finding}
           onOpenChange={setFinding}
           onPick={(id) => boardCamera.focusOn([id])}
+          commit={board.commit}
         />
         <ShortcutsDialog open={sheet} onOpenChange={setSheet} />
         <Announcer message={message} />

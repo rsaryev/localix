@@ -60,10 +60,17 @@ export async function assertContainedBuildInputs(input: {
       path: imported.path,
       from: dirname(resolve(key)),
     }))
+  // An import's recorded path is usually another input's key, which is relative to the build's
+  // working directory (as Bun 1.4 records it); only a path that is no key is resolved from the
+  // importing file.
   const realOf = async ({ path, from }: Edge) => {
     try {
       return await fs.realpath(
-        FILE_IMPORT.test(path) ? resolve(from, path) : Bun.resolveSync(path, from),
+        path in inputs
+          ? resolve(path)
+          : FILE_IMPORT.test(path)
+            ? resolve(from, path)
+            : Bun.resolveSync(path, from),
       )
     } catch {
       return undefined

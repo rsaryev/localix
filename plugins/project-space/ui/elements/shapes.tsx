@@ -1,9 +1,19 @@
 import { Frame, Shapes } from 'lucide-react'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 import type { SpaceColor } from '../../shared/format/schema'
+import type { TextAlign, TextFont, TextValign } from '../../shared/types/text-style'
 import { defineView, type ElementViewProps } from './contract'
 import { colorControl, fillControl, shapeKindControl, sizeControl, strokeControl } from './controls'
 import { InlineText } from './InlineText'
+import { InlineRichText } from './RichText'
+import {
+  alignControl,
+  fontControl,
+  inkControl,
+  textStyleClass,
+  VALIGN_CLASS,
+  valignControl,
+} from './text-style'
 import { labelInset, shapePath, type ShapeKind } from './shape-path'
 
 /**
@@ -19,6 +29,10 @@ type ShapeProps = {
   fill: 'none' | 'tint' | 'solid'
   stroke: 'solid' | 'dashed' | 'dotted'
   size: 's' | 'm' | 'l' | 'xl'
+  font: TextFont
+  align: TextAlign
+  valign: TextValign
+  ink?: SpaceColor
 }
 
 const LABEL: Record<ShapeProps['size'], string> = {
@@ -52,7 +66,7 @@ function ShapeView({
       {props.fill !== 'none' && (
         <div
           aria-hidden
-          className="space-shape-material lx-floating-surface pointer-events-none absolute inset-0 bg-popover"
+          className="space-shape-material pointer-events-none absolute inset-0"
           style={{ clipPath: `path('${outline}')` }}
         />
       )}
@@ -67,8 +81,9 @@ function ShapeView({
       </svg>
       <div
         className={cn(
-          'absolute flex items-center justify-center text-center leading-snug text-foreground',
+          'absolute flex flex-col overflow-hidden leading-snug text-foreground',
           LABEL[props.size],
+          textStyleClass(props),
         )}
         style={{ inset: `${inset.y * 100}% ${inset.x * 100}%` }}
       >
@@ -77,10 +92,13 @@ function ShapeView({
             value={props.text}
             onCommit={(text) => commit({ text })}
             onDone={stopEditing}
-            className={cn('text-center', LABEL[props.size])}
+            className={cn(LABEL[props.size], textStyleClass(props))}
+            formatting
           />
         ) : (
-          <span className="line-clamp-6 whitespace-pre-wrap break-words">{props.text}</span>
+          <div className={cn('w-full break-words', VALIGN_CLASS[props.valign])}>
+            <InlineRichText text={props.text} />
+          </div>
         )}
       </div>
     </div>
@@ -142,7 +160,11 @@ export const shapeViews = [
       colorControl,
       fillControl,
       strokeControl,
+      fontControl,
       sizeControl(['s', 'm', 'l', 'xl']),
+      alignControl,
+      valignControl,
+      inkControl,
     ],
   }),
   defineView({

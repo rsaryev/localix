@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-Localix uses Bun 1.3.14 and Turborepo. [CONTRIBUTING.md](CONTRIBUTING.md) documents the workflow;
+Localix uses Bun 1.4.4 and Turborepo. [CONTRIBUTING.md](CONTRIBUTING.md) documents the workflow;
 [docs/internals/code-map.md](docs/internals/code-map.md) maps source ownership.
 
 ## Development Workflow

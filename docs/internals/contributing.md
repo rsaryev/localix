@@ -205,7 +205,7 @@ signature checks follow
 
 | Tool                  | Repository selection                      | Boundary                                                            |
 | --------------------- | ----------------------------------------- | ------------------------------------------------------------------- |
-| Bun                   | `1.3.14` in root `package.json`.          | CI installs this exact version.                                     |
+| Bun                   | `1.4.4` in root `package.json`.           | CI installs this exact version.                                     |
 | Node.js               | `24` in `.nvmrc`.                         | The CLI package build invokes `node`; application runtime uses Bun. |
 | Rust                  | `1.96.1` in CI and the release workflow.  | Local scripts detect Rust; hosted checks pin this exact version.    |
 | Git                   | Required for checkout and source control. | The agent shell still requires a Bash executable on Windows.        |

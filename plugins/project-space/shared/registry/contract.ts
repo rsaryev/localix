@@ -35,6 +35,12 @@ export interface ElementTypeSpec<P extends Record<string, unknown> = Record<stri
   textProp?: keyof P & string
   text(props: P): string
   /**
+   * What a PERSON reads as the element's name in a list — a layers row, a search result — when
+   * `text` is written for a reader of the file: a note's text without its `**` marks, a
+   * flowchart's title and steps rather than its Mermaid. Absent, `text` is the name.
+   */
+  summary?(props: P): string
+  /**
    * A type whose whole content has a TEXT form (a sequence diagram written as Mermaid): `text`
    * writes the element in that form and this reads it back, so the agent writes the diagram as
    * the text it knows, a person edits it as text, and a pasted Mermaid block becomes one. Returns
@@ -48,6 +54,11 @@ export interface ElementTypeSpec<P extends Record<string, unknown> = Record<stri
   measure?(props: P): { w: number; h: number }
   /** A pasted text this type takes as its own (a Mermaid `sequenceDiagram` block). */
   claimsText?(text: string): boolean
+  /**
+   * `fromText` refuses whatever it cannot keep, so a whole fenced Mermaid block may become this
+   * type instead of the full Mermaid element: nothing in it can be lost on the way in.
+   */
+  exactText?: boolean
   claims?: ContentClaims
 }
 

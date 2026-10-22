@@ -1,5 +1,5 @@
 import { z as pluginZod } from 'zod'
-import { COLORS, EDGE_CAPS, EDGE_ROUTES, EDGE_STROKES, SIDES } from '../format/schema'
+import { COLORS, EDGE_CAPS, EDGE_ROUTES, EDGE_STROKES, EDGE_WEIGHTS, SIDES } from '../format/schema'
 import { GAP } from './geometry'
 
 /**
@@ -46,7 +46,14 @@ export function buildOpSchemas(z: Zod) {
     start: z.enum(EDGE_CAPS).optional().describe('Cap at the start; none by default.'),
     end: z.enum(EDGE_CAPS).optional().describe('Cap at the end; triangle by default.'),
     stroke: z.enum(EDGE_STROKES).optional(),
+    weight: z.enum(EDGE_WEIGHTS).optional().describe('thin, regular (default) or bold.'),
     color: z.enum(COLORS).optional(),
+    labelAt: z
+      .number()
+      .min(0)
+      .max(1)
+      .optional()
+      .describe('Where the label sits along the line, 0 to 1; 0.5 (the middle) by default.'),
   }
 
   const create = z.object({
@@ -67,6 +74,14 @@ export function buildOpSchemas(z: Zod) {
   const update = z.object({
     op: z.literal('update'),
     id,
+    type: z
+      .string()
+      .trim()
+      .min(1)
+      .optional()
+      .describe(
+        'Turn it into another kind (note, shape, text, flow…) where it stands: its id, place, stacking, groups and connectors stay; props then start from the new kind’s defaults.',
+      ),
     ...geometry,
     text: z.string().optional(),
     props: props

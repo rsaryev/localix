@@ -1,30 +1,26 @@
 /**
- * Smart output truncation for tool results.
+ * Output truncation for tool results, under two independent limits — whichever is hit first wins:
+ * a line count (default 2000) and a size in UTF-8 bytes (default 50 KiB).
  *
- * Truncation enforces two INDEPENDENT limits — whichever is hit first wins:
- * - Line limit (default: 2000 lines)
- * - Byte limit (default: 50KB, measured in UTF-8 bytes)
+ * - `truncateHead` keeps the FIRST lines — for file reads, where the beginning matters.
+ * - `truncateTail` keeps the LAST lines — for command output, where errors and results end it.
  *
- * Two directions, both under LINE and BYTE limits:
- * - `truncateHead` keeps the FIRST N — use for file reads (beginning matters).
- * - `truncateTail` keeps the LAST N — use for bash/command output (errors and
- *   final results are at the end).
+ * The third direction lives next door in `truncate-middle.ts`: it keeps BOTH ends under a
+ * CHARACTER budget, which shares no arithmetic with these two.
  *
- * The third direction lives next door in `truncate-middle.ts`: it keeps BOTH ends
- * under a CHARACTER budget, which shares no arithmetic with these two.
- *
- * UTF-8 safe: byte counting and the partial-line edge case never split a
- * multi-byte sequence or a surrogate pair. Partial-line suffixes replace unpaired
- * surrogates with U+FFFD; whole-line and untruncated output preserves the input.
+ * Whole lines only, with one exception: when the very last line of a tail is larger than the byte
+ * limit on its own, its end is kept, never splitting a multi-byte sequence or a surrogate pair
+ * (unpaired surrogates in that partial line become U+FFFD). Anything kept whole is unchanged.
  */
 
-import { utf8ByteLength, truncateStringToBytesFromEnd } from './truncate-utf8'
+import { truncateStringToBytesFromEnd, utf8ByteLength } from './truncate-utf8'
 
 export const DEFAULT_MAX_LINES = 2000
-export const DEFAULT_MAX_BYTES = 50 * 1024 // 50KB
+export const DEFAULT_MAX_BYTES = 50 * 1024
 
-const ONE_KIB = 1024
-const ONE_MIB = ONE_KIB * 1024
+const KIB = 1024
+const MIB = 1024 * KIB
+const LF = 10
 
 export interface TruncationResult {
   /** The truncated content. */
@@ -58,194 +54,129 @@ export interface TruncationOptions {
   maxBytes?: number
 }
 
-/** Count logical lines without allocating one array entry per input line. */
-function countLines(content: string): number {
-  if (content.length === 0) return 0
-  let lines = 1
-  for (let i = 0; i < content.length; i++) {
-    if (content.charCodeAt(i) === 10) lines++
-  }
-  if (content.charCodeAt(content.length - 1) === 10) lines--
-  return lines
-}
-
 /** Format a byte count as a human-readable size (e.g. "12.3KB"). */
 export function formatSize(bytes: number): string {
-  if (bytes < ONE_KIB) return `${bytes}B`
-  if (bytes < ONE_MIB) return `${(bytes / ONE_KIB).toFixed(1)}KB`
-  return `${(bytes / ONE_MIB).toFixed(1)}MB`
+  if (bytes < KIB) return `${bytes}B`
+  return bytes < MIB ? `${(bytes / KIB).toFixed(1)}KB` : `${(bytes / MIB).toFixed(1)}MB`
+}
+
+/** Logical lines: a trailing newline ends the last line rather than starting an empty one. */
+function lineCount(content: string): number {
+  if (content === '') return 0
+  let breaks = 0
+  for (let at = content.indexOf('\n'); at !== -1; at = content.indexOf('\n', at + 1)) breaks++
+  return content.charCodeAt(content.length - 1) === LF ? breaks : breaks + 1
+}
+
+interface Measured {
+  content: string
+  totalLines: number
+  totalBytes: number
+  maxLines: number
+  maxBytes: number
+}
+
+function measure(content: string, options: TruncationOptions): Measured {
+  return {
+    content,
+    totalLines: lineCount(content),
+    totalBytes: utf8ByteLength(content),
+    maxLines: options.maxLines ?? DEFAULT_MAX_LINES,
+    maxBytes: options.maxBytes ?? DEFAULT_MAX_BYTES,
+  }
+}
+
+const fits = (input: Measured) =>
+  input.totalLines <= input.maxLines && input.totalBytes <= input.maxBytes
+
+/** The result for what was kept; `kept` is the lines in output order. */
+function result(
+  input: Measured,
+  kept: readonly string[] | null,
+  by: TruncationResult['truncatedBy'],
+  flags: { lastLinePartial?: boolean; firstLineExceedsLimit?: boolean } = {},
+): TruncationResult {
+  const content = kept === null ? input.content : kept.join('\n')
+  return {
+    content,
+    truncated: kept !== null,
+    truncatedBy: by,
+    totalLines: input.totalLines,
+    totalBytes: input.totalBytes,
+    outputLines: kept === null ? input.totalLines : kept.length,
+    outputBytes: kept === null ? input.totalBytes : utf8ByteLength(content),
+    lastLinePartial: flags.lastLinePartial ?? false,
+    firstLineExceedsLimit: flags.firstLineExceedsLimit ?? false,
+    maxLines: input.maxLines,
+    maxBytes: input.maxBytes,
+  }
 }
 
 /**
  * Truncate content from the head (keep the first N lines/bytes).
- * Suitable for file reads where you want to see the beginning.
  *
- * Never returns a partial line. If the first line alone exceeds the byte limit,
- * returns empty content with `firstLineExceedsLimit = true`.
+ * Never returns a partial line. If the first line alone exceeds the byte limit, returns empty
+ * content with `firstLineExceedsLimit = true`.
  */
 export function truncateHead(content: string, options: TruncationOptions = {}): TruncationResult {
-  const maxLines = options.maxLines ?? DEFAULT_MAX_LINES
-  const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES
+  const input = measure(content, options)
+  if (fits(input)) return result(input, null, null)
 
-  const totalBytes = utf8ByteLength(content)
-  const totalLines = countLines(content)
-
-  if (totalLines <= maxLines && totalBytes <= maxBytes) {
-    return {
-      content,
-      truncated: false,
-      truncatedBy: null,
-      totalLines,
-      totalBytes,
-      outputLines: totalLines,
-      outputBytes: totalBytes,
-      lastLinePartial: false,
-      firstLineExceedsLimit: false,
-      maxLines,
-      maxBytes,
-    }
+  const firstBreak = content.indexOf('\n')
+  const firstLine = firstBreak === -1 ? content : content.slice(0, firstBreak)
+  if (utf8ByteLength(firstLine) > input.maxBytes) {
+    return result(input, [], 'bytes', { firstLineExceedsLimit: true })
   }
 
-  const firstLineEnd = content.indexOf('\n')
-  const firstLine = content.slice(0, firstLineEnd === -1 ? content.length : firstLineEnd)
-  const firstLineBytes = utf8ByteLength(firstLine)
-  if (firstLineBytes > maxBytes) {
-    return {
-      content: '',
-      truncated: true,
-      truncatedBy: 'bytes',
-      totalLines,
-      totalBytes,
-      outputLines: 0,
-      outputBytes: 0,
-      lastLinePartial: false,
-      firstLineExceedsLimit: true,
-      maxLines,
-      maxBytes,
-    }
+  const kept: string[] = []
+  let bytes = 0
+  let start = 0
+  const limit = Math.min(input.totalLines, input.maxLines)
+  while (kept.length < limit) {
+    const end = content.indexOf('\n', start)
+    const line = content.slice(start, end === -1 ? content.length : end)
+    // Every line after the first also brings the newline before it.
+    const cost = utf8ByteLength(line) + (kept.length === 0 ? 0 : 1)
+    if (bytes + cost > input.maxBytes) return result(input, kept, 'bytes')
+    kept.push(line)
+    bytes += cost
+    start = end + 1
   }
-
-  const outputLinesArr: string[] = []
-  let outputBytesCount = 0
-  let truncatedBy: 'lines' | 'bytes' = 'lines'
-
-  let cursor = 0
-  for (let i = 0; i < totalLines && i < maxLines; i++) {
-    const newline = content.indexOf('\n', cursor)
-    const lineEnd = newline === -1 ? content.length : newline
-    const line = content.slice(cursor, lineEnd)
-    const lineBytes = utf8ByteLength(line) + (i > 0 ? 1 : 0) // +1 for newline
-
-    if (outputBytesCount + lineBytes > maxBytes) {
-      truncatedBy = 'bytes'
-      break
-    }
-
-    outputLinesArr.push(line)
-    outputBytesCount += lineBytes
-    cursor = lineEnd + 1
-  }
-
-  if (outputLinesArr.length >= maxLines && outputBytesCount <= maxBytes) {
-    truncatedBy = 'lines'
-  }
-
-  const outputContent = outputLinesArr.join('\n')
-  const finalOutputBytes = utf8ByteLength(outputContent)
-
-  return {
-    content: outputContent,
-    truncated: true,
-    truncatedBy,
-    totalLines,
-    totalBytes,
-    outputLines: outputLinesArr.length,
-    outputBytes: finalOutputBytes,
-    lastLinePartial: false,
-    firstLineExceedsLimit: false,
-    maxLines,
-    maxBytes,
-  }
+  return result(input, kept, 'lines')
 }
 
 /**
  * Truncate content from the tail (keep the last N lines/bytes).
- * Suitable for bash/command output where the end (errors, final result) matters.
  *
  * May return a partial FIRST line if a single trailing line exceeds the byte limit.
  */
 export function truncateTail(content: string, options: TruncationOptions = {}): TruncationResult {
-  const maxLines = options.maxLines ?? DEFAULT_MAX_LINES
-  const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES
+  const input = measure(content, options)
+  if (fits(input)) return result(input, null, null)
 
-  const totalBytes = utf8ByteLength(content)
-  const ignoresTrailingEmpty = content.length > 0 && content.charCodeAt(content.length - 1) === 10
-  const totalLines = countLines(content)
-
-  if (totalLines <= maxLines && totalBytes <= maxBytes) {
-    return {
-      content,
-      truncated: false,
-      truncatedBy: null,
-      totalLines,
-      totalBytes,
-      outputLines: totalLines,
-      outputBytes: totalBytes,
-      lastLinePartial: false,
-      firstLineExceedsLimit: false,
-      maxLines,
-      maxBytes,
-    }
-  }
-
-  const outputLinesArr: string[] = []
-  let outputBytesCount = 0
-  let truncatedBy: 'lines' | 'bytes' = 'lines'
-  let lastLinePartial = false
-
-  let lineEnd = ignoresTrailingEmpty ? content.length - 1 : content.length
-  for (let i = totalLines - 1; i >= 0 && outputLinesArr.length < maxLines; i--) {
-    const newline = lineEnd === 0 ? -1 : content.lastIndexOf('\n', lineEnd - 1)
-    const lineStart = newline + 1
-    const line = content.slice(lineStart, lineEnd)
-    const lineBytes = utf8ByteLength(line) + (outputLinesArr.length > 0 ? 1 : 0) // +1 for newline
-
-    if (outputBytesCount + lineBytes > maxBytes) {
-      truncatedBy = 'bytes'
-      // Edge case: if we haven't added ANY lines yet and this single line exceeds
-      // maxBytes, take the END of the line (partial) so we still surface something.
-      if (outputLinesArr.length === 0) {
-        const truncatedLine = truncateStringToBytesFromEnd(line, maxBytes)
-        outputLinesArr.push(truncatedLine)
-        outputBytesCount = utf8ByteLength(truncatedLine)
-        lastLinePartial = true
+  // Lines are collected last-first and reversed once at the end.
+  const kept: string[] = []
+  let bytes = 0
+  let partial = false
+  let end = content.charCodeAt(content.length - 1) === LF ? content.length - 1 : content.length
+  for (let left = input.totalLines; left > 0 && kept.length < input.maxLines; left--) {
+    const start = end === 0 ? 0 : content.lastIndexOf('\n', end - 1) + 1
+    const line = content.slice(start, end)
+    const cost = utf8ByteLength(line) + (kept.length === 0 ? 0 : 1)
+    if (bytes + cost > input.maxBytes) {
+      if (kept.length === 0) {
+        // A last line too large on its own: surface its end rather than nothing.
+        const tail = truncateStringToBytesFromEnd(line, input.maxBytes)
+        kept.push(tail)
+        bytes = utf8ByteLength(tail)
+        partial = true
       }
-      break
+      const by = kept.length >= input.maxLines && bytes <= input.maxBytes ? 'lines' : 'bytes'
+      return result(input, kept.reverse(), by, { lastLinePartial: partial })
     }
-
-    outputLinesArr.push(line)
-    outputBytesCount += lineBytes
-    lineEnd = newline
+    kept.push(line)
+    bytes += cost
+    end = start - 1
   }
-
-  if (outputLinesArr.length >= maxLines && outputBytesCount <= maxBytes) {
-    truncatedBy = 'lines'
-  }
-
-  const outputContent = outputLinesArr.reverse().join('\n')
-  const finalOutputBytes = utf8ByteLength(outputContent)
-
-  return {
-    content: outputContent,
-    truncated: true,
-    truncatedBy,
-    totalLines,
-    totalBytes,
-    outputLines: outputLinesArr.length,
-    outputBytes: finalOutputBytes,
-    lastLinePartial,
-    firstLineExceedsLimit: false,
-    maxLines,
-    maxBytes,
-  }
+  return result(input, kept.reverse(), 'lines')
 }

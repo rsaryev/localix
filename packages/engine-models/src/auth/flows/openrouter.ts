@@ -1,8 +1,6 @@
 /**
  * OpenRouter's PKCE sign-in. It ends with a permanent API key the person controls rather than an
  * expiring token pair, so the credential never needs refreshing.
- *
- * Ported from pi (github.com/earendil-works/pi, MIT, © Mario Zechner).
  */
 import {
   callbackOrPasted,
@@ -57,7 +55,7 @@ export const openRouterFlow: OAuthFlow = {
         type: 'auth-url',
         url: url.toString(),
         instructions:
-          'Complete sign-in in your browser. If the browser is on another machine, paste the final redirect URL here.',
+          'Sign in to OpenRouter in the browser. If the browser runs on another machine, paste the address it ends on here.',
       })
       const result = await callbackOrPasted(interaction, callback, {
         message:
@@ -66,7 +64,7 @@ export const openRouterFlow: OAuthFlow = {
       })
       if (result.type === 'callback') return result.value
       const { code } = parsePastedAuthorization(result.input)
-      if (!code) throw new Error('Missing authorization code')
+      if (!code) throw new Error('The redirect carried no authorization code')
       await interaction.notify({
         type: 'progress',
         message: 'Exchanging the authorization code for an API key…',

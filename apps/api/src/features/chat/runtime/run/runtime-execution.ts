@@ -83,7 +83,9 @@ export function buildRuntimeSteering(input: {
   const { takeUserMessages } = input
   if (!takeUserMessages) return undefined
   return async (boundary) =>
-    (await takeUserMessages(boundary)).map(
-      (content): AgentMessage => ({ role: 'user', content, timestamp: Date.now() }),
-    )
+    (await takeUserMessages(boundary)).map((content): AgentMessage => ({
+      role: 'user',
+      content,
+      timestamp: Date.now(),
+    }))
 }

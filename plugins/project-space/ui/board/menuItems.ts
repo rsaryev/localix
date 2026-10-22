@@ -5,17 +5,23 @@ import {
   ArrowUpLeft,
   BringToFront,
   Copy,
+  Download,
   ExternalLink,
+  Frame,
   Group,
   Image,
   Keyboard,
   Lock,
   LockOpen,
   Maximize,
+  PaintBucket,
+  Paintbrush,
   PenLine,
+  Replace,
   Search,
   SendToBack,
   SquareDashedMousePointer,
+  SquarePlus,
   StickyNote,
   Trash2,
   Ungroup,
@@ -26,7 +32,19 @@ import type { SpaceOp } from '../../shared/ops/contract'
 import { spaceTypes } from '../../shared/types'
 import { duplicateOps } from '../content/clipboard'
 import { viewOf } from '../elements'
-import { groupOps, lockOps, reverseEdgeOps, stackOps, ungroupOps, type Selected } from './commands'
+import {
+  groupOps,
+  insertOnEdgeOps,
+  lockOps,
+  pasteStyleOps,
+  reverseEdgeOps,
+  stackOps,
+  styleOf,
+  ungroupOps,
+  type Selected,
+} from './commands'
+import type { StyleClipboard } from './boardKeys'
+import { isSwitchable, SWITCHABLE, switchTypeOps } from './switchType'
 import type { BoardReading } from './useReading'
 
 /**
@@ -56,11 +74,17 @@ export interface MenuContext {
   commit: (ops: readonly SpaceOp[]) => void
   edit: (id: string) => void
   copyImage: (ids: readonly string[]) => void
+  /** The same picture as a PNG file. */
+  saveImage: (ids: readonly string[]) => void
   addNote: (at: { x: number; y: number }) => void
   selectAll: () => void
   fit: () => void
   openFind: () => void
   openShortcuts: () => void
+  /** The style ⌥⌘C copied, shared with the keys. */
+  style: StyleClipboard
+  /** Put the selection in a new frame and name it. */
+  frame: (ids: readonly string[]) => void
 }
 
 type Sections = MenuItem[][]
@@ -100,6 +124,19 @@ function elementSections(ids: readonly string[], context: MenuContext): Sections
       run: () => view.open?.(read.props, context.sessionId),
     })
 
+  if (single && element && !element.locked && read?.status === 'ok')
+    for (const action of view?.actions ?? []) {
+      const ops = action.ops({ id: single, element, props: read.props, space })
+      if (ops) first.push({ label: action.label, Icon: action.Icon, run: () => commit(ops) })
+    }
+
+  if (single && element && isSwitchable(element.type))
+    for (const type of SWITCHABLE) {
+      const ops = switchTypeOps(space, single, type)
+      const label = spaceTypes.get(type)?.label.toLowerCase() ?? type
+      if (ops) first.push({ label: `Turn into ${label}`, Icon: Replace, run: () => commit(ops) })
+    }
+
   const traces: MenuItem[] = []
   if (single) {
     const counts = reachCounts(space, single, context.reading.links)
@@ -124,6 +161,12 @@ function elementSections(ids: readonly string[], context: MenuContext): Sections
     ...op('Send to back', SendToBack, stackOps(selection, 'back'), commit, 'mod+alt+['),
     ...op('Group', Group, groupOps(selection), commit, 'mod+g'),
     ...op('Ungroup', Ungroup, ungroupOps(selection), commit, 'mod+shift+g'),
+    {
+      label: 'Frame the selection',
+      Icon: Frame,
+      chord: 'mod+alt+g',
+      run: () => context.frame(ids),
+    },
     ...op(
       locked ? 'Unlock' : 'Lock',
       locked ? LockOpen : Lock,
@@ -133,9 +176,31 @@ function elementSections(ids: readonly string[], context: MenuContext): Sections
     ),
   ]
   const unlocked = ids.filter((id) => !space.elements[id]?.locked)
+  const copied = context.style.copied()
+  const style = single ? styleOf(space, single) : null
+  const styles: MenuItem[] = [
+    ...(style
+      ? [
+          {
+            label: 'Copy style',
+            Icon: Paintbrush,
+            chord: 'mod+alt+c',
+            run: () => context.style.copy(style),
+          },
+        ]
+      : []),
+    ...op(
+      'Paste style',
+      PaintBucket,
+      copied ? pasteStyleOps(selection, copied) : null,
+      commit,
+      'mod+alt+v',
+    ),
+  ]
   const last: MenuItem[] = [
     ...op('Duplicate', Copy, duplicateOps(space, ids), commit, 'mod+d'),
     { label: 'Copy as image', Icon: Image, run: () => context.copyImage(ids) },
+    { label: 'Save as image…', Icon: Download, run: () => context.saveImage(ids) },
     ...op(
       'Delete',
       Trash2,
@@ -144,7 +209,7 @@ function elementSections(ids: readonly string[], context: MenuContext): Sections
       'delete',
     ).map((item) => ({ ...item, danger: true })),
   ]
-  return [first, traces, arrange, last].filter((section) => section.length)
+  return [first, traces, arrange, styles, last].filter((section) => section.length)
 }
 
 function edgeSections(id: string, context: MenuContext): Sections {
@@ -156,6 +221,14 @@ function edgeSections(id: string, context: MenuContext): Sections {
         label: 'Reverse',
         Icon: ArrowLeftRight,
         run: () => context.commit(reverseEdgeOps(id, edge)),
+      },
+      {
+        label: 'Insert a shape',
+        Icon: SquarePlus,
+        run: () => {
+          const insert = insertOnEdgeOps(context.space, id)
+          if (insert) context.commit(insert.ops)
+        },
       },
     ],
     [
@@ -186,6 +259,7 @@ function groundSections(at: { x: number; y: number }, context: MenuContext): Sec
           },
           { label: 'Fit the board', Icon: Maximize, chord: 'shift+1', run: context.fit },
           { label: 'Copy the board as image', Icon: Image, run: () => context.copyImage([]) },
+          { label: 'Save the board as image…', Icon: Download, run: () => context.saveImage([]) },
         ],
     [{ label: 'Keyboard shortcuts', Icon: Keyboard, chord: 'shift+/', run: context.openShortcuts }],
   ].filter((section) => section.length)

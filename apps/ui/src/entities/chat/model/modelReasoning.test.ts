@@ -9,7 +9,7 @@ import {
 
 /**
  * A reasoning preference is stored per provider/model pair and outlives the model it was chosen
- * for. The runtime clamps what it cannot serve (as pi does), so the risk here is not a crash: it
+ * for. The runtime clamps what it cannot serve, so the risk here is not a crash: it
  * is a picker that offers a level the model will never receive, and a chip that names it.
  */
 

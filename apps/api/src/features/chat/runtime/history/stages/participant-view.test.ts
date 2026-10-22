@@ -106,14 +106,14 @@ describe('participant-view — the transcript as one participant reads it', () =
   test("a colleague's failed turn is not read as something it said", () => {
     // A provider error lands in `content` — right in a private chat, where the error IS the
     // reply. In a room the others would answer it as if a colleague had spoken.
-    const failed = row('a', DEV, 'assistant', 'Error: Unknown pi model openrouter/nope', {
+    const failed = row('a', DEV, 'assistant', 'Error: Unknown model openrouter/nope', {
       authorSnapshot: { handle: 'dev' },
       failed: true,
     })
     const [forOther] = projectParticipantView([failed], { viewer: QA })
     // Colleagues learn the turn happened and ended unfinished — never the error as speech.
     expect(forOther!.payload.content).toBe('dev: [Turn ended before it finished.]')
-    expect(JSON.stringify(forOther)).not.toContain('Unknown pi model')
+    expect(JSON.stringify(forOther)).not.toContain('Unknown model')
     // The member it happened to still sees its own turn — that is its own record of the failure.
     expect(projectParticipantView([failed], { viewer: DEV })).toHaveLength(1)
   })

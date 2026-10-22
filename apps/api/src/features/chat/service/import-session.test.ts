@@ -83,13 +83,10 @@ describe('importing an outside conversation', () => {
 
   test('the size limits name themselves so a caller can act', () => {
     expect(importProblem({ title: 't', messages: [] })).toContain('at least one message')
-    const tooMany = Array.from(
-      { length: IMPORT_MAX_MESSAGES + 1 },
-      (): ImportedMessage => ({
-        role: 'user',
-        content: 'x',
-      }),
-    )
+    const tooMany = Array.from({ length: IMPORT_MAX_MESSAGES + 1 }, (): ImportedMessage => ({
+      role: 'user',
+      content: 'x',
+    }))
     expect(importProblem({ title: 't', messages: tooMany })).toContain(String(IMPORT_MAX_MESSAGES))
     expect(importProblem({ title: 't', messages: turns })).toBeNull()
   })

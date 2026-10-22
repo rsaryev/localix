@@ -1,5 +1,8 @@
 import type { ComponentType } from 'react'
 import type { LucideIcon } from 'lucide-react'
+import type { IconComponent } from '@localixai/plugin-sdk/ui'
+import type { SpaceDocument, SpaceElement } from '../../shared/format/document'
+import type { SpaceOp } from '../../shared/ops/contract'
 
 /**
  * The VIEW half of an element type: how it draws, what it offers a person. The data half —
@@ -61,6 +64,11 @@ export interface ElementView<P = Record<string, unknown>> {
     description?: string
     /** A choice control offered before placement, such as a shape's kind. */
     variantProp?: string
+    /**
+     * The tool's variants when they are not all values of the element's own prop — the pen's
+     * eraser is a way of using the pen, not a kind of stroke an element can be.
+     */
+    variants?: Extract<ElementControl, { kind: 'choice' }>
     /** Ask for a web address before arming placement, rather than inventing a default URL. */
     input?: 'link'
     /** Freehand tools capture a pointer stroke instead of placing a preset on click. */
@@ -76,15 +84,40 @@ export interface ElementView<P = Record<string, unknown>> {
    * controls by declaring them, and the bar never learns a type's name.
    */
   controls?: readonly ElementControl[]
+  /**
+   * What can be DONE to an element of this type beyond its props — turn a flowchart into shapes,
+   * draw a Mermaid picture natively — as operations, offered on the bar and the right-click menu.
+   * `ops` answers null where the action does not apply to these props.
+   */
+  actions?: readonly ElementAction<P>[]
 }
 
+export interface ElementAction<P = Record<string, unknown>> {
+  label: string
+  Icon: LucideIcon
+  ops: (target: {
+    id: string
+    element: SpaceElement
+    props: P
+    space: SpaceDocument
+  }) => SpaceOp[] | null
+}
+
+/**
+ * `group: 'text'` gathers a control into the bar's one Text menu (face, size, alignment, ink), so
+ * a type with five text settings adds one icon to the bar, not five. `Icon` is what a choice
+ * shows on the bar when its current option has no icon of its own.
+ */
 export type ElementControl =
-  | { kind: 'color'; prop: string; label: string }
+  | { kind: 'color'; prop: string; label: string; group?: 'text' }
   | {
       kind: 'choice'
       prop: string
       label: string
-      options: readonly { value: string; label: string; Icon?: LucideIcon }[]
+      Icon?: IconComponent
+      group?: 'text'
+      /** An option's glyph can be any component: a face's name drawn in that face. */
+      options: readonly { value: string; label: string; Icon?: IconComponent }[]
     }
 
 /** Views are typed by their props; the registry holds them as the general shape. */

@@ -35,6 +35,8 @@ export const GIT_LOCAL_ENV_VARS = [
   'GIT_PREFIX',
   'GIT_SHALLOW_FILE',
   'GIT_COMMON_DIR',
+  // Listed by git before 2.40, which still ships as Apple's /usr/bin/git.
+  'GIT_INTERNAL_SUPER_PREFIX',
 ] as const
 
 export function gitHardenedEnv(extra?: NodeJS.ProcessEnv): NodeJS.ProcessEnv {

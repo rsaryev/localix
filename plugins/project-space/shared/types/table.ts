@@ -73,7 +73,38 @@ function cells(line: string): string[] {
   return out
 }
 
+/**
+ * Cells copied from a spreadsheet: one row per line, cells split by tabs — the clipboard format
+ * every spreadsheet writes. Every row is as wide as the first except the last, whose empty cells
+ * a paste's trimming took off; and two full rows at least, or it is a line of prose with a tab.
+ */
+export function isSheetText(text: string): boolean {
+  const lines = text.replace(/\r?\n$/u, '').split(/\r?\n/u)
+  const width = lines[0]?.split('\t').length ?? 0
+  const widths = lines.map((line) => line.split('\t').length)
+  return (
+    width >= 2 &&
+    widths.slice(0, -1).every((count) => count === width) &&
+    (widths.at(-1) ?? 0) <= width &&
+    widths.filter((count) => count === width).length >= 2
+  )
+}
+
+function readSheet(text: string): Pick<TableProps, 'columns' | 'rows'> | string {
+  const [head = [], ...rows] = text
+    .replace(/\r?\n$/u, '')
+    .split(/\r?\n/u)
+    .map((line) => line.split('\t').map((cell) => cell.trim()))
+  const columns = head.map((cell, index) => cell || `Column ${index + 1}`)
+  // The last row's trimmed empty cells, given back.
+  const full = rows.map((row) => [...row, ...Array(columns.length - row.length).fill('')])
+  const value = { columns, rows: full }
+  const parsed = props.safeParse(value)
+  return parsed.success ? value : parsed.error.issues[0]!.message
+}
+
 export function readTable(text: string): Pick<TableProps, 'columns' | 'rows'> | string {
+  if (isSheetText(text)) return readSheet(text)
   const lines = text
     .trim()
     .replace(/^```(?:markdown|md)?\s*\n|\n```$/gu, '')
@@ -98,13 +129,14 @@ export const tableType: ElementTypeSpec<TableProps> = {
   version: 1,
   label: 'Table / Grid',
   description:
-    'An editable native table. props: title, columns (header strings), rows (arrays of string cells of the same width). text accepts a Markdown table. Up to 20 columns and 200 rows.',
+    'An editable native table. props: title, columns (header strings), rows (arrays of string cells of the same width). text accepts a Markdown table or tab-separated rows. Up to 20 columns and 200 rows.',
   props: props as unknown as ElementTypeSpec<TableProps>['props'],
   size: { w: 420, h: 240 },
   minSize: { w: 200, h: 140 },
   text: writeTable,
   fromText: readTable,
-  claimsText: (text) => /^\s*(?:```(?:markdown|md)?\s*\n)?\|[^\n]*\n\|[\s:|-]+\|/u.test(text),
+  claimsText: (text) =>
+    isSheetText(text) || /^\s*(?:```(?:markdown|md)?\s*\n)?\|[^\n]*\n\|[\s:|-]+\|/u.test(text),
   measure: (value) => ({
     w: Math.min(1000, Math.max(360, value.columns.length * 160 + 48)),
     h: Math.min(700, Math.max(200, 94 + value.rows.length * 30)),

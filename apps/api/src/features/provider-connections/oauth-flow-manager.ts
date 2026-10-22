@@ -101,7 +101,7 @@ export function createOAuthFlowManager(deps: OAuthFlowManagerDeps) {
 
   const toInitial = (state: string, event: RuntimeAuthEvent): InitiateOAuthResponse | null => {
     if (event.type === 'auth-url') {
-      // Native pi browser flows own their fixed loopback listener and complete
+      // The engine's browser flows own their fixed loopback listener and complete
       // inside the API process. The host opens the URL and polls for the new
       // connection; it must not navigate the SPA or pretend its callbackUrl is used.
       return { state, mode: 'local-server', redirectUrl: event.url }
@@ -192,7 +192,7 @@ export function createOAuthFlowManager(deps: OAuthFlowManagerDeps) {
           return Promise.reject(new Error('OAuth provider requested an unsupported secret prompt'))
         }
 
-        // auth_url is delivered through notify(). Pi queues that notification
+        // auth_url is delivered through notify(). A flow queues that notification
         // just before asking for manual_code, so resolving the initial HTTP call
         // here races it and produces an interactive response with no URL — the
         // observed "OAuth button does nothing" failure. Only the event resolves

@@ -9,7 +9,8 @@
  * the alias won, every workspace's `bun run type-check` ran TypeScript 5.9 against code written for
  * 7, and the UI failed with hundreds of narrowing errors that no source change had caused.
  *
- * As this package's own dependency the 5.9 compiler, and its binary, stay inside this package.
+ * As this package's own dependency the JavaScript compiler (6.x, the last line with that API), and
+ * its binary, stay inside this package.
  */
 import { dirname } from 'node:path'
 import { createRequire } from 'node:module'

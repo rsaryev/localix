@@ -130,7 +130,7 @@ export function estimateItemTokens(item: ToolBackedItem): number {
   if (cached !== undefined) return cached
   const inputBytes = item.input != null ? textEncoderByteLength(JSON.stringify(item.input)) : 0
   const resultBytes = textEncoderByteLength(itemResultModelText(item))
-  // Pi replays this signature on the tool-call part for the same provider/model.
+  // The wire replays this signature on the tool-call part for the same provider/model.
   // It can contain a large encrypted reasoning payload, so treating it as free can
   // defeat VBC's context bound even when visible text is tiny.
   const signatureBytes = item.thoughtSignature ? textEncoderByteLength(item.thoughtSignature) : 0

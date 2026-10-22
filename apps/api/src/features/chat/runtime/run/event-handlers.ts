@@ -94,7 +94,7 @@ function handleTurnStart(ctx: TurnEventContext, event: EventOf<'turn_start'>) {
 }
 
 /**
- * PI emits `turn_end` only after the assistant message and every tool result for
+ * The loop emits `turn_end` only after the assistant message and every tool result for
  * that turn. This is the last safe replay boundary if the following provider
  * request overflows before producing a usable response.
  */

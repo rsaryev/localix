@@ -258,7 +258,7 @@ describe('every decrypted provider secret is registered for redaction', () => {
    *
    * There are TWO hook points, not one. `readCredential` covers every read, but it
    * is not the whole story: `modify` reads (registering the old tokens), calls `update(current)`,
-   * and returns the REFRESHED pair, which pi then authenticates with — so the value actually in use
+   * and returns the REFRESHED pair, which the engine then authenticates with — so the value actually in use
    * was unregistered until some later read. `writeCredential` closes that direction.
    */
   let db: ReturnType<typeof createDatabase>
@@ -355,7 +355,7 @@ describe('every decrypted provider secret is registered for redaction', () => {
 
   test('the REFRESHED tokens a mid-run rotation returns are registered too', async () => {
     // The defect this pins: `modify` registered only what it READ. The rotated pair it hands
-    // back is what pi signs the next request with, and it was unknown to the shield until some later
+    // back is what the engine signs the next request with, and it was unknown to the shield until some later
     // read — which for a long run never comes.
     const ctx = await setup()
     ctx.store.set(

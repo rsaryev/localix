@@ -207,7 +207,10 @@ describe('buildAgentSystemPrompt', () => {
       // Team authoring adds explicit priority and leader-owned proactive assembly (~1k chars).
       // 17.4k/14.5k, not 16.6k/13.7k: `# About Localix` (~790 chars) names the app's source and
       // logs, so a run can diagnose the host it runs in instead of guessing about it.
-      const ceiling = variant.endsWith('-conversation') ? 17_400 : 14_500
+      // 17.8k, not 17.4k: the `codemode` line (~325 chars) says when a script beats a turn per
+      // call; without it models read the tool as a second way to batch and almost never chose it.
+      // The conversation cell sat at 17,396 before it.
+      const ceiling = variant.endsWith('-conversation') ? 17_800 : 14_500
       expect(prompt.length, variant).toBeLessThan(ceiling)
     }
   })

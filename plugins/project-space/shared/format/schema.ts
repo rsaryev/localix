@@ -45,6 +45,7 @@ export type SpaceColor = z.infer<typeof colorSchema>
 export const EDGE_ROUTES = ['curved', 'straight', 'elbow'] as const
 export const EDGE_CAPS = ['none', 'arrow', 'triangle', 'circle', 'diamond', 'bar'] as const
 export const EDGE_STROKES = ['solid', 'dashed', 'dotted'] as const
+export const EDGE_WEIGHTS = ['thin', 'regular', 'bold'] as const
 
 const finite = z.number().refine(Number.isFinite, 'must be a finite number')
 const size = finite.refine((value) => value > 0, 'must be greater than 0')
@@ -83,7 +84,11 @@ export const edgeSchema = z.looseObject({
   start: z.enum(EDGE_CAPS).optional(),
   end: z.enum(EDGE_CAPS).optional(),
   stroke: z.enum(EDGE_STROKES).optional(),
+  /** The stroke's weight; absent is regular. */
+  weight: z.enum(EDGE_WEIGHTS).optional(),
   color: colorSchema.optional(),
+  /** Where the label sits along the line, 0 (start) to 1 (end); absent is the middle. */
+  labelAt: z.number().min(0).max(1).optional(),
 })
 
 export const spaceFileSchema = z.looseObject({

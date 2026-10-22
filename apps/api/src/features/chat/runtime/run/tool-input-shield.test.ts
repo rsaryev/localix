@@ -10,7 +10,7 @@ import { handleToolExecutionStart, handleToolExecutionUpdate } from './event-han
 import type { TurnEventContext } from './event-handlers'
 
 /**
- * The SEAM that was untested: the shield is unit-tested in isolation and the pi bridge is
+ * The SEAM that was untested: the shield is unit-tested in isolation and the loop is
  * tested against a hand-written fake sanitizer, so nothing pinned the composition —
  * `bootstrap → sanitizeToolInput → the event handler → the persisted item`. Both defects it was
  * asked about lived exactly there:

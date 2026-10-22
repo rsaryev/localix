@@ -139,12 +139,10 @@ export const multiParticipantStrategy: ConversationStrategy = {
         ...direct,
         ...session.agents
           .filter((member) => !direct.some((entry) => entry.agentId === member.agentId))
-          .map(
-            (member): ConversationRecipient => ({
-              agentId: member.agentId,
-              source: 'user-broadcast',
-            }),
-          ),
+          .map((member): ConversationRecipient => ({
+            agentId: member.agentId,
+            source: 'user-broadcast',
+          })),
       ]
     if (direct.length) return direct
     // A message addressed to nobody belongs to the leader: only the leader hands work out —

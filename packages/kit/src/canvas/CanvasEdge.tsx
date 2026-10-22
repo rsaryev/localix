@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useRef } from 'react'
 import {
   EdgeLabelRenderer,
   getBezierPath,
@@ -10,6 +10,7 @@ import {
   type Position,
 } from '@xyflow/react'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { EdgeCaption } from './EdgeCaption'
 import { edgeCap, type EdgeCap } from './edge-caps'
 import { floatingEnds, type HandleSide } from './edge-geometry'
 
@@ -53,8 +54,16 @@ export interface CanvasEdgeData extends Record<string, unknown> {
   stroke?: 'solid' | 'dashed' | 'dotted'
   /** Show the label at rest too, as a whiteboard does; a graph shows it only on focus. */
   labelAlways?: boolean
-  /** The label is a caption a person wrote: plain text in the board's own surface, not a count. */
+  /**
+   * The label is a caption a person wrote: plain text beside the line (`EdgeCaption`), never on
+   * it, at `labelAt` (0…1, the middle by default) of the way along.
+   */
   caption?: boolean
+  labelAt?: number
+  /** Let the caption be dragged along its line; called with where it was let go. */
+  onLabelMove?: (at: number) => void
+  /** A click on the caption selects its edge (it lies off the line, where no click reaches). */
+  onLabelSelect?: () => void
   /** The owner's own colour class at rest, for a board whose edges carry a colour. */
   toneClass?: string
 }
@@ -106,6 +115,7 @@ function CanvasEdgeImpl(props: EdgeProps<CanvasEdgeType>) {
       : data?.route === 'straight'
         ? getStraightPath(route)
         : getBezierPath(route)
+  const line = useRef<SVGPathElement>(null)
   const tone =
     emphasis === 'focus'
       ? FOCUS
@@ -124,6 +134,7 @@ function CanvasEdgeImpl(props: EdgeProps<CanvasEdgeType>) {
       />
       <g className={cn('transition-opacity duration-(--dur-fast)', tone)}>
         <path
+          ref={line}
           d={path}
           fill="none"
           stroke="currentColor"
@@ -146,27 +157,35 @@ function CanvasEdgeImpl(props: EdgeProps<CanvasEdgeType>) {
             ),
         )}
       </g>
-      {(emphasis === 'focus' || data?.labelAlways) && data?.label && (
-        <EdgeLabelRenderer>
-          <div
-            // For a board that hides small print when zoomed out: which element is a label, and
-            // whether its edge is the one being looked at (a focused label stays).
-            data-canvas-edge-label=""
-            data-emphasis={emphasis}
-            style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
-            // `bg-card`, the lift a node on the board uses: the pill must hide the line under it,
-            // and a ground token read as a black chip on the dark theme.
-            className={cn(
-              'pointer-events-none absolute border bg-card',
-              data.caption
-                ? 'max-w-56 truncate rounded-md border-border-soft px-1.5 py-0.5 text-2xs text-text-soft shadow-(--shadow-soft)'
-                : 'rounded-full border-status-info/40 px-1.5 font-mono text-3xs leading-4 text-status-info tabular-nums',
-            )}
-          >
-            {data.label}
-          </div>
-        </EdgeLabelRenderer>
-      )}
+      {(emphasis === 'focus' || data?.labelAlways) &&
+        data?.label &&
+        (data.caption ? (
+          <EdgeCaption
+            path={line}
+            d={path}
+            label={data.label}
+            at={data.labelAt}
+            fallback={{ x: labelX, y: labelY }}
+            emphasis={emphasis}
+            onMove={data.onLabelMove}
+            onSelect={data.onLabelSelect}
+          />
+        ) : (
+          <EdgeLabelRenderer>
+            <div
+              // For a board that hides small print when zoomed out: which element is a label, and
+              // whether its edge is the one being looked at (a focused label stays).
+              data-canvas-edge-label=""
+              data-emphasis={emphasis}
+              style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
+              // `bg-card`, the lift a node on the board uses: the pill must hide the line under
+              // it, and a ground token read as a black chip on the dark theme.
+              className="pointer-events-none absolute rounded-full border border-status-info/40 bg-card px-1.5 font-mono text-3xs leading-4 text-status-info tabular-nums"
+            >
+              {data.label}
+            </div>
+          </EdgeLabelRenderer>
+        ))}
     </>
   )
 }

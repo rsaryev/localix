@@ -6,6 +6,7 @@
  * whenever a change moves how a run is assembled or routed: the name says the behaviour, and a
  * failed assertion names the request or row that broke it.
  */
+import { BOARD_SCENARIOS } from './scenarios-board.mjs'
 import { GROUP_SCENARIOS } from './scenarios-group.mjs'
 import { HOOK_SCENARIOS } from './scenarios-hooks.mjs'
 import { MOD_SCENARIOS } from './scenarios-mods.mjs'
@@ -26,4 +27,5 @@ export const SCENARIOS = [
   ...WORKFLOW_SCENARIOS,
   ...HOOK_SCENARIOS,
   ...MOD_SCENARIOS,
+  ...BOARD_SCENARIOS,
 ]

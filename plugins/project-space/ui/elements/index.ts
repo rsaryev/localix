@@ -2,6 +2,8 @@ import { appLinkViews } from './app-links'
 import type { ElementView } from './contract'
 import { drawingViews } from './drawing'
 import { fileViews } from './files'
+import { flowViews } from './flow'
+import { quadrantViews } from './quadrant'
 import { mediaViews } from './media'
 import { sequenceViews } from './sequence'
 import { shapeViews } from './shapes'
@@ -17,6 +19,8 @@ import { mermaidViews } from './mermaid'
 export const ELEMENT_VIEWS: readonly ElementView[] = [
   ...drawingViews,
   ...shapeViews,
+  ...flowViews,
+  ...quadrantViews,
   ...sequenceViews,
   ...mermaidViews,
   ...tableViews,

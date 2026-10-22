@@ -25,13 +25,13 @@ import type { DbDialect } from './driver-catalog'
  *    to escape). T-SQL has no backtick at all.
  *  - `dollarQuotes`: `$tag$…$tag$` is a string in Postgres and nothing at all
  *    elsewhere.
- *  - `executableComments`: MySQL EXECUTES `/*! … *​/` (and `/*!50000 … *​/`). Treating it as
+ *  - `executableComments`: MySQL EXECUTES `/*! … *\/` (and `/*!50000 … *\/`). Treating it as
  *    an inert comment hides real statements from anything that scans the code.
  *  - `lineCommentRequiresSpace`: MySQL only starts a comment at `--` when a whitespace
  *    character follows; `1--2` is minus-minus-two. Treating a bare `--` as a comment there
  *    swallows the rest of the line, including a `;`.
  *  - `hashLineComments`: MySQL and ClickHouse accept `# …` to end of line.
- *  - `nestedBlockComments`: PostgreSQL and T-SQL match nested `/* … *​/` pairs.
+ *  - `nestedBlockComments`: PostgreSQL and T-SQL match nested `/* … *\/` pairs.
  *  - `prefixedBackslashStrings`: PostgreSQL only enables C-style backslash escaping
  *    for an `E'…'` string, rather than for every ordinary string.
  */
@@ -171,7 +171,7 @@ export interface SqlRegion {
 
 /**
  * Replace every non-code region — string literals, quoted identifiers, `--` line comments
- * and `/* *​/` block comments — with spaces, preserving newlines and, critically, LENGTH:
+ * and `/* *\/` block comments — with spaces, preserving newlines and, critically, LENGTH:
  * offsets into the result are offsets into `sql`.
  *
  * The array is built with `split('')`, i.e. UTF-16 code UNITS, because every offset here

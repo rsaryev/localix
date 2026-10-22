@@ -120,7 +120,7 @@ export function createRequestTransform(input: RequestTransformInput): RequestTra
           (serialized, i) =>
             baselineRefs?.[i] === wire[i] || serialized === JSON.stringify(wire[i]),
         )
-      // Pi's measured-prefix + trailing-estimate pattern, shared with pruning.
+      // Measured prefix + trailing estimate, the same pattern pruning uses.
       // Calibrate ONLY the known prefix. A signed global correction can erase
       // new tool-output cost once pruning reclaims more than the old measurement.
       const baselineTokens = prefixIsStable ? sumTokens(wire, 0, baselineWire.length) : 0

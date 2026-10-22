@@ -131,18 +131,16 @@ export function filterMenuEntries(filters: KanbanFilters): MenuEntry[] {
           onSelect: () => filters.setAssigneeFilter(''),
         },
         { separator: true },
-        ...filters.assignees.map(
-          (a): MenuEntry => ({
-            id: `agent:${a}`,
-            label: `@${a}`,
-            icon: monogramIcon(a, a),
-            selected: current === a,
-            keepOpen: true,
-            // A radio row: choosing the current agent again keeps it. "Any agent" is the way back
-            // to none, which the chip's second click used to be.
-            onSelect: () => filters.setAssigneeFilter(a),
-          }),
-        ),
+        ...filters.assignees.map((a): MenuEntry => ({
+          id: `agent:${a}`,
+          label: `@${a}`,
+          icon: monogramIcon(a, a),
+          selected: current === a,
+          keepOpen: true,
+          // A radio row: choosing the current agent again keeps it. "Any agent" is the way back
+          // to none, which the chip's second click used to be.
+          onSelect: () => filters.setAssigneeFilter(a),
+        })),
       ],
     })
   }

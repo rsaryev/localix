@@ -25,7 +25,7 @@ import { resultFromThrow } from './tool-error-result'
  * result the loop reads, so it is counted like any other.
  *
  * Stopping: `terminate: true` is a normal loop end (the run finalizes `completed`, so a delegated
- * child still reports). Pi ends a batch only when every result terminates, so the stop latches:
+ * child still reports). The loop ends a batch only when every result terminates, so the stop latches:
  * every later call in the run returns `terminate` without executing.
  */
 export const STUCK_RUN_LIMITS = { sameFailure: 4, consecutiveFailures: 6, identicalCalls: 8 }

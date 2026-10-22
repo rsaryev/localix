@@ -111,6 +111,9 @@ export function toFlow(view: SpaceView, registry: TypeRegistry, cache: FlowCache
   return { nodes, edges }
 }
 
+/** Stroke widths in board pixels; a cap grows with its line. */
+const EDGE_WEIGHT = { thin: 1.25, regular: 1.75, bold: 2.75 } as const
+
 function buildEdge(id: string, edge: SpaceEdge): CanvasEdgeType {
   return {
     id,
@@ -125,10 +128,11 @@ function buildEdge(id: string, edge: SpaceEdge): CanvasEdgeType {
       startCap: edge.start ?? 'none',
       endCap: edge.end ?? 'triangle',
       stroke: edge.stroke ?? 'solid',
-      weight: 1.75,
+      weight: EDGE_WEIGHT[edge.weight ?? 'regular'],
       labelAlways: true,
       caption: true,
       ...(edge.label ? { label: edge.label } : {}),
+      ...(edge.labelAt !== undefined ? { labelAt: edge.labelAt } : {}),
       toneClass: `space-tone-${edge.color ?? 'gray'} space-ink`,
     },
   }

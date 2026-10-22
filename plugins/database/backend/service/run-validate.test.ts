@@ -29,64 +29,63 @@ function liveOf(driver: DbDriver): LiveEntry {
   }
 }
 
-describe.each([['sqlite', () => createSqliteDriver({ file: ':memory:' }), '1']] as const)(
-  '%s validate',
-  (_name, makeDriver, syntaxCode) => {
-    it('locates a syntax error at the engine-reported offset, relative to the whole text', async () => {
-      const live = liveOf(makeDriver())
-      await runQuery(live, 'CREATE TABLE users(id INTEGER)')
-      const text = 'SELECT 1;\nSELEC * FROM users'
-      const { supported, results } = await runValidate(live, text)
-      expect(supported).toBe(true)
-      expect(results[0]).toEqual({ statementStart: 0, ok: true })
-      expect(results[1]).toMatchObject({
-        statementStart: text.indexOf('SELEC '),
-        ok: false,
-        offset: text.indexOf('SELEC '),
-        code: syntaxCode,
-      })
+describe.each([
+  ['sqlite', () => createSqliteDriver({ file: ':memory:' }), 'SQLITE_ERROR'],
+] as const)('%s validate', (_name, makeDriver, syntaxCode) => {
+  it('locates a syntax error at the engine-reported offset, relative to the whole text', async () => {
+    const live = liveOf(makeDriver())
+    await runQuery(live, 'CREATE TABLE users(id INTEGER)')
+    const text = 'SELECT 1;\nSELEC * FROM users'
+    const { supported, results } = await runValidate(live, text)
+    expect(supported).toBe(true)
+    expect(results[0]).toEqual({ statementStart: 0, ok: true })
+    expect(results[1]).toMatchObject({
+      statementStart: text.indexOf('SELEC '),
+      ok: false,
+      offset: text.indexOf('SELEC '),
+      code: syntaxCode,
     })
+  })
 
-    it('reports an unknown table, and passes a valid statement', async () => {
-      const live = liveOf(makeDriver())
-      await runQuery(live, 'CREATE TABLE users(id INTEGER)')
-      const { results } = await runValidate(live, 'SELECT * FROM nope; SELECT id FROM users')
-      expect(results[0]).toMatchObject({ ok: false })
-      expect(results[0]!.message).toContain('nope')
-      expect(results[1]).toMatchObject({ ok: true })
-    })
+  it('reports an unknown table, and passes a valid statement', async () => {
+    const live = liveOf(makeDriver())
+    await runQuery(live, 'CREATE TABLE users(id INTEGER)')
+    const { results } = await runValidate(live, 'SELECT * FROM nope; SELECT id FROM users')
+    expect(results[0]).toMatchObject({ ok: false })
+    expect(results[0]!.message).toContain('nope')
+    expect(results[1]).toMatchObject({ ok: true })
+  })
 
-    it('compiles DDL without executing it', async () => {
-      const live = liveOf(makeDriver())
-      await runQuery(live, 'CREATE TABLE users(id INTEGER); INSERT INTO users VALUES (1)')
-      const { results } = await runValidate(live, 'DROP TABLE users; CREATE TABLE extra(a INTEGER)')
-      expect(results.map((result) => result.ok)).toEqual([true, true])
-      expect((await runQuery(live, 'SELECT COUNT(*) FROM users')).result.rows).toEqual([[1]])
-      expect(runQuery(live, 'SELECT * FROM extra')).rejects.toBeDefined()
-    })
+  it('compiles DDL without executing it', async () => {
+    const live = liveOf(makeDriver())
+    await runQuery(live, 'CREATE TABLE users(id INTEGER); INSERT INTO users VALUES (1)')
+    const { results } = await runValidate(live, 'DROP TABLE users; CREATE TABLE extra(a INTEGER)')
+    expect(results.map((result) => result.ok)).toEqual([true, true])
+    expect((await runQuery(live, 'SELECT COUNT(*) FROM users')).result.rows).toEqual([[1]])
+    expect(runQuery(live, 'SELECT * FROM extra')).rejects.toBeDefined()
+  })
 
-    it('does not call a name an error when an earlier statement of the text creates it', async () => {
-      const live = liveOf(makeDriver())
-      const { results } = await runValidate(
-        live,
-        'CREATE TABLE fresh(a INTEGER); INSERT INTO fresh VALUES (1); SELECT nope FROM missing',
-      )
-      expect(results[1]).toMatchObject({ ok: true, skipped: 'depends-on-earlier' })
-      expect(results[2]).toMatchObject({ ok: true, skipped: 'depends-on-earlier' })
-    })
+  it('does not call a name an error when an earlier statement of the text creates it', async () => {
+    const live = liveOf(makeDriver())
+    const { results } = await runValidate(
+      live,
+      'CREATE TABLE fresh(a INTEGER); INSERT INTO fresh VALUES (1); SELECT nope FROM missing',
+    )
+    expect(results[1]).toMatchObject({ ok: true, skipped: 'depends-on-earlier' })
+    expect(results[2]).toMatchObject({ ok: true, skipped: 'depends-on-earlier' })
+  })
 
-    it('answers busy instead of waiting while a manual transaction holds the connection', async () => {
-      const live = liveOf(makeDriver())
-      const tx = await live.driver.beginTransaction!()
-      try {
-        const { results } = await runValidate(live, 'SELEC 1')
-        expect(results).toEqual([{ statementStart: 0, ok: true, skipped: 'busy' }])
-      } finally {
-        await tx.rollback()
-      }
-    })
-  },
-)
+  it('answers busy instead of waiting while a manual transaction holds the connection', async () => {
+    const live = liveOf(makeDriver())
+    const tx = await live.driver.beginTransaction!()
+    try {
+      const { results } = await runValidate(live, 'SELEC 1')
+      expect(results).toEqual([{ statementStart: 0, ok: true, skipped: 'busy' }])
+    } finally {
+      await tx.rollback()
+    }
+  })
+})
 
 describe('sqlite offsets', () => {
   it('converts the engine UTF-8 byte offset to a UTF-16 editor offset', async () => {

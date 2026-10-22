@@ -75,7 +75,7 @@ function schemaVocabulary(node: unknown, props = new Set<string>(), values = new
 const PROSE_IDENTIFIERS: Readonly<Record<string, readonly string[]>> = {
   // The description steers the model away from shelling out to these, by name.
   bash: ['cat', 'head', 'tail'],
-  // pi's description names the JavaScript a script ends with.
+  // The description names the JavaScript a script ends with.
   codemode: ['return'],
 }
 

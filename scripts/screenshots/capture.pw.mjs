@@ -25,6 +25,8 @@ for (const [key, spec] of Object.entries(capturePlan)) {
       await (await import('./agent-command.mjs')).seedAgentCommand(fixture)
     if (['kanban-board', 'kanban-conversation'].includes(spec.scenario))
       await (await import('./kanban-workbenches.mjs')).seedKanban(fixture)
+    if (spec.scenario === 'diagram-board')
+      await (await import('./diagram-board.mjs')).seedDiagramBoard(fixture)
     if (spec.scenario === 'agent-management')
       await (await import('./agent-management.mjs')).seedAgentManagement(fixture)
     if (['local-models-settings', 'semantic-search'].includes(spec.scenario))
@@ -32,16 +34,22 @@ for (const [key, spec] of Object.entries(capturePlan)) {
     const board = spec.scenario === 'answer-board'
     const prefix = board
       ? 'board'
-      : spec.scope === 'platform'
-        ? 'platform'
-        : spec.scope === 'external'
-          ? 'external'
-          : ''
+      : spec.scenario === 'diagram-board'
+        ? 'diagram'
+        : spec.scope === 'platform'
+          ? 'platform'
+          : spec.scope === 'external'
+            ? 'external'
+            : ''
     const route = `${uiOrigin}/#/project/${prefix ? fixture[`${prefix}ProjectId`] : fixture.projectId}/${prefix ? fixture[`${prefix}SessionId`] : fixture.sessionId}`
     const errors = []
     page.on('pageerror', (error) => errors.push(error.message))
     if (spec.theme)
       await page.addInitScript((theme) => localStorage.setItem('sandbox_theme', theme), spec.theme)
+    // Setup opens by itself until it has been closed once on a device; a capture is not a first
+    // launch, and the open dialog covered every surface a scenario reached for.
+    if (!spec.firstRun)
+      await page.addInitScript(() => localStorage.setItem('localix.setup.done', '1'))
     const island = spec.scenario.startsWith('island-')
     if (island) {
       await (

@@ -90,7 +90,13 @@ export async function extractViaOfficeParser(
   input: OfficeParserExtractInput,
 ): Promise<ExtractedTextDocument> {
   const lib = unwrap(await import('officeparser'))
-  const ast = await lib.parseOffice(input.bytes, { ignoreNotes: false })
+  const ast = await lib.parseOffice(input.bytes, {
+    ignoreNotes: false,
+    // officeparser 8 starts pdf.js in a child of `process.execPath` by default. Under `bun test`
+    // that parse never settled, and in the desktop app `execPath` is the packaged API binary, not
+    // a runtime for pdf.js's script; pdf.js runs in this process, as it did before 8.
+    pdfParserConfig: { separateProcess: false },
+  })
 
   const slideCount = countNodes(ast, 'slide')
   const pageCount = countNodes(ast, 'page')

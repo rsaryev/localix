@@ -113,8 +113,8 @@ describe('a garbled body warns ABOVE the body', () => {
 
   test('the warning is rendered', () => {
     expect(
-      garbled('The server sent this as `charset=windows-1251`, which this runtime cannot decode.'),
-    ).toContain('windows-1251')
+      garbled('The server sent this as `charset=utf-7`, which this runtime cannot decode.'),
+    ).toContain('utf-7')
   })
 
   test('it comes BEFORE the body — after it is no use to someone who already believed it', () => {

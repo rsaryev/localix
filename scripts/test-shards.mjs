@@ -31,6 +31,8 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
   const failed = await runConcurrently(shardCommands(Number(count), args), { cwd: process.cwd() })
   if (failed.length) {
     console.error(`[test] Failed: ${failed.join(', ')}`)
-    process.exit(1)
+    // `exitCode`, not `exit()`: a buffered shard's output is one large write to a pipe, and
+    // exiting at once cut it off — the failures it named never reached the log.
+    process.exitCode = 1
   }
 }

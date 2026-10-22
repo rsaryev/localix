@@ -119,7 +119,7 @@ Each release lists checksums in `SHA256SUMS.txt`.
 
 ## Run from source
 
-For the desktop app, install [Bun](https://bun.sh) **1.3.14**, a Rust toolchain, and your platform's
+For the desktop app, install [Bun](https://bun.sh) **1.4.4**, a Rust toolchain, and your platform's
 [Tauri prerequisites](https://tauri.app/start/prerequisites/).
 
 ```bash

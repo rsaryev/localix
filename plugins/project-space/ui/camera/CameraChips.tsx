@@ -41,7 +41,10 @@ export function CameraChips({
 
   if (!lead && !showBack && unseen === 0 && !follow.following) return null
   return (
-    <div className="nodrag nowheel pointer-events-none absolute left-1/2 top-3 z-(--z-controls) flex max-w-[calc(100%-6rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-1.5">
+    <div
+      data-canvas-chrome=""
+      className="nodrag nowheel pointer-events-none absolute left-1/2 top-3 z-(--z-controls) flex max-w-[calc(100%-6rem)] -translate-x-1/2 flex-wrap items-center justify-center gap-1.5"
+    >
       {lead}
       {showBack && (
         <Chip

@@ -9,7 +9,7 @@ import {
 } from '@localixai/kit/dialog'
 import { Kbd } from '@localixai/kit/kbd'
 import { formatChordText } from '@localixai/kit/keybindings'
-import { boardShortcuts } from './shortcuts'
+import { boardShortcuts, presentingShortcuts, writingShortcuts } from './shortcuts'
 
 /**
  * `?` — every key the board answers, grouped by what it is for (`shortcuts.ts` is the list). The
@@ -31,7 +31,7 @@ export function ShortcutsDialog({
           <DialogDescription>{keyboardHelp('edit')}</DialogDescription>
         </DialogHeader>
         <DialogBody className="grid items-start gap-6 sm:grid-cols-2">
-          {boardShortcuts().map((group) => (
+          {[...boardShortcuts(), writingShortcuts(), presentingShortcuts()].map((group) => (
             <section
               key={group.title}
               aria-label={group.title}

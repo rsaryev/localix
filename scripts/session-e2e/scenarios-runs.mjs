@@ -118,6 +118,28 @@ export const RUN_SCENARIOS = [
     },
   },
   {
+    name: 'codemode: the prompt prefers a script for dependent calls, and the script runs its tools',
+    async run(rt) {
+      const session = await rt.createSession({ title: 'Codemode' })
+      const code =
+        "const out = await tools.bash({ command: 'echo scripted-ok' }); return out.trim()"
+      const steps = {
+        localix: [{ tool: 'codemode', args: { code } }, 'The script reported scripted-ok.'],
+      }
+      const after = await rt.say(session.id, `Run a script. ${script(steps)}`)
+      const [first, ...rest] = runs(rt, after, 'localix')
+      assert.ok(first.tools.includes('codemode'), 'codemode is not on the roster')
+      assert.ok(first.system.includes('Prefer one `codemode` script to a turn per call'))
+      const answered = rest.at(-1)
+      assert.ok(answered, 'the model never read the script result')
+      assert.ok(
+        answered.messages.some((message) => message.text.includes('scripted-ok')),
+        'the script result did not reach the model',
+      )
+      assert.equal(rt.transcript(after).at(-1).text, 'The script reported scripted-ok.')
+    },
+  },
+  {
     name: '/workflows gives the agent the rule for bringing a team in',
     async run(rt) {
       const session = await rt.createSession({ title: 'Workflows' })

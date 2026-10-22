@@ -26,21 +26,19 @@ export interface ThirdPartyViewCommandOpeners {
 export function buildThirdPartyViewCommands(
   openers: ThirdPartyViewCommandOpeners,
 ): PaletteCommand[] {
-  return listThirdPartyViews().map(
-    (v): PaletteCommand => ({
-      id: `view.plugin.${v.fullName}`,
-      label: `Open ${v.title}`,
-      group: 'View',
-      effect: 'read',
-      keywords: [v.pluginName, 'plugin'],
-      run: () =>
-        openers.openWorkItem({
-          pluginName: v.pluginName,
-          projectId: v.projectId,
-          viewId: v.id,
-          fullName: v.fullName,
-          title: v.title,
-        }),
-    }),
-  )
+  return listThirdPartyViews().map((v): PaletteCommand => ({
+    id: `view.plugin.${v.fullName}`,
+    label: `Open ${v.title}`,
+    group: 'View',
+    effect: 'read',
+    keywords: [v.pluginName, 'plugin'],
+    run: () =>
+      openers.openWorkItem({
+        pluginName: v.pluginName,
+        projectId: v.projectId,
+        viewId: v.id,
+        fullName: v.fullName,
+        title: v.title,
+      }),
+  }))
 }

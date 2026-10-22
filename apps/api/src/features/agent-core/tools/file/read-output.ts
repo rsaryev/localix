@@ -71,7 +71,7 @@ export function modelFacingFile(
      * Byte offset of `output[0]` within the underlying FILE. When known, the
      * truncation marker names the exact next call (`offset=N`) instead of a
      * generic "read again with an offset" — the model should never have to
-     * guess how to get the rest (pi-style self-continuing truncation). Omit
+     * guess how to get the rest (self-continuing truncation). Omit
      * for non-file content (an outline), where file offsets don't apply.
      */
     continueFromByteOffset?: number

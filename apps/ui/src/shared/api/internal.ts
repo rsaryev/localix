@@ -214,7 +214,7 @@ export const client = hc<App>(API_BASE_URL, { fetch: apiFetch })
 // The transport hands a failure to `failure.ts` to be classified, and re-exports what it
 // answers with: every caller already imports its error helpers from here.
 export { ApiError, apiFailure, errorDetail, failureSentence } from './failure'
-import { responseError, transportFailure } from './failure'
+import { responseError, transportFailure, type FetchResponse } from './failure'
 
 /**
  * The JSON body of the SUCCESS branches of a typed Hono response.
@@ -242,12 +242,12 @@ export type OkBody<R> = R extends { status: infer S; json(): Promise<infer B> }
 export async function unwrap<R extends ClientResponse<unknown, number, ResponseFormat>>(
   response: R,
 ): Promise<OkBody<R>> {
-  if (!response.ok) throw await responseError(response as unknown as Response)
+  if (!response.ok) throw await responseError(response)
   return (await response.json()) as OkBody<R>
 }
 
 /** Throw an ApiError if a Response isn't ok — for endpoints with no body to unwrap (DELETE, fire-and-forget POST). */
-export async function assertOk(response: Response): Promise<void> {
+export async function assertOk(response: FetchResponse): Promise<void> {
   if (response.ok) return
   throw await responseError(response)
 }

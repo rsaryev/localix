@@ -81,7 +81,7 @@ describe('filterModels', () => {
   })
 
   test('lists every model on the connection, filtering only by provider', () => {
-    // The picker used to drop image/video OUTPUT models, which the pi adapter
+    // The picker used to drop image/video OUTPUT models, which an earlier runtime
     // merged into the chat catalog beside the text ones. The adapter no longer
     // lists them at all, so this is a plain provider narrowing again.
     const ids = filterModels(caps, 'p', '').map((x) => x.id)

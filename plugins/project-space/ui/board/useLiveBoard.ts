@@ -106,13 +106,36 @@ export function useLiveBoard(view: SpaceView, apply: (ops: readonly SpaceOp[]) =
   const shownEdges = useRef(
     new WeakMap<CanvasEdgeType, { selected: boolean; edge: CanvasEdgeType }>(),
   )
+  // A caption dragged along its line writes where it was let go — one stable callback per
+  // connector, so handing it over does not make every edge a new object on every render.
+  const applyRef = useRef(apply)
+  applyRef.current = apply
+  const selectRef = useRef(selection.select)
+  selectRef.current = selection.select
+  const captions = useRef(new Map<string, { move: (at: number) => void; select: () => void }>())
+  const captionOf = (id: string) => {
+    let caption = captions.current.get(id)
+    if (!caption) {
+      caption = {
+        move: (at) => applyRef.current([{ op: 'edge', id, labelAt: at }]),
+        select: () => selectRef.current([id]),
+      }
+      captions.current.set(id, caption)
+    }
+    return caption
+  }
   const edges = useMemo(
     (): CanvasEdgeType[] =>
       flow.edges.map((edge) => {
         const on = selected.has(edge.id)
         const cached = shownEdges.current.get(edge)
         if (cached?.selected === on) return cached.edge
-        const next = { ...edge, selected: on }
+        const caption = captionOf(edge.id)
+        const next = {
+          ...edge,
+          selected: on,
+          data: { ...edge.data, onLabelMove: caption.move, onLabelSelect: caption.select },
+        }
         shownEdges.current.set(edge, { selected: on, edge: next })
         return next
       }),

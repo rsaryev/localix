@@ -1,4 +1,14 @@
-import { Copy, ExternalLink, Group, Lock, LockOpen, PenLine, Trash2, Ungroup } from 'lucide-react'
+import {
+  Copy,
+  ExternalLink,
+  Group,
+  Lock,
+  LockOpen,
+  PenLine,
+  Trash2,
+  Type,
+  Ungroup,
+} from 'lucide-react'
 import { IconButton } from '@localixai/kit/icon-button'
 import { NodeToolbar, Position } from '@localixai/kit/canvas'
 import { formatChordText } from '@localixai/kit/keybindings'
@@ -10,8 +20,11 @@ import type { ElementControl } from '../elements/contract'
 import { viewOf } from '../elements'
 import { groupOps, lockOps, ungroupOps, type Selected } from './commands'
 import { ConnectionsMenu } from './ConnectionsMenu'
+import { SwitchTypeMenu } from './SwitchTypeMenu'
+import { FilterMenu } from './FilterMenu'
+import { rememberLook } from './lastLook'
 import type { BoardReading } from './useReading'
-import { BarDivider, BarSurface, ChoicePicker, ColorPicker } from './pickers'
+import { BarDivider, BarSurface, ChoicePicker, ColorPicker, StyleMenu } from './pickers'
 import { ArrangeMenu, OpacityMenu, StackMenu } from './SelectionMenus'
 
 /**
@@ -31,6 +44,7 @@ export function SelectionBar({
   onEdit,
   reading,
   focus,
+  select,
 }: {
   space: SpaceDocument
   ids: readonly string[]
@@ -41,21 +55,28 @@ export function SelectionBar({
   reading: BoardReading
   /** Select as a deliberate focus: the camera goes there. */
   focus: (ids: readonly string[]) => void
+  /** Select without moving the camera: a filter narrows what is already in view. */
+  select: (ids: readonly string[]) => void
 }) {
   const elements = ids.flatMap((id) => (space.elements[id] ? [{ id, ...space.elements[id] }] : []))
   if (elements.length === 0) return null
-  const controls = shared(elements.map((element) => viewOf(element.type)?.controls ?? []))
-  const valueOf = (prop: string) => {
-    const values = new Set(
-      elements.map((element) => {
-        const value = element.props[prop]
-        return typeof value === 'string' ? value : ''
-      }),
-    )
-    return values.size === 1 ? [...values][0] : undefined
-  }
-  const write = (prop: string, value: string) =>
+  const { offered, controls, textControls } = barControls(
+    elements.map((element) => viewOf(element.type)?.controls ?? []),
+  )
+  // Values as each type READS them, defaults filled: a note written before it had a face is
+  // set in sans, not "mixed". An empty value is a value (a snippet's "Plain text"); a colour
+  // picker reads it as the automatic colour.
+  const readProps = elements.map((element) => {
+    const read = spaceTypes.read(element.type, element.props, space.typeVersions[element.type])
+    return read.status === 'ok' ? read.props : element.props
+  })
+  const valueOf = (prop: string) => sharedValue(readProps, prop)
+  /** `null` returns the prop to its default, as the update op reads it. */
+  const write = (prop: string, value: string | null) => {
+    for (const type of new Set(elements.map((element) => element.type)))
+      rememberLook(type, { [prop]: value })
     commit(elements.map((element) => ({ op: 'update', id: element.id, props: { [prop]: value } })))
+  }
   const single = elements.length === 1 ? elements[0] : undefined
   const view = single ? viewOf(single.type) : undefined
   const read = single
@@ -108,7 +129,14 @@ export function SelectionBar({
             />
           ),
         )}
-        {controls.length > 0 && <BarDivider />}
+        <StyleMenu
+          label="Text"
+          Icon={Type}
+          controls={textControls}
+          valueOf={valueOf}
+          onPick={write}
+        />
+        {offered.length > 0 && <BarDivider />}
         {single && view?.editable && !single.locked && (
           <IconButton
             size="sm"
@@ -129,6 +157,25 @@ export function SelectionBar({
             <ExternalLink className="size-3.5" />
           </IconButton>
         )}
+        {single &&
+          read?.status === 'ok' &&
+          !single.locked &&
+          view?.actions?.map((action) => {
+            const ops = action.ops({ id: single.id, element: single, props: read.props, space })
+            return ops ? (
+              <IconButton
+                key={action.label}
+                size="sm"
+                aria-label={action.label}
+                tooltip={action.label}
+                onClick={() => commit(ops)}
+              >
+                <action.Icon className="size-3.5" />
+              </IconButton>
+            ) : null
+          })}
+        <FilterMenu space={space} ids={ids} select={select} />
+        {single && <SwitchTypeMenu space={space} id={single.id} commit={commit} />}
         {single && <ConnectionsMenu space={space} id={single.id} reading={reading} focus={focus} />}
         <OpacityMenu selection={selection} commit={commit} />
         <ArrangeMenu selection={selection} commit={commit} />
@@ -175,12 +222,41 @@ export function SelectionBar({
   )
 }
 
-/** The controls present, by prop, in every one of the lists. */
+/** The value every selected element has for `prop`, or undefined where they differ ("mixed"). */
+export function sharedValue(
+  props: readonly Record<string, unknown>[],
+  prop: string,
+): string | undefined {
+  const values = new Set(props.map((each) => (typeof each[prop] === 'string' ? each[prop] : '')))
+  return values.size === 1 ? [...values][0] : undefined
+}
+
+/**
+ * What the bar offers for a selection: the controls every selected type shares, split into those
+ * that stand on the bar and those gathered into its one Text menu.
+ */
+export function barControls(lists: readonly (readonly ElementControl[])[]) {
+  const offered = shared(lists)
+  return {
+    offered,
+    controls: offered.filter((control) => control.group !== 'text'),
+    textControls: offered.filter((control) => control.group === 'text'),
+  }
+}
+
+/**
+ * The controls present in every one of the lists. A choice is shared only when it offers the same
+ * values: a note's sizes (`auto`, `sm`…) and a shape's (`s`, `m`…) are both "Text size", and a
+ * pick from one written to the other was a value its type refuses.
+ */
 function shared(lists: readonly (readonly ElementControl[])[]): ElementControl[] {
   const [first = [], ...rest] = lists
-  return first.filter((control) =>
-    rest.every((list) =>
-      list.some((other) => other.prop === control.prop && other.kind === control.kind),
-    ),
-  )
+  const same = (a: ElementControl, b: ElementControl) =>
+    a.prop === b.prop &&
+    a.kind === b.kind &&
+    (a.kind !== 'choice' ||
+      (b.kind === 'choice' &&
+        a.options.map((option) => option.value).join() ===
+          b.options.map((option) => option.value).join()))
+  return first.filter((control) => rest.every((list) => list.some((other) => same(control, other))))
 }

@@ -7,7 +7,7 @@
  */
 /**
  * The reasoning-effort scale, ordered from least to most thinking. `xhigh` sits between `high`
- * and `max` because that is where the providers put it: pi's model data maps BOTH on Claude
+ * and `max` because that is where the providers put it: the model data maps BOTH on Claude
  * Opus 4.7/4.8, Sonnet 5 and Fable 5, while the whole GPT-5.2–5.5 family maps `xhigh` and NOT
  * `max` — so on those models our old top rung silently meant xhigh anyway, and a user who wanted
  * the top level could not name it. models.dev's effort values keep the same order.
@@ -49,10 +49,10 @@ export const DECLARABLE_REASONING_EFFORTS: readonly string[] = [
  * (which nothing downstream could carry). Meanwhile the one place that consumed a declared
  * value cast it unchecked, so a typo reached the provider.
  *
- * What a typo actually did there, measured in pi (the runtime then) rather than assumed — an earlier
+ * What a typo actually did there, measured in the runtime of the time rather than assumed — an earlier
  * version of this comment claimed it meant "no thinking", which is wrong on the provider this
  * repo most often runs: an unrecognized level does NOT degrade to "no thinking" — it degrades to
- * provider-dependent nonsense, which is worse to reason about: pi clamps it to the LOWEST
+ * provider-dependent nonsense, which is worse to reason about: the runtime clamped it to the LOWEST
  * supported level on the OpenAI family, `mapThinkingLevelToEffort` falls through to
  * `default: "high"` on adaptive Claude models (i.e. MORE thinking than most declarations ask
  * for), Google re-maps a clamped "off" back to "high", and the legacy Anthropic budget path

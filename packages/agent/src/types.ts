@@ -205,7 +205,7 @@ export const REASONING_EFFORT_OPTIONS: Array<{
   { value: 'high', label: 'High', description: 'Deep reasoning' },
   // Between `high` and `max`, because that is where providers put it: Claude Opus 4.7/4.8,
   // Sonnet 5 and Fable 5 map both, while the GPT-5.2–5.5 family maps `xhigh` and NOT `max`.
-  // A model that supports neither gets the nearest level it does support (pi clamps).
+  // A model that supports neither gets the nearest level it does support (the runtime clamps).
   { value: 'xhigh', label: 'X-High', description: 'Highest native level on models that have it' },
   { value: 'max', label: 'Max', description: 'Maximum effort' },
 ]
@@ -215,7 +215,7 @@ export function isReasoningEffort(v: string | null): v is ReasoningEffort {
 }
 
 /**
- * What a run thinks at when nobody has said otherwise. Matches pi's `DEFAULT_THINKING_LEVEL`.
+ * What a run thinks at when nobody has said otherwise. The engine's own default.
  *
  * One constant because the fallback appeared at four seams (session creation, the model picker's
  * row, the reasoning control, the composer chip) and each carried its own literal — which is how

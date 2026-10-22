@@ -169,8 +169,8 @@ export function createSkillTool(
           recordSkillUse(skill.name, skill.scope, skill.scope === 'project' ? projectId : '')
           onSkillLoaded?.(skill)
           // Progressive loading must retain provenance: bundled scripts,
-          // references, and assets are relative to the skill directory. Pi
-          // wraps explicit skill bodies with baseDir and Codex injects their
+          // references, and assets are relative to the skill directory. Other
+          // agents wrap explicit skill bodies with a baseDir or inject their
           // path; returning only the body makes those relative links unusable.
           // BOUNDED, like every other text-returning tool. The only ceiling on a skill body is
           // `MAX_SKILL_MARKDOWN_BYTES` (1 MiB) at load time, so one `get` could inject ~250k tokens of

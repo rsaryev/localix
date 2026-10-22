@@ -77,7 +77,7 @@ export const BUILTIN_TOOL_CATALOG = {
     name: 'codemode',
     label: 'Codemode',
     description:
-      'Run JavaScript that calls read, bash, edit and write: chain calls, run them in parallel, or filter large results.',
+      'Run JavaScript that calls read, bash, edit and write: chain dependent calls and cut large results down to the answer.',
     category: 'core',
     exposure: EVERYWHERE,
   },

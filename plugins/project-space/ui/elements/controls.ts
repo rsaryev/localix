@@ -1,5 +1,7 @@
 import {
+  ALargeSmall,
   Circle,
+  Code,
   Cloud,
   Crop,
   Cylinder,
@@ -7,8 +9,10 @@ import {
   FileText,
   Hexagon,
   Image as ImageIcon,
+  PaintBucket,
   RectangleHorizontal,
   Square,
+  Spline,
   SquareDashed,
   Star,
   Triangle,
@@ -29,13 +33,16 @@ const SIZE_LABEL: Record<string, string> = {
   l: 'Large',
   lg: 'Large',
   xl: 'Extra large',
+  auto: 'Fit to note',
 }
 
-/** A text-size picker over the size names a type uses (`s…xl`, or the text type's `sm…xl`). */
+/** A text-size picker over the size names a type uses (`s…xl`, the text type's `sm…xl`, `auto`). */
 export const sizeControl = (values: readonly string[]): ElementControl => ({
   kind: 'choice',
   prop: 'size',
   label: 'Text size',
+  Icon: ALargeSmall,
+  group: 'text',
   options: values.map((value) => ({ value, label: SIZE_LABEL[value] ?? value })),
 })
 
@@ -43,6 +50,7 @@ export const strokeControl: ElementControl = {
   kind: 'choice',
   prop: 'stroke',
   label: 'Line',
+  Icon: Spline,
   options: [
     { value: 'solid', label: 'Solid' },
     { value: 'dashed', label: 'Dashed' },
@@ -54,6 +62,7 @@ export const fillControl: ElementControl = {
   kind: 'choice',
   prop: 'fill',
   label: 'Fill',
+  Icon: PaintBucket,
   options: [
     { value: 'none', label: 'None' },
     { value: 'tint', label: 'Tint' },
@@ -66,6 +75,7 @@ export const codeLanguageControl: ElementControl = {
   kind: 'choice',
   prop: 'language',
   label: 'Language',
+  Icon: Code,
   options: [
     { value: '', label: 'Plain text' },
     { value: 'ts', label: 'TypeScript' },

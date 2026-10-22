@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { highlight } from 'sugar-high'
+import { highlightScript } from '@/shared/ui/code-block/highlightCode'
 import { FileCode2 } from 'lucide-react'
 import { SUGAR_HIGH_THEME } from '@/shared/ui/code-block/sugarHighTheme'
 
@@ -18,7 +18,7 @@ function greet(name: string) {
  * before it's committed to `--font-mono`.
  */
 export function EditorFontPreview({ fontCss, fontSize }: { fontCss: string; fontSize: string }) {
-  const html = useMemo(() => highlight(SNIPPET), [])
+  const html = useMemo(() => highlightScript(SNIPPET), [])
   const lineCount = SNIPPET.split('\n').length
 
   return (

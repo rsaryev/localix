@@ -51,7 +51,23 @@ registry.
    takes) added to `ELEMENT_TYPES`.
 2. A view in `ui/elements/` (content only; the node draws selection, resizing and connectors) added
    to `ELEMENT_VIEWS`. `elements.test.ts` fails until both lists name the type.
-3. Changing a type's props later means bumping its `version` and adding one migration.
+3. Changing a type's props later means bumping its `version` and adding one migration. A new
+   optional prop with a default needs neither: an older board reads as it drew, and an older build
+   carries the prop through.
+
+A type can say more, all as data the core reads without learning its name:
+
+| Field                         | Where | Does                                                                                          |
+| ----------------------------- | ----- | --------------------------------------------------------------------------------------------- |
+| `fromText`, `text`, `measure` | spec  | Written and read as text (Mermaid for `sequence`, `flow`, `quadrant`), sized by its content.  |
+| `exactText`                   | spec  | `fromText` refuses what it cannot keep, so a whole pasted Mermaid block may become the type.  |
+| `summary`                     | spec  | What a person reads in a list (no `**` marks, no Mermaid); `text` stays what the agent reads. |
+| `controls` (`group: 'text'`)  | view  | Bar pickers; the text group gathers into the one **Text** menu.                               |
+| `actions`                     | view  | Operations offered on the bar and the right-click menu (Convert to shapes, Draw natively).    |
+| `insert.variants`             | view  | Rail variants that are not the element's own values (the pen's eraser).                       |
+
+Text styles (`font`, `align`, `valign`, `ink`) are `shared/types/text-style.ts`; light marks in
+notes and labels are read by `shared/content/rich-text.ts` and typed by `rich-edit.ts`.
 
 Nothing else changes: the agent's tool descriptions, the tool rail and the drop pipeline read the
 registry.

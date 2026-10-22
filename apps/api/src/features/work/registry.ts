@@ -158,9 +158,11 @@ export function createWorkRegistry(deps: WorkRegistryDeps) {
     /** Held work no owner took back was lost with the old process. Once, after the owners load. */
     async losePending(): Promise<WorkRecord[]> {
       const endedAt = now().toISOString()
-      const lost = [...pending.values()].map(
-        (record): WorkRecord => ({ ...record, status: 'lost', endedAt }),
-      )
+      const lost = [...pending.values()].map((record): WorkRecord => ({
+        ...record,
+        status: 'lost',
+        endedAt,
+      }))
       pending.clear()
       for (const record of lost)
         await deps.repo

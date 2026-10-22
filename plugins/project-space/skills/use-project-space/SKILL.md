@@ -10,9 +10,9 @@ description: >-
 # Use the Project Space board
 
 Project Space is one board per project, kept in the project at `.localix/project-space/space.json`.
-It holds notes, text, shapes, frames, sequence diagrams, code snippets and connectors, and LIVE
-references to the project's files, folders, images, documents and web links — a file element shows
-the file as it is now and opens it.
+It holds notes, text, shapes, frames, flowcharts, sequence diagrams, code snippets and connectors,
+and LIVE references to the project's files, folders, images, documents and web links — a file
+element shows the file as it is now and opens it.
 
 ## Read, then change
 
@@ -27,21 +27,23 @@ the file as it is now and opens it.
    only refused operations rather than resending successful ones. Accepted changes are persisted
    together in one board write; per-operation acceptance is not a separate disk commit.
 
-| Operation    | Use it to                                                                        |
-| ------------ | -------------------------------------------------------------------------------- |
-| `create`     | add an element; give it an `id` to connect or group it in the same batch         |
-| `update`     | move (`x`/`y`), resize (`w`/`h`), relabel (`text`), `props`, `locked`, `opacity` |
-| `connect`    | draw a connector `from` → `to`, with an optional `label`                         |
-| `edge`       | restyle a connector (`label`, `route`, `start`/`end` caps, `stroke`)             |
-| `delete`     | remove an element (its connectors go too) or a connector                         |
-| `arrange`    | lay `ids` out as a `row`, `column` or `grid`; with `in`, a frame's contents      |
-| `align`      | line `ids` up on an edge: `left`, `center`, `right`, `top`, `middle`, `bottom`   |
-| `distribute` | equal gaps between three or more `ids`, `horizontal` or `vertical`               |
-| `group`      | make `ids` one group (`ungroup` takes the group id apart)                        |
-| `order`      | stack `ids`: `front`, `forward`, `backward` or `back`                            |
+| Operation    | Use it to                                                                         |
+| ------------ | --------------------------------------------------------------------------------- |
+| `create`     | add an element; give it an `id` to connect or group it in the same batch          |
+| `update`     | move, resize, relabel (`text`), `props`, `locked`, `opacity`; `type` changes kind |
+| `connect`    | draw a connector `from` → `to`, with an optional `label`                          |
+| `edge`       | restyle a connector (`label`, `labelAt`, `route`, caps, `stroke`, `weight`)       |
+| `delete`     | remove an element (its connectors go too) or a connector                          |
+| `arrange`    | lay `ids` out as a `row`, `column` or `grid`; with `in`, a frame's contents       |
+| `align`      | line `ids` up on an edge: `left`, `center`, `right`, `top`, `middle`, `bottom`    |
+| `distribute` | equal gaps between three or more `ids`, `horizontal` or `vertical`                |
+| `group`      | make `ids` one group (`ungroup` takes the group id apart)                         |
+| `order`      | stack `ids`: `front`, `forward`, `backward` or `back`                             |
 
 Wherever `ids` are taken, a group id stands for all its members, and a group moves, aligns and
-stacks as one piece.
+stacks as one piece. To turn an element into another kind (a note into a shape, a `mermaid`
+flowchart into a native `flow`), `update` it with `type`: it keeps its id, place, stacking, groups
+and connectors, and its props start from the new kind's defaults.
 
 ## Place without coordinates
 
@@ -70,11 +72,63 @@ element that should recede. A locked element changes only in an update that also
   diagram. This native editor accepts a sequence subset; use a `mermaid` element with `props.source`
   for complete Mermaid definitions, including branches and loops. Unsupported lines in the native
   sequence parser can be skipped, so read the saved result back.
-- **A flow** is `shape`s joined by `connect`: `kind` `rounded` for a step, `diamond` for a decision,
-  `ellipse` for start and end, `cylinder` for a database, `document`, `cloud`.
+- **A flowchart or an architecture** (steps, decisions, services, stores) is ONE `flow` element:
+  pass `text` as a Mermaid `flowchart` — `flowchart LR`, `A[Plan] --> B(Build)`,
+  `B -->|ok| C{Ready?}`, `C -.->|no| D[(DB)]`, `subgraph api [API] … end`. It lays itself out with
+  right-angled lines; mark one or two key steps `:::focal` (also `:::store`, `:::external`,
+  `:::optional`); `<br/>` starts a technical sublabel (`api[API<br/>hono:5151]`). `props.direction`
+  and `props.spacing` (`narrow`, `regular`, `wide`) restyle it without rewriting it. A line this
+  native reader cannot draw is refused with its line number, so fix it or use a `mermaid` element.
+- **A prioritisation** (impact against effort, reach against confidence) is ONE `quadrant`: pass
+  `text` as a Mermaid `quadrantChart` with `x-axis Low effort --> High effort`,
+  `y-axis Low impact --> High impact`, `quadrant-1`…`quadrant-4` (top right, top left, bottom left,
+  bottom right) and one `Item: [x, y]` per line in 0–1. Mark the one or two items the matrix is
+  about `Item:::focal: [x, y]`. The person drags items; read the props back before you reason about
+  where they now sit.
+- **Free-form shapes** joined by `connect` are for a diagram the person will rearrange by hand or
+  whose steps link to files: `kind` `rounded` for a step, `diamond` for a decision, `ellipse` for
+  start and end, `cylinder` for a database, `document`, `cloud`. A `flow` can be turned into such
+  shapes later (Convert to shapes), not back.
 - **Connectors** carry a `label`, a `route` (`curved`, `straight`, `elbow`), caps `start`/`end`
-  (`none`, `arrow`, `triangle`, `circle`, `diamond`, `bar`) and a `stroke` (`dashed` for a return or
-  an optional path).
+  (`none`, `arrow`, `triangle`, `circle`, `diamond`, `bar`), a `stroke` (`dashed` for a return or an
+  optional path), a `weight` (`thin`, `regular`, `bold`) and a `color`. The label is drawn beside
+  the line, never on it; `labelAt` (0–1, the middle by default) slides it along the line when a node
+  crowds it.
+
+## Write and set text
+
+Notes, shape labels and text elements draw light Markdown from their plain text: `**bold**`,
+`*italic*`, `++underline++`, `~~strike~~`, `==highlight==` and `` `code` ``. A note also draws one
+block per line: `# heading`, `- bullet`, `1. step`, `- [ ] task` (the person ticks it on the board)
+and `> quote`. Write the marks; the text stays readable in the board file and to you.
+
+How text is set is props, the same on every type that has text:
+
+| Prop     | Values                                     | On                      |
+| -------- | ------------------------------------------ | ----------------------- |
+| `font`   | `sans`, `serif`, `mono`, `hand`            | note, shape, text       |
+| `align`  | `start`, `center`, `end`                   | note, shape, text       |
+| `valign` | `top`, `middle`, `bottom`                  | note, shape             |
+| `ink`    | a colour name (absent is the theme's ink)  | shape, text             |
+| `size`   | `auto` fits the text to the note (default) | note: `auto`, `sm`…`xl` |
+
+Keep faces purposeful: `sans` for names, `mono` only for technical values (ports, commands, paths),
+`serif` for a title, `hand` for an aside. A shape label is a name and an optional second line in
+code, as `text: "**Build**\nbun run build"` with the second line wrapped in backticks.
+
+## Draw so it reads
+
+A diagram is done when nothing more can be taken out. Before you draw, decide what is focal.
+
+- At most about nine shapes in one frame; more is two diagrams, an overview and a detail.
+- Colour one or two focal elements (the path that matters, the component that changed); keep the
+  rest `gray`. Colour on every shape erases the signal.
+- Use `route: "elbow"` for flows and architectures; curves for loose association only.
+- A connector label is one to three words (`reads`, `on 401`, `retry`). If the relationship is
+  obvious from the layout, leave the label out.
+- `dashed` means optional, async or a return; `bold` the headline path.
+- Lay out with `arrange`, `align` and `distribute`, left to right or top to bottom, never by
+  guessing coordinates.
 
 ## Reference, never paste
 

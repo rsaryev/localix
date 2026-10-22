@@ -1,103 +1,65 @@
-// UTF-8 accounting and partial-line suffix slicing without a Node-only dependency.
+// UTF-8 sizes of JavaScript strings, and cutting a string to a byte budget from its end, without a
+// Node-only dependency.
 
-interface RuntimeBuffer {
+interface ByteCounter {
   byteLength(content: string, encoding: 'utf8'): number
 }
 
-const runtimeBuffer = (globalThis as { Buffer?: RuntimeBuffer }).Buffer
-// oxlint-disable-next-line no-control-regex -- the ASCII range 0x00-0x7f is the point: this matches any non-ASCII byte
-const nonAsciiPattern = /[^\x00-\x7f]/
+const nodeBuffer = (globalThis as { Buffer?: ByteCounter }).Buffer
+const encoder = new TextEncoder()
+const REPLACEMENT = String.fromCharCode(0xfffd)
 
-/** UTF-8 byte length of a string. Uses Buffer when available, else a manual scan. */
+const isHighSurrogate = (unit: number) => unit >= 0xd800 && unit <= 0xdbff
+const isLowSurrogate = (unit: number) => unit >= 0xdc00 && unit <= 0xdfff
+
+/**
+ * UTF-8 byte length of a string: Buffer's count where there is one, the encoder's otherwise. Both
+ * count an unpaired surrogate as the three bytes of the U+FFFD it is encoded as.
+ */
 export function utf8ByteLength(content: string): number {
-  if (runtimeBuffer) return runtimeBuffer.byteLength(content, 'utf8')
-
-  const firstNonAscii = content.search(nonAsciiPattern)
-  if (firstNonAscii === -1) return content.length
-
-  let bytes = firstNonAscii
-  for (let i = firstNonAscii; i < content.length; i++) {
-    const code = content.charCodeAt(i)
-    if (code <= 0x7f) {
-      bytes += 1
-    } else if (code <= 0x7ff) {
-      bytes += 2
-    } else if (code >= 0xd800 && code <= 0xdbff && i + 1 < content.length) {
-      const next = content.charCodeAt(i + 1)
-      if (next >= 0xdc00 && next <= 0xdfff) {
-        bytes += 4
-        i++
-      } else {
-        bytes += 3
-      }
-    } else {
-      bytes += 3
-    }
-  }
-  return bytes
+  return nodeBuffer ? nodeBuffer.byteLength(content, 'utf8') : encoder.encode(content).length
 }
 
-/** Replace any unpaired surrogate with U+FFFD so the result is valid UTF-16/UTF-8. */
-function replaceUnpairedSurrogates(content: string): string {
-  let output = ''
-  for (let i = 0; i < content.length; i++) {
-    const code = content.charCodeAt(i)
-    if (code >= 0xd800 && code <= 0xdbff) {
-      if (i + 1 < content.length) {
-        const next = content.charCodeAt(i + 1)
-        if (next >= 0xdc00 && next <= 0xdfff) {
-          output += content[i] + content[i + 1]
-          i++
-          continue
-        }
-      }
-      output += '�'
-    } else if (code >= 0xdc00 && code <= 0xdfff) {
-      output += '�'
-    } else {
-      output += content[i]
+/** Bytes of the one UTF-16 unit `unit` when it is not half of a surrogate pair. */
+const singleUnitBytes = (unit: number) => (unit < 0x80 ? 1 : unit < 0x800 ? 2 : 3)
+
+/** The string with each surrogate that has no partner swapped for U+FFFD. */
+function wellFormed(text: string): string {
+  const parts: string[] = []
+  let from = 0
+  for (let at = 0; at < text.length; at++) {
+    const unit = text.charCodeAt(at)
+    if (isHighSurrogate(unit) && at + 1 < text.length && isLowSurrogate(text.charCodeAt(at + 1))) {
+      at++
+      continue
+    }
+    if (isHighSurrogate(unit) || isLowSurrogate(unit)) {
+      parts.push(text.slice(from, at), REPLACEMENT)
+      from = at + 1
     }
   }
-  return output
+  parts.push(text.slice(from))
+  return parts.join('')
 }
 
 /**
- * Truncate a string to fit within a byte limit, keeping the END.
- * Handles multi-byte UTF-8 characters and surrogate pairs correctly.
+ * Truncate a string to fit within a byte limit, keeping the END. Never splits a surrogate pair or
+ * the bytes of one character; an unpaired surrogate in what is kept becomes U+FFFD.
  */
 export function truncateStringToBytesFromEnd(str: string, maxBytes: number): string {
   if (maxBytes <= 0) return ''
-
-  let outputBytes = 0
+  let budget = maxBytes
   let start = str.length
-  let needsReplacement = false
-  for (let i = str.length; i > 0;) {
-    let characterStart = i - 1
-    const code = str.charCodeAt(characterStart)
-    let characterBytes: number
-    let unpairedSurrogate = false
-    if (code >= 0xdc00 && code <= 0xdfff && characterStart > 0) {
-      const previous = str.charCodeAt(characterStart - 1)
-      if (previous >= 0xd800 && previous <= 0xdbff) {
-        characterStart--
-        characterBytes = 4
-      } else {
-        characterBytes = 3
-        unpairedSurrogate = true
-      }
-    } else if (code >= 0xd800 && code <= 0xdfff) {
-      characterBytes = 3
-      unpairedSurrogate = true
-    } else {
-      characterBytes = code <= 0x7f ? 1 : code <= 0x7ff ? 2 : 3
-    }
-    if (outputBytes + characterBytes > maxBytes) break
-    outputBytes += characterBytes
-    start = characterStart
-    needsReplacement ||= unpairedSurrogate
-    i = characterStart
+  let unpaired = false
+  while (start > 0) {
+    const unit = str.charCodeAt(start - 1)
+    const pair = isLowSurrogate(unit) && start > 1 && isHighSurrogate(str.charCodeAt(start - 2))
+    const cost = pair ? 4 : singleUnitBytes(unit)
+    if (cost > budget) break
+    budget -= cost
+    start -= pair ? 2 : 1
+    if (!pair && (isHighSurrogate(unit) || isLowSurrogate(unit))) unpaired = true
   }
-
-  const output = str.slice(start)
-  return needsReplacement ? replaceUnpairedSurrogates(output) : output
+  const kept = str.slice(start)
+  return unpaired ? wellFormed(kept) : kept
 }

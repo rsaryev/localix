@@ -19,7 +19,7 @@ import type { AgentStopReason } from '@localixai/agent/agents'
  * - `aborted` — the user pressed Stop; they do not need to be told.
  * - `stream_error` — an `error` event already surfaced the failure.
  *
- * `max_turns` is the only abnormal ending the pi loop can produce — its home-grown
+ * `max_turns` is the only abnormal ending the loop can produce — the old home-grown
  * predecessor's guard reasons (repeated/oscillating calls, content loop, exploration
  * stall, …) were deleted with that loop and their notices with them.
  */

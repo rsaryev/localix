@@ -162,8 +162,7 @@ export function formatSql(sql: string): string {
     )
       space = false
     else if (prev.text === '.' || t.text === '.') space = false
-    else if (prev.kind === 'word' && prev.text.endsWith('.'))
-      space = false // `t.` + `*`
+    else if (prev.kind === 'word' && prev.text.endsWith('.')) space = false // `t.` + `*`
     // Accessor/cast operators bind tight on both sides: id::text, data->'k', data->>'k'.
     else if (
       prev.text === '::' ||

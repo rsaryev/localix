@@ -72,15 +72,13 @@ export function indentationMenuEntries({
     { id: 'to-tabs', label: 'Convert Indentation to Tabs', onSelect: () => convert('tabs') },
     { separator: true },
     { header: 'Tab width' },
-    ...TAB_WIDTH_CHOICES.map(
-      (width): MenuEntry => ({
-        id: `width-${width}`,
-        label: `${width} spaces`,
-        selected: tabWidth === width,
-        keepOpen: true,
-        onSelect: () => setWidth(width),
-      }),
-    ),
+    ...TAB_WIDTH_CHOICES.map((width): MenuEntry => ({
+      id: `width-${width}`,
+      label: `${width} spaces`,
+      selected: tabWidth === width,
+      keepOpen: true,
+      onSelect: () => setWidth(width),
+    })),
   ]
 }
 
@@ -117,14 +115,12 @@ export function languageMenuEntries({
       : []
   return [
     ...reset,
-    ...SUPPORTED_LANGUAGE_IDS.map(
-      (id): MenuEntry => ({
-        id: `lang-${id}`,
-        label: languageLabel(id),
-        selected: language === id,
-        onSelect: () => onLanguageChange(id === autoLanguage ? null : id),
-      }),
-    ),
+    ...SUPPORTED_LANGUAGE_IDS.map((id): MenuEntry => ({
+      id: `lang-${id}`,
+      label: languageLabel(id),
+      selected: language === id,
+      onSelect: () => onLanguageChange(id === autoLanguage ? null : id),
+    })),
   ]
 }
 

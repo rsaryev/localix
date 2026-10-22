@@ -4,12 +4,9 @@ import { DEFAULT_REASONING_EFFORT, REASONING_EFFORT_OPTIONS, type ReasoningEffor
  * WHICH REASONING LEVELS A MODEL OFFERS, AND WHAT A STORED LEVEL BECOMES ON IT — the one rule the
  * picker, `/model`, the "All agents" batch, the agent editor and the server's route writes share.
  *
- * Both halves are the runtime's, not Localix's. The level list is the model's
- * `CatalogModel.reasoningEfforts`, which the pi adapter fills with pi's `getSupportedThinkingLevels`
- * (`off` included exactly where pi can send no reasoning). The clamp below is pi's
- * `clampThinkingLevel` applied to that list — this package is engine-neutral and cannot import pi,
- * so the adapter's conformance test (`catalog-reasoning.test.ts`) pins the two to the same answer
- * for every catalog model and level.
+ * The level list is the model's `CatalogModel.reasoningEfforts`, which the engine fills from the
+ * catalog (`off` included exactly where the model can run without reasoning). The clamp below is
+ * applied to that list, so the picker and the engine agree on what a stored level becomes.
  */
 
 export interface ReasoningModel {
@@ -21,7 +18,7 @@ export interface ReasoningModel {
 
 const OFF: ReasoningEffort = 'off'
 
-/** pi's `EXTENDED_THINKING_LEVELS`: `off`, then the canonical scale. */
+/** `off`, then the canonical scale. */
 const LEVELS: ReasoningEffort[] = REASONING_EFFORT_OPTIONS.map((option) => option.value)
 
 function available(efforts: readonly string[] | undefined): ReasoningEffort[] {
@@ -39,8 +36,7 @@ export function modelReasoningOptions(
 }
 
 /**
- * The level this model will actually be asked for, given a stored preference: pi's
- * `clampThinkingLevel` — the level itself if offered, else the nearest offered level upward, then
+ * The level this model will actually be asked for, given a stored preference: the level itself if offered, else the nearest offered level upward, then
  * downward.
  */
 export function clampModelReasoning(

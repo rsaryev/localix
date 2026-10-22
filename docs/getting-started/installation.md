@@ -18,13 +18,13 @@ does not mean an installer is publicly available.
 
 Run these commands from the repository root.
 
-| Command                         | Result                                                                             | Boundary                                                                                  |
-| ------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `bun install --frozen-lockfile` | Installs the exact Bun workspace lockfile.                                         | Requires Bun 1.3.14. This repository does not use npm or Yarn for workspace installation. |
-| `bun run dev`                   | Opens the native Tauri window and supervises the API and Vite development servers. | This is an unbundled development run.                                                     |
-| `bun run dev:web`               | Starts the API and browser workspace with a separate development database.         | No Rust toolchain is needed; native desktop bridges are unavailable.                      |
-| `bun run dev:workspace`         | Starts the API and workspace development tasks without the native shell.           | Native file dialogs, deep links, and desktop update APIs are unavailable.                 |
-| `bun run build:desktop`         | Builds a Tauri bundle for the current host.                                        | It is not a cross-build, signed release, or updater-enabled release artifact.             |
+| Command                         | Result                                                                             | Boundary                                                                                 |
+| ------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `bun install --frozen-lockfile` | Installs the exact Bun workspace lockfile.                                         | Requires Bun 1.4.4. This repository does not use npm or Yarn for workspace installation. |
+| `bun run dev`                   | Opens the native Tauri window and supervises the API and Vite development servers. | This is an unbundled development run.                                                    |
+| `bun run dev:web`               | Starts the API and browser workspace with a separate development database.         | No Rust toolchain is needed; native desktop bridges are unavailable.                     |
+| `bun run dev:workspace`         | Starts the API and workspace development tasks without the native shell.           | Native file dialogs, deep links, and desktop update APIs are unavailable.                |
+| `bun run build:desktop`         | Builds a Tauri bundle for the current host.                                        | It is not a cross-build, signed release, or updater-enabled release artifact.            |
 
 ## How it works
 
@@ -64,7 +64,7 @@ release actually published.
 
 | Toolchain | Recorded version           | Scope                                                                                          |
 | --------- | -------------------------- | ---------------------------------------------------------------------------------------------- |
-| Bun       | 1.3.14                     | Package manager, development runtime, CI, and bundled API sidecar.                             |
+| Bun       | 1.4.4                      | Package manager, development runtime, CI, and bundled API sidecar.                             |
 | Rust      | 1.96.1                     | Pinned by `apps/desktop-tauri/src-tauri/rust-toolchain.toml`; rustup installs it on first use. |
 | Node.js   | ≥18 for CLI; 24 in Actions | CLI workspace build and JavaScript actions in CI. The application runtime uses Bun.            |
 

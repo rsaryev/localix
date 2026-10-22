@@ -18,10 +18,10 @@ const IMAGE_MEDIA_TYPES = new Set<ImageContent['mediaType']>([
 /**
  * Whether the wire can carry these bytes as a real `ImageContent` part.
  *
- * THE boundary, in one place. It used to be re-listed in the pi codec and again in the
+ * THE boundary, in one place. It used to be re-listed in the wire codec and again in the
  * composer, and the copies were consistent — but the SPILL decision asked a different
  * question ("is it an image?") and so excluded every `image/*` from spilling on the
- * grounds that "pi carries ImageContent". That grounds only holds for these four: a
+ * grounds that "the wire carries ImageContent". That grounds only holds for these four: a
  * HEIC, SVG, BMP or TIFF was excluded from spilling AND unrepresentable on the wire, so
  * it reached the model as the bare text stub `[Attached file: x.heic]`. Anything this
  * returns false for must be given to the model as a FILE ON DISK, not as bytes.
