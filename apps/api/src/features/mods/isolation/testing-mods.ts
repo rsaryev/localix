@@ -2,10 +2,12 @@ import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 import { INERT_MOD_PORTS, type ModScene, type ModSource } from '../contracts'
 import { createModsHost, type ModsHostOptions } from '../host'
+import type { ModVmPort } from './mod-vm'
 
 /**
- * A mods host running real hooks modules, each in its worker, for the isolation tests: mods by
- * name and source, what they report and log, and a wait for a report. Not a test itself.
+ * A mods host running real hooks modules, each in its VM, for the isolation tests: mods by name
+ * and source, what they report, log and print, and a wait for a report. The test hands it the VMs
+ * (`createScriptVms` of `@localixai/engine-scripts`). Not a test itself.
  */
 
 const scratch = tempDirPerTest('mods-isolation', {})
@@ -41,15 +43,16 @@ export function manualClock() {
   }
 }
 
-export async function hostWithWorkers(
+export async function hostWithVms(
   mods: Record<string, string>,
-  options: ModsHostOptions = {},
+  options: ModsHostOptions & { vms: ModVmPort },
   /** Runs while the first reconcile is still loading (a test that drives the clock meanwhile). */
   whileLoading?: () => Promise<void>,
 ) {
   const dir = scratch()
   const reports: string[] = []
   const logged: string[] = []
+  const printed: string[] = []
   const waiters: Array<{ match: string; resolve: (line: string) => void }> = []
   const report = (plugin: string, message: string) => {
     const line = `${plugin}: ${message}`
@@ -67,7 +70,7 @@ export async function hostWithWorkers(
       report,
       log: (_scene, line) => void logged.push(line.text),
     },
-    options,
+    { print: (level, line) => void printed.push(`${level} ${line}`), ...options },
   )
   const sources: ModSource[] = Object.entries(mods).map(([plugin, code]) => {
     const root = join(dir, plugin)
@@ -82,6 +85,7 @@ export async function hostWithWorkers(
     scene,
     reports,
     logged,
+    printed,
     /** A command of `plugin`'s, as a person typing it would run it. */
     command: (plugin: string, command: string) =>
       host.runCommand({ command }, scene, new Set([plugin])) as Promise<{ text?: string }>,

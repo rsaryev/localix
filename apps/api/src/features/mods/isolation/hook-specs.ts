@@ -1,11 +1,11 @@
 import { plainDataProblem, type Matcher } from '@localixai/claude-plugin/mods'
 
 /**
- * The hooks a worker says its module registered, read on the host as untrusted data: each becomes
+ * The hooks a VM says its module registered, read on the host as untrusted data: each becomes
  * an entry of the engine every mod's events run through, so a malformed one — an event name that
  * is no string, a matcher that is no plain data (a RegExp the host would run on its own thread) —
- * refuses the load rather than reach the engine. A RegExp matcher is matched in the worker, which
- * sends `{}` here (`worker-main.ts`).
+ * refuses the load rather than reach the engine. A RegExp matcher is matched in the VM, which
+ * sends `{}` here (`guest/hooks.ts`).
  */
 
 export interface HookSpec {
@@ -16,7 +16,7 @@ export interface HookSpec {
   onError?: { id: number; generator: boolean }
 }
 
-/** More hooks than any module registers; a worker claiming more is refused. */
+/** More hooks than any module registers; a VM claiming more is refused. */
 const MAX_HOOKS = 1_000
 /** Longer than any event name or pattern. */
 const MAX_EVENT_CHARS = 200
@@ -32,7 +32,7 @@ const isPlainObject = (value: unknown): value is Record<string, unknown> => {
 /** The specs in `answer`, copied, or a throw naming what is wrong. */
 export function readHookSpecs(answer: unknown): HookSpec[] {
   const hooks = isPlainObject(answer) ? answer.hooks : undefined
-  if (!Array.isArray(hooks)) throw new Error('the worker answered no list of hooks')
+  if (!Array.isArray(hooks)) throw new Error('the VM answered no list of hooks')
   if (hooks.length > MAX_HOOKS) throw new Error(`the module registered over ${MAX_HOOKS} hooks`)
   return hooks.map(readSpec)
 }

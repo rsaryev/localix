@@ -9,71 +9,103 @@ import { createEndpoint, type Handler } from './endpoint'
 import { readHookSpecs } from './hook-specs'
 import { createRateLimit, truncated } from './rate-limit'
 import { createCalls } from './stand-in'
-import { startWatchdog, SUPERVISOR_CLOCK, type Watchdog } from './watchdog'
 
 /**
- * THE HOST SIDE of one mod instance's worker (`worker-main.ts`). The engine keeps running every
- * chain here; each hook the module registered is a stand-in that runs the module's hook in the
- * worker, serving its `$` calls and its `next` with the `$` and `next` of that run — so budgets,
- * pauses, retries and streams behave as they do for a hook in this process (`stand-in.ts`).
+ * THE HOST SIDE of one mod instance's VM: a QuickJS VM of its own, in a worker thread, running the
+ * mods runtime (`guest/`) and then the hooks module. The engine keeps running every chain here;
+ * each hook the module registered is a stand-in that runs the module's hook in the VM, serving
+ * its `$` calls and its `next` with the `$` and `next` of that run — so budgets, pauses, retries
+ * and streams behave as they do for a hook in this process (`stand-in.ts`).
  *
- * The worker starts with no environment (`Bun.env` is empty there). Whatever it sends is
- * untrusted: the hooks it registered are checked (`hook-specs.ts`), what it sends is bounded
- * (`WIRE_LIMITS`), as are its reports and the calls it has in flight at once. A worker that does
- * not finish loading within `hangMs`, holds its thread (`watchdog.ts`), crashes or
- * exits is terminated, and `onDeath` tells the host. The host's own thread never waits on it.
+ * The VM has no environment, file, network or process of its own; `$` is its only way out. What it
+ * sends is untrusted: the hooks it registered are checked (`hook-specs.ts`), what it sends is
+ * bounded (`WIRE_LIMITS`), as are its console lines, its unhandled rejections and the calls it has
+ * in flight at once. The VM itself bounds its heap (`memoryLimitBytes`: an allocation past it
+ * fails inside the VM) and its turns (a turn past `hangMs` is interrupted). A VM that did not
+ * finish loading within `hangMs`, held its thread, or crashed is stopped, and `onDeath` tells the
+ * host. The host's own thread never waits on it.
  */
 
-export interface ModWorkerOptions {
-  /** The bundled hooks module, sent to the worker as text (`module-build.ts`). */
+/**
+ * A JavaScript VM a mod instance runs in, exchanging JSON text with the host: a long-lived VM of
+ * `@localixai/engine-scripts` (`createScriptVms`), which the composition root hands the host.
+ */
+export interface ModVmPort {
+  start(input: {
+    runtime: string
+    name: string
+    sliceMs: number
+    memoryLimitBytes?: number
+    onMessage(json: string): void
+    onUnhandledRejection?(message: string): void
+    onExit(reason: string): void
+  }): { send(json: string): void; stop(): void }
+}
+
+export interface ModVmOptions {
+  vms: ModVmPort
+  /** The mods runtime the VM runs first (`guest-file.ts`). */
+  runtime: string
+  /** The bundled hooks module, sent to the VM as text (`module-build.ts`). */
   code: string
   /** What the module's stack traces name it. */
   name: string
-  workerUrl: string | URL
-  /** No answer to a ping, or an unsettled `register`, for this long: the worker is stopped. */
+  /** An unsettled `register`, or a turn that holds the VM's thread, for this long: the VM goes. */
   hangMs: number
-  /** The clock the worker is watched on; tests drive their own. */
-  clock?: BudgetClock
+  /** The VM's heap. */
+  memoryLimitBytes: number
+  /** The clock a load's budget runs on; tests drive their own. */
+  clock: BudgetClock
   /** The instance's `$` for a call a closure makes after its hook ended. */
   apiOf: () => ModsApi | undefined
-  /** What the worker reports and survives: a rejection nothing handled. */
+  /** What the VM reports and survives: a rejection nothing handled. */
   report: (message: string) => void
-  /** The worker hung, crashed or exited by itself, and is terminated. */
+  /** Where the module's `console` lines go, cut and bounded. */
+  print?: (level: 'log' | 'error', line: string) => void
+  /** The VM held its thread or crashed, and is stopped. */
   onDeath: (reason: string) => void
 }
 
-export interface ModWorker {
+export interface ModVm {
   register: RegisterFunction
-  /** The element tables `$.ui.resolve` answers in the worker, by component. */
+  /** The element tables `$.ui.resolve` answers in the VM, by component. */
   setTables(tables: ReadonlyMap<string, unknown>): void
   alive(): boolean
-  /** Terminates the worker; nothing is reported. */
+  /** Stops the VM; nothing is reported. */
   stop(): void
-  /** Terminates the worker and reports it dead, with `reason`. */
-  kill(reason: string): void
 }
 
 /**
- * What one value from a worker may hold. The nesting is plain data's; the count is ten times
- * plain data's, since a whole conversation's messages cross it (`session.compact`).
+ * What one value from a VM may hold. The nesting is plain data's; the count is ten times plain
+ * data's, since a whole conversation's messages cross it (`session.compact`).
  */
 export const WIRE_LIMITS = { depth: PLAIN_DATA_LIMITS.depth, values: 10 * PLAIN_DATA_LIMITS.values }
-/** `$` calls, `next`s and invocations one worker may have waiting on the host at once. */
+/** `$` calls, `next`s and invocations one VM may have waiting on the host at once. */
 export const MAX_PENDING = 1_024
-/** A worker's reports: at most so many a minute, each cut to so many characters. */
+/** A VM's reports: at most so many a minute, each cut to so many characters. */
 const REPORTS = { max: 20, windowMs: 60_000, chars: 1_000 }
+/** The module's console: at most so many lines in a window, each cut to so many characters. */
+const LINES = { max: 200, windowMs: 10_000, chars: 4_000 }
 
 type Fn = (...args: unknown[]) => unknown
 
-export function startModWorker(options: ModWorkerOptions): ModWorker {
-  const clock = options.clock ?? SUPERVISOR_CLOCK
-  const worker = new Worker(options.workerUrl, { env: {}, smol: true } as WorkerOptions)
+const printToConsole = (level: 'log' | 'error', line: string) =>
+  level === 'error' ? console.error(line) : console.log(line)
+
+export function startModVm(options: ModVmOptions): ModVm {
+  const { clock } = options
   let dead = false
   let pending = 0
-  let watchdog: Watchdog | undefined
-  let markReady!: () => void
-  const ready = new Promise<void>((resolve) => (markReady = resolve))
   const reports = createRateLimit({ max: REPORTS.max, windowMs: REPORTS.windowMs, now: clock.now })
+  const lines = createRateLimit({ max: LINES.max, windowMs: LINES.windowMs, now: clock.now })
+  const print = options.print ?? printToConsole
+
+  const report = (message: string) => {
+    const verdict = reports.take()
+    if (verdict === 'pass') options.report(truncated(message, REPORTS.chars))
+    else if (verdict === 'first-drop')
+      options.report(`more than ${REPORTS.max} reports in a minute; the rest are dropped`)
+  }
 
   /** A handler that counts while it waits, refusing past `MAX_PENDING`. */
   const bounded =
@@ -94,7 +126,7 @@ export function startModWorker(options: ModWorkerOptions): ModWorker {
     }
 
   const endpoint = createEndpoint({
-    post: (message) => worker.postMessage(message),
+    post: (message) => vm.send(JSON.stringify(message)),
     limits: WIRE_LIMITS,
     malformed: (reason) => die(`sent ${reason}`),
     handlers: {
@@ -129,14 +161,13 @@ export function startModWorker(options: ModWorkerOptions): ModWorker {
       'stream.result': bounded(({ call, id }: { call: number; id: number }) =>
         calls.within(call, () => streamOf(call, id).result),
       ),
-      report: (({ message }: { message: unknown }) => {
-        const verdict = reports.take()
-        if (verdict === 'pass') options.report(truncated(String(message), REPORTS.chars))
+      console: (({ level, line }: { level: unknown; line: unknown }) => {
+        const verdict = lines.take()
+        if (verdict === 'pass')
+          print(level === 'error' ? 'error' : 'log', truncated(String(line), LINES.chars))
         else if (verdict === 'first-drop')
-          options.report(`more than ${REPORTS.max} reports in a minute; the rest are dropped`)
+          print('error', `[mod] console: more than ${LINES.max} lines; some dropped`)
       }) as Handler,
-      crash: (({ message }: { message: unknown }) =>
-        die(`crashed: ${truncated(String(message), REPORTS.chars)}`)) as Handler,
     },
     builtIns: { invoke: bounded },
   })
@@ -148,36 +179,29 @@ export function startModWorker(options: ModWorkerOptions): ModWorker {
     return stream
   }
 
-  worker.addEventListener('message', (event: MessageEvent) => {
-    const message = event.data as { t?: unknown } | null
-    if (message?.t === 'pong') watchdog?.pong()
-    else if (message?.t === 'ready') {
-      // A worker still starting is not looked at: it answers nothing until its module ran.
-      watchdog ??= startWatchdog({
-        clock,
-        hangMs: options.hangMs,
-        ping: () => worker.postMessage({ t: 'ping' }),
-        die,
-      })
-      markReady()
-    } else endpoint.receive(message)
+  const vm = options.vms.start({
+    runtime: options.runtime,
+    name: 'mods-runtime.js',
+    sliceMs: options.hangMs,
+    memoryLimitBytes: options.memoryLimitBytes,
+    onMessage(json) {
+      let frame: unknown
+      try {
+        frame = JSON.parse(json)
+      } catch {
+        return die('sent a frame that is not JSON')
+      }
+      endpoint.receive(frame)
+    },
+    onUnhandledRejection: (message) => report(`unhandled rejection: ${message}`),
+    onExit: (reason) => die(reason),
   })
-  worker.addEventListener('error', (event: ErrorEvent) => {
-    event.preventDefault()
-    die(`crashed: ${truncated(crashMessage(event.message), REPORTS.chars)}`)
-  })
-  worker.addEventListener('close', () => die('exited'))
 
   function finish(error: Error) {
     dead = true
-    watchdog?.stop()
     endpoint.close(error)
     calls.clear()
-    try {
-      void worker.terminate()
-    } catch {
-      // Gone already.
-    }
+    vm.stop()
   }
 
   function die(reason: string) {
@@ -188,16 +212,12 @@ export function startModWorker(options: ModWorkerOptions): ModWorker {
 
   return {
     async register(on, registerOptions) {
-      // Loading is a hook's work too: past the budget, the worker goes and the load fails.
+      // Loading is a hook's work too: past the budget, the VM goes and the load fails.
       const cancel = clock.setTimer(
         () => die(`did not finish loading within ${options.hangMs} ms`),
         options.hangMs,
       )
       try {
-        await Promise.race([
-          ready,
-          new Promise((resolve) => worker.addEventListener('close', resolve)),
-        ])
         const answer = await endpoint.request('load', {
           code: options.code,
           name: options.name,
@@ -220,7 +240,6 @@ export function startModWorker(options: ModWorkerOptions): ModWorker {
     stop() {
       if (!dead) finish(new Error('the hooks module was stopped'))
     },
-    kill: die,
   }
 }
 
@@ -229,16 +248,4 @@ function ownMember(owner: object, key: unknown): Record<string, unknown> | undef
   return typeof key === 'string' && Object.hasOwn(owner, key)
     ? (owner as Record<string, Record<string, unknown>>)[key]
     : undefined
-}
-
-/**
- * The error of a worker's `error` event: Bun prints the source around the throw first, then
- * `error: <message>`, then the stack; the message alone is what a person needs.
- */
-function crashMessage(printed: string): string {
-  const line = printed
-    .split('\n')
-    .reverse()
-    .find((one) => one.startsWith('error: '))
-  return line ? line.slice('error: '.length) : (printed.split('\n')[0] ?? printed)
 }

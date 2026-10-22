@@ -1,5 +1,6 @@
 import { expect, test } from 'bun:test'
 import { join } from 'node:path'
+import { createScriptVms } from '@localixai/engine-scripts'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 import { INERT_MOD_PORTS, type ModSource } from './contracts'
 import { createModsHost } from './host'
@@ -42,13 +43,16 @@ test('$.state keeps a pane’s value: a write redraws it, a reload keeps it, a r
   })
   let changes = 0
   const reports: string[] = []
-  const host = createModsHost({
-    ...INERT_MOD_PORTS,
-    dataDir: (plugin) => join(dir, 'data', plugin),
-    workspaceDir: dir,
-    changed: () => (changes += 1),
-    report: (plugin, message) => reports.push(`${plugin}: ${message}`),
-  })
+  const host = createModsHost(
+    {
+      ...INERT_MOD_PORTS,
+      dataDir: (plugin) => join(dir, 'data', plugin),
+      workspaceDir: dir,
+      changed: () => (changes += 1),
+      report: (plugin, message) => reports.push(`${plugin}: ${message}`),
+    },
+    { vms: createScriptVms() },
+  )
   const source: ModSource = {
     plugin: 'counter',
     root,

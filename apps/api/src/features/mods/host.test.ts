@@ -3,12 +3,14 @@ import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 import { z } from 'zod'
 import { defineAgentTool, type AgentTool } from '@localixai/agent/agents'
+import { createScriptVms } from '@localixai/engine-scripts'
 import type { ModScene, ModSource, ModsPorts } from './contracts'
 import { createModsHost } from './host'
 import { instanceIdOf } from './instance-id'
 import { createModRunScope } from './run-scope'
 
 const scratch = tempDirPerTest('mods-host', {})
+const vms = createScriptVms()
 
 /** The tutorial mod from Claude Code's docs, extended with a tool, a pane and a guard. */
 const FIRST_MOD = `
@@ -70,7 +72,7 @@ async function loadFirstMod() {
     'hooks/register.jsx': FIRST_MOD,
   })
   const { value, changes, reports } = ports(dir)
-  const host = createModsHost(value)
+  const host = createModsHost(value, { vms })
   const source: ModSource = {
     plugin: 'first-mod',
     root,
@@ -199,18 +201,21 @@ describe('mods host', () => {
       `,
     })
     const { value, reports } = ports(dir)
-    const host = createModsHost({
-      ...value,
-      readSession: async (scene) => ({
-        messages: [
-          { role: 'user', text: 'one', toolUses: [] },
-          { role: 'assistant', text: 'ok', toolUses: [] },
-          { role: 'user', text: 'two', toolUses: [] },
-        ],
-        model: 'claude-opus',
-        context: { window: 200_000, tokens: scene.sessionId === 's1' ? 50_000 : 0 },
-      }),
-    })
+    const host = createModsHost(
+      {
+        ...value,
+        readSession: async (scene) => ({
+          messages: [
+            { role: 'user', text: 'one', toolUses: [] },
+            { role: 'assistant', text: 'ok', toolUses: [] },
+            { role: 'user', text: 'two', toolUses: [] },
+          ],
+          model: 'claude-opus',
+          context: { window: 200_000, tokens: scene.sessionId === 's1' ? 50_000 : 0 },
+        }),
+      },
+      { vms },
+    )
     await host.reconcile([
       {
         plugin: 'session-mod',
@@ -256,7 +261,7 @@ describe('mods host', () => {
       }
     }
     const { value, reports } = ports(dir)
-    const host = createModsHost(value)
+    const host = createModsHost(value, { vms })
     await host.reconcile([
       mod(
         'gate',

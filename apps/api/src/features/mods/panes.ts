@@ -224,7 +224,5 @@ export function createModPanes(deps: {
   }
 }
 
-export type ModPanes = ReturnType<typeof createModPanes>
-
 /** Who raised a `Client`'s events: code on the screen, seated with its plugin. */
 const CLIENT_ORIGIN: HookOrigin = { plugin: 'client', tier: 'user' }

@@ -15,9 +15,19 @@
  * `Object.prototype`) become accessor pairs instead: reading returns the built-in value, and
  * assigning on an instance gives that instance its own property.
  */
-export const LOCKDOWN_SOURCE = `(function hardenIntrinsics() {
+const SCRIPT_SHADOWABLE = `["constructor", "name", "message", "toString", "toLocaleString", "valueOf", "toJSON"]`
+
+/**
+ * A long-lived VM runs code written for an ordinary runtime, so it takes SES's whole list: the
+ * methods such code commonly assigns on its own objects (`list.push = …`, `fn.call = …`).
+ */
+const MODULE_SHADOWABLE = `["constructor", "name", "message", "toString", "toLocaleString", "valueOf",
+  "toJSON", "hasOwnProperty", "isPrototypeOf", "propertyIsEnumerable", "push", "concat", "bind",
+  "apply", "call", Symbol.iterator, Symbol.asyncIterator]`
+
+const lockdownSource = (shadowable: string) => `(function hardenIntrinsics() {
   "use strict";
-  const SHADOWABLE = ["constructor", "name", "message", "toString", "toLocaleString", "valueOf", "toJSON"];
+  const SHADOWABLE = ${shadowable};
   const visited = new WeakSet([globalThis]);
   const worklist = [];
 
@@ -105,3 +115,9 @@ export const LOCKDOWN_SOURCE = `(function hardenIntrinsics() {
     Object.freeze(target);
   }
 })();`
+
+/** What a script's prelude runs first (`prelude.ts`). */
+export const LOCKDOWN_SOURCE = lockdownSource(SCRIPT_SHADOWABLE)
+
+/** What a long-lived VM runs once its runtime is in place (`worker-vm.ts`). */
+export const MODULE_LOCKDOWN_SOURCE = lockdownSource(MODULE_SHADOWABLE)

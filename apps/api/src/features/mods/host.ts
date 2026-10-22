@@ -16,18 +16,17 @@ import { createHooksLoader, type HooksOptions, type LoadedMod } from './hooks-lo
 import { instanceIdOf, pluginOfInstance } from './instance-id'
 import { judgeJoin, resolveTables } from './joining'
 import { createMeasurer } from './measure'
-import type { ModWorker } from './isolation/mod-worker'
-import { SUPERVISOR_CLOCK } from './isolation/watchdog'
+import type { ModVm } from './isolation/mod-vm'
 import { createModPanes } from './panes'
 import { createModRegistry } from './registry'
-import { createModHealth, RESTART_RULES } from './restarts'
+import { createModHealth, RESTART_RULES, SUPERVISOR_CLOCK } from './restarts'
 
 /**
  * The process-wide mods host. Every enabled plugin with a hooks module is bundled here once, and
  * runs once per project, as a Claude Code session runs in one directory: an instance per working
  * directory, started (`session.start` with that `cwd`) the first time a conversation there needs
  * it, and one for the workspace at load, so a mod's commands and panes are there before any chat.
- * An instance runs in a worker of its own (`hooks-load.ts`); one whose worker died starts again,
+ * An instance runs in a VM of its own (`hooks-load.ts`); one whose VM died starts again,
  * later or not at all when it keeps dying (`restarts.ts`). `session.end` fires when it goes — its
  * plugin turned off or changed, Localix stopping, or the instance the least recently used past it.
  */
@@ -40,7 +39,7 @@ interface Instance {
   cwd: string
   usedAt: number
   dispose(): void
-  worker?: ModWorker
+  vm?: ModVm
 }
 
 /** Why the mods running in a project refused one more (`plugin.register`). */
@@ -93,9 +92,9 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
     clock,
     ports,
     apiOf: (id) => engine.apiOf(id),
-    died(id, worker, reason) {
-      // A worker that died loading fails its load, which reports it (`start`).
-      if (instances.get(id)?.worker !== worker) return
+    died(id, vm, reason) {
+      // A VM that died loading fails its load, which reports it (`start`).
+      if (instances.get(id)?.vm !== vm) return
       drop(id)
       const plugin = pluginOfInstance(id)
       if (health.died(plugin, reason))
@@ -110,7 +109,7 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
     const id = instanceIdOf(plugin, cwd)
     const scene: ModScene = { userId: '', cwd }
     let tables: Awaited<ReturnType<typeof resolveTables>> | undefined
-    let worker: ModWorker | undefined
+    let vm: ModVm | undefined
     const { api, dispose: disposeApi } = buildModApi({
       source: loaded.source,
       instance: { id, cwd },
@@ -123,11 +122,11 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
       calls,
       state,
     })
-    const dispose = () => void [disposeApi(), worker?.stop()]
+    const dispose = () => void [disposeApi(), vm?.stop()]
     try {
       const judges = sceneOf(id).instances
       const hooks = await hooksLoader.load(loaded, id)
-      worker = hooks.worker
+      vm = hooks.vm
       const events = await engine.load(id, hooks.register, loaded.source.options, api)
       const refused = await judgeJoin(dispatch, scene, judges, {
         plugin,
@@ -135,9 +134,9 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
         events,
       })
       if (refused !== undefined) throw new ModRefusedError(`refused by a mod: ${refused}`)
-      instances.set(id, { plugin, cwd, usedAt: Date.now(), dispose, ...(worker ? { worker } : {}) })
+      instances.set(id, { plugin, cwd, usedAt: Date.now(), dispose, ...(vm ? { vm } : {}) })
       tables = await resolveTables(dispatch, scene, sceneOf(id).instances)
-      worker?.setTables(tables)
+      vm?.setTables(tables)
       health.started(plugin)
       await dispatch(
         'session.start',
@@ -160,11 +159,11 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
   function instanceIn(plugin: string, cwd: string): Promise<string | null> {
     const id = instanceIdOf(plugin, cwd)
     const running = instances.get(id)
-    if (running && running.worker?.alive() !== false) {
+    if (running && running.vm?.alive() !== false) {
       running.usedAt = Date.now()
       return Promise.resolve(id)
     }
-    // Its worker died: the instance starts again, as at first, once it may.
+    // Its VM died: the instance starts again, as at first, once it may.
     if (running) drop(id)
     if (!starting.has(id) && !health.mayStart(plugin)) return Promise.resolve(null)
     const pending = starting.get(id) ?? start(plugin, cwd).finally(() => starting.delete(id))

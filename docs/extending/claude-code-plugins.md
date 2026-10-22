@@ -209,20 +209,27 @@ and panes are there before any chat. Instances reload when the plugin is updated
 reconfigured; at most eight projects run a mod at once, and the least recently used one stops
 (`session.end`).
 
-Each instance runs in a worker thread of its own, with no environment variables, and `$` is its only
-way out, as Claude Code describes a hooks module: the module has no `process`, `Bun`, `fetch`,
-`require` or timer globals, cannot make code with `eval`, `Function`, `ShadowRealm` or
-`WebAssembly`, and a module that uses `import(…)` or `import.meta` does not load. Standard
-JavaScript and web APIs such as `URL`, `TextEncoder`, `AbortController` and `crypto.subtle` work;
-any other global, including one a later Bun adds, is out of reach. The built-in objects are frozen,
-so a module cannot change what its worker runs, though it can still assign to its own objects, and
-`console` prints text, at most 200 lines in 10 seconds. A module whose `register` has not finished
-within 10 seconds does not load. One that holds its thread for 10 seconds without yielding, or
-crashes, is stopped and reported, and starts again with the next event that needs it; a second death
-within a minute makes it wait a second first, and a third stops it until the plugin changes. Localix
-keeps answering meanwhile. `$.clock.every` fires at most every 100 ms, and an instance has at most
-100 timers and sleeps pending. A worker's memory, and work it hands to the runtime such as
-`crypto.subtle`, are not limited.
+Each instance runs in a QuickJS VM of its own, in a worker thread: the same sandbox that runs
+`codemode` scripts. As Claude Code describes a hooks module, `$` is its only way out: the VM has no
+`process`, `Bun`, `fetch`, `require`, environment, files or timer globals, and no code can be made
+in it with `eval` or `Function`. A module that reaches for `import.meta.require` does not load, and
+`import(…)` rejects.
+
+Standard JavaScript and the web APIs `URL`, `TextEncoder`, `TextDecoder`, `Headers`,
+`AbortController`, `crypto.subtle`, `crypto.getRandomValues`, `structuredClone`, `atob` and `btoa`
+work; `Intl`, `Blob`, `Response` and the stream classes are not there. The built-in objects are
+frozen, so a module cannot change what the runtime beside it relies on, though it can still assign
+to its own objects. `console` prints text, at most 200 lines in 10 seconds.
+
+Each instance has 128 MiB of memory: an allocation past it fails inside the mod with
+`InternalError: out of memory`, and the rest of Localix goes on. A module whose `register` has not
+finished within 10 seconds does not load. One that holds its thread for 10 seconds without yielding,
+in a loop or a chain of promises, is interrupted and stopped, as is one that crashes; it is reported
+and starts again with the next event that needs it. A second death within a minute makes it wait a
+second first, and a third stops it until the plugin changes. Localix keeps answering meanwhile.
+
+`$.clock.every` fires at most every 100 ms, and an instance has at most 100 timers and sleeps
+pending.
 
 Every `$` call answers with a promise, as in Claude Code, except the synchronous `ui.notice`,
 `ui.invalidate`, `ui.resolve`, `ui.log`, `ui.toast`, `ui.status`, `clock.after` and `clock.every`.

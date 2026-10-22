@@ -21,12 +21,12 @@ events. Localix runs its own engine behind this boundary: an agent loop, model a
 The engine is four packages. Each may import only the packages listed for it; the architecture check
 enforces this.
 
-| Package                     | Owns                                                                                                         | May import                                |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------- |
-| `@localixai/engine-loop`    | Turns, the tool batch scheduler, argument coercion, hooks, nested calls, steering, follow-ups, event buffer. | `@localixai/agent` only; no provider SDK. |
-| `@localixai/engine-models`  | The models.dev catalog, provider SDKs (`@ai-sdk/*`), sign-in flows, credentials, wire shaping, usage, retry. | `@localixai/agent` and provider packages. |
-| `@localixai/engine-scripts` | The `codemode` sandbox: a QuickJS VM in a worker thread per script, and the tool declarations it reads.      | `@localixai/agent` and `quickjs-wasi`.    |
-| `@localixai/engine`         | Composition: `createEngine()` binds a run's model session and hands it to the loop.                          | `@localixai/agent` and the three layers.  |
+| Package                     | Owns                                                                                                                                        | May import                                |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `@localixai/engine-loop`    | Turns, the tool batch scheduler, argument coercion, hooks, nested calls, steering, follow-ups, event buffer.                                | `@localixai/agent` only; no provider SDK. |
+| `@localixai/engine-models`  | The models.dev catalog, provider SDKs (`@ai-sdk/*`), sign-in flows, credentials, wire shaping, usage, retry.                                | `@localixai/agent` and provider packages. |
+| `@localixai/engine-scripts` | The `codemode` sandbox: a QuickJS VM in a worker thread per script, and the tool declarations it reads; and the long-lived VMs mods run in. | `@localixai/agent` and `quickjs-wasi`.    |
+| `@localixai/engine`         | Composition: `createEngine()` binds a run's model session and hands it to the loop.                                                         | `@localixai/agent` and the three layers.  |
 
 The Localix host owns session state, modes, tools, permissions, context policy, persistence, and
 event publication. It depends on the `AgentRuntime` port, not on the engine's types. Only the

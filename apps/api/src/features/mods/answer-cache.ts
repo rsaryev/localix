@@ -38,7 +38,5 @@ export function createAnswerCache(limit = PER_EVENT) {
   }
 }
 
-export type AnswerCache = ReturnType<typeof createAnswerCache>
-
 /** A cache key from the parts of a question. */
 export const answerKey = (...parts: readonly unknown[]): string => JSON.stringify(parts)

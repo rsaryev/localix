@@ -1,9 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import type { AssistantMessage } from '@localixai/agent'
+import { createScriptVms } from '@localixai/engine-scripts'
 import { createModRunScope } from '../run-scope'
-import { hostWithWorkers } from './testing-mods'
+import { hostWithVms } from './testing-mods'
 
-/** What a hooks module may reach from its worker, and how the host lives with a worker that dies. */
+/** What a hooks module may reach from its VM, and how the host lives with a VM that dies. */
+
+const vms = createScriptVms()
 
 const PROBES = `
 const probe = (reach) => {
@@ -17,30 +20,25 @@ const probe = (reach) => {
 export function register(on) {
   on('command.run', { command: 'probe' }, async ($) => ({
     text: JSON.stringify({
-      process: probe(() => process),
-      Bun: probe(() => Bun),
-      fetch: probe(() => fetch),
-      Worker: probe(() => Worker),
-      setTimeout: probe(() => setTimeout),
+      process: typeof process,
+      Bun: typeof Bun,
+      fetch: typeof fetch,
+      Worker: typeof Worker,
+      setTimeout: typeof setTimeout,
       globalProcess: probe(() => globalThis.process),
-      globalBun: probe(() => globalThis.Bun),
-      selfFetch: probe(() => self.fetch),
       require: probe(() => require(['node', 'fs'].join(':'))),
+      dynamicImport: await import(['node', 'fs'].join(':')).then(() => 'loaded', () => 'refused'),
       functionThis: probe(() => Function('return this')()),
       constructorThis: probe(() => (function () {}).constructor('return this')()),
       asyncConstructor: probe(() => (async function () {}).constructor('return 1')),
       eval: probe(() => (0, globalThis.eval)('1')),
       // A fresh realm, or compiled code, would have every global this one took away.
-      shadowRealm: probe(() => new ShadowRealm().evaluate('typeof Bun')),
-      globalShadowRealm: probe(() => globalThis.ShadowRealm),
-      webAssembly: probe(() => WebAssembly),
-      sharedArrayBuffer: probe(() => SharedArrayBuffer),
-      atomics: probe(() => Atomics),
-      buffer: probe(() => Buffer),
-      messageChannel: probe(() => MessageChannel),
-      postMessage: probe(() => postMessage),
+      shadowRealm: typeof ShadowRealm,
+      webAssembly: typeof WebAssembly,
+      buffer: typeof Buffer,
+      postMessage: typeof postMessage,
       // What a mod may use: web APIs, and $.
-      url: typeof URL,
+      url: new URL('https://x.test/a?b=1').searchParams.get('b'),
       encoder: typeof TextEncoder,
       abort: typeof AbortController,
       subtle: typeof crypto.subtle,
@@ -51,9 +49,9 @@ export function register(on) {
 }
 `
 
-describe('a mod in its worker', () => {
-  test('reaches no process, Bun, fetch, require, timers or code generation; $ and web APIs work', async () => {
-    const { command, host, reports } = await hostWithWorkers({ probes: PROBES })
+describe('a mod in its VM', () => {
+  test('reaches no process, Bun, fetch, require, import, timers or code generation; $ and web APIs work', async () => {
+    const { command, host, reports } = await hostWithVms({ probes: PROBES }, { vms })
     expect(JSON.parse((await command('probes', 'probe')).text!)).toEqual({
       process: 'undefined',
       Bun: 'undefined',
@@ -61,22 +59,17 @@ describe('a mod in its worker', () => {
       Worker: 'undefined',
       setTimeout: 'undefined',
       globalProcess: 'undefined',
-      globalBun: 'undefined',
-      selfFetch: 'undefined',
       require: 'refused',
+      dynamicImport: 'refused',
       functionThis: 'refused',
       constructorThis: 'refused',
       asyncConstructor: 'refused',
       eval: 'refused',
-      shadowRealm: 'refused',
-      globalShadowRealm: 'undefined',
+      shadowRealm: 'undefined',
       webAssembly: 'undefined',
-      sharedArrayBuffer: 'undefined',
-      atomics: 'undefined',
       buffer: 'undefined',
-      messageChannel: 'undefined',
       postMessage: 'undefined',
-      url: 'function',
+      url: '1',
       encoder: 'function',
       abort: 'function',
       subtle: 'object',
@@ -88,8 +81,9 @@ describe('a mod in its worker', () => {
   })
 
   test('a value carrying the reserved reference key fails its hook, and the host goes on', async () => {
-    const { command, host, reports } = await hostWithWorkers({
-      forger: `
+    const { command, host, reports } = await hostWithVms(
+      {
+        forger: `
         const KEY = String.fromCharCode(0) + 'lx'
         export function register(on) {
           on('command.run', { command: 'number' }, async () => ({ text: 'x', [KEY]: 5 }))
@@ -97,7 +91,9 @@ describe('a mod in its worker', () => {
           on('command.run', { command: 'fine' }, async () => ({ text: 'fine' }))
         }
       `,
-    })
+      },
+      { vms },
+    )
     expect(await command('forger', 'number')).toEqual({})
     expect(await command('forger', 'own')).toEqual({})
     expect(await command('forger', 'fine')).toEqual({ text: 'fine' })
@@ -110,8 +106,9 @@ describe('a mod in its worker', () => {
   })
 
   test('a crash is reported, and the mod starts again, afresh, on its next event', async () => {
-    const { command, host, reported, reports } = await hostWithWorkers({
-      fragile: `
+    const { command, host, reported, reports } = await hostWithVms(
+      {
+        fragile: `
         let starts = 0
         let crashes = 0
         export function register(on) {
@@ -129,10 +126,12 @@ describe('a mod in its worker', () => {
           })
         }
       `,
-    })
+      },
+      { vms },
+    )
     expect(await command('fragile', 'count')).toEqual({ text: '1/0' })
     const crashed = reported('crashed')
-    // The worker crashed before it could answer: the hook is skipped.
+    // The VM crashed before it could answer: the hook is skipped.
     expect(await command('fragile', 'crash')).toEqual({})
     expect(await crashed).toContain('fragile: the hooks module crashed: boom')
     expect(host.instances().size).toBe(0)
@@ -147,8 +146,9 @@ describe('a mod in its worker', () => {
   })
 
   test('streaming hooks read and yield across the boundary, and a closure answers a button', async () => {
-    const { host, scene, logged } = await hostWithWorkers({
-      relay: `
+    const { host, scene, logged } = await hostWithVms(
+      {
+        relay: `
         let pressed = 0
         export function register(on) {
           on('session.start', async ($, e, next) => {
@@ -175,7 +175,9 @@ describe('a mod in its worker', () => {
           })
         }
       `,
-    })
+      },
+      { vms },
+    )
     const scope = await createModRunScope(host, scene, new Set(['relay']), { model: 'model-a' })
     const message: AssistantMessage = await scope.modelStep('turn-1')!(
       { index: 0, modelId: 'model-a', messageCount: 1 },

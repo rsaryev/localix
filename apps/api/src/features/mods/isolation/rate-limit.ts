@@ -1,7 +1,7 @@
 /**
  * What a mod may write to Localix's log, bounded: each line cut to a length, and at most so many
- * lines in a window of time. The host bounds a worker's reports with it, the worker its module's
- * `console`; the clock is injected, so tests move it.
+ * lines in a window of time. The host bounds a VM's reports and its module's `console` lines with
+ * it; the clock is injected, so tests move it.
  */
 
 export interface RateLimit {

@@ -42,5 +42,3 @@ export function createModConversations(limit = KEPT) {
       sessionId ? compactions.delete(sessionId) : false,
   }
 }
-
-export type ModConversations = ReturnType<typeof createModConversations>

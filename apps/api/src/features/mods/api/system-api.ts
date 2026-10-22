@@ -8,7 +8,7 @@ import { modFetch, type HttpInit } from './http-api'
  * `cancel()` stops it; a timer's callback that throws is reported, never left unhandled. A mod's
  * timers stop when the mod unloads (`dispose`). `every` fires at most every `MIN_EVERY_MS`, and an
  * instance has at most `MAX_TIMERS` timers and sleeps pending at once: each firing crosses into
- * the mod's worker, so a timer every millisecond would flood Localix's own thread.
+ * the mod's VM, so a timer every millisecond would flood Localix's own thread.
  */
 const PROCESS_MS = 30_000
 const PROCESS_MAX_MS = 10 * 60_000

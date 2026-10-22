@@ -1,14 +1,14 @@
 import { decode, encode, type WireLimits, type WireTable } from './wire'
 
 /**
- * One side of the channel between the mods host and a mod's worker: requests that answer, notes
+ * One side of the channel between the mods host and a mod's VM: requests that answer, notes
  * that do not, and the functions each side lends the other (`wire.ts`). Both sides run the same
- * endpoint. No frame carries a context: the host runs what a worker asks in the context of the
- * call the request names (`mod-worker.ts`), never one the worker picks. A stand-in the receiving
+ * endpoint. No frame carries a context: the host runs what a VM asks in the context of the
+ * call the request names (`mod-vm.ts`), never one the VM picks. A stand-in the receiving
  * side drops is released, and the owner forgets the function; a closed endpoint rejects whatever
  * is still waiting, and a request whose signal aborts rejects at once.
  *
- * What arrives is not trusted (the worker runs a mod's code): a frame that does not decode, or
+ * What arrives is not trusted (the VM runs a mod's code): a frame that does not decode, or
  * holds more than `limits`, fails only its own request — the waiting request rejects, a request is
  * answered with the error — and a frame that is no message of this channel goes to `malformed`,
  * never a throw of `receive`.

@@ -23,7 +23,8 @@ Changes land on `main`.
   session. A mod can guard or rewrite tool calls and model requests, shape the system prompt, read
   the conversation, add slash commands, tools and agents, fill the message box, and draw panes in
   the **Mods** view from the rail's overflow menu. Claude Code's own `diff` mod shows a project's
-  changes there. See [Claude Code plugins](docs/extending/claude-code-plugins.md#mods).
+  changes there. Each mod runs in a sandbox of its own with a memory cap, so one that loops or runs
+  out of memory stops alone. See [Claude Code plugins](docs/extending/claude-code-plugins.md#mods).
 - **Claude Code marketplaces**: `/plugin marketplace add owner/repo` adds one, and
   `/plugin install <name>@<marketplace>` installs from it; `list`, `update` and `remove` manage it.
   Plugins you installed in Claude Code itself also appear, waiting for your approval.

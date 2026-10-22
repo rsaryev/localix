@@ -45,23 +45,6 @@ test('a module importing a package is refused at build, naming it', async () => 
   ).rejects.toThrow('left-pad')
 })
 
-test('a module that would import at run time is refused at build', async () => {
-  for (const body of [
-    "const name = 'node:' + 'fs'\nexport const register = () => import(name)",
-    'export const register = () => import.meta.require',
-    // Bun's scanner names only a literal specifier; these hide the import in code it reads past.
-    "const p = ['fs'][0]\nexport const register = () => [...import(p)]",
-    "const p = 'fs'\nexport const register = () => `${import(p)}` / 2",
-    "const p = 'fs'\nexport const register = (a) => a / 2 / import(p)",
-  ]) {
-    const root = scratch()
-    writeTree(root, { 'hooks/register.js': body })
-    await expect(
-      bundleHooksModule({ module: join(root, 'hooks/register.js'), root }),
-    ).rejects.toThrow('imports nothing at run time')
-  }
-})
-
 test('text that only spells an import is no import: the module builds', async () => {
   const root = scratch()
   writeTree(root, {

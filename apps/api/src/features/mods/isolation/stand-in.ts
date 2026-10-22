@@ -1,14 +1,14 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import type { Hook, ModsApi, Next } from '@localixai/claude-plugin/mods'
 import type { Endpoint } from './endpoint'
-import type { ApiShape, CallMeta } from './worker-api'
+import type { ApiShape, CallMeta, CallReply } from './call-protocol'
 
 /**
- * The host's side of each call into a mod's worker: the stand-in the engine runs for a hook the
- * module registered, and the calls it opened. What the worker asks names its call, and runs in the
+ * The host's side of each call into a mod's VM: the stand-in the engine runs for a hook the
+ * module registered, and the calls it opened. What the VM asks names its call, and runs in the
  * async context that call was made in (the conversation's scene, a pane's drawing) — the call's
- * own, never one the worker names — so a worker cannot run a `$` call in another call's scene.
- * A call the engine abandoned (`next.signal`) stops waiting on the worker at once.
+ * own, never one the VM names — so a VM cannot run a `$` call in another call's scene.
+ * A call the engine abandoned (`next.signal`) stops waiting on the VM at once.
  */
 
 type Run = <T>(work: () => T) => T
@@ -19,7 +19,7 @@ export interface OpenCall {
   streams: Map<number, AsyncGenerator<unknown, unknown, unknown> & { result?: unknown }>
 }
 
-/** Contexts kept for what a worker asks after its call answered (a stashed `$`). */
+/** Contexts kept for what a VM asks after its call answered (a stashed `$`). */
 const CONTEXTS_KEPT = 512
 
 export function createCalls(endpoint: Endpoint) {
@@ -49,7 +49,7 @@ export function createCalls(endpoint: Endpoint) {
     }
   }
 
-  /** A stand-in for the module's hook `spec`: one run of it in the worker per call. */
+  /** A stand-in for the module's hook `spec`: one run of it in the VM per call. */
   function standIn(spec: { id: number; generator: boolean }): Hook {
     const start = ($: ModsApi, e: unknown, next: Next) => begin(spec.id, $, e, next)
     if (spec.generator)
@@ -103,10 +103,7 @@ export function createCalls(endpoint: Endpoint) {
   }
 }
 
-/** What the worker answers a call: its value, the stream it yields, or that its matcher missed. */
-type CallReply = { value: unknown } | { stream: number } | { absent: true }
-
-/** `$` as the worker rebuilds it: which members are methods, and the values of the rest. */
+/** `$` as the VM rebuilds it: which members are methods, and the values of the rest. */
 function shapeOf(api: ModsApi): ApiShape {
   const shape: ApiShape = {}
   for (const [namespace, members] of Object.entries(api)) {

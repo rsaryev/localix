@@ -1,8 +1,9 @@
 import { COUNTED_CALLS, SYNC_CALLS, elementTable } from '@localixai/claude-plugin/mods'
-import type { Endpoint } from './endpoint'
+import type { ApiShape, CallMeta, NextReply } from '../call-protocol'
+import type { Endpoint } from '../endpoint'
 
 /**
- * A hook's `$` and `next` inside the worker, standing in for the host's: each `$` call and each
+ * A hook's `$` and `next` inside the mod's VM, standing in for the host's: each `$` call and each
  * `next` is a request to the host, which answers it with the `$` and `next` of that hook's run —
  * so a call on `$` stashed past its hook (a timer, a button) still reaches the mod's own `$`.
  *
@@ -12,20 +13,7 @@ import type { Endpoint } from './endpoint'
  * streaming event (`turn.step`): `await next(e)` is the result, `yield* next(e)` the chunks.
  */
 
-/** A `$` as the host describes it: each namespace's methods, and its plain values. */
-export type ApiShape = Record<string, Record<string, { fn: true } | { value: unknown }>>
-
-export interface CallMeta {
-  origin: unknown
-  budget: { ms: number; remainingMs: number }
-  error?: unknown
-  called?: boolean
-}
-
 type Fn = (...args: unknown[]) => unknown
-
-/** How the host answered a `next`: the result, or a stream of the call it keeps. */
-type NextReply = { value: unknown } | { stream: number }
 
 /** A hook run's own time, as `next.budget.remainingMs` reads it: it stops while the host works. */
 function createMeter(remainingMs: number) {
@@ -45,7 +33,7 @@ function createMeter(remainingMs: number) {
   }
 }
 
-export function createWorkerApi(endpoint: Endpoint) {
+export function createGuestApi(endpoint: Endpoint) {
   const controllers = new Map<number, AbortController>()
   const meters = new Map<number, ReturnType<typeof createMeter>>()
   let tables = new Map<string, Record<string, unknown>>()

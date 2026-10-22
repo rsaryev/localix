@@ -1,6 +1,8 @@
+import type { BudgetClock } from '@localixai/claude-plugin/mods'
+
 /**
  * Which plugins' mods may start, and why one may not. A mod that did not load is failed until the
- * plugin changes. A mod whose worker died starts again: the first death in a while on its next
+ * plugin changes. A mod whose VM died starts again: the first death in a while on its next
  * event; each further one within `windowMs` waits twice as long as the last (from `backoffMs`);
  * at `deaths` within the window the mod is failed too. Each death and failure is reported once.
  */
@@ -12,6 +14,16 @@ export interface RestartRules {
 }
 
 export const RESTART_RULES: RestartRules = { deaths: 3, windowMs: 60_000, backoffMs: 1_000 }
+
+/** The real clock, whose timers never keep the process alive on their own. */
+export const SUPERVISOR_CLOCK: BudgetClock = {
+  now: () => Date.now(),
+  setTimer(fire, ms) {
+    const timer = setTimeout(fire, ms)
+    timer.unref()
+    return () => clearTimeout(timer)
+  },
+}
 
 export function createModHealth(
   rules: RestartRules,
@@ -30,7 +42,7 @@ export function createModHealth(
       failures.set(plugin, why)
       report(plugin, `the hooks module did not load: ${why}`)
     },
-    /** A running instance's worker died: answers true when the mod stays stopped. */
+    /** A running instance's VM died: answers true when the mod stays stopped. */
     died(plugin: string, reason: string): boolean {
       const at = now()
       const recent = (deaths.get(plugin) ?? []).filter((one) => at - one < rules.windowMs)

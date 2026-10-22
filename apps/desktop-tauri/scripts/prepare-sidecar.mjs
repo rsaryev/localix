@@ -30,10 +30,14 @@ import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import {
+  SCRIPT_EXTENSION_FILES,
   SCRIPT_WASM_FILE,
   SCRIPT_WORKER_FILE,
 } from '../../../packages/engine-scripts/src/assets.ts'
-import { MOD_WORKER_FILE } from '../../api/src/features/mods/isolation/worker-file.ts'
+import {
+  MOD_RUNTIME_FILE,
+  buildModRuntime,
+} from '../../api/src/features/mods/isolation/guest-file.ts'
 import {
   stageSidecarBun,
   binariesDir,
@@ -145,8 +149,9 @@ const runtimeReady =
   cache.runtimeVariant === runtimeVariant &&
   existsSync(join(resources, 'server.js')) &&
   existsSync(join(resources, SCRIPT_WORKER_FILE)) &&
-  existsSync(join(resources, MOD_WORKER_FILE)) &&
+  existsSync(join(resources, MOD_RUNTIME_FILE)) &&
   existsSync(join(resources, SCRIPT_WASM_FILE)) &&
+  Object.values(SCRIPT_EXTENSION_FILES).every((file) => existsSync(join(resources, file))) &&
   existsSync(join(resources, 'visual-feedback-probe.js')) &&
   existsSync(join(resources, 'visual-feedback-native-probe.js')) &&
   existsSync(join(resources, 'plugins', STAGED_DROPINS_MARKER)) &&
@@ -203,9 +208,10 @@ if (!runtimeReady) {
     for (const message of bundled.logs) console.error(message)
     throw new Error('bundling the API failed')
   }
-  // ── 1b. the script sandbox (`codemode`): its VM starts in a worker thread from a file beside the
-  //        module that creates it, and reads the QuickJS binary from disk. server.js has neither
-  //        beside it, so both are staged here, where `bundledScriptSandboxOptions` finds them.
+  // ── 1b. the script sandbox (`codemode`, and the VM each mod runs in): its VM starts in a worker
+  //        thread from a file beside the module that creates it, and reads the QuickJS binary and
+  //        its extensions from disk. server.js has none of them beside it, so they are staged here,
+  //        where `bundledScriptSandboxOptions` finds them.
   //        The worker is the package's `./worker` export, resolved from the engine that imports
   //        the package — the same build server.js bundled the host side from, so the two always
   //        speak the same protocol. ──
@@ -222,28 +228,13 @@ if (!runtimeReady) {
     for (const message of scriptWorker.logs) console.error(message)
     throw new Error('bundling the script sandbox worker failed')
   }
-  copyFileSync(
-    createRequire(join(repo, 'packages', 'engine-scripts', 'package.json')).resolve(
-      'quickjs-wasi/quickjs.wasm',
-    ),
-    join(resources, SCRIPT_WASM_FILE),
-  )
-  // ── 1c. the worker each mod instance runs in: started from a file beside the module that
-  //        creates it, which server.js does not have, so it is bundled here, where the mods
-  //        bootstrap's `modWorkerUrl` finds it. ──
-  const modWorker = await Bun.build({
-    entrypoints: [
-      join(repo, 'apps', 'api', 'src', 'features', 'mods', 'isolation', 'worker-main.ts'),
-    ],
-    target: 'bun',
-    outdir: resources,
-    naming: { entry: MOD_WORKER_FILE },
-    minify: { syntax: true, whitespace: true, identifiers: false },
-  })
-  if (!modWorker.success) {
-    for (const message of modWorker.logs) console.error(message)
-    throw new Error('bundling the mods worker failed')
-  }
+  const quickjs = createRequire(join(repo, 'packages', 'engine-scripts', 'package.json'))
+  copyFileSync(quickjs.resolve('quickjs-wasi/quickjs.wasm'), join(resources, SCRIPT_WASM_FILE))
+  for (const [name, file] of Object.entries(SCRIPT_EXTENSION_FILES))
+    copyFileSync(quickjs.resolve(`quickjs-wasi/${name}.so`), join(resources, file))
+  // ── 1c. the runtime each mod's VM runs before its hooks module: one script for QuickJS, which
+  //        the mods bootstrap reads beside server.js (`loadModRuntime`). ──
+  writeFileSync(join(resources, MOD_RUNTIME_FILE), await buildModRuntime())
   buildVisualFeedbackProbe({
     repoRoot: repo,
     outFile: join(resources, 'visual-feedback-probe.js'),

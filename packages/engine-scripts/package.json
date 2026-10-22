@@ -2,7 +2,7 @@
   "name": "@localixai/engine-scripts",
   "version": "0.1.0",
   "private": true,
-  "description": "Localix script sandbox: model-written JavaScript in a QuickJS VM whose only capability is calling the tools it is handed.",
+  "description": "Localix script sandbox: JavaScript in QuickJS VMs with a memory limit and an interrupt — model-written scripts whose only capability is calling their tools, and long-lived VMs that exchange JSON with their host (mods).",
   "license": "MIT",
   "files": [
     "dist",

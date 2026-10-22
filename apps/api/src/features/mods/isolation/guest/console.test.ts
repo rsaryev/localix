@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
-import { createSafeConsole, formatted } from './safe-console'
+import { createGuestConsole, formatted } from './console'
 
-/** The `console` a mod gets: text only, each line cut, and a flood dropped. */
+/** The `console` a mod gets in its VM: one line of text per call, never a value's own inspect. */
 
 test('a value prints as text, and its own inspect is never run', () => {
   let inspected = false
@@ -17,24 +17,28 @@ test('a value prints as text, and its own inspect is never run', () => {
   expect(inspected).toBe(false)
 })
 
-test('lines are cut, and past the window the rest are dropped with one note', () => {
+test('each call is one line at its level; counters and timers read the injected clock', () => {
   let now = 0
   const lines: string[] = []
-  const console = createSafeConsole({
+  const console = createGuestConsole({
     print: (level, line) => void lines.push(`${level} ${line}`),
     now: () => now,
-    limits: { lineChars: 5, lines: 2, windowMs: 1000 },
   })
-  console.log('abcdefgh')
-  console.error('x', { y: 1 })
-  console.log('dropped, said once')
-  console.log('dropped')
-  now = 1000
+  console.log('a', { b: 1 })
+  console.warn('careful')
   console.count()
+  console.count()
+  console.time('t')
+  now = 25
+  console.timeEnd('t')
+  console.assert(true, 'quiet')
+  console.assert(false, 'loud')
   expect(lines).toEqual([
-    'log abcde… (3 more)',
-    'error x {"y… (4 more)',
-    'error [mod] console: more than 2 lines; some dropped',
-    'log defau… (5 more)',
+    'log a {"b":1}',
+    'error careful',
+    'log default: 1',
+    'log default: 2',
+    'log t: 25ms',
+    'error Assertion failed loud',
   ])
 })

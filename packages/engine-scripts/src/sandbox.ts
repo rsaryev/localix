@@ -8,11 +8,6 @@
  * (`budget.ts`). The run settles at once; calls still in flight are aborted, the worker is
  * terminated in the background, and later events are ignored.
  */
-import { existsSync } from 'node:fs'
-import { readFile } from 'node:fs/promises'
-import { createRequire } from 'node:module'
-import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
 import { Worker } from 'node:worker_threads'
 
 import type {
@@ -22,52 +17,16 @@ import type {
   ScriptSandbox,
 } from '@localixai/agent/runtime'
 
-import { SCRIPT_WASM_FILE, SCRIPT_WORKER_FILE } from './assets'
 import { createCallSlots, createRunBudget } from './budget'
 import { renderDeclarations, toIdentifier } from './declarations'
 import { isWorkerMessage, type HostMessage, type WorkerData, type WorkerMessage } from './protocol'
-
-export interface ScriptSandboxOptions {
-  /** `quickjs.wasm` on disk. Default: the installed `quickjs-wasi` package's file. */
-  wasmPath?: string
-  /** The worker entry. Default: this package's own; a bundled host passes its bundled copy. */
-  workerUrl?: string | URL
-  /** The VM's heap; an allocation past it fails in the script as `InternalError: out of memory`. */
-  memoryLimitBytes?: number
-}
-
-const DEFAULT_MEMORY_LIMIT = 256 * 1024 * 1024
-
-/**
- * Where a BUNDLED host keeps the worker and the VM: both beside its bundle in `dir`. Undefined when
- * they are not there — a host running from source, where the defaults already resolve.
- */
-export function bundledScriptSandboxOptions(dir: string): ScriptSandboxOptions | undefined {
-  const workerPath = join(dir, SCRIPT_WORKER_FILE)
-  const wasmPath = join(dir, SCRIPT_WASM_FILE)
-  if (!existsSync(workerPath) || !existsSync(wasmPath)) return undefined
-  return { workerUrl: pathToFileURL(workerPath), wasmPath }
-}
-
-const compiled = new Map<string, Promise<object>>()
-
-/** Compiled once per path; a failed load is tried again by the next run. */
-function loadWasm(path: string): Promise<object> {
-  let module = compiled.get(path)
-  if (!module) {
-    module = readFile(path).then((bytes) => WebAssembly.compile(bytes))
-    module.catch(() => compiled.delete(path))
-    compiled.set(path, module)
-  }
-  return module
-}
-
-function defaultWorkerUrl(): URL {
-  // `.ts` from source (tests, the dev server), `.js` from `dist`.
-  return new URL(import.meta.url.endsWith('.ts') ? './worker.ts' : './worker.js', import.meta.url)
-}
-
-const messageOf = (error: unknown) => (error instanceof Error ? error.message : String(error))
+import {
+  DEFAULT_MEMORY_LIMIT,
+  loadWasm,
+  messageOf,
+  resolveFiles,
+  type ScriptSandboxOptions,
+} from './runtime-files'
 
 /** Text the worker sent that should be JSON and is not: a script that patched the built-ins it is encoded with. */
 function parseJson(json: string, what: string): unknown {
@@ -96,10 +55,6 @@ const MAX_TIMER_MS = 2_147_483_647
 
 export function createScriptSandbox(options: ScriptSandboxOptions = {}): ScriptSandbox {
   const memoryLimitBytes = options.memoryLimitBytes ?? DEFAULT_MEMORY_LIMIT
-  // Resolved on the first run, not here: a host missing the files fails codemode, not its boot.
-  const wasmPath = () =>
-    options.wasmPath ?? createRequire(import.meta.url).resolve('quickjs-wasi/quickjs.wasm')
-  const workerUrl = () => options.workerUrl ?? defaultWorkerUrl()
 
   return {
     declare: renderDeclarations,
@@ -218,7 +173,8 @@ export function createScriptSandbox(options: ScriptSandboxOptions = {}): ScriptS
       if (!finished) {
         let paths: { wasm: string; worker: string | URL }
         try {
-          paths = { wasm: wasmPath(), worker: workerUrl() }
+          // Resolved on the first run, not before: a host missing the files fails codemode, not its boot.
+          paths = resolveFiles(options)
         } catch (error) {
           fail(`The script sandbox could not find QuickJS: ${messageOf(error)}`)
           return result
@@ -227,6 +183,7 @@ export function createScriptSandbox(options: ScriptSandboxOptions = {}): ScriptS
           (wasm) => {
             if (finished) return
             const data: WorkerData = {
+              mode: 'run',
               code: request.code,
               tools: request.tools.map((tool) => ({
                 name: tool.name,

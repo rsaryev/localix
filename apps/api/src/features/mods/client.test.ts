@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
 import { Hono } from 'hono'
+import { createScriptVms } from '@localixai/engine-scripts'
 import { defaultErrorHandler } from '@localixai/plugin-sdk/backend'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 import type { ModSource, ModsPorts } from './contracts'
@@ -76,7 +77,7 @@ function setup(files: Record<string, string>, extra: Record<string, string> = {}
   }
   const sources = [sourceOf('spinner', files)]
   if (extra['hooks/register.tsx']) sources.push(sourceOf('bystander', extra))
-  const host = createModsHost(ports)
+  const host = createModsHost(ports, { vms: createScriptVms() })
   const app = new Hono().route('/', createModRoutes(host))
   app.onError(defaultErrorHandler)
   return { dir, host, app, sources, heard, changes, reports }

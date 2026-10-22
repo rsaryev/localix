@@ -1,7 +1,8 @@
 /**
- * @localixai/engine-scripts — the engine's `scripts` port: model-written JavaScript in a QuickJS VM
- * (a fresh one per script, in a worker thread) whose only capability is calling the tools it is
- * handed.
+ * @localixai/engine-scripts — JavaScript in QuickJS VMs, each in a worker thread, with a real
+ * memory limit and an interrupt. The engine's `scripts` port (`sandbox.ts`): model-written code in
+ * a fresh VM per script whose only capability is calling the tools it is handed. And long-lived
+ * VMs (`vm.ts`): a runtime the host hands in, exchanging JSON text with the host until stopped.
  */
 export { SCRIPT_WASM_FILE, SCRIPT_WORKER_FILE } from './assets'
 export { renderDeclarations, schemaToType, toIdentifier } from './declarations'
@@ -13,8 +14,6 @@ export {
   MAX_OUTPUT_ITEMS,
   MAX_TOTAL_CALL_ARGS_CHARS,
 } from './limits'
-export {
-  bundledScriptSandboxOptions,
-  createScriptSandbox,
-  type ScriptSandboxOptions,
-} from './sandbox'
+export { bundledScriptSandboxOptions, type ScriptSandboxOptions } from './runtime-files'
+export { createScriptSandbox } from './sandbox'
+export { createScriptVms, type ScriptVm, type ScriptVms, type ScriptVmStart } from './vm'
