@@ -126,8 +126,6 @@ export const CC_SKILL_FRONTMATTER_SCENARIOS = [
   },
   {
     name: 'cc-skills: an ask rule still prompts for a tool the skill’s allowed-tools grants',
-    known:
-      'A skill’s allowed-tools answers a named ask rule (`tool:bash touch *` ask): the call runs without a card.',
     async run(rt) {
       const mark = (label) => path.join(rt.root, `tla-mark-${label}`)
       const touch = (label) => ({ tool: 'bash', args: { command: `touch "${mark(label)}"` } })

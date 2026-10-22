@@ -280,7 +280,8 @@ export async function handlePluginsControlCommand(
             if (p.provides.agents?.length) bits.push(`${p.provides.agents.length} agents`)
             const state = p.error ? 'error' : enabled ? 'enabled' : 'disabled'
             const detail = bits.length ? ` — ${bits.join(', ')}` : ''
-            return `- ${state} \`${p.manifest.name}\` _(${scope})_${detail}`
+            const version = p.manifest.version ? ` · v${p.manifest.version}` : ''
+            return `- ${state} \`${p.manifest.name}\` _(${scope})_${detail}${version}`
           }),
         ].join('\n')
   return directReply(reply)

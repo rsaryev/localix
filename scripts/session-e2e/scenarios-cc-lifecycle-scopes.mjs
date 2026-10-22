@@ -53,7 +53,6 @@ export const CC_LIFECYCLE_SCOPE_SCENARIOS = [
   },
   {
     name: 'cc-lifecycle: /plugin list prints a marketplace-installed plugin with its version, scope and status',
-    known: 'The line names status and scope but no version: "- enabled `mk-listed` _(global)_".',
     async run(rt) {
       await withMarket(rt, 'lc-listed', { 'mk-listed': {} }, async ({ say }) => {
         await say('/plugin install mk-listed@lc-listed')

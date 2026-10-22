@@ -71,19 +71,17 @@ describe('shipped presets with task-local skill preapprovals', () => {
     ).toBe('deny')
   })
 
-  test('the authored exception to an earlier denial remains effective', () => {
+  test('a skill grant answers only the catch-all question; an authored named ask still asks', () => {
+    // skills.md: "Deny and ask rules still override allowed-tools".
     const rules = [
       { permission: 'bash', pattern: '*', action: 'deny' as const },
       { permission: 'bash', pattern: 'git *', action: 'ask' as const },
     ]
-    expect(
-      evaluate(
-        rules,
-        { name: 'bash', effect: 'read' },
-        extractCallFacts('bash', { command: 'git status' }, root),
-        grants,
-      ).action,
-    ).toBe('allow')
+    const gitStatus = extractCallFacts('bash', { command: 'git status' }, root)
+    const bash = { name: 'bash', effect: 'read' as const }
+    expect(evaluate(rules, bash, gitStatus, grants).action).toBe('ask')
+    const catchAll = [{ permission: '*', pattern: '*', action: 'ask' as const }]
+    expect(evaluate(catchAll, bash, gitStatus, grants).action).toBe('allow')
     expect(
       evaluate(
         rules,

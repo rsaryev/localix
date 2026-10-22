@@ -24,7 +24,6 @@ import type { CallClass } from '@localixai/agent/agents'
 import { splitCompoundCommand } from './tools/bash/bash-command-shape'
 import type { PermissionRule as StoredPermissionRule } from '../projects/contracts'
 import { matches } from './capability-rule'
-import { resourceClassOf } from './capability-resource-classes'
 import { matchesCapabilityCall } from './capability-call-match'
 import type { CallFacts } from './permission-facts'
 
@@ -79,13 +78,11 @@ export function evaluate(
       result = { action: rule.action, message: rule.message, rule }
     }
   }
-  // A skill can preapprove a named question, never change the authored list's order,
-  // open a denied capability, or answer a question about the manner of a call.
-  if (
-    result.action === 'ask' &&
-    result.rule &&
-    (result.rule.pattern === '*' || !resourceClassOf(result.rule.pattern))
-  ) {
+  // A skill's grant answers only the catch-all question (`*`), Localix's form of Claude Code's
+  // default-mode prompt for a call no rule decides. A narrowed ask is an authored rule and still
+  // asks, as in Claude Code ("Deny and ask rules still override allowed-tools"); a grant never
+  // changes the authored list's order or opens a denied capability.
+  if (result.action === 'ask' && result.rule?.pattern === '*') {
     const grant = evaluate(preapprovedRules, tool, call)
     if (grant.rule?.action === 'allow') return grant
   }
