@@ -138,8 +138,15 @@ export function apiFailure(
   )
 }
 
+/**
+ * A fetch answer, as the failure readers use it. The typed RPC client returns its own response
+ * type, which lacks members Bun adds to `Response` (`textStream`); taking only what is read
+ * accepts both.
+ */
+export type FetchResponse = Pick<Response, 'ok' | 'status' | 'json' | 'text'>
+
 /** The failure a non-ok response describes, read once so an unparseable body survives as detail. */
-export async function responseError(response: Response): Promise<ApiError> {
+export async function responseError(response: FetchResponse): Promise<ApiError> {
   const raw = (await response.text().catch(() => '')).trim()
   let parsed: JsonError | null = null
   try {

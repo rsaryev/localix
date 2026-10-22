@@ -81,6 +81,11 @@ async function renderTree() {
       if (original) Object.defineProperty(window.HTMLElement.prototype, key, original)
     })
     await act(async () => root.unmount())
+    // An unmounted Radix menu hands focus back in a `setTimeout(0)`; let it fire here, not inside
+    // the next test, where it pulled focus off the row that test had just focused.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
     host.remove()
   }
   return { host, act, cleanup }
@@ -134,8 +139,14 @@ describe('virtualized ChangesTree', () => {
         first.focus()
         first.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'End', bubbles: true }))
       })
+      // The jump scrolls first and focuses on a later frame, once the row is mounted; the
+      // virtualizer may take several frames to settle, so wait on the focus, not on a clock.
       await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 20))
+        const focused = () =>
+          (document.activeElement as HTMLElement | null)?.dataset?.treePath === 'file-4999.ts'
+        for (let frame = 0; frame < 30 && !focused(); frame++) {
+          await new Promise((resolve) => requestAnimationFrame(resolve))
+        }
       })
       const last = host.querySelector<HTMLElement>('[data-tree-path="file-4999.ts"]')
       expect(last).not.toBeNull()

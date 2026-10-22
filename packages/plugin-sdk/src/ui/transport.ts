@@ -41,6 +41,12 @@ export function pluginApiUrl(path: string): string {
 }
 
 /**
+ * A fetch answer, as these helpers read it. The typed RPC client returns its own response type,
+ * which lacks members Bun adds to `Response` (`textStream`); taking only what is read keeps both.
+ */
+type FetchResponse = Pick<Response, 'ok' | 'status' | 'url' | 'headers' | 'json' | 'text'>
+
+/**
  * Which client trace each response belongs to.
  *
  * The defect: an Event Center row picked its trace as "the newest failed request in this session
@@ -50,10 +56,10 @@ export function pluginApiUrl(path: string): string {
  * through {@link problemRequestOf}. A WeakMap rather than a request header, because a custom header
  * turns every cross-origin GET from the packaged page into a preflighted one.
  */
-const responseTraces = new WeakMap<Response, string>()
+const responseTraces = new WeakMap<FetchResponse, string>()
 
 /** Host transport only: record the trace id of the call that produced `response`. */
-export function markResponseTrace(response: Response, traceId: string): void {
+export function markResponseTrace(response: FetchResponse, traceId: string): void {
   responseTraces.set(response, traceId)
 }
 
@@ -61,7 +67,7 @@ export function markResponseTrace(response: Response, traceId: string): void {
 export const REQUEST_ID_HEADER = 'x-request-id'
 
 /** The failed call, as a problem names it — so the Event Center traces exactly this request. */
-export function problemRequestOf(response: Response, method?: string): ProblemRequest {
+export function problemRequestOf(response: FetchResponse, method?: string): ProblemRequest {
   let path: string | undefined
   try {
     path = response.url ? new URL(response.url).pathname : undefined
@@ -175,7 +181,7 @@ function readWireError(body: JsonError | null, status: number): WireError {
   }
 }
 
-async function pluginApiError(response: Response): Promise<PluginApiError> {
+async function pluginApiError(response: FetchResponse): Promise<PluginApiError> {
   const body = (await response.json().catch(() => null)) as JsonError | null
   const wire = readWireError(body, response.status)
   return new PluginApiError(wire.message, response.status, wire.code, wire.detail, {
@@ -184,12 +190,12 @@ async function pluginApiError(response: Response): Promise<PluginApiError> {
   })
 }
 
-export async function unwrapPluginResponse<T>(response: Response): Promise<T> {
+export async function unwrapPluginResponse<T>(response: FetchResponse): Promise<T> {
   if (!response.ok) throw await pluginApiError(response)
   return (await response.json()) as T
 }
 
-export async function assertPluginResponse(response: Response): Promise<void> {
+export async function assertPluginResponse(response: FetchResponse): Promise<void> {
   if (response.ok) return
   throw await pluginApiError(response)
 }

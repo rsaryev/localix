@@ -3,17 +3,16 @@
  * names that actually belong to those cells.
  *
  * `stmt.values()` materializes every row at once, so it cannot stop; `iterate()` can, but it
- * yields NAME-keyed objects, which is only lossless when the names are unique — `SELECT a.id,
- * b.id` would come back one column short. Bun's `columnNames` cannot tell either: it is itself
- * de-duplicated AND reordered (`SELECT t.id, t.v, t.id` reports `["v","id"]` over three cells),
- * so a grid built from it put every header over the wrong column. `declaredTypes` has one entry
- * per REAL column once the statement has stepped, so the first row decides — unique names keep
- * iterating (the common case), repeated names re-run the read through `values()` and cap it.
+ * yields NAME-keyed objects, which is only lossless when the names are unique — `SELECT 1 AS id,
+ * 2 AS id` would come back as `[2, 2]`. So repeated names, or a `columnNames` narrower than the
+ * row, read through `values()` and cap it; unique names keep iterating (the common case).
  *
- * The true names of a collapsed read come from SQLite itself: wrapped as a subquery
- * (`SELECT * FROM (…) LIMIT 0`, which steps nothing), SQLite names each repeat `id:1`, in order,
- * and the suffix comes off again. A write cannot be wrapped (and must not run twice), so its
- * repeated columns are named by position — honest about the order, rather than wrong.
+ * Bun 1.4 reports every column in order (`SELECT t.id, t.v, t.id` → `["id","v","id"]`). Bun 1.3
+ * de-duplicated AND reordered them (`["v","id"]` over three cells); `declaredTypes` has one entry
+ * per REAL column once the statement has stepped, so a narrower list is still caught. Its true
+ * names come from SQLite itself: wrapped as a subquery (`SELECT * FROM (…) LIMIT 0`, which steps
+ * nothing), SQLite names each repeat `id:1`, in order, and the suffix comes off again. A write
+ * cannot be wrapped (and must not run twice), so there its columns are named by position.
  *
  * Only a statement that just reads is iterated at all. Re-running a write to recover its
  * columns would perform it twice, and stopping one mid-step changes what it did; a writing
@@ -54,7 +53,7 @@ export function readSqliteRows(
         : Array.from({ length: width }, (_, i) => `column ${i + 1}`)
     return { ...capped, columns }
   }
-  if (!reads) return readAll()
+  if (!reads || new Set(columnNames).size !== columnNames.length) return readAll()
   const collector = createRowCollector()
   let checked = false
   for (const record of stmt.iterate(...(params as never[])) as Iterable<Record<string, unknown>>) {

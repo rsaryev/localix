@@ -13,11 +13,11 @@
  * An agent then reads the mojibake and reasons about it — reports an API as broken, or "fixes" an
  * encoding problem that only exists in our reader.
  *
- * AND THE RUNTIME CANNOT DO ALL OF THEM. Bun's `TextDecoder` supports `iso-8859-1`, `shift_jis`,
- * `gbk`, `euc-kr` and friends, but NOT `windows-1251` or `koi8-r` — the two that matter most for
- * the legacy Cyrillic APIs this would otherwise be for. An unsupported label does not degrade, it
- * THROWS `RangeError`, so passing a charset through unchecked would turn a mojibake body into a
- * failed send.
+ * AND THE RUNTIME CANNOT DO ALL OF THEM. Bun's `TextDecoder` has the WHATWG Encoding set (up to
+ * Bun 1.3 it lacked `windows-1251` and `koi8-r` too), but a label outside it — `utf-7`, or
+ * `iso-2022-kr`, which the standard maps to no decoder — is still refused. An unsupported label
+ * does not degrade, it THROWS `RangeError`, so passing a charset through unchecked would turn a
+ * mojibake body into a failed send.
  *
  * So: decode what we can, and for what we cannot, fall back to UTF-8 and SAY SO. A body we quietly
  * garbled is the failure this plugin keeps finding — plausible, silent, and reasoned about as if it

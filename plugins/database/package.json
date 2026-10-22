@@ -19,7 +19,7 @@
     "hono": "^4.12.30",
     "json-bigint": "^1.0.0",
     "lucide-react": "^1.61.0",
-    "mongodb": "^6.21.0",
+    "mongodb": "^7.7.0",
     "mssql": "^12.7.10",
     "mysql2": "^3.24.6",
     "postgres": "^3.4.9",

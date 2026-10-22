@@ -14,7 +14,7 @@ recording; logic changes should include a regression test when practical.
 
 ## Development setup
 
-Localix uses Bun 1.3.14 and Turborepo:
+Localix uses Bun 1.4.4 and Turborepo:
 
 ```bash
 git clone https://github.com/rsaryev/localix.git

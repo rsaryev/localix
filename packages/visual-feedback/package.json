@@ -81,7 +81,7 @@
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "21.0.4",
-    "@types/bun": "1.3.14",
+    "@types/bun": "1.4.3",
     "happy-dom": "21.0.4",
     "shx": "^0.4.0",
     "typescript": "^7.0.2"

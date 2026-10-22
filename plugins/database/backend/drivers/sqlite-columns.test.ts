@@ -37,10 +37,10 @@ describe('sqlite repeated column names', () => {
     expect(aliases.columns.map((c) => c.name)).toEqual(['x', 'v', 'x'])
   })
 
-  test('a write with repeated columns is named by position, never run twice', async () => {
+  test('a write with repeated columns keeps its names, in order, and never runs twice', async () => {
     const db = await withTable()
     const result = await db.query("INSERT INTO t VALUES (2, 'b') RETURNING id, v, id")
-    expect(result.columns.map((c) => c.name)).toEqual(['column 1', 'column 2', 'column 3'])
+    expect(result.columns.map((c) => c.name)).toEqual(['id', 'v', 'id'])
     expect(result.rows).toEqual([[2, 'b', 2]])
     expect((await db.query('SELECT count(*) AS n FROM t')).rows).toEqual([[2]])
   })

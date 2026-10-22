@@ -119,7 +119,7 @@
     "@localixai/engine-scripts": "workspace:*",
     "@localixai/source-lint": "workspace:*",
     "@localixai/testing": "workspace:*",
-    "@types/bun": "1.3.14",
+    "@types/bun": "1.4.3",
     "@types/picomatch": "^4",
     "@types/shell-quote": "^1.7.5",
     "typescript": "^7.0.2"
