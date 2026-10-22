@@ -29,6 +29,13 @@ Changes land on `main`.
   Plugins you installed in Claude Code itself also appear, waiting for your approval.
 - **Output styles**: Default, Proactive, Concise, Explanatory, Learning, a plugin's and your own.
   Pick the default in Settings → Preferences → Output style, or switch a chat with `/output-style`.
+- **Plugin secrets in the vault**: a Claude Code plugin's `sensitive` settings are kept encrypted in
+  the vault and bound to the plugin, not in plain text with its other settings. They still reach the
+  plugin's hooks and MCP servers, and are deleted when you uninstall it. Values saved by an earlier
+  version move to the vault the first time Localix starts.
+- **Hooks can read the conversation**: `transcript_path` names the chat as a file in Claude Code's
+  transcript format, so ralph-loop's completion promise and hookify's stop rules work as in Claude
+  Code. `/plugin validate <path>` checks a plugin folder before you install it.
 - **Plugin themes** in Settings → Preferences → Appearance and through `/theme`.
 - **Plugin workflows** run in the background as `/<plugin>:<name>`, each agent a child task on the
   model and effort it asks for, optionally in its own git worktree; a stopped run resumes.
@@ -52,6 +59,15 @@ Changes land on `main`.
   delegates to, with no limit per plugin. Settings → Capabilities → Plugins labels each entry
   **Claude Code plugin**, **mini app** or **legacy manifest**. See
   [Claude Code plugins](docs/extending/claude-code-plugins.md).
+- **Claude Code plugins behave as in Claude Code**: hooks see Claude Code's tool names and inputs
+  and decide before the approval card; allow, ask, deny, `continue: false` and replaced tool output
+  work as documented; a plugin's skills load by `/<plugin>:<skill>`, and your own skill of the same
+  name wins. A personal plugin has one set of settings in every project, `/plugin install` respects
+  `defaultEnabled: false` and names the dependencies it installed, `/plugin disable` refuses while
+  another plugin depends on it, and uninstalling deletes the plugin's data folder.
+- **Skill commands are checked**: a skill the agent loads runs its `!` commands only where your
+  permission rules allow them, passes its arguments as values rather than shell text, and gives each
+  command two minutes.
 - **Status updates when it changes**: local model downloads and semantic search indexing in
   Settings, a provider sign-in started from the message box, and an external agent waiting on
   terminal output now follow the change as it happens instead of checking on a timer, with fewer
