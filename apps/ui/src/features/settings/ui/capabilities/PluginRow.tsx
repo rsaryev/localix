@@ -23,6 +23,22 @@ import { pluginLabel } from '@localixai/plugin-sdk/manifest-label'
  * a migrated third-party bundle — and that vocabulary grows on its own schedule,
  * independent of how the list is loaded or refreshed.
  */
+/** What the folder holds, in the words of `docs/internals/plugins-and-mini-apps.md`. */
+const LAYOUT_LABELS: Record<PluginRecord['layout'], SettingRegistryMetaItem> = {
+  plugin: {
+    label: 'Claude Code plugin',
+    title: 'A plugin in the Claude Code format: the same folder loads in Claude Code',
+  },
+  'mini-app': {
+    label: 'mini app',
+    title: 'A Localix mini app with its plugin: screens, a backend and agent tools',
+  },
+  legacy: {
+    label: 'legacy manifest',
+    title: 'One root plugin.json written before plugins and mini apps were split',
+  },
+}
+
 export function PluginRow({
   plugin,
   projects,
@@ -66,17 +82,10 @@ export function PluginRow({
   const metadata: SettingRegistryMetaItem[] = [
     { label: `v${plugin.version}` },
     { label: projName },
-    plugin.importedFrom === 'claude-code'
-      ? {
-          label: 'imported',
-          title: `Imported from Claude Code${plugin.migratedFrom ? ` (${plugin.migratedFrom})` : ''}`,
-        }
-      : {
-          label: plugin.migratedFrom ? 'migrated' : 'native',
-          title: plugin.migratedFrom
-            ? `Migrated from ${plugin.migratedFrom}`
-            : 'Written natively for Localix',
-        },
+    LAYOUT_LABELS[plugin.layout],
+    ...(plugin.migratedFrom
+      ? [{ label: 'migrated', title: `Migrated from ${plugin.migratedFrom}` }]
+      : []),
     ...(isWorkbenchPlugin(plugin.surfaces)
       ? [
           {

@@ -53,6 +53,13 @@ refresh and remove the bundles. The page is the workspace with `chrome="app"`, d
 project of its own (`shared/lib/pluginAppProject.ts`). Install actions and icons live in
 `features/plugin-apps/`.
 
+An extension is a [plugin and a mini app](plugins-and-mini-apps.md): `.claude-plugin/plugin.json` in
+the Claude Code format, read by `packages/claude-plugin` (no Localix knowledge), and
+`.localix-app/app.json` (`@localixai/plugin-sdk/app-manifest`).
+`apps/api/src/features/plugins/layout/` reads both (`read.ts`), composes the one runtime manifest
+the loader uses (`compose.ts`, with `claude-code.ts` for the Claude Code mapping), splits a legacy
+root `plugin.json` (`split.ts`) and finds where the build writes the backend (`backend-pointer.ts`).
+
 ## Boot is phased, and the phases exist because of cycles
 
 `apps/api/src/bootstrap.ts` composes the `bootstrap/*` phases in order: infra, registries,
@@ -205,7 +212,7 @@ copy. Two copies drifting is why `wake-provenance` exists.
 | A new wake producer     | its own `features/<x>` engine + `bootstrap/session-services.ts` (or `engines.ts`) + a `WakeSource` in `chat/contracts/queue.ts` + label in `wake-provenance.ts` + the one delivery `wakes` (`triggers/delivery.ts`) if it cannot await a turn                                                                                                                                                                                                                                                |
 | A new kind of Continue  | a `ResumeProducer` (`features/resume/contracts.ts`: `list` + `take`) registered in `bootstrap/session-services.ts`, and `registry.changed(owner)` when its work changes; the UI needs nothing (`ResumeStrip`) unless the kind has its own row (`RESUME_KINDS_WITH_OWN_ROW`). Never a per-feature Continue button or endpoint                                                                                                                                                                 |
 | A model judgment        | a typed question to `features/decisions` (`DecisionService.decide`, its own `purpose`; `usageKind: 'routing'` only for routing) or texts to `semanticService.vectors` (`embeddings/semantic-vectors.ts`: `rank`, `embed`), the ports search, group routing and plugins share. Models are named only in `decisions/models.ts` and `embeddings/models.ts`. Never resolve a model, keep a deadline or compute a cosine in the consumer; always keep its fallback for an outcome without answers |
-| A plugin capability     | `plugins/<name>` + `@localixai/plugin-sdk` contract; remember plugins run from `~/.localix/plugins`                                                                                                                                                                                                                                                                                                                                                                                          |
+| A plugin capability     | `plugins/<name>`: agent parts in `.claude-plugin/` and its component folders, Localix parts in `.localix-app/app.json` + `@localixai/plugin-sdk` contract; remember plugins run from `~/.localix/plugins`                                                                                                                                                                                                                                                                                    |
 | A schema change         | a new file in `apps/api/migrations/` + `db/types.ts`; no existing migration is ever renamed, edited or deleted, because `bun run dev` has already run it on your database (`migration-ledger.ts` refuses to boot, `migration-freeze.test.ts` refuses in CI); see `apps/api/migrations/README.md`                                                                                                                                                                                             |
 
 Markdown grammar and portable rendering live in `packages/markdown`; the workspace owns mentions,

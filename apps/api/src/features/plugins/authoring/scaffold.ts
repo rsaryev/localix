@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto'
 import { promises as fs } from 'node:fs'
 import { basename, join } from 'node:path'
 
+import { MANIFEST_FILE } from '@localixai/claude-plugin'
+import { MINI_APP_MANIFEST_FILE } from '@localixai/plugin-sdk/app-manifest'
 import { TEMPLATE_SCAFFOLD_FILE } from './kit-layout'
 import type { PluginKit } from './kit'
 import { writePluginKitCatalog } from './kit-catalog'
@@ -156,8 +158,13 @@ async function rewriteCopy(dir: string, map: [RegExp, string][]): Promise<void> 
   }
 }
 
-async function patchManifest(dir: string, patch: Record<string, unknown>): Promise<void> {
-  const path = join(dir, 'plugin.json')
+/** Patch one manifest of the copy (`.claude-plugin/plugin.json`, `.localix-app/app.json`). */
+async function patchManifest(
+  dir: string,
+  file: string,
+  patch: Record<string, unknown>,
+): Promise<void> {
+  const path = join(dir, file)
   const manifest = JSON.parse(await fs.readFile(path, 'utf8')) as Record<string, unknown>
   await fs.writeFile(path, `${JSON.stringify({ ...manifest, ...patch }, null, 2)}\n`)
 }
@@ -189,16 +196,17 @@ export async function scaffoldUserPlugin(input: ScaffoldInput): Promise<Scaffold
       if (await exists(source))
         await fs.rename(source, join(staging, fillPlaceholders(to, { name })))
     }
-    // `tools` is left to the first build, which points it at the backend BUILD (a user plugin
-    // has no `node_modules`; the build is what resolves its shared imports). `defaultEnabled`
-    // is a first-party claim; a user plugin is enabled by the user's consent.
-    await patchManifest(staging, {
+    // The plugin carries the identity; the mini app around it keeps the rest. Its `backend` is
+    // left to the first build, which points it at the backend BUILD (a user plugin has no
+    // `node_modules`; the build is what resolves its shared imports). `defaultEnabled` is a
+    // first-party claim; a user plugin is enabled by the user's consent.
+    await patchManifest(staging, MANIFEST_FILE, {
       name,
       displayName,
       description,
       version: '0.1.0',
-      defaultEnabled: undefined,
     })
+    await patchManifest(staging, MINI_APP_MANIFEST_FILE, { name, defaultEnabled: undefined })
     await fs.writeFile(
       join(staging, 'README.md'),
       readme({ name, displayName, description, scaffold }),

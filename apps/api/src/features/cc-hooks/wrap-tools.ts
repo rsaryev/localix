@@ -77,21 +77,30 @@ export function wrapToolsWithCcHooks(
         }
       }
 
-      // A THROWN tool error becomes a result here so PostToolUse still runs on it —
-      // a user's hook that logs, redacts or gates on tool output could not observe a
-      // failed call at all while the throw flew past to the failure guard (which
-      // converts it identically, one wrapper out). Not rethrown afterwards: that
-      // would undo the conversion this wrapper just relied on.
+      // A THROWN tool error becomes a result here, and PostToolUseFailure runs on it in
+      // place of PostToolUse (as in Claude Code) — a hook that logs or explains failures could
+      // not observe a failed call at all while the throw flew past to the failure guard (which
+      // converts it identically, one wrapper out). Not rethrown afterwards: that would undo the
+      // conversion this wrapper just relied on.
       let result: AgentToolResult
       try {
         result = await tool.execute(toolCallId, effectiveInput, signal, onUpdate, context)
       } catch (error) {
         // A pre-hook BLOCK (this wrapper's own deny, or a plugin's from the wrapper
-        // inside it) keeps flying: the tool never ran, so there is no output for
-        // PostToolUse to inspect, and the failure guard recognises it by name to stamp
+        // inside it) keeps flying: the tool never ran, so there is no output for a
+        // post hook to inspect, and the failure guard recognises it by name to stamp
         // `kind:'blocked'`.
         if (isBlockedThrow(error)) throw error
         result = resultFromThrow(tool.name, error)
+        const failed = await runtime.runPostToolUseFailure(tool.name, effectiveInput, {
+          error: error instanceof Error ? error.message : String(error),
+          isInterrupt: Boolean(signal?.aborted),
+        })
+        if (failed.additionalContext) {
+          const note = failed.additionalContext.slice(0, CC_POST_APPEND_CAP_BYTES)
+          result = { ...result, content: `${result.content}\n\n[hook] ${note}` }
+        }
+        return result
       }
 
       // ---- PostToolUse ----------------------------------------------------

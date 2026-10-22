@@ -70,7 +70,7 @@ The rule is one pure function, `memberMay` in `shared/rules.ts`. Reassigning an 
 
 ## Source of truth
 
-- [Manifest](plugin.json)
+- [Plugin manifest](.claude-plugin/plugin.json) and [mini app manifest](.localix-app/app.json)
 - [Action vocabulary](shared/tool.ts)
 - [Per-action fields and status guards](backend/tool-input.ts)
 - [Ordered storage and read fallback](backend/store.ts)

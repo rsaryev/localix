@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test
 import { registerDom } from '@localixai/kit/testing/dom'
 
 let teardown: () => Promise<void>
-const CHESS = { plugin: 'chess', name: 'Chess', projectDir: '/h/.localix/apps/chess' }
+const CHESS = { plugin: 'tile-game', name: 'Tile game', projectDir: '/h/.localix/apps/tile-game' }
 
 beforeAll(() => {
   teardown = registerDom()
@@ -42,14 +42,14 @@ describe('pluginApp', () => {
   test('an app window names its plugin and title', async () => {
     const { pluginApp } = await import('./pluginApp')
     window.__LOCALIX_APP = {
-      plugin: 'game-2048',
+      plugin: 'puzzle-grid',
       name: '2048',
-      projectDir: '/h/.localix/apps/game-2048',
+      projectDir: '/h/.localix/apps/puzzle-grid',
     }
     expect(pluginApp()).toEqual({
-      plugin: 'game-2048',
+      plugin: 'puzzle-grid',
       name: '2048',
-      projectDir: '/h/.localix/apps/game-2048',
+      projectDir: '/h/.localix/apps/puzzle-grid',
     })
   })
 })
@@ -58,14 +58,14 @@ describe('applyPluginAppStartRoute', () => {
   test('starts on the remembered conversation instead of the home page', async () => {
     const { applyPluginAppStartRoute, rememberPluginAppSession } = await import('./pluginApp')
     window.__LOCALIX_APP = CHESS
-    rememberPluginAppSession('chess', 'abc_123')
+    rememberPluginAppSession('tile-game', 'abc_123')
     applyPluginAppStartRoute()
     expect(window.location.hash).toBe('#/chat/abc_123')
   })
 
   test('leaves a route the window already has, and the workspace, alone', async () => {
     const { applyPluginAppStartRoute, rememberPluginAppSession } = await import('./pluginApp')
-    rememberPluginAppSession('chess', 'abc_123')
+    rememberPluginAppSession('tile-game', 'abc_123')
     applyPluginAppStartRoute()
     expect(window.location.hash).toBe('')
     window.__LOCALIX_APP = CHESS

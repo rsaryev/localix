@@ -28,7 +28,8 @@ the normal plugin catalog and follows the same enablement rules as Database, Dev
 
 | Location                  | Responsibility                                                |
 | ------------------------- | ------------------------------------------------------------- |
-| `plugin.json`             | Product metadata, surfaces, backend and skill roots           |
+| `.claude-plugin/`         | The plugin: name, description, version (Claude Code format)   |
+| `.localix-app/`           | The mini app: category, surfaces, backend                     |
 | `backend/system.ts`       | Injectable native OS reader and one-second snapshot cache     |
 | `backend/processes.ts`    | Cross-platform process collector                              |
 | `backend/system-marks.ts` | Marks: notes saved with the CPU and memory of their moment    |
@@ -86,7 +87,7 @@ See the [plugin guide](../../docs/extending/plugins.md) for the full Localix con
 
 ## Source of truth
 
-- [Manifest](plugin.json)
+- [Plugin manifest](.claude-plugin/plugin.json) and [mini app manifest](.localix-app/app.json)
 - [Development and build commands](package.json)
 - [Standalone ports and proxy](vite.config.ts)
 - [Standalone process ownership](preview/serve.ts)

@@ -151,8 +151,8 @@ export type {
   RenameResult,
 } from './features/lsp'
 
-// The agnostic agent-vs-workbench split: a plugin DECLARES its surfaces in
-// `plugin.json`, every consumer (onboarding steps, settings grouping) reads the
+// The agnostic agent-vs-workbench split: a mini app DECLARES its surfaces in
+// `.localix-app/app.json`, every consumer (onboarding steps, settings grouping) reads the
 // declaration through these pure helpers — no host-side plugin allowlist.
 export {
   PLUGIN_SURFACE_AGENT,

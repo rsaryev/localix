@@ -104,7 +104,7 @@ bun test plugins/reader
 
 ## Source of truth
 
-- [Manifest and file associations](./plugin.json)
+- [Plugin manifest](.claude-plugin/plugin.json) and [mini app manifest](.localix-app/app.json)
 - [Backend registration and storage paths](./backend/index.ts)
 - [Explicit shelf and collections](./backend/service.ts)
 - [Format parsing and path containment](./backend/library.ts)

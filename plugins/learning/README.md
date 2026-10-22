@@ -71,7 +71,7 @@ Use `/learning:adapt` to patch only the affected lesson files and re-activate th
 
 ## Source of truth
 
-- [Manifest and skill contributions](plugin.json)
+- [Plugin manifest](.claude-plugin/plugin.json) and [mini app manifest](.localix-app/app.json)
 - [Course activation and step validation](backend/course-bundle.ts)
 - [Progress and answer handling](backend/service.ts)
 - [Module generation claims and retries](backend/module-generation.ts)

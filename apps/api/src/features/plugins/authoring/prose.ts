@@ -118,7 +118,10 @@ ${HOST_JUDGMENT_CONTRACT}
   the domain only through the entries.
 - EDIT the entries, keeping their path and export: ${scaffold.entry.join(', ')}.
 - REPLACE the domain — delete it, or rename it after what it now holds: ${copyDomain(scaffold, name).join(', ')}.
-- \`plugin.json\` \`tools\` is written by the build: it names the current build of
+- Two manifests, two layers: \`.claude-plugin/plugin.json\` is the agent's plugin in the Claude
+  Code format (name, description, keywords; its skills under \`skills/\`), and
+  \`.localix-app/app.json\` is the mini app around it (category, settings, the backend). The
+  mini app's \`backend\` is written by the build: it names the current build of
   \`backend/index.ts\` under \`${USER_PLUGIN_BACKEND_DIR}/\`, which is what runs. Leave it alone.
 - Keep what the user creates with \`openJsonStore\` (\`backend/store.ts\`) under \`ctx.dataDir\`,
   given to \`register(ctx)\`; \`ctx.stateDir\` is for internal state. Never only in memory.
@@ -186,13 +189,13 @@ export function agentInstruction(input: {
       // Every tool call is a model round trip, and a plugin is a dozen files: reading them one
       // per step and building after each edit made creation take minutes longer than its work.
       'Work in this order; the layout below is complete, so do not list the tree. Batch: issue the reads of one step together in a single turn, write independent files together, and build once the whole domain is written — not after each file.',
-      `1. READ the entries in one batch — same path and export, the body is yours: plugin.json (description, keywords; drop "skills" if you ship none; never edit "tools", the build writes it), ui/register.tsx (labels, icon, agentContext, tool list, resource URI), ui/Workspace.tsx (export Workspace, the root the frame renders), backend/index.ts (tools, wiring, routes), backend/routes.ts. With them, the patterns your plugin needs, and only those:`,
+      `1. READ the entries in one batch — same path and export, the body is yours: .claude-plugin/plugin.json (description, keywords), .localix-app/app.json (category, config; never edit "backend", the build writes it), ui/register.tsx (labels, icon, agentContext, tool list, resource URI), ui/Workspace.tsx (export Workspace, the root the frame renders), backend/index.ts (tools, wiring, routes), backend/routes.ts. With them, the patterns your plugin needs, and only those:`,
       ...scaffold.patterns.map(
         (pattern) => `   - ${pattern.use}: ${pattern.file} (at "${pattern.anchor}")`,
       ),
       `2. REPLACE the domain, ${scaffold.domainName} itself — delete it in one command, or rename it after what it now holds and rewrite it: ${copyDomain(scaffold, name).join(', ')}. No file, directory or identifier of it may survive (${scaffold.domainTokens.slice(0, 3).join(', ')}, …). Keep the FRAME byte for byte — ${frameList(kit, scaffold).join(', ')} — it imports no domain module, and its helpers are yours:`,
       ...FRAME_HELPERS.map((helper) => `   - ${helper}`),
-      `3. TEST the new behaviour with bun:test — its stored state, its routes and each acting tool — and replace skills/${skill}/ with a skill for the new domain (or drop "skills" from plugin.json). README.md and AGENTS.md are already written; leave them.`,
+      `3. TEST the new behaviour with bun:test — its stored state, its routes and each acting tool — and replace skills/${skill}/ with a skill for the new domain (or delete skills/ if you ship none). README.md and AGENTS.md are already written; leave them.`,
       `4. BUILD with ${PLUGIN_BUILD_TOOL} (name: "${name}"): it checks for ${scaffold.domainName} leftovers and the house style, builds the backend and the UI, type-checks against the SDK and kit declarations, runs the tests, and reloads the plugin in the running app. Every problem is one line with its file:line:col, all of them in one report: fix them all, then build again. The editor's diagnostics read the same tsconfig.json, so a type error shown after an edit is real — fix it before building.`,
       `5. If the browser tool is available, LOOK at it: url "${view}" opens its view in the workbench. take_screenshot to see it, and steps (click, type) to do each thing the person will do; read the result, not the code. Fix what does not look or work right, and build again. If the browser tool is unavailable, say that visual and interaction checks were not run.`,
       `6. TELL the user "${displayName}" is in the workspace overflow menu. The workbench replaced the UI in place: do not ask them to restart or reload anything.`,

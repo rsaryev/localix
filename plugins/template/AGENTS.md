@@ -7,8 +7,9 @@ repository; use the parent's dependency installation and lockfile.
 
 What a copy is made of is declared in `scaffold.json`, and every part of it is load-bearing:
 
-- **Entry** — same path and export in every copy, body replaced: `plugin.json`, `ui/register.tsx`,
-  `ui/Workspace.tsx`, `backend/index.ts`, `backend/routes.ts`.
+- **Entry** — same path and export in every copy, body replaced: `.claude-plugin/plugin.json` (the
+  agent's plugin, in the Claude Code format), `.localix-app/app.json` (the mini app around it),
+  `ui/register.tsx`, `ui/Workspace.tsx`, `backend/index.ts`, `backend/routes.ts`.
 - **Domain** — System Overview itself, deleted or rewritten by each copy. Its identifiers are the
   residue the `plugin_build` check reports, so a new one goes on `domainTokens`.
 - **Frame** — everything else, kept byte for byte: `ui/usePolledSnapshot.ts` (polling and `send`),

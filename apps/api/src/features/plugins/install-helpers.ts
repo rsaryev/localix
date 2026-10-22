@@ -18,11 +18,8 @@ import {
 } from '../ext/install-tree'
 import { findManifestPath } from './discovery'
 import { PLUGIN_NAME_RE } from './contracts'
-import {
-  CLAUDE_CODE_MARKETPLACE_HINT,
-  isClaudeCodeMarketplace,
-  readClaudeCodePluginName,
-} from './import-claude-code'
+import { CLAUDE_CODE_MARKETPLACE_HINT, isClaudeCodeMarketplace } from './claude-code-marketplace'
+import { MINI_APP_MANIFEST_FILE } from '@localixai/plugin-sdk/app-manifest'
 import { publishExtensionTree, type ExtensionPublicationLifecycle } from '../ext/publish-tree'
 
 const execFileAsync = promisify(execFile)
@@ -114,9 +111,11 @@ export async function installFromLocal(
 export const copyPluginTree = copyExtensionTree
 
 async function manifestName(dir: string): Promise<string> {
-  const manifestPath = (await findManifestPath(dir)) ?? join(dir, 'plugin.json')
-  // A Claude Code plugin is converted after staging; its name comes from its own manifest.
-  const declared = (await readManifestName(manifestPath)) ?? (await readClaudeCodePluginName(dir))
+  // A mini app names itself; else the plugin's manifest (Claude Code's, or a legacy one) does.
+  const pluginManifest = await findManifestPath(dir)
+  const declared =
+    (await readManifestName(join(dir, MINI_APP_MANIFEST_FILE))) ??
+    (pluginManifest ? await readManifestName(pluginManifest) : null)
   if (!declared && (await isClaudeCodeMarketplace(dir)))
     throw new InvalidRequestError('plugin_claude_marketplace', CLAUDE_CODE_MARKETPLACE_HINT)
   if (declared) {

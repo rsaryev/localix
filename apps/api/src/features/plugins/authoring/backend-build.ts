@@ -1,8 +1,9 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { promises as fs } from 'node:fs'
-import { join, relative } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 
 import { wasImportedByThisProcess } from '../../../lib/module-url'
+import { backendPointer, readPointerManifest } from '../layout/backend-pointer'
 import { formatBuildLogs } from './build-logs'
 import type { PluginKit } from './kit'
 import { assertSafeAuthoringPaths } from './output-paths'
@@ -21,15 +22,16 @@ import {
  * so importing its `backend/index.ts` directly failed on the first `import { Hono } from 'hono'`.
  * First-party plugins never hit it because staging pre-bundles them from the source tree — an
  * option an installed app does not have. The app bundles the plugin itself instead, leaving the
- * shared modules to the host (which serves its own at runtime), and `plugin.json` names the result.
+ * shared modules to the host (which serves its own at runtime), and the mini app manifest names the
+ * result (`backend`, or a legacy `plugin.json` `tools`; see `layout/backend-pointer.ts`).
  *
  * Every build is a NEW file named by its content, and the previous one is left where it is. The
  * first version renamed each build over one fixed file — the module the API had imported — and
  * replacing (or even renaming) an imported file makes the development runtime (`bun --watch`)
  * restart the whole API: one session lost its agent turn to "Backend restarted while plugin_build
  * was still running". Measured under `bun --watch`: replace-over and rename-aside both restart;
- * a new sibling file, a rewritten `plugin.json` and deleting a file nobody imported do not. So a
- * build writes `index-<hash>.mjs`, points `plugin.json` `tools` at it, and deletes only old builds
+ * a new sibling file, a rewritten manifest and deleting a file nobody imported do not. So a
+ * build writes `index-<hash>.mjs`, points the manifest's backend at it, and deletes only old builds
  * this process never imported. A single-file build also moves as a whole, so a changed module the
  * entry imported can no longer stay cached behind an unchanged entry URL.
  */
@@ -94,11 +96,12 @@ export async function discardPluginBackendCandidate(
   if (!tools) return
   // A malformed manifest is itself a failed check. It must not mask the report or leave every
   // failed candidate on disk; only a manifest that actually names this build protects it.
+  const pointer = await backendPointer(pluginDir)
   const manifest = await fs
-    .readFile(join(pluginDir, 'plugin.json'), 'utf8')
-    .then((text) => JSON.parse(text) as { tools?: unknown })
+    .readFile(pointer.path, 'utf8')
+    .then((text) => JSON.parse(text) as Record<string, unknown>)
     .catch(() => null)
-  if (manifest?.tools === tools) return
+  if (manifest?.[pointer.field] === tools) return
   const path = join(pluginDir, tools)
   if (!wasImportedByThisProcess(path)) await fs.rm(path, { force: true }).catch(() => {})
 }
@@ -109,13 +112,14 @@ export async function publishPluginBackend(
   tools: string | null,
   options: { prune?: boolean } = {},
 ): Promise<void> {
-  const manifestPath = join(pluginDir, 'plugin.json')
-  const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8')) as Record<string, unknown>
+  const pointer = await backendPointer(pluginDir)
+  const manifest = await readPointerManifest(pluginDir, pointer)
   const next = { ...manifest }
-  if (tools) next.tools = tools
-  else if (isUserPluginBackendBuild(next.tools)) delete next.tools
-  if (next.tools !== manifest.tools) {
-    await writeAtomically(manifestPath, `${JSON.stringify(next, null, 2)}\n`)
+  if (tools) next[pointer.field] = tools
+  else if (isUserPluginBackendBuild(next[pointer.field])) delete next[pointer.field]
+  if (next[pointer.field] !== manifest[pointer.field]) {
+    await fs.mkdir(dirname(pointer.path), { recursive: true })
+    await writeAtomically(pointer.path, `${JSON.stringify(next, null, 2)}\n`)
   }
 
   if (options.prune !== false) await prunePluginBackendBuilds(pluginDir, tools)

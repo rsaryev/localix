@@ -6,20 +6,15 @@ import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../../db'
 import { listSubdirs, pathExists } from '../ext/fs-discovery'
 import { defaultProjectDir, normalizeProjectDir } from '../projects/default-project'
-import { importClaudeCodePlugin, isClaudeCodePlugin } from './import-claude-code'
 
 /**
- * One-time, idempotent startup migration of plugin installs made before the native-only
- * format:
+ * One-time, idempotent startup migration of plugin installs made into the Default project's
+ * folder (`~/.localix/workspace/.localix/plugins`), which were invisible to its chats (they run in
+ * per-chat sandboxes). They move to the global root and their `capability_source` rows move to the
+ * global scope. A name that already exists globally is left where it is and logged.
  *
- *  1. Plugins installed into the Default project's folder (`~/.localix/workspace/.localix/
- *     plugins`) were invisible to its chats, which run in per-chat sandboxes. They move to the
- *     global root and their `capability_source` rows move to the global scope. A name that
- *     already exists globally is left where it is and logged.
- *  2. Every remaining Claude Code-layout install (global root and each project's
- *     `.localix/plugins`) gets a native root `plugin.json` written in place by the importer.
- *
- * Nothing is deleted: the original Claude Code manifest folder stays beside the new manifest.
+ * Claude Code-layout installs need nothing: they load in place (`layout/compose.ts`), and the root
+ * `plugin.json` an earlier version wrote beside one is ignored.
  */
 
 interface MigrationLogger {
@@ -90,35 +85,10 @@ async function relocateDefaultProjectInstalls(input: LegacyMigrationInput): Prom
   }
 }
 
-async function convertRoot(root: string, logger: MigrationLogger): Promise<void> {
-  for (const name of await listSubdirs(root)) {
-    const dir = join(root, name)
-    if (!(await isClaudeCodePlugin(dir))) continue
-    try {
-      const result = await importClaudeCodePlugin(dir, { source: 'migrated' })
-      logger.info(
-        { event: 'plugin.migrate.import', dir, notes: result?.notes ?? [] },
-        'Converted a Claude Code-layout plugin to the native format',
-      )
-    } catch (error) {
-      logger.warn(
-        { event: 'plugin.migrate.import_failed', dir, error: String(error) },
-        'Could not convert a Claude Code-layout plugin; it is left unchanged',
-      )
-    }
-  }
-}
-
-/** Run both migration steps. Never throws: a failure is logged and startup continues. */
+/** Run the migration. Never throws: a failure is logged and startup continues. */
 export async function migrateLegacyPluginInstalls(input: LegacyMigrationInput): Promise<void> {
   try {
     await relocateDefaultProjectInstalls(input)
-    const projects = await input.db.selectFrom('projects').select('working_dir').execute()
-    const roots = new Set([
-      join(input.homeDir, PLUGINS),
-      ...projects.map((p) => join(p.working_dir, PLUGINS)),
-    ])
-    for (const root of roots) await convertRoot(root, input.logger)
   } catch (error) {
     input.logger.warn(
       { event: 'plugin.migrate.failed', error: String(error) },

@@ -119,8 +119,8 @@ and "click Pods in DevOps" need no guessing.
 ## How it works
 
 1. The app builds a user plugin itself, from the plugin kit it ships: the backend into
-   `dist/backend/index-<hash>.mjs` (a new file per build; `plugin.json` `tools` is pointed at it, so
-   a running module is never replaced under the app) with `hono`, `zod` and
+   `dist/backend/index-<hash>.mjs` (a new file per build; the mini app's `backend` is pointed at it,
+   so a running module is never replaced under the app) with `hono`, `zod` and
    `@localixai/plugin-sdk/backend` taken from the kit, the UI into `dist/ui/`, and the tests run on
    the Bun binary the app ships. First-party plugins are built the same way at staging, except that
    a release leaves their UI source maps out; a user plugin's artifact keeps its maps.
@@ -331,7 +331,7 @@ keep the focused one.
 | ------------------------------ | ----------------------------------------- | -------------------------------------------------------- |
 | `ui/register.tsx`              | Plugin sources                            | The artifact entry; a plugin without it ships no UI.     |
 | `backend/index.ts`             | Plugin sources                            | The backend source the app builds.                       |
-| `tools`                        | `plugin.json`                             | Written by the build: the backend build that runs.       |
+| `backend`                      | `.localix-app/app.json`                   | Written by the build: the backend build that runs.       |
 | Shared-module rule             | `@localixai/plugin-sdk/ui-artifact`       | Which specifiers come from the host.                     |
 | Plugin CSS and utility classes | Imported `.css` and Tailwind classes      | Built into the artifact's stylesheets on the host theme. |
 | Script and style sources       | `tauri.conf.json` content security policy | Allows the local API origin for artifacts.               |

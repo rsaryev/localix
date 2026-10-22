@@ -1,0 +1,38 @@
+{
+  "name": "api",
+  "apiVersion": 1,
+  "category": "development",
+  "surfaces": ["agent", "workbench"],
+  "fileAssociations": [
+    {
+      "ext": ["request.json"],
+      "name": "Localix API Request",
+      "description": "File-native Localix HTTP request",
+      "mimeType": "application/vnd.localix.request+json",
+      "role": "Editor",
+      "rank": "Owner"
+    }
+  ],
+  "backend": "./backend/index.ts",
+  "config": {
+    "TIMEOUT_MS": {
+      "type": "string",
+      "title": "Request timeout (ms)",
+      "description": "How long a single request may take before it is aborted.",
+      "default": "30000"
+    },
+    "MAX_BODY_BYTES": {
+      "type": "string",
+      "title": "Max response body (bytes)",
+      "description": "Response bodies are streamed and truncated past this cap so a large response cannot exhaust memory.",
+      "default": "1000000"
+    },
+    "ALLOW_PRIVATE_NETWORK": {
+      "type": "boolean",
+      "title": "Allow private/internal hosts",
+      "description": "Off by default: requests to loopback, private, and link-local addresses are refused. Turn on only to call a service on your own machine or LAN.",
+      "default": false
+    }
+  },
+  "defaultEnabled": true
+}

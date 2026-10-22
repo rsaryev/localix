@@ -4,7 +4,13 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { createPluginSharedModules, SDK_SHARED_MODULES } from './pluginSharedModules'
 
 /** SDK entries that never belong in a browser artifact: server code, test doubles, the contract. */
-const NOT_SHARED = new Set(['./backend', './manifest', './ui/testing', './ui-artifact'])
+const NOT_SHARED = new Set([
+  './backend',
+  './manifest',
+  './app-manifest',
+  './ui/testing',
+  './ui-artifact',
+])
 
 describe('plugin shared modules', () => {
   test('the host provides every browser-side SDK entry, and nothing the SDK does not export', () => {

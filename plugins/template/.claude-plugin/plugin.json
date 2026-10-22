@@ -1,0 +1,10 @@
+{
+  "name": "template",
+  "displayName": "System Overview",
+  "version": "0.1.0",
+  "description": "OS, CPU and memory history with process inspection and agent context.",
+  "license": "MIT",
+  "author": {
+    "name": "Localix"
+  }
+}

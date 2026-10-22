@@ -38,6 +38,15 @@ export interface CcPostToolUseInput extends CcHookInputBase {
   tool_input: unknown
   tool_response: unknown
 }
+export interface CcPostToolUseFailureInput extends CcHookInputBase {
+  hook_event_name: 'PostToolUseFailure'
+  tool_name: string
+  tool_input: unknown
+  /** What the tool threw. */
+  error: string
+  /** True when the call was cut short by a cancellation, not a failure of its own. */
+  is_interrupt: boolean
+}
 export interface CcStopInput extends CcHookInputBase {
   hook_event_name: 'Stop'
   /** True when this Stop fires on a run that is ALREADY a Stop-hook-forced
@@ -83,6 +92,7 @@ export type CcHookInput =
   | CcUserPromptSubmitInput
   | CcPreToolUseInput
   | CcPostToolUseInput
+  | CcPostToolUseFailureInput
   | CcStopInput
   | CcSessionEndInput
   | CcSubagentStartInput

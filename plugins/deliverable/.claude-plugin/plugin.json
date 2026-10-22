@@ -1,0 +1,10 @@
+{
+  "name": "deliverable",
+  "displayName": "Deliverables",
+  "version": "1.0.0",
+  "description": "Attach files named in a final response as inline media or downloadable deliverables.",
+  "license": "MIT",
+  "author": {
+    "name": "Localix"
+  }
+}

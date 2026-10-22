@@ -1,32 +1,27 @@
 import { join } from 'node:path'
 import { listSubdirs, pathExists } from '../ext/fs-discovery'
 import { isExtensionPublicationArtifact } from '../ext/publish-tree'
+import { COMPONENT_MARKERS } from '@localixai/claude-plugin'
+import { MINI_APP_MANIFEST_FILE } from '@localixai/plugin-sdk/app-manifest'
 import { locateManifest, PLUGIN_MANIFEST_CANDIDATES } from './manifest-locate'
 import { loadManifest } from './manifest-load'
 import type { DiscoveredPlugin } from './discovery-types'
 
-/**
- * Locate a plugin's native manifest (`plugin.json` at the plugin root), or null.
- * Foreign layouts are converted at install time and at startup by the importer.
- */
+/** Locate a plugin's manifest (`.claude-plugin/plugin.json`, else a legacy `plugin.json`), or null. */
 export async function findManifestPath(dir: string): Promise<string | null> {
   return locateManifest(dir, PLUGIN_MANIFEST_CANDIDATES)
 }
 
-/** Default component locations that make a manifest-less directory a valid plugin. */
-const PLUGIN_COMPONENT_PATHS = ['skills', 'commands', 'agents', '.mcp.json', 'tools']
-
 /**
- * Is `dir` a plugin? True when it has a root manifest OR — the manifest is optional —
- * at least one recognized
- * component directory/file (skills/commands/agents/tools/.mcp.json). Bare dirs (e.g. a
- * `cache`) are skipped. An LSP-only directory (just `.lsp.json`) does not qualify
- * through this component-based fallback.
+ * What makes a directory an extension: a mini app manifest, a legacy `plugin.json`, or what makes
+ * one a Claude Code plugin — its manifest or a default component location (the manifest is
+ * optional). A legacy `tools/` entrypoint counts too. Bare dirs (e.g. a `cache`) are skipped.
  */
+const EXTENSION_MARKERS = [...COMPONENT_MARKERS, MINI_APP_MANIFEST_FILE, 'plugin.json', 'tools']
+
 async function isPluginDir(dir: string): Promise<boolean> {
-  if (await findManifestPath(dir)) return true
-  // Check all component paths in parallel — any one present makes this a plugin.
-  const checks = await Promise.all(PLUGIN_COMPONENT_PATHS.map((c) => pathExists(join(dir, c))))
+  // Check all markers in parallel — any one present makes this an extension.
+  const checks = await Promise.all(EXTENSION_MARKERS.map((c) => pathExists(join(dir, c))))
   return checks.some(Boolean)
 }
 

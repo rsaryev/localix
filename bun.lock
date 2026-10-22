@@ -31,6 +31,7 @@
         "@hono/zod-validator": "^0.9.1",
         "@localixai/agent": "workspace:*",
         "@localixai/change-feed": "workspace:*",
+        "@localixai/claude-plugin": "workspace:*",
         "@localixai/engine": "workspace:*",
         "@localixai/markdown": "workspace:*",
         "@localixai/notifications": "workspace:*",
@@ -192,6 +193,18 @@
       "version": "0.1.0",
       "dependencies": {
         "kysely": "^0.29.6",
+        "zod": "^4.4.3",
+      },
+      "devDependencies": {
+        "@types/bun": "1.3.14",
+        "shx": "^0.4.0",
+        "typescript": "^7.0.2",
+      },
+    },
+    "packages/claude-plugin": {
+      "name": "@localixai/claude-plugin",
+      "version": "0.1.0",
+      "dependencies": {
         "zod": "^4.4.3",
       },
       "devDependencies": {
@@ -1259,6 +1272,8 @@
     "@localixai/api": ["@localixai/api@workspace:apps/api"],
 
     "@localixai/change-feed": ["@localixai/change-feed@workspace:packages/change-feed"],
+
+    "@localixai/claude-plugin": ["@localixai/claude-plugin@workspace:packages/claude-plugin"],
 
     "@localixai/dataview": ["@localixai/dataview@workspace:packages/dataview"],
 

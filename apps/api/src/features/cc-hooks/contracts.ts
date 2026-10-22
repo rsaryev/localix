@@ -29,6 +29,8 @@ export const CC_HOOK_EVENTS = [
   'UserPromptSubmit',
   'PreToolUse',
   'PostToolUse',
+  // A tool that threw: in place of PostToolUse, as in Claude Code.
+  'PostToolUseFailure',
   'Stop',
   'SessionEnd',
   'SubagentStart',
@@ -49,7 +51,7 @@ export function isCcHookEvent(value: string): value is CcHookEvent {
  * an `if` never runs (CC §3). SubagentStart/Stop match an AGENT type, not a tool,
  * so they are NOT tool events for `if` purposes.
  */
-export const CC_TOOL_EVENTS = ['PreToolUse', 'PostToolUse'] as const
+export const CC_TOOL_EVENTS = ['PreToolUse', 'PostToolUse', 'PostToolUseFailure'] as const
 export function isToolEvent(event: CcHookEvent): boolean {
   return (CC_TOOL_EVENTS as readonly string[]).includes(event)
 }

@@ -3,7 +3,8 @@
   "summary": "System Overview reference plugin (live OS, CPU, memory and process data, plus marks the user and the agent save)",
   "domainName": "System Overview",
   "entry": [
-    "plugin.json",
+    ".claude-plugin/plugin.json",
+    ".localix-app/app.json",
     "ui/register.tsx",
     "ui/Workspace.tsx",
     "backend/index.ts",

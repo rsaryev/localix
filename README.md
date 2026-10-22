@@ -44,9 +44,9 @@
   </tr>
   <tr>
     <td valign="top">
-      <strong>Plugins, built by the agent</strong><br>
-      Describe one with <code>/plugin create</code>; it plugs into the agent, decision models and Localix’s APIs.<br>
-      <a href="docs/extending/build-with-the-agent.md">Build a plugin →</a>
+      <strong>Mini apps, built by the agent</strong><br>
+      Describe one with <code>/plugin create</code>: a meal log from photos, a dashboard, a game, wired to the agent, models and embeddings.<br>
+      <a href="docs/extending/build-with-the-agent.md">Build a mini app →</a>
     </td>
     <td valign="top">
       <strong>Your coding agents</strong><br>
@@ -61,36 +61,43 @@
   </tr>
   <tr>
     <td colspan="3" valign="top">
-      <strong>Plugins as Mac apps</strong><br>
-      Install a plugin as its own app: a Dock icon, a window of its own, and the agent beside it.<br>
+      <strong>Mini apps as Mac apps</strong><br>
+      Install a mini app as its own app: a Dock icon, a window of its own, and the agent beside it.<br>
       <a href="docs/features/plugin-apps.md">Plugin apps →</a>
     </td>
   </tr>
 </table>
 
-## Plugins
+## Plugins and mini apps
 
-- **Built with the agent.** Run `/plugin create <what it should do>`. The agent writes the interface
-  from the app's own components and the tools that go with it. Each build is checked — style, types,
-  builds and the plugin's tests — and replaces the working one only when every check passes; the
-  agent can then open the plugin in its browser and try it. See
-  [build a plugin with the agent](docs/extending/build-with-the-agent.md).
-- **Part of the agent.** A plugin's tools register with the agent with no glue code, so the chat
-  beside it does the understanding: attach a meal photo and, with a model that reads images, the
-  agent logs it through the plugin's own tool. A move in the plugin's screen can start an agent
-  turn, as the bundled games do. See [wake the agent from a plugin](docs/extending/plugin-wakes.md).
-- **Localix's APIs.** A plugin's backend can ask a
+An extension has two layers. The **plugin** is the Claude Code format — skills, commands, agents,
+hooks, MCP and LSP servers — and the same folder loads in Claude Code and in Localix. The **mini
+app** is Localix's layer around it: screens, a backend, and agent tools over Localix's own APIs.
+
+- **Claude Code plugins work as they are.** `/plugin install owner/repo` reads
+  `.claude-plugin/plugin.json` in place, with Claude Code's rules for commands, skills, hooks and
+  MCP servers; what Localix does not run yet is reported, never dropped silently. See
+  [Claude Code plugins](docs/extending/claude-code-plugins.md).
+- **Mini apps, built by the agent.** Run `/plugin create <what it should do>`. The agent writes the
+  interface from the app's own components and the tools that go with it; each build is checked —
+  style, types, builds and tests — and replaces the working one only when every check passes. See
+  [build with the agent](docs/extending/build-with-the-agent.md).
+- **Any app, part of Localix.** A calorie counter needs only a `log_meal` tool and a screen: attach
+  a meal photo and, with a model that reads images, the chat agent logs it through that tool. A
+  deployment dashboard reads your cluster through its own tools; a research board ranks notes with
+  the embedding model; a game's opponent is a decision model. The bundled DevOps, Database, Trading
+  and Kanban workbenches are mini apps on the same contract.
+- **Localix's APIs.** A mini app's backend can start an agent turn (`ctx.host.wake`), ask a
   [decision model](docs/features/decision-models.md) typed questions (`ctx.host.decisions`), index
-  its own items and search them by meaning with the embedding model on this computer
-  (`ctx.host.semantic`) and follow its own changes (`ctx.host.changes`). Its interface draws from
-  the same kit as the app. See [build a plugin](docs/extending/plugins.md) and
-  [semantic index and change feed](docs/extending/plugin-semantics.md).
-- **Its own Mac app.** **Install _Plugin_ as App**, from the plugin's tab, its rail button or the
-  command palette, makes `~/Applications/Localix Apps/<Plugin>.app`: its own Dock icon, menu bar,
-  Cmd+Tab entry and window, found by Spotlight and Launchpad. It opens the plugin's screen in a
-  project of its own, with the agent beside it and its conversations as the app's history. Localix
-  stays the host and starts in the background if it is not running. macOS only; plugins stay tabs
-  unless you choose this. See [plugin apps](docs/features/plugin-apps.md).
+  and search its own items by meaning (`ctx.host.semantic`), resolve vault secrets, keep data per
+  chat or per project, follow its own changes and push live updates to its screen. See
+  [what you can build](docs/extending/plugins.md#what-you-can-build).
+- **Its own Mac app.** **Install _App_ as App**, from the app's tab, its rail button or the command
+  palette, makes `~/Applications/Localix Apps/<App>.app`: its own Dock icon, menu bar, Cmd+Tab entry
+  and window, found by Spotlight and Launchpad. It opens the app's screen in a project of its own,
+  with the agent beside it and its conversations as the app's history. Localix stays the host and
+  starts in the background if it is not running. macOS only. See
+  [plugin apps](docs/features/plugin-apps.md).
 
 ## On this computer
 

@@ -2,6 +2,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { repoRoot } from './runtime.mjs'
 import { capturePlan, retainedShots } from './plan.mjs'
+import { readExtensionManifest } from '../lib/extension-manifest.mjs'
 
 // A catalog or adjacent chat is not evidence for a different owner's workbench.
 export const workbenchEvidence = {
@@ -34,14 +35,8 @@ export async function inspectWorkbenchCoverage() {
   const pluginDirs = await fs.readdir(path.join(repoRoot, 'plugins'), { withFileTypes: true })
   const owners = []
   for (const dir of pluginDirs.filter((entry) => entry.isDirectory())) {
-    try {
-      const manifest = JSON.parse(
-        await fs.readFile(path.join(repoRoot, 'plugins', dir.name, 'plugin.json'), 'utf8'),
-      )
-      if (manifest.surfaces?.includes('workbench')) owners.push(dir.name)
-    } catch (error) {
-      if (error.code !== 'ENOENT') throw error
-    }
+    const manifest = readExtensionManifest(path.join(repoRoot, 'plugins', dir.name))
+    if (manifest.surfaces?.includes('workbench')) owners.push(dir.name)
   }
   const shots = await fs.readdir(path.join(repoRoot, 'docs/assets/screenshots'), {
     recursive: true,

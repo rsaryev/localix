@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { hasExtensionManifest, readExtensionManifest } from './lib/extension-manifest.mjs'
 
 /**
  * Every shipped plugin names itself, in one house style.
@@ -35,14 +36,10 @@ interface Manifest {
 function manifests(): Manifest[] {
   return readdirSync(pluginsDir)
     .flatMap((entry) => {
-      const path = join(pluginsDir, entry, 'plugin.json')
-      try {
-        if (!statSync(path).isFile()) return []
-      } catch {
-        return []
-      }
-      const parsed = JSON.parse(readFileSync(path, 'utf8')) as Manifest
-      return [{ ...parsed, path: `plugins/${entry}/plugin.json` }]
+      const dir = join(pluginsDir, entry)
+      if (!statSync(dir).isDirectory() || !hasExtensionManifest(dir)) return []
+      const parsed = readExtensionManifest(dir) as Manifest
+      return [{ ...parsed, path: `plugins/${entry}` }]
     })
     .sort((left, right) => left.name.localeCompare(right.name))
 }

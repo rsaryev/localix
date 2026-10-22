@@ -13,7 +13,7 @@ workbench, its registry entries, or its enable and disable lifecycle.
 | Host service        | Narrow capability supplied to plugin code through `PluginContext.host`. | Services are optional and do not expose their owning core subsystem directly.  |
 | Plugin UI host      | Registration façade passed to a plugin's `registerUi(host)`.            | Plugin code must not import host registry modules.                             |
 | Native workbench UI | React contribution built into its own artifact and loaded by URL.       | Bundled plugins, and other plugins once the user enabled them (consent).       |
-| Manifest UI         | Sandboxed view described as data in `plugin.json`.                      | Runs in a sandboxed frame, whatever the plugin's origin.                       |
+| Manifest UI         | Sandboxed view described as data in `.localix-app/app.json`.            | Runs in a sandboxed frame, whatever the plugin's origin.                       |
 
 ## What you can do
 

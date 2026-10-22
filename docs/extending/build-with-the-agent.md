@@ -1,10 +1,10 @@
 # Build a plugin with the agent
 
-The agent can build a plugin from a description: it scaffolds one, writes its tools and interface,
+The agent can build a mini app from a description: it scaffolds one, writes its tools and interface,
 checks and builds it, and can inspect it through the browser tool. Use it to get a working
-workbench, such as a meal tracker or a board game, without writing the plugin yourself.
+workbench, such as a meal tracker, a dashboard or a board game, without writing the code yourself.
 
-**Trust boundary:** A plugin the agent creates is enabled when it is created, and its native code
+**Trust boundary:** A mini app the agent creates is enabled when it is created, and its native code
 runs unsandboxed in the Localix API process. Read what it made before you rely on it.
 
 ![A working Release Checklist fixture plugin beside its demo conversation](../assets/screenshots/plugins/agent-build--2026-10-07.png)
@@ -33,8 +33,10 @@ plugin, and the host does the rest:
    after the untouched template passes the non-residue checks. Template-domain residue is expected
    for this initial build. A failed creation removes its copy after activation rollback succeeds; if
    rollback cannot be confirmed, it leaves the copy and reports that state.
-2. The agent is instructed to replace the template's domain with yours and write the plugin's tools,
-   tests, and a matching skill, or remove the skill contribution.
+2. The copy has both layers: `.claude-plugin/plugin.json` names the plugin and carries its skill,
+   and `.localix-app/app.json` holds the mini app's category and settings. The agent is instructed
+   to replace the template's domain with yours and write the tools, tests, and a matching skill, or
+   delete `skills/`. The build writes the mini app's `backend`; the agent leaves it alone.
 3. Each `plugin_build` call checks template residue, style, routes, message context, the backend and
    UI builds, types and tests, in parallel. Output is published only when every check passes. The
    workbench swaps the new interface in place, with no restart.
@@ -47,11 +49,12 @@ exists. The host normalizes the name and selects a free suffix, trying up to twe
 the name returned by the tool. For subsequent builds, omit `description` and pass that name;
 including it again creates another copy. The command itself refuses an active or agentless session.
 
-A plugin keeps state and shows it, and the chat agent does the understanding. Because that agent
-already reads the files and photos you attach, a meal photo can arrive as a call to the plugin's own
-`log_meal` tool with structured items. That workflow does not need a separate upload, OCR, or model
-service in the plugin; native code can still implement other services when the feature requires
-them.
+A mini app keeps state and shows it, and the chat agent does the understanding. Because that agent
+already reads the files and photos you attach, a meal photo can arrive as a call to a calorie
+counter's own `log_meal` tool with structured items. That workflow needs no separate upload, OCR, or
+model service in the app. The same split serves a deployment dashboard whose tools read your
+cluster, a research board that ranks notes with the embedding model, or a game whose opponent is a
+decision model; [what a mini app can use](plugins.md#what-you-can-build) lists the host's APIs.
 
 A plugin can also answer back. The bundled chess, checkers, battleship, tic-tac-toe and 2048 plugins
 call `ctx.host.wake` when you move, so your move starts an agent turn and its reply lands on the
@@ -77,7 +80,7 @@ same board.
 
 ## Related guides
 
-- [Build plugins](plugins.md)
+- [Build a plugin or a mini app](plugins.md)
 - [Build workbench UI](plugin-ui.md)
 - [Wake the agent from a plugin](plugin-wakes.md)
 - [Annotate a live preview](../features/visual-feedback.md)

@@ -11,6 +11,7 @@ const EVENT_NAMES = {
   UserPromptSubmit: 'input.submit',
   PreToolUse: 'tool.before',
   PostToolUse: 'tool.after',
+  PostToolUseFailure: 'tool.failed',
   Stop: 'run.finish',
   SessionEnd: 'session.end',
   SubagentStart: 'delegation.start',

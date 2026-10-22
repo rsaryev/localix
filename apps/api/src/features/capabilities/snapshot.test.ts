@@ -27,6 +27,7 @@ function pluginRecord(over: {
     displayName: over.name,
     version: '1.0.0',
     description: '',
+    layout: 'plugin',
     surfaces: ['agent'],
     projectId: over.projectId ?? '',
     scope: over.projectId ? 'project' : 'global',

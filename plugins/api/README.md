@@ -152,7 +152,7 @@ receive its abort signal. The timeout is not a deadline for the complete operati
 
 ## Source of truth
 
-- [Plugin manifest](./plugin.json)
+- [Plugin manifest](.claude-plugin/plugin.json) and [mini app manifest](.localix-app/app.json)
 - [Tool schema](./backend/api-tool-schema.ts)
 - [Request routes](./backend/routes.ts)
 - [Request sender](./backend/send.ts)

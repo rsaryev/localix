@@ -8,14 +8,29 @@ Changes land on `main`.
 
 ### Added
 
-- **Plugin apps** (macOS): install a plugin as its own Mac app from its tab's menu, the app button
+- **Mini apps**: `/plugin create <what it should do>` has the agent build an app inside Localix — a
+  calorie counter that logs a meal from a photo, a dashboard, a game — with its own screen and tools
+  the chat agent uses. A mini app can start an agent turn, ask decision models, search its own items
+  by meaning, use vault secrets and push live updates to its screen. See
+  [Build a plugin or a mini app](docs/extending/plugins.md#what-you-can-build).
+- **Plugin apps** (macOS): install a mini app as its own Mac app from its tab's menu, the app button
   at the right of the tab strip, its rail button or the command palette. The app has its own Dock
-  icon, window, menu bar and project, shows the plugin with the agent beside it, keeps its
+  icon, window, menu bar and project, shows the mini app with the agent beside it, keeps its
   conversations as its history, and starts Localix in the background when it is not running. See
   [Plugin apps](docs/features/plugin-apps.md).
 
 ### Changed
 
+- **Claude Code plugins** load as they are: the same folder works in Claude Code and in Localix,
+  with nothing converted at install. Hooks on `PostToolUseFailure` run when a tool fails, and
+  `${VAR}` in a plugin's MCP servers reads the environment as in Claude Code. What Localix does not
+  run yet, such as hooks modules and output styles, is listed in the plugin's validation. Settings →
+  Capabilities → Plugins labels each entry **Claude Code plugin**, **mini app** or **legacy
+  manifest**. See [Claude Code plugins](docs/extending/claude-code-plugins.md).
+- **Status updates when it changes**: local model downloads and semantic search indexing in
+  Settings, a provider sign-in started from the message box, and an external agent waiting on
+  terminal output now follow the change as it happens instead of checking on a timer, with fewer
+  background requests.
 - **Context chips** above the message box stay on one line and scroll sideways instead of wrapping
   into a second row.
 

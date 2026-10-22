@@ -55,17 +55,17 @@ Contributor references:
 
 - [Database architecture](database/ARCHITECTURE.md) defines driver and workbench ownership.
 
-A plugin is a directory with a `plugin.json` manifest. Depending on that manifest, it can
-contribute:
+An extension has two layers ([plugins and mini apps](../docs/internals/plugins-and-mini-apps.md)):
 
-- native agent tools;
-- skills and slash commands;
-- MCP servers;
-- lifecycle hooks;
-- prompt sections and agent definitions;
-- sandboxed HTML views;
-- native workbench UI, built by the app into an artifact;
-- chat channels.
+- **The plugin** (`.claude-plugin/plugin.json`), in the Claude Code format: skills, slash commands,
+  agents, hooks, MCP and LSP servers, monitors. The same folder loads in Claude Code.
+- **The mini app** (`.localix-app/app.json`), Localix's layer around it: a native backend (agent
+  tools over Localix's APIs, routes, services, lifecycle hooks, channels), native workbench UI built
+  by the app into an artifact, sandboxed HTML views, prompt sections, agent definitions, file
+  associations, settings, and the pickers its commands show.
+
+A folder may hold only a plugin; a mini app names the plugin in its folder by sharing its name. A
+legacy root `plugin.json` that carries both layers still loads.
 
 Project-scoped plugins in `<project>/.localix/plugins/` override global plugins with the same name.
 Bundled plugins are synchronized by the application; locally installed plugins remain user-owned.
@@ -107,14 +107,14 @@ by `bun run apps/api/scripts/generate-bundled-marketplace.ts` (catalog-level fie
 `.localix-plugin/marketplace.metadata.json`). Do not edit the catalog by hand. Marketplaces must
 carry `.localix-plugin/marketplace.json`.
 
-A single Claude Code plugin installs through the importer, which converts it into a native
-`plugin.json`; see [Claude Code plugins](../docs/extending/claude-code-plugins.md).
+A single Claude Code plugin installs as it is and loads in place; see
+[Claude Code plugins](../docs/extending/claude-code-plugins.md).
 
 ## Dependencies
 
-`plugin.json` may declare required plugins as names or `{ "name", "version" }` objects. Marketplace
-installs resolve permitted dependencies transitively. Native-code dependencies are never silently
-enabled for a third-party install.
+A plugin or a mini app may declare required plugins as names or `{ "name", "version" }` objects.
+Marketplace installs resolve permitted dependencies transitively. Native-code dependencies are never
+silently enabled for a third-party install.
 
 Dependency version checks are advisory: mismatches produce warnings, not a hard install failure. Do
 not assume that a declared dependency expands the parent's permissions.

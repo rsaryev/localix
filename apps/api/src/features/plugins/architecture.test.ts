@@ -42,6 +42,7 @@ function mkPlugin(
   const manifest = pluginManifestSchema.parse(manifestInput) as PluginManifest
   return {
     manifest,
+    layout: 'legacy',
     dir: '/tmp/plugin',
     scope: 'global',
     projectId: '',

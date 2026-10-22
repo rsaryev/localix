@@ -59,11 +59,24 @@ describe('resolveEntrypoints — manifest hooks field (Part A)', () => {
     expect(r.hookConfigs).toEqual([inlineBlock])
   })
 
-  it('the manifest field REPLACES the default file (mirrors mcpServers)', async () => {
+  it('the manifest field MERGES with the default file, which loads first (Claude Code)', async () => {
     await fs.mkdir(join(dir, 'hooks'), { recursive: true })
     await fs.writeFile(join(dir, 'hooks', 'hooks.json'), JSON.stringify({ hooks: { Stop: [] } }))
     const r = await resolveEntrypoints(dir, manifest({ hooks: inlineBlock as never }))
-    expect(r.hookConfigs).toEqual([inlineBlock])
+    expect(r.hookConfigs).toEqual([{ hooks: { Stop: [] } }, inlineBlock])
+  })
+
+  it('MCP and LSP sources merge the same way: the default file, then the listed ones', async () => {
+    await fs.writeFile(
+      join(dir, '.mcp.json'),
+      JSON.stringify({ mcpServers: { a: { command: 'a' } } }),
+    )
+    await fs.writeFile(join(dir, 'more.mcp.json'), JSON.stringify({ b: { command: 'b' } }))
+    const r = await resolveEntrypoints(
+      dir,
+      manifest({ mcpServers: ['./more.mcp.json', { c: { command: 'c' } }] as never }),
+    )
+    expect(Object.keys(r.mcpServers)).toEqual(['a', 'b', 'c'])
   })
 
   it('a `..`-escaping path is dropped (confined to the plugin dir)', async () => {
@@ -238,8 +251,8 @@ describe('marketplace entry-as-manifest synthesis (Part B)', () => {
 
     await applyEntryManifestOverrides(dir, entry)
 
-    // A native root plugin.json was synthesized...
-    const written = JSON.parse(await fs.readFile(join(dir, 'plugin.json'), 'utf8'))
+    // The plugin's own Claude Code manifest was synthesized...
+    const written = JSON.parse(await fs.readFile(join(dir, '.claude-plugin/plugin.json'), 'utf8'))
     expect(written).toEqual({ name: 'box', skills: ['./skills/box'] })
     // ...and discovery now exposes the skill.
     const plugin = await loadManifest(dir, 'global', '')

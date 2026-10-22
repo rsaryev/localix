@@ -1,0 +1,8 @@
+{
+  "name": "learning",
+  "apiVersion": 1,
+  "category": "content",
+  "surfaces": ["agent", "workbench"],
+  "backend": "./backend/index.ts",
+  "defaultEnabled": true
+}

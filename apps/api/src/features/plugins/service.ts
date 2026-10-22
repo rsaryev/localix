@@ -61,7 +61,6 @@ import { confineToDir } from '../ext/fs-discovery'
 import { runArgOptionsScript, parseArgOptions } from './arg-options'
 import { isDefaultProject } from '../projects/default-project'
 import { applyEntryManifestOverrides } from './marketplace-entry-manifest'
-import { ClaudeCodeImportError, importClaudeCodePlugin } from './import-claude-code'
 import { createPluginInspections } from './inspection-snapshots'
 import type { PluginToolInspection } from './inspection-store'
 import { pluginTrustClass } from './enable'
@@ -185,6 +184,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       homepage: plugin.manifest.homepage,
       migratedFrom: plugin.manifest.migratedFrom,
       ...(plugin.manifest.origin ? { importedFrom: plugin.manifest.origin.format } : {}),
+      layout: plugin.layout,
       surfaces: normalizePluginSurfaces(plugin.manifest.surfaces),
       projectId: plugin.projectId,
       scope: plugin.scope,
@@ -583,18 +583,13 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       // Validate the actual copied tree before it becomes discoverable. Marketplace
       // overlays belong to preparation too: their failures must preserve the live tree.
       const prepare = async (directory: string) => {
-        // A Claude Code plugin becomes a native one before anything reads it.
-        try {
-          const imported = await importClaudeCodePlugin(directory, { source, now })
-          if (imported) installNotes.push(...imported.notes.map((n) => `Claude Code import: ${n}`))
-        } catch (error) {
-          if (error instanceof ClaudeCodeImportError)
-            throw new InvalidRequestError('plugin_invalid', error.message)
-          throw error
-        }
+        // A Claude Code plugin loads in place; what Localix does not run is said once, here.
         if (resolvedMarket) await applyEntryManifestOverrides(directory, resolvedMarket.entry)
         const candidate = await loadManifest(directory, scope, projectId)
         if (candidate.error) throw new InvalidRequestError('plugin_invalid', candidate.error)
+        installNotes.push(
+          ...(candidate.layoutIssues ?? []).map((found) => `${found.path}: ${found.message}`),
+        )
       }
       if (resolvedMarket) {
         const discovered = await discover({ cwd, projectId })

@@ -17,7 +17,7 @@
  */
 import { createHmac } from 'node:crypto'
 
-/** Every deliverable event; plugin.json's EVENTS description is checked against it. */
+/** Every deliverable event; the mini app manifest's EVENTS description is checked against it. */
 export const ALL_EVENTS = [
   'session_end',
   'user_message',

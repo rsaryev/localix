@@ -1,0 +1,11 @@
+{
+  "name": "chess",
+  "displayName": "Chess",
+  "version": "0.1.0",
+  "description": "Chess against the agent or a decision model, one board per chat: the agent in that chat answers each move with its own tool, or the board asks a decision model, and the board goes when the chat does.",
+  "license": "MIT",
+  "keywords": ["game", "chess", "play"],
+  "author": {
+    "name": "Localix"
+  }
+}

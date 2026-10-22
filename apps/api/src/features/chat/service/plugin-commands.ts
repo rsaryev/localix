@@ -112,6 +112,8 @@ export const renderPluginPrompt = async (
     projectDir?: string
     /** Working dir for CC dynamic content (`!\`cmd\`` + `@path`). Omit to skip that stage. */
     cwd?: string
+    /** CC `arguments`: names of the positional arguments, filling `$name`. */
+    arguments?: readonly string[]
   },
 ): Promise<string> => {
   // The same home `session-workspace` built the command's catalog with.
@@ -123,7 +125,10 @@ export const renderPluginPrompt = async (
   const hasDeclaredArgumentPlaceholder = Object.keys(values).some((name) =>
     template.includes(`\${${name}}`),
   )
-  const hasClaudeArgumentPlaceholder = /\$(?:ARGUMENTS(?:\[\d+\])?|\d+)/.test(template)
+  const named = namedArguments(values, ctx?.arguments)
+  const hasClaudeArgumentPlaceholder =
+    /\$(?:ARGUMENTS(?:\[\d+\])?|\d+)/.test(template) ||
+    named.some((name) => namedPattern(name).test(template))
   const consumesArguments = hasDeclaredArgumentPlaceholder || hasClaudeArgumentPlaceholder
   let out = template
   // 1) CC dynamic content — run FIRST, over the TEMPLATE, before any user-controlled
@@ -154,9 +159,17 @@ export const renderPluginPrompt = async (
     if (name === 'CLAUDE_PROJECT_DIR') return ctx?.projectDir ?? ''
     return values[name] ?? ''
   })
-  // 3) Claude Code argument tokens from the raw arg string.
+  // 3) Claude Code argument tokens from the raw arg string: `$name` (a declared arg's value, else
+  //    its position in `arguments`), then `$ARGUMENTS`, `$ARGUMENTS[N]` and `$N`.
   const trimmed = rawArgs.trim()
   const tokens = splitSkillArgs(trimmed)
+  for (const name of named) {
+    const position = ctx?.arguments?.indexOf(name) ?? -1
+    const value = values[name] ?? (position >= 0 ? (tokens[position] ?? '') : '')
+    out = out.replace(namedPattern(name), (full: string, esc: string) =>
+      esc ? full.slice(1) : value,
+    )
+  }
   out = out.replace(
     /(\\?)\$(?:ARGUMENTS(?:\[(\d+)\])?|(\d+))/g,
     (full: string, esc: string, bracketIdx?: string, bareIdx?: string) => {
@@ -169,3 +182,16 @@ export const renderPluginPrompt = async (
   if (trimmed && !consumesArguments) out = `${out}\n\nArguments: ${trimmed}`
   return out
 }
+
+/** Names `$name` may use: declared args and CC `arguments`, longest first so `$a` never eats `$ab`. */
+function namedArguments(
+  values: Record<string, string>,
+  positional: readonly string[] | undefined,
+): string[] {
+  return [...new Set([...Object.keys(values), ...(positional ?? [])])].sort(
+    (a, b) => b.length - a.length,
+  )
+}
+
+const namedPattern = (name: string) =>
+  new RegExp(`(\\\\?)\\$${name.replace(/[-]/g, '\\-')}(?![A-Za-z0-9_-])`, 'g')

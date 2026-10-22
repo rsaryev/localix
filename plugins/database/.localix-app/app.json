@@ -1,0 +1,24 @@
+{
+  "name": "database",
+  "apiVersion": 1,
+  "category": "data",
+  "surfaces": ["agent", "workbench"],
+  "fileAssociations": [
+    {
+      "ext": ["db", "sqlite", "sqlite3", "db3", "s3db", "sl3"],
+      "name": "SQLite Database",
+      "description": "SQLite database file",
+      "mimeType": "application/vnd.sqlite3",
+      "role": "Editor"
+    },
+    {
+      "ext": ["sql"],
+      "name": "SQL Script",
+      "description": "SQL script",
+      "mimeType": "application/sql",
+      "role": "Editor"
+    }
+  ],
+  "backend": "./backend/index.ts",
+  "defaultEnabled": true
+}

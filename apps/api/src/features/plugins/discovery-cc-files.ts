@@ -4,6 +4,7 @@ import { summarizeZodIssues } from '@localixai/plugin-sdk/backend'
 
 import { mapCcToolList } from '../ext/cc-tool-names'
 import { coerceFrontmatterBool, trimmedFrontmatterField } from '../ext/frontmatter'
+import { argumentHintField } from '../agent-core/skill-frontmatter'
 import {
   parseMarkdownFrontmatter,
   scalarField,
@@ -78,7 +79,11 @@ export async function parseCommandFile(
     })
     return null
   }
-  const argumentHint = fields['argument-hint'] || undefined
+  const argumentHint = argumentHintField(fields['argument-hint'])
+  // CC `arguments` — names for positional arguments (`$name` in the prompt).
+  const argumentNames = fields.arguments
+    ? (splitTokenList(fields.arguments) ?? []).filter((name) => !/^\d+$/.test(name))
+    : []
   // CC `allowed-tools` / `disallowed-tools`: map CC names → engine names via CC_TOOL_NAME_MAP.
   const allowedTools = fields['allowed-tools'] ? mapCcTools(fields['allowed-tools']) : undefined
   const disallowedTools = fields['disallowed-tools']
@@ -94,6 +99,7 @@ export async function parseCommandFile(
     args: [],
     prompt: body,
     ...(argumentHint ? { argumentHint } : {}),
+    ...(argumentNames.length ? { arguments: argumentNames } : {}),
     ...(allowedTools ? { allowedTools } : {}),
     ...(disallowedTools?.length ? { disallowedTools } : {}),
     ...(model ? { model } : {}),

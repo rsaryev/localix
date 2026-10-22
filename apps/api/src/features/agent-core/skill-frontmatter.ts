@@ -120,6 +120,16 @@ export function scalarField(v: string | string[] | undefined): string | undefine
   return Array.isArray(v) ? v.join(' ') : v
 }
 
+/**
+ * An `argument-hint`, written as the author meant it: unquoted `[name]` parses as a YAML flow
+ * list, and Claude Code's own plugins write it that way, so a list is put back in its brackets.
+ */
+export function argumentHintField(v: string | string[] | undefined): string | undefined {
+  if (v === undefined) return undefined
+  const hint = Array.isArray(v) ? `[${v.join(', ')}]` : v
+  return hint.trim() || undefined
+}
+
 /** True for a non-null, non-array object (a YAML mapping node). */
 function isPlainRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v)
@@ -161,7 +171,7 @@ export function parseSkillFrontmatter(raw: string): SkillFrontmatter {
     body,
     disableModelInvocation,
     userInvocable,
-    argumentHint: scalarField(fields['argument-hint']) || undefined,
+    argumentHint: argumentHintField(fields['argument-hint']),
     // CC: filter numeric-only names (conflict with $0/$1 positional shorthand).
     argumentNames: splitTokenList(fields.arguments)?.filter((n) => !/^\d+$/.test(n)) || undefined,
     allowedTools: splitTokenList(fields['allowed-tools']),

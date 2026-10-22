@@ -251,7 +251,7 @@ export async function handlePluginsControlCommand(
   const catalog = await ctx.buildSessionPluginCatalog(userId, session)
   const reply =
     catalog.all.length === 0
-      ? 'No plugins found. Install one in Settings → Plugins, or drop a folder with a `plugin.json` into `~/.localix/plugins`.'
+      ? 'No plugins found. Install one in Settings → Plugins, or drop a plugin folder (with `.claude-plugin/plugin.json`, as in Claude Code) into `~/.localix/plugins`.'
       : [
           '**Plugins** — enable in Settings → Plugins:',
           '',

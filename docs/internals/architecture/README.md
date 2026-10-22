@@ -62,15 +62,15 @@ hint that the resolver may replace with another live connection of the same prov
 
 ## Shape of the system
 
-| Layer               | Contents                                                                    | May depend on                       |
-| ------------------- | --------------------------------------------------------------------------- | ----------------------------------- |
-| Contracts and core  | `packages/agent`, `packages/engine-loop`, pure domain modules               | Other core packages, zod            |
-| Adapters (packages) | `packages/engine-models`, `packages/engine-scripts`, `packages/engine`      | Core packages, their own SDKs       |
-| Shared libraries    | `packages/kit`, `packages/plugin-sdk`, `packages/markdown`, other libraries | Lower libraries; never `apps/*`     |
-| API features        | `apps/api/src/features/*`: routes → service → domain → repository           | Ports of other features, packages   |
-| API composition     | `apps/api/src/bootstrap/`: builds adapters, wires ports and consumers       | Everything in the API               |
-| UI                  | `apps/ui/src`: shared → features → widgets → pages → app                    | Lower layers only                   |
-| Plugins             | `plugins/*`: backend, tools and UI through `plugin-sdk`                     | `plugin-sdk`, `agent`, a few others |
+| Layer               | Contents                                                                                | May depend on                       |
+| ------------------- | --------------------------------------------------------------------------------------- | ----------------------------------- |
+| Contracts and core  | `packages/agent`, `packages/engine-loop`, `packages/claude-plugin`, pure domain modules | Other core packages, zod            |
+| Adapters (packages) | `packages/engine-models`, `packages/engine-scripts`, `packages/engine`                  | Core packages, their own SDKs       |
+| Shared libraries    | `packages/kit`, `packages/plugin-sdk`, `packages/markdown`, other libraries             | Lower libraries; never `apps/*`     |
+| API features        | `apps/api/src/features/*`: routes → service → domain → repository                       | Ports of other features, packages   |
+| API composition     | `apps/api/src/bootstrap/`: builds adapters, wires ports and consumers                   | Everything in the API               |
+| UI                  | `apps/ui/src`: shared → features → widgets → pages → app                                | Lower layers only                   |
+| Plugins             | `plugins/*`: backend, tools and UI through `plugin-sdk`                                 | `plugin-sdk`, `agent`, a few others |
 
 Inside an API feature, a route translates HTTP to a service call, the service applies domain rules
 through ports, and only the repository touches Kysely. Errors are domain errors in the core; routes

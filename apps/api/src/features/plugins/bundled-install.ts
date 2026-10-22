@@ -10,6 +10,8 @@ import {
   retireUnshippedManagedCopies,
 } from './managed-copy'
 import { readStagedMarker, validateStagedMarker } from './staged-marker'
+import { composeManifest } from './layout/compose'
+import { readManifestFiles } from './layout/read'
 
 /** Install roots whose retired copies this process already swept (once, before any import). */
 const prunedRoots = new Set<string>()
@@ -127,16 +129,12 @@ async function syncOnce(sourceRoot: string, homeDir: string): Promise<Set<string
   const pluginEntries = []
   for (const entry of entries) {
     if (!entry.isDirectory() || entry.name.startsWith('.')) continue
-    try {
-      const manifest = JSON.parse(
-        await fs.readFile(join(sourceRoot, entry.name, 'plugin.json'), 'utf8'),
-      ) as { private?: unknown }
-      if (manifest.private === true) continue
-    } catch (error) {
-      // No manifest = not a plugin (a deleted one's leftover build output); staging it minted an
-      // empty managed copy. A malformed manifest stays: discovery reports it, not this sync.
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') continue
-    }
+    // No manifest = not a plugin (a deleted one's leftover build output); staging it minted an
+    // empty managed copy. A malformed manifest stays: discovery reports it, not this sync.
+    const files = await readManifestFiles(join(sourceRoot, entry.name))
+    if (!files.plugin && !files.app && !files.legacy) continue
+    const composed = composeManifest(files, entry.name)
+    if (composed.raw?.private === true) continue
     pluginEntries.push(entry)
   }
   const stagedMarker = await validateStagedMarker(

@@ -13,20 +13,24 @@
 // is a static, committed file that no runtime registry can amend.
 //
 // So the projection happens here: each bundled plugin declares its formats in its own
-// `plugin.json` (`fileAssociations`, see `@localixai/plugin-sdk/manifest`), core keeps
+// mini app manifest (`fileAssociations`, see `@localixai/plugin-sdk/manifest`), core keeps
 // its editor list in CORE_FILE_ASSOCIATIONS below, and this module merges the two into
 // exactly the array tauri.conf.json must contain. `--write` applies it; `--check` (and
 // the sibling test) fails when the committed config and the manifests disagree — which
 // prevents contributed viewer formats from silently missing at the OS boundary.
 //
 // Plain `.mjs` on purpose: it runs from packaging scripts and gates under bare node,
-// with no TypeScript loader available. It therefore reads plugin.json as data and
+// with no TypeScript loader available. It therefore reads the manifests as data and
 // never imports the zod schema — the schema stays the authoring contract (enforced by
 // the host when it loads a plugin), and the checks below are the packaging contract.
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import {
+  hasExtensionManifest,
+  readExtensionManifest,
+} from '../../../scripts/lib/extension-manifest.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url)) // apps/desktop-tauri/scripts
 export const repoRoot = resolve(here, '..', '..', '..')
@@ -283,16 +287,9 @@ function bundledPluginNames() {
 export function pluginFileAssociations() {
   const out = []
   for (const name of bundledPluginNames()) {
-    const manifestPath = join(pluginsDir, name, 'plugin.json')
-    let manifest
-    try {
-      manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
-    } catch (err) {
-      // A dir with no manifest is not a plugin; a manifest that does not parse is a
-      // problem the plugin host already reports loudly, and it is not this gate's to own.
-      if (err?.code === 'ENOENT') continue
-      throw new Error(`plugins/${name}/plugin.json is not valid JSON: ${err.message}`)
-    }
+    // A dir with no manifest is not a plugin; one that does not parse throws with its path.
+    if (!hasExtensionManifest(join(pluginsDir, name))) continue
+    const manifest = readExtensionManifest(join(pluginsDir, name))
     const declared = manifest.fileAssociations
     if (declared === undefined) continue
     if (!Array.isArray(declared)) {

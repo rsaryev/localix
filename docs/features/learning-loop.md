@@ -182,7 +182,7 @@ encoded keys.
   [filesystem discovery](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/skill-discovery.ts)
 - [Completion hook invocation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/finalize.ts)
 - [Plugin memory lifecycle](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/memory-hooks.ts)
-- [Learning plugin manifest](https://github.com/rsaryev/localix/blob/main/plugins/learning/plugin.json),
+- [Learning mini app manifest](https://github.com/rsaryev/localix/blob/main/plugins/learning/.localix-app/app.json),
   [course service](https://github.com/rsaryev/localix/blob/main/plugins/learning/backend/service.ts),
   and
   [resource provider](https://github.com/rsaryev/localix/blob/main/plugins/learning/backend/resource-provider.ts)

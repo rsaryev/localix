@@ -163,6 +163,10 @@
       "types": "./dist/manifest/index.d.ts",
       "import": "./dist/manifest/index.js"
     },
+    "./app-manifest": {
+      "types": "./dist/manifest/app.d.ts",
+      "import": "./dist/manifest/app.js"
+    },
     "./resource-refs": {
       "types": "./dist/backend/resource-refs.d.ts",
       "import": "./dist/backend/resource-refs.js"

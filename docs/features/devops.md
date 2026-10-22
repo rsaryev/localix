@@ -100,7 +100,8 @@ the workbench does not change kubeconfig's current context.
 
 ## Source of truth
 
-- [Plugin composition](https://github.com/rsaryev/localix/blob/main/plugins/devops/plugin.json) ·
+- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/plugins/devops/.localix-app/app.json)
+  ·
   [plugins/devops/backend/index.ts](https://github.com/rsaryev/localix/blob/main/plugins/devops/backend/index.ts)
 - [Workbench registration](https://github.com/rsaryev/localix/blob/main/plugins/devops/ui/register.tsx)
 - [Docker backend selection](https://github.com/rsaryev/localix/blob/main/plugins/devops/docker/backend/index.ts)

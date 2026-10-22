@@ -1,0 +1,10 @@
+{
+  "name": "database",
+  "displayName": "Database",
+  "version": "1.0.0",
+  "description": "Browse schemas, run queries, inspect data, and attach database context across supported engines.",
+  "license": "MIT",
+  "author": {
+    "name": "Localix"
+  }
+}

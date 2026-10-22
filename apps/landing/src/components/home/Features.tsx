@@ -49,8 +49,8 @@ export const FEATURES: readonly Feature[] = [
     Scene: DecisionScene,
   },
   {
-    title: 'Plugins, built by the agent',
-    line: 'Describe one with /plugin create; it plugs into the agent, decision models and Localix’s APIs.',
+    title: 'Mini apps, built by the agent',
+    line: 'Describe any app with /plugin create, from a meal log to a dashboard, wired to the agent, models and embeddings. Claude Code plugins load as they are.',
     docs: '/docs/extending--build-with-the-agent',
     Scene: PluginScene,
   },
@@ -67,8 +67,8 @@ export const FEATURES: readonly Feature[] = [
     Scene: ModelsScene,
   },
   {
-    title: 'Plugins as Mac apps',
-    line: 'Install a plugin as its own app: a Dock icon, a window of its own, and the agent beside it.',
+    title: 'Mini apps as Mac apps',
+    line: 'Install a mini app as its own app: a Dock icon, a window of its own, and the agent beside it.',
     docs: '/docs/features--plugin-apps',
     Scene: PluginAppScene,
     wide: true,

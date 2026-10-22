@@ -75,6 +75,8 @@ export function buildMcpRecords(
         enrichedConfig,
         allowedEnvKeys,
         isSensitive,
+        // A plugin in the Claude Code format expands environment variables as Claude Code does.
+        plugin.layout === 'legacy' ? 'declared' : 'claude-code',
       )
       if (blockedSensitiveKeys.length > 0) {
         logger?.warn(

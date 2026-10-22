@@ -19,11 +19,15 @@ import { normalizeTokenKey } from './manifest-substitute'
  *     left UNSUBSTITUTED (the literal `${…}` token survives) and reported in
  *     {@link McpSubstitutionResult.blockedSensitiveKeys} so the caller can warn.
  *
- * Token resolution otherwise matches the historical behavior: a key resolves
- * from plugin config first; if unset, it falls back to host `process.env` ONLY
- * when the plugin DECLARED that key in its manifest `config`. An undeclared
- * `${KEY}` resolves to '' — a plugin can't silently read arbitrary host
- * environment it never asked for. `${KEY:-default}` fallback is supported.
+ * A key resolves from plugin config first; if unset, from host `process.env` by the
+ * `environment` policy:
+ *   - `declared` (a legacy manifest): ONLY when the plugin DECLARED that key in its manifest
+ *     `config`; an undeclared `${KEY}` resolves to '' — such a plugin can't silently read host
+ *     environment it never asked for.
+ *   - `claude-code` (a plugin in the Claude Code format): any variable, as Claude Code expands
+ *     them — except that a credential-like name reads as empty in a remote server's `url` and
+ *     `headers`, as it does there. A stdio server inherits that environment anyway.
+ * `${KEY:-default}` fallback is supported.
  * Token keys are normalized via the shared `normalizeTokenKey` (strips the
  * `CLAUDE_PLUGIN_OPTION_` / `user_config.` prefixes, never coerces casing).
  *
@@ -67,9 +71,19 @@ export interface McpSubstitutionResult {
   blockedSensitiveKeys: string[]
 }
 
+export type McpEnvironmentPolicy = 'declared' | 'claude-code'
+
+/** Names Claude Code treats as credentials: empty in a remote server's `url` and `headers`. */
+const CREDENTIAL_NAME =
+  /TOKEN|SECRET|PASSWORD|PASSWD|API_?KEY|ACCESS_?KEY|PRIVATE_?KEY|CREDENTIAL|AUTH/i
+const REMOTE_FIELDS = new Set(['url', 'headers'])
+
 interface SubstituteCtx {
   config: PluginConfigValues
   allowedEnvKeys: ReadonlySet<string>
+  environment: McpEnvironmentPolicy
+  /** The top-level field being substituted (`url`, `args`, …). */
+  field: string
   isSensitive: (key: string) => boolean
   blocked: Set<string>
 }
@@ -88,10 +102,15 @@ function substituteString(text: string, inEnv: boolean, ctx: SubstituteCtx): str
     }
     const v = ctx.config[bare]
     if (v !== undefined && v !== '') return String(v)
-    const fromEnv = ctx.allowedEnvKeys.has(bare) ? process.env[bare] : undefined
+    const fromEnv = envAllowed(bare, ctx) ? process.env[bare] : undefined
     if (fromEnv !== undefined && fromEnv !== '') return fromEnv
     return fallback ?? ''
   })
+}
+
+function envAllowed(key: string, ctx: SubstituteCtx): boolean {
+  if (ctx.environment === 'declared') return ctx.allowedEnvKeys.has(key)
+  return !(REMOTE_FIELDS.has(ctx.field) && CREDENTIAL_NAME.test(key))
 }
 
 function walk(value: unknown, inEnv: boolean, ctx: SubstituteCtx): unknown {
@@ -111,14 +130,23 @@ export function substituteMcpServerEntry(
   config: PluginConfigValues,
   allowedEnvKeys: ReadonlySet<string>,
   isSensitive: (key: string) => boolean,
+  environment: McpEnvironmentPolicy = 'declared',
 ): McpSubstitutionResult {
-  const ctx: SubstituteCtx = { config, allowedEnvKeys, isSensitive, blocked: new Set() }
+  const blocked = new Set<string>()
   const out: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(raw)) {
+    const ctx: SubstituteCtx = {
+      config,
+      allowedEnvKeys,
+      isSensitive,
+      blocked,
+      environment,
+      field: k,
+    }
     // Only the server's TOP-LEVEL `env` object is the sanctioned secret channel.
     out[k] = walk(v, k === 'env', ctx)
   }
-  return { value: out, blockedSensitiveKeys: [...ctx.blocked].sort() }
+  return { value: out, blockedSensitiveKeys: [...blocked].sort() }
 }
 
 /** Collect every `${KEY}` token referenced anywhere in a plugin's MCP config (for validation). */

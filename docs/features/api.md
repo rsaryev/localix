@@ -138,7 +138,7 @@ whose actual destination you control.
 
 ## Source of truth
 
-- [Plugin manifest](https://github.com/rsaryev/localix/blob/main/plugins/api/plugin.json)
+- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/plugins/api/.localix-app/app.json)
 - [Tool schema](https://github.com/rsaryev/localix/blob/main/plugins/api/backend/api-tool-schema.ts)
 - [Request routes](https://github.com/rsaryev/localix/blob/main/plugins/api/backend/routes.ts)
 - [Request sender and network policy](https://github.com/rsaryev/localix/blob/main/plugins/api/backend/send.ts)

@@ -82,6 +82,8 @@ const KNOWN_FIELDS = new Set([
   'dependencies',
   'monitors',
   'experimental',
+  // Composed from a mini app (`layout/compose.ts`)
+  'commandOptions',
   // CC metadata for marketplace entries / plugin discovery
   'links',
   'readme',

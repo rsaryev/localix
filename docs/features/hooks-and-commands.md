@@ -81,8 +81,12 @@ per binding. These caps do not impose an aggregate limit on replacement message 
 Declarative hooks use the supported hooks JSON schema from enabled plugins or `hooks` frontmatter on
 the invoked skill or delegated agent. Localix dispatches these events:
 
-`SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `Stop`, `SessionEnd`,
-`SubagentStart`, `SubagentStop`, `PreCompact`, and `Notification`.
+`SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`, `PostToolUseFailure`, `Stop`,
+`SessionEnd`, `SubagentStart`, `SubagentStop`, `PreCompact`, and `Notification`.
+
+`PostToolUseFailure` runs in place of `PostToolUse` when a tool throws; its handlers receive the
+error and can add context to the failed result. A plugin's hooks on any other event are listed in
+its validation and never fire.
 
 `PreCompact` fires with trigger `auto` when a [context checkpoint](context-checkpoints.md) is taken.
 The view is already decided by then, so a block is logged and never stops the turn; the next run
@@ -96,6 +100,7 @@ compose and the first deny stops the call. `PostToolUse` replacements are visibl
 | `UserPromptSubmit`          | Rejects the prompt at the first block.                                                          |
 | `PreToolUse`                | Stops the tool at the first deny; `allow` and `ask` remain advisory.                            |
 | `PostToolUse`               | Cannot undo execution; a block reason becomes added result context.                             |
+| `PostToolUseFailure`        | Cannot block; added context is appended to the failed result.                                   |
 | `Stop`                      | Requests another run with the reason, subject to continuation gates and a five-run cap.         |
 | Scoped child `SubagentStop` | Can request the same bounded continuation in the child; parent observation does not restart it. |
 | `PreCompact`                | Reports the block without stopping the checkpoint.                                              |
@@ -110,9 +115,9 @@ not match. `UserPromptSubmit` and `Stop` ignore group matchers; other lifecycle 
 event's source, reason, agent type, notification type, or checkpoint trigger.
 
 A handler's `if` is one permission-style rule evaluated against the original tool input before
-rewrites. It applies only to `PreToolUse` and `PostToolUse`; carrying it on another event prevents
-that handler from running. Unparseable rules or unavailable comparison fields let the handler run.
-This filter does not grant tool permission.
+rewrites. It applies only to `PreToolUse`, `PostToolUse` and `PostToolUseFailure`; carrying it on
+another event prevents that handler from running. Unparseable rules or unavailable comparison fields
+let the handler run. This filter does not grant tool permission.
 
 `once: true` is tracked per session in API-process memory. Selection consumes the marker even if the
 handler later fails or an earlier handler blocks. The key combines event, source, plugin name, and
@@ -123,36 +128,40 @@ command and prompt fields. API restart or session runtime cleanup clears these m
 
 ### Contribution locations
 
-| Contribution             | Accepted source                                                                                      |
-| ------------------------ | ---------------------------------------------------------------------------------------------------- |
-| Plugin slash command     | Inline `commands` entries in `plugin.json`, declared Markdown paths, or the default `commands/` tree |
-| Declarative plugin hooks | Inline `hooks` in `plugin.json`, declared JSON paths, or default `hooks/hooks.json`                  |
-| Run-scoped hooks         | `hooks` frontmatter on the invoked skill or delegated agent                                          |
-| Native plugin hooks      | `hooks` returned from the plugin's `register(ctx)` function                                          |
+| Contribution             | Accepted source                                                                                                                            |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Plugin slash command     | The default `commands/` tree or `commands` paths in `.claude-plugin/plugin.json`; a legacy root `plugin.json` may also list inline entries |
+| Declarative plugin hooks | Default `hooks/hooks.json`, then `hooks` paths or inline objects in `.claude-plugin/plugin.json`                                           |
+| Run-scoped hooks         | `hooks` frontmatter on the invoked skill or delegated agent                                                                                |
+| Native plugin hooks      | `hooks` returned from the plugin's `register(ctx)` function                                                                                |
 
 Inline commands win same-name collisions with command Markdown files. Explicit file/path entries win
-over the default directory, and nested paths become colon-separated names. Localix-native plugins
-scan the default tree additively; declared safe paths on compatibility-origin plugins replace that
-default scan. Markdown commands need a non-empty body in a regular UTF-8 file up to 1 MiB. Discovery
-considers at most 64 declared roots, eight directory levels, and 2,000 entries per scanned root, and
-checks canonical paths against the plugin directory.
+over the default directory, and nested paths become colon-separated names. Paths listed in
+`.claude-plugin/plugin.json` replace the default tree, as in Claude Code; a legacy root
+`plugin.json` scans it additively. Markdown commands need a non-empty body in a regular UTF-8 file
+up to 1 MiB. Discovery considers at most 64 declared roots, eight directory levels, and 2,000
+entries per scanned root, and checks canonical paths against the plugin directory.
 
 ### Plugin command example and options
 
-```json
-{
-  "commands": [
-    {
-      "name": "review",
-      "args": [{ "name": "request", "type": "text", "required": true }],
-      "prompt": "Review the requested change and report concrete findings: ${request}"
-    }
-  ]
-}
+A command is a Markdown file in the plugin, `commands/review.md`:
+
+```markdown
+---
+description: Review a change and report concrete findings.
+arguments: [request]
+---
+
+Review the requested change and report concrete findings: $request
 ```
 
-For a plugin named `team-tools`, this entry runs as `/team-tools:review <request>`. The JSON is a
-manifest fragment; it still needs the plugin's required manifest fields.
+For a plugin named `team-tools`, it runs as `/team-tools:review <request>`, here and in Claude Code.
+A mini app beside it can add chips and pickers in `.localix-app/app.json`; the prompt stays the
+plugin's:
+
+```json
+{ "commands": { "review": { "args": [{ "name": "request", "type": "text", "required": true }] } } }
+```
 
 An options script runs directly through Bun when the composer requests choices for an enabled
 plugin. It receives `{ query, cwd, sessionId, argName, command, config }` JSON on stdin and returns
@@ -235,8 +244,8 @@ hook that exits any other way, or is lost to an API restart, wakes nobody.
 
 ## Related guides
 
-- [Install Claude Code plugins](../extending/claude-code-plugins.md): hook events carried over by
-  the importer
+- [Install Claude Code plugins](../extending/claude-code-plugins.md): what a Claude Code plugin runs
+  in Localix
 - [Your first session](../getting-started/first-session.md)
 - [Plugins](../extending/plugins.md)
 - [Skills](skills.md)

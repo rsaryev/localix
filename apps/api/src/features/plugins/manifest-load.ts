@@ -1,5 +1,7 @@
 import { basename, join } from 'node:path'
 
+import type { PluginIssue } from '@localixai/claude-plugin'
+
 import { listSubdirs, pathExists } from '../ext/fs-discovery'
 
 import {
@@ -11,11 +13,14 @@ import {
   type PluginProvides,
 } from './contracts'
 import { mapCcTools, parseAgentFile, parseCommandFile } from './discovery-cc-files'
-import { findManifestPath } from './discovery'
 import type { DiscoveredPlugin } from './discovery-types'
 import { resolveEntrypoints } from './discovery-entrypoints'
-import { parseManifestFile } from './discovery-manifest-recovery'
+import { parseComposedManifest } from './discovery-manifest-recovery'
+import { composeManifest } from './layout/compose'
+import { readManifestFiles } from './layout/read'
 import { agentContributionSchema } from '../agents/contribution'
+import { isCcHookEvent } from '../cc-hooks/contracts'
+import { isRecord } from '../../lib/record'
 
 /** Parse the inline command objects from a manifest `commands` field. */
 function parseInlineCommands(field: PluginManifest['commands']): PluginCommand[] {
@@ -37,6 +42,56 @@ function parseInlineCommands(field: PluginManifest['commands']): PluginCommand[]
   return out
 }
 
+/**
+ * What the plugin's hooks ask for that Localix does not run: events it does not dispatch, and a
+ * hooks module (a mod), whose runtime is not here yet.
+ */
+function hookIssues(configs: readonly unknown[]): PluginIssue[] {
+  const events = new Set<string>()
+  let modules = false
+  for (const config of configs) {
+    if (!isRecord(config)) continue
+    if (Array.isArray(config.modules) && config.modules.length) modules = true
+    const map = isRecord(config.hooks) ? config.hooks : config.modules ? {} : config
+    for (const event of Object.keys(map)) if (!isCcHookEvent(event)) events.add(event)
+  }
+  return [
+    ...(events.size
+      ? [
+          {
+            severity: 'warning' as const,
+            path: 'hooks',
+            message: `Hook events not dispatched by Localix: ${[...events].sort().join(', ')}`,
+          },
+        ]
+      : []),
+    ...(modules
+      ? [
+          {
+            severity: 'warning' as const,
+            path: 'hooks#modules',
+            message: 'The hooks module (mod) does not run in Localix yet; its hooks.json hooks do',
+          },
+        ]
+      : []),
+  ]
+}
+
+/**
+ * A mini app's presentation of its plugin's commands (`commandOptions`): pickers, `featured`,
+ * `activateTools`. The plugin's prompt is kept; a name the plugin does not declare is ignored.
+ */
+function applyCommandOptions(
+  commands: PluginCommand[],
+  options: PluginManifest['commandOptions'],
+): void {
+  if (!options) return
+  for (const command of commands) {
+    const extra = options[command.name]
+    if (extra) Object.assign(command, extra)
+  }
+}
+
 /** Read the skill names inside resolved skill dirs (a subdir is a skill iff it has SKILL.md). */
 async function readSkillNames(skillDirs: string[]): Promise<string[]> {
   const allNames = await Promise.all(
@@ -56,9 +111,10 @@ async function readSkillNames(skillDirs: string[]): Promise<string[]> {
 }
 
 /**
- * Parse one plugin directory into a DiscoveredPlugin (never throws). Reads only the
- * native root `plugin.json`; foreign layouts are converted at install time
- * (`import-claude-code.ts`) and never read here.
+ * Parse one extension directory into a DiscoveredPlugin (never throws). The folder's plugin
+ * (`.claude-plugin/plugin.json`), mini app (`.localix-app/app.json`) or legacy root `plugin.json`
+ * is composed into one runtime manifest (`layout/compose.ts`); a folder with none is a plugin named
+ * after itself (Claude Code parity), as long as it holds a recognized component.
  */
 export async function loadManifest(
   dir: string,
@@ -66,13 +122,11 @@ export async function loadManifest(
   projectId: string,
   bundled = false,
 ): Promise<DiscoveredPlugin> {
-  const manifestPath = await findManifestPath(dir)
-  // The manifest is OPTIONAL (Claude Code parity): a directory with only component
-  // folders (skills/commands/agents/.mcp.json) is a valid plugin named after its dir.
-  // Read+CC-promote+validate+recover lives in parseManifestFile — a malformed
-  // manifest errors, a missing one does not.
-  const { manifest, rawManifest, error, manifestRecovered } = await parseManifestFile(
-    manifestPath,
+  const composed = composeManifest(await readManifestFiles(dir), basename(dir))
+  // Promote, validate and recover live in parseComposedManifest: a malformed manifest errors, a
+  // missing one does not.
+  const { manifest, rawManifest, error, manifestRecovered } = parseComposedManifest(
+    composed,
     basename(dir),
   )
 
@@ -98,6 +152,7 @@ export async function loadManifest(
       seenCommandNames.add(cmd.name)
     }
   }
+  applyCommandOptions(commands, manifest.commandOptions)
   const agents: PluginAgent[] = Array.isArray(manifest.agents)
     ? manifest.agents.filter((a): a is PluginAgent => typeof a === 'object' && a !== null)
     : []
@@ -130,6 +185,7 @@ export async function loadManifest(
       ? { lspServers: Object.keys(entrypoints.lspServers) }
       : {}),
   }
+  const layoutIssues = [...composed.issues, ...hookIssues(entrypoints.hookConfigs)]
   entrypoints.diagnostics?.sort((a, b) =>
     `${a.kind}\0${a.path}\0${a.message}`.localeCompare(`${b.kind}\0${b.path}\0${b.message}`),
   )
@@ -146,6 +202,8 @@ export async function loadManifest(
     agents,
     bundled,
     error,
+    layout: composed.layout,
+    ...(layoutIssues.length ? { layoutIssues } : {}),
     ...(manifestRecovered ? { manifestRecovered: true } : {}),
   }
 }

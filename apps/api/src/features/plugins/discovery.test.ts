@@ -3,10 +3,9 @@ import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import {
-  CLAUDE_CODE_DIR,
-  CLAUDE_CODE_PLUGIN_MANIFEST,
-  importClaudeCodePlugin,
-} from './import-claude-code'
+  MANIFEST_DIR as CLAUDE_CODE_DIR,
+  MANIFEST_FILE as CLAUDE_CODE_PLUGIN_MANIFEST,
+} from '@localixai/claude-plugin'
 
 import { resolve } from 'node:path'
 import {
@@ -143,7 +142,7 @@ beforeAll(async () => {
   await fs.mkdir(broken, { recursive: true })
   await fs.writeFile(join(broken, 'plugin.json'), '{ not valid json')
 
-  // A Claude Code plugin (converted by the importer, as an install does), components at root.
+  // A Claude Code plugin, loaded in place as an install leaves it, components at root.
   const cc = join(dir, '.localix', 'plugins', 'cc-plugin')
   await fs.mkdir(join(cc, CLAUDE_CODE_DIR), { recursive: true })
   await fs.mkdir(join(cc, 'skills', 'review'), { recursive: true })
@@ -211,8 +210,6 @@ beforeAll(async () => {
     join(cc, 'agents', 'wildcard.md'),
     '---\nname: wildcard\ndescription: Wildcard tools.\ntools: *\n---\n\nAll tools.',
   )
-
-  await importClaudeCodePlugin(cc, { source: 'test' })
 
   // A Claude Code ecosystem install: ~/.claude/plugins with an installed_plugins.json
   // registry pointing at a cached plugin dir (Claude Code manifest layout).

@@ -569,6 +569,24 @@ describe('runtime protocol', () => {
     expect(r.additionalContext).toBe('file is generated')
   })
 
+  it('PostToolUseFailure: sees the error on stdin and adds context', async () => {
+    const rt = make(
+      reg({
+        PostToolUseFailure: [
+          cmd(
+            `grep -q '"error":"disk on fire"' && echo '{"hookSpecificOutput":{"hookEventName":"PostToolUseFailure","additionalContext":"retry later"}}'`,
+          ),
+        ],
+      }),
+    )
+    const r = await rt.runPostToolUseFailure(
+      'bash',
+      { command: 'x' },
+      { error: 'disk on fire', isInterrupt: false },
+    )
+    expect(r.additionalContext).toBe('retry later')
+  })
+
   it('PostToolUse: updatedToolOutput replaces the model-facing result content', async () => {
     const rt = make(
       reg({

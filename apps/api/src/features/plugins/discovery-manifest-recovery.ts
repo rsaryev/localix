@@ -1,9 +1,8 @@
-import { promises as fs } from 'node:fs'
-
 import { summarizeZodIssues } from '@localixai/plugin-sdk/backend'
 
 import { pluginManifestSchema, type PluginManifest } from './contracts'
 import type { ZodError } from 'zod'
+import type { ComposedManifest } from './layout/compose'
 
 /**
  * CC-compatibility manifest fixups used by discovery's `loadManifest`, split out
@@ -136,53 +135,27 @@ export interface ParsedManifestFile {
 }
 
 /**
- * Read, CC-promote, validate and (if needed) recover a plugin's manifest file.
- * The manifest is OPTIONAL (CC parity): when `manifestPath` is null the directory
- * is a valid plugin named after `fallbackName` with default version/description.
- * Pure parse path — no discovery/precedence logic — so it lives beside the other
- * raw-manifest transforms and is unit-testable in isolation.
+ * CC-promote, validate and (if needed) recover a composed runtime manifest
+ * (`layout/compose.ts`). The manifest is OPTIONAL (CC parity): a folder with none is a valid
+ * plugin named after `fallbackName` with default version/description. Pure parse path — no
+ * discovery/precedence logic — so it lives beside the other raw-manifest transforms.
  */
-export async function parseManifestFile(
-  manifestPath: string | null,
+export function parseComposedManifest(
+  composed: ComposedManifest,
   fallbackName: string,
-): Promise<ParsedManifestFile> {
+): ParsedManifestFile {
   const manifest: PluginManifest = { name: fallbackName, version: '0.0.0', description: '' }
-  if (!manifestPath) return { manifest, manifestRecovered: false }
-
-  let raw: string
-  try {
-    raw = await fs.readFile(manifestPath, 'utf8')
-  } catch (err) {
+  if (!composed.raw)
     return {
       manifest,
       manifestRecovered: false,
-      error:
-        err instanceof Error
-          ? `Cannot read plugin.json: ${err.message}`
-          : 'Cannot read plugin.json',
+      ...(composed.error ? { error: composed.error } : {}),
     }
-  }
-
-  let json: unknown
+  const label = composed.layout === 'legacy' ? 'plugin.json' : 'manifest'
+  const json = composed.raw
   try {
-    json = JSON.parse(raw) as unknown
-  } catch (err) {
-    return {
-      manifest,
-      manifestRecovered: false,
-      error:
-        err instanceof Error
-          ? `Invalid plugin.json: ${err.message}`
-          : 'Invalid plugin.json: malformed JSON',
-    }
-  }
-
-  try {
-    let rawManifest: Record<string, unknown> | undefined
-    if (json && typeof json === 'object') {
-      rawManifest = { ...(json as Record<string, unknown>) } // snapshot before promotions
-      applyManifestPromotions(json as Record<string, unknown>)
-    }
+    const rawManifest = { ...json } // snapshot before promotions
+    applyManifestPromotions(json)
     const parsed = pluginManifestSchema.safeParse(json)
     if (parsed.success) {
       return { manifest: parsed.data, rawManifest, manifestRecovered: false }
@@ -190,29 +163,28 @@ export async function parseManifestFile(
     // Graceful degradation: attempt to recover a usable manifest by stripping
     // only the offending config entries and re-parsing, so a plugin with one
     // unsupported config-option type still loads its tools/MCP/hooks/commands.
-    // Truly broken manifests (invalid JSON, missing name, schema errors outside
-    // config) still fail hard.
-    const recovered = tryRecoverManifest(json as Record<string, unknown>, parsed.error)
+    // Truly broken manifests (missing name, schema errors outside config) still fail hard.
+    const recovered = tryRecoverManifest(json, parsed.error)
     if (recovered.manifest) {
       return {
         manifest: recovered.manifest,
         rawManifest,
         manifestRecovered: true,
         // Surface a non-fatal warning so the author sees what was dropped.
-        error: `plugin.json partially loaded (${recovered.droppedKeys.map((k) => `config.${k}`).join(', ')} ignored — unsupported field values): fix the manifest to remove this warning`,
+        error: `${label} partially loaded (${recovered.droppedKeys.map((k) => `config.${k}`).join(', ')} ignored — unsupported field values): fix the manifest to remove this warning`,
       }
     }
     return {
       manifest,
       rawManifest,
       manifestRecovered: false,
-      error: `Invalid plugin.json: ${summarizeZodIssues(parsed.error).message}`,
+      error: `Invalid ${label}: ${summarizeZodIssues(parsed.error).message}`,
     }
   } catch (err) {
     return {
       manifest,
       manifestRecovered: false,
-      error: err instanceof Error ? `Invalid plugin.json: ${err.message}` : 'Invalid plugin.json',
+      error: err instanceof Error ? `Invalid ${label}: ${err.message}` : `Invalid ${label}`,
     }
   }
 }

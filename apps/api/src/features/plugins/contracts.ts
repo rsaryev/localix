@@ -4,7 +4,9 @@ import { pluginConfigFieldSchema } from './contracts-config'
 
 /**
  * Wire contracts for the plugin system. A plugin is a filesystem directory with a
- * `plugin.json` manifest that bundles any combination of: native JS tools, skills
+ * runtime manifest — composed from a Claude Code `.claude-plugin/plugin.json` and a mini app's
+ * `.localix-app/app.json` (`layout/compose.ts`), or read from a legacy root `plugin.json` — that
+ * bundles any combination of: native JS tools, skills
  * (SKILL.md), MCP servers, slash-command prompts, and lifecycle hooks. Discovery is
  * filesystem-based (like skills); enable-state and per-plugin config live in the DB
  * (like MCP servers), so dropping a directory in never silently runs code — a plugin
@@ -15,7 +17,7 @@ import { pluginConfigFieldSchema } from './contracts-config'
  *
  * The per-concern schema clusters live in sibling modules and are re-exported here so
  * the manifest barrel stays the single import surface:
- *   - `./contracts-manifest`      — full plugin.json schema
+ *   - `./contracts-manifest`      — the full runtime manifest schema
  *   - `./contracts-base`          — shared `PLUGIN_NAME_RE` / `PLUGIN_API_VERSION`
  *   - `./contracts-config`        — config-option + config-field schemas
  *   - `./contracts-contributions` — prompt-section / view schemas
@@ -110,8 +112,13 @@ export const pluginRecordSchema = z.object({
   homepage: z.string().optional(),
   /** Provenance from the manifest: source it was migrated from; absent = native. */
   migratedFrom: z.string().optional(),
-  /** Set when the plugin was converted from another format at install time. */
+  /** Set when the plugin is a Claude Code plugin, loaded in place. */
   importedFrom: z.literal('claude-code').optional(),
+  /**
+   * What the folder holds: a `plugin` in the Claude Code format, a `mini-app` with its plugin,
+   * or a `legacy` root `plugin.json` (docs/internals/plugins-and-mini-apps.md).
+   */
+  layout: z.enum(['plugin', 'mini-app', 'legacy']),
   /**
    * The surfaces the plugin declares it extends (normalized; `['agent']` when the
    * manifest says nothing). Consumers group by it — see `isWorkbenchPlugin`.

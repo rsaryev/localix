@@ -1,0 +1,11 @@
+{
+  "name": "learning",
+  "displayName": "Learning Studio",
+  "version": "0.2.0",
+  "description": "File-authored course bundles with Markdown lessons, independent multi-tab study, durable progress, and resource-based agent context.",
+  "license": "MIT",
+  "keywords": ["learning", "course", "education", "tutor", "practice", "adaptive"],
+  "author": {
+    "name": "Localix"
+  }
+}

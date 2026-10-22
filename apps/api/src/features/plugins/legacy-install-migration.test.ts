@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path'
 
 import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
-import { CLAUDE_CODE_PLUGIN_MANIFEST } from './import-claude-code'
+import { MANIFEST_FILE as CLAUDE_CODE_PLUGIN_MANIFEST } from '@localixai/claude-plugin'
 import { migrateLegacyPluginInstalls } from './legacy-install-migration'
 
 let root: string
@@ -39,7 +39,7 @@ const exists = (p: string) =>
     .catch(() => false)
 
 describe('migrateLegacyPluginInstalls', () => {
-  it('moves Default-project installs to global, re-scopes their rows, and converts them', async () => {
+  it('moves Default-project installs to global and re-scopes their rows', async () => {
     const home = join(root, 'home')
     const workspace = join(root, 'workspace')
     await db
@@ -71,9 +71,9 @@ describe('migrateLegacyPluginInstalls', () => {
     await run()
 
     const moved = join(home, '.localix', 'plugins', 'typescript-lsp')
-    expect(await exists(join(moved, 'plugin.json'))).toBe(true)
-    // Nothing is deleted: the original manifest stays beside the native one.
+    // The Claude Code plugin moves as it is: nothing is written beside its manifest.
     expect(await exists(join(moved, CLAUDE_CODE_PLUGIN_MANIFEST))).toBe(true)
+    expect(await exists(join(moved, 'plugin.json'))).toBe(false)
     expect(await exists(join(workspace, '.localix', 'plugins', 'typescript-lsp'))).toBe(false)
     const row = await db
       .selectFrom('capability_source')
@@ -81,8 +81,6 @@ describe('migrateLegacyPluginInstalls', () => {
       .where('id', '=', 'src-1')
       .executeTakeFirstOrThrow()
     expect(row.project_id).toBe('')
-    const native = JSON.parse(await fs.readFile(join(moved, 'plugin.json'), 'utf8'))
-    expect(native.origin.format).toBe('claude-code')
 
     // Idempotent: a second boot changes nothing and logs nothing new.
     const before = logs.length
@@ -90,7 +88,7 @@ describe('migrateLegacyPluginInstalls', () => {
     expect(logs.length).toBe(before)
   })
 
-  it('converts Claude Code layouts in real project roots in place', async () => {
+  it('leaves Claude Code layouts in project roots as they are: they load in place', async () => {
     const project = join(root, 'repo')
     await db
       .insertInto('projects')
@@ -104,7 +102,7 @@ describe('migrateLegacyPluginInstalls', () => {
       logger,
       defaultProjectDir: join(root, 'workspace'),
     })
-    expect(await exists(join(plugin, 'plugin.json'))).toBe(true)
+    expect(await exists(join(plugin, 'plugin.json'))).toBe(false)
   })
 
   it('leaves a Default-project copy in place when the global root has that name', async () => {

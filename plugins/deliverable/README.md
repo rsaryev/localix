@@ -37,5 +37,5 @@ default; an agent’s plugin rules can disable it in **Settings → Capabilities
 
 ## Source of truth
 
-- [Manifest and default settings](plugin.json)
+- [Plugin manifest](.claude-plugin/plugin.json) and [mini app manifest](.localix-app/app.json)
 - [Path matching, file caps, and attachment bindings](hooks/index.mjs)

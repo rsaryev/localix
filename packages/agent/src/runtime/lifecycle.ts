@@ -12,6 +12,7 @@ export const BUILTIN_LIFECYCLE_EVENTS = [
   { id: 'input.submit', gate: 'input' },
   { id: 'tool.before', gate: 'tool' },
   { id: 'tool.after', gate: 'observe' },
+  { id: 'tool.failed', gate: 'observe' },
   { id: 'run.finish', gate: 'completion' },
   { id: 'session.end', gate: 'observe' },
   { id: 'delegation.start', gate: 'observe' },

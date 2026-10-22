@@ -113,7 +113,7 @@ required, and applies the command through the chart control bus.
 
 ## Source of truth
 
-- [Plugin manifest](https://github.com/rsaryev/localix/blob/main/plugins/trading/plugin.json)
+- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/plugins/trading/.localix-app/app.json)
 - [Registered routes, tools, references, search, and streams](https://github.com/rsaryev/localix/blob/main/plugins/trading/backend/index.ts)
 - [Public profile contract](https://github.com/rsaryev/localix/blob/main/plugins/trading/backend/public-connection.ts)
 - [Read-only service](https://github.com/rsaryev/localix/blob/main/plugins/trading/backend/service.ts)

@@ -2,14 +2,15 @@
 
 **Availability:** macOS desktop only.
 
-A plugin with a screen of its own can also run as its own Mac app: a Dock icon, a window, a menu bar
-and a place in Cmd+Tab, Spotlight and Launchpad. Localix stays the host. Each app has one project of
-its own, its conversations are the app's history, and the agent works beside the plugin in each of
-them. Everything runs in Localix, on the same data you see in the workspace.
+A [mini app](../extending/plugins.md) with a screen of its own can also run as its own Mac app: a
+Dock icon, a window, a menu bar and a place in Cmd+Tab, Spotlight and Launchpad. Localix stays the
+host. Each app has one project of its own, its conversations are the app's history, and the agent
+works beside the mini app in each of them. Everything runs in Localix, on the same data you see in
+the workspace.
 
-Plugins stay tabs in the workspace until you choose otherwise; nothing becomes an app on its own.
+Mini apps stay tabs in the workspace until you choose otherwise; nothing becomes an app on its own.
 
-## Install a plugin as an app
+## Install a mini app as an app
 
 Any of these does the same:
 
@@ -76,13 +77,14 @@ plugin is on again.
 ## Limits
 
 - macOS only. The Windows and Linux desktop apps, and Localix in a browser, keep plugins as tabs.
-- A plugin needs a screen of its own (the button it adds to the rail) to become an app.
+- A mini app needs a screen of its own (the button it adds to the rail) to become an app. A plugin
+  in the Claude Code format with no mini app has no screen, so it stays in the agent.
 - A development build keeps its apps separately, in `~/Applications/Localix Dev Apps`, and they need
   the development servers running.
 
 ## Related guides
 
-- [Plugins](../extending/plugins.md)
+- [Plugins and mini apps](../extending/plugins.md)
 - [Build a plugin with the agent](../extending/build-with-the-agent.md)
 - [Native workspace tabs](native-workspace-tabs.md)
 

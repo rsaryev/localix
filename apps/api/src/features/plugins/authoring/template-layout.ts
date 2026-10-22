@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, relative, sep } from 'node:path'
 
+import { MANIFEST_FILE } from '@localixai/claude-plugin'
 import { TEMPLATE_SCAFFOLD_FILE } from './kit-layout'
 
 /**
@@ -9,7 +10,7 @@ import { TEMPLATE_SCAFFOLD_FILE } from './kit-layout'
  * One reader for the layout, because three consumers need the same answer and drifted when each
  * had its own: the instruction to the agent (which files to replace), the copy's AGENTS.md, and the
  * check (did the replacement actually happen). One generated plugin passed every gate while still exporting
- * the template's identifiers, pointing `plugin.json` at a deleted skill directory and carrying no
+ * the template's identifiers, pointing the plugin manifest at a deleted skill directory and carrying no
  * test at all — the instruction said "rename", nothing checked it. The same session hit the reverse
  * failure too: a "keep as is" file imported a domain module, so deleting the domain broke it.
  * Hence three kinds, and a check that pins the boundary between them.
@@ -160,20 +161,16 @@ export function findTemplateResidue(
   // Still thrown: an unreadable manifest is an error, never excusable residue on a fresh copy.
   let manifest: { skills?: unknown }
   try {
-    manifest = JSON.parse(readFileSync(join(pluginDir, 'plugin.json'), 'utf8')) as typeof manifest
+    manifest = JSON.parse(readFileSync(join(pluginDir, MANIFEST_FILE), 'utf8')) as typeof manifest
   } catch (error) {
-    throw new Error(`plugin.json is not valid JSON: ${(error as Error).message}`)
+    throw new Error(`${MANIFEST_FILE} is not valid JSON: ${(error as Error).message}`)
   }
-  if (typeof manifest.skills === 'string') {
-    const root = join(pluginDir, manifest.skills)
-    const hasSkill =
-      existsSync(root) &&
-      statSync(root).isDirectory() &&
-      listFiles(root).some((file) => file.endsWith('SKILL.md'))
-    if (!hasSkill) {
-      problems.push(
-        `plugin.json "skills" points at ${manifest.skills} with no SKILL.md — write one or drop the field`,
-      )
+  // The skills a copy ships: the listed folder, else the default `skills/` Claude Code scans.
+  const skills = typeof manifest.skills === 'string' ? manifest.skills : './skills'
+  const root = join(pluginDir, skills)
+  if (existsSync(root) && statSync(root).isDirectory()) {
+    if (!listFiles(root).some((file) => file.endsWith('SKILL.md'))) {
+      problems.push(`${skills} has no SKILL.md — write one, or delete the folder if you ship none`)
     }
   }
 

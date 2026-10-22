@@ -95,7 +95,7 @@ conversation permission modes still apply.
 
 ## Source of truth
 
-- [Manifest](plugin.json)
+- [Plugin manifest](.claude-plugin/plugin.json) and [mini app manifest](.localix-app/app.json)
 - [Tool actions and effect classification](backend/tools.ts)
 - [Game state and transitions](shared/game.ts)
 - [Wake requests](backend/ask-agent.ts)

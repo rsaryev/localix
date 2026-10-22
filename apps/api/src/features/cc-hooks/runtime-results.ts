@@ -16,6 +16,9 @@ export const EMPTY_RUNTIME: CcHooksRuntime = {
   async runPostToolUse() {
     return {}
   },
+  async runPostToolUseFailure() {
+    return {}
+  },
   async runStop() {
     return { blocked: false }
   },

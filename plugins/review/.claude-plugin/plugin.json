@@ -1,0 +1,11 @@
+{
+  "name": "review",
+  "displayName": "Code Review",
+  "version": "1.3.0",
+  "description": "Run a scoped diff review and file prioritized inline suggestions.",
+  "license": "MIT",
+  "keywords": ["review", "code-review", "diff", "quality", "suggestions"],
+  "author": {
+    "name": "Localix"
+  }
+}

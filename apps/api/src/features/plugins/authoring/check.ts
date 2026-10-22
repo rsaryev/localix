@@ -11,6 +11,7 @@ import {
   prunePluginBackendBuilds,
   publishPluginBackend,
 } from './backend-build'
+import { backendPointer } from '../layout/backend-pointer'
 import { checkPluginBindings } from './binding-check'
 import { runBun } from './bun-child'
 import type { PluginKit } from './kit'
@@ -139,17 +140,20 @@ export async function checkUserPlugin(input: {
       // manifest and UI directory then move in sequence; restore the manifest if the UI swap
       // fails. Pruning is housekeeping after both live pointers have moved.
       if (hasUi) await retainPreviousHashedFiles(liveUiDir, candidateUiDir)
-      const manifestPath = join(pluginDir, 'plugin.json')
-      const previousManifest = await fs.readFile(manifestPath, 'utf8')
+      const manifestPath = (await backendPointer(pluginDir)).path
+      const previousManifest = await fs.readFile(manifestPath, 'utf8').catch(() => null)
       await publishPluginBackend(pluginDir, backendTools, { prune: false })
       try {
         if (hasUi)
           await publishPluginUiArtifact(candidateUiDir, liveUiDir, { retainPrevious: false })
         else await removePluginUiArtifact(liveUiDir)
       } catch (error) {
-        const restore = `${manifestPath}.restore-${randomUUID()}`
-        await fs.writeFile(restore, previousManifest)
-        await fs.rename(restore, manifestPath)
+        if (previousManifest === null) await fs.rm(manifestPath, { force: true })
+        else {
+          const restore = `${manifestPath}.restore-${randomUUID()}`
+          await fs.writeFile(restore, previousManifest)
+          await fs.rename(restore, manifestPath)
+        }
         throw error
       }
       await prunePluginBackendBuilds(pluginDir, backendTools).catch(() => {})

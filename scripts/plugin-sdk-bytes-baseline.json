@@ -2,6 +2,9 @@
   "./agent-wait": {
     "bytes": 365
   },
+  "./app-manifest": {
+    "bytes": 2814
+  },
   "./backend": {
     "bytes": 46500,
     "shake": {

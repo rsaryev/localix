@@ -14,7 +14,7 @@ import {
   MARKETPLACE_CATALOG_FILE,
   MARKETPLACE_MANIFEST_CANDIDATES,
 } from './manifest-locate'
-import { CLAUDE_CODE_MARKETPLACE_HINT, isClaudeCodeMarketplace } from './import-claude-code'
+import { CLAUDE_CODE_MARKETPLACE_HINT, isClaudeCodeMarketplace } from './claude-code-marketplace'
 import type { MarketplaceRegistryDeps } from './marketplace-registry'
 
 /** A registered marketplace record (mirrors CC's known_marketplaces.json entries). */

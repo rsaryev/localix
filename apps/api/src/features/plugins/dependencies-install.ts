@@ -1,7 +1,6 @@
 import type { ExtensionTreeInput } from '../ext/publish-trees'
 import { loadManifest, type DiscoveredPlugin } from './discovery'
 import { applyEntryManifestOverrides } from './marketplace-entry-manifest'
-import { importClaudeCodePlugin } from './import-claude-code'
 import type {
   CapabilitySourceRepository,
   CapabilitySourceRecord,
@@ -137,7 +136,6 @@ export async function prepareDependenciesForInstall(
           source: step.dir,
           name: step.entry.name,
           prepare: async (staged) => {
-            await importClaudeCodePlugin(staged, { source: `${step.name}@${step.marketplace}` })
             await applyEntryManifestOverrides(staged, step.entry)
             const plugin = await loadManifest(staged, ops.scope, ops.projectId)
             if (plugin.error) throw new Error(`dependency "${step.name}": ${plugin.error}`)

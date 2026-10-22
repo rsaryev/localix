@@ -48,6 +48,9 @@ import {
 import { findTemplatePlugin } from './stage-plugin-kit.mjs'
 import { kitCacheRoot } from './plugin-kit-cache.mjs'
 
+const PLUGIN_MANIFEST = '.claude-plugin/plugin.json'
+const APP_MANIFEST = '.localix-app/app.json'
+
 const repoRoot = resolve(import.meta.dir, '..')
 const KIT_STAGER = join(import.meta.dir, 'stage-plugin-kit.mjs')
 const template = findTemplatePlugin(repoRoot)
@@ -253,11 +256,13 @@ describe('a scaffolded user plugin', () => {
       ['types', true],
       ['tests', true],
     ])
-    const manifest = JSON.parse(readFileSync(join(created.dir, 'plugin.json'), 'utf8'))
-    expect(manifest.name).toBe('gpu-monitor')
-    expect(isUserPluginBackendBuild(manifest.tools)).toBe(true)
-    expect(manifest.defaultEnabled).toBeUndefined()
-    const backend = await import(join(created.dir, manifest.tools))
+    const plugin = JSON.parse(readFileSync(join(created.dir, PLUGIN_MANIFEST), 'utf8'))
+    expect(plugin.name).toBe('gpu-monitor')
+    const app = JSON.parse(readFileSync(join(created.dir, APP_MANIFEST), 'utf8'))
+    expect(app.name).toBe('gpu-monitor')
+    expect(isUserPluginBackendBuild(app.backend)).toBe(true)
+    expect(app.defaultEnabled).toBeUndefined()
+    const backend = await import(join(created.dir, app.backend))
     expect(typeof backend.register).toBe('function')
     expect(existsSync(join(created.dir, 'dist', 'ui', 'manifest.json'))).toBe(true)
   })
@@ -266,7 +271,7 @@ describe('a scaffolded user plugin', () => {
   // whole API mid-turn. A build is a new file; the imported one is never touched.
   test('a rebuild never replaces or deletes a build the process imported', async () => {
     const { dir } = await freshCopy()
-    const tools = async () => JSON.parse(readFileSync(join(dir, 'plugin.json'), 'utf8')).tools
+    const tools = async () => JSON.parse(readFileSync(join(dir, APP_MANIFEST), 'utf8')).backend
     const first = await buildPluginBackend({ kit, pluginDir: dir })
     expect(await buildPluginBackend({ kit, pluginDir: dir })).toBe(first)
     await importFreshModule(join(dir, first!))
@@ -297,11 +302,11 @@ describe('a scaffolded user plugin', () => {
       const outside = join(dirname(dir), 'outside.ts')
       writeFileSync(outside, 'export const secret = "outside"\n')
       writeFileSync(join(dir, 'backend', 'index.ts'), source(outside))
-      const before = readFileSync(join(dir, 'plugin.json'), 'utf8')
+      const before = readFileSync(join(dir, APP_MANIFEST), 'utf8')
       await expect(buildPluginBackend({ kit, pluginDir: dir, publish: false })).rejects.toThrow(
         'outside the plugin',
       )
-      expect(readFileSync(join(dir, 'plugin.json'), 'utf8')).toBe(before)
+      expect(readFileSync(join(dir, APP_MANIFEST), 'utf8')).toBe(before)
     }
   })
 
@@ -311,12 +316,12 @@ describe('a scaffolded user plugin', () => {
     const output = join(dir, tools)
     mkdirSync(dirname(output), { recursive: true })
     writeFileSync(output, 'export {}\n')
-    writeFileSync(join(dir, 'plugin.json'), '{ malformed')
+    writeFileSync(join(dir, APP_MANIFEST), '{ malformed')
     await discardPluginBackendCandidate(dir, tools)
     expect(existsSync(output)).toBe(false)
 
     writeFileSync(output, 'export {}\n')
-    writeFileSync(join(dir, 'plugin.json'), JSON.stringify({ tools }))
+    writeFileSync(join(dir, APP_MANIFEST), JSON.stringify({ backend: tools }))
     await discardPluginBackendCandidate(dir, tools)
     expect(existsSync(output)).toBe(true)
   })
@@ -330,7 +335,7 @@ describe('a scaffolded user plugin', () => {
       allowTemplateResidue: true,
     })
     expect(first.published).toBe(true)
-    const manifestBefore = readFileSync(join(dir, 'plugin.json'), 'utf8')
+    const manifestBefore = readFileSync(join(dir, APP_MANIFEST), 'utf8')
     const uiBefore = readFileSync(join(dir, 'dist', 'ui', 'manifest.json'), 'utf8')
     const backendBefore = readdirSync(join(dir, 'dist', 'backend'))
     writeFileSync(
@@ -342,14 +347,14 @@ describe('a scaffolded user plugin', () => {
     const failed = await checkUserPlugin({ kit, pluginDir: dir, name })
     expect(failed.published).toBe(false)
     expect(failed.steps.find((entry) => entry.title === 'types')?.ok).toBe(false)
-    expect(readFileSync(join(dir, 'plugin.json'), 'utf8')).toBe(manifestBefore)
+    expect(readFileSync(join(dir, APP_MANIFEST), 'utf8')).toBe(manifestBefore)
     expect(readFileSync(join(dir, 'dist', 'ui', 'manifest.json'), 'utf8')).toBe(uiBefore)
     expect(readdirSync(join(dir, 'dist', 'backend'))).toEqual(backendBefore)
   })
 
   test('an unreadable reference manifest is not excused as template residue', async () => {
     const { dir, name } = await freshCopy()
-    writeFileSync(join(dir, 'plugin.json'), '{ broken json\n')
+    writeFileSync(join(dir, PLUGIN_MANIFEST), '{ broken json\n')
     const report = await checkUserPlugin({
       kit,
       pluginDir: dir,
@@ -358,7 +363,7 @@ describe('a scaffolded user plugin', () => {
     })
     expect(report.steps[0]?.errored).toBe(true)
     expect(report.published).toBe(false)
-    expect(readFileSync(join(dir, 'plugin.json'), 'utf8')).toBe('{ broken json\n')
+    expect(readFileSync(join(dir, PLUGIN_MANIFEST), 'utf8')).toBe('{ broken json\n')
   })
 
   test('generated output and tsconfig cannot follow symlinks outside the plugin', async () => {
@@ -482,7 +487,7 @@ describe('a scaffolded user plugin', () => {
     expect(await authoring.freeName('user', 'gpu-monitor')).toBe('gpu-monitor-2')
     // A display name is written into source; a quote or backtick in it would break the copy.
     const manifest = JSON.parse(
-      readFileSync(join(pluginsRoot, 'gpu-monitor', 'plugin.json'), 'utf8'),
+      readFileSync(join(pluginsRoot, 'gpu-monitor', PLUGIN_MANIFEST), 'utf8'),
     )
     expect(manifest.displayName).toBe('GPU Monitor x')
     await expect(authoring.freeName('user', 'Bad Name')).rejects.toThrow('lower-kebab-case')
@@ -678,9 +683,11 @@ describe('a scaffolded user plugin', () => {
         force: true,
       })
     }
+    // An empty skills folder claims skills it does not have; no folder ships none.
+    mkdirSync(join(dir, 'skills'))
     const residue = findTemplateResidue(dir, 'gpu-monitor', scaffold)
     expect(residue).toContain(
-      'plugin.json "skills" points at ./skills with no SKILL.md — write one or drop the field',
+      './skills has no SKILL.md — write one, or delete the folder if you ship none',
     )
     expect(residue.some((line) => line.startsWith('no test'))).toBe(true)
   })

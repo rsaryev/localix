@@ -226,6 +226,22 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
       }
     },
 
+    async runPostToolUseFailure(toolName, input, failure) {
+      const hookInput: CcHookInput = {
+        ...baseInput('PostToolUseFailure'),
+        tool_name: toolName,
+        tool_input: input,
+        error: failure.error,
+        is_interrupt: failure.isInterrupt,
+      }
+      const additionalContext = contextFrom(
+        await runAll('PostToolUseFailure', (m) => matchesToolName(m, toolName), hookInput, false, {
+          ifCtx: { toolName, toolInput: input },
+        }),
+      )
+      return additionalContext ? { additionalContext } : {}
+    },
+
     async runStop(stopOpts) {
       const input: CcHookInput = {
         ...baseInput('Stop'),

@@ -2,7 +2,7 @@
  * Identifying a database FILE — the one piece of knowledge shared by every layer that
  * has to answer "can Localix open this, and as which engine?":
  *
- *   - the desktop bundle, via `plugin.json.fileAssociations` (the extension lists here
+ *   - the desktop bundle, via the mini app's `fileAssociations` (the extension lists here
  *     and the ones declared there are locked together by a test in this directory)
  *   - the UI's file-editor contribution, deciding whether a path gets the database tab
  *   - the backend probe, which opens the file and reads its header before connecting

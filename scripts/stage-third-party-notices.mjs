@@ -8,6 +8,8 @@ import {
 } from 'node:fs'
 import { dirname, join, parse, relative } from 'node:path'
 
+import { readExtensionManifest } from './lib/extension-manifest.mjs'
+
 import {
   RUST_NOTICES_FILE,
   buildRustNotices,
@@ -44,7 +46,7 @@ function readManifest(path) {
 
 function isPrivatePluginDir(pluginsRoot, name) {
   try {
-    return readManifest(join(pluginsRoot, name, 'plugin.json')).private === true
+    return readExtensionManifest(join(pluginsRoot, name)).private === true
   } catch {
     return false
   }

@@ -299,7 +299,8 @@ Connections saved before pinning existed are pinned on their next successful con
 
 ## Source of truth
 
-- [Plugin registration](https://github.com/rsaryev/localix/blob/main/plugins/database/plugin.json) ·
+- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/plugins/database/.localix-app/app.json)
+  ·
   [plugins/database/backend/index.ts](https://github.com/rsaryev/localix/blob/main/plugins/database/backend/index.ts)
 - [Driver catalog and registry](https://github.com/rsaryev/localix/blob/main/plugins/database/shared/driver-catalog.ts)
   ·

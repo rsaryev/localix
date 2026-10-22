@@ -1,0 +1,8 @@
+{
+  "name": "template",
+  "apiVersion": 1,
+  "category": "utilities",
+  "surfaces": ["agent", "workbench"],
+  "backend": "./backend/index.ts",
+  "defaultEnabled": true
+}

@@ -128,7 +128,7 @@ contracts live in [Docker provider internals](docker-workbench.md) and
 
 ## Source of truth
 
-- [Plugin manifest](../../../plugins/devops/plugin.json)
+- [Plugin manifest](../../../plugins/devops/.localix-app/app.json)
 - [Backend composition](../../../plugins/devops/backend/index.ts)
 - [UI composition](../../../plugins/devops/ui/register.tsx)
 - [Root workspace](../../../plugins/devops/ui/DevOpsWorkspace.tsx)

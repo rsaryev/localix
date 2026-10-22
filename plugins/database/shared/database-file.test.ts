@@ -72,12 +72,14 @@ describe('database file identification', () => {
     }
   })
 
-  test('the extensions claimed here and in plugin.json are the same set', () => {
-    // The UI routes on DATABASE_FILE_EXTENSIONS; the OS routes on plugin.json. A file
+  test('the extensions claimed here and in the mini app manifest are the same set', () => {
+    // The UI routes on DATABASE_FILE_EXTENSIONS; the OS routes on the mini app manifest. A file
     // type in one and not the other is a double-click that opens the wrong thing (or
     // an in-app viewer the OS never offers), which is precisely the drift this plugin
     // pair was built to close.
-    const manifest = JSON.parse(readFileSync(join(import.meta.dir, '..', 'plugin.json'), 'utf8'))
+    const manifest = JSON.parse(
+      readFileSync(join(import.meta.dir, '..', '.localix-app', 'app.json'), 'utf8'),
+    )
     const declared: string[] = manifest.fileAssociations
       .filter((entry: { name: string }) => entry.name.endsWith('Database'))
       .flatMap((entry: { ext: string[] }) => entry.ext)

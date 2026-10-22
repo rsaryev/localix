@@ -1,0 +1,24 @@
+{
+  "name": "deliverable",
+  "apiVersion": 1,
+  "category": "content",
+  "backend": "./hooks/index.mjs",
+  "config": {
+    "MAX_FILE_MB": {
+      "type": "number",
+      "description": "Per-file size cap in megabytes; larger files are skipped.",
+      "default": 5
+    },
+    "MAX_FILES": {
+      "type": "number",
+      "description": "Max files attached per reply.",
+      "default": 4
+    },
+    "STRIP_PATHS": {
+      "type": "boolean",
+      "description": "Remove the raw file paths from the reply text once attached (only applies when the whole path line can be removed cleanly).",
+      "default": false
+    }
+  },
+  "defaultEnabled": true
+}

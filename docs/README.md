@@ -130,21 +130,22 @@ Each recipe walks through one task from setup to a visible result.
 
 ## Extending Localix
 
-| Guide                                                              | Covers                                                             |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------ |
-| [Build a plugin](extending/plugins.md)                             | Author a plugin manifest, tools, commands, and contributions.      |
-| [Build a plugin with the agent](extending/build-with-the-agent.md) | Describe a plugin and review the agent’s build result.             |
-| [Build workbench UI](extending/plugin-ui.md)                       | Build a workbench interface against the host bridge.               |
-| [Build a sandboxed HTML view](extending/sandboxed-views.md)        | Use the iframe bridge, scoped backend actions, and scratch state.  |
-| [Plugin synchronization](extending/plugin-sync.md)                 | Synchronize plugin resources and live views.                       |
-| [Keyboard ownership](extending/keyboard-ownership.md)              | Keep plugin shortcuts within their focus and ownership boundaries. |
-| [Report plugin failures](extending/plugin-problems.md)             | Report plugin failures through the host’s problem surfaces.        |
-| [The UI kit](extending/ui-kit.md)                                  | Use shared components, tokens, and supported import paths.         |
-| [Wake a session from a plugin](extending/plugin-wakes.md)          | Wake a session from a plugin event.                                |
-| [Semantic index and change feed](extending/plugin-semantics.md)    | Index a plugin's items by meaning and follow its own changes.      |
-| [Validate plugin route requests](extending/plugin-routes.md)       | Validate plugin HTTP request contracts.                            |
-| [Author a skill](extending/skills-authoring.md)                    | Write SKILL.md procedures and supporting resources.                |
-| [Shared Markdown](extending/markdown.md)                           | Use the shared Markdown renderer and interactive components.       |
+| Guide                                                              | Covers                                                                |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| [Build a plugin or a mini app](extending/plugins.md)               | Write a Claude Code plugin, add a mini app, and see the APIs it gets. |
+| [Install Claude Code plugins](extending/claude-code-plugins.md)    | Install a Claude Code plugin as it is and see what runs.              |
+| [Build a plugin with the agent](extending/build-with-the-agent.md) | Describe a mini app and review the agent’s build result.              |
+| [Build workbench UI](extending/plugin-ui.md)                       | Build a workbench interface against the host bridge.                  |
+| [Build a sandboxed HTML view](extending/sandboxed-views.md)        | Use the iframe bridge, scoped backend actions, and scratch state.     |
+| [Plugin synchronization](extending/plugin-sync.md)                 | Synchronize plugin resources and live views.                          |
+| [Keyboard ownership](extending/keyboard-ownership.md)              | Keep plugin shortcuts within their focus and ownership boundaries.    |
+| [Report plugin failures](extending/plugin-problems.md)             | Report plugin failures through the host’s problem surfaces.           |
+| [The UI kit](extending/ui-kit.md)                                  | Use shared components, tokens, and supported import paths.            |
+| [Wake a session from a plugin](extending/plugin-wakes.md)          | Wake a session from a plugin event.                                   |
+| [Semantic index and change feed](extending/plugin-semantics.md)    | Index a plugin's items by meaning and follow its own changes.         |
+| [Validate plugin route requests](extending/plugin-routes.md)       | Validate plugin HTTP request contracts.                               |
+| [Author a skill](extending/skills-authoring.md)                    | Write SKILL.md procedures and supporting resources.                   |
+| [Shared Markdown](extending/markdown.md)                           | Use the shared Markdown renderer and interactive components.          |
 
 ## Contributor references
 

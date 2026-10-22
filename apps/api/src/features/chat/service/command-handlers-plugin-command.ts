@@ -82,6 +82,7 @@ export async function handlePluginCommand(
       projectDir,
       // CC dynamic content (`!\`cmd\``, `@path`) runs in the session working dir.
       cwd: projectDir,
+      arguments: match.command.arguments,
     })
     const resolvedBindings = await resolveMessageBindings(deps, userId, session, bindings)
     if (match.command.activateTools?.length) {

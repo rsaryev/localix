@@ -1,6 +1,8 @@
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 
+import { MANIFEST_DIR, MANIFEST_FILE } from '@localixai/claude-plugin'
+
 import { findManifestPath } from './discovery'
 import type { MarketplaceEntry } from './marketplace'
 import { isRecord } from '../../lib/record'
@@ -13,7 +15,7 @@ import { isRecord } from '../../lib/record'
  *
  *  - `strict:false` + NO plugin.json in the plugin dir → the entry IS the whole
  *    manifest (the `*-lsp` plugins ship only LICENSE+README; the `box` skill-bundle
- *    lists `skills` inline). We SYNTHESIZE a native root plugin.json from the entry.
+ *    lists `skills` inline). We SYNTHESIZE its `.claude-plugin/plugin.json` from the entry.
  *  - strict (default) + an existing plugin.json → the entry SUPPLEMENTS it. We
  *    additively merge the entry's component fields WITHOUT overwriting anything the
  *    real manifest already declares (`skills` union; `lspServers`/`mcpServers` add
@@ -119,10 +121,11 @@ export function mergeEntryOverrides(
 
 /**
  * Reconcile a freshly-installed plugin dir with its marketplace entry's inline
- * components. Writes a synthesized plugin.json when the dir has none, or additively
+ * components. Writes a synthesized manifest when the dir has none, or additively
  * supplements an existing one (components + entry metadata: version overrides;
  * displayName/description fill gaps). No-op when the entry declares neither. A
- * synthesized manifest is written to `<dir>/plugin.json`; an existing one is updated in place.
+ * synthesized manifest is written to `<dir>/.claude-plugin/plugin.json`; an existing one is
+ * updated in place.
  */
 export async function applyEntryManifestOverrides(
   dir: string,
@@ -131,9 +134,11 @@ export async function applyEntryManifestOverrides(
   if (!entryHasManifestOverrides(entry)) return
   const manifestPath = await findManifestPath(dir)
   if (!manifestPath) {
-    // No plugin.json anywhere → the entry is the whole manifest (strict:false).
+    // No manifest anywhere → the entry is the whole manifest (strict:false), in the plugin's own
+    // Claude Code layout.
+    await fs.mkdir(join(dir, MANIFEST_DIR), { recursive: true })
     await fs.writeFile(
-      join(dir, 'plugin.json'),
+      join(dir, MANIFEST_FILE),
       JSON.stringify(synthesizeEntryManifest(entry), null, 2) + '\n',
       'utf8',
     )

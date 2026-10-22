@@ -84,13 +84,6 @@
       "author": "Localix"
     },
     {
-      "name": "snake",
-      "source": "./snake",
-      "description": "Play Snake in a chat with the arrow keys, or watch a decision model steer the same board one move at a time.",
-      "version": "0.1.0",
-      "author": "Localix"
-    },
-    {
       "name": "git-workspace",
       "source": "./git-workspace",
       "description": "A first-class Git workspace for changes, conflicts, history, branches, review context, and agent-assisted source-control workflows.",
@@ -144,6 +137,13 @@
       "name": "rock-paper-scissors",
       "source": "./rock-paper-scissors",
       "description": "Rock paper scissors against the agent or a decision model, one table per chat: whoever moves first seals the move, and the round reveals both with a digest anyone can check.",
+      "version": "0.1.0",
+      "author": "Localix"
+    },
+    {
+      "name": "snake",
+      "source": "./snake",
+      "description": "Play Snake in a chat with the arrow keys, or watch a decision model steer the same board one move at a time.",
       "version": "0.1.0",
       "author": "Localix"
     },

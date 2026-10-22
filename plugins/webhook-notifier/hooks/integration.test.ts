@@ -199,7 +199,7 @@ describe('webhook-notifier plugin', () => {
 
   it('the manifest names exactly the events the module delivers', async () => {
     const { ALL_EVENTS } = await import(join(PLUGIN_DIR, 'hooks', 'index.mjs'))
-    const manifest = await Bun.file(join(PLUGIN_DIR, 'plugin.json')).json()
+    const manifest = await Bun.file(join(PLUGIN_DIR, '.localix-app', 'app.json')).json()
     const description = JSON.stringify(manifest)
       .match(/Comma-separated filter: ([a-z_, ]+)\./)?.[1]
       ?.split(', ')
@@ -212,7 +212,7 @@ describe('webhook-notifier plugin', () => {
  *
  * The plugin names its hooks in THREE places that nothing forced to agree: the
  * `PluginHooks` interface in the SDK, the `experimental.nativeContributions.hooks`
- * array in plugin.json, and the handlers the module actually returns. A hook added to
+ * array in the mini app manifest, and the handlers the module actually returns. A hook added to
  * the union would simply never be delivered by the notifier, and a hook dropped from
  * the manifest would still run — neither shows up as a failure anywhere.
  *

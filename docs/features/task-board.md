@@ -167,7 +167,8 @@ See [Capabilities](capabilities.md#plugin-tools) for how a plugin rule and a too
 
 ## Source of truth
 
-- [Plugin manifest](https://github.com/rsaryev/localix/blob/main/plugins/kanban/plugin.json) and
+- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/plugins/kanban/.localix-app/app.json)
+  and
   [backend registration](https://github.com/rsaryev/localix/blob/main/plugins/kanban/backend/index.ts)
 - [Board operations](https://github.com/rsaryev/localix/blob/main/plugins/kanban/backend/operations.ts)
   and [workflow rules](https://github.com/rsaryev/localix/blob/main/plugins/kanban/shared/rules.ts)

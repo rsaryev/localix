@@ -72,7 +72,11 @@ describe('stageDropins', () => {
     const pluginsDir = join(import.meta.dir, '..', 'plugins')
     const manifests = readdirSync(pluginsDir, { withFileTypes: true })
       .filter((entry) => entry.isDirectory())
-      .map((entry) => join(pluginsDir, entry.name, 'plugin.json'))
+      .flatMap((entry) =>
+        ['.claude-plugin/plugin.json', '.localix-app/app.json', 'plugin.json'].map((file) =>
+          join(pluginsDir, entry.name, file),
+        ),
+      )
       .filter(existsSync)
 
     expect(manifests.length).toBeGreaterThan(0)

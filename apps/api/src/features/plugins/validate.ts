@@ -52,11 +52,15 @@ export function validatePlugin(
   for (const diagnostic of plugin.entrypoints.diagnostics ?? []) {
     errors.push(`${diagnostic.message}: ${diagnostic.path}`)
   }
+  // What the plugin and mini-app formats' own rules found (`layout/compose.ts`).
+  for (const found of plugin.layoutIssues ?? []) {
+    ;(found.severity === 'error' ? errors : warnings).push(`${found.message} (${found.path})`)
+  }
 
   // API version compatibility. Missing → assume current (with a nudge); newer → block.
   // Authoring nudges (apiVersion/author/license/version) are for plugin AUTHORS; an imported
   // Claude Code plugin was not written for this host, so its user gets no nudges they can't act on.
-  const imported = plugin.manifest.origin !== undefined
+  const imported = plugin.layout === 'plugin' || plugin.manifest.origin !== undefined
   const nudges = imported ? [] : warnings
   checkApiVersion('Plugin', PLUGIN_API_VERSION, plugin.manifest.apiVersion, errors, nudges)
 

@@ -107,6 +107,23 @@ describe('renderPluginPrompt', () => {
     ).toBe('Build all of a b c now')
   })
 
+  it('fills $name from CC `arguments` by position, and from a declared arg by value', async () => {
+    expect(
+      await renderPluginPrompt('Deploy $app to $env.', {}, 'web staging', {
+        arguments: ['app', 'env'],
+      }),
+    ).toBe('Deploy web to staging.')
+    expect(await renderPluginPrompt('Scope: $scope', { scope: 'branch' }, 'branch main')).toBe(
+      'Scope: branch',
+    )
+  })
+
+  it('a longer name is not eaten by a shorter one, and \\$name stays literal', async () => {
+    expect(await renderPluginPrompt('$a/$ab \\$a', {}, 'x y', { arguments: ['a', 'ab'] })).toBe(
+      'x/y $a',
+    )
+  })
+
   it('appends raw input when the template has no argument placeholder', async () => {
     expect(await renderPluginPrompt('Do the task carefully.', {}, 'IMPORTANT USER ARG')).toBe(
       'Do the task carefully.\n\nArguments: IMPORTANT USER ARG',

@@ -97,8 +97,9 @@ export function PluginsSettings({ scope, agentScope = '', projects }: PluginsSet
           error={error}
           empty={
             <>
-              No plugins here yet. Install one with Install plugin, or drop a folder with a{' '}
-              <code>plugin.json</code> into <code>~/.localix/plugins</code>.
+              No plugins here yet. Install one with Install plugin, or drop a plugin folder (with{' '}
+              <code>.claude-plugin/plugin.json</code>, as in Claude Code) into{' '}
+              <code>~/.localix/plugins</code>.
             </>
           }
         >

@@ -1,10 +1,10 @@
 # Build a sandboxed HTML view
 
-Declare a `views` entry pointing to an HTML file inside the plugin. Each view opens as a work-item
-tab from its rail button or the command palette. There is no second placement; a legacy `surface`
-key is dropped. HTML views work for installed and bundled plugins, with `sandbox="allow-scripts"`
-and an opaque origin. They use the message bridge rather than native React registrations or host
-UI-kit imports.
+Declare a `views` entry in the mini app's `.localix-app/app.json`, pointing to an HTML file inside
+the extension. Each view opens as a work-item tab from its rail button or the command palette. There
+is no second placement; a legacy `surface` key is dropped. HTML views work for installed and bundled
+plugins, with `sandbox="allow-scripts"` and an opaque origin. They use the message bridge rather
+than native React registrations or host UI-kit imports.
 
 ## Acquire the bridge
 

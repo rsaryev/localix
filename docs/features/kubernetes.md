@@ -109,7 +109,7 @@ choices are UI state; they do not alter kubeconfig files.
 
 ## Source of truth
 
-- [Plugin default and boundary](https://github.com/rsaryev/localix/blob/main/plugins/devops/plugin.json)
+- [Mini app default and boundary](https://github.com/rsaryev/localix/blob/main/plugins/devops/.localix-app/app.json)
 - [Provider registry](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/backend/index.ts)
 - [API backend and kubeconfig](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/backend/api-backend.ts)
 - [HTTP and WebSocket transport](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/backend/api-http.ts)

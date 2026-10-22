@@ -48,6 +48,7 @@ function fakePlugin(
   const { name, dependencies, hasNativeTools, ...rest } = over
   return {
     manifest: { name, version: '1.0.0', description: '', dependencies } as never,
+    layout: 'legacy',
     dir: `/plugins/${name}`,
     scope: 'global',
     projectId: '',

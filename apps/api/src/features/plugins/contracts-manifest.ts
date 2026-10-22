@@ -7,7 +7,7 @@ import {
   PROMPT_SECTIONS_MAX_PER_PLUGIN,
   VIEWS_MAX_PER_PLUGIN,
 } from './contracts-contributions'
-import { pluginCommandSchema } from './contracts-commands'
+import { pluginCommandOptionsSchema, pluginCommandSchema } from './contracts-commands'
 import { pluginAgentSchema, AGENTS_MAX_PER_PLUGIN } from './contracts-agents'
 import { pluginMonitorSchema, MONITORS_MAX_PER_PLUGIN } from './contracts-monitors'
 
@@ -58,8 +58,9 @@ export const pluginManifestSchema = pluginManifestCoreSchema.extend({
    */
   migratedFrom: z.string().optional(),
   /**
-   * Install-time import record. Set by the Claude Code importer (`import-claude-code.ts`)
-   * when a foreign plugin is converted into this native layout; absent for native plugins.
+   * The plugin is in the Claude Code format, read in place (`layout/claude-code.ts`); absent for a
+   * mini app and a legacy manifest. `source`/`version`/`importedAt` remain on the root
+   * `plugin.json` files earlier versions wrote at install, which are now ignored.
    */
   origin: z
     .object({
@@ -72,7 +73,7 @@ export const pluginManifestSchema = pluginManifestCoreSchema.extend({
   /**
    * Whether the default `commands/` / `agents/` directories are scanned in addition to
    * the paths listed in `commands` / `agents` (default `true`, additive). `false` makes the
-   * listed paths the only source — how imported Claude Code plugins keep their REPLACE rule.
+   * listed paths the only source — how a Claude Code plugin keeps its REPLACE rule.
    */
   defaultDirs: z
     .object({ commands: z.boolean().optional(), agents: z.boolean().optional() })
@@ -94,27 +95,36 @@ export const pluginManifestSchema = pluginManifestCoreSchema.extend({
     .union([
       z.record(z.string(), z.record(z.string(), z.unknown())),
       z.string(),
-      z.array(z.string()),
+      z.array(z.union([z.string(), z.record(z.string(), z.unknown())])),
     ])
     .optional(),
   /**
-   * Claude Code declarative shell hooks. A path string to a hooks-json file, an
-   * array of such paths, OR an INLINE hook config object (same `{ hooks: { <Event>:
-   * [...] } }` shape as `hooks/hooks.json`). Absent → the default `hooks/hooks.json`
-   * is loaded. Fed into the same cc-hooks pipeline the settings-file hooks use;
+   * Claude Code declarative shell hooks. A path string to a hooks-json file, an INLINE hook
+   * config object, or an array of either. They MERGE with the default `hooks/hooks.json`, which
+   * loads first, as in Claude Code. Fed into the same cc-hooks pipeline the settings-file hooks use;
    * all five handler types (command/http/mcp_tool/prompt/agent) run on the events
    * this host dispatches (see `features/cc-hooks/contracts.ts` CC_HOOK_EVENTS).
    */
-  hooks: z.union([z.string(), z.array(z.string()), z.record(z.string(), z.unknown())]).optional(),
+  hooks: z
+    .union([
+      z.string(),
+      z.array(z.union([z.string(), z.record(z.string(), z.unknown())])),
+      z.record(z.string(), z.unknown()),
+    ])
+    .optional(),
   /**
-   * Claude Code LSP servers. A path string to a `.lsp.json` file, an array of such
-   * paths, OR an INLINE map `{ "<id>": { command, args?, extensionToLanguage, … } }`
-   * (same shape as `.lsp.json`). Absent → the default `.lsp.json` is loaded. Enabled
+   * Claude Code LSP servers. A path string to a `.lsp.json` file, an INLINE map
+   * `{ "<id>": { command, args?, extensionToLanguage, … } }`, or an array of either. They MERGE
+   * with the default `.lsp.json`, which loads first; a later id replaces an earlier one. Enabled
    * plugins' servers are registered with the LSP feature, scoped to the project root
    * (see `features/lsp/lsp-plugin-servers.ts`). The `command` binary must be on PATH.
    */
   lspServers: z
-    .union([z.string(), z.array(z.string()), z.record(z.string(), z.unknown())])
+    .union([
+      z.string(),
+      z.array(z.union([z.string(), z.record(z.string(), z.unknown())])),
+      z.record(z.string(), z.unknown()),
+    ])
     .optional(),
   /**
    * Declarative system-prompt sections injected while the plugin is enabled.
@@ -142,11 +152,19 @@ export const pluginManifestSchema = pluginManifestCoreSchema.extend({
    * Claude Code experimental background monitors — long-running commands whose
    * stdout lines surface to the model as notifications. Declared here (top-level)
    * or under `experimental.monitors` (promoted to this field before parse); absent →
-   * the default `monitors/monitors.json` is read.
+   * the default `monitors/monitors.json` is read. A path string names another monitors file.
    * `when: "always"` monitors spawn while the plugin is enabled; `on-skill-invoke:`
    * monitors are parsed + registered but their lazy start is deferred (see monitor-host).
    */
-  monitors: z.array(pluginMonitorSchema).max(MONITORS_MAX_PER_PLUGIN).optional(),
+  monitors: z
+    .union([z.string(), z.array(pluginMonitorSchema).max(MONITORS_MAX_PER_PLUGIN)])
+    .optional(),
+  /**
+   * How Localix offers the plugin's commands, from the mini app (`.localix-app/app.json`
+   * `commands`): argument chips and pickers, `featured`, `activateTools`, keyed by command name.
+   * Applied over the commands the plugin declares; the prompt stays the plugin's.
+   */
+  commandOptions: z.record(z.string(), pluginCommandOptionsSchema).optional(),
   /**
    * Claude Code plugin-to-plugin dependencies: `["helper-lib", { name, version? }]`.
    * `version` is a semver RANGE (checked advisorily — mismatch warns, never blocks).

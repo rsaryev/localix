@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 
-import manifest from '../plugin.json'
+import manifest from '../.localix-app/app.json'
 import {
   READER_EXTENSIONS,
   isReaderReadable,

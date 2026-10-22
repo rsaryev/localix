@@ -1,0 +1,11 @@
+{
+  "name": "battleship",
+  "displayName": "Battleship",
+  "version": "0.1.0",
+  "description": "Battleship against the agent or a decision model, one game per chat: each side fires in turn, and the agent answers every shot with its own tool, or the board asks a decision model, without either ever seeing your fleet.",
+  "license": "MIT",
+  "keywords": ["game", "battleship", "sea battle", "play"],
+  "author": {
+    "name": "Localix"
+  }
+}

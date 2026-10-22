@@ -51,6 +51,12 @@ export interface CcHooksRuntime {
     input: unknown,
     result: { content: string; details?: unknown },
   ): Promise<{ additionalContext?: string; updatedToolOutput?: string }>
+  /** Fire the PostToolUseFailure hooks for a tool that threw; they may add context. */
+  runPostToolUseFailure(
+    toolName: string,
+    input: unknown,
+    failure: { error: string; isInterrupt: boolean },
+  ): Promise<{ additionalContext?: string }>
   /**
    * Fire the Stop hooks. `stopHookActive` is reported to hooks as `stop_hook_active`
    * — true when this run is ALREADY a Stop-hook-forced continuation (CC loop

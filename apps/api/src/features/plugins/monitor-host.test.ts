@@ -247,7 +247,7 @@ describe('manifest promotion', () => {
     }
     applyManifestPromotions(raw)
     const parsed = pluginManifestSchema.parse(raw)
-    expect(parsed.monitors?.map((m) => m.name)).toEqual(['m'])
+    expect(Array.isArray(parsed.monitors) && parsed.monitors.map((m) => m.name)).toEqual(['m'])
   })
 })
 

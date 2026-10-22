@@ -5,12 +5,13 @@ import { defineAgentTool, type AgentTool } from '@localixai/agent/agents'
 import { CcHookBlockedError, wrapToolsWithCcHooks } from './wrap-tools'
 import type { CcHooksRuntime } from './run'
 
-/** A runtime with only the two tool hooks the wrapper calls; the rest is never reached. */
+/** A runtime with only the tool hooks the wrapper calls; the rest is never reached. */
 function runtime(over: Partial<CcHooksRuntime>): CcHooksRuntime {
   return {
     active: true,
     runPreToolUse: () => Promise.resolve({ decision: 'proceed' as const }),
     runPostToolUse: () => Promise.resolve({}),
+    runPostToolUseFailure: () => Promise.resolve({}),
     ...over,
   } as CcHooksRuntime
 }
@@ -30,20 +31,26 @@ function throwingTool(): AgentTool {
 }
 
 describe('wrapToolsWithCcHooks', () => {
-  it('runs PostToolUse on a THROWN tool error, and returns the converted result', async () => {
-    const seen: string[] = []
+  it('runs PostToolUseFailure (not PostToolUse) on a THROWN tool error, as Claude Code does', async () => {
+    const failures: unknown[] = []
+    const posts: string[] = []
     const [tool] = wrapToolsWithCcHooks(
       [throwingTool()],
       runtime({
         runPostToolUse: (_name, _input, result) => {
-          seen.push(result.content)
+          posts.push(result.content)
+          return Promise.resolve({})
+        },
+        runPostToolUseFailure: (name, _input, failure) => {
+          failures.push({ name, ...failure })
           return Promise.resolve({ additionalContext: 'noted' })
         },
       }),
       logger,
     )
     const result = await tool.execute('tc1', {})
-    expect(seen).toEqual(['disk on fire'])
+    expect(failures).toEqual([{ name: 'boom', error: 'disk on fire', isInterrupt: false }])
+    expect(posts).toEqual([])
     expect(result.isError).toBe(true)
     expect(result.error?.kind).toBe('execution')
     expect(result.content).toContain('disk on fire')

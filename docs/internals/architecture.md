@@ -18,17 +18,18 @@ record before changing it.
 
 ## Ownership contract
 
-| Path                  | Owns                                                                          | Boundary                                                              |
-| --------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `apps/api`            | Hono routes, domain services, agent execution, persistence, and plugin hosts. | Feature code reaches the agent loop through the runtime port.         |
-| `apps/ui`             | React workspaces, typed panes, settings, and API/event clients.               | It requests state from the API; it does not own durable domain state. |
-| `apps/desktop-tauri`  | Native window, release sidecar lifecycle, and desktop capabilities.           | Development scripts start the API instead of the Rust shell.          |
-| `apps/landing`        | Documentation site and generated navigation.                                  | It is not part of the desktop runtime.                                |
-| `packages/agent`      | Provider-neutral agent types, tools, messages, and runtime interfaces.        | It cannot import Localix API features or the engine.                  |
-| `packages/engine*`    | The engine behind the runtime port: loop, model access, script sandbox.       | Production API imports are limited to the bootstrap composition root. |
-| `packages/plugin-sdk` | Plugin manifests and host contribution contracts.                             | A contribution exists only when its plugin is installed and enabled.  |
-| `packages/cli`        | The `localix` launcher: it hands a path to the running desktop app.           | It opens a deep link; it never starts a runtime or renders a session. |
-| `plugins`             | Bundled tool, provider, hook, workbench, and UI contributions.                | Each manifest declares its own capabilities and default state.        |
+| Path                     | Owns                                                                                        | Boundary                                                                |
+| ------------------------ | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `apps/api`               | Hono routes, domain services, agent execution, persistence, and plugin hosts.               | Feature code reaches the agent loop through the runtime port.           |
+| `apps/ui`                | React workspaces, typed panes, settings, and API/event clients.                             | It requests state from the API; it does not own durable domain state.   |
+| `apps/desktop-tauri`     | Native window, release sidecar lifecycle, and desktop capabilities.                         | Development scripts start the API instead of the Rust shell.            |
+| `apps/landing`           | Documentation site and generated navigation.                                                | It is not part of the desktop runtime.                                  |
+| `packages/agent`         | Provider-neutral agent types, tools, messages, and runtime interfaces.                      | It cannot import Localix API features or the engine.                    |
+| `packages/engine*`       | The engine behind the runtime port: loop, model access, script sandbox.                     | Production API imports are limited to the bootstrap composition root.   |
+| `packages/plugin-sdk`    | The mini app manifest (`/app-manifest`) and host contribution contracts.                    | A contribution exists only when its extension is installed and enabled. |
+| `packages/claude-plugin` | The Claude Code plugin format: `plugin.json` and `hooks.json` schemas, name and path rules. | It knows no Localix concept; `features/plugins/layout` composes it.     |
+| `packages/cli`           | The `localix` launcher: it hands a path to the running desktop app.                         | It opens a deep link; it never starts a runtime or renders a session.   |
+| `plugins`                | Bundled tool, provider, hook, workbench, and UI contributions.                              | Each manifest declares its own capabilities and default state.          |
 
 ## How it works
 
@@ -102,8 +103,8 @@ persistence around the `AgentRuntime` port. The production composition root supp
 [agent runtime boundary](https://github.com/rsaryev/localix/blob/main/docs/internals/agent-runtime.md)
 owns that interface and its event contract.
 
-Kanban is a bundled plugin
-([`plugin.json`](https://github.com/rsaryev/localix/blob/main/plugins/kanban/plugin.json)): a
+Kanban is a bundled mini app
+([`app.json`](https://github.com/rsaryev/localix/blob/main/plugins/kanban/.localix-app/app.json)): a
 passive board per chat, stored in that chat's plugin folder. Core names no board. The plugin reaches
 the host only through generic seams — per-chat storage, the agent directory, the tool's bound
 speaker, a resource and a search provider, and a live-frame stream. It creates no session and starts

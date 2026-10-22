@@ -1,4 +1,5 @@
 import { join } from 'node:path'
+import { MANIFEST_FILE } from '@localixai/claude-plugin'
 
 import { pathExists } from '../ext/fs-discovery'
 
@@ -10,8 +11,11 @@ import { pathExists } from '../ext/fs-discovery'
  * their precedence differ, so those stay explicit per caller as constants below.
  */
 
-/** Plugin manifest location: the native `plugin.json` at the plugin root, nothing else. */
-export const PLUGIN_MANIFEST_CANDIDATES: readonly string[] = ['plugin.json']
+/**
+ * The agent plugin's manifest: Claude Code's `.claude-plugin/plugin.json`, else a legacy root
+ * `plugin.json`. A mini app's `.localix-app/app.json` is not one (`layout/read.ts` reads all three).
+ */
+export const PLUGIN_MANIFEST_CANDIDATES: readonly string[] = [MANIFEST_FILE, 'plugin.json']
 
 /** The branded marketplace catalog directory and its files. */
 export const MARKETPLACE_DIR = '.localix-plugin'

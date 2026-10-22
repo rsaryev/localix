@@ -7,10 +7,9 @@ import { collectMarkdownFiles, parseCommandFile, parseAgentFile } from './discov
 import { discoverPlugins, loadManifest } from './discovery'
 import { validateCompatibility } from './validate-compat'
 import {
-  CLAUDE_CODE_DIR,
-  CLAUDE_CODE_PLUGIN_MANIFEST,
-  importClaudeCodePlugin,
-} from './import-claude-code'
+  MANIFEST_DIR as CLAUDE_CODE_DIR,
+  MANIFEST_FILE as CLAUDE_CODE_PLUGIN_MANIFEST,
+} from '@localixai/claude-plugin'
 
 /**
  * Nested-subdirectory namespacing for Claude Code `commands/`/`agents/` flat files:
@@ -117,8 +116,7 @@ describe('CC REPLACE vs localix ADD semantics for manifest commands/agents', () 
     await fs.cp(plug, ccPlug, { recursive: true })
     await fs.mkdir(join(ccPlug, CLAUDE_CODE_DIR), { recursive: true })
     await fs.rename(join(ccPlug, 'plugin.json'), join(ccPlug, CLAUDE_CODE_PLUGIN_MANIFEST))
-    // Runtime reads only the native manifest: the importer converts the Claude Code layout.
-    await importClaudeCodePlugin(ccPlug, { source: 'test' })
+    // A Claude Code plugin loads in place, with its REPLACE rule.
   })
 
   it('localix-origin plugin stays ADDITIVE (default dirs scanned alongside listed paths)', async () => {

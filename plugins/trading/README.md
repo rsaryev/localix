@@ -122,7 +122,7 @@ This target-count bound does not cap each series's total candle count.
 
 ## Source of truth
 
-- [Manifest](./plugin.json)
+- [Plugin manifest](.claude-plugin/plugin.json) and [mini app manifest](.localix-app/app.json)
 - [Plugin dependencies](./package.json)
 - [Backend registration](./backend/index.ts)
 - [Public market service](./backend/service.ts)

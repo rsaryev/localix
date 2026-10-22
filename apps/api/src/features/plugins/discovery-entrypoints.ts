@@ -5,6 +5,12 @@ import { asStringArray } from '../../lib/coerce'
 import { pathExists } from '../ext/fs-discovery'
 
 import type { PluginManifest } from './contracts'
+import {
+  componentSources,
+  DEFAULT_LOCATIONS,
+  type ClaudePluginManifest,
+  type MergedSource,
+} from '@localixai/claude-plugin'
 import { parseMonitors, type PluginMonitor } from './contracts-monitors'
 import { toAbsList } from './discovery-paths'
 import { collectMarkdownFiles, type CollectedMarkdownFile } from './discovery-cc-files'
@@ -88,6 +94,28 @@ async function readMcpJson(file: string): Promise<Record<string, Record<string, 
 }
 
 /**
+ * A merged component's configs in Claude Code's order: the default file when it exists, then
+ * each listed file (read with `read`) and inline map as the manifest lists them.
+ */
+async function mergedConfigs<T>(
+  dir: string,
+  defaultFile: string,
+  source: MergedSource,
+  read: (file: string) => Promise<T | undefined>,
+): Promise<Array<T | Record<string, unknown>>> {
+  const fallback = join(dir, defaultFile)
+  const files = toAbsList(dir, source.files).filter((file) => file !== fallback)
+  const [first, ...listed] = await Promise.all([
+    pathExists(fallback).then((exists) => (exists ? read(fallback) : undefined)),
+    ...files.map(read),
+  ])
+  return [
+    ...[first, ...listed].filter((config): config is Awaited<T> => config !== undefined),
+    ...source.inline,
+  ]
+}
+
+/**
  * Resolve a manifest's declared artifacts to absolute paths, applying directory
  * defaults (./tools, ./skills, ./.mcp.json) when the manifest is silent. Commands are
  * inline manifest objects — no filesystem default.
@@ -161,22 +189,21 @@ export async function resolveEntrypoints(
   const skillDirs = [...skillDirSet]
 
   // ---- MCP servers ---------------------------------------------------------
-  let mcpServers: Record<string, Record<string, unknown>> = {}
-  if (typeof manifest.mcpServers === 'string') {
-    // Single path form.
-    const [mcpPath] = toAbsList(dir, manifest.mcpServers)
-    if (mcpPath) mcpServers = await readMcpJson(mcpPath)
-  } else if (Array.isArray(manifest.mcpServers)) {
-    // Array of path strings — load in parallel and merge.
-    const results = await Promise.all(toAbsList(dir, manifest.mcpServers).map(readMcpJson))
-    for (const r of results) Object.assign(mcpServers, r)
-  } else if (manifest.mcpServers && typeof manifest.mcpServers === 'object') {
-    // Inline object form.
-    mcpServers = manifest.mcpServers as Record<string, Record<string, unknown>>
-  } else if (await pathExists(join(dir, '.mcp.json'))) {
-    // Default location.
-    mcpServers = await readMcpJson(join(dir, '.mcp.json'))
-  }
+  // CC: `.mcp.json` loads first, then each listed file or inline map; a later name replaces an
+  // earlier one.
+  const sources = componentSources({
+    hooks: manifest.hooks,
+    mcpServers: manifest.mcpServers,
+    lspServers: manifest.lspServers,
+  } as Partial<ClaudePluginManifest>)
+  const mcpServers: Record<string, Record<string, unknown>> = {}
+  for (const servers of await mergedConfigs(
+    dir,
+    DEFAULT_LOCATIONS.mcpServers,
+    sources.mcpServers,
+    readMcpJson,
+  ))
+    Object.assign(mcpServers, servers)
 
   // ---- Markdown commands & agents ------------------------------------------
   // ADDITIVE by default: the default `commands/` / `agents/` dirs are scanned alongside
@@ -206,35 +233,20 @@ export async function resolveEntrypoints(
   )
 
   // ---- Claude Code declarative hooks ---------------------------------------
-  // CC: the manifest `hooks` field is a path string, an array of paths, or an INLINE
-  // hook config object; absent → the default `hooks/hooks.json`. Mirrors mcpServers.
-  // Loaded (with substitution) only for ENABLED plugins by the loader.
-  const hookConfigs: unknown[] = []
-  if (typeof manifest.hooks === 'string') {
-    const [p] = toAbsList(dir, manifest.hooks)
-    if (p) {
-      const r = await readJson(p)
-      if (r !== undefined) hookConfigs.push(r)
-    }
-  } else if (Array.isArray(manifest.hooks)) {
-    const results = await Promise.all(toAbsList(dir, manifest.hooks).map(readJson))
-    for (const r of results) if (r !== undefined) hookConfigs.push(r)
-  } else if (manifest.hooks && typeof manifest.hooks === 'object') {
-    hookConfigs.push(manifest.hooks) // inline object
-  } else {
-    const def = join(dir, 'hooks', 'hooks.json')
-    if (await pathExists(def)) {
-      const r = await readJson(def)
-      if (r !== undefined) hookConfigs.push(r)
-    }
-  }
+  // CC: `hooks/hooks.json` loads first, then each listed hooks file or inline event map; all of
+  // them run. Loaded (with substitution) only for ENABLED plugins by the loader.
+  const hookConfigs = await mergedConfigs(dir, DEFAULT_LOCATIONS.hooks, sources.hooks, readJson)
 
   // ---- Claude Code LSP servers ---------------------------------------------
-  // CC: `lspServers` is a path string, an array of paths, or an INLINE map; absent →
-  // the default `.lsp.json`. Merged, keyed by server id. Parsed + registered (enabled
-  // plugins only, scoped to the project root) by the LSP feature.
+  // CC: `.lsp.json` loads first, then each listed file or inline map; merged, keyed by server
+  // id. Parsed + registered (enabled plugins only, scoped to the project root) by the LSP feature.
   const lspServers: Record<string, unknown> = {}
-  const mergeLspSource = (raw: unknown): void => {
+  for (const raw of await mergedConfigs(
+    dir,
+    DEFAULT_LOCATIONS.lspServers,
+    sources.lspServers,
+    readJson,
+  )) {
     if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
       const rec = raw as Record<string, unknown>
       const map = (
@@ -243,17 +255,6 @@ export async function resolveEntrypoints(
       for (const [k, v] of Object.entries(map)) if (v && typeof v === 'object') lspServers[k] = v
     }
   }
-  if (typeof manifest.lspServers === 'string') {
-    const [p] = toAbsList(dir, manifest.lspServers)
-    if (p) mergeLspSource(await readJson(p))
-  } else if (Array.isArray(manifest.lspServers)) {
-    const results = await Promise.all(toAbsList(dir, manifest.lspServers).map(readJson))
-    for (const r of results) mergeLspSource(r)
-  } else if (manifest.lspServers && typeof manifest.lspServers === 'object') {
-    mergeLspSource(manifest.lspServers)
-  } else if (await pathExists(join(dir, '.lsp.json'))) {
-    mergeLspSource(await readJson(join(dir, '.lsp.json')))
-  }
 
   // ---- Claude Code background monitors -------------------------------------
   // CC: `monitors` (top-level or promoted from `experimental.monitors`) REPLACES the
@@ -261,7 +262,10 @@ export async function resolveEntrypoints(
   // sources run through `parseMonitors` for uniform validation + name de-duplication.
   // Only PARSED here — the trust-gated spawn happens in the monitor host (enabled only).
   let monitors: PluginMonitor[] = []
-  if (manifest.monitors !== undefined) {
+  if (typeof manifest.monitors === 'string') {
+    const [file] = toAbsList(dir, manifest.monitors)
+    if (file) monitors = parseMonitors(await readJson(file)).monitors
+  } else if (manifest.monitors !== undefined) {
     monitors = parseMonitors(manifest.monitors).monitors
   } else {
     const monitorsFile = join(dir, 'monitors', 'monitors.json')

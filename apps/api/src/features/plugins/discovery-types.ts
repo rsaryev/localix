@@ -1,5 +1,7 @@
 import type { PluginAgent, PluginCommand, PluginManifest, PluginProvides } from './contracts'
+import type { PluginIssue } from '@localixai/claude-plugin'
 import type { ResolvedEntrypoints } from './discovery-entrypoints'
+import type { ExtensionLayout } from './layout/compose'
 
 export interface DiscoveredPlugin {
   manifest: PluginManifest
@@ -23,6 +25,10 @@ export interface DiscoveredPlugin {
   agents: PluginAgent[]
   /** True for a managed first-party copy synchronized into the global Localix root. */
   bundled: boolean
+  /** A plugin (Claude Code format), a mini app with its plugin, or a legacy root `plugin.json`. */
+  layout: ExtensionLayout
+  /** What the plugin and mini-app formats' own rules found (unknown fields, unsupported parts). */
+  layoutIssues?: PluginIssue[]
   /** Manifest parse/validation error — the plugin still surfaces in the UI. */
   error?: string
   /**

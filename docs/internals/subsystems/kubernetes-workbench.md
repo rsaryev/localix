@@ -126,7 +126,7 @@ anchors open the DevOps singleton; entity anchors open the matching transient ta
 
 ## Source of truth
 
-- [Plugin boundary](../../../plugins/devops/plugin.json) ·
+- [Plugin boundary](../../../plugins/devops/.localix-app/app.json) ·
   [plugins/devops/backend/index.ts](../../../plugins/devops/backend/index.ts)
 - [Backend composition](../../../plugins/devops/kubernetes/backend/index.ts) ·
   [routes.test.ts](../../../plugins/devops/kubernetes/backend/routes.test.ts)

@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { dirname, extname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseSync } from 'oxc-parser'
+import { readExtensionManifest } from './lib/extension-manifest.mjs'
 import { createPluginIdentityGuard, pluginUiNamespaceProblems } from './plugin-identity-guard.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -776,7 +777,7 @@ const bundledPluginNameByDirectory = new Map()
 for (const entry of await readdir(join(root, 'plugins'), { withFileTypes: true })) {
   if (!entry.isDirectory()) continue
   try {
-    const manifest = JSON.parse(await readFile(join(root, 'plugins', entry.name, 'plugin.json')))
+    const manifest = readExtensionManifest(join(root, 'plugins', entry.name))
     if (typeof manifest.name === 'string') {
       bundledPluginNames.push(manifest.name)
       bundledPluginManifests.push(manifest)

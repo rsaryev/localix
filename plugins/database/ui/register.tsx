@@ -202,7 +202,7 @@ export function registerUi(host: PluginUiHost): void {
 
   // A database FILE (`localix.db`, `app.sqlite`, `scratch.db3`) opens as a
   // connection — its schema browser, not the code editor's view of its page bytes.
-  // The same extensions this plugin declares to the OS in `plugin.json`
+  // The same extensions this plugin declares to the OS in its mini app manifest (`.localix-app/app.json`)
   // (`fileAssociations`), so a double-click in Finder and a click in the file tree
   // land in the same place. No `acceptsMedia`: a dropped/uploaded blob has no path
   // for the server to open, and a database is not something to read into memory.

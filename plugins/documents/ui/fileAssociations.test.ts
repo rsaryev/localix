@@ -10,7 +10,7 @@ import { __resetDocumentsUiRegistration, registerUi } from './register'
  * The two halves of "Localix opens this format" must name the same formats.
  *
  * `registerUi` tells the RUNNING app which extensions get a dedicated viewer;
- * `plugin.json.fileAssociations` tells the operating system, at package time, which
+ * The mini app's `fileAssociations` (`.localix-app/app.json`) tells the operating system, at package time, which
  * extensions to route to Localix at all. They are written in different files, read by
  * different processes, and nothing but this test connects them — which is how the
  * viewers below shipped while Finder had never heard of a single one of them.
@@ -40,7 +40,9 @@ registerUi({
   statusItems: noop,
 } as unknown as PluginUiHost)
 
-const manifest = JSON.parse(readFileSync(join(import.meta.dir, '..', 'plugin.json'), 'utf8')) as {
+const manifest = JSON.parse(
+  readFileSync(join(import.meta.dir, '..', '.localix-app', 'app.json'), 'utf8'),
+) as {
   fileAssociations?: { ext: string[]; mimeType?: string }[]
 }
 

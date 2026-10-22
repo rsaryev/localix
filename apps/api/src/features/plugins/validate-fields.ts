@@ -42,26 +42,36 @@ export function validatePluginCommands(plugin: DiscoveredPlugin): FieldValidatio
     }
     // An argumentHint like "[env] [tag]" with no declared args: the hint shows in the
     // composer but no structured arg parsing happens (users still get $ARGUMENTS).
-    if (cmd.argumentHint && cmd.args.length === 0) {
+    // Structured args are Localix's (a legacy manifest's inline command); a Claude Code command
+    // takes its argument string whole, and its hint is all it needs.
+    if (plugin.layout === 'legacy' && cmd.argumentHint && cmd.args.length === 0) {
       warnings.push(
         `Command "${cmd.name}" has "argumentHint" but no declared "args" — add args for structured argument parsing and validation.`,
       )
     }
-    // Cross-check declared args against the `${name}` placeholders the prompt
-    // actually uses — a declared-but-unreferenced arg is silently dropped input,
-    // and an undeclared placeholder renders empty in the dispatched prompt.
+    // Cross-check declared args against the placeholders the prompt actually uses —
+    // `${name}`, or Claude Code's `$name` — a declared-but-unreferenced arg is silently
+    // dropped input, and an undeclared placeholder renders empty in the dispatched prompt. A
+    // prompt that takes `$ARGUMENTS` whole consumes every arg.
     const placeholders = new Set(
       [...cmd.prompt.matchAll(/\$\{([a-zA-Z_][a-zA-Z0-9_-]*)\}/g)].map((match) => match[1]),
     )
+    const bare = new Set(
+      [...cmd.prompt.matchAll(/\$([a-zA-Z_][a-zA-Z0-9_-]*)/g)].map((match) => match[1]),
+    )
+    // With CC `arguments`, or `$ARGUMENTS` taken whole, the declared args only assemble the
+    // argument string the prompt reads by position.
+    const positional = new Set(cmd.arguments ?? [])
+    const byPosition = positional.size > 0 || bare.has('ARGUMENTS')
     const seenArgNames = new Set<string>()
     for (const [argIndex, arg] of cmd.args.entries()) {
       if (seenArgNames.has(arg.name)) {
         errors.push(`Command "${cmd.name}" declares duplicate arg "${arg.name}".`)
       }
       seenArgNames.add(arg.name)
-      if (!placeholders.has(arg.name)) {
+      if (!byPosition && !placeholders.has(arg.name) && !bare.has(arg.name)) {
         warnings.push(
-          `Command "${cmd.name}" declares arg "${arg.name}" but its prompt never references \${${arg.name}}.`,
+          `Command "${cmd.name}" declares arg "${arg.name}" but its prompt never references \${${arg.name}} or $${arg.name}.`,
         )
       }
       // DYNAMIC options (`optionsScript`): a plugin-relative script that produces the
@@ -150,7 +160,7 @@ export function validatePluginCommands(plugin: DiscoveredPlugin): FieldValidatio
       // SCREAMING_CASE tokens are the config/env convention (${API_KEY}) — prompts
       // legitimately mention them as documentation, so only lowercase-style tokens
       // are treated as likely arg typos.
-      if (!declaredArgs.has(token) && !/^[A-Z][A-Z0-9_]*$/.test(token)) {
+      if (!declaredArgs.has(token) && !positional.has(token) && !/^[A-Z][A-Z0-9_]*$/.test(token)) {
         warnings.push(
           `Command "${cmd.name}" prompt references \${${token}} which isn't a declared arg.`,
         )

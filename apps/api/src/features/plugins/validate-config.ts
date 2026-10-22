@@ -38,8 +38,10 @@ export function validatePluginConfig(
       )
     }
   }
+  // A Claude Code-format plugin reads undeclared `${VAR}` from the environment, as there.
+  const readsEnvironment = plugin.layout !== 'legacy'
   for (const token of collectMcpConfigTokens(plugin.entrypoints.mcpServers)) {
-    if (!declaredKeys.has(token) && !BUILTIN_PLUGIN_VARS.has(token)) {
+    if (!readsEnvironment && !declaredKeys.has(token) && !BUILTIN_PLUGIN_VARS.has(token)) {
       warnings.push(
         `MCP config references "\${${token}}" which isn't declared in "config" (it resolves to empty).`,
       )
@@ -117,7 +119,7 @@ export function validatePluginConfig(
     }
     if (opt.secret && opt.default !== undefined && opt.default !== '') {
       warnings.push(
-        `Config "${key}" is "secret: true" but also has a non-empty default — the default value will be visible in plugin.json, defeating the purpose of marking it secret.`,
+        `Config "${key}" is "secret: true" but also has a non-empty default — the default value will be visible in the manifest, defeating the purpose of marking it secret.`,
       )
     }
     if (opt.default !== undefined) {

@@ -137,7 +137,7 @@ export const PLUGIN_KIT_DIGEST: readonly string[] = [
 export const USER_PLUGIN_BACKEND_SOURCE = 'backend/index.ts'
 /**
  * Where the host writes its builds: one content-named file per build (`index-<hash>.mjs`), and
- * `plugin.json` `tools` is rewritten to name the current one. Never one fixed file — see
+ * the mini app manifest's `backend` is rewritten to name the current one. Never one fixed file — see
  * `backend-build.ts` for the restart that caused.
  */
 export const USER_PLUGIN_BACKEND_DIR = 'dist/backend'

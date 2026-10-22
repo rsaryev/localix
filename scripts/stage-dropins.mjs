@@ -29,6 +29,12 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'nod
 import { execFileSync, spawn, spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import {
+  backendField,
+  hasExtensionManifest,
+  localixManifestFile,
+  readExtensionManifest,
+} from './lib/extension-manifest.mjs'
+import {
   discardStagedUiArtifact,
   pluginKitDirOf,
   stagePluginUi,
@@ -117,7 +123,7 @@ const UNDER_BUILD_OUTPUT_RE = /^(?:\.\/)?dist(?:\/|$)/u
 function manifestDeclaresBuildOutput(pluginDir) {
   let manifest
   try {
-    manifest = JSON.parse(readFileSync(join(pluginDir, 'plugin.json'), 'utf8'))
+    manifest = readExtensionManifest(pluginDir)
   } catch {
     return false
   }
@@ -155,9 +161,8 @@ function privatePluginDirs(root) {
   const result = new Set()
   for (const entry of readdirSync(root, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue
-    const manifestPath = join(root, entry.name, 'plugin.json')
     try {
-      const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+      const manifest = readExtensionManifest(join(root, entry.name))
       if (manifest.private === true) result.add(entry.name)
     } catch {
       // Validation reports malformed manifests later; staging must not hide them by name.
@@ -180,6 +185,7 @@ function manifestRuntimeSourceDirs(manifest, repoPlugin) {
     }
     if (
       key === 'tools' ||
+      key === 'backend' ||
       typeof value !== 'string' ||
       !value.startsWith('.') ||
       !UI_AUTHORING_SOURCE_RE.test(value)
@@ -345,16 +351,21 @@ export function stageDropins({
  */
 function bundleStagedPluginBackend(name, { repoRoot, outPlugins, log, onPluginError }) {
   const repoPlugins = join(repoRoot, 'plugins')
-  const manifestPath = join(outPlugins, name, 'plugin.json')
-  if (!existsSync(manifestPath)) return null
+  // The backend entry lives in the Localix layer: a mini app's `backend`, or a legacy `tools`.
+  const manifestPath = localixManifestFile(join(outPlugins, name))
+  if (!manifestPath) return null
+  const field = backendField(manifestPath)
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
-  if (typeof manifest.tools !== 'string' || !BUNDLEABLE_TOOLS_ENTRY_RE.test(manifest.tools))
+  if (typeof manifest[field] !== 'string' || !BUNDLEABLE_TOOLS_ENTRY_RE.test(manifest[field]))
     return null
-  const repoEntry = join(repoPlugins, name, manifest.tools)
+  const repoEntry = join(repoPlugins, name, manifest[field])
   const repoPlugin = join(repoPlugins, name)
   const stagedPlugin = join(outPlugins, name)
   const outDir = join(outPlugins, name, 'backend')
-  const protectedSourceDirs = manifestRuntimeSourceDirs(manifest, repoPlugin)
+  const protectedSourceDirs = manifestRuntimeSourceDirs(
+    readExtensionManifest(repoPlugin),
+    repoPlugin,
+  )
   mkdirSync(outDir, { recursive: true })
   const metadataDir = mkdtempSync(join(outDir, '.localix-bundle-'))
   const metadataPath = join(metadataDir, 'metafile.json')
@@ -401,7 +412,7 @@ function bundleStagedPluginBackend(name, { repoRoot, outPlugins, log, onPluginEr
   } finally {
     rmSync(metadataDir, { recursive: true, force: true })
   }
-  manifest.tools = './backend/index.bundle.mjs'
+  manifest[field] = './backend/index.bundle.mjs'
   writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n')
   return null
 }
@@ -427,8 +438,7 @@ export function restagePlugin({
   // Set the running UI aside first: a UI build that fails mid-edit puts it back.
   const previousUi = existsSync(stagedPlugin) ? takeStagedUiArtifact(stagedPlugin) : null
   rmSync(stagedPlugin, { recursive: true, force: true })
-  const present =
-    existsSync(join(repoPlugin, 'plugin.json')) && !privatePluginDirs(repoPlugins).has(name)
+  const present = hasExtensionManifest(repoPlugin) && !privatePluginDirs(repoPlugins).has(name)
   let failure = null
   if (present) {
     // The filter reasons about paths RELATIVE TO THE PLUGINS ROOT (`<name>/ui/…`), same as
@@ -551,9 +561,7 @@ export function readStagingUnavailable(outPlugins) {
 function writeStagingMarker(outPlugins, unavailable = {}) {
   const pluginHashes = Object.fromEntries(
     readdirSync(outPlugins, { withFileTypes: true })
-      .filter(
-        (entry) => entry.isDirectory() && existsSync(join(outPlugins, entry.name, 'plugin.json')),
-      )
+      .filter((entry) => entry.isDirectory() && hasExtensionManifest(join(outPlugins, entry.name)))
       .sort((a, b) => a.name.localeCompare(b.name))
       .map((entry) => [entry.name, fingerprintPluginTree(join(outPlugins, entry.name))]),
   )

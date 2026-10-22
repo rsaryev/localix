@@ -11,7 +11,7 @@ export const PLUGIN_FEATURES: FeatureRow[] = [
   {
     kicker: 'For example',
     title: 'Photograph a meal, and the agent logs it',
-    body: 'Send a photo in the chat. With a model that accepts images, the agent reads it and calls the tracker’s own tools, and the plugin shows the log and totals.',
+    body: 'Send a photo in the chat. With a model that accepts images, the agent reads it and calls the tracker’s own tools, and the mini app shows the log and totals.',
     slug: 'extending--build-with-the-agent',
     anchor: 'how-it-works',
   },
@@ -24,17 +24,24 @@ export const PLUGIN_FEATURES: FeatureRow[] = [
   },
   {
     kicker: 'Built on the host',
-    title: 'A plugin uses the models Localix already has',
-    body: 'A plugin can ask a decision model a typed question, and rank a few texts or index its own items with the embedding model on this computer. When no model answers, the plugin keeps its own fallback.',
+    title: 'A mini app uses the models Localix already has',
+    body: 'A mini app can ask a decision model a typed question, and rank a few texts or index its own items with the embedding model on this computer. When no model answers, the app keeps its own fallback.',
     slug: 'extending--plugin-semantics',
     anchor: 'ask-a-decision-model',
   },
   {
     kicker: 'Same contract',
-    title: 'The product’s own workbenches are plugins',
-    body: 'The Kanban board, DevOps, Project Space, Code Graph, Database, and Git are plugins on the contract you get, and the larger ones run to tens of thousands of lines.',
+    title: 'The product’s own workbenches are mini apps',
+    body: 'The Kanban board, DevOps, Project Space, Code Graph, Database, and Git are mini apps on the contract you get, and the larger ones run to tens of thousands of lines.',
     slug: 'extending--plugins',
-    anchor: 'what-you-can-do',
+    anchor: 'what-you-can-build',
+  },
+  {
+    kicker: 'Same folder',
+    title: 'Claude Code plugins work as they are',
+    body: 'Install one with /plugin install and Localix reads its manifest, skills, commands, hooks and MCP servers in place. The same folder still loads in Claude Code, and what Localix does not run yet is reported.',
+    slug: 'extending--claude-code-plugins',
+    anchor: 'compatibility',
   },
   {
     kicker: 'Plugins that answer back',

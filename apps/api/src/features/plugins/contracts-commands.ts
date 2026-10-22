@@ -57,6 +57,11 @@ export const pluginCommandSchema = z.object({
   description: z.string().default(''),
   args: z.array(pluginCommandArgSchema).default([]),
   prompt: z.string(), // agent-macro template; ${argName} placeholders
+  /**
+   * CC `arguments` — names for the positional arguments, filling `$name` in the prompt
+   * (`arguments: [env, branch]` → `$env` is the first word, `$branch` the second).
+   */
+  arguments: z.array(z.string().regex(/^[a-zA-Z_][a-zA-Z0-9_-]*$/)).optional(),
   /** CC `argumentHint` — placeholder shown in the composer when this command is selected. */
   argumentHint: z.string().optional(),
   /** Shown first in the slash menu, under "Suggested". */
@@ -90,6 +95,12 @@ export const pluginCommandSchema = z.object({
   disallowedTools: z.array(z.string()).optional(),
 })
 export type PluginCommand = z.infer<typeof pluginCommandSchema>
+
+/** What a mini app may set on one of its plugin's commands (`commandOptions`). */
+export const pluginCommandOptionsSchema = pluginCommandSchema
+  .pick({ args: true, featured: true, activateTools: true })
+  .partial()
+export type PluginCommandOptions = z.infer<typeof pluginCommandOptionsSchema>
 
 /**
  * UI-facing per-command spec returned by the commands endpoint. The `prompt`

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, spyOn } from 'bun:test'
 import { promises as fs } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { CLAUDE_CODE_MARKETPLACE, CLAUDE_CODE_MARKETPLACE_HINT } from './import-claude-code'
+import { CLAUDE_CODE_MARKETPLACE, CLAUDE_CODE_MARKETPLACE_HINT } from './claude-code-marketplace'
 
 import {
   addMarketplace,

@@ -185,7 +185,7 @@ scope, resource anchors, and chart command listener.
 
 - [Chart action effect classifier](../../../plugins/trading/backend/manage-chart-class.ts)
 
-- [Plugin manifest](../../../plugins/trading/plugin.json)
+- [Plugin manifest](../../../plugins/trading/.localix-app/app.json)
 - [Backend registration](../../../plugins/trading/backend/index.ts)
 - [Public connection contract](../../../plugins/trading/backend/public-connection.ts)
 - [Exchange backend port](../../../plugins/trading/backend/backend.ts)

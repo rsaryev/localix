@@ -123,7 +123,7 @@ sent when `SECRET` is empty.
 
 ## Source of truth
 
-- [Manifest and configuration schema](./plugin.json)
+- [Plugin manifest](.claude-plugin/plugin.json) and [mini app manifest](.localix-app/app.json)
 - [Hook registration, filtering, payloads, signing, and delivery](./hooks/index.mjs)
 - [Behavior and hook-coverage tests](hooks/integration.test.ts)
 - [Default-enable policy](../../apps/api/src/features/plugins/enable.ts)

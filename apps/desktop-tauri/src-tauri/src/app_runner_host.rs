@@ -183,13 +183,13 @@ mod tests {
     #[test]
     fn page_globals_are_json_not_interpolated_text() {
         let script = page_globals(
-            "kanban",
+            "task-notes",
             "Board \"Q3\"</script>",
-            Path::new("/h/.localix/apps/kanban"),
+            Path::new("/h/.localix/apps/task-notes"),
             4321,
         );
-        assert!(script.contains(r#""plugin":"kanban""#));
-        assert!(script.contains(r#""projectDir":"/h/.localix/apps/kanban""#));
+        assert!(script.contains(r#""plugin":"task-notes""#));
+        assert!(script.contains(r#""projectDir":"/h/.localix/apps/task-notes""#));
         assert!(script.contains(r#"Board \"Q3\"</script>"#));
         assert!(script.contains("window.__LOCALIX_API_PORT=4321;"));
     }

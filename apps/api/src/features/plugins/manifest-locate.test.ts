@@ -8,7 +8,8 @@ import {
   MARKETPLACE_MANIFEST_CANDIDATES,
   PLUGIN_MANIFEST_CANDIDATES,
 } from './manifest-locate'
-import { CLAUDE_CODE_MARKETPLACE, CLAUDE_CODE_PLUGIN_MANIFEST } from './import-claude-code'
+import { MANIFEST_FILE as CLAUDE_CODE_PLUGIN_MANIFEST } from '@localixai/claude-plugin'
+import { CLAUDE_CODE_MARKETPLACE } from './claude-code-marketplace'
 
 /**
  * Shared manifest-locating core: first existing candidate wins, candidate order is the
@@ -45,11 +46,13 @@ describe('locateManifest', () => {
     expect(await locateManifest(dir, ['missing.json', 'b.json'])).toBe(join(dir, 'b.json'))
   })
 
-  it('plugin candidates: only the root plugin.json, never a foreign layout', async () => {
-    await touch(CLAUDE_CODE_PLUGIN_MANIFEST)
-    expect(await locateManifest(dir, PLUGIN_MANIFEST_CANDIDATES)).toBeNull()
+  it('plugin candidates: the Claude Code manifest first, then a legacy root plugin.json', async () => {
     await touch('plugin.json')
     expect(await locateManifest(dir, PLUGIN_MANIFEST_CANDIDATES)).toBe(join(dir, 'plugin.json'))
+    await touch(CLAUDE_CODE_PLUGIN_MANIFEST)
+    expect(await locateManifest(dir, PLUGIN_MANIFEST_CANDIDATES)).toBe(
+      join(dir, CLAUDE_CODE_PLUGIN_MANIFEST),
+    )
   })
 
   it('marketplace candidates: only .localix-plugin/marketplace.json', async () => {
