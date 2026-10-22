@@ -25,7 +25,7 @@ import type { ChangeFeedHost } from './changes'
 import type { DecisionHost } from './decision'
 import type { SemanticIndexHost } from './semantic'
 
-/** Host-side terminal reader: the same three calls, with the user the host resolves. */
+/** Host-side terminal reader: the same calls, with the user the host resolves. */
 export interface TerminalReadHost {
   screen(input: {
     userId: string
@@ -41,6 +41,10 @@ export interface TerminalReadHost {
     terminalId: string
     command?: string
   }[]
+  watch?(
+    input: { userId: string; sessionId: string | null; terminalId: string },
+    onEvent: (event: 'output' | 'exit') => void,
+  ): (() => void) | null
 }
 
 /**

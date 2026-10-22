@@ -74,6 +74,7 @@ export function SpaceBoard({
   const boardCamera = useBoardCamera({
     root,
     sessionId,
+    live: view.liveUpdates === true,
     space,
     remote,
     selected: board.selected,

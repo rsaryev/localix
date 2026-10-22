@@ -11,6 +11,7 @@ import type { FileMtimeStore } from '../../agent-core/tools/file/file-utils'
 import type { WorkRegistry } from '../../work/registry'
 import type { SessionGrants } from './session-grants'
 import type { RouteCooldowns } from './route-cooldowns'
+import type { ActiveRuns } from './active-runs'
 
 /** One tool's registered actions plus the (userId, sessionId) that registered them. */
 export interface ActionRegistryEntry {
@@ -70,7 +71,8 @@ export interface ContextLaneState {
 }
 
 export interface RuntimeState {
-  activeRuns: Map<string, AbortController>
+  /** sessionId → the live run's abort; announces each release (see active-runs.ts). */
+  activeRuns: ActiveRuns
   activeRunSessions: Map<string, { userId: string; session: SessionRecord; agentId?: string }>
   /**
    * sessionId → the run identity (role profile, tool grants, scoped hooks) a

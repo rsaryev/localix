@@ -56,7 +56,9 @@ export const RELAY_TOPICS = {
   skill: { resources: ['capabilities'] },
   plugin: 'ignore',
   mcp: 'ignore',
-  // What the `local` provider lists reaches clients through the catalog's own refresh.
+  // What the `local` provider lists reaches clients through the catalog's own refresh; the
+  // install itself through the `local-models` status poke (`status-pokes.ts`), which every
+  // install and removal also signals.
   'local.model': 'ignore',
 } as const satisfies Record<EntityKind<CoreRefs>, Topics | 'ignore'>
 

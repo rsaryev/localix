@@ -7,6 +7,7 @@ import { useKubernetesRecovery } from './useKubernetesRecovery'
 import { useKubernetesScope } from './useKubernetesScope'
 import { usePodPollLoop } from './usePodPollLoop'
 import { usePodWatchLive } from './usePodWatchLive'
+import { useLivePortForwards } from './portForwardsFeed'
 
 /**
  * Kubernetes workbench orchestration.
@@ -62,6 +63,9 @@ export function useKubernetes(enabled = true) {
     watchLiveRef,
     setState,
   })
+  useLivePortForwards(recovery.liveReadsEnabled, (portForwards) =>
+    setState((current) => ({ ...current, portForwards })),
+  )
 
   return {
     ...state,

@@ -33,6 +33,8 @@ export interface KubernetesService extends KubernetesBackend {
   stopPortForwardsByOwner(owner: string): Promise<number>
   /** List the currently-active managed forwards. */
   listPortForwards(): PortForward[]
+  /** Hear every change of {@link listPortForwards}; returns the release. */
+  watchPortForwards(listener: () => void): () => void
   /** Stop every managed forward during shutdown. */
   stopAllPortForwards(): Promise<void>
   /**
@@ -69,6 +71,7 @@ export function createKubernetesService(options: KubernetesServiceOptions = {}):
     stopPortForward: (id) => portForwards.stop(id),
     stopPortForwardsByOwner: (owner) => portForwards.stopByOwner(owner),
     listPortForwards: () => portForwards.list(),
+    watchPortForwards: (listener) => portForwards.onChange(listener),
     stopAllPortForwards: () => portForwards.stopAll(),
     watchPods: (context, namespace, sub) => watches.subscribe(context, namespace, sub),
     stopAllWatches: () => watches.stopAll(),

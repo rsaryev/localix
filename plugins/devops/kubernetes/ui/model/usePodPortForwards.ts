@@ -2,19 +2,22 @@ import { useCallback, useEffect, useState } from 'react'
 import type { PortForward } from '../../backend/contracts'
 import { useVisiblePolling } from '@localixai/plugin-sdk/ui/visibility'
 import { kubernetesApi } from '../api/kubernetesApi'
+import { usePortForwardsFeed } from './portForwardsFeed'
 
 /**
  * Whether the tab's forward list needs its five-second re-read.
  *
- * A forward for this tab's owner is started only by this tab (its dialog hands it to `add`) and
- * stopped through `stop`, so the one change the tab cannot see is a forward DYING on the server —
- * a tunnel the cluster closed. With no forward there is nothing to die: polling an empty list every
- * five seconds for as long as a pod tab was open re-read a list nothing could change. The pod watch
- * does not carry forwards (they are this process's sockets, not cluster objects), so while there is
- * one, the poll stays.
+ * The registry announces every start, stop and death of a forward on the realtime stream, and the
+ * tab re-reads on that frame, so while the stream is live nothing is polled. Only while it is down
+ * does the poll stand in, and only with a forward to die — a tunnel the cluster closed is the one
+ * change the tab cannot see itself, and an empty list has nothing that could change on its own.
  */
-export function portForwardPollNeeded(active: boolean, forwardCount: number): boolean {
-  return active && forwardCount > 0
+export function portForwardPollNeeded(
+  active: boolean,
+  forwardCount: number,
+  streamLive: boolean,
+): boolean {
+  return active && forwardCount > 0 && !streamLive
 }
 
 /** Owner-scoped port-forward inventory and stop lifecycle for one pod editor tab. */
@@ -31,13 +34,14 @@ export function usePodPortForwards(active: boolean, owner: string) {
     }
   }, [owner])
 
-  // One read when the tab shows (a reopened tab finds the forwards it started before), then the
-  // poll only while a forward exists to die.
+  // One read when the tab shows (a reopened tab finds the forwards it started before), then a
+  // re-read per announced change; the poll only while the stream is down and a forward could die.
   useEffect(() => {
     if (active) void refresh()
   }, [active, refresh])
+  const streamLive = usePortForwardsFeed(active, () => void refresh())
   useVisiblePolling({
-    enabled: portForwardPollNeeded(active, forwards.length),
+    enabled: portForwardPollNeeded(active, forwards.length, streamLive),
     intervalMs: 5000,
     onTick: refresh,
     resetKey: owner,

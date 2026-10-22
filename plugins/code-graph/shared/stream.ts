@@ -10,7 +10,9 @@ import { agentViewSchema } from './view'
  *
  * - `agent`: the agent asked the map to show something (`code_graph_show`, a camera move);
  * - `report`: a tool wants to know what the tab shows right now — answer with a camera report;
- * - `revision`: the index published, or finished a refresh — re-read the snapshot.
+ * - `revision`: the index published, or finished a refresh — re-read the snapshot;
+ * - `indexing`: a refresh moved (a phase, parsed files), at most about once a second — a tab
+ *   showing the build re-reads its progress, which it used to poll for every 1.5 s.
  */
 export const GRAPH_FRAME_TAG = 'g'
 export const GRAPH_SUBSCRIBE = 'code-graph:subscribe'
@@ -20,6 +22,7 @@ export const graphFrameSchema = z.union([
   z.object({ sessionId: z.string(), agent: agentViewSchema }),
   z.object({ sessionId: z.string(), report: z.number().int().nonnegative() }),
   z.object({ sessionId: z.string(), revision: z.number().int().nonnegative() }),
+  z.object({ sessionId: z.string(), indexing: z.enum(['discovering', 'parsing', 'linking']) }),
 ])
 
 export type GraphFrame = z.infer<typeof graphFrameSchema>

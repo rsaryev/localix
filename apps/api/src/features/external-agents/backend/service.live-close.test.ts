@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import type { TerminalRead } from '@localixai/plugin-sdk/backend'
 import { AgentSessionsService } from './service'
 import type { ProviderAdapter, SourceRef } from './adapters/types'
-import type { LiveEntry } from './live/store'
+import { pendingKeyFor, type LiveEntry } from './live/store'
 
 const screen = (text: string) => ({ text }) as Awaited<ReturnType<TerminalRead['screen']>>
 
@@ -32,6 +32,38 @@ test('an agent whose terminal exited leaves the roster instead of staying live',
   await service.roster({}, 's')
   expect(service.live.get('t1')?.closed).toBeFalsy()
   expect(service.live.get('t2')?.closed).toBe(true)
+  service.shutdown()
+})
+
+test('a waited pane that exits ends the wait on its exit event, not a timer', async () => {
+  const service = new AgentSessionsService(
+    '.',
+    () => {},
+    { env: {}, homeDir: '/nonexistent' },
+    () => [],
+  )
+  const running = new Set(['t1'])
+  const armed = Promise.withResolvers<(event: 'output' | 'exit') => void>()
+  service.setTerminalRead({
+    ...reader(running),
+    watch: ({ sessionId, terminalId }, onEvent) => {
+      expect([sessionId, terminalId]).toEqual(['s', 't1'])
+      armed.resolve(onEvent)
+      return () => {}
+    },
+  })
+  service.live.open({ terminalId: 't1', localixSessionId: 's', provider: 'codex' })
+  const waiting = service.wait(
+    { keys: [pendingKeyFor('codex', 't1')], mode: 'all', until: ['done'], timeoutMs: 30_000 },
+    undefined,
+    's',
+  )
+  const emit = await armed.promise
+  running.delete('t1')
+  emit('exit')
+  const outcome = await waiting
+  expect(outcome.satisfied).toBe(true)
+  expect(service.live.get('t1')?.closed).toBe(true)
   service.shutdown()
 })
 

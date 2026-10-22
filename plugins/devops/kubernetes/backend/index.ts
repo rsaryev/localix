@@ -4,7 +4,7 @@
  * `register()` constructs the Kubernetes API service and contributes it as a `BackendSubsystem`: the
  * boot-time loader (`loadPluginBackends`) mounts the route (`/rpc/kubernetes`),
  * registers the resource (`localix://resource/k8s`) + global-search providers, wires the live
- * pod-watch as a generic WS-frame stream, and calls `onShutdown` on shutdown.
+ * pod-watch and the port-forward changes as generic WS-frame streams, and calls `onShutdown` on shutdown.
  * It contributes NO agent tool; see the reasoning at the `register()` body below.
  *
  * It owns API informer, port-forward, and exec websocket lifecycles and closes them
@@ -16,12 +16,38 @@
  * frames; an unsubscribe (or socket close) releases it. Core consults the generic
  * `WsFrameRegistry` for these otherwise-unrecognized commands — no k8s literal in core.
  */
-import { createKubernetesService } from './service'
+import { createKubernetesService, type KubernetesService } from './service'
 import { createKubernetesRoutes } from './routes'
 import { createKubernetesResourceProvider } from './resource-provider'
 import { createKubernetesSearchProvider } from './search-provider'
 import { createKubernetesContextProvider } from './context-provider'
+import {
+  PORT_FORWARDS_FRAME_TAG,
+  PORT_FORWARDS_SUBSCRIBE,
+  PORT_FORWARDS_UNSUBSCRIBE,
+  type PortForwardsFrame,
+} from './forwards-contract'
 import type { PluginRegistration, WsFrameContribution } from '@localixai/plugin-sdk/backend'
+
+/**
+ * The forward registry's changes as a stream. Forwards are host-wide (every tab reads the one
+ * list and filters by owner), so every socket shares one key.
+ */
+export function createPortForwardsWsFrame(
+  service: Pick<KubernetesService, 'watchPortForwards'>,
+): WsFrameContribution {
+  const changed: PortForwardsFrame = { kind: 'changed' }
+  return {
+    subscribeCommand: PORT_FORWARDS_SUBSCRIBE,
+    unsubscribeCommand: PORT_FORWARDS_UNSUBSCRIBE,
+    frameTag: PORT_FORWARDS_FRAME_TAG,
+    key: () => 'forwards',
+    start: (_params, send) => service.watchPortForwards(() => send(JSON.stringify(changed))),
+    stop: (handle) => {
+      if (typeof handle === 'function') (handle as () => void)()
+    },
+  }
+}
 
 export async function register(): Promise<PluginRegistration> {
   const service = createKubernetesService()
@@ -65,7 +91,7 @@ export async function register(): Promise<PluginRegistration> {
           listNamespaces: (context) => service.listNamespaces(context),
           listPods: (namespace, context) => service.listPods(namespace, context),
         }),
-        wsFrames: [podWatch],
+        wsFrames: [podWatch, createPortForwardsWsFrame(service)],
         onShutdown: async () => {
           await service.stopAllExecs()
           await service.stopAllPortForwards()

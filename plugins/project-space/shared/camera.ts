@@ -35,6 +35,12 @@ export interface CameraCommand {
   move: CameraMove
 }
 
+/** A move pushed to the chat's board tab on the space stream's tag (`backend/ws-frames.ts`). */
+export interface CameraFrame {
+  sessionId: string
+  camera: CameraCommand
+}
+
 /** What the tab shows after a move: its camera and the size of the view, in screen pixels. */
 export interface CameraReport {
   seq: number

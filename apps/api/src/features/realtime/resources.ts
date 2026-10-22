@@ -9,6 +9,9 @@ export const REALTIME_RESOURCES = [
   'vault',
   'storage',
   'system',
+  // In-memory status a service signals as it moves (a download, an index build), not a table.
+  'local-models',
+  'semantic',
 ] as const
 
 export type RealtimeResource = (typeof REALTIME_RESOURCES)[number]

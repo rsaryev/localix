@@ -112,8 +112,11 @@ describe('warm-hidden DevOps work items', () => {
     if (!active) return`)
     expect(podSeed).toContain('enabled: active && seedFailed')
     expect(podContent).toContain("enabled: active && view === 'logs' && logsLive")
-    // Polled only while shown AND a forward exists to die (`portForwardPollNeeded`).
-    expect(podForwards).toContain('enabled: portForwardPollNeeded(active, forwards.length),')
+    // Polled only while shown, a forward exists to die, and the stream that announces each change
+    // is down (`portForwardPollNeeded`).
+    expect(podForwards).toContain(
+      'enabled: portForwardPollNeeded(active, forwards.length, streamLive),',
+    )
     expect(podForwards).toContain('return active && forwardCount > 0')
     expect(resource.match(/if \(!active\) return/g)).toHaveLength(2)
     expect(node).toContain('if (!active || seededTarget.current === targetKey) return')

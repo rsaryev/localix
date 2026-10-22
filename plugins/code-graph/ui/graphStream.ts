@@ -23,6 +23,8 @@ export interface GraphStreamListener {
   agent?: (view: AgentView) => void
   report?: () => void
   revision?: () => void
+  /** A refresh moved (paced by the backend); the done frame is `revision`. */
+  progress?: () => void
   reconnect?: () => void
 }
 
@@ -40,6 +42,7 @@ export function graphFollower(listener: GraphStreamListener): RealtimeFeedFollow
     frame: (frame) => {
       if ('agent' in frame) listener.agent?.(frame.agent)
       else if ('report' in frame) listener.report?.()
+      else if ('indexing' in frame) listener.progress?.()
       else listener.revision?.()
     },
     reconnect: () => listener.reconnect?.(),

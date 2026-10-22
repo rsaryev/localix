@@ -26,6 +26,8 @@ import { useFollowFocus } from './useFollowFocus'
 export interface BoardCameraInput {
   root: RefObject<HTMLElement | null>
   sessionId: string
+  /** The backend streams the board (`SpaceView.liveUpdates`), so the agent's moves can arrive. */
+  live: boolean
   space: SpaceDocument
   remote: RemoteChange | null
   selected: ReadonlySet<string>
@@ -37,14 +39,14 @@ export interface BoardCameraInput {
 }
 
 export function useBoardCamera(input: BoardCameraInput) {
-  const { root, sessionId, space, remote, selected, select, still, onAgentShown } = input
+  const { root, sessionId, live, space, remote, selected, select, still, onAgentShown } = input
   const camera = useCanvasCamera()
   // The board is not hidden while its first placement waits: one frame at the default camera
   // costs a whiteboard nothing, and a surface that never reports a size (the agent's capture of
   // the tab) must still see the board.
   useCameraPlacement(sessionId, () => camera.fit())
   const director = useCameraDirector(root)
-  useCameraBridge(sessionId, director, onAgentShown)
+  useCameraBridge(sessionId, director, onAgentShown, { live })
   useAddedFocus(sessionId, space, director, select, root)
   const follow = useFollow(remote, space, director, root)
   const focus = useFollowFocus(selected, space, director, still)

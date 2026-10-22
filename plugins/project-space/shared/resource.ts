@@ -16,6 +16,9 @@ export const SPACE_TITLE = 'Project Space'
 export const SPACE_FRAME_TAG = 'p'
 export const SPACE_SUBSCRIBE = 'project-space:subscribe'
 export const SPACE_UNSUBSCRIBE = 'project-space:unsubscribe'
+/** The agent's camera moves for one chat's open board (`backend/camera-hub.ts`), on the same tag. */
+export const CAMERA_SUBSCRIBE = 'project-space:camera.subscribe'
+export const CAMERA_UNSUBSCRIBE = 'project-space:camera.unsubscribe'
 export const SPACE_TOOLS = {
   read: 'space_read',
   apply: 'space_apply',

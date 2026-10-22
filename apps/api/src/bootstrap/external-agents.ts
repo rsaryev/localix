@@ -8,7 +8,7 @@ import {
   installedExternalAgents,
   detectInstalledExternalAgents,
 } from '../features/external-agents/installed'
-import { agentTerminalOf } from '../features/terminal/agent-scope'
+import { agentTerminalOf, watchAgentTerminal } from '../features/terminal/agent-scope'
 import { watchPathNative } from '../features/fs-watch/path-watch'
 import type { InfraPhase } from './infra'
 import type { RegistriesPhase } from './registries'
@@ -57,6 +57,12 @@ export function createExternalAgentsPhase({
       if (!sessionId || archived?.chatSessionId !== sessionId) return null
       return (await terminal?.finalScreen(env.LOCALIX_DEFAULT_USER_ID, terminalId)) ?? null
     },
+    watch: (input, onEvent) =>
+      watchAgentTerminal(
+        serviceRefs.terminalService,
+        { userId: env.LOCALIX_DEFAULT_USER_ID, ...input },
+        onEvent,
+      ),
   })
   const resources = createExternalAgentResourceProvider(service)
   resourceRefsRegistry.register(resources)

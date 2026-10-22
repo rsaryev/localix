@@ -14,22 +14,22 @@ import {
   visit,
   type GraphLocation,
 } from './model/history'
+import { snapshotPollMs } from './model/cadence'
 import { usePolledSnapshot } from './usePolledSnapshot'
 import { useAgentRequests } from './useAgentRequests'
 import { useGraphStream } from './graphStream'
+
+/** Changes folded into one re-index, from the first: a save-and-format, an agent's burst of edits. */
+const CHANGE_WINDOW_MS = 1500
 
 /**
  * Everything the view is looking at, and the one snapshot that answers it.
  *
  * Where the person is (scope, selection, search) lives here, in the view; what the project IS
- * lives in the backend and arrives with each poll. The agent's `show` is the one place the backend
- * moves the view: it carries a revision, applied once, after which the person is free to wander.
+ * lives in the backend and arrives with each read — on a stream frame, or a poll while the stream
+ * is down (`model/cadence.ts`). The agent's `show` is the one place the backend moves the view:
+ * it carries a revision, applied once, after which the person is free to wander.
  */
-const INDEXING_POLL_MS = 1500
-const IDLE_POLL_MS = 8000
-/** Changes folded into one re-index, from the first: a save-and-format, an agent's burst of edits. */
-const CHANGE_WINDOW_MS = 1500
-
 export function useGraph(active: boolean) {
   const sessionId = useWorkItemSessionId()
   const [history, setHistory] = useState(initialHistory)
@@ -91,14 +91,21 @@ export function useGraph(active: boolean) {
   }, [sessionId, scope, selected, deferredQuery, external, trail, live])
 
   const refreshRef = useRef<() => void>(() => {})
+  const indexingRef = useRef(indexing)
+  indexingRef.current = indexing
   const streamLive = useGraphStream(sessionId, active, {
     revision: () => refreshRef.current(),
+    // A build's progress matters to a tab showing it; a background refresh of a ready map stays
+    // quiet until its `revision`.
+    progress: () => {
+      if (indexingRef.current) refreshRef.current()
+    },
     reconnect: () => refreshRef.current(),
   })
   const polled = usePolledSnapshot({
     path: `${ROUTE_PATH}/view${params}`,
     schema: graphSnapshotSchema,
-    intervalMs: indexing ? INDEXING_POLL_MS : live && streamLive ? null : IDLE_POLL_MS,
+    intervalMs: snapshotPollMs({ indexing, streamLive, changesLive: live === true }),
     active: active && sessionId !== null,
     failureMessage: 'The code map could not be loaded.',
   })

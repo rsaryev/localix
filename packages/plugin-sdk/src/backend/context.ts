@@ -52,6 +52,15 @@ export interface TerminalRead {
   }): Promise<PluginScreenSnapshot | null>
   /** Live terminals bound to this chat session. */
   list(input: { sessionId: string | null }): { terminalId: string; command?: string }[]
+  /**
+   * Subscribe to a terminal's output and exit, so a reader re-reads `screen` when it can have
+   * changed instead of on a timer. The same ownership check as `screen`: null when the terminal is
+   * not this session's or no longer exists. Optional because an older host does not offer it.
+   */
+  watch?(
+    input: { sessionId: string | null; terminalId: string },
+    onEvent: (event: 'output' | 'exit') => void,
+  ): (() => void) | null
 }
 
 /** Resolved plugin config values (declared defaults overlaid with stored values). */

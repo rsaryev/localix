@@ -48,6 +48,7 @@ export class ProjectIndex {
   /** Files changed while a refresh was already walking: it may have passed them, so run again. */
   private stale = false
   private readonly listeners = new Set<(status: IndexStatus) => void>()
+  private readonly progressListeners = new Set<(status: IndexStatus) => void>()
 
   constructor(
     readonly root: string,
@@ -114,10 +115,17 @@ export class ProjectIndex {
     return () => this.listeners.delete(listener)
   }
 
+  /** Hear a running refresh move: each phase, and each parsed file — a caller paces itself. */
+  watchProgress(listener: (status: IndexStatus) => void): () => void {
+    this.progressListeners.add(listener)
+    return () => this.progressListeners.delete(listener)
+  }
+
   close(): void {
     this.cache?.close()
     this.cache = null
     this.listeners.clear()
+    this.progressListeners.clear()
   }
 
   private async run(): Promise<PublishedGraph | null> {
@@ -202,5 +210,6 @@ export class ProjectIndex {
       ...(builtAt ? { builtAt } : {}),
       ...(progress ? { progress } : {}),
     }
+    for (const listener of this.progressListeners) listener(this.snapshot())
   }
 }

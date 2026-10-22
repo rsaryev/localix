@@ -2,6 +2,7 @@ import { afterEach, expect, test } from 'bun:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { cameraHub } from './camera-hub'
 import { createSpaceWsFrames } from './ws-frames'
 import { spaceStore } from './space-store'
 
@@ -94,4 +95,37 @@ test('backend shutdown releases active streams and pending ownership resolutions
   expect(messages).toEqual([])
   stream!.stop(active)
   stream!.stop(pending)
+})
+
+test('the camera stream pushes the authorized chat its moves, a fresh one on start, and only while followed', async () => {
+  const {
+    wsFrames: [, camera],
+  } = createSpaceWsFrames({
+    resolveSessionRoot: async (userId) => (userId === 'owner' ? '/project' : null),
+  })
+  const sent = cameraHub.send('cam-a', { kind: 'zoom', zoom: 2 })
+  const frames: unknown[] = []
+  const foreign: unknown[] = []
+  const handle = camera!.start({ sessionId: 'cam-a' }, (json) => frames.push(JSON.parse(json)), {
+    userId: 'owner',
+  })
+  const spoof = camera!.start({ sessionId: 'cam-a' }, (json) => foreign.push(json), {
+    userId: 'foreign',
+  })
+  await Promise.resolve()
+  expect(frames).toEqual([
+    { sessionId: 'cam-a', camera: { seq: sent, move: { kind: 'zoom', zoom: 2 } } },
+  ])
+  expect(cameraHub.listening('cam-a')).toBe(true)
+  const next = cameraHub.send('cam-a', { kind: 'pan', x: 0.5, y: 0 })
+  expect(frames.at(-1)).toEqual({
+    sessionId: 'cam-a',
+    camera: { seq: next, move: { kind: 'pan', x: 0.5, y: 0 } },
+  })
+  camera!.stop(handle)
+  camera!.stop(spoof)
+  expect(cameraHub.listening('cam-a')).toBe(false)
+  cameraHub.send('cam-a', { kind: 'zoom', zoom: 1 })
+  expect(frames).toHaveLength(2)
+  expect(foreign).toEqual([])
 })

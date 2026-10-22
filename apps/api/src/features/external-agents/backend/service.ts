@@ -115,6 +115,17 @@ export class AgentSessionsService {
     return screen.text
   }
 
+  /** Subscribe to the pane behind `key`, through the host's ownership-checked terminal events. */
+  private watchScreen(
+    key: string,
+    sessionId: string | null,
+    onEvent: (event: 'output' | 'exit') => void,
+  ): (() => void) | null {
+    const entry = this.live.byKey(key)
+    if (!entry || !this.terminalRead?.watch) return null
+    return this.terminalRead.watch({ sessionId, terminalId: entry.terminalId }, onEvent)
+  }
+
   async start(): Promise<void> {
     await this.manifests.loadOverrides()
   }
@@ -405,8 +416,10 @@ export class AgentSessionsService {
    * could not arrive: a wait on "blocked" for a screen-detected agent could only ever end at its
    * timeout. Reports and a closed terminal still woke it, which is why the gap was not obvious.
    *
-   * So the wait polls the panes it is waiting on. Only those, only while it is waiting, and only
-   * when the host gave this load a reader — everywhere else the previous behaviour is unchanged.
+   * So the wait reads the panes it is waiting on. Only those, only while it is waiting, and only
+   * when the host gave this load a reader. A pane's output and exit are its change events: the
+   * wait re-reads a screen when its program prints (throttled) or exits, and falls back to a timer
+   * only on a host that offers no pane events. Logs are re-read on their own file watch.
    */
   async wait(
     request: WaitRequest,
@@ -420,7 +433,7 @@ export class AgentSessionsService {
     await this.readTurnsFor(request.keys)
 
     /**
-     * Two independent readers, and the poll must not be gated on the terminal one.
+     * Two independent readers, and the log one must not be gated on the terminal one.
      *
      * It was: `if (!this.terminalRead) return` sat above the timer, so a load without a reader
      * polled nothing — and the transcript reader needs no terminal at all. A delegation that
@@ -429,11 +442,18 @@ export class AgentSessionsService {
     const watched = request.keys.filter((key) => this.live.byKey(key))
     if (!this.terminalRead && watched.length === 0) return waitForStates(this.live, request, signal)
 
-    const stopPolling = startWaitPoll({
+    const stopReading = startWaitPoll({
       request,
       sessionId,
       hasTerminalRead: () => Boolean(this.terminalRead),
+      watchScreen: this.terminalRead?.watch
+        ? (key, askingSession, onEvent) => this.watchScreen(key, askingSession, onEvent)
+        : undefined,
       readScreen: (key, askingSession) => this.readScreen(key, askingSession),
+      readEnd: async (key, askingSession) => {
+        const entry = this.live.byKey(key)
+        if (entry) await this.refreshEntry(askingSession, entry.terminalId)
+      },
       readTurnsFor: (keys) => this.readTurnsFor(keys),
       timers: () => this.timers,
       sourcePath: (key) => this.turnSources.get(key)?.ref.sourcePath,
@@ -442,7 +462,7 @@ export class AgentSessionsService {
     try {
       return await waitForStates(this.live, request, signal)
     } finally {
-      stopPolling()
+      stopReading()
     }
   }
 }

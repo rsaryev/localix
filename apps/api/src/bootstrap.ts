@@ -2,6 +2,7 @@ import { startSemantic } from './bootstrap/semantic-changes'
 import { startCoreReactors } from './bootstrap/core-reactors'
 import type { WebSocketHandler } from 'bun'
 import { websocket } from './features/realtime/ws'
+import { startStatusPokes } from './features/realtime/status-pokes'
 import { MAX_MESSAGE_BINDINGS_TOTAL_BYTES } from './features/chat/contracts'
 import { bindChatHostRefs } from './bootstrap/chat-host-refs'
 import { createChatServicePhase } from './bootstrap/chat-service-deps'
@@ -312,6 +313,18 @@ export async function bootstrap(
       startEngines()
       startOpsTimers(signal)
       startSemantic({ db, logger, localModels, semanticService, changes: infra.changes, signal })
+      const stopStatusPokes = startStatusPokes(
+        [
+          { resource: 'local-models', subscribe: localModels.subscribe },
+          { resource: 'semantic', subscribe: semanticService.subscribe },
+        ],
+        (resources) =>
+          chatService.streamRegistry.publish(env.LOCALIX_DEFAULT_USER_ID, '', {
+            type: 'resources.changed',
+            resources,
+          }),
+      )
+      signal?.addEventListener('abort', stopStatusPokes, { once: true })
       void startCoreReactors({
         db,
         feed: infra.changes.core,

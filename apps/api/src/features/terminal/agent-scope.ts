@@ -59,3 +59,23 @@ export function agentTerminalOf(
     terminalId,
   })
 }
+
+/**
+ * Subscribe to an agent-visible terminal's output and exit, behind the same boundary as
+ * `agentTerminalOf`. Null when the pane is not this session's or no longer exists, which a reader
+ * treats as an exit. Lets a reader re-read the screen when it can have changed, not on a timer.
+ */
+export function watchAgentTerminal(
+  service: { get: (userId: string, terminalId: string) => TerminalSession | undefined } | undefined,
+  input: { userId: string; sessionId: string | null; terminalId: string },
+  onEvent: (event: 'output' | 'exit') => void,
+): (() => void) | null {
+  const session = agentTerminalOf(service, input.userId, input.sessionId, input.terminalId)
+  if (!session) return null
+  const offData = session.subscribe(() => onEvent('output'))
+  const offExit = session.onExit(() => onEvent('exit'))
+  return () => {
+    offData()
+    offExit()
+  }
+}

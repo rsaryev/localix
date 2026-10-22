@@ -1,7 +1,15 @@
 import { workspacePathsTouch } from '@localixai/plugin-sdk/ui/file-resource-sync'
 import { createRealtimeFeed } from '@localixai/plugin-sdk/ui/realtime-feed'
 import { pluginFiles } from '@localixai/plugin-sdk/ui/runtime'
-import { BOARD_DIR, SPACE_FRAME_TAG, SPACE_SUBSCRIBE, SPACE_UNSUBSCRIBE } from '../shared/resource'
+import type { CameraFrame } from '../shared/camera'
+import {
+  BOARD_DIR,
+  CAMERA_SUBSCRIBE,
+  CAMERA_UNSUBSCRIBE,
+  SPACE_FRAME_TAG,
+  SPACE_SUBSCRIBE,
+  SPACE_UNSUBSCRIBE,
+} from '../shared/resource'
 
 /** A workspace change at or under the board's folder — or a coarse one, which may include it. */
 export function touchesBoard(paths: readonly string[] | null): boolean {
@@ -48,6 +56,29 @@ export const spaceFeed = createRealtimeFeed<string, { sessionId: string; revisio
     const event = JSON.parse(json) as { sessionId?: unknown; revision?: unknown }
     return typeof event.sessionId === 'string' && typeof event.revision === 'string'
       ? { sessionId: event.sessionId, revision: event.revision }
+      : null
+  },
+  route: (event) => event.sessionId,
+})
+
+/**
+ * The agent's camera moves for one chat's board (`backend/camera-hub.ts`), pushed on the board's
+ * tag as they are sent. Its own subscription, so only a mounted board counts as listening.
+ */
+export const cameraFeed = createRealtimeFeed<string, CameraFrame>({
+  tag: SPACE_FRAME_TAG,
+  subscribe: (sessionId) => ({ t: CAMERA_SUBSCRIBE, sessionId }),
+  unsubscribe: (sessionId) => ({ t: CAMERA_UNSUBSCRIBE, sessionId }),
+  decode: (json) => {
+    const event = JSON.parse(json) as {
+      sessionId?: unknown
+      camera?: Partial<CameraFrame['camera']>
+    }
+    const camera = event.camera
+    return typeof event.sessionId === 'string' &&
+      typeof camera?.seq === 'number' &&
+      typeof camera.move?.kind === 'string'
+      ? { sessionId: event.sessionId, camera: camera as CameraFrame['camera'] }
       : null
   },
   route: (event) => event.sessionId,

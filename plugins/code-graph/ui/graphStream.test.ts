@@ -57,7 +57,10 @@ test('one subscription per chat, routed by chat, released with the last listener
     agent: (view) => seen.push(`a:agent:${view.revision}`),
   })
   const offCamera = followGraphStream('a', { report: () => seen.push('a:report') })
-  const offOther = followGraphStream('b', { revision: () => seen.push('b:revision') })
+  const offOther = followGraphStream('b', {
+    revision: () => seen.push('b:revision'),
+    progress: () => seen.push('b:progress'),
+  })
   expect(socket.commands).toEqual([
     { t: GRAPH_SUBSCRIBE, sessionId: 'a' },
     { t: GRAPH_SUBSCRIBE, sessionId: 'b' },
@@ -66,9 +69,10 @@ test('one subscription per chat, routed by chat, released with the last listener
   socket.frame({ sessionId: 'a', agent: { revision: 3, highlight: [] } })
   socket.frame({ sessionId: 'a', report: 1 })
   socket.frame({ sessionId: 'b', revision: 2 })
+  socket.frame({ sessionId: 'b', indexing: 'parsing' })
   socket.frame({ sessionId: 'c', revision: 2 })
   socket.frame({ sessionId: 'a', bogus: true })
-  expect(seen).toEqual(['a:agent:3', 'a:report', 'b:revision'])
+  expect(seen).toEqual(['a:agent:3', 'a:report', 'b:revision', 'b:progress'])
 
   offAgent()
   expect(socket.commands).toHaveLength(2)

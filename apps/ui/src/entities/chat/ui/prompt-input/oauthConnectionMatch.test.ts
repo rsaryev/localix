@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { findChangedOAuthConnection } from './oauthConnectionPolling'
+import { findChangedOAuthConnection } from './oauthConnectionWatch'
 
 const connection = (id: string, providerId: string, updatedAt: string, keyCount: number) => ({
   id,
@@ -9,7 +9,7 @@ const connection = (id: string, providerId: string, updatedAt: string, keyCount:
   keyCount,
 })
 
-describe('OAuth connection polling', () => {
+describe('findChangedOAuthConnection', () => {
   test('detects an in-place repair of an existing zero-key connection', () => {
     const orphan = connection('openrouter-1', 'openrouter', '2026-07-19T00:00:00.000Z', 0)
     const repaired = connection('openrouter-1', 'openrouter', '2026-07-19T00:01:00.000Z', 1)

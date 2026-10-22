@@ -56,10 +56,12 @@ describe('what the agent asks the camera for', () => {
 })
 
 describe('the camera hub', () => {
-  test('a waiting tab gets the move at once, and the tool gets that move’s report', async () => {
-    const waiting = cameraHub.wait('S-hub-1', 0)
+  test('a following tab gets the move at once, and the tool gets that move’s report', async () => {
+    const moves: unknown[] = []
+    const off = cameraHub.follow('S-hub-1', (command) => moves.push(command))
+    expect(cameraHub.listening('S-hub-1')).toBe(true)
     const seq = cameraHub.send('S-hub-1', { kind: 'zoom', zoom: 1 })
-    expect(await waiting).toEqual({ seq, move: { kind: 'zoom', zoom: 1 } })
+    expect(moves).toEqual([{ seq, move: { kind: 'zoom', zoom: 1 } }])
     const answer = cameraHub.awaitReport('S-hub-1', seq, 1_000)
     cameraHub.report('S-hub-1', {
       seq,
@@ -67,15 +69,18 @@ describe('the camera hub', () => {
       size: { width: 10, height: 10 },
     })
     expect(await answer).toMatchObject({ seq })
+    off()
+    expect(cameraHub.listening('S-hub-1')).toBe(false)
+    cameraHub.send('S-hub-1', { kind: 'zoom', zoom: 2 })
+    expect(moves).toHaveLength(1)
   })
 
-  test('a tab that opens just after the move still gets it; an answered move is not resent', async () => {
+  test('a tab that starts following just after the move still gets it', () => {
     const seq = cameraHub.send('S-hub-2', { kind: 'pan', x: 1, y: 0 })
-    expect(await cameraHub.wait('S-hub-2', 0)).toMatchObject({ seq })
-    const stop = new AbortController()
-    const next = cameraHub.wait('S-hub-2', seq, stop.signal)
-    stop.abort()
-    expect(await next).toBeNull()
+    const moves: unknown[] = []
+    const off = cameraHub.follow('S-hub-2', (command) => moves.push(command))
+    expect(moves).toEqual([{ seq, move: { kind: 'pan', x: 1, y: 0 } }])
+    off()
   })
 
   test('no report in time is null, so the tool can say the tab did not answer', async () => {

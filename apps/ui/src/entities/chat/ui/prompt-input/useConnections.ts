@@ -13,7 +13,7 @@ import {
 import { isDesktop, getDesktopOAuthPort } from '@localixai/kit/environment'
 import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import { platformCapabilities } from '@/shared/lib/platformCapabilities'
-import { startOAuthConnectionPoll } from './oauthConnectionPolling'
+import { watchOAuthConnection } from './oauthConnectionWatch'
 import { returnToOAuthModels } from './oauthConnectionReturn'
 
 /** A key connection's extras: more keys for its pool, and what a cloud names besides its key. */
@@ -58,12 +58,11 @@ export function useConnections(sessionId: string | null) {
   // in the management list, but never tell the composer it is runnable.
   const activeConnection = selectedConnection?.hasApiKey ? selectedConnection : null
 
-  // OAuth-completion poll loops started by this hook instance. Each stop handle
-  // also covers an in-flight tick, so its `finally` cannot schedule another read
-  // after navigation.
-  const oauthPollStops = useRef<Map<string, () => void>>(new Map())
+  // OAuth-completion watches started by this hook instance. Each stop handle
+  // also aborts an in-flight binding, so it cannot reopen the picker after navigation.
+  const oauthWatchStops = useRef<Map<string, () => void>>(new Map())
   useEffect(() => {
-    const stops = oauthPollStops.current
+    const stops = oauthWatchStops.current
     return () => {
       for (const stop of stops.values()) stop()
       stops.clear()
@@ -143,9 +142,9 @@ export function useConnections(sessionId: string | null) {
       label: string,
       onConnected?: (connectionId: string) => void,
     ) => {
-      // The server replaces an abandoned login on retry. Its old poll must not
+      // The server replaces an abandoned login on retry. Its old watch must not
       // mistake the replacement's connection for its own or report a timeout.
-      oauthPollStops.current.get(providerId)?.()
+      oauthWatchStops.current.get(providerId)?.()
       // Snapshot before starting login: a fast callback may persist before initiate returns.
       const baseline = useChatStore.getState().connections
       // In desktop mode the OAuth callback must go to a localhost URL that the
@@ -176,15 +175,18 @@ export function useConnections(sessionId: string | null) {
       sessionStorage.setItem(OAUTH_STATE_KEY, state)
       if (activeSessionId) sessionStorage.setItem(OAUTH_SESSION_KEY, activeSessionId)
 
-      // Poll the workspace until the connection the server creates appears, then bind
+      // Watch the connections list until the connection the server creates appears, then bind
       // it to the active session. Used for desktop OAuth and for local-server flows
       // (e.g. Anthropic, whose loopback callback completes the flow server-side).
-      const pollForNewConnection = () => {
-        const stopPoll = startOAuthConnectionPoll({
+      const watchForConnection = () => {
+        const stopWatch = watchOAuthConnection({
           baseline,
           providerId,
-          refresh: refreshConnections,
           read: () => useChatStore.getState().connections,
+          subscribe: (listener) =>
+            useChatStore.subscribe((next, previous) => {
+              if (next.connections !== previous.connections) listener()
+            }),
           async onConnected(fresh, signal) {
             if (activeSessionId) {
               await backendClient.updateSession(activeSessionId, {
@@ -192,7 +194,7 @@ export function useConnections(sessionId: string | null) {
               })
               if (signal.aborted) return
             }
-            // Each poll retains its originating session rather than reading another flow's
+            // Each watch retains its originating session rather than reading another flow's
             // sessionStorage entry after the user starts a second sign-in.
             if (sessionStorage.getItem(OAUTH_STATE_KEY) === state) {
               sessionStorage.removeItem(OAUTH_STATE_KEY)
@@ -202,8 +204,8 @@ export function useConnections(sessionId: string | null) {
             returnToOAuthModels(fresh, activeSessionId)
           },
           onStop: () => {
-            if (oauthPollStops.current.get(providerId) === stopPoll) {
-              oauthPollStops.current.delete(providerId)
+            if (oauthWatchStops.current.get(providerId) === stopWatch) {
+              oauthWatchStops.current.delete(providerId)
             }
           },
           onTimeout: () => {
@@ -212,11 +214,11 @@ export function useConnections(sessionId: string | null) {
             })
           },
         })
-        oauthPollStops.current.set(providerId, stopPoll)
+        oauthWatchStops.current.set(providerId, stopWatch)
       }
 
       // device-code adapters (GitHub Copilot): the server polls until the user enters the
-      // code at the verification URL. Surface the code to the form and poll for the new
+      // code at the verification URL. Surface the code to the form and watch for the new
       // connection. Open the verification page to save the user a click.
       const openSignIn = async (url: string | undefined) => {
         if (!url) return true
@@ -230,15 +232,15 @@ export function useConnections(sessionId: string | null) {
       }
       if (mode === 'device-code') {
         if (!(await openSignIn(verificationUri))) return { mode: 'cancelled' } as const
-        pollForNewConnection()
+        watchForConnection()
         return { mode, userCode, verificationUri } as const
       }
 
       // local-server adapters (Anthropic) redirect to their own fixed loopback URI and
-      // finish server-side — never navigate the SPA away; open a window and poll.
+      // finish server-side — never navigate the SPA away; open a window and watch.
       if (mode === 'local-server') {
         if (!(await openSignIn(redirectUrl))) return { mode: 'cancelled' } as const
-        pollForNewConnection()
+        watchForConnection()
         return { mode } as const
       }
 
@@ -249,7 +251,7 @@ export function useConnections(sessionId: string | null) {
         return { mode } as const
       }
       if (!(await openSignIn(redirectUrl))) return { mode: 'cancelled' } as const
-      pollForNewConnection()
+      watchForConnection()
       return { mode } as const
     },
     [activeSessionId],

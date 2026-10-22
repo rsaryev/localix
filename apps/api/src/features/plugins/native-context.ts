@@ -79,6 +79,12 @@ export function makeContext(
             screen: (input) => host.terminalRead!.screen({ userId, ...input }),
             finalScreen: (input) => host.terminalRead!.finalScreen({ userId, ...input }),
             list: (input) => host.terminalRead!.list({ userId, ...input }),
+            ...(host.terminalRead.watch
+              ? {
+                  watch: (input, onEvent) =>
+                    host.terminalRead!.watch!({ userId, ...input }, onEvent),
+                }
+              : {}),
           },
         }
       : {}),

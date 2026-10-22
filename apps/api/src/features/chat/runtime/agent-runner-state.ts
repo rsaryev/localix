@@ -8,6 +8,7 @@ import type { BackgroundJobSnapshot } from '../../agent-core/prompt/sections/bac
 import { forgetMidRunReminders } from './mid-run-reminders'
 import type { WorkRegistry } from '../../work/registry'
 import { createRouteCooldowns } from './route-cooldowns'
+import { createActiveRuns } from './active-runs'
 import type { RuntimeState } from './agent-runner-state-contracts'
 export type {
   ActionRegistryEntry,
@@ -146,7 +147,7 @@ export function snapshotBackgroundJobs(
 export function createRuntimeState(work: WorkRegistry): RuntimeState {
   return {
     work,
-    activeRuns: new Map(),
+    activeRuns: createActiveRuns(),
     activeRunSessions: new Map(),
     sessionRunIdentity: new Map(),
     stoppedRuntimeSessionIds: new Set(),

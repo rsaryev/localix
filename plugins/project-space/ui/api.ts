@@ -4,7 +4,7 @@ import {
   unwrapPluginResponse,
 } from '@localixai/plugin-sdk/ui/transport'
 import type { AppliedView, FileText, FolderListing, SpaceView, SteppedView } from '../shared/api'
-import type { CameraCommand, CameraReport } from '../shared/camera'
+import type { CameraReport } from '../shared/camera'
 import type { SpaceOp } from '../shared/ops/contract'
 import { ROUTE_PATH } from '../shared/resource'
 import { readSpace, writeSpace } from './spaceUpdates'
@@ -70,16 +70,7 @@ export const spaceApi = {
     read<FileText>(sessionId, '/text', undefined, { path }),
   folder: (sessionId: string, path: string) =>
     read<FolderListing>(sessionId, '/folder', undefined, { path }),
-  /** The agent's next camera move after `after`; null when none came within the server's wait. */
-  cameraWait: async (sessionId: string, after: number, signal: AbortSignal) =>
-    (
-      await read<{ command: CameraCommand | null }>(
-        sessionId,
-        '/camera/wait',
-        { signal },
-        { after: String(after) },
-      )
-    ).command,
+  /** What the board shows after the agent's camera move `report.seq` (`useCameraBridge`). */
   cameraReport: (sessionId: string, report: CameraReport) =>
     read<{ ok: true }>(sessionId, '/camera/report', post(report)),
   /** A URL an `<img>` or an `<iframe>` can load a referenced file from. */

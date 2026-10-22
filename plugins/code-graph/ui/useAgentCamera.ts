@@ -6,14 +6,10 @@ import { pluginApiFetch } from '@localixai/plugin-sdk/ui/transport'
 import type { AgentView } from '../shared/view'
 import { ROUTE_PATH } from '../shared/resource'
 import { useGraphStream } from './graphStream'
+import { cameraBackstopMs } from './model/cadence'
 
 /** A move older than this is not applied: the person has had time to look elsewhere. */
 const MOVE_TTL_MS = 15_000
-/**
- * The report a tool falls back to when the stream cannot ask (the socket is down): the backend
- * keeps a report for 10 s, so a visible tab refreshes it a little more often than that.
- */
-const BACKSTOP_REPORT_MS = 8000
 
 /**
  * As in Project Space, the visible tab applies the agent's camera moves and reports what it
@@ -21,8 +17,9 @@ const BACKSTOP_REPORT_MS = 8000
  * person's view.
  *
  * It reports when there is something to say — a move applied, a tool asking through the stream
- * (`requestGraphReport`) — plus a slow backstop. It used to apply and report on a one-second
- * timer, which POSTed a camera report every second for as long as a map stayed open.
+ * (`requestGraphReport`) — plus a slow backstop only while the stream is down. It used to apply
+ * and report on a one-second timer, which POSTed a camera report every second for as long as a
+ * map stayed open.
  */
 export function useAgentCamera({
   active,
@@ -157,7 +154,7 @@ export function useAgentCamera({
   }, [sessionId, agent, scope, trailKey, nodes, camera, shown, report])
 
   // A tool asked what the tab shows right now.
-  useGraphStream(sessionId, active, {
+  const streamLive = useGraphStream(sessionId, active, {
     report: () => {
       if (showing()) void report()
     },
@@ -165,7 +162,7 @@ export function useAgentCamera({
 
   useVisiblePolling({
     enabled: active && Boolean(sessionId),
-    intervalMs: BACKSTOP_REPORT_MS,
+    intervalMs: cameraBackstopMs(streamLive),
     immediate: true,
     onTick: report,
   })

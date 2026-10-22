@@ -1,22 +1,27 @@
 import { describe, expect, test } from 'bun:test'
 
+import { createActiveRuns } from './active-runs'
 import { createRuntimeState } from './agent-runner-state'
 import { testWork } from '../../../testing/work-fixture'
 import { requireRunSettlement, stopSession, waitForRunSettlement } from './stop-session'
 
 describe('waitForRunSettlement', () => {
-  test('waits until the exact aborted run relinquishes its registry slot', async () => {
+  test('wakes on the registry releasing the exact run, not on a timer', async () => {
     const run = new AbortController()
-    const activeRuns = new Map([['s1', run]])
+    const activeRuns = createActiveRuns()
+    activeRuns.set('s1', run)
     let settled = false
-    const wait = waitForRunSettlement(activeRuns, 's1', run, 200).then((value) => {
+    // A bound no test would survive: only the release announcement can settle this in time.
+    const wait = waitForRunSettlement(activeRuns, 's1', run, 600_000).then((value) => {
       settled = value
     })
     await Promise.resolve()
     expect(settled).toBe(false)
     activeRuns.delete('s1')
-    await wait
+    // Settled within the same turn of the event loop: no re-check timer stands in between.
+    await Promise.resolve()
     expect(settled).toBe(true)
+    await wait
   })
 
   test('does not wait on a continuation that replaced the stopped run', async () => {

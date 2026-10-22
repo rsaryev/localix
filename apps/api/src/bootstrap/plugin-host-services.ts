@@ -1,5 +1,5 @@
 import { workspaceCapabilities } from './plugin-workspace-capabilities'
-import { agentTerminalOf } from '../features/terminal/agent-scope'
+import { agentTerminalOf, watchAgentTerminal } from '../features/terminal/agent-scope'
 import type { loadPluginBackends } from '../features/plugins/loader'
 import type { createPluginWakes } from '../features/plugins/plugin-wake'
 import { bindPluginMonitors } from '../features/plugins/monitor-arms'
@@ -75,6 +75,8 @@ export function createPluginHostServices(deps: {
         (serviceRefs.terminalService?.list(userId) ?? []).flatMap((t) =>
           t.chatSessionId === sessionId ? [{ terminalId: t.id, command: t.command }] : [],
         ),
+      // The pane's own output and exit, so a reader re-reads `screen` when it can have changed.
+      watch: (input, onEvent) => watchAgentTerminal(serviceRefs.terminalService, input, onEvent),
     },
     sessionStorage: {
       resolveDataDir: (...args) =>

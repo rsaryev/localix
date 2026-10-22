@@ -1,4 +1,5 @@
 import type { ChatRepository, SessionRecord } from '../repository'
+import { whenRunReleased, type ActiveRuns } from './active-runs'
 import { toSessionSummary } from '../repository'
 import type { RuntimeState } from './agent-runner-state'
 import { markChildStopped as markChildRuntimeStopped } from './session-status'
@@ -13,24 +14,23 @@ import { stopSpawnedChildren, type CascadeContext } from './stop-cascade'
 
 const RUN_SETTLEMENT_TIMEOUT_MS = 5_000
 
-/** Wait until this exact run relinquishes the session registry slot. */
-export async function waitForRunSettlement(
-  activeRuns: Map<string, AbortController>,
+/**
+ * Wait until this exact run relinquishes the session registry slot. Woken by the registry's own
+ * release announcement (`active-runs.ts`), so a stop returns as soon as the run's teardown frees
+ * the slot rather than on the next tick of a re-check.
+ */
+export function waitForRunSettlement(
+  activeRuns: ActiveRuns,
   sessionId: string,
   run: AbortController,
   timeoutMs = RUN_SETTLEMENT_TIMEOUT_MS,
 ): Promise<boolean> {
-  if (activeRuns.get(sessionId) !== run) return true
-  const deadline = Date.now() + Math.max(0, timeoutMs)
-  while (activeRuns.get(sessionId) === run && Date.now() < deadline) {
-    await new Promise<void>((resolve) => setTimeout(resolve, 10))
-  }
-  return activeRuns.get(sessionId) !== run
+  return whenRunReleased(activeRuns, sessionId, run, timeoutMs)
 }
 
 /** A stop acknowledgement is truthful only after the exact run relinquishes its slot. */
 export async function requireRunSettlement(
-  activeRuns: Map<string, AbortController>,
+  activeRuns: ActiveRuns,
   sessionId: string,
   run: AbortController,
   timeoutMs = RUN_SETTLEMENT_TIMEOUT_MS,

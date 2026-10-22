@@ -23,9 +23,19 @@ const compactSnapshot = (buffer: StreamEnvelope[], event: AgentStreamEvent) => {
       (e) => e.event.type === 'session_timing.updated' && e.event.sessionId === event.sessionId,
     )
     if (stale !== -1) buffer.splice(stale, 1)
+  } else if (event.type === 'resources.changed') {
+    // A poke only says "re-read these": the newest one for the same topics covers every older
+    // one, so a status poked once a second through a long download keeps one slot, not hundreds.
+    const topics = resourceKey(event.resources)
+    const stale = buffer.findIndex(
+      (e) => e.event.type === 'resources.changed' && resourceKey(e.event.resources) === topics,
+    )
+    if (stale !== -1) buffer.splice(stale, 1)
   }
   return buffer
 }
+
+const resourceKey = (resources: readonly string[]) => [...resources].sort().join(',')
 
 // Append an envelope to a ring buffer keyed by session/user: compact stale
 // snapshots first, push, trim to `maxSize`, re-insert at the tail (so the key

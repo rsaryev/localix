@@ -2,23 +2,20 @@ import useSWR from 'swr'
 import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
 import { localModelsApi, type InstallJob, type LocalModelKind } from '@/shared/api/localModelsApi'
 import { semanticApi } from '@/shared/api/semanticApi'
-
-/** A download or an index build moves every second; at rest the state changes rarely. */
-const ACTIVE_POLL_MS = 1000
-const IDLE_POLL_MS = 15_000
+import { useRevalidateOnResources } from '@/shared/api/resourceGeneration'
 
 const LOCAL_MODELS_STATUS_KEY = 'local-models-status'
 const SEMANTIC_STATUS_KEY = 'semantic-status'
 
-/** What is installed, downloading and running — shared by Settings and the model picker. */
+/**
+ * What is installed, downloading and running — shared by Settings and the model picker. The server
+ * pokes `local-models` as a download moves (at most once a second), and the status is read again.
+ */
 export function useLocalModelsStatus(enabled = true) {
   const visible = useWorkItemVisible()
-  const { data, error, mutate } = useSWR(
-    visible && enabled ? LOCAL_MODELS_STATUS_KEY : null,
-    () => localModelsApi.status(),
-    {
-      refreshInterval: (latest) => (latest?.jobs.length ? ACTIVE_POLL_MS : IDLE_POLL_MS),
-    },
+  useRevalidateOnResources(LOCAL_MODELS_STATUS_KEY, ['local-models'])
+  const { data, error, mutate } = useSWR(visible && enabled ? LOCAL_MODELS_STATUS_KEY : null, () =>
+    localModelsApi.status(),
   )
   const jobOf = (modelId: string): InstallJob | undefined =>
     data?.jobs.find((j) => j.modelId === modelId)
@@ -51,21 +48,12 @@ export function useLocalModelDetails(id: string | null) {
   return { entry: data ?? null, isLoading }
 }
 
-/** Semantic search: the embedding model's download and the index build. */
+/** Semantic search: the embedding model's download and the index build, poked as `semantic`. */
 export function useSemanticStatus() {
   const visible = useWorkItemVisible()
-  const { data, error, mutate } = useSWR(
-    visible ? SEMANTIC_STATUS_KEY : null,
-    () => semanticApi.status(),
-    {
-      refreshInterval: (latest) =>
-        latest &&
-        (latest.install.state === 'downloading' ||
-          latest.index.phase === 'reconciling' ||
-          latest.index.phase === 'updating')
-          ? ACTIVE_POLL_MS
-          : IDLE_POLL_MS,
-    },
+  useRevalidateOnResources(SEMANTIC_STATUS_KEY, ['semantic'])
+  const { data, error, mutate } = useSWR(visible ? SEMANTIC_STATUS_KEY : null, () =>
+    semanticApi.status(),
   )
   return { status: data, error, refresh: mutate }
 }

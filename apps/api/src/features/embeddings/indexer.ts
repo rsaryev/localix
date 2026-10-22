@@ -8,8 +8,10 @@
  *   2. CHANGES — the outbox (keys the change feed and plugins name): read back from their source;
  *      a key the source no longer returns is gone.
  *
- * Failures never drop work: a failed batch stays queued and retries with backoff. Progress
- * (counts, rate, ETA) feeds the status bar.
+ * A pass runs when something says there is work — the engine starts or resumes, a source registers,
+ * a change is queued (`kick`), a rescan is asked for — never on a timer: every outbox write goes
+ * through the service, which kicks. Failures never drop work: a failed batch stays queued and
+ * retries with backoff. Progress (counts, rate, ETA) feeds the status bar.
  */
 import type { SemanticSource } from '@localixai/plugin-sdk/backend'
 import type { EmbeddingEngine } from './engine'
@@ -19,7 +21,6 @@ import type { VectorCache } from './vector-cache'
 
 const SCAN_PAGE = 64
 const OUTBOX_PAGE = 128
-const POLL_MS = 3000
 const RETRY_MS = [5_000, 15_000, 60_000]
 /** The rate shown (and the ETA built on it) covers this much recent work, not the whole run. */
 const RATE_WINDOW_MS = 30_000
@@ -50,6 +51,14 @@ export interface IndexerDeps {
   sources: () => readonly SemanticSource[]
   onProgress?: () => void
   log?: (event: string, fields: Record<string, unknown>) => void
+  /** Arms the retry after a failed pass; returns its cancel. Test seam. */
+  setTimer?: (fire: () => void, ms: number) => () => void
+}
+
+function unrefTimer(fire: () => void, ms: number): () => void {
+  const timer = setTimeout(fire, ms)
+  timer.unref?.()
+  return () => clearTimeout(timer)
 }
 
 export function createIndexer(deps: IndexerDeps) {
@@ -58,7 +67,8 @@ export function createIndexer(deps: IndexerDeps) {
   let phase: IndexerPhase = 'stopped'
   let lastError: string | null = null
   let failures = 0
-  let timer: ReturnType<typeof setTimeout> | null = null
+  const setTimer = deps.setTimer ?? unrefTimer
+  let cancelRetry: (() => void) | null = null
   let running: Promise<void> | null = null
   let rerun = false
   /** Set by a person: no pass starts, and a running one stops at its next page. */
@@ -208,9 +218,11 @@ export function createIndexer(deps: IndexerDeps) {
   }
 
   function schedule(ms: number) {
-    if (timer) clearTimeout(timer)
-    timer = setTimeout(() => kick(), ms)
-    timer.unref?.()
+    cancelRetry?.()
+    cancelRetry = setTimer(() => {
+      cancelRetry = null
+      kick()
+    }, ms)
   }
 
   function kick() {
@@ -226,7 +238,7 @@ export function createIndexer(deps: IndexerDeps) {
         rerun = false
         return kick()
       }
-      schedule(phase === 'retrying' ? RETRY_MS[Math.min(failures, RETRY_MS.length) - 1]! : POLL_MS)
+      if (phase === 'retrying') schedule(RETRY_MS[Math.min(failures, RETRY_MS.length) - 1]!)
     })
   }
 
@@ -242,7 +254,8 @@ export function createIndexer(deps: IndexerDeps) {
     async stop() {
       engine = null
       paused = false
-      if (timer) clearTimeout(timer)
+      cancelRetry?.()
+      cancelRetry = null
       await running?.catch(() => {})
       reconcile.clear()
       setPhase('stopped')
@@ -251,7 +264,8 @@ export function createIndexer(deps: IndexerDeps) {
     async pause() {
       if (!engine) return
       paused = true
-      if (timer) clearTimeout(timer)
+      cancelRetry?.()
+      cancelRetry = null
       await running?.catch(() => {})
       setPhase('paused')
     },
@@ -263,6 +277,10 @@ export function createIndexer(deps: IndexerDeps) {
     },
     /** Something changed (plugin `changed()`, a newly registered source): run soon. */
     kick,
+    /** Resolves once no pass is running or queued behind the one in hand. */
+    async whenSettled() {
+      while (running) await running.catch(() => {})
+    },
     /** Re-scan every collection, or one; "Rebuild index" passes `fromScratch`. */
     async rescan(fromScratch: boolean, collection?: string) {
       for (const state of await store.listCollections(collection)) {

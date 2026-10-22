@@ -385,6 +385,27 @@ describe('createSessionStreamRegistry', () => {
     unsubscribe()
   })
 
+  test('keeps one poke per set of topics: the newest covers every older one', () => {
+    const registry = createSessionStreamRegistry()
+    const poke = (resources: string[]) => ({ type: 'resources.changed', resources }) as never
+    registry.publish(userId, '', poke(['local-models']))
+    registry.publish(userId, '', poke(['semantic']))
+    registry.publish(userId, '', poke(['local-models']))
+    registry.publish(userId, '', poke(['vault', 'providers']))
+    registry.publish(userId, '', poke(['providers', 'vault']))
+
+    const replayed: string[] = []
+    const unsubscribe = registry.subscribeAll(
+      userId,
+      (payload) => {
+        replayed.push(payload.id)
+      },
+      { since: '0' },
+    )
+    expect(replayed).toEqual(['2', '3', '5'])
+    unsubscribe()
+  })
+
   // The early-out every transient publisher (`child_session.activity`) reads. It must answer
   // "is anyone positioned to RENDER this session", not the old "is this user connected at all" —
   // the latter is true whenever a tab is open, which is how 782 unattended sub-agents each ended

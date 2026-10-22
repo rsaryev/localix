@@ -109,11 +109,9 @@ test('retrying an abandoned browser sign-in returns once to the exact connection
         events.push(`abandoned:${id}`),
       )
     })
-    jest.useFakeTimers()
     await act(async () => {
       await state.addOAuthConnection('openai', 'OpenAI', 'Work', (id) => events.push(id))
-      // One 3 s poll interval on the faked clock, then the flow's own completion signal.
-      jest.advanceTimersByTime(3200)
+      // The connection is already listed when the watch starts; the flow's own completion signal.
       await appFocused
     })
     expect(document.hidden).toBe(true)

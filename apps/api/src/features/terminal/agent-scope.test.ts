@@ -2,7 +2,7 @@
 
 import { describe, expect, test } from 'bun:test'
 
-import { resolveAgentTerminal } from './agent-scope'
+import { resolveAgentTerminal, watchAgentTerminal } from './agent-scope'
 import type { TerminalSession } from './session'
 
 /**
@@ -75,5 +75,52 @@ describe('resolveAgentTerminal', () => {
     expect(
       resolveAgentTerminal({ get: f.get, userId: 'u1', sessionId: 's1', terminalId: 'nope' }),
     ).toBeUndefined()
+  })
+})
+
+describe('watchAgentTerminal', () => {
+  /** A pane whose output and exit listeners the test fires by hand. */
+  function pane(over: Partial<TerminalSession> = {}) {
+    const data = new Set<(chunk: string) => void>()
+    const exit = new Set<(code: number) => void>()
+    const session = term({
+      subscribe: (listener: (chunk: string) => void) => {
+        data.add(listener)
+        return () => data.delete(listener)
+      },
+      onExit: (listener: (code: number) => void) => {
+        exit.add(listener)
+        return () => exit.delete(listener)
+      },
+      ...over,
+    } as Partial<TerminalSession>)
+    return { session, data, exit }
+  }
+
+  test('its own session’s pane reports output and exit until released', () => {
+    const p = pane()
+    const events: string[] = []
+    const release = watchAgentTerminal(
+      { get: () => p.session },
+      { userId: 'u1', sessionId: 's1', terminalId: 't1' },
+      (event) => events.push(event),
+    )
+    for (const listener of p.data) listener('chunk')
+    for (const listener of p.exit) listener(0)
+    expect(events).toEqual(['output', 'exit'])
+    release?.()
+    expect(p.data.size + p.exit.size).toBe(0)
+  })
+
+  test('another session’s pane cannot be watched', () => {
+    const p = pane({ chatSessionId: 's2' })
+    expect(
+      watchAgentTerminal(
+        { get: () => p.session },
+        { userId: 'u1', sessionId: 's1', terminalId: 't1' },
+        () => {},
+      ),
+    ).toBeNull()
+    expect(p.data.size).toBe(0)
   })
 })

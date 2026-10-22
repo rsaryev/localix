@@ -96,6 +96,25 @@ function closeServer(server: Server): Promise<void> {
 export class ApiPortForwardRegistry {
   private readonly forwards = new Map<string, ForwardEntry>()
   private readonly ownerGenerations = new Map<string, number>()
+  private readonly listeners = new Set<() => void>()
+
+  /** Hear every change of {@link list}: a forward started, stopped, or closed by its tunnel. */
+  onChange(listener: () => void): () => void {
+    this.listeners.add(listener)
+    return () => {
+      this.listeners.delete(listener)
+    }
+  }
+
+  private announce(): void {
+    for (const listener of Array.from(this.listeners)) {
+      try {
+        listener()
+      } catch {
+        // One follower's failure must not keep the others from hearing the change.
+      }
+    }
+  }
 
   async start(options: StartPortForwardOptions): Promise<PortForward> {
     const ownerGeneration = options.owner
@@ -265,11 +284,16 @@ export class ApiPortForwardRegistry {
     }
     entry = { meta, server, sockets, tunnels }
     this.forwards.set(meta.id, entry)
+    this.announce()
     return meta
   }
 
   private async close(id: string, entry: ForwardEntry): Promise<void> {
-    this.forwards.delete(id)
+    // A tunnel failure and a stop can both close one entry; only the first changes the list.
+    if (this.forwards.get(id) === entry) {
+      this.forwards.delete(id)
+      this.announce()
+    }
     for (const socket of entry.sockets) socket.destroy()
     for (const tunnel of entry.tunnels) tunnel.close()
     await closeServer(entry.server)

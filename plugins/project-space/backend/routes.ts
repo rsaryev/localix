@@ -131,13 +131,7 @@ export function createSpaceRoutes({ liveUpdates = false }: { liveUpdates?: boole
         }),
       )
       .get('/folder', (c) => answer(c, async () => listFolder(await readable(c))))
-      // The agent's camera (`camera-hub.ts`): the tab holds this open until a move arrives.
-      .get('/camera/wait', async (c) => {
-        c.header('Cache-Control', 'no-store')
-        const sessionId = c.req.query('sessionId') ?? ''
-        const after = Number(c.req.query('after') ?? 0) || 0
-        return c.json({ command: await cameraHub.wait(sessionId, after, c.req.raw.signal) })
-      })
+      // The tab's answer to the agent's camera move, pushed to it on its stream (`camera-hub.ts`).
       .post('/camera/report', jsonBody(reportBody), (c) => {
         cameraHub.report(c.req.query('sessionId') ?? '', c.req.valid('json'))
         return c.json({ ok: true })
