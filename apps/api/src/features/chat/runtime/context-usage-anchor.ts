@@ -148,7 +148,7 @@ export function lastTurnContextAnchor(
       // A row that is older than a row projected in front of it was measured under a
       // prefix that did not have that row, so its provider usage must not anchor this
       // one. The checkpoint epoch in the anchor identity is the primary guard; this is
-      // the positional one PI applies to any row it inserts out of order.
+      // the positional one the loop applies to any row it inserts out of order.
       const appliesToCurrentPrefix = !timestampIsKnown || timestamp >= newestPrefixTimestamp
       if (appliesToCurrentPrefix && typeof ctx === 'number' && Number.isFinite(ctx) && ctx > 0) {
         const persistedIdentity = m.payload.usage?.contextIdentity

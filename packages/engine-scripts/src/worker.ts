@@ -15,163 +15,154 @@ import { JSException, MAX_STACK_SIZE, QuickJS, type JSValueHandle } from 'quickj
 import { PRELUDE_SOURCE } from './prelude'
 import { isHostMessage, type WorkerData, type WorkerMessage } from './protocol'
 
-/** Promise jobs run between two interrupt polls: `while (true) await null` is all jobs, few opcodes. */
-const JOBS_PER_POLL = 50
+/** Promise jobs run between two interrupt checks: `while (true) await null` is all jobs, few opcodes. */
+const JOBS_BETWEEN_CHECKS = 50
 
-function post(message: WorkerMessage): void {
-  parentPort?.postMessage(message)
-}
+const send = (message: WorkerMessage) => parentPort?.postMessage(message)
 
-function crash(error: unknown): void {
-  post({
-    type: 'crash',
-    message: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
-  })
+function reportCrash(error: unknown): void {
+  const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error)
+  send({ type: 'crash', message })
 }
 
 /**
- * QuickJS writes engine diagnostics to fd 1 and 2, which would land in the host's own stdout. They
- * are dropped, every byte reported as written so libc does not retry.
+ * WASI for the VM: QuickJS prints engine diagnostics to fd 1 and 2, which would land in the host's
+ * own stdout. Every write is swallowed and reported as complete, so libc does not retry it.
  */
-function discardOutput(memory: { readonly buffer: ArrayBufferLike }) {
+function silentStdio(memory: { readonly buffer: ArrayBufferLike }) {
   return {
-    fd_write(_fd: number, iovs: number, count: number, written: number): number {
+    fd_write(_fd: number, iovecs: number, iovecCount: number, writtenOut: number): number {
       const view = new DataView(memory.buffer)
-      let total = 0
-      for (let index = 0; index < count; index++)
-        total += view.getUint32(iovs + index * 8 + 4, true)
-      view.setUint32(written, total, true)
+      let bytes = 0
+      // Each iovec is { buf: u32, len: u32 }; only the lengths matter here.
+      for (let i = 0; i < iovecCount; i++) bytes += view.getUint32(iovecs + 8 * i + 4, true)
+      view.setUint32(writtenOut, bytes, true)
       return 0
     },
   }
 }
 
-function describeException(error: JSException): string {
-  const head = error.message ? `${error.name}: ${error.message}` : error.name
-  const stack = error.stack?.trimEnd()
+/** A script that did not compile, in the shape the host decodes as a script error. */
+function compileError(error: JSException): string {
+  const title = error.message ? `${error.name}: ${error.message}` : error.name
+  const frames = error.stack?.trimEnd()
   return JSON.stringify({
     name: error.name,
     message: error.message,
-    stack: stack ? `${head}\n${stack}` : head,
+    stack: frames ? `${title}\n${frames}` : title,
   })
 }
 
-async function main(data: WorkerData): Promise<void> {
-  const interrupt = new Int32Array(data.interrupt)
-  const interrupted = () => Atomics.load(interrupt, 0) !== 0
+/** The prelude hands the bridge primitives only; anything else is refused, never converted. */
+function stringOf(handle: JSValueHandle | undefined): string {
+  // Converting an object would run the script's own `toString`.
+  if (!handle?.isString) throw new TypeError('The script sandbox received a non-string value')
+  return handle.toString()
+}
+
+const maybeString = (handle: JSValueHandle | undefined) =>
+  handle === undefined || handle.isUndefined ? undefined : stringOf(handle)
+
+/** Turns one bridge call from the prelude into the message the host reads. */
+function toMessage(
+  kind: JSValueHandle,
+  a: JSValueHandle,
+  b?: JSValueHandle,
+  c?: JSValueHandle,
+): WorkerMessage | undefined {
+  const what = stringOf(kind)
+  if (what === 'call') {
+    if (!a.isNumber) throw new TypeError('The script sandbox received a non-numeric call id')
+    return { type: 'call', id: a.toNumber(), name: stringOf(b), args: maybeString(c) }
+  }
+  if (what === 'output') {
+    const item =
+      stringOf(a) === 'image'
+        ? { type: 'image' as const, data: stringOf(b), mimeType: stringOf(c) }
+        : { type: 'text' as const, text: stringOf(b) }
+    return { type: 'output', item }
+  }
+  if (what === 'done') {
+    return a.toBoolean()
+      ? { type: 'done', ok: true, value: maybeString(b) }
+      : { type: 'done', ok: false, error: stringOf(b) }
+  }
+  return undefined
+}
+
+async function start(data: WorkerData): Promise<void> {
+  const flag = new Int32Array(data.interrupt)
+  const stopRequested = () => Atomics.load(flag, 0) !== 0
   const vm = await QuickJS.create({
     wasm: data.wasm as WebAssembly.Module,
     memoryLimit: data.memoryLimitBytes,
     // Deep recursion becomes a catchable RangeError instead of a wasm trap; 512 KiB fits a worker's stack.
     maxStackSize: MAX_STACK_SIZE,
-    interruptHandler: interrupted,
-    wasi: discardOutput,
+    interruptHandler: stopRequested,
+    wasi: silentStdio,
   })
 
-  // `executePendingJobs()` would run the queue to empty with no chance to interrupt, so jobs run one
-  // at a time through the VM's exports (quickjs-wasi is pinned to an exact version for this).
-  const exports = vm._getExports()
-  let api: JSValueHandle
-  let stalled: JSValueHandle
-  let settle: JSValueHandle
-  const drain = () => {
-    let jobs = 0
-    while (exports.qjs_is_job_pending()) {
-      if (exports.qjs_execute_pending_job() < 0) throw new Error('Promise job failed')
-      if (++jobs % JOBS_PER_POLL === 0 && interrupted()) throw new Error('Execution interrupted')
-    }
-    vm.callFunction(stalled, api).dispose()
-  }
-
-  // The prelude passes primitives only. A handle that is not a string is refused rather than
-  // converted: converting an object runs the script's own `toString`.
-  const text = (handle: JSValueHandle | undefined): string => {
-    if (!handle?.isString) throw new TypeError('The script sandbox received a non-string value')
-    return handle.toString()
-  }
-  const optionalText = (handle: JSValueHandle | undefined): string | undefined =>
-    handle === undefined || handle.isUndefined ? undefined : text(handle)
   const bridge = vm.newFunction('bridge', (kind, a, b, c) => {
     try {
-      relay(kind, a, b, c)
+      const message = toMessage(kind, a, b, c)
+      if (message) send(message)
     } catch (error) {
       // Ends the run on the host; thrown into the VM instead, the script could catch it.
-      crash(error)
+      reportCrash(error)
     }
     return vm.undefined
   })
-  function relay(kind: JSValueHandle, a: JSValueHandle, b?: JSValueHandle, c?: JSValueHandle) {
-    switch (text(kind)) {
-      case 'call':
-        if (!a.isNumber) throw new TypeError('The script sandbox received a non-numeric call id')
-        post({ type: 'call', id: a.toNumber(), name: text(b), args: optionalText(c) })
-        break
-      case 'output':
-        post({
-          type: 'output',
-          item:
-            text(a) === 'image'
-              ? { type: 'image', data: text(b), mimeType: text(c) }
-              : { type: 'text', text: text(b) },
-        })
-        break
-      case 'done':
-        if (a.toBoolean()) post({ type: 'done', ok: true, value: optionalText(b) })
-        else post({ type: 'done', ok: false, error: text(b) })
-        break
+
+  // The prelude's API lives as long as the VM, which dies with the worker.
+  const api = vm.withScope((scope) => {
+    const factory = vm.evalCode(PRELUDE_SOURCE, 'prelude.js')
+    const toolsJson = vm.newString(JSON.stringify(data.tools))
+    return scope.escape(vm.callFunction(factory, vm.undefined, bridge, toolsJson))
+  })
+  const stalledFn = api.getProp('stalled')
+  const settleFn = api.getProp('settle')
+
+  // `executePendingJobs()` would run the whole queue with no chance to interrupt, so jobs run one
+  // at a time through the VM's exports (quickjs-wasi is pinned to an exact version for this).
+  const raw = vm._getExports()
+  const runJobs = () => {
+    for (let count = 1; raw.qjs_is_job_pending(); count++) {
+      if (raw.qjs_execute_pending_job() < 0) throw new Error('Promise job failed')
+      if (count % JOBS_BETWEEN_CHECKS === 0 && stopRequested()) {
+        throw new Error('Execution interrupted')
+      }
     }
+    vm.callFunction(stalledFn, api).dispose()
   }
 
+  let script: JSValueHandle
   try {
-    // Lives as long as the VM, which dies with the worker.
-    api = vm.withScope((scope) =>
-      scope.escape(
-        vm.callFunction(
-          vm.evalCode(PRELUDE_SOURCE, 'prelude.js'),
-          vm.undefined,
-          bridge,
-          vm.newString(JSON.stringify(data.tools)),
-        ),
-      ),
-    )
-    stalled = api.getProp('stalled')
-    settle = api.getProp('settle')
-    let script: JSValueHandle
-    try {
-      // The wrapper shares the script's first line, so reported line numbers match the script as written.
-      script = vm.evalCode(`(async (tools, console) => {${data.code}\n})`, 'script.js')
-    } catch (error) {
-      if (!(error instanceof JSException)) throw error
-      post({ type: 'done', ok: false, error: describeException(error) })
-      return
-    }
-    const run = api.getProp('run')
-    vm.callFunction(run, api, script).dispose()
-    run.dispose()
-    script.dispose()
-    drain()
+    // The wrapper shares the script's first line, so reported line numbers match the script as written.
+    script = vm.evalCode(`(async (tools, console) => {${data.code}\n})`, 'script.js')
   } catch (error) {
-    crash(error)
+    if (!(error instanceof JSException)) throw error
+    send({ type: 'done', ok: false, error: compileError(error) })
     return
   }
+  const runFn = api.getProp('run')
+  vm.callFunction(runFn, api, script).dispose()
+  runFn.dispose()
+  script.dispose()
+  runJobs()
 
   parentPort?.on('message', (message: unknown) => {
     if (!isHostMessage(message)) return
     try {
       vm.withScope(() => {
-        vm.callFunction(
-          settle,
-          api,
-          vm.newNumber(message.id),
-          message.ok ? vm.true : vm.false,
-          message.payload === undefined ? vm.undefined : vm.newString(message.payload),
-        )
+        const payload = message.payload === undefined ? vm.undefined : vm.newString(message.payload)
+        const ok = message.ok ? vm.true : vm.false
+        vm.callFunction(settleFn, api, vm.newNumber(message.id), ok, payload)
       })
-      drain()
+      runJobs()
     } catch (error) {
-      crash(error)
+      reportCrash(error)
     }
   })
 }
 
-if (parentPort) main(workerData as WorkerData).catch(crash)
+if (parentPort) start(workerData as WorkerData).catch(reportCrash)

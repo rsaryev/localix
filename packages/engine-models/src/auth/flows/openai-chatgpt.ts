@@ -2,8 +2,6 @@
  * Sign in with ChatGPT for the OpenAI API: a public-client flow whose access token goes straight
  * to api.openai.com, billed to the person's ChatGPT plan. Every login registers its own client;
  * OpenAI returns the issued client id in the redirect and refreshes require it.
- *
- * Ported from pi (github.com/earendil-works/pi, MIT, © Mario Zechner).
  */
 import type { RuntimeOAuthCredential } from '@localixai/agent/runtime'
 
@@ -66,9 +64,9 @@ function credentialFrom(token: Record<string, unknown>, clientId: string): Runti
 
 function fromRedirect(params: URLSearchParams, state: string): { code: string; clientId: string } {
   const error = params.get('error')
-  if (error) throw new Error(`ChatGPT authorization failed: ${error}`)
+  if (error) throw new Error(`ChatGPT refused the sign-in: ${error}`)
   const code = params.get('code')
-  if (!code) throw new Error('Missing authorization code')
+  if (!code) throw new Error('The redirect carried no authorization code')
   if (params.get('state') !== state) throw new Error('OAuth state mismatch')
   const clientId = params.get('client_id')?.trim()
   if (!clientId) throw new Error('OpenAI did not return the client id it issued')
@@ -135,10 +133,10 @@ export const openAIChatGPTFlow: OAuthFlow = {
         type: 'auth-url',
         url: url.toString(),
         instructions:
-          'Complete sign-in in your browser. If the callback does not complete, paste the final redirect URL here.',
+          'Sign in to ChatGPT in the browser. If this app never hears back, copy the address the browser ends on and paste it here.',
       })
       const result = await callbackOrPasted(interaction, callback, {
-        message: 'Complete login in your browser, or paste the final redirect URL here:',
+        message: 'Finish signing in in the browser, or paste the address it ended on:',
         placeholder: REDIRECT_URI,
       })
       let redirect: { code: string; clientId: string }
@@ -148,7 +146,7 @@ export const openAIChatGPTFlow: OAuthFlow = {
         try {
           pasted = new URL(result.input.trim())
         } catch {
-          throw new Error('Paste the full callback URL from the browser')
+          throw new Error('Paste the whole address from the browser, starting with http')
         }
         redirect = fromRedirect(pasted.searchParams, state)
       }

@@ -135,8 +135,8 @@ export function planContextCompression(
     const t = estimateChatMessageTokens(messages[i])
     // A single oversized assistant row can contain an entire tool-heavy turn.
     // Locking "at least one" made that row exempt from every VBC operation even
-    // when it alone exceeded the model budget. Pi can cut inside such a turn
-    // because tool calls/results are separate session entries; our persisted
+    // when it alone exceeded the model budget. A runtime that stores tool calls and
+    // results as separate session entries could cut inside such a turn; our persisted
     // row aggregates them in `items`, so the safe equivalent is to leave the row
     // UNLOCKED and let pairing-safe item rewrites bound it on the wire.
     if (tailTokens + t > tokenCap) break

@@ -7,7 +7,7 @@ import type { ContextStore } from './repository'
 /**
  * Durable tool-result append barrier.
  *
- * Pi awaits this hook before it appends the result and advances to the next model
+ * The loop awaits this hook before it appends the result and advances to the next model
  * request. Commit the exact sanitized tool I/O here, then (and only then) mint a
  * recovery pointer. The later runtime-event consumer remains asynchronous and
  * is no longer part of pointer correctness. The existing per-request wire policy

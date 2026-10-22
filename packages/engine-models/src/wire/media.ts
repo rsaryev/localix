@@ -5,7 +5,7 @@
  * that once carried a screenshot stays usable after switching to a text-only model. The
  * OpenAI-compatible wire carries only text in a tool message (its SDK would inline the image as
  * base64 JSON, megabytes of it), so there the result says where its images went and they follow
- * in a user message, as pi sent them.
+ * in a user message.
  */
 import type {
   LanguageModelV4FilePart,

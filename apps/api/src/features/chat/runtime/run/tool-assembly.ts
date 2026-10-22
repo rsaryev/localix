@@ -212,9 +212,8 @@ export async function assembleRunTools(
 
   // The activator lives as long as this run has ANY external tool, even when the session has already
   // activated every one of them. Two reasons, both learned rather than assumed: a tool that vanishes from
-  // the list mid-session is a list change that buys nothing, and pi's deferred-loading guidance is to keep
-  // the loader active for the whole session because the stable prefix is what keeps the prompt cache warm
-  // (`packages/coding-agent/docs/extensions.md`). With an empty catalog it simply says so.
+  // the list mid-session is a list change that buys nothing, and the loader stays
+  // active for the whole session because the stable prefix is what keeps the prompt cache warm. With an empty catalog it simply says so.
   const activator =
     split.externalEntries.length > 0
       ? createActivateToolsTool({

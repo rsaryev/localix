@@ -20,7 +20,7 @@
  * flight for it. The split happens even when the current row is still EMPTY (a steer
  * in the instant before the first model response): that empty slot predates the
  * instruction by sequence, so leaving it would again put the response before the user
- * turn that shaped it — the order pi's loop emits (steer, then the assistant message) is
+ * turn that shaped it — the order the loop emits (steer, then the assistant message) is
  * the order stored. The user row and the fresh assistant row commit in one transaction.
  */
 import { randomUUID } from 'node:crypto'

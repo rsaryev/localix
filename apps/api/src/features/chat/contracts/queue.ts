@@ -234,7 +234,7 @@ export interface SessionQueueItem {
   /** Where this queued turn came from (provenance), for the composer chip. */
   source?: WakeSource
   /**
-   * Runtime delivery seam: Pi steering at the next tool/model boundary, a new turn, or HELD — a
+   * Runtime delivery seam: steering at the next tool/model boundary, a new turn, or HELD — a
    * child's report waiting for its siblings, so their delegator answers them together — or
    * FAILED: its delivery failed every retry and it waits for the person to retry or remove it.
    */

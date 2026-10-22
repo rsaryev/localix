@@ -2,8 +2,6 @@
  * ChatGPT Plus/Pro through the Codex backend: the Codex CLI's sign-in, in a browser or with a
  * device code. Its callback ports (1455, then 1457) are shared with the Codex CLI, so a port an
  * older attempt still holds is asked to give way through its `/cancel` route first.
- *
- * Ported from pi (github.com/earendil-works/pi, MIT, © Mario Zechner).
  */
 import type { RuntimeOAuthCredential } from '@localixai/agent/runtime'
 
@@ -154,7 +152,7 @@ async function browserLogin(
   await interaction.notify({
     type: 'auth-url',
     url: url.toString(),
-    instructions: 'A browser window should open. Complete login to finish.',
+    instructions: 'Sign in to OpenAI in the browser window that opens.',
   })
   try {
     const result = await callbackOrPasted(interaction, callback, {
@@ -169,7 +167,7 @@ async function browserLogin(
       if (pasted.state && pasted.state !== state) throw new Error('State mismatch')
       code = pasted.code
     }
-    if (!code) throw new Error('Missing authorization code')
+    if (!code) throw new Error('The redirect carried no authorization code')
     return await exchange(code, verifier, redirectUri, signal)
   } finally {
     callback?.close()

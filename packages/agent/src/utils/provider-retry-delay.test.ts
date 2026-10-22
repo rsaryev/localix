@@ -23,7 +23,7 @@ const withHeaders = (headers: Record<string, string>, status = 429) =>
 describe('providerRetryDelayMs — header forms', () => {
   test('retry-after-ms wins, being the precise millisecond extension', () => {
     // Both provider SDKs send it, and it is more precise than the integer seconds header;
-    // pi's own codex transport reads it first for the same reason.
+    // The codex transport reads it first for the same reason.
     expect(providerRetryDelayMs(withHeaders({ 'retry-after-ms': '1500' }), NOW)).toBe(1500)
     expect(
       providerRetryDelayMs(withHeaders({ 'retry-after-ms': '1500', 'retry-after': '60' }), NOW),
@@ -201,8 +201,8 @@ describe('providerRetryDelayMs — hostile input', () => {
 
 describe('providerRetryDelayMs — the delay stated in the message', () => {
   test('a codex usage cap states its reset in prose, with no header carrying it', () => {
-    // pi renders the body's `resets_at` as this sentence and throws it as the message
-    // (`openai-codex-responses.ts`); codex itself likewise regexes its retry delay out of the
+    // The codex transport renders the body's `resets_at` as this sentence and throws it as the
+    // message; codex itself likewise regexes its retry delay out of the
     // error text. Same signal, read the same way.
     expect(
       providerRetryDelayMs(

@@ -98,10 +98,10 @@ A repeated search returns its full results again. The tool card shows a row per 
 ### Run a script over tools
 
 `codemode` lets the model write one script that chains calls, runs them in parallel, or filters a
-large result down to what it needs, instead of spending a model round trip on each call. It follows
-pi's codemode: the script is the body of an async function in a QuickJS sandbox with no Node, file
-system, network or timers. It calls `read`, `bash`, `edit` and `write` (those the run has) as
-`await tools.<name>(args)`; a call resolves to the tool's text result and rejects with its error.
+large result down to what it needs, instead of spending a model round trip on each call. The script
+is the body of an async function in a QuickJS sandbox with no Node, file system, network or timers.
+It calls `read`, `bash`, `edit` and `write` (those the run has) as `await tools.<name>(args)`; a
+call resolves to the tool's text result and rejects with its error.
 
 `text(value)`, `console.log()` and the returned value are what the model reads; the results of the
 calls stay in the script. The tool's description asks the model to use JavaScript to turn those

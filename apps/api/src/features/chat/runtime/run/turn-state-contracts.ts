@@ -29,7 +29,7 @@ export interface RunTurnState {
    */
   currentPayload: StoredMessagePayload
   assistantCreatedAt: string
-  /** Last fully-settled PI turn, captured after all of its tool results. */
+  /** Last fully-settled loop turn, captured after all of its tool results. */
   completedTurnCheckpoint: { payload: StoredMessagePayload; createdAt: string } | undefined
   /** Most recent fully persisted tool-result turn. A child report can only join this seam. */
   completedToolTurnIndex: number | undefined

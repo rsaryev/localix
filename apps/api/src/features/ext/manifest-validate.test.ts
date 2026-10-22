@@ -182,7 +182,7 @@ describe('isDeclarableEffort', () => {
     expect(isDeclarableEffort('minimal')).toBe(true)
   })
 
-  it("accepts pi's native `xhigh` as itself, no longer normalized away", () => {
+  it('accepts a native `xhigh` as itself, no longer normalized away', () => {
     // It used to normalize to `max` because the column could not hold it — which up-shifted the
     // declaration one rung, since on Claude 4.7+/Sonnet 5/Fable 5 `xhigh` sits BELOW `max`. It is
     // a real level now, so it survives as authored.

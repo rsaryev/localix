@@ -89,7 +89,6 @@ function fixture(): string {
     join(root, 'vendor/monaco-editor-runtime/THIRD_PARTY_NOTICES.localix.txt'),
     'monaco bundled-dependency notices\n',
   )
-  write(join(root, 'packages/engine/licenses/pi-LICENSE.txt'), 'pi license\n')
   write(join(root, 'packages/engine-scripts/licenses/quickjs-ng-LICENSE.txt'), 'quickjs license\n')
   return root
 }
@@ -135,7 +134,6 @@ describe('third-party runtime notices', () => {
       'monaco-editor-ThirdPartyNotices.txt',
       'monaco-editor-bundled-dependencies-NOTICES.txt',
       'npm-runtime-THIRD_PARTY_NOTICES.txt',
-      'pi-LICENSE.txt',
       'quickjs-ng-LICENSE.txt',
     ])
     expect(readdirSync(landing)).toEqual(['npm-runtime-THIRD_PARTY_NOTICES.txt'])

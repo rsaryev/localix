@@ -104,8 +104,8 @@ export function createLanguageModelAdapter(
       //     so a breakpoint on the static prefix can never produce a read. Padding a
       //     prompt to clear a cache minimum is not a real option.
       //  2. The provider does not confine the breakpoint to that prefix — it also marks
-      //     the last conversation message (see `applyAnthropicCacheControl` in the pi
-      //     provider). Here that message is the per-keystroke file window: ~1.3k tokens
+      //     the last conversation message (the provider's
+      //     cache-control placement). Here that message is the per-keystroke file window: ~1.3k tokens
       //     for a 60-line file and ~21k once windowing saturates. That prefix DOES clear
       //     the minimum, so retention wrote a cache entry whose tail changes on every
       //     request — at the 1h write premium (2x input), against a hit rate of ~0.

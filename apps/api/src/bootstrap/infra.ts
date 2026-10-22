@@ -200,7 +200,7 @@ export async function createInfraPhase(
   // An MCP server that does not connect is a standing Event Center row, not a log line per turn.
   // The same process-lifetime singleton reason as above.
   mcpClientManager.observeConnections(createMcpConditions(notifications))
-  // pi's catalog plus its last refresh; the ops timers fetch newer lists (`ops-timers.ts`).
+  // The engine's model catalog plus its last refresh; the ops timers fetch newer lists (`ops-timers.ts`).
   const catalogService = createCatalogService({
     source: {
       list: (...args) => engine.listCatalog(...args),

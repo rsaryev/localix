@@ -208,7 +208,7 @@ export function toModelMessages(messages: ChatMessage[]): WireMessage[] {
  * message. The last message is this turn's own addition (its runtime context, or the trigger
  * itself), sent for the first time; everything before it is byte-stable across rebuilds —
  * this converter is deterministic and the host's history is append-only between context
- * checkpoints. The pi adapter forwards the flag and `anthropic-messages` turns it into
+ * checkpoints. The engine forwards the flag and the Anthropic wire turns it into
  * an explicit `cache_control` breakpoint on that message, so the rebuilt history is READ
  * from cache across runs instead of re-written every run. Idempotent; clears any stale
  * anchor first. Mutates in place and returns the same array.

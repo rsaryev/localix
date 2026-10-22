@@ -123,7 +123,7 @@ export async function stopSession(
       // immediately re-read `running` even though stop() returned true.
       await markRuntimeSessionStatus(active.userId, active.session, 'stopped')
     }
-    // Pi's abort contract includes wait-for-idle. Match it at the host boundary:
+    // A stop's contract includes wait-for-idle. Match it at the host boundary:
     // a resolved stop means this exact run has left the registry, so an immediate
     // retry cannot race the old finalizer. Bounded to keep a broken provider from
     // hanging the control plane forever.

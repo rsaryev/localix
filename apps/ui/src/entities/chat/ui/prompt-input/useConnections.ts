@@ -244,7 +244,7 @@ export function useConnections(sessionId: string | null) {
         return { mode } as const
       }
 
-      // A future adapter may explicitly return to the SPA. Native pi browser
+      // A future adapter may explicitly return to the SPA. The engine's browser
       // OAuth uses `local-server` above and never enters this branch.
       if (!isDesktop) {
         if (redirectUrl) window.location.href = redirectUrl

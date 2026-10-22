@@ -297,8 +297,7 @@ describe('pruneWireMessages budgetTokens', () => {
 
 /**
  * SHAPE PARITY. `ToolResult.content` is `string | Array<TextContent|ImageContent|FileContent>`,
- * and the pi codec builds the ARRAY form for every in-loop result (`fromPiMessage` →
- * `fromPiParts`). `pruneResult` used to bail on any non-string, so this whole layer was inert
+ * and the wire codec builds the ARRAY form for every in-loop result. `pruneResult` used to bail on any non-string, so this whole layer was inert
  * in production while every test here passed on the string form — a 27-read history came back
  * byte-identical. These pin both shapes to the same decisions.
  *

@@ -9,7 +9,7 @@ import { filterDisabledSkills, type SkillOverrides } from '../../agent-core/skil
  *
  * A pin is an explicit invocation, so `disable-model-invocation` must not hide
  * it: that flag only removes a skill from the model-selectable roster. This is
- * the same split Pi makes for `/skill:name` and Codex makes for an explicit
+ * the same split other agents make for `/skill:name` and Codex makes for an explicit
  * `$skill` mention when implicit invocation is disabled.
  */
 export function resolvePinnedSkills(

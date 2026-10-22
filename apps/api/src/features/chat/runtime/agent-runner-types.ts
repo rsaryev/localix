@@ -63,7 +63,7 @@ export interface RunnerDeps {
   catalogService: CatalogService
   hitlRegistry: HitlRegistry
   streamRegistry: SessionStreamRegistry
-  /** Engine-neutral agent runtime; the composition root supplies the pi adapter. */
+  /** Engine-neutral agent runtime; the composition root supplies the engine. */
   agentRuntime: AgentRuntime
   /** Engine-neutral factory for buffered auxiliary model calls. */
   languageModelFactory: LanguageModelFactory

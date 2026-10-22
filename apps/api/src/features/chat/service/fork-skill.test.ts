@@ -178,7 +178,7 @@ describe('a declared effort must take effect or be ignored — never mean someth
     }
   })
 
-  it("pi's native xhigh now applies as authored, not one rung up", async () => {
+  it('a native xhigh now applies as authored, not one rung up', async () => {
     // It used to normalize to `max`, which is a HIGHER level on the models that have native
     // xhigh (Opus 4.7/4.8, Sonnet 5, Fable 5) — so an author who wrote the right value paid for
     // more thinking than they asked for.

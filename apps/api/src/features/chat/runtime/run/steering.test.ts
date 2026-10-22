@@ -5,7 +5,7 @@ import { DEFAULT_AGENT_PARTICIPANT } from '../../../../db'
  * BEFORE the wire, grok-build interjection framing on the wire text only, and
  * the hold-during-HITL safety gate. Queue-side behaviour (consumption removes
  * the item, `session_queue.updated` is published) is covered in
- * ../wake-queue.test.ts; adapter-side injection is covered by the pi runtime tests.
+ * ../wake-queue.test.ts; engine-side injection is covered by the engine-loop tests.
  */
 import { describe, expect, it } from 'bun:test'
 
@@ -365,7 +365,7 @@ describe('createSteeringTaker', () => {
     expect(h.inserted).toHaveLength(0)
   })
 
-  it('never rejects Pi steering and leaves a failed item queued for retry', async () => {
+  it('never rejects the steering poll and leaves a failed item queued for retry', async () => {
     const h = makeHarness({
       failInsertAt: 2,
       turns: [
@@ -383,7 +383,7 @@ describe('createSteeringTaker', () => {
 
 describe('a cancelled run does not consume what it cannot answer', () => {
   it('takes nothing once the run is aborted', async () => {
-    // pi asks for steering ONE more time after an abort landing during tool execution: the
+    // The loop asks for steering ONE more time after an abort landing during tool execution: the
     // batch finishes with "Operation aborted" results, the turn ends, and the loop polls
     // here before its next sampling attempt discovers the signal.
     const abort = new AbortController()

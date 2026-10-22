@@ -23,8 +23,6 @@ const NOTICE_FILES = [
     'vendor/monaco-editor-runtime/THIRD_PARTY_NOTICES.localix.txt',
     'monaco-editor-bundled-dependencies-NOTICES.txt',
   ],
-  // The agent loop, its sign-in flows and the script sandbox started as ports of pi (MIT).
-  ['packages/engine/licenses/pi-LICENSE.txt', 'pi-LICENSE.txt'],
   // The script sandbox ships quickjs.wasm, QuickJS-NG built by quickjs-wasi; the npm package carries
   // only the wrapper's license, and QuickJS-NG's notice must travel with the engine.
   ['packages/engine-scripts/licenses/quickjs-ng-LICENSE.txt', 'quickjs-ng-LICENSE.txt'],

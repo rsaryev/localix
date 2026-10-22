@@ -31,7 +31,7 @@ import { richRegistry } from './prompt/testing/prompt-render'
 // (measured total 7,744).
 // `history_search` became modes of `global_search` (320): the palette's search over every
 // domain, by meaning too, plus the conversation reads, in one tool (measured total 7,789).
-// `codemode` (1,669), as pi's first version builds it: its description declares `read`, `bash`,
+// `codemode` (1,669): its description declares `read`, `bash`,
 // `edit` and `write` again as the TypeScript a script calls (measured total 9,358).
 const WIRE_BUDGET_TOKENS = 9_400
 /** No single tool may take more than this — `browser` was 1,900 before its diet. */

@@ -37,7 +37,7 @@ const TIER: Record<AgentStopReason, 'abnormal' | 'normal'> = {
   tool_terminate: 'normal',
   aborted: 'normal',
   stream_error: 'normal',
-  // The pi loop's only in-loop brake — the home-grown loop's guard reasons
+  // The loop's only in-loop brake — the old home-grown loop's guard reasons
   // (repeated/oscillating calls, content loop, exploration stall, …) left the
   // union when that loop was deleted.
   max_turns: 'abnormal',

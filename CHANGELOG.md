@@ -166,7 +166,7 @@ installers were removed; this release replaces them.
 
 - Providers connect only through credentials stored in the encrypted vault; API keys are never read
   from environment variables.
-- Updated dependencies, the pi runtime (v1.2.0) and Monaco (0.57.0).
+- Updated dependencies, the agent runtime (v1.2.0) and Monaco (0.57.0).
 
 ### Removed
 

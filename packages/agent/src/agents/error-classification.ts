@@ -44,7 +44,7 @@ export function classifyAgentError(error: unknown): AgentErrorInfo {
   // timing is read after classification rather than only in the named FetchError branch.
   if (info.retryAfterMs !== undefined || !(info.rateLimited || info.retryable)) return info
   // Prose is mined only for a RATE LIMIT. It exists for one provider shape — a ChatGPT usage
-  // cap, where pi renders the body's `resets_at` as "Try again in ~N min." and no header
+  // cap, where the Codex transport renders the body's `resets_at` as "Try again in ~N min." and no header
   // carries it — and a plain transient message ("Service unavailable, try again in 30
   // minutes") is not an instruction about an allowance.
   const stated = providerRetryDelayMs(error, Date.now(), { fromMessage: info.rateLimited })

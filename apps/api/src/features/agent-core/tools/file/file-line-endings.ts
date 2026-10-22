@@ -7,24 +7,25 @@
 
 const BOM = String.fromCharCode(0xfeff)
 
+type LineEnding = '\r\n' | '\n'
+
 /** Strip a UTF-8 BOM if present; returns the BOM (or '') and the text without it. */
 export function stripBom(content: string): { bom: string; text: string } {
-  return content.startsWith(BOM) ? { bom: BOM, text: content.slice(1) } : { bom: '', text: content }
+  const bom = content.startsWith(BOM) ? BOM : ''
+  return { bom, text: content.slice(bom.length) }
 }
 
-/** Detect the file's dominant line ending: whichever of \r\n / lone \n appears first. */
-export function detectLineEnding(content: string): '\r\n' | '\n' {
-  const crlfIdx = content.indexOf('\r\n')
-  const lfIdx = content.indexOf('\n')
-  if (lfIdx === -1) return '\n'
-  if (crlfIdx === -1) return '\n'
-  return crlfIdx < lfIdx ? '\r\n' : '\n'
+/** The file's dominant line ending: the one its first line ends with. */
+export function detectLineEnding(content: string): LineEnding {
+  const firstBreak = content.indexOf('\n')
+  return firstBreak > 0 && content[firstBreak - 1] === '\r' ? '\r\n' : '\n'
 }
 
+/** Every CRLF and lone CR as LF. */
 export function normalizeToLF(text: string): string {
-  return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+  return text.replace(/\r\n?/g, '\n')
 }
 
-export function restoreLineEndings(text: string, ending: '\r\n' | '\n'): string {
-  return ending === '\r\n' ? text.replace(/\n/g, '\r\n') : text
+export function restoreLineEndings(text: string, ending: LineEnding): string {
+  return ending === '\n' ? text : text.replace(/\n/g, '\r\n')
 }

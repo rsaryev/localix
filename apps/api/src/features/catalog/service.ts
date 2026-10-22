@@ -78,7 +78,7 @@ export function createCatalogService(deps: CatalogServiceDeps) {
   ): Promise<EngineCatalogRefreshResult | undefined> => {
     if (!deps.source.refresh) return undefined
     const result = await deps.source.refresh(options)
-    // The adapter's signal from pi: a provider published a new list, so this build is stale.
+    // The engine's signal: a provider published a new list, so this build is stale.
     if (result.changed) loaded = undefined
     deps.onRefresh?.(result, options)
     return result

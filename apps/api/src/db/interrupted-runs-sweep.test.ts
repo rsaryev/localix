@@ -49,7 +49,7 @@ describe('the boot sweep reports the sessions whose runs were interrupted', () =
         status: 'running',
         provider_id: 'p',
         model_id: 'm',
-        adapter: 'pi',
+        adapter: 'localix',
         adapter_version: '1',
         started_at: '2026-07-26T00:00:00.000Z',
       })

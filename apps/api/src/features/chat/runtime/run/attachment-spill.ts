@@ -131,12 +131,12 @@ export async function spillMessageAttachments(
       }
 
       // ---- Non-image binary files (PDF included): spill to a manifest LINE (no bytes) --
-      // Images keep their wire path: pi carries `ImageContent`, so native vision works.
+      // Images keep their wire path: the wire carries `ImageContent`, so native vision works.
       //
       // PDFs used to be excluded here too, on the premise that they reached the model as a
-      // native document block. That premise died with the move to the pi runtime: pi's
-      // `UserMessage.content` is `string | (TextContent | ImageContent)[]` (no document
-      // part), so `toPiPart` turns a `FileContent` into the literal text
+      // native document block. That premise died with an earlier runtime, whose
+      // `UserMessage.content` was `string | (TextContent | ImageContent)[]` (no document
+      // part), so its codec turned a `FileContent` into the literal text
       // `[Attached file: spec.pdf]`. Measured end to end: a PDF binding survives
       // `toModelMessages` correctly and then loses every byte at the codec, so "Summarise
       // the attached spec" reached the model as a filename and nothing else — silently.

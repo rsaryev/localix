@@ -264,7 +264,7 @@ test('a missing mediaId spill passes through unchanged', async () => {
 })
 
 test('images keep their native wire path (never spilled)', async () => {
-  // Images are the ONLY binary the wire still carries natively: pi's user content is
+  // Images are the ONLY binary the wire still carries natively: a user message's content is
   // `string | (TextContent | ImageContent)[]`, so vision works end to end.
   const dir = await cwd()
   const img: MessageAttachment = {
@@ -286,8 +286,8 @@ test('images keep their native wire path (never spilled)', async () => {
 test('a PDF is spilled to disk, not handed to the codec as a filename stub', async () => {
   // INTENTIONAL BEHAVIOUR CHANGE. This test previously asserted PDFs were never spilled,
   // on the premise that they reached the model as a native document block. Measured, that
-  // premise is false on the pi runtime: `toModelMessages` produces the right `FileContent`
-  // part and `toPiPart` then replaces it with the literal text `[Attached file: doc.pdf]`,
+  // premise was false on the earlier runtime: `toModelMessages` produced the right `FileContent`
+  // part and its codec then replaced it with the literal text `[Attached file: doc.pdf]`,
   // so every byte was lost silently. Spilling gives the agent a real path (and, with the
   // documents capability wired, extracted text) instead of a filename.
   const dir = await cwd()
@@ -431,7 +431,7 @@ test('exports a conservative spill concurrency budget', () => {
 /**
  * The categories that used to fall between the two mechanisms.
  *
- * Spilling excluded every `image/*` because "pi carries ImageContent" — true only for
+ * Spilling excluded every `image/*` because "the wire carries ImageContent" — true only for
  * png/jpeg/gif/webp — and audio/video were excluded by kind. So a HEIC, an SVG, an mp3 or an
  * mp4 was neither spilled nor representable on the wire, and reached the model as the bare
  * text stub `[Attached file: x.heic]`. These three fail against that old predicate.

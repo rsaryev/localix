@@ -24,7 +24,7 @@ export function sessionAttachmentsDirRel(sessionId: string): string {
 
 /**
  * Bytes the model can only reach as a FILE. Not "is it an image?" — that question excluded
- * every `image/*` from spilling on the grounds that pi carries `ImageContent`, which is only
+ * every `image/*` from spilling on the grounds that the wire carries `ImageContent`, which is only
  * true for png/jpeg/gif/webp. A HEIC/SVG/BMP/TIFF image, and likewise audio and video, were
  * excluded from spilling AND unrepresentable on the wire, so they reached the model as the
  * bare stub `[Attached file: x.heic]`. The boundary now comes from the SDK that owns the wire.

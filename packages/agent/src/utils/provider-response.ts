@@ -69,7 +69,7 @@ function rateLimitHeadersOf(raw: unknown): Record<string, string> | undefined {
 /**
  * Read the provider response off an error, accepting the THREE shapes that really occur:
  *
- *   1. what `attachProviderResponse` stored (runtime adapters — the pi path);
+ *   1. what `attachProviderResponse` stored (runtime adapters — the engine path);
  *   2. the official SDK shape: `status` + `headers` DIRECTLY on the error. Both
  *      `@anthropic-ai/sdk` and `openai` expose `APIError.headers: Headers` and
  *      `APIError.status` with no `response` field at all — checked against the installed
