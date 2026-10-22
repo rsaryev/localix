@@ -30,7 +30,7 @@
     "clean": "shx rm -rf dist .turbo"
   },
   "dependencies": {
-    "kysely": "^0.29.6",
+    "kysely": "^0.29.7",
     "zod": "^4.4.3"
   },
   "devDependencies": {

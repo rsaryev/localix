@@ -17,7 +17,7 @@
   "dependencies": {
     "@localixai/plugin-sdk": "workspace:*",
     "hono": "^4.12.30",
-    "lucide-react": "^1.57.0",
+    "lucide-react": "^1.61.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "zod": "^4.4.3"
@@ -28,8 +28,8 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
-    "turbo": "^2.10.8",
+    "turbo": "^2.11.10",
     "typescript": "^7.0.2",
-    "vite": "^8.3.4"
+    "vite": "^8.3.5"
   }
 }
