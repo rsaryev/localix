@@ -2,7 +2,8 @@ import { describe, expect, test } from 'bun:test'
 import type { MenuEntry, StatusItemState } from '@localixai/mini-app-sdk/ui'
 
 import { isMenuAction } from '@localixai/kit/menu-entries'
-import { statusItemMenuEntries } from './status-item-menu'
+import { consumeSettingsNav, subscribeSettingsNav } from '@/shared/lib/settingsNavBus'
+import { openMiniAppSettings, statusItemMenuEntries } from './status-item-menu'
 
 const host = { openMiniAppSettings: () => undefined }
 const labels = (entries: MenuEntry[]) =>
@@ -90,5 +91,17 @@ describe('the uniform status-item menu', () => {
       expect('separator' in entries[0]!).toBe(false)
       expect('separator' in entries.at(-1)!).toBe(false)
     }
+  })
+
+  test("the host row opens the Mini apps tab, where the item's mini app is configured", () => {
+    const tabs: string[] = []
+    const stop = subscribeSettingsNav((target) => tabs.push(target.tab))
+    try {
+      openMiniAppSettings()
+    } finally {
+      stop()
+      consumeSettingsNav()
+    }
+    expect(tabs).toEqual(['mini-apps'])
   })
 })

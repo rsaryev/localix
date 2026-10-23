@@ -26,12 +26,14 @@ import { navigateSettings } from '@/shared/lib/settingsNavBus'
  * hatch above the actions is a menu that reads as the host's rather than the mini app's.
  */
 
-/** Reveal the Plugins tab of Settings — the one place every plugin is configured and disabled. */
+/**
+ * Reveal the Mini apps tab of Settings — the one place every mini app is configured and disabled.
+ */
 export function openMiniAppSettings(): void {
   // Open first, then navigate: `navigateSettings` latches its target, so the panel applies it
   // whether it mounts before or after this call.
   inspector.openSettings()
-  navigateSettings('plugins')
+  navigateSettings('mini-apps')
 }
 
 /** The host capabilities the menu offers — injected so the shape is testable without the shell. */
