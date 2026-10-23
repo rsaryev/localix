@@ -75,11 +75,34 @@ Changes land on `main`.
   background requests. Kubernetes lists and logs and Docker logs follow their sources too.
 - **Context chips** above the message box stay on one line and scroll sideways instead of wrapping
   into a second row.
+- **Opening a folder from a link asks first**: a `localix://open` link or `localix <path>` that
+  names a folder not yet open as a project shows a confirmation before the project is created or
+  restored. A disk root or your home folder is refused.
+- **The agent reads a file before it overwrites it**: replacing an existing file it has not read in
+  this chat is refused with a request to read it first, instead of showing its content.
+- **Remote sites in a Browser tab** open directly in the web app, without the element picker, which
+  stays available for pages served from your machine.
 
 ### Fixed
 
 - **Group chats** keep routing a message to the right participant after the model catalog refreshes:
   the decision model was dropped when the catalog named its vendor's own package.
+- **A repository can no longer run code before you allow it**: a plugin in a project named like one
+  you enabled no longer takes over your consent, a project's own language-server programs no longer
+  replace the bundled ones, a skill the agent loads adds hook commands only where your rules allow
+  its shell, and `/plugin reload` builds only your own plugins that are switched on. Project
+  instructions import only files inside the project.
+- **Permission checks cover every path**: an approval card for a call touching files inside and
+  outside the project lists them all and a session approval must cover all of them, writes through a
+  linked folder count as outside the project, and in Plan mode a SQL Server query that changes the
+  server is no longer treated as a read.
+- **Previews and browser tabs stay local**: preview servers answer only on this machine and only for
+  files inside the folder they serve, other sites cannot connect through a preview's live reload,
+  and a browser tab refuses the app's own address. The app's Windows address is trusted only on
+  Windows, and the web app serves only its own files.
+- **Plugin views**: a page a plugin view navigates to can no longer send messages into your chat.
+- **Research and plugin downloads**: the research tool refuses a site whose address it cannot check,
+  and an npm plugin source without its own registry uses the one your `~/.npmrc` names for it.
 
 ## v0.1.0-beta.15 — 2026-10-21
 
