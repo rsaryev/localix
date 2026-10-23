@@ -147,8 +147,10 @@ function ensureProxyServer(upstreamOrigin: string): number {
   )
 }
 
+const LOOPBACK_UPSTREAM_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
+
 /**
- * For an external http(s) preview, returns a same-origin proxied URL that serves
+ * For a loopback http(s) preview, returns a same-origin proxied URL that serves
  * the dev server with the probe injected — or `undefined` if disabled. The path +
  * query of the original URL are preserved so the right route loads.
  */
@@ -160,6 +162,9 @@ export function buildInjectedPreviewUrl(rawUrl: string): string | undefined {
     return undefined
   }
   if (u.protocol !== 'http:' && u.protocol !== 'https:') return undefined
+  // Loopback upstreams only (the rule `openPreviewCore` applies). A remote site behind this proxy
+  // would be re-hosted on `http://localhost:<port>` with its CSP and X-Frame-Options removed.
+  if (!LOOPBACK_UPSTREAM_HOSTS.has(u.hostname)) return undefined
   const port = ensureProxyServer(u.origin)
   return `http://localhost:${port}${u.pathname}${u.search}`
 }

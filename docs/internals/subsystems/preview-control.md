@@ -81,7 +81,9 @@ HTML. For a URL, it requires HTTP or HTTPS, follows redirects during a 2.5-secon
 and publishes the direct URL plus whether the site refuses framing.
 
 The proxy forwards ordinary requests and HMR websockets. When nothing listens upstream it answers
-502 with the upstream address; a reload shows the page once the server is up.
+502 with the upstream address; a reload shows the page once the server is up. The proxy is built
+only for a loopback upstream (`localhost`, `127.0.0.1`, `[::1]`); `resolve` returns no `injectUrl`
+for a remote site, so a remote page is never re-hosted on a loopback origin.
 
 ### Frame address
 

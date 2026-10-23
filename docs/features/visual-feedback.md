@@ -174,7 +174,7 @@ attached is reviewed in the composer's attached-context list.
 | Preview input                 | Probe path                                                                 | Boundary                                                                              |
 | ----------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | Static HTML served by Localix | The loopback static server injects the probe into the HTML response.       | Only files below the selected static root are served.                                 |
-| HTTP or HTTPS preview         | A loopback reverse proxy injects the probe and relays the upstream origin. | The proxy removes response CSP and frame-blocking headers for the preview.            |
+| HTTP or HTTPS preview         | A loopback reverse proxy injects the probe and relays the upstream origin. | Loopback upstreams only; the proxy removes CSP and frame-blocking headers.            |
 | Frame-blocked preview         | The UI shows a blocked-state card and can engage the injecting proxy.      | Frame-busting script, bot protection, or an unreachable origin can still prevent use. |
 
 ## Limits

@@ -13,7 +13,10 @@ import { afterAll, describe, expect, test } from 'bun:test'
 import { mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { disposeProxyServers } from '../agent-core/tools/preview/preview-proxy'
+import {
+  buildInjectedPreviewUrl,
+  disposeProxyServers,
+} from '../agent-core/tools/preview/preview-proxy'
 import { disposeStaticServers } from '../agent-core/tools/preview/preview-static'
 import { createPreviewRoutes, type PreviewRoutesDeps } from './routes'
 
@@ -78,6 +81,17 @@ describe('an external server', () => {
       injectUrl?: string
     }
     expect(new URL(again.injectUrl!).port).toBe(new URL(body.injectUrl!).port)
+  })
+
+  test('a remote site gets no proxy: it is never re-hosted on a loopback origin', async () => {
+    const res = await resolve({ url: 'https://example.invalid/page?x=1' })
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { url?: string; previewId?: string; injectUrl?: string }
+    expect(body.url).toBe('https://example.invalid/page?x=1')
+    expect(body.previewId).toBe('https://example.invalid')
+    expect(body.injectUrl).toBeUndefined()
+    expect(buildInjectedPreviewUrl('http://198.51.100.7:8000/')).toBeUndefined()
+    expect(buildInjectedPreviewUrl('http://[::1]:8000/')).toMatch(/^http:\/\/localhost:\d+\/$/)
   })
 
   test('refuses what cannot be framed, in the envelope', async () => {
