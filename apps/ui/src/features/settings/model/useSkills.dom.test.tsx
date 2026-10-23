@@ -30,6 +30,7 @@ const snapshotWith = (skills: unknown[]) =>
     revision: 1,
     scope: { projectId: '', agentId: null },
     plugins: [],
+    miniApps: [],
     tools: {
       enabled: [],
       disabled: [],

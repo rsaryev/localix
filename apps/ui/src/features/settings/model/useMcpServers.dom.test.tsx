@@ -44,6 +44,7 @@ describe('MCP runtime availability mutations', () => {
       revision: 1,
       scope: { projectId: '', sessionId: null },
       plugins: [],
+      miniApps: [],
       tools: {
         enabled: [],
         disabled: [],
