@@ -12,9 +12,9 @@ Changes land on `main`.
   page: screenshots at full resolution with a full-window viewer, its README as About, and details
   such as size, license and what it adds. Tags filter the store, and featured apps come first. See
   [Mini apps](docs/features/mini-apps.md#how-it-works).
-- **Install with desktop app** (macOS): the store's Install menu also makes the app its own Mac app
-  once it is installed, with the app's own icon in the Dock. See
-  [Mac apps](docs/features/mini-app-mac-apps.md).
+- **Install with desktop app** (macOS): **Install** in the store asks **Localix only** or **With
+  desktop app**; the second also makes the app its own Mac app once it is installed, with the app's
+  own icon in the Dock. See [Mac apps](docs/features/mini-app-mac-apps.md).
 - **Catalogs**: the store's catalog menu shows one catalog or all of them with their app counts, and
   **Add catalog…** shows who publishes a catalog before you add it. `/mini-app catalog list`, `add`
   and `remove` do the same from the chat, and a publisher can link people straight to the dialog.

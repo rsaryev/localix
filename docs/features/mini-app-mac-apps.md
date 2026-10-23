@@ -14,14 +14,14 @@ Mini apps stay tabs in the workspace until you choose otherwise; nothing becomes
 
 Any of these does the same:
 
-| Where                      | Do this                                                                               |
-| -------------------------- | ------------------------------------------------------------------------------------- |
-| A mini app's tab           | Right-click the tab and choose **Install _Name_ as App**.                             |
-| The tab strip              | With the mini app's tab on screen, click the app button at the right of the tabs.     |
-| The mini app's rail button | Right-click it and choose **Install _Name_ as App**.                                  |
-| The command palette        | Run **Install _Name_ as App**.                                                        |
-| The store, installing      | **Install** ▾ → **Install with desktop app**: the app is made once the install lands. |
-| The store, installed       | **Add desktop app** on the mini app's page; **Remove desktop app** takes it away.     |
+| Where                      | Do this                                                                           |
+| -------------------------- | --------------------------------------------------------------------------------- |
+| A mini app's tab           | Right-click the tab and choose **Install _Name_ as App**.                         |
+| The tab strip              | With the mini app's tab on screen, click the app button at the right of the tabs. |
+| The mini app's rail button | Right-click it and choose **Install _Name_ as App**.                              |
+| The command palette        | Run **Install _Name_ as App**.                                                    |
+| The store, installing      | **Install** → **With desktop app**: the app is made once the install lands.       |
+| The store, installed       | **Add desktop app** on the mini app's page; **Remove desktop app** takes it away. |
 
 The app's icon is the mini app's own icon, the one its `mini-app.json` names and the store shows,
 drawn at every size the Dock uses. A mini app that names no icon cannot become an app until it has

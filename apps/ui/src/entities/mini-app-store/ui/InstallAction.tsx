@@ -1,14 +1,8 @@
 import { useState } from 'react'
-import { ChevronDown, Download, MonitorUp, Trash2 } from 'lucide-react'
+import { MonitorUp, Trash2 } from 'lucide-react'
 import type { MiniAppStoreEntryRecord } from '@localixai/api/client'
 import { Button } from '@localixai/kit/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@localixai/kit/dropdown-menu'
 import { IconButton } from '@localixai/kit/icon-button'
-import { MenuEntries } from '@localixai/kit/menu-entries'
 import { ProgressBar } from '@localixai/kit/progress-bar'
 import { isBusy } from '../model/storeFilters'
 import type { StoreActions } from '../model/storeActions'
@@ -22,8 +16,9 @@ const percent = (job: NonNullable<MiniAppStoreEntryRecord['job']>) =>
 type Size = 'sm' | 'default'
 
 /**
- * The one thing an app's state allows: how far its install is, Install (with the desktop app as a
- * second choice where one can be made), Update, Remove, or that it needs a newer Localix. An
+ * The one thing an app's state allows: how far its install is, Install (which, where a desktop app
+ * can be made, turns into "Localix only" and "With desktop app" in place — Esc or a click elsewhere
+ * brings it back), Update, Remove, or that it needs a newer Localix. An
  * unverified publisher's install asks "Install anyway?" first, whichever choice it was.
  */
 export function InstallAction({
@@ -42,6 +37,8 @@ export function InstallAction({
   removeAs?: 'icon' | 'button'
 } & StoreActions) {
   const [confirming, setConfirming] = useState<null | 'localix' | 'desktop'>(null)
+  // Install, where a desktop app can also be made, turns into the two ways to install, in place.
+  const [choosing, setChoosing] = useState(false)
   const label = entry.displayName ?? entry.name
   const job = entry.job
   if (job && isBusy(entry)) {
@@ -104,49 +101,55 @@ export function InstallAction({
   const trusted = entry.publisher.verified || Boolean(entry.installed)
   const install = () => (trusted ? onInstall(entry.name) : setConfirming('localix'))
   const installWithDesktop = () => (trusted ? onInstallWithDesktop?.({}) : setConfirming('desktop'))
-  const primary = (
+  const variant = size === 'default' ? 'mono' : 'field'
+  if (choosing)
+    return (
+      <div
+        className="flex items-center gap-1"
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape') return
+          event.preventDefault()
+          setChoosing(false)
+        }}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setChoosing(false)
+        }}
+      >
+        <Button
+          ref={(button) => button?.focus()}
+          size={size}
+          variant="ghost"
+          onClick={() => {
+            setChoosing(false)
+            install()
+          }}
+        >
+          Localix only
+        </Button>
+        <Button
+          size={size}
+          variant={variant}
+          title={DESKTOP_APP_HINT}
+          onClick={() => {
+            setChoosing(false)
+            installWithDesktop()
+          }}
+        >
+          <MonitorUp data-icon="inline-start" aria-hidden />
+          With desktop app
+        </Button>
+      </div>
+    )
+  return (
     <Button
       size={size}
-      variant={size === 'default' ? 'mono' : 'field'}
-      className={onInstallWithDesktop && !entry.installed ? 'rounded-r-none' : undefined}
-      onClick={install}
+      variant={variant}
+      onClick={() =>
+        // A first install where a desktop app can be made asks which; an update never does.
+        onInstallWithDesktop && !entry.installed ? setChoosing(true) : install()
+      }
     >
       {entry.update ? 'Update' : job?.phase === 'failed' ? 'Try again' : 'Install'}
     </Button>
-  )
-  if (!onInstallWithDesktop || entry.installed) return primary
-  return (
-    <div className="flex items-center">
-      {primary}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            size={size}
-            variant={size === 'default' ? 'mono' : 'field'}
-            aria-label={`More ways to install ${label}`}
-            className={
-              size === 'default' ? 'ml-px rounded-l-none px-1.5' : '-ml-px rounded-l-none px-1'
-            }
-          >
-            <ChevronDown aria-hidden />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-72">
-          <MenuEntries
-            family="dropdown"
-            entries={[
-              { id: 'install', label: 'Install', icon: Download, onSelect: install },
-              {
-                id: 'install-desktop',
-                label: 'Install with desktop app',
-                icon: MonitorUp,
-                description: DESKTOP_APP_HINT,
-                onSelect: installWithDesktop,
-              },
-            ]}
-          />
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
   )
 }

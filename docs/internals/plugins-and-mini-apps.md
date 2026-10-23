@@ -146,9 +146,9 @@ Only developer mode builds on the person's machine; every other source ships bui
 2. **Choose.** The store is its own workspace tab, opened from the rail's add button, from setup and
    from Settings → Mini apps. Category tabs, a tag filter, a search and a catalog menu, then
    Featured, Updates, Installed and Available as rows: the app's own icon, name, description, tags,
-   publisher when not verified, and Install (or Install with desktop app), Update, Remove or the
-   download's progress. A row opens the app's page: screenshots, README and details. Install and
-   update reuse the local models' pinned download (`lib/pinned-download.ts`).
+   publisher when not verified, and Install (Localix only or with its desktop app), Update, Remove
+   or the download's progress. A row opens the app's page: screenshots, README and details. Install
+   and update reuse the local models' pinned download (`lib/pinned-download.ts`).
 3. **Install.** One queue downloads each archive with progress (resumable, size-capped, verified
    against the catalog's sha256 before anything is unpacked), unpacks it beside the installed copy
    and swaps it in with one rename. A failed install leaves the previous build.

@@ -20,7 +20,7 @@ add yourself waits for your yes before its code runs; one the agent builds for y
 | Add one from the store       | The **+** button in the rail, **Open the store** in Settings, or setup                  | Nothing is installed until you choose it.                          |
 | Update one                   | **Update** on its row in the store, or wait for the automatic update                    | Shown when the catalog offers another version than yours.          |
 | See what an app is           | Choose its row in the store                                                             | Its page shows screenshots, its README and details.                |
-| Install with its desktop app | **Install** ▾ → **Install with desktop app** in the store                               | macOS desktop only, for an app with a screen of its own.           |
+| Install with its desktop app | **Install** → **With desktop app** in the store                                         | macOS desktop only, for an app with a screen of its own.           |
 | Add a publisher's catalog    | The store's catalog menu → **Add catalog…**, or `/mini-app catalog add <url>`           | Localix reads it first; nothing is added until you choose **Add**. |
 | See or remove catalogs       | The store's catalog menu, Settings → Mini apps → **Catalogs**, `/mini-app catalog list` | The Localix catalog is built in and stays.                         |
 | Turn one on or off           | `/mini-app enable <name>`, `/mini-app disable <name>`, or the row's switch              | A switch in Settings applies to the agent selected there.          |
@@ -53,11 +53,11 @@ API it was built for, and what it adds (tools for the agent, a screen of its own
 the screenshots with the arrows, a swipe, ←/→ or the dots, and choose one to see it full-window.
 **Mini apps** at the top returns to the list where you left it, filters and scroll kept.
 
-On the macOS desktop, an app with a screen of its own has a split **Install**: the button installs
-it in Localix, and its menu offers **Install with desktop app**, which also makes it an app with its
-own window, Dock icon and place in Spotlight once the install has landed. If the desktop app cannot
-be made, the install stays and the row says why. An installed app's page has **Add desktop app** or
-**Remove desktop app**. See [Mac apps](mini-app-mac-apps.md).
+On the macOS desktop, **Install** on an app with a screen of its own turns into two buttons in
+place: **Localix only**, and **With desktop app**, which also makes it an app with its own window,
+Dock icon and place in Spotlight once the install has landed. Esc brings **Install** back. If the
+desktop app cannot be made, the install stays and the row says why. An installed app's page has
+**Add desktop app** or **Remove desktop app**. See [Mac apps](mini-app-mac-apps.md).
 
 The store reads the Localix catalog and any catalog you added. The catalog menu at the right of the
 tab row shows **All catalogs** or one of them, each with its app count; it removes a catalog you

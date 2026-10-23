@@ -21,21 +21,24 @@ const withScreen = (candidate: { surfaces?: string[] }) =>
   Boolean(candidate.surfaces?.includes('workbench'))
 
 describe('installing with or without the desktop app', () => {
-  test('Install alone installs in Localix; the menu offers both, with what the desktop app adds', async () => {
+  test('Install turns into the two ways to install, in place; Esc brings Install back', async () => {
     const view = await renderStore({ entries: [chess], desktopAvailable: withScreen })
     try {
-      await view.click(view.button('Install', view.row('chess')!))
-      expect(view.calls.install.map(({ name }) => name)).toEqual(['chess'])
-      expect(view.calls.desktopInstall).toEqual([])
-
-      await view.openMenu(view.button('More ways to install Chess'))
-      expect(view.menuItems().map((item) => item.querySelector('.truncate')?.textContent)).toEqual([
-        'Install',
-        'Install with desktop app',
-      ])
-      expect(view.menuItem('Install with desktop app')?.textContent).toContain(
+      const row = () => view.row('chess')!
+      await view.click(view.button('Install', row()))
+      expect(view.calls.install).toEqual([])
+      expect(view.button('Install', row())).toBeUndefined()
+      expect(view.button('With desktop app', row())?.getAttribute('title')).toBe(
         'Also adds it as an app with its own window, Dock icon and place in Spotlight',
       )
+
+      await view.press('Escape')
+      expect(view.button('Install', row())).toBeDefined()
+
+      await view.click(view.button('Install', row()))
+      await view.click(view.button('Localix only', row()))
+      expect(view.calls.install.map(({ name }) => name)).toEqual(['chess'])
+      expect(view.calls.desktopInstall).toEqual([])
     } finally {
       await view.done()
     }
@@ -44,14 +47,16 @@ describe('installing with or without the desktop app', () => {
   test('where no desktop app can be made, the action is a plain Install', async () => {
     const elsewhere = await renderStore({ entries: [chess] })
     try {
-      expect(elsewhere.button('More ways to install Chess')).toBeUndefined()
-      expect(elsewhere.button('Install', elsewhere.row('chess')!)).toBeDefined()
+      await elsewhere.click(elsewhere.button('Install', elsewhere.row('chess')!))
+      expect(elsewhere.calls.install.map(({ name }) => name)).toEqual(['chess'])
+      expect(elsewhere.button('With desktop app')).toBeUndefined()
     } finally {
       await elsewhere.done()
     }
     const noScreen = await renderStore({ entries: [notes], desktopAvailable: withScreen })
     try {
-      expect(noScreen.button('More ways to install Notes')).toBeUndefined()
+      await noScreen.click(noScreen.button('Install', noScreen.row('notes')!))
+      expect(noScreen.calls.install.map(({ name }) => name)).toEqual(['notes'])
     } finally {
       await noScreen.done()
     }
@@ -60,8 +65,8 @@ describe('installing with or without the desktop app', () => {
   test('with the desktop app, it is made once the install has landed', async () => {
     const view = await renderStore({ entries: [chess], desktopAvailable: withScreen })
     try {
-      await view.openMenu(view.button('More ways to install Chess'))
-      await view.click(view.menuItem('Install with desktop app'))
+      await view.click(view.button('Install', view.row('chess')!))
+      await view.click(view.button('With desktop app', view.row('chess')!))
       expect(view.calls.install.map(({ name }) => name)).toEqual(['chess'])
       expect(view.calls.desktopInstall).toEqual([])
 
@@ -83,8 +88,8 @@ describe('installing with or without the desktop app', () => {
       desktopFails: 'Chess has no icon of its own',
     })
     try {
-      await view.openMenu(view.button('More ways to install Chess'))
-      await view.click(view.menuItem('Install with desktop app'))
+      await view.click(view.button('Install', view.row('chess')!))
+      await view.click(view.button('With desktop app', view.row('chess')!))
       await view.rerender([{ ...chess, installed: { version: '1.0.0' }, job: { phase: 'done' } }])
       expect(view.calls.remove).toEqual([])
       expect(view.row('chess')?.textContent).toContain(
