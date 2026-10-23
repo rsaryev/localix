@@ -107,7 +107,7 @@ export interface LoadedPlugins {
    * Enabled mini apps' guides (`mini-app.json` `guide`), each contained in its app's folder. The
    * agent reads one with `mini_app_guide`; the prompt lists the app in one line.
    */
-  miniAppGuides: Array<{ app: string; file: string }>
+  miniAppGuides: Array<{ app: string; file: string; pages?: string }>
   /**
    * Custom worker ROLES (sub-agents) from enabled plugins — manifest data,
    * namespaced `<plugin>:<name>`: the subagent types `delegate` runs a task as, as Claude Code's

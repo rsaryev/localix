@@ -51,6 +51,26 @@ describe('mini_app_guide', () => {
     expect(result.text).toContain('cut')
   })
 
+  test('a page of the guide comes from its guide/ folder, and nothing outside it', async () => {
+    writeTree(dir(), {
+      'charts/guide.md': 'See the recipes page.\n',
+      'charts/guide/recipes.md': 'Recipe one.\n',
+      'charts/secret.md': 'Not a guide page.\n',
+    })
+    const tool = createMiniAppGuideTool([
+      { app: 'charts', file: join(dir(), 'charts/guide.md'), pages: join(dir(), 'charts/guide') },
+    ])
+    expect(await run(tool, { app: 'charts', page: 'recipes' })).toEqual({
+      text: 'Recipe one.\n',
+      isError: false,
+    })
+    for (const page of ['../secret', '../../charts/secret', 'missing']) {
+      const result = await run(tool, { app: 'charts', page })
+      expect(result.isError, page).toBe(true)
+      expect(result.text).not.toContain('Not a guide page')
+    }
+  })
+
   test('reading a guide changes nothing', () => {
     const tool = createMiniAppGuideTool([])
     expect(tool.mutates).toBe(false)

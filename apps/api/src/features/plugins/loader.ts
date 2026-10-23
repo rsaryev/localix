@@ -283,7 +283,9 @@ export async function loadEnabledPlugins(opts: {
     // ---- A mini app's guide (read on demand by `mini_app_guide`) ----------
     if (plugin.layout === 'mini-app' && plugin.manifest.guide) {
       const file = resolveWithin(plugin.dir, plugin.manifest.guide)
-      if (file) result.miniAppGuides.push({ app: plugin.manifest.name, file })
+      const pages = resolveWithin(plugin.dir, 'guide')
+      if (file)
+        result.miniAppGuides.push({ app: plugin.manifest.name, file, ...(pages ? { pages } : {}) })
     }
 
     // ---- Custom worker roles (sub-agents — manifest data + CC files) --------

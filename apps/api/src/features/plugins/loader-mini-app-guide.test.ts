@@ -84,7 +84,11 @@ describe('loadEnabledPlugins miniAppGuides', () => {
       homeDir: home,
     })
     expect(loaded.miniAppGuides).toEqual([
-      { app: 'notes', file: join(home, '.localix/plugins', 'notes', 'guide.md') },
+      {
+        app: 'notes',
+        file: join(home, '.localix/plugins', 'notes', 'guide.md'),
+        pages: join(home, '.localix/plugins', 'notes', 'guide'),
+      },
     ])
   })
 })

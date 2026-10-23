@@ -1,6 +1,7 @@
 import { promises as fs } from 'node:fs'
 import { z } from 'zod'
 import { defineAgentTool, type CallClass } from '@localixai/agent/agents'
+import { resolveWithin } from '@localixai/path-containment'
 
 import { TOOL } from '../tool-names'
 
@@ -17,6 +18,8 @@ export interface MiniAppGuide {
   app: string
   /** The guide's absolute path, already contained in the mini app's folder. */
   file: string
+  /** The app's `guide/` folder, where the pages its guide links to live (`<page>.md`). */
+  pages?: string
 }
 
 /** A guide is instructions, not a document: past this it is cut, and says so. */
@@ -24,6 +27,10 @@ export const MINI_APP_GUIDE_MAX_CHARS = 32_000
 
 const inputSchema = z.object({
   app: z.string().describe('The mini app, by the name the prompt lists it under.'),
+  page: z
+    .string()
+    .optional()
+    .describe('A page the guide links to (guide/<page>.md), by its name without .md.'),
 })
 
 const READ: CallClass = { effect: 'read' }
@@ -47,11 +54,23 @@ export function createMiniAppGuideTool(guides: readonly MiniAppGuide[]) {
           isError: true,
         }
       }
+      const page = input.page?.trim()
+      const file = page
+        ? guide.pages
+          ? resolveWithin(guide.pages, `${page}.md`)
+          : null
+        : guide.file
       let text: string
       try {
-        text = await fs.readFile(guide.file, 'utf8')
+        if (!file) throw new Error('outside')
+        text = await fs.readFile(file, 'utf8')
       } catch {
-        return { content: `The ${app} mini app ships no guide.`, isError: true }
+        return {
+          content: page
+            ? `The ${app} guide has no page "${page}".`
+            : `The ${app} mini app ships no guide.`,
+          isError: true,
+        }
       }
       if (text.length <= MINI_APP_GUIDE_MAX_CHARS) return { content: text }
       return {
