@@ -55,7 +55,13 @@ describe('inspectPath', () => {
   test('classifies a file and a directory, normalizing a trailing separator', async () => {
     const { dir, file } = await fixture()
     expect(await inspectPath(file)).toEqual({ kind: 'file', path: file })
-    expect(await inspectPath(`${dir}/`)).toEqual({ kind: 'directory', path: dir })
+    expect(await inspectPath(`${dir}/`)).toEqual({ kind: 'directory', path: dir, broad: false })
+  })
+
+  test('marks a filesystem root and the home folder as too broad to open', async () => {
+    const { dir } = await fixture()
+    expect((await inspectPath('/')).broad).toBe(true)
+    expect((await inspectPath(dir, `${dir}/`)).broad).toBe(true)
   })
 
   test('refuses a relative path and reports a missing one as not found', async () => {
@@ -81,7 +87,7 @@ describe('POST /rpc/projects/inspect-path', () => {
     expect(await fileRes.json()).toEqual({ kind: 'file', path: file })
     const dirRes = await post(app, { path: dir })
     expect(dirRes.status).toBe(200)
-    expect(await dirRes.json()).toEqual({ kind: 'directory', path: dir })
+    expect(await dirRes.json()).toEqual({ kind: 'directory', path: dir, broad: false })
 
     expect(await projectIds()).toEqual(before)
     await destroyDatabase(db)

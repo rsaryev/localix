@@ -45,10 +45,15 @@ export interface ConfirmableAction {
   perform: () => void
   /** Report acceptance or cancellation to workflows that must stop on a refusal. */
   onDecision?: (proceed: boolean) => void
+  /**
+   * Decline, rather than perform, when no host is mounted to ask. For a request that arrives from
+   * OUTSIDE the app (a `localix://` link), where acting unasked is the very thing being guarded.
+   */
+  requireHost?: boolean
 }
 
 /** What the host renders — the descriptor minus the callback it must not invoke itself. */
-export type PendingConfirmation = Omit<ConfirmableAction, 'perform' | 'onDecision'>
+export type PendingConfirmation = Omit<ConfirmableAction, 'perform' | 'onDecision' | 'requireHost'>
 
 let pending: ConfirmableAction | null = null
 /**
@@ -118,6 +123,10 @@ export function decideConfirmation(proceed: boolean): void {
 /** Ask first, then do it. */
 export function requestConfirmation(action: ConfirmableAction): void {
   if (mountedHosts === 0) {
+    if (action.requireHost) {
+      action.onDecision?.(false)
+      return
+    }
     action.perform()
     action.onDecision?.(true)
     return

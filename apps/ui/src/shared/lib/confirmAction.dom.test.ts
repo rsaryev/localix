@@ -170,3 +170,18 @@ describe('external link, as an outward action', () => {
     unmount()
   })
 })
+
+test('a request that requires a host is declined, not performed, while none is mounted', async () => {
+  const { requestConfirmation } = await import('./confirmAction')
+  const decisions: boolean[] = []
+  let performed = 0
+  requestConfirmation({
+    kind: 'open-folder',
+    title: 'Open?',
+    requireHost: true,
+    perform: () => performed++,
+    onDecision: (proceed) => decisions.push(proceed),
+  })
+  expect(performed).toBe(0)
+  expect(decisions).toEqual([false])
+})

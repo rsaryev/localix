@@ -85,6 +85,11 @@ describe('OS file opens', () => {
       filePath: null,
       created: false,
     })
+    const projects = spyOn(backendClient, 'listProjects').mockResolvedValue([
+      { id: 'folder', workingDir: '/folder' } as Awaited<
+        ReturnType<typeof backendClient.listProjects>
+      >[number],
+    ])
     const open = mock((_request: InspectorRequest) => {})
     const unregister = registerInspectorHandler(open)
     const previousHash = window.location.hash
@@ -95,6 +100,7 @@ describe('OS file opens', () => {
     } finally {
       inspect.mockRestore()
       resolve.mockRestore()
+      projects.mockRestore()
       unregister()
       window.location.hash = previousHash
     }

@@ -1,4 +1,5 @@
 import { InvalidRequestError, NotFoundError } from '../../lib/domain-errors'
+import { homedir } from 'node:os'
 import path from 'node:path'
 import { stat } from 'node:fs/promises'
 import { z } from 'zod'
@@ -15,6 +16,11 @@ export const inspectPathResponseSchema = z.object({
   kind: z.enum(['file', 'directory']),
   /** Normalized absolute path that was classified. */
   path: z.string(),
+  /**
+   * A directory too broad to become a project from a link: a filesystem root or the home folder.
+   * The UI refuses it; the client cannot tell which folder is home on its own.
+   */
+  broad: z.boolean().optional(),
 })
 
 export type InspectPathResponse = z.infer<typeof inspectPathResponseSchema>
@@ -42,7 +48,10 @@ export function assertAbsolutePath(inputPath: string): void {
  * Classify an absolute path as a file or a directory. It stats the path and nothing else: no
  * project is minted, revived or read, so an OS file open cannot grow the project list.
  */
-export async function inspectPath(inputPath: string): Promise<InspectPathResponse> {
+export async function inspectPath(
+  inputPath: string,
+  home: string = homedir(),
+): Promise<InspectPathResponse> {
   assertAbsolutePath(inputPath)
   const normalized = normalizeDir(inputPath)
   let info: Awaited<ReturnType<typeof stat>>
@@ -52,7 +61,10 @@ export async function inspectPath(inputPath: string): Promise<InspectPathRespons
     throw new NotFoundError('project_path_not_found', 'Path does not exist or cannot be read')
   }
   if (info.isFile()) return { kind: 'file', path: normalized }
-  if (info.isDirectory()) return { kind: 'directory', path: normalized }
+  if (info.isDirectory()) {
+    const broad = path.parse(normalized).root === normalized || normalized === normalizeDir(home)
+    return { kind: 'directory', path: normalized, broad }
+  }
   throw new InvalidRequestError(
     'project_path_not_regular',
     'Path is neither a file nor a directory',
