@@ -134,6 +134,13 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
         events,
       })
       if (refused !== undefined) throw new ModRefusedError(`refused by a mod: ${refused}`)
+      // The plugin failed while this start was loading (another instance hit the death limit):
+      // it stays stopped, so this instance does not join, and does not clear that failure.
+      if (health.failures.has(plugin)) {
+        dispose()
+        drop(id)
+        return null
+      }
       instances.set(id, { plugin, cwd, usedAt: Date.now(), dispose, ...(vm ? { vm } : {}) })
       tables = await resolveTables(dispatch, scene, sceneOf(id).instances)
       vm?.setTables(tables)

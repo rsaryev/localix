@@ -4,15 +4,23 @@
  * What the messages mean — calls, functions lent by id, streams — is the runtime's and its host's
  * own; this side carries text, keeps the limits, and says when the VM is done for.
  *
- * The limits: the VM's heap (`memoryLimitBytes`), and its turn (`sliceMs`) — a delivered message
- * and the promise jobs it starts — past which the VM is interrupted and ends. Messages sent before
+ * The limits: the VM's heap (`memoryLimitBytes`), its turn (`sliceMs`) — a delivered message
+ * and the promise jobs it starts — past which the VM is interrupted and ends, and what one turn
+ * may post (`postLimits`), past which it ends too: the turn's time alone lets a posting loop queue
+ * millions of messages the host would then parse on its own thread. Messages sent before
  * the worker is up wait for it. `onExit` is called once, when the VM ends by itself; never after
  * `stop()`. Nothing the VM sends is trusted: it is text, for the caller to parse and check.
  */
 import { Worker } from 'node:worker_threads'
 
 import { SCRIPT_EXTENSION_FILES } from './assets'
-import { isVmWorkerMessage, type VmHostMessage, type VmWorkerData } from './protocol'
+import {
+  DEFAULT_VM_POST_LIMITS,
+  isVmWorkerMessage,
+  type VmHostMessage,
+  type VmPostLimits,
+  type VmWorkerData,
+} from './protocol'
 import {
   DEFAULT_MEMORY_LIMIT,
   loadWasm,
@@ -31,6 +39,8 @@ export interface ScriptVmStart {
   sliceMs: number
   /** The VM's heap; the sandbox's own default when absent. */
   memoryLimitBytes?: number
+  /** What one turn may post before the VM is ended; `DEFAULT_VM_POST_LIMITS` when absent. */
+  postLimits?: VmPostLimits
   /** Each message the runtime posted, as it posted it. */
   onMessage(json: string): void
   /** A rejection the VM's code left unhandled at the end of a turn, as text. */
@@ -91,6 +101,7 @@ export function createScriptVms(options: ScriptSandboxOptions = {}): ScriptVms {
           memoryLimitBytes:
             input.memoryLimitBytes ?? options.memoryLimitBytes ?? DEFAULT_MEMORY_LIMIT,
           sliceMs: input.sliceMs,
+          postLimits: input.postLimits ?? DEFAULT_VM_POST_LIMITS,
           interrupt,
         }
         worker = new Worker(files.worker, { workerData: data })

@@ -101,6 +101,18 @@ describe('plugin remove', () => {
     expect(await readdir(join(workspaceDir, '.localix', 'plugins'))).toEqual([])
   })
 
+  test('a personal plugin whose folder is gone is removed from a project chat too', async () => {
+    const source = join(root, 'src', 'vanished-tool')
+    await writePlugin(source, 'vanished-tool')
+    const installed = await service.install('u1', { source, projectId: null, enable: true })
+    await rm(installed.dir, { recursive: true, force: true })
+
+    await service.remove('u1', { name: 'vanished-tool', projectId: 'p1' })
+
+    const rows = await db.selectFrom('capability_source').selectAll().execute()
+    expect(rows.some((row) => JSON.stringify(row).includes('vanished-tool'))).toBe(false)
+  })
+
   test('a name that is not installed is an error, not a removal', async () => {
     await expect(
       service.remove('u1', { name: 'never-installed', projectId: null }),

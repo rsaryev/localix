@@ -19,7 +19,7 @@ export interface OpenCall {
   streams: Map<number, AsyncGenerator<unknown, unknown, unknown> & { result?: unknown }>
 }
 
-/** Contexts kept for what a VM asks after its call answered (a stashed `$`). */
+/** Contexts kept for what a VM asks after its call answered (a stashed `$`), beyond open calls. */
 const CONTEXTS_KEPT = 512
 
 export function createCalls(endpoint: Endpoint) {
@@ -27,11 +27,20 @@ export function createCalls(endpoint: Endpoint) {
   const open = new Map<number, OpenCall>()
   const contexts = new Map<number, Run>()
 
+  /** Drop the oldest context whose call answered; an open call's stays while it runs. */
+  function forgetOldestClosed() {
+    for (const call of contexts.keys()) {
+      if (open.has(call)) continue
+      contexts.delete(call)
+      return
+    }
+  }
+
   function begin(hook: number, $: ModsApi, e: unknown, next: Next) {
     const call = ++lastCall
     open.set(call, { api: $, next, streams: new Map() })
     contexts.set(call, AsyncLocalStorage.snapshot() as Run)
-    if (contexts.size > CONTEXTS_KEPT) contexts.delete(contexts.keys().next().value!)
+    if (contexts.size > CONTEXTS_KEPT) forgetOldestClosed()
     const abort = () => endpoint.notify('abort', { call })
     next.signal.addEventListener('abort', abort, { once: true })
     const meta: CallMeta = {

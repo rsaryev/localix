@@ -99,3 +99,14 @@ test('a reset returns every value to its default, redraws, and never reuses a ve
   // A stale `ifVersion` from before the reset cannot match the new version.
   expect(await state.set(COUNT, 3)).toEqual({ isSet: true, version: 3 })
 })
+
+test('a space refuses a write past its total size; rewriting a key or a reset frees room', () => {
+  const spaces = createStateSpaces({ changed: () => {}, maxSpaceChars: 10 })
+  const ref = (id: string) => ({ plugin: 'p', key: 'k', id })
+  spaces.set('/p', ref('a'), '"1234"')
+  expect(() => spaces.set('/p', ref('b'), '"12345"')).toThrow('over the 10 limit')
+  spaces.set('/p', ref('a'), '"1"')
+  spaces.set('/p', ref('b'), '"12345"')
+  spaces.reset('/p')
+  spaces.set('/p', ref('c'), '"12345678"')
+})

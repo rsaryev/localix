@@ -139,6 +139,8 @@ export function mapCcTools(rawValue: string | string[]): string[] {
  * Returns `undefined` when the field is absent or empty (→ inherit the role's default tool surface).
  * Returns `[]` only for an explicit YAML inline array `[]` (intentional no-tool surface).
  * Returns `undefined` when the list contains `*` (wildcard = all tools).
+ * A list whose every name is unknown here (`TodoWrite`, `ExitPlanMode`) maps to `[]`: a `tools`
+ * list is exact, so dropping its names must not widen it to the inherited surface.
  */
 function mapOptionalCcTools(raw: string | string[] | undefined): string[] | undefined {
   if (raw === undefined) return undefined
@@ -146,8 +148,7 @@ function mapOptionalCcTools(raw: string | string[] | undefined): string[] | unde
   if (Array.isArray(raw)) {
     if (raw.length === 0) return [] // explicit empty list → no-tool surface
     if (raw.includes('*')) return undefined // wildcard → inherit default
-    const mapped = mapCcTools(raw)
-    return mapped.length > 0 ? mapped : undefined
+    return mapCcTools(raw)
   }
   const trimmed = raw.trim()
   if (trimmed === '') return undefined // empty/missing field → inherit default
@@ -156,8 +157,7 @@ function mapOptionalCcTools(raw: string | string[] | undefined): string[] | unde
   // `*` or `["*"]` means "all tools" → inherit default.
   const tokens = splitTokenList(stripped) ?? []
   if (tokens.includes('*')) return undefined
-  const mapped = mapCcTools(raw)
-  return mapped.length > 0 ? mapped : undefined
+  return mapCcTools(raw)
 }
 
 /**
@@ -205,7 +205,9 @@ export async function parseAgentFile(
     return null
   }
   const tools = mapOptionalCcTools(fields.tools)
-  const disallowedTools = mapOptionalCcTools(fields.disallowedTools)
+  // A deny list that names nothing known here denies nothing.
+  const deniedTools = mapOptionalCcTools(fields.disallowedTools)
+  const disallowedTools = deniedTools?.length ? deniedTools : undefined
   const preferredModel = trimmedFrontmatterField(fields.model)
   // CC `skills:` — skill names to preload when this agent runs.
   const pinnedSkillsRaw = splitTokenList(fields.skills)

@@ -10,7 +10,8 @@
  * runtime was handed (a module), which its own code cannot do.
  *
  * Work runs in turns: a delivered message and every promise job it starts. A turn past `sliceMs`
- * is interrupted, and the VM is done for — it held its thread. An allocation past the memory limit
+ * is interrupted, and the VM is done for — it held its thread. So is one that posts more than its
+ * `postLimits` (messages, or characters in all) in a turn. An allocation past the memory limit
  * throws `InternalError: out of memory` in the VM, which the runtime may catch. A job that throws,
  * or a runtime that throws to its caller, ends the VM too. Rejections no one handled by the end of
  * a turn are reported, as an ordinary runtime reports them once its microtasks ran.
@@ -40,8 +41,11 @@ export async function startVm(data: VmWorkerData): Promise<void> {
   let deadline = 0
   let overran = false
   let ended = false
+  /** Why the current turn posted past its limits, once it did. */
+  let flooded: string | undefined
+  let posted = { messages: 0, characters: 0 }
   const interrupted = () => {
-    if (overran || Atomics.load(flag, 0) !== 0) return true
+    if (overran || flooded !== undefined || Atomics.load(flag, 0) !== 0) return true
     if (deadline !== 0 && performance.now() > deadline) overran = true
     return overran
   }
@@ -81,7 +85,15 @@ export async function startVm(data: VmWorkerData): Promise<void> {
     handle.dispose()
   }
   lend('post', (json) => {
-    send({ type: 'message', json: textOf(json, 'host.post') })
+    const text = textOf(json, 'host.post')
+    const limits = data.postLimits
+    posted = { messages: posted.messages + 1, characters: posted.characters + text.length }
+    if (posted.messages > limits.messages)
+      flooded = `posted more than ${limits.messages} messages in one turn`
+    else if (posted.characters > limits.characters)
+      flooded = `posted more than ${limits.characters} characters in one turn`
+    if (flooded !== undefined) throw new Error(flooded)
+    send({ type: 'message', json: text })
     return vm.undefined
   })
   lend('listen', (fn) => {
@@ -100,15 +112,17 @@ export async function startVm(data: VmWorkerData): Promise<void> {
   const turn = (work: () => void) => {
     if (ended) return
     deadline = performance.now() + data.sliceMs
+    posted = { messages: 0, characters: 0 }
     try {
       work()
       runPendingJobs(vm, interrupted)
     } catch (error) {
-      if (!overran) exit(`crashed: ${messageOf(error)}`)
+      if (!overran && flooded === undefined) exit(`crashed: ${messageOf(error)}`)
     } finally {
       deadline = 0
       for (const handle of answered.splice(0)) handle.dispose()
     }
+    if (flooded !== undefined) return exit(flooded)
     if (overran) return exit(`held its thread for ${data.sliceMs} ms`)
     for (const message of unhandled.values()) send({ type: 'rejection', message })
     unhandled.clear()

@@ -80,7 +80,7 @@ export type AuthorizeSkillCommand = (command: string) => string | undefined
  * - Inline: `` !`cmd` `` when `!` is at line-start or preceded by whitespace
  * - Fenced: `` ```! `` ... `` ``` `` block → run as a shell script
  *
- * Each command runs in `cwd` with a 10 s timeout, its stderr merged into its stdout. A command
+ * Each command runs in `cwd` with a 2-minute timeout (as Claude Code gives it), its stderr merged into its stdout. A command
  * that fails (a non-zero exit other than exit 1 from a search or comparison command, a timeout,
  * a spawn error) throws {@link SkillCommandFailedError}: the whole invocation stops, as in
  * Claude Code. Output is capped at 32 KB per command to protect context window size.

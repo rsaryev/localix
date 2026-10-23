@@ -32,6 +32,17 @@ import { MAX_BACKGROUND_JOBS_PER_SESSION } from './bash/bash-promote'
 export interface TimeoutPromoterOptions {
   /** Override the per-tool budget (tests; a deployment-wide clamp later). */
   budgetMsFor?: (tool: AgentTool) => number | undefined
+  /**
+   * The permission gate sits inside the chain (`chat/runtime/run/chain-gate.ts`): the budget
+   * starts when it has decided the call, so the minutes a person spends on a card are not
+   * reported to the model as a call still running in the background.
+   */
+  clockStartsAtGate?: boolean
+}
+
+/** What the gate inside the chain finds on a call's context: start the call's budget now. */
+export interface ToolClockCarrier {
+  startToolClock?: () => void
 }
 
 /**
@@ -75,13 +86,20 @@ export function wrapToolsWithTimeoutPromoter(
         else signal?.addEventListener('abort', relayAbort, { once: true })
         // The run's signal outlives every call on it: detach the relay once this call settles,
         // or a long run accumulates one listener (and one controller) per promotable call.
+        let startClock = () => {}
+        const clockStarted = new Promise<void>((resolve) => (startClock = resolve))
+        const clocked: typeof context = options.clockStartsAtGate
+          ? ({ ...context, startToolClock: startClock } as typeof context & ToolClockCarrier)
+          : context
         const inflight = Promise.resolve()
-          .then(() => tool.execute(toolCallId, input, controller.signal, onUpdate, context))
+          .then(() => tool.execute(toolCallId, input, controller.signal, onUpdate, clocked))
           .finally(() => signal?.removeEventListener('abort', relayAbort))
         // No registry means nothing can carry a job — a non-hosted context, or a tool run
         // outside a session. Waiting is then the only honest option.
         if (!registry) return inflight
 
+        // A call the gate refuses, or that a hook answers before the gate, settles first.
+        if (options.clockStartsAtGate) await Promise.race([clockStarted, inflight.then(noop, noop)])
         const settled = await raceBudget(inflight, budgetMs)
         if (settled !== PENDING) return settled
 
@@ -131,6 +149,7 @@ export function wrapToolsWithTimeoutPromoter(
 }
 
 const PENDING = Symbol('still-running')
+const noop = () => {}
 
 /**
  * Resolve with the call's result if it lands inside the budget, or `PENDING` if it does not.

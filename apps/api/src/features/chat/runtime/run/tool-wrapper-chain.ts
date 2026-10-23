@@ -93,5 +93,8 @@ export function applyToolWrapperChain(
   const hooked = wrapToolsWithHooks(gated, input.pluginHooks, input.pluginHookOptions)
   const ccHooked = wrapToolsWithCcHooks(hooked, input.ccHooks, input.logger)
   const modded = input.mods ? wrapToolsWithMods(ccHooked, input.mods) : ccHooked
-  return wrapToolsWithStuckRunBreaker(wrapToolsWithTimeoutPromoter(modded))
+  const promoted = wrapToolsWithTimeoutPromoter(modded, {
+    clockStartsAtGate: !!input.gate?.inChain,
+  })
+  return wrapToolsWithStuckRunBreaker(promoted)
 }

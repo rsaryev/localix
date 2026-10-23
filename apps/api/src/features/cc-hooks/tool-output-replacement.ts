@@ -23,7 +23,7 @@ function mcpText(value: unknown): string {
     const texts = blocks.flatMap((block) =>
       isRecord(block) && typeof block.text === 'string' ? [block.text] : [],
     )
-    if (texts.length > 0) return texts.join('\n')
+    if (texts.length > 0 || blocks.length === 0) return texts.join('\n')
   }
   return JSON.stringify(value)
 }
@@ -37,7 +37,8 @@ function bashText(value: Record<string, unknown>): string | undefined {
 
 /**
  * The model-facing content a hook's replacement stands for, or undefined when it replaces
- * nothing (absent, blank, or not in the tool's shape).
+ * nothing (absent or not in the tool's shape). An empty replacement is one: a redaction hook
+ * that answers `""` hides the output rather than letting it through.
  */
 export function replacementContent(
   toolName: string,
@@ -47,10 +48,9 @@ export function replacementContent(
   if (isMcpTool(toolName)) {
     const chosen = value ?? mcpValue
     if (chosen === undefined || chosen === null) return undefined
-    const text = mcpText(chosen)
-    return text.trim() ? text : undefined
+    return mcpText(chosen)
   }
-  if (typeof value === 'string') return value.trim() ? value : undefined
+  if (typeof value === 'string') return value
   if (toolName === 'bash' && isRecord(value)) return bashText(value)
   return undefined
 }

@@ -9,7 +9,8 @@ import { promisify } from 'node:util'
 import { ApiError, errorMessage } from '../../lib/errors'
 import { childEnv } from '../../lib/login-shell-env'
 import { rmrf } from '../ext/install-tree'
-import { fetchChecked } from './marketplace-download'
+import { fetchChecked, readCapped } from './marketplace-download'
+import { assertGunzipWithin } from './marketplace-gzip-limit'
 import { DEFAULT_NPM_REGISTRY, npmHop, userDefaultNpmRegistry } from './marketplace-npm-registry'
 
 export { DEFAULT_NPM_REGISTRY } from './marketplace-npm-registry'
@@ -31,6 +32,9 @@ const execFileAsync = promisify(execFile)
 
 /** Compressed tarball ceiling; extraction has separate manifest/install validation. */
 export const MAX_NPM_TARBALL_BYTES = 50 * 1024 * 1024
+
+/** Packument ceiling: a plugin's metadata is small; the body comes from a catalog-chosen host. */
+export const MAX_NPM_METADATA_BYTES = 64 * 1024 * 1024
 
 /** An npm plugin source (CC marketplace spec). */
 export interface NpmEntrySource {
@@ -230,6 +234,31 @@ async function fetchNpm(
   return (await fetchChecked(url, { ...download, code: 'plugin_npm_fetch_failed' })).response
 }
 
+/** The package's packument, its body capped and every failure a per-entry `ApiError`. */
+async function fetchPackument(src: NpmEntrySource, defaultRegistry: string): Promise<Packument> {
+  const what = `npm metadata for "${src.package}"`
+  const response = await fetchNpm(
+    npmMetadataUrl(src.package, src.registry),
+    what,
+    defaultRegistry,
+    NPM_METADATA_TIMEOUT_MS,
+  )
+  const body = await readCapped(response, MAX_NPM_METADATA_BYTES, {
+    what,
+    timeoutMs: NPM_METADATA_TIMEOUT_MS,
+    code: 'plugin_npm_fetch_failed',
+    tooLargeCode: 'plugin_npm_metadata_too_large',
+  })
+  try {
+    return JSON.parse(body.toString('utf8')) as Packument
+  } catch (err) {
+    throw new InvalidRequestError(
+      'plugin_npm_fetch_failed',
+      `${what} is not JSON: ${errorMessage(err)}`,
+    )
+  }
+}
+
 /**
  * Resolve + download + verify + extract an npm plugin source into `dest` (created,
  * previous content replaced). The tarball's single top-level folder (`package/` for
@@ -243,13 +272,7 @@ export async function fetchNpmPlugin(
 ): Promise<void> {
   // Plain http only on the user's own default registry, checked before anything is contacted.
   const defaultRegistry = opts.defaultRegistry ?? (await userDefaultNpmRegistry())
-  const metaRes = await fetchNpm(
-    npmMetadataUrl(src.package, src.registry),
-    `npm metadata for "${src.package}"`,
-    defaultRegistry,
-    NPM_METADATA_TIMEOUT_MS,
-  )
-  const meta = (await metaRes.json()) as Packument
+  const meta = await fetchPackument(src, defaultRegistry)
   const version = pickNpmVersion(src.package, meta, src.version)
   const dist = meta.versions?.[version]?.dist
   if (!dist?.tarball) {
@@ -268,6 +291,7 @@ export async function fetchNpmPlugin(
   const tmpFile = join(tmpdir(), `localix-npm-${randomUUID()}.tgz`)
   try {
     await downloadNpmTarball(packageVersion, tarRes, tmpFile, dist)
+    await assertGunzipWithin(tmpFile, `npm tarball for "${packageVersion}"`)
     await rmrf(dest)
     await fs.mkdir(dest, { recursive: true })
     // npm tarballs wrap everything in one `package/` folder — strip it on extract.

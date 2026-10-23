@@ -1,5 +1,6 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { EXIT_DRAIN_MS, awaitChildGone, releaseChildPipes } from '../../lib/child-exit'
+import { killProcessTreeNow } from '../../lib/process-tree'
 import { withTimeout } from '../../lib/timeout'
 import { createStreamTextDecoder } from '../../lib/stream-text'
 import { resolveHookSpawnTarget, type HookShell, type HookSpawnTarget } from './command-target'
@@ -75,6 +76,9 @@ export function runHookCommand(options: HookCommandOptions): Promise<HookCommand
       stdio: ['pipe', 'pipe', 'pipe'],
       windowsHide: true,
       shell: false,
+      // A group leader, so a timeout or abort reaches what a shell hook started (a pipeline,
+      // `cmd; other`), not only the shell.
+      detached: process.platform !== 'win32',
     })
   } catch (error) {
     return failed(error)
@@ -87,13 +91,14 @@ export function runHookCommand(options: HookCommandOptions): Promise<HookCommand
     let timedOut = false
     let aborted = false
     let settled = false
+    const killTree = () => killProcessTreeNow(child.pid)
     const abort = () => {
       aborted = true
-      child.kill('SIGKILL')
+      killTree()
     }
     const timer = setTimeout(() => {
       timedOut = true
-      child.kill('SIGKILL')
+      killTree()
     }, options.timeoutMs)
     timer.unref?.()
     const finish = (code: number | null) => {
@@ -133,7 +138,7 @@ export function runHookCommand(options: HookCommandOptions): Promise<HookCommand
       },
       () => {
         timedOut = true
-        child.kill('SIGKILL')
+        killTree()
         finish(null)
       },
     )

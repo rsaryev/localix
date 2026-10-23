@@ -63,6 +63,17 @@ describe('npmUrlProblem', () => {
       'not an http(s) URL',
     )
   })
+
+  it('refuses loopback and link-local https unless it is the default registry', () => {
+    for (const url of [
+      'https://127.0.0.1:8443/p',
+      'https://localhost./p',
+      'https://169.254.169.254/p',
+    ])
+      expect(npmUrlProblem(new URL(url), DEFAULT_NPM_REGISTRY)).toContain('not on a public host')
+    expect(npmUrlProblem(new URL('https://localhost:4873/p'), 'https://localhost:4873/')).toBeNull()
+    expect(npmUrlProblem(new URL('http://localhost:4873/p'), 'http://localhost:4873')).toBeNull()
+  })
 })
 
 describe('fetchNpmPlugin over plain http', () => {

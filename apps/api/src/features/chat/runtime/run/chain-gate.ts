@@ -3,6 +3,7 @@ import type { AgentTool, AgentToolResult, BeforeToolCallResult } from '@localixa
 
 import type { PermissionGateFn } from '../../../agent-core/permission-gate'
 import type { PreToolUseVerdictCarrier } from '../../../agent-core/permission-hook-decision'
+import type { ToolClockCarrier } from '../../../agent-core/tools/timeout-promoter'
 import { PermissionGateBlockedError } from '../../../agent-core/tools/tool-error-result'
 
 /**
@@ -128,6 +129,8 @@ export function createChainGate(inChain: boolean, options: ChainGateOptions = {}
             if (verdict?.block) throw new PermissionGateBlockedError(refusalOf(tool.name, verdict))
             if (loop && verdict?.note) loop.verdict.note = verdict.note
             if (loop && verdict?.provenance) loop.verdict.provenance = verdict.provenance
+            // The call is decided: from here on it is running, and its budget counts.
+            ;(context as ToolClockCarrier | undefined)?.startToolClock?.()
             const approved = options.approvedInput?.(tool, toolCallId)
             const ran = await tool.execute(
               toolCallId,

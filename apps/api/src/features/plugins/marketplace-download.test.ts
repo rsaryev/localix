@@ -134,6 +134,8 @@ describe('isForbiddenHost', () => {
     for (const host of ['localhost', '127.0.0.1', '[::1]', '169.254.169.254', '[::ffff:7f00:1]'])
       expect(isForbiddenHost(host)).toBe(true)
     expect(isForbiddenHost(new URL('https://2130706433/').hostname)).toBe(true)
+    expect(isForbiddenHost('localhost.')).toBe(true)
+    expect(isForbiddenHost('127.0.0.1.')).toBe(true)
     expect(isForbiddenHost('artifacts.example.com')).toBe(false)
   })
 })

@@ -33,9 +33,12 @@ export async function removePlugin(
   const plugin =
     discovered.find((p) => p.manifest.name === input.name && p.projectId === projectId) ?? null
   // Nothing to remove used to answer like a removal, so `/plugin remove typo` said "Removed".
-  const rowScope = rowScopeOf(plugin, projectId)
-  if (!plugin && !(await repo.get(userId, projectId, input.name)))
-    throw new NotFoundError('plugin_not_found', `Plugin "${input.name}" is not installed`)
+  let rowScope = rowScopeOf(plugin, projectId)
+  if (!plugin && !(await repo.get(userId, projectId, input.name))) {
+    // A user-scope plugin whose folder is gone keeps its row in the user scope alone.
+    if (projectId && (await repo.get(userId, '', input.name))) rowScope = ''
+    else throw new NotFoundError('plugin_not_found', `Plugin "${input.name}" is not installed`)
+  }
   // Claude Code owns what it installed; Localix reads that folder in place. Turning the
   // plugin off here is the part that is ours to change.
   if (plugin?.claudeCodeInstall) {

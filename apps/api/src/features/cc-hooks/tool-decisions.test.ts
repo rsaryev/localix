@@ -140,6 +140,17 @@ describe('PostToolUse output replacement', () => {
     expect(result.updatedToolOutput).toBe('REDACTED')
   })
 
+  it('an empty replacement hides the output instead of letting it through', async () => {
+    for (const [tool, fields] of [
+      ['bash', { updatedToolOutput: '' }],
+      ['mcp_echo_echo', { updatedMCPToolOutput: '' }],
+      ['mcp_echo_echo', { updatedMCPToolOutput: { content: [] } }],
+    ] as const) {
+      const { rt } = answering('PostToolUse', { a: post(fields) })
+      expect((await rt.runPostToolUse(tool, { text: 'secret' }, output)).updatedToolOutput).toBe('')
+    }
+  })
+
   it('updatedMCPToolOutput is ignored for a tool that is not an MCP tool', async () => {
     const { rt } = answering('PostToolUse', { a: post({ updatedMCPToolOutput: 'REDACTED' }) })
     const result = await rt.runPostToolUse('bash', { command: 'ls' }, output)

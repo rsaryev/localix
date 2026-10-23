@@ -38,6 +38,20 @@ export interface HostMessage {
 }
 
 /** A long-lived VM (`vm.ts`, `worker-vm.ts`): the runtime it evaluates first, and its limits. */
+export interface VmPostLimits {
+  messages: number
+  characters: number
+}
+
+/**
+ * Generous for any runtime that answers what it is handed, and small enough that a VM posting in
+ * a loop ends long before its queued messages swamp the host's thread.
+ */
+export const DEFAULT_VM_POST_LIMITS: VmPostLimits = {
+  messages: 10_000,
+  characters: 32 * 1024 * 1024,
+}
+
 export interface VmWorkerData {
   mode: 'vm'
   runtime: string
@@ -49,6 +63,8 @@ export interface VmWorkerData {
   memoryLimitBytes: number
   /** One turn — a delivered message and the promise jobs it starts — may run this long. */
   sliceMs: number
+  /** What one turn may post (`host.post`): this many messages, this many characters in all. */
+  postLimits: VmPostLimits
   /** As a run's: set by the host before it terminates the worker. */
   interrupt: SharedArrayBuffer
 }

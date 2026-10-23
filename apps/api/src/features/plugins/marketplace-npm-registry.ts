@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
-import type { HopCheck } from './marketplace-download'
+import { isForbiddenHost, type HopCheck } from './marketplace-download'
 
 /**
  * Which npm URLs a plugin source may reach. As in Claude Code, a registry or tarball URL must be
@@ -42,11 +42,19 @@ function originOf(url: string): string | null {
   return URL.canParse(url) ? new URL(url).origin : null
 }
 
-/** Why an npm URL may not be requested, or null: https, or http on the user's default registry. */
+/**
+ * Why an npm URL may not be requested, or null: https on a public host, or anything http(s) on
+ * the user's default registry (which may well be a Verdaccio on localhost).
+ */
 export function npmUrlProblem(url: URL, defaultRegistry: string): string | null {
-  if (url.protocol === 'https:') return null
+  const onDefault = url.origin === originOf(defaultRegistry)
+  if (url.protocol === 'https:') {
+    return onDefault || !isForbiddenHost(url.hostname)
+      ? null
+      : `${url.href} is not on a public host and is not your default npm registry`
+  }
   if (url.protocol === 'http:') {
-    return url.origin === originOf(defaultRegistry)
+    return onDefault
       ? null
       : `${url.href} uses plain http and is not your default npm registry; use https://`
   }

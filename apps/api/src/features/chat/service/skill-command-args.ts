@@ -97,6 +97,16 @@ function reference(variable: string, quoting: Quoting): string {
 }
 
 /**
+ * A value written in place as the shell would read it in the quoting it lands in, so a permission
+ * rule checks the command that runs: inside the author's quotes the value stays inside them.
+ */
+function literal(value: string, quoting: Quoting): string {
+  if (quoting === 'single') return value.replace(/'/g, `'\\''`)
+  if (quoting === 'double') return value.replace(/[\\"$`]/g, '\\$&')
+  return shellQuote(value)
+}
+
+/**
  * Claude Code inserts the arguments into a skill's content before its `` !`cmd` `` commands run,
  * so a command such as `"${CLAUDE_PLUGIN_ROOT}/setup.sh" $ARGUMENTS` receives them. Text the person
  * (or the model) typed must never become shell syntax, whatever quoting the author put around the
@@ -128,11 +138,10 @@ export function bindShellArgs(command: string, args: SkillShellArgs): BoundShell
       .map((token, index) => (set(argVar(index), token), reference(argVar(index), 'none')))
       .join(' ')
   })
-  const display = rewritePlaceholders(command, tokens, names, (target) =>
-    target.kind === 'one'
-      ? shellQuote(tokens[target.index] ?? '')
-      : tokens.map(shellQuote).join(' '),
-  )
+  const display = rewritePlaceholders(command, tokens, names, (target, quoting) => {
+    if (target.kind === 'one') return literal(tokens[target.index] ?? '', quoting)
+    return quoting === 'none' ? tokens.map(shellQuote).join(' ') : literal(raw, quoting)
+  })
   return { command: bound, env, display }
 }
 

@@ -94,3 +94,21 @@ describe('bounded plugin command/agent markdown discovery', () => {
     }
   })
 })
+
+describe('agent tools lists', () => {
+  test('a tools list of only unmapped names stays an empty allowlist, not the inherited surface', async () => {
+    const root = await fs.mkdtemp(join(tmpdir(), 'plugin-agent-tools-'))
+    try {
+      const agent = join(root, 'planner.md')
+      await fs.writeFile(
+        agent,
+        '---\nname: planner\ndescription: plans\ntools: TodoWrite, ExitPlanMode\ndisallowedTools: TodoWrite\n---\nPlan.\n',
+      )
+      const parsed = await parseAgentFile(agent)
+      expect(parsed?.tools).toEqual([])
+      expect(parsed?.disallowedTools).toBeUndefined()
+    } finally {
+      await fs.rm(root, { recursive: true, force: true })
+    }
+  })
+})

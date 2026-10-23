@@ -21,6 +21,19 @@ describe('resolvePluginConfig', () => {
     expect(resolvePluginConfig(manifest({ A: {} }), { A: 'set' })).toEqual({ A: 'set' })
   })
 
+  test('a value the vault returns as text is read back as its declared number or boolean', () => {
+    const declared = manifest({
+      PIN: { type: 'number' },
+      ON: { type: 'boolean' },
+      NAME: { type: 'string' },
+    } as Record<string, { default?: unknown }>)
+    expect(resolvePluginConfig(declared, { PIN: '1234', ON: 'false', NAME: '42' })).toEqual({
+      PIN: 1234,
+      ON: false,
+      NAME: '42',
+    })
+  })
+
   test('no config + no stored → empty', () => {
     expect(resolvePluginConfig(manifest({}), undefined)).toEqual({})
   })

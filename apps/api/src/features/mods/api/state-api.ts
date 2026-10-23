@@ -16,6 +16,12 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 /** A value's JSON text may be at most this long, as in Claude Code. */
 export const STATE_VALUE_MAX_CHARS = 4 * 1024 * 1024
 
+/**
+ * All of one space's values together may be at most this long: a space lives as long as the
+ * process, and a mod keying values by request would otherwise grow it without end.
+ */
+export const STATE_SPACE_MAX_CHARS = 64 * 1024 * 1024
+
 export interface StateRef {
   plugin: string
   key: string
@@ -25,12 +31,16 @@ export interface StateRef {
 interface Held {
   value: unknown
   version: number
+  /** The length of the value's JSON text. */
+  chars: number
 }
 
 interface Space {
   values: Map<string, Held>
   /** No version at or below it is handed out again (a reset keeps the highest one). */
   floor: number
+  /** Every value's `chars` together. */
+  chars: number
   /** The keys each drawing read when it was last drawn, by drawing. */
   readers: Map<string, Set<string>>
 }
@@ -73,11 +83,13 @@ function deepFrozen<T>(value: T): T {
 }
 
 /** The process's state spaces, one per working directory; `changed` redraws the mods' sites. */
-export function createStateSpaces(options: { changed: () => void }) {
+export function createStateSpaces(options: { changed: () => void; maxSpaceChars?: number }) {
+  const maxChars = options.maxSpaceChars ?? STATE_SPACE_MAX_CHARS
   const spaces = new Map<string, Space>()
   const spaceOf = (name: string) => {
     let space = spaces.get(name)
-    if (!space) spaces.set(name, (space = { values: new Map(), floor: 0, readers: new Map() }))
+    if (!space)
+      spaces.set(name, (space = { values: new Map(), floor: 0, chars: 0, readers: new Map() }))
     return space
   }
   return {
@@ -99,11 +111,18 @@ export function createStateSpaces(options: { changed: () => void }) {
     set(name: string, ref: StateRef, text: string, ifVersion?: number) {
       const space = spaceOf(name)
       const key = keyOf(ref)
-      const current = space.values.get(key)?.version ?? 0
+      const held = space.values.get(key)
+      const current = held?.version ?? 0
       if (ifVersion !== undefined && ifVersion !== current)
         return { isSet: false, version: current }
+      const chars = space.chars - (held?.chars ?? 0) + text.length
+      if (chars > maxChars)
+        throw new Error(
+          `state.set: this project's state would hold ${chars} characters, over the ${maxChars} limit`,
+        )
       const version = Math.max(current, space.floor) + 1
-      space.values.set(key, { value: deepFrozen(JSON.parse(text)), version })
+      space.values.set(key, { value: deepFrozen(JSON.parse(text)), version, chars: text.length })
+      space.chars = chars
       if ([...space.readers.values()].some((keys) => keys.has(key))) options.changed()
       return { isSet: true, version }
     },
@@ -113,6 +132,7 @@ export function createStateSpaces(options: { changed: () => void }) {
       if (!space) return
       for (const held of space.values.values()) space.floor = Math.max(space.floor, held.version)
       space.values.clear()
+      space.chars = 0
       space.readers.clear()
       options.changed()
     },

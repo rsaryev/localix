@@ -44,6 +44,20 @@ const failed: AgentToolResult = {
 }
 
 describe('wrapToolsWithCcHooks decisions', () => {
+  it('an allow whose rewrite fails the schema does not carry over to the original call', async () => {
+    const seen: unknown[] = []
+    const [wrapped] = wrapToolsWithCcHooks(
+      [tool({ content: 'ran' }, seen)],
+      runtime({
+        runPreToolUse: () =>
+          Promise.resolve({ decision: 'allow', didRewrite: true, updatedInput: { command: 7 } }),
+      }),
+      logger,
+    )
+    await wrapped.execute('tc1', { command: 'rm -rf ./build' })
+    expect((seen[0] as PreToolUseVerdictCarrier | undefined)?.preToolUseVerdict).toBeUndefined()
+  })
+
   it('a command that ran and exited non-zero fires PostToolUseFailure, not PostToolUse', async () => {
     const failures: { error: string; isInterrupt: boolean }[] = []
     let posts = 0

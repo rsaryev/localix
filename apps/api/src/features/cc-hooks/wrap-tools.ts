@@ -131,11 +131,15 @@ export function wrapToolsWithCcHooks(
           withContextReminder(pre.reason ?? 'denied', pre.additionalContext),
         )
       }
+      // An `allow` that came with a rewrite approved the rewritten call: when the rewrite is
+      // discarded, the original call goes to the gate without it.
+      let decision = pre.decision
       if (pre.didRewrite && pre.updatedInput !== undefined) {
         const reparsed = reparse(tool, pre.updatedInput)
         if (reparsed.ok) {
           effectiveInput = reparsed.input
         } else {
+          if (decision === 'allow') decision = 'proceed'
           logger.warn(
             `[cc-hooks] PreToolUse updatedInput for "${tool.name}" ignored (schema re-parse failed: ${reparsed.error})`,
           )
@@ -144,8 +148,8 @@ export function wrapToolsWithCcHooks(
 
       // allow/ask reach the permission gate inside the chain on the call's context.
       const verdict =
-        pre.decision === 'allow' || pre.decision === 'ask'
-          ? { decision: pre.decision, ...(pre.reason ? { reason: pre.reason } : {}) }
+        decision === 'allow' || decision === 'ask'
+          ? { decision, ...(pre.reason ? { reason: pre.reason } : {}) }
           : undefined
       const gated: (typeof context & PreToolUseVerdictCarrier) | undefined = verdict
         ? { ...context, preToolUseVerdict: verdict }

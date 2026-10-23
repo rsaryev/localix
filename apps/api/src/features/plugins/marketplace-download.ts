@@ -13,7 +13,11 @@ const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308])
 
 /** Hosts a download may not reach: this machine, link-local space, cloud metadata. */
 export function isForbiddenHost(hostname: string): boolean {
-  const host = hostname.toLowerCase().replace(/^\[|\]$/g, '')
+  // A trailing dot names the same host (`localhost.` is `localhost`).
+  const host = hostname
+    .toLowerCase()
+    .replace(/^\[|\]$/g, '')
+    .replace(/\.+$/, '')
   return (
     host === 'localhost' ||
     host.endsWith('.localhost') ||

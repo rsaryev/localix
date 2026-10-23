@@ -249,3 +249,28 @@ describe('the run signal relay', () => {
     expect(live.size).toBe(0)
   })
 })
+
+describe('a gate inside the chain', () => {
+  test('starts the budget once it has decided, so time on a card is not a background job', async () => {
+    const { registry, registered } = fakeRegistry()
+    // The card: answered only after the whole budget has passed.
+    const card = new Promise<void>((resolve) => setTimeout(resolve, 60))
+    const gated = defineAgentTool({
+      name: 'research',
+      label: 'Research',
+      description: 't',
+      activeVerb: 'Researching',
+      promoteAfterMs: 10,
+      inputSchema: z.object({ q: z.string() }),
+      async execute(_id, _input, _signal, _onUpdate, context) {
+        await card
+        ;(context as { startToolClock?: () => void }).startToolClock?.()
+        return { content: 'answered' }
+      },
+    })
+    const [tool] = wrapToolsWithTimeoutPromoter([gated], { clockStartsAtGate: true })
+
+    expect((await run(tool!, registry)).content).toBe('answered')
+    expect(registered).toEqual([])
+  })
+})

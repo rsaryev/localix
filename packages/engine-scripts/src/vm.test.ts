@@ -53,6 +53,30 @@ function evaluator(sliceMs = 5_000) {
 }
 
 describe('a long-lived VM', () => {
+  test('ends when one turn posts past its limits, before the host is swamped', async () => {
+    for (const [loop, limit] of [
+      ['for (;;) host.post("x")', 'messages'],
+      ['for (;;) host.post("x".repeat(1000))', 'characters'],
+    ] as const) {
+      let received = 0
+      let exited!: (reason: string) => void
+      const exit = new Promise<string>((resolve) => (exited = resolve))
+      vms
+        .start({
+          name: 'flood.js',
+          sliceMs: 5_000,
+          postLimits: { messages: 100, characters: 50_000 },
+          runtime: `host.listen(() => { ${loop} })`,
+          onMessage: () => void (received += 1),
+          onExit: (reason) => exited(reason),
+        })
+        .send('"go"')
+      expect(await exit).toContain(`more than`)
+      expect(await exit).toContain(limit)
+      expect(received).toBeLessThanOrEqual(100)
+    }
+  })
+
   test('keeps its state between messages and answers each', async () => {
     const { vm, ask } = evaluator()
     expect(await ask('globalThis.count = 1; count')).toEqual({ ok: 1 })

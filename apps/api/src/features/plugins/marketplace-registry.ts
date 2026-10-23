@@ -320,7 +320,7 @@ export async function resolveMarketplaceInstall(
 
   // Remote sources stage into a stable temp dir under the marketplaces root; git, npm and
   // archives land the same shape (a plain plugin dir handed to `installFromLocal`).
-  const staging = join(root, `.fetch-${Math.abs(hashString(ref.plugin + ref.marketplace))}`)
+  const staging = join(root, `.fetch-${Math.abs(hashString(`${ref.plugin}\0${ref.marketplace}`))}`)
   return { dir: await fetchEntryPlugin(resolved, staging, deps), linkRoot: staging, ...base }
 }
 

@@ -20,7 +20,9 @@ import { isPathWithin } from '../../lib/path-containment'
  *
  * Each real directory is copied at most once. Reaching one again links to its first copy, or,
  * while it is still being copied (a link cycle), skips it; so many links between shared
- * directories cost one copy each instead of one per path through them.
+ * directories cost one copy each instead of one per path through them. A file dereferenced
+ * through links is likewise copied once and linked to after that, so thousands of links to one
+ * large file outside the plugin cannot multiply it on disk.
  */
 
 /** Version control metadata, the only thing never copied. */
@@ -39,6 +41,8 @@ interface CopyContext {
   copies: Map<string, string>
   /** Real directories whose copy has not finished yet. */
   active: Set<string>
+  /** Real file reached through a link → where it was first copied. */
+  linkedFiles: Map<string, string>
 }
 
 export async function copyExtensionTree(
@@ -57,6 +61,7 @@ export async function copyExtensionTree(
     linkRoot,
     copies: new Map(),
     active: new Set(),
+    linkedFiles: new Map(),
   }
   await enter(context, sourceRoot, destination)
 }
@@ -116,5 +121,16 @@ async function copyLink(context: CopyContext, link: string, to: string): Promise
   if (!isPathWithin(context.linkRoot, resolved)) return
   const stats = await fs.stat(resolved)
   if (stats.isDirectory()) await enter(context, resolved, to)
-  else if (stats.isFile()) await fs.copyFile(resolved, to)
+  else if (stats.isFile()) await copyLinkedFile(context, resolved, to)
+}
+
+/** Copy a file reached through a link once; later links to it point at that copy. */
+async function copyLinkedFile(context: CopyContext, real: string, to: string): Promise<void> {
+  const first = context.linkedFiles.get(real)
+  if (first !== undefined) {
+    await fs.symlink(relative(dirname(to), first), to, 'file')
+    return
+  }
+  context.linkedFiles.set(real, to)
+  await fs.copyFile(real, to)
 }

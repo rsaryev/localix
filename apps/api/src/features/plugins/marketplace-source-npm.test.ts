@@ -238,6 +238,13 @@ describe('fetchNpmPlugin', () => {
     ).rejects.toThrow(/"demo" has no version satisfying/)
   })
 
+  it('metadata that is not JSON → per-entry error, not a raw SyntaxError', async () => {
+    globalThis.fetch = stubFetch(async () => new Response('<html>'))
+    expect(fetchNpmPlugin({ package: 'demo' }, join(work, 'out-html'))).rejects.toMatchObject({
+      code: 'plugin_npm_fetch_failed',
+    })
+  })
+
   it('registry HTTP error → clear per-entry error', async () => {
     globalThis.fetch = stubFetch(async () => new Response('nope', { status: 404 }))
     expect(fetchNpmPlugin({ package: 'demo' }, join(work, 'out-404'))).rejects.toThrow(/HTTP 404/)

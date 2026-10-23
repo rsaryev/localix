@@ -63,3 +63,20 @@ test("what an instance asks runs in its call's own context, whichever call is ru
   expect(seen).toEqual(['conversation A', 'conversation B', 'conversation B'])
   expect(calls.within(99, () => scene.getStore())).toBeUndefined()
 })
+
+test('a call still running keeps its context however many calls answer meanwhile', async () => {
+  const { endpoint } = endpointNeverAnswering()
+  const calls = createCalls(endpoint)
+  const scene = new AsyncLocalStorage<string>()
+  const hook = calls.standIn({ id: 1, generator: false })
+  scene.run('long call', () => void hook({} as ModsApi, {}, nextWith(new AbortController())))
+  for (let i = 0; i < 600; i++) {
+    const controller = new AbortController()
+    const running = scene.run('short call', () =>
+      hook({} as ModsApi, {}, nextWith(controller)),
+    ) as Promise<unknown>
+    controller.abort(new Error('done'))
+    await running.catch(() => {})
+  }
+  expect(calls.within(1, () => scene.getStore())).toBe('long call')
+})

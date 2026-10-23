@@ -191,3 +191,22 @@ test('links fanning out between shared directories copy each directory once', as
   expect(await fs.realpath(again)).toBe(await fs.realpath(join(destination, 'shared', 's1')))
   expect(await fs.readFile(join(again, 'file.md'), 'utf8')).toBe('s1')
 })
+
+test('many marketplace links to one file outside the plugin copy it once', async () => {
+  const marketplace = join(tempDir(), 'market')
+  const plugin = join(marketplace, 'plugins', 'fan')
+  await write(join(marketplace, 'blob.bin'), 'large')
+  await fs.mkdir(plugin, { recursive: true })
+  for (let i = 0; i < 5; i++) await fs.symlink('../../blob.bin', join(plugin, `f${i}`), 'file')
+  const destination = join(tempDir(), 'installed')
+
+  await copyExtensionTree(plugin, destination, { linkRoot: marketplace })
+
+  const regular = []
+  for (let i = 0; i < 5; i++) {
+    const path = join(destination, `f${i}`)
+    expect(await fs.readFile(path, 'utf8')).toBe('large')
+    if (!(await fs.lstat(path)).isSymbolicLink()) regular.push(path)
+  }
+  expect(regular).toHaveLength(1)
+})

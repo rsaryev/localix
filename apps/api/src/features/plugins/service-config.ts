@@ -47,8 +47,21 @@ export async function savePluginConfig(input: {
     existing,
   })
   const saved = await repo.patchConfig(userId, rowScope, name, patch)
-  // Only a config-only row (an install records its source) is the old per-project copy.
+  // Only a config-only row (an install records its source) is the old per-project copy. An
+  // install row stays, but not with a secret in plain text: its value now lives in the vault.
   if (legacy?.source === 'local') await repo.remove(userId, projectId, name)
+  else if (legacy) {
+    const plain = Object.entries(legacy.config).filter(
+      ([key, value]) => declared[key]?.secret && value !== '' && !isSecretHandle(value),
+    )
+    if (plain.length > 0)
+      await repo.patchConfig(
+        userId,
+        projectId,
+        name,
+        Object.fromEntries(plain.map(([key]) => [key, null])),
+      )
+  }
   return { state: await hydrateSecretOption(userId, saved), rowScope }
 }
 

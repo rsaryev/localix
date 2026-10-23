@@ -31,6 +31,8 @@ export function createModHealth(
   report: (plugin: string, message: string) => void,
 ) {
   const failures = new Map<string, string>()
+  /** Plugins failed by the death limit, which only a change to the plugin lifts. */
+  const exhausted = new Set<string>()
   const deaths = new Map<string, number[]>()
   const heldUntil = new Map<string, number>()
 
@@ -56,18 +58,26 @@ export function createModHealth(
           : `it starts again on its next event${wait ? ` after ${seconds(wait)}` : ''}`
       }`
       report(plugin, message)
-      if (stays) failures.set(plugin, message)
-      else heldUntil.set(plugin, at + wait)
+      if (stays) {
+        failures.set(plugin, message)
+        exhausted.add(plugin)
+      } else heldUntil.set(plugin, at + wait)
       return stays
     },
     /** False while the plugin's mod is failed, or waits after a death. */
     mayStart: (plugin: string) =>
       !failures.has(plugin) && now() >= (heldUntil.get(plugin) ?? -Infinity),
-    /** An instance started: the mod is not failed. */
-    started: (plugin: string) => void failures.delete(plugin),
+    /**
+     * An instance started: a load failure is lifted. One that reached the death limit is not: a
+     * start that was already under way when it did must not restart a crash-looping mod.
+     */
+    started(plugin: string) {
+      if (!exhausted.has(plugin)) failures.delete(plugin)
+    },
     /** The plugin changed or went: what it did so far counts no more. */
     forget(plugin: string) {
       failures.delete(plugin)
+      exhausted.delete(plugin)
       deaths.delete(plugin)
       heldUntil.delete(plugin)
     },

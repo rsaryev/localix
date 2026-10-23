@@ -43,3 +43,18 @@ test('deaths outside the window count no more', () => {
   expect(health.died('m', 'exited')).toBe(false)
   expect(health.mayStart('m')).toBe(true)
 })
+
+test('a start that finishes after the death limit does not lift it; one after a load failure does', () => {
+  const health = createModHealth(
+    { deaths: 1, windowMs: 100, backoffMs: 10 },
+    () => 0,
+    () => {},
+  )
+  health.died('looping', 'crashed: boom')
+  health.started('looping')
+  expect(health.mayStart('looping')).toBe(false)
+
+  health.fail('flaky', 'timed out')
+  health.started('flaky')
+  expect(health.mayStart('flaky')).toBe(true)
+})

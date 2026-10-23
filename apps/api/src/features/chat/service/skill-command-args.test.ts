@@ -54,7 +54,14 @@ describe('arguments in an injected command', () => {
     const bound = bindShellArgs("run $0 '$1' \\$1", { raw: `a "b'c"` })
     expect(bound.command).toBe(`run "\${LOCALIX_SKILL_ARG_0}" ''"\${LOCALIX_SKILL_ARG_1}"'' \\$1`)
     expect(bound.env).toEqual({ LOCALIX_SKILL_ARG_0: 'a', LOCALIX_SKILL_ARG_1: "b'c" })
-    expect(bound.display).toBe(`run 'a' ''b'\\''c'' \\$1`)
+    expect(bound.display).toBe(`run 'a' 'b'\\''c' \\$1`)
+  })
+
+  test("a value inside the author's quotes stays inside them where a rule reads it", () => {
+    const single = bindShellArgs(`git commit -m '$ARGUMENTS'`, { raw: 'a; b' })
+    expect(single.display).toBe(`git commit -m 'a; b'`)
+    const double = bindShellArgs(`echo "$0" && ls`, { raw: `'a"; b; $(c)'` })
+    expect(double.display).toBe(`echo "a\\"; b; \\$(c)" && ls`)
   })
 })
 
