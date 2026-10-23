@@ -9,9 +9,10 @@ import { afterAll, afterEach, describe, expect, test } from 'bun:test'
 import { Hono } from 'hono'
 import type { PluginRouteContext, PluginRouteScope } from '@localixai/plugin-sdk/backend'
 import { createRestRoutes } from './routes'
-import { createMemoryCollection } from './collection/memory'
-import { createEnvironmentService, type EnvironmentService } from './environments/service'
-import type { EnvironmentStore, SavedEnvironment } from './environments/store'
+import { createMemoryCollection } from './collection/testing/memory'
+import type { EnvironmentService } from './environments/service'
+import { createEnvironmentService, type EnvironmentStore } from './environments/testing/service'
+import type { SavedEnvironment } from './environments/store'
 import { listHistory, recordSend, resetHistory } from './history'
 
 // See history.test.ts: the ring is process-wide, so a suite that records must clear it.
@@ -37,7 +38,7 @@ const saved = (name: string, over: Partial<RequestSpec> = {}): CollectionRequest
 })
 
 /**
- * The collection these routes read. One shared in-memory double (see collection/memory.ts) — the
+ * The collection these routes read. One shared in-memory double (see collection/testing/memory.ts) — the
  * real filesystem store is pinned in its own suite, and a temp directory per case here would be
  * slower without making a status code any truer.
  */

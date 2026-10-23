@@ -1,3 +1,4 @@
+import { manifestAuthorSchema } from '@localixai/plugin-sdk/app-manifest'
 import { z } from 'zod'
 
 import type { PluginValidation } from './contracts'
@@ -15,16 +16,6 @@ import type { PluginValidation } from './contracts'
  * {@link validateMarketplace}, which separates blocking schema and source-path errors
  * from non-blocking catalog-hygiene warnings.
  */
-
-/** Author/owner — bare string OR the Claude Code object form. */
-const authorSchema = z.union([
-  z.string(),
-  z.object({
-    name: z.string().optional(),
-    email: z.string().optional(),
-    url: z.string().optional(),
-  }),
-])
 
 /** A plugin entry's source: a relative `./path` string, or an object `{ source, … }`. */
 export const marketplaceSourceSchema = z.union([
@@ -55,7 +46,7 @@ export const marketplaceEntrySchema = z
     source: marketplaceSourceSchema,
     displayName: z.string().optional(),
     description: z.string().optional(),
-    author: authorSchema.optional(),
+    author: manifestAuthorSchema.optional(),
     category: z.string().optional(),
     tags: z.array(z.string()).optional(),
     version: z.string().optional(),
@@ -89,7 +80,7 @@ export type MarketplaceEntry = z.infer<typeof marketplaceEntrySchema>
 /** A marketplace catalog. Unknown top-level keys (e.g. `$schema`) are stripped. */
 export const marketplaceSchema = z.object({
   name: z.string().min(1, 'Marketplace name cannot be empty'),
-  owner: authorSchema.optional(),
+  owner: manifestAuthorSchema.optional(),
   description: z.string().optional(),
   plugins: z.array(marketplaceEntrySchema),
   /**

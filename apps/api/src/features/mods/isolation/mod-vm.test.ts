@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import type { AssistantMessage } from '@localixai/agent'
 import { createScriptVms } from '@localixai/engine-scripts'
 import { createModRunScope } from '../run-scope'
-import { hostWithVms } from './testing-mods'
+import { hostWithVms } from './testing/testing-mods'
 
 /** What a hooks module may reach from its VM, and how the host lives with a VM that dies. */
 

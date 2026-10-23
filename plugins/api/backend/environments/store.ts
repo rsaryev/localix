@@ -5,7 +5,6 @@
  * their literal values never enter this record.
  */
 
-import type { UserEntityStore } from '@localixai/plugin-sdk/backend'
 import type { EnvironmentVariable } from '../collection/environments'
 
 export interface SavedEnvironment {
@@ -17,5 +16,3 @@ export interface SavedEnvironment {
   active: boolean
   variables: EnvironmentVariable[]
 }
-
-export type EnvironmentStore = UserEntityStore<SavedEnvironment>

@@ -7,7 +7,7 @@ import {
   oversizedHazardProvider,
   sampleAutomaticRequest,
   slowHazardProvider,
-} from './plugin-contract-kit'
+} from './testing/plugin-contract-kit'
 import { createContextManager } from './manager'
 import { createContextProviderRegistry } from './registry'
 import type { ContextProviderContribution } from './contracts'

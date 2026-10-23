@@ -29,7 +29,8 @@ export const miniAppCommandSchema = z.object({
 })
 export type MiniAppCommand = z.infer<typeof miniAppCommandSchema>
 
-const authorSchema = z.union([
+/** Author/owner: a bare string or the Claude Code object form (a marketplace entry's too). */
+export const manifestAuthorSchema = z.union([
   z.string(),
   z.object({
     name: z.string().optional(),
@@ -46,7 +47,7 @@ export const miniAppManifestSchema = pluginManifestCoreSchema.extend({
   version: z.string().optional(),
   displayName: z.string().optional(),
   description: z.string().optional(),
-  author: authorSchema.optional(),
+  author: manifestAuthorSchema.optional(),
   homepage: z.string().optional(),
   repository: z.string().optional(),
   license: z.string().optional(),

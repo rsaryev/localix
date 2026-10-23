@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { resolveCommandSpec } from '@localixai/api/slash-catalog'
 import { resolveModelCommand } from './modelCommandPlan'
-import { context, member } from './modelCommandFixture'
+import { context, member } from './testing/modelCommandFixture'
 
 const MODEL_ARGS = resolveCommandSpec('model')!.args!
 const solo = context([member('solo', 'openai/gpt', 'high')])

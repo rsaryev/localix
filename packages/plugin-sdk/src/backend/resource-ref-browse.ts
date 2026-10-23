@@ -56,6 +56,19 @@ export function createResourceBrowser({
       group: string
       node: ResourceNode
     }> = []
+    /** A provider's notice goes aside; a row is kept when it matches the typed segment. */
+    const take = (provider: ResourceRefProvider, nodes: readonly ResourceNode[]) => {
+      for (const node of nodes) {
+        if (node.notice) {
+          notices.push(node)
+          continue
+        }
+        const group = node.group || providerTitle(provider)
+        if (matchesBrowseQuery(node, query, provider.provider, group)) {
+          collected.push({ provider: provider.provider, group, node })
+        }
+      }
+    }
 
     // The global root is a lightweight category index. It does not eagerly list
     // every provider (or mix all of their roots into one long menu); selecting a
@@ -132,16 +145,7 @@ export function createResourceBrowser({
       )
       for (const { provider, nodes, failed } of listings) {
         if (failed) notices.push(providerFailureNotice(provider))
-        for (const node of nodes) {
-          if (node.notice) {
-            notices.push(node)
-            continue
-          }
-          const group = node.group || providerTitle(provider)
-          if (matchesBrowseQuery(node, query, provider.provider, group)) {
-            collected.push({ provider: provider.provider, group, node })
-          }
-        }
+        take(provider, nodes)
       }
     } else {
       const parsed = parseResourceUri(parent)
@@ -164,16 +168,7 @@ export function createResourceBrowser({
           warnListFailure(provider.provider, err)
           notices.push(providerFailureNotice(provider))
         }
-        for (const node of nodes) {
-          if (node.notice) {
-            notices.push(node)
-            continue
-          }
-          const group = node.group || providerTitle(provider)
-          if (matchesBrowseQuery(node, query, provider.provider, group)) {
-            collected.push({ provider: provider.provider, group, node })
-          }
-        }
+        take(provider, nodes)
       }
     }
 

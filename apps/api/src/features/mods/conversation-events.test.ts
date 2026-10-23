@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { defineAgentTool, type AgentTool } from '@localixai/agent/agents'
 import { clientEvent, describeCommands, receiveDelivery, skillPrompt } from './conversation-events'
 import { createEventCalls } from './event-calls'
-import { hostWithMod } from './testing-host'
+import { hostWithMod } from './testing/testing-host'
 
 describe('the conversation’s events between turns', () => {
   test('skill.prompt rewrites a typed skill and the skill tool’s text', async () => {

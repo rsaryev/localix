@@ -9,7 +9,7 @@ import { createPermissionGate, type PermissionRule } from '../../../agent-core/p
 import type { ConfirmOutcome } from '../../../agent-core/permission-gate'
 import type { CcHooksRuntime } from '../../../cc-hooks'
 import { EMPTY_RUNTIME } from '../../../cc-hooks/runtime-results'
-import { hostWithMod } from '../../../mods/testing-host'
+import { hostWithMod } from '../../../mods/testing/testing-host'
 import { createChainGate } from './chain-gate'
 import { applyToolWrapperChain } from './tool-wrapper-chain'
 

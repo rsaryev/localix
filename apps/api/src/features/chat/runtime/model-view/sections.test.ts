@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { ContextCheckpoint } from '@localixai/agent'
 
-import { persistedRow } from '../history/test-fixtures'
+import { persistedRow } from '../history/testing/test-fixtures'
 import { modelViewSections } from './sections'
 import type { ModelView } from './view'
 

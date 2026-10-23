@@ -2,7 +2,7 @@ import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import type { ComposerCommands } from '../useComposerCommands'
 import type { ModelCommandContext } from './modelCommandTarget'
-import { context, member } from './modelCommandFixture'
+import { context, member } from './testing/modelCommandFixture'
 
 let teardown: () => Promise<void>
 beforeAll(() => {

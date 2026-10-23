@@ -122,6 +122,28 @@ export function WorkspaceRail({
   // eslint-disable-next-line react-hooks/refs
   const seenIds = seenBarIds.current
 
+  // The upper and lower rails place their entries the same way: in order, no entrance animation.
+  const placedEntries = (entries: RailEntry[], area: 'top' | 'bottom') =>
+    entries.map((entry, index) => (
+      <CustomizableRailButton
+        key={entry.id}
+        entry={entry}
+        area={area}
+        drag={drag}
+        isFirst={index === 0}
+        isLast={index === entries.length - 1}
+        justPinned={false}
+        onDragStart={onDragStart}
+        onDragOverItem={onDragOverItem}
+        onDropItem={onDropItem}
+        onDragEnd={clearDrag}
+        onMoveWithin={onMoveWithinBar}
+        onMoveArea={onMoveToArea}
+        onReset={onResetRail}
+        onUnpin={onUnpinTool}
+      />
+    ))
+
   return (
     <div className="flex h-full min-h-0 flex-col items-center py-2 pb-3.5">
       {/* Group 1 — fixed chat anchors + customizable upper navigation. */}
@@ -164,25 +186,7 @@ export function WorkspaceRail({
               onClick={action.onClick}
             />
           ))}
-          {topEntries.map((entry, index) => (
-            <CustomizableRailButton
-              key={entry.id}
-              entry={entry}
-              area="top"
-              drag={drag}
-              isFirst={index === 0}
-              isLast={index === topEntries.length - 1}
-              justPinned={false}
-              onDragStart={onDragStart}
-              onDragOverItem={onDragOverItem}
-              onDropItem={onDropItem}
-              onDragEnd={clearDrag}
-              onMoveWithin={onMoveWithinBar}
-              onMoveArea={onMoveToArea}
-              onReset={onResetRail}
-              onUnpin={onUnpinTool}
-            />
-          ))}
+          {placedEntries(topEntries, 'top')}
         </div>
       </div>
 
@@ -247,25 +251,7 @@ export function WorkspaceRail({
             onClick={action.onClick}
           />
         ))}
-        {bottomEntries.map((entry, index) => (
-          <CustomizableRailButton
-            key={entry.id}
-            entry={entry}
-            area="bottom"
-            drag={drag}
-            isFirst={index === 0}
-            isLast={index === bottomEntries.length - 1}
-            justPinned={false}
-            onDragStart={onDragStart}
-            onDragOverItem={onDragOverItem}
-            onDropItem={onDropItem}
-            onDragEnd={clearDrag}
-            onMoveWithin={onMoveWithinBar}
-            onMoveArea={onMoveToArea}
-            onReset={onResetRail}
-            onUnpin={onUnpinTool}
-          />
-        ))}
+        {placedEntries(bottomEntries, 'bottom')}
       </div>
     </div>
   )

@@ -96,6 +96,17 @@ export function addEditorActions(
     }
   }
 
+  // One target is jumped to directly; several open the references list under `title`.
+  const goToTargets = async (
+    source: 'implementationSource' | 'typeDefinitionSource',
+    title: string,
+  ) => {
+    const references = await getProps()[source]?.(currentPosition())
+    if (!references?.length) return
+    if (references.length === 1) navigate(references[0]!)
+    else widgets.openReferences(title, references, navigate)
+  }
+
   actions.push(
     editor.addAction({
       id: `localix.save.${editor.getId()}`,
@@ -116,51 +127,13 @@ export function addEditorActions(
       label: 'Go to Implementation',
       keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.F12],
       precondition: 'localixHasImplementation',
-      run: async () => {
-        const references = await getProps().implementationSource?.(currentPosition())
-        if (!references?.length) return
-        if (references.length === 1) {
-          const target = references[0]!
-          navigate({
-            file: target.file,
-            line: target.line,
-            character: target.character,
-          })
-        } else {
-          widgets.openReferences('Implementations', references, (target) =>
-            navigate({
-              file: target.file,
-              line: target.line,
-              character: target.character,
-            }),
-          )
-        }
-      },
+      run: () => goToTargets('implementationSource', 'Implementations'),
     }),
     editor.addAction({
       id: `localix.typeDefinition.${editor.getId()}`,
       label: 'Go to Type Definition',
       precondition: 'localixHasTypeDefinition',
-      run: async () => {
-        const references = await getProps().typeDefinitionSource?.(currentPosition())
-        if (!references?.length) return
-        if (references.length === 1) {
-          const target = references[0]!
-          navigate({
-            file: target.file,
-            line: target.line,
-            character: target.character,
-          })
-        } else {
-          widgets.openReferences('Type Definitions', references, (target) =>
-            navigate({
-              file: target.file,
-              line: target.line,
-              character: target.character,
-            }),
-          )
-        }
-      },
+      run: () => goToTargets('typeDefinitionSource', 'Type Definitions'),
     }),
     editor.addAction({
       id: `localix.references.${editor.getId()}`,
@@ -170,13 +143,7 @@ export function addEditorActions(
       run: async () => {
         const references = await getProps().referencesSource?.(currentPosition())
         if (!references?.length) return
-        widgets.openReferences('References', references, (target) =>
-          navigate({
-            file: target.file,
-            line: target.line,
-            character: target.character,
-          }),
-        )
+        widgets.openReferences('References', references, navigate)
       },
     }),
     editor.addAction({

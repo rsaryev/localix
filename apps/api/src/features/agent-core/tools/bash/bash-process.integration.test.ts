@@ -3,7 +3,7 @@ import { describe, expect, test } from 'bun:test'
 import { adoptChildBgProc, childBgProc } from './bash-process'
 import { spawnToResult } from '../environments/spawn'
 import { createBashTool } from './bash'
-import { FAST_SETTLE } from './test-settle'
+import { FAST_SETTLE } from './testing/test-settle'
 
 /**
  * A background bash job is over when THE COMMAND is over.

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { createScriptVms } from '@localixai/engine-scripts'
-import { hostWithVms } from './testing-mods'
+import { hostWithVms } from './testing/testing-mods'
 
 /**
  * What a hooks module can change in its VM: nothing the runtime it shares the VM with relies on.

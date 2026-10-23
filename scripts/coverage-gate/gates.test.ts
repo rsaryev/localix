@@ -44,6 +44,7 @@ describe('package floors', () => {
         floor: 75,
         uncovered: 1,
         maxUncovered: null,
+        firstLoaded: 0,
         ok: true,
       },
       {
@@ -54,6 +55,7 @@ describe('package floors', () => {
         floor: 60,
         uncovered: 1,
         maxUncovered: null,
+        firstLoaded: 0,
         ok: false,
       },
     ])
@@ -91,6 +93,32 @@ describe('package floors', () => {
       ok: false,
     })
   })
+})
+
+// A first test for a file no test loaded brings that file's untested lines into the count. That is
+// coverage gained, not lost: those lines count against the ceiling from the next recording on.
+test('a file a test loads for the first time does not count against the untested ceiling', () => {
+  const baseline = {
+    floors: { 'pkg/a': 90, 'pkg/b': 0 },
+    uncovered: { 'pkg/a': 1, 'pkg/b': 1 },
+    unloaded: ['pkg/a/x.ts', 'pkg/b/never.ts'],
+  }
+  const result = evaluate({
+    coverage: new Map([
+      ...coverage,
+      [
+        'pkg/a/old.ts',
+        lines([
+          [1, 1],
+          [2, 0],
+        ]),
+      ],
+    ]),
+    sources: { ...sources, 'pkg/a': ['pkg/a/x.ts', 'pkg/a/old.ts'] },
+    baseline,
+  })
+  // x.ts is newly loaded with 1 untested line; old.ts keeps the 1 the ceiling allows.
+  expect(result.packages[0]).toMatchObject({ uncovered: 2, maxUncovered: 1, ok: true })
 })
 
 describe('files no test loads', () => {
@@ -209,6 +237,48 @@ describe('ratchet', () => {
       uncovered: { 'pkg/a': 1, 'pkg/b': 1 },
       unloaded: ['pkg/b/never.ts'],
     })
+  })
+
+  test('a recording takes in the untested lines of files a test loaded for the first time', () => {
+    const baseline = {
+      floors: { 'pkg/a': 90, 'pkg/b': 0 },
+      uncovered: { 'pkg/a': 1, 'pkg/b': 1 },
+      unloaded: ['pkg/a/x.ts', 'pkg/b/never.ts'],
+    }
+    const measured = evaluate({
+      coverage: new Map([
+        ...coverage,
+        [
+          'pkg/a/old.ts',
+          lines([
+            [1, 1],
+            [2, 0],
+          ]),
+        ],
+      ]),
+      sources: { ...sources, 'pkg/a': ['pkg/a/x.ts', 'pkg/a/old.ts'] },
+      baseline,
+    })
+    const next = ratchet(baseline, measured)
+    expect(next.uncovered['pkg/a']).toBe(2)
+    expect(next.unloaded).toEqual(['pkg/b/never.ts'])
+    // Recorded, the same measurement passes.
+    expect(
+      evaluate({
+        coverage: new Map([
+          ...coverage,
+          [
+            'pkg/a/old.ts',
+            lines([
+              [1, 1],
+              [2, 0],
+            ]),
+          ],
+        ]),
+        sources: { ...sources, 'pkg/a': ['pkg/a/x.ts', 'pkg/a/old.ts'] },
+        baseline: next,
+      }).packages[0]?.ok,
+    ).toBe(true)
   })
 
   test('the untested-lines ceiling only falls', () => {

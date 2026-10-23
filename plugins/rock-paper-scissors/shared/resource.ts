@@ -5,9 +5,6 @@ export const ROUTE_PATH = '/rpc/rock-paper-scissors'
 
 const game = sessionResourceAddress('rock-paper-scissors', 'game')
 
-/** The table as a resource: what the launcher and the anchor resolve. */
-export const GAME_URI = game.uri
-
 /**
  * One chat's table. The new-round tool opens THIS, naming the session it runs in, so the table
  * opens in that chat even if the person has since switched to another.

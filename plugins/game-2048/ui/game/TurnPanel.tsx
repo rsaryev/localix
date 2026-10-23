@@ -13,6 +13,7 @@ import { Button } from '@localixai/kit/button'
 import { GameProblem, GameStatus } from '@localixai/kit/game-status'
 import { IconButton } from '@localixai/kit/icon-button'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { OTHER_OPPONENT } from '@localixai/plugin-sdk/opponent'
 
 import { agentPlays, stopped, type Game, type Opponent } from '../../shared/game'
 import {
@@ -104,11 +105,6 @@ export function PlayToggle({
       <Play />
     </IconButton>
   )
-}
-
-const OTHER_OPPONENT: Record<Opponent, { opponent: Opponent; label: string }> = {
-  agent: { opponent: 'decision', label: 'Use the decision model' },
-  decision: { opponent: 'agent', label: 'Use the chat agent' },
 }
 
 /**

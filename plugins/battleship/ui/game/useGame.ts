@@ -1,9 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useTableGame } from '@localixai/plugin-sdk/ui/game-table'
 
 import { owesAgentShot, playerViewSchema, type Opponent, type Player } from '../../shared/game'
 import { ROUTE_PATH } from '../../shared/resource'
-import { useStoreSnapshot } from '../useStoreSnapshot'
 
 /**
  * The board's state and the four things a person can do to it.
@@ -18,36 +16,19 @@ import { useStoreSnapshot } from '../useStoreSnapshot'
  * (`useStoreSnapshot`); only while that feed is not live does the board look for itself.
  */
 
-/** While the agent owes a shot and the feed is not live, how often the board looks for it. */
-export const AGENT_TURN_POLL_MS = 800
-export const IDLE_POLL_MS = 4000
-
 export function useGame(active: boolean) {
-  const sessionId = useWorkItemSessionId()
-  const table = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ''
-  const [quick, setQuick] = useState(false)
-  const polled = useStoreSnapshot({
+  const game = useTableGame({
     plugin: 'battleship',
-    sessionId,
-    path: `${ROUTE_PATH}/game${table}`,
+    route: ROUTE_PATH,
     schema: playerViewSchema,
-    intervalMs: quick ? AGENT_TURN_POLL_MS : IDLE_POLL_MS,
-    // A board that belongs to no chat has no game to read.
-    active: active && sessionId !== null,
+    active,
+    quick: owesAgentShot,
     failureMessage: 'The board could not be read. Check that Localix is running, then retry.',
   })
-  useEffect(() => setQuick(owesAgentShot(polled.snapshot)), [polled.snapshot])
-
-  const { send } = polled
-  const act = useCallback(
-    (action: string, body: object) => send(body, { path: `${ROUTE_PATH}/game/${action}${table}` }),
-    [send, table],
-  )
+  const { act } = game
 
   return {
-    ...polled,
-    /** Whether this board belongs to a chat — a board opened outside one has no table. */
-    hasTable: sessionId !== null,
+    ...game,
     fire: (cell: number) => act('fire', { cell }),
     reshuffle: () => act('reshuffle', {}),
     newGame: (first?: Player) => act('new', first ? { first } : {}),

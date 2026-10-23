@@ -1,4 +1,4 @@
-import { readLandingStyles } from '../../scripts/read-styles'
+import { readLandingStyles } from '../testing/read-styles'
 import { expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 

@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test'
 import { estimateMessagesTokens, type ChatMessage, type ContextCheckpoint } from '@localixai/agent'
 
 import { resolveContextBudgetFrame } from '../../context-budget'
-import { persistedRow } from '../test-fixtures'
+import { persistedRow } from '../testing/test-fixtures'
 import { checkpointStage } from './checkpoint'
 
 test('host provenance carries an internal delegator correction into an evicted epoch card', async () => {

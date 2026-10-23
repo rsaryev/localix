@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { createRestRoutes } from './routes'
-import { createMemoryCollection } from './collection/memory'
+import { createMemoryCollection } from './collection/testing/memory'
 import type { EnvironmentService } from './environments/service'
 import { RestError } from './errors'
 

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
 import { fixesExecution, readPendingTurn, sameSurface } from './entry'
-import { entry, event, person, report } from './test-entries'
+import { entry, event, person, report } from './testing/test-entries'
 
 describe('what kind of entry an admission makes', () => {
   test('each producer shape is its own kind', () => {

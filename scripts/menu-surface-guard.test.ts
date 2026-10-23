@@ -49,25 +49,8 @@ const RADIX_MENU_IMPORT =
 const HAND_ROLLED_DANGER_ITEM =
   /<(?:ContextMenu|DropdownMenu)(?:Item|CheckboxItem|SubTrigger)\b[^>]*className=\{?["'][^"'}]*text-(?:status-error|destructive)/u
 
-/**
- * A submenu's panel, and whether it is portalled.
- *
- * Rendered inline, Radix puts `SubContent` INSIDE the parent panel — and the parent panel is
- * `overflow-y-auto overscroll-contain`, so the submenu was clipped to its box: invisible in the
- * dropdown family, and mispositioned in both, because a clipped element also loses the collision
- * measurements Radix flips a side on. Both families shipped that way at once, which is exactly the
- * kind of shared defect this file exists to keep from coming back.
- */
-function subContentIsPortalled(source: string): boolean {
-  const start = source.indexOf('SubContent = React.forwardRef')
-  if (start < 0) return false
-  const body = source.slice(start, source.indexOf('displayName', start))
-  // The JSX `<` is what separates the rendered element from the `typeof …Primitive.SubContent`
-  // in the forwardRef's type arguments, which names the same symbol two lines above it.
-  const panel = body.search(/<\w+Primitive\.SubContent\b/u)
-  const portal = body.search(/<\w+Primitive\.Portal\b/u)
-  return panel >= 0 && portal >= 0 && portal < panel
-}
+// Whether a menu family portals its submenu panel is pinned by the kit's menu-rows DOM test,
+// which renders both families and checks the open submenu is not inside the root panel.
 
 interface Offence {
   readonly path: string
@@ -142,15 +125,6 @@ describe('menu surface guard', () => {
     expect(report(offences)).toBe('')
   })
 
-  test('every menu family portals its submenu panel', async () => {
-    const offences: string[] = []
-    for (const path of PRIMITIVE_OWNERS) {
-      const source = await Bun.file(`${REPO_ROOT}/${path}`).text()
-      if (!subContentIsPortalled(source)) offences.push(`${path} — SubContent is not portalled`)
-    }
-    expect(offences.join('\n')).toBe('')
-  })
-
   test('positive control: each detector reports its planted defect', () => {
     const plantedRadixImport = `import { ContextMenu } from 'radix-ui'\n`
     expect(scan(plantedRadixImport, RADIX_MENU_IMPORT)).toEqual([1])
@@ -165,27 +139,6 @@ describe('menu surface guard', () => {
       '>',
     ].join('\n')
     expect(scanOpeningTags(plantedWrappedDanger, HAND_ROLLED_DANGER_ITEM)).toEqual([1])
-
-    const plantedInlineSubContent = [
-      'const DropdownMenuSubContent = React.forwardRef<X, Y>((props, ref) => (',
-      '  <DropdownMenuPrimitive.SubContent ref={ref} {...props} />',
-      '))',
-      'DropdownMenuSubContent.displayName = "x"',
-    ].join('\n')
-    expect(subContentIsPortalled(plantedInlineSubContent)).toBe(false)
-    expect(
-      subContentIsPortalled(
-        plantedInlineSubContent.replace(
-          '  <DropdownMenuPrimitive.SubContent ref={ref} {...props} />',
-          [
-            '  <DropdownMenuPrimitive.Portal>',
-            '    <DropdownMenuPrimitive.SubContent ref={ref} {...props} />',
-            '  </DropdownMenuPrimitive.Portal>',
-          ].join('\n'),
-        ),
-      ),
-    ).toBe(true)
-
     // …and stays quiet on the shapes it must not claim: the sanctioned `tone`, and a red label
     // that merely sits inside a menu item.
     expect(

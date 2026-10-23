@@ -51,9 +51,13 @@ A game whose other side can be the decision model keeps the choice with its tabl
 over the legal moves; a miss comes back as the reason the board shows), and offers the choice with
 `OpponentMenu` from `@localixai/kit/opponent-menu`. Show the miss with `GameProblem` from
 `@localixai/kit/game-status`, over the board, with Ask again and the other opponent as its actions.
+
 The bundled games are the examples. Ask after the person's request has answered, with
 `decisionTurns` from `@localixai/plugin-sdk/backend`: the route records the model as thinking and
 returns the person's move at once, and the model's move lands through the store feed.
+`createTurnTable`, from the same entry point, does all of this for a game with one board per chat:
+give it the rules (who owes a turn, the position's key, how a decision is played) and it keeps the
+game, settles the opponent, wakes the agent once per position and plays the model's turns.
 
 ## Follow your own changes
 

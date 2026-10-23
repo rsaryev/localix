@@ -30,3 +30,15 @@ describe('miniAppManifestSchema', () => {
     ).toBe(true)
   })
 })
+
+describe('the manifest author', () => {
+  test('is a bare string or the Claude Code object form, and nothing else', () => {
+    const author = (value: unknown) =>
+      miniAppManifestSchema.safeParse({ name: 'calories', author: value }).success
+    expect(author('Ada')).toBe(true)
+    expect(author({ name: 'Ada', email: 'ada@example.com', url: 'https://example.com' })).toBe(true)
+    expect(author({})).toBe(true)
+    expect(author(42)).toBe(false)
+    expect(author({ name: 42 })).toBe(false)
+  })
+})

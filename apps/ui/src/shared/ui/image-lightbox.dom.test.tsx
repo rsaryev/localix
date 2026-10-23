@@ -81,3 +81,36 @@ describe('ImageLightbox', () => {
     }
   })
 })
+
+describe('useLightboxPaging', () => {
+  test('opens one image, pages within the list and closes', async () => {
+    const { act } = await import('react')
+    const { createRoot } = await import('react-dom/client')
+    const { useLightboxPaging } = await import('./image-lightbox')
+    const images = [
+      { src: 'blob:a', name: 'a.png' },
+      { src: 'blob:b', name: 'b.png' },
+    ]
+    let paging!: ReturnType<typeof useLightboxPaging<(typeof images)[number]>>
+    function Harness() {
+      paging = useLightboxPaging(images)
+      return null
+    }
+    const root = createRoot(document.createElement('div'))
+    await act(async () => root.render(<Harness />))
+    expect(paging.lightbox.image).toBeNull()
+    expect(paging.lightbox).toMatchObject({ hasPrev: false, hasNext: false })
+
+    await act(async () => paging.open(0))
+    expect(paging.lightbox.image?.name).toBe('a.png')
+    expect(paging.lightbox).toMatchObject({ hasPrev: false, hasNext: true, onPrev: undefined })
+    await act(async () => paging.lightbox.onNext?.())
+    expect(paging.lightbox.image?.name).toBe('b.png')
+    expect(paging.lightbox).toMatchObject({ hasPrev: true, hasNext: false, onNext: undefined })
+    await act(async () => paging.lightbox.onPrev?.())
+    expect(paging.lightbox.image?.name).toBe('a.png')
+    await act(async () => paging.lightbox.onClose())
+    expect(paging.lightbox.image).toBeNull()
+    await act(async () => root.unmount())
+  })
+})

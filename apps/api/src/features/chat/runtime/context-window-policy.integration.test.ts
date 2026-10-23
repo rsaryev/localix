@@ -5,7 +5,7 @@ import {
   runSession,
   sessionDatabasePerFile,
   type TurnLog,
-} from './context-window-session.test-harness'
+} from './testing/context-window-session.test-harness'
 
 sessionDatabasePerFile()
 

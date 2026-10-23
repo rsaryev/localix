@@ -1,6 +1,11 @@
+import { elapsed } from '@localixai/plugin-sdk/agent-wait'
+import { opponentName } from '@localixai/plugin-sdk/opponent'
 import { QUIET_DRAW_PLIES, type Game, type Move, type GameRecord } from '../../shared/game'
 import { moveName } from '../../shared/notation'
 import { other, type Side } from '../../shared/rules'
+
+/** Shared by every game: the wait's clock and the opponent in the person's words. */
+export { elapsed, opponentName }
 
 /**
  * The game in the PERSON's words — the view's headline and what a screen reader announces.
@@ -11,10 +16,6 @@ import { other, type Side } from '../../shared/rules'
  */
 
 export const colour = (side: Side) => (side === 'white' ? 'White' : 'Black')
-
-/** Who plays the other colour at this table, in the person's words. */
-export const opponentName = (game: Pick<Game, 'opponent'>) =>
-  game.opponent === 'decision' ? 'The decision model' : 'The agent'
 
 /** " · Score 2–1, 3 draws" — the table's running score, empty before the first game ends. */
 export function scoreLine(record: GameRecord): string {
@@ -60,10 +61,3 @@ export function announcement(game: Game): string {
 
 /** Which colour the person plays next game — the other one. */
 export const nextColour = (game: Game) => `you play ${colour(other(game.you)).toLowerCase()}`
-
-/** "12s", "1m 05s" — how long the agent has been thinking. */
-export function elapsed(ms: number): string {
-  const seconds = Math.max(0, Math.floor(ms / 1000))
-  if (seconds < 60) return `${seconds}s`
-  return `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(2, '0')}s`
-}

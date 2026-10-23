@@ -53,8 +53,7 @@ paths are not stored here.
 
 The initial eight homepage captures are unretouched 4800×3000 PNGs, captured natively at 3× density
 with a 1600×1000 viewport. Composition is set in the product by arranging panels and scrolling the
-transcript. The homepage's generator preserves the original pixels and selects the dated images in
-place of their placeholder slots.
+transcript.
 
 The composer-context frame shows automatic open-file and terminal links, their sources and sizes. It
 belongs to workspace context guidance; it does not show a context checkpoint or a selected code

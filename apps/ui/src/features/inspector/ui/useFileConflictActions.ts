@@ -6,10 +6,9 @@ import { baseName, errorMessage } from '@localixai/plugin-sdk/ui/utilities'
 import { composeOnSaveContent, getSaveCleanupPrefs } from '@/shared/ui/code-editor/saveCleanup'
 import { reloadGuard } from '../lib/reloadGuard'
 import { fileEditorOwnerKey } from '../model/fileDrafts'
-import { fileContentCache } from '../model/fileContentCache'
 import { buildCompareDiff } from '../lib/compare-diff'
 import type { FileConflict, FileEditorWriteState } from './fileEditorContracts'
-import { trackFileSaveTask } from './fileSaveTask'
+import { adoptWrittenFile, trackFileSaveTask } from './fileSaveTask'
 
 interface FileConflictActionsOptions extends FileEditorWriteState {
   sessionId: string | null
@@ -52,23 +51,22 @@ export function useFileConflictActions({
       if (editPath) reloadGuard.markSaving(fileEditorOwnerKey(sessionId, editPath))
       try {
         const composed = composeOnSaveContent(savedBuffer, null, getSaveCleanupPrefs())
-        const res = await backendClient.writeFileContent(sessionId, path, composed, c.diskHash)
-        baseHashRef.current = res.hash
-        baseContentRef.current = composed
-        setBaseHash(res.hash)
-        setBaseContent(composed)
-        if (bufferRef.current === savedBuffer) {
-          bufferRef.current = composed
-          setBuffer(composed)
-          lastSyncedRef.current = composed
-          if (editPath && composed !== savedBuffer)
-            void backendClient.lspChange(sessionId, editPath, composed)
-          if (editPath) void backendClient.lspSave(sessionId, editPath)
-        }
-        setConflict(null)
+        const written = await backendClient.writeFileContent(sessionId, path, composed, c.diskHash)
+        adoptWrittenFile(
+          {
+            bufferRef,
+            baseContentRef,
+            baseHashRef,
+            lastSyncedRef,
+            setBaseHash,
+            setBaseContent,
+            setBuffer,
+            setConflict,
+          },
+          { sessionId, path, editPath, savedBuffer, composed, written },
+        )
         setEditError(null)
         // No success row: the reconcile banner closes and the tab turns clean where it was clicked.
-        fileContentCache.putText(sessionId, path, res.path, composed, res.hash)
         return true
       } catch (err) {
         toast.error(`Could not overwrite “${baseName(path)}” on disk`, {

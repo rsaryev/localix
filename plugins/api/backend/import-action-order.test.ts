@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { runImportAction } from './import-action'
-import { createMemoryCollection } from './collection/memory'
+import { createMemoryCollection } from './collection/testing/memory'
 
 test('vaults the whole batch before saving requests, then saves environments', async () => {
   const store = createMemoryCollection()

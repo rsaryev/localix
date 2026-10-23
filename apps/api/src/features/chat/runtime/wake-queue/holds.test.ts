@@ -10,7 +10,7 @@ import {
   takeExpectedReport,
 } from '../../../agent-core/delegation-awaits'
 import { heldEntries, MAX_REPORT_HOLD_MS } from './holds'
-import { event, QUEUED_AT, report } from './test-entries'
+import { event, QUEUED_AT, report } from './testing/test-entries'
 
 afterEach(() => __resetExpectedReports())
 

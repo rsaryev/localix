@@ -1,11 +1,11 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { assetBindings } from '@localixai/agent'
 import type { MessageBinding } from '@/shared/api/contracts'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 import { mediaSrc } from '@/shared/lib/mediaSrc'
 import { attachmentRenderKind, isFigureRender } from '@/shared/lib/attachmentRender'
 import { FileChip, FileChipStrip } from '@localixai/kit/file-chip'
-import { ImageLightbox } from '@/shared/ui/image-lightbox'
+import { ImageLightbox, useLightboxPaging } from '@/shared/ui/image-lightbox'
 import { VoiceMessage } from '@/shared/ui/attachments/VoiceMessage'
 import { ImageFigure, VideoFigure } from './MediaFigure'
 import type { MessageContextBindingDraft } from '@localixai/plugin-sdk/ui'
@@ -79,11 +79,10 @@ export function MessageAttachments({
     })
     return list
   }, [attachments])
-  // Position within `images` currently open in the lightbox, or null.
-  const [zoomIdx, setZoomIdx] = useState<number | null>(null)
+  const paging = useLightboxPaging(images)
   const openImage = (attIndex: number) => {
     const pos = images.findIndex((im) => im.attIndex === attIndex)
-    if (pos >= 0) setZoomIdx(pos)
+    if (pos >= 0) paging.open(pos)
   }
   if (attachments.length === 0) return null
   // Several images in one message sit two-up in a responsive grid; a single one
@@ -149,16 +148,7 @@ export function MessageAttachments({
       {chips.length > 0 && <FileChipStrip align={align}>{chips}</FileChipStrip>}
 
       {/* Shared fullscreen viewer — ←/→ pages through the message's images. */}
-      <ImageLightbox
-        image={zoomIdx != null ? images[zoomIdx] : null}
-        onClose={() => setZoomIdx(null)}
-        onPrev={zoomIdx != null && zoomIdx > 0 ? () => setZoomIdx(zoomIdx - 1) : undefined}
-        onNext={
-          zoomIdx != null && zoomIdx < images.length - 1 ? () => setZoomIdx(zoomIdx + 1) : undefined
-        }
-        hasPrev={zoomIdx != null && zoomIdx > 0}
-        hasNext={zoomIdx != null && zoomIdx < images.length - 1}
-      />
+      <ImageLightbox {...paging.lightbox} />
     </div>
   )
 }

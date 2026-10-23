@@ -18,7 +18,7 @@ import {
 import { CHECKPOINT_HIGH_WATER } from '../model-view/checkpoint-policy'
 import { createChatHistoryRun } from './chat-strategy'
 import { createRequestTransform, type RequestTransformInput } from './request-transform'
-import { freshLane, freshView, TEST_IDENTITY } from './test-fixtures'
+import { freshLane, freshView, TEST_IDENTITY } from './testing/test-fixtures'
 
 /** The whole-request ceiling for a window — what the pruner compares a request against. */
 const ceilingOf = (contextWindow: number) =>

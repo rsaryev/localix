@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { createHttpRequestTool } from './http-request'
 import { formatImportPreview } from './import-report'
 import { expandCollection } from './resource-provider'
-import { createMemoryCollection } from './collection/memory'
+import { createMemoryCollection } from './collection/testing/memory'
 import type { RequestAuth } from './request-spec'
 import type { EnvironmentService } from './environments/service'
 

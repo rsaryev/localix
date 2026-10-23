@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 
-import { closeDurable, durableQueue, durableStore, type DurableStore } from './test-durable'
+import { closeDurable, durableQueue, durableStore, type DurableStore } from './testing/test-durable'
 
 /**
  * A durable lease is how long one owner may hold a delivery. Held longer than the delivery takes,

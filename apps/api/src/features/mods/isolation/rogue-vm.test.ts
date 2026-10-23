@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { MAX_PENDING, startModVm, WIRE_LIMITS, type ModVmOptions, type ModVmPort } from './mod-vm'
-import { manualClock } from './testing-mods'
+import { manualClock } from './testing/testing-mods'
 
 /**
  * The host's side of a mod's VM facing a runtime that does not play by the rules — what a module

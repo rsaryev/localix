@@ -30,3 +30,13 @@ export async function defaultOpponent(
 /** What a game's agent tool says when the decision model holds the seat it would move from. */
 export const DECISION_HOLDS_SEAT =
   'The decision model plays your side at this table. The user can switch the opponent back to you on the board.'
+
+/** Who plays the other side at a table, in the person's words; an unsettled table is the agent's. */
+export const opponentName = (table: { opponent: Opponent | null }) =>
+  table.opponent === 'decision' ? 'The decision model' : 'The agent'
+
+/** The other opponent a table offers when the one it has did not answer, in its button's words. */
+export const OTHER_OPPONENT: Record<Opponent, { opponent: Opponent; label: string }> = {
+  agent: { opponent: 'decision', label: 'Use the decision model' },
+  decision: { opponent: 'agent', label: 'Use the chat agent' },
+}

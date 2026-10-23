@@ -18,7 +18,7 @@ const own = (content: string): readonly ContextContribution[] => [
 ]
 
 /** A service over a fake model that counts its calls and their spend. */
-function harness(reply: () => Promise<string> | string = () => 'chat: "Yes, let\'s do it"') {
+function harness(reply: () => unknown = () => 'chat: "Yes, let\'s do it"') {
   const calls: LanguageModelRequest[] = []
   let usage = 0
   let context = 'Assistant: …Want to go through concrete exercises?'
@@ -104,6 +104,17 @@ describe('the inline completion answer cache', () => {
     expect((await h.ask()).outcome).toBe('empty')
     expect((await h.ask()).outcome).toBe('empty')
     expect(h.calls).toHaveLength(1)
+  })
+})
+
+describe('a reply in content blocks', () => {
+  it('reads only the text blocks, joined in order', async () => {
+    const h = harness(() => [
+      { type: 'thinking', thinking: 'chat: "no"' },
+      { type: 'text', text: 'chat: "Ye' },
+      { type: 'text', text: 's"' },
+    ])
+    expect((await h.ask()).completions).toEqual({ chat: 'Yes' })
   })
 })
 

@@ -9,7 +9,7 @@ import path from 'node:path'
 
 import type { PersistedMessage } from '../../../contracts'
 import { createMediaStore } from '../../../../media/store'
-import { persistedRow } from '../test-fixtures'
+import { persistedRow } from '../testing/test-fixtures'
 import { findActiveInvocationIndex, toModelPayloads } from './media'
 
 const seam = (messages: PersistedMessage[], deps = {}) => toModelPayloads(messages, deps)

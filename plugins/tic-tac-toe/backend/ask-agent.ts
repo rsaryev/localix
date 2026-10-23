@@ -1,7 +1,7 @@
-import { askAgentForTurn, type Seat, type Wake } from '@localixai/plugin-sdk/backend'
+import type { Seat, Wake } from '@localixai/plugin-sdk/backend'
 
 import { drawBoard, lastMoveLine, recordLine, threatLine } from '../shared/describe'
-import { freeCells, type AgentWait, type Game } from '../shared/game'
+import { freeCells, type Game } from '../shared/game'
 
 /**
  * HOW THE BOARD ASKS THE AGENT FOR ITS MOVE — the plugin's side of the host's wake contract.
@@ -44,14 +44,3 @@ export function askForMove(game: Game): string {
  * position are the same wake while it still waits for its turn.
  */
 export const positionKey = (game: Game) => `${game.id}:${game.moves.length}`
-
-/** The wait the view shows after asking — or the reason nobody was asked. */
-export async function askAgent(
-  wake: Wake | undefined,
-  seat: Seat,
-  game: Game,
-  now: string,
-): Promise<AgentWait> {
-  const turn = { message: askForMove(game), tools: ANSWER_TOOLS, key: positionKey(game) }
-  return askAgentForTurn(wake, seat, turn, now)
-}

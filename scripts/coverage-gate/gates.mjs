@@ -58,15 +58,19 @@ export function changedLines(diff) {
  * }} input `sources` lists, per package, every source file that has code to cover
  */
 export function evaluate({ coverage, sources, baseline, changed, diffThreshold = 80 }) {
+  const listedUnloaded = new Set(baseline.unloaded)
   const packages = Object.entries(sources)
     .filter(([, files]) => files.length > 0)
     .map(([pkg, files]) => {
       let covered = 0
       let total = 0
+      // Untested lines of files a test loads for the first time: coverage gained, not lost.
+      let firstLoaded = 0
       for (const file of files) {
         for (const hits of coverage.get(file)?.values() ?? []) {
           total++
           if (hits > 0) covered++
+          else if (listedUnloaded.has(file)) firstLoaded++
         }
       }
       const floor = baseline.floors[pkg] ?? null
@@ -75,8 +79,18 @@ export function evaluate({ coverage, sources, baseline, changed, diffThreshold =
       const uncovered = total - covered
       const ok =
         floor !== null &&
-        (measured >= floor || (maxUncovered !== null && uncovered <= maxUncovered))
-      return { pkg, covered, total, percent: measured, floor, uncovered, maxUncovered, ok }
+        (measured >= floor || (maxUncovered !== null && uncovered - firstLoaded <= maxUncovered))
+      return {
+        pkg,
+        covered,
+        total,
+        percent: measured,
+        floor,
+        uncovered,
+        maxUncovered,
+        firstLoaded,
+        ok,
+      }
     })
 
   const sourceSet = new Set(Object.values(sources).flat())
@@ -154,8 +168,11 @@ export function ratchet(baseline, measured, { adopt = false } = {}) {
   for (const row of measured.packages) {
     const previous = baseline.floors[row.pkg]
     floors[row.pkg] = previous === undefined ? row.percent : Math.max(previous, row.percent)
+    // Files a test loaded for the first time leave the unloaded list, so their untested lines join
+    // the count the ceiling holds from now on.
     const ceiling = baseline.uncovered?.[row.pkg]
-    uncovered[row.pkg] = ceiling === undefined ? row.uncovered : Math.min(ceiling, row.uncovered)
+    uncovered[row.pkg] =
+      ceiling === undefined ? row.uncovered : Math.min(ceiling + row.firstLoaded, row.uncovered)
   }
   const stale = new Set(measured.unloaded.stale)
   const kept = baseline.unloaded.filter((file) => !stale.has(file))

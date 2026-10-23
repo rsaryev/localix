@@ -3,8 +3,8 @@ import { zValidator } from '../../lib/validator'
 import { z } from 'zod'
 
 import { defaultErrorHandler } from '../../lib/http'
-import { argOptionSchema, type ArgOption } from './arg-options'
-import { listOutputStylesResponseSchema, type OutputStyleSummary } from './output-style-listing'
+import { argOptionSchema } from './arg-options'
+import { listOutputStylesResponseSchema } from './output-style-listing'
 import type { AppContext } from '../../app'
 import {
   addMarketplaceRequestSchema,
@@ -18,61 +18,29 @@ import {
   pluginRecordSchema,
   removePluginRequestSchema,
   setPluginConfigRequestSchema,
-  type InstallPluginRequest,
-  type ListPluginCommandsResponse,
-  type ListPluginsResponse,
-  type PluginViewSpec,
-  type PluginRecord,
-  type RemovePluginRequest,
-  type SetPluginConfigRequest,
-  type SetPluginEnabledRequest,
-  type InvokePluginUiActionRequest,
 } from './contracts'
+import type { PluginService } from './service-types'
 
-export interface PluginRoutesService {
-  listPlugins(userId: string, opts?: { projectId?: string | null }): Promise<ListPluginsResponse>
-  listPluginCommands(
-    userId: string,
-    opts?: { projectId?: string | null },
-  ): Promise<ListPluginCommandsResponse>
-  resolvePluginArgOptions(
-    userId: string,
-    input: {
-      plugin: string
-      command: string
-      arg: string
-      query?: string
-      sessionId?: string
-      projectId?: string | null
-    },
-  ): Promise<{ options: ArgOption[] }>
-  listPluginViews(
-    userId: string,
-    opts?: { projectId?: string | null },
-  ): Promise<{ views: PluginViewSpec[] }>
-  listOutputStyles(
-    userId: string,
-    opts?: { projectId?: string | null },
-  ): Promise<{ styles: OutputStyleSummary[] }>
-  getViewHtml(
-    userId: string,
-    input: { pluginName: string; viewId: string; projectId?: string | null },
-  ): Promise<{ html: string }>
-  resolveUiFile(userId: string, input: { pluginName: string; file: string }): Promise<string>
-  invokeUiAction(userId: string, input: InvokePluginUiActionRequest): Promise<{ result: unknown }>
-  setEnabled(userId: string, input: SetPluginEnabledRequest): Promise<PluginRecord>
-  setConfig(userId: string, input: SetPluginConfigRequest): Promise<PluginRecord>
-  install(userId: string, input: InstallPluginRequest): Promise<PluginRecord>
-  update(userId: string, input: RemovePluginRequest): Promise<PluginRecord>
-  /** May return dependent-plugin warnings (the HTTP route still replies 204). */
-  remove(userId: string, input: RemovePluginRequest): Promise<{ warnings: string[] } | void>
-  addMarketplace(
-    userId: string,
-    input: { source: string },
-  ): Promise<{ name: string; count: number }>
-  listMarketplaces(userId: string): Promise<{ name: string; builtin: boolean; count: number }[]>
-  removeMarketplace(userId: string, input: { name: string }): Promise<unknown>
-}
+/** The slice of the plugin service these routes call. */
+export type PluginRoutesService = Pick<
+  PluginService,
+  | 'listPlugins'
+  | 'listPluginCommands'
+  | 'resolvePluginArgOptions'
+  | 'listPluginViews'
+  | 'listOutputStyles'
+  | 'getViewHtml'
+  | 'resolveUiFile'
+  | 'invokeUiAction'
+  | 'setEnabled'
+  | 'setConfig'
+  | 'install'
+  | 'update'
+  | 'remove'
+  | 'addMarketplace'
+  | 'listMarketplaces'
+  | 'removeMarketplace'
+>
 
 export function createPluginRoutes(service: PluginRoutesService) {
   const app = new Hono<AppContext>()

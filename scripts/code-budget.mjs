@@ -1,8 +1,9 @@
 #!/usr/bin/env bun
 // The product code budget: Localix stays under `limit` lines of code (config/code-budget.json).
 // A line counts when it holds code; comments and blank lines do not, so explaining code never
-// costs budget. Only what ships counts: tests, test helpers, generated and vendored code, and the
-// tooling that builds, checks and tests the product (see `exclude` in the config) do not.
+// costs budget. Only the host counts: tests, test helpers, generated and vendored code, the
+// bundled mini apps and plugins in plugins/, and the tooling that builds, checks and tests the
+// product (see `exclude` in the config) do not.
 //
 //   bun run check:size          fails when the product code is over the limit
 //

@@ -1,5 +1,10 @@
+import { elapsed } from '@localixai/plugin-sdk/agent-wait'
+import { opponentName } from '@localixai/plugin-sdk/opponent'
 import { lineName } from '../../shared/describe'
 import { cellName, type Game, type Move, type GameRecord } from '../../shared/game'
+
+/** Shared by every game: the wait's clock and the opponent in the person's words. */
+export { elapsed, opponentName }
 
 /**
  * The game in the PERSON's words — the view's headline and what a screen reader announces.
@@ -8,10 +13,6 @@ import { cellName, type Game, type Move, type GameRecord } from '../../shared/ga
  * is looking at the board ("Your turn", "The agent won with the top row"). Pure, so every state the
  * board can be in has a sentence a test can read.
  */
-
-/** Who plays O at this table, in the person's words. */
-export const opponentName = (game: Pick<Game, 'opponent'>) =>
-  game.opponent === 'decision' ? 'The decision model' : 'The agent'
 
 /** "The agent played the top left (cell 1)." */
 export const moveSentence = (move: Move, game: Pick<Game, 'opponent'>) =>
@@ -46,11 +47,4 @@ export function scoreLine(record: GameRecord): string {
   if (record.won + record.lost + record.draw === 0) return ''
   const draws = record.draw === 1 ? '1 draw' : `${record.draw} draws`
   return ` · Score ${record.won}–${record.lost}, ${draws}`
-}
-
-/** "12s", "1m 05s" — how long the agent has been thinking. */
-export function elapsed(ms: number): string {
-  const seconds = Math.max(0, Math.floor(ms / 1000))
-  if (seconds < 60) return `${seconds}s`
-  return `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(2, '0')}s`
 }

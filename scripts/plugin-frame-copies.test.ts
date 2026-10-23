@@ -89,14 +89,17 @@ describe('the template frame in bundled plugins', () => {
       recursive: true,
       filter: (src) => !src.includes('node_modules'),
     })
-    const useNow = readFileSync(join(template, 'ui', 'useNow.ts'), 'utf8')
     const write = (plugin: string, file: string, text: string) => {
       cpSync(templateCopy, join(plugins, plugin), { recursive: true })
       writeFileSync(join(plugins, plugin, file), text)
     }
 
+    // The real frame files re-export the SDK, so the control gives the template copy a frame file
+    // with a body of its own and plants a copy of it that drifted.
     test('positive control: a copy that drifted is reported', () => {
-      write('drifted', 'ui/useNow.ts', useNow.replace('setTimeout(tick, 0)', 'setTimeout(tick, 1)'))
+      const body = 'export function useNow() {\n  return setTimeout(() => {}, 0)\n}\n'
+      writeFileSync(join(templateCopy, 'ui', 'useNow.ts'), body)
+      write('drifted', 'ui/useNow.ts', body.replace('0)', '1)'))
       expect(driftedCopies(plugins, templateCopy)).toContain('drifted/ui/useNow.ts')
     })
 

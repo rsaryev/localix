@@ -5,7 +5,12 @@ import type { McpClientLike } from '../../mcp/mcp-wire'
 import { McpAuthenticationRequiredError } from '../../mcp/mcp-connect'
 import type { McpServerRecord } from '../../mcp/repository'
 import { createMcpConditions } from './mcp'
-import { createTestJournal, openRows, TEST_USER as U, type TestJournal } from './test-journal'
+import {
+  createTestJournal,
+  openRows,
+  TEST_USER as U,
+  type TestJournal,
+} from './testing/test-journal'
 
 const journals: TestJournal[] = []
 afterEach(async () => {

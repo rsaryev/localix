@@ -21,11 +21,12 @@ const DbConnectionTab = lazy(() =>
 )
 const DbTableTab = lazy(() => import('./DbTableTab').then((m) => ({ default: m.DbTableTab })))
 const DbDiagramTab = lazy(() => import('./DbDiagramTab').then((m) => ({ default: m.DbDiagramTab })))
-const KvConsoleTab = lazy(() => import('./KvConsoleTab').then((m) => ({ default: m.KvConsoleTab })))
-const DocConsoleTab = lazy(() =>
-  import('./DocConsoleTab').then((m) => ({ default: m.DocConsoleTab })),
-)
-const EsConsoleTab = lazy(() => import('./EsConsoleTab').then((m) => ({ default: m.EsConsoleTab })))
+/** The non-SQL consoles share one prop shape, so each engine kind maps straight to its tab. */
+const ENGINE_CONSOLE_TABS = {
+  kv: lazy(() => import('./KvConsoleTab').then((m) => ({ default: m.KvConsoleTab }))),
+  document: lazy(() => import('./DocConsoleTab').then((m) => ({ default: m.DocConsoleTab }))),
+  search: lazy(() => import('./EsConsoleTab').then((m) => ({ default: m.EsConsoleTab }))),
+}
 /** The `.sql` file editor takes FileEditorProps as-is, so its lazy tab IS the body. */
 export const SqlFileEditorBody = lazy(() =>
   import('./SqlFileTab').then((m) => ({ default: m.SqlFileTab })),
@@ -82,9 +83,10 @@ export function DbConsoleBody({
   const kind = DIALECT_KIND[dialect]
   // The consoles read their chat themselves (`useSqlNextEdit`, `useDbConsoleCommands`).
   if (!sessionId) return NO_CHAT
-  if (kind === 'kv')
+  if (kind !== 'sql') {
+    const EngineConsoleTab = ENGINE_CONSOLE_TABS[kind]
     return (
-      <KvConsoleTab
+      <EngineConsoleTab
         key={item.id}
         consoleId={consoleId}
         connectionId={connectionId}
@@ -92,26 +94,7 @@ export function DbConsoleBody({
         publishMessageContext={publishMessageContext}
       />
     )
-  if (kind === 'document')
-    return (
-      <DocConsoleTab
-        key={item.id}
-        consoleId={consoleId}
-        connectionId={connectionId}
-        dbLabel={dbLabel}
-        publishMessageContext={publishMessageContext}
-      />
-    )
-  if (kind === 'search')
-    return (
-      <EsConsoleTab
-        key={item.id}
-        consoleId={consoleId}
-        connectionId={connectionId}
-        dbLabel={dbLabel}
-        publishMessageContext={publishMessageContext}
-      />
-    )
+  }
   return (
     <DbConsoleTab
       key={item.id}

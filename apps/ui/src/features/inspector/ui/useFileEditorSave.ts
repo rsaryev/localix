@@ -8,7 +8,7 @@ import { reloadGuard } from '../lib/reloadGuard'
 import { fileEditorOwnerKey } from '../model/fileDrafts'
 import { fileContentCache } from '../model/fileContentCache'
 import type { FileEditorWriteState, FormatOnSaveRunner } from './fileEditorContracts'
-import { trackFileSaveTask } from './fileSaveTask'
+import { adoptWrittenFile, trackFileSaveTask } from './fileSaveTask'
 
 interface FileEditorSaveOptions extends FileEditorWriteState {
   sessionId: string | null
@@ -79,26 +79,26 @@ export function useFileEditorSave({
           formatted = await runFormat(savedBuffer)
         }
         // Compose cleanup before the write and adopt those exact persisted bytes.
-        // Keeping the buffer/base snapshot byte-identical to disk is load-bearing:
-        // otherwise the editor can report clean while displaying different text.
         const composed = composeOnSaveContent(savedBuffer, formatted, getSaveCleanupPrefs())
-        const res = await backendClient.writeFileContent(sessionId, path, composed, savedBaseHash)
-        baseHashRef.current = res.hash
-        baseContentRef.current = composed
-        setBaseHash(res.hash)
-        setBaseContent(composed)
-        if (bufferRef.current === savedBuffer) {
-          bufferRef.current = composed
-          setBuffer(composed)
-          lastSyncedRef.current = composed
-          if (editPath && composed !== savedBuffer)
-            void backendClient.lspChange(sessionId, editPath, composed)
-          // The one place the language server hears "saved" — servers that check on save
-          // (rust-analyzer, linters) run then, not on every pause in typing.
-          if (editPath) void backendClient.lspSave(sessionId, editPath)
-        }
-        setConflict(null)
-        fileContentCache.putText(sessionId, path, res.path, composed, res.hash)
+        const written = await backendClient.writeFileContent(
+          sessionId,
+          path,
+          composed,
+          savedBaseHash,
+        )
+        adoptWrittenFile(
+          {
+            bufferRef,
+            baseContentRef,
+            baseHashRef,
+            lastSyncedRef,
+            setBaseHash,
+            setBaseContent,
+            setBuffer,
+            setConflict,
+          },
+          { sessionId, path, editPath, savedBuffer, composed, written },
+        )
         return true
       } catch (err) {
         const raw = errorMessage(err, '')

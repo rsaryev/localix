@@ -9,7 +9,12 @@ import { loadEnabledPlugins } from '../../plugins/loader'
 import { makeContext } from '../../plugins/native'
 import { pluginProblemReporter } from '../../plugins/problem-reporter'
 import { createPluginConditions, observePluginConditions, recordPluginCatalogLoad } from './plugins'
-import { createTestJournal, openRows, TEST_USER as U, type TestJournal } from './test-journal'
+import {
+  createTestJournal,
+  openRows,
+  TEST_USER as U,
+  type TestJournal,
+} from './testing/test-journal'
 
 const journals: TestJournal[] = []
 afterEach(async () => {

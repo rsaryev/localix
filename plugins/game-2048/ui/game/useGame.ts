@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useCallback } from 'react'
+import { useTableGame } from '@localixai/plugin-sdk/ui/game-table'
 
 import { agentPlays, gameSchema, type Direction, type Mode, type Opponent } from '../../shared/game'
 import { ROUTE_PATH } from '../../shared/resource'
-import { useStoreSnapshot } from '../useStoreSnapshot'
 
 /**
  * The board's state and the things a person can do to it.
@@ -14,37 +13,20 @@ import { useStoreSnapshot } from '../useStoreSnapshot'
  * look for itself — quickly while the agent plays, slowly otherwise.
  */
 
-/** While the agent plays and the feed is not live, how often the board looks for its moves. */
-export const AGENT_PLAY_POLL_MS = 800
-export const IDLE_POLL_MS = 4000
-
 export function useGame(active: boolean) {
-  const sessionId = useWorkItemSessionId()
-  const table = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ''
-  const [quick, setQuick] = useState(false)
-  const polled = useStoreSnapshot({
+  const game = useTableGame({
     plugin: 'game-2048',
-    sessionId,
-    path: `${ROUTE_PATH}/game${table}`,
+    route: ROUTE_PATH,
     schema: gameSchema,
-    intervalMs: quick ? AGENT_PLAY_POLL_MS : IDLE_POLL_MS,
-    // A board that belongs to no chat has no game to read.
-    active: active && sessionId !== null,
+    active,
+    quick: agentPlays,
     failureMessage: 'The board could not be read. Check that Localix is running, then retry.',
   })
-  useEffect(() => setQuick(agentPlays(polled.snapshot)), [polled.snapshot])
-
-  const { send } = polled
-  const act = useCallback(
-    (action: string, body: object) => send(body, { path: `${ROUTE_PATH}/game/${action}${table}` }),
-    [send, table],
-  )
+  const { act } = game
   const play = useCallback((direction: Direction) => act('move', { direction }), [act])
 
   return {
-    ...polled,
-    /** Whether this board belongs to a chat — a board opened outside one has no table. */
-    hasTable: sessionId !== null,
+    ...game,
     play,
     newGame: (mode: Mode) => act('new', { mode }),
     setMode: (mode: Mode) => act('mode', { mode }),

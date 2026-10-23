@@ -4,7 +4,12 @@ import type { TriggerRecord } from '../../triggers/contracts'
 import { createWakeDelivery } from '../../triggers/delivery'
 import { flush, triggerHarness } from '../../triggers/test-harness'
 import { createTriggerConditions, createWakeNotices, FAILING_STREAK } from './triggers'
-import { createTestJournal, openRows, TEST_USER as U, type TestJournal } from './test-journal'
+import {
+  createTestJournal,
+  openRows,
+  TEST_USER as U,
+  type TestJournal,
+} from './testing/test-journal'
 
 const journals: TestJournal[] = []
 afterEach(async () => {
@@ -95,6 +100,34 @@ describe('a loop that keeps failing', () => {
       ])
     } finally {
       await h.close()
+    }
+  })
+})
+
+describe('what a loop row offers', () => {
+  it('a failing loop and a stranded one both come from the loop and open its chat', async () => {
+    const test = await journal()
+    const triggers = createTriggerConditions(test.journal)
+    triggers.fireSettled(loop(), { ok: false, streak: FAILING_STREAK, error: 'boom' })
+    triggers.routeStranded(loop())
+    const open = await openRows(test)
+    expect(open.map((row) => row.title).sort()).toEqual([
+      'A scheduled loop has no model to run on',
+      'Could not run a scheduled loop',
+    ])
+    for (const row of open) {
+      expect(row).toMatchObject({
+        origin: { kind: 'session', sessionId: 'S1', projectId: null, label: 'Loop' },
+        actions: [
+          {
+            id: 'open-session',
+            label: 'Open chat',
+            kind: 'navigate',
+            target: { kind: 'session', sessionId: 'S1', projectId: null },
+            available: true,
+          },
+        ],
+      })
     }
   })
 })

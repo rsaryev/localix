@@ -13,8 +13,8 @@ What a copy is made of is declared in `scaffold.json`, and every part of it is l
 - **Domain** — System Overview itself, deleted or rewritten by each copy. Its identifiers are the
   residue the `plugin_build` check reports, so a new one goes on `domainTokens`.
 - **Frame** — everything else, kept byte for byte: `ui/usePolledSnapshot.ts` (polling and `send`),
-  `ui/useStoreSnapshot.ts` (the same, re-read when the store feed nudges), `ui/useNow.ts` (a clock
-  for derived values), `backend/store.ts` (durable state under `ctx.dataDir`),
+  `ui/useStoreSnapshot.ts` (the same, re-read when the store feed nudges), `ui/useNow.ts` (the SDK's
+  `ui/now` clock for derived values), `backend/store.ts` (durable state under `ctx.dataDir`),
   `backend/store-feed.ts` and `shared/store-feed.ts` (the nudge after a store write),
   `shared/schema.ts`. The frame never imports a domain module — replacing the domain must never
   break it, and `scripts/plugin-kit.integration.test.ts` fails the moment it does.

@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useTableGame } from '@localixai/plugin-sdk/ui/game-table'
 
 import {
   playerViewSchema,
@@ -9,7 +8,6 @@ import {
   type Player,
 } from '../../shared/game'
 import { ROUTE_PATH } from '../../shared/resource'
-import { useStoreSnapshot } from '../useStoreSnapshot'
 
 /**
  * The table as the person may see it, and the four things they can do at it.
@@ -20,34 +18,19 @@ import { useStoreSnapshot } from '../useStoreSnapshot'
  * is not live does the table poll — quickly while the agent owes a move, slowly otherwise.
  */
 
-export const AGENT_TURN_POLL_MS = 800
-export const IDLE_POLL_MS = 4000
-
 export function useGame(active: boolean) {
-  const sessionId = useWorkItemSessionId()
-  const table = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ''
-  const [quick, setQuick] = useState(false)
-  const polled = useStoreSnapshot({
+  const game = useTableGame({
     plugin: 'rock-paper-scissors',
-    sessionId,
-    path: `${ROUTE_PATH}/game${table}`,
+    route: ROUTE_PATH,
     schema: playerViewSchema,
-    intervalMs: quick ? AGENT_TURN_POLL_MS : IDLE_POLL_MS,
-    active: active && sessionId !== null,
+    active,
+    quick: viewOwesAgentMove,
     failureMessage: 'The table could not be read. Check that Localix is running, then retry.',
   })
-  useEffect(() => setQuick(viewOwesAgentMove(polled.snapshot)), [polled.snapshot])
-
-  const { send } = polled
-  const act = useCallback(
-    (action: string, body: object) => send(body, { path: `${ROUTE_PATH}/game/${action}${table}` }),
-    [send, table],
-  )
+  const { act } = game
 
   return {
-    ...polled,
-    /** Whether this table belongs to a chat — one opened outside a chat has none. */
-    hasTable: sessionId !== null,
+    ...game,
     play: (move: Move) => act('play', { move }),
     nextRound: (first?: Player) => act('next', first ? { first } : {}),
     remind: () => act('remind', {}),

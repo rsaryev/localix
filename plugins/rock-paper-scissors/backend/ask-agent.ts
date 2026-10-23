@@ -1,7 +1,7 @@
-import { askAgentForTurn, type Seat, type Wake } from '@localixai/plugin-sdk/backend'
+import type { Seat, Wake } from '@localixai/plugin-sdk/backend'
 
 import { describeForAgent } from '../shared/describe'
-import { viewFor, type AgentWait, type Game } from '../shared/game'
+import { viewFor, type Game } from '../shared/game'
 
 /**
  * HOW THE TABLE ASKS THE AGENT FOR ITS MOVE — the plugin's side of the host's wake contract.
@@ -28,14 +28,3 @@ export function askForMove(game: Game): string {
 
 /** One delivery per round: a double click and a reminder for the same round are the same wake. */
 export const roundKey = (game: Game) => `${game.id}:${game.round.id}`
-
-/** The wait the view shows after asking — or the reason nobody was asked. */
-export async function askAgent(
-  wake: Wake | undefined,
-  seat: Seat,
-  game: Game,
-  now: string,
-): Promise<AgentWait> {
-  const turn = { message: askForMove(game), tools: ANSWER_TOOLS, key: roundKey(game) }
-  return askAgentForTurn(wake, seat, turn, now)
-}

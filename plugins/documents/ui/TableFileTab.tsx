@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { resourceMessageBindingDraft, type PublishMessageContext } from '@localixai/plugin-sdk/ui'
-import { localixResourceUri } from '@localixai/plugin-sdk/navigation'
+import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
 import { tableApi } from './api/tableApi'
 import { documentsApi } from './api/documentsApi'
 import type { TableMeta } from './docClient'
@@ -10,6 +9,7 @@ import { documentFailure } from './failure'
 import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
 import { TableTab } from './table/TableTab'
 import { useDocumentProblem } from './problems'
+import { usePublishDocContext } from './usePublishDocContext'
 
 interface TableFileTabProps {
   path: string
@@ -96,22 +96,7 @@ export function TableFileTab({
     }
   }, [sessionId, path, mediaId, name, reloadNonce, workItemVisible])
 
-  useEffect(() => {
-    if (!publishMessageContext) return
-    if (!contextId) {
-      publishMessageContext(null)
-      return
-    }
-    publishMessageContext({
-      strategy: 'replace',
-      bindings: [
-        resourceMessageBindingDraft({
-          uri: localixResourceUri('doc', [contextId]),
-          label,
-        }),
-      ],
-    })
-  }, [contextId, label, publishMessageContext])
+  usePublishDocContext(publishMessageContext, contextId, label)
 
   const problem = useDocumentProblem({
     label,

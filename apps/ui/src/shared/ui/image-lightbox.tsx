@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Check, ChevronLeft, ChevronRight, Copy, Download, X } from 'lucide-react'
 import { Dialog, DialogContent, DialogTitle } from '@localixai/kit/dialog'
 import { MediaOverlayButton, mediaOverlayPillClasses } from '@localixai/kit/media-overlay-button'
@@ -160,4 +161,25 @@ export function ImageLightbox({
       </DialogContent>
     </Dialog>
   )
+}
+
+/**
+ * Paging state for one {@link ImageLightbox} over an ordered list of images: `open(index)` shows
+ * one, and `lightbox` is spread onto the viewer so ←/→ walks the list and stops at both ends.
+ */
+export function useLightboxPaging<T extends { src: string; name: string }>(images: readonly T[]) {
+  const [index, setIndex] = useState<number | null>(null)
+  const hasPrev = index != null && index > 0
+  const hasNext = index != null && index < images.length - 1
+  return {
+    open: setIndex,
+    lightbox: {
+      image: index != null ? (images[index] ?? null) : null,
+      onClose: () => setIndex(null),
+      onPrev: hasPrev ? () => setIndex(index - 1) : undefined,
+      onNext: hasNext ? () => setIndex(index + 1) : undefined,
+      hasPrev,
+      hasNext,
+    },
+  }
 }

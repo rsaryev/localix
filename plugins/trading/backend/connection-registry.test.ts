@@ -4,7 +4,7 @@ import { createConnectionRegistry } from './connection-registry'
 import type { ExchangeBackend } from './backend'
 import type { TradingConnectionConfig } from './contracts'
 import type { SavedTradingConnection, TradingConnectionStore } from './store'
-import { exchangeInfo, stubExchangeBackend } from './test-fixtures'
+import { exchangeInfo, stubExchangeBackend } from './testing/test-fixtures'
 
 /**
  * CHARACTERIZATION of the driver-lifecycle rules that used to be reachable only THROUGH the

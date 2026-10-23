@@ -62,10 +62,11 @@ skills.
 ## Code budget
 
 Product code stays under **500,000 lines**, counted by `bun run check:size` (CI fails above it).
-Comments and blank lines do not count, so explaining code costs nothing. Only what ships counts:
-tests, test helpers, generated and vendored code, and the tooling that builds, checks and tests the
-product (`scripts/`, `apps/*/scripts`, build plugins, lint rules, config files) do not. The limit is
-in `config/code-budget.json` and is not raised. Keep under it by deleting dead code, duplication and
+Comments and blank lines do not count, so explaining code costs nothing. Only the host counts:
+tests, test helpers, generated and vendored code, the bundled mini apps and plugins in `plugins/`,
+and the tooling that builds, checks and tests the product (`scripts/`, `apps/*/scripts`, the UI's
+build hooks in `apps/ui/build`, lint rules, config files) do not. The limit is in
+`config/code-budget.json` and is not raised. Keep under it by deleting dead code, duplication and
 code another package already provides; a change that adds code makes room for it. Never compress
 code or strip comments to fit.
 

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { FileWarning } from 'lucide-react'
-import { resourceMessageBindingDraft, type PublishMessageContext } from '@localixai/plugin-sdk/ui'
-import { localixResourceUri } from '@localixai/plugin-sdk/navigation'
+import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
 import { pluginFiles } from '@localixai/plugin-sdk/ui/runtime'
 import { pluginApiUrl } from '@localixai/plugin-sdk/ui/transport'
 import { LoadingHint } from '@localixai/kit/empty-hint'
@@ -12,6 +11,7 @@ import { PDF_CONTENT_TYPE } from '@localixai/plugin-sdk/ui/file-types'
 import { documentsApi } from './api/documentsApi'
 import { documentFailure } from './failure'
 import { useDocumentProblem } from './problems'
+import { usePublishDocContext } from './usePublishDocContext'
 
 interface PdfFileTabProps {
   path: string
@@ -114,22 +114,7 @@ export function PdfFileTab({
     }
   }, [contextId, mediaId, path, reloadNonce, workItemVisible])
 
-  useEffect(() => {
-    if (!publishMessageContext) return
-    if (!contextId) {
-      publishMessageContext(null)
-      return
-    }
-    publishMessageContext({
-      strategy: 'replace',
-      bindings: [
-        resourceMessageBindingDraft({
-          uri: localixResourceUri('doc', [contextId]),
-          label,
-        }),
-      ],
-    })
-  }, [contextId, label, publishMessageContext])
+  usePublishDocContext(publishMessageContext, contextId, label)
 
   const problem = useDocumentProblem({
     label,

@@ -1,7 +1,12 @@
 import { afterEach, describe, expect, it } from 'bun:test'
 
 import { createConditions, headline, problemFingerprint, subjectPrefix } from './condition'
-import { createTestJournal, openRows, TEST_USER as U, type TestJournal } from './test-journal'
+import {
+  createTestJournal,
+  openRows,
+  TEST_USER as U,
+  type TestJournal,
+} from './testing/test-journal'
 import { recoveryAction } from '../recovery'
 
 const journals: TestJournal[] = []

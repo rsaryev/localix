@@ -3,9 +3,14 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { builtinAgentPreset } from '../capabilities/builtin-agent-presets'
 import { approvedPlanForRun } from '../chat/runtime/plan-view'
 import { planCommentScope } from '../comments/contracts'
-import { WORKSPACE } from './core-call-cases'
-import { CHILD, createPlanLifecycle, ROOT, type PlanLifecycle } from './plan-lifecycle-test-harness'
-import { modeSurface, runRegistry } from './run-surface'
+import { WORKSPACE } from './testing/core-call-cases'
+import {
+  CHILD,
+  createPlanLifecycle,
+  ROOT,
+  type PlanLifecycle,
+} from './testing/plan-lifecycle-test-harness'
+import { modeSurface, runRegistry } from './testing/run-surface'
 
 /**
  * A PLAN FROM PLAN MODE TO DONE, through every seam the server wires (`plan-lifecycle-test-harness.ts`).

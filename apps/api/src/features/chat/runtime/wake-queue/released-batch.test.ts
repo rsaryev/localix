@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 
-import { closeDurable, durableQueue, durableStore, type DurableStore } from './test-durable'
+import { closeDurable, durableQueue, durableStore, type DurableStore } from './testing/test-durable'
 
 /**
  * A RELEASED BATCH: the person's two lines were claimed together, their transcript row was

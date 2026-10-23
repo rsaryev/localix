@@ -49,6 +49,19 @@ function strokePath(
   })
 }
 
+/** The hover a line drawing reports when the pointer is within six pixels of it, else none. */
+export function drawingHit(id: string, distance: number): PrimitiveHoveredItem | null {
+  return distance <= 6
+    ? {
+        externalId: `drawing:${id}`,
+        zOrder: 'normal',
+        distance,
+        hitTestPriority: 1,
+        cursorStyle: 'pointer',
+      }
+    : null
+}
+
 /** A straight segment between two {time, price} points, drawn on the series' pane. */
 export class TrendlinePrimitive implements ISeriesPrimitive<Time> {
   private param: SeriesAttachedParameter<Time> | null = null
@@ -90,16 +103,7 @@ export class TrendlinePrimitive implements ISeriesPrimitive<Time> {
     const length2 = dx * dx + dy * dy
     const t =
       length2 === 0 ? 0 : Math.max(0, Math.min(1, ((x - c.x1) * dx + (y - c.y1) * dy) / length2))
-    const distance = Math.hypot(x - (c.x1 + t * dx), y - (c.y1 + t * dy))
-    return distance <= 6
-      ? {
-          externalId: `drawing:${this.drawing.id}`,
-          zOrder: 'normal',
-          distance,
-          hitTestPriority: 1,
-          cursorStyle: 'pointer',
-        }
-      : null
+    return drawingHit(this.drawing.id, Math.hypot(x - (c.x1 + t * dx), y - (c.y1 + t * dy)))
   }
 
   attached(param: SeriesAttachedParameter<Time>): void {
@@ -164,16 +168,7 @@ export class VerticalLinePrimitive implements ISeriesPrimitive<Time> {
 
   hitTest(x: number): PrimitiveHoveredItem | null {
     if (this.x === null) return null
-    const distance = Math.abs(x - this.x)
-    return distance <= 6
-      ? {
-          externalId: `drawing:${this.drawing.id}`,
-          zOrder: 'normal',
-          distance,
-          hitTestPriority: 1,
-          cursorStyle: 'pointer',
-        }
-      : null
+    return drawingHit(this.drawing.id, Math.abs(x - this.x))
   }
 
   attached(param: SeriesAttachedParameter<Time>): void {

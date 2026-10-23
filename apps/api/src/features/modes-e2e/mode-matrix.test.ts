@@ -5,10 +5,10 @@ import { z } from 'zod'
 import { BUILTIN_AGENTS } from '../agents/builtin'
 import { builtinAgentPreset } from '../capabilities/builtin-agent-presets'
 import { PERMISSION_MODES } from '../../contracts/permission-modes'
-import { loadBundledPluginTools, type LoadedBundledTools } from './bundled-plugin-tools'
-import { CORE_CALL_CASES, WORKSPACE, type CallCase } from './core-call-cases'
-import { contributedCallCases, matrixMismatches, type PresetUnderTest } from './mode-matrix'
-import { modeSurface, runRegistry } from './run-surface'
+import { loadBundledPluginTools, type LoadedBundledTools } from './testing/bundled-plugin-tools'
+import { CORE_CALL_CASES, WORKSPACE, type CallCase } from './testing/core-call-cases'
+import { contributedCallCases, matrixMismatches, type PresetUnderTest } from './testing/mode-matrix'
+import { modeSurface, runRegistry } from './testing/run-surface'
 
 /**
  * EVERY MODE × EVERY TOOL × EVERY SHIPPED PRESET, through the real gate.

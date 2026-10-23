@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import { defaultQueuePolicy } from '../queue-policy'
 import { joinPoint, personSpeaks, queueSourceOf, renderBatch, routeEvent } from './kinds'
-import { entry, event, person, report } from './test-entries'
+import { entry, event, person, report } from './testing/test-entries'
 
 const surface = { capabilities: ['workbench-ui'], catalogs: { 'workbench-ui': 'cat-1' } }
 

@@ -3,7 +3,7 @@ import { defineAgentTool } from '@localixai/agent/agents'
 import type { PluginContext } from '@localixai/plugin-sdk/backend'
 import { z } from 'zod'
 import { createHttpRequestTool } from './http-request'
-import { createMemoryCollection } from './collection/memory'
+import { createMemoryCollection } from './collection/testing/memory'
 import type { EnvironmentService } from './environments/service'
 
 test.each(['store', 'environment', 'vault'] as const)(

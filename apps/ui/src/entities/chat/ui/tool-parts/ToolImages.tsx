@@ -1,7 +1,6 @@
-import { useState } from 'react'
 import type { ToolBackedItem } from '@localixai/agent/agents'
 import { mediaSrc } from '@/shared/lib/mediaSrc'
-import { ImageLightbox } from '@/shared/ui/image-lightbox'
+import { ImageLightbox, useLightboxPaging } from '@/shared/ui/image-lightbox'
 import { IORow } from './ToolIO'
 
 /**
@@ -11,11 +10,11 @@ import { IORow } from './ToolIO'
  * screenshots, an image `read`), because the item field it reads is one field.
  */
 export function ToolImages({ item }: { item: ToolBackedItem }) {
-  const [zoom, setZoom] = useState<number | null>(null)
   const images = (item.attachments ?? []).flatMap((att) => {
     const src = mediaSrc(att)
     return src ? [{ src, name: att.name }] : []
   })
+  const paging = useLightboxPaging(images)
   if (images.length === 0) return null
   return (
     <IORow label="IMG">
@@ -25,20 +24,13 @@ export function ToolImages({ item }: { item: ToolBackedItem }) {
             key={image.src}
             type="button"
             className="overflow-hidden rounded-md border border-border"
-            onClick={() => setZoom(index)}
+            onClick={() => paging.open(index)}
           >
             <img src={image.src} alt={image.name} className="max-h-48 max-w-full object-contain" />
           </button>
         ))}
       </div>
-      <ImageLightbox
-        image={zoom != null ? (images[zoom] ?? null) : null}
-        onClose={() => setZoom(null)}
-        onPrev={zoom != null && zoom > 0 ? () => setZoom(zoom - 1) : undefined}
-        onNext={zoom != null && zoom < images.length - 1 ? () => setZoom(zoom + 1) : undefined}
-        hasPrev={zoom != null && zoom > 0}
-        hasNext={zoom != null && zoom < images.length - 1}
-      />
+      <ImageLightbox {...paging.lightbox} />
     </IORow>
   )
 }

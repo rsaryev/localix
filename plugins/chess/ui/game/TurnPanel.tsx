@@ -3,6 +3,7 @@ import { ActivityOrb } from '@localixai/kit/activity-orb'
 import { Button } from '@localixai/kit/button'
 import { GameProblem, GameStatus } from '@localixai/kit/game-status'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { OTHER_OPPONENT } from '@localixai/plugin-sdk/opponent'
 
 import { owesAgentMove, positionOfGame, turnOf, type Game, type Opponent } from '../../shared/game'
 import {
@@ -59,11 +60,6 @@ export function TurnStatus({ game, now }: { game: Game; now: number }) {
       </p>
     </>
   )
-}
-
-const OTHER_OPPONENT: Record<Opponent, { opponent: Opponent; label: string }> = {
-  agent: { opponent: 'decision', label: 'Use the decision model' },
-  decision: { opponent: 'agent', label: 'Use the chat agent' },
 }
 
 export function TurnProblem({

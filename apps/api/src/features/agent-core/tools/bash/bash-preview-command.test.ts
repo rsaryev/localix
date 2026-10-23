@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { createBashTool } from './bash'
 import type { SpawnTerminalJob, TerminalJobHandle } from '../terminal/terminal-job'
-import { FAST_SETTLE } from './test-settle'
+import { FAST_SETTLE } from './testing/test-settle'
 
 function fakeTerminalHost(url: string): { spawn: SpawnTerminalJob; commands: string[] } {
   const commands: string[] = []

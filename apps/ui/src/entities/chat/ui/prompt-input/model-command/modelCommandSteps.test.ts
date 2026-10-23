@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { modelStepOptions, skipModelStep } from './modelCommandSteps'
 import { sortCatalogModelsNewestFirst } from '@localixai/agent/catalog'
-import { context, MODELS, member } from './modelCommandFixture'
+import { context, MODELS, member } from './testing/modelCommandFixture'
 
 const values = (rows: { value: string }[]) => rows.map((row) => row.value)
 const committedMap = (record: Record<string, string>) => new Map(Object.entries(record))

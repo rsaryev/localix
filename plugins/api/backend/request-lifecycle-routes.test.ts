@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from 'bun:test'
 import { createRestRoutes } from './routes'
-import { createMemoryCollection } from './collection/memory'
+import { createMemoryCollection } from './collection/testing/memory'
 import { listHistory, recordSend, resetHistory } from './history'
 import type { SendResponse } from './contracts'
 

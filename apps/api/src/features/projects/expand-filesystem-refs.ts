@@ -81,24 +81,38 @@ export function isSensitivePath(absPath: string): boolean {
 /** Resolves `p` inside `workingDir`; returns null when it escapes the root. */
 const confine = resolveWithin
 
-export async function expandFile(
+/**
+ * The checks a `@file:` ref passes before it is read or sized: it names a path, inside the
+ * working directory, that is not a credential file and is an existing file, not a folder.
+ */
+export async function statFileRef(
   workingDir: string,
   ref: ContextRef,
-): Promise<ContextRefExpansion> {
-  if (!ref.path) return fail(ref, 'missing path')
+): Promise<{ resolved: string; size: number } | { refused: ContextRefExpansion }> {
+  if (!ref.path) return { refused: fail(ref, 'missing path') }
   const resolved = confine(workingDir, ref.path)
-  if (!resolved) return fail(ref, 'path is outside the project working directory')
-  if (isSensitivePath(resolved)) return fail(ref, 'path looks like a sensitive credential file')
-
+  if (!resolved) return { refused: fail(ref, 'path is outside the project working directory') }
+  if (isSensitivePath(resolved))
+    return { refused: fail(ref, 'path looks like a sensitive credential file') }
   let info
   try {
     info = await stat(resolved)
   } catch {
-    return fail(ref, 'file not found')
+    return { refused: fail(ref, 'file not found') }
   }
-  if (info.isDirectory()) return fail(ref, 'path is a directory — use @folder:')
-  if (info.size > MAX_FILE_BYTES)
-    return fail(ref, `file too large (${Math.round(info.size / 1024)}KB)`)
+  if (info.isDirectory()) return { refused: fail(ref, 'path is a directory — use @folder:') }
+  return { resolved, size: info.size }
+}
+
+export async function expandFile(
+  workingDir: string,
+  ref: ContextRef,
+): Promise<ContextRefExpansion> {
+  const file = await statFileRef(workingDir, ref)
+  if ('refused' in file) return file.refused
+  const { resolved } = file
+  if (file.size > MAX_FILE_BYTES)
+    return fail(ref, `file too large (${Math.round(file.size / 1024)}KB)`)
 
   const buffer = await readFile(resolved)
   if (hasBinarySignature(buffer)) return fail(ref, 'binary files are not supported')

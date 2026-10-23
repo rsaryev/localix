@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
-import { Braces, Box, Variable, Hash, Type, Circle } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { backendClient } from '@/shared/api/client'
 import { useDebouncedQuery } from '@/shared/hooks/useDebouncedQuery'
 import { Spinner } from '@localixai/kit/spinner'
@@ -17,44 +16,9 @@ import { CommandHints } from '@/shared/ui/command-hints'
 import { baseName } from '@localixai/plugin-sdk/ui/utilities'
 import { openFileInGrid } from '@/shared/lib/recentFiles'
 import { loadFileEditor } from '../model/fileEditorLoader'
-import { subscribeUiOverlay } from '@/shared/lib/uiOverlayBus'
+import { symbolKindMeta } from '../model/symbolKindMeta'
 import { WORKSPACE_SYMBOL_OVERLAY_ID } from './WorkspaceSymbols.surface'
-
-// LSP SymbolKind → a compact icon + label (same grouping as GoToSymbol).
-function kindMeta(kind: number): { Icon: typeof Braces; label: string } {
-  switch (kind) {
-    case 6:
-    case 9:
-    case 12:
-      return { Icon: Braces, label: kind === 12 ? 'function' : 'method' }
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-    case 10:
-    case 11:
-    case 23:
-      return {
-        Icon: Box,
-        label: kind === 11 ? 'interface' : kind === 5 ? 'class' : kind === 10 ? 'enum' : 'type',
-      }
-    case 7:
-    case 8:
-    case 13:
-    case 14:
-      return {
-        Icon: Variable,
-        label: kind === 14 ? 'constant' : kind === 13 ? 'variable' : 'field',
-      }
-    case 16:
-    case 22:
-      return { Icon: Hash, label: 'value' }
-    case 26:
-      return { Icon: Type, label: 'type param' }
-    default:
-      return { Icon: Circle, label: 'symbol' }
-  }
-}
+import { useOverlayPaletteQuery } from './useOverlayPaletteQuery'
 
 interface WorkspaceSymbolsProps {
   sessionId: string | null
@@ -70,11 +34,10 @@ interface WorkspaceSymbolsProps {
  * (debounced); jumps to the pick across files.
  */
 export function WorkspaceSymbols({ sessionId, open, onOpenChange }: WorkspaceSymbolsProps) {
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useOverlayPaletteQuery(WORKSPACE_SYMBOL_OVERLAY_ID, open, onOpenChange)
   const [symbols, setSymbols] = useState<WorkspaceSymbol[]>([])
   const [loading, setLoading] = useState(false)
   const [resultKey, setResultKey] = useState<string | null>(null)
-  const requestedQuery = useRef<string | null>(null)
 
   // ⌘T is explicit cross-file navigation intent. Warm the editor graph while the
   // language server searches instead of waiting for the selected symbol to render.
@@ -82,28 +45,10 @@ export function WorkspaceSymbols({ sessionId, open, onOpenChange }: WorkspaceSym
     if (open && sessionId) void loadFileEditor()
   }, [open, sessionId])
 
-  useEffect(
-    () =>
-      subscribeUiOverlay(WORKSPACE_SYMBOL_OVERLAY_ID, (params) => {
-        const query = typeof params.query === 'string' ? params.query : ''
-        requestedQuery.current = query
-        if (open) {
-          setQuery(query)
-          requestedQuery.current = null
-        }
-        onOpenChange(true)
-      }),
-    [onOpenChange, open],
-  )
-
-  // Reset the query each time the palette opens so a stale search never lingers.
+  // Each opening starts from fresh results as well as a fresh query.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset when the palette opens
-    if (open) {
-      setQuery(requestedQuery.current ?? '')
-      requestedQuery.current = null
-      setSymbols([])
-    }
+    if (open) setSymbols([])
   }, [open])
 
   // workspace/symbol is server-side filtering — re-query (debounced) as the user types.
@@ -167,7 +112,7 @@ export function WorkspaceSymbols({ sessionId, open, onOpenChange }: WorkspaceSym
             </CommandEmpty>
           )}
           {visibleSymbols.map((s, i) => {
-            const { Icon, label } = kindMeta(s.kind)
+            const { Icon, label } = symbolKindMeta(s.kind)
             return (
               <CommandItem
                 key={`${s.file}:${s.line}:${s.character}`}

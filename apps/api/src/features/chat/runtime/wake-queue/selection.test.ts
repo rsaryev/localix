@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
 import { bandRecipient, selectDrainBand } from './selection'
-import { event, ids, person, report } from './test-entries'
+import { event, ids, person, report } from './testing/test-entries'
 
 describe('selectDrainBand', () => {
   test('an empty queue, or one where everything is held, selects nothing', () => {

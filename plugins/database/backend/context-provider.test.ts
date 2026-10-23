@@ -15,7 +15,7 @@ import {
   certifyAutomaticContribution,
   certifyResolverContribution,
   sampleAutomaticRequest,
-} from '../../../apps/api/src/features/context-fabric/plugin-contract-kit'
+} from '../../../apps/api/src/features/context-fabric/testing/plugin-contract-kit'
 
 const failedChecks = (results: { check: string; ok: boolean; detail?: string }[]) =>
   results.filter((result) => !result.ok).map((result) => `${result.check}: ${result.detail ?? ''}`)

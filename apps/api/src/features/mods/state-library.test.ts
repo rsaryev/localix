@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 import { createStateApi, createStateSpaces } from './api/state-api'
 import { bundleHooksModule } from './module-build'
-import { runBundle } from './testing-bundle'
+import { runBundle } from './testing/testing-bundle'
 
 const scratch = tempDirPerTest('mods-state-library', {})
 

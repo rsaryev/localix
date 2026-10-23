@@ -77,10 +77,11 @@ directly in chat can retain the agent's reply.
 | `skills/`                 | How the agent plays and talks about a game.                      |
 
 State is kept with `openJsonStore` and announced by `createJsonStoreFeed`, both from
-`@localixai/plugin-sdk/backend`; `ui/useStoreSnapshot.ts` re-exports the SDK snapshot hook. A store
-write announces a change over the realtime feed, and a visible board re-reads its snapshot. A
-healthy feed has no periodic read; when unavailable, the board polls every 800 ms during agent
-activity or 4 seconds while idle. Showing the pane or reconnecting reconciles its state.
+`@localixai/plugin-sdk/backend`; the view reads it with `useTableGame` from
+`@localixai/plugin-sdk/ui/game-table`. A store write announces a change over the realtime feed, and
+a visible board re-reads its snapshot. A healthy feed has no periodic read; when unavailable, the
+board polls every 800 ms during agent activity or 4 seconds while idle. Showing the pane or
+reconnecting reconciles its state.
 
 The stream frame carries no fleet state; the route projects the player’s view and reveals the
 opponent fleet only when the game ends.

@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
 import { defineAgentTool, type AgentTool } from '@localixai/agent/agents'
 import type { AssistantMessage } from '@localixai/agent'
-import { hostWithMod } from './testing-host'
+import { hostWithMod } from './testing/testing-host'
 
 function tool(name: string, content = `${name} ran`): AgentTool {
   return defineAgentTool({

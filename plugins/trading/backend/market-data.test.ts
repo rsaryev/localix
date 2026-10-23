@@ -7,7 +7,7 @@ import {
 } from './market-data'
 import { candleSummary, trendLine } from './candle-lines'
 import { quoteRow } from './market-data-render'
-import { exchangeCapabilities } from './test-fixtures'
+import { exchangeCapabilities } from './testing/test-fixtures'
 
 const conn = (over: Partial<MarketDataConnection> = {}): MarketDataConnection => ({
   id: 'c1',

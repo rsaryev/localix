@@ -1,7 +1,7 @@
-import { askAgentForTurn, type Seat, type Wake } from '@localixai/plugin-sdk/backend'
+import type { Seat, Wake } from '@localixai/plugin-sdk/backend'
 
 import { recordLine, sinceLastTurn, suggestedCells, targetGrid } from '../shared/describe'
-import { viewFor, type AgentWait, type Game } from '../shared/game'
+import { viewFor, type Game } from '../shared/game'
 import { cellName } from '../shared/rules'
 
 /**
@@ -48,14 +48,3 @@ export function askForShot(game: Game): string {
  * position are the same wake while it still waits for its turn.
  */
 export const positionKey = (game: Game) => `${game.id}:${game.shots.length}`
-
-/** The wait the view shows after asking — or the reason nobody was asked. */
-export async function askAgent(
-  wake: Wake | undefined,
-  seat: Seat,
-  game: Game,
-  now: string,
-): Promise<AgentWait> {
-  const turn = { message: askForShot(game), tools: ANSWER_TOOLS, key: positionKey(game) }
-  return askAgentForTurn(wake, seat, turn, now)
-}

@@ -11,7 +11,7 @@ import {
 import { BUILTIN_TOOL_NAMES } from '../agent-core/tool-names'
 import { builtinAgentPreset } from '../capabilities/builtin-agent-presets'
 import { PERMISSION_MODES, type PermissionMode } from '../../contracts/permission-modes'
-import { modeSurface, PLAN_DRAFT, runRegistry } from './run-surface'
+import { modeSurface, PLAN_DRAFT, runRegistry } from './testing/run-surface'
 
 /**
  * WHAT EACH MODE'S PROMPT SAYS — the plan sections where they belong, and no tool it lacks.

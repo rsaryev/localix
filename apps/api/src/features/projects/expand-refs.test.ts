@@ -307,6 +307,28 @@ describe('expandContextRefs — sizeOnly preflight (cheap estimate, no heavy fet
     expect(gone.error).toContain('file not found')
   })
 
+  test('file: the preflight refuses exactly what the full expansion refuses', async () => {
+    await mkdir(path.join(sizeDir, 'sub'), { recursive: true })
+    await writeFile(path.join(sizeDir, '.env'), 'SECRET=1\n')
+    const refused: ContextRef[] = [
+      { raw: '@file:', kind: 'file' },
+      { raw: '@file:../outside.ts', kind: 'file', path: '../outside.ts' },
+      { raw: '@file:.env', kind: 'file', path: '.env' },
+      { raw: '@file:nope.ts', kind: 'file', path: 'nope.ts' },
+      { raw: '@file:sub', kind: 'file', path: 'sub' },
+    ]
+    const sized = await expandContextRefs(sizeDir, refused, {}, true)
+    const expanded = await expandContextRefs(sizeDir, refused)
+    expect(sized.map((exp) => exp.error)).toEqual([
+      'missing path',
+      'path is outside the project working directory',
+      'path looks like a sensitive credential file',
+      'file not found',
+      'path is a directory — use @folder:',
+    ])
+    expect(sized).toEqual(expanded)
+  })
+
   test('file line-range: proportional estimate, marked estimated, capped at file size', async () => {
     const [exp] = await expandContextRefs(
       sizeDir,

@@ -1,5 +1,10 @@
+import { elapsed } from '@localixai/plugin-sdk/agent-wait'
+import { opponentName } from '@localixai/plugin-sdk/opponent'
 import type { PlayerView, GameRecord, Shot } from '../../shared/game'
 import { cellName } from '../../shared/rules'
+
+/** Shared by every game: the wait's clock and the opponent in the person's words. */
+export { elapsed, opponentName }
 
 /**
  * The game in the PERSON's words — the view's headline and what a screen reader announces.
@@ -10,10 +15,6 @@ import { cellName } from '../../shared/rules'
  */
 
 const RESULT = { miss: 'missed', hit: 'hit a ship', sunk: 'sank a ship' } as const
-
-/** Who fires from the agent's side at this table, in the person's words. */
-export const opponentName = (view: Pick<PlayerView, 'opponent'>) =>
-  view.opponent === 'decision' ? 'The decision model' : 'The agent'
 
 /** "The agent fired at E5 and hit a ship." */
 export const shotSentence = (shot: Shot, view: Pick<PlayerView, 'opponent'>) =>
@@ -41,10 +42,3 @@ export const nextOpener = (view: PlayerView) =>
 /** " · Score 2–1" — the table's running score, empty before the first game ends. */
 export const scoreLine = (record: GameRecord) =>
   record.won + record.lost === 0 ? '' : ` · Score ${record.won}–${record.lost}`
-
-/** "12s", "1m 05s" — how long the agent has been thinking. */
-export function elapsed(ms: number): string {
-  const seconds = Math.max(0, Math.floor(ms / 1000))
-  if (seconds < 60) return `${seconds}s`
-  return `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(2, '0')}s`
-}

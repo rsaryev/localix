@@ -799,6 +799,50 @@ describe('useFileEditor save ownership', () => {
     }
   })
 
+  test('overwrite adopts the cleaned bytes it wrote when nothing was typed meanwhile', async () => {
+    setSaveCleanupPrefs({ trimTrailingWhitespace: true, ensureFinalNewline: true })
+    const backend = mockEditorBackend()
+    const write = spyOn(backendClient, 'writeFileContent').mockResolvedValue({
+      path: '/workspace/shared.ts',
+      bytes: 5,
+      hash: 'hash-overwritten',
+    })
+    const editor = await mountEditor()
+    try {
+      await editor.act(async () => {
+        editor.current.setBuffer('mine  ')
+        publishConflictResolved({
+          sessionId: 'session-a',
+          editPath: '/workspace/shared.ts',
+          expectedBuffer: 'base',
+          content: 'disk',
+          hash: 'hash-external',
+        })
+      })
+      backend.change.mockClear()
+      await editor.act(async () => {
+        expect(await editor.current.overwrite()).toBe(true)
+      })
+      expect(write).toHaveBeenCalledWith('session-a', 'shared.ts', 'mine\n', 'hash-external')
+      expect(editor.current.buffer).toBe('mine\n')
+      expect(editor.current.baseHash).toBe('hash-overwritten')
+      expect(editor.current.dirty).toBe(false)
+      expect(editor.current.conflict).toBeNull()
+      expect(fileContentCache.get('session-a', 'shared.ts')).toMatchObject({
+        content: 'mine\n',
+        hash: 'hash-overwritten',
+      })
+      expect(backend.change).toHaveBeenCalledWith('session-a', '/workspace/shared.ts', 'mine\n')
+      expect(backend.saved).toHaveBeenCalledTimes(1)
+    } finally {
+      setSaveCleanupPrefs({ trimTrailingWhitespace: false, ensureFinalNewline: false })
+      await editor.unmount()
+      clearFileDraft('session-a', '/workspace/shared.ts')
+      write.mockRestore()
+      backend.restore()
+    }
+  })
+
   test('format-on-save formats the buffer in memory and writes ONCE', async () => {
     // It used to write the raw buffer, let the server format the file on disk, re-read it
     // and write again — two writes and a window where any other writer passed for the

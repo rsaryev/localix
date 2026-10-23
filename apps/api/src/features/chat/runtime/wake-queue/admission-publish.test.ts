@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from 'bun:test'
 
-import { closeDurable, durableQueue, durableStore, type DurableStore } from './test-durable'
+import { closeDurable, durableQueue, durableStore, type DurableStore } from './testing/test-durable'
 
 /** The queue chip says what IS queued: a turn appears once its row is durable, never before. */
 afterEach(closeDurable)

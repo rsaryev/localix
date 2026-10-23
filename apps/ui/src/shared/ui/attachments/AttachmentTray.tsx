@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import type { PendingAttachment } from '@/shared/lib/attachment-policy'
 import { FileChip, FileChipStrip, RemoveBadge } from '@localixai/kit/file-chip'
-import { ImageLightbox } from '@/shared/ui/image-lightbox'
+import { ImageLightbox, useLightboxPaging } from '@/shared/ui/image-lightbox'
 import { VoiceMessage } from '@/shared/ui/attachments/VoiceMessage'
 
 /** A staged voice recording — the player plus a floating remove badge. */
@@ -42,7 +42,7 @@ export function AttachmentTray({
       ),
     [attachments],
   )
-  const [zoomIdx, setZoomIdx] = useState<number | null>(null)
+  const paging = useLightboxPaging(images)
   if (attachments.length === 0) return null
   return (
     <div className="px-3.5 pb-1 pt-2 max-sm:px-2.5">
@@ -72,22 +72,13 @@ export function AttachmentTray({
               onRemove={() => onRemove(item.id)}
               onView={() => {
                 const pos = images.findIndex((im) => im.id === item.id)
-                if (pos >= 0) setZoomIdx(pos)
+                if (pos >= 0) paging.open(pos)
               }}
             />
           )
         })}
       </FileChipStrip>
-      <ImageLightbox
-        image={zoomIdx != null ? images[zoomIdx] : null}
-        onClose={() => setZoomIdx(null)}
-        onPrev={zoomIdx != null && zoomIdx > 0 ? () => setZoomIdx(zoomIdx - 1) : undefined}
-        onNext={
-          zoomIdx != null && zoomIdx < images.length - 1 ? () => setZoomIdx(zoomIdx + 1) : undefined
-        }
-        hasPrev={zoomIdx != null && zoomIdx > 0}
-        hasNext={zoomIdx != null && zoomIdx < images.length - 1}
-      />
+      <ImageLightbox {...paging.lightbox} />
     </div>
   )
 }

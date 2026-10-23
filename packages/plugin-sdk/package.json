@@ -219,6 +219,10 @@
       "types": "./dist/opponent.d.ts",
       "import": "./dist/opponent.js"
     },
+    "./bounded-cache": {
+      "types": "./dist/bounded-cache.d.ts",
+      "import": "./dist/bounded-cache.js"
+    },
     "./secret-shapes": {
       "types": "./dist/secret-shapes.d.ts",
       "import": "./dist/secret-shapes.js"
@@ -238,6 +242,18 @@
     "./ui/store-snapshot": {
       "types": "./dist/ui/store-snapshot.d.ts",
       "import": "./dist/ui/store-snapshot.js"
+    },
+    "./ui/session-game": {
+      "types": "./dist/ui/session-game.d.ts",
+      "import": "./dist/ui/session-game.js"
+    },
+    "./ui/game-table": {
+      "types": "./dist/ui/game-table.d.ts",
+      "import": "./dist/ui/game-table.js"
+    },
+    "./ui/now": {
+      "types": "./dist/ui/now.d.ts",
+      "import": "./dist/ui/now.js"
     },
     "./manifest-label": {
       "types": "./dist/manifest/label.d.ts",

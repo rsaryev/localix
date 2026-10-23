@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test'
 import { z } from 'zod'
 import { defineAgentTool, type AgentTool } from '@localixai/agent/agents'
 
-import { hostWithMod } from './testing-host'
+import { hostWithMod } from './testing/testing-host'
 
 test('agent.offer sees a plugin agent type as one, and hides it from delegate too', async () => {
   const delegated: unknown[] = []

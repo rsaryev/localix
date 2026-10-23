@@ -19,7 +19,7 @@ import type { RunnerDeps } from '../agent-runner-types'
 import { resolveContextBudgetFrame } from '../context-budget'
 import { createChatHistoryRun } from './chat-strategy'
 import { intakeTurn } from './intake'
-import { freshLane, freshView } from './test-fixtures'
+import { freshLane, freshView } from './testing/test-fixtures'
 
 const NOW = '2026-09-04T00:00:00.000Z'
 const GOLDEN_PATH = path.join(import.meta.dir, 'chat-strategy.golden.json')

@@ -1,6 +1,6 @@
 import type { TriggerRecord } from '../../triggers/contracts'
 import type { WakeOutcome, WakeShape } from '../../triggers/delivery'
-import type { ConditionJournal } from './condition'
+import type { ConditionJournal, ConditionRaise } from './condition'
 import { createConditions, headline } from './condition'
 
 /**
@@ -42,6 +42,20 @@ export interface TriggerConditions {
 /** Only loops are reported: a monitor's and an exit notice's failures belong to their own work. */
 const reported = (trigger: TriggerRecord) => trigger.action === 'loop'
 
+/** A loop's row comes from its chat, and offers to open it. */
+const fromLoop = ({ sessionId }: TriggerRecord): Pick<ConditionRaise, 'origin' | 'actions'> => ({
+  origin: { kind: 'session', sessionId, projectId: null, label: 'Loop' },
+  actions: [
+    {
+      id: 'open-session',
+      label: 'Open chat',
+      kind: 'navigate',
+      target: { kind: 'session', sessionId, projectId: null },
+      available: true,
+    },
+  ],
+})
+
 export function createTriggerConditions(journal: ConditionJournal): TriggerConditions {
   const conditions = createConditions(journal)
   const subject = (trigger: Pick<TriggerRecord, 'id'>) => ['trigger', trigger.id]
@@ -63,16 +77,7 @@ export function createTriggerConditions(journal: ConditionJournal): TriggerCondi
         ]
           .filter(Boolean)
           .join('\n'),
-        origin: { kind: 'session', sessionId: trigger.sessionId, projectId: null, label: 'Loop' },
-        actions: [
-          {
-            id: 'open-session',
-            label: 'Open chat',
-            kind: 'navigate',
-            target: { kind: 'session', sessionId: trigger.sessionId, projectId: null },
-            available: true,
-          },
-        ],
+        ...fromLoop(trigger),
       })
     },
     routeStranded(trigger) {
@@ -83,16 +88,7 @@ export function createTriggerConditions(journal: ConditionJournal): TriggerCondi
         severity: 'error',
         title: 'A scheduled loop has no model to run on',
         body: 'The provider account its chat used was removed. Connect the provider again or pick another model in the chat.',
-        origin: { kind: 'session', sessionId: trigger.sessionId, projectId: null, label: 'Loop' },
-        actions: [
-          {
-            id: 'open-session',
-            label: 'Open chat',
-            kind: 'navigate',
-            target: { kind: 'session', sessionId: trigger.sessionId, projectId: null },
-            available: true,
-          },
-        ],
+        ...fromLoop(trigger),
       })
     },
     loopEnded: (userId, triggerId) =>

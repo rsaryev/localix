@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { createBashTool } from './bash'
-import { FAST_SETTLE } from './test-settle'
+import { FAST_SETTLE } from './testing/test-settle'
 
 describe('bash background settle window', () => {
   test('surfaces early output of a still-running background job in the result', async () => {

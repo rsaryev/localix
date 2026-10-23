@@ -46,7 +46,7 @@ the normal plugin catalog and follows the same enablement rules as Database, Dev
 | `ui/useStoreSnapshot.ts`  | Store-change reads; polling only when the feed is unavailable |
 | `backend/store-feed.ts`   | Nudges an open view after an `openJsonStore` write            |
 | `shared/store-feed.ts`    | The store feed's frame tag, commands and frame                |
-| `ui/useNow.ts`            | A clock for values derived from a stored timestamp            |
+| `ui/useNow.ts`            | The SDK clock for values derived from a stored timestamp      |
 | `@localixai/kit/*`        | The host UI kit — the plugin's only view of the host          |
 | `skills/inspect-system/`  | Reusable agent procedure for interpreting snapshots           |
 | `preview/`                | Standalone composition and loopback backend runner            |

@@ -1,9 +1,8 @@
-import { Hono, type Context } from 'hono'
+import { Hono } from 'hono'
 import { z } from 'zod'
-import { jsonBody, jsonError, type PluginRouteContext } from '@localixai/plugin-sdk/backend'
+import { jsonBody, seatedAnswer, type PluginRouteContext } from '@localixai/plugin-sdk/backend'
 
 import { MoveRefused, OPPONENTS, type Game } from '../shared/game'
-import type { Seat } from './ask-agent'
 import type { GameService } from './game-service'
 
 const moveBody = z.object({ cell: z.number().int().min(0).max(8) })
@@ -20,17 +19,10 @@ const emptyBody = z.object({})
  * taken.").
  */
 export function createGameRoutes(games: GameService) {
-  const answer = async (c: Context<PluginRouteContext>, action: (seat: Seat) => Promise<Game>) => {
-    const sessionId = c.env.sessionId
-    if (!sessionId)
-      return jsonError(c, 404, 'no_table', 'This board belongs to a chat that is not available.')
-    try {
-      return c.json(await action({ userId: c.env.userId, sessionId }))
-    } catch (error) {
-      if (error instanceof MoveRefused) return jsonError(c, 409, 'move_refused', error.message)
-      return jsonError(c, 503, 'game_unavailable', 'The game could not be saved. Try again.')
-    }
-  }
+  const answer = seatedAnswer<Game>({
+    missing: { code: 'no_table', message: 'This board belongs to a chat that is not available.' },
+    refused: { error: MoveRefused, code: 'move_refused' },
+  })
 
   return new Hono<PluginRouteContext>()
     .get('/game', (c) => {

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { createBashTool } from './bash'
 import type { SpawnTerminalJob } from '../terminal/terminal-job'
-import { FAST_SETTLE } from './test-settle'
+import { FAST_SETTLE } from './testing/test-settle'
 
 /** A PTY job that prints one line, stays up, and exits 130 when killed — as a closed pane does. */
 function fakeServerHost() {

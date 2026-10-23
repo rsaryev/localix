@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { createScriptVms } from '@localixai/engine-scripts'
-import { hostWithVms, manualClock } from './testing-mods'
+import { hostWithVms, manualClock } from './testing/testing-mods'
 
 /**
  * The host's rules for a mod's instance, whatever runs it: what a load may register, how long it

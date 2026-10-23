@@ -55,6 +55,9 @@ export const SDK_SHARED_MODULES: Record<string, Loader> = {
     import('@localixai/plugin-sdk/ui/route-snapshot'),
   '@localixai/plugin-sdk/ui/store-snapshot': () =>
     import('@localixai/plugin-sdk/ui/store-snapshot'),
+  '@localixai/plugin-sdk/ui/now': () => import('@localixai/plugin-sdk/ui/now'),
+  '@localixai/plugin-sdk/ui/game-table': () => import('@localixai/plugin-sdk/ui/game-table'),
+  '@localixai/plugin-sdk/ui/session-game': () => import('@localixai/plugin-sdk/ui/session-game'),
   '@localixai/plugin-sdk/ui/resource-sync': () => import('@localixai/plugin-sdk/ui/resource-sync'),
   '@localixai/plugin-sdk/ui/file-resource-sync': () =>
     import('@localixai/plugin-sdk/ui/file-resource-sync'),
@@ -90,6 +93,7 @@ export const SDK_SHARED_MODULES: Record<string, Loader> = {
   '@localixai/plugin-sdk/agent-wait': () => import('@localixai/plugin-sdk/agent-wait'),
   '@localixai/plugin-sdk/opponent': () => import('@localixai/plugin-sdk/opponent'),
   '@localixai/plugin-sdk/sealed': () => import('@localixai/plugin-sdk/sealed'),
+  '@localixai/plugin-sdk/bounded-cache': () => import('@localixai/plugin-sdk/bounded-cache'),
   '@localixai/plugin-sdk/secret-shapes': () => import('@localixai/plugin-sdk/secret-shapes'),
   '@localixai/plugin-sdk/navigation': () => import('@localixai/plugin-sdk/navigation'),
   '@localixai/plugin-sdk/session-resource': () => import('@localixai/plugin-sdk/session-resource'),

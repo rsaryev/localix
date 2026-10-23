@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { AssistantMessage } from '@localixai/agent'
 import type { Hook } from '@localixai/claude-plugin/mods'
-import { hostWithMod } from './testing-host'
+import { hostWithMod } from './testing/testing-host'
 
 /** `turn.step` hooks written as Claude Code documents them: async generators over the stream. */
 

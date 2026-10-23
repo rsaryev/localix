@@ -7,9 +7,7 @@
  * binary files rejected); workdir-free kinds (session/terminal/call) resolve via
  * loaders injected by the composition root so this module stays dependency-free.
  */
-import { resolveWithin } from '../../lib/path-containment'
-import { stat } from 'node:fs/promises'
-import { expandFile, expandFolder, isSensitivePath } from './expand-filesystem-refs'
+import { expandFile, expandFolder, statFileRef } from './expand-filesystem-refs'
 import { fail, succeed } from './ref-expansion-result'
 
 import type { ContextRef, ContextRefExpansion } from './contracts'
@@ -105,9 +103,6 @@ export interface ExpandRefsOptions {
   loadMessageDigest?: MessageDigestLoader
   loadResource?: ResourceRefLoader
 }
-
-/** Resolves `p` inside `workingDir`; returns null when it escapes the root. */
-const confine = resolveWithin
 
 /** Generic loader-backed expander for the workdir-free kinds. */
 async function expandViaLoader(
@@ -222,28 +217,19 @@ async function estimateRefSize(workingDir: string, ref: ContextRef): Promise<Con
     return { raw: ref.raw, ok: true, chars: (ref.content ?? '').length }
   }
   if (ref.kind === 'file') {
-    if (!ref.path) return fail(ref, 'missing path')
-    const resolved = confine(workingDir, ref.path)
-    if (!resolved) return fail(ref, 'path is outside the project working directory')
-    if (isSensitivePath(resolved)) return fail(ref, 'path looks like a sensitive credential file')
-    let info
-    try {
-      info = await stat(resolved)
-    } catch {
-      return fail(ref, 'file not found')
-    }
-    if (info.isDirectory()) return fail(ref, 'path is a directory — use @folder:')
+    const file = await statFileRef(workingDir, ref)
+    if ('refused' in file) return file.refused
     if (ref.startLine) {
       // A line range → estimate proportionally (no read); a full file → the real byte size.
       const lineCount = Math.max(1, (ref.endLine ?? ref.startLine) - ref.startLine + 1)
       return {
         raw: ref.raw,
         ok: true,
-        chars: Math.min(info.size, lineCount * APPROX_BYTES_PER_LINE),
+        chars: Math.min(file.size, lineCount * APPROX_BYTES_PER_LINE),
         estimated: true,
       }
     }
-    return { raw: ref.raw, ok: true, chars: info.size }
+    return { raw: ref.raw, ok: true, chars: file.size }
   }
   // folder/session/project/message/terminal/call/resource — a
   // conservative fixed estimate. The real size is only known at send.

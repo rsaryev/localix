@@ -18,7 +18,13 @@ import type { RuntimeSection } from '../../../agent-core/prompt/runtime-sections
 import type { PersistedMessage } from '../../contracts'
 import { turnContextState, type StoredTurnContext } from '../model-view/turn-context'
 import type { ModelView } from '../model-view/view'
-import { bashMessage, freshLane, materializeChat, persistedRow, readMessage } from './test-fixtures'
+import {
+  bashMessage,
+  freshLane,
+  materializeChat,
+  persistedRow,
+  readMessage,
+} from './testing/test-fixtures'
 
 const VIEWER = 'agent:default'
 const user = (id: string, content: string) =>

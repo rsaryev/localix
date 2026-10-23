@@ -9,7 +9,7 @@ import {
   sessionDatabasePerFile,
   WINDOWS,
   type TurnLog,
-} from './context-window-session.test-harness'
+} from './testing/context-window-session.test-harness'
 import { checkpointAtTokens } from './model-view/checkpoint-policy'
 
 sessionDatabasePerFile()

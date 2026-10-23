@@ -1,10 +1,9 @@
-import { Hono, type Context } from 'hono'
+import { Hono } from 'hono'
 import { z } from 'zod'
-import { jsonBody, jsonError, type PluginRouteContext } from '@localixai/plugin-sdk/backend'
+import { jsonBody, seatedAnswer, type PluginRouteContext } from '@localixai/plugin-sdk/backend'
 
 import { OPPONENTS, PLAYERS, ShotRefused, viewFor, type Game } from '../shared/game'
 import { SIZE } from '../shared/rules'
-import type { Seat } from './ask-agent'
 import type { GameService } from './game-service'
 
 const shotBody = z.object({
@@ -29,17 +28,11 @@ const emptyBody = z.object({})
  * rules refuse answers 409 with the rules' own sentence ("E5 is already known").
  */
 export function createGameRoutes(games: GameService) {
-  const answer = async (c: Context<PluginRouteContext>, action: (seat: Seat) => Promise<Game>) => {
-    const sessionId = c.env.sessionId
-    if (!sessionId)
-      return jsonError(c, 404, 'no_table', 'This board belongs to a chat that is not available.')
-    try {
-      return c.json(viewFor(await action({ userId: c.env.userId, sessionId }), 'you'))
-    } catch (error) {
-      if (error instanceof ShotRefused) return jsonError(c, 409, 'shot_refused', error.message)
-      return jsonError(c, 503, 'game_unavailable', 'The game could not be saved. Try again.')
-    }
-  }
+  const answer = seatedAnswer({
+    missing: { code: 'no_table', message: 'This board belongs to a chat that is not available.' },
+    refused: { error: ShotRefused, code: 'shot_refused' },
+    view: (game: Game) => viewFor(game, 'you'),
+  })
 
   return new Hono<PluginRouteContext>()
     .get('/game', (c) => {

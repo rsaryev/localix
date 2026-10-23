@@ -4,7 +4,7 @@ import { localEnvironment } from '../environments/local'
 import { SSHEnvironment, DockerEnvironment } from '../environments/remote'
 import type { ExecutionEnvironment } from '../environment'
 import type { AsyncToolRegistry, ToolAction } from '@localixai/agent/agents'
-import { FAST_SETTLE } from './test-settle'
+import { FAST_SETTLE } from './testing/test-settle'
 
 /** A fake env whose foreground exec returns a fixed exit code (no real process). */
 function envWithExit(exitCode: number, stderr = ''): ExecutionEnvironment {

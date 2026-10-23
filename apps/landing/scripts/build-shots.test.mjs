@@ -93,7 +93,7 @@ describe('product screenshot manifest', () => {
     expect(generated).not.toContain('task-board/board')
   })
 
-  test('the homepage manifest points at plain public paths and flags placeholders', async () => {
+  test('copies only the current captures under plain public paths', async () => {
     const { shotsDir, outFile } = await fixture()
     const publicDir = path.join(path.dirname(shotsDir), 'public-shots')
     await fs.mkdir(path.join(shotsDir, 'task-board'))
@@ -106,29 +106,6 @@ describe('product screenshot manifest', () => {
       path.join(shotsDir, 'workspace', 'hero--placeholder.png'),
       pngHeader(1600, 1000),
     )
-    await fs.writeFile(
-      path.join(shotsDir, 'workspace', 'hero--2026-10-05.png'),
-      pngHeader(1600, 1000),
-    )
-
-    await buildShotManifest({ shotsDir, outFile, publicDir })
-
-    const home = await fs.readFile(path.join(path.dirname(outFile), 'home-shots.ts'), 'utf8')
-    expect(home).toContain(
-      '"task-board/board": { src: "/shots/task-board/board--placeholder.png", placeholder: true }',
-    )
-    // The dated capture wins over the placeholder of the same key.
-    expect(home).toContain(
-      '"workspace/hero": { src: "/shots/workspace/hero--2026-10-05.png", placeholder: false }',
-    )
-    expect(home).not.toContain('hero--placeholder')
-    expect(await fs.readdir(path.join(publicDir, 'workspace'))).toEqual(['hero--2026-10-05.png'])
-  })
-
-  test('keeps the approved editor capture on the homepage when newer evidence exists', async () => {
-    const { shotsDir, outFile } = await fixture()
-    const publicDir = path.join(path.dirname(shotsDir), 'public-shots')
-    await fs.mkdir(path.join(shotsDir, 'workspace'))
     for (const date of ['2026-10-07', '2026-10-09']) {
       await fs.writeFile(
         path.join(shotsDir, 'workspace', `hero--${date}.png`),
@@ -138,14 +115,10 @@ describe('product screenshot manifest', () => {
 
     await buildShotManifest({ shotsDir, outFile, publicDir })
 
-    const home = await fs.readFile(path.join(path.dirname(outFile), 'home-shots.ts'), 'utf8')
-    expect(home).toContain('/shots/workspace/hero--2026-10-07.png')
-    expect(home).not.toContain('hero--2026-10-09.png')
     expect(await fs.readFile(outFile, 'utf8')).toContain('/shots/workspace/hero--2026-10-09.png')
-    expect((await fs.readdir(path.join(publicDir, 'workspace'))).sort()).toEqual([
-      'hero--2026-10-07.png',
-      'hero--2026-10-09.png',
-    ])
+    expect(await fs.readdir(publicDir)).toEqual(['workspace'])
+    expect(await fs.readdir(path.join(publicDir, 'workspace'))).toEqual(['hero--2026-10-09.png'])
+    await expect(fs.stat(path.join(path.dirname(outFile), 'home-shots.ts'))).rejects.toThrow()
   })
 
   test('rejects a placeholder with the wrong dimensions', async () => {

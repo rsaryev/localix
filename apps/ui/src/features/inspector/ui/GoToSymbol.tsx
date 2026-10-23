@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { backendClient } from '@/shared/api/client'
 import { ActivitySignal } from '@localixai/kit/activity-orb'
 import type { LspDocumentSymbol } from '@/shared/api/contracts'
@@ -16,8 +16,8 @@ import { baseName } from '@localixai/plugin-sdk/ui/utilities'
 import { useActiveFilePath } from '../model/fileNav'
 import { openFileInGrid } from '@/shared/lib/recentFiles'
 import { symbolKindMeta } from '../model/symbolKindMeta'
-import { subscribeUiOverlay } from '@/shared/lib/uiOverlayBus'
 import { DOCUMENT_SYMBOL_OVERLAY_ID } from './GoToSymbol.surface'
+import { useOverlayPaletteQuery } from './useOverlayPaletteQuery'
 
 interface GoToSymbolProps {
   sessionId: string | null
@@ -39,31 +39,7 @@ export function GoToSymbol({ sessionId, open, onOpenChange }: GoToSymbolProps) {
   const [loading, setLoading] = useState(false)
   // Tracked so symbol names can highlight the matched characters (cmdk still
   // owns the actual filtering by item value).
-  const [query, setQuery] = useState('')
-  const requestedQuery = useRef<string | null>(null)
-
-  useEffect(
-    () =>
-      subscribeUiOverlay(DOCUMENT_SYMBOL_OVERLAY_ID, (params) => {
-        const query = typeof params.query === 'string' ? params.query : ''
-        requestedQuery.current = query
-        if (open) {
-          setQuery(query)
-          requestedQuery.current = null
-        }
-        onOpenChange(true)
-      }),
-    [onOpenChange, open],
-  )
-
-  // Reset the query each time the palette opens so a stale search never lingers.
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset when the palette opens
-    if (open) {
-      setQuery(requestedQuery.current ?? '')
-      requestedQuery.current = null
-    }
-  }, [open])
+  const [query, setQuery] = useOverlayPaletteQuery(DOCUMENT_SYMBOL_OVERLAY_ID, open, onOpenChange)
 
   useEffect(() => {
     if (!open || !sessionId || !filePath) {

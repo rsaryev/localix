@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { createMemoryWorkRepository } from '../../../work/memory-repository'
+import { createMemoryWorkRepository } from '../../../work/testing/memory-repository'
 import { createWorkRegistry } from '../../../work/registry'
 import type { ActionRegistryEntry } from '../agent-runner-state'
 import { routedParticipants, sessionFixture } from '../../../../testing/session-fixture'

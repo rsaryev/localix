@@ -71,7 +71,7 @@ export const HOST_JUDGMENT_CONTRACT =
 const FRAME_HELPERS = [
   'ui/usePolledSnapshot.ts — read a route while the view is visible, and send(body, { path?, method? }) for every action: the route answers with the NEW state, which replaces the snapshot at once',
   'ui/useStoreSnapshot.ts — the same for state openJsonStore keeps: re-read the moment backend/store-feed.ts (createStoreFeed, registered as wsFrames) nudges the scope, polling only as a slow backstop',
-  'ui/useNow.ts — a clock for anything that counts; derive the value from a stored timestamp',
+  'ui/useNow.ts — the SDK clock (@localixai/plugin-sdk/ui/now) for anything that counts; derive the value from a stored timestamp',
   'backend/store.ts — openJsonStore({ dir: ctx.dataDir, file, schema, initial }): durable state, one change at a time, shared by every register(ctx) call',
 ]
 

@@ -6,7 +6,7 @@
 import { describe, expect, test } from 'bun:test'
 import { runImportAction, uniqueNames } from './import-action'
 import type { CollectionRequest, CollectionStore } from './collection/store'
-import { createMemoryCollection } from './collection/memory'
+import { createMemoryCollection } from './collection/testing/memory'
 import type { ImportedRequest } from './import/types'
 
 /** The shared in-memory collection — the same double the route tests use. */

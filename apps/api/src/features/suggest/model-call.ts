@@ -11,6 +11,7 @@
  * model's confident "nothing"); a failure or an abort never is.
  */
 import { sha256Hex } from '../edit-prediction/cache/keys'
+import { messageText } from '../edit-prediction/model/adapter'
 import { createResultCache } from '../../lib/result-cache'
 import { executeModelTask } from '../model-task-runtime'
 import type { resolveAuxLanguageModel } from '../autocomplete/resolve-model'
@@ -20,7 +21,7 @@ import type {
   InlineCompletionSurfaceId,
 } from '../inline-completion/contracts'
 import { parseSurfaceLines } from './parse'
-import { MAX_TOKENS_PER_SURFACE, SYSTEM_PROMPT, messageText } from './prompt'
+import { MAX_TOKENS_PER_SURFACE, SYSTEM_PROMPT } from './prompt'
 import type { InlineCompletionSurfaceSpec } from './surfaces'
 import type { InlineCompletionServiceDeps } from './service'
 

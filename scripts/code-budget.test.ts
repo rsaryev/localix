@@ -40,7 +40,7 @@ describe('budgetFiles', () => {
 })
 
 describe('the recorded budget', () => {
-  test('counts what ships, not the tooling that builds, checks and tests it', () => {
+  test('counts the host, not the bundled mini apps and plugins or the tooling that builds, checks and tests it', () => {
     const files = [
       'apps/api/src/index.ts',
       'apps/ui/src/app/main.tsx',
@@ -63,7 +63,6 @@ describe('the recorded budget', () => {
       'apps/api/src/index.ts',
       'apps/ui/src/app/main.tsx',
       'packages/kit/src/controls/button.tsx',
-      'plugins/chess/backend/routes.ts',
       'apps/desktop-tauri/src-tauri/src/main.rs',
     ])
     expect(recorded.limit).toBe(500_000)

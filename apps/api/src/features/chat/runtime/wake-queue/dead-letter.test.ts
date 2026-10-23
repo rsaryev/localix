@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 
-import { closeDurable, durableQueue } from './test-durable'
+import { closeDurable, durableQueue } from './testing/test-durable'
 
 /**
  * A head whose delivery fails every time used to be retried three times and then picked again

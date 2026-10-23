@@ -5,9 +5,6 @@ export const ROUTE_PATH = '/rpc/checkers'
 
 const game = sessionResourceAddress('checkers', 'game')
 
-/** The board as a resource: what the launcher and the anchor resolve. */
-export const GAME_URI = game.uri
-
 /**
  * One chat's board. The new-game tool opens THIS, naming the session it runs in, so the board
  * opens in that chat even if the person has since switched to another.

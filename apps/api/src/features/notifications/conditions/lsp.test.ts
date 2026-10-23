@@ -6,7 +6,12 @@ import { createLspManager } from '../../lsp/lsp-manager'
 import type { LspClientInfo } from '../../lsp/lsp-protocol'
 import type { LspServerDef } from '../../lsp/lsp-servers'
 import { createLspConditions } from './lsp'
-import { createTestJournal, openRows, TEST_USER as U, type TestJournal } from './test-journal'
+import {
+  createTestJournal,
+  openRows,
+  TEST_USER as U,
+  type TestJournal,
+} from './testing/test-journal'
 
 const journals: TestJournal[] = []
 afterEach(async () => {

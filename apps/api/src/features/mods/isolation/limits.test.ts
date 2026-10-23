@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { createScriptVms } from '@localixai/engine-scripts'
-import { hostWithVms } from './testing-mods'
+import { hostWithVms } from './testing/testing-mods'
 
 /**
  * A mod gone wrong on the real VM: a hook that never yields the thread — a plain loop or a loop of

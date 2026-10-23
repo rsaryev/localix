@@ -72,19 +72,6 @@ export const SYSTEM_PROMPT = [
   'when continuing an unfinished word. If there is no confident suggestion, use "".',
 ].join(' ')
 
-/** Extract plain text from an assistant message's content blocks. */
-export function messageText(content: unknown): string {
-  if (typeof content === 'string') return content
-  if (!Array.isArray(content)) return ''
-  return content
-    .filter(
-      (b): b is { type: 'text'; text: string } =>
-        !!b && typeof b === 'object' && (b as { type?: unknown }).type === 'text',
-    )
-    .map((b) => b.text)
-    .join('')
-}
-
 /**
  * Assemble the user-content prompt: the shared working set first (once, however many surfaces
  * ask), then one titled block per surface (fragment + instruction). Exported for tests.

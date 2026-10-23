@@ -5,7 +5,7 @@
 import type { Kysely } from 'kysely'
 
 import type { AppDatabase } from '../db/types'
-import { createMemoryWorkRepository } from '../features/work/memory-repository'
+import { createMemoryWorkRepository } from '../features/work/testing/memory-repository'
 import { createWorkRegistry } from '../features/work/registry'
 import { createWorkRepository } from '../features/work/repository'
 

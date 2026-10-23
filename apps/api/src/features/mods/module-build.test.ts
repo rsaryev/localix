@@ -3,7 +3,7 @@ import { mkdirSync, readdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 import { bundleHooksModule, clearHooksCopies } from './module-build'
-import { runBundle } from './testing-bundle'
+import { runBundle } from './testing/testing-bundle'
 
 const scratch = tempDirPerTest('mods-build', {})
 
