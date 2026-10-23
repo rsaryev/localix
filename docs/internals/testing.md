@@ -30,6 +30,17 @@ Bun reads `bunfig.toml` only from the directory a run starts in, so every worksp
 its own and lists `packages/testing/src/preload/index.ts` by its relative path. The preload removes
 git's repository variables and makes a request to a non-loopback host fail at once, naming the URL.
 
+## Tests first
+
+Work red, green, refactor, as [AGENTS.md](../../AGENTS.md#tests-first-tdd) states:
+
+1. For a bug, write a test that reproduces it at the layer where a person meets it, and run it to
+   see it fail for the right reason. Then fix the code and see the test pass. The red run proves the
+   test can fail; never break working code to get one.
+2. For a feature or a change of behaviour, write its tests first, from what a person does and sees:
+   the keys pressed, what is on screen, what the model was sent. Then write the code.
+3. Refactor only on green. Delete a test that cannot fail, or that restates a text or a constant.
+
 ## Writing a test
 
 1. Put real time, child processes, file watchers and PTYs in a `*.integration.test.ts` file. Keep

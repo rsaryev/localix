@@ -59,6 +59,18 @@ Use `packages/kit` for UI. First read `.claude/skills/localix-ui-kit/SKILL.md` a
 `docs/internals/visual-system.md`; repository components and tokens take precedence over generic
 skills.
 
+## Tests first (TDD)
+
+Every change is red, green, refactor:
+
+- A bug: first a test that reproduces it, at the layer where a person meets it, run and seen failing
+  for the right reason; then the fix; then the test passes. The red run is the proof the test can
+  fail: never break working code to get one.
+- A feature or a change of behaviour: its tests first, written from what a person does and sees
+  (keys pressed, the screen, what the model was sent), then the code.
+- Refactor only on green. A test that cannot fail, or that restates a text or a constant, is
+  deleted, not kept.
+
 ## Testing
 
 Read [docs/internals/testing.md](docs/internals/testing.md) before writing tests. Use Bun Test with
@@ -67,8 +79,8 @@ colocated `*.test.ts`; `*.dom.test.tsx` for interaction or accessibility evidenc
 tests never sleep: inject the delay, clock or window as an option. Use `@localixai/testing` for temp
 dirs (`tempDirPerTest`), processes (`run`, deadline + SIGKILL), git (`scratchGitEnv`) and network
 (stub `fetch`; real hosts fail). Each file passes alone and under `--isolate`; run big suites as
-shards (`scripts/test-shards.mjs`), never `--parallel`. Add a regression test that fails without the
-fix. No coverage threshold.
+shards (`scripts/test-shards.mjs`), never `--parallel`. A test exercises behaviour; it never reads
+source or style files as text to assert on code, class names or copy.
 
 ## Commits and Pull Requests
 
