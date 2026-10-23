@@ -54,11 +54,9 @@ the host makes the name valid and, when it is taken, uses the next free one (`gp
 new plugin never edits one you already have. The copy comes from the
 [System Overview reference template](https://github.com/rsaryev/localix/tree/main/plugins/template)
 in the plugin kit and lives under `~/.localix/plugins/<name>`. The agent is told the plugin's folder
-and nothing else; the Localix application's own files are off limits to it. To change a plugin you
-already have, ask for the change in chat: the agent edits its folder and rebuilds it with
-`plugin_build`. Only a plugin of yours under `~/.localix/plugins` that is switched on is rebuilt: a
-build runs the plugin's code, so a plugin you have not allowed, a Claude Code install and an
-in-place folder are never built.
+and nothing else; the Localix application's own files are off limits to it. To change a plugin, ask
+in chat; the agent edits and rebuilds it with `plugin_build`. A build runs plugin code, so only your
+switched-on plugins are built.
 
 The reference copy builds and passes its tests before its domain is changed. Its frame reaches the
 domain only through the entries — `ui/Workspace.tsx`, and `createRoutes` and `register` in
