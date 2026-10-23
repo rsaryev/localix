@@ -1,0 +1,81 @@
+{
+  "name": "reader",
+  "displayName": "Reader",
+  "version": "0.1.0",
+  "description": "Focused local reader for explicitly opened EPUB, PDF, MOBI/AZW3, FB2, CBZ, Markdown, HTML, and text with native agent context and links.",
+  "author": {
+    "name": "Localix"
+  },
+  "license": "MIT",
+  "keywords": ["reader", "books", "epub", "cbz", "library", "research", "annotations", "context"],
+  "apiVersion": 1,
+  "category": "content",
+  "surfaces": ["agent", "workbench"],
+  "backend": "./backend/index.ts",
+  "fileAssociations": [
+    {
+      "ext": ["epub"],
+      "name": "EPUB Book",
+      "description": "Electronic publication",
+      "mimeType": "application/epub+zip",
+      "role": "Viewer",
+      "rank": "Owner"
+    },
+    {
+      "ext": ["mobi", "azw3"],
+      "name": "Kindle Book",
+      "description": "Mobipocket or Kindle Format 8 ebook",
+      "mimeType": "application/x-mobipocket-ebook",
+      "role": "Viewer",
+      "rank": "Owner"
+    },
+    {
+      "ext": ["fb2"],
+      "name": "FictionBook",
+      "description": "FictionBook ebook",
+      "mimeType": "application/x-fictionbook+xml",
+      "role": "Viewer",
+      "rank": "Owner"
+    },
+    {
+      "ext": ["cbz"],
+      "name": "Comic Book Archive",
+      "description": "ZIP-based comic book",
+      "mimeType": "application/vnd.comicbook+zip",
+      "role": "Viewer",
+      "rank": "Owner"
+    },
+    {
+      "ext": ["pdf"],
+      "name": "PDF Reading View",
+      "description": "Selectable and searchable reflowed PDF reading view",
+      "mimeType": "application/pdf",
+      "role": "Viewer",
+      "rank": "Alternate"
+    },
+    {
+      "ext": ["md", "markdown"],
+      "name": "Markdown Reading View",
+      "description": "Focused Markdown reading view",
+      "mimeType": "text/markdown",
+      "role": "Viewer",
+      "rank": "Alternate"
+    },
+    {
+      "ext": ["html", "htm"],
+      "name": "HTML Reading View",
+      "description": "Sanitized focused HTML reading view",
+      "mimeType": "text/html",
+      "role": "Viewer",
+      "rank": "Alternate"
+    },
+    {
+      "ext": ["txt"],
+      "name": "Plain Text Reading View",
+      "description": "Focused plain-text reading view",
+      "mimeType": "text/plain",
+      "role": "Viewer",
+      "rank": "Alternate"
+    }
+  ]
+}

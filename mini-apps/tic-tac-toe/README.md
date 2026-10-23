@@ -55,7 +55,7 @@ memory scope.
 | `backend/routes.ts`       | The board's routes; each answers with the new game.           |
 | `backend/tools.ts`        | The agent's tools.                                            |
 | `ui/`                     | The board, the turn line and the result card.                 |
-| `skills/`                 | How the agent plays and talks about a game.                   |
+| `guide.md`                | How the agent plays and talks about a game.                   |
 
 State is kept with `openJsonStore` and announced by `createJsonStoreFeed`, both from
 `@localixai/mini-app-sdk/backend`; the view reads it with `useTableGame` from
@@ -74,7 +74,7 @@ conversation permission modes still apply.
 
 ## Source of truth
 
-- [Plugin manifest](.claude-plugin/plugin.json) and [mini app manifest](.localix-app/app.json)
+- [Mini app manifest](mini-app.json) and [agent guide](guide.md)
 - [Tool actions and effect classification](backend/tools.ts)
 - [Game state and transitions](shared/game.ts)
 - [Wake requests](backend/ask-agent.ts)

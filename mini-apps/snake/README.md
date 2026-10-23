@@ -28,7 +28,7 @@ to **I play**, or a decision without a move (whose reason the board shows, with 
 
 ## Source of truth
 
-- [Plugin manifest](.claude-plugin/plugin.json) and [mini app manifest](.localix-app/app.json)
+- [Mini app manifest](mini-app.json) and [agent guide](guide.md)
 - [Rules](shared/game.ts)
 - [The decision question](backend/ask-decision.ts)
 - [The person's run](ui/game/useHumanRun.ts)

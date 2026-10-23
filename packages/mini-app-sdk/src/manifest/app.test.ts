@@ -1,10 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import {
-  MINI_APP_GUIDE_FILE,
-  MINI_APP_MANIFEST_FILE,
-  legacyMiniAppManifestSchema,
-  miniAppManifestSchema,
-} from './app'
+import { MINI_APP_GUIDE_FILE, MINI_APP_MANIFEST_FILE, miniAppManifestSchema } from './app'
+import { legacyMiniAppManifestSchema } from './legacy'
 
 const calories = {
   name: 'calories',

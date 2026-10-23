@@ -1,10 +1,10 @@
 {
-  "$comment": "What a copy of this plugin is made of. Read by the API's plugin authoring (apps/api/src/features/plugins/authoring: the scaffold, the agent instruction and the check) and by staging (scripts/stage-plugin-kit.mjs ships the template minus authoringOnly). The template owns its own domain, so the host names no plugin identity. Placeholders: {name} lower-kebab, {snake} lower_snake, {displayName}.",
+  "$comment": "What a copy of this mini app is made of. Read by the API's plugin authoring (apps/api/src/features/plugins/authoring: the scaffold, the agent instruction and the check) and by staging (scripts/stage-plugin-kit.mjs ships the template minus authoringOnly). The template owns its own domain, so the host names no mini app identity. Placeholders: {name} lower-kebab, {snake} lower_snake, {displayName}.",
   "summary": "System Overview reference plugin (live OS, CPU, memory and process data, plus marks the user and the agent save)",
   "domainName": "System Overview",
   "entry": [
-    ".claude-plugin/plugin.json",
-    ".localix-app/app.json",
+    "mini-app.json",
+    "guide.md",
     "ui/register.tsx",
     "ui/Workspace.tsx",
     "backend/index.ts",
@@ -21,8 +21,7 @@
     "backend/system-marks.ts",
     "backend/system-marks.test.ts",
     "backend/context.ts",
-    "ui/system/",
-    "skills/inspect-system/"
+    "ui/system/"
   ],
   "patterns": [
     {
@@ -110,14 +109,31 @@
     "formatSystemMarks"
   ],
   "renames": [
-    { "pattern": "\\bsystem_overview", "replacement": "{snake}_overview" },
-    { "pattern": "\\bsystem_processes", "replacement": "{snake}_processes" },
-    { "pattern": "\\bsystem_mark\\b", "replacement": "{snake}_mark" },
-    { "pattern": "\\binspect-system\\b", "replacement": "inspect-{name}" },
-    { "pattern": "System Overview", "replacement": "{displayName}" },
-    { "pattern": "System overview", "replacement": "{displayName}" }
+    {
+      "pattern": "\\bsystem_overview",
+      "replacement": "{snake}_overview"
+    },
+    {
+      "pattern": "\\bsystem_processes",
+      "replacement": "{snake}_processes"
+    },
+    {
+      "pattern": "\\bsystem_mark\\b",
+      "replacement": "{snake}_mark"
+    },
+    {
+      "pattern": "\\binspect-system\\b",
+      "replacement": "inspect-{name}"
+    },
+    {
+      "pattern": "System Overview",
+      "replacement": "{displayName}"
+    },
+    {
+      "pattern": "System overview",
+      "replacement": "{displayName}"
+    }
   ],
-  "directoryRenames": [{ "from": "skills/inspect-system", "to": "skills/inspect-{name}" }],
-  "tools": ["{snake}_overview", "{snake}_processes", "{snake}_mark"],
-  "skill": "inspect-{name}"
+  "directoryRenames": [],
+  "tools": ["{snake}_overview", "{snake}_processes", "{snake}_mark"]
 }

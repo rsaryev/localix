@@ -17,7 +17,7 @@ native workbench item.
 | `backend/ask-agent.ts`    | The wake request that hands the board to the agent.                           |
 | `backend/tools.ts`        | The agent's tool.                                                             |
 | `ui/game/`                | The board, its geometry and tile tracking, the status and the result.         |
-| `skills/`                 | How the agent plays and talks about a game.                                   |
+| `guide.md`                | How the agent plays and talks about a game.                                   |
 
 A `game_2048` move carries a plan (`shared/play.ts`). With `prefer`, an order of directions, each
 move takes the first direction that changes the board as it is then. With `moves`, an exact list, a
@@ -42,7 +42,7 @@ conversation permission modes still apply.
 
 ## Source of truth
 
-- [Plugin manifest](.claude-plugin/plugin.json) and [mini app manifest](.localix-app/app.json)
+- [Mini app manifest](mini-app.json) and [agent guide](guide.md)
 - [Tool actions and effect classification](backend/tools.ts)
 - [Game state and transitions](shared/game.ts)
 - [Wake requests](backend/ask-agent.ts)

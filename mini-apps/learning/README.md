@@ -71,10 +71,10 @@ Use `/learning:adapt` to patch only the affected lesson files and re-activate th
 
 ## Source of truth
 
-- [Plugin manifest](.claude-plugin/plugin.json) and [mini app manifest](.localix-app/app.json)
+- [Mini app manifest](mini-app.json) and [agent guide](guide.md)
 - [Course activation and step validation](backend/course-bundle.ts)
 - [Progress and answer handling](backend/service.ts)
 - [Module generation claims and retries](backend/module-generation.ts)
 - [Portable import and export](backend/course-portable.ts)
 - [Course invalidation and fallback polling](ui/model/courseChanges.ts)
-- [Course authoring contract](skills/build-learning-course/references/course-bundle.md)
+- [Course authoring contract](guide/course-bundle.md)

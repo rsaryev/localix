@@ -1,0 +1,14 @@
+{
+  "name": "template",
+  "displayName": "System Overview",
+  "version": "0.1.0",
+  "description": "OS, CPU and memory history with process inspection and agent context.",
+  "author": {
+    "name": "Localix"
+  },
+  "license": "MIT",
+  "apiVersion": 1,
+  "category": "utilities",
+  "surfaces": ["agent", "workbench"],
+  "backend": "./backend/index.ts"
+}

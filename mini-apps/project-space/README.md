@@ -126,7 +126,7 @@ bun run --cwd mini-apps/project-space type-check
 
 ## Source of truth
 
-- [Plugin manifest](.claude-plugin/plugin.json) and [mini app manifest](.localix-app/app.json)
+- [Mini app manifest](mini-app.json) and [agent guide](guide.md)
 - [Ordered file storage and actor history](backend/space-store.ts)
 - [Path normalization and file-route access](backend/paths.ts)
 - [File envelope and record preservation](shared/format/parse.ts)

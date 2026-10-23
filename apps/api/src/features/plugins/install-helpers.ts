@@ -17,10 +17,8 @@ import { findManifestPath } from './discovery'
 import { PLUGIN_NAME_RE } from './contracts'
 import { marketplaceOnlyHint } from './claude-code-marketplace'
 import { fetchGitTree } from './git-fetch'
-import {
-  LEGACY_MINI_APP_MANIFEST_FILE,
-  MINI_APP_MANIFEST_FILE,
-} from '@localixai/mini-app-sdk/app-manifest'
+import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
+import { LEGACY_MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/legacy-manifest'
 import { publishExtensionTree, type ExtensionPublicationLifecycle } from '../ext/publish-tree'
 
 export interface MaterializedPluginSource {

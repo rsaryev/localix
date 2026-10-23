@@ -17,7 +17,7 @@ import { createResourceProviderRegistry } from '../apps/api/src/features/agent-c
 import { createContextProviderRegistry } from '../apps/api/src/features/context-fabric/registry'
 import { register } from '../mini-apps/project-space/backend'
 import { ROUTE_PATH, SPACE_SUBSCRIBE } from '../mini-apps/project-space/shared/resource'
-import manifest from '../mini-apps/project-space/.claude-plugin/plugin.json'
+import manifest from '../mini-apps/project-space/mini-app.json'
 import type { SpaceView } from '../mini-apps/project-space/shared/api'
 import { spaceStore } from '../mini-apps/project-space/backend/space-store'
 

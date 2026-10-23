@@ -1,0 +1,15 @@
+{
+  "name": "rock-paper-scissors",
+  "displayName": "Rock Paper Scissors",
+  "version": "0.1.0",
+  "description": "Rock paper scissors against the agent or a decision model, one table per chat: whoever moves first seals the move, and the round reveals both with a digest anyone can check.",
+  "author": {
+    "name": "Localix"
+  },
+  "license": "MIT",
+  "keywords": ["game", "rock paper scissors", "roshambo", "play"],
+  "apiVersion": 1,
+  "category": "games",
+  "surfaces": ["agent", "workbench"],
+  "backend": "./backend/index.ts"
+}

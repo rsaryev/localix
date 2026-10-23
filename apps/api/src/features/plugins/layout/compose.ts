@@ -4,13 +4,15 @@ import {
   type PluginIssue,
 } from '@localixai/claude-plugin'
 import {
-  LEGACY_MINI_APP_MANIFEST_FILE,
   MINI_APP_MANIFEST_FILE,
-  legacyMiniAppManifestSchema,
   miniAppManifestSchema,
-  type LegacyMiniAppManifest,
   type MiniAppManifest,
 } from '@localixai/mini-app-sdk/app-manifest'
+import {
+  LEGACY_MINI_APP_MANIFEST_FILE,
+  legacyMiniAppManifestSchema,
+  type LegacyMiniAppManifest,
+} from '@localixai/mini-app-sdk/legacy-manifest'
 import { summarizeZodIssues } from '@localixai/mini-app-sdk/backend'
 import { fromClaudePlugin } from './claude-code'
 

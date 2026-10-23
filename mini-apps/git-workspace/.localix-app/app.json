@@ -1,8 +1,0 @@
-{
-  "name": "git-workspace",
-  "apiVersion": 1,
-  "category": "development",
-  "surfaces": ["agent", "workbench"],
-  "backend": "./backend/index.ts",
-  "defaultEnabled": true
-}

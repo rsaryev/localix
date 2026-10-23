@@ -2,8 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { promises as fs } from 'node:fs'
 import { basename, join } from 'node:path'
 
-import { MANIFEST_FILE } from '@localixai/claude-plugin'
-import { LEGACY_MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
+import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 import { TEMPLATE_SCAFFOLD_FILE } from './kit-layout'
 import type { MiniAppKit } from './kit'
 import { writeMiniAppKitCatalog } from './kit-catalog'
@@ -16,21 +15,21 @@ import {
 } from './template-layout'
 
 /**
- * Fork the kit's reference plugin into a USER plugin at `<pluginsRoot>/<name>`.
+ * Fork the kit's reference mini app into a USER mini app at `<pluginsRoot>/<name>`.
  *
- * Why a fork of a shipped, tested plugin and not a hollow skeleton: a skeleton with placeholders
+ * Why a fork of a shipped, tested mini app and not a hollow skeleton: a skeleton with placeholders
  * cannot be built or tested itself, so it rots the moment the SDK moves; a copy of the template is
- * a working plugin in the first second, and the agent (or a person) replaces its DOMAIN, never its
+ * a working mini app in the first second, and the agent (or a person) replaces its DOMAIN, never its
  * frame.
  *
  * Why a rename MAP and not a search-and-replace of the template's name: the domain's identifiers
- * (its tools and skill) would collide with the template's when both plugins are enabled — tool
+ * (its tools and skill) would collide with the template's when both mini apps are enabled — tool
  * names are global — and the two prose files use the word as a noun. So code files get the identity
  * map, the domain identifiers the template declares in its `scaffold.json` are made unique to the
  * copy, and the prose files are regenerated.
  *
  * The copy is assembled beside its destination and moved into place with one rename, so discovery
- * never sees half a plugin and a failure leaves nothing behind to block the retry.
+ * never sees half a mini app and a failure leaves nothing behind to block the retry.
  */
 
 /** Lower-kebab only: the PascalCase and snake_case derivations below need one clean shape. */
@@ -54,7 +53,7 @@ export function toMiniAppName(raw: string): string {
     .replace(/^[^a-z]+|-+$/gu, '')
   return PLUGIN_NAME_RE.test(slug) ? slug : 'my-plugin'
 }
-/** A private provenance marker so continuation never edits a different plugin with the same name. */
+/** A private provenance marker so continuation never edits a different mini app with the same name. */
 export const USER_MINI_APP_AUTHORING_MARKER = '.localix-authoring.json'
 /** The template's own name: every identity token of the template contains it as a word. */
 const TEMPLATE_NAME = 'template'
@@ -64,13 +63,13 @@ export class ScaffoldError extends Error {}
 
 export interface ScaffoldInput {
   kit: MiniAppKit
-  /** The user plugins root the copy lands in (`~/.localix/plugins`). */
+  /** The user mini apps root the copy lands in (`~/.localix/plugins`). */
   pluginsRoot: string
   name: string
   /** What the person sees; `titleCase(name)` turns `gpu-monitor` into "Gpu Monitor". */
   displayName?: string
   description?: string
-  /** Every plugin name already discovered, in any scope: a copy may not shadow one. */
+  /** Every mini app name already discovered, in any scope: a copy may not shadow one. */
   takenNames: ReadonlySet<string>
 }
 
@@ -144,7 +143,7 @@ function validate({ name, takenNames }: ScaffoldInput): void {
     )
   }
   if (name === TEMPLATE_NAME || takenNames.has(name)) {
-    throw new ScaffoldError(`A plugin named "${name}" already exists — choose another name.`)
+    throw new ScaffoldError(`A mini app named "${name}" already exists — choose another name.`)
   }
 }
 
@@ -158,7 +157,7 @@ async function rewriteCopy(dir: string, map: [RegExp, string][]): Promise<void> 
   }
 }
 
-/** Patch one manifest of the copy (`.claude-plugin/plugin.json`, `.localix-app/app.json`). */
+/** Patch the copy's `mini-app.json`. */
 async function patchManifest(
   dir: string,
   file: string,
@@ -196,17 +195,15 @@ export async function scaffoldUserMiniApp(input: ScaffoldInput): Promise<Scaffol
       if (await exists(source))
         await fs.rename(source, join(staging, fillPlaceholders(to, { name })))
     }
-    // The plugin carries the identity; the mini app around it keeps the rest. Its `backend` is
-    // left to the first build, which points it at the backend BUILD (a user plugin has no
-    // `node_modules`; the build is what resolves its shared imports). `defaultEnabled` is a
-    // first-party claim; a user plugin is enabled by the user's consent.
-    await patchManifest(staging, MANIFEST_FILE, {
+    // The copy's identity. Its `backend` is left to the first build, which points it at the
+    // backend BUILD (a user mini app has no `node_modules`; the build is what resolves its shared
+    // imports).
+    await patchManifest(staging, MINI_APP_MANIFEST_FILE, {
       name,
       displayName,
       description,
       version: '0.1.0',
     })
-    await patchManifest(staging, LEGACY_MINI_APP_MANIFEST_FILE, { name, defaultEnabled: undefined })
     await fs.writeFile(
       join(staging, 'README.md'),
       readme({ name, displayName, description, scaffold }),

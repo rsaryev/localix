@@ -104,7 +104,7 @@ bun test mini-apps/reader
 
 ## Source of truth
 
-- [Plugin manifest](.claude-plugin/plugin.json) and [mini app manifest](.localix-app/app.json)
+- [Mini app manifest](mini-app.json)
 - [Backend registration and storage paths](./backend/index.ts)
 - [Explicit shelf and collections](./backend/service.ts)
 - [Format parsing and path containment](./backend/library.ts)

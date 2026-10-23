@@ -52,7 +52,7 @@ A language is added with a walker in `backend/extract/lang/`, its grammar in
 
 ## Source of truth
 
-- [Plugin manifest](.claude-plugin/plugin.json) and [mini app manifest](.localix-app/app.json)
+- [Mini app manifest](mini-app.json) and [agent guide](guide.md)
 - [Query tool registration](backend/tools.ts)
 - [Camera tool](backend/view-tool.ts)
 - [Graph reads and signal health](ui/useGraph.ts)

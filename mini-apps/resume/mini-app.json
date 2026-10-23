@@ -1,0 +1,14 @@
+{
+  "name": "resume",
+  "displayName": "Resumes",
+  "version": "0.1.0",
+  "description": "Structured resumes with a shared editor, revision-safe agent tools and section context.",
+  "author": {
+    "name": "Localix"
+  },
+  "license": "MIT",
+  "apiVersion": 1,
+  "category": "content",
+  "surfaces": ["agent", "workbench"],
+  "backend": "./backend/index.ts"
+}

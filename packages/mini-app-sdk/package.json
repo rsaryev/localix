@@ -167,6 +167,10 @@
       "types": "./dist/manifest/app.d.ts",
       "import": "./dist/manifest/app.js"
     },
+    "./legacy-manifest": {
+      "types": "./dist/manifest/legacy.d.ts",
+      "import": "./dist/manifest/legacy.js"
+    },
     "./resource-refs": {
       "types": "./dist/backend/resource-refs.d.ts",
       "import": "./dist/backend/resource-refs.js"

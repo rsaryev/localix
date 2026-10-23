@@ -2,10 +2,8 @@ import { join } from 'node:path'
 import { listSubdirs, pathExists } from '../ext/fs-discovery'
 import { isExtensionPublicationArtifact } from '../ext/publish-tree'
 import { COMPONENT_MARKERS } from '@localixai/claude-plugin'
-import {
-  LEGACY_MINI_APP_MANIFEST_FILE,
-  MINI_APP_MANIFEST_FILE,
-} from '@localixai/mini-app-sdk/app-manifest'
+import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
+import { LEGACY_MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/legacy-manifest'
 import { locateManifest, PLUGIN_MANIFEST_CANDIDATES } from './manifest-locate'
 import { loadManifest } from './manifest-load'
 import { withWorkflowCommands } from './workflow-commands'

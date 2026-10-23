@@ -1,15 +1,15 @@
-# Working on the reference plugin
+# Working on the reference mini app
 
-This is System Overview, the plugin every user plugin is forked from: `/plugin create` copies it
+This is System Overview, the mini app every user mini app is forked from: `/plugin create` copies it
 into `~/.localix/plugins/<name>` under a new identity, and the agent replaces its domain. Read the
 repository root guidelines first. This directory is a Bun workspace package, not a separate Git
 repository; use the parent's dependency installation and lockfile.
 
 What a copy is made of is declared in `scaffold.json`, and every part of it is load-bearing:
 
-- **Entry** — same path and export in every copy, body replaced: `.claude-plugin/plugin.json` (the
-  agent's plugin, in the Claude Code format), `.localix-app/app.json` (the mini app around it),
-  `ui/register.tsx`, `ui/Workspace.tsx`, `backend/index.ts`, `backend/routes.ts`.
+- **Entry** — same path and export in every copy, body replaced: `mini-app.json` (the mini app),
+  `guide.md` (what the agent reads before it first uses the app), `ui/register.tsx`,
+  `ui/Workspace.tsx`, `backend/index.ts`, `backend/routes.ts`.
 - **Domain** — System Overview itself, deleted or rewritten by each copy. Its identifiers are the
   residue the `plugin_build` check reports, so a new one goes on `domainTokens`.
 - **Frame** — everything else, kept byte for byte: `ui/usePolledSnapshot.ts` (polling and `send`),

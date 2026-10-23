@@ -1,0 +1,15 @@
+{
+  "name": "project-space",
+  "displayName": "Project Space",
+  "version": "0.1.0",
+  "description": "One spatial board per project: notes, shapes, frames, sequence diagrams, code snippets and connectors beside live references to the project's files, folders, images and documents, kept in the project and edited by you and the agent, which can also move your camera to show you a part of it.",
+  "author": {
+    "name": "Localix"
+  },
+  "license": "MIT",
+  "keywords": ["space", "whiteboard", "canvas", "diagram", "notes", "files", "map"],
+  "apiVersion": 1,
+  "category": "content",
+  "surfaces": ["agent", "workbench"],
+  "backend": "./backend/index.ts"
+}

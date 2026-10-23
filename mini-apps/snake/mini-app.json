@@ -1,0 +1,15 @@
+{
+  "name": "snake",
+  "displayName": "Snake",
+  "version": "0.1.0",
+  "description": "Play Snake in a chat with the arrow keys, or watch a decision model steer the same board one move at a time.",
+  "author": {
+    "name": "Localix"
+  },
+  "license": "MIT",
+  "keywords": ["snake", "game", "arcade", "play"],
+  "apiVersion": 1,
+  "category": "games",
+  "surfaces": ["agent", "workbench"],
+  "backend": "./backend/index.ts"
+}

@@ -76,9 +76,12 @@ describe('stageDropins', () => {
         readdirSync(root, { withFileTypes: true })
           .filter((entry) => entry.isDirectory())
           .flatMap((entry) =>
-            ['.claude-plugin/plugin.json', '.localix-app/app.json', 'plugin.json'].map((file) =>
-              join(root, entry.name, file),
-            ),
+            [
+              'mini-app.json',
+              '.claude-plugin/plugin.json',
+              '.localix-app/app.json',
+              'plugin.json',
+            ].map((file) => join(root, entry.name, file)),
           ),
       )
       .filter(existsSync)

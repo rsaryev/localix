@@ -88,7 +88,7 @@ describe('bundled roots', () => {
   })
 
   const checkout = tempDirPerTest('bundled-roots', {
-    'mini-apps/chess/.localix-app/app.json': '{"name":"chess"}',
+    'mini-apps/chess/mini-app.json': '{"name":"chess"}',
     'mini-apps/chess/ui/register.tsx': '',
     'plugins/workflows/.claude-plugin/plugin.json': '{"name":"workflows"}',
     'plugins/workflows/commands/workflows.md': '',

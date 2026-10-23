@@ -1,0 +1,14 @@
+{
+  "name": "trading",
+  "displayName": "Trading",
+  "version": "0.1.0",
+  "description": "Read-only market research workspace for venues, charts, indicators, order books, and trades; no account or order path.",
+  "author": {
+    "name": "Localix"
+  },
+  "license": "MIT",
+  "apiVersion": 1,
+  "category": "data",
+  "surfaces": ["agent", "workbench"],
+  "backend": "./backend/index.ts"
+}

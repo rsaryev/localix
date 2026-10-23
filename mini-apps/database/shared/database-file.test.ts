@@ -77,9 +77,7 @@ describe('database file identification', () => {
     // type in one and not the other is a double-click that opens the wrong thing (or
     // an in-app viewer the OS never offers), which is precisely the drift this plugin
     // pair was built to close.
-    const manifest = JSON.parse(
-      readFileSync(join(import.meta.dir, '..', '.localix-app', 'app.json'), 'utf8'),
-    )
+    const manifest = JSON.parse(readFileSync(join(import.meta.dir, '..', 'mini-app.json'), 'utf8'))
     const declared: string[] = manifest.fileAssociations
       .filter((entry: { name: string }) => entry.name.endsWith('Database'))
       .flatMap((entry: { ext: string[] }) => entry.ext)

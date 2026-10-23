@@ -16,30 +16,30 @@ const run = async (tool: ReturnType<typeof createMiniAppGuideTool>, input: unkno
 
 describe('mini_app_guide', () => {
   test('hands the agent the guide of an enabled mini app', async () => {
-    writeTree(dir(), { 'chess/guide.md': 'Play with the `chess` tool.\n' })
-    const tool = createMiniAppGuideTool([{ app: 'chess', file: join(dir(), 'chess/guide.md') }])
-    expect(await run(tool, { app: 'chess' })).toEqual({
-      text: 'Play with the `chess` tool.\n',
+    writeTree(dir(), { 'tiles/guide.md': 'Play with the `tiles` tool.\n' })
+    const tool = createMiniAppGuideTool([{ app: 'tiles', file: join(dir(), 'tiles/guide.md') }])
+    expect(await run(tool, { app: 'tiles' })).toEqual({
+      text: 'Play with the `tiles` tool.\n',
       isError: false,
     })
   })
 
   test('an app it does not know is an error that names the ones it does', async () => {
     const tool = createMiniAppGuideTool([
-      { app: 'chess', file: join(dir(), 'chess/guide.md') },
-      { app: 'kanban', file: join(dir(), 'kanban/guide.md') },
+      { app: 'tiles', file: join(dir(), 'tiles/guide.md') },
+      { app: 'notes', file: join(dir(), 'notes/guide.md') },
     ])
-    const result = await run(tool, { app: 'chss' })
+    const result = await run(tool, { app: 'tles' })
     expect(result.isError).toBe(true)
-    expect(result.text).toContain('chss')
-    expect(result.text).toContain('chess, kanban')
+    expect(result.text).toContain('tles')
+    expect(result.text).toContain('tiles, notes')
   })
 
   test('a guide the app does not ship says so instead of failing the call', async () => {
-    const tool = createMiniAppGuideTool([{ app: 'chess', file: join(dir(), 'missing.md') }])
-    const result = await run(tool, { app: 'chess' })
+    const tool = createMiniAppGuideTool([{ app: 'tiles', file: join(dir(), 'missing.md') }])
+    const result = await run(tool, { app: 'tiles' })
     expect(result.isError).toBe(true)
-    expect(result.text).toContain('chess')
+    expect(result.text).toContain('tiles')
   })
 
   test('a guide longer than the cap is cut, and says it was', async () => {
@@ -74,6 +74,6 @@ describe('mini_app_guide', () => {
   test('reading a guide changes nothing', () => {
     const tool = createMiniAppGuideTool([])
     expect(tool.mutates).toBe(false)
-    expect(tool.classify?.({ app: 'chess' })).toEqual({ effect: 'read' })
+    expect(tool.classify?.({ app: 'tiles' })).toEqual({ effect: 'read' })
   })
 })

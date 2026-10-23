@@ -20,6 +20,10 @@ export function pluginTrustClass(plugin: DiscoveredPlugin): TrustClass {
   return trustClassOf({
     isBundled: plugin.bundled,
     isCodeBearing: plugin.provides.hasNativeTools,
-    defaultEnabled: plugin.manifest.defaultEnabled,
+    // A bundled mini-app.json is ours and starts on, until mini apps leave this feature and a
+    // first-party catalog install is what trusts one.
+    defaultEnabled:
+      plugin.manifest.defaultEnabled ??
+      (plugin.bundled && plugin.layout === 'mini-app' ? true : undefined),
   })
 }

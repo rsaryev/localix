@@ -1,8 +1,0 @@
-{
-  "name": "snake",
-  "apiVersion": 1,
-  "category": "games",
-  "surfaces": ["agent", "workbench"],
-  "backend": "./backend/index.ts",
-  "defaultEnabled": true
-}

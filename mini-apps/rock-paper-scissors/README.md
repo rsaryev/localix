@@ -28,7 +28,7 @@ Openers alternate from round to round; the agent's `next_round` may name one.
 | The agent           | The wake, every tool result and the chat context are built from `viewFor(game, 'agent')` or `describeForChat`, which never name an unrevealed move.        |
 | Either, afterwards  | The digest (`sha256(salt:move)`) is shown before the reveal, so a swapped move fails the check.                                                            |
 
-No result ever names the agent's own unrevealed move: results are shown to the user too. The skill
+No result ever names the agent's own unrevealed move: results are shown to the user too. The guide
 tells the agent not to deliberate in writing, because its reasoning and replies are visible. The
 table file in the chat's session storage holds both moves in the clear, like every bundled game's
 state; the plugin does not defend against reading it from disk.
@@ -55,6 +55,6 @@ for one short line. `state` is classified `read`; the other actions are `session
 | `backend/routes.ts`       | The table's routes; each answers with the person's view.          |
 | `backend/tools.ts`        | The agent's tool and its sealed `move`.                           |
 | `ui/`                     | The two hands, the move picker, the digest check.                 |
-| `skills/`                 | How the agent plays without giving its move away.                 |
+| `guide.md`                | How the agent plays without giving its move away.                 |
 
 See [Wake a session from a plugin](../../docs/extending/plugin-wakes.md) for the wake contract.

@@ -1,0 +1,95 @@
+{
+  "name": "documents",
+  "displayName": "Documents",
+  "version": "1.0.0",
+  "description": "Read, create, inspect, and attach document, spreadsheet, presentation, PDF, and table content.",
+  "author": {
+    "name": "Localix"
+  },
+  "license": "MIT",
+  "apiVersion": 1,
+  "category": "content",
+  "surfaces": ["agent", "workbench"],
+  "backend": "./backend/index.ts",
+  "fileAssociations": [
+    {
+      "ext": ["pdf"],
+      "name": "PDF Document",
+      "description": "Portable Document Format",
+      "mimeType": "application/pdf",
+      "role": "Viewer",
+      "rank": "Alternate"
+    },
+    {
+      "ext": ["docx"],
+      "name": "Word Document",
+      "description": "Microsoft Word document",
+      "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "role": "Viewer",
+      "rank": "Alternate"
+    },
+    {
+      "ext": ["doc"],
+      "name": "Word 97-2004 Document",
+      "description": "Legacy Microsoft Word document",
+      "mimeType": "application/msword",
+      "role": "Viewer",
+      "rank": "Alternate"
+    },
+    {
+      "ext": ["odt"],
+      "name": "OpenDocument Text",
+      "description": "OpenDocument text document",
+      "mimeType": "application/vnd.oasis.opendocument.text",
+      "role": "Viewer",
+      "rank": "Alternate"
+    },
+    {
+      "ext": ["pptx"],
+      "name": "PowerPoint Presentation",
+      "description": "Microsoft PowerPoint presentation",
+      "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "role": "Viewer",
+      "rank": "Alternate"
+    },
+    {
+      "ext": ["xlsx"],
+      "name": "Excel Workbook",
+      "description": "Microsoft Excel workbook",
+      "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "role": "Viewer",
+      "rank": "Alternate"
+    },
+    {
+      "ext": ["xls"],
+      "name": "Excel 97-2004 Workbook",
+      "description": "Legacy Microsoft Excel workbook",
+      "mimeType": "application/vnd.ms-excel",
+      "role": "Viewer",
+      "rank": "Alternate"
+    },
+    {
+      "ext": ["xlsm"],
+      "name": "Excel Macro-Enabled Workbook",
+      "description": "Microsoft Excel macro-enabled workbook",
+      "mimeType": "application/vnd.ms-excel.sheet.macroEnabled.12",
+      "role": "Viewer",
+      "rank": "Alternate"
+    },
+    {
+      "ext": ["xlsb"],
+      "name": "Excel Binary Workbook",
+      "description": "Microsoft Excel binary workbook",
+      "mimeType": "application/vnd.ms-excel.sheet.binary.macroEnabled.12",
+      "role": "Viewer",
+      "rank": "Alternate"
+    },
+    {
+      "ext": ["csv"],
+      "name": "CSV Document",
+      "description": "Comma-separated values",
+      "mimeType": "text/csv",
+      "role": "Editor"
+    }
+  ]
+}

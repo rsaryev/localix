@@ -21,7 +21,7 @@ its REST driver, exposes no account routes, and registers no order-placement or 
 | Resources        | `localix://resource/trade/...`                                    | Read-only connection, market, ticker, candle, book, trade, funding, and technical references      |
 | Context provider | `trading:public-context`                                          | Accepts only public-profile trade resources                                                       |
 | Search           | Lazy `Trading` scope with `trade`, `market`, and `exchange` terms | Queries live public market rosters only when selected                                             |
-| Skill            | `lightweight-charts`                                              | Agent instructions for the installed chart library's v5 API                                       |
+| Guide            | `guide.md`                                                        | Agent instructions for the installed chart library's v5 API                                       |
 | UI panels        | None                                                              | Workbench surfaces use native UI registration rather than manifest HTML panels                    |
 | Commands         | None                                                              | No slash command is declared                                                                      |
 | Roles            | None                                                              | No worker role is declared                                                                        |
@@ -122,7 +122,7 @@ This target-count bound does not cap each series's total candle count.
 
 ## Source of truth
 
-- [Plugin manifest](.claude-plugin/plugin.json) and [mini app manifest](.localix-app/app.json)
+- [Mini app manifest](mini-app.json) and [agent guide](guide.md)
 - [Plugin dependencies](./package.json)
 - [Backend registration](./backend/index.ts)
 - [Public market service](./backend/service.ts)
@@ -141,4 +141,4 @@ This target-count bound does not cap each series's total candle count.
 - [Trade tape without REST fallback](ui/ui/TradesTape.tsx)
 - [Chart tab](./ui/TradingChartTab.tsx)
 - [Technicals tab](./ui/TechnicalsTab.tsx)
-- [Chart skill](./skills/lightweight-charts/SKILL.md)
+- [Chart guide](./guide.md)

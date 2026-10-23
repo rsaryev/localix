@@ -168,20 +168,20 @@ describe('buildPluginsPromptContext', () => {
   test('a mini app with a guide says so, and how to read it, while the guide tool is on', () => {
     const loadedPlugins = {
       loaded: [
-        { name: 'chess', scope: 'global', toolNames: ['chess'], skills: [], mcpServers: [] },
+        { name: 'tiles', scope: 'global', toolNames: ['tiles'], skills: [], mcpServers: [] },
         { name: 'notes', scope: 'global', toolNames: ['notes'], skills: [], mcpServers: [] },
       ],
-      miniAppGuides: [{ app: 'chess', file: '/apps/chess/guide.md' }],
+      miniAppGuides: [{ app: 'tiles', file: '/apps/tiles/guide.md' }],
       agents: [],
       promptSections: [],
     } as unknown as LoadedPlugins
 
-    const out = buildPluginsPromptContext(loadedPlugins, ['chess', 'notes', 'mini_app_guide'])!
-    expect(out).toContain('- chess — 1 direct tool; guide')
+    const out = buildPluginsPromptContext(loadedPlugins, ['tiles', 'notes', 'mini_app_guide'])!
+    expect(out).toContain('- tiles — 1 direct tool; guide')
     expect(out).toContain('- notes — 1 direct tool\n')
     expect(out).toContain('mini_app_guide')
     // Without the tool on the wire, a guide is nothing the model can act on.
-    const without = buildPluginsPromptContext(loadedPlugins, ['chess', 'notes'])!
+    const without = buildPluginsPromptContext(loadedPlugins, ['tiles', 'notes'])!
     expect(without).not.toContain('guide')
   })
 

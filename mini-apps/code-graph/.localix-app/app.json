@@ -1,8 +1,0 @@
-{
-  "name": "code-graph",
-  "apiVersion": 1,
-  "category": "development",
-  "surfaces": ["agent", "workbench"],
-  "backend": "./backend/index.ts",
-  "defaultEnabled": true
-}
