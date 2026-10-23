@@ -1,6 +1,12 @@
-import { expect, test } from 'bun:test'
+import { beforeEach, expect, test } from 'bun:test'
 
 import { consumeSettingsNav, navigateSettings, subscribeSettingsNav } from './settingsNavBus'
+
+// The bus latches the last navigation for a late subscriber; one left by another file in the same
+// process would replay into these assertions.
+beforeEach(() => {
+  consumeSettingsNav()
+})
 
 test('settings navigation carries an exact capability scope and plugin anchor', () => {
   const received: unknown[] = []

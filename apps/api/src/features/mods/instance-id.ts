@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto'
 
+import type { ModVm } from './isolation/mod-vm'
+
 /**
  * A mod runs once per project, as a Claude Code session runs in one directory: an instance is a
  * plugin's mod in one working directory, named `<plugin>~<hash of the directory>`. Plugin names
@@ -11,4 +13,13 @@ export const instanceIdOf = (plugin: string, cwd: string) =>
 export const pluginOfInstance = (id: string) => {
   const at = id.lastIndexOf('~')
   return at < 0 ? id : id.slice(0, at)
+}
+
+/** A running instance: one plugin's mod in one working directory. */
+export interface ModInstance {
+  plugin: string
+  cwd: string
+  usedAt: number
+  dispose(): void
+  vm?: ModVm
 }

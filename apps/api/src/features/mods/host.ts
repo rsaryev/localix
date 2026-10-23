@@ -13,7 +13,7 @@ import { createModConversations } from './conversations'
 import { createEventCalls } from './event-calls'
 import { inScene, type ModScene, type ModSource, type ModsPorts } from './contracts'
 import { createHooksLoader, type HooksOptions, type LoadedMod } from './hooks-load'
-import { instanceIdOf, pluginOfInstance } from './instance-id'
+import { instanceIdOf, pluginOfInstance, type ModInstance } from './instance-id'
 import { judgeJoin, resolveTables } from './joining'
 import { createMeasurer } from './measure'
 import type { ModVm } from './isolation/mod-vm'
@@ -33,14 +33,6 @@ import { createModHealth, RESTART_RULES, SUPERVISOR_CLOCK } from './restarts'
 
 /** Projects a plugin's mod runs in at once; the least recently used beyond them stops. */
 const INSTANCES_PER_PLUGIN = 8
-
-interface Instance {
-  plugin: string
-  cwd: string
-  usedAt: number
-  dispose(): void
-  vm?: ModVm
-}
 
 /** Why the mods running in a project refused one more (`plugin.register`). */
 class ModRefusedError extends Error {}
@@ -64,7 +56,7 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
   const conversations = createModConversations()
   const state = createStateSpaces({ changed: () => ports.changed() })
   const sources = new Map<string, LoadedMod>()
-  const instances = new Map<string, Instance>()
+  const instances = new Map<string, ModInstance>()
   const starting = new Map<string, Promise<string | null>>()
   const clock = options.clock ?? SUPERVISOR_CLOCK
   const health = createModHealth({ ...RESTART_RULES, ...options.restarts }, clock.now, ports.report)
