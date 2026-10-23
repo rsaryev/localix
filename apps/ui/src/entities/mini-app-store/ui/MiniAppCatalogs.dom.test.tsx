@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
+import { ADA, HOSTED } from '@/testing/miniAppStore'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -8,11 +9,11 @@ beforeAll(() => {
 })
 afterAll(async () => teardown())
 
-const HOSTED = 'https://github.com/rsaryev/localix/releases/latest/download/mini-app-catalog.json'
-const THEIRS = 'https://ada.test/releases/latest/download/mini-app-catalog.json'
+const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
 
-async function render(onAdd: (url: string) => Promise<void>) {
+async function render() {
   const removed: string[] = []
+  const added: string[] = []
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { MiniAppCatalogsView } = await import('./MiniAppCatalogs')
@@ -22,69 +23,63 @@ async function render(onAdd: (url: string) => Promise<void>) {
   await act(async () =>
     root.render(
       <MiniAppCatalogsView
-        catalogs={[
-          { url: HOSTED, builtIn: true },
-          { url: THEIRS, builtIn: false },
-        ]}
-        onAdd={onAdd}
-        onRemove={async (url) => void removed.push(url)}
+        catalogs={{
+          list: [
+            { url: HOSTED, builtIn: true },
+            { url: ADA, builtIn: false },
+          ],
+          preview: async (url) => ({
+            url,
+            publishers: ['Bob'],
+            apps: 1,
+            icons: [],
+            verified: false,
+            added: false,
+          }),
+          add: async (url) => void added.push(url),
+          remove: async (url) => void removed.push(url),
+        }}
+        counts={{ [HOSTED]: 19, [ADA]: 2 }}
       />,
     ),
   )
-  const type = async (value: string) =>
+  const click = async (element: Element | null | undefined) =>
     act(async () => {
-      const input = host.querySelector<HTMLInputElement>('input')!
-      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, value)
-      input.dispatchEvent(new Event('input', { bubbles: true }))
-    })
-  const submit = async () =>
-    act(async () => {
-      host
-        .querySelector('form')!
-        .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+      ;(element as HTMLElement).click()
+      await settle()
     })
   const done = async () => {
     await act(async () => root.unmount())
     host.remove()
+    document.body.innerHTML = ''
   }
-  return { host, act, type, submit, removed, done }
+  return { host, act, click, removed, added, done }
 }
 
-describe('the catalogs the store reads', () => {
-  test('the Localix catalog is named and stays; an added one can be removed', async () => {
-    const view = await render(async () => {})
+describe('Settings → Mini apps → Catalogs', () => {
+  test('lists Localix first with its app count, then the added ones, each removable', async () => {
+    const view = await render()
     try {
       const rows = [...view.host.querySelectorAll('li')]
       expect(rows[0]?.textContent).toContain('Localix')
+      expect(rows[0]?.textContent).toContain('19 apps')
       expect(rows[0]?.querySelector('button')).toBeNull()
       expect(rows[1]?.textContent).toContain('ada.test')
-      await view.act(async () =>
-        rows[1]!.querySelector<HTMLButtonElement>('button[aria-label^="Remove"]')!.click(),
-      )
-      expect(view.removed).toEqual([THEIRS])
+      await view.click(rows[1]!.querySelector('button[aria-label="Remove ada.test"]'))
+      expect(view.removed).toEqual([ADA])
     } finally {
       await view.done()
     }
   })
 
-  test('adding one sends the address; a refusal is said under the field and the text stays', async () => {
-    const sent: string[] = []
-    const view = await render(async (url) => {
-      sent.push(url)
-      if (url.includes('broken'))
-        throw new Error('The mini app catalog at broken.test answered 404')
-    })
+  test('Add catalog… opens the same dialog the store uses', async () => {
+    const view = await render()
     try {
-      await view.type('https://broken.test/catalog.json')
-      await view.submit()
-      expect(view.host.textContent).toContain('answered 404')
-      expect(view.host.querySelector('input')!.value).toBe('https://broken.test/catalog.json')
-
-      await view.type('https://bob.test/catalog.json')
-      await view.submit()
-      expect(sent).toEqual(['https://broken.test/catalog.json', 'https://bob.test/catalog.json'])
-      expect(view.host.querySelector('input')!.value).toBe('')
-      expect(view.host.textContent).not.toContain('answered 404')
+      const add = [...view.host.querySelectorAll('button')].find(
+        (b) => b.textContent === 'Add catalog…',
+      )
+      await view.click(add)
+      expect(document.body.querySelector('[role="dialog"] h2')?.textContent).toBe('Add a catalog')
     } finally {
       await view.done()
     }

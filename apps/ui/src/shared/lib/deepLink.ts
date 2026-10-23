@@ -71,6 +71,8 @@ function hasControlChars(value: string): boolean {
 export type DeepLinkIntent =
   | { kind: 'route'; hash: string }
   | { kind: 'open'; path: string; fresh: boolean }
+  /** A tab the UI navigation opens (`localix://ui/work-item/…`), read-only like any link. */
+  | { kind: 'ui'; uri: string }
 
 /**
  * Parse a `localix://…` URL into a structured intent, or null when the URL is not
@@ -99,6 +101,12 @@ export function parseDeepLink(rawUrl: string): DeepLinkIntent | null {
     const prompt = url.searchParams.get('prompt') ?? ''
     if (prompt.length > MAX_PROMPT_LENGTH) return null
     return { kind: 'route', hash: prompt ? `#/?prompt=${encodeURIComponent(prompt)}` : '#/' }
+  }
+  // A tab, such as the store's Add catalog dialog: the UI's own location registry validates the
+  // rest. Only work-item addresses come in from outside; settings and actions do not.
+  if (url.hostname === 'ui' && segments[0] === 'work-item' && segments.length >= 2) {
+    if (rawUrl.length > MAX_PATH_LENGTH || hasControlChars(rawUrl)) return null
+    return { kind: 'ui', uri: rawUrl }
   }
   if (url.hostname === 'open' && segments.length === 0) {
     const path = url.searchParams.get('path') ?? ''

@@ -4,7 +4,6 @@ import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { tauriInvoke } from '@/shared/lib/tauri'
 import { toast } from '@/shared/lib/notify'
 import { ensureStandaloneAppProject } from '@/shared/lib/standaloneAppProject'
-import type { IconComponent } from './appIcon'
 
 /**
  * Mini apps installed as their own Mac apps. The shell owns the bundles
@@ -20,10 +19,10 @@ export interface InstalledStandaloneApp {
   projectDir: string | null
 }
 
+/** A mini app that can become a Mac app; its icon is the one its manifest names. */
 export interface StandaloneAppSource {
   miniApp: string
   title: string
-  Icon: IconComponent
 }
 
 /** Only the macOS desktop shell can make an app bundle. */
@@ -48,7 +47,7 @@ export async function refreshStandaloneApps(): Promise<void> {
   }
 }
 
-function subscribe(listener: () => void) {
+export function subscribeStandaloneApps(listener: () => void) {
   listeners.add(listener)
   return () => listeners.delete(listener)
 }
@@ -62,32 +61,45 @@ export function useInstalledStandaloneApps(): readonly InstalledStandaloneApp[] 
     window.addEventListener('focus', onFocus)
     return () => window.removeEventListener('focus', onFocus)
   }, [])
-  return useSyncExternalStore(subscribe, () => installed)
+  return useSyncExternalStore(subscribeStandaloneApps, installedStandaloneApps)
 }
 
-/** Make the mini app its own app, then open it. The shell signs and registers the bundle. */
-export async function installStandaloneApp(source: StandaloneAppSource): Promise<void> {
+/** The apps as last read from the shell. */
+export const installedStandaloneApps = (): readonly InstalledStandaloneApp[] => installed
+
+/**
+ * Make the mini app its own app, with its own icon, then open it. The shell signs and registers
+ * the bundle. Throws what went wrong, for a caller that reports it where the person asked.
+ */
+export async function createStandaloneApp(source: StandaloneAppSource): Promise<void> {
   const invoke = tauriInvoke()
-  if (!invoke) return
+  if (!invoke) throw new Error('Only the Localix Mac app can make a desktop app')
   try {
     // Drawn only here, so the renderer it needs stays out of the workspace's startup.
     const { renderAppIcon } = await import('./appIcon')
-    const icons = await renderAppIcon(source.Icon)
-    const installed = (await invoke('mini_app_install', {
+    const icons = await renderAppIcon(source.miniApp, source.title)
+    const created = (await invoke('mini_app_install', {
       request: { miniApp: source.miniApp, name: source.title, icons },
     })) as InstalledStandaloneApp
     // The app opens into a project of its own: make it now, before the app's first launch.
-    if (installed.projectDir) await ensureStandaloneAppProject(installed.projectDir, source.title)
+    if (created.projectDir) await ensureStandaloneAppProject(created.projectDir, source.title)
     await invoke('mini_app_open', { miniApp: source.miniApp })
     toast.success(`${source.title} is now an app`, {
       description: 'Find it in Applications, Launchpad and Spotlight, or keep it in the Dock.',
     })
+  } finally {
+    await refreshStandaloneApps()
+  }
+}
+
+/** {@link createStandaloneApp}, with a failure said in a toast. */
+export async function installStandaloneApp(source: StandaloneAppSource): Promise<void> {
+  try {
+    await createStandaloneApp(source)
   } catch (error) {
     toast.error(`Could not make ${source.title} an app`, {
       description: errorMessage(error, '') || undefined,
     })
-  } finally {
-    await refreshStandaloneApps()
   }
 }
 

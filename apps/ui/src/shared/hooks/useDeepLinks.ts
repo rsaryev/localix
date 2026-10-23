@@ -4,6 +4,9 @@ import { parseDeepLink } from '@/shared/lib/deepLink'
 import { toast } from '@/shared/lib/notify'
 import { tauriInvoke } from '@/shared/lib/tauri'
 import { openDeepLinkPath } from '@/shared/lib/openDeepLinkPath'
+import { inspector } from '@/shared/lib/inspectorBus'
+import { resolveUiNavigation } from '@/shared/lib/uiNavigation'
+import { workItemRequestOf } from './useUiNavigation'
 
 declare global {
   interface Window {
@@ -37,6 +40,14 @@ export function useDeepLinks(): void {
       }
       if (intent.kind === 'route') {
         window.location.hash = intent.hash
+        return
+      }
+      if (intent.kind === 'ui') {
+        // Read-only resolution through the location registry; only a tab opens from outside.
+        const target = resolveUiNavigation(intent.uri)
+        if (target?.kind === 'work-item') inspector.openWorkItem(workItemRequestOf(target, null))
+        else
+          toast.error('Could not open that link', { description: `Localix has no ${intent.uri}.` })
         return
       }
       // `localix://open?path=…` — a file opens in the chat on screen; a folder

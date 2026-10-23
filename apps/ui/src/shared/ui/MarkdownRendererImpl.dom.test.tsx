@@ -9,6 +9,25 @@ beforeAll(() => {
 })
 
 describe('live Markdown renderer', () => {
+  test('with raw HTML off, a document from outside keeps its Markdown and drops its tags', async () => {
+    const { act } = await import('react')
+    const { createRoot } = await import('react-dom/client')
+    const { default: MarkdownRendererImpl } = await import('./MarkdownRendererImpl')
+    const host = document.createElement('div')
+    const root = createRoot(host)
+    const readme = '# Notes\n\n<p align="center"><b>Bold</b></p>\n\nPlain **strong** text.'
+    try {
+      await act(async () =>
+        root.render(<MarkdownRendererImpl rawHtml={false}>{readme}</MarkdownRendererImpl>),
+      )
+      expect(host.querySelector('h1')?.textContent).toBe('Notes')
+      expect(host.querySelector('strong')?.textContent).toBe('strong')
+      expect(host.querySelector('p[align], b')).toBeNull()
+    } finally {
+      await act(async () => root.unmount())
+    }
+  })
+
   test('does not erase ordinary prose beginning with a pipe', async () => {
     const { act } = await import('react')
     const { createRoot } = await import('react-dom/client')

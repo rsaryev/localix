@@ -108,7 +108,6 @@ export function useChatPagePalette({
             {
               miniApp: viewlet.miniAppName,
               title: viewlet.title,
-              Icon: viewlet.Icon,
             },
             standaloneApps,
           ).map((action) => ({

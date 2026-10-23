@@ -13,5 +13,5 @@ export function standaloneAppSourceForKind(kind: string): StandaloneAppSource | 
   if (!miniApp) return null
   const screen = railViewletRegistry.list().find((viewlet) => viewlet.miniAppName === miniApp)
   if (!screen) return null
-  return { miniApp, title: screen.title, Icon: screen.Icon }
+  return { miniApp, title: screen.title }
 }

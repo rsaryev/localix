@@ -65,6 +65,11 @@ export interface MarkdownRendererProps {
    * message stays read-only.
    */
   onSourceChange?: (markdown: string) => void
+  /**
+   * Off for a document from outside Localix (a mini app's README in the store): its HTML is
+   * dropped rather than parsed, so only Markdown reaches the page. On by default.
+   */
+  rawHtml?: boolean
 }
 
 /** A relative href that points at a file (optionally with a #Lxx anchor) → its path, else null. */
@@ -165,6 +170,7 @@ const MarkdownBody = memo(function MarkdownBody({
   linkifyMentions,
   mentionHandles,
   linkifyAgentNames,
+  rawHtml = true,
 }: {
   text: string
   components: Components
@@ -172,6 +178,7 @@ const MarkdownBody = memo(function MarkdownBody({
   linkifyMentions?: boolean
   mentionHandles?: readonly string[]
   linkifyAgentNames?: boolean
+  rawHtml?: boolean
 }) {
   const plainStreaming = shouldRenderPlainStreaming(text.length, streaming)
   const actionSurface = useActionSurface()
@@ -197,7 +204,7 @@ const MarkdownBody = memo(function MarkdownBody({
   // The one fence still being written (StreamingDiagram draws every other diagram at once).
   const growingFence = useMemo(() => (streaming ? openFenceBody(text) : null), [streaming, text])
   const hasMath = hasMathSyntax(display)
-  const hasHtml = hasHtmlSyntax(display)
+  const hasHtml = rawHtml && hasHtmlSyntax(display)
   // Raw HTML is incomplete while streaming and often appears inside growing HTML
   // code fences. Keep it inert until settlement, then parse and sanitize together.
   const htmlActive = shouldActivateHtml(hasHtml, streaming)
@@ -276,6 +283,7 @@ const MarkdownBody = memo(function MarkdownBody({
             rehypePlugins={rehypePlugins}
             components={components}
             urlTransform={markdownUrlTransform}
+            skipHtml={!rawHtml}
           >
             {display}
           </ReactMarkdown>
@@ -459,6 +467,7 @@ const MarkdownRendererImpl = memo(function MarkdownRendererImpl({
   mentionHandles,
   linkifyAgentNames,
   onSourceChange,
+  rawHtml,
 }: MarkdownRendererProps) {
   const streaming = isStreaming ?? false
   const smoothStreaming = shouldSmoothStreaming(children.length, streaming)
@@ -480,6 +489,7 @@ const MarkdownRendererImpl = memo(function MarkdownRendererImpl({
       linkifyMentions={linkifyMentions}
       mentionHandles={mentionHandles}
       linkifyAgentNames={linkifyAgentNames}
+      rawHtml={rawHtml}
     />
   )
   return onSourceChange ? (

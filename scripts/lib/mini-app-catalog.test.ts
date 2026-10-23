@@ -114,10 +114,10 @@ describe('packing the staged mini apps into a catalog', () => {
 
   test('refuses to pack an app whose icon is missing or not a valid icon', async () => {
     const staged = join(root(), 'staged')
-    stagedApp(staged, 'chess', { icon: undefined })
+    stagedApp(staged, 'timer', { icon: undefined })
     await expect(
       packMiniAppCatalog({ stagedRoot: staged, outDir: join(root(), 'out') }),
-    ).rejects.toThrow('chess: mini-app.json declares no "icon"')
+    ).rejects.toThrow('timer: mini-app.json declares no "icon"')
 
     const other = join(root(), 'other')
     const dir = stagedApp(other, 'notes')

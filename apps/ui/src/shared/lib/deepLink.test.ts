@@ -7,6 +7,19 @@ const deepLinkToHash = (rawUrl: string): string | null => {
   return intent?.kind === 'route' ? intent.hash : null
 }
 
+describe('parseDeepLink — a tab the app opens', () => {
+  it('passes a work-item link to the UI navigation as it came, query and all', () => {
+    const url =
+      'localix://ui/work-item/mini-app-store/add-catalog?url=https%3A%2F%2Fada.test%2Fc.json'
+    expect(parseDeepLink(url)).toEqual({ kind: 'ui', uri: url })
+  })
+
+  it('takes no other kind of UI address from outside the app', () => {
+    expect(parseDeepLink('localix://ui/action/command/quit')).toBeNull()
+    expect(parseDeepLink('localix://ui/settings/root')).toBeNull()
+  })
+})
+
 describe('parseDeepLink — route intent (as a hash)', () => {
   it('maps session links to the chat route', () => {
     expect(deepLinkToHash('localix://session/abc123')).toBe('#/chat/abc123')

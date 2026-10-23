@@ -14,6 +14,8 @@ import { isDesktop } from '@localixai/kit/environment'
 import { registerAgentRunPreflight } from '@/shared/api/agentRunPreflight'
 import { registerSessionPreviews } from '@/shared/lib/sessionPreviews'
 import { registerChatSurface } from '@/shared/ui/chatSurfaceSlot'
+import { provideMiniAppDesktopApps } from '@/shared/lib/miniAppDesktopApps'
+import { standaloneDesktopApps } from '@/features/standalone-mini-apps'
 import { terminal as terminalBus } from '@/shared/lib/terminalBus'
 import { finishTerminalTabs } from '@/features/terminal/model/deadTerminalTabs'
 import { ChatSurface } from '@/widgets/chat-workspace/ui/ChatSurface'
@@ -73,6 +75,8 @@ registerAgentRunPreflight(waitForRuntimeCapabilities)
 registerSessionPreviews(inspectorSessionPreviews)
 // The editor grid lays out chat tabs; the chat workspace widget draws them.
 registerChatSurface(ChatSurface)
+// The store offers a mini app's desktop app through this port, without importing the feature.
+provideMiniAppDesktopApps(standaloneDesktopApps)
 terminalBus.setFinisher(finishTerminalTabs)
 // Every completion surface (composer, commit subject, mini app fields, the code editor) carries
 // what is open on screen; the grid is the one thing that knows it.

@@ -1,5 +1,10 @@
 import { assertOk, cleanQuery, client, unwrap } from './internal'
-import type { MiniAppCatalogEntryRecord, MiniAppStoreResponse } from '@localixai/api/client'
+import type {
+  MiniAppCatalogEntryRecord,
+  MiniAppCatalogPreviewRecord,
+  MiniAppStorePageRecord,
+  MiniAppStoreResponse,
+} from '@localixai/api/client'
 import type { MiniAppRecord } from './contracts'
 
 /**
@@ -121,6 +126,16 @@ export const miniAppsApi = {
   /** What the catalogs offer, what is installed and the installs in flight. */
   async listMiniAppStore(): Promise<MiniAppStoreResponse> {
     return unwrap(await client.rpc['mini-apps'].store.$get())
+  },
+
+  /** One app's store page: its row, README, screenshots and what it brings. */
+  async getMiniAppStorePage(name: string): Promise<MiniAppStorePageRecord> {
+    return unwrap(await client.rpc['mini-apps'].store[':name'].$get({ param: { name } }))
+  },
+
+  /** Read a catalog before adding it: who publishes it and what is in it. Writes nothing. */
+  async previewMiniAppCatalog(url: string): Promise<MiniAppCatalogPreviewRecord> {
+    return unwrap(await client.rpc['mini-apps'].catalogs.preview.$post({ json: { url } }))
   },
 
   /** Queue an install; its progress arrives as `mini-app-installs` pokes. */
