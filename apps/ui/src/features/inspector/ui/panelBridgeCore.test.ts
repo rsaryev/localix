@@ -30,16 +30,21 @@ function makeHost(win: PanelWindowLike | null, onBridged?: () => void) {
     actions: createPanelActions(deps),
     context: { pluginName: 'sample-plugin', projectId: '', panelName: 'demo' },
     onBridged,
+    getNonce: () => NONCE,
   })
 }
 
 const flush = () => new Promise((r) => setTimeout(r, 0))
 
+/** The srcdoc document's bridge nonce, as `buildPanelSrcDoc`'s bootstrap stamps it. */
+const NONCE = 'doc-nonce-1'
+const stamp = <T extends object>(message: T, nonce: string = NONCE) => ({ ...message, nonce })
+
 describe('createPanelBridgeHost', () => {
   test('ping invoke round-trips a correlated result through the fake window', async () => {
     const win = fakeWindow()
     const host = makeHost(win)
-    host.handleMessage({ data: invokeMessage('req-1', 'ping', { n: 7 }), source: win })
+    host.handleMessage({ data: stamp(invokeMessage('req-1', 'ping', { n: 7 })), source: win })
     await flush()
     expect(win.posted).toEqual([
       { lx: 'plugin-ui', v: 1, type: 'result', id: 'req-1', payload: { n: 7 } },
@@ -49,7 +54,7 @@ describe('createPanelBridgeHost', () => {
   test('unknown action replies with a correlated error', async () => {
     const win = fakeWindow()
     const host = makeHost(win)
-    host.handleMessage({ data: invokeMessage('req-2', 'formatDisk'), source: win })
+    host.handleMessage({ data: stamp(invokeMessage('req-2', 'formatDisk')), source: win })
     await flush()
     expect(win.posted).toEqual([
       {
@@ -82,8 +87,8 @@ describe('createPanelBridgeHost', () => {
     const host = makeHost(win, () => {
       bridgedCalls++
     })
-    host.handleMessage({ data: readyMessage(), source: win })
-    host.handleMessage({ data: readyMessage(), source: win }) // duplicate ready: once
+    host.handleMessage({ data: stamp(readyMessage()), source: win })
+    host.handleMessage({ data: stamp(readyMessage()), source: win }) // duplicate ready: once
     expect(host.isBridged()).toBe(true)
     expect(bridgedCalls).toBe(1)
     host.postTheme({ theme: 'dark', vars: { '--background': '#000' } })
@@ -119,7 +124,7 @@ describe('createPanelBridgeHost', () => {
     host.postSessionEvent('sess-9', 'run-started')
     expect(win.posted).toEqual([])
     // After opt-in it streams as a minimal `event` envelope.
-    host.handleMessage({ data: readyMessage(), source: win })
+    host.handleMessage({ data: stamp(readyMessage()), source: win })
     host.postSessionEvent('sess-9', 'run-completed')
     expect(win.posted).toEqual([
       {
@@ -144,12 +149,53 @@ describe('createPanelBridgeHost', () => {
         },
       }),
       context: { pluginName: 'sample-plugin', projectId: '', panelName: 'demo' },
+      getNonce: () => NONCE,
     })
     const msg = invokeMessage('drop-me', 'sendPrompt', { text: 'hi' })
     delete msg.id
-    host.handleMessage({ data: msg, source: win })
+    host.handleMessage({ data: stamp(msg), source: win })
     await flush()
     expect(sent).toEqual(['hi'])
     expect(win.posted).toEqual([])
+  })
+
+  test('a document navigated into the frame cannot use the bridge without the srcdoc nonce', async () => {
+    const win = fakeWindow()
+    const sent: string[] = []
+    let bridgedCalls = 0
+    const host = createPanelBridgeHost({
+      getWindow: () => win,
+      actions: createPanelActions({
+        getSessionId: () => 's1',
+        sendMessage: async (_sessionId, text) => {
+          sent.push(text)
+          return {}
+        },
+      }),
+      context: { pluginName: 'sample-plugin', projectId: '', panelName: 'demo' },
+      onBridged: () => bridgedCalls++,
+      getNonce: () => NONCE,
+    })
+    // Same WindowProxy, a different document: it never saw the nonce, or guesses wrong.
+    host.handleMessage({ data: readyMessage(), source: win })
+    host.handleMessage({ data: invokeMessage('a1', 'sendPrompt', { text: 'probe' }), source: win })
+    host.handleMessage({
+      data: stamp(invokeMessage('a2', 'sendPrompt', { text: 'probe' }), 'guess'),
+      source: win,
+    })
+    await flush()
+    expect(sent).toEqual([])
+    expect(bridgedCalls).toBe(0)
+    expect(win.posted).toEqual([])
+
+    // A host with no live document nonce fails closed even for a stamped message.
+    const unbound = createPanelBridgeHost({
+      getWindow: () => win,
+      actions: createPanelActions({ getSessionId: () => 's1', sendMessage: async () => ({}) }),
+      context: { pluginName: 'sample-plugin', projectId: '', panelName: 'demo' },
+      getNonce: () => null,
+    })
+    unbound.handleMessage({ data: stamp(readyMessage()), source: win })
+    expect(unbound.isBridged()).toBe(false)
   })
 })

@@ -19,7 +19,7 @@ import type { PanelActionContext, PanelActionTable } from '@/shared/contrib/plug
  * protocol so it is testable with fake windows:
  *
  * - validates every inbound message (envelope guard + fail-closed source
- *   check against the LIVE iframe window),
+ *   check against the LIVE iframe window + the srcdoc document's nonce),
  * - flips `bridged` on the panel's `ready` opt-in (a static panel that never
  *   posts it keeps the legacy remount behavior — the caller checks
  *   `isBridged()`),
@@ -41,6 +41,12 @@ export interface PanelBridgeHostOptions {
   context: PanelActionContext
   /** Fired once, when the panel posts `ready` (opts into the bridge). */
   onBridged?: () => void
+  /**
+   * The nonce `buildPanelSrcDoc` baked into the CURRENT srcdoc document's bootstrap; null when
+   * none is loaded. The window check alone is not enough: a frame keeps its WindowProxy when it
+   * navigates, so a page the view links to would otherwise inherit `sendPrompt`/`callBackend`.
+   */
+  getNonce: () => string | null | undefined
 }
 
 export interface PanelBridgeHost {
@@ -58,7 +64,7 @@ export interface PanelBridgeHost {
 }
 
 export function createPanelBridgeHost(options: PanelBridgeHostOptions): PanelBridgeHost {
-  const { getWindow, actions, context, onBridged } = options
+  const { getWindow, actions, context, onBridged, getNonce } = options
   let bridged = false
 
   function post(message: unknown): void {
@@ -91,6 +97,9 @@ export function createPanelBridgeHost(options: PanelBridgeHostOptions): PanelBri
       if (!isPluginBridgeMessage(event.data)) return
       // Trust only THIS panel's live iframe — fail closed when it is unmounted.
       if (!isMessageFromWindow(getWindow(), event.source)) return
+      // ...and only the document the host built for it. Fail closed without a nonce.
+      const nonce = getNonce()
+      if (!nonce || (event.data as { nonce?: unknown }).nonce !== nonce) return
       const message = event.data
       if (message.type === 'ready') {
         if (!bridged) {

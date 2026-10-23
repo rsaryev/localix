@@ -9,7 +9,10 @@ than native React registrations or host UI-kit imports.
 ## Acquire the bridge
 
 The host injects `acquireLocalixApi()` before the plugin HTML runs. Acquire it once per document; a
-second acquisition throws. The returned client is frozen and speaks protocol version 1.
+second acquisition throws. The returned client is frozen and speaks protocol version 1. The host
+accepts bridge messages only from the document it built for the view: each carries a per-document
+key that the injected client adds. A page the frame navigates to, or a hand-written `postMessage`
+envelope, is ignored.
 
 ```html
 <script type="module">

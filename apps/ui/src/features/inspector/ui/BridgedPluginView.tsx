@@ -5,7 +5,7 @@ import { collectHostThemeCss } from '@/shared/lib/hostThemeVars'
 import { StateNotice } from '@localixai/kit/state-notice'
 import { ProblemLine, useProblemReport } from '@/shared/ui/problem-report'
 import { LoadingHint } from '@localixai/kit/empty-hint'
-import { buildPanelSrcDoc } from './pluginPanelSrcDoc'
+import { buildPanelSrcDoc, mintPanelNonce } from './pluginPanelSrcDoc'
 import { usePluginPanelBridge } from './usePluginPanelBridge'
 import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
 import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
@@ -115,12 +115,16 @@ export function BridgedPluginView({
   }, [workItemVisible, fetchKey])
 
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  // One bridge nonce per loaded view: only documents the host builds from this HTML carry it.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- a reload (fetchKey) mints a fresh one.
+  const nonce = useMemo(() => (html === null ? null : mintPanelNonce()), [html, fetchKey])
   const { bridged } = usePluginPanelBridge({
     pluginName,
     projectId,
     panelName: viewName,
     iframeRef,
     resetKey: fetchKey,
+    nonce,
     publishMessageContext,
   })
 
@@ -134,14 +138,15 @@ export function BridgedPluginView({
 
   const srcDoc = useMemo(
     () =>
-      html !== null
+      html !== null && nonce !== null
         ? buildPanelSrcDoc(
             html,
             docTheme.appearance === 'light' ? 'light' : 'dark',
             collectHostThemeCss(),
+            nonce,
           )
         : null,
-    [html, docTheme],
+    [html, docTheme, nonce],
   )
 
   // Called above the early returns and given `null` when healthy — the surface that owns the

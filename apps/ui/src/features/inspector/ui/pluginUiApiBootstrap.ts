@@ -9,9 +9,14 @@
  * cannot import the application bundle. The static string contains no plugin data,
  * so embedding it in a <script> cannot create an interpolation/injection seam.
  */
-export const PLUGIN_UI_API_BOOTSTRAP = String.raw`
+const BOOTSTRAP_SOURCE = String.raw`
 (function () {
   'use strict';
+
+  // This document's bridge nonce. The host drops any message without it, so a page the frame
+  // later navigates to (same WindowProxy, new document) cannot speak for the plugin view.
+  var NONCE = '__LOCALIX_BRIDGE_NONCE__';
+  if (document.currentScript) document.currentScript.remove();
 
   var MARKER = 'plugin-ui';
   var VERSION = 1;
@@ -27,7 +32,7 @@ export const PLUGIN_UI_API_BOOTSTRAP = String.raw`
   var eventListeners = new Set();
 
   function post(type, payload, id) {
-    var message = { lx: MARKER, v: VERSION, type: type };
+    var message = { lx: MARKER, v: VERSION, type: type, nonce: NONCE };
     if (id !== undefined) message.id = id;
     if (payload !== undefined) message.payload = payload;
     parent.postMessage(message, '*');
@@ -178,3 +183,11 @@ export const PLUGIN_UI_API_BOOTSTRAP = String.raw`
   });
 })();
 `.trim()
+
+const NONCE_RE = /^[A-Za-z0-9_-]{16,128}$/
+
+/** The bootstrap for ONE srcdoc document, stamped with that document's bridge nonce. */
+export function pluginUiApiBootstrap(nonce: string): string {
+  if (!NONCE_RE.test(nonce)) throw new Error('Invalid plugin bridge nonce')
+  return BOOTSTRAP_SOURCE.replace('__LOCALIX_BRIDGE_NONCE__', nonce)
+}

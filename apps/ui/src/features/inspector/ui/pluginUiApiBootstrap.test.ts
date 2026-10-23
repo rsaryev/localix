@@ -6,7 +6,7 @@ import type {
   PluginUiApi,
 } from '@localixai/plugin-sdk/ui'
 
-import { PLUGIN_UI_API_BOOTSTRAP } from './pluginUiApiBootstrap'
+import { pluginUiApiBootstrap } from './pluginUiApiBootstrap'
 
 type MessageListener = (event: { source: unknown; data: unknown }) => void
 
@@ -54,7 +54,7 @@ function bootstrapFixture() {
     },
   }
 
-  runInNewContext(PLUGIN_UI_API_BOOTSTRAP, {
+  runInNewContext(pluginUiApiBootstrap('test-bridge-nonce-0001'), {
     window,
     parent,
     document,
@@ -88,7 +88,9 @@ describe('host-injected plugin UI API', () => {
 
     api.ready()
     api.ready()
-    expect(fixture.posted).toEqual([{ lx: 'plugin-ui', v: 1, type: 'ready' }])
+    expect(fixture.posted as unknown[]).toEqual([
+      { lx: 'plugin-ui', v: 1, type: 'ready', nonce: 'test-bridge-nonce-0001' },
+    ])
   })
 
   test('correlates invoke results and ignores messages not sent by the parent', async () => {

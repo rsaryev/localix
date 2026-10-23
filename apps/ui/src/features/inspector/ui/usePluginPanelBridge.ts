@@ -34,6 +34,7 @@ export function usePluginPanelBridge({
   panelName,
   iframeRef,
   resetKey,
+  nonce,
   publishMessageContext,
 }: {
   pluginName: string
@@ -41,12 +42,15 @@ export function usePluginPanelBridge({
   panelName: string
   iframeRef: React.RefObject<HTMLIFrameElement | null>
   resetKey: string
+  /** The bridge nonce baked into the current srcdoc document; null before one is built. */
+  nonce: string | null
   publishMessageContext?: PublishMessageContext
 }): { bridged: boolean } {
   const [bridged, setBridged] = useState(false)
   // The chat the view's tab belongs to (the grid provides it around every tab body). Read through
   // a ref so the bridge, built once per panel document, always answers with the current one.
   const sessionRef = useLatestRef(useWorkItemSessionId())
+  const nonceRef = useLatestRef(nonce)
 
   // Reset synchronously when the panel document changes (adjust-during-render,
   // same pattern PluginPanelTab uses for its error state) so a stale `bridged`
@@ -60,6 +64,7 @@ export function usePluginPanelBridge({
   useEffect(() => {
     const core = createPanelBridgeHost({
       getWindow: () => iframeRef.current?.contentWindow,
+      getNonce: () => nonceRef.current,
       // Built-ins (ping + sendPrompt with its session guards) available
       // to all, PLUS only THIS plugin's own custom actions — scoped by pluginName
       // so a view for plugin X cannot invoke plugin Y's actions.

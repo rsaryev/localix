@@ -41,7 +41,7 @@ describe('PANEL_CSP', () => {
 })
 
 describe('buildPanelSrcDoc', () => {
-  const doc = buildPanelSrcDoc('<p>hi</p>', 'dark', '--background: #000;')
+  const doc = buildPanelSrcDoc('<p>hi</p>', 'dark', '--background: #000;', 'doc-nonce-0123456789')
 
   test('embeds the enforced CSP verbatim', () => {
     expect(doc).toContain(`content="${PANEL_CSP}"`)
@@ -50,7 +50,7 @@ describe('buildPanelSrcDoc', () => {
   test('drives the theme attribute and color-scheme from `theme`', () => {
     expect(doc).toContain('<html data-theme="dark">')
     expect(doc).toContain('color-scheme: dark;')
-    const light = buildPanelSrcDoc('', 'light', '')
+    const light = buildPanelSrcDoc('', 'light', '', 'doc-nonce-0123456789')
     expect(light).toContain('<html data-theme="light">')
     expect(light).toContain('color-scheme: light;')
   })
@@ -64,6 +64,11 @@ describe('buildPanelSrcDoc', () => {
     expect(doc).toContain('@media (prefers-contrast: more)')
     expect(doc).toContain('@media (prefers-reduced-transparency: reduce)')
     expect(doc).toContain('@media (forced-colors: active)')
+  })
+
+  test('stamps the bridge nonce into this document only, and refuses one that could break out', () => {
+    expect(doc).toContain("var NONCE = 'doc-nonce-0123456789';")
+    expect(() => buildPanelSrcDoc('', 'dark', '', "x';alert(1);//0123456789")).toThrow()
   })
 
   test('installs the acquired host API before any plugin-authored HTML executes', () => {

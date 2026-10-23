@@ -4,7 +4,7 @@
 // (collectThemeCss) and passes it in; everything here is deterministic.
 
 import { EMBEDDED_VISUAL_PREFERENCES_CSS } from '@localixai/kit/embedded-visual-preferences'
-import { PLUGIN_UI_API_BOOTSTRAP } from './pluginUiApiBootstrap'
+import { pluginUiApiBootstrap } from './pluginUiApiBootstrap'
 
 /**
  * The library CDNs a panel may load scripts and styles from (Chart.js, D3, three.js, mermaid).
@@ -37,13 +37,24 @@ export const PANEL_CSP = [
   "form-action 'none'",
 ].join(';')
 
+/** A fresh bridge nonce for one panel document (see `createPanelBridgeHost`'s `getNonce`). */
+export function mintPanelNonce(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(18))
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
 /**
  * Build the full sandboxed panel document. `theme` is 'light' | 'dark'; `themeCss`
  * is the host's forwarded CSS custom properties (collected from the live DOM by the
  * caller). The plugin `html` is injected verbatim — containment is the iframe
- * sandbox + the CSP above, NOT escaping.
+ * sandbox + the CSP above, NOT escaping. `nonce` binds the bridge to this document.
  */
-export function buildPanelSrcDoc(html: string, theme: string, themeCss: string): string {
+export function buildPanelSrcDoc(
+  html: string,
+  theme: string,
+  themeCss: string,
+  nonce: string,
+): string {
   return `<!doctype html>
 <html data-theme="${theme}">
 <head>
@@ -69,7 +80,7 @@ button{font-family:inherit;font-size:inherit;cursor:pointer}
 /* OS preferences must be declared inside the sandboxed document. */
 ${EMBEDDED_VISUAL_PREFERENCES_CSS}
 </style>
-<script>${PLUGIN_UI_API_BOOTSTRAP}</script>
+<script>${pluginUiApiBootstrap(nonce)}</script>
 </head>
 <body>
 ${html}
