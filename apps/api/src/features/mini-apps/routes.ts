@@ -22,6 +22,7 @@ import {
   miniAppCatalogRequestSchema,
   miniAppCatalogPreviewSchema,
   miniAppCatalogsResponseSchema,
+  miniAppStoreActivitySchema,
   miniAppStoreMediaParamsSchema,
   miniAppStorePageSchema,
   miniAppStoreResponseSchema,
@@ -90,6 +91,14 @@ export function createMiniAppRoutes(service: MiniAppRoutesService) {
     // `mini-app-installs` pokes the client answers by reading the list again.
     .get('/store', async (c) =>
       c.json(miniAppStoreResponseSchema.parse(await service.store.list()), 200),
+    )
+    // What is installing or updating now, and the updates already offered; never a catalog read.
+    .get('/store/activity', async (c) =>
+      c.json(miniAppStoreActivitySchema.parse(await service.store.activity()), 200),
+    )
+    // Update all: the newer version of every app a catalog put here, re-reading the catalogs.
+    .post('/store/update', async (c) =>
+      c.json({ queued: await service.store.updateInstalled() }, 202),
     )
     // A store file: the icon or one screenshot, read from the app's folder or a catalog's pinned
     // copy (`store-media.ts`). The README reaches the client inside the store page.

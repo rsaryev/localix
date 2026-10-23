@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+const jobPhaseSchema = z.enum(['queued', 'downloading', 'installing', 'done', 'failed'])
+
 /** One app a catalog offers, as the store shows it (`store.ts`). */
 export const miniAppStoreEntrySchema = z.object({
   name: z.string(),
@@ -14,6 +16,8 @@ export const miniAppStoreEntrySchema = z.object({
   icon: z.string().optional(),
   tags: z.array(z.string()).optional(),
   featured: z.boolean().optional(),
+  /** Localix installs it on its own on a new installation (`recommended.ts`). */
+  recommended: z.boolean().optional(),
   /** What it adds: `workbench` is a screen of its own (the one a desktop app opens on). */
   surfaces: z.array(z.string()).optional(),
   installed: z.object({ version: z.string().optional() }).nullable(),
@@ -21,7 +25,7 @@ export const miniAppStoreEntrySchema = z.object({
   incompatible: z.boolean().optional(),
   job: z
     .object({
-      phase: z.enum(['queued', 'downloading', 'installing', 'done', 'failed']),
+      phase: jobPhaseSchema,
       received: z.number().optional(),
       total: z.number().optional(),
       error: z.string().optional(),
@@ -36,6 +40,37 @@ export const miniAppStoreResponseSchema = z.object({
   problems: z.array(z.string()),
 })
 export type MiniAppStoreResponse = z.infer<typeof miniAppStoreResponseSchema>
+
+/**
+ * What the store is doing in the background (`GET /store/activity`, `store-activity.ts`): the
+ * installs and updates in flight, and the updates the catalogs already offer. Read on every
+ * `mini-app-installs` poke by the surfaces always on screen; it never fetches a catalog.
+ */
+export const miniAppStoreActivitySchema = z.object({
+  jobs: z.array(
+    z.object({
+      name: z.string(),
+      displayName: z.string().optional(),
+      icon: z.string().optional(),
+      version: z.string().optional(),
+      kind: z.enum(['install', 'update']),
+      phase: jobPhaseSchema,
+      received: z.number().optional(),
+      total: z.number().optional(),
+      error: z.string().optional(),
+    }),
+  ),
+  updates: z.array(
+    z.object({
+      name: z.string(),
+      displayName: z.string().optional(),
+      icon: z.string().optional(),
+      from: z.string().optional(),
+      to: z.string(),
+    }),
+  ),
+})
+export type MiniAppStoreActivityRecord = z.infer<typeof miniAppStoreActivitySchema>
 
 export const installMiniAppRequestSchema = z.object({
   name: z.string().min(1),

@@ -61,6 +61,11 @@ const storeFieldsSchema = {
   author: optional(z.string().max(120)),
   /** Shown in the store's Featured group, for the catalog Localix vouches for only. */
   featured: optional(z.boolean()),
+  /**
+   * Installed on its own, once, on a new installation (`recommended.ts`) — for the catalog Localix
+   * vouches for only.
+   */
+  recommended: optional(z.boolean()),
   surfaces: optional(z.array(z.string().max(32)).max(16)),
   commands: optional(z.array(z.string().max(64)).max(64)),
 }

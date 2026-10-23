@@ -30,7 +30,9 @@ import { resolveMiniAppUiFile } from './ui-artifact'
 import { createMiniAppWrites } from './service-writes'
 import { withCatalogPreview } from './catalog-preview'
 import { createMiniAppCatalogs } from './catalogs'
-import { builtInMiniAppSources, createMiniAppStore, type MiniAppStoreSource } from './store'
+import { createRecommendedInstalls } from './recommended'
+import { createMiniAppStore, type MiniAppInstallOutcome, type MiniAppStoreSource } from './store'
+import { builtInMiniAppSources } from './store-sources'
 import {
   invokeMiniAppUiAction,
   readInstalledMiniAppIcon,
@@ -61,6 +63,11 @@ export interface MiniAppServiceDeps {
   miniAppKitDir?: () => string
   /** The catalogs every installation reads; defaults to {@link builtInMiniAppSources}. */
   storeSources?: () => Promise<MiniAppStoreSource[]>
+  /**
+   * The store's queue drained: how each install and update went. The composition root records
+   * them in the journal (`notifications/producers/mini-app-installs.ts`).
+   */
+  installOutcomes?: (outcomes: MiniAppInstallOutcome[]) => void
 }
 
 export type MiniAppService = ReturnType<typeof createMiniAppService>
@@ -200,6 +207,7 @@ export function createMiniAppService(deps: MiniAppServiceDeps) {
         ref: { id: name, scope: 'global' },
       })
     },
+    ...(deps.installOutcomes ? { onJobsSettled: deps.installOutcomes } : {}),
   })
   const catalogs = withCatalogPreview(catalogList, store)
 
@@ -207,6 +215,14 @@ export function createMiniAppService(deps: MiniAppServiceDeps) {
     authoring,
     catalogs,
     store,
+    /** The one-time install of the apps the Localix catalog recommends (`recommended.ts`). */
+    installRecommended: (userId: string) =>
+      createRecommendedInstalls({
+        store,
+        homeDir: deps.homeDir,
+        userId,
+        log: (event, detail) => deps.logger?.warn(event, detail),
+      }).run(),
     /**
      * `/mini-app reload`: rebuild the person's own mini apps, then say every one changed, since a
      * folder edited on disk is a change no write announced.

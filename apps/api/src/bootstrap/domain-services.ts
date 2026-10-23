@@ -13,6 +13,7 @@ import { createAgentsService } from '../features/agents/service'
 import { createInvocationRegistry } from '../features/capabilities/invocation'
 import { createLspManager } from '../features/lsp'
 import { createLspConditions } from '../features/notifications/conditions/lsp'
+import { createMiniAppInstallFacts } from '../features/notifications/producers/mini-app-installs'
 import type { InfraPhase } from './infra'
 import { toResourceExpansionResult } from '../features/projects/expand-refs'
 import { createProjectsService } from '../features/projects/service'
@@ -215,6 +216,8 @@ export function createDomainServicesPhase({
     resolveSessionCwd,
     invokeUiAction: (...args) => backendHost.invokeUiAction(...args),
     logger: { warn: (msg, meta) => warnMiniAppOnce({ event: 'mini-app.warn', msg, meta }) },
+    // A finished install or update is a line in the person's Event Center, said by the store.
+    installOutcomes: createMiniAppInstallFacts(notifications, env.LOCALIX_DEFAULT_USER_ID),
   })
   // Managed-Agents registry: file-backed reusable agents + their `agents` ext-state. The
   // invocation registry is the agents service's own dependency and nothing else's, so it is

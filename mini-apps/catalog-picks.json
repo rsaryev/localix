@@ -1,0 +1,4 @@
+{
+  "featured": ["kanban", "project-space", "database", "code-graph", "chess"],
+  "recommended": ["git-workspace", "documents", "kanban"]
+}

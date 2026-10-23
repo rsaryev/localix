@@ -1,14 +1,20 @@
 import { join } from 'node:path'
-import { MINI_APP_API_VERSION } from '@localixai/mini-app-sdk/manifest-primitives'
 
 import { ConflictError, NotFoundError } from '../../lib/domain-errors'
-import { envString } from '../../lib/env'
 import { errorMessage } from '../../lib/errors'
-import { bundledMiniAppsSyncRoot } from './discovery'
 import { MINI_APPS_SUBDIR } from './paths'
+import {
+  ACTIVE_PHASES,
+  iconOf,
+  isIncompatible as incompatible,
+  isUpdatable,
+  readStoreActivity,
+  type MiniAppInstallOutcome,
+  type MiniAppJobLabel,
+} from './store-activity'
 import { storePage, type MiniAppStorePage } from './store-detail'
 import { installedBy, installOffer } from './store-install'
-import { createStoreMediaReader, storeMediaUrl, type StoreMediaKind } from './store-media'
+import { createStoreMediaReader, type StoreMediaKind } from './store-media'
 import {
   createOfferReader,
   readManifest,
@@ -18,13 +24,15 @@ import {
 } from './store-offers'
 
 export type { MiniAppPublisher, MiniAppStoreSource } from './store-offers'
+export type { MiniAppInstallOutcome, MiniAppStoreActivity } from './store-activity'
 
 /**
  * The mini app store: what the catalogs offer, what is installed, and the installs in flight
  * (`docs/internals/plugins-and-mini-apps.md`, "Catalogs and sources"). Nothing is installed until
  * the person chooses it (rule X5). An install is in-memory status — every move of a job tells the
  * subscribers, which poke `mini-app-installs` so the client re-reads the list — and a finished one
- * is announced through `onInstalled`.
+ * is announced through `onInstalled`. When the queue drains, how each install went is handed to
+ * `onJobsSettled`, which records it in the person's journal (the owner announces).
  */
 
 export type MiniAppJobPhase = 'queued' | 'downloading' | 'installing' | 'done' | 'failed'
@@ -52,6 +60,8 @@ export interface MiniAppStoreEntry {
   tags?: string[]
   /** In the Featured group above the rest (the Localix catalog only). */
   featured?: boolean
+  /** Installed on its own on a new installation (the Localix catalog only, `recommended.ts`). */
+  recommended?: boolean
   surfaces?: string[]
   /** What is on this machine, or null. */
   installed: { version?: string } | null
@@ -71,8 +81,6 @@ export interface MiniAppStoreListing {
 /** A catalog's store media, kept by hash once fetched. */
 export const MINI_APP_STORE_CACHE_SUBDIR = '.localix/cache/mini-app-store'
 
-const incompatible = (offer: Offer) => (offer.apiVersion ?? 1) > MINI_APP_API_VERSION
-
 export function createMiniAppStore(deps: {
   homeDir: string
   /** Read per call: a development checkout restages while the API runs. */
@@ -82,6 +90,8 @@ export function createMiniAppStore(deps: {
    * person chose, record their yes to run it.
    */
   onInstalled: (name: string, info: { fresh: boolean; userId?: string }) => Promise<void>
+  /** The queue drained: how every install since the last drain went, in the order they ran. */
+  onJobsSettled?: (outcomes: MiniAppInstallOutcome[]) => void
   fetchImpl?: typeof fetch
   /** Where a catalog's media are kept once fetched; under the Localix cache by default. */
   cacheDir?: string
@@ -93,17 +103,37 @@ export function createMiniAppStore(deps: {
     fetchImpl: deps.fetchImpl,
   })
   const jobs = new Map<string, MiniAppJob>()
+  const labels = new Map<string, MiniAppJobLabel>()
+  let outcomes: MiniAppInstallOutcome[] = []
   const listeners = new Set<() => void>()
   let queue: Promise<void> = Promise.resolve()
   const setJob = (name: string, job: MiniAppJob) => {
     jobs.set(name, job)
     for (const listener of listeners) listener()
   }
-  const busy = (name: string) =>
-    ['queued', 'downloading', 'installing'].includes(jobs.get(name)?.phase ?? '')
+  const labelJob = (offer: Offer, kind: MiniAppJobLabel['kind']) => {
+    const icon = iconOf(offer)
+    labels.set(offer.name, {
+      ...(offer.displayName ? { displayName: offer.displayName } : {}),
+      ...(icon ? { icon } : {}),
+      ...(offer.version ? { version: offer.version } : {}),
+      kind,
+    })
+  }
+  const busy = (name: string) => ACTIVE_PHASES.has(jobs.get(name)?.phase ?? 'done')
 
   async function run(offer: Offer, userId: string | undefined): Promise<void> {
     const fresh = (await installedBy(join(installRoot, offer.name))) === null
+    const label = offer.displayName ?? offer.name
+    const kind = fresh ? 'install' : 'update'
+    labelJob(offer, kind)
+    const outcome = {
+      name: offer.name,
+      label,
+      kind,
+      ...(offer.version ? { version: offer.version } : {}),
+      ...(userId ? { userId } : {}),
+    } as const
     setJob(
       offer.name,
       offer.from === 'catalog'
@@ -119,16 +149,27 @@ export function createMiniAppStore(deps: {
       setJob(offer.name, { phase: 'installing' })
       await deps.onInstalled(offer.name, { fresh, ...(userId ? { userId } : {}) })
       setJob(offer.name, { phase: 'done' })
+      outcomes.push(outcome)
     } catch (error) {
       setJob(offer.name, { phase: 'failed', error: errorMessage(error) })
+      outcomes.push({ ...outcome, error: errorMessage(error) })
     }
+  }
+
+  /** After each job: once nothing is left in flight, say how every one since the last drain went. */
+  const reportIfDrained = () => {
+    if ([...jobs.keys()].some(busy) || outcomes.length === 0) return
+    const settled = outcomes
+    outcomes = []
+    deps.onJobsSettled?.(settled)
   }
 
   async function toEntry(offer: Offer): Promise<MiniAppStoreEntry> {
     const installed = await readManifest(join(installRoot, offer.name))
     const installedVersion = typeof installed?.version === 'string' ? installed.version : undefined
     const job = jobs.get(offer.name)
-    const { icon, tags, featured, surfaces } = offer.store
+    const { tags, featured, recommended, surfaces } = offer.store
+    const icon = iconOf(offer)
     return {
       name: offer.name,
       ...(offer.displayName ? { displayName: offer.displayName } : {}),
@@ -137,9 +178,10 @@ export function createMiniAppStore(deps: {
       ...(offer.version ? { version: offer.version } : {}),
       publisher: offer.publisher,
       source: offer.source,
-      ...(icon ? { icon: storeMediaUrl(offer.name, 'icon', icon) } : {}),
+      ...(icon ? { icon } : {}),
       ...(tags.length ? { tags } : {}),
       ...(featured ? { featured: true } : {}),
+      ...(recommended ? { recommended: true } : {}),
       ...(surfaces ? { surfaces } : {}),
       installed: installed ? (installedVersion ? { version: installedVersion } : {}) : null,
       update: Boolean(installed && offer.version && installedVersion !== offer.version),
@@ -158,9 +200,10 @@ export function createMiniAppStore(deps: {
     return offer
   }
 
-  const enqueue = (offer: Offer, userId?: string) => {
+  const enqueue = (offer: Offer, kind: MiniAppJobLabel['kind'], userId?: string) => {
+    labelJob(offer, kind)
     setJob(offer.name, { phase: 'queued' })
-    queue = queue.then(() => run(offer, userId))
+    queue = queue.then(() => run(offer, userId)).then(reportIfDrained)
   }
 
   return {
@@ -198,7 +241,8 @@ export function createMiniAppStore(deps: {
           'mini_app_incompatible',
           `"${name}" needs a newer Localix (mini app API ${offer.apiVersion}); update Localix first`,
         )
-      if ((await installedBy(join(installRoot, name))) === 'person')
+      const by = await installedBy(join(installRoot, name))
+      if (by === 'person')
         throw new ConflictError(
           'mini_app_name_taken',
           `A mini app of yours is already called "${name}"; rename or remove it first`,
@@ -208,7 +252,7 @@ export function createMiniAppStore(deps: {
           'mini_app_unverified',
           `"${name}" comes from an unverified publisher (${offer.publisher.name}); confirm to install it`,
         )
-      enqueue(offer, opts.userId)
+      enqueue(offer, by === null ? 'install' : 'update', opts.userId)
     },
 
     /**
@@ -220,16 +264,22 @@ export function createMiniAppStore(deps: {
       const { offers } = await readOffers({ fresh: true })
       const queued: string[] = []
       for (const offer of offers.values()) {
-        if (offer.from !== 'catalog' || incompatible(offer) || busy(offer.name)) continue
-        const dir = join(installRoot, offer.name)
         // A staged first-party copy an earlier build installed moves to the catalog's on its next
-        // version; a folder the person made is theirs.
-        if (!['catalog', 'staged'].includes((await installedBy(dir)) ?? '')) continue
-        if ((await readManifest(dir))?.version === offer.version) continue
-        enqueue(offer)
+        // version; a folder the person made is theirs (`isUpdatable`).
+        if (busy(offer.name) || !(await isUpdatable(offer, installRoot))) continue
+        enqueue(offer, 'update')
         queued.push(offer.name)
       }
       return queued
+    },
+
+    /**
+     * The installs in flight and the updates the catalogs already offer, from what the store last
+     * read — never a catalog fetch of its own (`store-activity.ts`).
+     */
+    async activity() {
+      const { offers } = await readOffers({ cachedOnly: true })
+      return readStoreActivity({ jobs, labels, offers, installRoot })
     },
 
     /** A catalog's icon, checked against its pin, for a catalog not added yet. */
@@ -249,21 +299,3 @@ export function createMiniAppStore(deps: {
 }
 
 export type MiniAppStore = ReturnType<typeof createMiniAppStore>
-
-/** The hosted Localix catalog, published with every release (`release.yml`). */
-export const DEFAULT_MINI_APP_CATALOG_URL =
-  'https://github.com/rsaryev/localix/releases/latest/download/mini-app-catalog.json'
-
-/**
- * The catalogs every installation reads (`catalogs.ts` adds the person's own after them). In a
- * development checkout, its staged `mini-apps/`, published by Localix — a change is installed
- * without a release. Otherwise the hosted Localix catalog.
- */
-export async function builtInMiniAppSources(): Promise<MiniAppStoreSource[]> {
-  if (envString('LOCALIX_BUNDLED_MINI_APPS_DIR')) {
-    const staged = await bundledMiniAppsSyncRoot()
-    if (staged)
-      return [{ kind: 'local', root: staged, publisher: { name: 'Localix', verified: true } }]
-  }
-  return [{ kind: 'catalog', url: DEFAULT_MINI_APP_CATALOG_URL, vouches: true }]
-}

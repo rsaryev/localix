@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tempDirPerTest } from '@localixai/testing'
 
-import { packMiniAppCatalog } from './mini-app-catalog.mjs'
+import { packMiniAppCatalog, readCatalogPicks } from './mini-app-catalog.mjs'
 
 const root = tempDirPerTest('mini-app-catalog-')
 
@@ -110,6 +110,33 @@ describe('packing the staged mini apps into a catalog', () => {
     // Screenshots are published beside the archive, never downloaded with the app.
     const files = await new Bun.Archive(readFileSync(join(out, chess.archive.url))).files()
     expect([...files.keys()]).not.toContain('screenshots/board.png')
+  })
+
+  test('the apps Localix recommends are marked, so a new installation gets them on its own', async () => {
+    const staged = join(root(), 'staged')
+    const out = join(root(), 'out')
+    stagedApp(staged, 'kanban')
+    stagedApp(staged, 'chess')
+
+    const { apps } = await packMiniAppCatalog({
+      stagedRoot: staged,
+      outDir: out,
+      recommended: ['kanban'],
+    })
+    const byName = Object.fromEntries(apps.map((app: { name: string }) => [app.name, app]))
+    expect(byName.kanban.recommended).toBe(true)
+    expect(byName.chess.recommended).toBeUndefined()
+  })
+
+  test('the checkout keeps one list of picks, beside the apps, read by the release and the dev store', () => {
+    const picks = join(root(), 'checkout')
+    mkdirSync(join(picks, 'mini-apps'), { recursive: true })
+    writeFileSync(
+      join(picks, 'mini-apps', 'catalog-picks.json'),
+      JSON.stringify({ featured: ['chess'], recommended: ['kanban', 7] }),
+    )
+    expect(readCatalogPicks(picks)).toEqual({ featured: ['chess'], recommended: ['kanban'] })
+    expect(readCatalogPicks(join(root(), 'nowhere'))).toEqual({ featured: [], recommended: [] })
   })
 
   test('refuses to pack an app whose icon is missing or not a valid icon', async () => {

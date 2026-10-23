@@ -237,6 +237,23 @@ export function createOpsTimersPhase({
           logger.warn({ event: 'mini_apps.update_check_failed', error: errorMessage(error) }),
         )
     setTimeout(() => void updateMiniApps(), 60_000).unref?.()
+
+    // The apps the Localix catalog recommends, installed once on a new installation
+    // (`features/mini-apps/recommended.ts`). Offline or failed, it tries again: after five
+    // minutes, then twice as long each time, at most every six hours.
+    let recommendedRetryMs = 5 * 60_000
+    const installRecommended = (): Promise<void> =>
+      miniAppService
+        .installRecommended(env.LOCALIX_DEFAULT_USER_ID)
+        .catch((error) => {
+          logger.warn({ event: 'mini_apps.recommended_failed', error: errorMessage(error) })
+          return 'retry' as const
+        })
+        .then((outcome) => {
+          if (outcome === 'done' || signal.aborted) return
+          setTimeout(() => void installRecommended(), recommendedRetryMs).unref?.()
+          recommendedRetryMs = Math.min(recommendedRetryMs * 2, 6 * 60 * 60 * 1000)
+        })
     setInterval(() => void updateMiniApps(), 6 * 60 * 60 * 1000).unref?.()
 
     // Model lists: hourly, refetched past six hours (`features/catalog/refresh-schedule.ts`).
@@ -272,6 +289,7 @@ export function createOpsTimersPhase({
       },
       { name: 'skills_curator', run: runCuratorCheck },
       { name: 'storage_maintenance', run: (ctx) => maintainStorage(signal, ctx) },
+      { name: 'recommended_mini_apps', run: installRecommended },
       // Last: it waits on the network, and the restored catalog is already served.
       ...(checkModelCatalog ? [{ name: 'model_catalog_check', run: checkModelCatalog }] : []),
     ]

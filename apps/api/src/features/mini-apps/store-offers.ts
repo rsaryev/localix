@@ -28,8 +28,15 @@ export interface MiniAppPublisher {
  *   source `vouches` — the hosted Localix catalog does; one a person added does not.
  */
 export type MiniAppStoreSource =
-  | { kind: 'local'; root: string; publisher: MiniAppPublisher }
+  | { kind: 'local'; root: string; publisher: MiniAppPublisher; vouches?: boolean }
   | { kind: 'catalog'; url: string; vouches: boolean }
+
+/**
+ * Beside the apps of a local source Localix vouches for (the staged first-party folder): which of
+ * them the store features and which a new installation gets on its own — the same lists the
+ * release writes into its catalog (`scripts/pack-mini-apps.mjs`).
+ */
+export const CATALOG_PICKS_FILE = 'catalog-picks.json'
 
 /**
  * One file of an app's store page: a path in a local app's folder, or a catalog's pinned file. It
@@ -50,6 +57,8 @@ export interface OfferStore {
   author?: string
   /** In the Featured group; set only by a catalog Localix vouches for. */
   featured?: boolean
+  /** Installed on its own on a new installation; set only by a catalog Localix vouches for. */
+  recommended?: boolean
   surfaces?: string[]
   commands?: string[]
 }
@@ -127,10 +136,25 @@ export async function readManifest(dir: string): Promise<Record<string, unknown>
   }
 }
 
+/** The picks beside a local source's apps, only when Localix vouches for the source. */
+async function localPicks(source: Extract<MiniAppStoreSource, { kind: 'local' }>) {
+  const none = { featured: new Set<string>(), recommended: new Set<string>() }
+  if (!source.vouches) return none
+  try {
+    const parsed = JSON.parse(await fs.readFile(join(source.root, CATALOG_PICKS_FILE), 'utf8'))
+    const names = (value: unknown) =>
+      new Set(Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [])
+    return { featured: names(parsed?.featured), recommended: names(parsed?.recommended) }
+  } catch {
+    return none
+  }
+}
+
 async function localOffers(
   source: Extract<MiniAppStoreSource, { kind: 'local' }>,
 ): Promise<Offer[]> {
   const offers: Offer[] = []
+  const picks = await localPicks(source)
   for (const folder of await listSubdirs(source.root)) {
     if (folder.startsWith('.')) continue
     const dir = join(source.root, folder)
@@ -147,7 +171,11 @@ async function localOffers(
       ...(typeof manifest.apiVersion === 'number' ? { apiVersion: manifest.apiVersion } : {}),
       publisher: source.publisher,
       source: pathToFileURL(source.root).href,
-      store: await localStore(dir, manifest),
+      store: {
+        ...(await localStore(dir, manifest)),
+        ...(picks.featured.has(name) ? { featured: true } : {}),
+        ...(picks.recommended.has(name) ? { recommended: true } : {}),
+      },
       from: 'local',
       dir,
     })
@@ -173,8 +201,10 @@ export function createOfferReader(deps: {
   async function catalogOffers(
     source: Extract<MiniAppStoreSource, { kind: 'catalog' }>,
     fresh: boolean,
+    cachedOnly: boolean,
   ): Promise<Offer[]> {
     const cached = cache.get(source.url)
+    if (cachedOnly) return cached?.offers ?? []
     if (cached && !fresh && now() - cached.at < ttl) return cached.offers
     const apps = await readMiniAppCatalog(source.url, { fetchImpl: deps.fetchImpl })
     const pinned = (file: { url: string; bytes: number; sha256: string; type?: string }) => ({
@@ -206,6 +236,8 @@ export function createOfferReader(deps: {
         ...(app.author ? { author: app.author } : {}),
         // Featured is Localix's own word: a catalog someone added cannot put itself on top.
         ...(app.featured && source.vouches ? { featured: true } : {}),
+        // So is recommended: only Localix installs something without being asked.
+        ...(app.recommended && source.vouches ? { recommended: true } : {}),
         ...(app.surfaces ? { surfaces: app.surfaces } : {}),
         ...(app.commands ? { commands: app.commands } : {}),
       },
@@ -217,9 +249,13 @@ export function createOfferReader(deps: {
     return offers
   }
 
-  /** Every offer by name — the first source to offer a name wins it — and what could not be read. */
+  /**
+   * Every offer by name — the first source to offer a name wins it — and what could not be read.
+   * `cachedOnly` answers from what the hosted catalogs said last, fetching nothing: the reads a
+   * background surface makes must never be what sends a request out.
+   */
   return async function read(
-    opts: { fresh?: boolean } = {},
+    opts: { fresh?: boolean; cachedOnly?: boolean } = {},
   ): Promise<{ offers: Map<string, Offer>; problems: string[] }> {
     const offers = new Map<string, Offer>()
     const problems: string[] = []
@@ -229,7 +265,7 @@ export function createOfferReader(deps: {
         found =
           source.kind === 'local'
             ? await localOffers(source)
-            : await catalogOffers(source, opts.fresh ?? false)
+            : await catalogOffers(source, opts.fresh ?? false, opts.cachedOnly ?? false)
       } catch (error) {
         problems.push(errorMessage(error))
         found = source.kind === 'catalog' ? (cache.get(source.url)?.offers ?? []) : []

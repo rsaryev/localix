@@ -16,16 +16,17 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
 
-import { packMiniAppCatalog } from './lib/mini-app-catalog.mjs'
+import { packMiniAppCatalog, readCatalogPicks } from './lib/mini-app-catalog.mjs'
 import { readStagingUnavailable, stageDropins, stageMiniAppKitBeside } from './stage-dropins.mjs'
 
 const repoRoot = resolve(import.meta.dir, '..')
 /**
- * The first-party apps the Localix catalog features at the top of the store. Only the Localix
- * release sets it: a catalog of someone else's may say `featured`, but the store shows the group
- * for what Localix publishes.
+ * The first-party apps the Localix catalog features at the top of the store, and the ones a new
+ * installation gets on its own (`mini-apps/catalog-picks.json`). Only the Localix release sets
+ * them: a catalog of someone else's may say `featured` or `recommended`, but the store honours
+ * both for what Localix publishes only.
  */
-const FEATURED = ['kanban', 'project-space', 'database', 'code-graph', 'chess']
+const PICKS = readCatalogPicks(repoRoot)
 const { values } = parseArgs({
   options: {
     out: { type: 'string', default: join(repoRoot, 'dist', 'mini-app-catalog') },
@@ -65,9 +66,7 @@ try {
     outDir: resolve(values.out),
     unavailable: readStagingUnavailable(staged),
     // A fork packing its own app names itself; only the Localix release is vouched for.
-    ...(values.publisher
-      ? { publisher: { name: values.publisher, verified: false } }
-      : { featured: FEATURED }),
+    ...(values.publisher ? { publisher: { name: values.publisher, verified: false } } : PICKS),
     only,
     log,
   })

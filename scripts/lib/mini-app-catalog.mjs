@@ -23,6 +23,25 @@ import {
 } from '../../packages/mini-app-sdk/src/manifest/media.ts'
 
 export const CATALOG_FILE = 'mini-app-catalog.json'
+/**
+ * Which first-party apps the Localix catalog features at the top of the store, and which a new
+ * installation gets on its own (`apps/api/src/features/mini-apps/recommended.ts`). One list beside
+ * the apps: the release writes it into the catalog, and staging copies it next to the staged apps,
+ * where the development store reads it (`store-offers.ts` `CATALOG_PICKS_FILE`).
+ */
+export const CATALOG_PICKS_FILE = 'catalog-picks.json'
+
+/** The checkout's picks; a list that is missing or not one is empty. */
+export function readCatalogPicks(repoRoot) {
+  const names = (value) =>
+    Array.isArray(value) ? value.filter((name) => typeof name === 'string') : []
+  try {
+    const parsed = JSON.parse(readFileSync(join(repoRoot, 'mini-apps', CATALOG_PICKS_FILE), 'utf8'))
+    return { featured: names(parsed?.featured), recommended: names(parsed?.recommended) }
+  } catch {
+    return { featured: [], recommended: [] }
+  }
+}
 export const CATALOG_SCHEMA = 1
 /** The app's README, published as its store page's About; longer than this is not a README. */
 const README_FILE = 'README.md'
@@ -131,6 +150,7 @@ function storeFields(dir, manifest, outDir, app) {
  *   unavailable?: Record<string, string>,
  *   only?: string[],
  *   featured?: string[],
+ *   recommended?: string[],
  *   log?: (line: string) => void,
  * }} options
  */
@@ -141,6 +161,7 @@ export async function packMiniAppCatalog({
   unavailable = {},
   only,
   featured = [],
+  recommended = [],
   log = () => {},
 }) {
   mkdirSync(outDir, { recursive: true })
@@ -191,6 +212,7 @@ export async function packMiniAppCatalog({
       publisher,
       ...storeFields(dir, manifest, outDir, { name, version }),
       ...(featured.includes(name) ? { featured: true } : {}),
+      ...(recommended.includes(name) ? { recommended: true } : {}),
       archive: { url: file, bytes: bytes.byteLength, sha256 },
     })
     log(`packed ${name} ${version} (${(bytes.byteLength / 1024 / 1024).toFixed(1)} MB)`)
