@@ -194,15 +194,3 @@ test('disabling the parent source withdraws its registered reviewer immediately'
     (await f.agents.resolveRunAgent('u', reviewer.record.id, 'delegation', 'p')).status,
   ).not.toBe('allowed')
 })
-
-test('/workflows hands the goal to a team and contributes no agent of its own', async () => {
-  const workflows = await loadManifest(
-    join(import.meta.dir, '../../../../../plugins/workflows'),
-    'global',
-    '',
-  )
-  expect(workflows.provides.agents ?? []).toEqual([])
-  const command = workflows.commands.find((entry) => entry.name === 'workflows')
-  expect(command?.prompt).toContain('Goal: $ARGUMENTS')
-  expect(command?.args?.map((arg) => arg.name)).toEqual(['goal'])
-})

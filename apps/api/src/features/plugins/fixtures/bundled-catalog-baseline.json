@@ -299,26 +299,5 @@
     "views": [],
     "promptSections": [],
     "config": []
-  },
-  "workflows": {
-    "category": "utilities",
-    "surfaces": ["agent"],
-    "trust": "bundled",
-    "ruleKey": "plugin:workflows",
-    "skills": [],
-    "commands": [
-      {
-        "name": "workflows",
-        "args": ["goal"],
-        "featured": true,
-        "activateTools": ["kanban"]
-      }
-    ],
-    "agents": [],
-    "contributions": [],
-    "tools": [],
-    "views": [],
-    "promptSections": [],
-    "config": []
   }
 }

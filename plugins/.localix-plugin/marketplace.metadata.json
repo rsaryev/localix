@@ -1,6 +1,6 @@
 {
   "name": "localix",
-  "description": "Bundled Localix plugins — the reference set shipped with the app.",
+  "description": "Bundled Localix plugins \u2014 the reference set shipped with the app.",
   "owner": {
     "name": "Localix"
   },
@@ -9,6 +9,7 @@
     "kubernetes": "devops",
     "web": null,
     "web-search": null,
-    "go": "workflows"
+    "go": null,
+    "workflows": null
   }
 }

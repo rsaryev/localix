@@ -10,7 +10,8 @@
     "kubernetes": "devops",
     "web": null,
     "web-search": null,
-    "go": "workflows"
+    "go": null,
+    "workflows": null
   },
   "plugins": [
     {
@@ -151,13 +152,6 @@
       "name": "trading",
       "source": "./trading",
       "description": "Read-only market research workspace for venues, charts, indicators, order books, and trades; no account or order path.",
-      "version": "0.1.0",
-      "author": "Localix"
-    },
-    {
-      "name": "workflows",
-      "source": "./workflows",
-      "description": "Turn a free-form goal into a team: the agent plans tasks on the Kanban board, brings in the specialists it needs and coordinates them to the result.",
       "version": "0.1.0",
       "author": "Localix"
     }

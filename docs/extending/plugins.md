@@ -308,8 +308,7 @@ The native UI is found by convention at `ui/register.tsx`. A `views[]` entry is
 A command's prompt is the plugin's `commands/<name>.md`. Its `arguments` frontmatter names the
 positional arguments that fill `$name`; `$ARGUMENTS` and `$1` work as in Claude Code. The mini app's
 `commands.<name>.args` adds chips and pickers: `text` or `choice`, static `options` or an
-`optionsScript`, and an optional `{ arg, equals }` condition. The bundled Workflows keeps its prompt
-in `plugins/workflows/commands/workflows.md` and its argument chips in its `app.json`. See
+`optionsScript`, and an optional `{ arg, equals }` condition. See
 [command authoring](../features/hooks-and-commands.md#plugin-command-example-and-options).
 
 ### Native agent contributions

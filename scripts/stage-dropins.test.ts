@@ -55,6 +55,7 @@ describe('host-provided modules in a staged backend', () => {
   })
 })
 import { NO_SOURCE_MAPS_FLAG } from './stage-plugin-ui.mjs'
+import { bundledRoots } from './lib/bundled-roots.mjs'
 
 const roots: string[] = []
 
@@ -69,13 +70,16 @@ function write(path: string, content: string): void {
 
 describe('stageDropins', () => {
   test('every first-party plugin manifest is valid JSON before staging', () => {
-    const pluginsDir = join(import.meta.dir, '..', 'plugins')
-    const manifests = readdirSync(pluginsDir, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory())
-      .flatMap((entry) =>
-        ['.claude-plugin/plugin.json', '.localix-app/app.json', 'plugin.json'].map((file) =>
-          join(pluginsDir, entry.name, file),
-        ),
+    const manifests = bundledRoots(join(import.meta.dir, '..'))
+      .filter(existsSync)
+      .flatMap((root) =>
+        readdirSync(root, { withFileTypes: true })
+          .filter((entry) => entry.isDirectory())
+          .flatMap((entry) =>
+            ['.claude-plugin/plugin.json', '.localix-app/app.json', 'plugin.json'].map((file) =>
+              join(root, entry.name, file),
+            ),
+          ),
       )
       .filter(existsSync)
 
