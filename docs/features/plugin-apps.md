@@ -14,15 +14,15 @@ Mini apps stay tabs in the workspace until you choose otherwise; nothing becomes
 
 Any of these does the same:
 
-| Where                    | Do this                                                                         |
-| ------------------------ | ------------------------------------------------------------------------------- |
-| A plugin's tab           | Right-click the tab and choose **Install _Plugin_ as App**.                     |
-| The tab strip            | With the plugin's tab on screen, click the app button at the right of the tabs. |
-| The plugin's rail button | Right-click it and choose **Install _Plugin_ as App**.                          |
-| The command palette      | Run **Install _Plugin_ as App**.                                                |
+| Where                      | Do this                                                                           |
+| -------------------------- | --------------------------------------------------------------------------------- |
+| A mini app's tab           | Right-click the tab and choose **Install _Name_ as App**.                         |
+| The tab strip              | With the mini app's tab on screen, click the app button at the right of the tabs. |
+| The mini app's rail button | Right-click it and choose **Install _Name_ as App**.                              |
+| The command palette        | Run **Install _Name_ as App**.                                                    |
 
-Localix draws the app's icon from the plugin's own glyph on a black tile like Localix's, creates the
-app in `~/Applications/Localix Apps`, makes the app's project and opens it. From there it is an
+Localix draws the app's icon from the mini app's own glyph on a black tile like Localix's, creates
+the app in `~/Applications/Localix Apps`, makes the app's project and opens it. From there it is an
 ordinary Mac app: keep it in the Dock, open it from Spotlight or Launchpad, or drag it anywhere you
 keep apps.
 
@@ -30,12 +30,12 @@ The app's project is named after the app and lives in `~/.localix/apps/<plugin>`
 workspace's project switcher like any other project, so you can open the app's conversations from
 Localix too, and its permissions, agent and mode are the project's own.
 
-A plugin offers one app, whichever of its tabs you install it from: a board and a task card of the
-same plugin open the same app, on the plugin's main screen.
+A mini app offers one app, whichever of its tabs you install it from: a board and a task card of the
+same mini app open the same app, on the mini app's main screen.
 
 ## Use the app
 
-The window shows the plugin's main screen with the conversation beside it. The agent there is the
+The window shows the mini app's main screen with the conversation beside it. The agent there is the
 same agent as in the workspace, so a game's opponent, a board's planner or a tool's operator works
 the way it does in a tab. The app opens on the conversation you last used in it.
 
@@ -60,9 +60,9 @@ stops unexpectedly, an open app starts it again and reconnects.
 
 ## Open, reinstall or remove
 
-When a plugin is already an app, the same places offer **Open _Plugin_ App** and **Remove _Plugin_
-App**. Removing moves the app to the Trash; the plugin itself stays in Localix. Deleting the app in
-Finder does the same.
+When a mini app is already an app, the same places offer **Open _Name_ App** and **Remove _Name_
+App**. Removing moves the app to the Trash; the mini app itself stays in Localix. Deleting the app
+in Finder does the same.
 
 After a Localix update, its apps are brought up to date on the next launch and keep their names and
 icons. To pick up a new icon, remove the app and install it again.
@@ -70,22 +70,22 @@ icons. To pick up a new icon, remove the app and install it again.
 Removing the app keeps its project and history. Installing the app again reopens them. Deleting the
 project in Localix hides it there; the app brings it back the next time it opens.
 
-If you turn a plugin off or remove it, its app still opens and shows its conversations, and the
-Event Center keeps one entry saying the plugin is turned off. The entry clears itself once the
-plugin is on again.
+If you turn a mini app off or remove it, its app still opens and shows its conversations, and the
+Event Center keeps one entry saying the mini app is turned off. The entry clears itself once the
+mini app is on again.
 
 ## Limits
 
-- macOS only. The Windows and Linux desktop apps, and Localix in a browser, keep plugins as tabs.
-- A mini app needs a screen of its own (the button it adds to the rail) to become an app. A plugin
-  in the Claude Code format with no mini app has no screen, so it stays in the agent.
+- macOS only. The Windows and Linux desktop apps, and Localix in a browser, keep mini apps as tabs.
+- A mini app needs a screen of its own (the button it adds to the rail) to become an app. A Claude
+  Code plugin has no screen, so it stays in the agent.
 - A development build keeps its apps separately, in `~/Applications/Localix Dev Apps`, and they need
   the development servers running.
 
 ## Related guides
 
 - [Plugins and mini apps](../extending/plugins.md)
-- [Build a plugin with the agent](../extending/build-with-the-agent.md)
+- [Build a mini app with the agent](../extending/build-with-the-agent.md)
 - [Native workspace tabs](native-workspace-tabs.md)
 
 ## Source of truth

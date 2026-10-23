@@ -4,7 +4,7 @@ Database Workspace connects Localix to saved SQL and non-SQL data sources throug
 catalog. Use it to inspect schema and data, run engine-native queries, and give a session bounded
 database access.
 
-The bundled `database` plugin is enabled by default. Live operations require an established
+The bundled `database` mini app is enabled by default. Live operations require an established
 connection, and each driver decides which actions are available.
 
 ![A SQLite query over release checks with four returned rows](../assets/screenshots/database/console--2026-10-08.png)
@@ -30,18 +30,19 @@ Saved connection configurations and live drivers have separate lifecycles. Conne
 target before saving it; disconnecting closes the driver but keeps the saved entry; reconnecting
 opens that entry on demand. Startup does not reconnect saved entries automatically.
 
-A restart or a plugin reload drops every live driver. A saved connection stays saved, but the
-workbench can still show it as connected. When a query, a table page, a grid commit or a structure
-change then finds the connection gone, the workbench reconnects once and repeats the request. The
-server refused the first request before running anything, so the statement runs only once. If a
-manual transaction was open, it ended with the old driver. In that case the workbench reconnects but
-does not repeat the statement outside the transaction. It reports the transaction as lost instead.
+A restart or a reload of the mini app drops every live driver. A saved connection stays saved, but
+the workbench can still show it as connected. When a query, a table page, a grid commit or a
+structure change then finds the connection gone, the workbench reconnects once and repeats the
+request. The server refused the first request before running anything, so the statement runs only
+once. If a manual transaction was open, it ended with the old driver. In that case the workbench
+reconnects but does not repeat the statement outside the transaction. It reports the transaction as
+lost instead.
 
 The driver catalog owns engine identity, URL schemes, query language, and capability flags. The UI
 uses those flags to expose transactions, explain, cancellation, row editing, relationships, and
 schema editing only where the adapter implements them.
 
-Network engines use the client libraries packaged with the plugin. SQLite uses Bun's in-process
+Network engines use the client libraries packaged with the mini app. SQLite uses Bun's in-process
 driver, and SSH tunnels use the bundled `ssh2` client. No database CLI is required.
 
 Database credentials can be stored as `${secret:KEY}` references. The backend resolves those
@@ -218,7 +219,7 @@ surfaces poll every 60 seconds. Showing a surface again refreshes a list older t
 The connection form imports supported URLs into editable fields. Default ports and available
 operations come from the driver catalog rather than engine-name checks in the UI.
 
-Saved configurations live in per-user JSON files in the plugin’s host data directory. Literal
+Saved configurations live in per-user JSON files in the mini app’s host data directory. Literal
 passwords, credential-bearing URLs, TLS material, and SSH credentials are saved as supplied; this
 configuration store does not encrypt them. A `${secret:KEY}` value stays a reference in that file,
 and its resolved value is used to open the live driver or tunnel.
@@ -255,7 +256,7 @@ Connections saved before pinning existed are pinned on their next successful con
 
 ## Limits
 
-- Disabling the `database` plugin removes its workbench, file associations, resources, and
+- Disabling the `database` mini app removes its workbench, file associations, resources, and
   `database_client` tool. Listing saved connections and testing or opening a target need no existing
   live driver; schema, browse, and query operations do.
 - Read-only is an accidental-write guard, not a substitute for database permissions. Use database
@@ -264,7 +265,7 @@ Connections saved before pinning existed are pinned on their next successful con
 - SQLite, Redis, MongoDB, and Elasticsearch do not implement query cancellation. Cancellation on
   other engines can still race with completion, so a timeout does not prove remote work stopped.
   Synchronous SQLite execution can also delay the event loop that runs the cancellation timer.
-- `mongodb+srv://` cannot use the plugin's SSH tunnel because DNS discovers the target rather than
+- `mongodb+srv://` cannot use the app's SSH tunnel because DNS discovers the target rather than
   naming one host and port.
 - SQL Server has no explain action. ClickHouse and the non-SQL engines have no row or schema editor;
   capability flags hide those actions.
@@ -294,12 +295,12 @@ Connections saved before pinning existed are pinned on their next successful con
 ## Related guides
 
 - [Secrets](secrets.md)
-- [Plugins](../extending/plugins.md)
+- [Mini apps](../extending/plugins.md)
 - [Workspace](workspace.md)
 
 ## Source of truth
 
-- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/mini-apps/database/.localix-app/app.json)
+- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/mini-apps/database/mini-app.json)
   ·
   [mini-apps/database/backend/index.ts](https://github.com/rsaryev/localix/blob/main/mini-apps/database/backend/index.ts)
 - [Driver catalog and registry](https://github.com/rsaryev/localix/blob/main/mini-apps/database/shared/driver-catalog.ts)

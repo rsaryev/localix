@@ -28,12 +28,12 @@ needs in `task`.
 `context: "conversation"` adds the **current topic** of the conversation, reduced to what the person
 and the delegating agent said:
 
-| Copied                                                     | Not copied                                                            |
-| ---------------------------------------------------------- | --------------------------------------------------------------------- |
-| The person's messages, with attachments and linked context | A command's invocation instruction, such as the one `/workflows` adds |
-| The delegating agent's replies, as their text              | Its tool calls, tool results and reasoning                            |
-|                                                            | Other participants' messages, system wakes, notices, earlier topics   |
-|                                                            | The delegating turn's own unfinished reply                            |
+| Copied                                                     | Not copied                                                          |
+| ---------------------------------------------------------- | ------------------------------------------------------------------- |
+| The person's messages, with attachments and linked context | A command's invocation instruction                                  |
+| The delegating agent's replies, as their text              | Its tool calls, tool results and reasoning                          |
+|                                                            | Other participants' messages, system wakes, notices, earlier topics |
+|                                                            | The delegating turn's own unfinished reply                          |
 
 The child is told that the copied requests were already handled, that other participants' roles and
 tasks are not its own, and that earlier approvals do not carry over.

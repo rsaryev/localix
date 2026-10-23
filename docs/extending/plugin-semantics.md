@@ -1,6 +1,6 @@
 # Semantic index and change feed
 
-A plugin backend can put its own items in the semantic index, find them by meaning, compare a few
+A mini app backend can put its own items in the semantic index, find them by meaning, compare a few
 texts with the embedding model, ask a decision model typed questions, and follow its own changes on
 the host's change feed — the same mechanisms the core uses for chats, skills, agents and group
 routing.
@@ -70,12 +70,12 @@ is retried from the same notice.
 `followCoreDeletions(consumer, handler)` reads the core's deletions the same way, read-only: a
 deleted agent, chat, project or provider connection, with its ref only (`CoreDeletion`). Use it to
 clean up what you kept about one, such as a card assigned to an agent that is gone. A renamed agent
-is not a deletion: store the agent's stable `agentId`, never its handle. The Kanban plugin unassigns
-a deleted agent's cards on every board this way, listing its chat folders with
+is not a deletion: store the agent's stable `agentId`, never its handle. The Kanban mini app
+unassigns a deleted agent's cards on every board this way, listing its chat folders with
 `ctx.sessionStorage.listDataDirs()`.
 
 This feed is durable and for backend consumers. To refresh an open view after a store write, use the
-store change feed instead; [Plugin synchronization](plugin-sync.md#two-change-feeds) explains the
+store change feed instead; [Mini app synchronization](plugin-sync.md#two-change-feeds) explains the
 split.
 
 ## Example

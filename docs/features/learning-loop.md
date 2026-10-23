@@ -11,13 +11,13 @@ automatically.
 
 ## What you can do
 
-| Surface             | Mechanism                                                                              | Boundary                                                                                               |
-| ------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Memory              | Store keyed Markdown notes at session, project, or global scope                        | Use `/memory`, the `memory` tool, or deliberate file edits; tool writes enforce the note budget        |
-| Skills              | Reuse project or global procedures stored as `SKILL.md` files                          | Saving is explicit or depends on the model choosing the `skill` tool; see [Skills](skills.md)          |
-| Session recall      | Discover sessions by full-text query, browse recent sessions, or page around a message | Recall requires `global_search`; transcripts are not injected on every turn                            |
-| Learning Studio     | Build, import, export, and study file-authored courses                                 | The bundled `learning` plugin is enabled by default but can be disabled; courses belong to one session |
-| Memory-provider API | Let one enabled native plugin replace or append built-in prompt memory                 | Provider calls are bounded and best-effort; a disabled plugin contributes nothing                      |
+| Surface             | Mechanism                                                                              | Boundary                                                                                                 |
+| ------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Memory              | Store keyed Markdown notes at session, project, or global scope                        | Use `/memory`, the `memory` tool, or deliberate file edits; tool writes enforce the note budget          |
+| Skills              | Reuse project or global procedures stored as `SKILL.md` files                          | Saving is explicit or depends on the model choosing the `skill` tool; see [Skills](skills.md)            |
+| Session recall      | Discover sessions by full-text query, browse recent sessions, or page around a message | Recall requires `global_search`; transcripts are not injected on every turn                              |
+| Learning Studio     | Build, import, export, and study file-authored courses                                 | The bundled `learning` mini app is enabled by default but can be disabled; courses belong to one session |
+| Memory-provider API | Let one enabled mini app backend replace or append built-in prompt memory              | Provider calls are bounded and best-effort; a disabled app contributes nothing                           |
 
 ## How it works
 
@@ -92,8 +92,10 @@ conversation; no arguments browse recent sessions. The tool returns previews and
 rather than replaying a full transcript.
 
 Learning Studio validates course bundles authored under `.localix/learning-drafts/`, imports valid
-content into the owning session's plugin data, and exposes the course hierarchy as session-scoped
-resources. Course creation, adaptation, import, export, and study progress are explicit actions.
+content into the owning session's mini app data, and exposes the course hierarchy as session-scoped
+resources. The agent reads the app's guide with `mini_app_guide`; the bundle format and quality
+checklist are its `course-bundle` page. Course creation, adaptation, import, export, and study
+progress are explicit actions.
 
 Courses prepare one complete module at a time. The first module is ready at activation; course
 activity can request the next pending module once half the current module's lessons are completed
@@ -104,7 +106,7 @@ the same course. Readiness is not guaranteed by a fixed deadline.
 
 Quiz options use a stable shuffled order. The backend checks selected option ids and preserves
 first-attempt scores across retries. Practice submission saves the solution and wakes the agent
-through the common plugin host interface in the owning conversation. The agent records feedback
+through the common mini app host interface in the owning conversation. The agent records feedback
 against the acceptance criteria; continuation requires a passing review. That review does not
 complete the step for you. It is tied to the submitted attempt; repeated reviews keep the original
 result, and an outdated submission cannot overwrite a newer one. Course prose and code fences use
@@ -161,7 +163,7 @@ encoded keys.
 - [Skills](skills.md)
 - [Sessions and projects](sessions-and-projects.md)
 - [Context checkpoints](context-checkpoints.md)
-- [Plugins](../extending/plugins.md)
+- [Mini apps](../extending/plugins.md)
 
 ## Source of truth
 
@@ -181,8 +183,8 @@ encoded keys.
   and
   [filesystem discovery](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/skill-discovery.ts)
 - [Completion hook invocation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/finalize.ts)
-- [Plugin memory lifecycle](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/memory-hooks.ts)
-- [Learning mini app manifest](https://github.com/rsaryev/localix/blob/main/mini-apps/learning/.localix-app/app.json),
+- [Memory provider lifecycle](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/memory-hooks.ts)
+- [Learning mini app manifest](https://github.com/rsaryev/localix/blob/main/mini-apps/learning/mini-app.json),
   [course service](https://github.com/rsaryev/localix/blob/main/mini-apps/learning/backend/service.ts),
   and
   [resource provider](https://github.com/rsaryev/localix/blob/main/mini-apps/learning/backend/resource-provider.ts)

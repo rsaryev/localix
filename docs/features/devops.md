@@ -1,11 +1,11 @@
 # Use DevOps Workspace
 
-DevOps Workspace puts container and Kubernetes resources in one plugin-contributed workbench. Use it
-to inspect runtime state, open logs and resource details, and start container or cluster actions
-from the Localix workspace.
+DevOps Workspace puts container and Kubernetes resources in one mini app workbench. Use it to
+inspect runtime state, open logs and resource details, and start container or cluster actions from
+the Localix workspace.
 
-The bundled `devops` plugin is enabled by default. Containers require a reachable Docker-compatible
-daemon, while Kubernetes requires a usable kubeconfig and cluster permissions.
+The bundled `devops` mini app is enabled by default. Containers require a reachable
+Docker-compatible daemon, while Kubernetes requires a usable kubeconfig and cluster permissions.
 
 ![A running demo container with its live logs and lifecycle controls](../assets/screenshots/devops/containers--2026-10-08.png)
 
@@ -36,9 +36,9 @@ Provider-owned actions and safety behavior are documented in [Containers](docker
 
 ## How it works
 
-The plugin entrypoint composes two backend subsystems. Docker mounts `/rpc/docker` and owns
-`localix://resource/docker`; Kubernetes mounts `/rpc/kubernetes`, owns `localix://resource/k8s`, and
-manages its watch, exec, and port-forward lifecycles.
+The mini app's backend entrypoint composes two backend subsystems. Docker mounts `/rpc/docker` and
+owns `localix://resource/docker`; Kubernetes mounts `/rpc/kubernetes`, owns
+`localix://resource/k8s`, and manages its watch, exec, and port-forward lifecycles.
 
 The UI contributes one restorable DevOps Workspace with **Overview**, **Containers**, and
 **Kubernetes** areas. Docker and Kubernetes resource tabs are transient because a daemon or cluster
@@ -60,7 +60,7 @@ the workbench does not change kubeconfig's current context.
 
 | Input                   | Primary behavior                                                        | Boundary                                                      |
 | ----------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------- |
-| Plugin state            | Enables both provider backends, workbench areas, and resource providers | Disabling `devops` removes Docker and Kubernetes together     |
+| Mini app state          | Enables both provider backends, workbench areas, and resource providers | Disabling `devops` removes Docker and Kubernetes together     |
 | `DOCKER_HOST`           | Selects an explicit Docker daemon endpoint                              | Overrides the selected Docker context and platform default    |
 | Selected Docker context | Supplies its recorded endpoint when `DOCKER_HOST` is unset              | The `default` context uses the platform socket or pipe        |
 | Docker platform default | Uses `/var/run/docker.sock` or the Windows `docker_engine` pipe         | An unreachable endpoint leaves the container provider offline |
@@ -95,13 +95,12 @@ the workbench does not change kubeconfig's current context.
 
 - [Containers](docker.md)
 - [Kubernetes](kubernetes.md)
-- [Plugins](../extending/plugins.md)
+- [Mini apps](../extending/plugins.md)
 - [Workspace](workspace.md)
 
 ## Source of truth
 
-- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/.localix-app/app.json)
-  ·
+- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/mini-app.json) ·
   [mini-apps/devops/backend/index.ts](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/backend/index.ts)
 - [Workbench registration](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/ui/register.tsx)
 - [Docker backend selection](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/docker/backend/index.ts)

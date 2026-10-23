@@ -1,6 +1,6 @@
 # DevOps Workspace internals
 
-DevOps Workspace composes Docker and Kubernetes providers behind one bundled plugin and one global
+DevOps Workspace composes Docker and Kubernetes providers behind one bundled mini app and one global
 tab. Use this page when changing provider composition, shared navigation, lifecycle ownership, or
 persisted presentation state.
 
@@ -8,9 +8,9 @@ persisted presentation state.
 
 | Term               | Meaning                                                                                             | Boundary                                                           |
 | ------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| DevOps plugin      | The default-enabled `devops` manifest and its backend and UI entrypoints.                           | Docker and Kubernetes have no independent enable switch.           |
+| DevOps mini app    | The default-enabled `devops` manifest and its backend and UI entrypoints.                           | Docker and Kubernetes have no independent enable switch.           |
 | Provider           | A transport-specific Docker or Kubernetes backend and UI contribution set.                          | Providers keep separate routes, state, errors, and shutdown needs. |
-| Backend subsystem  | A registered route plus optional resource, context, search, live-frame, and shutdown contributions. | Its id is a host registry key, not the installable plugin id.      |
+| Backend subsystem  | A registered route plus optional resource, context, search, live-frame, and shutdown contributions. | Its id is a host registry key, not the installable mini app id.    |
 | DevOps work item   | The restorable, global `devops` tab with Overview, Containers, and Kubernetes areas.                | Entity detail tabs are transient.                                  |
 | Resource reference | A `localix://resource/docker` or `localix://resource/k8s` URI expanded by its provider.             | Expansion adds bounded read context and performs no mutation.      |
 | Provider model     | The state returned by `useDocker` or `useKubernetes` and retained by the root shell.                | Live requests pause while the work item is hidden.                 |
@@ -19,7 +19,7 @@ persisted presentation state.
 
 | Surface                       | Mechanism                                                                                              | Boundary                                                                                       |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| Open one operations workspace | The plugin contributes one overflow launcher and one global `devops` work item.                        | The root manifest enables or disables both providers together.                                 |
+| Open one operations workspace | The mini app contributes one overflow launcher and one global `devops` work item.                      | The root manifest enables or disables both providers together.                                 |
 | Compare provider state        | Overview derives container, image, project, pod, deployment, node, and issue summaries.                | A failed collection shows an issue instead of treating stale data as current health.           |
 | Inspect containers            | Docker contributes inventory, details, logs, stats, processes, search, and resource references.        | Daemon access and some actions require the Docker CLI.                                         |
 | Inspect clusters              | Kubernetes contributes workloads, pods, deployments, services, nodes, metrics, search, and references. | Kubeconfig credentials, network access, and RBAC control results.                              |
@@ -28,7 +28,7 @@ persisted presentation state.
 
 ## How it works
 
-### Plugin composition
+### Mini app composition
 
 The root backend entrypoint registers both providers concurrently, then concatenates their backend
 and tool contributions. Docker retains subsystem id `devops:docker` and route `/rpc/docker`;
@@ -41,7 +41,7 @@ The root UI entrypoint first registers both provider contribution sets. It then 
 global, restorable DevOps work item and an overflow rail viewlet whose mount owns Kubernetes
 port-forward cleanup for closed owner tabs.
 
-The plugin UI artifact compiles its utility CSS from every `ui/` or `shared/` source folder,
+The mini app's UI artifact compiles its utility CSS from every `ui/` or `shared/` source folder,
 including provider folders such as `docker/ui/` and `kubernetes/ui/`. The provider components bundle
 as JavaScript independently of that scan; omitting their CSS leaves resource tabs and inventory rows
 without their grid geometry.
@@ -74,7 +74,7 @@ contracts live in [Docker provider internals](docker-workbench.md) and
 
 | Owner              | Invariant                                                                       | Failure when violated                                                         |
 | ------------------ | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Root manifest      | One plugin name and one enable state cover both providers.                      | Settings can expose a provider whose compiled root cannot load independently. |
+| Root manifest      | One mini app name and one enable state cover both providers.                    | Settings can expose a provider whose compiled root cannot load independently. |
 | Root backend       | Provider subsystem ids and RPC mounts remain distinct.                          | Resources, routes, live frames, or shutdown hooks collide.                    |
 | Root UI            | Provider models mount above the area switch.                                    | Changing areas discards inventory, selection, timers, and watches.            |
 | UI artifact        | Utility scanning includes nested provider UI folders.                           | Bundled provider rows render without their layout rules.                      |
@@ -88,7 +88,7 @@ contracts live in [Docker provider internals](docker-workbench.md) and
 
 | Input                     | Effect                                                                         | Boundary                                                    |
 | ------------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------- |
-| Plugin enabled state      | Registers both backend subsystems, both resource providers, and the DevOps UI. | Docker and Kubernetes cannot be toggled separately.         |
+| Mini app enabled state    | Registers both backend subsystems, both resource providers, and the DevOps UI. | Docker and Kubernetes cannot be toggled separately.         |
 | `DOCKER_HOST`             | Selects an explicit Docker endpoint.                                           | It overrides Docker context and the platform default.       |
 | Docker context and config | Supplies a context endpoint when `DOCKER_HOST` is unset.                       | Some endpoint types select the CLI fallback.                |
 | `KUBECONFIG`              | Supplies kubeconfig files to the Kubernetes client.                            | Unset uses the client's platform default.                   |
@@ -107,8 +107,9 @@ contracts live in [Docker provider internals](docker-workbench.md) and
 
 - Disabling `devops` removes both providers and all three tools. Provider directories contain no
   standalone manifest, package, or UI launcher.
-- Docker and Kubernetes can fail independently after registration, but their root plugin entrypoint
-  is shared. A root registration failure prevents the combined backend contribution from loading.
+- Docker and Kubernetes can fail independently after registration, but their root mini app
+  entrypoint is shared. A root registration failure prevents the combined backend contribution from
+  loading.
 - The DevOps work item is restorable; Docker container/resource and Kubernetes pod/resource work
   items are intentionally transient because their backing objects can disappear.
 - Kubernetes watches, exec relays, and port forwards are process-memory lifecycles. They are closed,
@@ -123,12 +124,12 @@ contracts live in [Docker provider internals](docker-workbench.md) and
 - [DevOps Workspace](../../features/devops.md)
 - [Containers](../../features/docker.md)
 - [Kubernetes](../../features/kubernetes.md)
-- [Plugins](../../extending/plugins.md)
+- [Mini apps](../../extending/plugins.md)
 - [Execution environments](../../features/execution-environments.md)
 
 ## Source of truth
 
-- [Plugin manifest](../../../mini-apps/devops/.localix-app/app.json)
+- [Mini app manifest](../../../mini-apps/devops/mini-app.json)
 - [Backend composition](../../../mini-apps/devops/backend/index.ts)
 - [UI composition](../../../mini-apps/devops/ui/register.tsx)
 - [Root workspace](../../../mini-apps/devops/ui/DevOpsWorkspace.tsx)

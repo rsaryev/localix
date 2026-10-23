@@ -1,8 +1,8 @@
 # Kanban board
 
-The Kanban board is a bundled plugin that gives every chat its own passive task board: epics, tasks,
-dependencies, checklists, owners and blockers, kept by you and the agent in that chat. Use this page
-to plan multi-part work so its state stays visible and durable.
+The Kanban board is a bundled mini app that gives every chat its own passive task board: epics,
+tasks, dependencies, checklists, owners and blockers, kept by you and the agent in that chat. Use
+this page to plan multi-part work so its state stays visible and durable.
 
 ![Release tasks arranged by status, with owners and labels](../assets/screenshots/task-board/board--2026-10-09.png)
 
@@ -14,7 +14,7 @@ Empty columns are collapsed to keep the cards readable.
 
 | Term    | Meaning                                                                  | Boundary                                                           |
 | ------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------ |
-| Board   | The tasks of one chat, stored in that chat's plugin folder.              | There is no global or project board; deleting the chat deletes it. |
+| Board   | The tasks of one chat, stored in that chat's mini app folder.            | There is no global or project board; deleting the chat deletes it. |
 | Card    | One task or epic on the board, addressed as `LX-<n>`.                    | Numbers are per board; ordinary deletion does not reuse them.      |
 | Epic    | A card that groups tasks.                                                | An epic cannot be taken; take one of its tasks.                    |
 | Take    | The agent's act of claiming a card: it becomes the owner, `in_progress`. | Refused while a dependency is not `done`.                          |
@@ -37,10 +37,10 @@ Empty columns are collapsed to keep the cards readable.
 
 ## How the agent works with it
 
-An agent allowed to use the plugin gets its `kanban` tool. Its actions are `list`, `search`,
+An agent allowed to use the mini app gets its `kanban` tool. Its actions are `list`, `search`,
 `create`, `update`, `take`, `complete`, `block`, `reorder`, `delete` and `detail`. While the board's
 tab is linked to the message, the tool is on the wire. Without the tab it is deferred like every
-plugin tool: the agent loads it once with `activate_tools`, and the session remembers that.
+mini app tool: the agent loads it once with `activate_tools`, and the session remembers that.
 
 1. The agent puts multi-part, durable work on the board; a small single deliverable needs no card. A
    `create` batch may wire dependencies to earlier entries by title. Its result offers the board,
@@ -91,8 +91,8 @@ can `take` it.
 
 The board's directory lists you as `human`. A card assigned to `human` waits for you: the board
 shows it with a person icon and "you (@human)", and assigning it raises a mention notification (and
-the `onHumanAssigned` plugin hook). Agents cannot `take` or `complete` such a card; the tool answers
-"LX-n is for @human; it waits for the person." Move your own cards on the board as usual.
+the `onHumanAssigned` mini app hook). Agents cannot `take` or `complete` such a card; the tool
+answers "LX-n is for @human; it waits for the person." Move your own cards on the board as usual.
 
 Each workflow move has one action. `update` changes a card's text, owner, epic, priority,
 dependencies and checklist, and moves it only to `backlog`, `ready` or `cancelled`: `in_progress` is
@@ -117,26 +117,26 @@ back to `ready` clears its blocker.
 
 ## How it works
 
-The board is stored as one JSON file per chat under that chat's plugin folder, which the host
+The board is stored as one JSON file per chat under that chat's mini app folder, which the host
 removes when the chat is deleted. Every write runs one at a time per board, validates its
 dependencies and parent before it lands, and is announced to every open view only after it reached
-the disk. The agent's tool and the board's routes run in separate plugin loads and still share one
+the disk. The agent's tool and the board's routes run in separate backend loads and still share one
 write queue.
 
-| Surface        | Mechanism                                                                           |
-| -------------- | ----------------------------------------------------------------------------------- |
-| Agent tool     | `kanban`, acting on the chat the call runs in.                                      |
-| View routes    | `/rpc/kanban/*`, served only for a chat the user owns.                              |
-| Live updates   | A plugin websocket stream (`b` frames) per chat, checked against the socket's user. |
-| Composer strip | The chat's open cards above the composer.                                           |
-| References     | A `kanban` resource provider and a `kanban:tasks` search provider.                  |
+| Surface        | Mechanism                                                                             |
+| -------------- | ------------------------------------------------------------------------------------- |
+| Agent tool     | `kanban`, acting on the chat the call runs in.                                        |
+| View routes    | `/rpc/kanban/*`, served only for a chat the user owns.                                |
+| Live updates   | A mini app websocket stream (`b` frames) per chat, checked against the socket's user. |
+| Composer strip | The chat's open cards above the composer.                                             |
+| References     | A `kanban` resource provider and a `kanban:tasks` search provider.                    |
 
 ## Configuration
 
-| Control                         | Effect                                                       | Default                     |
-| ------------------------------- | ------------------------------------------------------------ | --------------------------- |
-| The **Kanban board** plugin     | Settings → Capabilities → Plugins, or a `plugin:kanban` rule | On (`defaultEnabled: true`) |
-| The `kanban` tool for one agent | A `tool:kanban` rule with effect `deny` removes it           | Allowed                     |
+| Control                         | Effect                                                       | Default      |
+| ------------------------------- | ------------------------------------------------------------ | ------------ |
+| The **Kanban board** mini app   | Settings → Capabilities → Plugins, or a `plugin:kanban` rule | On (bundled) |
+| The `kanban` tool for one agent | A `tool:kanban` rule with effect `deny` removes it           | Allowed      |
 
 See [Capabilities](capabilities.md#plugin-tools) for how a plugin rule and a tool rule differ.
 
@@ -163,11 +163,11 @@ See [Capabilities](capabilities.md#plugin-tools) for how a plugin rule and a too
 - [Delegation](delegation.md)
 - [Conversations](conversations.md)
 - [Capabilities](capabilities.md)
-- [Plugins](../extending/plugins.md)
+- [Mini apps](../extending/plugins.md)
 
 ## Source of truth
 
-- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/mini-apps/kanban/.localix-app/app.json)
+- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/mini-apps/kanban/mini-app.json)
   and
   [backend registration](https://github.com/rsaryev/localix/blob/main/mini-apps/kanban/backend/index.ts)
 - [Board operations](https://github.com/rsaryev/localix/blob/main/mini-apps/kanban/backend/operations.ts)
@@ -177,4 +177,4 @@ See [Capabilities](capabilities.md#plugin-tools) for how a plugin rule and a too
   and [service](https://github.com/rsaryev/localix/blob/main/mini-apps/kanban/backend/service.ts)
 - [Agent tool](https://github.com/rsaryev/localix/blob/main/mini-apps/kanban/backend/tools.ts)
 - [Resource and search providers](https://github.com/rsaryev/localix/blob/main/mini-apps/kanban/backend/references.ts)
-- [Plugin UI registration](https://github.com/rsaryev/localix/blob/main/mini-apps/kanban/ui/register.tsx)
+- [UI registration](https://github.com/rsaryev/localix/blob/main/mini-apps/kanban/ui/register.tsx)

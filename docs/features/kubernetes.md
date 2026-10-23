@@ -4,8 +4,8 @@ Kubernetes is the cluster provider in the bundled, default-enabled [DevOps Works
 Use it to inspect workloads, logs, events, manifests, and metrics or to run confirmed deployment,
 pod, node, and manifest changes against a selected kubeconfig context.
 
-**Requires:** The plugin must stay enabled, and the Localix host needs kubeconfig credentials,
-network access to the API server, and sufficient RBAC.
+**Requires:** The `devops` mini app must stay enabled, and the Localix host needs kubeconfig
+credentials, network access to the API server, and sufficient RBAC.
 
 ![The running release preview pod in the isolated demo cluster, with readiness and live container logs](../assets/screenshots/kubernetes/pod-logs--2026-10-08.png)
 
@@ -38,7 +38,7 @@ reconciles watch changes with REST polling, which becomes the primary feed when 
 Pod exec creates a single-use loopback WebSocket bridge and opens it in a terminal. Port forwarding
 binds a local listener to `127.0.0.1` and tunnels through the Kubernetes port-forward subresource.
 Closing a pod tab requests best-effort cleanup of forwards owned by that tab. Sidebar forwards have
-no tab owner and remain until stopped. Plugin shutdown closes every watch, exec, and forward.
+no tab owner and remain until stopped. Mini app shutdown closes every watch, exec, and forward.
 
 Kubernetes objects can enter chat as `localix://resource/k8s` references. The dedicated workbench
 views cover pods, deployments, services, and nodes. API discovery lists other listable kinds,
@@ -105,11 +105,11 @@ choices are UI state; they do not alter kubeconfig files.
 - [DevOps Workspace](devops.md)
 - [Containers](docker.md)
 - [Workspace](workspace.md)
-- [Plugins](../extending/plugins.md)
+- [Mini apps](../extending/plugins.md)
 
 ## Source of truth
 
-- [Mini app default and boundary](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/.localix-app/app.json)
+- [Mini app default and boundary](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/mini-app.json)
 - [Provider registry](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/kubernetes/backend/index.ts)
 - [API backend and kubeconfig](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/kubernetes/backend/api-backend.ts)
 - [HTTP and WebSocket transport](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/kubernetes/backend/api-http.ts)

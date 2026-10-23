@@ -1,9 +1,9 @@
 # Build a plugin or a mini app
 
-A Localix extension has two layers: a **plugin** in the Claude Code format, which gives the agent
-skills, commands, agents, hooks and servers, and a **mini app** around it, which gives the person
-screens, a backend and agent tools over Localix's own APIs. Use this page to choose the layer you
-need, write its manifest, and see what the host gives a mini app.
+Localix has two kinds of extension, and they share nothing: a **plugin** in the Claude Code format,
+which gives the agent skills, commands, agents, hooks and servers, and a **mini app** in Localix's
+own format, which gives the person screens, a backend and agent tools over Localix's APIs. Use this
+page to choose the kind you need, write its manifest, and see what the host gives a mini app.
 
 **Trust boundary:** Installed extensions start disabled; agent-built ones start enabled. A mini
 app's native backend runs as trusted code in the API process.
@@ -12,14 +12,14 @@ app's native backend runs as trusted code in the API process.
 
 ## Terminology
 
-| Term              | Meaning                                                                                 | Boundary                                                             |
-| ----------------- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Plugin            | A folder in the Claude Code plugin format, `.claude-plugin/plugin.json` and components. | Knows nothing of Localix; the same folder loads in Claude Code.      |
-| Mini app          | `.localix-app/app.json` beside a plugin: backend, screens, views, settings, pickers.    | Localix only. It shares its plugin's name and names that plugin.     |
-| Native backend    | A JavaScript or TypeScript module whose `register(ctx)` the API process loads.          | Declared by a mini app's `backend`; not sandboxed.                   |
-| Workbench         | A mini app's screen in the workspace, built from `ui/register.tsx`.                     | Opens as a tab; a rail screen can also become a Mac app.             |
-| Legacy manifest   | One root `plugin.json` that carries both layers, written before the split.              | Still loads; new extensions use the two manifests.                   |
-| Bundled extension | A first-party extension synchronized from the packaged set.                             | Installed ones live under a project or personal plugin root instead. |
+| Term              | Meaning                                                                                  | Boundary                                                             |
+| ----------------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Plugin            | A folder in the Claude Code plugin format, `.claude-plugin/plugin.json` and components.  | Knows nothing of Localix; the same folder loads in Claude Code.      |
+| Mini app          | A folder with one `mini-app.json`: backend, screens, views, settings, commands.          | Localix only. It holds no `.claude-plugin/`, skills or hooks.        |
+| Guide             | A mini app's `guide.md`, read by the agent with `mini_app_guide` before it uses the app. | Read on demand; the prompt lists only that the app has one.          |
+| Native backend    | A JavaScript or TypeScript module whose `register(ctx)` the API process loads.           | Declared by a mini app's `backend`; not sandboxed.                   |
+| Workbench         | A mini app's screen in the workspace, built from `ui/register.tsx`.                      | Opens as a tab; a rail screen can also become a Mac app.             |
+| Bundled extension | A first-party extension synchronized from the packaged set.                              | Installed ones live under a project or personal plugin root instead. |
 
 ## What you can do
 
@@ -30,6 +30,8 @@ app's native backend runs as trusted code in the API process.
 | Package procedures, commands | Ship `skills/<name>/SKILL.md` and `commands/<name>.md` in the plugin.                          | Skills and commands remain distinct invocation surfaces.                          |
 | Connect external tools       | Declare MCP servers in `.mcp.json` or the plugin's `mcpServers`.                               | The plugin's enable state gates each server.                                      |
 | Add tools over Localix APIs  | A mini app's `backend` exports `register(ctx)` returning `tools`.                              | Native code runs in process and is not sandboxed.                                 |
+| Teach the agent your app     | Write the mini app's `guide.md`; long material goes in pages under `guide/`.                   | The agent reads it with `mini_app_guide`; nothing of it sits in every prompt.     |
+| Offer a mini app command     | Declare it under `commands` in `mini-app.json`, with its `prompt` and argument pickers.        | It runs as `/<app>:<command>`; a plugin's commands are `commands/<name>.md`.      |
 | Shape runtime behavior       | Return lifecycle hooks, a channel, or one memory provider from `register`.                     | Hook timeouts and optional host services limit these contributions.               |
 | Register native agents       | Declare typed `contributions` in the mini app.                                                 | Availability, invocation policy and review remain separate.                       |
 | Add a native workbench       | Ship `ui/register.tsx`; the app builds the artifact and swaps it in place.                     | Bundled extensions, and your own under `~/.localix/plugins` once you enable them. |
@@ -70,29 +72,23 @@ one; semantic search answers once its model is on this computer.
 
 ### Two layers
 
-A plugin is what the agent uses, in Claude Code's own format; a mini app is what the person uses.
-Claude Code ignores `.localix-app/`, the backend and the UI, so copying a mini app's folder into
-Claude Code installs its plugin. Localix reads both manifests and serves them as one extension under
-one name. A mini app's display fields (`displayName`, `description`, …) win over its plugin's; the
-plugin keeps its version. Settings → Capabilities → Plugins labels each entry **Claude Code
-plugin**, **mini app** or **legacy manifest**. The
-[design note](https://github.com/rsaryev/localix/blob/main/docs/internals/plugins-and-mini-apps.md)
+A plugin is what the agent uses, in Claude Code's own format; a mini app is what the person uses, in
+Localix's. A folder is one or the other: a folder with both `mini-app.json` and
+`.claude-plugin/plugin.json` loads nothing and says why. A mini app tells the agent how to use it in
+its `guide.md`, not in skills; the prompt lists each enabled mini app in one line, marked when it
+has a guide, and the agent reads the guide with `mini_app_guide` before it first uses the app.
+Settings → Capabilities → Plugins labels each entry **Claude Code plugin**, **mini app**, or an
+older layout; the
+[contract](https://github.com/rsaryev/localix/blob/main/docs/internals/plugins-and-mini-apps.md)
 records the rules.
 
-One procedure is a [skill](skills-authoring.md), one tool server is [MCP](../features/mcp.md), and a
-command the agent composes calls to is a `bin/` executable. Skills, commands and hooks for any agent
-make a plugin; tools over Localix's APIs, settings or a screen make a mini app. For a workbench,
-`/plugin create <what it should do>` has the agent fork the System Overview template into
-`~/.localix/plugins/<name>` and build it out; the [workbench UI guide](plugin-ui.md) explains the
-path.
+Skills, commands, hooks and MCP servers for any agent make a plugin; tools over Localix's APIs,
+settings or a screen make a mini app. For a workbench, `/plugin create <what it should do>` forks
+the System Overview template into `~/.localix/plugins/<name>`; see [workbench UI](plugin-ui.md).
 
 ### A minimal plugin
 
-```text
-calorie-log/
-  .claude-plugin/plugin.json
-  skills/estimate-calories/SKILL.md
-```
+A folder `calorie-log/` with `skills/estimate-calories/SKILL.md` and `.claude-plugin/plugin.json`:
 
 ```json
 {
@@ -107,11 +103,21 @@ Code, and in Localix it appears as `/calorie-log:estimate-calories`.
 
 ### A minimal mini app
 
-Add `.localix-app/app.json` and a backend to the same folder:
+A mini app is its own folder, with no plugin in it: `mini-app.json`, `guide.md`, `backend/index.ts`.
 
 ```json
-{ "name": "calorie-log", "apiVersion": 1, "category": "utilities", "backend": "./backend/index.ts" }
+{
+  "name": "calorie-counter",
+  "version": "0.1.0",
+  "description": "Logs meals and their calories.",
+  "apiVersion": 1,
+  "category": "utilities",
+  "backend": "./backend/index.ts"
+}
 ```
+
+`guide.md` is plain Markdown for the agent: when to call `log_meal`, what to extract from a meal
+photo, and what to tell the person afterwards. The backend gives the agent that tool:
 
 ```ts
 import { appendFile } from 'node:fs/promises'
@@ -227,8 +233,8 @@ was given, with a slow backstop poll for loads without it. To push a change to a
 An enabled plugin's `bin/` directory is prepended to the PATH of the commands the agent runs:
 `bash`, and the checks and watches a [monitor](../features/monitors.md) runs. A bundled executable
 resolves by bare name, with no manifest field and no SDK surface — the smallest way to let the agent
-reach a system your extension already knows how to talk to. The extension owns the connection and
-the correct query; the agent keeps composing the command and the condition itself:
+reach a system your plugin already knows how to talk to. The plugin owns the connection and the
+correct query; the agent keeps composing the command and the condition itself:
 
 ```text
 monitor(until: { check: 'my-plugin-query --connection prod --sql "select count(*) from members"',
@@ -264,26 +270,26 @@ form. [Claude Code plugins](claude-code-plugins.md) lists what Localix runs and 
 
 ### Mini app manifest
 
-`.localix-app/app.json` (schema `miniAppManifestSchema` from
-`@localixai/mini-app-sdk/app-manifest`):
+`mini-app.json` at the folder root (`miniAppManifestSchema`, `@localixai/mini-app-sdk/app-manifest`)
+refuses unknown keys, a plugin's `skills` or `hooks` among them:
 
-| Field              | Shape                                                    | Effect and boundary                                                                               |
-| ------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `name`             | string, required                                         | The plugin's name in the same folder; a different name stops loading.                             |
-| `apiVersion`       | positive integer                                         | Targets the contract, currently `1`. A newer version blocks loading; omission warns.              |
-| `displayName`, …   | `description`, `author`, `homepage`, `license`, …        | Display fields; they win over the plugin's. `version` applies only when the plugin has none.      |
-| `category`         | `development`, `data`, `content`, `utilities` or `games` | Groups workbenches in the Plugins launcher; one per app.                                          |
-| `surfaces`         | string array; `['agent']`                                | `workbench` adds a screen. Unknown values are retained.                                           |
-| `defaultEnabled`   | boolean                                                  | Initial state of a bundled app. Installed ones always wait to be allowed.                         |
-| `private`          | boolean                                                  | Keeps an authoring scaffold out of packaging.                                                     |
-| `backend`          | string or string array                                   | The native entrypoint(s) exporting `register(ctx)`; `/plugin create` builds write it.             |
-| `config`           | config-option map                                        | Settings delivered through `ctx.config`; one form with the plugin's `userConfig`, whose keys win. |
-| `commands`         | map keyed by the plugin's command name                   | How Localix offers the command: `args` chips and pickers, `featured`, `activateTools` (max 8).    |
-| `views`            | view array; max 6                                        | Sandboxed iframe UI, each a work-item tab; HTML capped at 1.5 MiB.                                |
-| `promptSections`   | `{ title, content }` array; max 3                        | Static text under the extension's prompt section; title max 80, content max 2,000 characters.     |
-| `contributions`    | typed declaration array; max 1,000                       | Native values through host-owned schemas; unknown kinds fail closed.                              |
-| `fileAssociations` | association array                                        | File types projected into desktop packaging; only bundled declarations reach the OS.              |
-| `dependencies`     | names or `{ name, version? }`                            | Other plugins installed and enabled with the app; version ranges warn only.                       |
+| Field                    | Shape                                                     | Effect and boundary                                                                             |
+| ------------------------ | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `name`                   | string, required                                          | Letters, numbers, dashes or underscores; the namespace of its tools and commands.               |
+| `version`, `description` | string, required                                          | The app's version, and what it does, shown in Settings and in the agent's listing.              |
+| `displayName`, …         | `author`, `homepage`, `repository`, `license`, `keywords` | Display fields.                                                                                 |
+| `apiVersion`             | positive integer                                          | Targets the contract, currently `1`. A newer version blocks loading; omission warns.            |
+| `category`               | `development`, `data`, `content`, `utilities` or `games`  | Groups workbenches in the Plugins launcher; one per app.                                        |
+| `surfaces`               | string array; `['agent']`                                 | `workbench` adds a screen. Unknown values are retained.                                         |
+| `private`                | boolean                                                   | Keeps an authoring scaffold out of packaging.                                                   |
+| `backend`                | string or string array                                    | The native entrypoint(s) exporting `register(ctx)`; `/plugin create` builds write it.           |
+| `guide`                  | path; `./guide.md`                                        | The agent's guide; pages it links live in `guide/<page>.md`.                                    |
+| `config`                 | config-option map                                         | Settings delivered through `ctx.config`.                                                        |
+| `commands`               | map keyed by command name                                 | Each `{ prompt, description?, args?, argumentHint?, featured?, activateTools? }` (max 8 tools). |
+| `views`                  | view array; max 6                                         | Sandboxed iframe UI, each a work-item tab; HTML capped at 1.5 MiB.                              |
+| `promptSections`         | `{ title, content }` array; max 3                         | Static text under the app's prompt section; title max 80, content max 2,000 characters.         |
+| `contributions`          | typed declaration array; max 1,000                        | Native values through host-owned schemas; unknown kinds fail closed.                            |
+| `fileAssociations`       | association array                                         | File types projected into desktop packaging; only bundled declarations reach the OS.            |
 
 The native UI is found by convention at `ui/register.tsx`. A `views[]` entry is
 `{ id, title, file, icon?, agentDescription? }`; a `fileAssociations[]` entry is
@@ -305,10 +311,11 @@ The native UI is found by convention at `ui/register.tsx`. A `views[]` entry is
 
 ### Commands and their pickers
 
-A command's prompt is the plugin's `commands/<name>.md`. Its `arguments` frontmatter names the
-positional arguments that fill `$name`; `$ARGUMENTS` and `$1` work as in Claude Code. The mini app's
-`commands.<name>.args` adds chips and pickers: `text` or `choice`, static `options` or an
-`optionsScript`, and an optional `{ arg, equals }` condition. See
+A mini app's command lives in `mini-app.json`: its `prompt` takes `${name}` for each declared
+argument, and `$ARGUMENTS` and `$1` as in Claude Code. `args` adds chips and pickers: `text` or
+`choice`, static `options` or an `optionsScript`, and an optional `{ arg, equals }` condition. A
+plugin's command is its `commands/<name>.md`, whose `arguments` frontmatter names the positional
+arguments that fill `$name`. See
 [command authoring](../features/hooks-and-commands.md#plugin-command-example-and-options).
 
 ### Native agent contributions
@@ -321,10 +328,11 @@ the installation, and files dropped into a directory register nothing: use the i
 
 ### Legacy manifest
 
-A root `plugin.json` that carries both layers still loads, with the fields above plus `tools` for
-the backend and inline `commands`. A folder that has `.claude-plugin/plugin.json` or
-`.localix-app/app.json` ignores a root `plugin.json` and warns, except the one an earlier Localix
-wrote beside an imported Claude Code plugin, which is skipped silently.
+Two layouts from before the split load until a start-up migration moves them to `mini-app.json`: a
+plugin with `.localix-app/app.json` beside it, whose display fields win over the plugin's, and a
+root `plugin.json` with `tools` for the backend and inline `commands`. A folder with either newer
+manifest ignores a root `plugin.json` and warns, unless an earlier Localix wrote it beside an
+imported Claude Code plugin. A `mini-app.json` beside any of them loads nothing.
 
 ### Test and package
 
@@ -332,11 +340,11 @@ In the repository, run `bun test ./path/to/my-app`, then `bun run test`, `type-c
 standalone extension brings its own tests; bundle any package dependencies into the backend and
 point `backend` at that file.
 
-## Bundled extensions
+## Bundled mini apps
 
-Each ships as a plugin with a mini app around it: `surfaces` decides whether it adds a workbench,
-and `defaultEnabled` whether it starts on. Native code in a bundled extension still runs in the
-trusted API process. Fifteen workbenches complement the four [games](../features/games.md):
+Each has its own `mini-app.json` and `guide.md` and starts enabled; `surfaces` decides whether it
+adds a workbench. Its native code still runs in the trusted API process. Fifteen workbenches
+complement the four [games](../features/games.md):
 
 | Mini app            | Guide                                           | What the workbench shows                                                              |
 | ------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------- |
@@ -354,7 +362,7 @@ trusted API process. Fifteen workbenches complement the four [games](../features
 | **Project Space**   | [Project Space](../features/project-space.md)   | One board per project: notes, shapes, connectors and live references to its files     |
 | **Reader**          | [Reader](../features/reader.md)                 | EPUB, PDF, MOBI/AZW3, FB2, CBZ, Markdown, HTML, and text with annotations             |
 | **Trading**         | [Market research](../features/trading.md)       | Read-only public venues, charts, indicators, order books, and trades                  |
-| **System Overview** | this guide                                      | OS history, process context and a reusable skill                                      |
+| **System Overview** | this guide                                      | OS history, process context and a guide for the agent                                 |
 
 ![The System Overview workbench reading live OS metrics and recent CPU and memory samples](../assets/screenshots/system/overview--2026-10-08.png)
 
@@ -381,7 +389,7 @@ trusted API process. Fifteen workbenches complement the four [games](../features
 
 - [Mini app manifest schema](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/manifest/app.ts)
 - [Claude Code plugin format](https://github.com/rsaryev/localix/tree/main/packages/claude-plugin/src)
-- [Composing the two manifests](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/layout/compose.ts)
+- [Reading the manifests](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/layout/compose.ts)
 - [Runtime manifest schema](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/contracts.ts)
 - [Discovery and exact-scope rules](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/discovery.ts)
 - [Enable policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/enable.ts)

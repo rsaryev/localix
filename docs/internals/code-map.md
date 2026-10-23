@@ -34,8 +34,8 @@ A Bun and Hono API (`apps/api`) owns the agent runtime, tools, permissions, stor
 multiplexed websocket (`/rpc/ws`) that carries every live update. The React workspace (`apps/ui`) is
 a typed Hono RPC client over that API. `apps/desktop-tauri` wraps both as the shipped app, and
 `apps/landing` is the product and documentation site. Everything persisted lives under `~/.localix`
-(`localix.db`, the vault and `plugins/`); `plugins/` in the repository is source that is staged into
-that home.
+(`localix.db`, the vault and `plugins/`); `mini-apps/` in the repository is source that is staged
+into that home.
 
 The desktop [agent island](agent-island.md) uses a separate UI entry and the existing chat and
 attention pipelines. Its native host lives in `companion.rs` (page commands in
@@ -53,12 +53,14 @@ refresh and remove the bundles. The page is the workspace with `chrome="app"`, d
 project of its own (`shared/lib/pluginAppProject.ts`). Install actions and icons live in
 `features/plugin-apps/`.
 
-An extension is a [plugin and a mini app](plugins-and-mini-apps.md): `.claude-plugin/plugin.json` in
-the Claude Code format, read by `packages/claude-plugin` (no Localix knowledge), and
-`.localix-app/app.json` (`@localixai/mini-app-sdk/app-manifest`).
-`apps/api/src/features/plugins/layout/` reads both (`read.ts`), composes the one runtime manifest
-the loader uses (`compose.ts`, with `claude-code.ts` for the Claude Code mapping), splits a legacy
-root `plugin.json` (`split.ts`) and finds where the build writes the backend (`backend-pointer.ts`).
+An extension is a [plugin or a mini app](plugins-and-mini-apps.md), never both: a plugin is
+`.claude-plugin/plugin.json` in the Claude Code format, read by `packages/claude-plugin` (no Localix
+knowledge); a mini app is `mini-app.json` (`@localixai/mini-app-sdk/app-manifest`) with its
+`guide.md`, which the agent reads with `mini_app_guide` (`agent-core/tools/mini-app-guide.ts`).
+`apps/api/src/features/plugins/layout/` reads a folder's manifests (`read.ts`), composes the one
+runtime manifest the loader uses (`compose.ts`, with `claude-code.ts` for the Claude Code mapping;
+the `.localix-app/app.json` and root `plugin.json` layouts from before the split still load there)
+and finds where the build writes the backend (`backend-pointer.ts`).
 
 ## Boot is phased, and the phases exist because of cycles
 
@@ -96,20 +98,20 @@ schema, and prompt sections gate on `hasTool(...)` (`agent-core/prompt/sections/
 a required `source`, and optional `to` and `deliveryKey`) is the only way a turn starts without a
 person typing. Each producer has its `source`:
 
-| Producer                                           | `source`     | Where                                             |
-| -------------------------------------------------- | ------------ | ------------------------------------------------- |
-| A loop's trigger fire                              | `loop`       | `bootstrap/loop-action.ts`                        |
-| A background job's exit notice                     | `bg-job`     | `runtime/exit-notices.ts`                         |
-| A monitor's event                                  | `bg-monitor` | `features/monitors/action.ts`                     |
-| A finished sub-agent's report                      | `subagent`   | `runtime/delegation-report.ts`                    |
-| A Claude Code `asyncRewake` hook                   | `hook`       | `features/cc-hooks`                               |
-| A reaction on a message                            | `reaction`   | `chat/contracts/queue.ts` (the `WakeSource` list) |
-| The person's **Continue** on stopped work          | `resume`     | `features/resume/registry.ts`                     |
-| Plugin backends, plugin monitors, inbound webhooks | `external`   | `chat/contracts/queue.ts` (the `WakeSource` list) |
+| Producer                                             | `source`     | Where                                             |
+| ---------------------------------------------------- | ------------ | ------------------------------------------------- |
+| A loop's trigger fire                                | `loop`       | `bootstrap/loop-action.ts`                        |
+| A background job's exit notice                       | `bg-job`     | `runtime/exit-notices.ts`                         |
+| A monitor's event                                    | `bg-monitor` | `features/monitors/action.ts`                     |
+| A finished sub-agent's report                        | `subagent`   | `runtime/delegation-report.ts`                    |
+| A Claude Code `asyncRewake` hook                     | `hook`       | `features/cc-hooks`                               |
+| A reaction on a message                              | `reaction`   | `chat/contracts/queue.ts` (the `WakeSource` list) |
+| The person's **Continue** on stopped work            | `resume`     | `features/resume/registry.ts`                     |
+| Mini app backends, plugin monitors, inbound webhooks | `external`   | `chat/contracts/queue.ts` (the `WakeSource` list) |
 
 A `resume` point is registered by a producer such as the approved plan, and the client offers one
 only while nobody works on the conversation. No plugin board wakes a session: the bundled `kanban`
-plugin records work and never starts a run.
+mini app records work and never starts a run.
 
 Every wake enters the durable priority queue (`features/chat/runtime/wake-queue.ts`, admission in
 `wake-queue/wake.ts`). An entry is typed by its kind (`wake-queue/entry.ts`): the person's words, a
@@ -130,7 +132,7 @@ crash interrupted replays with the same entries and transcript row. A wake persi
 internal user row carrying its `WakeSource`, and `features/chat/wake-provenance.ts` lifts that onto
 the next visible assistant message, which is what renders the "via Loop" chip.
 
-A trigger's fire and every producer that cannot await a turn (plugin backends and monitors, a
+A trigger's fire and every producer that cannot await a turn (mini app backends, plugin monitors, a
 finished child's report, a reaction) wake through one delivery, `features/triggers/delivery.ts`.
 `deliver` answers delivered, missed or failed, and `send` logs an undelivered one against its
 subject. It is bound once in `bootstrap.ts` as `wakes`. A fire is keyed `trg:<id>:<seq>`, so a
@@ -190,8 +192,8 @@ error where the UI reads it. Write no type argument for it and fetch no `/rpc/` 
 
 Live session state is surfaced above the composer through the strips in
 `entities/chat/ui/prompt-input/ComposerHeaderStrips.tsx`; follow that pattern rather than adding a
-second place. The shared plugin runtime is `@localixai/mini-app-sdk/ui`, and `apps/ui` never names a
-specific plugin. The rules for menus and for marking a recommended step are in
+second place. The shared mini app runtime is `@localixai/mini-app-sdk/ui`, and `apps/ui` never names
+a specific mini app. The rules for menus and for marking a recommended step are in
 [Visual system](visual-system.md).
 
 ## Shared leaves
@@ -211,7 +213,7 @@ copy. Two copies drifting is why `wake-provenance` exists.
 | A new wake producer     | its own `features/<x>` engine + `bootstrap/session-services.ts` (or `engines.ts`) + a `WakeSource` in `chat/contracts/queue.ts` + label in `wake-provenance.ts` + the one delivery `wakes` (`triggers/delivery.ts`) if it cannot await a turn                                                                                                                                                                                                                                                |
 | A new kind of Continue  | a `ResumeProducer` (`features/resume/contracts.ts`: `list` + `take`) registered in `bootstrap/session-services.ts`, and `registry.changed(owner)` when its work changes; the UI needs nothing (`ResumeStrip`) unless the kind has its own row (`RESUME_KINDS_WITH_OWN_ROW`). Never a per-feature Continue button or endpoint                                                                                                                                                                 |
 | A model judgment        | a typed question to `features/decisions` (`DecisionService.decide`, its own `purpose`; `usageKind: 'routing'` only for routing) or texts to `semanticService.vectors` (`embeddings/semantic-vectors.ts`: `rank`, `embed`), the ports search, group routing and plugins share. Models are named only in `decisions/models.ts` and `embeddings/models.ts`. Never resolve a model, keep a deadline or compute a cosine in the consumer; always keep its fallback for an outcome without answers |
-| A plugin capability     | `plugins/<name>`: agent parts in `.claude-plugin/` and its component folders, Localix parts in `.localix-app/app.json` + `@localixai/mini-app-sdk` contract; remember plugins run from `~/.localix/plugins`                                                                                                                                                                                                                                                                                  |
+| A mini app capability   | `mini-apps/<name>`: `mini-app.json`, `guide.md` (pages in `guide/`), `backend/index.ts` and `ui/register.tsx` against the `@localixai/mini-app-sdk` contract; remember installed copies run from `~/.localix/plugins`. A Claude Code plugin's parts live in `.claude-plugin/` and its component folders                                                                                                                                                                                      |
 | A schema change         | a new file in `apps/api/migrations/` + `db/types.ts`; no existing migration is ever renamed, edited or deleted, because `bun run dev` has already run it on your database (`migration-ledger.ts` refuses to boot, `migration-freeze.test.ts` refuses in CI); see `apps/api/migrations/README.md`                                                                                                                                                                                             |
 
 Markdown grammar and portable rendering live in `packages/markdown`; the workspace owns mentions,

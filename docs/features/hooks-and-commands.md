@@ -1,15 +1,15 @@
 # Use hooks and slash commands
 
 Slash commands turn `/…` input into session controls or extension macros. Hooks let enabled plugins
-or an invoked skill or agent run handlers at defined runtime boundaries.
+and mini apps, or an invoked skill or agent, run handlers at defined runtime boundaries.
 
 ## What you can do
 
 | Outcome                     | Mechanism                                                                            | Boundary                                                      |
 | --------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------- |
 | Run session controls        | Select a core command for models, reasoning, context, loops, or extensions.          | Client-scoped commands depend on the active client.           |
-| Invoke an extension macro   | Run a command contributed by an enabled plugin or user-invocable skill.              | Macros start model work; during a run they wait in the queue. |
-| Gate prompts or tools       | Use native `onPreToolCall` or declarative `UserPromptSubmit` and `PreToolUse` hooks. | The plugin or run-scoped declaration must be active.          |
+| Invoke an extension macro   | Run a command from an enabled plugin or mini app, or a user-invocable skill.         | Macros start model work; during a run they wait in the queue. |
+| Gate prompts or tools       | Use native `onPreToolCall` or declarative `UserPromptSubmit` and `PreToolUse` hooks. | The extension or run-scoped declaration must be active.       |
 | Transform model-facing data | Rewrite prompts, tool inputs, tool outputs, assistant text, or added context.        | Each hook contract controls which persisted data can change.  |
 | Observe lifecycle events    | Receive run, worker, context-checkpoint, and human-input events.                     | Observer hooks cannot answer a human-in-the-loop request.     |
 
@@ -17,21 +17,21 @@ or an invoked skill or agent run handlers at defined runtime boundaries.
 
 ### Slash-command dispatch
 
-Web/desktop derives its built-in menus from the shared slash catalog, then merges enabled plugin
-commands and user-invocable skills for the active scope.
+Web/desktop derives its built-in menus from the shared slash catalog, then merges enabled plugin and
+mini app commands and user-invocable skills for the active scope.
 
 | Order | Owner                | Dispatch behavior                                                                      |
 | ----- | -------------------- | -------------------------------------------------------------------------------------- |
 | 1     | Compatible client    | Handles client commands such as `/fork` and `/open` before an API turn.                |
 | 2     | Core API catalog     | Resolves canonical names and aliases to typed control handlers.                        |
-| 3     | Enabled plugin       | Resolves `/<plugin>:<command>` or a collapsed same-name command such as `/review`.     |
+| 3     | Enabled extension    | Resolves `/<name>:<command>` or a collapsed same-name command such as `/review`.       |
 | 4     | User-invocable skill | Resolves `/<skill-name>` when no earlier owner claimed it.                             |
 | 5     | Unresolved gate      | Returns an error and suggestions instead of sending command-shaped input to the model. |
 
-A core name or alias wins a collision. Plugin commands are agent prompt templates: the backend
-validates positional arguments and static choices, expands supported variables and dynamic content,
-then starts a macro run. Dynamic option scripts stay server-side; clients receive only their
-returned choices.
+A core name or alias wins a collision. Plugin and mini app commands are agent prompt templates: the
+backend validates positional arguments and static choices, expands supported variables and dynamic
+content, then starts a macro run. Dynamic option scripts stay server-side; clients receive only
+their returned choices.
 
 Arguments are positional. Non-final text and choice fields consume whitespace-delimited tokens; only
 a final text field captures the remainder. Static choices must match a declared value, while dynamic
@@ -53,24 +53,24 @@ grants do not govern that preprocessing.
 | Memory and skills | `/memory`, `/skills` (`/skill`)              |
 | Extensions        | `/mcp`, `/plugin`, `/provider`               |
 
-### Native plugin hooks
+### Native mini app hooks
 
-Native hooks are callbacks returned by an enabled plugin's `register(ctx)` function.
+Native hooks are callbacks returned by an enabled mini app's `register(ctx)` function.
 
 | Hook                               | Primary effect                                                 | Boundary                                                                     |
 | ---------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `onSessionStart`                   | Observe the first run of a session through the plugin context. | Fires once per session per API process and is not awaited.                   |
+| `onSessionStart`                   | Observe the first run of a session through the app's context.  | Fires once per session per API process and is not awaited.                   |
 | `onUserMessage`                    | Rewrite the model-facing prompt.                               | The persisted user message does not change.                                  |
-| `onPreToolCall`                    | Observe, rewrite, or block built-in, plugin, and MCP calls.    | A rewrite is schema-checked when the tool exposes a compatible schema.       |
-| `onPostToolCall`                   | Replace result content or append a plugin note.                | Appended text is capped at 1,024 UTF-16 code units per hook result.          |
+| `onPreToolCall`                    | Observe, rewrite, or block built-in, extension, and MCP calls. | A rewrite is schema-checked when the tool exposes a compatible schema.       |
+| `onPostToolCall`                   | Replace result content or append a note.                       | Appended text is capped at 1,024 UTF-16 code units per hook result.          |
 | `onAssistantMessage`               | Replace persisted assistant text or add message bindings.      | Content must be non-empty; bindings are validated and capped.                |
 | `onSessionEnd`                     | Observe the end of each run.                                   | It is not a logical session-deletion event.                                  |
 | `onSubagentStop`                   | Observe a child session reaching a terminal status.            | Observer-only.                                                               |
 | `onHitlRequest` / `onHitlResolved` | Observe human-input request lifecycle.                         | These hooks cannot answer or veto the request.                               |
 | `onHumanAssigned`                  | Observe a board card assigned to the person.                   | Receives `sessionId`, `messageId`, `from` and a text excerpt; observer-only. |
 
-Native rewrites compose in plugin load order. Tool pre-hooks stop at the first block; post-hooks all
-run and later hooks see earlier replacements.
+Native rewrites compose in mini app load order. Tool pre-hooks stop at the first block; post-hooks
+all run and later hooks see earlier replacements.
 
 Post-hooks also see execution errors converted into tool results; a pre-hook block skips execution
 and post-hooks. Assistant hooks can add at most eight bindings in total, with an 8 MiB payload cap
@@ -141,7 +141,8 @@ prompt text. API restart or session runtime cleanup clears these markers.
 | Plugin slash command     | The default `commands/` tree or `commands` paths in `.claude-plugin/plugin.json`; a legacy root `plugin.json` may also list inline entries |
 | Declarative plugin hooks | Default `hooks/hooks.json`, then `hooks` paths or inline objects in `.claude-plugin/plugin.json`                                           |
 | Run-scoped hooks         | `hooks` frontmatter on the invoked skill or delegated agent                                                                                |
-| Native plugin hooks      | `hooks` returned from the plugin's `register(ctx)` function                                                                                |
+| Mini app slash command   | An entry under `commands` in `mini-app.json`, which carries its own `prompt`                                                               |
+| Native mini app hooks    | `hooks` returned from the mini app's `register(ctx)` function                                                                              |
 
 Inline commands win same-name collisions with command Markdown files. Explicit file/path entries win
 over the default directory, and nested paths become colon-separated names. Paths listed in
@@ -164,24 +165,34 @@ Review the requested change and report concrete findings: $request
 ```
 
 For a plugin named `team-tools`, it runs as `/team-tools:review <request>`, here and in Claude Code.
-A mini app beside it can add chips and pickers in `.localix-app/app.json`; the prompt stays the
-plugin's:
+
+A mini app declares its commands in `mini-app.json`, each with its `prompt` and the chips and
+pickers of its `args`; `${name}` takes each argument's value. In a mini app named `team-board` this
+runs as `/team-board:review <request>`:
 
 ```json
-{ "commands": { "review": { "args": [{ "name": "request", "type": "text", "required": true }] } } }
+{
+  "commands": {
+    "review": {
+      "description": "Review a change and report concrete findings.",
+      "prompt": "Review the requested change and report concrete findings: ${request}",
+      "args": [{ "name": "request", "type": "text", "required": true }]
+    }
+  }
+}
 ```
 
-An options script runs directly through Bun when the composer requests choices for an enabled
-plugin. It receives `{ query, cwd, sessionId, argName, command, config }` JSON on stdin and returns
-a JSON array of strings or `{ value, label?, description? }` objects on stdout. Valid rows are
+An options script runs directly through Bun when the composer requests choices for an enabled mini
+app. It receives `{ query, cwd, sessionId, argName, command, config }` JSON on stdin and returns a
+JSON array of strings or `{ value, label?, description? }` objects on stdout. Valid rows are
 normalized, with at most 200 returned. The run has an eight-second deadline and a 256 KiB stdout
 capture ceiling. A parse failure or timeout yields an empty menu; a non-zero exit alone does not
 discard otherwise usable stdout.
 
 The working directory is the resolved session directory, otherwise the project directory, otherwise
-the shared Localix workspace. The script path must be lexically within the plugin directory, but
+the shared Localix workspace. The script path must be lexically within the mini app's directory, but
 this path check does not resolve symlink targets. This subprocess has normal local access and runs
-outside Bash tool approval. Treat it as executable plugin code, rather than a sandboxed lookup.
+outside Bash tool approval. Treat it as executable mini app code, rather than a sandboxed lookup.
 
 ### Declarative handler support
 
@@ -222,9 +233,9 @@ exits any other way, or is lost to an API restart, wakes nobody.
 
 - Localix does not load hooks from ambient user, project, or local settings files. Declarative hooks
   enter through an enabled plugin or the invoked skill or agent's run-scoped frontmatter.
-- Enabling a hook-bearing plugin is a code-execution trust decision. Native and command hooks can
-  run local code; HTTP hooks make network requests; MCP, prompt, and agent hooks invoke their named
-  runtimes.
+- Enabling a hook-bearing plugin or mini app is a code-execution trust decision. Native and command
+  hooks can run local code; HTTP hooks make network requests; MCP, prompt, and agent hooks invoke
+  their named runtimes.
 - Unsupported event and handler combinations are skipped during parsing. They do not execute.
 - Declarative `PreToolUse` `allow` is advisory and cannot bypass the Localix permission gate. A deny
   can still stop the tool.
@@ -247,8 +258,8 @@ exits any other way, or is lost to an API restart, wakes nobody.
   callback occurs before that promise handler and can propagate into run startup.
 - `/fork` and `/open` require web/desktop. A client without those surfaces omits them from its
   forwarded server command list.
-- A plugin or skill macro sent while a run is active waits in the queue as a whole command — its
-  badge, model override, tool grants and hooks — and runs as its own turn.
+- A plugin, mini app or skill macro sent while a run is active waits in the queue as a whole command
+  — its badge, model override, tool grants and hooks — and runs as its own turn.
 - `/model` walks the model picker's steps in the composer — agent (groups only, with **All
   agents**), provider, model, then optional reasoning, turns and context limit settings — and never
   prints a model list. See [Switch models with `/model`](conversations.md#switch-models-with-model).

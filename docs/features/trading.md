@@ -4,8 +4,8 @@ Trading Workspace is a bundled workbench for read-only public market data. Use i
 chart markets, inspect order books and trades, run technical analysis, or attach market context to a
 session.
 
-**Availability:** The bundled `trading` plugin is enabled by default and requires network access to
-a venue. The registered surface has no credential, account, or order route.
+**Availability:** The bundled `trading` mini app is enabled by default and requires network access
+to a venue. The registered surface has no credential, account, or order route.
 
 ![Kraken BTC/USD one-hour candles, volume bars, and public order book, captured on 8 October 2026](../assets/screenshots/trading/market-chart--2026-10-08.png)
 
@@ -67,14 +67,14 @@ The host classifies `snapshot` and plain `detect` as reads. Chart-changing actio
 still apply. None of these calls places an exchange order.
 
 `manage_chart` commands are emitted as replayable `plugin.command` session events. The Trading UI
-accepts commands for its plugin and chart channel, opens or focuses the matching chart when
+accepts commands for its mini app and chart channel, opens or focuses the matching chart when
 required, and applies the command through the chart control bus.
 
 ## Configuration
 
 | Control             | Default                                      | Effect and boundary                                                                                                   |
 | ------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Plugin state        | Enabled                                      | A scoped disable removes that scope's UI and tools; the process-global backend remains while another scope enables it |
+| Mini app state      | Enabled                                      | A scoped disable removes that scope's UI and tools; the process-global backend remains while another scope enables it |
 | Public venue        | Hyperliquid                                  | The UI can select another catalog venue; the two agent tools currently register only `public:hyperliquid`             |
 | Market list refresh | Cached read                                  | **Refresh** forces a venue reload and rewrites the cache                                                              |
 | Timeframe           | Stored per connection; initial fallback `1h` | The venue's advertised list validates the stored value                                                                |
@@ -84,8 +84,8 @@ required, and applies the command through the chart control bus.
 
 ## Limits
 
-- The registered plugin backend exposes public market-data routes and streams only. Account,
-  credential, portfolio, and order code elsewhere in the plugin tree is not mounted or returned from
+- The registered backend exposes public market-data routes and streams only. Account, credential,
+  portfolio, and order code elsewhere in the mini app's tree is not mounted or returned from
   `register()`.
 - The UI can construct an ephemeral profile for a catalog venue, but public access is not
   guaranteed. Authentication requirements, symbols, timeframes, and feed capabilities remain
@@ -108,12 +108,12 @@ required, and applies the command through the chart control bus.
 
 - [Workspace](workspace.md)
 - [Sessions and projects](sessions-and-projects.md)
-- [Plugins](../extending/plugins.md)
+- [Mini apps](../extending/plugins.md)
 - [Trading subsystem notes](https://github.com/rsaryev/localix/blob/main/docs/internals/subsystems/trading-workbench.md)
 
 ## Source of truth
 
-- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/mini-apps/trading/.localix-app/app.json)
+- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/mini-apps/trading/mini-app.json)
 - [Registered routes, tools, references, search, and streams](https://github.com/rsaryev/localix/blob/main/mini-apps/trading/backend/index.ts)
 - [Public profile contract](https://github.com/rsaryev/localix/blob/main/mini-apps/trading/backend/public-connection.ts)
 - [Read-only service](https://github.com/rsaryev/localix/blob/main/mini-apps/trading/backend/service.ts)

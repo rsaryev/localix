@@ -50,10 +50,10 @@ sign-in the picker uses. With OpenRouter connected, Localix uses small, inexpens
 to route group chats, drive the Browser toward a goal, and play games and plugins. Once a connection
 exists, the tip shows **Connected**.
 
-The goal tip appears only while an enabled plugin features a command, such as the bundled
-`/workflows`, and shows that command. The agent island tip appears only in the macOS desktop app;
-its switch turns the island on or off at once, like the one in Settings. The dialog remembers the
-last tip you viewed on this device, and its last step, **Start chatting**, closes it onto the chat.
+The goal tip appears only while an enabled plugin or mini app features a command, and shows that
+command. The agent island tip appears only in the macOS desktop app; its switch turns the island on
+or off at once, like the one in Settings. The dialog remembers the last tip you viewed on this
+device, and its last step, **Start chatting**, closes it onto the chat.
 
 An editor group with nothing open, such as one whose chat tab you closed, shows the Localix bird.
 

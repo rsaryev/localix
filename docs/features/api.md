@@ -1,11 +1,11 @@
 # Use the API workbench
 
-The bundled API plugin adds a REST client for saved HTTP requests, response inspection, imports,
+The bundled API mini app adds a REST client for saved HTTP requests, response inspection, imports,
 repository exports, and bounded agent access. Use it when an API workflow should stay visible and
 addressable inside the Localix workspace.
 
-**Availability:** The bundled `api` plugin is enabled by default and can be disabled in **Settings →
-Capabilities → Plugins**. Requests to private or local hosts require the plugin’s **Allow
+**Availability:** The bundled `api` mini app is enabled by default and can be disabled in **Settings
+→ Capabilities → Plugins**. Requests to private or local hosts require the app’s **Allow
 private/internal hosts** option; enable it only for services you intend to call. Without it, a host
 whose address cannot be resolved is refused as well.
 
@@ -19,13 +19,13 @@ whose address cannot be resolved is refused as well.
 | Send and inspect       | Resolve the active environment, send the request, and inspect the response | Response bodies are bounded and each request uses the configured timeout      |
 | Import API collections | Preview cURL, OpenAPI, Postman, Insomnia, HAR, or Localix request files    | Compatibility is a supported subset; unsupported values remain visible        |
 | Export to a repository | Write reviewable JSON request files under `.localix/rest/`                 | Recognized credential fields block export; review the snapshot before sharing |
-| Attach API context     | Search, mention, or attach a saved request as a plugin-owned resource      | Context keeps supported secret references instead of exposing vault values    |
-| Use agent tools        | Manage requests and environments through the registered plugin tools       | Tool availability depends on plugin state, mode, and effective permissions    |
+| Attach API context     | Search, mention, or attach a saved request as an app-owned resource        | Context keeps supported secret references instead of exposing vault values    |
+| Use agent tools        | Manage requests and environments through the app's registered tools        | Tool availability depends on app state, mode, and effective permissions       |
 
 ## How it works
 
 The workbench keeps a request tree, editable request tabs, response inspection, and saved-request
-history in the workspace. The same saved requests are exposed through plugin search and resource
+history in the workspace. The same saved requests are exposed through the app's search and resource
 providers so a session can return to the owning workbench surface.
 
 Before sending, the backend resolves supported environment placeholders and `${secret:KEY}` values.
@@ -87,8 +87,8 @@ Preview an import before saving it.
 - Every redirect destination is checked again. Cross-origin redirects remove `Authorization` and
   `Cookie`; custom credential headers and a body preserved by a redirect can still reach that
   origin.
-- Redirect cookies live only for the current send; the plugin has no persistent cookie jar.
-- The enabled plugin is trusted backend code and can make outbound requests.
+- Redirect cookies live only for the current send; the app has no persistent cookie jar.
+- The enabled app is trusted backend code and can make outbound requests.
 - Localix permissions are an application gate, not an operating-system sandbox.
 
 ## Configuration
@@ -100,7 +100,7 @@ Preview an import before saving it.
 | `ALLOW_PRIVATE_NETWORK` | `false`     | Allows loopback, private, and link-local targets when on              |
 | Credential storage      | Vault field | Use supported authentication fields or `secret:` values               |
 
-A request-specific positive `timeoutMs` overrides the plugin default. The fetch timeout covers the
+A request-specific positive `timeoutMs` overrides the app's default. The fetch timeout covers the
 redirect chain; environment/vault resolution occurs before it starts, and destination DNS checks do
 not receive its abort signal. It is not a deadline for the complete operation.
 
@@ -113,7 +113,7 @@ visible.
 
 - GraphQL has no dedicated editor; send a normal JSON HTTP request instead.
 - Import support is narrower than each source application's complete data model.
-- Saved request metadata and environment values are not encrypted by the plugin.
+- Saved request metadata and environment values are not encrypted by the app.
 - Repository export does not synchronize later workbench changes.
 - A bounded response can omit bytes that were available from the remote server.
 
@@ -135,11 +135,11 @@ whose actual destination you control.
 
 - [Vault and secrets](secrets.md)
 - [Workspace and resource links](workspace.md)
-- [Plugins](../extending/plugins.md)
+- [Mini apps](../extending/plugins.md)
 
 ## Source of truth
 
-- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/mini-apps/api/.localix-app/app.json)
+- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/mini-apps/api/mini-app.json)
 - [Tool schema](https://github.com/rsaryev/localix/blob/main/mini-apps/api/backend/api-tool-schema.ts)
 - [Request routes](https://github.com/rsaryev/localix/blob/main/mini-apps/api/backend/routes.ts)
 - [Request sender and network policy](https://github.com/rsaryev/localix/blob/main/mini-apps/api/backend/send.ts)

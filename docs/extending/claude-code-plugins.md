@@ -33,8 +33,9 @@ A user-scope plugin has one configuration in every project, as Claude Code's `pl
 to the plugin; the plugin's settings keep only a reference, and the value reaches its hooks, MCP
 servers and `CLAUDE_PLUGIN_OPTION_<KEY>` when they run.
 
-To give a plugin screens, a backend or agent tools over Localix's APIs, add a mini app beside it;
-see [Build a plugin or a mini app](plugins.md).
+Screens, a backend and agent tools over Localix's APIs are a mini app's, not a plugin's: a mini app
+is its own folder with `mini-app.json`, and a folder is one or the other. See
+[Build a plugin or a mini app](plugins.md).
 
 ## How it works
 
@@ -125,12 +126,12 @@ and `/plugin update` checks the files again and says the plugin loads in place. 
 `/plugin marketplace remove` forget the record Localix keeps in `~/.localix/plugins/.in-place.json`;
 no command deletes or changes the folder.
 
-| Plugin from a local-folder marketplace                                          | Installed as                      |
-| ------------------------------------------------------------------------------- | --------------------------------- |
-| Claude Code format, user scope                                                  | Loads in place from its folder    |
-| With a mini app (`.localix-app/app.json`), native tools or a root `plugin.json` | A copy under `~/.localix/plugins` |
-| Installed with `--project`                                                      | A copy in the project             |
-| An entry at the marketplace root that lists its `skills`                        | A copy with the listed skills     |
+| Plugin from a local-folder marketplace                                                                                | Installed as                      |
+| --------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| Claude Code format, user scope                                                                                        | Loads in place from its folder    |
+| Native tools, or a manifest of Localix's (`mini-app.json`, or an older `.localix-app/app.json` or root `plugin.json`) | A copy under `~/.localix/plugins` |
+| Installed with `--project`                                                                                            | A copy in the project             |
+| An entry at the marketplace root that lists its `skills`                                                              | A copy with the listed skills     |
 
 A plugin installed as a copy by an earlier version keeps working as one; `/plugin update` turns it
 into an in-place plugin and removes the copy.
@@ -322,7 +323,7 @@ Claude Code's own mods — `diff`, `agents-md`, `sec-default`, `telemetry` — a
 
 - [The Claude Code plugin format](https://github.com/rsaryev/localix/tree/main/packages/claude-plugin/src)
 - [Reading it as Localix's runtime manifest](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/layout/claude-code.ts)
-- [Composing a plugin and its mini app](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/layout/compose.ts)
+- [Reading a folder's manifest](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/layout/compose.ts)
 - [The mods runtime](https://github.com/rsaryev/localix/tree/main/apps/api/src/features/mods)
 - [Mods engine and elements](https://github.com/rsaryev/localix/tree/main/packages/claude-plugin/src/mods)
 - [Hook events and the inert ones](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/cc-hooks/contracts.ts)

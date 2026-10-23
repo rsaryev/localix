@@ -45,9 +45,9 @@ withhold a tool enabled in Settings.
 
 A plugin's tools join the same roster as the built-in ones, so one rule shape answers for both.
 `tool:kanban` over `*` with effect `deny` removes the board tool from that agent's runs;
-`plugin:kanban` removes the whole plugin — its tools, skills, prompt sections, agents and MCP
-servers. The run projects the rules only after the loaded plugins are known, so a plugin tool
-switched off in Settings never reaches the turn.
+`plugin:kanban` removes the whole extension: a mini app's tools, prompt sections and agents, or a
+plugin's skills, agents and MCP servers. The run projects the rules only after the loaded plugins
+are known, so a plugin tool switched off in Settings never reaches the turn.
 
 The conversation's **Plan** [permission mode](permission-modes.md) constrains project changes while
 allowing its own plan files and permitted session-state changes. Use it to investigate and prepare a

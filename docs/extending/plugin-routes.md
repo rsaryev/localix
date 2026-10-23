@@ -1,4 +1,4 @@
-# Validate plugin route requests
+# Validate mini app route requests
 
 Use `routeValidator` from `@localixai/mini-app-sdk/backend` to check a route's body, query or path
 against a Zod schema before its handler runs. Build it once with the error envelope your UI client
@@ -59,10 +59,10 @@ route must reject that absence before accessing its storage.
 
 ## Limits
 
-- Do not import `@hono/zod-validator` or `hono/validator` in a plugin. The repository guard
-  `apps/api/src/lib/validator.test.ts` fails a bundled plugin that does.
-- The envelope is a promise to the plugin's UI client. Change it only together with the client that
-  reads it.
+- Do not import `@hono/zod-validator` or `hono/validator` in a mini app. The repository guard
+  `apps/api/src/lib/validator.test.ts` fails a bundled mini app that does.
+- The envelope is a promise to the mini app's UI client. Change it only together with the client
+  that reads it.
 - An unanswered 404 before the first backend reconcile waits up to 15 seconds, then dispatches once
   more. Core responses do not wait. After that first reconcile settles, including failure, unknown
   routes return 404 immediately; the wait does not guarantee that a backend was loaded successfully.
@@ -72,8 +72,8 @@ route must reject that absence before accessing its storage.
 
 ## Related guides
 
-- [Plugins](plugins.md)
-- [Plugin UI](plugin-ui.md)
+- [Mini apps](plugins.md)
+- [Mini app UI](plugin-ui.md)
 
 ## Source of truth
 

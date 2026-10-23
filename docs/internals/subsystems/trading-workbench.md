@@ -1,6 +1,6 @@
 # Trading workbench
 
-Trading Workspace is a bundled plugin that reads public exchange data and renders market research
+Trading Workspace is a bundled mini app that reads public exchange data and renders market research
 surfaces. Use this page when changing its registered backend, public connection boundary, live-data
 flow, resource references, agent tools, or workbench UI.
 
@@ -48,7 +48,7 @@ tools:
 | Tool         | `market_data`                                       | The port contains read methods only                                       |
 | Tool         | `manage_chart`                                      | It changes Localix chart state and performs server-side public-data scans |
 
-Files elsewhere in the plugin tree are not a product surface by themselves. The returned
+Files elsewhere in the mini app's tree are not a product surface by themselves. The returned
 contributions from `register()` determine what the host mounts and exposes.
 
 ### Public connection and driver lifecycle
@@ -60,7 +60,7 @@ public:<exchange> id
   -> load and normalize venue market data
   -> short-lived read caches or pooled stream client
   -> route, resource, tool, or UI consumer
-  -> close registry entries during plugin shutdown
+  -> close registry entries during mini app shutdown
 ```
 
 [`public-connection.ts`](../../../mini-apps/trading/backend/public-connection.ts) parses public ids
@@ -131,7 +131,7 @@ scope, resource anchors, and chart command listener.
 
 | Control                    | Default or cap                       | Effect and boundary                                                                                            |
 | -------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| Plugin state               | Bundled and enabled by default       | A scoped disable removes that scope's UI and tools; the process backend remains while another scope enables it |
+| Mini app state             | Bundled and enabled by default       | A scoped disable removes that scope's UI and tools; the process backend remains while another scope enables it |
 | Agent-tool public venue    | `public:hyperliquid`                 | Both tools receive this one registered connection                                                              |
 | UI venue source            | Hyperliquid initially                | The market browser can select another catalog exchange                                                         |
 | Market browser request     | At most 500 rows                     | Querying asks the server to search the full cached roster before applying the cap                              |
@@ -149,7 +149,7 @@ scope, resource anchors, and chart command listener.
 
 ## Limits
 
-- The registered plugin is public-data and exchange-read-only. It mounts no account, credential,
+- The registered mini app is public-data and exchange-read-only. It mounts no account, credential,
   balance, position, private-trade, order, leverage, or cancellation surface.
 - Code for other historical or prospective trading concerns can exist in the directory without being
   registered. Do not infer availability from an unreturned module.
@@ -176,7 +176,7 @@ scope, resource anchors, and chart command listener.
 ## Related guides
 
 - [Research public markets](../../features/trading.md)
-- [Plugins](../../extending/plugins.md)
+- [Mini apps](../../extending/plugins.md)
 - [Workspace](../../features/workspace.md)
 - [Message bindings](message-bindings.md)
 - [Capabilities and permissions](../../features/capabilities.md)
@@ -185,7 +185,7 @@ scope, resource anchors, and chart command listener.
 
 - [Chart action effect classifier](../../../mini-apps/trading/backend/manage-chart-class.ts)
 
-- [Plugin manifest](../../../mini-apps/trading/.localix-app/app.json)
+- [Mini app manifest](../../../mini-apps/trading/mini-app.json)
 - [Backend registration](../../../mini-apps/trading/backend/index.ts)
 - [Public connection contract](../../../mini-apps/trading/backend/public-connection.ts)
 - [Exchange backend port](../../../mini-apps/trading/backend/backend.ts)

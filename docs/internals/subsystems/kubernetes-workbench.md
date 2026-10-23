@@ -1,6 +1,6 @@
 # Kubernetes provider internals
 
-Kubernetes is the API-native cluster provider inside the bundled DevOps Workspace plugin. Use this
+Kubernetes is the API-native cluster provider inside the bundled DevOps Workspace mini app. Use this
 reference when changing kubeconfig handling, cluster operations, live transports, tools, or UI
 contributions.
 
@@ -8,7 +8,7 @@ contributions.
 
 | Term               | Meaning                                                                   | Boundary                                                        |
 | ------------------ | ------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| Provider           | The `kubernetes` backend subsystem contributed by plugin `devops`         | It has no independent manifest or enable switch                 |
+| Provider           | The `kubernetes` backend subsystem contributed by mini app `devops`       | It has no independent manifest or enable switch                 |
 | Context            | A kubeconfig context selected on an in-memory `KubeConfig` per request    | Selection does not rewrite kubeconfig `current-context`         |
 | API backend        | Injectable `KubernetesBackend` implementation over Kubernetes API clients | Routes and UI depend only on Localix contracts                  |
 | Pod informer       | Reference-counted list/watch entry keyed by context and namespace         | REST polling remains the reconciliation fallback                |
@@ -28,7 +28,7 @@ contributions.
 | Add cluster context       | Expand Kubernetes resource URIs into persisted Context Fabric snapshots             | The provider exports resource content, never credentials                   |
 
 User workflows and prerequisites belong to
-[Operate Kubernetes clusters](../../features/kubernetes.md). Plugin composition belongs to
+[Operate Kubernetes clusters](../../features/kubernetes.md). Mini app composition belongs to
 [DevOps Workspace internals](devops-workbench.md).
 
 ## How it works
@@ -45,18 +45,18 @@ DevOps Workspace and Kubernetes detail tabs
 
 ### Module contracts
 
-| Module                                                                                    | Mechanism and invariant                                                                                | Failure when violated                                                           |
-| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| [`backend/index.ts`](../../../mini-apps/devops/kubernetes/backend/index.ts)               | Returns one backend subsystem, resource/context/search providers, pod-watch frames, and shutdown hooks | Plugin disable leaves live sockets or a contribution without its owning service |
-| [`backend-port.ts`](../../../mini-apps/devops/kubernetes/backend/backend-port.ts)         | Keeps routes and UI on cluster-neutral Localix shapes                                                  | Generated client models leak across the subsystem boundary                      |
-| [`api-backend.ts`](../../../mini-apps/devops/kubernetes/backend/api-backend.ts)           | Selects context per config, maps API objects, and implements reads and mutations                       | A call can target the wrong cluster or return transport-specific data           |
-| [`api-http.ts`](../../../mini-apps/devops/kubernetes/backend/api-http.ts)                 | Applies kubeconfig authentication, CA, client certificate/key, server name, and HTTP proxy             | API requests fail or bypass configured trust material                           |
-| [`api-websocket.ts`](../../../mini-apps/devops/kubernetes/backend/api-websocket.ts)       | Applies kubeconfig TLS and headers to watch, exec, and forwarding sockets                              | Streaming paths use different trust or authentication from REST                 |
-| [`api-watch.ts`](../../../mini-apps/devops/kubernetes/backend/api-watch.ts)               | Reference-counts informers and reconnects with capped exponential backoff                              | Dead watches are reported as live or leak after the last subscriber             |
-| [`api-exec.ts`](../../../mini-apps/devops/kubernetes/backend/api-exec.ts)                 | Keeps credentials out of terminal commands by using a one-use local relay token                        | Reusable relay URLs widen access to a pod shell                                 |
-| [`api-port-forward.ts`](../../../mini-apps/devops/kubernetes/backend/api-port-forward.ts) | Validates the pod, binds loopback, probes the real tunnel, and tracks owner generation                 | A listening socket is reported ready without a working cluster tunnel           |
-| [`route-guard.ts`](../../../mini-apps/devops/kubernetes/backend/route-guard.ts)           | Maps validation and Kubernetes failures into one typed error envelope                                  | UI receives raw errors or inconsistent HTTP status codes                        |
-| [`ui/register.tsx`](../../../mini-apps/devops/kubernetes/ui/register.tsx)                 | Registers transient entity tabs, search scope, glyphs, and URI anchors                                 | Restored tabs can query deleted live objects or search hits cannot open         |
+| Module                                                                                    | Mechanism and invariant                                                                                | Failure when violated                                                             |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| [`backend/index.ts`](../../../mini-apps/devops/kubernetes/backend/index.ts)               | Returns one backend subsystem, resource/context/search providers, pod-watch frames, and shutdown hooks | Mini app disable leaves live sockets or a contribution without its owning service |
+| [`backend-port.ts`](../../../mini-apps/devops/kubernetes/backend/backend-port.ts)         | Keeps routes and UI on cluster-neutral Localix shapes                                                  | Generated client models leak across the subsystem boundary                        |
+| [`api-backend.ts`](../../../mini-apps/devops/kubernetes/backend/api-backend.ts)           | Selects context per config, maps API objects, and implements reads and mutations                       | A call can target the wrong cluster or return transport-specific data             |
+| [`api-http.ts`](../../../mini-apps/devops/kubernetes/backend/api-http.ts)                 | Applies kubeconfig authentication, CA, client certificate/key, server name, and HTTP proxy             | API requests fail or bypass configured trust material                             |
+| [`api-websocket.ts`](../../../mini-apps/devops/kubernetes/backend/api-websocket.ts)       | Applies kubeconfig TLS and headers to watch, exec, and forwarding sockets                              | Streaming paths use different trust or authentication from REST                   |
+| [`api-watch.ts`](../../../mini-apps/devops/kubernetes/backend/api-watch.ts)               | Reference-counts informers and reconnects with capped exponential backoff                              | Dead watches are reported as live or leak after the last subscriber               |
+| [`api-exec.ts`](../../../mini-apps/devops/kubernetes/backend/api-exec.ts)                 | Keeps credentials out of terminal commands by using a one-use local relay token                        | Reusable relay URLs widen access to a pod shell                                   |
+| [`api-port-forward.ts`](../../../mini-apps/devops/kubernetes/backend/api-port-forward.ts) | Validates the pod, binds loopback, probes the real tunnel, and tracks owner generation                 | A listening socket is reported ready without a working cluster tunnel             |
+| [`route-guard.ts`](../../../mini-apps/devops/kubernetes/backend/route-guard.ts)           | Maps validation and Kubernetes failures into one typed error envelope                                  | UI receives raw errors or inconsistent HTTP status codes                          |
+| [`ui/register.tsx`](../../../mini-apps/devops/kubernetes/ui/register.tsx)                 | Registers transient entity tabs, search scope, glyphs, and URI anchors                                 | Restored tabs can query deleted live objects or search hits cannot open           |
 
 ### Mutation contracts
 
@@ -89,7 +89,7 @@ anchors open the DevOps singleton; entity anchors open the matching transient ta
 
 | Control              | Current value                  | Effect                                                      |
 | -------------------- | ------------------------------ | ----------------------------------------------------------- |
-| Plugin manifest      | `devops`, enabled by default   | One switch controls Docker and Kubernetes providers         |
+| Mini app manifest    | `devops`, enabled by default   | One switch controls Docker and Kubernetes providers         |
 | Backend route        | `/rpc/kubernetes`              | Mounts the typed REST surface                               |
 | Kubeconfig load      | `KubeConfig.loadFromDefault()` | Uses the client library's default kubeconfig discovery      |
 | Context config cache | `60_000` ms                    | Reuses validated in-memory configs by selected context      |
@@ -115,7 +115,7 @@ anchors open the DevOps singleton; entity anchors open the matching transient ta
 - Search inspects pod names in the current or first context across at most 12 namespaces. It does
   not search deployments, services, nodes, manifests, or logs.
 - Pod, deployment, service, and node detail tabs are not restored across application restart.
-- Managed forwards and exec bridges are in memory and are closed on plugin shutdown.
+- Managed forwards and exec bridges are in memory and are closed on mini app shutdown.
 
 ## Related guides
 
@@ -126,7 +126,7 @@ anchors open the DevOps singleton; entity anchors open the matching transient ta
 
 ## Source of truth
 
-- [Plugin boundary](../../../mini-apps/devops/.localix-app/app.json) ·
+- [Mini app boundary](../../../mini-apps/devops/mini-app.json) ·
   [mini-apps/devops/backend/index.ts](../../../mini-apps/devops/backend/index.ts)
 - [Backend composition](../../../mini-apps/devops/kubernetes/backend/index.ts) ·
   [routes.test.ts](../../../mini-apps/devops/kubernetes/backend/routes.test.ts)

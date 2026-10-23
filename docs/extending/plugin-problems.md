@@ -1,16 +1,16 @@
-# Report plugin failures
+# Report mini app failures
 
-A plugin reports a failure as a problem the person can act on: one line inside a surface that still
-shows something, a centred state when the failure is the whole pane, and the one action that fixes
-it. Use this page when a plugin calls its own backend or an external program such as Docker, git or
-`gh`.
+A mini app reports a failure as a problem the person can act on: one line inside a surface that
+still shows something, a centred state when the failure is the whole pane, and the one action that
+fixes it. Use this page when a mini app calls its own backend or an external program such as Docker,
+git or `gh`.
 
 ## Terminology
 
 | Term         | Meaning                                                                  | Boundary                                                                    |
 | ------------ | ------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
 | Problem      | A failure's message, code, detail, and request inside a `ProblemReport`. | The hook publishes the report and returns surface props.                    |
-| Prerequisite | An external program the plugin needs, and the state it is in.            | `missing`, `stopped` or `signed-out`.                                       |
+| Prerequisite | An external program the mini app needs, and the state it is in.          | `missing`, `stopped` or `signed-out`.                                       |
 | Recovery     | An offered action for a prerequisite.                                    | Requires an install URL or command; recovery is not verified automatically. |
 
 ## What you can do
@@ -79,7 +79,7 @@ a hint but has no primary recovery action. The recovery helper already marks its
 ## Related guides
 
 - [Build workbench UI](plugin-ui.md)
-- [Validate plugin route requests](plugin-routes.md)
+- [Validate mini app route requests](plugin-routes.md)
 
 ## Source of truth
 

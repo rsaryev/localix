@@ -1,7 +1,7 @@
-# Plugin synchronization
+# Mini app synchronization
 
-Plugins use the installation's existing multiplexed `/rpc/ws` socket. A change notification names an
-owned resource and scope; the resource's HTTP read supplies the authoritative value. Repeated
+Mini apps use the installation's existing multiplexed `/rpc/ws` socket. A change notification names
+an owned resource and scope; the resource's HTTP read supplies the authoritative value. Repeated
 notifications are harmless. Navigation, selections and unsaved drafts remain local to each window.
 
 ## Choose the source
@@ -61,7 +61,7 @@ idempotency contract.
 
 ## Publish after commit
 
-A JSON-store backend registers `createStoreChangeFeed` with its plugin name, an ownership-checking
+A JSON-store backend registers `createStoreChangeFeed` with its mini app name, an ownership-checking
 `resolveDir(userId, sessionId)`, a committed-write subscription, and `ctx.watchPath` when available.
 Register its `wsFrames` and release it through `onShutdown`. Never accept an absolute subscription
 path or trust a user ID from the command payload. `acceptPath` can narrow a directory to the owning
@@ -69,10 +69,10 @@ user's file; coarse filesystem events invalidate conservatively.
 
 The shared protocol uses commands `<plugin>:store.subscribe` and `<plugin>:store.unsubscribe`, frame
 tag `c`, and `{ plugin, sessionId }` invalidations. A status frame additionally supplies `live`.
-`sessionId: null` names installation-owned plugin state, not an arbitrary user's state. The socket's
-host-supplied user ID still governs resolution and reads. The local API uses self-asserted identity;
-this scope contract does not authenticate a network caller. Frames never contain credentials or
-documents.
+`sessionId: null` names installation-owned mini app state, not an arbitrary user's state. The
+socket's host-supplied user ID still governs resolution and reads. The local API uses self-asserted
+identity; this scope contract does not authenticate a network caller. Frames never contain
+credentials or documents.
 
 `live: true` means the native source is covered, not merely that the host accepted a command.
 Without a native watcher, committed API changes still arrive promptly but the reader keeps its
@@ -85,12 +85,12 @@ successful committed write into a failed mutation.
 
 ## Two change feeds
 
-The store change feed and `host.changes` do different jobs, so a plugin may use both:
+The store change feed and `host.changes` do different jobs, so a mini app may use both:
 
 | Question          | Store change feed (`createStoreChangeFeed`)        | `host.changes`                                      |
 | ----------------- | -------------------------------------------------- | --------------------------------------------------- |
-| Who listens       | Open views over `/rpc/ws`                          | Backend consumers in the plugin                     |
-| What it covers    | Committed writes and external file edits (watcher) | Notices the plugin records; the core's deletions    |
+| Who listens       | Open views over `/rpc/ws`                          | Backend consumers in the mini app                   |
+| What it covers    | Committed writes and external file edits (watcher) | Notices the mini app records; the core's deletions  |
 | Missed while away | Nothing kept: the view reads again on reconnect    | Kept in SQLite; a consumer catches up at its cursor |
 | Cost per write    | An in-memory nudge, coalesced per 50 ms            | One database row                                    |
 
@@ -125,7 +125,7 @@ without an event API, or a Git directory outside the watched project. Local cloc
 analytics writes are not state polling. Event delivery is not distributed exactly-once execution;
 reconnect reads and existing revision/idempotency guards remain necessary.
 
-## Validate a plugin
+## Validate a mini app
 
 Exercise initial subscription, edits from another window, agent/API writes, atomic file replacement,
 bursts during an in-flight read, reconnect, scope changes, watcher failure and unmount. Assert that

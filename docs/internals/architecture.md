@@ -6,15 +6,15 @@ record before changing it.
 
 ## Terminology
 
-| Term                            | Meaning                                                                                                                  | Boundary                                                     |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
-| Agentic Development Environment | The product category covering connected development surfaces, context, model routes, agents, and extensible workbenches. | Do not use it to exclude non-code workbenches.               |
-| Session                         | The durable unit of direct or orchestrated agent work.                                                                   | A session can contain multiple runs.                         |
-| Worker                          | A session created for delegated work.                                                                                    | It is not automatically isolated.                            |
-| Kanban board                    | The bundled `kanban` plugin's per-chat task board, with dependencies and a card lifecycle.                               | A plugin, not core; not a general project-management system. |
-| Workbench                       | A plugin-contributed product surface.                                                                                    | It exists only while its plugin is enabled.                  |
-| Work item                       | A typed editor-grid pane.                                                                                                | Each registered kind owns its component and state contract.  |
-| Composition root                | Bootstrap code selecting concrete infrastructure.                                                                        | Feature modules receive those dependencies.                  |
+| Term                            | Meaning                                                                                                                  | Boundary                                                       |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| Agentic Development Environment | The product category covering connected development surfaces, context, model routes, agents, and extensible workbenches. | Do not use it to exclude non-code workbenches.                 |
+| Session                         | The durable unit of direct or orchestrated agent work.                                                                   | A session can contain multiple runs.                           |
+| Worker                          | A session created for delegated work.                                                                                    | It is not automatically isolated.                              |
+| Kanban board                    | The bundled `kanban` mini app's per-chat task board, with dependencies and a card lifecycle.                             | A mini app, not core; not a general project-management system. |
+| Workbench                       | A product surface a mini app contributes.                                                                                | It exists only while its mini app is enabled.                  |
+| Work item                       | A typed editor-grid pane.                                                                                                | Each registered kind owns its component and state contract.    |
+| Composition root                | Bootstrap code selecting concrete infrastructure.                                                                        | Feature modules receive those dependencies.                    |
 
 ## Ownership contract
 
@@ -29,7 +29,8 @@ record before changing it.
 | `packages/mini-app-sdk`  | The mini app manifest (`/app-manifest`) and host contribution contracts.                    | A contribution exists only when its extension is installed and enabled. |
 | `packages/claude-plugin` | The Claude Code plugin format: `plugin.json` and `hooks.json` schemas, name and path rules. | It knows no Localix concept; `features/plugins/layout` composes it.     |
 | `packages/cli`           | The `localix` launcher: it hands a path to the running desktop app.                         | It opens a deep link; it never starts a runtime or renders a session.   |
-| `plugins`                | Bundled tool, provider, hook, workbench, and UI contributions.                              | Each manifest declares its own capabilities and default state.          |
+| `mini-apps`              | First-party mini apps: tools, providers, hooks, workbenches, and UI contributions.          | Each `mini-app.json` declares its own capabilities.                     |
+| `plugins`                | Bundled plugins in the Claude Code format.                                                  | Read exactly as Claude Code reads them.                                 |
 
 ## How it works
 
@@ -50,11 +51,11 @@ API process, and a development build of the UI holds its first reads on the same
 the API's own `/health` (`apps/ui/src/shared/lib/runtimeReady.ts`) instead of failing into the
 startup retry ladder.
 
-The first capability snapshot names every enabled plugin's tools. Answering that means running each
-plugin's `register()`, so the answer is kept on disk under `~/.localix/cache` and a launch whose
-plugin code, config and host build are unchanged serves it without importing any backend
+The first capability snapshot names every enabled mini app's tools. Answering that means running
+each mini app's `register()`, so the answer is kept on disk under `~/.localix/cache` and a launch
+whose mini app code, config and host build are unchanged serves it without importing any backend
 (`apps/api/src/features/plugins/inspection-store.ts`). The UI publishes the enabled set and tools
-the moment that snapshot lands and registers each plugin's UI as its own artifact loads.
+the moment that snapshot lands and registers each mini app's UI as its own artifact loads.
 
 ### API composition
 
@@ -76,7 +77,7 @@ the configured database file.
 | Terminal stream   | Each terminal pane opens a dedicated WebSocket for its PTY session.            | The pane closes that socket when its stream lifecycle ends.                 |
 
 The editor grid maps typed `WorkItem` records to pane components. Core panes are registered in the
-UI registry; enabled plugins can contribute additional pane types through the plugin host.
+UI registry; enabled mini apps can contribute additional pane types through the extension host.
 
 #### A value crossing into the browser needs its own leaf
 
@@ -93,7 +94,7 @@ pointing at a module with few or no imports — never a re-export from `client.t
 
 `scripts/browser-graph-guard.test.ts` enforces it by walking the module graph of everything the web
 build pulls in — the HTML entry plus each `import.meta.glob` (feature contributions, UI surfaces)
-and every bundled plugin's UI artifact entry — and failing on any `node:` import, with the chain
+and every bundled mini app's UI artifact entry — and failing on any `node:` import, with the chain
 that reached it.
 
 ### Agent execution
@@ -104,11 +105,11 @@ persistence around the `AgentRuntime` port. The production composition root supp
 owns that interface and its event contract.
 
 Kanban is a bundled mini app
-([`app.json`](https://github.com/rsaryev/localix/blob/main/mini-apps/kanban/.localix-app/app.json)):
-a passive board per chat, stored in that chat's plugin folder. Core names no board. The plugin
-reaches the host only through generic seams — per-chat storage, the agent directory, the tool's
-bound speaker, a resource and a search provider, and a live-frame stream. It creates no session and
-starts no run; agents create child sessions only with the `delegate` tool. The
+([`mini-app.json`](https://github.com/rsaryev/localix/blob/main/mini-apps/kanban/mini-app.json)): a
+passive board per chat, stored in that chat's mini app folder. Core names no board. The app reaches
+the host only through generic seams — per-chat storage, the agent directory, the tool's bound
+speaker, a resource and a search provider, and a live-frame stream. It creates no session and starts
+no run; agents create child sessions only with the `delegate` tool. The
 [Kanban guide](../features/task-board.md) owns the board's lifecycle.
 
 ## Configuration
@@ -121,8 +122,9 @@ Architecture checks are repository commands, not runtime settings.
 | `bun run check:docs`                  | Internal subsystem references documented by the architecture checker.      |
 | `bun run --cwd apps/landing docs:gen` | Documentation metadata, links, repository paths, and generated navigation. |
 
-Plugin enablement changes which tools, providers, hooks, and workbench panes the hosts register. The
-[plugin architecture](../extending/plugins.md) owns manifest fields and contribution lifecycles.
+Plugin and mini app enablement changes which tools, providers, hooks, and workbench panes the hosts
+register. [Plugins and mini apps](../extending/plugins.md) owns manifest fields and contribution
+lifecycles.
 
 ## Limits
 
@@ -134,8 +136,8 @@ Plugin enablement changes which tools, providers, hooks, and workbench panes the
   control plane or multi-node persistence design.
 - The architecture checker validates import text and known package rules. It does not prove runtime
   behavior or dependency injection correctness.
-- Plugin surfaces are conditional. A bundled plugin can be disabled, and an installed plugin can
-  omit a contribution type.
+- Extension surfaces are conditional. A bundled mini app can be disabled, and an installed plugin or
+  mini app can omit a contribution type.
 - Tauri release startup and development startup deliberately differ. A failure reproduced in one
   path may not exercise the other.
 
@@ -146,7 +148,7 @@ Plugin enablement changes which tools, providers, hooks, and workbench panes the
 - [Environment and configuration](environment.md)
 - [Workspace](../features/workspace.md)
 - [Execution environments](../features/execution-environments.md)
-- [Plugins](../extending/plugins.md)
+- [Plugins and mini apps](../extending/plugins.md)
 
 ## Source of truth
 
@@ -156,7 +158,7 @@ Plugin enablement changes which tools, providers, hooks, and workbench panes the
 - [Terminal stream pane](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/terminal/ui/TerminalPane.tsx)
 - [Work-item registry](https://github.com/rsaryev/localix/blob/main/apps/ui/src/widgets/editor-grid/ui/registry.tsx)
 - [Runtime interfaces](https://github.com/rsaryev/localix/blob/main/packages/agent/src/runtime/index.ts)
-- [Plugin manifest contracts](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/manifest/index.ts)
+- [Mini app manifest contracts](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/manifest/app.ts)
 - [Architecture checker](https://github.com/rsaryev/localix/blob/main/scripts/check-architecture.mjs)
 - [Browser-graph guard](https://github.com/rsaryev/localix/blob/main/scripts/browser-graph-guard.test.ts)
 - [API export map (the leaves)](https://github.com/rsaryev/localix/blob/main/apps/api/package.json)
