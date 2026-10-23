@@ -69,3 +69,19 @@ export function normalizeMiniAppSurfaces(declared?: readonly string[] | null): s
 export function isWorkbenchMiniApp(surfaces?: readonly string[] | null): boolean {
   return normalizeMiniAppSurfaces(surfaces).includes(MINI_APP_SURFACE_WORKBENCH)
 }
+
+/** Store media limits a manifest is held to by its schema (`media.ts` checks the files). */
+export const MINI_APP_SCREENSHOTS_MAX = 10
+export const MINI_APP_TAGS_MAX = 8
+/** A tag: lower-case words joined by dashes (`board-game`). */
+export const MINI_APP_TAG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
+/** A path that stays inside the app's folder: relative, forward slashes, no `..` segment. */
+export function isAppRelativePath(path: string): boolean {
+  if (!path || path.includes('\\') || path.includes('\0') || path.startsWith('/')) return false
+  if (/^[a-z]:/i.test(path)) return false
+  return path
+    .replace(/^\.\//, '')
+    .split('/')
+    .every((segment) => segment !== '' && segment !== '.' && segment !== '..')
+}

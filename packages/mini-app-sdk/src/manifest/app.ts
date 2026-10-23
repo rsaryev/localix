@@ -1,6 +1,13 @@
 import { z } from 'zod'
 import { miniAppManifestCoreSchema } from './index'
-import { MINI_APP_NAME_RE, MINI_APP_QUALIFIED_NAME_RE } from './primitives'
+import {
+  isAppRelativePath,
+  MINI_APP_SCREENSHOTS_MAX,
+  MINI_APP_TAG_RE,
+  MINI_APP_TAGS_MAX,
+  MINI_APP_NAME_RE,
+  MINI_APP_QUALIFIED_NAME_RE,
+} from './primitives'
 
 /**
  * ── MINI APP MANIFEST ─────────────────────────────────────────────────────────
@@ -43,6 +50,18 @@ export const miniAppCommandSchema = z
   .strict()
 export type MiniAppCommand = z.infer<typeof miniAppCommandSchema>
 
+/** A file of the app, named relative to its folder; the host serves it from there only. */
+const appPathSchema = z
+  .string()
+  .min(1)
+  .max(256)
+  .refine(isAppRelativePath, 'A path must stay inside the mini app folder: relative, with no ".."')
+
+/** One store screenshot: shown at its own resolution in the store's detail page. */
+export const miniAppScreenshotSchema = z
+  .object({ path: appPathSchema, caption: z.string().max(140).optional() })
+  .strict()
+
 export const miniAppManifestSchema = miniAppManifestCoreSchema
   .extend({
     name: z
@@ -56,6 +75,25 @@ export const miniAppManifestSchema = miniAppManifestCoreSchema
     repository: z.string().optional(),
     license: z.string().optional(),
     keywords: z.array(z.string()).optional(),
+    /**
+     * The app's icon in the store, the rail and the Dock (`media.ts` has the rules): a square
+     * `.svg`, or a `.png`/`.webp` of at least 512×512, or an `.ico`. A published app needs one.
+     */
+    icon: appPathSchema.optional(),
+    screenshots: z.array(miniAppScreenshotSchema).max(MINI_APP_SCREENSHOTS_MAX).optional(),
+    /** Words the store filters by. */
+    tags: z
+      .array(
+        z
+          .string()
+          .max(32)
+          .regex(
+            MINI_APP_TAG_RE,
+            'A tag is lower-case words joined by dashes, such as "board-game"',
+          ),
+      )
+      .max(MINI_APP_TAGS_MAX)
+      .optional(),
     /** Native entrypoint(s) exporting `register(ctx)`: agent tools, routes, subsystems, hooks. */
     backend: z.union([z.string(), z.array(z.string())]).optional(),
     /** The agent's guide to the app, relative to the folder. */

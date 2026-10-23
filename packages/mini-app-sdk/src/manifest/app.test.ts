@@ -64,6 +64,31 @@ describe('mini-app.json', () => {
     }
   })
 
+  test('names its store icon, screenshots and tags, each inside the folder', () => {
+    const parsed = miniAppManifestSchema.parse({
+      ...calories,
+      icon: './icon.svg',
+      screenshots: [{ path: './screenshots/log.png', caption: 'A meal, logged' }],
+      tags: ['nutrition', 'meal-photos'],
+      homepage: 'https://example.com/calories',
+    })
+    expect(parsed).toMatchObject({ icon: './icon.svg', tags: ['nutrition', 'meal-photos'] })
+    expect(parsed.screenshots).toEqual([
+      { path: './screenshots/log.png', caption: 'A meal, logged' },
+    ])
+
+    expect(problems({ ...calories, icon: '../icon.svg' })).toEqual([
+      'A path must stay inside the mini app folder: relative, with no ".."',
+    ])
+    expect(problems({ ...calories, tags: ['Board Game'] })).toEqual([
+      'A tag is lower-case words joined by dashes, such as "board-game"',
+    ])
+    expect(problems({ ...calories, tags: 'abcdefghi'.split('') }).length).toBe(1)
+    const eleven = Array.from({ length: 11 }, (_, i) => ({ path: `s/${i}.png` }))
+    expect(problems({ ...calories, screenshots: eleven }).length).toBe(1)
+    expect(problems({ ...calories, screenshots: [{ path: 's.png', alt: 'x' }] }).length).toBe(1)
+  })
+
   test('the author is a bare string or the object form, and nothing else', () => {
     const author = (value: unknown) => problems({ ...calories, author: value }).length === 0
     expect(author('Ada')).toBe(true)

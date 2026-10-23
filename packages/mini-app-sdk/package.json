@@ -167,6 +167,10 @@
       "types": "./dist/manifest/app.d.ts",
       "import": "./dist/manifest/app.js"
     },
+    "./manifest-media": {
+      "types": "./dist/manifest/media.d.ts",
+      "import": "./dist/manifest/media.js"
+    },
     "./legacy-manifest": {
       "types": "./dist/manifest/legacy.d.ts",
       "import": "./dist/manifest/legacy.js"

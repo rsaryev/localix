@@ -10,6 +10,14 @@
   "keywords": ["learning", "course", "education", "tutor", "practice", "adaptive"],
   "apiVersion": 1,
   "category": "content",
+  "tags": ["courses", "education", "tutor", "practice"],
+  "icon": "./icon.svg",
+  "screenshots": [
+    {
+      "path": "./screenshots/lesson.png",
+      "caption": "A lesson with theory, a test and practice"
+    }
+  ],
   "surfaces": ["agent", "workbench"],
   "backend": "./backend/index.ts",
   "commands": {

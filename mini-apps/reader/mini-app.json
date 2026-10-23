@@ -10,6 +10,14 @@
   "keywords": ["reader", "books", "epub", "cbz", "library", "research", "annotations", "context"],
   "apiVersion": 1,
   "category": "content",
+  "tags": ["books", "epub", "pdf", "annotations", "research"],
+  "icon": "./icon.svg",
+  "screenshots": [
+    {
+      "path": "./screenshots/chapter.png",
+      "caption": "A guide with its table of contents"
+    }
+  ],
   "surfaces": ["agent", "workbench"],
   "backend": "./backend/index.ts",
   "fileAssociations": [

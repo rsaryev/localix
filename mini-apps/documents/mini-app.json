@@ -9,6 +9,14 @@
   "license": "MIT",
   "apiVersion": 1,
   "category": "content",
+  "tags": ["pdf", "spreadsheets", "csv", "charts", "tables"],
+  "icon": "./icon.svg",
+  "screenshots": [
+    {
+      "path": "./screenshots/table.png",
+      "caption": "A table with typed columns"
+    }
+  ],
   "surfaces": ["agent", "workbench"],
   "backend": "./backend/index.ts",
   "fileAssociations": [

@@ -17,6 +17,7 @@ import { runBun } from './bun-child'
 import type { MiniAppKit } from './kit'
 import { MINI_APP_KIT_TEST_PRELOAD } from './kit-layout'
 import { assertSafeAuthoringPaths } from './output-paths'
+import { checkMiniAppStoreMedia } from './media-check'
 import { checkMiniAppRoutes } from './route-check'
 import { checkMiniAppStyle } from './style-check'
 import { findTemplateResidue, listFiles, loadTemplateScaffold } from './template-layout'
@@ -65,6 +66,8 @@ export type MiniAppTestRunner = (input: {
 }) => Promise<{ ok: boolean; output: string }>
 
 const TEST_TIMEOUT_MS = 120_000
+/** The icon and screenshots a catalog shows (`media-check.ts`). */
+const STORE_MEDIA_STEP = 'store media'
 const OUTPUT_TAIL_LINES = 60
 const TEST_FILE = /\.test\.tsx?$/u
 
@@ -112,6 +115,7 @@ export async function checkUserMiniApp(input: {
     ),
     step('style', () => checkMiniAppStyle(miniAppDir, kit)),
     step('routes', () => checkMiniAppRoutes(miniAppDir)),
+    step(STORE_MEDIA_STEP, () => checkMiniAppStoreMedia(miniAppDir)),
     step('message context', () => checkMiniAppBindings(miniAppDir)),
     step('backend build', async () => {
       backendTools = await buildMiniAppBackend({ kit, miniAppDir, publish: false })
@@ -137,8 +141,12 @@ export async function checkUserMiniApp(input: {
     }),
   ])
   const ok = steps.every((entry) => entry.ok)
+  // The store media matter to a catalog, not to running here: they never hold back the build.
   const publish = steps.every(
-    (entry, index) => entry.ok || (index === 0 && input.allowTemplateResidue && !entry.errored),
+    (entry, index) =>
+      entry.ok ||
+      entry.title === STORE_MEDIA_STEP ||
+      (index === 0 && input.allowTemplateResidue && !entry.errored),
   )
   let completed = false
   try {

@@ -10,6 +10,8 @@
   "keywords": ["game", "rock paper scissors", "roshambo", "play"],
   "apiVersion": 1,
   "category": "games",
+  "tags": ["game", "quick-play"],
+  "icon": "./icon.svg",
   "surfaces": ["agent", "workbench"],
   "backend": "./backend/index.ts"
 }

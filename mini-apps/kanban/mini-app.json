@@ -10,6 +10,14 @@
   "keywords": ["kanban", "board", "tasks", "plan"],
   "apiVersion": 1,
   "category": "utilities",
+  "tags": ["tasks", "planning", "board"],
+  "icon": "./icon.svg",
+  "screenshots": [
+    {
+      "path": "./screenshots/board.png",
+      "caption": "Tasks by status, with owners and labels"
+    }
+  ],
   "surfaces": ["agent", "workbench"],
   "backend": "./backend/index.ts"
 }

@@ -19,6 +19,14 @@
   ],
   "apiVersion": 1,
   "category": "development",
+  "tags": ["code", "architecture", "dependencies", "call-graph", "impact"],
+  "icon": "./icon.svg",
+  "screenshots": [
+    {
+      "path": "./screenshots/callers.png",
+      "caption": "A function followed through its callers"
+    }
+  ],
   "surfaces": ["agent", "workbench"],
   "backend": "./backend/index.ts"
 }

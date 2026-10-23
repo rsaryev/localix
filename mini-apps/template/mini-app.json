@@ -9,6 +9,14 @@
   "license": "MIT",
   "apiVersion": 1,
   "category": "utilities",
+  "tags": ["system", "processes", "monitoring"],
+  "icon": "./icon.svg",
+  "screenshots": [
+    {
+      "path": "./screenshots/overview.png",
+      "caption": "Live OS metrics with CPU and memory history"
+    }
+  ],
   "surfaces": ["agent", "workbench"],
   "backend": "./backend/index.ts"
 }

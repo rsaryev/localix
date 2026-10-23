@@ -21,7 +21,8 @@
     "backend/system-marks.ts",
     "backend/system-marks.test.ts",
     "backend/context.ts",
-    "ui/system/"
+    "ui/system/",
+    "screenshots/"
   ],
   "patterns": [
     {

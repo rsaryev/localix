@@ -9,6 +9,14 @@
   "license": "MIT",
   "apiVersion": 1,
   "category": "data",
+  "tags": ["sql", "sqlite", "postgres", "schemas", "queries"],
+  "icon": "./icon.svg",
+  "screenshots": [
+    {
+      "path": "./screenshots/console.png",
+      "caption": "A query and the rows it returned"
+    }
+  ],
   "surfaces": ["agent", "workbench"],
   "backend": "./backend/index.ts",
   "fileAssociations": [

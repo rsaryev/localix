@@ -3,7 +3,7 @@
     "bytes": 514
   },
   "./app-manifest": {
-    "bytes": 2826
+    "bytes": 3459
   },
   "./backend": {
     "bytes": 47446,
@@ -19,7 +19,7 @@
     "bytes": 2546
   },
   "./legacy-manifest": {
-    "bytes": 3767
+    "bytes": 4370
   },
   "./manifest": {
     "bytes": 2836
@@ -27,8 +27,11 @@
   "./manifest-label": {
     "bytes": 721
   },
+  "./manifest-media": {
+    "bytes": 4468
+  },
   "./manifest-primitives": {
-    "bytes": 857
+    "bytes": 1197
   },
   "./navigation": {
     "bytes": 443

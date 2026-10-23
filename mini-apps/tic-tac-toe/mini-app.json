@@ -10,6 +10,14 @@
   "keywords": ["game", "tic-tac-toe", "noughts and crosses", "play"],
   "apiVersion": 1,
   "category": "games",
+  "tags": ["game", "board-game", "quick-play"],
+  "icon": "./icon.svg",
+  "screenshots": [
+    {
+      "path": "./screenshots/finished.png",
+      "caption": "A finished game with its winning row"
+    }
+  ],
   "surfaces": ["agent", "workbench"],
   "backend": "./backend/index.ts"
 }

@@ -20,6 +20,12 @@ import { packMiniAppCatalog } from './lib/mini-app-catalog.mjs'
 import { readStagingUnavailable, stageDropins, stageMiniAppKitBeside } from './stage-dropins.mjs'
 
 const repoRoot = resolve(import.meta.dir, '..')
+/**
+ * The first-party apps the Localix catalog features at the top of the store. Only the Localix
+ * release sets it: a catalog of someone else's may say `featured`, but the store shows the group
+ * for what Localix publishes.
+ */
+const FEATURED = ['kanban', 'project-space', 'database', 'code-graph', 'chess']
 const { values } = parseArgs({
   options: {
     out: { type: 'string', default: join(repoRoot, 'dist', 'mini-app-catalog') },
@@ -59,7 +65,9 @@ try {
     outDir: resolve(values.out),
     unavailable: readStagingUnavailable(staged),
     // A fork packing its own app names itself; only the Localix release is vouched for.
-    ...(values.publisher ? { publisher: { name: values.publisher, verified: false } } : {}),
+    ...(values.publisher
+      ? { publisher: { name: values.publisher, verified: false } }
+      : { featured: FEATURED }),
     only,
     log,
   })

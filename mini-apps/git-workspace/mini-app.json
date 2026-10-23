@@ -10,6 +10,14 @@
   "homepage": "https://github.com/rsaryev/localix",
   "apiVersion": 1,
   "category": "development",
+  "tags": ["git", "source-control", "diffs", "branches", "review"],
+  "icon": "./icon.svg",
+  "screenshots": [
+    {
+      "path": "./screenshots/review.png",
+      "caption": "Changes under review, ready to commit"
+    }
+  ],
   "surfaces": ["agent", "workbench"],
   "backend": "./backend/index.ts"
 }

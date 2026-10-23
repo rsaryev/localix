@@ -10,6 +10,18 @@
   "keywords": ["space", "whiteboard", "canvas", "diagram", "notes", "files", "map"],
   "apiVersion": 1,
   "category": "content",
+  "tags": ["whiteboard", "canvas", "diagrams", "notes"],
+  "icon": "./icon.svg",
+  "screenshots": [
+    {
+      "path": "./screenshots/flow.png",
+      "caption": "Shapes, connectors and sticky notes"
+    },
+    {
+      "path": "./screenshots/answers.png",
+      "caption": "File trees, steps and checklists"
+    }
+  ],
   "surfaces": ["agent", "workbench"],
   "backend": "./backend/index.ts"
 }

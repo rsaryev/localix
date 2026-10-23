@@ -9,6 +9,14 @@
   "license": "MIT",
   "apiVersion": 1,
   "category": "development",
+  "tags": ["http", "rest", "requests", "collections", "environments"],
+  "icon": "./icon.svg",
+  "screenshots": [
+    {
+      "path": "./screenshots/request.png",
+      "caption": "A saved request and its JSON response"
+    }
+  ],
   "surfaces": ["agent", "workbench"],
   "backend": "./backend/index.ts",
   "config": {

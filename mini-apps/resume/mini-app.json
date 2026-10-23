@@ -9,6 +9,14 @@
   "license": "MIT",
   "apiVersion": 1,
   "category": "content",
+  "tags": ["resume", "cv", "templates", "pdf-export"],
+  "icon": "./icon.svg",
+  "screenshots": [
+    {
+      "path": "./screenshots/editor.png",
+      "caption": "The editor beside a full-height preview"
+    }
+  ],
   "surfaces": ["agent", "workbench"],
   "backend": "./backend/index.ts"
 }

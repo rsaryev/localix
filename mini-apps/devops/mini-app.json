@@ -9,6 +9,18 @@
   "license": "MIT",
   "apiVersion": 1,
   "category": "development",
+  "tags": ["docker", "kubernetes", "containers", "logs"],
+  "icon": "./icon.svg",
+  "screenshots": [
+    {
+      "path": "./screenshots/containers.png",
+      "caption": "A running container and its live logs"
+    },
+    {
+      "path": "./screenshots/pod-logs.png",
+      "caption": "A pod’s readiness and container logs"
+    }
+  ],
   "surfaces": ["agent", "workbench"],
   "backend": "./backend/index.ts"
 }

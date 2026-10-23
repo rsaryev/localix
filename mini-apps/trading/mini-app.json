@@ -9,6 +9,14 @@
   "license": "MIT",
   "apiVersion": 1,
   "category": "data",
+  "tags": ["markets", "charts", "crypto", "order-book"],
+  "icon": "./icon.svg",
+  "screenshots": [
+    {
+      "path": "./screenshots/chart.png",
+      "caption": "Hourly candles, volume and an order book"
+    }
+  ],
   "surfaces": ["agent", "workbench"],
   "backend": "./backend/index.ts"
 }
