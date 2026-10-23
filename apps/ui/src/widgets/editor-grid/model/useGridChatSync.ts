@@ -52,7 +52,7 @@ export function syncGridChatSelection(
   if (existing) {
     // A restored/session-warm chat is already seeded. Updating it through
     // `openItem` would also activate it, overwriting the persisted active tab
-    // (for example a plugin-owned workbench tab) on every reload or session return.
+    // (for example a mini-app-owned workbench tab) on every reload or session return.
     // Preserve the scope's own active work item and only refresh presentation.
     if (existing.title !== title) grid.setTabTitle(id, title)
     // One exception: the workspace is shared (`workspaceChats.ts`), so the group may be showing a

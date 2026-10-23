@@ -42,7 +42,7 @@ function useArrivals(game: Game): Move[] {
 
 /**
  * The grid, INLINE on purpose: it is the one layout everything here depends on, and a utility
- * class reaching a plugin through the host's de-duplicated sheet can be dropped — live, a grid
+ * class reaching a mini app through the host's de-duplicated sheet can be dropped — live, a grid
  * collapsed into one column. An inline style cannot be dropped or out-ranked.
  */
 const GRID: CSSProperties = {

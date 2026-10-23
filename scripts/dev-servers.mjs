@@ -162,7 +162,8 @@ export function resolveDevTurboCommands(workspace) {
     prepare: ['x', 'turbo', 'dev:prepare', '--output-logs=new-only', apiFilter, ...frontendFilters],
     api: ['x', 'turbo', 'dev', '--only', apiFilter],
     // Every workspace package's persistent `dev` runs at once; Turbo refuses a run whose persistent
-    // tasks reach its default concurrency of 10, which the workspace passed as plugins were added.
+    // tasks reach its default concurrency of 10, which the workspace passed as mini apps were
+    // added.
     frontend: [
       'x',
       'turbo',
@@ -242,8 +243,8 @@ export async function waitForHealth(preferredBaseUrl, apiObserver, timeoutMs = 4
  * Bring `node_modules` up to the checked-in lockfile before anything builds.
  *
  * The defect: a pull that adds a dependency moves `bun.lock` but not `node_modules`, and nothing
- * said so. A bundled plugin importing the new package failed to bundle, dev staging skipped it,
- * and the plugin simply was not in the list — with one console line among hundreds as the only
+ * said so. A bundled mini app importing the new package failed to bundle, dev staging skipped it,
+ * and the mini app simply was not in the list — with one console line among hundreds as the only
  * trace. `--frozen-lockfile` installs exactly what the lockfile pins and never rewrites it; when
  * nothing is missing it is a no-op of ~0.1s. A failure (a lockfile that no longer matches its
  * package.json, no network) is reported and development continues on what is installed.

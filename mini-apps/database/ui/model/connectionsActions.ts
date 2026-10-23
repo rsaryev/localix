@@ -105,7 +105,7 @@ export function ensureConnected(
 
 /**
  * The server answered `connection_not_found` for a row this UI still shows connected: its live
- * driver went with a backend restart or plugin reload. Correct the row first — `ensureConnected`
+ * driver went with a backend restart or mini app reload. Correct the row first — `ensureConnected`
  * treats a connected row as nothing to do — then reconnect, forced, because a person asked for
  * this request just now; a parked auto-retry must not refuse it.
  */

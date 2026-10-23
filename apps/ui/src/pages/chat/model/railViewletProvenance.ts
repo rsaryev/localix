@@ -1,3 +1,3 @@
-/** Core and plugin viewlets share one registry; only stamped ownership means plugin. */
-export const isMiniAppRailViewlet = (viewlet: { pluginName?: string }): boolean =>
-  Boolean(viewlet.pluginName)
+/** Core and mini app viewlets share one registry; only stamped ownership means mini app. */
+export const isMiniAppRailViewlet = (viewlet: { miniAppName?: string }): boolean =>
+  Boolean(viewlet.miniAppName)

@@ -18,7 +18,7 @@ import { ROUTE_PATH } from '../../shared/resource'
 
 export function useGame(active: boolean) {
   const game = useTableGame({
-    plugin: 'battleship',
+    miniApp: 'battleship',
     route: ROUTE_PATH,
     schema: playerViewSchema,
     active,

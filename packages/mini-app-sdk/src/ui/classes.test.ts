@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import { clamp, cn, CONTROL_FOCUS_VISIBLE, CONTROL_FOCUS_WITHIN } from './classes'
 
-describe('plugin UI class utilities', () => {
+describe('mini app UI class utilities', () => {
   test('merges conditional and conflicting Tailwind classes', () => {
     expect(cn('p-2', false, 'text-muted', 'p-4')).toBe('text-muted p-4')
   })

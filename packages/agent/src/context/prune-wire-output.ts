@@ -105,7 +105,7 @@ export function truncateMiddle(s: string, locator?: string, recoveryToolAvailabl
  *
  * The ordinary wire policy deliberately protects the newest few messages, but a
  * single fresh tool result can itself be larger than the next model request. That
- * is especially easy for plugin/MCP tools, which do not necessarily share the
+ * is especially easy for mini app/MCP tools, which do not necessarily share the
  * built-in tools' output limits. Our built-ins cap output at 2,000 lines / 50 KiB and
  * Codex truncates function output as it enters history; enforce the same invariant
  * here on the wire copy. Read-class tools are deliberately excluded: their bounded

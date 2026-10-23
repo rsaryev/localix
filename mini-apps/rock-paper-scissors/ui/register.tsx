@@ -11,7 +11,7 @@ const Workspace = lazy(() =>
 
 /** One board per chat, its launcher and the anchor its tool opens (`sessionGameUi`). */
 export const registerUi = sessionGameUi({
-  plugin: 'rock-paper-scissors',
+  miniApp: 'rock-paper-scissors',
   kind: GAME_KIND,
   title: 'Rock Paper Scissors',
   label: 'Rock Paper Scissors — sealed moves against the agent',

@@ -35,7 +35,7 @@ interface Slot {
   listeners: Set<(event: BoardEvent) => void>
 }
 
-const GLOBAL_KEY = Symbol.for('localix.plugin.kanban.boards')
+const GLOBAL_KEY = Symbol.for('localix.mini-app.kanban.boards')
 
 function slotFor(path: string): Slot {
   const g = globalThis as { [key: symbol]: Map<string, Slot> | undefined }

@@ -27,7 +27,7 @@ function text(value: unknown): string | undefined {
 }
 
 /**
- * Normalize both plugin-owned errors (`{ error: string, code, detail }`) and the
+ * Normalize both mini-app-owned errors (`{ error: string, code, detail }`) and the
  * host's generic envelope (`{ error: { code, message } }`). Unknown object bodies
  * deliberately fall back to status text instead of leaking `[object Object]`.
  */
@@ -53,7 +53,7 @@ export function parseApiFailure<Code extends string = string>(
   }
 }
 
-/** Successful plugin payloads never carry `error`; keep that contract explicit. */
+/** Successful mini app payloads never carry `error`; keep that contract explicit. */
 export function hasApiFailure(body: unknown): boolean {
   return record(body)?.error !== undefined
 }

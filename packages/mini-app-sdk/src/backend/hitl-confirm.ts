@@ -1,8 +1,8 @@
 /**
- * The `confirm` HITL contract — the payload/response shapes a plugin backend uses
+ * The `confirm` HITL contract — the payload/response shapes a mini app backend uses
  * when it requests a permission approval through the host's human-in-the-loop
  * controller. Pure types built on the generic HITL bases from `@localixai/agent`.
- * Moved here so plugins depend on the SDK instead of deep-importing
+ * Moved here so mini apps depend on the SDK instead of deep-importing
  * `apps/api/src/features/agent-core/tools/hitl/confirm`.
  */
 import type { HumanInLoopRequestBase, HumanInLoopResponseBase } from '@localixai/agent/agents'

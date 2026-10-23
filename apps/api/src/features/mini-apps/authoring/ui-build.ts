@@ -25,15 +25,15 @@ import { buildMiniAppStylesheet } from './ui-styles'
 import { escapeRegExp } from '../../../lib/regexp'
 
 /**
- * Build one plugin's workbench UI into a self-contained ES module ARTIFACT: an entry,
+ * Build one mini app's workbench UI into a self-contained ES module ARTIFACT: an entry,
  * content-hashed chunks, its stylesheets and a manifest carrying a content revision.
  *
- * Why an artifact and not host source: compiled into the host, every plugin edit was an edit of
+ * Why an artifact and not host source: compiled into the host, every mini app edit was an edit of
  * the app and the only way to show it was a full page reload (one build reloaded the workbench an
- * agent was running in). Built apart, a plugin is served by the API and swapped in place by the
- * host runtime. The builder lives in the app and reads only the plugin kit, so the SAME build runs
- * for a first-party plugin at staging and for a user plugin on an installed app with no source
- * tree.
+ * agent was running in). Built apart, a mini app is served by the API and swapped in place by the
+ * host runtime. The builder lives in the app and reads only the mini app kit, so the SAME build
+ * runs for a first-party mini app at staging and for a user mini app on an installed app with no
+ * source tree.
  *
  * The artifact bundles its own dependencies except the shared modules (`MINI_APP_UI_SHARED_MODULE`):
  * each import of one becomes a tiny module that takes the host's instance and re-exports exactly
@@ -44,8 +44,8 @@ const UI_ENTRIES = ['ui/register.tsx', 'ui/register.ts']
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/u
 const SHARED_NAMESPACE = 'localix-shared'
 
-export function miniAppUiEntry(pluginDir: string): string | null {
-  return UI_ENTRIES.map((path) => join(pluginDir, path)).find((path) => existsSync(path)) ?? null
+export function miniAppUiEntry(miniAppDir: string): string | null {
+  return UI_ENTRIES.map((path) => join(miniAppDir, path)).find((path) => existsSync(path)) ?? null
 }
 
 /**
@@ -55,9 +55,10 @@ export function miniAppUiEntry(pluginDir: string): string | null {
  * `require` whose dependency chain contains a top-level `await` anywhere.
  *
  * The awaited `load` is the ONLY top-level `await` an artifact carries, and it is safe only because
- * the host's registry never settles a load after `pagehide` (`apps/ui/src/app/pluginSharedModules.ts`):
- * WebKit resumes a module paused at a top-level `await` in a detached document by spinning forever,
- * which froze the whole app after a reload. A second kind of top-level `await` here would reopen it.
+ * the host's registry never settles a load after `pagehide`
+ * (`apps/ui/src/app/miniAppSharedModules.ts`): WebKit resumes a module paused at a top-level
+ * `await` in a detached document by spinning forever, which froze the whole app after a reload. A
+ * second kind of top-level `await` here would reopen it.
  */
 export function sharedShim(specifier: string, names: readonly string[]): string {
   const named = [...new Set(names)].filter((name) => name !== 'default' && IDENTIFIER.test(name))
@@ -93,26 +94,27 @@ function exactly(specifiers: readonly string[]): RegExp {
  * `sideEffects: false` package, resolved after a callback declined it, is dropped — and the build
  * still succeeds, the barrel's names referenced and their definitions gone. That is how
  * `isTextItem` from `@localixai/agent/agents/items` shipped as an undeclared `E_`, on which a
- * bundled plugin's every session import failed. So each filter names exactly its modules, and every other
- * import meets Bun's own resolver, browser conditions and all, with no plugin in the way.
+ * bundled mini app's every session import failed. So each filter names exactly its modules, and
+ * every other import meets Bun's own resolver, browser conditions and all, with no mini app in the
+ * way.
  */
-function sharedModulesPlugin(kit: MiniAppKit, pluginDir: string): Bun.BunPlugin {
+function sharedModulesPlugin(kit: MiniAppKit, miniAppDir: string): Bun.BunPlugin {
   const vendor = kitBundledModules(kit)
   const vendored = Object.keys(vendor)
   return {
-    name: 'localix-plugin-ui-shared',
+    name: 'localix-mini-app-ui-shared',
     setup(build) {
-      // The boundary, enforced where it matters: host internals are never bundled into a plugin.
+      // The boundary, enforced where it matters: host internals are never bundled into a mini app.
       // (Bun's onResolve ignores esbuild-style returned `errors`; throwing fails the build.)
       build.onResolve({ filter: /^@\// }, (args) => {
         throw new Error(
-          `${relative(pluginDir, args.importer)} imports host internals ("${args.path}"); use a @localixai/kit module`,
+          `${relative(miniAppDir, args.importer)} imports host internals ("${args.path}"); use a @localixai/kit module`,
         )
       })
       build.onResolve({ filter: MINI_APP_UI_SHARED_MODULE }, (args) => {
         if (!kit.manifest.uiSharedExports[args.path]) {
           throw new Error(
-            `${relative(pluginDir, args.importer)}: the host provides no "${args.path}"`,
+            `${relative(miniAppDir, args.importer)}: the host provides no "${args.path}"`,
           )
         }
         return { path: args.path, namespace: SHARED_NAMESPACE }
@@ -132,7 +134,7 @@ function sharedModulesPlugin(kit: MiniAppKit, pluginDir: string): Bun.BunPlugin 
 
 /**
  * Move a fully built UI artifact into the served location. A failed publication restores the
- * previous artifact; callers may also use this after other plugin checks pass.
+ * previous artifact; callers may also use this after other mini app checks pass.
  */
 export async function publishMiniAppUiArtifact(
   stagedDir: string,
@@ -178,24 +180,24 @@ export async function removeMiniAppUiArtifact(outDir: string): Promise<void> {
 }
 
 /**
- * Build `<pluginDir>`'s UI into `<outDir>` (replaced whole). Returns the manifest, or null for a
- * plugin without a UI entry. A failed build leaves the old artifact intact.
+ * Build `<miniAppDir>`'s UI into `<outDir>` (replaced whole). Returns the manifest, or null for a
+ * mini app without a UI entry. A failed build leaves the old artifact intact.
  *
- * `sourceMaps` defaults on: a user plugin is debugged in the app it is built in, from the maps
- * beside it. Release staging of the FIRST-PARTY plugins turns them off — maps of code nobody
+ * `sourceMaps` defaults on: a user mini app is debugged in the app it is built in, from the maps
+ * beside it. Release staging of the FIRST-PARTY mini apps turns them off — maps of code nobody
  * debugs on a user's machine were 17 MB of the installer.
  */
 export async function buildMiniAppUiArtifact(input: {
   kit: MiniAppKit
-  pluginDir: string
+  miniAppDir: string
   outDir: string
   sourceMaps?: boolean
 }): Promise<MiniAppUiArtifactManifest | null> {
-  const { kit, pluginDir, outDir, sourceMaps = true } = input
-  if (isPathWithin(pluginDir, outDir)) await assertSafeAuthoringPaths(pluginDir)
-  const entry = miniAppUiEntry(pluginDir)
+  const { kit, miniAppDir, outDir, sourceMaps = true } = input
+  if (isPathWithin(miniAppDir, outDir)) await assertSafeAuthoringPaths(miniAppDir)
+  const entry = miniAppUiEntry(miniAppDir)
   if (!entry) {
-    // A successful build of a plugin whose UI entry was removed also removes its old view.
+    // A successful build of a mini app whose UI entry was removed also removes its old view.
     await removeMiniAppUiArtifact(outDir)
     return null
   }
@@ -207,7 +209,7 @@ export async function buildMiniAppUiArtifact(input: {
   try {
     const manifest = await buildStagedUiArtifact({
       kit,
-      pluginDir,
+      miniAppDir,
       entry,
       outDir: staging,
       sourceMaps,
@@ -221,12 +223,12 @@ export async function buildMiniAppUiArtifact(input: {
 
 async function buildStagedUiArtifact(input: {
   kit: MiniAppKit
-  pluginDir: string
+  miniAppDir: string
   entry: string
   outDir: string
   sourceMaps: boolean
 }): Promise<MiniAppUiArtifactManifest> {
-  const { kit, pluginDir, entry, outDir, sourceMaps } = input
+  const { kit, miniAppDir, entry, outDir, sourceMaps } = input
   const result = await Bun.build({
     entrypoints: [entry],
     outdir: outDir,
@@ -242,16 +244,16 @@ async function buildStagedUiArtifact(input: {
       asset: 'assets/[name]-[hash].[ext]',
     },
     define: { 'process.env.NODE_ENV': '"production"' },
-    plugins: [sharedModulesPlugin(kit, pluginDir)],
+    plugins: [sharedModulesPlugin(kit, miniAppDir)],
     metafile: true,
     throw: false,
   })
   if (!result.success) {
-    throw new Error(`UI build failed:\n${formatBuildLogs(result.logs, pluginDir)}`)
+    throw new Error(`UI build failed:\n${formatBuildLogs(result.logs, miniAppDir)}`)
   }
   await assertContainedBuildInputs({
     metafile: result.metafile,
-    pluginDir,
+    miniAppDir,
     kitDir: kit.dir,
     sharedSpecifiers: new Set(Object.keys(kit.manifest.uiSharedExports)),
     virtualInputs: new Set(
@@ -259,7 +261,7 @@ async function buildStagedUiArtifact(input: {
     ),
   })
 
-  const utilities = await buildMiniAppStylesheet(kit, pluginDir)
+  const utilities = await buildMiniAppStylesheet(kit, miniAppDir)
   if (utilities.trim()) await fs.writeFile(join(outDir, 'utilities.css'), utilities)
 
   // A fixed order, so the revision hashes content, not directory-listing order.

@@ -14,9 +14,9 @@ import type { MessageContextBinding } from '@/shared/api/contracts'
  * `@resource:localix://resource/<provider>/…`, `@message:<sid>/<mid>`, or a bare `localix://…` URI —
  * turned into the same binding a drag of that thing carries.
  *
- * A surface that takes a link (the composer, a plugin board) must not learn the token grammar
- * itself: the grammar lives in the ref-kind registry (`@localixai/api/context-refs`), and a plugin
- * cannot import that package at all. So the parse is here, once, and reaches plugins through
+ * A surface that takes a link (the composer, a mini app board) must not learn the token grammar
+ * itself: the grammar lives in the ref-kind registry (`@localixai/api/context-refs`), and a mini
+ * app cannot import that package at all. So the parse is here, once, and reaches mini apps through
  * `@localixai/kit/context-links`; a pasted `@session:…` then becomes the session a dragged session
  * row would have become, not a note that happens to contain its token.
  */
@@ -44,7 +44,7 @@ export function contextTargetFromRef(
 
 /**
  * A ref shown in the chat (a sent pill, a composer chip) as the link a drag of it carries: the
- * canonical envelope it was rebuilt from when it has one, so a plugin resource keeps its own
+ * canonical envelope it was rebuilt from when it has one, so a mini app resource keeps its own
  * attributes, else the grammar's target.
  */
 export function linkFromRef(

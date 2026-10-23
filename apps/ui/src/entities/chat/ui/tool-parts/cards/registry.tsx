@@ -15,7 +15,7 @@ export type ToolCardComponent = ComponentType<{ item: ToolCallItem }>
 
 /**
  * Tool name → rich card for generic `tool_call` items. The dispatch point
- * ItemView consults, beside the plugin-contributed cards below; anything absent
+ * ItemView consults, beside the mini-app-contributed cards below; anything absent
  * from both renders as GenericToolCard.
  * `command` / `file_change` / `mcp_call` items are typed and dispatch on
  * `item.type` in ItemView instead — they never pass through this map.
@@ -44,7 +44,7 @@ export const TOOL_CARDS: Partial<Record<PresentableToolName, ToolCardComponent>>
 /**
  * Resolve the card for a tool name (undefined → caller falls back to generic).
  *
- * The lookup takes a raw `string` — the name arrives off the wire, and a plugin tool
+ * The lookup takes a raw `string` — the name arrives off the wire, and a mini app tool
  * legitimately has no entry. The single cast is confined HERE on purpose: the map's
  * DECLARATION is what needed checking (a typo'd or renamed key silently downgrades a
  * rich card to the generic wrench, with no error anywhere), and one narrow accessor is
@@ -55,11 +55,11 @@ export function getToolCard(name: string): ToolCardComponent | undefined {
 }
 
 /**
- * The card a plugin registered for a tool it owns (`host.toolCards`), if any.
+ * The card a mini app registered for a tool it owns (`host.toolCards`), if any.
  *
  * Asked separately because the dispatcher gives it a different place in line than a core card: a
- * plugin card renders its own output, navigation requests included, so it has to win over the
- * generic navigation button. A name the core table owns never resolves here — otherwise a plugin
+ * mini app card renders its own output, navigation requests included, so it has to win over the
+ * generic navigation button. A name the core table owns never resolves here — otherwise a mini app
  * registering `bash` would replace the terminal card of every chat.
  */
 export function contributedToolCard(name: string): ToolCardComponent | undefined {

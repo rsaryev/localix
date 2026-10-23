@@ -54,11 +54,11 @@ const BACKEND_METHODS: Record<keyof ContainerEngineBackend, true> = {
 }
 
 /**
- * The backend chosen on first USE, not at plugin registration.
+ * The backend chosen on first USE, not at mini app registration.
  *
  * Choosing once in `register()` pinned the CLI fallback for the whole process whenever Docker
  * Desktop was not running yet at app launch — starting it later never brought the Engine API
- * back — and a stale socket held plugin registration for the full request timeout. Now only a
+ * back — and a stale socket held mini app registration for the full request timeout. Now only a
  * successful API connection is kept; a fallback is served for {@link DOCKER_REPROBE_MS} and then
  * the API is probed again, one probe at a time.
  */

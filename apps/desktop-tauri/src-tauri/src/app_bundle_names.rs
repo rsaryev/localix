@@ -1,7 +1,8 @@
-//! What a plugin app is called on disk and to macOS: its plugin name, Finder name and bundle id.
+//! What a standalone mini app is called on disk and to macOS: its mini app name, Finder name and
+//! bundle id.
 
-/// Plugin names as manifests allow them (`PLUGIN_NAME_RE` in `mini-app-sdk`: letters, digits, `-`
-/// and `_`, not leading with a separator), bounded; nothing else reaches a path or a bundle id.
+/// Mini app names as manifests allow them (`MINI_APP_NAME_RE` in `mini-app-sdk`: letters, digits,
+/// `-` and `_`, not leading with a separator), bounded; nothing else reaches a path or a bundle id.
 pub(crate) fn valid_mini_app(name: &str) -> bool {
     (1..=64).contains(&name.len())
         && name.starts_with(|first: char| first.is_ascii_alphanumeric())
@@ -10,7 +11,7 @@ pub(crate) fn valid_mini_app(name: &str) -> bool {
             .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_')
 }
 
-/// A Finder name for the bundle: the plugin's title without path separators or a leading dot.
+/// A Finder name for the bundle: the mini app's title without path separators or a leading dot.
 pub(crate) fn bundle_name(title: &str) -> Option<String> {
     let cleaned: String = title
         .chars()
@@ -21,9 +22,9 @@ pub(crate) fn bundle_name(title: &str) -> Option<String> {
     (!cleaned.is_empty()).then(|| cleaned.to_string())
 }
 
-/// A bundle id allows letters, digits, `-` and `.`; a plugin name may also hold `_`.
-pub(crate) fn bundle_id_part(plugin: &str) -> String {
-    plugin.to_ascii_lowercase().replace('_', "-")
+/// A bundle id allows letters, digits, `-` and `.`; a mini app name may also hold `_`.
+pub(crate) fn bundle_id_part(mini_app: &str) -> String {
+    mini_app.to_ascii_lowercase().replace('_', "-")
 }
 
 #[cfg(test)]

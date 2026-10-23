@@ -35,7 +35,7 @@ import {
 
 const REPO_ROOT = path.resolve(import.meta.dir, '..')
 
-/** Every UI source outside the kit: the workbench, the plugin views, the SDK's own components. */
+/** Every UI source outside the kit: the workbench, the mini app views, the SDK's own components. */
 const INCLUDE = [
   'apps/ui/src/**/*.{ts,tsx}',
   'mini-apps/*/ui/**/*.{ts,tsx}',

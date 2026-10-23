@@ -1,10 +1,10 @@
 /**
- * OPEN registry of plugin-contributed session-stream event handlers — the UI
- * counterpart of a plugin backend's own stream frames (e.g. `<domain>.updated`).
+ * OPEN registry of mini-app-contributed session-stream event handlers — the UI
+ * counterpart of a mini app backend's own stream frames (e.g. `<domain>.updated`).
  * The chat runtime's demultiplexer dispatches an event type here AFTER its
  * built-in routes: a contributed type is consumed by its handlers and does not
  * reach the generic store reducer. Registration comes through the MiniAppUiHost
- * (`host.sessionEvents.register`) from a plugin's `ui/register.tsx`.
+ * (`host.sessionEvents.register`) from a mini app's `ui/register.tsx`.
  */
 
 export type SessionEventHandler = (sessionId: string, event: unknown) => void
@@ -12,7 +12,7 @@ import { isMiniAppContributionEnabled } from './miniAppActivation'
 
 interface RegisteredHandler {
   handler: SessionEventHandler
-  pluginName?: string
+  miniAppName?: string
 }
 
 const handlers = new Map<string, RegisteredHandler[]>()
@@ -21,18 +21,18 @@ const handlers = new Map<string, RegisteredHandler[]>()
 export function registerSessionEventHandler(
   type: string,
   handler: SessionEventHandler,
-  pluginName?: string,
+  miniAppName?: string,
 ): void {
   const list = handlers.get(type) ?? []
-  list.push({ handler, pluginName })
+  list.push({ handler, miniAppName })
   handlers.set(type, list)
 }
 
 /** Handlers contributed for an event type (empty array when none). */
-/** Drop every handler `owner` registered (a plugin reload or unload). */
+/** Drop every handler `owner` registered (a mini app reload or unload). */
 export function removeSessionEventHandlersOf(owner: string): void {
   for (const [type, list] of handlers) {
-    const kept = list.filter((entry) => entry.pluginName !== owner)
+    const kept = list.filter((entry) => entry.miniAppName !== owner)
     if (kept.length) handlers.set(type, kept)
     else handlers.delete(type)
   }
@@ -40,6 +40,6 @@ export function removeSessionEventHandlersOf(owner: string): void {
 
 export function sessionEventHandlersFor(type: string): SessionEventHandler[] {
   return (handlers.get(type) ?? []).flatMap((entry) =>
-    isMiniAppContributionEnabled(entry.pluginName) ? [entry.handler] : [],
+    isMiniAppContributionEnabled(entry.miniAppName) ? [entry.handler] : [],
   )
 }

@@ -1,7 +1,7 @@
 /**
  * Compact workbench action used in persistent chrome (titlebar/header bars).
  *
- * Geometry is tokenized in index.css so host and plugin actions keep the same
+ * Geometry is tokenized in index.css so host and mini app actions keep the same
  * physical hit target when typography density changes. The class intentionally
  * owns interaction feedback as well: a chrome action should never invent its own
  * focus, hover, pressed, or reduced-motion behavior.

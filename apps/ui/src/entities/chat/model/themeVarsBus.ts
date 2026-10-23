@@ -1,5 +1,5 @@
 /**
- * Shared theme-variable bridge for sandboxed iframes (plugin panels, the
+ * Shared theme-variable bridge for sandboxed iframes (mini app panels, the
  * visual-feedback preview probe).
  *
  * Each live frame needs the host's CSS custom properties forwarded into its

@@ -17,7 +17,7 @@ What a copy is made of is declared in `scaffold.json`, and every part of it is l
   `ui/now` clock for derived values), `backend/store.ts` (durable state under `ctx.dataDir`),
   `backend/store-feed.ts` and `shared/store-feed.ts` (the nudge after a store write),
   `shared/schema.ts`. The frame never imports a domain module — replacing the domain must never
-  break it, and `scripts/plugin-kit.integration.test.ts` fails the moment it does.
+  break it, and `scripts/mini-app-kit.integration.test.ts` fails the moment it does.
 - **Patterns** — the domain files the agent reads before replacing them, each at an anchor the file
   contains. They are how a copy learns an acting tool, a state-changing route, a form driven by
   `send` and a value derived with `useNow`; keep them the best example of each in the repository.
@@ -44,7 +44,7 @@ House rules the copies inherit from here:
 
 Choose checks for the changed contract. Run a focused test under this mini app; use its `type-check`
 or `type-check:tests` script when static evidence is needed. Changes to the scaffold frame also need
-`bun test scripts/plugin-kit.integration.test.ts` from the repository root: it builds and checks a
+`bun test scripts/mini-app-kit.integration.test.ts` from the repository root: it builds and checks a
 copy from a staged kit. Full builds and repository gates belong to CI. Documentation-only edits need
 documentation validation, not a runtime build.
 

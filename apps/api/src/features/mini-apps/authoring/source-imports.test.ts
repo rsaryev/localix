@@ -13,10 +13,10 @@ function write(root: string, file: string, text = '') {
   writeFileSync(join(root, file), text)
 }
 
-/** A plugin whose file imports a hoisted package, built from `root` as Bun 1.4 records it. */
+/** A mini app whose file imports a hoisted package, built from `root` as Bun 1.4 records it. */
 function layout() {
   const root = scratch()
-  write(root, 'plugin/ui/view.tsx')
+  write(root, 'app/ui/view.tsx')
   write(root, 'kit/index.js')
   write(root, 'node_modules/@x/pkg/package.json', '{"name":"@x/pkg"}')
   write(root, 'node_modules/@x/pkg/dist/index.js')
@@ -36,7 +36,7 @@ describe('assertContainedBuildInputs', () => {
     // `dist/index.js` only re-exports, so tree shaking leaves it out of the inputs.
     const metafile = {
       inputs: {
-        'plugin/ui/view.tsx': input([
+        'app/ui/view.tsx': input([
           { path: 'node_modules/@x/pkg/dist/index.js', original: '@x/pkg' },
         ]),
         'node_modules/@x/pkg/dist/parse.js': input([]),
@@ -46,7 +46,7 @@ describe('assertContainedBuildInputs', () => {
     await expect(
       assertContainedBuildInputs({
         metafile,
-        pluginDir: join(root, 'plugin'),
+        miniAppDir: join(root, 'app'),
         kitDir: join(root, 'kit'),
         cwd: root,
       }),
@@ -58,7 +58,7 @@ describe('assertContainedBuildInputs', () => {
     write(root, 'secret.js')
     const metafile = {
       inputs: {
-        'plugin/ui/view.tsx': input([{ path: 'secret.js', original: '../../secret.js' }]),
+        'app/ui/view.tsx': input([{ path: 'secret.js', original: '../../secret.js' }]),
         'secret.js': input([]),
       },
       outputs: {},
@@ -66,7 +66,7 @@ describe('assertContainedBuildInputs', () => {
     await expect(
       assertContainedBuildInputs({
         metafile,
-        pluginDir: join(root, 'plugin'),
+        miniAppDir: join(root, 'app'),
         kitDir: join(root, 'kit'),
         cwd: root,
       }),

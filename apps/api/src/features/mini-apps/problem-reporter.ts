@@ -2,18 +2,18 @@ import type { MiniAppProblem } from '@localixai/mini-app-sdk/backend'
 
 import { recordMiniAppProblem } from '../notifications/conditions/mini-apps'
 
-/** Draw a plugin's problem on a chat's transcript. Supplied only where a session firehose
+/** Draw a mini app's problem on a chat's transcript. Supplied only where a session firehose
  *  exists to carry it (the per-run load), and only ever handed a problem that names a chat. */
 export type MiniAppProblemSink = (
-  pluginName: string,
+  miniAppName: string,
   problem: MiniAppProblem & { sessionId: string },
 ) => void
 
 /** What `makeContext` binds `ctx.reportProblem` to: see {@link miniAppProblemReporter}. */
-export type MiniAppProblemReporter = (pluginName: string, problem: MiniAppProblem) => void
+export type MiniAppProblemReporter = (miniAppName: string, problem: MiniAppProblem) => void
 
 /**
- * THE binding of `ctx.reportProblem` for every load that runs plugin code.
+ * THE binding of `ctx.reportProblem` for every load that runs mini app code.
  *
  * The problem used to reach a person only as a transcript line, and only from the per-run load —
  * the one caller with a chat firehose — so a backend whose `register` found a broken config had no

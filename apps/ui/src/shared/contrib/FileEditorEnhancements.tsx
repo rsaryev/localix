@@ -8,14 +8,14 @@
  *
  * Several enhancers nest, outermost first, each merging its contribution into what the ones
  * outside it produced. The editor at the centre receives one object — it never learns how many
- * plugins are installed, which is the whole point of the seam.
+ * mini apps are installed, which is the whole point of the seam.
  *
  * WHY THE CHAIN IS KEYED BY PATH. An enhancer's hooks are scoped to a file: switching the tab to
  * another file must tear them down rather than let them answer the new file with the old one's
  * state. React reuses a component instance at the same position, so without a key the git gutter
  * kept the previous file's base blob through a switch and drew its diff over the new content.
  *
- * The enhancers are a registry SLICE keyed by path rather than a read per render: a plugin can
+ * The enhancers are a registry SLICE keyed by path rather than a read per render: a mini app can
  * register after the first paint (they load lazily), and a read at render showed that file's
  * editor unenhanced until something else re-rendered the editor.
  */
@@ -62,7 +62,7 @@ function nest(
 ): ReactNode {
   const [enhancer, ...rest] = enhancers
   if (!enhancer) return <Fragment>{inner(gathered)}</Fragment>
-  // Each enhancer is plugin code on the editor's render path, so each gets its own boundary: one
+  // Each enhancer is mini app code on the editor's render path, so each gets its own boundary: one
   // that throws loses its own decoration and the editor still opens, where a single boundary
   // around the chain would take the file's content down with it. The `key` carries the path for
   // the same reason it does below — a boundary deliberately does not reset itself on new props.

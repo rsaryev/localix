@@ -8,7 +8,7 @@
  * It applies {@link agentPolicy} and it THROWS — and the throw is why it is not in `policy.ts`.
  * That module is a shared leaf (`@localixai/api/agent-policy`): the settings screen imports it to
  * grey out what a user may not edit, so every value it imports ships to the browser. `ApiError`
- * comes from the plugin SDK's BACKEND barrel, which reaches `node:dns`, `node:net` and
+ * comes from the mini app SDK's BACKEND barrel, which reaches `node:dns`, `node:net` and
  * `node:fs/promises`; with this function inside the leaf, opening the agent profile tab threw
  * "Module node:dns has been externalized" at render. The rule stays where the settings screen
  * can read it; the refusal lives here, on the server, beside the service that writes.

@@ -1,4 +1,5 @@
-//! What a plugin app bundle records about its host, written as its Info.plist and read back.
+//! What a standalone mini app bundle records about its host, written as its Info.plist and read
+//! back.
 use std::path::{Path, PathBuf};
 
 use tauri::{AppHandle, Manager};
@@ -12,7 +13,7 @@ pub(crate) struct Host {
     pub(crate) location: PathBuf,
     pub(crate) ui: String,
     pub(crate) endpoint: PathBuf,
-    /// Where each app's project folder goes (`apps/<plugin>` under the Localix home).
+    /// Where each app's project folder goes (`apps/<app>` under the Localix home).
     pub(crate) projects: PathBuf,
     pub(crate) version: String,
     pub(crate) build: String,
@@ -62,8 +63,8 @@ pub(crate) fn host(app: &AppHandle) -> Result<Host, String> {
     })
 }
 
-pub(crate) fn info_plist(id: &str, name: &str, plugin: &str, host: &Host) -> String {
-    let project = host.projects.join(plugin).to_string_lossy().into_owned();
+pub(crate) fn info_plist(id: &str, name: &str, mini_app: &str, host: &Host) -> String {
+    let project = host.projects.join(mini_app).to_string_lossy().into_owned();
     let strings = [
         ("CFBundleDevelopmentRegion", "en"),
         ("CFBundleExecutable", EXECUTABLE),
@@ -77,9 +78,9 @@ pub(crate) fn info_plist(id: &str, name: &str, plugin: &str, host: &Host) -> Str
         ("LSMinimumSystemVersion", "13.0"),
         (
             "NSMicrophoneUsageDescription",
-            "The plugin may record audio when you ask it to.",
+            "The mini app may record audio when you ask it to.",
         ),
-        (keys::PLUGIN, plugin),
+        (keys::MINI_APP, mini_app),
         (keys::UI, &host.ui),
         (keys::ENDPOINT, &host.endpoint.to_string_lossy()),
         (keys::HOST, &host.location.to_string_lossy()),
@@ -148,7 +149,7 @@ mod tests {
             Some("Q&A <board>")
         );
         assert_eq!(
-            plist_string(&plist, keys::PLUGIN).as_deref(),
+            plist_string(&plist, keys::MINI_APP).as_deref(),
             Some("kanban")
         );
         assert_eq!(

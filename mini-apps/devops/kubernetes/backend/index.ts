@@ -1,5 +1,5 @@
 /**
- * Kubernetes provider backend inside the bundled DevOps Workspace plugin.
+ * Kubernetes provider backend inside the bundled DevOps Workspace mini app.
  *
  * `register()` constructs the Kubernetes API service and contributes it as a `BackendSubsystem`: the
  * boot-time loader (`loadMiniAppBackends`) mounts the route (`/rpc/kubernetes`),

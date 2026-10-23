@@ -14,7 +14,7 @@ const kit = defineTypedError<DemoCode>('DemoError', FRIENDLY)
 const DemoError = kit.DomainError
 
 /**
- * A representative hand-rolled plugin error adapter, preserved verbatim. The factory
+ * A representative hand-rolled mini app error adapter, preserved verbatim. The factory
  * must be indistinguishable from it — a subsystem that adopts the factory must not have a
  * single observable behaviour change.
  */

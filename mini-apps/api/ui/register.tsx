@@ -1,12 +1,12 @@
 /**
  * UI registration for the bundled API Client subsystem.
  *
- * The plugin contributes ONE workspace (a rail VIEWLET → one grid tab per chat, since the
+ * The mini app contributes ONE workspace (a rail VIEWLET → one grid tab per chat, since the
  * collection lives in that chat's project) plus the per-request tab kind a user can pop out of it,
  * through the {@link MiniAppUiHost} façade (the
- * plugin-SDK contract). It is discovered + invoked generically by `shared/contrib/discover.ts`.
+ * mini app SDK contract). It is discovered + invoked generically by `shared/contrib/discover.ts`.
  *
- * It used to register a rail SECTION whose rows opened tabs, which made it the last plugin in the
+ * It used to register a rail SECTION whose rows opened tabs, which made it the last mini app in the
  * app on that shape — Database, Trading, DevOps and Learning are all viewlets. The
  * workspace is `RestApiWorkspace`; see its header for why a REST client in particular needs the
  * list and the request on screen together.
@@ -168,7 +168,7 @@ export function registerUi(host: MiniAppUiHost): void {
   })
 
   // A request POPPED OUT of the workspace. Same editor, its own tab — for reading two responses
-  // side by side, which one workspace body cannot do. The database plugin's SQL consoles are the
+  // side by side, which one workspace body cannot do. The database mini app's SQL consoles are the
   // same arrangement.
   host.workItems.register({
     kind: REQUEST_WORK_KIND,

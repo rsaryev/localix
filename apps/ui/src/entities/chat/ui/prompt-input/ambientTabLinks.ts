@@ -76,7 +76,7 @@ export function ambientAutoRefs(
     const { binding } = link
     const dismissalKey = ambientLinkDismissalKey(link)
     if (dismissedLinks.has(dismissalKey)) continue
-    // Resolve from the complete binding so plugin-owned URI/attributes and the
+    // Resolve from the complete binding so mini-app-owned URI/attributes and the
     // host-minted active-tab provenance survive into the durable message binding.
     const ref = refFromContextBinding(binding)
     out.push({

@@ -10,7 +10,7 @@ afterAll(() => teardown())
 
 /**
  * The behaviour a live incident bought: a contributed surface that throws during render must cost
- * that surface and nothing else. The app previously had ONE boundary, at the root, so a plugin
+ * that surface and nothing else. The app previously had ONE boundary, at the root, so a mini app
  * work-item body building a `localix://` URI from an empty id took the entire workspace down —
  * and, being a restorable tab, took it down again on every start.
  */

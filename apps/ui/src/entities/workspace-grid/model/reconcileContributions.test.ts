@@ -3,10 +3,10 @@ import { miniAppUiHostFor } from '@/shared/contrib/host'
 import { setEnabledMiniAppNames } from '@/shared/contrib/miniAppActivation'
 import { reconcileUnavailableContributedItems, useGridStore } from './store'
 
-const KIND = 'reconcile-plugin:tab'
-const PLUGIN = 'reconcile-plugin'
+const KIND = 'reconcile-mini-app:tab'
+const MINI_APP = 'reconcile-mini-app'
 
-miniAppUiHostFor(PLUGIN).workItems.register({
+miniAppUiHostFor(MINI_APP).workItems.register({
   kind: KIND,
   Component: () => null,
   Icon: () => null,
@@ -16,7 +16,7 @@ miniAppUiHostFor(PLUGIN).workItems.register({
 
 describe('reconcileUnavailableContributedItems', () => {
   beforeEach(() => {
-    setEnabledMiniAppNames(new Set([PLUGIN]))
+    setEnabledMiniAppNames(new Set([MINI_APP]))
     useGridStore.getState().resetLayout()
     useGridStore.getState().openItem(
       {
@@ -31,7 +31,7 @@ describe('reconcileUnavailableContributedItems', () => {
     useGridStore
       .getState()
       .openItem(
-        { kind: KIND, id: 'plugin:tab', title: 'Plugin tab', scope: '@global' },
+        { kind: KIND, id: 'mini-app:tab', title: 'Mini app tab', scope: '@global' },
         { group: 'group-root' },
       )
   })
@@ -41,21 +41,21 @@ describe('reconcileUnavailableContributedItems', () => {
     useGridStore.getState().resetLayout()
   })
 
-  test('does not erase a tab while plugin activation is still pending', () => {
+  test('does not erase a tab while mini app activation is still pending', () => {
     setEnabledMiniAppNames(null)
     reconcileUnavailableContributedItems()
-    expect(useGridStore.getState().items['plugin:tab']).toBeDefined()
+    expect(useGridStore.getState().items['mini-app:tab']).toBeDefined()
   })
 
-  test('keeps an unknown lazy kind pending, then removes it when no plugin registers it', () => {
+  test('keeps an unknown lazy kind pending, then removes it when no mini app registers it', () => {
     useGridStore
       .getState()
       .openItem(
-        { kind: 'unregistered-lazy-kind', id: 'lazy:tab', title: 'Lazy plugin tab', scope: 's1' },
+        { kind: 'unregistered-lazy-kind', id: 'lazy:tab', title: 'Lazy mini app tab', scope: 's1' },
         { group: 'group-root' },
       )
 
-    // A plugin kind in a session takes its chat in its id (`tabIdInScope`).
+    // A mini app kind in a session takes its chat in its id (`tabIdInScope`).
     setEnabledMiniAppNames(null)
     reconcileUnavailableContributedItems()
     expect(useGridStore.getState().items['lazy:tab@s1']).toBeDefined()
@@ -65,23 +65,25 @@ describe('reconcileUnavailableContributedItems', () => {
     expect(useGridStore.getState().items['lazy:tab@s1']).toBeUndefined()
   })
 
-  test('closes confirmed-disabled plugin tabs without touching other tabs', () => {
+  test('closes confirmed-disabled mini app tabs without touching other tabs', () => {
     setEnabledMiniAppNames(new Set())
     reconcileUnavailableContributedItems()
-    expect(useGridStore.getState().items['plugin:tab']).toBeUndefined()
+    expect(useGridStore.getState().items['mini-app:tab']).toBeUndefined()
     expect(useGridStore.getState().items['file:keep.sql']).toBeDefined()
   })
 
-  test('does not leave a disabled plugin tab in the reopen history', () => {
+  test('does not leave a disabled mini app tab in the reopen history', () => {
     setEnabledMiniAppNames(new Set())
     reconcileUnavailableContributedItems()
 
-    expect(useGridStore.getState().closed.some(({ item }) => item.id === 'plugin:tab')).toBe(false)
+    expect(useGridStore.getState().closed.some(({ item }) => item.id === 'mini-app:tab')).toBe(
+      false,
+    )
     useGridStore.getState().reopenClosedTab()
-    expect(useGridStore.getState().items['plugin:tab']).toBeUndefined()
+    expect(useGridStore.getState().items['mini-app:tab']).toBeUndefined()
   })
 
-  test('does not close a core-kind tab because a disabled plugin reused its kind', () => {
+  test('does not close a core-kind tab because a disabled mini app reused its kind', () => {
     expect(() =>
       miniAppUiHostFor('core-kind-shadow-reconcile').workItems.register({
         kind: 'chat',

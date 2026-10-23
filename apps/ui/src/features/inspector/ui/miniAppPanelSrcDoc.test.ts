@@ -71,13 +71,13 @@ describe('buildPanelSrcDoc', () => {
     expect(() => buildPanelSrcDoc('', 'dark', '', "x';alert(1);//0123456789")).toThrow()
   })
 
-  test('installs the acquired host API before any plugin-authored HTML executes', () => {
+  test('installs the acquired host API before any mini-app-authored HTML executes', () => {
     expect(doc).toContain("Object.defineProperty(window, 'acquireLocalixApi'")
     expect(doc.indexOf('acquireLocalixApi')).toBeLessThan(doc.indexOf('<p>hi</p>'))
     expect(doc.match(/<\/script>/g)).toHaveLength(1)
   })
 
-  test('injects the plugin html verbatim into the body (containment is the sandbox, not escaping)', () => {
+  test('injects the mini app html verbatim into the body (containment is the sandbox, not escaping)', () => {
     expect(doc).toContain('<body>\n<p>hi</p>\n</body>')
   })
 })

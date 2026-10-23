@@ -59,7 +59,7 @@ type CollapsibleStripProps = CollapsibleStripBaseProps &
 
 /**
  * The shared shell for every composer strip that lists rows under a collapsible,
- * scrollable header — sub-sessions, background jobs, plugin strips. It owns BOTH the
+ * scrollable header — sub-sessions, background jobs, mini app strips. It owns BOTH the
  * behaviour (click-to-toggle bar + animated, scrollable row container) AND the
  * collapsed-bar LAYOUT, so the three strips line up into the same columns:
  *

@@ -17,7 +17,7 @@ test('one store feed proves native coverage, batches writes and disk edits, and 
     }
   }
   const feed = createStoreChangeFeed({
-    plugin: 'game',
+    miniApp: 'game',
     resolveDir: async (user, session) => (user === 'owner' && session === 's' ? '/scope' : null),
     subscribeWrites: (listener) => {
       write = listener
@@ -34,7 +34,7 @@ test('one store feed proves native coverage, batches writes and disk edits, and 
     userId: 'owner',
   })
   await tick()
-  expect(frames).toContainEqual({ plugin: 'game', sessionId: 's', live: true })
+  expect(frames).toContainEqual({ miniApp: 'game', sessionId: 's', live: true })
   expect(frames.filter((frame) => frame.live === undefined)).toHaveLength(1)
   write('/other/a.json')
   await tick()
@@ -46,7 +46,7 @@ test('one store feed proves native coverage, batches writes and disk edits, and 
   expect(frames.filter((frame) => frame.live === undefined)).toHaveLength(2)
   fail()
   await tick()
-  expect(frames).toContainEqual({ plugin: 'game', sessionId: 's', live: false })
+  expect(frames).toContainEqual({ miniApp: 'game', sessionId: 's', live: false })
   contribution.stop(handle)
   expect(releases).toBe(2)
   const count = frames.length
@@ -60,7 +60,7 @@ test('an unauthorized scope or absent native watcher never claims full live cove
   const frames: StoreFrame[] = []
   let subscriptions = 0
   const feed = createStoreChangeFeed({
-    plugin: 'game',
+    miniApp: 'game',
     resolveDir: async (user) => (user === 'owner' ? '/scope' : null),
     subscribeWrites: () => {
       subscriptions++
@@ -72,7 +72,7 @@ test('an unauthorized scope or absent native watcher never claims full live cove
   source.start({ sessionId: 's' }, (json) => frames.push(JSON.parse(json)), { userId: 'other' })
   await tick()
   expect(subscriptions).toBe(0)
-  expect(frames).toEqual([{ plugin: 'game', sessionId: 's', live: false }])
+  expect(frames).toEqual([{ miniApp: 'game', sessionId: 's', live: false }])
   source.start({ sessionId: 's' }, (json) => frames.push(JSON.parse(json)), { userId: 'owner' })
   await tick()
   expect(subscriptions).toBe(1)

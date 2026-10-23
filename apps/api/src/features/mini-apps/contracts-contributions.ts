@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { PLUGIN_NAME_RE } from './contracts-base'
+import { MINI_APP_NAME_RE } from './contracts-base'
 
 function containsAsciiControlCharacter(value: string): boolean {
   for (let index = 0; index < value.length; index += 1) {
@@ -19,7 +19,7 @@ const modelDescriptionSchema = z
     'Description contains control characters',
   )
 
-/** Max UI views one plugin may declare. */
+/** Max UI views one mini app may declare. */
 export const VIEWS_MAX_PER_MINI_APP = 6
 /** Max bytes of view HTML served to the UI (matches the inline-widget cap). */
 export const MINI_APP_VIEW_HTML_CAP_BYTES = 1.5 * 1024 * 1024
@@ -27,25 +27,27 @@ export const MINI_APP_VIEW_HTML_CAP_BYTES = 1.5 * 1024 * 1024
 export const MINI_APP_VIEW_ICON_RE = /^[a-z][a-z0-9-]{0,39}$/i
 
 /**
- * A declarative UI VIEW — the ONE way a plugin contributes its own screen.
+ * A declarative UI VIEW — the ONE way a mini app contributes its own screen.
  *
- * Sandboxed HTML from the plugin directory, rendered in an opaque-origin iframe
+ * Sandboxed HTML from the mini app directory, rendered in an opaque-origin iframe
  * under a strict CSP with the live postMessage bridge, and opened as a WORK-ITEM
  * TAB in the editor grid. There is deliberately no `surface` choice: `panels`
  * (inspector) and rail-mounted views were the same iframe reached through three
  * different placements, which meant three registries, three tab kinds and three
  * doc paragraphs for one capability. A manifest `panels` array is still READ —
- * promoted into this shape before parse — so ported plugins keep working.
+ * promoted into this shape before parse — so ported mini apps keep working.
  *
- * Pure manifest DATA; the HTML is read only while the plugin is enabled.
+ * Pure manifest DATA; the HTML is read only while the mini app is enabled.
  * `icon` is an optional Lucide name the host maps to a glyph (unknown/absent →
  * the generic Puzzle icon).
  */
 export const miniAppViewSchema = z.object({
-  id: z.string().regex(PLUGIN_NAME_RE, 'View id must be letters, numbers, dashes or underscores.'),
+  id: z
+    .string()
+    .regex(MINI_APP_NAME_RE, 'View id must be letters, numbers, dashes or underscores.'),
   /** Tab label. */
   title: z.string().min(1).max(40),
-  /** HTML file path relative to the plugin directory. */
+  /** HTML file path relative to the mini app directory. */
   file: z.string().min(1),
   /** Optional Lucide icon name hint. */
   icon: z.string().regex(MINI_APP_VIEW_ICON_RE, 'Icon must be a Lucide icon name.').optional(),
@@ -88,16 +90,16 @@ export type InvokeMiniAppUiActionRequest = z.infer<typeof invokeMiniAppUiActionR
 export const invokeMiniAppUiActionResponseSchema = z.object({ result: z.unknown() })
 
 /** Caps for manifest prompt sections — the system prompt is shared real estate. */
-export const PROMPT_SECTIONS_MAX_PER_PLUGIN = 3
+export const PROMPT_SECTIONS_MAX_PER_MINI_APP = 3
 export const PROMPT_SECTION_CONTENT_MAX_CHARS = 2000
 
 /**
- * A declarative system-prompt contribution: rendered under the `# Plugins`
- * section (prefixed with the plugin name) for every run while the plugin is
- * enabled. Pure manifest DATA — no code involved — so code-free plugins can
+ * A declarative system-prompt contribution: rendered under the `# Mini apps`
+ * section (prefixed with the mini app name) for every run while the mini app is
+ * enabled. Pure manifest DATA — no code involved — so code-free mini apps can
  * shape agent behavior (style guides, domain conventions, tool usage rules).
  */
-export const pluginPromptSectionSchema = z.object({
+export const miniAppPromptSectionSchema = z.object({
   title: z.string().min(1).max(80),
   content: z.string().min(1).max(PROMPT_SECTION_CONTENT_MAX_CHARS),
 })

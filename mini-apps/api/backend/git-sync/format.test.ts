@@ -1,8 +1,8 @@
 /**
  * The repo file format, and the rule that keeps credentials out of git history.
  *
- * `gitSafetyProblem` is the load-bearing test here. Everything else in this plugin can be fixed by
- * a later commit; a credential committed once cannot — it stays readable in history forever, and
+ * `gitSafetyProblem` is the load-bearing test here. Everything else in this mini app can be fixed
+ * by a later commit; a credential committed once cannot — it stays readable in history forever, and
  * the only real remedy is rotating the secret and rewriting history.
  */
 
@@ -219,7 +219,7 @@ describe('a credential in the QUERY STRING is refused too', () => {
 
 describe('a credential in a HEADER is refused too — the composition bug', () => {
   // The hole this closes: for fourteen iterations `gitSafetyProblem` checked `spec.auth` only, on
-  // the argument that "auth is the one place this plugin promises to hold credentials" — while
+  // the argument that "auth is the one place this mini app promises to hold credentials" — while
   // `import/har.ts` puts a logged-in session's Authorization AND Cookie straight into headers by
   // design, and `import/curl.ts` leaves any auth scheme it cannot sign there. Import a HAR from a
   // logged-in tab → export → commit → the session is in git history forever, which is the exact

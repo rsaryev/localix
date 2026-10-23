@@ -30,7 +30,7 @@ const KIND_ICONS: Record<CoreWorkItemKind, typeof FileText> = {
   file: FileText,
   diff: GitCompare,
   preview: Globe,
-  'plugin-view': Puzzle,
+  'mini-app-view': Puzzle,
   'live-file-change': File,
   agent: Bot,
   stats: BarChart3,
@@ -44,7 +44,7 @@ const KIND_ICONS: Record<CoreWorkItemKind, typeof FileText> = {
 /** `tintClass` is an optional text-color class (e.g. a connection's color tag), so a
  *  db-console tab's icon signals its color right in the tab strip. */
 export function workItemIcon(kind: WorkItemKind, tintClass?: string | null): ReactNode {
-  // Plugin-exclusive contributions supply their own icon. Reserved core kinds
+  // Mini-app-exclusive contributions supply their own icon. Reserved core kinds
   // always retain the built-in table.
   const Icon =
     activeWorkItemContribution(kind)?.Icon ?? KIND_ICONS[kind as CoreWorkItemKind] ?? FileText

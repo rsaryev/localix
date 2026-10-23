@@ -48,7 +48,7 @@ export function clearConnectionConsoleDrafts(connectionId: string, storage: Stor
  * `db.console.draft.<id>` localStorage entries can never be reused — without this
  * sweep every "New console" open permanently accretes one orphaned entry (which may
  * contain sensitive SQL) after the tab (or its whole connection) is removed.
- * Mirrors the kubernetes plugin's `useForwardCleanup`: the grid item registry is the
+ * Mirrors the kubernetes mini app's `useForwardCleanup`: the grid item registry is the
  * close signal (a global-scope tab body unmounts on every tab switch, so unmount is
  * not reliable). Mounted once via the rail section's `Mount` lifecycle.
  */

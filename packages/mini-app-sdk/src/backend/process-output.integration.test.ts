@@ -1,7 +1,7 @@
 /**
  * The wait must outlive nothing.
  *
- * `await Promise.all([...pipes, proc.exited])` — what the DevOps Docker exec and the plugin
+ * `await Promise.all([...pipes, proc.exited])` — what the DevOps Docker exec and the mini app
  * template both used to do — waits on pipe EOF, which needs EVERY write end closed, not just
  * the child's; anything the command leaves behind (`foo &`, `setsid`, a daemon) keeps the read
  * pending and the WAIT outlives the PROCESS. A timeout that kills the child would not even help:

@@ -100,7 +100,7 @@ export function ComposerHeaderStrips({
           promoted calls, servers started from the preview), pushed by the server; also hosts
           terminal liveness. */}
       <WorkStrip sessionId={activeSessionId} isFocused={isFocused} />
-      {/* Plugin strips about this session's live work. `isFocused` travels as context because
+      {/* Mini app strips about this session's live work. `isFocused` travels as context because
           every warm composer renders this stack: a strip that holds a live subscription mounts it
           only for the focused one. Keyed by session so a strip's in-flight state never carries
           over into the next session's composer. */}

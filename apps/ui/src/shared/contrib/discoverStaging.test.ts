@@ -31,7 +31,7 @@ afterEach(() => {
 test('the route publishes the catalog gated on staged discovery, after failing closed', () => {
   // The call site is the only place that hands the discovery promise to the sync. Without it the
   // behavioural gate below never engages; and the scope must be prepared synchronously first, or
-  // project B's first catalog can capture project A's plugin destinations.
+  // project B's first catalog can capture project A's mini app destinations.
   const prepare = catalogSyncCallSite.indexOf('prepareMiniAppContribScope(routeProjectId)')
   const publish = catalogSyncCallSite.indexOf(
     'startUiLocationCatalogSync(routeProjectId, whenUiSurfacesReady())',

@@ -8,7 +8,7 @@ export function registerSessionSurface(contribution: SessionSurfaceContribution)
     contributions.some(
       (candidate) =>
         candidate.surface === contribution.surface &&
-        candidate.pluginName === contribution.pluginName,
+        candidate.miniAppName === contribution.miniAppName,
     )
   ) {
     return
@@ -16,10 +16,10 @@ export function registerSessionSurface(contribution: SessionSurfaceContribution)
   contributions.push(contribution)
 }
 
-/** Drop every surface `owner` registered (a plugin reload or unload). */
+/** Drop every surface `owner` registered (a mini app reload or unload). */
 export function removeSessionSurfacesOf(owner: string): void {
   for (let index = contributions.length - 1; index >= 0; index -= 1) {
-    if (contributions[index]?.pluginName === owner) contributions.splice(index, 1)
+    if (contributions[index]?.miniAppName === owner) contributions.splice(index, 1)
   }
 }
 
@@ -31,7 +31,7 @@ export function sessionSurfacesFor(surface: string): SessionSurfaceContribution[
 /**
  * The fills of one host surface. Subscribed to its OWN slice of the registry: rendered from a
  * parent that rarely re-renders (the composer, the chat surface), a surface read once at mount
- * never showed a plugin that registered later — the Git plugin's poller did not mount until
+ * never showed a mini app that registered later — the Git mini app's poller did not mount until
  * something else re-rendered its parent, so the panel reported "not a repository" at startup.
  */
 export function SessionSurface({
@@ -50,7 +50,7 @@ export function SessionSurface({
     <>
       {contributions.map((contribution, index) => (
         <contribution.Component
-          key={`${contribution.pluginName ?? 'core'}:${contribution.surface}:${index}`}
+          key={`${contribution.miniAppName ?? 'core'}:${contribution.surface}:${index}`}
           sessionId={sessionId}
           context={context}
         />

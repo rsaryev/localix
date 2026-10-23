@@ -1,5 +1,5 @@
 /**
- * Regression vectors shared by the SDK, host, and native-plugin tests. These spellings cover
+ * Regression vectors shared by the SDK, host, and native-mini-app tests. These spellings cover
  * IPv4-mapped and NAT64 forms that a dotted-quad-only check misses.
  */
 export const PRIVATE_NETWORK_HOSTS = [

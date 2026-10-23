@@ -56,7 +56,7 @@ export interface EmbeddedServer {
   baseUrl: string
   port: number
   /** Graceful, idempotent teardown: the same sequence the signal handlers run —
-   *  drain platform channels, abort runs, kill PTY/LSP/plugin children, release
+   *  drain platform channels, abort runs, kill PTY/LSP/mini app children, release
    *  ownership, close the DB. Safe to call more than once. */
   stop: () => Promise<void>
 }
@@ -83,7 +83,7 @@ async function closeLogDestination(
  * How long the WHOLE graceful teardown gets before the process leaves anyway.
  *
  * The teardown in `stop()` is a sequence of awaits over subsystems that own FOREIGN
- * children — PTYs, language servers, plugin backends, preview servers. Any one of them
+ * children — PTYs, language servers, mini app backends, preview servers. Any one of them
  * can fail to settle, and until this deadline existed that outcome was a process which
  * had already stopped serving, never reached `runtimeOwnership.release()`, and went on
  * holding the runtime lease forever. The next launch then waited for an endpoint that
@@ -292,7 +292,7 @@ export async function startServer(options: StartServerOptions = {}): Promise<Emb
       for (const file of publishedEndpointFiles) {
         await cleanup('clearRuntimeEndpoint', () => clearRuntimeEndpoint(process.pid, file))
       }
-      // Quiesce first. A boot reconcile still loading plugin backends, or a fact queued for the
+      // Quiesce first. A boot reconcile still loading mini app backends, or a fact queued for the
       // inbox, used to finish after `db.destroy` and the log sink below: its write failed, the
       // failure log threw `SonicBoom destroyed`, and the process exited 1 after a clean quit.
       // Closing the journal here also means the jobs and terminals this teardown kills raise no

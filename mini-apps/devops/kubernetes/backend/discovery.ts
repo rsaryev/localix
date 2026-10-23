@@ -1,7 +1,7 @@
 /**
  * API DISCOVERY: turn what the cluster SAYS it serves into a resolvable table of kinds.
  *
- * Every list in this plugin used to name its kind in TypeScript — `listPods`, `listDeployments`,
+ * Every list in this mini app used to name its kind in TypeScript — `listPods`, `listDeployments`,
  * `listServices`, `listNodes` — so the workbench could show exactly four things and the agent's
  * `kubernetes_get` could list exactly one (pods). A cluster serves dozens out of the box and an
  * arbitrary number of CRDs, and the code that talks to them is already generic:

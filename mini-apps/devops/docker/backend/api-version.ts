@@ -15,7 +15,7 @@
  */
 
 /**
- * The newest version whose request/response shapes this plugin is written against.
+ * The newest version whose request/response shapes this mini app is written against.
  *
  * Deliberately below moby's current 1.55: claiming a version we have not shaped requests for
  * buys nothing, and a lower negotiated version is understood by every newer daemon.

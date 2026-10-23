@@ -7,11 +7,11 @@ export type { BackendSubsystem } from '@localixai/mini-app-sdk/backend'
  * route mount / resource provider / search provider, a subsystem contributes
  * itself as a `BackendSubsystem` and core iterates the registry generically.
  *
- * All plugin backend surfaces enter the host through this registry.
+ * All mini app backend surfaces enter the host through this registry.
  */
 export interface SubsystemRegistry {
   register(s: BackendSubsystem): void
-  /** Remove a subsystem by id — hot plugin disable. Unknown ids are a no-op. */
+  /** Remove a subsystem by id — hot mini app disable. Unknown ids are a no-op. */
   unregister(id: string): void
   /** Returns registered subsystems in insertion order. */
   list(): BackendSubsystem[]

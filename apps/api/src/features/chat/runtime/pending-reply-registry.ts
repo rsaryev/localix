@@ -3,7 +3,7 @@
  *
  * A request has three terminal paths (reply, timeout, close/publish failure). They
  * must all delete the correlation entry and cancel its timer exactly once. Keeping
- * that transition here prevents the plugin and preview relays from drifting apart.
+ * that transition here prevents the mini app and preview relays from drifting apart.
  */
 
 export interface ReplyScheduler {

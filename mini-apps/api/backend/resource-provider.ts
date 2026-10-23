@@ -4,7 +4,7 @@
  * composer `@`-menu drills, so a user can `@`-mention a saved request (or drag it into chat) and
  * the model sees what it does WITHOUT having to call the tool to find out.
  *
- * This is the difference between a plugin that merely has a tool and one that is native: `list`
+ * This is the difference between a mini app that merely has a tool and one that is native: `list`
  * costs a tool round-trip and only the model can start it; an `@`-ref is something the USER
  * reaches for, and it lands in context before the turn begins.
  *

@@ -2,8 +2,8 @@
  * Coalescing for the workspace file-change signal (`miniAppFiles.watchWorkspace`).
  *
  * The host's watcher already settles a burst for a quarter second, but an agent run, a build or a
- * branch switch is many bursts in a row, and a plugin that re-reads on each one (a `git status`, a
- * re-index) turns the watcher into a process storm. So batches are gathered for a window that
+ * branch switch is many bursts in a row, and a mini app that re-reads on each one (a `git status`,
+ * a re-index) turns the watcher into a process storm. So batches are gathered for a window that
  * starts at the FIRST change and is not pushed back by later ones: steady churn yields one
  * delivery per window instead of starving until the churn stops, which a trailing debounce would
  * do while the person watches a stale panel.

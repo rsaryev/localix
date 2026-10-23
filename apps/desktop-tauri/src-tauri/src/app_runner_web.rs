@@ -1,4 +1,5 @@
-//! A plugin app's one window: its page, where that page may go, and what it may ask of the app.
+//! A standalone mini app's one window: its page, where that page may go, and what it may ask of the
+//! app.
 use std::cell::{Cell, OnceCell};
 use std::time::Instant;
 
@@ -221,7 +222,7 @@ fn absolute(url: &NSURL) -> Option<String> {
     url.absoluteString().map(|text| text.to_string())
 }
 
-/// The configuration every plugin app's web view starts from.
+/// The configuration every standalone mini app's web view starts from.
 pub(crate) fn configuration(
     mtm: MainThreadMarker,
     controller: &Controller,

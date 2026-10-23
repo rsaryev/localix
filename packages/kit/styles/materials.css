@@ -166,7 +166,7 @@
 
    Tailwind backdrop utilities retain `backdrop-blur` in the DOM class name,
    including arbitrary values such as `backdrop-blur-[1px]`; the attribute
-   selector therefore covers current and future host/plugin chrome without a
+   selector therefore covers current and future host/mini app chrome without a
    second opt-in API. Low-opacity materials get an explicit readable fallback,
    while already-near-opaque 85–95% sticky chrome only loses its blur. */
 @media (prefers-reduced-transparency: reduce) {

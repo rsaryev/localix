@@ -14,14 +14,14 @@ import * as sdkDocumentLayout from '@localixai/mini-app-sdk/document-layout'
 import type { MiniAppBackendHostModule } from './authoring/kit-layout'
 
 /**
- * The host's own instance of each module a plugin backend imports as external
- * (`MINI_APP_BACKEND_HOST_MODULES`), served to those imports by a Bun runtime plugin.
+ * The host's own instance of each module a mini app backend imports as external
+ * (`MINI_APP_BACKEND_HOST_MODULES`), served to those imports by a Bun runtime mini app.
  *
- * Why a runtime plugin and not a file path: resolving the bare import to the host's FILE loads a
+ * Why a runtime mini app and not a file path: resolving the bare import to the host's FILE loads a
  * second instance of it, which is exactly the duplicate this removes (measured: no RSS saved, and
  * 950 ms of re-evaluation). `module()` answers the specifier with the namespace the host has
- * already evaluated, so a plugin's `z` and `Hono` are the host's objects. Keyed by the list's type,
- * so a specifier added there without an instance here does not compile.
+ * already evaluated, so a mini app's `z` and `Hono` are the host's objects. Keyed by the list's
+ * type, so a specifier added there without an instance here does not compile.
  */
 const HOST_MODULES: Record<MiniAppBackendHostModule, Record<string, unknown>> = {
   hono,
@@ -41,13 +41,13 @@ let installed = false
 
 /**
  * Serve the host modules to every later import in this process. Idempotent; call before any
- * plugin backend is imported (the infra phase does, first thing).
+ * mini app backend is imported (the infra phase does, first thing).
  */
 export function installBackendHostModules(): void {
   if (installed) return
   installed = true
   plugin({
-    name: 'localix-plugin-backend-host-modules',
+    name: 'localix-mini-app-backend-host-modules',
     setup(build) {
       for (const [specifier, exports] of Object.entries(HOST_MODULES)) {
         build.module(specifier, () => ({ exports, loader: 'object' }))

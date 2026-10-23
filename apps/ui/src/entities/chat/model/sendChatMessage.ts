@@ -50,7 +50,7 @@ function settleSendFlight(
 }
 
 /**
- * THE send path — every entry point (composer via agent-runtime, plugin-panel
+ * THE send path — every entry point (composer via agent-runtime, mini-app-panel
  * `sendPrompt`) routes through this one helper so
  * each of them gets the same instant paint + failure cleanup. Not a hook: it
  * operates on `useChatStore.getState()`, so bridges can call it directly.

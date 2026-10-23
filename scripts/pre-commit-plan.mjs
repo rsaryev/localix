@@ -41,7 +41,7 @@ export function planChecks(paths, workspaces, exists = existsSync) {
       selected.add(workspace.name)
     }
   }
-  // The API includes bundled plugin backends in its compile project.
+  // The API includes bundled mini app backends in its compile project.
   const bundledBackend = /^[^/]+\/.*\/backend\/.*\.[cm]?[jt]sx?$/
   if (paths.some((path) => path.startsWith(MINI_APPS_PREFIX) && bundledBackend.test(path))) {
     for (const workspace of workspaces) {

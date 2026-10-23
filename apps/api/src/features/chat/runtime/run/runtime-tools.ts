@@ -47,7 +47,7 @@ export interface RuntimeToolWiringContext {
   ccHookSessions?: RuntimeState['ccHookSessions']
 }
 
-// Small plugin surfaces stay direct. Larger workbench stacks are indexed and
+// Small mini app surfaces stay direct. Larger workbench stacks are indexed and
 // activated on demand so unrelated schemas do not tax every request.
 
 /**

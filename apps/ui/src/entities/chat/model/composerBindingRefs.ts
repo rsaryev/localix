@@ -35,7 +35,7 @@ export type BindingBackedContextRef = ParsedContextRef & {
     source?: MessageContextBinding['source']
     target: MessageContextBinding['target']
     assets?: MessageContextBinding['assets']
-    plugin?: MessageContextBinding['plugin']
+    miniApp?: MessageContextBinding['miniApp']
   }
 }
 
@@ -68,7 +68,7 @@ function clampContextRefLabel(label: string): string {
  * snippet/message fields and provider-owned URI attributes survive a return. */
 export function refFromContextBinding(
   binding: Pick<MessageContextBinding, 'target'> &
-    Partial<Pick<MessageContextBinding, 'source' | 'assets' | 'plugin'>>,
+    Partial<Pick<MessageContextBinding, 'source' | 'assets' | 'miniApp'>>,
 ): BindingBackedContextRef {
   const label = clampContextRefLabel(binding.target.label)
   const attributes = binding.target.attributes ?? {}
@@ -116,8 +116,8 @@ export function refFromContextBinding(
     messageBinding: {
       ...(binding.source ? { source: binding.source } : {}),
       ...(binding.assets?.length ? { assets: binding.assets } : {}),
-      ...(binding.plugin ? { plugin: binding.plugin } : {}),
-      // Clone the envelope: plugin-owned attributes remain opaque and intact,
+      ...(binding.miniApp ? { miniApp: binding.miniApp } : {}),
+      // Clone the envelope: mini-app-owned attributes remain opaque and intact,
       // while the local ParsedContextRef above receives only its safe known fields.
       target: {
         ...binding.target,
@@ -131,7 +131,7 @@ export function refFromContextBinding(
   }
 }
 
-/** Convert plugin-owned context drafts into the same structured refs used by drag/drop. */
+/** Convert mini-app-owned context drafts into the same structured refs used by drag/drop. */
 export function refsFromContextBindingDrafts(
   bindings: readonly MessageContextBindingDraft[],
 ): BindingBackedContextRef[] {
@@ -151,7 +151,7 @@ type ContextBindingCandidate = {
   source?: MessageContextBinding['source']
   target?: MessageContextBinding['target']
   assets?: MessageContextBinding['assets']
-  plugin?: MessageContextBinding['plugin']
+  miniApp?: MessageContextBinding['miniApp']
 }
 
 /**
@@ -178,7 +178,7 @@ export function contextRefsMissingFromComposerText(
         target: binding.target,
         ...(binding.source ? { source: binding.source } : {}),
         ...(binding.assets?.length ? { assets: binding.assets } : {}),
-        ...(binding.plugin ? { plugin: binding.plugin } : {}),
+        ...(binding.miniApp ? { miniApp: binding.miniApp } : {}),
       }),
     ]
   })

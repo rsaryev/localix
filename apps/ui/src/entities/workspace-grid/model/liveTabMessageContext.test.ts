@@ -50,7 +50,7 @@ describe('live tab message context', () => {
     })
   })
 
-  // A user plugin published `{ strategy: 'replace', text }`, and reading its missing
+  // A user mini app published `{ strategy: 'replace', text }`, and reading its missing
   // `bindings` crashed the whole tab. An untyped value is untrusted input, never a throw.
   test('a malformed publication clears the context instead of crashing the tab', () => {
     const valid = {
@@ -115,7 +115,7 @@ describe('live tab message context', () => {
     expect(liveTabMessageContextRevision()).toBe(revision)
   })
 
-  test('applies the sandbox runtime boundary to bundled plugin publications too', () => {
+  test('applies the sandbox runtime boundary to bundled mini app publications too', () => {
     publishLiveTabMessageContext(file.id, {
       strategy: 'replace',
       bindings: [
@@ -134,7 +134,7 @@ describe('live tab message context', () => {
     expect(workItemToMessageBindings(file)).toEqual([
       {
         kind: 'context',
-        source: 'plugin',
+        source: 'mini-app',
         target: {
           kind: 'resource',
           token: '@resource:localix://resource/acme/current/view',
@@ -149,7 +149,7 @@ describe('live tab message context', () => {
       bindings: [
         {
           kind: 'context',
-          source: 'plugin',
+          source: 'mini-app',
           target: {
             kind: 'file',
             token: '@file:/etc/passwd',

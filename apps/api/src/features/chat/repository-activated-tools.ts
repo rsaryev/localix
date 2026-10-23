@@ -12,8 +12,8 @@ import { safeJsonParse } from '../../lib/json'
  * run can write at once (the speakers of a group chat). A whole-list `updateSession` lets each
  * write a list computed from what IT read, the record it loaded when it started, so one run's
  * activation erased another's. Here the read and the write share one transaction and the new list
- * is computed from the stored one, so no writer can drop another's names. (Tools an open plugin
- * view or a plugin's wake brings are not stored here at all: `runtime/run/surface-tools.ts`.)
+ * is computed from the stored one, so no writer can drop another's names. (Tools an open mini app
+ * view or a mini app's wake brings are not stored here at all: `runtime/run/surface-tools.ts`.)
  *
  * The rule itself (order, cap, what counts as a change) stays with its owner,
  * `runtime/run/tool-deferral.ts`; this module only guarantees it is applied to what is stored.

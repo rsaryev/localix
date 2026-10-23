@@ -2,7 +2,7 @@ import { miniAppViewTarget } from '../../../contracts/mini-app-view-target'
 import type { MiniAppKit } from './kit'
 import {
   MINI_APP_BACKEND_SHARED_MODULES,
-  PLUGIN_KIT_CATALOG,
+  MINI_APP_KIT_CATALOG,
   USER_MINI_APP_BACKEND_DIR,
 } from './kit-layout'
 import {
@@ -146,7 +146,7 @@ ${HOST_JUDGMENT_CONTRACT}
   The UI may import React, \`zod\`, \`lucide-react\`, \`@localixai/mini-app-sdk/ui*\` (not \`/ui/testing\`)
   and the host kit \`@localixai/kit/<id>\`. Nothing else is available.
 - Build every control from the kit and colour with host tokens; \`${MINI_APP_BUILD_TOOL}\` reports a raw
-  \`<button>\` or a palette class with its line. \`${PLUGIN_KIT_CATALOG}\` (written by every build, like
+  \`<button>\` or a palette class with its line. \`${MINI_APP_KIT_CATALOG}\` (written by every build, like
   \`tsconfig.json\`) lists each kit module by the job it does — look there before writing a control.
 - Every contributed id stays namespaced \`${name}:\`; tool names stay unique across mini apps.
 - Build, type-check, test and reload with the \`${MINI_APP_BUILD_TOOL}\` tool; look at the result with the
@@ -172,7 +172,7 @@ export function agentInstruction(input: {
   // The catalog answers WHICH module a job needs; the digest answers what the core ones take.
   // Told the props alone, a copy hand-rolled the tabs, checkbox and progress bar the kit had.
   const catalog = kit.manifest.kitCatalog
-    ? `${PLUGIN_KIT_CATALOG} in the mini app folder lists every kit module by the job it does (tabs, trees, tables, empty states, charts, dialogs…): before writing any control, find its job there and use that module.`
+    ? `${MINI_APP_KIT_CATALOG} in the mini app folder lists every kit module by the job it does (tabs, trees, tables, empty states, charts, dialogs…): before writing any control, find its job there and use that module.`
     : ''
   const digest = kit.manifest.kitDigest?.length
     ? [
@@ -223,6 +223,6 @@ export function agentInstruction(input: {
       .join('\n'),
     // The catalog already names every kit id by its job; the bare list of ~100 ids repeated it
     // without the job, and only when there is no catalog is the list the agent's sole source.
-    `Imports: the backend may use ${MINI_APP_BACKEND_SHARED_MODULES.join(', ')}, node:*, bun:* and its own files; the UI may use React, zod, lucide-react, @localixai/mini-app-sdk/ui* (not /ui/testing) and the host kit \`@localixai/kit/<id>\`${catalog ? ` — the ids ${PLUGIN_KIT_CATALOG} lists` : ` — ids: ${kit.manifest.kitModules.join(', ')}`}. Nothing else resolves. Everything you need is in this folder and this message; do not search the disk for SDK or kit sources.`,
+    `Imports: the backend may use ${MINI_APP_BACKEND_SHARED_MODULES.join(', ')}, node:*, bun:* and its own files; the UI may use React, zod, lucide-react, @localixai/mini-app-sdk/ui* (not /ui/testing) and the host kit \`@localixai/kit/<id>\`${catalog ? ` — the ids ${MINI_APP_KIT_CATALOG} lists` : ` — ids: ${kit.manifest.kitModules.join(', ')}`}. Nothing else resolves. Everything you need is in this folder and this message; do not search the disk for SDK or kit sources.`,
   ].join('\n\n')
 }

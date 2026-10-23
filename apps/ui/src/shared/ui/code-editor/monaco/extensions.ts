@@ -7,7 +7,7 @@ export interface MonacoEditorExtensionContext {
   model: Monaco.editor.ITextModel
 }
 
-/** Stable plugin seam for feature-specific Monaco decorations and interactions. */
+/** Stable mini app seam for feature-specific Monaco decorations and interactions. */
 export interface MonacoEditorExtension {
   setup(context: MonacoEditorExtensionContext): Monaco.IDisposable | Monaco.IDisposable[] | void
 }

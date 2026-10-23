@@ -155,7 +155,7 @@ export async function loadMiniApp(
   if (beside)
     return {
       ...named,
-      error: `${MINI_APP_MANIFEST_FILE} and ${beside} are both here: a folder is a mini app or a plugin, not both`,
+      error: `${MINI_APP_MANIFEST_FILE} and ${beside} are both here: a folder is a plugin or a mini app, not both`,
     }
 
   const declared = manifest.backend === undefined ? [] : [manifest.backend].flat()

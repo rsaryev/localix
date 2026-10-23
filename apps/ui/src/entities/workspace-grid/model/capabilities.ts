@@ -47,10 +47,10 @@ export const WORK_ITEM_CAPS: Record<CoreWorkItemKind, WorkItemCapability> = {
   // is on screen.
   preview: { singleton: true, restorable: true },
   // A third-party bridged VIEW tab. NOT restorable: on reload it should re-open
-  // only if its plugin is still enabled (the rail button re-appears), so a
-  // disabled/uninstalled plugin never leaves a dead tab behind. Session-scoped: a prompt it
+  // only if its mini app is still enabled (the rail button re-appears), so a
+  // disabled/uninstalled mini app never leaves a dead tab behind. Session-scoped: a prompt it
   // sends and the session events it receives are its own chat's.
-  'plugin-view': {},
+  'mini-app-view': {},
   'live-file-change': { ephemeralSlot: true, alwaysEphemeral: true, countsToFileCap: true },
   // An agent record is not bound to a session, and its profile re-reads the registry on mount,
   // so a restored tab comes back with what the record says NOW rather than a stale copy.
@@ -89,7 +89,7 @@ export function isBuiltInWorkItemKind(kind: WorkItemKind): boolean {
   return builtInCapsOf(kind) !== undefined
 }
 
-/** Resolve only plugin-exclusive work-item kinds. A bundled plugin colliding
+/** Resolve only mini-app-exclusive work-item kinds. A bundled mini app colliding
  * with a reserved core kind must never replace core rendering, placement,
  * capabilities, icons, or message-binding behavior. */
 export function activeWorkItemContribution(
@@ -104,7 +104,7 @@ export function scopeKindOf(kind: WorkItemKind): 'session' | 'global' {
 }
 
 export function capsOf(kind: WorkItemKind): WorkItemCapability {
-  // Plugin-exclusive kinds derive their structural caps from the contribution.
+  // Mini-app-exclusive kinds derive their structural caps from the contribution.
   // Reserved core kinds always retain their built-in contract.
   const contributed = activeWorkItemContribution(kind)
   if (contributed) {
@@ -122,8 +122,8 @@ export function isRestorable(kind: WorkItemKind): boolean {
 }
 
 /**
- * Persistence uses a cold-start-aware answer. A registered plugin whose enabled set has
- * not loaded yet is retained; only an authoritatively disabled plugin is discarded.
+ * Persistence uses a cold-start-aware answer. A registered mini app whose enabled set has
+ * not loaded yet is retained; only an authoritatively disabled mini app is discarded.
  * Runtime rendering still uses {@link isRestorable}/the activation-gated registry.
  */
 export function isRestorableForPersistence(kind: WorkItemKind): boolean {
@@ -131,16 +131,16 @@ export function isRestorableForPersistence(kind: WorkItemKind): boolean {
   const builtIn = builtInCapsOf(kind)
   if (!contributed) {
     if (builtIn) return builtIn.restorable === true
-    // Lazy bundled plugin modules are deliberately not registered until the
+    // Lazy bundled mini app modules are deliberately not registered until the
     // backend confirms they are enabled. Preserve their serialized tabs during
     // that cold window; the authoritative pass below removes true leftovers.
     return areMiniAppContributionsPending()
   }
-  const activation = miniAppContributionActivation(contributed.pluginName)
-  // A plugin may accidentally reuse a built-in kind. While that plugin is pending
+  const activation = miniAppContributionActivation(contributed.miniAppName)
+  // A mini app may accidentally reuse a built-in kind. While that mini app is pending
   // or disabled, its dormant registration must not make the core kind disappear
   // from persistence. Keeping a tab when either possible owner is restorable is
-  // the lossless cold-start answer; an enabled plugin still owns its live contract.
+  // the lossless cold-start answer; an enabled mini app still owns its live contract.
   if (activation === 'pending') {
     return contributed.restorable === true || builtIn?.restorable === true
   }
@@ -150,11 +150,11 @@ export function isRestorableForPersistence(kind: WorkItemKind): boolean {
 
 /**
  * Which scope a stored kind belongs to, cold-start aware like {@link isRestorableForPersistence}:
- * a built-in or registered kind answers from its declaration even while its plugin is still
+ * a built-in or registered kind answers from its declaration even while its mini app is still
  * activating; `null` means its owner has not registered yet, so nothing is known about it.
  *
  * The activation-gated {@link scopeKindOf} answers 'session' for any kind it cannot see yet, so a
- * restore that used it dropped every global tab of a plugin still loading.
+ * restore that used it dropped every global tab of a mini app still loading.
  */
 export function persistedScopeKindOf(kind: WorkItemKind): 'session' | 'global' | null {
   const contributed = workItemKindRegistry.getRegistered(kind)
@@ -163,31 +163,32 @@ export function persistedScopeKindOf(kind: WorkItemKind): 'session' | 'global' |
   return builtIn ? (builtIn.scope ?? 'session') : null
 }
 
-/** True after the backend confirms that a plugin-only kind has no active renderer. */
+/** True after the backend confirms that a mini-app-only kind has no active renderer. */
 export function isUnavailableContributedKind(kind: WorkItemKind): boolean {
   if (isBuiltInWorkItemKind(kind) || areMiniAppContributionsPending()) return false
   const contributed = workItemKindRegistry.getRegistered(kind)
-  // Disabled bundled plugins were never imported, so their kinds are unknown
+  // Disabled bundled mini apps were never imported, so their kinds are unknown
   // rather than registered-with-a-disabled-owner. Once activation is
   // authoritative, both states mean the persisted tab cannot be rendered.
   return (
     contributed === undefined ||
-    miniAppContributionActivation(contributed.pluginName) === 'disabled'
+    miniAppContributionActivation(contributed.miniAppName) === 'disabled'
   )
 }
 
 /**
- * A restored plugin-only kind whose owner may still be loading — what "Restoring…" may promise.
- * Only an ATTEMPTED load counts: a plugin that ran out of retries still keeps its tabs (see
+ * A restored mini-app-only kind whose owner may still be loading — what "Restoring…" may promise.
+ * Only an ATTEMPTED load counts: a mini app that ran out of retries still keeps its tabs (see
  * {@link isUnavailableContributedKind}) but no longer claims to be on its way.
  */
 export function isPendingContributedKind(kind: WorkItemKind): boolean {
   if (isBuiltInWorkItemKind(kind) || !areMiniAppUiLoadsInFlight()) return false
   const contributed = workItemKindRegistry.getRegistered(kind)
-  // With lazy discovery an enabled plugin's kind is initially unknown. Render
+  // With lazy discovery an enabled mini app's kind is initially unknown. Render
   // the restoring placeholder until the first activation snapshot decides it.
   return (
-    contributed === undefined || miniAppContributionActivation(contributed.pluginName) === 'pending'
+    contributed === undefined ||
+    miniAppContributionActivation(contributed.miniAppName) === 'pending'
   )
 }
 

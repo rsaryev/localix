@@ -68,7 +68,7 @@ function setup(
   const answers = [...(options.answers ?? [])]
   let ids = 0
   const table = createTurnTable<Game, { amount: number }>({
-    plugin: 'toy',
+    miniApp: 'toy',
     noun: 'board',
     ...(options.resolveDir === false
       ? {}

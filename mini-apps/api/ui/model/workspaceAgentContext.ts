@@ -27,7 +27,7 @@ export function apiWorkspaceAgentStateContent(state: ApiWorkspaceAgentState): st
     : state.activeEnvironment
       ? `Active environment: ${state.activeEnvironment}.`
       : 'Active environment: none (literal URLs only).'
-  return ['Active plugin work item: API Client', countLine, selectedLine, environmentLine].join(
+  return ['Active mini app work item: API Client', countLine, selectedLine, environmentLine].join(
     '\n',
   )
 }

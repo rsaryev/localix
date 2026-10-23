@@ -22,7 +22,7 @@ import type {
  * exclusions at all for a linked file. This resolver keeps the expanders (they are the one owner
  * of how each kind reads) and puts their output through the same admission as every provider:
  * a file contribution carries `source.path`, so realpath containment, the built-in excluded
- * segments and the user's `contextExclusions` apply to it exactly as to a plugin's.
+ * segments and the user's `contextExclusions` apply to it exactly as to a mini app's.
  */
 
 export interface HostRefExpander {

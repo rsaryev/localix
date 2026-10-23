@@ -1,5 +1,5 @@
 /**
- * The one chip recipe for small metadata tags in the database plugin (RO / SSH, an object's
+ * The one chip recipe for small metadata tags in the database mini app (RO / SSH, an object's
  * engine badge, a column-match count, UNIQUE, a column flag).
  *
  * The defect it stops: the same veil was hand-transcribed five times and had already drifted —

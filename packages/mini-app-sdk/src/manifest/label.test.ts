@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import { humanizeMiniAppId, miniAppLabel } from './label'
 
-describe('the name a person reads for a plugin', () => {
+describe('the name a person reads for a mini app', () => {
   test('a declared name is used verbatim', () => {
     expect(miniAppLabel({ name: 'learning', displayName: 'Learning Studio' })).toBe(
       'Learning Studio',
@@ -11,7 +11,7 @@ describe('the name a person reads for a plugin', () => {
 
   test('a missing name is TRANSLATED from the id, never printed raw', () => {
     // The whole point: `name` is a kebab id by contract, so a bare `||` fallback puts an
-    // identifier in a list of names — which reads as a failed load, not as a plugin.
+    // identifier in a list of names — which reads as a failed load, not as a mini app.
     expect(miniAppLabel({ name: 'webhook-notifier' })).toBe('Webhook Notifier')
     expect(miniAppLabel({ name: 'database' })).toBe('Database')
   })

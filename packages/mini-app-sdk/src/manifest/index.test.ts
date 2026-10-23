@@ -5,8 +5,8 @@ import * as primitives from './primitives'
 import {
   MINI_APP_API_VERSION,
   MINI_APP_CONFIG_TYPES,
-  PLUGIN_NAME_RE,
-  PLUGIN_QUALIFIED_NAME_RE,
+  MINI_APP_NAME_RE,
+  MINI_APP_QUALIFIED_NAME_RE,
   isWorkbenchMiniApp,
   normalizeMiniAppSurfaces,
   miniAppConfigOptionSchema,
@@ -15,22 +15,22 @@ import {
   type MiniAppManifestCoreInput,
 } from './index'
 
-describe('plugin name rules', () => {
+describe('mini app name rules', () => {
   test('accepts simple handles, rejects path-ish ones', () => {
-    expect(PLUGIN_NAME_RE.test('sample-plugin')).toBe(true)
-    expect(PLUGIN_NAME_RE.test('code-search')).toBe(true)
-    expect(PLUGIN_NAME_RE.test('x_search2')).toBe(true)
-    expect(PLUGIN_NAME_RE.test('-leading-dash')).toBe(false)
-    expect(PLUGIN_NAME_RE.test('has space')).toBe(false)
-    expect(PLUGIN_NAME_RE.test('a/b')).toBe(false)
+    expect(MINI_APP_NAME_RE.test('sample-mini-app')).toBe(true)
+    expect(MINI_APP_NAME_RE.test('code-search')).toBe(true)
+    expect(MINI_APP_NAME_RE.test('x_search2')).toBe(true)
+    expect(MINI_APP_NAME_RE.test('-leading-dash')).toBe(false)
+    expect(MINI_APP_NAME_RE.test('has space')).toBe(false)
+    expect(MINI_APP_NAME_RE.test('a/b')).toBe(false)
   })
 
   test('qualified names allow :-namespacing and are a superset of plain names', () => {
-    expect(PLUGIN_QUALIFIED_NAME_RE.test('commit')).toBe(true)
-    expect(PLUGIN_QUALIFIED_NAME_RE.test('git:commit')).toBe(true)
-    expect(PLUGIN_QUALIFIED_NAME_RE.test('a:b:c')).toBe(true)
-    expect(PLUGIN_QUALIFIED_NAME_RE.test(':leading')).toBe(false)
-    expect(PLUGIN_QUALIFIED_NAME_RE.test('trailing:')).toBe(false)
+    expect(MINI_APP_QUALIFIED_NAME_RE.test('commit')).toBe(true)
+    expect(MINI_APP_QUALIFIED_NAME_RE.test('git:commit')).toBe(true)
+    expect(MINI_APP_QUALIFIED_NAME_RE.test('a:b:c')).toBe(true)
+    expect(MINI_APP_QUALIFIED_NAME_RE.test(':leading')).toBe(false)
+    expect(MINI_APP_QUALIFIED_NAME_RE.test('trailing:')).toBe(false)
   })
 })
 
@@ -58,11 +58,11 @@ describe('surfaces', () => {
   })
 })
 
-test('the SDK pins plugin API v1', () => {
+test('the SDK pins mini app API v1', () => {
   expect(MINI_APP_API_VERSION).toBe(1)
 })
 
-describe('plugin manifest core contract', () => {
+describe('mini app manifest core contract', () => {
   test('accepts one broad category and rejects unknown ones', () => {
     expect(miniAppManifestCoreSchema.parse({ name: 'game', category: 'games' }).category).toBe(
       'games',
@@ -73,18 +73,18 @@ describe('plugin manifest core contract', () => {
   })
 
   test('owns identity defaults and preserves free-form surface declarations', () => {
-    expect(miniAppManifestCoreSchema.parse({ name: 'sample-plugin' })).toEqual({
-      name: 'sample-plugin',
+    expect(miniAppManifestCoreSchema.parse({ name: 'sample-mini-app' })).toEqual({
+      name: 'sample-mini-app',
       version: '0.0.0',
     })
     expect(
       miniAppManifestCoreSchema.parse({
-        name: 'sample-plugin',
+        name: 'sample-mini-app',
         apiVersion: MINI_APP_API_VERSION,
         surfaces: ['agent', 'future-surface'],
       }),
     ).toEqual({
-      name: 'sample-plugin',
+      name: 'sample-mini-app',
       version: '0.0.0',
       apiVersion: MINI_APP_API_VERSION,
       surfaces: ['agent', 'future-surface'],
@@ -141,8 +141,8 @@ describe('plugin manifest core contract', () => {
 })
 
 test('the compatibility manifest retains the same primitive objects and functions', () => {
-  expect(manifest.PLUGIN_NAME_RE).toBe(primitives.PLUGIN_NAME_RE)
-  expect(manifest.PLUGIN_QUALIFIED_NAME_RE).toBe(primitives.PLUGIN_QUALIFIED_NAME_RE)
+  expect(manifest.MINI_APP_NAME_RE).toBe(primitives.MINI_APP_NAME_RE)
+  expect(manifest.MINI_APP_QUALIFIED_NAME_RE).toBe(primitives.MINI_APP_QUALIFIED_NAME_RE)
   expect(manifest.MINI_APP_CONFIG_TYPES).toBe(primitives.MINI_APP_CONFIG_TYPES)
   expect(manifest.MINI_APP_CATEGORIES).toBe(primitives.MINI_APP_CATEGORIES)
   expect(manifest.normalizeMiniAppSurfaces).toBe(primitives.normalizeMiniAppSurfaces)

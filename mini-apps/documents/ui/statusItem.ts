@@ -5,7 +5,7 @@ import { fileExtension } from '@localixai/mini-app-sdk/ui/file-types'
 import { useMiniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 
 /**
- * The formats this plugin OWNS a viewer for, and the glyph each reads as.
+ * The formats this mini app OWNS a viewer for, and the glyph each reads as.
  *
  * Duplicated from `register.tsx`'s three sets on purpose — the same reason the comment there gives
  * for not re-reading the routing registry per match. What is shared here is the LIST, and it is
@@ -35,10 +35,10 @@ function basename(path: string): string {
 /**
  * The documents this session has open in a dedicated viewer.
  *
- * WHY this and not the count of formats the plugin can read, or a "Documents" launcher: the plugin
- * has no workspace of its own to launch. It is a set of VIEWERS, so the only live fact it owns is
- * which files are currently inside one — and that fact is genuinely hard to see. A PDF opened into
- * a second grid group, or into a group whose tab strip is scrolled, is open and invisible; the
+ * WHY this and not the count of formats the mini app can read, or a "Documents" launcher: the mini
+ * app has no workspace of its own to launch. It is a set of VIEWERS, so the only live fact it owns
+ * is which files are currently inside one — and that fact is genuinely hard to see. A PDF opened
+ * into a second grid group, or into a group whose tab strip is scrolled, is open and invisible; the
  * file tree shows where it lives, never that it is on screen somewhere. This is the one place that
  * answers "where did that spreadsheet go".
  *
@@ -46,7 +46,7 @@ function basename(path: string): string {
  * to: no request, no cache, no poll, and no import of the viewer chunks it names.
  *
  * Nothing open in a viewer, no control. A session that is not reading a document hears nothing
- * from this plugin — the same silence rule every other bundled item follows.
+ * from this mini app — the same silence rule every other bundled item follows.
  *
  * A row re-opens its file in the session the item is drawn for (`sessionId`), never "the active
  * one": the item is mounted per surface, and a guessed chat opened the file in whichever chat was

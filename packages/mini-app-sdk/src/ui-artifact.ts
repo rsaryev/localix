@@ -1,10 +1,10 @@
 /**
- * The contract between a plugin's built UI ARTIFACT and the host that loads it.
+ * The contract between a mini app's built UI ARTIFACT and the host that loads it.
  *
- * A plugin's workbench UI is not part of the host application: it is built into its own ES
+ * A mini app's workbench UI is not part of the host application: it is built into its own ES
  * module artifact, served by the API, imported by URL and replaced in place when it changes —
- * the same way in development and in a packaged app. Compiling plugin UI INTO the host (a glob
- * over the plugins tree) made every plugin edit an edit of the app, and the only way to show it
+ * the same way in development and in a packaged app. Compiling mini app UI INTO the host (a glob
+ * over the mini apps tree) made every mini app edit an edit of the app, and the only way to show it
  * was to reload the whole page, mid-turn.
  *
  * An artifact bundles its own dependencies EXCEPT the shared modules below, which must be the
@@ -48,7 +48,7 @@ export const MINI_APP_UI_KIT_PREFIX = '@localixai/kit/'
  *
  * A pattern and not only a predicate, because the artifact build filters imports with it — and
  * that filter has to match exactly these: a bundler callback that matches an import it then
- * declines is not neutral (the plugin UI builder says why).
+ * declines is not neutral (the mini app UI builder says why).
  */
 export const MINI_APP_UI_SHARED_MODULE =
   /^(?:react(?:\/jsx-(?:dev-)?runtime)?|react-dom(?:\/client)?|@localixai\/kit\/(?!testing).+|@localixai\/mini-app-sdk\/(?!backend(?:\/|$)).+)$/u
@@ -58,15 +58,15 @@ export function isMiniAppUiSharedModule(specifier: string): boolean {
   return MINI_APP_UI_SHARED_MODULE.test(specifier)
 }
 
-/** Where an artifact lives inside a plugin's installed copy. */
+/** Where an artifact lives inside a mini app's installed copy. */
 export const MINI_APP_UI_ARTIFACT_DIR = 'dist/ui'
 /** The artifact's self-description, beside its files. */
 export const MINI_APP_UI_ARTIFACT_MANIFEST = 'manifest.json'
 
 /**
  * `dist/ui/manifest.json`. Paths are relative to the artifact directory. `revision` is a hash
- * of every artifact file, so it moves exactly when the UI changed — not when the plugin's
- * backend or docs did — and a host holding an older revision replaces that plugin, nothing else.
+ * of every artifact file, so it moves exactly when the UI changed — not when the mini app's
+ * backend or docs did — and a host holding an older revision replaces that mini app, nothing else.
  */
 export interface MiniAppUiArtifactManifest {
   entry: string

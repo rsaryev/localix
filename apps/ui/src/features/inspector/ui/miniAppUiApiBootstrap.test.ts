@@ -77,7 +77,7 @@ function bootstrapFixture() {
   }
 }
 
-describe('host-injected plugin UI API', () => {
+describe('host-injected mini app UI API', () => {
   test('is acquired once, frozen, and posts one idempotent ready handshake', () => {
     const fixture = bootstrapFixture()
     const api = fixture.acquire()
@@ -89,7 +89,7 @@ describe('host-injected plugin UI API', () => {
     api.ready()
     api.ready()
     expect(fixture.posted as unknown[]).toEqual([
-      { lx: 'plugin-ui', v: 1, type: 'ready', nonce: 'test-bridge-nonce-0001' },
+      { lx: 'mini-app-ui', v: 1, type: 'ready', nonce: 'test-bridge-nonce-0001' },
     ])
   })
 
@@ -100,17 +100,17 @@ describe('host-injected plugin UI API', () => {
     const request = fixture.posted[0]
 
     expect(request).toMatchObject({
-      lx: 'plugin-ui',
+      lx: 'mini-app-ui',
       v: 1,
       type: 'invoke',
       payload: { action: 'ping', payload: { hello: 'world' } },
     })
     fixture.dispatch(
-      { lx: 'plugin-ui', v: 1, type: 'result', id: request.id, payload: { echoed: false } },
+      { lx: 'mini-app-ui', v: 1, type: 'result', id: request.id, payload: { echoed: false } },
       {},
     )
     fixture.dispatch({
-      lx: 'plugin-ui',
+      lx: 'mini-app-ui',
       v: 1,
       type: 'result',
       id: request.id,
@@ -119,7 +119,7 @@ describe('host-injected plugin UI API', () => {
     expect(await result).toEqual({ echoed: true })
   })
 
-  test('callBackend uses the same correlated bridge without exposing plugin identity', async () => {
+  test('callBackend uses the same correlated bridge without exposing mini app identity', async () => {
     const fixture = bootstrapFixture()
     const api = fixture.acquire()
     const result = Promise.resolve(api.callBackend<{ ok: boolean }>('dashboard', { page: 2 }))
@@ -129,7 +129,7 @@ describe('host-injected plugin UI API', () => {
       payload: { action: 'dashboard', payload: { page: 2 } },
     })
     fixture.dispatch({
-      lx: 'plugin-ui',
+      lx: 'mini-app-ui',
       v: 1,
       type: 'result',
       id: request.id,
@@ -147,13 +147,13 @@ describe('host-injected plugin UI API', () => {
     const failed = Promise.resolve(api.invoke('missing'))
     const failedRequest = fixture.posted.at(-1)!
     fixture.dispatch({
-      lx: 'plugin-ui',
+      lx: 'mini-app-ui',
       v: 1,
       type: 'error',
       id: failedRequest.id,
-      payload: { message: 'Unknown plugin panel action "missing"' },
+      payload: { message: 'Unknown mini app panel action "missing"' },
     })
-    expect(await rejectionMessage(failed)).toContain('Unknown plugin panel action')
+    expect(await rejectionMessage(failed)).toContain('Unknown mini app panel action')
 
     expect(
       await rejectionMessage(Promise.resolve(api.invoke('slow', undefined, { timeoutMs: 1 }))),
@@ -169,13 +169,13 @@ describe('host-injected plugin UI API', () => {
     api.onEvent((event) => events.push(event))
 
     fixture.dispatch({
-      lx: 'plugin-ui',
+      lx: 'mini-app-ui',
       v: 1,
       type: 'theme',
       payload: { theme: 'light', vars: { '--background': '#fff', color: 'ignored' } },
     })
     fixture.dispatch({
-      lx: 'plugin-ui',
+      lx: 'mini-app-ui',
       v: 1,
       type: 'event',
       payload: { name: 'session', data: { phase: 'run-completed', sessionId: 's1' } },
@@ -192,7 +192,7 @@ describe('host-injected plugin UI API', () => {
     const getRequest = fixture.posted.at(-1)!
     expect(getRequest.payload).toEqual({ action: 'getViewState', payload: undefined })
     fixture.dispatch({
-      lx: 'plugin-ui',
+      lx: 'mini-app-ui',
       v: 1,
       type: 'result',
       id: getRequest.id,
@@ -203,7 +203,7 @@ describe('host-injected plugin UI API', () => {
     const setState = Promise.resolve(api.setState({ count: 3 }))
     const setRequest = fixture.posted.at(-1)!
     expect(setRequest.payload).toEqual({ action: 'setViewState', payload: { count: 3 } })
-    fixture.dispatch({ lx: 'plugin-ui', v: 1, type: 'result', id: setRequest.id })
+    fixture.dispatch({ lx: 'mini-app-ui', v: 1, type: 'result', id: setRequest.id })
     expect(await setState).toEqual({ count: 3 })
   })
 })

@@ -28,7 +28,7 @@ import { spawnInTerminal } from './model/terminalSpawn'
  * the same pattern as the `.sql` editor integration: the ordinary editable FileTab PLUS
  * a docked action bar that spawns the matching `docker …` command in the workspace
  * terminal (build / up / down / ps / logs). Contributed to the editor-grid's file-type
- * editor registry from this plugin's `register.tsx`, so core routing composes
+ * editor registry from this mini app's `register.tsx`, so core routing composes
  * the inspector's FileTab with shared terminal machinery without core importing Docker.
  *
  * Spawns reuse the EXISTING terminal PTY + editor-grid terminal tab via

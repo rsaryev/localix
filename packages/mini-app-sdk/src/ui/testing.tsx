@@ -1,11 +1,11 @@
 /**
- * Host stand-ins for a plugin's own tests.
+ * Host stand-ins for a mini app's own tests.
  *
- * A plugin renders host-owned surfaces — the problem line, the file tab, the data grid — through a
- * binding the application installs at boot. A plugin's unit test has no application, so every plugin
- * that tests a failure surface has to bind something. Three of them wrote the same twenty lines
- * independently, each casting `as never` to get past the components it did not care about, which is
- * how a partial binding hides the day a real one goes missing.
+ * A mini app renders host-owned surfaces — the problem line, the file tab, the data grid — through
+ * a binding the application installs at boot. A mini app's unit test has no application, so every
+ * mini app that tests a failure surface has to bind something. Three of them wrote the same twenty
+ * lines independently, each casting `as never` to get past the components it did not care about,
+ * which is how a partial binding hides the day a real one goes missing.
  *
  * So the SDK supplies it. The doubles render the FACTS a surface asserts on — the headline, the
  * recovery links, the way into the centre — and nothing else: a test that passes against a stub
@@ -30,11 +30,11 @@ export type MiniAppUiRegistrations = Record<MiniAppUiHostRegistry, unknown[]>
 /**
  * A {@link MiniAppUiHost} that records rather than renders, for a `registerUi` test.
  *
- * The point is that it is COMPLETE. A hand-rolled fixture enumerates the registries its plugin
+ * The point is that it is COMPLETE. A hand-rolled fixture enumerates the registries its mini app
  * happens to use and casts past the rest, so the day a seam is added to the contract every such
- * fixture stops compiling — the failure lands on plugins that never asked for the seam, far from
+ * fixture stops compiling — the failure lands on mini apps that never asked for the seam, far from
  * the change that caused it. Here the `satisfies` is checked once, in the package that owns the
- * contract, and a plugin's test only ever reads `registrations`.
+ * contract, and a mini app's test only ever reads `registrations`.
  *
  * Each entry is the argument list of one `register` call, so a test can assert on order, count and
  * payload: `host.registrations.workItems.map((c) => c.kind)`.
@@ -76,7 +76,7 @@ export function recordingMiniAppUiHost(): {
     railViewlets: { register: record('railViewlets') },
     search: { register: record('search') },
     // `anchors` and `locations` answer whether the claim was accepted; a recording host accepts
-    // everything, so a plugin that branches on the answer takes its happy path.
+    // everything, so a mini app that branches on the answer takes its happy path.
     anchors: { register: (contribution: unknown) => (record('anchors')(contribution), true) },
     locations: { register: (contribution: unknown) => (record('locations')(contribution), true) },
     resourceRefIcons: { register: record('resourceRefIcons') },
@@ -100,13 +100,13 @@ export function recordingMiniAppUiHost(): {
 /**
  * Bind every host UI contract to a test double.
  *
- * Call it ONCE from the plugin's test preload. A suite that also imports the real host runtime
+ * Call it ONCE from the mini app's test preload. A suite that also imports the real host runtime
  * rebinds afterwards and must win — which is why this is not a per-test `beforeEach` by default:
  * re-binding between tests replaces the real editor and grid such a suite depends on.
  *
  * A SUITE that binds them itself calls the returned unbind in `afterAll`. The combined
- * `bun test plugins` run loads no plugin preload and shares one process, so a suite's doubles
- * that outlive it become the next plugin's host: its real grid renders as the stub. The unbind
+ * `bun test mini-apps` run loads no mini app preload and shares one process, so a suite's doubles
+ * that outlive it become the next mini app's host: its real grid renders as the stub. The unbind
  * restores whatever the suite shadowed.
  */
 export function bindMiniAppUiTestDoubles(): () => void {

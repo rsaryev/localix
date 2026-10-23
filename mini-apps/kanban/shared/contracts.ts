@@ -3,7 +3,7 @@ import { z } from 'zod'
 /**
  * The board's wire and storage contract, read by the backend, the tool and the view alike.
  *
- * A board belongs to ONE chat session and lives in that session's plugin folder, so the host
+ * A board belongs to ONE chat session and lives in that session's mini app folder, so the host
  * deletes it with the chat. The board is passive: it records workflow state and reusable task
  * context and never starts a model, an agent or a session.
  *

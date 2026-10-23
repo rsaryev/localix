@@ -38,7 +38,7 @@ function flyoutLabels(): (string | null)[] {
 
 // The whole point of the dock: recents rest behind one button, and the icons come
 // back on demand. Without these the feature's noise budget is unenforced — any
-// change that leaks three plugin icons back into the rail would pass silently.
+// change that leaks three mini app icons back into the rail would pass silently.
 describe('RailRecentsDock', () => {
   /** Last slot API the dock handed out — the seam a real context menu wires into. */
   const slotApi: { current: RailRecentsSlotApi | null } = { current: null }

@@ -1,5 +1,5 @@
 /**
- * What this plugin's UI can announce, and what its readers watch.
+ * What this mini app's UI can announce, and what its readers watch.
  *
  * One value both sides import, so a writer and a reader can never disagree about the name. The
  * protocol, the key semantics and the reasoning are in `mini-app-sdk/ui/resource-topics`.
@@ -11,7 +11,8 @@ import { resourceTopic } from '@localixai/mini-app-sdk/ui/resource-topics'
  *
  * App-global: a machine's databases do not belong to a conversation. Worth announcing rather than
  * polling because the fact the titlebar carries — a connection that is live AND writable, so a
- * generated `UPDATE` reaches real rows — is only true between two events this plugin itself causes.
+ * generated `UPDATE` reaches real rows — is only true between two events this mini app itself
+ * causes.
  */
 export const DATABASE_CONNECTIONS = resourceTopic('database:connections')
 

@@ -18,7 +18,7 @@ export type ConnectionColor = (typeof CONNECTION_COLORS)[number]
  * driver (`ExchangeInfo.requiredCredentials`), never hardcoded here.
  *
  * Any value may be a `${secret:KEY}` token, resolved server-side at use time against the
- * central vault through the generic plugin host seam.
+ * central vault through the generic mini app host seam.
  */
 export const credentialsSchema = z.object({
   apiKey: z.string().optional(),

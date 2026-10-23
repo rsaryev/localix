@@ -1,7 +1,7 @@
 /**
  * The WIRE CONTRACT between the `manage_chart` agent tool (backend) and the trading UI's command
  * sink — the one payload shape both sides compile against. Route B: the tool emits it as a typed,
- * REPLAYABLE `plugin.command` stream frame (`context.session.emitCommand` → `plugin.command` →
+ * REPLAYABLE `mini-app.command` stream frame (`context.session.emitCommand` → `mini-app.command` →
  * `miniAppCommandBus`), keyed by {@link TRADING_MINI_APP} + {@link TRADING_CHART_CHANNEL}; the UI
  * sink parses it back with {@link parseChartCommandPayload} because the envelope's payload is
  * `unknown`-typed by design.
@@ -102,7 +102,7 @@ const optional = (v: unknown, ok: boolean) => v === undefined || ok
 
 /**
  * Structural guard for the payload as it comes OFF the command envelope. Anything malformed
- * (an old build, a foreign emitter on the same plugin/channel key) is dropped as null — the sink
+ * (an old build, a foreign emitter on the same mini app/channel key) is dropped as null — the sink
  * must never crash the stream router.
  */
 export function parseChartCommandPayload(data: unknown): ChartCommandPayload | null {

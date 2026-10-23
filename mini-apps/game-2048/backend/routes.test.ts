@@ -135,7 +135,7 @@ describe('the agent’s tool', () => {
   }
   const lone2 = () => [2, ...Array<number>(15).fill(0)]
 
-  test('the plugin gives the agent ONE tool, and says each call has its own effect', () => {
+  test('the mini app gives the agent ONE tool, and says each call has its own effect', () => {
     const { ctx } = tool()
     const registered = register(ctx).tools ?? []
     expect(registered.map((candidate) => candidate.name)).toEqual(['game_2048'])

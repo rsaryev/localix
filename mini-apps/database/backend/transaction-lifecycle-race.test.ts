@@ -197,7 +197,7 @@ describe('manual transaction lifecycle races', () => {
 
     // No `await`: bun's `.rejects` matchers settle themselves, and every other
     // `.rejects` assertion in this repo is written without one (apps/api lib tests,
-    // packages, other plugins). Awaiting a non-Thenable is what oxlint flags.
+    // packages, other mini apps). Awaiting a non-Thenable is what oxlint flags.
     expect(
       service.query('u', connection.id, 'SELECT slow_work', undefined, { timeoutMs: 10 }),
     ).rejects.toMatchObject({ code: 'timeout' })

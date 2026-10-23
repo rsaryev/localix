@@ -1,4 +1,4 @@
-//! A plugin app's menu bar: the standard macOS menus under the app's own name.
+//! A standalone mini app's menu bar: the standard macOS menus under the app's own name.
 use objc2::rc::Retained;
 use objc2::runtime::{AnyObject, Sel};
 use objc2::{sel, MainThreadMarker, MainThreadOnly};

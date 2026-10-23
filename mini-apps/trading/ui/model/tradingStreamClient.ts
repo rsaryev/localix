@@ -2,7 +2,7 @@
 // demux, the per-key refcount, the re-subscribe on reconnect and the pause while hidden, so the
 // market feeds do not each re-implement them.
 //
-// Frames arrive on the `m` frame tag (the plugin's `WsFrameContribution`, distinct from the
+// Frames arrive on the `m` frame tag (the mini app's `WsFrameContribution`, distinct from the
 // reserved s/k/r and the k8s `w`); subscribe/unsubscribe ride the `trading:watch.subscribe`
 // / `trading:watch.unsubscribe` WS commands. All sends are best-effort — a failed subscribe
 // just leaves the caller's REST poll fallback in charge.

@@ -1,5 +1,5 @@
 /**
- * THE RUNTIME CONTRACT — every type crossing the plugin/host boundary at runtime.
+ * THE RUNTIME CONTRACT — every type crossing the mini app/host boundary at runtime.
  *
  * Split from `runtime.ts`, which had grown to hold both the vocabulary and the accessors that
  * speak it. They change for different reasons: a new door is a contract edit the host must
@@ -16,18 +16,18 @@ import type { IconComponent, MessageBindingDraft, WorkItemLike } from './contrib
 
 /** Open a file in the host's code editor, optionally at an exact position (like `code -g file:line:col`). */
 /**
- * Open a DIFF in the host's viewer — the door beside {@link MiniAppOpenFileRequest} for a plugin
+ * Open a DIFF in the host's viewer — the door beside {@link MiniAppOpenFileRequest} for a mini app
  * that computed a patch and wants the workbench's own diff surface to render it.
  *
- * `provenance` and `staging` are deliberately opaque: the plugin obtained them from its own backend
- * and hands them straight back, and the host renders them through the slot that owns each. Typing
- * them here would drag a source-control vocabulary into a seam every plugin shares.
+ * `provenance` and `staging` are deliberately opaque: the mini app obtained them from its own
+ * backend and hands them straight back, and the host renders them through the slot that owns each.
+ * Typing them here would drag a source-control vocabulary into a seam every mini app shares.
  */
 /**
  * Every workspace open names the chat its tab belongs to — `useWorkItemSessionId()` in a tab, the
  * `sessionId` prop of a session surface, the session a route or a tool call carries. The host used
- * to fill a missing one with the chat on screen, so a plugin tab kept in the background opened its
- * file, diff or preview in another chat's workspace. The host now refuses a session open that
+ * to fill a missing one with the chat on screen, so a mini app tab kept in the background opened
+ * its file, diff or preview in another chat's workspace. The host now refuses a session open that
  * names none.
  */
 export interface MiniAppOpenDiffRequest {
@@ -69,13 +69,13 @@ export interface MiniAppOpenFileRequest {
   /** 0-based end character of the selection. */
   endColumn?: number
   /**
-   * Ask for the built-in CODE editor even when a plugin has registered an editor for this file
+   * Ask for the built-in CODE editor even when a mini app has registered an editor for this file
    * type.
    *
-   * Needed because a registered editor otherwise wins silently: a plugin that owns `.foo` makes
+   * Needed because a registered editor otherwise wins silently: a mini app that owns `.foo` makes
    * every open of a `.foo` file render its own surface, so a caller whose whole intent is "show
    * me the text" — a board asking to open its own board file as code — had no way to say it and
-   * got the plugin's canvas back instead. A one-off request: it does not change what the file
+   * got the mini app's canvas back instead. A one-off request: it does not change what the file
    * type opens with next time.
    */
   openWith?: 'builtin'
@@ -83,12 +83,12 @@ export interface MiniAppOpenFileRequest {
 
 /**
  * Show built HTML in the host's Preview panel — the door beside {@link MiniAppOpenFileRequest} for a
- * plugin whose output is a page rather than a document to read.
+ * mini app whose output is a page rather than a document to read.
  *
  * A PATH, and the same one the editor's own "open preview" for an `.html` file passes: the host
  * serves the file's directory over loopback and attaches the panel through its injecting proxy, so
  * relative links between the built pages work and a republish reveals. Deliberately not a URL and
- * not a directory plus an entry — a plugin does not know what port anything is on, and there is
+ * not a directory plus an entry — a mini app does not know what port anything is on, and there is
  * already one way to ask for this.
  */
 export interface MiniAppOpenPreviewRequest {
@@ -97,7 +97,7 @@ export interface MiniAppOpenPreviewRequest {
   path: string
   title?: string
   /**
-   * The session whose Browser tab opens. A plugin view is bound to a session (its work item's
+   * The session whose Browser tab opens. A mini app view is bound to a session (its work item's
    * scope) and that is the one its export belongs to; defaulting to the ACTIVE chat session put the
    * preview on a different session's panel whenever the two disagreed, and the click did nothing
    * visible.
@@ -131,7 +131,8 @@ export interface MiniAppComposerInsert {
   submit?: boolean
   internal?: boolean
   /** The chat whose composer receives the text. Without it the insert went to whichever
-   *  composer had focus — another chat's, when the plugin surface belonged to a background one. */
+   *  composer had focus — another chat's, when the mini app surface belonged to a background one.
+   *  */
   sessionId: string
   buffer?: boolean
 }
@@ -143,20 +144,20 @@ export interface MiniAppWorkspaceSnapshot {
   /**
    * The id of the work item the person is looking at, or null when none is.
    *
-   * Without it a plugin can see WHAT is open but not WHICH is in front, so a launcher cannot say
+   * Without it a mini app can see WHAT is open but not WHICH is in front, so a launcher cannot say
    * "you are already here" — and the only way to learn it was the host's grid store.
    */
   focusedId: string | null
 }
 
-/** Vault metadata safe to expose to plugin UI. Secret values never cross this boundary. */
+/** Vault metadata safe to expose to mini app UI. Secret values never cross this boundary. */
 export interface MiniAppSecretReference {
   key: string
   label: string
   reference: string
 }
 
-/** Stable subset of a host session that plugin surfaces may observe. */
+/** Stable subset of a host session that mini app surfaces may observe. */
 export interface MiniAppPendingInteraction {
   kind: string
   request: {
@@ -174,7 +175,7 @@ export interface MiniAppSession {
   rootSessionId: string | null
   sessionKind: 'chat' | 'subagent' | 'job' | 'system' | 'member'
   /**
-   * Who the conversation is with and what each runs on. A plugin sees the party because a
+   * Who the conversation is with and what each runs on. A mini app sees the party because a
    * session's model is a property of its participants, not of the session.
    */
   agents: ReadonlyArray<{

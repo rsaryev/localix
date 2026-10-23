@@ -5,7 +5,7 @@
  * WHY THIS EXISTS. Startup was three visible waves. The shell painted with an EMPTY
  * sidebar and an EMPTY activity rail, because both are gated on data that only exists
  * after a round trip: the session roster (~0.3s) and the capability snapshot (~1.2s, it
- * pays for plugin discovery). Measured on a packaged boot, the rail therefore sat blank
+ * pays for mini app discovery). Measured on a packaged boot, the rail therefore sat blank
  * for over a second and then filled with icons — not a flicker, a structural pop-in, and
  * the thing that reads as "the app is still assembling itself".
  *

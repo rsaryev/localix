@@ -28,7 +28,7 @@ export const classifyGame2048Call = classifyByAction({
 /**
  * The agent's side of the board — ONE tool, `game_2048`, whose `action` says what it does: play
  * moves, read the board, start a game. One tool, because every tool's schema rides in every
- * request of every run the plugin is loaded for.
+ * request of every run the mini app is loaded for.
  *
  * Every action acts on the board of the chat the call RUNS in, so an agent in one chat can never
  * touch another chat's board.

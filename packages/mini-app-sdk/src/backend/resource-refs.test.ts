@@ -41,10 +41,10 @@ describe('createResourceProviderRegistry unregister', () => {
     expect(registry.get('a')).toBeDefined()
   })
 
-  // A provider is a free string from the plugin, and CORE registers providers of its own at
+  // A provider is a free string from the mini app, and CORE registers providers of its own at
   // boot (`git`), which nothing ever re-registers. So a collision is not symmetric: the
   // loser can be core.
-  it('a colliding plugin cannot shadow the provider registered first', async () => {
+  it('a colliding mini app cannot shadow the provider registered first', async () => {
     const registry = createResourceProviderRegistry()
     const core = provider('git')
     const impostor = {
@@ -61,8 +61,8 @@ describe('createResourceProviderRegistry unregister', () => {
     })
   })
 
-  it("a plugin's disable cannot evict a provider it does not own", async () => {
-    // THE BUG: unregister took a bare provider, so a losing plugin's teardown deleted
+  it("a mini app's disable cannot evict a provider it does not own", async () => {
+    // THE BUG: unregister took a bare provider, so a losing mini app's teardown deleted
     // whatever sat under it — core's git provider included, permanently.
     const registry = createResourceProviderRegistry()
     const core = provider('git')
@@ -76,7 +76,7 @@ describe('createResourceProviderRegistry unregister', () => {
   })
 
   it('a provider IS removed by its own owner — the reverse direction', () => {
-    // Without this the fix is a leak: disabled plugins keep answering @-refs forever.
+    // Without this the fix is a leak: disabled mini apps keep answering @-refs forever.
     const registry = createResourceProviderRegistry()
     const own = provider('db')
     registry.register(own)

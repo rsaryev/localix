@@ -23,7 +23,7 @@ import type {
 /**
  * THE ONE WAY A FACT ONLY THIS CLIENT KNOWS ENTERS THE JOURNAL — a failed copy, a crashed view, a
  * board file that will not validate, the socket being down. The server records what it knows
- * itself (runs, requests, plugins); this is the same write path for the rest, so both kinds land
+ * itself (runs, requests, mini apps); this is the same write path for the rest, so both kinds land
  * in one inbox and are read, cleared and synced alike.
  *
  * What it adds on the way is what only this window can: the causal trace of the moment (the
@@ -45,7 +45,7 @@ export interface ClientFact {
   condition?: boolean
   /** Where it happened; defaults to the failed operation just before, else the visible screen. */
   origin?: NotificationOrigin
-  /** Who reported it (a plugin's name), as a label on whichever origin the row gets. */
+  /** Who reported it (a mini app's name), as a label on whichever origin the row gets. */
   originLabel?: string
   actions?: NotificationAction[]
   /** The person is looking at the surface that reports it: recorded without an unread badge. */

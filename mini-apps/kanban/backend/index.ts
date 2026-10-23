@@ -21,7 +21,7 @@ export function register(ctx: MiniAppContext): MiniAppRegistration {
   const storage = ctx.sessionStorage
   const boards = createBoardService({
     resolveDir: async (userId, sessionId) => {
-      if (!storage) throw new Error('This host keeps no per-chat plugin data.')
+      if (!storage) throw new Error('This host keeps no per-chat mini app data.')
       return storage.resolveDataDir(userId, sessionId)
     },
     ...(ctx.agents ? { agents: ctx.agents } : {}),

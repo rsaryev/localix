@@ -167,7 +167,7 @@ describe('WorkspaceShell responsive ownership', () => {
     try {
       await act(async () => root.render(<Harness />))
 
-      const openPlugins = host.querySelector<HTMLButtonElement>('[aria-label="All tools"]')
+      const openMiniApps = host.querySelector<HTMLButtonElement>('[aria-label="All tools"]')
       const files = host.querySelector<HTMLButtonElement>('[aria-label="Files"]')
       const search = host.querySelector<HTMLButtonElement>('[aria-label="Search"]')
       const vaultKeys = host.querySelector<HTMLButtonElement>('[aria-label="Vault keys"]')
@@ -177,11 +177,11 @@ describe('WorkspaceShell responsive ownership', () => {
       const usage = host.querySelector<HTMLButtonElement>('[aria-label="Usage & Spend"]')
       const resetLayout = host.querySelector<HTMLButtonElement>('[aria-label="Reset layout"]')
       const buttons = [...host.querySelectorAll('button')]
-      expect(openPlugins).not.toBeNull()
-      expect(openPlugins?.querySelector('.lucide-ellipsis')).not.toBeNull()
-      expect(openPlugins?.getAttribute('data-slot')).toBe('button')
-      expect(openPlugins?.getAttribute('data-size')).toBe('icon-touch')
-      expect(openPlugins?.getAttribute('title')).toBeNull()
+      expect(openMiniApps).not.toBeNull()
+      expect(openMiniApps?.querySelector('.lucide-ellipsis')).not.toBeNull()
+      expect(openMiniApps?.getAttribute('data-slot')).toBe('button')
+      expect(openMiniApps?.getAttribute('data-size')).toBe('icon-touch')
+      expect(openMiniApps?.getAttribute('title')).toBeNull()
       expect(files).not.toBeNull()
       expect(files?.getAttribute('draggable')).toBe('true')
       expect(search).not.toBeNull()
@@ -199,8 +199,8 @@ describe('WorkspaceShell responsive ownership', () => {
       expect(buttons.indexOf(search!)).toBeLessThan(buttons.indexOf(vaultKeys!))
       expect(buttons.indexOf(vaultKeys!)).toBeLessThan(buttons.indexOf(notes!))
       expect(buttons.indexOf(notes!)).toBeLessThan(buttons.indexOf(review!))
-      expect(buttons.indexOf(review!)).toBeLessThan(buttons.indexOf(openPlugins!))
-      expect(buttons.indexOf(openPlugins!)).toBeLessThan(buttons.indexOf(usage!))
+      expect(buttons.indexOf(review!)).toBeLessThan(buttons.indexOf(openMiniApps!))
+      expect(buttons.indexOf(openMiniApps!)).toBeLessThan(buttons.indexOf(usage!))
       expect(buttons.indexOf(usage!)).toBeLessThan(buttons.indexOf(settings!))
       expect(buttons.indexOf(settings!)).toBeLessThan(buttons.indexOf(resetLayout!))
 
@@ -237,8 +237,8 @@ describe('WorkspaceShell responsive ownership', () => {
       })
 
       await act(async () => {
-        openPlugins!.focus()
-        openPlugins!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+        openMiniApps!.focus()
+        openMiniApps!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
         await new Promise((resolve) => setTimeout(resolve, 30))
       })
       expect(document.body.querySelector('[role="menu"]')?.textContent).toContain(
@@ -436,10 +436,10 @@ describe('WorkspaceShell status contribution', () => {
     }
   })
   // The Dock-style half of the rail: opening an UNPINNED view floats it into a
-  // recent slot, pinning it hands the slot back, and a view whose plugin went away
+  // recent slot, pinning it hands the slot back, and a view whose mini app went away
   // stops rendering without being forgotten. Without this the whole recents feature
   // is invisible to the suite — the layout store alone can't express it.
-  test('an opened plugin view takes a recent slot and leaves with its plugin', async () => {
+  test('an opened mini app view takes a recent slot and leaves with its mini app', async () => {
     const React = await import('react')
     const { act } = React
     const { createRoot } = await import('react-dom/client')
@@ -475,8 +475,8 @@ describe('WorkspaceShell status contribution', () => {
           onClick: noOp,
           customizable: true,
           defaultArea: 'overflow' as const,
-          plugin: true,
-          pluginName: id,
+          miniApp: true,
+          miniAppName: id,
         }))}
         onOpenSidebar={noOp}
         onCloseSidebar={noOp}
@@ -521,7 +521,7 @@ describe('WorkspaceShell status contribution', () => {
       }
       await openReader()
       // Default mode collapses an inactive recent behind the dock's trigger, so the
-      // rail itself gains exactly one quiet button instead of a plugin icon.
+      // rail itself gains exactly one quiet button instead of a mini app icon.
       expect(railSlots()).toEqual(['All tools', 'Add mini apps'])
       const dockTrigger = host.querySelector<HTMLButtonElement>(
         '[data-rail-group="workspace"] [data-rail-recents-trigger]',
@@ -543,7 +543,7 @@ describe('WorkspaceShell status contribution', () => {
       await openReader()
       expect(railSlots()).toEqual(['All tools', 'Add mini apps'])
 
-      // Reader's plugin goes away: its slot goes with it, without erasing the entry
+      // Reader's mini app goes away: its slot goes with it, without erasing the entry
       // from the recents store (re-enabling brings it back).
       await act(async () => root.render(renderShell(['office'])))
       expect(railSlots()).not.toContain('Reader')

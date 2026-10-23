@@ -3,7 +3,7 @@
  *
  * It selects, it does not navigate. Choosing a row moves the workspace's request/response panes
  * onto it so the list and edited request stay visible together. Opening a request in its own grid
- * tab remains an explicit row action, matching the database plugin's SQL-console behavior.
+ * tab remains an explicit row action, matching the database mini app's SQL-console behavior.
  *
  * "+" mints a request (or imports one from pasted cURL) and selects it; row actions duplicate,
  * rename, or delete. Sort and group choices persist per browser. The state ladder is loading →

@@ -49,7 +49,7 @@ describe('WorkbenchListRow', () => {
       <WorkbenchListRow density="compact" active dragging>
         <WorkbenchListRowTrigger aria-current="page">
           <WorkbenchListRowLeading>V</WorkbenchListRowLeading>
-          <WorkbenchListRowText title="View" description="Plugin view" />
+          <WorkbenchListRowText title="View" description="Mini app view" />
         </WorkbenchListRowTrigger>
         <WorkbenchListRowMeta>In rail</WorkbenchListRowMeta>
         <WorkbenchListRowActions aria-label="View actions" visibility="hover">

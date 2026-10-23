@@ -119,7 +119,7 @@ export function registerRequestEditRoutes<TSchema extends Schema>(
         if (hasBody) spec.body = edit.body
         else delete spec.body
         // Per-request send settings, under the SAME replace rule: an omitted one is cleared, so the
-        // request reverts to the plugin default rather than keeping a value the user removed. The
+        // request reverts to the mini app default rather than keeping a value the user removed. The
         // spread above copied the stored ones; this is where the PUT's intent overwrites them.
         if (edit.followRedirects !== undefined) spec.followRedirects = edit.followRedirects
         else delete spec.followRedirects

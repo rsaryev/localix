@@ -2,8 +2,8 @@ import { afterEach, beforeEach, expect, test } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { bindMiniAppUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
 
-// Bound here, not only in the plugin preload: the combined `bun test plugins` run loads no preload,
-// and another suite's doubles would decide what the problem surface renders.
+// Bound here, not only in the mini app preload: the combined `bun test mini-apps` run loads no
+// preload, and another suite's doubles would decide what the problem surface renders.
 let unbind = () => {}
 beforeEach(() => {
   unbind = bindMiniAppUiTestDoubles()

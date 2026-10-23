@@ -42,18 +42,18 @@ describe('core WorkItem addressability metadata', () => {
   })
 
   test('keeps the generic runtime view bridge directly addressable', () => {
-    expect(workItemAddressability('plugin-view')).toEqual({
+    expect(workItemAddressability('mini-app-view')).toEqual({
       mode: 'direct',
-      owner: 'runtime plugin-view location',
+      owner: 'runtime mini-app-view location',
     })
   })
 
-  test('gives contributed tables and custom plugin kinds the payload-free focus fallback', () => {
+  test('gives contributed tables and custom mini app kinds the payload-free focus fallback', () => {
     for (const kind of ['table', 'vendor:custom-editor']) {
       expect(workItemAddressability(kind)).toEqual({
         mode: 'focus-existing',
         locationId: 'work-item.focus',
-        reason: 'Plugin-owned payloads remain with the mounted contribution.',
+        reason: 'Mini-app-owned payloads remain with the mounted contribution.',
       })
     }
   })
@@ -61,8 +61,8 @@ describe('core WorkItem addressability metadata', () => {
 
 describe('existing WorkItem focus resolution', () => {
   const item: WorkItem = {
-    kind: 'plugin-view',
-    id: 'plugin-view:call-1',
+    kind: 'mini-app-view',
+    id: 'mini-app-view:call-1',
     title: 'View result',
     scope: 'session-a',
     payload: { html: '<private-payload>' },
@@ -117,7 +117,7 @@ describe('existing WorkItem focus resolution', () => {
   })
 
   test('allows global tabs in every active scope', () => {
-    const globalItem = { ...item, id: 'plugin:panel', scope: GLOBAL_SCOPE }
+    const globalItem = { ...item, id: 'mini-app:panel', scope: GLOBAL_SCOPE }
     expect(
       resolveExistingWorkItemFocus(
         {

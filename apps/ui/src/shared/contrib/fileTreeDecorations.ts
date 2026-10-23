@@ -17,9 +17,9 @@ export function registerFileTreeDecoration(input: FileTreeDecorationContribution
   for (const listener of listeners) listener()
 }
 
-/** Release the decoration slot if `owner` holds it (a plugin reload or unload). */
+/** Release the decoration slot if `owner` holds it (a mini app reload or unload). */
 export function removeFileTreeDecorationOf(owner: string): void {
-  if (contribution?.pluginName !== owner) return
+  if (contribution?.miniAppName !== owner) return
   contribution = undefined
   for (const listener of listeners) listener()
 }
@@ -42,7 +42,7 @@ const providerId = fileTreeDecorationProviderId
  * from.
  *
  * The second half is a REMOUNT KEY, not a label. `useIndex` below is a hook chosen at runtime, and
- * plugin UI discovery imports the chunk that registers it well after first paint — so a tree that
+ * mini app UI discovery imports the chunk that registers it well after first paint — so a tree that
  * mounted first would call zero hooks at that call site on one render and the provider's on the
  * next. React answers a changed hook order by unmounting the tree, which here means the whole
  * route: in a packaged build the user sees a crash screen and a journal row reading "Route failed"

@@ -1,6 +1,6 @@
 // Maps the shared inspector open-request channel (InspectorRequest) onto editor-grid
 // effects, so existing callers (`inspector.openFile(...)`, agent reveals, the file
-// tree, plugin work items, …) drive the grid unchanged once it replaces the inspector docks.
+// tree, mini app work items, …) drive the grid unchanged once it replaces the inspector docks.
 import type { InspectorRequest } from '@/shared/lib/inspectorBus'
 import { baseName } from '@localixai/mini-app-sdk/ui/utilities'
 import { tabIdInScope, workspaceScope, type WorkItem } from '@/entities/workspace-grid/model'

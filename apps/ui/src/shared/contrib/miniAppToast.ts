@@ -10,11 +10,11 @@ import type { ProblemReport } from '@localixai/mini-app-sdk/ui/problems'
 import { attributeMiniAppCaller, miniAppLabel } from './miniAppAttribution'
 
 /**
- * The toast the host lends plugins: its own, with each row named after the plugin that made it.
+ * The toast the host lends mini apps: its own, with each row named after the mini app that made it.
  *
- * Handing plugins the host's `toast` directly filed every plugin row as "System" (see
- * `miniAppAttribution.ts`). This wrapper answers "which plugin" per call and passes the answer as the
- * row's `source` label — a label on whatever origin the row would get anyway, never a different
+ * Handing mini apps the host's `toast` directly filed every mini app row as "System" (see
+ * `miniAppAttribution.ts`). This wrapper answers "which mini app" per call and passes the answer as
+ * the row's `source` label — a label on whatever origin the row would get anyway, never a different
  * origin, so a row still files under the chat it happened in. A call nothing can attribute is
  * published exactly as before.
  */
@@ -38,18 +38,19 @@ export interface AttributableToast extends Publish, Record<Method, Publish> {
 
 /**
  * The stack to attribute: the call site an SDK helper recorded for a deferred publish, else the
- * live one. Taken HERE, inside the wrapper, so the frames above it are the SDK's and the plugin's.
+ * live one. Taken HERE, inside the wrapper, so the frames above it are the SDK's and the mini
+ * app's.
  */
 const callerStack = (): string =>
-  miniAppNotificationCallSite() ?? new Error('plugin notification call site').stack ?? ''
+  miniAppNotificationCallSite() ?? new Error('mini app notification call site').stack ?? ''
 
 export function createMiniAppToast(
   host: AttributableToast,
   stack: () => string = callerStack,
 ): MiniAppToast {
   const sourceOf = () => attributeMiniAppCaller(stack())?.label
-  // A `source` a plugin slipped into its options is dropped: the name is the host's to give, or a
-  // plugin could file its rows under another plugin's name.
+  // A `source` a mini app slipped into its options is dropped: the name is the host's to give, or a
+  // mini app could file its rows under another mini app's name.
   const withSource = (options: MiniAppToastOptions | undefined) => {
     const { source: _claimed, ...rest } = (options ?? {}) as MiniAppToastOptions & {
       source?: unknown
@@ -71,7 +72,8 @@ export function createMiniAppToast(
   ) as Record<Method, Publish>
   return Object.assign(method(), methods, {
     // A report is usually published from the SDK's shared hook, inside a React effect whose stack
-    // holds no plugin frame. Its `scope` is the plugin id by contract, which is the next best name.
+    // holds no mini app frame. Its `scope` is the mini app id by contract, which is the next best
+    // name.
     problems: (report: ProblemReport, options: MiniAppProblemsOptions) =>
       host.problems(report, { ...options, source: sourceOf() ?? miniAppLabel(options.scope) }),
     problemsCleared: (subject: Pick<ProblemReport, 'subject'>, scope: string) =>

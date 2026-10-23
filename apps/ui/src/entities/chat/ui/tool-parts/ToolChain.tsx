@@ -180,7 +180,7 @@ function ToolChainComponent({
     },
   )
 
-  // Summaries and folding read tool presentation, and a plugin's rows register after the
+  // Summaries and folding read tool presentation, and a mini app's rows register after the
   // transcript has painted — without this the chain would keep "Tool" until the run changed.
   const toolCardsVersion = useToolCardsVersion()
 

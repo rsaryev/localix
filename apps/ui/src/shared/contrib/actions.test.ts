@@ -27,7 +27,7 @@ test('predicates filter typed targets and fail closed without breaking content',
       {
         ...action,
         when: () => {
-          throw new Error('bad plugin')
+          throw new Error('bad mini app')
         },
       },
       context,
@@ -41,7 +41,7 @@ afterEach(() => {
   setEnabledMiniAppNames(null)
 })
 
-test('owned actions follow plugin activation and disappear on unload', () => {
+test('owned actions follow mini app activation and disappear on unload', () => {
   const host = miniAppUiHostFor(owner)
   const action = {
     id: `${owner}:save`,
@@ -53,7 +53,7 @@ test('owned actions follow plugin activation and disappear on unload', () => {
   host.actions!.register(action)
   expect(contributedActions()).toEqual([])
   setEnabledMiniAppNames(new Set([owner]))
-  expect(contributedActions()[0]).toMatchObject({ ...action, pluginName: owner })
+  expect(contributedActions()[0]).toMatchObject({ ...action, miniAppName: owner })
   expect(contributedActions()).toBe(contributedActions())
   setEnabledMiniAppNames(new Set())
   expect(contributedActions()).toEqual([])

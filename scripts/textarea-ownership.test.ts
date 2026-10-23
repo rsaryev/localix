@@ -6,8 +6,8 @@ const RAW_TEXTAREA = /<textarea\b/g
 
 /**
  * Lives under `scripts/`, not in core: this contract holds across the WHOLE repository — core and
- * every bundled plugin — and core may not name a concrete plugin tree. It was in `apps/ui` and
- * listed a plugin's commit box by path, which is the boundary violation it exists to prevent.
+ * every bundled mini app — and core may not name a concrete mini app tree. It was in `apps/ui` and
+ * listed a mini app's commit box by path, which is the boundary violation it exists to prevent.
  *
  * These are editors/composers rather than ordinary form fields: each owns
  * caret/history, mirrored completion, dropzone, or combobox behavior that a
@@ -17,7 +17,7 @@ const RAW_TEXTAREA = /<textarea\b/g
  */
 const SPECIALIZED_OWNERS = new Map<string, number>([
   ['apps/ui/src/entities/chat/ui/prompt-input/TextArea.tsx', 1],
-  // The plugin's commit box, for the same reason as core's above: an inline-completion ghost
+  // The mini app's commit box, for the same reason as core's above: an inline-completion ghost
   // is absolutely positioned over the field, so the two must share exact metrics that
   // `Textarea`'s own sizing would override.
   ['mini-apps/git-workspace/ui/source-control/ui/CommitBox.tsx', 1],

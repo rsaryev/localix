@@ -140,10 +140,10 @@ describe('messageDisplayRows', () => {
   test('joins only explicit adjacent visible continuation segments without altering the model', () => {
     const transcript = [
       msg('a', 'agent:localix', '10:00'),
-      msg('hidden', 'user', '10:01', { isInternal: true, wakeSource: 'plugin' }),
+      msg('hidden', 'user', '10:01', { isInternal: true, wakeSource: 'mini-app' }),
       msg('b', 'agent:localix', '10:02', { continuedFromMessageId: 'a' }),
       msg('c', 'agent:localix', '10:03', { continuedFromMessageId: 'b' }),
-      msg('independent', 'agent:localix', '10:04', { wakeSource: 'plugin' }),
+      msg('independent', 'agent:localix', '10:04', { wakeSource: 'mini-app' }),
     ]
     const visible = createTranscriptProjectionSelector()(transcript)
     const rows = messageDisplayRows(visible)

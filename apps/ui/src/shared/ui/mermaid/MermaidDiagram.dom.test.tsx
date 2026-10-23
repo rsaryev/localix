@@ -11,7 +11,7 @@ afterAll(async () => {
   await teardown()
 })
 
-test('plugin actions receive the picture and owning chat, and are also offered in the viewer', async () => {
+test('mini app actions receive the picture and owning chat, and are also offered in the viewer', async () => {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { WorkItemSessionProvider } = await import('@localixai/mini-app-sdk/ui/work-item-session')
@@ -30,7 +30,7 @@ test('plugin actions receive the picture and owning chat, and are also offered i
   setEnabledMiniAppNames(new Set(['picture-fixture']))
   registerAction({
     id: 'picture-fixture:save',
-    pluginName: 'picture-fixture',
+    miniAppName: 'picture-fixture',
     label: 'Save picture',
     Icon: () => null,
     when: ({ target }) => target.kind === 'visualization',

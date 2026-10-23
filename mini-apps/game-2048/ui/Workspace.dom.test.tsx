@@ -82,7 +82,7 @@ async function mount(sessionId: string | null, unreachable?: string) {
   const root = createRoot(host)
   const dispatch = (event: KeyboardEvent) => offerKeyToFocusedSurface(event)
   window.addEventListener('keydown', dispatch)
-  // The host wraps every plugin tab in the session it BELONGS to.
+  // The host wraps every mini app tab in the session it BELONGS to.
   const render = (active = true) =>
     act(async () =>
       root.render(

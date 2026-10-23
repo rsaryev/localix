@@ -5,7 +5,7 @@ import { DATABASE_DRIVERS, isDatabaseDialect } from '../shared/driver-catalog'
 import { resolveAgentDatabaseConnection } from './agent-connection'
 
 /**
- * Narrow port the tool needs from the database service — the plugin's `register()`
+ * Narrow port the tool needs from the database service — the mini app's `register()`
  * (backend/index.ts) adapts the shared service to it, so the tool depends only on
  * this shape and stays trivially testable with a fake.
  */
@@ -116,7 +116,7 @@ export function createDbQueryTool(options: DbQueryToolOptions) {
     // which is what puts a DDL/DML call behind the ask-mode confirmation.
     mutates: true,
     // This tool can mutate a configured remote database, never a filesystem path.
-    // Declaring the empty target set here keeps that decision plugin-owned instead
+    // Declaring the empty target set here keeps that decision mini-app-owned instead
     // of requiring a host-side exemption keyed by this concrete tool name.
     permissionPaths: () => [],
     /**

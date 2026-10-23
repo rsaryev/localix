@@ -29,9 +29,9 @@ export const classifyBattleshipCall = classifyByAction({
 /**
  * The agent's side of the game — ONE tool, `battleship`, whose `action` says what it does: fire,
  * read its side of the game, start a game. One tool rather than three, because every tool's schema
- * rides in every request of every run the plugin is loaded for; three tools cost three schemas and
- * three names the model has to choose between, for what is one conversation with one board. None
- * of the actions wakes anyone: the agent calling the tool is already the turn.
+ * rides in every request of every run the mini app is loaded for; three tools cost three schemas
+ * and three names the model has to choose between, for what is one conversation with one board.
+ * None of the actions wakes anyone: the agent calling the tool is already the turn.
  *
  * Every action acts on the board of the chat the call RUNS in — the session the host names in the
  * call's context — and every result is built from the AGENT's view (`viewFor(game, 'agent')`), so

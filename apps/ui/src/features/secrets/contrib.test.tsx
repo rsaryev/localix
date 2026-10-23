@@ -45,7 +45,7 @@ test('registers the core Vault as a global restorable workspace and URI anchor',
     defaultArea: 'bar',
     toolCategory: 'utilities',
   })
-  expect(railViewlets[0]?.pluginName).toBeUndefined()
+  expect(railViewlets[0]?.miniAppName).toBeUndefined()
   expect(anchors[0]?.resolve('localix://resource/vault/items/OPENAI_KEY')).toMatchObject({
     kind: 'work-item',
     workKind: 'secrets-manager',

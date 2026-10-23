@@ -15,7 +15,7 @@ import { createGitResourceService } from './resource-service'
 export async function register(ctx: MiniAppContext) {
   const workspaces = ctx.host?.workspaces
   // Native entrypoints are also invoked by generic tool/channel/monitor
-  // inspection, where host services are intentionally absent. This plugin has
+  // inspection, where host services are intentionally absent. This mini app has
   // no context-free contributions, so stay inert there; the backend host calls
   // the same entrypoint with the workspace port during reconciliation.
   if (!workspaces) return { backend: [], tools: [] }

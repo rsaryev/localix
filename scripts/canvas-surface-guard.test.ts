@@ -4,18 +4,18 @@ import { describe, expect, test } from 'bun:test'
  * ONE board library, and one copy of it.
  *
  * Every board in the app — the code map, its call lens, the database diagram, and whatever board
- * a plugin draws next — runs on `@localixai/kit/canvas`, which the host serves from its single
+ * a mini app draws next — runs on `@localixai/kit/canvas`, which the host serves from its single
  * copy of `@xyflow/react`. Two ways to get a board that is *almost* the app's, both of which
  * happened before this file existed:
  *
  *  1. Import the flow library directly. The board then carries its own camera (the database
  *     diagram zoomed on scroll while the code map panned; only the code map answered a pinch in
  *     the desktop app) and its own theme (black arrowheads on a dark ground).
- *  2. Declare the library as a plugin dependency. The plugin's artifact then bundles a SECOND
+ *  2. Declare the library as a mini app dependency. The mini app's artifact then bundles a SECOND
  *     copy, whose `Handle` looks for a store context the host's `Canvas` never provided — and
  *     throws at render.
  *
- * So only the kit's canvas primitive imports the library, and no plugin or other package declares
+ * So only the kit's canvas primitive imports the library, and no mini app or other package declares
  * it. The host bundles the kit from source, so its own declaration may only repeat the kit's range
  * — two ranges are how a workspace ends up resolving two copies. The positive control at the
  * bottom plants each defect, because a scanner that reads nothing satisfies both rules too.

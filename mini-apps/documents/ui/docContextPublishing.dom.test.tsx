@@ -59,7 +59,7 @@ const docBinding = (id: string, label: string): Published => ({
   bindings: [
     {
       kind: 'context',
-      source: 'plugin',
+      source: 'mini-app',
       target: {
         kind: 'resource',
         token: `@resource:localix://resource/doc/${id}`,

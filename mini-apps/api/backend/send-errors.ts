@@ -21,8 +21,8 @@
  * Seven of eight cases said `502 network_error` — "the upstream is broken" — when the upstream had
  * not been contacted at all. The workbench told people an API was down because they mistyped a url.
  *
- * That is the same shape as every other bug this plugin has produced: one piece of knowledge in two
- * places, and only one of them gets updated. The cure is the same too — stop keeping it in two
+ * That is the same shape as every other bug this mini app has produced: one piece of knowledge in
+ * two places, and only one of them gets updated. The cure is the same too — stop keeping it in two
  * places. An error now carries the code it means, and `mapRestError` reads it instead of guessing.
  *
  * This module exists rather than `send.ts` importing `errors.ts` because the dependency runs the
@@ -31,7 +31,7 @@
  */
 
 /**
- * The subset of the plugin's error codes a send can produce.
+ * The subset of the mini app's error codes a send can produce.
  *
  * Deliberately NOT re-exported from `contracts.ts`'s `RestErrorCode`: `request_not_found` and
  * `secret_unavailable` happen before a send starts and are not this module's to name. Keeping the

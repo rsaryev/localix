@@ -16,15 +16,15 @@ export async function syncBundledContributions(input: {
   apps: readonly DiscoveredMiniApp[]
   now: () => string
 }) {
-  const managed = input.apps.filter((plugin) => plugin.bundled)
-  const bundled = managed.filter((plugin) => {
-    if (plugin.error) return false
+  const managed = input.apps.filter((miniApp) => miniApp.bundled)
+  const bundled = managed.filter((miniApp) => {
+    if (miniApp.error) return false
     try {
-      input.kinds.normalize(plugin.contributions)
+      input.kinds.normalize(miniApp.contributions)
       return true
     } catch {
       console.warn(
-        `[mini-apps] Invalid bundled contributions in ${plugin.name}; retaining the last valid publication.`,
+        `[mini-apps] Invalid bundled contributions in ${miniApp.name}; retaining the last valid publication.`,
       )
       return false
     }
@@ -32,7 +32,7 @@ export async function syncBundledContributions(input: {
   await input.db.transaction().execute(async (db) => {
     const sources = input.stores.sources(db, 'mini-app', input.now)
     const store = createContributionStore(db, input.kinds, input.now)
-    const visible = new Set(managed.map((plugin) => plugin.name))
+    const visible = new Set(managed.map((miniApp) => miniApp.name))
     for (const source of await sources.listForScope(input.userId, input.projectId)) {
       if (
         source.projectId !== input.projectId ||
@@ -44,14 +44,14 @@ export async function syncBundledContributions(input: {
       if (current?.contributions.length)
         await store.publish(input.userId, source.id, current.revision, [])
     }
-    for (const plugin of bundled) {
+    for (const miniApp of bundled) {
       // Keep existing sources with no contributions, so a removed declaration gets archived.
-      const existing = await sources.get(input.userId, input.projectId, plugin.name)
-      const declarations = plugin.contributions
+      const existing = await sources.get(input.userId, input.projectId, miniApp.name)
+      const declarations = miniApp.contributions
       if (!existing && declarations.length === 0) continue
       const source =
         existing ??
-        (await sources.upsert(input.userId, input.projectId, plugin.name, {
+        (await sources.upsert(input.userId, input.projectId, miniApp.name, {
           source: 'bundled',
         }))
       const current = await store.getCurrent(input.userId, source.id)

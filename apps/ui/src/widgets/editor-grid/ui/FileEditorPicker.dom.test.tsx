@@ -19,7 +19,7 @@ const miniAppEditor: FileEditorContribution = {
   id: 'example:table',
   label: 'Table view',
   match: (path: string) => path.endsWith('.csv'),
-  Component: () => <div data-testid="plugin-editor" />,
+  Component: () => <div data-testid="mini-app-editor" />,
 }
 
 // react-dom is loaded INSIDE the test, after registerDom() installed the document —
@@ -110,16 +110,16 @@ describe('a PDF with the built-in viewer and Reader', () => {
 
 /**
  * The editor pick is per-tab STATE: the initializer runs once per mount, so a tab that is
- * already showing a plugin editor used to swallow every later open request — including the
+ * already showing a mini app editor used to swallow every later open request — including the
  * one explicit way a caller can ask for text, `openWith: 'builtin'`. From the outside that
  * was a button that did nothing. A new request is recognisable because every open stamps a
  * fresh `revealAt`.
  */
 describe('a re-open that asks for the built-in editor', () => {
-  test('wins over the latched plugin pick', async () => {
+  test('wins over the latched mini app pick', async () => {
     const { root, container } = await mount()
     await act(async () => root.render(body({ requestedBuiltin: false, revealAt: 1 })))
-    expect(container.querySelector('[data-testid="plugin-editor"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="mini-app-editor"]')).not.toBeNull()
 
     await act(async () => root.render(body({ requestedBuiltin: true, revealAt: 2 })))
     expect(container.querySelector('[data-testid="builtin-editor"]')).not.toBeNull()
@@ -130,7 +130,7 @@ describe('a re-open that asks for the built-in editor', () => {
     const { root, container } = await mount()
     await act(async () => root.render(body({ requestedBuiltin: false, revealAt: 1 })))
     await act(async () => root.render(body({ requestedBuiltin: false, revealAt: 2 })))
-    expect(container.querySelector('[data-testid="plugin-editor"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="mini-app-editor"]')).not.toBeNull()
     await act(async () => root.unmount())
   })
 
@@ -141,7 +141,7 @@ describe('a re-open that asks for the built-in editor', () => {
     const { root, container } = await mount()
     await act(async () => root.render(body({ requestedBuiltin: false, revealAt: 1 })))
     await act(async () => root.render(body({ requestedBuiltin: true, revealAt: 1 })))
-    expect(container.querySelector('[data-testid="plugin-editor"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="mini-app-editor"]')).not.toBeNull()
     await act(async () => root.unmount())
   })
 })

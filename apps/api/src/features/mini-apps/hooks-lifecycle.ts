@@ -8,12 +8,12 @@ import type {
   SubagentStopEvent,
 } from './native'
 
-// Lifecycle + observer hooks: fire-and-forget notifications a plugin can observe
+// Lifecycle + observer hooks: fire-and-forget notifications a mini app can observe
 // (subagent-stop, HITL request/resolved, session-end). Split out of hooks.ts;
 // the historical `./hooks` import surface re-exports these. Each is best-effort —
-// per-plugin isolation + timeout, never throws.
+// per-mini-app isolation + timeout, never throws.
 
-/** Fire an observer-only hook on every declaring plugin (isolation + timeout each). */
+/** Fire an observer-only hook on every declaring mini app (isolation + timeout each). */
 async function runObserverHooks<
   K extends 'onSubagentStop' | 'onHitlRequest' | 'onHitlResolved' | 'onHumanAssigned',
 >(
@@ -40,7 +40,7 @@ async function runObserverHooks<
   )
 }
 
-/** Fire every plugin's `onSubagentStop` when a child session reaches a terminal status. */
+/** Fire every mini app's `onSubagentStop` when a child session reaches a terminal status. */
 export async function runSubagentStopHooks(
   hookEntries: readonly LoadedMiniAppHook[],
   event: SubagentStopEvent,
@@ -49,7 +49,7 @@ export async function runSubagentStopHooks(
   return runObserverHooks('onSubagentStop', hookEntries, event, options)
 }
 
-/** Fire every plugin's `onHitlRequest` when a run blocks on a human (confirm/ask/quiz). */
+/** Fire every mini app's `onHitlRequest` when a run blocks on a human (confirm/ask/quiz). */
 export async function runHitlRequestHooks(
   hookEntries: readonly LoadedMiniAppHook[],
   event: HitlRequestEvent,
@@ -58,7 +58,7 @@ export async function runHitlRequestHooks(
   return runObserverHooks('onHitlRequest', hookEntries, event, options)
 }
 
-/** Fire every plugin's `onHitlResolved` when a pending HITL request is answered or dismissed. */
+/** Fire every mini app's `onHitlResolved` when a pending HITL request is answered or dismissed. */
 export async function runHitlResolvedHooks(
   hookEntries: readonly LoadedMiniAppHook[],
   event: HitlResolvedEvent,
@@ -67,7 +67,7 @@ export async function runHitlResolvedHooks(
   return runObserverHooks('onHitlResolved', hookEntries, event, options)
 }
 
-/** Fire every plugin's `onHumanAssigned` when a board card is assigned to the person. */
+/** Fire every mini app's `onHumanAssigned` when a board card is assigned to the person. */
 export async function runHumanAssignedHooks(
   hookEntries: readonly LoadedMiniAppHook[],
   event: HumanAssignedEvent,
@@ -77,10 +77,10 @@ export async function runHumanAssignedHooks(
 }
 
 /**
- * Fire every plugin's `onSessionEnd` hook. Called from agent-runner's run()
+ * Fire every mini app's `onSessionEnd` hook. Called from agent-runner's run()
  * finally block — i.e. once per RUN (a continuation is a new run and
  * fires it again); true logical session-end has no single point in the runtime.
- * Best-effort: isolation + timeout per plugin, never throws.
+ * Best-effort: isolation + timeout per mini app, never throws.
  */
 export async function runSessionEndHooks(
   hookEntries: readonly LoadedMiniAppHook[],

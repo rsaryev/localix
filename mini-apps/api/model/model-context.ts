@@ -36,7 +36,7 @@ function sensitiveKey(key: string): boolean {
   )
 }
 
-/** Strong credential shapes: the host's shared list, so a plugin view can never drift from it. */
+/** Strong credential shapes: the host's shared list, so a mini app view can never drift from it. */
 export const redactModelSecrets = (input: string): string => redactSecrets(input)
 
 const IDENTIFIER = /^[A-Za-z_$][A-Za-z0-9_$]*$/

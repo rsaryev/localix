@@ -9,7 +9,7 @@ import { estimateTokens } from '../../lib/tokens'
  * the ResourceProviderRegistry contract; provider-specific schemes remain entirely
  * outside this module.
  *
- * It is a FALLBACK (see `ContextProviderContribution.fallback`): a plugin that registers its own
+ * It is a FALLBACK (see `ContextProviderContribution.fallback`): a mini app that registers its own
  * resolver for its scheme answers first, and this bridge serves every scheme that has none. The
  * registration, not this predicate, decides the destinations — the predicate used to pin
  * `edit-prediction`, which is why a chat send needed a second, host-side path for the same URI.

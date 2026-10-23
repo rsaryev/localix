@@ -5,7 +5,7 @@
  * person is left holding a file. What it must not also be is invisible five seconds later, so the
  * same sentence goes to the Event Center as goes on the pane.
  *
- * Ownership of a standing report belongs to the SDK; what is left here is this plugin's scope and
+ * Ownership of a standing report belongs to the SDK; what is left here is this mini app's scope and
  * the fact that a reader's subject is a file, which the centre can name and open.
  */
 
@@ -17,7 +17,7 @@ import type {
   ProblemSubject,
 } from '@localixai/mini-app-sdk/ui/problems'
 
-/** Namespace for this plugin's rows in the Event Center. */
+/** Namespace for this mini app's rows in the Event Center. */
 export const READER_PROBLEM_SCOPE = 'reader'
 
 export interface ReaderProblemOptions {

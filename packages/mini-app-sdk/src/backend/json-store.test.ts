@@ -34,7 +34,7 @@ const settle = async () => {
 
 function start(dirs: Record<string, string>) {
   const feed = createStoreFeed({
-    plugin: 'probe',
+    miniApp: 'probe',
     resolveDir: async (userId, sessionId) =>
       userId === 'me' && sessionId ? (dirs[sessionId] ?? null) : null,
     windowMs: WINDOW_MS,
@@ -57,8 +57,8 @@ test('a write under the followed folder nudges once per burst, and only that sco
   await settle()
   // The first nudge closes the gap between the view's last read and the subscription.
   expect(sent).toEqual([
-    JSON.stringify({ plugin: 'probe', sessionId: 'a', live: false }),
-    JSON.stringify({ plugin: 'probe', sessionId: 'a' }),
+    JSON.stringify({ miniApp: 'probe', sessionId: 'a', live: false }),
+    JSON.stringify({ miniApp: 'probe', sessionId: 'a' }),
   ])
 
   const store = counter(mine)
@@ -77,7 +77,7 @@ test('a write under the followed folder nudges once per burst, and only that sco
 test('a scope the socket’s user may not follow reports unavailable without data', async () => {
   const { mine } = folders()
   const feed = createStoreFeed({
-    plugin: 'probe',
+    miniApp: 'probe',
     resolveDir: async () => null,
     windowMs: WINDOW_MS,
   })
@@ -85,10 +85,10 @@ test('a scope the socket’s user may not follow reports unavailable without dat
   feed.wsFrames[0]!.start({ sessionId: 'a' }, (data) => sent.push(data), { userId: 'someone' })
   await counter(mine).update(() => ({ n: 1 }))
   await settle()
-  expect(sent).toEqual([JSON.stringify({ plugin: 'probe', sessionId: 'a', live: false })])
+  expect(sent).toEqual([JSON.stringify({ miniApp: 'probe', sessionId: 'a', live: false })])
 })
 
-test('the commands are the plugin’s own, and shutdown releases live streams', async () => {
+test('the commands are the mini app’s own, and shutdown releases live streams', async () => {
   const { mine } = folders()
   const { feed, contribution, sent } = start({ a: mine })
   expect(contribution.subscribeCommand).toBe('probe:store.subscribe')

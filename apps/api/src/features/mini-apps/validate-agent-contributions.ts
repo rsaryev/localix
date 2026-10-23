@@ -2,11 +2,11 @@ import type { DiscoveredMiniApp } from './discovery'
 import { agentContributionSchema } from '../agents/contribution'
 
 /** Agent definitions have a typed payload even though manifest contribution kinds are extensible. */
-export function validateAgentContributions(plugin: DiscoveredMiniApp): string[] {
+export function validateAgentContributions(miniApp: DiscoveredMiniApp): string[] {
   const errors: string[] = []
   const keys = new Set<string>()
   const handles = new Set<string>()
-  for (const entry of plugin.contributions) {
+  for (const entry of miniApp.contributions) {
     if (entry.kind !== 'agent') continue
     const parsed = agentContributionSchema.safeParse(entry.value)
     if (!parsed.success) {

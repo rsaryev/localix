@@ -59,7 +59,7 @@ describe('contributed session surfaces', () => {
   test('a contribution receives the session and the surface context verbatim', async () => {
     registerSessionSurface({
       surface: 'test.context',
-      pluginName: 'fixture',
+      miniAppName: 'fixture',
       Component: ({ sessionId, context }: { sessionId: string | null; context?: unknown }) => (
         <span data-session={sessionId ?? 'none'} data-context={JSON.stringify(context ?? null)} />
       ),
@@ -69,7 +69,7 @@ describe('contributed session surfaces', () => {
     )
     try {
       expect(view.html).toContain('data-session="s1"')
-      // The context is the surface's own vocabulary and reaches the plugin unchanged — the git
+      // The context is the surface's own vocabulary and reaches the mini app unchanged — the git
       // poller reads an `isolationToken` from here, and dropping it silently costs a refresh.
       expect(view.html).toContain('{&quot;focused&quot;:true}')
     } finally {
@@ -80,7 +80,7 @@ describe('contributed session surfaces', () => {
   test('a null session still mounts — a surface decides for itself what that means', async () => {
     registerSessionSurface({
       surface: 'test.nullable',
-      pluginName: 'fixture',
+      miniAppName: 'fixture',
       Component: ({ sessionId }: { sessionId: string | null }) => (
         <span data-session={String(sessionId)} />
       ),

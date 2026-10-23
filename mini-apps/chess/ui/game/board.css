@@ -1,5 +1,5 @@
 /* ── The board ────────────────────────────────────────────────────────────────────────────────
-   Squares and pieces are styled HERE, not with utility classes: utilities reach a plugin through
+   Squares and pieces are styled HERE, not with utility classes: utilities reach a mini app through
    the host's de-duplicated sheet, where a rule judged a duplicate of the host's can be dropped, and
    a board whose squares lost their colour is no board at all. The same board as Checkers: squares
    mixed from the theme's foreground so it sits in light and dark alike, while the PIECES keep

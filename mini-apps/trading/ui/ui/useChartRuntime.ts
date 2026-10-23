@@ -41,7 +41,7 @@ export interface ChartRuntime {
   mainSeries: Box<MainSeriesApi | null>
   volumeSeries: Box<ISeriesApi<'Histogram'> | null>
   drawingLayer: ReturnType<typeof createDrawingLayer>
-  /** Native series-marker plugin on the main series (trade markers), recreated on a type swap. */
+  /** Native series-marker mini app on the main series (trade markers), recreated on a type swap. */
   markersPlugin: Box<ISeriesMarkersPluginApi<Time> | null>
   /** Session background — rides the VOLUME series, which survives a chart-type swap. */
   sessionPrim: Box<SessionHighlightPrimitive | null>

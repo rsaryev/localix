@@ -113,7 +113,7 @@ export function RootLayout() {
         </Suspense>
       )}
       {/* One host for the whole app: a link from a book, a model's Markdown, the
-          terminal or a plugin panel all wait on this same confirmation — and so
+          terminal or a mini app panel all wait on this same confirmation — and so
           will the next outward action, without a second dialog. */}
       <ActionConfirm />
     </>

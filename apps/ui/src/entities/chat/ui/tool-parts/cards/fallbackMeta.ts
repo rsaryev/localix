@@ -5,11 +5,11 @@ import type { ToolMeta } from './meta'
 
 /*
  * Meta for names the core table does not own: the generic fallback, MCP tools, standalone
- * surfaces without an entry, and the rows plugins contribute for their own tools.
+ * surfaces without an entry, and the rows mini apps contribute for their own tools.
  */
 
 /**
- * Unknown and plugin tools — and, since external-agent transcripts landed, every FOREIGN tool.
+ * Unknown and mini app tools — and, since external-agent transcripts landed, every FOREIGN tool.
  *
  * `stackable` is true for the same reason MCP's is: a run of consecutive calls to ONE name is one
  * activity however little we know about the name, and `groupConsecutiveItems` only stacks a same-name
@@ -50,9 +50,9 @@ export const MCP_META: ToolMeta = {
 export const STANDALONE_FALLBACK_META: ToolMeta = { ...FALLBACK_META, stackable: false }
 
 /**
- * The row a plugin registered for a tool it owns (`host.toolCards`), in this table's shape.
+ * The row a mini app registered for a tool it owns (`host.toolCards`), in this table's shape.
  *
- * Consulted only AFTER the core table, so a plugin cannot restyle a built-in by registering its
+ * Consulted only AFTER the core table, so a mini app cannot restyle a built-in by registering its
  * name. Cached per contribution because callers compare meta by identity (the stacking fold, the
  * `FALLBACK_META` guard) and a fresh object per call would read as a different tool every render.
  */

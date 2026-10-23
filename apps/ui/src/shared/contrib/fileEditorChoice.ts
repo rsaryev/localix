@@ -5,7 +5,7 @@ import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
  * same file, the user's pick is persisted PER EXTENSION (the routing key every
  * contribution matches on) so the chooser appears once, not on every open.
  * Keyed by contribution id (stable across reloads); a remembered id whose
- * contribution disappeared (plugin removed) is simply ignored by the caller.
+ * contribution disappeared (mini app removed) is simply ignored by the caller.
  */
 
 const STORAGE_KEY = 'localix.fileEditorChoice'

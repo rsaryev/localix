@@ -1,5 +1,5 @@
 /**
- * The MODEL-FACING CONTRACT of `api_client` — the plugin's ONE tool.
+ * The MODEL-FACING CONTRACT of `api_client` — the mini app's ONE tool.
  *
  * It was two: `http_request` and `manage_environment`, split by subject the way trading splits
  * `market_data` from `manage_chart`. That split had a real argument behind it — "a fourteen-action
@@ -18,7 +18,7 @@
  * environment, `import` one) are refused by {@link apiToolProblem} with a message that says what
  * to do instead, rather than being unrepresentable and therefore undiscoverable.
  *
- * The shape follows this plugin's established pattern, unchanged:
+ * The shape follows this mini app's established pattern, unchanged:
  *   1. ONE flat `z.object` with an `action` enum and per-action params as OPTIONAL siblings.
  *   2. Every `.describe()` says WHICH action needs the field and shows a literal example.
  */

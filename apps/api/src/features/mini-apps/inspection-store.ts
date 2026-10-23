@@ -8,18 +8,18 @@ import { readManagedFingerprint } from './managed-copy'
 import type { inspectMiniAppTools } from './native'
 
 /**
- * Plugin tool inspections that survive a restart.
+ * Mini app tool inspections that survive a restart.
  *
- * The defect this stops: the capability snapshot names each enabled plugin's tools by importing
+ * The defect this stops: the capability snapshot names each enabled mini app's tools by importing
  * its backend and calling `register()` (`inspectMiniAppTools`), and that answer lived only in the
  * service's memory. So EVERY launch imported every backend bundle (~20 bundles, 14 MB, ~265 ms)
- * before the first snapshot could answer, and the UI's plugin rail waited on it. The answer
+ * before the first snapshot could answer, and the UI's mini app rail waited on it. The answer
  * rarely changes between launches, so it is kept on disk and a launch whose inputs are unchanged
- * serves it without running any plugin code.
+ * serves it without running any mini app code.
  *
  * What makes an entry valid is stated by {@link durableInspectionFingerprint}: the in-memory
  * fingerprint (manifest, config digest, entry mtime/size, user, cwd) PLUS evidence that neither
- * the plugin's code nor the host that inspects it changed — the fingerprint a managed copy was
+ * the mini app's code nor the host that inspects it changed — the fingerprint a managed copy was
  * installed with, or for a user install a stat of its tree. Lifecycle changes (enable, config,
  * install, remove, reload) drop entries explicitly, exactly as they drop the in-memory ones. A
  * failed inspection is never stored, and a file that does not parse is an empty cache.
@@ -37,16 +37,16 @@ interface StoredInspection {
 const STORE_VERSION = 1
 const STORE_FILE = 'mini-app-inspection-cache-v1.json'
 const MAX_STORED = 256
-/** Twenty plugins finish inspecting within one burst; coalesce them into one write. */
+/** Twenty mini apps finish inspecting within one burst; coalesce them into one write. */
 const WRITE_COALESCE_MS = 50
-/** A user plugin tree bigger than this is not stat-walked per launch; it stays memory-only. */
+/** A user mini app tree bigger than this is not stat-walked per launch; it stays memory-only. */
 const MAX_TREE_ENTRIES = 2_000
 const SKIPPED_TREE_DIRS = new Set(['node_modules', '.git'])
 
 /**
  * The host build: the file this code is running from. Packaged, that is the server bundle, which
  * changes with every release — and a release can change what inspection reports (tool-name
- * policy, the context `register()` receives) for a plugin whose own files did not change.
+ * policy, the context `register()` receives) for a mini app whose own files did not change.
  */
 let hostStamp: Promise<string> | null = null
 function hostBuildStamp(): Promise<string> {
@@ -58,7 +58,7 @@ function hostBuildStamp(): Promise<string> {
 }
 
 /**
- * mtime/size of every file a user plugin's entry could import. A user install has no content
+ * mtime/size of every file a user mini app's entry could import. A user install has no content
  * marker, and the entry's own stat (the in-memory key) misses an edit to a sibling module the
  * entry imports — which a restart, unlike an in-process re-import, WOULD pick up. `node_modules`
  * is represented by its own directory stat (an install or removal) rather than walked.
@@ -92,15 +92,15 @@ async function userTreeStamp(root: string): Promise<string | null> {
 }
 
 /**
- * The key a stored inspection must match, or null when this plugin's inspection is not persisted
+ * The key a stored inspection must match, or null when this mini app's inspection is not persisted
  * (a user tree too large to stat cheaply). `memoryFingerprint` is the service's own key digest.
  */
 export async function durableInspectionFingerprint(
-  plugin: DiscoveredMiniApp,
+  miniApp: DiscoveredMiniApp,
   memoryFingerprint: string,
 ): Promise<string | null> {
-  const managed = await readManagedFingerprint(plugin.dir)
-  const code = managed ? `managed:${managed}` : await userTreeStamp(plugin.dir)
+  const managed = await readManagedFingerprint(miniApp.dir)
+  const code = managed ? `managed:${managed}` : await userTreeStamp(miniApp.dir)
   if (code === null) return null
   return createHash('sha256')
     .update(JSON.stringify([STORE_VERSION, await hostBuildStamp(), memoryFingerprint, code]))
@@ -162,7 +162,7 @@ export interface MiniAppInspectionStore {
 /** The on-disk inspection store of one Localix home: `<home>/.localix/cache/<STORE_FILE>`. */
 export function createMiniAppInspectionStore(homeDir: string): MiniAppInspectionStore {
   const file = join(homeDir, '.localix', 'cache', STORE_FILE)
-  // Keyed by a digest: the raw key carries the plugin path, user and cwd.
+  // Keyed by a digest: the raw key carries the mini app path, user and cwd.
   const digest = (key: string) => createHash('sha256').update(key).digest('hex')
   let entries: Promise<Map<string, StoredInspection>> | null = null
   const load = (): Promise<Map<string, StoredInspection>> => {

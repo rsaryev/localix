@@ -22,7 +22,7 @@ test('the status bar omits CLI launchers even when agents are installed', async 
   function Probe({ available }: { available: boolean }) {
     const actions = useRailActions({
       openSessionId: 'own-chat',
-      pluginViews: [],
+      miniAppViews: [],
       capabilityScope: 'global',
       keepAwake: {
         state: { id: 'keep-awake', title: 'Keep awake', enabled: false, available },

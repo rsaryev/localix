@@ -41,7 +41,7 @@ interface RailRecentsDockProps {
  * open view's icon and the active accent instead of letting it out onto the rail.
  *
  * The flyout is a portalled popover rather than an in-rail expansion on purpose:
- * growing the rail under the pointer would shove the plugin launcher and everything below
+ * growing the rail under the pointer would shove the mini app launcher and everything below
  * it out from under the cursor.
  *
  * `railRecentsPref` chooses between this, always-expanded, and off.

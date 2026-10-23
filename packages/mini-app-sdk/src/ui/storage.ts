@@ -1,4 +1,4 @@
-/** Minimal read contract, allowing plugins and tests to supply an isolated store. */
+/** Minimal read contract, allowing mini apps and tests to supply an isolated store. */
 export interface StorageReader {
   getItem(key: string): string | null
 }

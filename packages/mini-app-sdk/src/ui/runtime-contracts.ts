@@ -1,5 +1,5 @@
 /**
- * THE RUNTIME INTERFACE — the doors a host must implement for plugin UI.
+ * THE RUNTIME INTERFACE — the doors a host must implement for mini app UI.
  *
  * Its payload types live beside it in `runtime-payloads.ts`: adding a door is a change the host
  * has to answer, while a payload shape usually is not, and reviewing one should not mean
@@ -42,10 +42,11 @@ export interface MiniAppUiRuntime {
      */
     openPreview(request: MiniAppOpenPreviewRequest): Promise<void>
     /**
-     * Close every tab of this plugin's whose id is `prefix` or a `prefix:` child. A session-scoped
-     * tab carries its chat in its id, so say which chats the close reaches: `session` closes that
-     * chat's tabs only (the same card id in another chat is a different tab); `everyChat` closes
-     * them in every chat — for something app-wide that went away, like a removed connection.
+     * Close every tab of this mini app's whose id is `prefix` or a `prefix:` child. A
+     * session-scoped tab carries its chat in its id, so say which chats the close reaches:
+     * `session` closes that chat's tabs only (the same card id in another chat is a different tab);
+     * `everyChat` closes them in every chat — for something app-wide that went away, like a removed
+     * connection.
      */
     closeWorkItems(prefix: string, options?: { session?: string; everyChat?: boolean }): void
     focusWorkItem(id: string): void
@@ -64,7 +65,7 @@ export interface MiniAppUiRuntime {
     /**
      * PASTE a command onto the prompt of a chat's terminal — the host opens one if that chat has
      * none and strips any trailing newline. Deliberately not `spawnCommand`: the person reviews
-     * the line and presses Enter, so a plugin can offer a command without executing on their
+     * the line and presses Enter, so a mini app can offer a command without executing on their
      * behalf.
      */
     paste(request: { sessionId: string; command: string }): void
@@ -79,7 +80,7 @@ export interface MiniAppUiRuntime {
     /**
      * Announce that these paths changed on disk, so open editors reload them.
      *
-     * A plugin that writes through git — staging a hunk, discarding a change — moves files the
+     * A mini app that writes through git — staging a hunk, discarding a change — moves files the
      * editor is already showing, and without this the buffer keeps the stale text until the person
      * switches tabs.
      */
@@ -98,7 +99,7 @@ export interface MiniAppUiRuntime {
      *
      * A desktop host may retain a real filesystem path. Browser and clipboard
      * files have no path, so the host persists their bytes and returns an opaque
-     * media-backed file binding instead. Plugins never choose the storage route.
+     * media-backed file binding instead. Mini apps never choose the storage route.
      */
     bindingsFromFiles(files: readonly File[]): Promise<MessageBindingDraft[]>
     /**
@@ -118,8 +119,8 @@ export interface MiniAppUiRuntime {
      *
      * A host door rather than a bridge event: the sandboxed iframe tier never receives file paths
      * (`bridge.ts` keeps `fs.changed` off its allow-list), while native workbench UI already runs
-     * with the consent of a native backend. Plugins call {@link miniAppFiles.watchWorkspace}, which
-     * coalesces this feed; the host only filters by chat and reports liveness.
+     * with the consent of a native backend. Mini apps call {@link miniAppFiles.watchWorkspace},
+     * which coalesces this feed; the host only filters by chat and reports liveness.
      */
     watchWorkspace(sessionId: string, handlers: MiniAppWorkspaceWatchHandlers): () => void
   }
@@ -136,7 +137,7 @@ export interface MiniAppUiRuntime {
       options?: { signal?: AbortSignal; timeoutMs?: number },
     ): Promise<unknown>
   }
-  // No "active session" here, on purpose: a plugin surface acts for the chat it belongs to
+  // No "active session" here, on purpose: a mini app surface acts for the chat it belongs to
   // (`useWorkItemSessionId()`, a session surface's `sessionId` prop), never for whichever chat is
   // on screen. Reading the active one made a background board wake, insert into and open things
   // in another chat.
@@ -178,7 +179,7 @@ export interface MiniAppUiRuntime {
     ): Promise<MiniAppEditPredictionResult>
   }
   completion: {
-    /** A React hook the host provides: ghost-text completion for one plugin text field. */
+    /** A React hook the host provides: ghost-text completion for one mini app text field. */
     useTextInput(input: MiniAppTextInputCompletionInput): MiniAppTextInputCompletion
   }
   clipboard: {

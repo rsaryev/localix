@@ -15,7 +15,7 @@ import type { Message } from '../model/types'
  * `sessionId` is nullable and every OTHER use in the list guards it. This one used
  * `sessionId ?? ''`, which silences the type checker with a value the runtime rejects:
  * `localixResourceUri` throws on an empty segment, from inside render, where the only net was the
- * ROOT error boundary — the same shape that took the whole workspace down when a plugin did it.
+ * ROOT error boundary — the same shape that took the whole workspace down when a mini app did it.
  *
  * A message with no session simply is not addressable, and `useUiTarget` already accepts
  * `undefined` and registers nothing. Saying that is both truthful and unable to throw.

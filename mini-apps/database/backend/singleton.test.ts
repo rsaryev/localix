@@ -1,7 +1,7 @@
 /**
  * The live failure: the agent's `database_client` tool answered "Connected: MySQL Docker smoke
  * test", the saved-connection file on disk had the row, and the workbench list never showed it —
- * reload or not. The host re-wires a plugin by loading the new registration BEFORE unwiring the
+ * reload or not. The host re-wires a mini app by loading the new registration BEFORE unwiring the
  * old one; the new routes captured the instance the old `onShutdown` then released, and the next
  * agent turn built a second instance. These tests replay that order on the real `register()`.
  */
@@ -43,7 +43,7 @@ async function registration() {
   return { call, listed, onShutdown: subsystem.onShutdown!, tool: tools![0]! }
 }
 
-test('a connection the agent adds after a plugin reload is on the list the workbench reads', async () => {
+test('a connection the agent adds after a mini app reload is on the list the workbench reads', async () => {
   const boot = await registration()
   expect(await boot.listed()).toEqual([]) // the list is now cached in memory
 

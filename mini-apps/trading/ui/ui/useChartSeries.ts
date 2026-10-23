@@ -67,7 +67,7 @@ export function useChartMainSeries(
     series.applyOptions({ priceFormat: { type: 'price', ...rt.props.current.priceFormat } })
     series.setData(mainSeriesData(chartType, rt.candles.current) as never[])
     rt.mainSeries.current = series
-    // Drawings and the trade-marker plugin lived ON the removed series — re-attach them.
+    // Drawings and the trade-marker mini app lived ON the removed series — re-attach them.
     rt.drawingLayer.attach(series)
     syncDrawingLayer(rt, rt.drawings.current)
     rt.markersPlugin.current = createSeriesMarkers(series, seriesMarkersOf(rt.drawings.current))

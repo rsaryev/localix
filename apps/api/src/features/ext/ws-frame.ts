@@ -21,7 +21,7 @@
  *            (`realtime/ws.ts`) and parsed here as a generic tagged frame
  *   frame:   "<tag>\n<payload-json>" — a GENERIC subsystem live-stream frame. The
  *            single-char `tag` (any leading char other than the reserved s/r/n —
- *            `RESERVED_FRAME_TAGS` in the plugin SDK refuses them at registration) is
+ *            `RESERVED_FRAME_TAGS` in the mini app SDK refuses them at registration) is
  *            contributed by a backend subsystem via `WsFrameContribution.frameTag`
  *            and demuxed by a registered per-tag handler. Core names no subsystem.
  *

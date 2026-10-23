@@ -4,7 +4,7 @@ import { formatBuildLogs } from './build-logs'
 
 describe('build logs', () => {
   // "Could not resolve: zod" without the importing file sent the agent searching for it.
-  test('a bundler error names its file, line and column relative to the plugin', () => {
+  test('a bundler error names its file, line and column relative to the mini app', () => {
     const logs = [
       {
         message: 'Could not resolve: "left-pad"',

@@ -15,7 +15,7 @@ import {
 } from './template-layout'
 
 /**
- * Fork the kit's reference mini app into a USER mini app at `<pluginsRoot>/<name>`.
+ * Fork the kit's reference mini app into a USER mini app at `<miniAppsRoot>/<name>`.
  *
  * Why a fork of a shipped, tested mini app and not a hollow skeleton: a skeleton with placeholders
  * cannot be built or tested itself, so it rots the moment the SDK moves; a copy of the template is
@@ -33,7 +33,7 @@ import {
  */
 
 /** Lower-kebab only: the PascalCase and snake_case derivations below need one clean shape. */
-export const PLUGIN_NAME_RE = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u
+export const MINI_APP_NAME_RE = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/u
 const MAX_NAME_LENGTH = 40
 
 /**
@@ -51,7 +51,7 @@ export function toMiniAppName(raw: string): string {
     .replace(/[^a-z0-9]+/gu, '-')
     .slice(0, MAX_NAME_LENGTH)
     .replace(/^[^a-z]+|-+$/gu, '')
-  return PLUGIN_NAME_RE.test(slug) ? slug : 'my-plugin'
+  return MINI_APP_NAME_RE.test(slug) ? slug : 'my-mini-app'
 }
 /** A private provenance marker so continuation never edits a different mini app with the same name. */
 export const USER_MINI_APP_AUTHORING_MARKER = '.localix-authoring.json'
@@ -64,7 +64,7 @@ export class ScaffoldError extends Error {}
 export interface ScaffoldInput {
   kit: MiniAppKit
   /** The user mini apps root the copy lands in (`~/.localix/mini-apps`). */
-  pluginsRoot: string
+  miniAppsRoot: string
   name: string
   /** What the person sees; `titleCase(name)` turns `gpu-monitor` into "Gpu Monitor". */
   displayName?: string
@@ -137,9 +137,9 @@ async function exists(path: string): Promise<boolean> {
 function validate({ name, takenNames }: ScaffoldInput): void {
   // The name becomes a directory, a package namespace and part of every tool name, so the shape
   // check is also what keeps it from naming a path.
-  if (!PLUGIN_NAME_RE.test(name)) {
+  if (!MINI_APP_NAME_RE.test(name)) {
     throw new ScaffoldError(
-      `Plugin name "${name}" must be lower-kebab-case: letters, digits and dashes.`,
+      `Mini app name "${name}" must be lower-kebab-case: letters, digits and dashes.`,
     )
   }
   if (name === TEMPLATE_NAME || takenNames.has(name)) {
@@ -171,8 +171,8 @@ async function patchManifest(
 export async function scaffoldUserMiniApp(input: ScaffoldInput): Promise<ScaffoldResult> {
   // Validate → decide → write.
   validate(input)
-  const { kit, pluginsRoot, name } = input
-  const dir = join(pluginsRoot, name)
+  const { kit, miniAppsRoot, name } = input
+  const dir = join(miniAppsRoot, name)
   if (await exists(dir)) {
     throw new ScaffoldError(`${dir} already exists — choose another name, or remove that folder.`)
   }
@@ -182,8 +182,8 @@ export async function scaffoldUserMiniApp(input: ScaffoldInput): Promise<Scaffol
 
   // The `.`-prefixed staging directory is invisible to discovery, on the same filesystem as the
   // destination so the final move is one atomic rename.
-  const staging = join(pluginsRoot, `.scaffold-${name}-${randomUUID()}`)
-  await fs.mkdir(pluginsRoot, { recursive: true })
+  const staging = join(miniAppsRoot, `.scaffold-${name}-${randomUUID()}`)
+  await fs.mkdir(miniAppsRoot, { recursive: true })
   try {
     await fs.cp(kit.templateDir, staging, {
       recursive: true,

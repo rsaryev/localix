@@ -265,7 +265,7 @@ export function SegmentedControlItem({
   )
 }
 
-/** Compact typed choice control used by plugin and host panels alike. */
+/** Compact typed choice control used by mini app and host panels alike. */
 export function Segmented<T extends string>({
   options,
   value,

@@ -1,6 +1,6 @@
 {
-  "$comment": "What a copy of this mini app is made of. Read by the API's plugin authoring (apps/api/src/features/plugins/authoring: the scaffold, the agent instruction and the check) and by staging (scripts/stage-plugin-kit.mjs ships the template minus authoringOnly). The template owns its own domain, so the host names no mini app identity. Placeholders: {name} lower-kebab, {snake} lower_snake, {displayName}.",
-  "summary": "System Overview reference plugin (live OS, CPU, memory and process data, plus marks the user and the agent save)",
+  "$comment": "What a copy of this mini app is made of. Read by the API's mini app authoring (apps/api/src/features/mini-apps/authoring: the scaffold, the agent instruction and the check) and by staging (scripts/stage-mini-app-kit.mjs ships the template minus authoringOnly). The template owns its own domain, so the host names no mini app identity. Placeholders: {name} lower-kebab, {snake} lower_snake, {displayName}.",
+  "summary": "System Overview reference mini app (live OS, CPU, memory and process data, plus marks the user and the agent save)",
   "domainName": "System Overview",
   "entry": [
     "mini-app.json",

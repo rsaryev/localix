@@ -9,7 +9,7 @@ type MutationResources<T, Resource extends string> = {
 }
 
 /**
- * Compose commit notifications onto service methods, so HTTP, plugins and internal callers use
+ * Compose commit notifications onto service methods, so HTTP, mini apps and internal callers use
  * the same contract. Explicit method maps keep reads silent. The service retains its type and
  * identity; no proxy, second transport or domain dependency on realtime is needed.
  */

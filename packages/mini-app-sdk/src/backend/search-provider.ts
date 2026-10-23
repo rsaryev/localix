@@ -148,7 +148,7 @@ export interface SearchProviderRegistry {
    *  object is idempotent: the host re-runs `register` for already-wired backends when the
    *  registry is attached. Returns false when the id was already taken by someone else. */
   register(provider: SearchProvider): boolean
-  /** Remove a provider — hot plugin disable. Pass the PROVIDER you registered, not a bare
+  /** Remove a provider — hot mini app disable. Pass the PROVIDER you registered, not a bare
    *  id: with an id alone a disable removed whatever currently sits under that id, which
    *  on an id collision is somebody else's live provider. Unknown/foreign entries are a
    *  no-op. */
@@ -190,7 +190,7 @@ export function createSearchProviderRegistry(): SearchProviderRegistry {
       if (existing === provider) return true
       if (existing) {
         console.warn(
-          `[search] duplicate provider id "${provider.id}" — keeping the first; a plugin must namespace its provider id`,
+          `[search] duplicate provider id "${provider.id}" — keeping the first; a mini app must namespace its provider id`,
         )
         return false
       }
@@ -201,7 +201,7 @@ export function createSearchProviderRegistry(): SearchProviderRegistry {
       const id = typeof provider === 'string' ? provider : provider.id
       const live = byId.get(id)
       if (!live) return
-      // Identity-checked: a plugin's disable must not evict a provider it never owned.
+      // Identity-checked: a mini app's disable must not evict a provider it never owned.
       if (typeof provider !== 'string' && live !== provider) return
       byId.delete(id)
     },

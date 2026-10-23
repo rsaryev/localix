@@ -45,7 +45,7 @@ export const DECISION_RUN_MOVES = 2500
  * opponent, or a decision comes back without a move — whose reason the board then shows.
  */
 export function createGameService(input: {
-  /** The session's folder for this plugin; rejects for a session the user does not own. */
+  /** The session's folder for this mini app; rejects for a session the user does not own. */
   resolveDir?: (userId: string, sessionId: string) => Promise<string>
   /** `ctx.host.wake` — present on the backend load, where the routes live. */
   wake?: Wake

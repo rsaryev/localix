@@ -1,5 +1,5 @@
-//! Serves the UI build that ships inside Localix.app to a plugin app's page, so the page is always
-//! the version of the host that serves its data.
+//! Serves the UI build that ships inside Localix.app to a standalone mini app's page, so the page
+//! is always the version of the host that serves its data.
 use std::path::{Path, PathBuf};
 
 use objc2::rc::Retained;

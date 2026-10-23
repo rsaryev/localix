@@ -28,7 +28,7 @@ const RPC_ATTRIBUTE_KEYS = [
   'terminalId',
   'requestId',
   'commandId',
-  'pluginName',
+  'miniAppName',
   'action',
 ] as const
 

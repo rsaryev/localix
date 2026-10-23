@@ -16,7 +16,7 @@ The workbench is built from these surfaces:
 | Driver/schema state          | Shared connection and schema stores across workspace and console tabs |
 | Query/data/schema work areas | Native editor-grid consoles, result tabs and schema explorer          |
 | Pre-run parameter form       | Safe out-of-band binds with per-console remembered values             |
-| Extension/query hooks        | Plugin SDK resources, search, context providers and agent tools       |
+| Extension/query hooks        | Mini app SDK resources, search, context providers and agent tools     |
 
 Parameter execution detects placeholders at Run time, requests values before execution and retains
 them for the next invocation.
@@ -97,9 +97,9 @@ omission is not a general credential-redaction guarantee.
   editor-grid tabs that belong to the chat they were opened in. A console runs edit prediction for
   its chat and the other tabs open consoles and tables into theirs, so every open names the chat
   (the tab's own session, or the status item's) and the console command bus is keyed by chat and
-  connection. Saved connections themselves stay app-wide. Cold restoration treats plugin activation
-  as a tri-state: a backend snapshot that has not arrived is pending, not disabled, so a slow
-  sidecar cannot erase the saved tab layout.
+  connection. Saved connections themselves stay app-wide. Cold restoration treats mini app
+  activation as a tri-state: a backend snapshot that has not arrived is pending, not disabled, so a
+  slow sidecar cannot erase the saved tab layout.
 
 ## Structured read invariant
 
@@ -129,7 +129,7 @@ declaration without their own dialect switches.
 ## Related guides
 
 - [Database user guide and engine validation boundaries](../../docs/features/database.md)
-- [Bundled plugin ownership](../README.md)
+- [Bundled mini app ownership](../README.md)
 
 ## Source of truth
 

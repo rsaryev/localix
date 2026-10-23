@@ -179,7 +179,7 @@
    ═══════════════════════════════════════════════════════════════
    `prefers-contrast: more` is distinct from forced colors: the user's chosen
    palette remains intact, but quiet chrome needs a larger luminance step. Keep
-   the adjustment in semantic tokens so host and plugin surfaces strengthen
+   the adjustment in semantic tokens so host and mini app surfaces strengthen
    together instead of accumulating per-component high-contrast variants. */
 @media (prefers-contrast: more) {
   :root {

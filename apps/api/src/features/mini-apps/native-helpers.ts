@@ -8,7 +8,7 @@ import { extractReadable } from '../agent-core/tools/web/readable-extract'
 
 /**
  * Host implementation of `ctx.helpers` — the {@link MiniAppHelpers} contract is
- * OWNED by `@localixai/mini-app-sdk` (plugins compile against it); this module
+ * OWNED by `@localixai/mini-app-sdk` (mini apps compile against it); this module
  * provides the runtime. The type is re-exported so the historical import surface
  * (native.ts) stays unchanged.
  *
@@ -97,11 +97,11 @@ export function makeHelpers(): MiniAppHelpers {
     },
     readJson: readJsonFile,
     /**
-     * Atomic on purpose, and this is the highest-leverage place for it: every plugin
+     * Atomic on purpose, and this is the highest-leverage place for it: every mini app
      * gets this helper, and `readJson` + `writeJson` is the whole-file read-modify-write
      * loop extension authors naturally write (`writeJson(f, [...names, name])`). A
      * plain writeFile truncates and then writes, so an interrupted save leaves a
-     * half-file and takes every OTHER key with it — a plugin author gets that failure
+     * half-file and takes every OTHER key with it — a mini app author gets that failure
      * mode by default, in their own store, without ever choosing it. temp+rename means
      * the file is the old one or the new one, never a partial.
      */
@@ -109,9 +109,9 @@ export function makeHelpers(): MiniAppHelpers {
       await atomicWriteFile(filePath, JSON.stringify(value, null, 2))
     },
     // Text utilities shared with the central research reader (agent-core html-text) so
-    // drop-in plugins don't each carry their own entity/tag-stripping copy. A pure
-    // PARSING kernel a plugin unit-tests standalone may still inline its own (e.g.
-    // native plugin tools); adapters should reach for these.
+    // drop-in mini apps don't each carry their own entity/tag-stripping copy. A pure
+    // PARSING kernel a mini app unit-tests standalone may still inline its own (e.g.
+    // native mini app tools); adapters should reach for these.
     decodeEntities,
     htmlToText,
     stripToText,

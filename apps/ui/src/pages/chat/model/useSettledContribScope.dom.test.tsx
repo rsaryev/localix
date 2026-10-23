@@ -11,7 +11,7 @@ afterAll(async () => teardown())
 /**
  * A cold launch lands on `/`, which the launch restore redirects to the remembered project. The
  * contribution store used to treat that transient route as the GLOBAL scope: it discarded the
- * restored frame, published the global plugin set, emptied it at the redirect and only then
+ * restored frame, published the global mini app set, emptied it at the redirect and only then
  * loaded the project's — the rail flickered three times.
  */
 describe('the contribution scope across a home route', () => {

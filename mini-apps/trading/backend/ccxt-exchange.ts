@@ -1,6 +1,7 @@
 /**
- * The ccxt CLIENT surface: the slice of a ccxt `Exchange` this plugin actually calls, how the heavy
- * module is loaded, and the one non-obvious fact every caller of it must know (`has` is TRI-state).
+ * The ccxt CLIENT surface: the slice of a ccxt `Exchange` this mini app actually calls, how the
+ * heavy module is loaded, and the one non-obvious fact every caller of it must know (`has` is
+ * TRI-state).
  *
  * Declared STRUCTURALLY — nothing here imports ccxt's types, so every module that reads an exchange
  * (the driver, the scoped-read policy, the capability description) compiles and unit-tests against a
@@ -8,7 +9,7 @@
  * through {@link loadCcxt}.
  */
 
-/** The slice of a ccxt `Exchange` this plugin actually calls. */
+/** The slice of a ccxt `Exchange` this mini app actually calls. */
 export interface CcxtExchange {
   id: string
   name: string

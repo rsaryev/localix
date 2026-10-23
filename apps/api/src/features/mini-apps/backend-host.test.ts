@@ -399,7 +399,7 @@ describe('createMiniAppBackendHost', () => {
     expect(host.wired()).toEqual([])
     expect(wsFrameRegistry.list()).toEqual([])
     expect(warnings).toHaveLength(1)
-    expect(warnings[0]?.message).toContain('plugin backend rejected')
+    expect(warnings[0]?.message).toContain('mini app backend rejected')
     expect(warnings[0]?.meta).toMatchObject({
       problems: [
         expect.stringContaining('backend subsystem'),
@@ -440,7 +440,7 @@ describe('createMiniAppBackendHost', () => {
 
     await host.reconcile()
     expect(host.wired()).toEqual(['alpha'])
-    expect(warnings.some((warning) => warning.includes('duplicate plugin backend id'))).toBe(true)
+    expect(warnings.some((warning) => warning.includes('duplicate mini app backend id'))).toBe(true)
   })
 
   it('a mini app STILL tears down its own mount on disable', async () => {

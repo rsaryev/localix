@@ -8,7 +8,7 @@ import type { SystemReader } from './system'
  * "closed Docker" — so a later sample has something to be compared with.
  *
  * The view adds them and the agent adds them with `system_mark`, and both go through this one
- * store under the plugin's data folder: each sees the other's marks, and they outlive the pane,
+ * store under the mini app's data folder: each sees the other's marks, and they outlive the pane,
  * the session and the app.
  */
 export function createSystemMarks(dataDir: string, read: SystemReader, now = () => new Date()) {

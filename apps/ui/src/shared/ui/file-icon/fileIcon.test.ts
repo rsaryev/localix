@@ -53,7 +53,7 @@ describe('fileIcon', () => {
     expect(markup).toContain('fill="#3178c6"')
   })
 
-  test('renders plugin-contributed icon data through the shared catalog renderer', () => {
+  test('renders mini-app-contributed icon data through the shared catalog renderer', () => {
     const contribution: IconifyIcon = {
       body: '<path fill="#123456" d="M0 0h16v16H0z"/>',
       width: 16,

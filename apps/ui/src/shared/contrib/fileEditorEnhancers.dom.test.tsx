@@ -55,7 +55,7 @@ describe('file editor enhancer chain', () => {
   test('a claiming enhancer hands its contribution to the editor', async () => {
     registerFileEditorEnhancer({
       id: 'fixture:blame',
-      pluginName: 'fixture',
+      miniAppName: 'fixture',
       match: (path) => path.endsWith('.ts'),
       Component: ({ path, render: renderEditor }) =>
         renderEditor({ blameSource: async () => [{ line: 1, summary: path }] }),
@@ -79,7 +79,7 @@ describe('file editor enhancer chain', () => {
     let mounted = 0
     registerFileEditorEnhancer({
       id: 'fixture:counted',
-      pluginName: 'fixture',
+      miniAppName: 'fixture',
       match: (path) => path.endsWith('.md'),
       Component: ({ render: renderEditor }) => {
         mounted += 1
@@ -102,14 +102,14 @@ describe('file editor enhancer chain', () => {
   test('several enhancers compose, and the innermost wins a shared key', async () => {
     registerFileEditorEnhancer({
       id: 'fixture:outer',
-      pluginName: 'fixture',
+      miniAppName: 'fixture',
       match: (path) => path.endsWith('.css'),
       Component: ({ render: renderEditor }) =>
         renderEditor({ blameSource: async () => null, dirtyDiff: undefined }),
     })
     registerFileEditorEnhancer({
       id: 'fixture:inner',
-      pluginName: 'fixture',
+      miniAppName: 'fixture',
       match: (path) => path.endsWith('.css'),
       Component: ({ render: renderEditor }) => renderEditor({ blameSource: undefined }),
     })
@@ -126,7 +126,7 @@ describe('file editor enhancer chain', () => {
     try {
       // Both contributed the key; the later registration is nested deeper and merges last, so its
       // explicit `undefined` is the answer the editor gets. Spelling that out here because "last
-      // one wins" is the only rule that keeps two plugins on one file predictable.
+      // one wins" is the only rule that keeps two mini apps on one file predictable.
       expect(view.html).toContain('data-has-blame="true"')
       expect(view.html).toContain('data-blame="no"')
     } finally {

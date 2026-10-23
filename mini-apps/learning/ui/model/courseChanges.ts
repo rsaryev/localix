@@ -50,7 +50,7 @@ export function useCourseChanges(
   refresh: () => Promise<unknown>,
 ): void {
   const live = useStoreChanges(
-    { plugin: 'learning', sessionId },
+    { miniApp: 'learning', sessionId },
     () => LEARNING_COURSES.invalidate(sessionId),
     visible,
   )

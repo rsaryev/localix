@@ -21,7 +21,7 @@ function authoringStub(taken: readonly string[]) {
         name: input.name,
         displayName: input.displayName ?? input.name,
         description: 'd',
-        dir: `/tmp/plugins/${input.name}`,
+        dir: `/tmp/mini-apps/${input.name}`,
         report: {
           ok: false,
           published: true,
@@ -42,7 +42,7 @@ function authoringStub(taken: readonly string[]) {
 }
 
 // A description used to CONTINUE a generated copy of the same name, so an agent asked for a new
-// plugin that picked a name the user already had rebuilt the user's old plugin.
+// mini app that picked a name the user already had rebuilt the user's old mini app.
 test('a described taken name creates the next free name and never touches the existing one', async () => {
   const { authoring, calls } = authoringStub(['gpu-monitor'])
   const result = await runMiniAppBuild(authoring, 'user', {

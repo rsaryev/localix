@@ -27,7 +27,7 @@ interface WorkspaceRailProps {
   onUnpinTool: (id: string) => void
   /** Customizable entries currently placed in the lower group. */
   bottomEntries: RailEntry[]
-  /** Transient recent slots — plugin views, most recently opened first. */
+  /** Transient recent slots — mini app views, most recently opened first. */
   recentEntries?: RailEntry[]
   /** Append an entry to any visible placement zone. */
   onMoveToArea: (id: string, area: PinnedRailArea) => void
@@ -54,7 +54,7 @@ const NO_RECENT_ENTRIES: RailEntry[] = []
 /**
  * The vertical navigation rail, read as three hairline-separated groups: the fixed
  * NAVIGATION group (new chat, history) → the WORKSPACE group (fixed core
- * destinations, customizable plugin entries, and the plugin launcher) → the fixed SYSTEM group
+ * destinations, customizable mini app entries, and the mini app launcher) → the fixed SYSTEM group
  * (settings and update). Rendered in both the desktop
  * and mobile nav slots; the persisted layout is owned once by the shell, so both
  * stay in sync.
@@ -192,8 +192,8 @@ export function WorkspaceRail({
 
       <RailDivider />
 
-      {/* Group 2 — centered WORKSPACE destinations, customizable plugin entries,
-          the recent slots, and the plugin launcher. */}
+      {/* Group 2 — centered WORKSPACE destinations, customizable mini app entries,
+          the recent slots, and the mini app launcher. */}
       <RailWorkspaceGroup
         mainRailActions={mainRailActions}
         barEntries={barEntries}

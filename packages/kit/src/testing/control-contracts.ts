@@ -8,7 +8,7 @@ import {
  * The control ownership rules, stated ONCE.
  *
  * Each rule has two halves: the kit proves its own sources keep it, and the host proves the app
- * and the plugins do (`apps/ui/src/shared/ui/controls.contract.test.ts`), because the kit never
+ * and the mini apps do (`apps/ui/src/shared/ui/controls.contract.test.ts`), because the kit never
  * reads the host. Two copies of a detector drift — one half tightens a regex, the other keeps
  * passing over the shape it stopped seeing — so both halves call these, over different sources.
  */

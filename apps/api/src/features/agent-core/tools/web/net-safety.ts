@@ -1,6 +1,6 @@
 /**
  * Compatibility seam for existing host imports. The backend SDK owns the implementation so
- * research and native plugins enforce one SSRF/body-budget policy.
+ * research and native mini apps enforce one SSRF/body-budget policy.
  */
 export {
   checkUrlSafety,

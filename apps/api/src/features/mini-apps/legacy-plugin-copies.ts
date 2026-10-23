@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 
 import { listSubdirs } from '../ext/fs-discovery'
-import { MARKER_FILE, MARKER_KIND } from './managed-copy'
+import { LEGACY_MARKER_KIND, MARKER_FILE } from './managed-copy'
 
 /**
  * Before mini apps were their own format, Localix synchronized managed copies of the ones it
@@ -20,7 +20,7 @@ export async function retireLegacyPluginCopies(homeDir: string): Promise<string[
       .readFile(join(dir, MARKER_FILE), 'utf8')
       .then((text) => JSON.parse(text) as { kind?: unknown })
       .catch(() => null)
-    if (marker?.kind !== MARKER_KIND) continue
+    if (marker?.kind !== LEGACY_MARKER_KIND) continue
     await fs.rm(dir, { recursive: true, force: true })
     removed.push(name)
   }

@@ -28,7 +28,7 @@ export function useMiniAppContributions({
   onHomeRoute: boolean
 }) {
   const routeProjectId = useSettledContribScope(routeScope, onHomeRoute)
-  // The LIVE enabled-plugin contribution set (names + views) — an external store
+  // The LIVE enabled-mini-app contribution set (names + views) — an external store
   // refetched on the server's `resources.changed` event, so a toggle applies with no
   // page reload. `enabledNames === null` = not loaded yet (gates fail closed).
   const {
@@ -42,14 +42,14 @@ export function useMiniAppContributions({
   }, [enabledMiniAppNames])
   // Publish as soon as CORE discovery has settled — `discoverUi()` starts that
   // staged pass at app composition, so this is one chunk load, not a round trip.
-  // Do not wait for plugin bootstrap/hydration: that left early agent runs with
-  // the workbench capability but no catalog. When plugin activation becomes
+  // Do not wait for mini app bootstrap/hydration: that left early agent runs with
+  // the workbench capability but no catalog. When mini app activation becomes
   // authoritative, the registry revision triggers an atomic follow-up snapshot
   // with the newly available destinations.
   useEffect(() => {
     if (routeProjectId === undefined) return
     // Fail closed synchronously at the route boundary. Otherwise the first
-    // project-B catalog can capture project-A plugin destinations while B's
+    // project-B catalog can capture project-A mini app destinations while B's
     // contribution discovery is still in flight.
     prepareMiniAppContribScope(routeProjectId)
     return startUiLocationCatalogSync(routeProjectId, whenUiSurfacesReady())
@@ -60,7 +60,7 @@ export function useMiniAppContributions({
   // the palette commands below); the version bumps on every (re)sync.
   const thirdPartyViewsV = useSyncExternalStore(subscribeThirdPartyViews, thirdPartyViewsVersion)
 
-  // A restored shell frame has enabled names, but its plugin UI modules have not
+  // A restored shell frame has enabled names, but its mini app UI modules have not
   // been imported yet. Only a completed server snapshot also completes UI discovery.
   return {
     enabledMiniAppNames,
@@ -82,7 +82,7 @@ export function useMiniAppContributionsSync({
   routeProjectId: string | null | undefined
   thirdPartyViewsV: number
 }) {
-  // Initial load of the plugin contribution set (panels + enabled names +
+  // Initial load of the mini app contribution set (panels + enabled names +
   // third-party views). Later refetches ride the `resources.changed` stream event
   // (agent-runtime restarts the same convergent sync), so enable/disable
   // applies live — no page reload.

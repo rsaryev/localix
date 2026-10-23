@@ -145,7 +145,7 @@ describe('assistant continuation card', () => {
                 message={second}
                 segments={[first, second]}
                 segmentSessionId="session"
-                segmentWakeSources={[undefined, 'plugin']}
+                segmentWakeSources={[undefined, 'mini-app']}
                 isLast
               />
             </WorkItemSessionProvider>
@@ -163,7 +163,7 @@ describe('assistant continuation card', () => {
       )
       // The wake that joined mid-answer is a system line between the segments, not a caption.
       const wakeLine = host.querySelector('[data-message-id="second"] [role="status"]')
-      expect(wakeLine?.textContent).toContain('Plugin update · continuing')
+      expect(wakeLine?.textContent).toContain('Mini app update · continuing')
       expect(host.querySelectorAll('[data-sources-trigger]')).toHaveLength(1)
       expect(host.querySelector('[data-sources-trigger]')?.getAttribute('data-source-count')).toBe(
         '1',

@@ -9,16 +9,16 @@ import {
 import { UI_TOKEN_RULES, type UiTokenRule } from '../../../contracts/ui-token-rules'
 import { scanSources } from '../../../lib/source-lint'
 import type { MiniAppKit } from './kit'
-import { PLUGIN_KIT_STYLES_DIR } from './kit-layout'
+import { MINI_APP_KIT_STYLES_DIR } from './kit-layout'
 
 /**
- * The house style, checked on a USER plugin the way the repository guard checks the app.
+ * The house style, checked on a USER mini app the way the repository guard checks the app.
  *
  * A generated timer passed every build step with `<button className="rounded border px-4 py-2">`,
  * `text-red-500` and `bg-emerald-500`: it worked, and it looked like somebody else's app. The token
- * rules have bound the app and its bundled plugins since the drift guard, but that guard reads the
- * repository, and a user's mini app lives in `~/.localix/mini-apps`. So the same list runs here
- * (`contracts/ui-token-rules.ts`, one owner), plus the rule only a plugin needs: a native form
+ * rules have bound the app and its bundled mini apps since the drift guard, but that guard reads
+ * the repository, and a user's mini app lives in `~/.localix/mini-apps`. So the same list runs here
+ * (`contracts/ui-token-rules.ts`, one owner), plus the rule only a mini app needs: a native form
  * control where the kit has one. The kit's controls carry the focus ring, the control heights and
  * the tokens; a hand-written one has to remember all three, and that timer's remembered none.
  */
@@ -52,27 +52,27 @@ async function cssFilesUnder(dir: string): Promise<string[]> {
 
 /**
  * The tokens the host theme declares, read from the stylesheets staged in the kit — the same files
- * a plugin's utilities are compiled against, so a name that exists here is one the build emits.
- * A kit whose theme declares no colour is a broken install, not a plugin with no problems: every
+ * a mini app's utilities are compiled against, so a name that exists here is one the build emits.
+ * A kit whose theme declares no colour is a broken install, not a mini app with no problems: every
  * kit-family class would read as absent, so it throws and the step reports an error instead.
  */
 async function kitThemeTokens(kit: MiniAppKit): Promise<ThemeTokens> {
-  const files = await cssFilesUnder(join(kit.dir, PLUGIN_KIT_STYLES_DIR))
+  const files = await cssFilesUnder(join(kit.dir, MINI_APP_KIT_STYLES_DIR))
   const tokens = themeTokensOf(
     ...(await Promise.all(files.map((file) => fs.readFile(file, 'utf8')))),
   )
   if (tokens.colors.size === 0) {
     throw new Error(
-      `The plugin kit at ${kit.dir} carries no theme tokens to check classes against.`,
+      `The mini app kit at ${kit.dir} carries no theme tokens to check classes against.`,
     )
   }
   return tokens
 }
 
 /** One `file:line` problem per departure from the house style; empty when there is none. */
-export async function checkMiniAppStyle(pluginDir: string, kit: MiniAppKit): Promise<string[]> {
-  // A plugin without a UI has nothing to check, which is not a disabled check.
-  const files = await scanSources({ root: pluginDir, include: SOURCES, skip: isTest, minFiles: 0 })
+export async function checkMiniAppStyle(miniAppDir: string, kit: MiniAppKit): Promise<string[]> {
+  // A mini app without a UI has nothing to check, which is not a disabled check.
+  const files = await scanSources({ root: miniAppDir, include: SOURCES, skip: isTest, minFiles: 0 })
   const tokens = files.length > 0 ? await kitThemeTokens(kit) : null
   const problems: string[] = []
   for (const { file, code } of files) {

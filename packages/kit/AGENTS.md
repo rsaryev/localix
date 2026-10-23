@@ -1,13 +1,13 @@
 # Changing the kit
 
-`@localixai/kit` is the one set of primitives the workbench and every plugin view are drawn with. A
-plugin takes each module from the running host, so a kit module has exactly one instance, and a
+`@localixai/kit` is the one set of primitives the workbench and every mini app view are drawn with.
+A mini app takes each module from the running host, so a kit module has exactly one instance, and a
 change here reaches every surface at once. The rules below exist because each of them was once
 broken by a surface that built its own copy of something the kit already had.
 
 ## The kit sits below everything that uses it
 
-The kit imports no app code (`@/…`), no app package and no plugin package;
+The kit imports no app code (`@/…`), no app package and no mini app package;
 `scripts/check-architecture.mjs` (`kitBoundaryProblem`) fails the build when it does. What a
 primitive needs from the host arrives as a prop, a port, or a store the host writes — the way
 `src/keyboard/chord-store.ts` carries resolved chords without knowing where they came from. A module
@@ -20,11 +20,11 @@ that cannot be written that way is bound to a host feature: it is lent by the ap
    `src/lists/`, `src/feedback/`, `src/content/`, `src/keyboard/`, `src/canvas/`); shared helpers go
    in `src/lib/`. New source files stay under 300 lines (`scripts/source-size-guard.test.ts`).
 2. **The door**, `src/entries/<id>.ts`, is the component or helper’s public module: an explicit
-   re-export list, never `export *`. The door is the contract — the plugin kit staging
-   (`scripts/stage-plugin-kit.mjs`) reads its names, and an export nobody listed is not public.
+   re-export list, never `export *`. The door is the contract — the mini app kit staging
+   (`scripts/stage-mini-app-kit.mjs`) reads its names, and an export nobody listed is not public.
 3. **The catalog entry** goes in the `src/catalog/<category>.ts` for its category: the job it is for
    (`use`) and what it must not be confused with (`not`). A props list does not tell anyone which
-   primitive a job needs, and the catalog is what the plugin authoring agent chooses from
+   primitive a job needs, and the catalog is what the mini app authoring agent chooses from
    (`KIT.md`). `src/catalog/catalog.test.ts` pins the catalog to the doors in both directions: a
    door without an entry, an entry without a door, or an entry naming an export its door does not
    have fails.
@@ -33,8 +33,8 @@ that cannot be written that way is bound to a host feature: it is lent by the ap
    control and overlay contracts in `src/testing/` are the ones to extend before writing a new
    assertion by hand.
 
-Renaming or removing a door is a breaking change for every installed plugin that imports it: update
-its catalog entry, its callers and `docs/extending/ui-kit.md` in the same change.
+Renaming or removing a door is a breaking change for every installed mini app that imports it:
+update its catalog entry, its callers and `docs/extending/ui-kit.md` in the same change.
 
 ## Paint only with the theme's tokens
 

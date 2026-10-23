@@ -7,7 +7,7 @@ import type {
 } from './context-fabric'
 
 export interface StaticContextProviderSpec {
-  /** Globally unique provider id, normally `<plugin>.instructions`. */
+  /** Globally unique provider id, normally `<app>.instructions`. */
   id: string
   content: string
   destinations?: readonly ContextDestination[]
@@ -20,8 +20,8 @@ export interface StaticContextProviderSpec {
 }
 
 /**
- * Turn fixed plugin guidance into a governed automatic Context Fabric contribution.
- * This is the replacement for appending plugin text directly to the global system
+ * Turn fixed mini app guidance into a governed automatic Context Fabric contribution.
+ * This is the replacement for appending mini app text directly to the global system
  * prompt: the host applies destination routing, cancellation, quotas and policy.
  */
 export function createStaticContextProvider(
@@ -46,7 +46,7 @@ export function createStaticContextProvider(
           providerId: spec.id,
           providerVersion: version,
           scope: 'global',
-          kind: spec.kind ?? 'plugin-instructions',
+          kind: spec.kind ?? 'mini-app-instructions',
           content: spec.content,
           revision,
           priority: spec.priority ?? 100,

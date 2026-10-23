@@ -3,7 +3,7 @@ import { parseLocalixUri } from '@localixai/mini-app-sdk/navigation'
 
 /**
  * Registry-first UI-anchor activation. Search and `/open` share this entry point;
- * plugin-specific navigation stays behind the anchor registry, while core URI
+ * mini-app-specific navigation stays behind the anchor registry, while core URI
  * schemes fall through to the injected navigators.
  */
 /** Global-search adapter over the shared UI-anchor activation seam. */

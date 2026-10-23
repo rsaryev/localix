@@ -1,8 +1,8 @@
 /**
  * Resolving `${secret:KEY}` tokens in a request's auth block.
  *
- * The vault itself is never imported: a resolver arrives through the generic plugin host seam
- * (`ctx.host.resolveSecret`) and is threaded in by the singleton. That keeps this plugin
+ * The vault itself is never imported: a resolver arrives through the generic mini app host seam
+ * (`ctx.host.resolveSecret`) and is threaded in by the singleton. That keeps this mini app
  * portable — it depends on the SDK's token grammar, not on the API's secrets feature.
  *
  * Only auth fields are resolved. Headers and bodies are deliberately NOT scanned: a token there
@@ -24,7 +24,7 @@ export type ResolveSecret = (
   consumer?: SecretConsumer,
 ) => Promise<string | null>
 
-/** The consumer type this plugin registers under, in the vault's own vocabulary. */
+/** The consumer type this mini app registers under, in the vault's own vocabulary. */
 export const SECRET_CONSUMER_TYPE = 'api-request'
 
 /** `auth.token`, `auth.password`, … — which field of a request holds the reference. */
@@ -87,7 +87,7 @@ export async function resolveAuthSecrets(
   if (!resolve) {
     throw new Error(
       'This request references a stored secret, but the secrets store is unavailable. ' +
-        'Reload the plugin, or replace the ${secret:KEY} reference with a literal value.',
+        'Reload the mini app, or replace the ${secret:KEY} reference with a literal value.',
     )
   }
   // `authNeedsVault` passed, so the variant has a secret field holding a reference.

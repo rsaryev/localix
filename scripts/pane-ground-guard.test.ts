@@ -7,17 +7,17 @@ import { join } from 'node:path'
  *
  * Under the macOS glass theme `--background` and `--sidebar` are translucent, so a pane that
  * paints a ground while nested inside another pane that already painted one COMPOUNDS: 85% over
- * 70% composites to 95.5% opaque — black. That is how the database plugin's pane came out a black
+ * 70% composites to 95.5% opaque — black. That is how the database mini app's pane came out a black
  * slab beside a chat pane that stayed glass. `--surface-raised` and `--surface-sunken` are worse
  * still at pane size: both mix from a ground DARKER than the pane they cover.
  *
  * A CSS rule in `packages/kit/styles/base.css` clears any ground nested inside another ground, but
  * it can only reach elements carrying those utility CLASSES in the rendered tree. This guard is the
  * other half: it stops a NEW pane-sized ground painter from being written in the first place, in
- * any app, package or plugin — the failure mode that produced four rounds of "you missed some"
+ * any app, package or mini app — the failure mode that produced four rounds of "you missed some"
  * when the search was done by eye instead of by rule.
  *
- * The fix at a reported site is almost always deletion: a feature or plugin pane inherits the
+ * The fix at a reported site is almost always deletion: a feature or mini app pane inherits the
  * host pane it is mounted into, and painting nothing is what makes the window one material.
  */
 

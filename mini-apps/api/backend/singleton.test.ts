@@ -4,13 +4,13 @@ import { bindVault, getResolveSecret } from './singleton'
 
 // The holder lives on `globalThis`; a fake resolver left bound would answer for every later file.
 afterAll(() => {
-  delete (globalThis as { [key: symbol]: unknown })[Symbol.for('localix.plugin.api.services')]
+  delete (globalThis as { [key: symbol]: unknown })[Symbol.for('localix.mini-app.api.services')]
 })
 
 describe('getResolveSecret', () => {
   test('the saved request that reads a secret reaches the host resolver', async () => {
     // The wrapper used to take `(userId, key)` only, so the vault audit attributed every read to
-    // the plugin as a whole instead of the request that made it.
+    // the mini app as a whole instead of the request that made it.
     const seen: Parameters<ResolveSecret>[] = []
     bindVault({
       resolveSecret: async (...args) => {

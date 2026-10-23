@@ -289,7 +289,7 @@ export function GridView({
           }
           // visibility:hidden does NOT pause CSS animations — a global rule in
           // index.css pauses everything under [data-grid-hidden] so maximized-away
-          // leaves (pulsing skeletons, plugin animations…) stop burning style recalcs.
+          // leaves (pulsing skeletons, mini app animations…) stop burning style recalcs.
           data-grid-hidden={hidden || undefined}
           aria-hidden={hidden || undefined}
         >

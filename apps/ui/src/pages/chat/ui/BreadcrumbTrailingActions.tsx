@@ -32,20 +32,20 @@ import { fitStatusStrip } from '@localixai/kit/workbench-statusbar'
  * The workspace quick-access cluster in the titlebar, next to the unified navigation breadcrumb
  * (see {@link TitlebarContent}). Two zones, and the order is a contract:
  *
- *     … breadcrumb … │ [ contributed plugin items ] │ [ Terminal · Browser · Event Center ]
+ *     … breadcrumb … │ [ contributed mini app items ] │ [ Terminal · Browser · Event Center ]
  *
  * ── THE CORE CLUSTER IS THE ANCHOR, AND IT IS PINNED RIGHT ──────────────────────
- * The terminal, browser and bell are always here, always LAST, and no plugin can move,
- * replace or crowd them out. They used to sit on either side of the plugin glyphs — palette and
+ * The terminal, browser and bell are always here, always LAST, and no mini app can move,
+ * replace or crowd them out. They used to sit on either side of the mini app glyphs — palette and
  * terminal before, bell after — which made the row's right edge a different control depending on
- * how many plugins happened to be speaking. Three fixed buttons behind one rule are a corner a
+ * how many mini apps happened to be speaking. Three fixed buttons behind one rule are a corner a
  * user can aim at without reading, which is the entire value of permanent chrome. The Event Center
  * in particular is the single place a user looks when something needs attention, and an anchor
  * that moves is not one.
  *
  * The contributed items therefore grow LEFTWARDS out of that corner, into the room the navigation
  * trail is not using. `StatusItems` renders contributed items only, and its budget counts only
- * those — a workspace with twenty plugins pushes plugin glyphs into `…`, never the bell.
+ * those — a workspace with twenty mini apps pushes mini app glyphs into `…`, never the bell.
  *
  * ── Why a FIXED curated core set, not another drag-customizable one ─────────────
  * These are the always-relevant workspace tools, so they earn a stable, always-visible home in
@@ -55,19 +55,19 @@ import { fitStatusStrip } from '@localixai/kit/workbench-statusbar'
  * customization surface for every other panel; this is the horizontal complement.
  *
  * Source control used to be a fourth hardcoded button here. It is a contributed item now, which
- * is the whole point of the middle zone: what belongs to a plugin lives in the plugin.
+ * is the whole point of the middle zone: what belongs to a mini app lives in the mini app.
  */
 
 /**
  * The CEILING on contributed items in the titlebar; how many actually show is a question of room.
  *
- * A cap rather than trust: every bundled plugin could want a glyph here, and a titlebar that grows
- * until the breadcrumb has nowhere left to truncate is worse for the user than a menu. Overflow,
- * never truncation — an item that silently vanished would be indistinguishable from a plugin that
- * broke.
+ * A cap rather than trust: every bundled mini app could want a glyph here, and a titlebar that
+ * grows until the breadcrumb has nowhere left to truncate is worse for the user than a menu.
+ * Overflow, never truncation — an item that silently vanished would be indistinguishable from a
+ * mini app that broke.
  *
  * It used to be a flat four on a window of any size, which was the wrong half of the trade, and
- * then a ten chosen to match the bundled set — a number that has to be edited every time a plugin
+ * then a ten chosen to match the bundled set — a number that has to be edited every time a mini app
  * starts or stops contributing. `fitStatusStrip` spends the MEASURED room instead, dropping the
  * items' live text before dropping the items themselves, so this is no longer the number that
  * decides anything on a normal window. It is the sanity ceiling above which a status bar has
@@ -104,7 +104,7 @@ export function BreadcrumbTrailingActions({
   const toggle = (kind: WorkItemKind, open: () => void) =>
     focusedKind === kind && focusedId ? closeGridTab(focusedId) : open()
 
-  // How many plugins are DRAWING, against how much room the strip has. Counting declarations
+  // How many mini apps are DRAWING, against how much room the strip has. Counting declarations
   // instead was the bug behind the report: most bundled titlebar items return `null` until they
   // have something to say (no open books, no environments, no running forwards), so a budget spent
   // on declarations reserved room for the silent ones and folded the speaking ones into `…`. The
@@ -122,27 +122,27 @@ export function BreadcrumbTrailingActions({
 
   return (
     // The parent titlebar grid owns the trailing column. `min-w-0` rather than `shrink-0`: the
-    // plugin half is now allowed to be wide, so if the fit ever over-promised the excess must be
+    // mini app half is now allowed to be wide, so if the fit ever over-promised the excess must be
     // clipped inside this cluster instead of pushing a deep breadcrumb out of its own column.
     // NOT a `data-tauri-drag-region`, so controls remain clickable on macOS.
     <div
       data-tauri-drag-region="false"
       className="flex min-w-0 flex-nowrap items-center gap-0.5 pl-1"
     >
-      {/* CONTRIBUTED items — declared, not drawn. A plugin says what it has (a glyph, live text,
+      {/* CONTRIBUTED items — declared, not drawn. A mini app says what it has (a glyph, live text,
           metrics, a menu) and the host renders the same control it gives its own buttons below.
           The seam this replaced was a free React surface, and the one button in it had already
           grown its own height and lost its focus ring.
 
           Its own group, named, and fenced on BOTH sides: between the navigation path and three
-          fixed core controls, the plugin glyphs are the one part of this row whose membership
+          fixed core controls, the mini app glyphs are the one part of this row whose membership
           changes, and a boundary is what lets a screen-reader user skip them the way a sighted one
           skips a cluster of icons. The leading rule appears only when the group has something in
           it — two rules with nothing between them is the seam an empty strip would leave. */}
       {contributedCount > 0 && <Rule />}
       <div
         role="group"
-        aria-label="Plugin items"
+        aria-label="Mini app items"
         className="flex min-w-0 items-center gap-0.5 overflow-hidden"
       >
         <StatusItems
@@ -156,7 +156,7 @@ export function BreadcrumbTrailingActions({
                 <button
                   type="button"
                   aria-haspopup="menu"
-                  aria-label={`${hidden.length} more plugin item${hidden.length === 1 ? '' : 's'}`}
+                  aria-label={`${hidden.length} more mini app item${hidden.length === 1 ? '' : 's'}`}
                   className={chromeAction}
                 >
                   <MoreHorizontal className="size-3.5 shrink-0" strokeWidth={1.75} />

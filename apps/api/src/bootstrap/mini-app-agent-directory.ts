@@ -6,8 +6,8 @@ import type { MiniAppHostRefs } from './mini-app-host-refs'
 /**
  * The boot-time half of `ctx.agents`, read through the late-bound host refs.
  *
- * Chat and the agent registry are created after the plugin-host phase, so capturing either here
- * would bind a plugin backend to a service that does not exist yet. Reading per call is what lets
+ * Chat and the agent registry are created after the mini-app-host phase, so capturing either here
+ * would bind a mini app backend to a service that does not exist yet. Reading per call is what lets
  * the wiring order stay honest. The per-run half is built in `chat/runtime/run/stages/context.ts`
  * from the run's own repository; both go through `createMiniAppAgentDirectory`, so a route and a
  * tool list the same agents.

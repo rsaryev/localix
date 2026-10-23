@@ -33,7 +33,7 @@ export function createGameService(
   const newId = input.newId ?? (() => randomUUID())
   const table = createTurnTable({
     ...input,
-    plugin: 'tic-tac-toe',
+    miniApp: 'tic-tac-toe',
     noun: 'board',
     now,
     schema: gameSchema,

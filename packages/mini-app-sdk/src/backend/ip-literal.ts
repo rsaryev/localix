@@ -11,7 +11,7 @@
  * Decoding a literal to its 16 bytes (with `::` zero-compression, a trailing embedded
  * dotted-quad, and embedded-v4 detection across v4-mapped / v4-compatible / NAT64) is
  * pure parsing with no stakes asymmetry — both sides want IDENTICAL decoding. Sharing
- * it in the backend SDK gives built-ins and native plugins one neutral mechanism while
+ * it in the backend SDK gives built-ins and native mini apps one neutral mechanism while
  * keeping their higher-level policy decisions explicit.
  */
 

@@ -5,7 +5,7 @@ import type { ElementTypeSpec } from '../registry/contract'
  * A link to anything the app can link — the same thing a person can drag into the chat, dragged
  * onto the board instead: a chat session, one message, a tool call, a terminal, a project, or a
  * provider's resource (`localix://resource/<provider>/…`: a database table, a git commit, a vault
- * item, a plugin's own record). Files, folders and snippets already have their own types; every
+ * item, a mini app's own record). Files, folders and snippets already have their own types; every
  * OTHER link is this one.
  *
  * The element stores the link itself — the binding target every drag in the app carries (kind,
@@ -25,8 +25,10 @@ const refProps = z.object({
   label: z.string().default(''),
   uri: z.string().min(1).optional(),
   attributes: z.record(z.string(), primitive).optional(),
-  /** The plugin whose tab the link came from, so a chat it is dragged back into gets its tools. */
-  plugin: z.string().optional(),
+  /**
+   * The mini app whose tab the link came from, so a chat it is dragged back into gets its tools.
+   */
+  miniApp: z.string().optional(),
 })
 
 export type RefProps = z.infer<typeof refProps>

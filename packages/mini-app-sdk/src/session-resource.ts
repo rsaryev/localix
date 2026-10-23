@@ -6,11 +6,11 @@ import { localixResourceUri, parseLocalixUri } from './navigation'
  * (the host resolves it against the caller's own session, never the chat on screen), and
  * `…/<name>/<session>` for one named chat's.
  *
- * Every session-bound plugin wrote this pair itself, as a string prefix and a `startsWith(… + '/')`
- * split — four identical copies, each one a hand-rolled parser beside the one grammar that already
- * rejects dot segments, empty segments and overlong ids. Building and reading it through
- * {@link localixResourceUri} and {@link parseLocalixUri} keeps an opaque session id (a `/`, a `%`)
- * one segment by construction.
+ * Every session-bound mini app wrote this pair itself, as a string prefix and a
+ * `startsWith(… + '/')` split — four identical copies, each one a hand-rolled parser beside the one
+ * grammar that already rejects dot segments, empty segments and overlong ids. Building and reading
+ * it through {@link localixResourceUri} and {@link parseLocalixUri} keeps an opaque session id (a
+ * `/`, a `%`) one segment by construction.
  */
 export function sessionResourceAddress(provider: string, name: string) {
   const uri = localixResourceUri(provider, [name])

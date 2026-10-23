@@ -1,12 +1,12 @@
 /**
- * Native plugin entrypoint — the host calls `register(ctx)` once when the (enabled) plugin loads.
- * Thin by design: it wires modules together. The tool contract lives in http-request-schema.ts
- * and the body in http-request.ts.
+ * Native mini app entrypoint — the host calls `register(ctx)` once when the (enabled) mini app
+ * loads. Thin by design: it wires modules together. The tool contract lives in
+ * http-request-schema.ts and the body in http-request.ts.
  *
  * `register` runs on BOTH the boot-time load (which carries `ctx.host`) and the per-run tool load
  * (which does not) — see singleton.ts for why the resolver has to outlive the call.
  *
- * The plugin contributes on two surfaces, and they are not redundant:
+ * The mini app contributes on two surfaces, and they are not redundant:
  *   tools   — what the MODEL can do (send a request, import a curl command).
  *   backend — what the USER can reach for: `@`-mention a saved request, find one in search, and
  *             have it captured into context before the turn starts. A tool can only answer a
@@ -41,7 +41,7 @@ export function register(ctx: MiniAppContext): MiniAppRegistration {
   // Unscoped fallbacks are retained for hosts/tool invocations that do not carry a session id.
   // Normal workbench, context and tool calls resolve the session-owned collection below.
   const store = collectionFor(ctx.cwd)
-  // The SDK's own per-plugin directory — the plugin never constructs a `~/.localix` path.
+  // The SDK's own per-mini-app directory — the mini app never constructs a `~/.localix` path.
   bindEnvironmentStateDir(ctx.stateDir)
   const environments = environmentsFor(ctx.cwd)
   const port = scopedRequestPort(async (userId, sessionId) => {

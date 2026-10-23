@@ -61,8 +61,8 @@ describe('createWsFrameRegistry register collisions', () => {
     }
   })
 
-  it('accepts `k` — core no longer sends board frames, so the tag is free for a plugin', () => {
-    // The task board moved into a plugin that streams on `k`; a stale reservation would refuse
+  it('accepts `k` — core no longer sends board frames, so the tag is free for a mini app', () => {
+    // The task board moved into a mini app that streams on `k`; a stale reservation would refuse
     // the one contribution the tag now belongs to.
     expect(createWsFrameRegistry().register(contribution({ frameTag: 'k' })).status).toBe(
       'registered',
@@ -174,7 +174,7 @@ describe('createWsFrameRegistry register collisions', () => {
     // `register` rejects a duplicate subscribe command LOUDLY and keeps the first — but
     // the loser's own record still CARRIES that command, and a disable unregisters every
     // frame the subsystem declared. Removing by command NAME therefore evicted the WINNER:
-    // still-enabled plugin, live subsystem and UI tab, but its stream refuses new
+    // still-enabled mini app, live subsystem and UI tab, but its stream refuses new
     // subscribes with nothing said. Same defect the resource/search registries already
     // fixed ("pass the provider, not its id") and the route mount table checks by identity.
     const registry = createWsFrameRegistry()
@@ -189,7 +189,7 @@ describe('createWsFrameRegistry register collisions', () => {
   })
 
   it('the OWNER still unregisters itself — the identity check is not a leak', () => {
-    // The reverse direction: if identity over-reaches, a disabled plugin keeps accepting
+    // The reverse direction: if identity over-reaches, a disabled mini app keeps accepting
     // subscribes forever. The registered object is exactly what the owner passes back.
     const registry = createWsFrameRegistry()
     const own = contribution({ frameTag: 'a' })
@@ -304,7 +304,7 @@ describe('createWsFrameConnection', () => {
     expect(counters.stops).toBe(2)
   })
 
-  it('isolates throwing plugin key/start callbacks', () => {
+  it('isolates throwing mini app key/start callbacks', () => {
     const registry = createWsFrameRegistry()
     registry.register({
       subscribeCommand: 'bad-key.subscribe',
@@ -351,7 +351,7 @@ describe('createWsFrameConnection', () => {
     expect(counters.stops).toBe(1)
   })
 
-  it('continues teardown after a plugin stop throws', () => {
+  it('continues teardown after a mini app stop throws', () => {
     const registry = createWsFrameRegistry()
     const stopped: string[] = []
     registry.register({

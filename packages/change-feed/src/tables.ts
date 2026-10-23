@@ -3,7 +3,7 @@ import type { Generated, Kysely, Transaction } from 'kysely'
 /** The change feed: one append-only row per notice. */
 export interface ChangeEventsTable {
   seq: Generated<number>
-  /** Whose registry the notice belongs to: `core`, or `plugin:<name>`. */
+  /** Whose registry the notice belongs to: `core`, or `mini-app:<name>`. */
   stream: string
   entity: string
   op: 'upserted' | 'deleted' | 'resync'

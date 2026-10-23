@@ -24,11 +24,11 @@ export interface ProblemStateProps {
 /**
  * A problem that IS the pane: nothing else can render until it is fixed.
  *
- * Seven plugins each hand-built this as `<div className="flex-1 items-center justify-center">` around
- * a `ProblemLine` — and in a block-level scroll container `flex-1` is a no-op, so the "centred"
- * failure sat at the top of an empty pane (the DevOps sidebar, reported). `StateNotice` is the kit's
- * one centred shell and fills its parent in block and flex layouts alike, so the geometry is decided
- * once, here.
+ * Seven mini apps each hand-built this as `<div className="flex-1 items-center justify-center">`
+ * around a `ProblemLine` — and in a block-level scroll container `flex-1` is a no-op, so the
+ * "centred" failure sat at the top of an empty pane (the DevOps sidebar, reported). `StateNotice`
+ * is the kit's one centred shell and fills its parent in block and flex layouts alike, so the
+ * geometry is decided once, here.
  *
  * Shape, in reading order: the headline; the one-sentence hint (what to do); the expected next step
  * as the surface's recommended button — Install Docker, Start Docker — when the report has one; then

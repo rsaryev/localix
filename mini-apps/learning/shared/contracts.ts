@@ -120,7 +120,7 @@ export interface LearningCourse extends Omit<CourseOutlineDraft, 'modules'> {
   id: string
   /** Owning chat session. The course is stored and resolved only inside this scope. */
   sessionId: string
-  /** Canonical root manifest under the session-isolated plugin data directory. */
+  /** Canonical root manifest under the session-isolated mini app data directory. */
   bundlePath: string
   createdAt: string
   updatedAt: string

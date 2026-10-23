@@ -4,7 +4,7 @@ import { captureApplicationFailure } from '@/shared/lib/notifications/applicatio
 import { ProblemState } from '@/shared/ui/problem-report'
 
 interface Props {
-  /** What failed, named for the user — e.g. a work-item kind or a plugin id. */
+  /** What failed, named for the user — e.g. a work-item kind or a mini app id. */
   surface: string
   /**
    * What the fallback looks like.
@@ -18,7 +18,9 @@ interface Props {
    * and a `SilentFallback` per call site) and it applies here for the same reason.
    */
   fallback?: 'card' | 'silent'
-  /** Also tell the surface's owner — a plugin tab's crash is what the agent inspecting it needs. */
+  /**
+   * Also tell the surface's owner — a mini app tab's crash is what the agent inspecting it needs.
+   */
   onError?: (error: Error) => void
   children: ReactNode
 }
@@ -35,16 +37,16 @@ interface State {
  *
  * The app had exactly one boundary, at the root, so any component that threw during render
  * replaced the entire workspace with the root error page. That is the correct behaviour for a core
- * crash and the wrong one for a contributed surface: a plugin's tab is not the application, and a
+ * crash and the wrong one for a contributed surface: a mini app's tab is not the application, and a
  * bug in it should cost that tab, not the session, the composer and every other pane.
  *
- * Observed rather than imagined: a plugin work-item body built a `localix://` URI from an empty id
- * during render, the builder threw `TypeError`, and the whole app stopped loading — including for
- * work that had nothing to do with that plugin. The tab is restorable, so the failure came back on
- * every start.
+ * Observed rather than imagined: a mini app work-item body built a `localix://` URI from an empty
+ * id during render, the builder threw `TypeError`, and the whole app stopped loading — including
+ * for work that had nothing to do with that mini app. The tab is restorable, so the failure came
+ * back on every start.
  *
  * The asymmetry is worth naming, because it is why this went unnoticed for so long: the BACKEND
- * has isolated plugin failures all along — `resource-refs.ts` wraps every provider call in a
+ * has isolated mini app failures all along — `resource-refs.ts` wraps every provider call in a
  * timeout, swallows a failure to `[]`, and surfaces a notice, at five call sites, with the reason
  * written down. The frontend had no equivalent. The principle was already agreed; only one half of
  * the host applied it.
@@ -61,7 +63,7 @@ export class SurfaceErrorBoundary extends Component<Props, State> {
   }
 
   override componentDidCatch(error: Error, info: ErrorInfo): void {
-    // Named, because the surface is the actionable half: "which plugin" is the first question.
+    // Named, because the surface is the actionable half: "which mini app" is the first question.
     console.error(
       `[SurfaceErrorBoundary] ${this.props.surface} failed to render`,
       error,
@@ -87,7 +89,7 @@ export class SurfaceErrorBoundary extends Component<Props, State> {
       problems: [
         {
           message: `${this.props.surface} could not render.`,
-          hint: 'Close this tab, or disable the plugin that owns it, to stop it reappearing.',
+          hint: 'Close this tab, or disable the mini app that owns it, to stop it reappearing.',
           detail: this.state.detail,
         },
       ],

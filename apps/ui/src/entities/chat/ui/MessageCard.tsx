@@ -248,7 +248,7 @@ function MessageCardImpl({
 
       <ToolTimingProvider tools={message.timing?.tools}>{renderBody()}</ToolTimingProvider>
 
-      {/* User uploads AND plugin-added deliverables (onAssistantMessage hooks)
+      {/* User uploads AND mini-app-added deliverables (onAssistantMessage hooks)
           render with the same chips/thumbnails; alignment follows the article. */}
       {message.bindings?.length ? (
         <MessageAttachments bindings={message.bindings} align={align} />

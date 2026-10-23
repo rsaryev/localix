@@ -1,6 +1,6 @@
 /**
  * The REPLY half of the `manage_chart` wire contract — what the trading UI sink answers to an
- * `action:'snapshot'` command (over the `plugin-command-result` WS RPC, correlated by the frame's
+ * `action:'snapshot'` command (over the `mini-app-command-result` WS RPC, correlated by the frame's
  * commandId). Sibling of `chart-command.ts` and held to the same rules: pure types + structural
  * guards + formatting only, importable from both the backend tool and the UI sink.
  */

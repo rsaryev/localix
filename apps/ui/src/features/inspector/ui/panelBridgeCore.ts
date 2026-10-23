@@ -13,9 +13,9 @@ import {
 import type { PanelActionContext, PanelActionTable } from '@/shared/contrib/miniAppPanelActions'
 
 /**
- * Framework-free HOST side of the plugin-panel bridge (protocol:
+ * Framework-free HOST side of the mini-app-panel bridge (protocol:
  * mini-app-sdk/ui/bridge). One instance per mounted panel iframe. The React hook
- * (usePluginPanelBridge) owns lifecycles and DOM listeners; this core owns the
+ * (useMiniAppPanelBridge) owns lifecycles and DOM listeners; this core owns the
  * protocol so it is testable with fake windows:
  *
  * - validates every inbound message (envelope guard + fail-closed source

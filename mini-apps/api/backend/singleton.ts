@@ -1,8 +1,8 @@
 /**
- * Process-wide holder for this plugin's store + secret resolver.
+ * Process-wide holder for this mini app's store + secret resolver.
  *
  * `register()` runs MORE THAN ONCE per process: once at boot (the backend/host-service load) and
- * again per agent run (the tool contribution, via the per-run plugin loader). Only the BOOT load
+ * again per agent run (the tool contribution, via the per-run mini app loader). Only the BOOT load
  * carries `ctx.host`, so the per-run load that actually owns the `api_client` tool has no way
  * to resolve `${secret:KEY}` on its own. Holding the resolver on `globalThis` — which survives
  * the fresh per-call module import the loader does — is what lets the tool reach the vault.
@@ -20,7 +20,7 @@ interface Holder {
   bindSecret?: BindSecret
 }
 
-const GLOBAL_KEY = Symbol.for('localix.plugin.api.services')
+const GLOBAL_KEY = Symbol.for('localix.mini-app.api.services')
 
 function holder(): Holder {
   const g = globalThis as { [key: symbol]: Holder | undefined }

@@ -23,7 +23,7 @@ interface RuntimeSessionRowProps {
   onToggle: (id: string) => void
   onSelect: (id: string) => void | Promise<void>
   onStop: (session: UiSession) => void
-  /** A plugin status line's text for this row, drawn in place of its title and activity. */
+  /** A mini app status line's text for this row, drawn in place of its title and activity. */
   body?: string
 }
 

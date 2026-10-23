@@ -8,9 +8,9 @@ import type {
 } from './contracts'
 
 /**
- * Content-free validation for a plugin/subsystem Context Fabric contribution.
+ * Content-free validation for a mini app/subsystem Context Fabric contribution.
  *
- * A contribution is DECLARATIVE DATA supplied by a (possibly untrusted) plugin.
+ * A contribution is DECLARATIVE DATA supplied by a (possibly untrusted) mini app.
  * Its metadata — destinations, activation, budgets, sensitivity — is validated
  * here BEFORE registration so a malformed or hostile declaration degrades to a
  * content-free diagnostic instead of widening the model-context surface or
@@ -27,17 +27,17 @@ export const CONTEXT_DESTINATIONS = [
   'subagent',
 ] as const satisfies readonly ContextDestination[]
 
-/** Hard ceilings for a plugin-declared automatic/explicit contribution. A single
- *  plugin can never pack more than this into a model request even if it declares a
+/** Hard ceilings for a mini-app-declared automatic/explicit contribution. A single
+ *  mini app can never pack more than this into a model request even if it declares a
  *  larger budget — the host caps it. `forbidden` is never a usable declared
  *  sensitivity (it means "never admit"), so it is rejected at declaration. */
-export const PLUGIN_CONTEXT_MAX_TOKENS = 8_000
-export const PLUGIN_CONTEXT_MAX_TIMEOUT_MS = 5_000
+export const MINI_APP_CONTEXT_MAX_TOKENS = 8_000
+export const MINI_APP_CONTEXT_MAX_TIMEOUT_MS = 5_000
 /**
- * The ceiling for CORE's own resolvers. The plugin cap exists to stop an untrusted provider from
+ * The ceiling for CORE's own resolvers. The mini app cap exists to stop an untrusted provider from
  * flooding a model request; core's host-reference resolver instead reads what the USER linked — a
- * whole file on a sent message — and is already bounded by its expanders. Holding it to the plugin
- * cap would turn every file over ~32 KB into a silently dropped `provider_quota`.
+ * whole file on a sent message — and is already bounded by its expanders. Holding it to the mini
+ * app cap would turn every file over ~32 KB into a silently dropped `provider_quota`.
  */
 export const CORE_CONTEXT_MAX_TOKENS = 500_000
 
@@ -49,7 +49,7 @@ export const contextContributionMetaSchema = z
     activation: z.enum(['explicit', 'automatic']),
     defaultEnabled: z.boolean(),
     maxTokens: z.number().int().positive().max(CORE_CONTEXT_MAX_TOKENS),
-    timeoutMs: z.number().int().positive().max(PLUGIN_CONTEXT_MAX_TIMEOUT_MS),
+    timeoutMs: z.number().int().positive().max(MINI_APP_CONTEXT_MAX_TIMEOUT_MS),
     fallback: z.boolean().optional(),
     // A declared sensitivity of `forbidden` is meaningless (nothing would ever be
     // admitted) and almost certainly a mistake — reject it at the boundary.
@@ -99,11 +99,11 @@ function sensitivityRank(value: ContextSensitivity): number {
 
 /**
  * Validate a contribution's declarative envelope. Returns a content-free result —
- * never throws for a plugin-shaped defect, so a bad plugin cannot crash bootstrap.
+ * never throws for a mini-app-shaped defect, so a bad mini app cannot crash bootstrap.
  */
 export function validateContextContribution(
   contribution: ContextProviderContribution,
-  ceiling: { maxTokens: number } = { maxTokens: PLUGIN_CONTEXT_MAX_TOKENS },
+  ceiling: { maxTokens: number } = { maxTokens: MINI_APP_CONTEXT_MAX_TOKENS },
 ): ContributionValidation {
   const provider = contribution?.provider
   const id = typeof provider?.id === 'string' ? provider.id : '<invalid>'

@@ -45,7 +45,7 @@ export const CONTENT: readonly KitCatalogEntry[] = [
     category: 'content',
     provider: 'kit',
     exports: ['ClaudeMark', 'CodexMark', 'GeminiMark', 'CopilotMark', 'OpenCodeMark', 'HermesMark'],
-    summary: 'Monochrome coding agent brand marks shared by core and plugin surfaces.',
+    summary: 'Monochrome coding agent brand marks shared by core and mini app surfaces.',
     use: 'Identify Claude Code, Codex, Gemini CLI, GitHub Copilot, OpenCode and Hermes.',
     not: 'A generic action glyph or a running-session indicator.',
   },
@@ -104,7 +104,7 @@ export const CONTENT: readonly KitCatalogEntry[] = [
     provider: 'kit',
     exports: ['EMBEDDED_VISUAL_PREFERENCES_CSS'],
     summary: 'The CSS that carries reduced motion and contrast into a sandboxed iframe.',
-    use: 'A plugin panel rendered as its own document.',
+    use: 'A mini app panel rendered as its own document.',
   },
   {
     specifier: k('canvas'),
@@ -164,7 +164,7 @@ export const CONTENT: readonly KitCatalogEntry[] = [
     provider: 'host',
     exports: ['MarkdownRenderer', 'MermaidDiagram'],
     summary: "The app's Markdown renderer: code, math, diagrams, file and mention links.",
-    use: 'Any Markdown a plugin shows (notes, reports, lessons). MermaidDiagram with embedded draws editable board content without transcript controls.',
+    use: 'Any Markdown a mini app shows (notes, reports, lessons). MermaidDiagram with embedded draws editable board content without transcript controls.',
   },
   {
     specifier: k('code-block'),
@@ -213,7 +213,7 @@ export const CONTENT: readonly KitCatalogEntry[] = [
     category: 'content',
     provider: 'host',
     exports: ['fileIcon', 'folderIcon'],
-    summary: 'The icon for a file or folder name, including plugin-contributed icons.',
+    summary: 'The icon for a file or folder name, including mini-app-contributed icons.',
     use: 'File trees, tabs and file rows.',
   },
   {
@@ -222,7 +222,7 @@ export const CONTENT: readonly KitCatalogEntry[] = [
     provider: 'host',
     exports: ['ToolLine'],
     summary: 'The vocabulary of a tool call card.',
-    use: "Drawing a plugin tool's call in chat like a built-in one.",
+    use: "Drawing a mini app tool's call in chat like a built-in one.",
   },
   {
     specifier: k('composer-command-button'),

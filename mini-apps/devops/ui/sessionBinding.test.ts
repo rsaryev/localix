@@ -1,7 +1,7 @@
 /**
  * Every DevOps open, shell and insert names the chat it acts for.
  *
- * The plugin's tabs used to be global and its terminal spawns passed `sessionId: null`, which the
+ * The mini app's tabs used to be global and its terminal spawns passed `sessionId: null`, which the
  * host read as "the chat on screen": a container tab kept for chat A opened its Exec shell in chat
  * B, and a pod clicked in a workspace kept for chat A opened in chat B. The session is now an
  * argument of each door, so these pin that the argument is what reaches the host.

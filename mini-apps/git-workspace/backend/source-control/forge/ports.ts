@@ -2,7 +2,7 @@
  * The forge seam. A `ForgeBackend` is one code-host implementation (GitHub over
  * the `gh` CLI today). The forge service depends on this port, never on `gh`
  * directly — a GitLab backend later drops in with zero UI change, mirroring the
- * `SourceControlBackend` / plugin / provider drop-in model.
+ * `SourceControlBackend` / mini app / provider drop-in model.
  */
 import type { ForgePullRequest, ForgeStatus } from './contracts'
 

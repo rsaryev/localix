@@ -70,7 +70,7 @@ export interface Problem {
 /** The failed call a problem came from — what an operator needs to find it in the API log. */
 export interface ProblemRequest {
   method?: string
-  /** Full path without the query string, e.g. `/rpc/<plugin>/items`. */
+  /** Full path without the query string, e.g. `/rpc/<app>/items`. */
   path?: string
   /** HTTP status, or 0 when the server was never reached. */
   status?: number
@@ -105,7 +105,7 @@ export interface ProblemSubject {
  * Recovery used to be written twice: as markup on the line (`actions={<ProblemAction …>}`) and
  * again as data for the durable row. Half the call sites wrote only the first, so the Event Center
  * row — the copy a person finds an hour later, on a surface they may have closed — was a dead end.
- * Two plugins independently grew a `durable` flag in their own wrappers to say "this one is
+ * Two mini apps independently grew a `durable` flag in their own wrappers to say "this one is
  * surface-only", which is what a missing field looks like from the outside.
  *
  * So it is data, in the shared vocabulary, and both renderers read the same list.

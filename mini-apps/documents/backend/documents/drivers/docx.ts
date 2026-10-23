@@ -1,7 +1,7 @@
 /// <reference path="./vendor.d.ts" />
 /**
  * DOCX driver — Word documents to Markdown. `mammoth` converts the .docx into clean
- * semantic HTML (headings, lists, tables), then `turndown` (+ the GFM plugin for
+ * semantic HTML (headings, lists, tables), then `turndown` (+ the GFM mini app for
  * pipe tables) renders that HTML as Markdown the model reads directly.
  *
  * Both heavy libs load via dynamic `import()` on first extraction, so the docx

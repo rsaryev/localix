@@ -1,8 +1,8 @@
 /**
- * Backend plugin surface — everything a plugin's `register(ctx)` compiles against:
+ * Backend mini app surface — everything a mini app's `register(ctx)` compiles against:
  * the context, lifecycle hooks, channel bridge contracts, and the agent-tool
  * contracts re-exported from `@localixai/agent/agents`. The host (`apps/api`)
- * implements these interfaces; plugins only consume the types.
+ * implements these interfaces; mini apps only consume the types.
  */
 export type {
   MiniAppAgentDirectory,
@@ -142,7 +142,7 @@ export {
   searchHitsOf,
   selectProviders,
 } from './search-provider'
-// The semantic index seam: sources, queries and the plugin host capability.
+// The semantic index seam: sources, queries and the mini app host capability.
 export type * from './semantic'
 export type * from './changes'
 export { SEMANTIC_GLOBAL_SCOPE } from './semantic'
@@ -274,7 +274,7 @@ export type {
   MiniAppChannel,
 } from './channels'
 
-// Agent-tool contracts a plugin types its tools against — re-exported so a plugin
+// Agent-tool contracts a mini app types its tools against — re-exported so a mini app
 // (or an external repo) depends only on the SDK.
 export type {
   AgentTool,

@@ -3,7 +3,7 @@ import { miniAppCommandBus, type MiniAppCommandFrame } from './commands'
 
 const frame = (over: Partial<MiniAppCommandFrame> = {}): MiniAppCommandFrame => ({
   sessionId: 's-1',
-  plugin: 'sample-plugin',
+  miniApp: 'sample-mini-app',
   channel: 'chart',
   payload: { action: 'open' },
   commandId: `cmd-${Math.random()}`,
@@ -13,10 +13,10 @@ const frame = (over: Partial<MiniAppCommandFrame> = {}): MiniAppCommandFrame => 
 
 afterEach(() => miniAppCommandBus._clearApplied())
 
-describe('miniAppCommandBus — the typed plugin.command dispatcher', () => {
-  test('routes by (plugin, channel) and carries sessionId + active through', () => {
+describe('miniAppCommandBus — the typed mini-app.command dispatcher', () => {
+  test('routes by (mini app, channel) and carries sessionId + active through', () => {
     const seen: Array<{ sessionId: string; active: boolean; payload: unknown }> = []
-    const unsub = miniAppCommandBus.register('sample-plugin', 'chart', (e) =>
+    const unsub = miniAppCommandBus.register('sample-mini-app', 'chart', (e) =>
       seen.push({ sessionId: e.sessionId, active: e.active, payload: e.payload }),
     )
     try {
@@ -33,7 +33,7 @@ describe('miniAppCommandBus — the typed plugin.command dispatcher', () => {
 
   test('is NON-COALESCING: two back-to-back commands both land, in order', () => {
     const seqs: number[] = []
-    const unsub = miniAppCommandBus.register('sample-plugin', 'chart', (e) => seqs.push(e.seq))
+    const unsub = miniAppCommandBus.register('sample-mini-app', 'chart', (e) => seqs.push(e.seq))
     try {
       miniAppCommandBus.publish(frame({ seq: 1 }), true)
       miniAppCommandBus.publish(frame({ seq: 2 }), true)
@@ -45,7 +45,7 @@ describe('miniAppCommandBus — the typed plugin.command dispatcher', () => {
 
   test('a replayed frame (same commandId) is applied at most once', () => {
     let calls = 0
-    const unsub = miniAppCommandBus.register('sample-plugin', 'chart', () => calls++)
+    const unsub = miniAppCommandBus.register('sample-mini-app', 'chart', () => calls++)
     try {
       const f = frame({ commandId: 'cmd-replay' })
       miniAppCommandBus.publish(f, true)
@@ -56,11 +56,11 @@ describe('miniAppCommandBus — the typed plugin.command dispatcher', () => {
     }
   })
 
-  test('a frame for an unregistered (plugin, channel) key is dropped, not queued', () => {
+  test('a frame for an unregistered (mini app, channel) key is dropped, not queued', () => {
     let calls = 0
-    const unsub = miniAppCommandBus.register('sample-plugin', 'chart', () => calls++)
+    const unsub = miniAppCommandBus.register('sample-mini-app', 'chart', () => calls++)
     try {
-      miniAppCommandBus.publish(frame({ plugin: 'other' }), true)
+      miniAppCommandBus.publish(frame({ miniApp: 'other' }), true)
       miniAppCommandBus.publish(frame({ channel: 'orders' }), true)
       expect(calls).toBe(0)
     } finally {
@@ -70,10 +70,10 @@ describe('miniAppCommandBus — the typed plugin.command dispatcher', () => {
 
   test('one throwing sink neither breaks the fan-out nor the stream router above', () => {
     const seen: number[] = []
-    const unsubA = miniAppCommandBus.register('sample-plugin', 'chart', () => {
+    const unsubA = miniAppCommandBus.register('sample-mini-app', 'chart', () => {
       throw new Error('broken sink')
     })
-    const unsubB = miniAppCommandBus.register('sample-plugin', 'chart', (e) => seen.push(e.seq))
+    const unsubB = miniAppCommandBus.register('sample-mini-app', 'chart', (e) => seen.push(e.seq))
     try {
       expect(() => miniAppCommandBus.publish(frame({ seq: 7 }), true)).not.toThrow()
       expect(seen).toEqual([7])
@@ -85,7 +85,7 @@ describe('miniAppCommandBus — the typed plugin.command dispatcher', () => {
 
   test('the reply seam rides the event to the sink, bound by the caller', () => {
     const replies: unknown[] = []
-    const unsub = miniAppCommandBus.register('sample-plugin', 'chart', (e) =>
+    const unsub = miniAppCommandBus.register('sample-mini-app', 'chart', (e) =>
       e.reply?.({ ok: true, result: { mounted: true } }),
     )
     try {
@@ -101,7 +101,7 @@ describe('miniAppCommandBus — the typed plugin.command dispatcher', () => {
 
   test('a replayed frame is deduped BEFORE the reply seam — no double answer', () => {
     let replyCount = 0
-    const unsub = miniAppCommandBus.register('sample-plugin', 'chart', (e) => {
+    const unsub = miniAppCommandBus.register('sample-mini-app', 'chart', (e) => {
       e.reply?.({ ok: true })
     })
     try {
@@ -116,7 +116,7 @@ describe('miniAppCommandBus — the typed plugin.command dispatcher', () => {
 
   test('unsubscribe stops delivery', () => {
     let calls = 0
-    const unsub = miniAppCommandBus.register('sample-plugin', 'chart', () => calls++)
+    const unsub = miniAppCommandBus.register('sample-mini-app', 'chart', () => calls++)
     unsub()
     miniAppCommandBus.publish(frame(), true)
     expect(calls).toBe(0)

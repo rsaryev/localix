@@ -2,7 +2,7 @@ import type { MiniAppSessionPhase } from '@localixai/mini-app-sdk/ui'
 
 /**
  * Tiny pub/sub carrying the SAFE session lifecycle phases the chat runtime
- * forwards to bridged plugin views (run started/completed/failed). Deliberately
+ * forwards to bridged mini app views (run started/completed/failed). Deliberately
  * separate from the store: it never re-renders anything, it just fans a low-rate
  * signal out to whatever bridged iframes are mounted. Each subscriber (a mounted
  * view's bridge) applies its OWN per-session gate — the bus itself is a plain

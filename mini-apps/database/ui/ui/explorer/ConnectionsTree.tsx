@@ -45,7 +45,7 @@ export function ConnectionsTree({ s }: { s: ExplorerState }) {
 
   // No `bg-sidebar` coat: the host's sidebar panel is the outermost painter of that ground, and
   // under the macOS glass theme the token carries alpha — a second pane-sized coat compounds into
-  // an opaque slab, and a plugin ground nested in the host's is exactly how this pane went black.
+  // an opaque slab, and a mini app ground nested in the host's is exactly how this pane went black.
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* `content` tone throughout: this tree is the body of a work-item pane, not the host's

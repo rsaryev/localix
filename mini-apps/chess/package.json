@@ -2,7 +2,7 @@
   "name": "@localix-mini-app/chess",
   "version": "0.1.0",
   "private": true,
-  "description": "Dependencies for the bundled Chess plugin: a board whose moves wake the agent in its chat.",
+  "description": "Dependencies for the bundled Chess mini app: a board whose moves wake the agent in its chat.",
   "license": "MIT",
   "type": "module",
   "scripts": {

@@ -28,7 +28,7 @@ import type { MarketTypeToken } from './uri'
 import { publicConnectionConfig, publicExchangeId } from './public-connection'
 import { mapTradingError, toErrorInfo } from './errors'
 
-/** The URI provider this plugin owns. */
+/** The URI provider this mini app owns. */
 export const PROVIDER = 'trade'
 
 /**

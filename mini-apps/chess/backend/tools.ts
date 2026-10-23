@@ -28,7 +28,7 @@ export const classifyChessCall = classifyByAction({
 /**
  * The agent's side of the game — ONE tool, `chess`, whose `action` says what it does: play a
  * move, read the board, start a game, resign. One tool rather than four, because every tool's
- * schema rides in every request of every run the plugin is loaded for; four tools cost four
+ * schema rides in every request of every run the mini app is loaded for; four tools cost four
  * schemas and four names the model has to choose between, for what is one conversation with one
  * board. None of the actions wakes anyone: the agent calling the tool is already the turn.
  *

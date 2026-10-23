@@ -5,12 +5,12 @@
  * remains the evidence packet replayed to the model, while this compact record
  * survives in the transcript so every host can explain where that context came
  * from. The vocabulary is deliberately tool/provider agnostic — built-ins,
- * plugins, MCP adapters and provider-native search all publish the same shape.
+ * mini apps, MCP adapters and provider-native search all publish the same shape.
  */
 export interface AgentSource {
   /** Stable within the source URI; callers should reuse it across retries. */
   id: string
-  /** Open vocabulary (`web`, `document`, `message`, plugin-owned kinds, ...). */
+  /** Open vocabulary (`web`, `document`, `message`, mini-app-owned kinds, ...). */
   kind: string
   /** Human-readable label shown by transcript surfaces. */
   title: string
@@ -31,7 +31,7 @@ export interface AgentSource {
   snippet?: string
   /** ISO timestamp for time-sensitive provenance. */
   retrievedAt?: string
-  /** Small, scalar extension bag for provider/plugin-specific presentation data. */
+  /** Small, scalar extension bag for provider/mini-app-specific presentation data. */
   metadata?: Record<string, string | number | boolean>
 }
 

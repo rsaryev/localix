@@ -1,9 +1,9 @@
 /**
  * Turning an untrusted key into a filename — once, for every store in the repo.
  *
- * WHY IT LIVES IN THE SDK. Its callers are five host stores AND five plugin stores, and a plugin
- * cannot import `apps/api`: the boundary contract (`plugin-boundary-contract.test.ts`) exists to
- * stop exactly that, and every plugin store was reaching across it by relative path to inject
+ * WHY IT LIVES IN THE SDK. Its callers are five host stores AND five mini app stores, and a mini
+ * app cannot import `apps/api`: the boundary contract (`plugin-boundary-contract.test.ts`) exists
+ * to stop exactly that, and every mini app store was reaching across it by relative path to inject
  * this function into `createUserEntityStore`. A security primitive smuggled over a boundary that
  * a test is meant to enforce is the worst of both worlds — the rule is still single-owner, but
  * nothing about the arrangement says so.
@@ -20,7 +20,7 @@
  * whatever a caller sends arrives here verbatim.
  *
  * It was open-coded FOUR times with identical bodies — the secrets vault, the MCP OAuth
- * token store, an extension connection store, and another plugin's own store-paths (which had
+ * token store, an extension connection store, and another mini app's own store-paths (which had
  * already consolidated several copies, and whose header rightly said "a security
  * primitive is exactly the wrong thing to keep three copies of" — it just never learned
  * about the four outside it). Four places a hardening fix has to land; three places it can

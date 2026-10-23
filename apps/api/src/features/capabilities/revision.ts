@@ -8,7 +8,7 @@
  * connection. The snapshot's revision, rather than event arrival order, settles competing reads.
  *
  * Process-wide on purpose, and deliberately NOT per-user or per-project: a capability
- * mutation invalidates discovery, the plugin backend host's wiring, and any runtime
+ * mutation invalidates discovery, the mini app backend host's wiring, and any runtime
  * cache keyed on the enabled set — all of which are process-scoped. A per-scope
  * counter would need every consumer to know which scopes a mutation touched (a global
  * plugin participates in every project), which is exactly the fan-out this replaces.

@@ -5,7 +5,7 @@ import { createSharedResource, GLOBAL_RESOURCE_KEY } from './shared-resource'
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 /**
- * The rules a status item's data has to obey, held once here instead of in every plugin.
+ * The rules a status item's data has to obey, held once here instead of in every mini app.
  *
  * Each is a mistake the hand-written version of this cache made or invited: a second reader paying
  * for the same list again, a re-read fired because the answer was legitimately empty, and a
@@ -40,7 +40,7 @@ describe('createSharedResource', () => {
     resource.refresh(GLOBAL_RESOURCE_KEY)
     await settle()
 
-    // The mount effect guards on `has`, not on truthiness. A plugin with no saved connections
+    // The mount effect guards on `has`, not on truthiness. A mini app with no saved connections
     // would otherwise re-ask on every mount, forever, for the answer it already has.
     expect(resource.peek(GLOBAL_RESOURCE_KEY)).toEqual([])
     expect(calls).toBe(1)

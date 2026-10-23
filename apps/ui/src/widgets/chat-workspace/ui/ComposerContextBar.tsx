@@ -39,7 +39,7 @@ export function ComposerContextBar({
       <ProjectChip />
       {children}
       {/* CONTRIBUTED indicator pills — declared, not drawn. Same seam as the titlebar cluster and
-          the status bar: a plugin says what it has (a glyph, live text, metrics, a menu) and the
+          the status bar: a mini app says what it has (a glyph, live text, metrics, a menu) and the
           host renders it as a `ComposerChip`, so a contributed pill cannot end up a different
           height from the project chip beside it. */}
       <StatusItems placement="composer" sessionId={activeSessionId} />

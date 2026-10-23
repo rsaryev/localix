@@ -10,7 +10,7 @@ import type { SourceControlStatus } from '../../../backend/source-control/contra
 import { gitReadProblem } from './gitFailure'
 import { useSourceControlStore } from './store'
 
-/** Namespace for this plugin's rows in the Event Center. */
+/** Namespace for this mini app's rows in the Event Center. */
 const SCOPE = 'source-control'
 
 /**

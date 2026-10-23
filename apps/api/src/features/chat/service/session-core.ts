@@ -35,7 +35,7 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
     hitlRegistry,
     streamRegistry,
     previewRegistry,
-    pluginCommands,
+    miniAppCommands,
     runner,
   } = graph
 
@@ -134,9 +134,9 @@ export function createSessionCore(deps: ChatServiceDeps, graph: ChatServiceGraph
     // otherwise they only clear via their 22s timeout.
     closeSessionPreview: (userId, sessionId) => {
       previewRegistry.closeForSession(userId, sessionId)
-      // Same rule for awaited plugin commands: a deleted session's pending
+      // Same rule for awaited mini app commands: a deleted session's pending
       // round-trips settle now instead of only via their timeout.
-      pluginCommands.closeForSession(userId, sessionId)
+      miniAppCommands.closeForSession(userId, sessionId)
     },
     // Close the deleted session's file-tree watcher (frees the inotify handle when the last
     // session sharing an isolated directory leaves it).

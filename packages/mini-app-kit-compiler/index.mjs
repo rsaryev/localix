@@ -1,5 +1,5 @@
 /**
- * The JavaScript TypeScript compiler the plugin kit needs, and ONLY the plugin kit.
+ * The JavaScript TypeScript compiler the mini app kit needs, and ONLY the mini app kit.
  *
  * The workspace type-checks with TypeScript 7, whose compiler is native and ships no JavaScript
  * API. The kit needs one: it reads the host kit's real types to write its declarations, and it

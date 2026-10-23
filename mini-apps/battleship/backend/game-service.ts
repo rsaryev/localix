@@ -47,7 +47,7 @@ export function createGameService(
   const fleets = () => ({ you: placeFleet(random), agent: placeFleet(random) })
   const table = createTurnTable({
     ...input,
-    plugin: 'battleship',
+    miniApp: 'battleship',
     noun: 'board',
     now,
     schema: gameSchema,

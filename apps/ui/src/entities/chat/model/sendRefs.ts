@@ -211,7 +211,7 @@ export function resolveSendRefs(input: ResolveSendRefsInput): MessageContextBind
       id: crypto.randomUUID(),
       source: canonical?.source ?? 'mention',
       ...(canonical?.assets?.length ? { assets: canonical.assets } : {}),
-      ...(canonical?.plugin ? { plugin: canonical.plugin } : {}),
+      ...(canonical?.miniApp ? { miniApp: canonical.miniApp } : {}),
       // One ref → target conversion, shared with a pasted link's (`contextLinks.ts`).
       target: canonical?.target ?? contextTargetFromRef(ref),
       resolution: { status: 'pending', contributions: [] },

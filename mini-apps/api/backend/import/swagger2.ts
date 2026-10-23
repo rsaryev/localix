@@ -14,7 +14,7 @@
  * That is not just less code. It means the OA3 importer's `$ref` resolution, its example generation,
  * its `{placeholder}` → `:placeholder` rewrite and its "report an auth scheme we cannot sign rather
  * than importing it as none" all serve Swagger 2 for free — and the next fix to any of them serves
- * both formats instead of one, which is the failure mode this plugin keeps finding (the same
+ * both formats instead of one, which is the failure mode this mini app keeps finding (the same
  * knowledge in two copies, one of them quietly drifting).
  *
  * The differences, all four:

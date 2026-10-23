@@ -3,16 +3,16 @@
  *
  * The workbench's `register()` runs MORE THAN ONCE per process: once at boot (the
  * backend/route contribution, via `loadMiniAppBackends`) and again per agent run (the
- * `database_client` tool contribution, via the per-run plugin loader). Both paths share
+ * `database_client` tool contribution, via the per-run mini app loader). Both paths share
  * ONE `DatabaseService` instance, because the live-driver registry (open connections,
  * manual transactions) lives in memory on the instance — a second instance would have an
  * empty registry and every tool query would return "not connected" even though the UI
  * opened a connection through the route on the first instance.
  *
  * So the service is held on `globalThis` (survives the fresh per-call module import the
- * plugin loader does) and built lazily on first `register()`. The one host capability it
+ * mini app loader does) and built lazily on first `register()`. The one host capability it
  * needs — resolving `${secret:KEY}` tokens against the central vault — arrives through the
- * generic plugin `ctx.host.resolveSecret` seam; the boot-time load supplies the real
+ * generic mini app `ctx.host.resolveSecret` seam; the boot-time load supplies the real
  * resolver, and the latest real host always wins (captured below), so per-run calls that
  * lack a host simply reuse the already-built service.
  */
@@ -33,7 +33,7 @@ interface Holder {
   resolveSecret?: ResolveSecret
 }
 
-const GLOBAL_KEY = Symbol.for('localix.plugin.database.services')
+const GLOBAL_KEY = Symbol.for('localix.mini-app.database.services')
 
 function holder(): Holder {
   const g = globalThis as { [key: symbol]: Holder | undefined }
@@ -92,7 +92,7 @@ export function getDatabaseService(options: {
  * The service a registration hands to its routes, providers and tool: never an instance, always
  * the CURRENT one, resolved on every call.
  *
- * The defect it stops: the host re-wires a plugin by loading the NEW registration first and only
+ * The defect it stops: the host re-wires a mini app by loading the NEW registration first and only
  * then unwiring the old one. The new routes had already captured the live instance when the old
  * registration's `onShutdown` released it, so the routes served a closed instance — and its
  * saved-connection list, which the store caches after the first read, froze. The next agent turn

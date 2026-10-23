@@ -7,7 +7,10 @@ import { fileURLToPath } from 'node:url'
 import { parseSync } from 'oxc-parser'
 import { readExtensionManifest } from './lib/extension-manifest.mjs'
 import { BUNDLED_DIRS, MINI_APPS_PREFIX, appOfPath, bundledRoots } from './lib/bundled-roots.mjs'
-import { createPluginIdentityGuard, pluginUiNamespaceProblems } from './plugin-identity-guard.mjs'
+import {
+  createMiniAppIdentityGuard,
+  miniAppUiNamespaceProblems,
+} from './mini-app-identity-guard.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 /** A workspace package's folder from a repository path: its group and its name. */
@@ -35,10 +38,10 @@ const skippedDirectories = new Set([
   'vendor',
 ])
 const skippedTrees = [
-  // The desktop app's staged release payload (gitignored): mirrors of the plugins, the built API,
+  // The desktop app's staged release payload (gitignored): mirrors of the mini apps, the built API,
   // the CLI launcher and the API migrations, each scanned at its canonical source below. Skipped as
   // ONE tree because listing its entries one by one failed the gate on every checkout that had
-  // staged a new kind of payload — the migrations copy named the plugin a migration once served.
+  // staged a new kind of payload — the migrations copy named the mini app a migration once served.
   'apps/desktop-tauri/src-tauri/resources/',
   // Generated landing-page modules mirror canonical Markdown and screenshot manifests.
   'apps/landing/src/generated/',
@@ -103,7 +106,7 @@ const auditedRuntimeMutationWrappers = new Map([
   ['apps/ui/src/features/settings/model/useSkills.ts', new Set(['runSkillMutation'])],
 ])
 
-// Bundled plugin UI reaches the host only through the public SDK and the host UI kit,
+// Bundled mini app UI reaches the host only through the public SDK and the host UI kit,
 // `@localixai/kit/<id>` — a door of the `packages/kit` package (`src/entries/<id>.ts`) or a module
 // the host still lends (`apps/ui/src/app/kit/`, whose README states the admission rule): never
 // `@/…` host internals, in source or in tests. The kit is presentation. A kit module that exposes
@@ -111,18 +114,18 @@ const auditedRuntimeMutationWrappers = new Map([
 // would retire it. The map self-cleans: an edge that no longer exists is reported as stale, so a
 // debt cannot outlive its cause. Adding one is a decision — the default is to build the seam.
 const HOST_UI_KIT = '@localixai/kit'
-const pluginKitDebt = new Map([])
+const miniAppKitDebt = new Map([])
 /** Kit modules that expose host feature state: only the recorded edges may import them. */
 const hostFeatureKitModules = new Set([
   '@localixai/kit/user-settings',
-  ...[...pluginKitDebt.keys()].map((edge) => edge.split(' -> ')[1]),
+  ...[...miniAppKitDebt.keys()].map((edge) => edge.split(' -> ')[1]),
 ])
 
-// Workspace packages that are intentionally part of the plugin authoring surface.
+// Workspace packages that are intentionally part of the mini app authoring surface.
 // Everything else is a host/runtime implementation detail. A package export map is
-// not an architectural permission: without this gate a plugin could simply declare
+// not an architectural permission: without this gate a mini app could simply declare
 // @localixai/api and bypass the relative-import boundary below.
-const pluginPublicWorkspacePackages = new Set([
+const miniAppPublicWorkspacePackages = new Set([
   '@localixai/agent',
   '@localixai/dataview',
   '@localixai/path-containment',
@@ -464,43 +467,43 @@ function localWorkspacePackageName(specifier) {
 
 function miniAppWorkspaceImportProblem(specifier) {
   const packageName = localWorkspacePackageName(specifier)
-  if (!packageName || pluginPublicWorkspacePackages.has(packageName)) return null
-  return `plugin imports private workspace package ${specifier}; use @localixai/mini-app-sdk or another approved generic building block`
+  if (!packageName || miniAppPublicWorkspacePackages.has(packageName)) return null
+  return `mini app imports private workspace package ${specifier}; use @localixai/mini-app-sdk or another approved generic building block`
 }
 
-function pluginPathHasArea(path, area) {
+function miniAppPathHasArea(path, area) {
   return appOfPath(path)?.rest.split('/').includes(area) ?? false
 }
 
 function miniAppSdkLayerProblem(path, specifier) {
-  if (pluginPathHasArea(path, 'ui') && specifier.startsWith('@localixai/mini-app-sdk/backend')) {
-    return `plugin UI imports Node-only SDK surface ${specifier}`
+  if (miniAppPathHasArea(path, 'ui') && specifier.startsWith('@localixai/mini-app-sdk/backend')) {
+    return `mini app UI imports Node-only SDK surface ${specifier}`
   }
   if (
-    (pluginPathHasArea(path, 'backend') || pluginPathHasArea(path, 'tools')) &&
+    (miniAppPathHasArea(path, 'backend') || miniAppPathHasArea(path, 'tools')) &&
     specifier.startsWith('@localixai/mini-app-sdk/ui')
   ) {
-    return `plugin backend imports browser-only SDK surface ${specifier}`
+    return `mini app backend imports browser-only SDK surface ${specifier}`
   }
   return null
 }
 
 /**
- * A plugin's edge into the host, or null when it is allowed. `@/…` is refused everywhere — the
+ * A mini app's edge into the host, or null when it is allowed. `@/…` is refused everywhere — the
  * UI artifact build refuses it too. The kit is browser UI: its surfaces, the preview shell and
- * tests. A host-feature kit module is allowed only along a recorded {@link pluginKitDebt} edge.
+ * tests. A host-feature kit module is allowed only along a recorded {@link miniAppKitDebt} edge.
  */
 function miniAppHostBoundaryProblem(path, specifier) {
   if (!appOfPath(path)) return null
   if (specifier.startsWith('@/')) {
-    return `plugin imports host internals ${specifier}; use its ${HOST_UI_KIT} module (packages/kit/src/entries, or apps/ui/src/app/kit when the host lends it)`
+    return `mini app imports host internals ${specifier}; use its ${HOST_UI_KIT} module (packages/kit/src/entries, or apps/ui/src/app/kit when the host lends it)`
   }
   if (specifier !== HOST_UI_KIT && !specifier.startsWith(`${HOST_UI_KIT}/`)) return null
   const browserSide =
-    pluginPathHasArea(path, 'ui') || pluginPathHasArea(path, 'preview') || /\.test\./u.test(path)
-  if (!browserSide) return `non-UI plugin imports the host UI kit ${specifier}`
+    miniAppPathHasArea(path, 'ui') || miniAppPathHasArea(path, 'preview') || /\.test\./u.test(path)
+  if (!browserSide) return `non-UI mini app imports the host UI kit ${specifier}`
   if (hostFeatureKitModules.has(specifier)) {
-    return `plugin reaches host feature state through ${specifier}; build the seam instead`
+    return `mini app reaches host feature state through ${specifier}; build the seam instead`
   }
   return null
 }
@@ -508,9 +511,9 @@ function miniAppHostBoundaryProblem(path, specifier) {
 /**
  * The kit package's edge out of itself, or null when it is allowed.
  *
- * The kit is the design system the host AND every plugin build from, so it sits below both. A kit
+ * The kit is the design system the host AND every mini app build from, so it sits below both. A kit
  * module that reaches up into an app — through `@/…`, a relative path, or an app's own package —
- * or into a plugin makes every plugin that imports the kit depend on host internals it cannot
+ * or into a mini app makes every mini app that imports the kit depend on host internals it cannot
  * see, and turns the package back into the host tree it was cut out of. What the host owns (a
  * setting, a client, a feature's state) reaches a primitive as a prop or a registered port.
  * `appPackageNames` is the set of `apps/*` package names, read from their manifests.
@@ -522,7 +525,7 @@ function kitBoundaryProblem(path, specifier, appPackageNames) {
     return `kit imports host internals ${specifier}; the kit sits below the host — take it as a prop or a port`
   }
   if (specifier.startsWith('@localix-mini-app/')) {
-    return `kit imports plugin package ${specifier}; a plugin builds on the kit, never the reverse`
+    return `kit imports mini app package ${specifier}; a mini app builds on the kit, never the reverse`
   }
   const packageName = /^(@localixai\/[^/]+)/u.exec(specifier)?.[1]
   if (packageName && appPackageNames.has(packageName)) {
@@ -628,7 +631,7 @@ assert.match(
     `${MINI_APPS_PREFIX}example/backend/index.ts`,
     '@localixai/kit/button',
   ) ?? '',
-  /non-UI plugin/u,
+  /non-UI mini app/u,
 )
 assert.match(
   miniAppHostBoundaryProblem(
@@ -646,7 +649,7 @@ for (const [specifier, reason] of [
     `../../../${MINI_APPS_PREFIX}example/ui/x`,
     new RegExp(`crosses into ${MINI_APPS_PREFIX}example/ui/x`, 'u'),
   ],
-  ['@localix-mini-app/example', /plugin package/u],
+  ['@localix-mini-app/example', /mini app package/u],
   ['@localixai/api/tool-names', /app package/u],
 ]) {
   assert.match(
@@ -753,7 +756,7 @@ const appPackageNames = new Set(
 assert(appPackageNames.has('@localixai/api'), 'the app package names were not read')
 
 const problems = []
-const observedPluginKitEdges = new Set()
+const observedMiniAppKitEdges = new Set()
 const files = (
   await Promise.all(
     ['apps', 'packages', ...BUNDLED_DIRS, 'scripts'].map((directory) =>
@@ -769,9 +772,9 @@ const auxiliaryCoreFiles = (
   )
 ).flat()
 
-// A plugin that owns TypeScript must also own the commands that compile and test it.
-// Otherwise the host's tsconfig/test runner has to enumerate concrete plugin trees, or
-// the source silently falls outside CI. Keep this structural so newly added plugins are
+// A mini app that owns TypeScript must also own the commands that compile and test it.
+// Otherwise the host's tsconfig/test runner has to enumerate concrete mini app trees, or
+// the source silently falls outside CI. Keep this structural so newly added mini apps are
 // covered without extending an allowlist in core.
 for (const bundledRoot of bundledRoots(root))
   for (const entry of await readdir(bundledRoot, { withFileTypes: true })) {
@@ -783,12 +786,12 @@ for (const bundledRoot of bundledRoots(root))
     if (!ownsTypeScript) continue
     const workspace = workspaceManifests.get(directory)
     if (!workspace) {
-      problems.push(`${directory}: TypeScript plugin has no package.json compile/test owner`)
+      problems.push(`${directory}: TypeScript mini app has no package.json compile/test owner`)
       continue
     }
     for (const script of ['test', 'type-check']) {
       if (typeof workspace.scripts[script] !== 'string' || workspace.scripts[script].length === 0) {
-        problems.push(`${directory}: TypeScript plugin package is missing the ${script} script`)
+        problems.push(`${directory}: TypeScript mini app package is missing the ${script} script`)
       }
     }
   }
@@ -798,8 +801,8 @@ for (const bundledRoot of bundledRoots(root))
 // introducing a second language surface.
 const cyrillic = /[\u0400-\u04ff]/u
 const bundledMiniAppNames = []
-const bundledPluginManifests = []
-const bundledPluginNameByDirectory = new Map()
+const bundledMiniAppManifests = []
+const bundledMiniAppNameByDirectory = new Map()
 for (const bundledRoot of bundledRoots(root))
   for (const entry of await readdir(bundledRoot, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue
@@ -807,54 +810,55 @@ for (const bundledRoot of bundledRoots(root))
       const manifest = readExtensionManifest(join(bundledRoot, entry.name))
       if (typeof manifest.name === 'string') {
         bundledMiniAppNames.push(manifest.name)
-        bundledPluginManifests.push(manifest)
-        bundledPluginNameByDirectory.set(entry.name, manifest.name)
+        bundledMiniAppManifests.push(manifest)
+        bundledMiniAppNameByDirectory.set(entry.name, manifest.name)
       }
     } catch {
-      // Manifest validation owns malformed plugin reporting. This guard only needs valid identities.
+      // Manifest validation owns malformed mini app reporting. This guard only needs valid
+      // identities.
     }
   }
 
-// Identity belongs to the plugin that registers it. Build the forbidden catalog from
+// Identity belongs to the mini app that registers it. Build the forbidden catalog from
 // the real bundled register() results instead of a hand-maintained core allowlist. A
 // newly registered tool/provider/route/stream command therefore enters this guard in
 // the same change even if its author never edits check-architecture.mjs.
 const { discoverBundledMiniApps } = await import('../apps/api/src/features/mini-apps/discovery.ts')
 const { resolveMiniAppConfig } = await import('../apps/api/src/features/mini-apps/config.ts')
 const { inspectMiniAppTools } = await import('../apps/api/src/features/mini-apps/native.ts')
-const discoveredPlugins = await discoverBundledMiniApps()
-const nativePlugins = discoveredPlugins.filter((plugin) => plugin.backendEntries.length > 0)
+const discoveredMiniApps = await discoverBundledMiniApps()
+const nativeMiniApps = discoveredMiniApps.filter((miniApp) => miniApp.backendEntries.length > 0)
 const nativeInspections = await Promise.all(
-  nativePlugins.map(async (plugin) => ({
-    plugin,
-    // A fixture home: inspection builds a real context, which creates the plugin's roots, and
+  nativeMiniApps.map(async (miniApp) => ({
+    miniApp,
+    // A fixture home: inspection builds a real context, which creates the mini app's roots, and
     // this check runs on every developer's machine.
     inspection: await inspectMiniAppTools(
-      plugin,
-      resolveMiniAppConfig(plugin.manifest?.config, undefined),
+      miniApp,
+      resolveMiniAppConfig(miniApp.manifest?.config, undefined),
       {
         userId: 'architecture-audit',
-        cwd: plugin.dir,
+        cwd: miniApp.dir,
         homeDir: join(tmpdir(), 'localix-architecture-audit-home'),
       },
     ),
   })),
 )
-for (const { plugin, inspection } of nativeInspections) {
+for (const { miniApp, inspection } of nativeInspections) {
   if (inspection.error) {
-    problems.push(`${plugin.name}: native identity inspection failed (${inspection.error})`)
+    problems.push(`${miniApp.name}: native identity inspection failed (${inspection.error})`)
   }
 }
 
-const concretePluginToolNames = new Set(
+const concreteMiniAppToolNames = new Set(
   nativeInspections.flatMap(({ inspection }) => inspection.tools.map((tool) => tool.name)),
 )
-const pluginCommandNames = discoveredPlugins.flatMap((app) =>
+const miniAppCommandNames = discoveredMiniApps.flatMap((app) =>
   app.commands.map((command) =>
     command.name === app.name ? app.name : `${app.name}:${command.name}`,
   ),
 )
-const pluginAgentNames = discoveredPlugins.flatMap((app) =>
+const miniAppAgentNames = discoveredMiniApps.flatMap((app) =>
   app.contributions.flatMap((entry) =>
     entry.kind === 'agent' && typeof entry.value?.definition?.handle === 'string'
       ? [`${app.name}:${entry.value.definition.handle}`]
@@ -862,12 +866,12 @@ const pluginAgentNames = discoveredPlugins.flatMap((app) =>
   ),
 )
 // Authoring-only/lazy tools may be declared but not returned by the active register()
-// path. Their plugin-owned declarations still define identities core must not learn.
-for (const manifest of bundledPluginManifests) {
+// path. Their mini-app-owned declarations still define identities core must not learn.
+for (const manifest of bundledMiniAppManifests) {
   const declared = manifest.experimental?.nativeContributions?.tools
   if (!Array.isArray(declared)) continue
   for (const tool of declared) {
-    if (typeof tool?.name === 'string') concretePluginToolNames.add(tool.name)
+    if (typeof tool?.name === 'string') concreteMiniAppToolNames.add(tool.name)
   }
 }
 for (const file of files) {
@@ -883,7 +887,7 @@ for (const file of files) {
     (/\binputSchema\b/u.test(source) && /\b(?:async\s+)?execute\s*(?::|\()/u.test(source))
   if (!definesTool) continue
   for (const match of source.matchAll(/^\s*name\s*:\s*['"]([a-z][a-z0-9_]*)['"]/gmu)) {
-    concretePluginToolNames.add(match[1])
+    concreteMiniAppToolNames.add(match[1])
   }
   const constants = new Map(
     [...source.matchAll(/\bconst\s+([A-Z][A-Z0-9_]*)\s*=\s*['"]([a-z][a-z0-9_]*)['"]/gu)].map(
@@ -892,7 +896,7 @@ for (const file of files) {
   )
   for (const match of source.matchAll(/^\s*name\s*:\s*([A-Z][A-Z0-9_]*)\b/gmu)) {
     const value = constants.get(match[1])
-    if (value) concretePluginToolNames.add(value)
+    if (value) concreteMiniAppToolNames.add(value)
   }
 }
 
@@ -907,8 +911,8 @@ const backendSubsystems = nativeInspections.flatMap(
 )
 const searchProviders = nativeInspections.flatMap(({ inspection }) => inspection.searchProviders)
 const channelNames = nativeInspections.flatMap(({ inspection }) => inspection.channels)
-const pluginUiContributionIds = new Set()
-const pluginUiContributions = []
+const miniAppUiContributionIds = new Set()
+const miniAppUiContributions = []
 for (const file of files) {
   const path = projectPath(file)
   if (
@@ -921,12 +925,12 @@ for (const file of files) {
   const source = (await readFile(file, 'utf8'))
     .replace(/\/\*[\s\S]*?\*\//gu, '')
     .replace(/(^|[^:])\/\/.*$/gmu, '$1')
-  const pluginDirectory = appOfPath(path)?.app
-  const pluginName = bundledPluginNameByDirectory.get(pluginDirectory)
-  assert(pluginName, `${path}: bundled plugin directory has no manifest identity`)
+  const miniAppDirectory = appOfPath(path)?.app
+  const miniAppName = bundledMiniAppNameByDirectory.get(miniAppDirectory)
+  assert(miniAppName, `${path}: bundled mini app directory has no manifest identity`)
   const recordContribution = (id) => {
-    pluginUiContributionIds.add(id)
-    pluginUiContributions.push({ id, path, pluginName })
+    miniAppUiContributionIds.add(id)
+    miniAppUiContributions.push({ id, path, miniAppName })
   }
   for (const match of source.matchAll(
     /host\.(?:workItems|railSections|railViewlets|search|anchors|fileEditors|statusItems)\.register\(\s*\{\s*(?:\.\.\.[^,\n]+,\s*)?(?:kind|id)\s*:\s*['"]([^'"]+)['"]/gu,
@@ -939,24 +943,25 @@ for (const file of files) {
     recordContribution(match[1])
   }
 }
-problems.push(...pluginUiNamespaceProblems(pluginUiContributions))
+problems.push(...miniAppUiNamespaceProblems(miniAppUiContributions))
 
-assert(nativeInspections.length > 0, 'bundled native-plugin inspection must not be empty')
+assert(nativeInspections.length > 0, 'bundled native-mini-app inspection must not be empty')
 assert(auxiliaryCoreFiles.length > 0, 'auxiliary core source inspection must not be empty')
-assert(concretePluginToolNames.size > 0, 'bundled tool identity catalog must not be empty')
-assert(pluginCommandNames.length > 0, 'bundled command identity catalog must not be empty')
+assert(concreteMiniAppToolNames.size > 0, 'bundled tool identity catalog must not be empty')
+assert(miniAppCommandNames.length > 0, 'bundled command identity catalog must not be empty')
 assert(routeMounts.length > 0, 'bundled route identity catalog must not be empty')
 assert(resourceProviders.length > 0, 'bundled resource identity catalog must not be empty')
 assert(contextProviders.length > 0, 'bundled context-provider identity catalog must not be empty')
 assert(wsCommands.length > 0, 'bundled websocket identity catalog must not be empty')
-// Channels and agents are the capabilities no bundled plugin has to declare — the host keeps the port open
-// for an outside-messenger bridge, and agents come from the core presets today. So those catalogs
-// may be empty, and their positive controls are skipped rather than fabricated from undefined names.
-assert(pluginUiContributionIds.size > 0, 'bundled UI contribution catalog must not be empty')
-const pluginIdentityGuard = createPluginIdentityGuard({
-  toolNames: concretePluginToolNames,
-  commandNames: pluginCommandNames,
-  agentNames: pluginAgentNames,
+// Channels and agents are the capabilities no bundled mini app has to declare — the host keeps the
+// port open for an outside-messenger bridge, and agents come from the core presets today. So those
+// catalogs may be empty, and their positive controls are skipped rather than fabricated from
+// undefined names.
+assert(miniAppUiContributionIds.size > 0, 'bundled UI contribution catalog must not be empty')
+const miniAppIdentityGuard = createMiniAppIdentityGuard({
+  toolNames: concreteMiniAppToolNames,
+  commandNames: miniAppCommandNames,
+  agentNames: miniAppAgentNames,
   backendSubsystems,
   routeMounts,
   resourceProviders,
@@ -964,13 +969,13 @@ const pluginIdentityGuard = createPluginIdentityGuard({
   contextProviders,
   wsCommands,
   channelNames,
-  pluginNames: bundledMiniAppNames,
-  uiContributionIds: pluginUiContributionIds,
+  miniAppNames: bundledMiniAppNames,
+  uiContributionIds: miniAppUiContributionIds,
 })
 const identityPositiveControls = [
-  `toolName: '${[...concretePluginToolNames][0]}'`,
-  `composer.insert('/${pluginCommandNames[0]}')`,
-  ...(pluginAgentNames.length > 0 ? [`agentName: '${pluginAgentNames[0]}'`] : []),
+  `toolName: '${[...concreteMiniAppToolNames][0]}'`,
+  `composer.insert('/${miniAppCommandNames[0]}')`,
+  ...(miniAppAgentNames.length > 0 ? [`agentName: '${miniAppAgentNames[0]}'`] : []),
   `backendId: '${backendSubsystems[0]}'`,
   `${routeMounts[0]}/health`,
   `localix://resource/${resourceProviders[0]}/item`,
@@ -978,19 +983,19 @@ const identityPositiveControls = [
   `providerId: '${contextProviders[0]}'`,
   `messageType: '${wsCommands[0]}'`,
   ...(channelNames.length > 0 ? [`channelName: '${channelNames[0]}'`] : []),
-  `pluginName: '${bundledMiniAppNames[0]}'`,
-  `workKind: '${[...pluginUiContributionIds][0]}'`,
+  `miniAppName: '${bundledMiniAppNames[0]}'`,
+  `workKind: '${[...miniAppUiContributionIds][0]}'`,
 ]
 for (const [index, source] of identityPositiveControls.entries()) {
   assert(
-    pluginIdentityGuard.inspect(`positive-control-${index}.ts`, source).length > 0,
-    `plugin identity positive control ${index} must be detected`,
+    miniAppIdentityGuard.inspect(`positive-control-${index}.ts`, source).length > 0,
+    `mini app identity positive control ${index} must be detected`,
   )
 }
-// Relative (`../plugins/x/`), turbo-rooted, or a QUOTED repo-root path (`'plugins/x/…'`). The
-// quoted form is how a core contract test once kept a list of files inside six bundled plugins,
+// Relative (`../mini-apps/x/`), turbo-rooted, or a QUOTED repo-root path (`'mini-apps/x/…'`). The
+// quoted form is how a core contract test once kept a list of files inside six bundled mini apps,
 // and the relative-only pattern let it through.
-const concretePluginTreePattern = new RegExp(
+const concreteMiniAppTreePattern = new RegExp(
   `(?:(?:\\.\\./)+|\\$TURBO_ROOT\\$/|["'\`])${MINI_APPS_PREFIX}(?:${bundledMiniAppNames.join('|')})/`,
   'u',
 )
@@ -999,11 +1004,11 @@ for (const control of [
   `['${MINI_APPS_PREFIX}${bundledMiniAppNames[0]}/ui/X.tsx', 1]`,
 ]) {
   assert(
-    concretePluginTreePattern.test(control),
-    `plugin tree positive control must match: ${control}`,
+    concreteMiniAppTreePattern.test(control),
+    `mini app tree positive control must match: ${control}`,
   )
 }
-// A plugin may own encoding fixture text without teaching this host-side guard its name or path.
+// A mini app may own encoding fixture text without teaching this host-side guard its name or path.
 // Construct the marker in parts so this guard does not accidentally exempt itself merely by
 // defining the token it recognizes.
 const cyrillicFixtureMarker = ['@architecture', 'allow-cyrillic-fixture'].join('-')
@@ -1084,7 +1089,7 @@ for (const file of englishOnlyFiles) {
       path.startsWith('packages/') ||
       path.startsWith('scripts/'))
   if (nonSourceCoreText && !/(?:^|\/)(?:__tests__|fixtures?)\//u.test(path)) {
-    problems.push(...pluginIdentityGuard.inspect(path, text))
+    problems.push(...miniAppIdentityGuard.inspect(path, text))
   }
   for (const [index, line] of lines.entries()) {
     if (cyrillic.test(line)) {
@@ -1092,11 +1097,11 @@ for (const file of englishOnlyFiles) {
     }
     if (
       (path.startsWith('apps/') || path.startsWith('packages/')) &&
-      concretePluginTreePattern.test(line)
+      concreteMiniAppTreePattern.test(line)
     ) {
       problems.push(
-        `${path}:${index + 1}: core references a concrete bundled plugin tree; ` +
-          `plugins own their compile/test projects and integration belongs under ${MINI_APPS_PREFIX} or scripts/`,
+        `${path}:${index + 1}: core references a concrete bundled mini app tree; ` +
+          `mini apps own their compile/test projects and integration belongs under ${MINI_APPS_PREFIX} or scripts/`,
       )
     }
   }
@@ -1106,7 +1111,7 @@ for (const file of files) {
   const path = projectPath(file)
   assert(path)
   const source = await readFile(file, 'utf8')
-  // The opt-in screenshot suite is test tooling: it seeds deterministic plugin fixtures the way a
+  // The opt-in screenshot suite is test tooling: it seeds deterministic mini app fixtures the way a
   // test does, and never ships in the host.
   const testSource =
     /(?:^|\/)__tests__\//u.test(path) ||
@@ -1121,21 +1126,21 @@ for (const file of files) {
   const uiProductionSource =
     (path.startsWith('apps/ui/src/') || path.startsWith('packages/kit/src/')) && !testSource
   // Anything that renders in the BROWSER/webview, wherever it lives: the host UI, a
-  // plugin's ui area, and the SDK's ui surface. `uiProductionSource` is host-only, so a
-  // rule about escaping the app has to use this or it silently misses every plugin.
+  // mini app's ui area, and the SDK's ui surface. `uiProductionSource` is host-only, so a
+  // rule about escaping the app has to use this or it silently misses every mini app.
   const browserProductionSource =
     !testSource &&
     (path.startsWith('apps/ui/src/') ||
       path.startsWith('packages/kit/src/') ||
       path.startsWith('packages/mini-app-sdk/src/ui/') ||
-      pluginPathHasArea(path, 'ui'))
+      miniAppPathHasArea(path, 'ui'))
   const coreOrPackageSource =
     path !== 'scripts/check-architecture.mjs' &&
     (path.startsWith('apps/') || path.startsWith('packages/') || path.startsWith('scripts/'))
   const coreOrPackageProductionSource = !testSource && coreOrPackageSource
 
   if (coreOrPackageSource) {
-    problems.push(...pluginIdentityGuard.inspect(path, source))
+    problems.push(...miniAppIdentityGuard.inspect(path, source))
   }
   if (coreOrPackageProductionSource) {
     if (/Record\s*<\s*WorkItemKind\s*,/u.test(sourceWithoutComments)) {
@@ -1173,12 +1178,12 @@ for (const file of files) {
     }
   }
 
-  // A plugin tool description over 4 000 characters (the host's
+  // A mini app tool description over 4 000 characters (the host's
   // MINI_APP_TOOL_DESCRIPTION_MAX_CHARS) is truncated at load with one server-log
   // line and nothing else. One bundled tool shipped at 6 887, so 2 888 characters —
   // its essential authoring constraints never reached a model. SCOPE: exported
   // `*DESCRIPTION*` template literals only. Descriptions
-  // built inline in `register()` are invisible here and stay the owning plugin's
+  // built inline in `register()` are invisible here and stay the owning mini app's
   // job to test; a manifest-reading check would be worse than nothing, since
   // manifests carry tool NAMES and no descriptions at all.
   if (path.startsWith(MINI_APPS_PREFIX) && !testSource) {
@@ -1187,9 +1192,9 @@ for (const file of files) {
     )) {
       if (match[2].length > 4000) {
         problems.push(
-          `${path}: ${match[1]} is ${match[2].length} chars; the host truncates a plugin tool ` +
+          `${path}: ${match[1]} is ${match[2].length} chars; the host truncates a mini app tool ` +
             'description at 4000 and says so only in a server log — move the overflow into the ' +
-            "plugin's instructions context provider",
+            "mini app's instructions context provider",
         )
       }
     }
@@ -1301,7 +1306,7 @@ for (const file of files) {
   // `window.open` is how a link escapes the app WITHOUT the confirmation gate, and
   // inside the desktop shell WKWebView swallows it, so the link silently does
   // nothing. `openExternal.ts` owns the one sanctioned call; everything else asks
-  // through `platformCapabilities().external.open` (plugins: `miniAppExternal`).
+  // through `platformCapabilities().external.open` (mini apps: `miniAppExternal`).
   if (
     browserProductionSource &&
     path !== 'apps/ui/src/shared/lib/openExternal.ts' &&
@@ -1358,12 +1363,12 @@ for (const file of files) {
     continue
   }
   const specifiers = moduleLoads.specifiers
-  const pluginMatch = appOfPath(path)
-  if (pluginMatch && !testSource) {
+  const miniAppMatch = appOfPath(path)
+  if (miniAppMatch && !testSource) {
     for (const { kind, start } of moduleLoads.nonLiteral) {
       const line = source.slice(0, start).split('\n').length
       problems.push(
-        `${path}:${line}: production plugin uses non-literal ${kind}(); use an explicit ` +
+        `${path}:${line}: production mini app uses non-literal ${kind}(); use an explicit ` +
           'module specifier so dependency and host-boundary checks can inspect it',
       )
     }
@@ -1409,7 +1414,7 @@ for (const file of files) {
       path.startsWith('packages/kit/src/') ||
       path.startsWith('apps/landing/src/') ||
       path.startsWith('packages/mini-app-sdk/src/ui/') ||
-      pluginPathHasArea(path, 'ui')
+      miniAppPathHasArea(path, 'ui')
     if (
       uiProductionSource &&
       /(?:^|\/)openExternal$/u.test(specifier) &&
@@ -1423,11 +1428,11 @@ for (const file of files) {
     }
     if (
       browserUiSource &&
-      !pluginMatch &&
+      !miniAppMatch &&
       specifier.startsWith('@localixai/mini-app-sdk/backend')
     ) {
       problems.push(
-        `${path}: browser UI imports the Node-only plugin SDK backend barrel; use ` +
+        `${path}: browser UI imports the Node-only mini app SDK backend barrel; use ` +
           '@localixai/mini-app-sdk/ui or a narrow browser-safe entrypoint',
       )
     }
@@ -1446,7 +1451,7 @@ for (const file of files) {
         )
       }
     }
-    if (pluginMatch && !testSource) {
+    if (miniAppMatch && !testSource) {
       const workspaceProblem = miniAppWorkspaceImportProblem(specifier)
       if (workspaceProblem) problems.push(`${path}: ${workspaceProblem}`)
       const sdkLayerProblem = miniAppSdkLayerProblem(path, specifier)
@@ -1464,15 +1469,15 @@ for (const file of files) {
       }
     }
 
-    // The host discovers and composes plugins from manifests and the public SDK
-    // contracts. A source import into one concrete plugin would make that plugin
+    // The host discovers and composes mini apps from manifests and the public SDK
+    // contracts. A source import into one concrete mini app would make that mini app
     // part of the host's compile-time architecture and silently bypass discovery,
     // enablement, and isolation. Tests may import fixtures explicitly; production
     // host code may not.
     if (coreOrPackageProductionSource && target?.startsWith(MINI_APPS_PREFIX)) {
       problems.push(
-        `${path}: host imports concrete plugin source (${target}); compose it through ` +
-          'plugin discovery and @localixai/mini-app-sdk contracts',
+        `${path}: host imports concrete mini app source (${target}); compose it through ` +
+          'mini app discovery and @localixai/mini-app-sdk contracts',
       )
     }
 
@@ -1506,42 +1511,42 @@ for (const file of files) {
       }
     }
 
-    const targetPluginMatch = target ? appOfPath(target) : null
-    if (!pluginMatch && !testSource && specifier.startsWith('@localix-mini-app/')) {
+    const targetMiniAppMatch = target ? appOfPath(target) : null
+    if (!miniAppMatch && !testSource && specifier.startsWith('@localix-mini-app/')) {
       problems.push(
-        `${path}: host/package imports concrete plugin package ${specifier}; compose it through ` +
-          'plugin discovery and @localixai/mini-app-sdk contracts',
+        `${path}: host/package imports concrete mini app package ${specifier}; compose it through ` +
+          'mini app discovery and @localixai/mini-app-sdk contracts',
       )
     }
     if (
-      pluginMatch &&
-      targetPluginMatch &&
-      pluginMatch.app !== targetPluginMatch.app &&
+      miniAppMatch &&
+      targetMiniAppMatch &&
+      miniAppMatch.app !== targetMiniAppMatch.app &&
       !testSource
     ) {
       problems.push(
-        `${path}: plugin ${pluginMatch.app} imports sibling plugin ${targetPluginMatch.app}`,
+        `${path}: mini app ${miniAppMatch.app} imports sibling mini app ${targetMiniAppMatch.app}`,
       )
     }
     if (
-      pluginMatch &&
+      miniAppMatch &&
       !testSource &&
       (target?.startsWith('apps/') ||
         target?.startsWith('packages/') ||
         target?.startsWith('scripts/'))
     ) {
       problems.push(
-        `${path}: plugin imports workspace internals (${target}); use an approved public ` +
+        `${path}: mini app imports workspace internals (${target}); use an approved public ` +
           'workspace package, @localixai/mini-app-sdk, or inject host-owned behavior through MiniAppContext',
       )
     }
     // Tests too: they reach the host through `@localixai/kit/testing`, never `@/`.
-    if (pluginMatch) {
+    if (miniAppMatch) {
       const hostProblem = miniAppHostBoundaryProblem(path, specifier)
       if (hostProblem) {
         const edge = `${path} -> ${specifier}`
-        observedPluginKitEdges.add(edge)
-        if (!pluginKitDebt.has(edge)) problems.push(`${path}: ${hostProblem}`)
+        observedMiniAppKitEdges.add(edge)
+        if (!miniAppKitDebt.has(edge)) problems.push(`${path}: ${hostProblem}`)
       }
     }
 
@@ -1569,9 +1574,9 @@ for (const file of files) {
     // entirely and nothing else in the gate objects — not lint, not type-check.
     if (path.startsWith('apps/ui/src/') && specifier.startsWith('.')) {
       const escaped = relativeTarget(file, specifier)
-      // Scoped to apps/api deliberately. `plugins/*/ui/**` is also reached by
+      // Scoped to apps/api deliberately. `mini-apps/*/ui/**` is also reached by
       // relative path from a few warm-* dom tests, but apps/ui does not depend on
-      // the plugin packages, so a name import is not available to them and calling
+      // the mini app packages, so a name import is not available to them and calling
       // that a violation would be asserting something I have not established.
       if (escaped?.startsWith('apps/api/')) {
         problems.push(
@@ -1597,12 +1602,12 @@ for (const file of auxiliaryCoreFiles) {
   const path = projectPath(file)
   assert(path)
   const source = await readFile(file, 'utf8')
-  problems.push(...pluginIdentityGuard.inspect(path, source))
+  problems.push(...miniAppIdentityGuard.inspect(path, source))
 }
 
-for (const [edge, reason] of pluginKitDebt) {
-  if (!observedPluginKitEdges.has(edge)) {
-    problems.push(`stale plugin host-feature kit allowance: ${edge} (${reason})`)
+for (const [edge, reason] of miniAppKitDebt) {
+  if (!observedMiniAppKitEdges.has(edge)) {
+    problems.push(`stale mini app host-feature kit allowance: ${edge} (${reason})`)
   }
 }
 
@@ -1646,14 +1651,14 @@ assert.deepEqual(
 
 console.log(
   `[architecture] ${files.length} JS/TS and ${auxiliaryCoreFiles.length} Rust source files respect ` +
-    'package, plugin, runtime, UI, storage, platform, and stacking boundaries.',
+    'package, mini app, runtime, UI, storage, platform, and stacking boundaries.',
 )
 console.log(
-  `[architecture] Derived ${concretePluginToolNames.size} tools, ${backendSubsystems.length} backends, ` +
+  `[architecture] Derived ${concreteMiniAppToolNames.size} tools, ${backendSubsystems.length} backends, ` +
     `${routeMounts.length} routes, ${resourceProviders.length} resources, ` +
     `${searchProviders.length} search providers, ${contextProviders.length} context providers, ` +
-    `${wsCommands.length} websocket commands, ${pluginCommandNames.length} slash commands, ` +
-    `${pluginAgentNames.length} agents, ` +
+    `${wsCommands.length} websocket commands, ${miniAppCommandNames.length} slash commands, ` +
+    `${miniAppAgentNames.length} agents, ` +
     `${channelNames.length} channels, and ` +
-    `${pluginUiContributionIds.size} UI contribution ids from bundled mini apps.`,
+    `${miniAppUiContributionIds.size} UI contribution ids from bundled mini apps.`,
 )

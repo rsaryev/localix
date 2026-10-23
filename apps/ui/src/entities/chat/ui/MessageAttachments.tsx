@@ -50,7 +50,7 @@ function CarriedAttachment({
 }
 
 /**
- * Figures / chips for a message's attachments — user uploads AND plugin-added
+ * Figures / chips for a message's attachments — user uploads AND mini-app-added
  * deliverables on assistant replies. `align` follows the message side.
  *
  * EVERY image renders as an inline {@link ImageFigure}: a real picture with a

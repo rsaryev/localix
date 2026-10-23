@@ -1,18 +1,18 @@
 /**
- * THE invalidation protocol: how a plugin says "this data just moved" and everyone who shows it
+ * THE invalidation protocol: how a mini app says "this data just moved" and everyone who shows it
  * finds out.
  *
- * Every plugin here hit the same wall. A fact is written in one place — a picker in a sidebar, a
+ * Every mini app here hit the same wall. A fact is written in one place — a picker in a sidebar, a
  * dialog on a canvas, a tool call the agent made — and READ somewhere that has no idea the write
  * happened: a titlebar glyph, a composer pill, another panel. The writer has no business knowing
  * its readers exist, and the reader has no event to hang off.
  *
- * Five plugins solved it, five times, with the same twenty lines: a module holding a `Set` of
+ * Five mini apps solved it, five times, with the same twenty lines: a module holding a `Set` of
  * listeners, an `announceX`, a `subscribeX`. Two of the five never got wired up at all — Database
  * had the reader and the refresh function and nothing in between, and the API client's picker
  * announced only for the agent's writes, so switching an environment by hand updated the sidebar
- * while the titlebar went on naming the one you had just left. That is what a per-plugin copy of a
- * cross-cutting mechanism costs: not the duplication, the ones that are quietly incomplete.
+ * while the titlebar went on naming the one you had just left. That is what a per-mini-app copy of
+ * a cross-cutting mechanism costs: not the duplication, the ones that are quietly incomplete.
  *
  * So it lives here once, as three ideas:
  *
@@ -20,7 +20,7 @@
  *     a value both sides import, never a string each side spells, so a typo cannot silently
  *     disconnect a reader from its writer;
  *   - a WRITER invalidates it, and knows nothing else. One line at the end of a mutating call in
- *     the plugin's own client module, where every write already passes;
+ *     the mini app's own client module, where every write already passes;
  *   - a READER subscribes — usually by construction, since {@link createSharedResource} takes a
  *     topic and re-reads itself.
  *
@@ -30,7 +30,7 @@
  * readers disagree about what happened.
  *
  * Deliberately NOT a poller either — see {@link SharedResource}. The two moments that move a list
- * are the plugin doing the thing and the surface being opened, and both are announceable.
+ * are the mini app doing the thing and the surface being opened, and both are announceable.
  *
  * ── KEYS ────────────────────────────────────────────────────────────────────────
  * Some data is app-global (a machine's saved connections) and some is per-session (a chat's
@@ -39,7 +39,7 @@
  */
 
 export interface ResourceTopic {
-  /** `<plugin>:<thing>` — namespaced like every other plugin-chosen identity. */
+  /** `<app>:<thing>` — namespaced like every other mini-app-chosen identity. */
   readonly name: string
   /**
    * Announce a change. `key` narrows it to one session or scope; omit it when the whole topic

@@ -20,13 +20,13 @@ export { storeFeed } from './store-resource'
  */
 export function useStoreSnapshot<T>(
   options: Parameters<typeof usePolledSnapshot<T>>[0] & {
-    plugin: string
-    /** The chat whose stores the route reads, or `null` for the plugin's own folder. */
+    miniApp: string
+    /** The chat whose stores the route reads, or `null` for the mini app's own folder. */
     sessionId: string | null
     backstopMs?: number | null
   },
 ): PolledSnapshot<T> & { live: boolean } {
-  const { plugin, sessionId, backstopMs = STORE_BACKSTOP_POLL_MS, ...poll } = options
+  const { miniApp, sessionId, backstopMs = STORE_BACKSTOP_POLL_MS, ...poll } = options
   // Followed only while the surface is shown: a hidden tab's nudges would each cost a read
   // nobody sees, and showing it again polls at once.
   const visible = useWorkItemVisible()
@@ -34,7 +34,7 @@ export function useStoreSnapshot<T>(
   // The poll's cadence depends on `live`, so the feed is followed first and reaches the poll's
   // re-read through a ref.
   const refresh = useRef(() => {})
-  const live = useRealtimeFeed(storeFeed, following ? { plugin, sessionId } : null, {
+  const live = useRealtimeFeed(storeFeed, following ? { miniApp, sessionId } : null, {
     frame: () => {
       if (document.visibilityState !== 'hidden') refresh.current()
     },

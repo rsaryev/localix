@@ -5,7 +5,7 @@ import type { MiniAppCategory } from '../manifest'
 
 /**
  * Workbench UI contribution contracts. The host (`apps/ui`) implements the open
- * registries these describe; a plugin's `ui/register.tsx` receives them through
+ * registries these describe; a mini app's `ui/register.tsx` receives them through
  * the {@link MiniAppUiHost} argument and registers its WorkItem kinds, rail
  * sections/viewlets, search domain, resource icons, and file editors.
  */
@@ -13,9 +13,9 @@ import type { MiniAppCategory } from '../manifest'
 /** Any icon component the host can render with a className (Lucide icons qualify). */
 export type IconComponent = ComponentType<{ className?: string }>
 
-/** Host-assigned owner for a bundled plugin contribution. Plugin code never sets it. */
+/** Host-assigned owner for a bundled mini app contribution. Mini app code never sets it. */
 export interface MiniAppOwnedContribution {
-  pluginName?: string
+  miniAppName?: string
 }
 
 /** Minimal shape the per-kind hooks below read off a work item — kept structural so
@@ -25,7 +25,7 @@ export interface WorkItemLike {
   kind: string
   id: string
   title: string
-  /** Host-assigned workspace scope; opaque to the plugin. */
+  /** Host-assigned workspace scope; opaque to the mini app. */
   scope?: string
   payload?: Record<string, unknown>
 }
@@ -34,10 +34,10 @@ export interface WorkItemLike {
  * What the host knows about a tab that its item does not say plainly.
  *
  * A session-scoped tab's resource usually names its chat (one chat's board, one chat's game), and
- * the binding seam hands the plugin the item alone — so plugins decoded the host's `scope` field,
- * which is opaque by contract (a global tab's scope is a reserved marker, not a session). The host
- * states the session here instead: the chat a session-scoped tab belongs to, or null for a global
- * tab.
+ * the binding seam hands the mini app the item alone — so mini apps decoded the host's `scope`
+ * field, which is opaque by contract (a global tab's scope is a reserved marker, not a session).
+ * The host states the session here instead: the chat a session-scoped tab belongs to, or null for a
+ * global tab.
  */
 export interface WorkItemBindingContext {
   session: string | null
@@ -119,7 +119,7 @@ export interface WorkItemKindContribution extends MiniAppOwnedContribution {
    * a document-shaped surface and wrong for a conversation-shaped one: chats stack in the `aux`
    * side panel, so a transcript that opened center stage read as "somewhere else" no matter how
    * faithfully it rendered. Declaring it here keeps core from having to recognise any particular
-   * plugin's kind.
+   * mini app's kind.
    *
    * The user's own arrangement always wins — this only decides where a kind lands the first time.
    */
@@ -153,7 +153,9 @@ export interface RailSectionContribution extends MiniAppOwnedContribution {
  * (e.g. a client-side data publisher feeding its tab).
  */
 export interface RailViewletContribution extends MiniAppOwnedContribution {
-  /** Category for a built-in tool in the rail catalog; plugin owners use their manifest category. */
+  /**
+   * Category for a built-in tool in the rail catalog; mini app owners use their manifest category.
+   */
   toolCategory?: MiniAppCategory
   /** The GLOBAL singleton `WorkItemKind` this button opens (also its stable tab id). */
   kind: string
@@ -197,8 +199,8 @@ export interface WorkItemSlotContribution extends MiniAppOwnedContribution {
  * A component mounted for the CURRENT SESSION at a named place in the shell — a background poller,
  * a composer context strip, a breadcrumb action.
  *
- * Unlike a slot, EVERY contribution to a surface renders: these are additive (two plugins may
- * both want a breadcrumb action), and the host keys them by owning plugin so ordering stays
+ * Unlike a slot, EVERY contribution to a surface renders: these are additive (two mini apps may
+ * both want a breadcrumb action), and the host keys them by owning mini app so ordering stays
  * stable across reloads.
  */
 /**

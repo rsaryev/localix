@@ -43,7 +43,7 @@ export type ChannelRunEvent =
 export interface ChannelInboundMessage {
   /**
    * Stable conversation key within this channel (e.g. a platform chat id). The
-   * host maps each (plugin, channel, conversationId) to ONE persistent chat
+   * host maps each (mini app, channel, conversationId) to ONE persistent chat
    * session, so follow-up messages continue the same conversation.
    */
   conversationId: string
@@ -163,7 +163,7 @@ export interface ChannelWorkspaceApi {
   dismissHitl(requestId: string): Promise<{ ok: boolean; error?: string }>
 }
 
-/** Context handed to a channel's `start()` — the plugin context plus the host bridge. */
+/** Context handed to a channel's `start()` — the mini app context plus the host bridge. */
 export interface ChannelContext extends MiniAppContext {
   /**
    * Deliver an incoming platform message to the agent. Resolves when the agent
@@ -174,20 +174,20 @@ export interface ChannelContext extends MiniAppContext {
   inbound: (message: ChannelInboundMessage) => Promise<ChannelInboundResult>
   /** Session/project/model management — see ChannelWorkspaceApi. */
   workspace: ChannelWorkspaceApi
-  /** Aborted when the host stops the channel (plugin disabled, config changed, shutdown). */
+  /** Aborted when the host stops the channel (mini app disabled, config changed, shutdown). */
   signal: AbortSignal
 }
 
 /**
  * A long-running inbound/outbound bridge to an external messaging platform,
  * returned from a native module's `register(ctx)` as `channels: [...]`. The host
- * owns the lifecycle: `start(ctx)` is called once when the plugin is enabled at
+ * owns the lifecycle: `start(ctx)` is called once when the mini app is enabled at
  * boot (or becomes enabled); it should run its receive loop (e.g. long polling)
  * until `ctx.signal` aborts. `stop()` is optional extra cleanup beyond the
- * signal. Channels are restarted on plugin config changes.
+ * signal. Channels are restarted on mini app config changes.
  */
 export interface MiniAppChannel {
-  /** Channel name, unique within the plugin. */
+  /** Channel name, unique within the mini app. */
   name: string
   start: (ctx: ChannelContext) => void | Promise<void>
   stop?: () => void | Promise<void>

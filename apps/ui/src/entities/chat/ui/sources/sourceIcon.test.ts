@@ -32,8 +32,8 @@ describe('sourceIcon', () => {
     expect(iconFor('symbol', 'localix://ui/work-item/file?path=a.ts&line=4')).toBe(Braces)
   })
 
-  test('an unknown plugin kind still gets a glyph rather than nothing', () => {
-    // The vocabulary is open — plugins and MCP servers mint their own — so the fallback has to be
+  test('an unknown mini app kind still gets a glyph rather than nothing', () => {
+    // The vocabulary is open — mini apps and MCP servers mint their own — so the fallback has to be
     // total. `refKindIcon` answers for anything.
     expect(iconFor('fixture_record', 'localix://resource/fixture/1')).toBeDefined()
   })

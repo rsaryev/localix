@@ -1,5 +1,5 @@
-// The sandboxed srcDoc for a plugin-declared inspector panel — a pure string build
-// split out of PluginPanelTab so the containment contract (CSP + sandbox shape) is
+// The sandboxed srcDoc for a mini-app-declared inspector panel — a pure string build
+// split out of MiniAppPanelTab so the containment contract (CSP + sandbox shape) is
 // unit-testable without a DOM. The component reads the live host theme CSS
 // (collectThemeCss) and passes it in; everything here is deterministic.
 
@@ -46,7 +46,7 @@ export function mintPanelNonce(): string {
 /**
  * Build the full sandboxed panel document. `theme` is 'light' | 'dark'; `themeCss`
  * is the host's forwarded CSS custom properties (collected from the live DOM by the
- * caller). The plugin `html` is injected verbatim — containment is the iframe
+ * caller). The mini app `html` is injected verbatim — containment is the iframe
  * sandbox + the CSP above, NOT escaping. `nonce` binds the bridge to this document.
  */
 export function buildPanelSrcDoc(

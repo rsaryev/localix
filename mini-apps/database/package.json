@@ -2,7 +2,7 @@
   "name": "@localix-mini-app/database",
   "version": "1.0.0",
   "private": true,
-  "description": "Dependencies of the bundled `database` workbench plugin. Deps live HERE (not in apps/api) — the staging build pre-bundles them into backend/index.bundle.mjs, so shipped plugins stay self-contained.",
+  "description": "Dependencies of the bundled `database` workbench mini app. Deps live HERE (not in apps/api) — the staging build pre-bundles them into backend/index.bundle.mjs, so shipped mini apps stay self-contained.",
   "license": "MIT",
   "type": "module",
   "scripts": {

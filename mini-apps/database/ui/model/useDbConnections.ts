@@ -92,7 +92,7 @@ export function useDbConnections(): DbConnectionsState {
   useEffect(() => {
     if (workItemVisible) ensureConnectionsListed()
   }, [workItemVisible])
-  const live = useStoreChanges({ plugin: 'database', sessionId: null }, refreshConnections)
+  const live = useStoreChanges({ miniApp: 'database', sessionId: null }, refreshConnections)
   useVisiblePolling({
     enabled: !live,
     intervalMs: CONNECTIONS_POLL_MS,

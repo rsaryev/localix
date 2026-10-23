@@ -1,6 +1,6 @@
 /**
  * TEXT-INPUT COMPLETION — the port behind "suggest the rest of what I am typing" for a field a
- * plugin owns (a commit subject, a query, a name).
+ * mini app owns (a commit subject, a query, a name).
  *
  * The host owns the one auxiliary-model call, the debounce, the deadline, the cancellation AND
  * the context budget. A surface says only what grounds its own field and how to read the answer
@@ -31,7 +31,7 @@ export interface MiniAppTextInputCompletionRequest {
 }
 
 export interface MiniAppTextInputCompletionSurface {
-  /** Stable id the client asks for, namespaced by the owning plugin (`git-workspace.commit`). */
+  /** Stable id the client asks for, namespaced by the owning mini app (`git-workspace.commit`). */
   readonly id: string
 
   /**

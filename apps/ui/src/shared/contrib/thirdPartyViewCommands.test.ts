@@ -28,13 +28,13 @@ describe('buildThirdPartyViewCommands', () => {
     const cmds = buildThirdPartyViewCommands(noopOpeners)
     expect(cmds.map((c) => c.label)).toEqual(['Open dash', 'Open panel'])
     expect(cmds.every((c) => c.group === 'View')).toBe(true)
-    expect(cmds.map((c) => c.id)).toEqual(['view.plugin.mon:dash', 'view.plugin.mon:panel'])
+    expect(cmds.map((c) => c.id)).toEqual(['view.mini-app.mon:dash', 'view.mini-app.mon:panel'])
   })
 
-  test('the command DISAPPEARS when its plugin drops out of a later sync (disable)', () => {
+  test('the command DISAPPEARS when its mini app drops out of a later sync (disable)', () => {
     syncThirdPartyViews([view('mon', 'dash')])
     expect(buildThirdPartyViewCommands(noopOpeners)).toHaveLength(1)
-    // Disable: the plugin is gone from the next enabled set.
+    // Disable: the mini app is gone from the next enabled set.
     syncThirdPartyViews([])
     expect(buildThirdPartyViewCommands(noopOpeners)).toHaveLength(0)
   })
@@ -46,7 +46,7 @@ describe('buildThirdPartyViewCommands', () => {
     cmds.find((c) => c.label === 'Open panel')!.run()
     expect(opened).toEqual([
       {
-        pluginName: 'mon',
+        miniAppName: 'mon',
         projectId: '',
         viewId: 'panel',
         fullName: 'mon:panel',

@@ -50,7 +50,7 @@ export const LAYOUT: readonly KitCatalogEntry[] = [
     exports: ['WorkbenchStatusBar', 'WorkbenchStatusItem', 'WorkbenchStatusButton'],
     summary: 'The 24px status row of a pane and its items.',
     use: 'Counts, cursor position, connection state at the bottom of a viewer.',
-    not: 'A plugin contributes to the app status bar through the SDK status items, not by drawing one.',
+    not: 'A mini app contributes to the app status bar through the SDK status items, not by drawing one.',
   },
   {
     specifier: k('tabs'),

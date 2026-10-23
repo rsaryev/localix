@@ -7,19 +7,19 @@ import {
   type StoreFrame,
 } from '../store-changes'
 
-export type StoreScope = Pick<StoreFrame, 'plugin' | 'sessionId'>
-const scopeId = (scope: StoreScope) => `${scope.plugin}\n${scope.sessionId ?? ''}`
+export type StoreScope = Pick<StoreFrame, 'miniApp' | 'sessionId'>
+const scopeId = (scope: StoreScope) => `${scope.miniApp}\n${scope.sessionId ?? ''}`
 
-/** One host-shared subscription registry across every plugin using the JSON-store protocol. */
+/** One host-shared subscription registry across every mini app using the JSON-store protocol. */
 export const storeFeed = createRealtimeFeed<StoreScope, StoreFrame>({
   tag: STORE_FRAME_TAG,
   pauseWhileHidden: true,
   subscribe: (scope) => ({
-    t: storeFeedCommands(scope.plugin).subscribe,
+    t: storeFeedCommands(scope.miniApp).subscribe,
     sessionId: scope.sessionId,
   }),
   unsubscribe: (scope) => ({
-    t: storeFeedCommands(scope.plugin).unsubscribe,
+    t: storeFeedCommands(scope.miniApp).unsubscribe,
     sessionId: scope.sessionId,
   }),
   id: scopeId,

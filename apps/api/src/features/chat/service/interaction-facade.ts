@@ -1,14 +1,14 @@
 import { resolveDefaultUserId } from '../../../lib/env'
 import type { VaultItemType } from '../../secrets/contracts'
 import { isInteractAllowedForOwner } from '../runtime/interact-ownership'
-import type { MiniAppCommandResultPayload } from '../runtime/plugin-command-registry'
+import type { MiniAppCommandResultPayload } from '../runtime/mini-app-command-registry'
 import type { PreviewResultPayload } from '../runtime/preview-command-registry'
 import type { ChatServiceDeps } from './context'
 import type { ChatServiceGraph } from './service-graph'
 
 /**
  * The answers a client sends BACK to something the runtime is waiting on: a HITL card, a secret
- * prompt, a running tool's action button, a relayed preview or plugin command, an "Always allow"
+ * prompt, a running tool's action button, a relayed preview or mini app command, an "Always allow"
  * grant being taken back.
  *
  * Grouped because every one of them settles a pending request owned by someone, and the defect
@@ -17,7 +17,7 @@ import type { ChatServiceGraph } from './service-graph'
  */
 export interface ChatInteractionFacadeDeps extends Pick<
   ChatServiceGraph,
-  'runner' | 'hitlRegistry' | 'streamRegistry' | 'previewRegistry' | 'pluginCommands'
+  'runner' | 'hitlRegistry' | 'streamRegistry' | 'previewRegistry' | 'miniAppCommands'
 > {
   deps: ChatServiceDeps
 }
@@ -28,7 +28,7 @@ export function createChatInteractionFacade({
   hitlRegistry,
   streamRegistry,
   previewRegistry,
-  pluginCommands,
+  miniAppCommands,
 }: ChatInteractionFacadeDeps) {
   return {
     /** Internal ownership bridge for channel-side HITL controls. */
@@ -90,7 +90,7 @@ export function createChatInteractionFacade({
      * The isolated ANSWER leg of the `request_secret` HITL request kind, which the
      * `vault` tool raises from its create/rotate actions. The typed VALUE
      * arrives here over the dedicated `submit-secret` WS command — deliberately NOT
-     * `interact`, so the shared respond path (controller records, plugin hooks, any
+     * `interact`, so the shared respond path (controller records, mini app hooks, any
      * future interact logging) can never capture it. The value is written straight
      * to the encrypted vault and DISCARDED: the paused tool resumes with only
      * `{ stored }`. Keep the value out of respond payloads, stream events, error
@@ -181,16 +181,16 @@ export function createChatInteractionFacade({
     },
 
     /**
-     * Settle a pending awaited plugin command (`emitCommandWithReply`) from the
-     * client sink's reply (the `{t:'plugin-command-result'}` WS RPC).
+     * Settle a pending awaited mini app command (`emitCommandWithReply`) from the
+     * client sink's reply (the `{t:'mini-app-command-result'}` WS RPC).
      * Ownership-gated by the command's owner.
      */
-    resolvePluginCommand(
+    resolveMiniAppCommand(
       commandId: string,
       payload: MiniAppCommandResultPayload,
       callerUserId?: string,
     ): { ok: boolean } {
-      return { ok: pluginCommands.resolve(commandId, payload, callerUserId) }
+      return { ok: miniAppCommands.resolve(commandId, payload, callerUserId) }
     },
   }
 }

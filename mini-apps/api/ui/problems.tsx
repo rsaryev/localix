@@ -17,7 +17,7 @@ import { useProblemReport } from '@localixai/mini-app-sdk/ui'
 import { ProblemLine, ProblemState } from '@localixai/mini-app-sdk/ui/components'
 import type { ProblemConsequence, ProblemReport } from '@localixai/mini-app-sdk/ui/problems'
 
-/** Namespace for this plugin's rows in the Event Center. */
+/** Namespace for this mini app's rows in the Event Center. */
 const SCOPE = 'api'
 
 export function ApiProblem(props: ApiProblemProps) {

@@ -7,14 +7,24 @@ import { MINI_APP_UI_ARTIFACT_DIR } from '@localixai/mini-app-sdk/ui-artifact'
 import { retainPreviousHashedFiles } from './authoring/ui-retained-files'
 
 /**
- * One managed copy of a bundled plugin under `~/.localix/mini-apps/<name>`: how it is installed,
+ * One managed copy of a bundled mini app under `~/.localix/mini-apps/<name>`: how it is installed,
  * how the copy it replaces is kept alive, and when the kept copies are swept. `bundled-install.ts`
- * decides WHICH plugins need a copy; this module owns the filesystem act.
+ * decides WHICH mini apps need a copy; this module owns the filesystem act.
  */
 
 /** Marks a directory as a first-party copy this process may refresh; user installs carry none. */
 export const MARKER_FILE = '.localix-managed.json'
-export const MARKER_KIND = 'localix-bundled-plugin'
+export const MARKER_KIND = 'localix-bundled-mini-app'
+/**
+ * The kind copies carried before mini apps were named apart from plugins. Still read as managed, so
+ * a copy installed then is refreshed in place (and rewritten with {@link MARKER_KIND}) instead of
+ * passing for the person's own; `legacy-plugin-copies.ts` finds the old copies by it.
+ */
+export const LEGACY_MARKER_KIND = 'localix-bundled-plugin'
+
+/** Whether a marker's `kind` names a copy this process manages. */
+export const isManagedMarkerKind = (kind: unknown): boolean =>
+  kind === MARKER_KIND || kind === LEGACY_MARKER_KIND
 /** Retired copies: the `.sync-` prefix keeps them invisible to discovery like every sync artifact. */
 const RETIRED_PREFIX = '.sync-retired-'
 
@@ -29,7 +39,7 @@ export async function readManagedFingerprint(dir: string): Promise<string | null
       kind?: unknown
       fingerprint?: unknown
     }
-    return parsed.kind === MARKER_KIND && typeof parsed.fingerprint === 'string'
+    return isManagedMarkerKind(parsed.kind) && typeof parsed.fingerprint === 'string'
       ? parsed.fingerprint
       : null
   } catch {
@@ -43,7 +53,7 @@ export async function readManagedFingerprint(dir: string): Promise<string | null
  * bundle may be the module this process is executing right now, and the development runtime
  * is `bun --watch`, which reloads the whole API the moment a file it imported is unlinked
  * (measured: rename-aside leaves it alone; `rm` of the renamed tree reloads). That reload is
- * what killed an agent turn mid-`bash` after a plugin was re-staged. Retired trees are swept by
+ * what killed an agent turn mid-`bash` after a mini app was re-staged. Retired trees are swept by
  * {@link pruneRetiredManagedCopies} on the next process start, before anything is imported.
  */
 export async function installManagedCopy(
@@ -106,10 +116,10 @@ export async function installCopy(
 }
 
 /**
- * Retire a managed copy whose plugin no longer ships: renamed aside exactly like a replaced copy
+ * Retire a managed copy whose mini app no longer ships: renamed aside exactly like a replaced copy
  * (its backend may be loaded right now, and deleting an imported file restarts `bun --watch`), and
  * swept by {@link pruneRetiredManagedCopies} on the next start. Without this a removed bundled
- * plugin lingered in `~/.localix/mini-apps` forever and was rediscovered on every boot.
+ * mini app lingered in `~/.localix/mini-apps` forever and was rediscovered on every boot.
  */
 export async function retireManagedCopy(installDir: string): Promise<void> {
   const retiredDir = join(
@@ -121,9 +131,9 @@ export async function retireManagedCopy(installDir: string): Promise<void> {
 }
 
 /**
- * Retire every managed copy (ours, by `isManaged`) under `installRoot` whose plugin is not in
+ * Retire every managed copy (ours, by `isManaged`) under `installRoot` whose mini app is not in
  * `shipped`. The caller proves `shipped` complete — a staged marker AND the source directory
- * agree — because a plugin mid-restage must never be unloaded. A user's own plugin carries no
+ * agree — because a mini app mid-restage must never be unloaded. A user's own mini app carries no
  * marker and is never touched.
  */
 export async function retireUnshippedManagedCopies(
@@ -140,7 +150,7 @@ export async function retireUnshippedManagedCopies(
 
 /**
  * Delete the managed copies earlier syncs retired. Safe only while nothing from them is
- * loaded, so the first sync of a process runs it before any plugin module is imported; a
+ * loaded, so the first sync of a process runs it before any mini app module is imported; a
  * later sync in the same process leaves them alone (see {@link installManagedCopy}).
  */
 export async function pruneRetiredManagedCopies(installRoot: string): Promise<number> {

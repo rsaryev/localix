@@ -7,8 +7,8 @@ import { bindMiniAppUiToast, toast, type MiniAppToast } from './notifications'
 import { bindMiniAppUiTestDoubles } from './testing'
 
 describe('bindMiniAppUiTestDoubles', () => {
-  // The defect: a suite's doubles outlived it in the combined `bun test plugins` process, so the
-  // next plugin's real grid rendered as the stub. Ending the doubles must hand back BOTH the host
+  // The defect: a suite's doubles outlived it in the combined `bun test mini-apps` process, so the
+  // next mini app's real grid rendered as the stub. Ending the doubles must hand back BOTH the host
   // components and the host toast the suite shadowed.
   test('its unbind restores the components and toast it shadowed', () => {
     const hostInput = () => createElement('span', null, 'host')

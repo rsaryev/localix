@@ -22,12 +22,12 @@ const conn = (over: Partial<MarketDataConnection> = {}): MarketDataConnection =>
 
 /** A context whose emitCommand calls are captured — the tool's ONLY side effect. */
 function recordingCtx() {
-  const emitted: Array<{ plugin: string; channel: string; payload: unknown }> = []
+  const emitted: Array<{ miniApp: string; channel: string; payload: unknown }> = []
   const ctx: AgentToolExecutionContext = {
     session: {
       id: 's-1',
       scratchDir: '/dev/null',
-      emitCommand: (plugin, channel, payload) => emitted.push({ plugin, channel, payload }),
+      emitCommand: (miniApp, channel, payload) => emitted.push({ miniApp, channel, payload }),
     },
   }
   return { ctx, emitted }
@@ -199,7 +199,7 @@ describe('manage_chart execute — the emitCommand contract', () => {
     )
     expect(result.isError).toBeUndefined()
     expect(emitted).toHaveLength(1)
-    expect(emitted[0]!.plugin).toBe(TRADING_MINI_APP)
+    expect(emitted[0]!.miniApp).toBe(TRADING_MINI_APP)
     expect(emitted[0]!.channel).toBe(TRADING_CHART_CHANNEL)
     expect(emitted[0]!.payload).toEqual({
       action: 'set_timeframe',
@@ -286,7 +286,7 @@ describe('manage_chart snapshot — the awaited read-back', () => {
 
   /** A context whose emitCommandWithReply resolves with a canned outcome. */
   function replyingCtx(outcome: ToolCommandReplyOutcome) {
-    const awaited: Array<{ plugin: string; channel: string; payload: unknown }> = []
+    const awaited: Array<{ miniApp: string; channel: string; payload: unknown }> = []
     const ctx: AgentToolExecutionContext = {
       session: {
         id: 's-1',
@@ -294,8 +294,8 @@ describe('manage_chart snapshot — the awaited read-back', () => {
         emitCommand: () => {
           throw new Error('snapshot must use the awaited path, never fire-and-forget')
         },
-        emitCommandWithReply: async (plugin, channel, payload) => {
-          awaited.push({ plugin, channel, payload })
+        emitCommandWithReply: async (miniApp, channel, payload) => {
+          awaited.push({ miniApp, channel, payload })
           return outcome
         },
       },
@@ -316,7 +316,7 @@ describe('manage_chart snapshot — the awaited read-back', () => {
     expect(result.isError).toBeUndefined()
     expect(awaited).toHaveLength(1)
     expect(awaited[0]).toMatchObject({
-      plugin: TRADING_MINI_APP,
+      miniApp: TRADING_MINI_APP,
       channel: TRADING_CHART_CHANNEL,
       payload: {
         action: 'snapshot',

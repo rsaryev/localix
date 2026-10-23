@@ -7,7 +7,7 @@ import { navigateUi, resolveUiNavigation } from '@/shared/lib/uiNavigation'
 
 /**
  * A `localix://` view an agent linked in its message, opened when the person clicks it — in the
- * chat the message belongs to. A view whose owner has not registered (a plugin not loaded) stays
+ * chat the message belongs to. A view whose owner has not registered (a mini app not loaded) stays
  * text instead of a link that does nothing.
  */
 export function MarkdownAppViewLink({ href, children }: { href: string; children: ReactNode }) {

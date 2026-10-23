@@ -19,10 +19,10 @@ import type { MiniAppConditions } from '../notifications/conditions/mini-apps'
 const CHANNEL_STOP_GRACE_MS = 3_000
 
 /**
- * Process-wide host for plugin CHANNELS — long-running bridges to external
+ * Process-wide host for mini app CHANNELS — long-running bridges to external
  * external messaging platforms. Unlike tools/hooks (loaded per
  * agent turn), channels live for the lifetime of the process: started once at
- * boot for every enabled plugin that declares them, restarted when plugin
+ * boot for every enabled mini app that declares them, restarted when mini app
  * state changes (enable/disable/config), stopped on shutdown.
  *
  * Channels load GLOBAL scope only (like LLM drop-in providers): a platform
@@ -42,7 +42,7 @@ export interface ChannelInboundHandler {
 
 export interface MiniAppChannelHostOptions {
   /**
-   * What the rules say about this user's plugins. A PORT: this host owns no storage, and
+   * What the rules say about this user's mini apps. A PORT: this host owns no storage, and
    * the composition root is the only place that can bind the rule store.
    *
    * No agent is named because a channel runs beside every turn rather than inside one; the
@@ -54,9 +54,9 @@ export interface MiniAppChannelHostOptions {
   inbound: ChannelInboundHandler
   /** Workspace management surface handed to channels as `ctx.workspace`. */
   workspace: ChannelWorkspaceApi
-  /** Discovery root for project-scoped plugins; defaults to `~/.localix/workspace`. */
+  /** Discovery root for project-scoped mini apps; defaults to `~/.localix/workspace`. */
   cwd?: string
-  /** The user's home (see `discoverPlugins`); `userHome()` in production, a fixture in a test. */
+  /** The user's home (see `discoverMiniApps`); `userHome()` in production, a fixture in a test. */
   homeDir: string
   logger?: { info?: (msg: string) => void; warn: (msg: string, meta?: unknown) => void }
   /** A crashed receive loop as a standing Event Center row, cleared when the channel restarts. */
@@ -71,13 +71,13 @@ interface RunningChannel {
 }
 
 export interface MiniAppChannelHost {
-  /** Load enabled plugins' channels and start them. Safe to call once at boot. */
+  /** Load enabled mini apps' channels and start them. Safe to call once at boot. */
   start(): Promise<void>
-  /** Stop everything and start again from current plugin state (debounced). */
+  /** Stop everything and start again from current mini app state (debounced). */
   refresh(): void
   /** Stop all running channels (shutdown). */
   stop(): Promise<void>
-  /** Names of currently running channels, as `<plugin>:<channel>`. */
+  /** Names of currently running channels, as `<app>:<channel>`. */
   running(): string[]
 }
 
@@ -140,7 +140,7 @@ export function createMiniAppChannelHost(options: MiniAppChannelHostOptions): Mi
   async function startAll(): Promise<void> {
     // Channels only. This ran the FULL loader — every enabled plugin's SKILL.md files
     // read off disk, its MCP records, agents, prompt sections and LSP configs built —
-    // to take one field, at boot and again on every plugin toggle.
+    // to take one field, at boot and again on every mini app toggle.
     const found = await loadEnabledMiniAppChannels({
       repo,
       availability: await availabilityFor(userId),

@@ -19,7 +19,7 @@ export function exceedsDragByteCap(serialized: string): boolean {
  * Limits below mirror `normalizePublishedMessageContext`
  * (packages/mini-app-sdk/src/ui/contrib.ts) — the same binding shape arriving over a
  * different transport, so the two must not drift. That helper cannot be called
- * from here: it accepts only the two plugin-publishable target kinds (`resource`,
+ * from here: it accepts only the two mini-app-publishable target kinds (`resource`,
  * `snippet`), deliberately, so a sandboxed iframe cannot impersonate a host
  * capability — while a drag legitimately carries every core kind from in-process
  * producers.
@@ -29,13 +29,13 @@ const LABEL_MAX = 512
 const URI_MAX = 4096
 const ATTRIBUTES_MAX = 32
 const ATTRIBUTE_KEY_MAX = 64
-/** The shape the API accepts for `MessageContextBinding.plugin`. */
-const PLUGIN_NAME = /^[a-z0-9][a-z0-9._-]{0,127}$/iu
+/** The shape the API accepts for `MessageContextBinding.miniApp`. */
+const MINI_APP_NAME = /^[a-z0-9][a-z0-9._-]{0,127}$/iu
 
 const BINDING_SOURCES: Readonly<Record<MessageBindingDragPayload['source'], true>> = {
   drag: true,
   'active-tab': true,
-  plugin: true,
+  'mini-app': true,
 }
 
 function isBindingSource(value: unknown): value is MessageBindingDragPayload['source'] {
@@ -89,7 +89,7 @@ export function normalizeDragEnvelope(value: unknown): MessageBindingDragPayload
   // empty label is likewise kept — the producer is in-process host code and an
   // untitled tab is a real case, so a blank display string is no reason to drop
   // a link. (This is where the drag path deliberately parts with contrib.ts,
-  // which rejects both because there the producer is an untrusted plugin.)
+  // which rejects both because there the producer is an untrusted mini app.)
   if (typeof target.token !== 'string' || target.token.length > TOKEN_MAX) return null
   if (typeof target.label !== 'string' || target.label.length > LABEL_MAX) return null
   const uri = target.uri
@@ -101,16 +101,16 @@ export function normalizeDragEnvelope(value: unknown): MessageBindingDragPayload
   // A contentless snippet resolves to an empty ref downstream, so it is a broken
   // payload rather than a link with less information.
   if (target.kind === 'snippet' && typeof attributes?.content !== 'string') return null
-  // The owning plugin of a dragged tab — what brings its tools to the turn. Kept only when it is
-  // a plugin name; anything else is dropped rather than failing the drop.
-  const plugin =
-    typeof envelope.plugin === 'string' && PLUGIN_NAME.test(envelope.plugin)
-      ? envelope.plugin
+  // The owning mini app of a dragged tab — what brings its tools to the turn. Kept only when it is
+  // a mini app name; anything else is dropped rather than failing the drop.
+  const miniApp =
+    typeof envelope.miniApp === 'string' && MINI_APP_NAME.test(envelope.miniApp)
+      ? envelope.miniApp
       : undefined
   return {
     kind: 'context',
     source: envelope.source,
-    ...(plugin ? { plugin } : {}),
+    ...(miniApp ? { miniApp } : {}),
     target: {
       kind: target.kind,
       token: target.token,

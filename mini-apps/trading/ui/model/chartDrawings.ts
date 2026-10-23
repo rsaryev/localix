@@ -148,7 +148,7 @@ export const MARKER_SELL_COLOR = '#ef5350'
 /**
  * The `marker` drawings as lightweight-charts NATIVE series markers, ascending by time (the
  * library requires the order). Pure — ChartCanvas hands the result straight to the
- * `createSeriesMarkers` plugin on the main series. A buy is an up arrow below the bar, a sell a
+ * `createSeriesMarkers` mini app on the main series. A buy is an up arrow below the bar, a sell a
  * down arrow above it; an explicit drawing color wins over the side tint; the label rides as the
  * marker text. A marker whose time falls between bars snaps to the library's nearest-bar rule —
  * the recorded `price`/time stay exact in the drawing itself (list + snapshot).

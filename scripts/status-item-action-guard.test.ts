@@ -5,10 +5,10 @@ import { describe, expect, test } from 'bun:test'
  *
  * The reported symptom: choosing a database in the titlebar menu changed the glyph's text and,
  * as far as the person could tell, nothing else happened. Two separate causes, both of them the
- * same class of mistake, and both present in more than one plugin:
+ * same class of mistake, and both present in more than one mini app:
  *
  *   - a fire-and-forget call. `onSelect` returns `void`, so an asynchronous action has to dispose
- *     of its own rejection, and the two shapes a plugin reaches for both lose it. `void promise`
+ *     of its own rejection, and the two shapes a mini app reaches for both lose it. `void promise`
  *     leaves an unhandled rejection nobody sees; `promise.catch(() => {})` is worse, because it is
  *     deliberate. The row highlights, the menu closes, and there is no way to tell a refused action
  *     from a broken one. It was in the Database, DevOps, API and Git items at once;

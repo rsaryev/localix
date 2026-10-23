@@ -6,7 +6,7 @@
  * "— " for the user's own question. The user reviews, types, and sends.
  *
  * Why a resource ref and not the numbers on screen: the token is minted by `buildTradeUri`,
- * the one owner of this plugin's URI grammar, so what the click links can never drift from
+ * the one owner of this mini app's URI grammar, so what the click links can never drift from
  * what the backend's resource provider resolves — the same invariant the side-panel tab drag
  * relies on. The human line DOES carry the clicked figures (formatted exactly as the screen
  * showed them), because "the wall at 63,900" is the question's subject; the ref is how the

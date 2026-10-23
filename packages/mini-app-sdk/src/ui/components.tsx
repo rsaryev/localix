@@ -145,7 +145,7 @@ export type MiniAppTextareaProps = ComponentPropsWithoutRef<'textarea'> & {
 
 /**
  * A problem, said in one line, with a button into the host's Event Center where the full report
- * lives. The only problem surface a plugin gets — and the only one it needs.
+ * lives. The only problem surface a mini app gets — and the only one it needs.
  */
 export interface MiniAppProblemLineProps {
   report: ProblemReport
@@ -195,7 +195,7 @@ export function bindMiniAppUiComponents(next: MiniAppUiComponents): () => void {
 }
 
 function component<K extends keyof MiniAppUiComponents>(key: K): MiniAppUiComponents[K] {
-  if (!components) throw new Error('Plugin UI components are not bound by the host')
+  if (!components) throw new Error('Mini app UI components are not bound by the host')
   return components[key]
 }
 
@@ -232,13 +232,13 @@ export function Input(props: MiniAppInputProps) {
   return render(component('Input'), props)
 }
 
-/** Host multiline field; plugins keep content behavior while the host owns presentation. */
+/** Host multiline field; mini apps keep content behavior while the host owns presentation. */
 export function Textarea(props: MiniAppTextareaProps) {
   return render(component('Textarea'), props)
 }
 
 /**
- * The host's problem line. A plugin's failures then look like the host's failures, and reach the
+ * The host's problem line. A mini app's failures then look like the host's failures, and reach the
  * same place — which is the whole point of the contract.
  */
 export function ProblemLine(props: MiniAppProblemLineProps) {

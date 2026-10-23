@@ -14,7 +14,7 @@ export function marketResourceUri(connectionId: string, symbol: string): string 
 export function marketMessageBindingDraft(
   connectionId: string,
   symbol: string,
-  source: MessageContextBindingDraft['source'] = 'plugin',
+  source: MessageContextBindingDraft['source'] = 'mini-app',
 ): MessageContextBindingDraft {
   return resourceMessageBindingDraft(
     {

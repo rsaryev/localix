@@ -11,7 +11,7 @@ const Workspace = lazy(() =>
 
 /** One board per chat, its launcher and the anchor its tool opens (`sessionGameUi`). */
 export const registerUi = sessionGameUi({
-  plugin: 'checkers',
+  miniApp: 'checkers',
   kind: GAME_KIND,
   title: 'Checkers',
   label: 'Checkers — play against the agent',

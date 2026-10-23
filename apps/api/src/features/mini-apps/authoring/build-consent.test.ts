@@ -44,7 +44,7 @@ function harness(apps: DiscoveredMiniApp[], allowed: ReadonlySet<string>) {
   const tested: string[] = []
   const authoring = createMiniAppAuthoring({
     discover: async () => apps,
-    pluginsRoot: join(root, 'home/.localix/mini-apps'),
+    miniAppsRoot: join(root, 'home/.localix/mini-apps'),
     kitDir: () => {
       kitReads.push('kit')
       return join(root, 'no-kit')
@@ -52,8 +52,8 @@ function harness(apps: DiscoveredMiniApp[], allowed: ReadonlySet<string>) {
     allowed: async (_userId, app) => allowed.has(app.name),
     enable: async () => undefined,
     changed: () => undefined,
-    runTests: async ({ pluginDir }) => {
-      tested.push(pluginDir)
+    runTests: async ({ miniAppDir }) => {
+      tested.push(miniAppDir)
       return { ok: true, output: '' }
     },
   } as Parameters<typeof createMiniAppAuthoring>[0])

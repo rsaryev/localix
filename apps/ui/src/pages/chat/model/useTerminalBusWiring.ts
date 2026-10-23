@@ -32,9 +32,9 @@ export function useTerminalBusWiring(opts: { activeSessionId: string | null }): 
   // in a chat the command was never meant for.
   useEffect(() => terminalBus.setOpener((sessionId) => revealOrCreateTerminal(sessionId)), [])
 
-  // Agent background jobs run in a PTY: when someone opens one (its strip row, its card, a plugin),
-  // reveal a terminal tab attached to the job's backend terminal (adopted — closing the tab leaves
-  // the job running), in the job's own chat. Nothing calls this on the job's own events.
+  // Agent background jobs run in a PTY: when someone opens one (its strip row, its card, a mini
+  // app), reveal a terminal tab attached to the job's backend terminal (adopted — closing the tab
+  // leaves the job running), in the job's own chat. Nothing calls this on the job's own events.
   useEffect(() => terminalBus.setJobOpener(adoptTerminal), [])
 
   // An external agent's CLI runs in a terminal its chat owns; opening that chat reveals it here.

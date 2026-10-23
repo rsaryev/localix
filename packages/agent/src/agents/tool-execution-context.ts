@@ -8,7 +8,7 @@ import type { AgentToolResult } from './tool-result'
  * scratch directory any tool may use, and a generic live-data channel to a client
  * renderer. This is the growth point that lets feature tools (e.g. the bundled
  * extension-owned renderers live OUTSIDE core without the host hardcoding their concepts —
- * the host wires it once; plugins consume it. Optional; tools tolerate its absence.
+ * the host wires it once; mini apps consume it. Optional; tools tolerate its absence.
  */
 /** A speaker's place in its conversation, bound by the host. */
 export type SpeakerRole = 'leader' | 'member' | 'solo'
@@ -42,15 +42,15 @@ export interface ToolSessionContext {
     leader?: string
   }
   /**
-   * Publish ONE plugin→UI command as a typed, REPLAYABLE session-stream frame. The host
-   * wraps it into its stream envelope keyed by `plugin` + `channel`; the plugin's
-   * UI registers a matching sink (a per-plugin command registry) on the client.
+   * Publish ONE mini app→UI command as a typed, REPLAYABLE session-stream frame. The host
+   * wraps it into its stream envelope keyed by `miniApp` + `channel`; the mini app's
+   * UI registers a matching sink (a per-mini-app command registry) on the client.
    * Non-coalescing: every call is delivered in order, and a reconnecting client
    * replays missed commands (deduped client-side by the envelope's command id).
    * Optional — hosts without a command stream omit it, and tools must say so
    * honestly instead of pretending the command landed.
    */
-  emitCommand?(plugin: string, channel: string, payload: unknown): void
+  emitCommand?(miniApp: string, channel: string, payload: unknown): void
   /**
    * The round-trip variant of {@link emitCommand}: publish the command AND await
    * the client sink's reply, correlated server-side by the frame's `commandId`
@@ -61,7 +61,7 @@ export interface ToolSessionContext {
    * with a client→server reply RPC wire it; tools must tolerate its absence.
    */
   emitCommandWithReply?(
-    plugin: string,
+    miniApp: string,
     channel: string,
     payload: unknown,
     timeoutMs?: number,
@@ -70,7 +70,7 @@ export interface ToolSessionContext {
 
 /**
  * How a {@link ToolSessionContext.emitCommandWithReply} round-trip ended. `result`
- * is opaque to core — the plugin's two ends share its shape (same idiom as the
+ * is opaque to core — the mini app's two ends share its shape (same idiom as the
  * command payload). `noReply` distinguishes "no client answered" (tab closed /
  * client offline — not a defect) from an explicit failure the sink reported.
  */

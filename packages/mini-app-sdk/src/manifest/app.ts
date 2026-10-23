@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { miniAppManifestCoreSchema } from './index'
-import { PLUGIN_NAME_RE, PLUGIN_QUALIFIED_NAME_RE } from './primitives'
+import { MINI_APP_NAME_RE, MINI_APP_QUALIFIED_NAME_RE } from './primitives'
 
 /**
  * ── MINI APP MANIFEST ─────────────────────────────────────────────────────────
@@ -47,7 +47,7 @@ export const miniAppManifestSchema = miniAppManifestCoreSchema
   .extend({
     name: z
       .string()
-      .regex(PLUGIN_NAME_RE, 'A mini app name must be letters, numbers, dashes or underscores.'),
+      .regex(MINI_APP_NAME_RE, 'A mini app name must be letters, numbers, dashes or underscores.'),
     version: z.string().min(1),
     description: z.string().min(1),
     displayName: z.string().optional(),
@@ -60,7 +60,9 @@ export const miniAppManifestSchema = miniAppManifestCoreSchema
     backend: z.union([z.string(), z.array(z.string())]).optional(),
     /** The agent's guide to the app, relative to the folder. */
     guide: z.string().default(`./${MINI_APP_GUIDE_FILE}`),
-    commands: z.record(z.string().regex(PLUGIN_QUALIFIED_NAME_RE), miniAppCommandSchema).optional(),
+    commands: z
+      .record(z.string().regex(MINI_APP_QUALIFIED_NAME_RE), miniAppCommandSchema)
+      .optional(),
     views: z.array(z.unknown()).optional(),
     promptSections: z.array(z.unknown()).optional(),
     contributions: z.array(z.unknown()).optional(),

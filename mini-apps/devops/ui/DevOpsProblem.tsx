@@ -8,7 +8,7 @@ import { ProblemLine, ProblemState } from '@localixai/mini-app-sdk/ui/components
 import type { Prerequisite } from '@localixai/mini-app-sdk/prerequisite'
 import type { Problem, ProblemReport, ProblemRequest } from '@localixai/mini-app-sdk/ui/problems'
 
-/** Namespace for this plugin's rows in the Event Center. */
+/** Namespace for this mini app's rows in the Event Center. */
 const SCOPE = 'devops'
 
 export interface DevOpsIssue {

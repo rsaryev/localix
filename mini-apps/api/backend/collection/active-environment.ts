@@ -7,9 +7,9 @@
  * decides it by conflict resolution. That is a production request sent at staging because someone
  * else rebased.
  *
- * So the pointer lives in the plugin's own state directory, keyed by COLLECTION ROOT — two projects
- * open in two windows each keep their own active environment, which is the behaviour a person
- * expects and the one a single global pointer cannot give.
+ * So the pointer lives in the mini app's own state directory, keyed by COLLECTION ROOT — two
+ * projects open in two windows each keep their own active environment, which is the behaviour a
+ * person expects and the one a single global pointer cannot give.
  *
  * Absence is meaningful: no entry means NO environment is active, and a request with a
  * `{{placeholder}}` then fails loudly rather than rendering against whatever happens to be first.

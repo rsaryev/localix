@@ -125,7 +125,7 @@ export function DiffWorkItemBody({ item }: { item: WorkItem }) {
   // fills the slot — the host only knows there is a value to hand over.
   const staging = payload<unknown>(item, 'staging')
   // Interactive staging is contributed, not built in: the host owns the slot and the payload, the
-  // plugin that owns git renders it. The slot is empty when no plugin fills it (yet), so a
+  // mini app that owns git renders it. The slot is empty when no mini app fills it (yet), so a
   // staging descriptor with no owner falls through to the ordinary read-only diff below.
   if (!multiFile && staging && interactive) {
     return <WorkItemSlot slot="diff.interactive" item={item} value={staging} />

@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react'
 import { LAUNCH_RESTORE_WAIT_MS } from '@/entities/chat/model/launchRestore'
 
 /**
- * The project scope the plugin contribution store should describe — the route's, EXCEPT across a
+ * The project scope the mini app contribution store should describe — the route's, EXCEPT across a
  * home route, which never stays: the launch restore or the home draft always redirects it to a
  * project (`useUrlStoreSync`).
  *
  * Treating the cold `/` as the global scope is what made the rail flicker at launch. The restored
- * frame (project P's plugins) was discarded by `prepareMiniAppContribScope(null)`, the global set
- * (fewer plugins) was fetched and published, then emptied again at the redirect, then P's set
+ * frame (project P's mini apps) was discarded by `prepareMiniAppContribScope(null)`, the global set
+ * (fewer mini apps) was fetched and published, then emptied again at the redirect, then P's set
  * arrived. Holding keeps the scope the store already has: on a cold launch that is the frame's
  * own project, so when the restore lands on P nothing is discarded and the first sync is P's.
  *

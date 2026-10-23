@@ -29,7 +29,7 @@ export const FOUNDATION: readonly KitCatalogEntry[] = [
     exports: ['chromeAction', 'chromeActionActive'],
     summary: "The compact action of the app's own titlebar and header chrome.",
     use: 'Host chrome only.',
-    not: 'Plugins do not use it (`scripts/plugin-chrome-recipes.test.ts`): a plugin action is IconButton.',
+    not: 'Mini apps do not use it (`scripts/mini-app-chrome-recipes.test.ts`): a mini app action is IconButton.',
   },
   {
     specifier: k('rail-button'),
@@ -89,7 +89,7 @@ export const FOUNDATION: readonly KitCatalogEntry[] = [
     provider: 'host',
     exports: ['useUserSettings'],
     summary: "The user's settings, read-only. Recorded debt: host feature state.",
-    use: 'Only where a plugin must follow a user preference the host owns.',
+    use: 'Only where a mini app must follow a user preference the host owns.',
   },
   {
     specifier: '@localixai/mini-app-sdk/ui/classes',

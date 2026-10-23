@@ -21,7 +21,7 @@ export type { VfCommandReply, VisualFeedbackBridge }
  * Host side of the visual-feedback bridge. The probe (injected into the preview)
  * self-generates a channelId and announces it via `ready`; we trust the message by
  * `e.source === iframe.contentWindow` (the static preview is a dynamic ephemeral
- * origin, so origin can't be hardcoded — mirrors the plugin-panel bridge). On each
+ * origin, so origin can't be hardcoded — mirrors the mini-app-panel bridge). On each
  * (re)connect we re-send the current mode and theme vars,
  * so a preview reload re-syncs automatically.
  */

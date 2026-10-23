@@ -36,7 +36,7 @@ describe('ctx.reportProblem', () => {
   it('is absent when the caller binds no reporter', () => {
     const ctx = makeContext('sample', '/mini-apps/sample', {}, () => {}, '/work', 'u1', TEST_HOME)
     // Only Settings inspection builds a context like this: every load that runs mini app code
-    // binds `miniAppProblemReporter` (see `notifications/conditions/plugins.test.ts`).
+    // binds `miniAppProblemReporter` (see `notifications/conditions/miniApps.test.ts`).
     expect(ctx.reportProblem).toBeUndefined()
   })
 })

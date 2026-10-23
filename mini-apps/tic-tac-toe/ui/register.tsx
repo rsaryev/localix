@@ -11,7 +11,7 @@ const Workspace = lazy(() =>
 
 /** One board per chat, its launcher and the anchor its tool opens (`sessionGameUi`). */
 export const registerUi = sessionGameUi({
-  plugin: 'tic-tac-toe',
+  miniApp: 'tic-tac-toe',
   kind: GAME_KIND,
   title: 'Tic-Tac-Toe',
   label: 'Tic-Tac-Toe — play against the agent',

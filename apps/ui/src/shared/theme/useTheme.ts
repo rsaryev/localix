@@ -3,7 +3,7 @@ import { useSyncExternalStore } from 'react'
 // `@ui/*` alias, where `@/` resolves to landing/src and would not find these.
 import { applyPlatformDataset, isDesktop } from '@localixai/kit/environment'
 import { hasNativeWindowMaterial } from '@localixai/kit/environment'
-import { pluginApp } from '../lib/pluginApp'
+import { standaloneApp } from '../lib/standaloneApp'
 import { tauriInvoke } from '../lib/tauri'
 import { readNativeHeaderTint } from './nativeHeaderTint'
 // Imported before the boot block below runs, so the transparency level is on <html> by the time
@@ -64,8 +64,9 @@ export function applyThemeModeToDom(mode: ThemeMode): ResolvedTheme {
   // so this fill would sit ON TOP of the NSVisualEffectView and hide it permanently. The stylesheet
   // rule that makes the root transparent there cannot win against this line, which is why the
   // decision has to be made here rather than in CSS.
-  // A plugin installed as its own Mac app backs its page with the same material (`pluginApp.ts`).
-  if (hasNativeWindowMaterial() || pluginApp()) {
+  // A mini app installed as its own Mac app backs its page with the same material
+  // (`standaloneApp.ts`).
+  if (hasNativeWindowMaterial() || standaloneApp()) {
     root.style.removeProperty('background-color')
   } else {
     root.style.backgroundColor = chromeBackground

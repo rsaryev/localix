@@ -224,7 +224,7 @@ export interface Message {
   /**
    * Provenance of an autonomously-woken turn (the backend `WakeSource` tag, stored
    * as the message payload's `origin`): why a non-user turn ran — a `/loop` tick, a
-   * plugin's wake, a `sleep`/background-job completion, or the
+   * mini app's wake, a `sleep`/background-job completion, or the
    * background-job monitor. Kept as transport metadata for non-web surfaces and
    * diagnostics; the web transcript deliberately does not render an origin badge.
    * `user-busy` identifies a genuine user message rather than an autonomous wake.

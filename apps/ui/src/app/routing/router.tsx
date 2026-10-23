@@ -5,7 +5,7 @@ import { RootLayout } from '../RootLayout'
 import { RouteErrorBoundary } from './RouteErrorBoundary'
 import { ROUTE_PATTERNS } from '@/shared/routing/routes'
 
-// The workspace shell is monolithic: Settings/Stats/plugin views are inspector
+// The workspace shell is monolithic: Settings/Stats/mini app views are inspector
 // panels *inside* ChatPage (opened from the rail, no URL of their own), not
 // separate pages. So every route renders the same ChatPage element under the
 // shared layout Outlet — React keeps it mounted across navigations (same element

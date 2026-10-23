@@ -34,7 +34,7 @@ function coreMessageBinding(item: WorkItem): MessageBindingDragPayload | null {
     case 'global-search':
     case 'live-file-change':
     case 'message-replay':
-    case 'plugin-view':
+    case 'mini-app-view':
     case 'preview':
     case 'problems':
     case 'review':
@@ -63,7 +63,7 @@ function miniAppAgentContext(item: WorkItem): WorkItemAgentContext | null {
   const contribution = activeWorkItemContribution(item.kind)
   const configured = contribution?.agentContext
   if (configured) return typeof configured === 'function' ? configured(item) : configured
-  if (!contribution && item.kind !== 'plugin-view') return null
+  if (!contribution && item.kind !== 'mini-app-view') return null
   return {
     description: 'Mini app view open in the Localix workspace.',
     nextSteps: [
@@ -75,21 +75,21 @@ function miniAppAgentContext(item: WorkItem): WorkItemAgentContext | null {
 }
 
 /** An always-present, bounded snapshot that tells the agent where the user is and what to do next. */
-function pluginGuidanceBinding(
+function miniAppGuidanceBinding(
   item: WorkItem,
   liveContextAvailable: boolean,
 ): MessageBindingDragPayload | null {
   const context = miniAppAgentContext(item)
   if (!context) return null
-  const owner = activeWorkItemContribution(item.kind)?.pluginName
-  const pluginName =
+  const owner = activeWorkItemContribution(item.kind)?.miniAppName
+  const miniAppName =
     owner ??
-    (typeof item.payload?.pluginName === 'string' ? item.payload.pluginName : undefined) ??
+    (typeof item.payload?.miniAppName === 'string' ? item.payload.miniAppName : undefined) ??
     item.kind.split(':')[0]
   const steps = (context.nextSteps ?? []).slice(0, 3)
   const content = [
     `Active mini app view: ${item.title}`,
-    `Mini app: ${pluginName}`,
+    `Mini app: ${miniAppName}`,
     `Surface: ${item.kind}`,
     context.description ? `Purpose: ${context.description}` : null,
     liveContextAvailable
@@ -182,7 +182,7 @@ function dedupeBindings(
  * - terminal     → a `@terminal:<id>` ref (cwd + recent commands + output tail)
  * - a subsystem-contributed kind supplies an opaque `@resource:localix://resource/<provider>/<id>` token and
  *   its OWN mapping via the workItemKind registry. Reserved core kinds keep the
- *   switch below, so a plugin collision cannot replace their binding behavior.
+ *   switch below, so a mini app collision cannot replace their binding behavior.
  */
 export function workItemToMessageBinding(
   item: WorkItem | undefined,
@@ -196,14 +196,14 @@ export function workItemToMessageBinding(
  * Static mappings come from the work-item contribution. A mounted component may
  * publish fresher UI-state facets through the host-injected publisher; `replace`
  * narrows the static target, while `append` enriches it. This is the single merge
- * point used by auto-context and tab dragging, so plugins never coordinate with a
+ * point used by auto-context and tab dragging, so mini apps never coordinate with a
  * composer directly.
  */
 export function workItemToMessageBindings(item: WorkItem | undefined): MessageBindingDragPayload[] {
   if (!item) return []
   const statics = staticMessageBindings(item)
   const live = liveTabMessageContext(item.id)
-  const guidance = pluginGuidanceBinding(item, Boolean(live))
+  const guidance = miniAppGuidanceBinding(item, Boolean(live))
   if (!live) return ownedBy(item, dedupeBindings(guidance ? [...statics, guidance] : statics))
   const liveWithGuidance = mergeGuidanceIntoLiveSnippet(live.bindings, guidance)
   return ownedBy(
@@ -214,28 +214,28 @@ export function workItemToMessageBindings(item: WorkItem | undefined): MessageBi
   )
 }
 
-/** The plugin that owns a tab — its contribution's, or a generic plugin view's named owner. */
+/** The mini app that owns a tab — its contribution's, or a generic mini app view's named owner. */
 export function tabOwnerMiniApp(item: WorkItem): string | undefined {
-  const owner = activeWorkItemContribution(item.kind)?.pluginName
+  const owner = activeWorkItemContribution(item.kind)?.miniAppName
   if (owner) return owner
-  return item.kind === 'plugin-view' && typeof item.payload?.pluginName === 'string'
-    ? item.payload.pluginName
+  return item.kind === 'mini-app-view' && typeof item.payload?.miniAppName === 'string'
+    ? item.payload.miniAppName
     : undefined
 }
 
 /**
- * Stamp every binding of a plugin's tab with its owner, so the turn that answers the message
- * carries that plugin's tools — and only while the tab is linked: a closed tab, or a chip the
+ * Stamp every binding of a mini app's tab with its owner, so the turn that answers the message
+ * carries that mini app's tools — and only while the tab is linked: a closed tab, or a chip the
  * person removed, sends no binding and so brings no tools. The host sets it here, over whatever
- * a plugin's draft said, because this is the one place both the ambient link and a tab drag pass
+ * a mini app's draft said, because this is the one place both the ambient link and a tab drag pass
  * through; a core tab (a file, a terminal) has no owner and carries none.
  */
 function ownedBy(
   item: WorkItem,
   bindings: readonly MessageBindingDragPayload[],
 ): MessageBindingDragPayload[] {
-  const plugin = tabOwnerMiniApp(item)
-  return bindings.map(({ plugin: _claimed, ...binding }) =>
-    plugin ? { ...binding, plugin } : binding,
+  const miniApp = tabOwnerMiniApp(item)
+  return bindings.map(({ miniApp: _claimed, ...binding }) =>
+    miniApp ? { ...binding, miniApp } : binding,
   )
 }

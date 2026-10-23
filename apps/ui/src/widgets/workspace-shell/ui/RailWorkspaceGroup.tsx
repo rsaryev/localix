@@ -24,7 +24,7 @@ interface RailWorkspaceGroupProps {
   pinnedToolIds: ReadonlySet<string>
   onPinTool: (id: string, pinned: boolean) => void
   onUnpinTool: (id: string) => void
-  /** Transient recent slots — plugin views, most recently opened first. */
+  /** Transient recent slots — mini app views, most recently opened first. */
   recentEntries: RailEntry[]
   /** Ids already seen on the bar; anything else plays the entrance animation. */
   seenIds: ReadonlySet<string> | null
@@ -40,7 +40,7 @@ interface RailWorkspaceGroupProps {
 
 /**
  * The rail's middle group: fixed core destinations, the user's placed entries, the
- * Dock-style recent slots, and the plugin launcher — all inside one drop
+ * Dock-style recent slots, and the mini app launcher — all inside one drop
  * zone. The inner min-height wrapper centers short stacks evenly between the top
  * and bottom groups; when the stack grows taller, this outer region scrolls.
  */
@@ -144,7 +144,7 @@ export function RailWorkspaceGroup({
               />
             )}
           />
-          {/* Recent slots, macOS-Dock style: plugin views float in here as they are
+          {/* Recent slots, macOS-Dock style: mini app views float in here as they are
           opened and age out. The dock owns whether they rest collapsed behind one
           disclosure button (the default), expanded, or hidden — see
           shared/lib/railRecentsPref. */}

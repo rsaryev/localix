@@ -3,7 +3,7 @@
 The source of Localix's first-party mini apps. A mini app is Localix's own format, not a Claude Code
 plugin: one `mini-app.json` (identity, category, backend, settings, commands), a `guide.md` the
 agent reads with `mini_app_guide` before it first uses the app, a native backend (`backend/`) and
-screens (`ui/`). It holds no `skills/`, `.claude-plugin/` or hooks, and Localix ships no plugins.
+screens (`ui/`). It holds no `skills/`, `.claude-plugin/` or hooks, and Localix ships no mini apps.
 The contract and the migration status:
 [plugins and mini apps](../docs/internals/plugins-and-mini-apps.md).
 
@@ -86,8 +86,8 @@ tests and reloads it there. Nothing in this repository changes when a user creat
 
 To add a first-party mini app, copy [`template/`](template/) by hand — its
 [`scaffold.json`](template/scaffold.json) lists the frame to keep and the domain to replace. A
-running `bun run dev` re-stages the mini app on every save (`scripts/dev-plugin-watch.mjs`), and the
-workbench swaps its UI in place.
+running `bun run dev` re-stages the mini app on every save (`scripts/dev-mini-app-watch.mjs`), and
+the workbench swaps its UI in place.
 
 Use a focused check for the mini app being changed, from the repository root:
 
@@ -105,5 +105,5 @@ The [mini app SDK](../packages/mini-app-sdk/README.md) owns typed host contracts
 
 - [Manifest contract](../packages/mini-app-sdk/src/manifest/app.ts)
 - [Installed artifact trust](../apps/api/src/features/ext/trust.ts)
-- [Developer watcher](../scripts/dev-plugin-watch.mjs)
+- [Developer watcher](../scripts/dev-mini-app-watch.mjs)
 - [Mini app SDK entry points](../packages/mini-app-sdk/README.md)

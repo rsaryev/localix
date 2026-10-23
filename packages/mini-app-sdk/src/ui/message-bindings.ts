@@ -1,9 +1,9 @@
 /**
- * THE MESSAGE-BINDING VOCABULARY — what a plugin can attach to a chat message, and how the composer
- * describes it.
+ * THE MESSAGE-BINDING VOCABULARY — what a mini app can attach to a chat message, and how the
+ * composer describes it.
  *
  * Split out of `contrib.ts`, which had grown to hold two unrelated vocabularies: the shapes a
- * plugin REGISTERS with the host (tabs, rail entries, slots) and the shapes it SENDS through the
+ * mini app REGISTERS with the host (tabs, rail entries, slots) and the shapes it SENDS through the
  * composer. They are edited by different work and read by different readers. `contrib.ts`
  * re-exports everything here, so `@localixai/mini-app-sdk/ui` is unchanged.
  */
@@ -23,20 +23,20 @@ export type MessageBindingTargetKind =
   | 'snippet'
 
 /**
- * Architecture-neutral draft used by both plugin and core drag/link producers.
- * The host serializes this exact shape; no plugin-to-core adapter is required.
+ * Architecture-neutral draft used by both mini app and core drag/link producers.
+ * The host serializes this exact shape; no mini-app-to-core adapter is required.
  */
 export interface MessageContextBindingDraft {
   kind: 'context'
-  source: 'drag' | 'active-tab' | 'plugin'
+  source: 'drag' | 'active-tab' | 'mini-app'
   /** Optional media/file evidence that travels atomically with this context. */
   assets?: MessageAttachment[]
   /**
-   * HOST-minted: the plugin whose open tab this context came from, so the turn answering the
-   * message carries that plugin's tools. The host sets it from the tab's owner and overwrites
-   * whatever a plugin's draft says.
+   * HOST-minted: the mini app whose open tab this context came from, so the turn answering the
+   * message carries that mini app's tools. The host sets it from the tab's owner and overwrites
+   * whatever a mini app's draft says.
    */
-  plugin?: string
+  miniApp?: string
   target: {
     kind: MessageBindingTargetKind
     token: string
@@ -57,10 +57,10 @@ export interface MessageContextBindingDraft {
  *
  * `replace` says the live facets are a more precise view of the static tab binding.
  * `append` keeps the static binding and adds UI-state facets beside it. The host owns
- * dedupe, ranking, budgets, lifecycle cleanup and capture; plugins still own only opaque
+ * dedupe, ranking, budgets, lifecycle cleanup and capture; mini apps still own only opaque
  * binding drafts and never import a chat/composer store.
  */
-/** Runtime-published plugin state uses only provider-owned resources or bounded
+/** Runtime-published mini app state uses only provider-owned resources or bounded
  * snapshots. Other binding kinds remain available to host/static producers. */
 export type PublishedMessageContextBindingDraft = MessageContextBindingDraft & {
   target: MessageContextBindingDraft['target'] & { kind: 'resource' | 'snippet' }
@@ -85,10 +85,10 @@ export type PublishMessageContext = (context: PublishedMessageContext | null) =>
  */
 export type MessageBindingDraft = MessageAttachment | MessageContextBindingDraft
 
-/** Canonical resource → message-binding adapter shared by core and plugin UI. */
+/** Canonical resource → message-binding adapter shared by core and mini app UI. */
 export function resourceMessageBindingDraft(
   resource: Pick<AddressableResource, 'uri' | 'label'>,
-  source: MessageContextBindingDraft['source'] = 'plugin',
+  source: MessageContextBindingDraft['source'] = 'mini-app',
 ): PublishedMessageContextBindingDraft {
   return {
     kind: 'context',
@@ -107,10 +107,10 @@ export function resourceMessageBindingDraft(
 export const LIVE_SNIPPET_CONTENT_MAX = 40_000
 const LIVE_SNIPPET_TRUNCATION_NOTE = '\n… [live context snapshot truncated]'
 /**
- * Live plugin state may either address a provider-owned opaque resource or carry
+ * Live mini app state may either address a provider-owned opaque resource or carry
  * a bounded ephemeral snapshot. Core-owned targets (`file`, `terminal`, `task`,
  * …) are intentionally excluded: accepting them from an iframe would let a
- * plugin impersonate a host capability instead of registering its own URI.
+ * mini app impersonate a host capability instead of registering its own URI.
  */
 const PUBLISHED_MESSAGE_CONTEXT_TARGET_KINDS: ReadonlySet<string> = new Set(['resource', 'snippet'])
 const PUBLISHED_CONTEXT_ASSET_MAX = 8
@@ -122,7 +122,7 @@ function normalizeContextAsset(value: unknown): MessageAttachment | null {
   if (typeof asset.kind !== 'string' || typeof asset.name !== 'string') return null
   if (typeof asset.size !== 'number' || !Number.isSafeInteger(asset.size) || asset.size < 0)
     return null
-  // Sandboxed plugins may publish bytes or an already-hosted media id, never a
+  // Sandboxed mini apps may publish bytes or an already-hosted media id, never a
   // host filesystem path.
   if (asset.kind === 'path') return null
   if (asset.kind === 'text') {
@@ -145,7 +145,7 @@ function normalizeContextAsset(value: unknown): MessageAttachment | null {
  * content to its wire limit before persistence. */
 export function snippetMessageBindingDraft(
   input: { label: string; content: string; language?: string },
-  source: MessageContextBindingDraft['source'] = 'plugin',
+  source: MessageContextBindingDraft['source'] = 'mini-app',
 ): PublishedMessageContextBindingDraft {
   const label = input.label.trim() || 'snippet'
   const content =
@@ -170,8 +170,8 @@ export function snippetMessageBindingDraft(
 
 /**
  * Validate and normalize an untrusted live-context publication (notably one
- * crossing the sandboxed plugin iframe bridge). Returns null for an invalid
- * envelope. The host, not the plugin, mints provenance; URI namespaces stay opaque.
+ * crossing the sandboxed mini app iframe bridge). Returns null for an invalid
+ * envelope. The host, not the mini app, mints provenance; URI namespaces stay opaque.
  */
 export function normalizePublishedMessageContext(value: unknown): PublishedMessageContext | null {
   if (typeof value !== 'object' || value === null) return null
@@ -249,7 +249,7 @@ export function normalizePublishedMessageContext(value: unknown): PublishedMessa
     }
     bindings.push({
       kind: 'context',
-      source: 'plugin',
+      source: 'mini-app',
       ...(assets?.length ? { assets } : {}),
       target: {
         kind: target.kind as PublishedMessageContextBindingDraft['target']['kind'],

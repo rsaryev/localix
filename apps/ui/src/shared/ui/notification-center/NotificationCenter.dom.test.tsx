@@ -452,7 +452,7 @@ describe('Event Center', () => {
   })
 
   /**
-   * "Details" is offered from inside modal dialogs (a vault item, a plugin's create form), so the
+   * "Details" is offered from inside modal dialogs (a vault item, a mini app's create form), so the
    * Event Center has to actually be usable while one is open. The z-order was already right
    * (`--z-popover: 250` over `--z-modal: 220`); what could not be settled by reading was Radix's
    * dialog focus trap and its `pointer-events: none` on the body. Both turn out to be answered by

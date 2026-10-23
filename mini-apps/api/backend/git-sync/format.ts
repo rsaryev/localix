@@ -62,7 +62,7 @@ export function parseRequestFile(text: string): RequestFile | null {
  *
  * TWO places, not one. The auth block is the obvious one. The other is `Authorization` / `Cookie` /
  * `Proxy-Authorization` HEADERS, and missing them was a real hole for fourteen iterations: this
- * function checked auth only, on the argument that "auth is the one place this plugin promises to
+ * function checked auth only, on the argument that "auth is the one place this mini app promises to
  * hold credentials" — while `import/har.ts` puts a logged-in session's `Authorization` and `Cookie`
  * straight into headers by design, and `import/curl.ts` leaves any auth scheme it cannot sign there
  * too. Import a HAR from a logged-in tab, export, commit, and the session cookie is in git history

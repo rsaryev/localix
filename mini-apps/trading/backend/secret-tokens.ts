@@ -4,10 +4,10 @@
  * The token grammar + substitution are NOT reimplemented here: the pure leaf
  * `@localixai/mini-app-sdk/backend` (`hasSecretTokens` / `resolveSecretTokens`) is the one
  * source of truth for the whole app, and the database workbench reuses it the same way. Only
- * the *shape* of what gets interpolated is plugin-specific — for trading that is each field
+ * the *shape* of what gets interpolated is mini-app-specific — for trading that is each field
  * of the credential map, rather than a connection URL.
  *
- * The vault itself is never imported: a resolver arrives through the generic plugin host seam
+ * The vault itself is never imported: a resolver arrives through the generic mini app host seam
  * (`ctx.host.resolveSecret`) and is threaded in by the service.
  */
 import { hasSecretTokens, resolveSecretTokens } from '@localixai/mini-app-sdk/backend'
@@ -21,7 +21,7 @@ export type ResolveSecret = (userId: string, key: string) => Promise<string | nu
 /**
  * Store one value under `key` — ONLY when the key is free (`false` = taken, nothing written).
  * The create-only half of the vault (`setIfAbsent`, never `set`): it lets a pasted literal
- * credential move into the vault as a `${secret:KEY}` reference without granting this plugin
+ * credential move into the vault as a `${secret:KEY}` reference without granting this mini app
  * the power to overwrite a key another integration depends on.
  */
 export type StoreSecret = (userId: string, key: string, value: string) => Promise<boolean>

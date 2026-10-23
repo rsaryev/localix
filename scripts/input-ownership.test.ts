@@ -1,8 +1,9 @@
 import { describe, test } from 'bun:test'
 import { expectOwnershipBoundary } from '@localixai/kit/testing/ownership-contract'
 
-// Lives under `scripts/`, not in core: its owner list names files inside bundled plugins, which is
-// integration between the host kit and those plugins — core itself may not name a plugin tree.
+// Lives under `scripts/`, not in core: its owner list names files inside bundled mini apps, which
+// is integration between the host kit and those mini apps — core itself may not name a mini app
+// tree.
 const REPO_ROOT = new URL('../', import.meta.url).pathname
 const RAW_INPUT = /<input\b/g
 

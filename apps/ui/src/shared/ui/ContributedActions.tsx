@@ -12,7 +12,7 @@ import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { IconButton } from '@localixai/kit/icon-button'
 import { actionMatches, contributedActions, useContributedActions } from '@/shared/contrib/actions'
 
-/** The host supplies content and interaction; each plugin decides eligibility and destination. */
+/** The host supplies content and interaction; each mini app decides eligibility and destination. */
 export function ContributedActions({
   target,
   surface: explicitSurface,

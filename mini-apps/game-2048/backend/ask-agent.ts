@@ -4,13 +4,13 @@ import { describeGame } from '../shared/describe'
 import { MAX_MOVES, type AgentWait, type Game } from '../shared/game'
 
 /**
- * HOW THE BOARD HANDS ITSELF TO THE AGENT — the plugin's side of the host's wake contract.
+ * HOW THE BOARD HANDS ITSELF TO THE AGENT — the mini app's side of the host's wake contract.
  *
  * The agent plays in the chat the board BELONGS to. When the person hands it the board (switches
- * to "Watch" with the chat agent as the player, starts an agent game, or asks it to continue), the plugin wakes that session
- * with the position and the tool that answers it, and the agent plays through `game_2048`. Nothing
- * here waits for the moves: the wake only says whether the chat will take the turn, and the view
- * shows the answer — playing, or why it could not be reached.
+ * to "Watch" with the chat agent as the player, starts an agent game, or asks it to continue), the
+ * mini app wakes that session with the position and the tool that answers it, and the agent plays
+ * through `game_2048`. Nothing here waits for the moves: the wake only says whether the chat will
+ * take the turn, and the view shows the answer — playing, or why it could not be reached.
  *
  * Only a person's action wakes the chat. The agent's own moves never do (the host's contract: a
  * tool that woke the agent would wake it again after every call), so the message asks for the

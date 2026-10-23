@@ -13,7 +13,7 @@ import { __resetApiUiRegistration, registerUi, requestNameFromFilePath } from '.
 /**
  * Registration goes through the SDK's recording host, not a hand-built literal.
  *
- * The literal this replaced named the five seams the plugin used and cast past the rest, so the
+ * The literal this replaced named the five seams the mini app used and cast past the rest, so the
  * day the contract grew one more, `registerUi` died on `undefined.register` — inside the tests
  * whose job is to prove registration works. The completeness check belongs in the package that
  * owns the contract, and does.

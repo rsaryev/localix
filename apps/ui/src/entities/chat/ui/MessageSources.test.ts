@@ -18,7 +18,7 @@ const toolItem = (id: string, sources: AgentSource[]): AgentItem =>
     id,
     type: 'tool_call',
     toolCallId: id,
-    name: 'plugin_tool',
+    name: 'mini_app_tool',
     activeVerb: 'Working',
     status: 'completed',
     sources,

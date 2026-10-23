@@ -22,8 +22,9 @@ export class RestApiError extends Error {
 }
 
 /**
- * A 200 carrying `{ error }` is a failure too — the plugin error body is `{ error, code, detail }`,
- * which is NOT core's `{ error: { code, message } }` envelope, so core's `unwrap` cannot read it.
+ * A 200 carrying `{ error }` is a failure too — the mini app error body is
+ * `{ error, code, detail }`, which is NOT core's `{ error: { code, message } }` envelope, so core's
+ * `unwrap` cannot read it.
  */
 export async function readOr<T>(res: Response): Promise<T> {
   const json = (await res.json().catch(() => null)) as
@@ -45,15 +46,15 @@ export const enc = encodeURIComponent
  * WHICH PROJECT this call is about — named by the caller, never looked up.
  *
  * A collection is a directory inside the project, so every route needs to know which one — and
- * the plugin's backend is wired ONCE, so it cannot know. The host resolves the scope per request
+ * the mini app's backend is wired ONCE, so it cannot know. The host resolves the scope per request
  * (`MiniAppRouteScope`), from the session named here; without it every call would read the
  * collection under the API process's own working directory, which is the repo the app was
  * launched from rather than the one the user is looking at.
  *
  * The session used to be read from the host's ACTIVE chat at call time. A workspace kept mounted
  * for chat A then saved, sent and listed against whichever chat was on screen — chat B's project.
- * Every surface of this plugin belongs to one chat (its tab's session, a file editor's or a status
- * item's `sessionId`), so the caller passes that one and the builder requires it.
+ * Every surface of this mini app belongs to one chat (its tab's session, a file editor's or a
+ * status item's `sessionId`), so the caller passes that one and the builder requires it.
  */
 function scopedPath(sessionId: string, path: string): string {
   const route = `/rpc/api${path}`

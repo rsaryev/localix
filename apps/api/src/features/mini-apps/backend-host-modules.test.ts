@@ -50,7 +50,7 @@ describe('host-provided backend modules', () => {
     const { shared } = (await import(bundle)) as {
       shared: { Hono: unknown; ZodObject: unknown; sdk: unknown; app: Hono; schema: unknown }
     }
-    // One class identity: a plugin's schema is a host `ZodObject`, its app a host `Hono`.
+    // One class identity: a mini app's schema is a host `ZodObject`, its app a host `Hono`.
     expect(shared.ZodObject).toBe(ZodObject)
     expect(shared.Hono).toBe(Hono)
     expect(shared.schema).toBeInstanceOf(ZodObject)

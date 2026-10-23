@@ -22,7 +22,7 @@ export interface RepoContext {
   /**
    * Absolute per-worktree `.git` directory. Joining a `.git`-relative name onto
    * it is equivalent to `git rev-parse --git-path <name>` for every per-worktree
-   * path this plugin reads (`rebase-merge`, `rebase-apply`, `BISECT_*`,
+   * path this mini app reads (`rebase-merge`, `rebase-apply`, `BISECT_*`,
    * `refs/bisect`) — verified against a linked worktree. Do NOT join names that
    * live in the COMMON dir (`refs/heads`, `packed-refs`, `config`); those differ
    * in a linked worktree and still need `--git-path`.

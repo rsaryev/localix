@@ -1,4 +1,4 @@
-import { z as pluginZod } from 'zod'
+import { z as miniAppZod } from 'zod'
 import { COLORS, EDGE_CAPS, EDGE_ROUTES, EDGE_STROKES, EDGE_WEIGHTS, SIDES } from '../format/schema'
 import { GAP } from './geometry'
 
@@ -14,9 +14,9 @@ import { GAP } from './geometry'
  *
  * Built by a factory over a zod namespace because the agent tool must declare its input with the
  * HOST's zod (`ctx.z`, which turns it into the model's JSON schema) and the routes validate with
- * the plugin's own: one definition, two instances, never two copies that drift.
+ * the mini app's own: one definition, two instances, never two copies that drift.
  */
-type Zod = typeof pluginZod
+type Zod = typeof miniAppZod
 
 export const STACKING = ['front', 'forward', 'backward', 'back'] as const
 export const ALIGN_EDGES = ['left', 'center', 'right', 'top', 'middle', 'bottom'] as const
@@ -164,13 +164,13 @@ export function buildOpSchemas(z: Zod) {
   return { create, update, arrange, op, ops: z.array(op).min(1).max(200) }
 }
 
-const schemas = buildOpSchemas(pluginZod)
+const schemas = buildOpSchemas(miniAppZod)
 
 export const spaceOpsSchema = schemas.ops
-export type SpaceOp = pluginZod.infer<typeof schemas.op>
-export type CreateOp = pluginZod.infer<typeof schemas.create>
-export type UpdateOp = pluginZod.infer<typeof schemas.update>
-export type ArrangeOp = pluginZod.infer<typeof schemas.arrange>
+export type SpaceOp = miniAppZod.infer<typeof schemas.op>
+export type CreateOp = miniAppZod.infer<typeof schemas.create>
+export type UpdateOp = miniAppZod.infer<typeof schemas.update>
+export type ArrangeOp = miniAppZod.infer<typeof schemas.arrange>
 export type Stacking = (typeof STACKING)[number]
 export type AlignEdge = (typeof ALIGN_EDGES)[number]
 export type Axis = (typeof AXES)[number]

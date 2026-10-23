@@ -149,7 +149,7 @@ export function startUiLocationCatalogSync(
 ): () => void {
   const owner = Symbol('ui-location-catalog-sync')
   // Never attach a request for the new route to a snapshot published for an
-  // older route or plugin inventory. The tool safely remains raw-URI-only until
+  // older route or mini app inventory. The tool safely remains raw-URI-only until
   // this owner has published its complete snapshot.
   activeCatalog = null
   catalogIdsByProject.delete(projectKey(projectId))

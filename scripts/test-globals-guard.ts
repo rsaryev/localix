@@ -35,7 +35,7 @@ const BASELINE: ReadonlySet<string> = new Set([
   'IS_REACT_ACT_ENVIRONMENT',
   '__reactRouterVersion',
   // A bundled tslib used to install its whole helper family here (32 keys, `__extends` through
-  // `__rewriteRelativeImportExtension`). It stopped: with plugin backends activated lazily from
+  // `__rewriteRelativeImportExtension`). It stopped: with mini app backends activated lazily from
   // their manifests, a full run no longer eagerly imports the TS-compiled dependency that
   // carried tslib, so the helpers never reach globalThis. Deleted per this file's own rule that
   // the list may only shrink — if an eager import brings them back, the guard fails and they

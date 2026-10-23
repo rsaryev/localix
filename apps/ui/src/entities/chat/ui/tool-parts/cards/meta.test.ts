@@ -92,7 +92,7 @@ describe('tool meta ↔ card registry (client-internal contract)', () => {
     // / 1 ms after. `readOnly` stays absent on purpose — read-only runs fold at TWO, and claiming
     // that for a tool we cannot classify would fold a run of writes on a guess.
     expect(toolMeta('Bash').stackable).toBe(true)
-    expect(toolMeta('some_plugin_tool').stackable).toBe(true)
+    expect(toolMeta('some_mini_app_tool').stackable).toBe(true)
     expect(toolMeta('Bash').readOnly).toBeUndefined()
   })
 
@@ -139,7 +139,7 @@ describe('toolMeta resolution order', () => {
     expect(toolMeta('mcp_anything')).toBe(MCP_META)
   })
 
-  test('an unknown / plugin tool gets the generic fallback', () => {
+  test('an unknown / mini app tool gets the generic fallback', () => {
     expect(toolMeta('totally_unknown_tool_xyz')).toBe(FALLBACK_META)
     expect(toolMeta('')).toBe(FALLBACK_META)
   })

@@ -26,7 +26,7 @@ export interface ProcessSource {
  *
  * Through the SDK's bounded reader, not `Promise.all([pipe text, pipe text, exited])`: that waits
  * on pipe EOF, which anything the command left behind can hold open forever, and its SIGTERM
- * timeout bounded the process but not the wait. Every plugin copied from this template inherited
+ * timeout bounded the process but not the wait. Every mini app copied from this template inherited
  * that hang.
  *
  * In the C locale: `ps` formats `%cpu`/`%mem` with the locale's decimal separator, so under

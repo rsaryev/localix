@@ -10,19 +10,19 @@ import { resourceKeyAffected, type ResourceTopic } from './resource-topics'
  * A status item's hook runs on every render of the bar it sits in, and that bar re-renders
  * whenever any tab moves. A fetch owned by the render therefore runs again and again for an
  * answer nobody asked to change, which is precisely what the contribution contract forbids. But
- * most plugins have something worth showing that no existing store already holds — the saved
+ * most mini apps have something worth showing that no existing store already holds — the saved
  * environments, the connections, the shelf — and writing the cache by hand each time produced the
- * same forty lines of `Map` + `inFlight` + listener set in every plugin that tried.
+ * same forty lines of `Map` + `inFlight` + listener set in every mini app that tried.
  *
  * So it lives here once. A resource keeps one value per key, fetches a key at most once, and hands
  * every reader the same answer.
  *
  * Deliberately NOT a poller. There is no interval and no way to ask for one: a status item is an
- * affordance, and a background request per second to re-learn what the plugin itself caused is the
- * cost the contract exists to prevent. The two moments that actually move a list — opening the
- * surface that owns it, and the plugin performing the action that changes it — are announced, not
+ * affordance, and a background request per second to re-learn what the mini app itself caused is
+ * the cost the contract exists to prevent. The two moments that actually move a list — opening the
+ * surface that owns it, and the mini app performing the action that changes it — are announced, not
  * polled for: give the resource a {@link ResourceTopic} and every writer that invalidates it
- * re-reads this resource by construction. That is the half a plugin used to have to remember, and
+ * re-reads this resource by construction. That is the half a mini app used to have to remember, and
  * two of the five that tried never finished wiring.
  *
  * A failed load keeps the last good value. The item is an affordance, not a report: showing a
@@ -55,11 +55,11 @@ export interface SharedResourceOptions {
    *
    * Wiring it here rather than at each call site is the point: a reader that has to remember to
    * subscribe is a reader that will one day be built without one, which is exactly how two of the
-   * bundled plugins ended up with a titlebar showing whatever was true when the app started.
+   * bundled mini apps ended up with a titlebar showing whatever was true when the app started.
    *
    * Only registered readers, including an initial read in flight, are re-read. A key nobody has asked for has no value to correct, and
-   * fetching it because something changed would turn an invalidation into a request per plugin per
-   * session.
+   * fetching it because something changed would turn an invalidation into a request per mini app
+   * per session.
    */
   topic?: ResourceTopic
 }
@@ -67,8 +67,8 @@ export interface SharedResourceOptions {
 /**
  * The key an app-global resource is stored under.
  *
- * Most plugin data is not session-scoped — a machine has one set of saved connections whichever
- * chat is on screen. Such a resource still needs A key, and every plugin inventing its own string
+ * Most mini app data is not session-scoped — a machine has one set of saved connections whichever
+ * chat is on screen. Such a resource still needs A key, and every mini app inventing its own string
  * for "the only one" is noise. Session-scoped resources pass the session id instead.
  */
 export const GLOBAL_RESOURCE_KEY = 'global'

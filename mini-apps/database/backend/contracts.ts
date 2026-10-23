@@ -1,4 +1,4 @@
-// Request/response contracts for the database plugin's backend routes. The
+// Request/response contracts for the database mini app's backend routes. The
 // connection-config zod schemas (ssl / ssh / per-dialect union) live in
 // ./contracts/connection-config; this facade re-exports the full public surface.
 import { z } from 'zod'

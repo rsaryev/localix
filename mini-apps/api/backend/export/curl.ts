@@ -3,7 +3,7 @@
  * shareable one-liner an agent can paste into API docs or a person into a terminal.
  *
  * THE ONE INVARIANT THIS FILE EXISTS TO HOLD: a real credential NEVER lands in exported text.
- * A curl string is the most copy-pasteable, most likely-to-be-committed artifact this plugin
+ * A curl string is the most copy-pasteable, most likely-to-be-committed artifact this mini app
  * produces — into a chat, an issue, a shell history — so it is exactly where a leaked token does
  * the most damage. The serializer therefore works from `redactSpec(spec)`, which masks a literal
  * to `••••••` and leaves a `${secret:KEY}` reference legible. The reference is DELIBERATELY kept

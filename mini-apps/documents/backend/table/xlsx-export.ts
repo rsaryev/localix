@@ -2,7 +2,7 @@
  * Server-side XLSX serializer. `@localixai/dataview` declares the `xlsx` export
  * format (id/label/mime/extension) but can't encode the bytes without a spreadsheet
  * library — that would break its zero-runtime-dep guarantee. So the real workbook
- * bytes are produced HERE (SheetJS, loaded lazily by this plugin) and registered
+ * bytes are produced HERE (SheetJS, loaded lazily by this mini app) and registered
  * over dataview's declaration in `createTableService`.
  *
  * SheetJS loads lazily on first export via `createRequire` (a sync CJS load), so it

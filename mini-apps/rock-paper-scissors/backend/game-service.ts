@@ -41,7 +41,7 @@ export function createGameService(
     applyMove(game, seal(move, player, at), at)
   const table = createTurnTable({
     ...input,
-    plugin: 'rock-paper-scissors',
+    miniApp: 'rock-paper-scissors',
     noun: 'table',
     now,
     schema: gameSchema,

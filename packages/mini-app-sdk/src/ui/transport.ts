@@ -2,7 +2,7 @@ import { parsePrerequisite, type Prerequisite } from '../prerequisite'
 import type { ProblemRequest } from './problems'
 
 export interface MiniAppUiTransport {
-  /** Execute one request against a validated plugin-owned `/rpc/*` route. */
+  /** Execute one request against a validated mini-app-owned `/rpc/*` route. */
   request(path: string, init?: RequestInit): Promise<Response>
   /** Resolve a validated route for browser-owned consumers such as links and media elements. */
   url(path: string): string
@@ -10,7 +10,7 @@ export interface MiniAppUiTransport {
 
 let transport: MiniAppUiTransport | null = null
 
-/** Bind the host transport before discovering bundled plugin UI modules. */
+/** Bind the host transport before discovering bundled mini app UI modules. */
 /** Bind the host transport; the unbind restores the previous one (see `bindMiniAppUiRuntime`). */
 export function bindMiniAppUiTransport(next: MiniAppUiTransport): () => void {
   const previous = transport
@@ -22,13 +22,13 @@ export function bindMiniAppUiTransport(next: MiniAppUiTransport): () => void {
 
 function miniAppRoute(path: string): string {
   if (!path.startsWith('/rpc/') || path.startsWith('//')) {
-    throw new Error(`Plugin UI routes must be relative /rpc/* paths: ${path}`)
+    throw new Error(`Mini app UI routes must be relative /rpc/* paths: ${path}`)
   }
   return path
 }
 
 function currentTransport(): MiniAppUiTransport {
-  if (!transport) throw new Error('Plugin UI transport is not bound by the host')
+  if (!transport) throw new Error('Mini app UI transport is not bound by the host')
   return transport
 }
 
@@ -52,7 +52,7 @@ type FetchResponse = Pick<Response, 'ok' | 'status' | 'url' | 'headers' | 'json'
  * The defect: an Event Center row picked its trace as "the newest failed request in this session
  * within ten seconds", so a Docker problem was filed with a Kubernetes poll's 503 as its cause —
  * the Docker request was in the buffer and was cut. A problem has to NAME its request. The host
- * transport marks every response it returns with the trace id it minted; a plugin reads it back
+ * transport marks every response it returns with the trace id it minted; a mini app reads it back
  * through {@link problemRequestOf}. A WeakMap rather than a request header, because a custom header
  * turns every cross-origin GET from the packaged page into a preflighted one.
  */
@@ -86,7 +86,7 @@ export function problemRequestOf(response: FetchResponse, method?: string): Prob
 }
 
 /**
- * A failed plugin request, carrying the three things the route already knew: the sentence, the
+ * A failed mini app request, carrying the three things the route already knew: the sentence, the
  * machine code, and the raw text behind it. `detail` is for the Event Center, never for a surface
  * line — same split as the backend's `toErrorInfo()`.
  */
@@ -118,14 +118,14 @@ export class MiniAppApiError extends Error {
 }
 
 /**
- * The two error bodies a plugin route actually answers with.
+ * The two error bodies a mini app route actually answers with.
  *
  * The host envelope (`jsonError`) is NESTED — `{ error: { code, message, detail } }`. Several
- * plugin routes hand-roll a FLAT one instead — `{ error, code, detail }`, which is what
+ * mini app routes hand-roll a FLAT one instead — `{ error, code, detail }`, which is what
  * `toErrorInfo()` naturally spreads into. Reading only the nested shape was a miss on every field:
  * a person whose spreadsheet would not open was told "Request failed with status 400" while the
  * sentence naming the reason, and the library's own words, were both on the wire and both thrown
- * away. The documents plugin worked around it with a private copy of this function.
+ * away. The documents mini app worked around it with a private copy of this function.
  *
  * So read BOTH. The flat shape is only trusted when `error` is a string — that is what separates
  * it from the nested one, whose `error` is an object.
@@ -133,7 +133,7 @@ export class MiniAppApiError extends Error {
  * And when a route answers nothing readable at all, the fallback is a SENTENCE, not the status
  * line. `Request failed with status 500` names neither what failed nor what to do; the host's own
  * transport classifies the same statuses this way, and the two must not word one failure
- * differently just because it crossed a plugin boundary.
+ * differently just because it crossed a mini app boundary.
  */
 
 /** One sentence per status class, matching the host transport's table. */
@@ -181,7 +181,7 @@ function readWireError(body: JsonError | null, status: number): WireError {
   }
 }
 
-async function pluginApiError(response: FetchResponse): Promise<MiniAppApiError> {
+async function miniAppApiError(response: FetchResponse): Promise<MiniAppApiError> {
   const body = (await response.json().catch(() => null)) as JsonError | null
   const wire = readWireError(body, response.status)
   return new MiniAppApiError(wire.message, response.status, wire.code, wire.detail, {
@@ -191,13 +191,13 @@ async function pluginApiError(response: FetchResponse): Promise<MiniAppApiError>
 }
 
 export async function unwrapMiniAppResponse<T>(response: FetchResponse): Promise<T> {
-  if (!response.ok) throw await pluginApiError(response)
+  if (!response.ok) throw await miniAppApiError(response)
   return (await response.json()) as T
 }
 
 export async function assertMiniAppResponse(response: FetchResponse): Promise<void> {
   if (response.ok) return
-  throw await pluginApiError(response)
+  throw await miniAppApiError(response)
 }
 
 /**
@@ -214,8 +214,8 @@ export function miniAppErrorDetail(error: unknown): string | undefined {
 
 /**
  * Everything a thrown request failure knows that a {@link Problem} can carry — its code, the raw
- * text, the failed call and an absent dependency — so a plugin's problem builder spreads one value
- * instead of reading four fields (and forgetting the one that links the row to its request).
+ * text, the failed call and an absent dependency — so a mini app's problem builder spreads one
+ * value instead of reading four fields (and forgetting the one that links the row to its request).
  */
 export function miniAppFailureFacts(error: unknown): {
   code?: string

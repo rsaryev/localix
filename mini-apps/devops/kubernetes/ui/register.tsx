@@ -12,7 +12,7 @@ import { KubernetesPodBody, KubernetesResourceBody } from './register/bodies'
  * The body adapters live in `register/bodies.tsx` and URI activation in
  * `register/anchor.ts`, so this file reads as the contribution list it is.
  *
- * The provider intentionally does not own a rail section: the root DevOps plugin
+ * The provider intentionally does not own a rail section: the root DevOps mini app
  * composes it with Docker behind the single DevOps Workspace entry.
  */
 export function registerKubernetesContributions(host: MiniAppUiHost): void {

@@ -9,7 +9,7 @@
  * Settings doesn't re-navigate to a stale target.
  */
 export interface SettingsNavTarget {
-  /** A settings string tab id ('secrets' | 'plugins' | 'models' | 'general' | …). */
+  /** A settings string tab id ('secrets' | 'plugins' | 'mini-apps' | 'models' | 'general' | …). */
   tab: string
   /** Optional `data-settings-anchor` to scroll to + flash once the tab renders. */
   anchor?: string

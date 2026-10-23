@@ -7,13 +7,13 @@ import { basename, dirname, extname, join } from 'node:path'
 
 /**
  * file:// import URL for a drop-in module, cache-busted by mtime so edits to a
- * bundled plugin `.mjs` are picked up WITHOUT a full server
+ * bundled mini app `.mjs` are picked up WITHOUT a full server
  * restart. The ESM loader caches imports by URL forever; appending
  * `?m=<mtimeMs>` keeps an unchanged file on the same (cached) URL — zero prod
  * cost, since bundled drop-ins don't change there — while an edit yields a fresh
  * URL that re-imports. Falls back to the bare URL if the file can't be stat'd.
  *
- * Shared by the external executor and plugin native loaders so hot-reload
+ * Shared by the external executor and mini app native loaders so hot-reload
  * behaves identically across code-bearing extension kinds.
  */
 export function freshModuleUrl(absPath: string): string {
@@ -30,7 +30,7 @@ export function freshModuleUrl(absPath: string): string {
  *
  * The `?m=` cache-buster above does not work under Bun: its module cache is keyed by the file's
  * canonical path and ignores the query, so re-importing an edited `index.bundle.mjs` returned the
- * first version for the life of the process — a bundled plugin rebuilt in development kept its
+ * first version for the life of the process — a bundled mini app rebuilt in development kept its
  * old backend until the API restarted. A distinct PATH is a distinct module, so the edited file is
  * copied beside itself under a unique name: beside, because a split bundle imports its chunks by
  * relative path and they must still resolve. Only an edit after a first load pays for a copy; an
@@ -173,7 +173,7 @@ export async function importFreshModule(absPath: string): Promise<unknown> {
   if (state.generation > 0) {
     // Bun caches a rejected file import by canonical path even when its query
     // changes. Re-bundle the repaired entry in memory and import that distinct
-    // module identity. Bundling also preserves provider/plugin relative imports.
+    // module identity. Bundling also preserves provider/mini app relative imports.
     let recoveredArtifact = state.recoveredArtifact
     if (!recoveredArtifact) {
       const built = await Bun.build({
@@ -225,7 +225,7 @@ export async function importFreshModule(absPath: string): Promise<unknown> {
     // A synchronized split bundle can be valid on disk yet lose a Bun import race while its
     // directory generation changes. Bun reports that loader failure as a positioned
     // `BuildMessage` and caches the rejected URL. Recover in THIS caller: waiting for another
-    // plugin consumer made startup emit a false warning even though a later host loaded the same
+    // mini app consumer made startup emit a false warning even though a later host loaded the same
     // backend successfully. A genuine syntax error still rejects; runtime exceptions are never
     // retried inside the same call (a later caller may still retry by the documented generation
     // recovery path above).

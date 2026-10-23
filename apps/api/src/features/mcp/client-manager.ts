@@ -117,7 +117,7 @@ export function createMcpClientManager(options: McpClientManagerOptions = {}) {
    *
    * It exists so a count shown before a session's first run can still be honest. The failure it
    * exists to prevent is the one every comparable feature has shipped — "says 128 but the picker
-   * shows 118": a UI counting only builtins + plugin tools while the run also
+   * shows 118": a UI counting only builtins + mini app tools while the run also
    * sends N MCP tools.
    *
    * The names are produced by the SAME three functions `gather` uses — `filterToolDefs`,

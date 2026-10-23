@@ -20,9 +20,9 @@
  * mojibake body into a failed send.
  *
  * So: decode what we can, and for what we cannot, fall back to UTF-8 and SAY SO. A body we quietly
- * garbled is the failure this plugin keeps finding — plausible, silent, and reasoned about as if it
- * were the server's fault. A body we garbled with a line saying which charset we could not honour is
- * a fact the reader can act on.
+ * garbled is the failure this mini app keeps finding — plausible, silent, and reasoned about as if
+ * it were the server's fault. A body we garbled with a line saying which charset we could not
+ * honour is a fact the reader can act on.
  */
 
 /** `text/html; charset=ISO-8859-1` → `iso-8859-1`. Null when the header names none. */

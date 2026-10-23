@@ -12,10 +12,10 @@ export interface ReadableResult {
 }
 
 /**
- * Shared utilities handed to every plugin as `ctx.helpers` — the patterns every
- * native plugin used to copy-paste (config coercion, the standard error-result
- * shape, the abort+timeout controller dance, JSON state files). A plugin may
- * still inline its own copies (older plugins keep working), but new code should
+ * Shared utilities handed to every mini app as `ctx.helpers` — the patterns every
+ * native mini app used to copy-paste (config coercion, the standard error-result
+ * shape, the abort+timeout controller dance, JSON state files). A mini app may
+ * still inline its own copies (older mini apps keep working), but new code should
  * reach for these. The host (`apps/api`) implements this interface.
  */
 export interface MiniAppHelpers {

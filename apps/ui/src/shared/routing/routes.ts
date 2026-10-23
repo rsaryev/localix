@@ -6,7 +6,7 @@
  * pattern change never drifts from the strings scattered across the UI.
  *
  * URL-derived types (`SectionId`) live here too: they describe the address bar,
- * so the route surface owns them. Settings/Stats/plugin views are inspector
+ * so the route surface owns them. Settings/Stats/mini app views are inspector
  * panels (no URL) — see the inspector store. `SettingsTabId` is the panel's
  * internal sub-tab selector and lives here as a shared type.
  */
@@ -109,7 +109,7 @@ export function isSectionId(value: string | undefined): value is SectionId {
   // Core rail sections, plus any id contributed through the open rail-section
   // registry (bundled subsystems register themselves there).
   if (value === 'files' || value === 'jobs') return true
-  // Installed third-party plugin views are NOT rail sections — they open as
+  // Installed third-party mini app views are NOT rail sections — they open as
   // work-item tabs, addressed by their own location uri, not a section id.
   return railSectionRegistry.list().some((s) => s.id === value)
 }

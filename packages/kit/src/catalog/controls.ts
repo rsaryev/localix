@@ -158,7 +158,7 @@ export const CONTROLS: readonly KitCatalogEntry[] = [
     provider: 'kit',
     exports: ['Switch'],
     summary: 'The native on/off switch for a setting that applies at once.',
-    use: 'Enabling a feature, a rule, a plugin option.',
+    use: 'Enabling a feature, a rule, a mini app option.',
     not: 'A filter chip is TogglePill; a form choice is Checkbox.',
   },
   {

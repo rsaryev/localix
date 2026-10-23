@@ -53,7 +53,7 @@ export function createUiAnchorRegistry(): UiAnchorRegistry {
     resolve(uri) {
       const namespace = localixUriNamespace(uri)
       const contribution = namespace ? byNamespace.get(namespace) : undefined
-      return contribution && isMiniAppContributionEnabled(contribution.pluginName)
+      return contribution && isMiniAppContributionEnabled(contribution.miniAppName)
         ? contribution.resolve(uri)
         : null
     },
@@ -64,7 +64,7 @@ export function createUiAnchorRegistry(): UiAnchorRegistry {
           )
         : Array.from(byId.values())
       const rows = contributions.flatMap((contribution) =>
-        isMiniAppContributionEnabled(contribution.pluginName)
+        isMiniAppContributionEnabled(contribution.miniAppName)
           ? (contribution.listChildren?.(parentUri, query) ?? [])
           : [],
       )
@@ -77,13 +77,13 @@ export function createUiAnchorRegistry(): UiAnchorRegistry {
     },
     owner(namespace) {
       const contribution = byNamespace.get(namespace.toLowerCase())
-      return contribution && isMiniAppContributionEnabled(contribution.pluginName)
+      return contribution && isMiniAppContributionEnabled(contribution.miniAppName)
         ? contribution
         : undefined
     },
     removeOwner(owner) {
-      for (const [id, entry] of byId) if (entry.pluginName === owner) byId.delete(id)
-      for (const [ns, entry] of byNamespace) if (entry.pluginName === owner) byNamespace.delete(ns)
+      for (const [id, entry] of byId) if (entry.miniAppName === owner) byId.delete(id)
+      for (const [ns, entry] of byNamespace) if (entry.miniAppName === owner) byNamespace.delete(ns)
     },
   }
 }

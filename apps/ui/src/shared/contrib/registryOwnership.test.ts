@@ -14,12 +14,12 @@ import {
 
 const CoreComponent = () => null
 const CoreIcon = () => null
-const PluginComponent = () => null
-const PluginIcon = () => null
+const MiniAppComponent = () => null
+const MiniAppIcon = () => null
 
-test('a plugin cannot submit unowned global UI identities or shadow shared icon keys', () => {
-  const pluginName = 'registry-collision-fixture'
-  const host = miniAppUiHostFor(pluginName)
+test('a mini app cannot submit unowned global UI identities or shadow shared icon keys', () => {
+  const miniAppName = 'registry-collision-fixture'
+  const host = miniAppUiHostFor(miniAppName)
   const warn = spyOn(console, 'warn').mockImplementation(() => {})
 
   try {
@@ -58,40 +58,40 @@ test('a plugin cannot submit unowned global UI identities or shadow shared icon 
     expect(() =>
       host.workItems.register({
         kind: 'core-owned-work-item-fixture',
-        Component: PluginComponent,
-        Icon: PluginIcon,
+        Component: MiniAppComponent,
+        Icon: MiniAppIcon,
       }),
     ).toThrow('must be namespaced by owner "registry-collision-fixture:"')
     expect(() =>
       host.railSections.register({
         id: 'core-owned-section-fixture',
-        title: 'Plugin section',
-        Icon: PluginIcon,
-        Sidebar: PluginComponent,
+        title: 'Mini app section',
+        Icon: MiniAppIcon,
+        Sidebar: MiniAppComponent,
       }),
     ).toThrow('must be namespaced by owner "registry-collision-fixture:"')
     expect(() =>
       host.railViewlets.register({
         kind: 'core-owned-viewlet-fixture',
-        title: 'Plugin viewlet',
-        label: 'Plugin viewlet',
-        Icon: PluginIcon,
+        title: 'Mini app viewlet',
+        label: 'Mini app viewlet',
+        Icon: MiniAppIcon,
         defaultArea: 'overflow',
       }),
     ).toThrow('must be namespaced by owner "registry-collision-fixture:"')
     expect(() =>
       host.search.register({
         id: 'core-owned-search-fixture',
-        icons: { plugin: PluginIcon },
+        icons: { miniApp: MiniAppIcon },
       }),
     ).toThrow('must be namespaced by owner "registry-collision-fixture:"')
-    host.resourceRefIcons.register({ 'core-owned-icon-fixture': PluginIcon })
+    host.resourceRefIcons.register({ 'core-owned-icon-fixture': MiniAppIcon })
     expect(() =>
       host.fileEditors.register({
         id: 'core-owned-editor-fixture',
-        label: 'Plugin editor',
+        label: 'Mini app editor',
         match: (path) => path.endsWith('.registry-ownership-fixture'),
-        Component: PluginComponent,
+        Component: MiniAppComponent,
       }),
     ).toThrow('must be namespaced by owner "registry-collision-fixture:"')
     expect(() => host.anchors.register({ id: 'core-owned-anchor-fixture' } as never)).toThrow(
@@ -106,8 +106,8 @@ test('a plugin cannot submit unowned global UI identities or shadow shared icon 
 
     host.workItems.register({
       kind: 'registry-collision-fixture:owned-kind',
-      Component: PluginComponent,
-      Icon: PluginIcon,
+      Component: MiniAppComponent,
+      Icon: MiniAppIcon,
     })
     expect(() =>
       assertMiniAppOwnedWorkItemInstance({
@@ -126,7 +126,7 @@ test('a plugin cannot submit unowned global UI identities or shadow shared icon 
       }),
     ).not.toThrow()
 
-    setEnabledMiniAppNames(new Set([pluginName]))
+    setEnabledMiniAppNames(new Set([miniAppName]))
     expect(workItemKindRegistry.get('core-owned-work-item-fixture')?.Component).toBe(CoreComponent)
     expect(railSectionRegistry.get('core-owned-section-fixture')?.Sidebar).toBe(CoreComponent)
     expect(railViewletRegistry.get('core-owned-viewlet-fixture')?.Icon).toBe(CoreIcon)

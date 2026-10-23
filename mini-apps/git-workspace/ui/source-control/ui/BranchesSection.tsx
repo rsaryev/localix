@@ -34,7 +34,7 @@ const REMOTE_PREVIEW = 5
  * titlebar item offers exactly that — but three of the four operations come with a text field, and
  * a status menu is data: `MenuEntry` has a label and an `onSelect`, and no way to ask for a
  * string. So creating, renaming and deleting moved to the panel. The seam's own rule, applied: a
- * plugin that needs arbitrary graphics gets a panel, not a strip of chrome.
+ * mini app that needs arbitrary graphics gets a panel, not a strip of chrome.
  *
  * The popover version carried ~80 lines of roving-focus code — a selectable-item query, an
  * arrow-key mover, a restore-focus ref — because a popover is a focus trap that has to implement

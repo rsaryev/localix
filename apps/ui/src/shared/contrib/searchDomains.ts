@@ -43,15 +43,15 @@ export function unregisterSearchDomain(contribution: SearchDomainContribution): 
   if (registry.get(contribution.id) === contribution) registry.delete(contribution.id)
 }
 
-/** Drop every domain `owner` registered (a plugin reload or unload). */
+/** Drop every domain `owner` registered (a mini app reload or unload). */
 export function removeSearchDomainsOf(owner: string): void {
-  for (const [id, domain] of registry) if (domain.pluginName === owner) registry.delete(id)
+  for (const [id, domain] of registry) if (domain.miniAppName === owner) registry.delete(id)
 }
 
 /** All registered domains, in insertion order. */
 export function searchDomains(): SearchDomainContribution[] {
   return Array.from(registry.values()).filter((domain) =>
-    isMiniAppContributionEnabled(domain.pluginName),
+    isMiniAppContributionEnabled(domain.miniAppName),
   )
 }
 
@@ -59,7 +59,7 @@ export function searchDomains(): SearchDomainContribution[] {
 export function searchDomainScopes(): Array<{ id: string; scope: SearchDomainScope }> {
   const out: Array<{ id: string; scope: SearchDomainScope }> = []
   for (const domain of registry.values()) {
-    if (!isMiniAppContributionEnabled(domain.pluginName)) continue
+    if (!isMiniAppContributionEnabled(domain.miniAppName)) continue
     if (domain.scope) out.push({ id: domain.id, scope: domain.scope })
   }
   return out
@@ -68,7 +68,7 @@ export function searchDomainScopes(): Array<{ id: string; scope: SearchDomainSco
 /** Resolve a contributed glyph key → its icon (first domain that declares it). */
 export function searchDomainIcon(key: string): IconComponent | undefined {
   for (const domain of registry.values()) {
-    if (!isMiniAppContributionEnabled(domain.pluginName)) continue
+    if (!isMiniAppContributionEnabled(domain.miniAppName)) continue
     const icon = domain.icons?.[key]
     if (icon) return icon
   }

@@ -14,7 +14,7 @@
  *  - The saved state is a full, canonical placement: after any move it lists every
  *    currently-known entry with its area, in display order. Stale ids (an entry
  *    that no longer exists) are dropped on the next canonicalize; brand-new entries
- *    (a freshly installed plugin panel) are appended to their DEFAULT area in def
+ *    (a freshly installed mini app panel) are appended to their DEFAULT area in def
  *    order — so the rail degrades gracefully as the available set changes.
  */
 
@@ -77,8 +77,8 @@ export function resolveRailAreas(
     placed.add(entry.id)
     const restore =
       state?.legacyMiniAppPins &&
-      ((saved.plugin && entry.area === 'overflow') ||
-        (saved.tool && !saved.plugin && entry.area === 'bottom'))
+      ((saved.miniApp && entry.area === 'overflow') ||
+        (saved.tool && !saved.miniApp && entry.area === 'bottom'))
     const area = restore ? 'bar' : entry.area
     target[saved.placeable === false ? 'overflow' : area].push(entry.id)
   }

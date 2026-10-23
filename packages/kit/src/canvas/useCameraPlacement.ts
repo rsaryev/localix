@@ -17,7 +17,7 @@ import type { CanvasSize } from './camera'
  * changes or the board unmounts.
  *
  * Hiding has a ceiling, `REVEAL_MS`: a surface whose size never reaches the store (the agent's
- * off-screen capture of a plugin tab) left the board hidden for good, a black pane with nothing
+ * off-screen capture of a mini app tab) left the board hidden for good, a black pane with nothing
  * wrong in the console. After the ceiling the board shows at whatever camera it has, and it is
  * still placed the moment it can be.
  */

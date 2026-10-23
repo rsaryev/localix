@@ -19,7 +19,7 @@
  * is genuinely different in each subsystem (a prototype-chain walk for ccxt, numeric
  * SQLSTATEs for databases, stderr substrings for the CLIs).
  *
- * WHY IT LIVES HERE. A plugin must not import another plugin, so the owner cannot sit in
+ * WHY IT LIVES HERE. A mini app must not import another mini app, so the owner cannot sit in
  * any one of the four. `features/ext/` is already the host-side home for exactly this
  * shape of primitive (`enable.ts`, `catalog.ts`, `install-tree.ts`, `fs-discovery.ts`).
  *

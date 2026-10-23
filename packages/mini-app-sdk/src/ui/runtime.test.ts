@@ -110,7 +110,7 @@ function bind(overrides: Partial<MiniAppUiRuntime> = {}) {
   return runtime
 }
 
-describe('plugin UI runtime capabilities', () => {
+describe('mini app UI runtime capabilities', () => {
   test('delegates browser files as host-native bindings without exposing host storage', async () => {
     const file = new File(['hello'], 'notes.md', { type: 'text/markdown' })
     const binding = {
@@ -186,12 +186,12 @@ describe('plugin UI runtime capabilities', () => {
     expect(opened).toEqual([['item-1', 'session-1']])
     expect(inserts).toEqual([['Ask about this', 'session-1']])
     expect(terminals).toEqual([['terminal-1', 'session-1']])
-    // There is no "active session" to read: a plugin acts for the chat it belongs to.
+    // There is no "active session" to read: a mini app acts for the chat it belongs to.
     expect('activeId' in miniAppSessions).toBe(false)
     expect('activeScope' in miniAppWorkspace.getSnapshot()).toBe(false)
   })
 
-  test('rejects downloads outside plugin RPC routes', () => {
+  test('rejects downloads outside mini app RPC routes', () => {
     bind()
     expect(() => miniAppFiles.download('https://example.com/file', 'file.txt')).toThrow()
     expect(() => miniAppFiles.download('/internal/file', 'file.txt')).toThrow()
@@ -233,7 +233,7 @@ describe('plugin UI runtime capabilities', () => {
           target: {
             kind: 'resource',
             token: '@resource:localix://resource/example/item/42',
-            label: 'Plugin tab',
+            label: 'Mini app tab',
             uri: 'localix://resource/example/item/42',
             attributes: { providerView: 'timeline' },
           },
@@ -303,7 +303,7 @@ describe('plugin UI runtime capabilities', () => {
     expect(result.nodes[0]?.uri).toBe('localix://resource/example/query')
   })
 
-  test('reserves core realtime tags while delegating plugin frames', () => {
+  test('reserves core realtime tags while delegating mini app frames', () => {
     const tags: string[] = []
     bind({
       realtime: {

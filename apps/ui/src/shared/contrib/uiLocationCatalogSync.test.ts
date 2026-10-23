@@ -174,29 +174,29 @@ describe('UI location catalog frontend sync', () => {
     })
     const fetch = spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ catalogId: 'ui1_before_plugin', accepted: true }), {
+        new Response(JSON.stringify({ catalogId: 'ui1_before_mini_app', accepted: true }), {
           status: 200,
           headers: { 'content-type': 'application/json' },
         }),
       )
       .mockImplementationOnce((async () => refreshResponse) as unknown as typeof globalThis.fetch)
     const { registerUiLocation, unregisterUiLocation } = await import('./uiLocations')
-    const locationId = 'test.catalog-refresh.plugin-settings'
+    const locationId = 'test.catalog-refresh.mini-app-settings'
     const stop = startUiLocationCatalogSync('project-refresh', Promise.resolve())
 
     try {
       expect(await readyWorkbenchToolSurface(1_000)).toEqual({
         capabilities: ['workbench-ui'],
-        catalogs: { 'workbench-ui': 'ui1_before_plugin' },
+        catalogs: { 'workbench-ui': 'ui1_before_mini_app' },
       })
 
       expect(
         registerUiLocation({
           id: locationId,
           uri: 'localix://ui/settings/test-catalog-refresh',
-          title: 'Fresh plugin settings',
-          description: 'Open settings contributed by a newly enabled plugin.',
-          agent: { description: 'Open settings contributed by a newly enabled plugin.' },
+          title: 'Fresh mini app settings',
+          description: 'Open settings contributed by a newly enabled mini app.',
+          agent: { description: 'Open settings contributed by a newly enabled mini app.' },
           effect: 'read',
           surface: 'settings',
           exposure: {},
@@ -215,14 +215,14 @@ describe('UI location catalog frontend sync', () => {
       expect(settled).toBe(false)
 
       finishRefresh(
-        new Response(JSON.stringify({ catalogId: 'ui1_after_plugin', accepted: true }), {
+        new Response(JSON.stringify({ catalogId: 'ui1_after_mini_app', accepted: true }), {
           status: 200,
           headers: { 'content-type': 'application/json' },
         }),
       )
       expect(await surfacePromise).toEqual({
         capabilities: ['workbench-ui'],
-        catalogs: { 'workbench-ui': 'ui1_after_plugin' },
+        catalogs: { 'workbench-ui': 'ui1_after_mini_app' },
       })
     } finally {
       stop()

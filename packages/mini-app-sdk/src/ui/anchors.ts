@@ -36,7 +36,7 @@ export interface UiAnchorWorkItem {
  *
  * Unlike `work-item`, this target can never construct a tab or carry its opaque
  * payload. It is the safe address for payload-bound views such as diffs,
- * tool HTML, live mutation streams, document tables, and plugin-owned editors.
+ * tool HTML, live mutation streams, document tables, and mini-app-owned editors.
  */
 export interface UiAnchorWorkItemFocus {
   kind: 'work-item-focus'
@@ -109,8 +109,8 @@ export type UiAnchorInspector =
        *
        * The host stays agnostic about what this launches: it is a command string supplied by
        * whoever registered the location, exactly as the preview panel already supplies a dev-server
-       * command. That is what lets a plugin contribute "open a terminal running X" without the host
-       * learning a vocabulary of X's.
+       * command. That is what lets a mini app contribute "open a terminal running X" without the
+       * host learning a vocabulary of X's.
        *
        * Reaching this field means the location declared `effect: 'write'`, which the registry binds
        * to `surface: 'action'`, refuses to expose to the agent, and resolves only for a caller that
@@ -204,7 +204,7 @@ function hasNavigationPresentation(value: Record<string, unknown>): boolean {
   )
 }
 
-/** Runtime boundary guard for a user-driven serialized tool/plugin destination. */
+/** Runtime boundary guard for a user-driven serialized tool/mini app destination. */
 export function isUiNavigationAction(value: unknown): value is UiNavigationAction {
   if (!value || typeof value !== 'object') return false
   const action = value as Record<string, unknown>

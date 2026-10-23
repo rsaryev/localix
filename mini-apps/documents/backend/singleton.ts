@@ -1,5 +1,5 @@
 /**
- * Process-wide documents/table services for the bundled documents plugin.
+ * Process-wide documents/table services for the bundled documents mini app.
  *
  * `register()` runs on every load (boot-time backend load AND per-run tool load),
  * but the extraction cache, table store and their in-memory state must be one
@@ -32,7 +32,7 @@ export interface DocumentsServices {
   hostFiles?: NonNullable<MiniAppHostServices['files']>
 }
 
-const KEY = Symbol.for('localix.plugin.documents.services')
+const KEY = Symbol.for('localix.mini-app.documents.services')
 
 type Holder = { services?: DocumentsServices }
 function holder(): Holder {

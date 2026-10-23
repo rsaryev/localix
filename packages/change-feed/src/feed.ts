@@ -1,11 +1,11 @@
 /**
  * A change feed's consuming side: the consumers of one stream, each reading at its own cursor,
  * and the retention of what they all have read. One mechanism, many instances — the core's
- * registry is one stream, a plugin's is another.
+ * registry is one stream, a mini app's is another.
  *
  * Producers do not hold a feed: they call `recordChanges` (`record.ts`) in their own transaction
  * and the stream's signal wakes the feed. `record` and `publish` here are the same call for a
- * holder of the feed (tests, a plugin host).
+ * holder of the feed (tests, a mini app host).
  */
 import type { Kysely } from 'kysely'
 import { startConsumer, type ChangeConsumer, type ConsumerTimers } from './consumer'
@@ -28,7 +28,7 @@ const RETENTION_MS = 24 * 60 * 60_000
 const ABANDONED_CURSOR_MS = 30 * 24 * 60 * 60_000
 
 interface FeedDeps<R extends RefSchemas, C extends Cascades<R>> {
-  /** `core`, or `plugin:<name>` for a plugin's own registry. */
+  /** `core`, or `mini-app:<name>` for a mini app's own registry. */
   stream: string
   registry: EntityRegistry<R, C>
   /** The wait before retry number `attempt` (0-based) of a failed delivery. */
@@ -98,7 +98,7 @@ function feedOver<R extends RefSchemas, C extends Cascades<R>>(
         log,
         timers: deps.timers,
       })
-      // A stopped consumer leaves, so its name can be subscribed again (a plugin reloaded).
+      // A stopped consumer leaves, so its name can be subscribed again (a mini app reloaded).
       const stop = () => consumer.stop()
       const handle: ChangeConsumer = {
         ...consumer,

@@ -23,7 +23,7 @@ export function createTerminalRoutes(service: TerminalService, work: WorkRegistr
       const input = c.req.valid('json')
       const userId = c.get('userId')
       const session = await service.spawnCommand(userId, input)
-      // A server started from the preview, a plugin, or by hand is the session's background
+      // A server started from the preview, a mini app, or by hand is the session's background
       // work as much as an agent's job is — without a record the composer, which lists work,
       // would not show it. Agent bash jobs are recorded by the runner; the agent's interactive
       // panes by the terminal port, through this same `recordTerminalWork`.

@@ -13,7 +13,7 @@ import {
  * a primitive is only as good as the way the product composes it: a palette without its list, a
  * popover with a header and no scrolling body, a drawer override that silently loses to the cap.
  * The kit never reads the host, so the same detectors — with their positive controls in the kit —
- * run over the app and the plugins here.
+ * run over the app and the mini apps here.
  */
 const REPO_ROOT = new URL('../../../../../', import.meta.url).pathname
 const hostSources = () => tsxSourcesUnder(REPO_ROOT, ['apps/ui/src', 'mini-apps'])

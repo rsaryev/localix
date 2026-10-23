@@ -2,7 +2,7 @@
   "name": "@localix-mini-app/documents",
   "version": "1.0.0",
   "private": true,
-  "description": "Dependencies of the bundled `documents` workbench plugin. Heavy office libs live HERE (not in apps/api) — the staging build pre-bundles them into backend/index.bundle.mjs, so shipped plugins stay self-contained. turndown is deliberately duplicated with apps/api (the web readability tool keeps its own copy).",
+  "description": "Dependencies of the bundled `documents` workbench mini app. Heavy office libs live HERE (not in apps/api) — the staging build pre-bundles them into backend/index.bundle.mjs, so shipped mini apps stay self-contained. turndown is deliberately duplicated with apps/api (the web readability tool keeps its own copy).",
   "license": "MIT",
   "type": "module",
   "scripts": {

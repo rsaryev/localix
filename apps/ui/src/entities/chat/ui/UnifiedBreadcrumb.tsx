@@ -43,8 +43,8 @@ const CURRENT_CRUMB = 'flex min-w-0 shrink-0 items-center'
  * Navigation flows through the URL. Modal switchers remain available through each
  * dropdown's "Search all…" footer.
  *
- * `app`: the window is a plugin app (`shared/lib/pluginApp.ts`). The app's name is the root of
- * the path, not a project switch, and the conversation segment lists the app's project, which is
+ * `app`: the window is a standalone app (`shared/lib/standaloneApp.ts`). The app's name is the root
+ * of the path, not a project switch, and the conversation segment lists the app's project, which is
  * the app's history, wherever the person has gone.
  */
 export function UnifiedBreadcrumb({

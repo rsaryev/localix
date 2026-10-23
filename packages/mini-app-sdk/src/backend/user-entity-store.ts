@@ -2,7 +2,7 @@
  * Per-user, file-backed store for a list of identified entities — the ONE owner of the
  * cache + write-lock + atomic-commit discipline that saved-connection stores need.
  *
- * WHY THIS EXISTS. Two workbench plugins each kept their own copy of this file, ~95%
+ * WHY THIS EXISTS. Two workbench mini apps each kept their own copy of this file, ~95%
  * identical line for line, and one copy's header said so out loud: it mirrors
  * "the same atomic-write + per-user write-lock + cache discipline, WHICH IS WHAT CLOSED
  * ITS MID-WRITE READ RACE". That is a copy of a bug FIX, documented as a copy. The race
@@ -10,10 +10,10 @@
  * reader observed a half-written file) is subtle enough that nobody would re-derive it
  * on the third copy — they would just re-introduce it.
  *
- * Lives in the plugin SDK (not `apps/api`) because it is dependency-free reusable
- * machinery a bundled plugin backend compiles against — a stateless factory, not a
+ * Lives in the mini app SDK (not `apps/api`) because it is dependency-free reusable
+ * machinery a bundled mini app backend compiles against — a stateless factory, not a
  * host singleton: each call owns its own cache/lock and its own directory, so two
- * plugins' stores never share state. The host owns no instance of it.
+ * mini apps' stores never share state. The host owns no instance of it.
  *
  * THE FOUR PROPERTIES, which are the whole point:
  *

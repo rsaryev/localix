@@ -15,8 +15,8 @@ afterAll(async () => {
 const entry = (id: string, onClick: () => void, active = false): RailEntry => ({
   id,
   label: id,
-  plugin: true,
-  pluginName: id,
+  miniApp: true,
+  miniAppName: id,
   active,
   icon: <span />,
   onClick,

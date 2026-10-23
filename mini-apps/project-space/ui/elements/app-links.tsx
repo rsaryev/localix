@@ -47,7 +47,7 @@ export function linkOf(props: RefProps): MessageContextBindingDraft {
   return {
     kind: 'context',
     source: 'drag',
-    ...(props.plugin ? { plugin: props.plugin } : {}),
+    ...(props.miniApp ? { miniApp: props.miniApp } : {}),
     target: {
       kind: props.kind as MessageContextBindingDraft['target']['kind'],
       token: props.token,

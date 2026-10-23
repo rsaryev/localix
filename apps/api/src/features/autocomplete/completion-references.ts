@@ -6,7 +6,7 @@
  * `{id, kind, uri}` wire shape, and chat ghost text expanded a narrower `ContextRef` through the
  * host expander with no Fabric policy at all. A completion reference is now the binding-target
  * shape everywhere, and resolution is Fabric's, so both destinations read a linked file, an open
- * tab and a plugin resource under the same scope, containment and secret rules as a sent message.
+ * tab and a mini app resource under the same scope, containment and secret rules as a sent message.
  */
 import { createHash } from 'node:crypto'
 

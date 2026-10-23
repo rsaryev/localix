@@ -36,12 +36,12 @@ export function createRegistriesPhase({
 }: RegistriesPhaseInput): RegistriesPhase {
   // Central secrets store — write-only values; `secretsStore` (the resolver) is kept for
   // server-internal resolution, never routed. Routes get list/set/delete only. It is fed
-  // to backend plugins as the generic
+  // to backend mini apps as the generic
   // `ctx.host.resolveSecret` seam so they resolve `${secret:KEY}` tokens without importing
   // this subsystem.
-  // OPEN subsystem registry — any backend plugin contributes a `BackendSubsystem` (route mount +
-  // resource/search providers + shutdown) via its plugin `register()` instead of core
-  // hardcoding it. Populated LIVE by the plugin backend host (boot + every hot
+  // OPEN subsystem registry — any backend mini app contributes a `BackendSubsystem` (route mount +
+  // resource/search providers + shutdown) via its mini app `register()` instead of core
+  // hardcoding it. Populated LIVE by the mini app backend host (boot + every hot
   // enable/disable); read by the shutdown handler and diagnostics.
   const subsystemRegistry = createSubsystemRegistry()
   // Destination-aware context contributions are registered independently from
@@ -60,24 +60,24 @@ export function createRegistriesPhase({
     sensitivity: 'project',
   })
   const contextManager = createContextManager(contextProviderRegistry)
-  // Plugin text fields with ghost-text completion — populated LIVE by the backend host, read per
-  // completion call, so enabling a plugin gives its fields completion without a restart.
+  // Mini app text fields with ghost-text completion — populated LIVE by the backend host, read per
+  // completion call, so enabling a mini app gives its fields completion without a restart.
   const textInputSurfaceRegistry = createTextInputSurfaceRegistry()
-  // GENERIC live-stream frame registry — a backend subsystem (bundled plugin)
+  // GENERIC live-stream frame registry — a backend subsystem (bundled mini app)
   // contributes `wsFrames` here (a subscribe/unsubscribe command pair + tagged frame
   // stream); the realtime socket (ws.ts) consults it for otherwise-unrecognized
   // commands.
   const wsFrameRegistry = createWsFrameRegistry()
-  // Typed plugin→core capability seam from the public SDK: a subsystem may
+  // Typed mini app→core capability seam from the public SDK: a subsystem may
   // contribute narrow ports core consumes (document extraction, table save, …).
   // First-wins per key; bootstrap resolves the values once and threads them into
   // deps as plain optional ports — core never sees the registry at run time.
   const capabilityRegistry = createCapabilityRegistry((msg) =>
-    logger.warn({ event: 'plugin_capability.warn', msg }),
+    logger.warn({ event: 'mini_app_capability.warn', msg }),
   )
   // Resource-ref provider registry — backs the `@resource:` context-ref kind. Bundled
   // workbench providers (a subsystem tree under `localix://resource/<provider>`) are wired by
-  // the plugin backend host below; adding a provider lights up a whole new
+  // the mini app backend host below; adding a provider lights up a whole new
   // referenceable tree with no core changes.
   const resourceRefsRegistry = createResourceProviderRegistry()
   const capabilityResourceProvider = createCapabilityResourceProvider()

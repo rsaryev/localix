@@ -5,14 +5,14 @@ import type { WakeDelivery } from '../features/triggers/delivery'
 import type { PluginMonitorHost } from '../features/plugins/monitor-host'
 
 /**
- * The LATE-BOUND references a plugin host reads through.
+ * The LATE-BOUND references a mini app host reads through.
  *
- * Everything here is filled in after the plugin-host phase has already run — chat, projects and
+ * Everything here is filled in after the mini-app-host phase has already run — chat, projects and
  * the capability publisher are all created later, and some are replaced on a reload. A host that
  * captured a service at construction would keep calling a dead one; reading through this table is
  * what lets the wiring order stay honest instead of being worked around.
  *
- * Its own module because it is a CONTRACT between phases, while `plugin-hosts.ts` is composition:
+ * Its own module because it is a CONTRACT between phases, while `mini-app-hosts.ts` is composition:
  * every phase that fulfils a ref imports this, and none of them wants the host builder.
  */
 export interface MiniAppHostRefs {
@@ -28,7 +28,7 @@ export interface MiniAppHostRefs {
     userId: string,
   ) => Promise<readonly { id: string; name: string; workingDirectory: string | null }[]>
   chatService?: ReturnType<typeof createChatService>
-  /** The agent registry's listing, for the plugin `agents` directory. */
+  /** The agent registry's listing, for the mini app `agents` directory. */
   listAgents?: ReturnType<typeof createAgentsService>['listAgents']
   getHuman?: ReturnType<typeof createAgentsService>['getHuman']
   /** The one wake delivery (`features/triggers/delivery`), bound once chat exists. */

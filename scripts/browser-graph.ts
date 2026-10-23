@@ -23,7 +23,7 @@ const WORKSPACE_PACKAGES: Record<string, string> = {
 
 /**
  * Where a `@localixai/kit/<id>` the package does not export resolves instead: a module the host
- * still lends, exactly as the plugins' `tsconfig` paths fall back to it.
+ * still lends, exactly as the mini apps' `tsconfig` paths fall back to it.
  */
 const KIT_LENT_DIR = resolve(repoRoot, 'apps/ui/src/app/kit')
 
@@ -32,7 +32,7 @@ const KIT_LENT_DIR = resolve(repoRoot, 'apps/ui/src/app/kit')
  *
  * Vite's `import.meta.glob` calls are entries too — the feature contributions and the UI
  * surface manifest — and a `node:` import behind one of those is in the bundle exactly as
- * much as one behind `main.tsx`. Every bundled plugin's `ui/register` is the entry of its
+ * much as one behind `main.tsx`. Every bundled mini app's `ui/register` is the entry of its
  * own browser artifact (`apps/api/src/features/mini-apps/authoring/ui-build.ts`), so it is walked
  * the same way.
  */

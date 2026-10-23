@@ -18,7 +18,7 @@ type SwitchProps = Omit<
 /**
  * Native, form-capable on/off switch. Keep choice chips on `TogglePill` and
  * checkbox-style multi-selection on `Checkbox`; this primitive owns immediate
- * boolean settings across the host and plugin UI.
+ * boolean settings across the host and mini app UI.
  */
 const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
   ({ checked, className, size = 'md', ...props }, ref) => {

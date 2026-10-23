@@ -30,7 +30,7 @@ export interface QueuePanelItem {
   text: string
   /** Backend queue kind; internal wakes cannot be promoted as user input. */
   queueKind?: SessionQueueItem['kind']
-  /** Backend items only: provenance of the queued wake (loop / plugin / …). */
+  /** Backend items only: provenance of the queued wake (loop / mini app / …). */
   wakeSource?: WakeSource
   /** Backend delivery boundary; next-tool is live steering, held a report awaiting siblings. */
   delivery?: SessionQueueItem['delivery']
@@ -70,7 +70,7 @@ export function QueueItemRow({
   const [confirmDelete, setConfirmDelete] = useState(false)
   const deletesInternalWake = item.queueKind === 'wake'
   // A participant's turn is cancelled in one click: it holds no text of anyone's to lose, and
-  // the chip strip above shows who is still in line. Other wakes (loops, plugins) confirm.
+  // the chip strip above shows who is still in line. Other wakes (loops, mini apps) confirm.
   const confirmsDelete = deletesInternalWake && !item.agent
   const capabilities = item.queueKind ? queueItemCapabilities(item.queueKind) : null
   const removeLabel = item.agent

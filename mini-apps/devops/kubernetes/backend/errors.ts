@@ -14,9 +14,9 @@
 // `/typed-error`, not `/backend`: `resource-nodes.ts` imports `mapKubeError` from here, and the
 // UI's `resourceLink.ts` imports the URI builders from THAT — so this file is browser-reachable.
 // The `./backend` barrel re-exports `net-safety`, which touches `node:dns`, and Vite externalizes
-// that to a stub which throws on first property access. The whole DevOps plugin then failed to
+// that to a stub which throws on first property access. The whole DevOps mini app then failed to
 // register its UI with "Module node:dns has been externalized for browser compatibility", and
-// because the failure is caught per-plugin it surfaced only as a missing workspace.
+// because the failure is caught per-mini-app it surfaced only as a missing workspace.
 import { defineTypedError, type TypedDomainError } from '@localixai/mini-app-sdk/typed-error'
 import { isMissingExecutable } from '@localixai/mini-app-sdk/prerequisite'
 import { credentialHelperPrerequisite } from './local-cluster'
@@ -233,7 +233,7 @@ const SYSTEM_CODES: Record<string, KubeErrorCode> = {
 /**
  * The typed signals a failure already carries — the API server's `Status.reason`, or the system
  * error code on the error or its cause — checked before any message wording. Kubectl and
- * credential-plugin output has no such fields, so the text rules remain the fallback for it.
+ * credential-mini-app output has no such fields, so the text rules remain the fallback for it.
  */
 function structuralCode(
   err: unknown,

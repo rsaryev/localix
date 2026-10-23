@@ -6,7 +6,7 @@ import type { KubeNode, KubePod, NodeUsage, PodUsage } from '../../backend/contr
  * Kubernetes units, not the generic `KB/MB` formatter in the chat feature: a cluster
  * speaks `Ki/Mi/Gi` and millicores, so a node showing `15.7 GB` next to a manifest that
  * says `15707912Ki` reads as a different number. (That formatter is also another
- * feature's private module — a plugin must not reach into it.)
+ * feature's private module — a mini app must not reach into it.)
  *
  * Everything here stays pure and unit-tested, like `watchPace.ts`, because these are
  * the numbers a user makes scaling decisions from.

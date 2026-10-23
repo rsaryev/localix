@@ -13,8 +13,8 @@ import { revealPreview } from './revealPreview'
  *
  * Reveals from the response rather than waiting for the `preview.updated` stream frame: that frame
  * only reaches a client with a mounted, watching chat surface for the session, so a click made from
- * a file tab or a plugin view while the chat tab was elsewhere would otherwise record the preview and
- * show it to nobody.
+ * a file tab or a mini app view while the chat tab was elsewhere would otherwise record the preview
+ * and show it to nobody.
  */
 export function openPreviewFromClick(sessionId: string, url: string): void {
   void backendClient

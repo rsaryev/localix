@@ -52,9 +52,9 @@ describe('loadGrid', () => {
     expect(loadGrid()?.items['terminal:dead']?.payload).toEqual(restoredPayload)
   })
 
-  test('retains a registered plugin tab while activation is still loading', () => {
-    const kind = 'slow-plugin:pending-persistence-fixture'
-    miniAppUiHostFor('slow-plugin').workItems.register({
+  test('retains a registered mini app tab while activation is still loading', () => {
+    const kind = 'slow-mini-app:pending-persistence-fixture'
+    miniAppUiHostFor('slow-mini-app').workItems.register({
       kind,
       Component: () => null,
       Icon: () => null,
@@ -67,7 +67,7 @@ describe('loadGrid', () => {
         {
           kind,
           id: 'slow:tab',
-          title: 'Slow plugin tab',
+          title: 'Slow mini app tab',
           scope: '@global',
           payload: { stable: true },
         },
@@ -79,7 +79,7 @@ describe('loadGrid', () => {
     expect(loadGrid()?.items['slow:tab']?.payload).toEqual({ stable: true })
   })
 
-  test('retains an unregistered lazy plugin tab while activation is still loading', () => {
+  test('retains an unregistered lazy mini app tab while activation is still loading', () => {
     const kind = 'lazy-persistence-fixture'
     seed({
       root: { type: 'leaf', id: 'g1', tabs: ['lazy:tab'], activeTab: 'lazy:tab' },
@@ -87,7 +87,7 @@ describe('loadGrid', () => {
         {
           kind,
           id: 'lazy:tab',
-          title: 'Lazy plugin tab',
+          title: 'Lazy mini app tab',
           scope: '@global',
           payload: { stable: true },
         },
@@ -99,9 +99,9 @@ describe('loadGrid', () => {
     expect(loadGrid()?.items['lazy:tab']?.payload).toEqual({ stable: true })
   })
 
-  test('drops a plugin tab only after its owner is authoritatively disabled', () => {
-    const kind = 'disabled-plugin:persistence-fixture'
-    miniAppUiHostFor('disabled-plugin').workItems.register({
+  test('drops a mini app tab only after its owner is authoritatively disabled', () => {
+    const kind = 'disabled-mini-app:persistence-fixture'
+    miniAppUiHostFor('disabled-mini-app').workItems.register({
       kind,
       Component: () => null,
       Icon: () => null,
@@ -110,7 +110,7 @@ describe('loadGrid', () => {
     })
     seed({
       root: { type: 'leaf', id: 'g1', tabs: ['disabled:tab'], activeTab: 'disabled:tab' },
-      items: [{ kind, id: 'disabled:tab', title: 'Disabled plugin tab' }],
+      items: [{ kind, id: 'disabled:tab', title: 'Disabled mini app tab' }],
       activeGroup: 'g1',
       maximizedGroup: null,
     })
@@ -119,7 +119,7 @@ describe('loadGrid', () => {
     expect(loadGrid()?.items['disabled:tab']).toBeUndefined()
   })
 
-  test('a disabled plugin registration cannot make a restorable core kind disappear', () => {
+  test('a disabled mini app registration cannot make a restorable core kind disappear', () => {
     expect(() =>
       miniAppUiHostFor('core-kind-shadow').workItems.register({
         kind: 'chat',

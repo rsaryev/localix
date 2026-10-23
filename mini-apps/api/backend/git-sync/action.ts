@@ -27,8 +27,8 @@ export interface ExportResult {
 /**
  * Resolve the export directory inside `cwd`, or null when `subdir` escapes it.
  *
- * The containment check is not ceremony: `subdir` reaches this from a tool argument, and a plugin
- * that writes wherever a model asks is a plugin that writes to `~/.ssh`. `resolveWithin` is the
+ * The containment check is not ceremony: `subdir` reaches this from a tool argument, and a mini app
+ * that writes wherever a model asks is a mini app that writes to `~/.ssh`. `resolveWithin` is the
  * repo's one owner of that rule.
  */
 export function exportDirFor(cwd: string, subdir?: string): string | null {

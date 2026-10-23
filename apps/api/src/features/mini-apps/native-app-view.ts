@@ -4,7 +4,7 @@ import { isUiNavigationAction } from '@localixai/mini-app-sdk/ui'
 import { isRecord } from '../../lib/record'
 
 /**
- * The destination a native plugin tool OFFERED: its `details` is a `ui.navigate` action
+ * The destination a native mini app tool OFFERED: its `details` is a `ui.navigate` action
  * (`ctx.ui.offer`), or carries one under `details.reveal` beside its own data.
  */
 export function offeredAppViewUri(details: unknown): string | undefined {
@@ -14,10 +14,10 @@ export function offeredAppViewUri(details: unknown): string | undefined {
 }
 
 /**
- * Tell the model where a plugin tool's offer leads. A plugin never reveals a view itself —
+ * Tell the model where a mini app tool's offer leads. A mini app never reveals a view itself —
  * the person gets a button, and the agent decides whether to show it with the `open` tool —
  * so the URI has to reach the model too, or the agent cannot open what the tool produced.
- * The line is added once, here, for every native plugin tool, and only when the result does
+ * The line is added once, here, for every native mini app tool, and only when the result does
  * not name that URI already.
  */
 export function withAppViewLine(result: AgentToolResult): AgentToolResult {

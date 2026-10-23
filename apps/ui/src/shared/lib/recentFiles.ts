@@ -1,5 +1,5 @@
 // Open a file as a grid tab and keep the per-chat recent-files list for the quick-open palette.
-// It lives below the features so the terminal, the inspector and plugins open files the same way.
+// It lives below the features so the terminal, the inspector and mini apps open files the same way.
 import { create } from 'zustand'
 import { inspector, type OpenFileRequest } from '@/shared/lib/inspectorBus'
 import { pushMru } from '@/shared/lib/mru'

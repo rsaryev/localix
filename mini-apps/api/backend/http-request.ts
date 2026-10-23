@@ -48,7 +48,7 @@ export function createHttpRequestTool(deps: HttpRequestDeps): AgentTool {
    * The transcript button that turns a tool result into a place the user can GO.
    *
    * `offer`: the agent was asked to do work, not to show a surface, so a result
-   * that seized the grid mid-conversation would be the plugin deciding what the user should be
+   * that seized the grid mid-conversation would be the mini app deciding what the user should be
    * looking at. `offer` renders the same button and leaves the click to them.
    */
   const openRequest = (name: string, description: string) =>
@@ -97,7 +97,7 @@ export function createHttpRequestTool(deps: HttpRequestDeps): AgentTool {
     // `export` writes a file into the workspace.
     mutates: true,
     /**
-     * The collection and export helpers enforce that every plugin-owned file stays under
+     * The collection and export helpers enforce that every mini-app-owned file stays under
      * `ctx.cwd`. Import names come from the parsed payload, so declare the collection directory
      * and host-provided state file before those names are known.
      *

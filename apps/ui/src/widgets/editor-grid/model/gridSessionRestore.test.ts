@@ -82,7 +82,7 @@ describe('a restored session keeps the tab it was serialized with', () => {
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(serialized))
 
-    // Reload happens before the enabled-plugin snapshot and its lazy UI chunk.
+    // Reload happens before the enabled-mini-app snapshot and its lazy UI chunk.
     hydrateGrid()
     expect(useGridStore.getState().items[boardTab]?.payload).toEqual({ boardId: 'board-1' })
 

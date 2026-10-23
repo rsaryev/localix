@@ -19,8 +19,8 @@ function resolve(query: string) {
   })
 }
 
-describe('the scope a plugin route runs in', () => {
-  test('an owned session reaches the plugin, with its working directory', async () => {
+describe('the scope a mini app route runs in', () => {
+  test('an owned session reaches the mini app, with its working directory', async () => {
     expect(await resolve('?sessionId=s-own')).toEqual({
       userId: 'u1',
       sessionId: 's-own',
@@ -29,7 +29,7 @@ describe('the scope a plugin route runs in', () => {
     })
   })
 
-  test('a foreign or deleted session never reaches the plugin', async () => {
+  test('a foreign or deleted session never reaches the mini app', async () => {
     const scope = await resolve('?sessionId=s-gone&projectId=p1')
     expect(scope.sessionId).toBeUndefined()
     expect(scope).toEqual({ userId: 'u1', projectId: 'p1', cwd: '/work/p1' })

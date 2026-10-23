@@ -33,7 +33,7 @@ describe('miniAppSessionEventBus', () => {
   test('PER-SESSION GATE: a view forwards only its OWN session (the hook edge)', () => {
     const activeSessionId = 'active'
     const forwarded: string[] = []
-    // Mirrors usePluginPanelBridge's subscriber: drop events for other sessions.
+    // Mirrors useMiniAppPanelBridge's subscriber: drop events for other sessions.
     const off = miniAppSessionEventBus.subscribe((e) => {
       if (e.sessionId !== activeSessionId) return
       forwarded.push(e.sessionId)

@@ -7,7 +7,7 @@ import { ManifestStatus } from './ManifestStatus'
 import { ManifestToolbar } from './ManifestToolbar'
 
 // The status strip draws its problem through the host's `ProblemLine`; outside the app that is the
-// SDK's double. Unbound afterwards, so the shared `bun test plugins` process gets its host back.
+// SDK's double. Unbound afterwards, so the shared `bun test mini-apps` process gets its host back.
 let unbindDoubles: () => void
 beforeAll(() => {
   unbindDoubles = bindMiniAppUiTestDoubles()

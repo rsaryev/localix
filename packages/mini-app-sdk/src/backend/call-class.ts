@@ -1,8 +1,8 @@
 /**
- * Building blocks for a plugin tool's `classify` — the per-call permission class.
+ * Building blocks for a mini app tool's `classify` — the per-call permission class.
  *
- * Most plugin tools are one name over an `action` enum, often with an `actions: [...]` batch of
- * the same steps. Hand-written per plugin, the same two mistakes recur: a batch classified by its
+ * Most mini app tools are one name over an `action` enum, often with an `actions: [...]` batch of
+ * the same steps. Hand-written per mini app, the same two mistakes recur: a batch classified by its
  * FIRST step (so a `delete` rides behind a `list` past a session that refuses writes), and an
  * action missing from the switch falling through to `read`. These helpers make both impossible
  * by construction: a batch answers the WIDEST class of its steps, and an action the table does

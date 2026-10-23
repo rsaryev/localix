@@ -12,7 +12,7 @@ import { buildToolError } from './tool-errors'
  * wired. A stub in the dispatch registry (never in the model's schema list) turns that into
  * the ledger's sentence, and names the remedy when one exists and the run can propose it.
  *
- * Every withheld row is stubbed — built-in, plugin or MCP: the ledger knows each name it
+ * Every withheld row is stubbed — built-in, mini app or MCP: the ledger knows each name it
  * withheld, and a name it never saw really is unknown.
  */
 export function withheldToolStubs(ledger: ToolLedger, present: ReadonlySet<string>): AgentTool[] {

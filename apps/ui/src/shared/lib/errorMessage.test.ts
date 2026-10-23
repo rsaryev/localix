@@ -10,10 +10,10 @@ describe('errorMessage', () => {
     expect(errorMessage(new Error(''), 'fallback')).toBe('')
   })
 
-  // Non-Error throws (a plugin backend rejecting with a plain object, an `{error:{message}}`
+  // Non-Error throws (a mini app backend rejecting with a plain object, an `{error:{message}}`
   // response body, a Bun ResolveMessage) used to render as "[object Object]" in the UI.
   it('duck-types a message out of a non-Error throw', () => {
-    expect(errorMessage({ message: 'plugin exploded' }, 'fallback')).toBe('plugin exploded')
+    expect(errorMessage({ message: 'mini app exploded' }, 'fallback')).toBe('mini app exploded')
     expect(errorMessage({ error: { message: 'bad request' } }, 'fallback')).toBe('bad request')
     expect(errorMessage('a string', 'fallback')).toBe('a string')
   })

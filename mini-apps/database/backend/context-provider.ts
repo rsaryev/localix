@@ -14,15 +14,15 @@ import { extractSqlTableRefs } from '../shared/sql-context'
 export { extractSqlTableRefs } from '../shared/sql-context'
 
 /**
- * Plugin-owned Context Fabric resolver for selected `localix://resource/db` resources. It reuses the
- * plugin's read-only resource provider as the expander, so ownership checks and the
+ * Mini-app-owned Context Fabric resolver for selected `localix://resource/db` resources. It reuses
+ * the mini app's read-only resource provider as the expander, so ownership checks and the
  * no-credentials expansion contract stay in one boundary; the shared factory owns the
  * revisioning and capture-then-replay machinery. Core remains unaware of database
  * types, connection details, and schema serialization.
  *
  * The kind mapping is the one thing genuinely database-specific: a SQL expansion is a
  * schema, anything else is a plain resource. The provider id is NOT passed: the factory
- * derives it from the expander, which is this plugin's own `ResourceRefProvider` and
+ * derives it from the expander, which is this mini app's own `ResourceRefProvider` and
  * therefore the authority on the provider id it owns.
  */
 export function createDatabaseContextProvider(

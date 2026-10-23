@@ -17,7 +17,7 @@ export function register(context: MiniAppContext): MiniAppRegistration {
     helpers: context.helpers,
   })
   const feed = createStoreChangeFeed({
-    plugin: 'reader',
+    miniApp: 'reader',
     resolveDir: async () => context.dataDir,
     subscribeWrites: () => () => {},
     watchPath: context.watchPath ?? context.host?.watchPath,

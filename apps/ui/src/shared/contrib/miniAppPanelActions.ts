@@ -1,13 +1,13 @@
 /**
- * Capability-limited actions a bridged plugin panel/view may `invoke`.
+ * Capability-limited actions a bridged mini app panel/view may `invoke`.
  *
  * Deliberately a small registry (not a switch god-file). Two BUILT-INS —
  * `ping` (echo, for tests/liveness) and `sendPrompt` (same semantics as the
- * inline-widget bridge) — are available to EVERY plugin. Custom actions are
- * registered PER PLUGIN via {@link registerPanelAction} and namespaced by the
- * owning plugin: {@link createPanelActions} builds a table for ONE plugin, so a
- * bridged view for plugin X can only invoke X's own custom actions plus the
- * built-ins — never plugin Y's. Everything here is pure: the host dependencies
+ * inline-widget bridge) — are available to EVERY mini app. Custom actions are
+ * registered PER MINI APP via {@link registerPanelAction} and namespaced by the
+ * owning mini app: {@link createPanelActions} builds a table for ONE mini app, so a
+ * bridged view for mini app X can only invoke X's own custom actions plus the
+ * built-ins — never mini app Y's. Everything here is pure: the host dependencies
  * (chat session lookup, message send) are injected, so the table is
  * unit-testable without the backend client or the chat store.
  */
@@ -17,7 +17,7 @@ import {
 } from '@localixai/mini-app-sdk/ui'
 
 export interface PanelActionContext {
-  pluginName: string
+  miniAppName: string
   projectId: string
   panelName: string
 }
@@ -37,7 +37,7 @@ export interface PanelActionDeps {
   sendMessage(sessionId: string, text: string): Promise<unknown>
   /** The current host theme — surfaced through `getContext` (no secret). */
   getTheme?(): 'light' | 'dark'
-  /** Read this view's persisted scratch state (scope = `${plugin}\x00${view}`). */
+  /** Read this view's persisted scratch state (scope = `${miniApp}\x00${view}`). */
   readViewState?(scope: string): unknown
   /** Persist this view's scratch state. May throw (e.g. oversized) → error reply. */
   writeViewState?(scope: string, value: unknown): void
@@ -54,46 +54,46 @@ export interface PanelActionDeps {
   }): Promise<unknown>
 }
 
-/** Per-view state scope — embeds the plugin name so cross-plugin reads are impossible. */
+/** Per-view state scope — embeds the mini app name so cross-mini-app reads are impossible. */
 function viewStateScope(ctx: PanelActionContext): string {
-  return `${ctx.pluginName}\x00${ctx.panelName}`
+  return `${ctx.miniAppName}\x00${ctx.panelName}`
 }
 
-/** Per-plugin custom action registries — `pluginName → (action → handler)`. */
+/** Per-mini-app custom action registries — `miniAppName → (action → handler)`. */
 const registered = new Map<string, Map<string, PanelActionHandler>>()
 
 /**
- * Register a custom host action for ONE plugin. Scoped by `pluginName` so it is
- * only ever reachable from that plugin's own bridged views (per-plugin authz).
- * Last write wins for a given `(plugin, name)`.
+ * Register a custom host action for ONE mini app. Scoped by `miniAppName` so it is
+ * only ever reachable from that mini app's own bridged views (per-mini-app authz).
+ * Last write wins for a given `(mini app, name)`.
  */
 export function registerPanelAction(
-  pluginName: string,
+  miniAppName: string,
   name: string,
   handler: PanelActionHandler,
 ): void {
-  let table = registered.get(pluginName)
+  let table = registered.get(miniAppName)
   if (!table) {
     table = new Map()
-    registered.set(pluginName, table)
+    registered.set(miniAppName, table)
   }
   table.set(name, handler)
 }
 
-/** Drop every custom action registered for a plugin (e.g. on disable/uninstall). */
-export function clearPanelActions(pluginName: string): void {
-  registered.delete(pluginName)
+/** Drop every custom action registered for a mini app (e.g. on disable/uninstall). */
+export function clearPanelActions(miniAppName: string): void {
+  registered.delete(miniAppName)
 }
 
 /**
- * Build the action table for ONE plugin: built-ins over `deps`, plus ONLY the
- * custom actions registered for `pluginName`. Built-ins win a name collision —
- * a plugin must not be able to shadow `sendPrompt` with its own handler — and a
- * plugin never sees another plugin's custom actions.
+ * Build the action table for ONE mini app: built-ins over `deps`, plus ONLY the
+ * custom actions registered for `miniAppName`. Built-ins win a name collision —
+ * a mini app must not be able to shadow `sendPrompt` with its own handler — and a
+ * mini app never sees another mini app's custom actions.
  */
-export function createPanelActions(deps: PanelActionDeps, pluginName?: string): PanelActionTable {
+export function createPanelActions(deps: PanelActionDeps, miniAppName?: string): PanelActionTable {
   const table = new Map<string, PanelActionHandler>(
-    pluginName ? (registered.get(pluginName) ?? new Map()) : new Map(),
+    miniAppName ? (registered.get(miniAppName) ?? new Map()) : new Map(),
   )
 
   // Echo — lets a panel (and our tests) verify the bridge round-trip.
@@ -119,12 +119,12 @@ export function createPanelActions(deps: PanelActionDeps, pluginName?: string): 
   table.set('getContext', (_payload, ctx) => ({
     sessionId: deps.getSessionId(),
     theme: deps.getTheme?.() ?? 'dark',
-    plugin: ctx.pluginName,
+    miniApp: ctx.miniAppName,
     projectId: ctx.projectId,
     view: ctx.panelName,
   }))
 
-  // The iframe cannot choose a target plugin or scope: both are taken from the
+  // The iframe cannot choose a target mini app or scope: both are taken from the
   // mounted surface context. It only names one operation its own backend exposed.
   table.set('callBackend', async (payload, ctx) => {
     const request = payload as { action?: unknown; payload?: unknown } | null
@@ -134,7 +134,7 @@ export function createPanelActions(deps: PanelActionDeps, pluginName?: string): 
     }
     if (!deps.invokeMiniAppBackend) throw new Error('Mini app backend actions are unavailable')
     return deps.invokeMiniAppBackend({
-      app: ctx.pluginName,
+      app: ctx.miniAppName,
       projectId: ctx.projectId,
       viewId: ctx.panelName,
       sessionId: deps.getSessionId(),
@@ -145,7 +145,7 @@ export function createPanelActions(deps: PanelActionDeps, pluginName?: string): 
 
   // Per-view persisted scratch — survives a remount so a view keeps its own state
   // (scroll position, a draft, a selected tab) without a backend. Scoped by
-  // plugin+view: a view can only ever touch its OWN slot.
+  // mini app+view: a view can only ever touch its OWN slot.
   table.set('getViewState', (_payload, ctx) => deps.readViewState?.(viewStateScope(ctx)) ?? null)
   table.set('setViewState', (payload, ctx) => {
     deps.writeViewState?.(viewStateScope(ctx), payload)
@@ -154,10 +154,10 @@ export function createPanelActions(deps: PanelActionDeps, pluginName?: string): 
 
   // Sandboxed views use the same central live-context contract as bundled React
   // contributions. The SDK validator clamps content, bounds facet count and
-  // forces `source: plugin`; the iframe cannot spoof active-tab provenance.
+  // forces `source: mini-app`; the iframe cannot spoof active-tab provenance.
   table.set('publishMessageContext', (payload) => {
     if (!deps.publishMessageContext) {
-      throw new Error('Live message context is not available on this plugin surface')
+      throw new Error('Live message context is not available on this mini app surface')
     }
     if (payload === null) {
       deps.publishMessageContext(null)

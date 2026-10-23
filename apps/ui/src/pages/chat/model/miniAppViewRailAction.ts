@@ -10,7 +10,7 @@ interface MiniAppViewRailActionArgs {
   view: MiniAppViewSpec
   /** The focused group's visible active tab — the button is "active" when it is this view. */
   focusedActiveId: string | null
-  /** The chat the page has open: a plugin view is a tab of ONE chat, and it opens in this one. */
+  /** The chat the page has open: a mini app view is a tab of ONE chat, and it opens in this one. */
   openSessionId: string | null
   capabilityScope: string
   /** Runs the open/close as a workspace-view gesture (closes the mobile drawer first). */
@@ -18,10 +18,10 @@ interface MiniAppViewRailActionArgs {
 }
 
 /**
- * The rail button of one installed third-party plugin VIEW: opens its bridged iframe as an
+ * The rail button of one installed third-party mini app VIEW: opens its bridged iframe as an
  * editor-grid tab of the open chat, or closes it when it is the focused tab.
  *
- * A plugin view is one tab per chat, its id qualified by that chat (`tabIdInScope`), so "is this
+ * A mini app view is one tab per chat, its id qualified by that chat (`tabIdInScope`), so "is this
  * the focused tab" matches the id as opened rather than the bare id — and an open names the chat,
  * since the grid refuses a session tab opened without one. With no chat open it says so.
  */
@@ -32,18 +32,18 @@ export function miniAppViewRailAction({
   capabilityScope,
   run,
 }: MiniAppViewRailActionArgs): RailAction {
-  const tabId = `plugin-view:${view.fullName}`
+  const tabId = `mini-app-view:${view.fullName}`
   const isActive = focusedActiveId !== null && isTabOpenedAs(focusedActiveId, tabId)
   return {
     id: `view:${view.fullName}`,
     icon: createElement(resolveViewIcon(view.icon), { className: 'size-4.5' }),
-    label: `${view.title} (${view.app} plugin)`,
+    label: `${view.title} (${view.app} mini app)`,
     active: isActive,
     customizable: true,
     defaultArea: 'overflow',
-    // Installed third-party view — grouped under "Plugins" in the overflow.
-    plugin: true,
-    pluginName: view.app,
+    // Installed third-party view — grouped under "Mini apps" in the overflow.
+    miniApp: true,
+    miniAppName: view.app,
     resourceUri: capabilityResourceUri({
       kind: 'view',
       id: view.fullName,
@@ -61,11 +61,11 @@ export function miniAppViewRailAction({
         const sessionId = requireOpenChat(openSessionId)
         if (!sessionId) return
         useGridStore.getState().openItem({
-          kind: 'plugin-view',
+          kind: 'mini-app-view',
           id: tabId,
           title: view.title,
           scope: sessionId,
-          payload: { pluginName: view.app, projectId: view.projectId, viewId: view.id },
+          payload: { miniAppName: view.app, projectId: view.projectId, viewId: view.id },
         })
       }),
   }

@@ -138,7 +138,7 @@ export function SourceControlHeader({
 
   // Kit controls, not a local class string: the row's hand-rolled buttons got their height from
   // padding (`p-1`, `py-0.5`), so they sat off the control ladder and apart from every other
-  // plugin's toolbar, and each re-wrapped its own Tooltip that IconButton already carries.
+  // mini app's toolbar, and each re-wrapped its own Tooltip that IconButton already carries.
   return (
     <>
       <WorkbenchToolbar density="slim" wrap aria-label="Source control actions">

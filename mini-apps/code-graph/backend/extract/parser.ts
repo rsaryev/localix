@@ -12,7 +12,7 @@ import type { LanguageId } from '../../shared/model'
 /**
  * Tree-sitter, as WebAssembly, loaded once per process.
  *
- * WASM rather than the native bindings because the plugin runs on every machine the app ships to
+ * WASM rather than the native bindings because the mini app runs on every machine the app ships to
  * without a compiler: a native `.node` grammar is one build per platform and architecture, and a
  * a native build broke on arm64 under a new Node. The grammars come from the prebuilt
  * `@vscode/tree-sitter-wasm` set, so their ABI matches the runtime they ship with.

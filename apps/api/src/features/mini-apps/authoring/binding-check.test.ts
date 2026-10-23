@@ -10,7 +10,7 @@ afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true })
 })
 
-function plugin(files: Record<string, string>): string {
+function miniApp(files: Record<string, string>): string {
   const dir = mkdtempSync(join(tmpdir(), 'binding-check-'))
   dirs.push(dir)
   for (const [file, text] of Object.entries(files)) {
@@ -31,7 +31,7 @@ export function registerUi(host) {
 // Regression: the copy deleted backend/context.ts and kept the binding, so every message sent
 // with the tab open carried "no resource provider" instead of the timer.
 test('a resource binding without a backend provider is reported at its line', async () => {
-  const dir = plugin({
+  const dir = miniApp({
     'ui/register.tsx': REGISTER,
     'backend/index.ts': '// a resourceProvider is mentioned only here\nexport const x = 1\n',
   })
@@ -43,13 +43,13 @@ test('a resource binding without a backend provider is reported at its line', as
 test('a backend that registers a provider, or a view with no resource binding, passes', async () => {
   expect(
     await checkMiniAppBindings(
-      plugin({
+      miniApp({
         'ui/register.tsx': REGISTER,
         'backend/index.ts': 'export const reg = { resourceProvider: provider }\n',
       }),
     ),
   ).toEqual([])
-  expect(await checkMiniAppBindings(plugin({ 'ui/register.tsx': 'export const x = 1\n' }))).toEqual(
-    [],
-  )
+  expect(
+    await checkMiniAppBindings(miniApp({ 'ui/register.tsx': 'export const x = 1\n' })),
+  ).toEqual([])
 })

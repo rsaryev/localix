@@ -1,14 +1,14 @@
 /**
  * A database failure, said the way every other Localix failure is said.
  *
- * The plugin used to grow a new error shape per surface — a centered card in the results pane, a
+ * The mini app used to grow a new error shape per surface — a centered card in the results pane, a
  * red strip over the connection list, a tinted line under a tree node. None of them reached the
  * Event Center, so an engine message you were not watching when it arrived was gone.
  *
- * Ownership of a standing report belongs to the SDK now. What is left here is the plugin's own two
- * defaults: its scope, and the shape of a database failure — one engine sentence about one subject.
- * Recovery is declared ONCE and lands in both places it is needed, because a Retry that exists only
- * on a pane the person has closed is not recovery.
+ * Ownership of a standing report belongs to the SDK now. What is left here is the mini app's own
+ * two defaults: its scope, and the shape of a database failure — one engine sentence about one
+ * subject. Recovery is declared ONCE and lands in both places it is needed, because a Retry that
+ * exists only on a pane the person has closed is not recovery.
  */
 
 import type { MiniAppProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
@@ -20,7 +20,7 @@ import type {
 } from '@localixai/mini-app-sdk/ui/problems'
 import { DbApiError } from './api/databaseApi'
 
-/** Namespace for this plugin's rows in the Event Center. */
+/** Namespace for this mini app's rows in the Event Center. */
 export const DB_PROBLEM_SCOPE = 'database'
 
 export interface DbProblemOptions {

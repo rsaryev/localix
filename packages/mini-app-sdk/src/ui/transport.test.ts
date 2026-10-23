@@ -13,8 +13,8 @@ import {
 let unbind: (() => void) | undefined
 afterEach(() => unbind?.())
 
-describe('plugin UI transport boundary', () => {
-  test('delegates validated plugin routes to the host', async () => {
+describe('mini app UI transport boundary', () => {
+  test('delegates validated mini app routes to the host', async () => {
     const calls: Array<{ path: string; init?: RequestInit }> = []
     unbind = bindMiniAppUiTransport({
       request: async (path, init) => {
@@ -38,8 +38,8 @@ describe('plugin UI transport boundary', () => {
       url: (path) => path,
     })
 
-    expect(() => miniAppApiFetch('https://example.com/rpc/plugin')).toThrow()
-    expect(() => miniAppApiFetch('//example.com/rpc/plugin')).toThrow()
+    expect(() => miniAppApiFetch('https://example.com/rpc/mini-app')).toThrow()
+    expect(() => miniAppApiFetch('//example.com/rpc/mini-app')).toThrow()
     expect(() => miniAppApiFetch('/internal/admin')).toThrow()
   })
 
@@ -60,7 +60,7 @@ describe('plugin UI transport boundary', () => {
 
   // The defect this fixes: routes answering the FLAT body were read as if they had said nothing,
   // so both the sentence and the raw text went over the wire and were thrown away.
-  test('reads the flat plugin body too, sentence and raw text both', async () => {
+  test('reads the flat mini app body too, sentence and raw text both', async () => {
     const response = Response.json(
       {
         error: 'That spreadsheet could not be opened.',

@@ -63,8 +63,8 @@ export interface EnqueueParams {
   content: string
   clientMessageId?: string
   extraDisabledTools?: string[]
-  /** Plugins whose tools the answering turn carries (`WakeRequest.plugin`). */
-  plugins?: string[]
+  /** Mini apps whose tools the answering turn carries (`WakeRequest.miniApp`). */
+  miniApps?: string[]
   internal?: boolean
   source?: WakeSource
   bindings?: MessageBinding[]

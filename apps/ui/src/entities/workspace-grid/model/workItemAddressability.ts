@@ -47,7 +47,7 @@ export const CORE_WORK_ITEM_ADDRESSABILITY = {
     reason: 'A diff requires an already-trusted patch payload.',
   },
   preview: { mode: 'direct', owner: 'preview.open' },
-  'plugin-view': { mode: 'direct', owner: 'runtime plugin-view location' },
+  'mini-app-view': { mode: 'direct', owner: 'runtime mini-app-view location' },
   'live-file-change': {
     mode: 'focus-existing',
     locationId: 'work-item.focus',
@@ -71,7 +71,7 @@ export function isCoreWorkItemKind(kind: string): kind is CoreWorkItemKind {
 }
 
 /**
- * Runtime/plugin kinds inherit the same safe contract: their owner may expose a
+ * Runtime/mini app kinds inherit the same safe contract: their owner may expose a
  * richer typed location, while every already-mounted tab is at least focusable
  * without core knowing its payload or id grammar.
  */
@@ -80,7 +80,7 @@ export function workItemAddressability(kind: WorkItemKind): WorkItemAddressabili
   return {
     mode: 'focus-existing',
     locationId: 'work-item.focus',
-    reason: 'Plugin-owned payloads remain with the mounted contribution.',
+    reason: 'Mini-app-owned payloads remain with the mounted contribution.',
   }
 }
 

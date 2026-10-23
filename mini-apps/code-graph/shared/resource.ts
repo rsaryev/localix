@@ -1,6 +1,6 @@
 import { sessionResourceAddress } from '@localixai/mini-app-sdk/session-resource'
 
-/** The router's mount path: `/rpc/<plugin name>`, so it is this plugin's own. */
+/** The router's mount path: `/rpc/<mini app name>`, so it is this mini app's own. */
 export const ROUTE_PATH = '/rpc/code-graph'
 
 /**

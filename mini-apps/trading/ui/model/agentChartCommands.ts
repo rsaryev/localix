@@ -12,7 +12,7 @@ import { openTradingChartTab, tradingChartTabId, type OpenChartArgs } from './op
 
 /**
  * The trading UI's SINK for `manage_chart` tool commands. The backend tool emits ONE payload as a
- * typed `plugin.command` stream frame (`session.emitCommand` → `plugin.command` →
+ * typed `mini-app.command` stream frame (`session.emitCommand` → `mini-app.command` →
  * `miniAppCommandBus`, keyed `trading`/`chart`); this module opens/focuses the market's chart tab
  * and forwards the payload's parts onto `chartControlBus` for that tab id, where TradingChartTab
  * (timeframe) and ChartCanvas (indicators / chart type / navigation) subscribe. Route B upgrades

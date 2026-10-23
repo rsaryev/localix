@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { PLUGIN_NAME_RE } from '@localixai/mini-app-sdk/manifest-primitives'
+import { MINI_APP_NAME_RE } from '@localixai/mini-app-sdk/manifest-primitives'
 
 /**
  * A catalog: one `catalog.json` that lists mini apps and where each one's archive is. It may be
@@ -11,7 +11,7 @@ import { PLUGIN_NAME_RE } from '@localixai/mini-app-sdk/manifest-primitives'
 export const MINI_APP_CATALOG_SCHEMA = 1
 
 const catalogAppSchema = z.object({
-  name: z.string().regex(PLUGIN_NAME_RE),
+  name: z.string().regex(MINI_APP_NAME_RE),
   displayName: z.string().optional(),
   description: z.string().default(''),
   category: z.string().optional(),

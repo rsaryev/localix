@@ -4,7 +4,7 @@ import { knownFragmentId, prepareFragmentId } from './fragmentIdentity'
 import { savedSpaceView, watchSpaceUpdates } from './spaceUpdates'
 import { containsFragment } from './fragmentPresence'
 
-/** The plugin, including its read model, decides whether a destination still needs this copy. */
+/** The mini app, including its read model, decides whether a destination still needs this copy. */
 export function needsContent(context: ActionContext) {
   if (!canAddToSpace(context)) return false
   const id = knownFragmentId(context.target)

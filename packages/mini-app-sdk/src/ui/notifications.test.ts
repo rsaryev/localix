@@ -58,7 +58,7 @@ describe('runMiniAppAction', () => {
 
   // The defect: a MiniAppApiError's `detail` — the driver's own words — was dropped, leaving the row
   // with a classified sentence and nothing naming the reason.
-  test("a plugin request's detail is kept on its own line under the message", async () => {
+  test("a mini app request's detail is kept on its own line under the message", async () => {
     const published = bindRecordingHost()
     const error = new MiniAppApiError(
       'The server rejected this request.',
@@ -90,8 +90,9 @@ describe('runMiniAppAction', () => {
     ])
   })
 
-  // A rejection is handled on a later microtask whose stack no longer holds the plugin, so the host
-  // could not tell which plugin failed. The call site recorded at the call must be lent to it.
+  // A rejection is handled on a later microtask whose stack no longer holds the mini app, so the
+  // host could not tell which mini app failed. The call site recorded at the call must be lent to
+  // it.
   test('lends the call-time stack to the host for a deferred publish, and only then', async () => {
     const published = bindRecordingHost()
     function miniAppMenuRowHandler() {

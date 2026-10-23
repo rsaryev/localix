@@ -1,6 +1,6 @@
 // ── Deep links: localix:// → in-app hash route ────────────────────────────────
 // The `localix` scheme is registered by the Tauri shell (tauri.conf.json
-// plugins.deep-link.desktop.schemes). Incoming URLs are forwarded from Rust into
+// miniApps.deep-link.desktop.schemes). Incoming URLs are forwarded from Rust into
 // the webview, which calls installDeepLinkHandler's callback with the raw URL.
 // This module owns the pure URL→route grammar (shell-agnostic, unit-testable).
 //

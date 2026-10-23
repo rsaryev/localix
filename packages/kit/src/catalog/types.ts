@@ -2,13 +2,13 @@
  * The kit catalog: one entry per module a surface may import to draw itself, with the job it is
  * for and what it must not be confused with.
  *
- * It exists because a props list does not tell anyone WHICH primitive a job needs. The plugin
+ * It exists because a props list does not tell anyone WHICH primitive a job needs. The mini app
  * authoring agent was given sixteen prop signatures and nothing else, so it hand-rolled tabs, a
  * checkbox, a tree row and a progress bar that the kit already had; a person reading `entries/`
  * sees 84 file names. The catalog is the answer to "I need X — which module?", read by the kit's
- * docs, the plugin kit staging (`scripts/stage-plugin-kit.mjs` writes it into `kit.json`) and the
- * `/plugin create` instruction. Its tests pin it to the doors in both directions, so a new door
- * without an entry, or an entry without a door, fails.
+ * docs, the mini app kit staging (`scripts/stage-mini-app-kit.mjs` writes it into `kit.json`) and
+ * the `/mini-app create` instruction. Its tests pin it to the doors in both directions, so a new
+ * door without an entry, or an entry without a door, fails.
  */
 
 export type KitCategory =

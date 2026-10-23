@@ -1,5 +1,5 @@
 /**
- * What this plugin's UI can announce, and what its readers watch.
+ * What this mini app's UI can announce, and what its readers watch.
  *
  * One value both sides import, so a writer and a reader can never disagree about the name. The
  * protocol, the key semantics and the reasoning are in `mini-app-sdk/ui/resource-topics`.

@@ -1,6 +1,6 @@
 /**
  * VCS-neutral source-control over a session's working directory. Mirrors the
- * plugin backend port: the polled workspace snapshot, diffs and history, every
+ * mini app backend port: the polled workspace snapshot, diffs and history, every
  * write, and the GitHub forge calls. All reads are scoped to a `sessionId`
  * (whose working dir the backend resolves). An optional `repoRoot` targets one
  * repository of a multi-root project (a container of several git repos);

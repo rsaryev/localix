@@ -1,5 +1,5 @@
 /**
- * One saved request in the workspace navigator. Owned by this plugin — row components are not
+ * One saved request in the workspace navigator. Owned by this mini app — row components are not
  * shared, so each subsystem's row can say what its own domain needs.
  *
  * Management has two reachable surfaces over the same actions: a right-click context menu and a

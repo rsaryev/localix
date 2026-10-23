@@ -1,4 +1,4 @@
-/** Resource namespaces owned by host features. Plugin namespaces stay plugin-owned. */
+/** Resource namespaces owned by host features. Mini app namespaces stay mini-app-owned. */
 export const RESOURCE_PROVIDERS = {
   capability: 'capability',
   chat: 'chat',

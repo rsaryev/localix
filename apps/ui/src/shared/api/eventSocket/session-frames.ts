@@ -17,7 +17,7 @@ import { sessionHandlers } from './subscription'
 // notification in the batch lands in the same task, so React 18 auto-batching
 // collapses the burst into a single render pass.
 //
-// Only `s` (session) frames coalesce — they are the firehose. Plugin
+// Only `s` (session) frames coalesce — they are the firehose. Mini app
 // frames are low-rate and RPC responses resolve pending promises, so those
 // dispatch inline (`dispatch.ts`). JSON.parse is deferred to the drain so a
 // burst's parse cost also stays inside the one task.

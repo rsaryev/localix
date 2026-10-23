@@ -5,24 +5,24 @@ import { MARKER_FILE } from './managed-copy'
 import { isRecord } from '../../lib/record'
 
 /**
- * What a staged plugins root says about itself, and whether that can be believed.
+ * What a staged mini apps root says about itself, and whether that can be believed.
  *
  * The stager (`scripts/stage-dropins.mjs`) writes one marker per root, LAST: a content hash per
- * staged plugin and the reason for each plugin it could not build. The sync trusts those hashes
+ * staged mini app and the reason for each mini app it could not build. The sync trusts those hashes
  * only when nothing in the tree changed after the marker was written; a marker it cannot trust is
  * `null`, and every consumer then falls back to walking the tree itself.
  */
 
 /** Written LAST by staging, so its rewrite is the one event that means "this root is complete". */
 export const STAGED_MARKER_FILE = '.localix-staged.json'
-const STAGED_MARKER_KIND = 'localix-staged-plugins'
+const STAGED_MARKER_KIND = 'localix-staged-mini-apps'
 const STAGED_MARKER_SCHEMA_VERSION = 3
 const STAGED_HASH_ALGORITHM = 'sha256'
 const SHA256_HEX_RE = /^[0-9a-f]{64}$/u
 
 export interface StagedMarker {
-  pluginHashes: Record<string, string>
-  /** Plugins the stager could not build, with the reason; they have no staged directory. */
+  miniAppHashes: Record<string, string>
+  /** Mini apps the stager could not build, with the reason; they have no staged directory. */
   unavailable: Record<string, string>
   writtenAtNs: bigint
 }
@@ -37,26 +37,26 @@ export async function readStagedMarker(root: string): Promise<StagedMarker | nul
       const parsed = JSON.parse(await handle.readFile('utf8')) as Record<string, unknown>
       const stat = await handle.stat({ bigint: true })
       if (stat.dev !== pathStat.dev || stat.ino !== pathStat.ino) return null
-      const { pluginHashes, unavailable } = parsed
+      const { miniAppHashes, unavailable } = parsed
       if (
         parsed.kind !== STAGED_MARKER_KIND ||
         parsed.schemaVersion !== STAGED_MARKER_SCHEMA_VERSION ||
         parsed.hashAlgorithm !== STAGED_HASH_ALGORITHM ||
-        !isRecord(pluginHashes) ||
+        !isRecord(miniAppHashes) ||
         !isRecord(unavailable)
       ) {
         return null
       }
-      for (const [name, hash] of Object.entries(pluginHashes)) {
+      for (const [name, hash] of Object.entries(miniAppHashes)) {
         if (!name || typeof hash !== 'string' || !SHA256_HEX_RE.test(hash)) return null
       }
-      // A plugin cannot be both staged and unavailable; a marker that says so is not a record of
+      // A mini app cannot be both staged and unavailable; a marker that says so is not a record of
       // one staging run.
       for (const [name, reason] of Object.entries(unavailable)) {
-        if (!name || typeof reason !== 'string' || name in pluginHashes) return null
+        if (!name || typeof reason !== 'string' || name in miniAppHashes) return null
       }
       return {
-        pluginHashes: pluginHashes as Record<string, string>,
+        miniAppHashes: miniAppHashes as Record<string, string>,
         unavailable: unavailable as Record<string, string>,
         writtenAtNs: stat.mtimeNs,
       }
@@ -70,11 +70,11 @@ export async function readStagedMarker(root: string): Promise<StagedMarker | nul
 
 /**
  * The packager replaces the staging root and writes its marker only after every
- * plugin hash is complete. File/link content or mode edits advance ctime even when
+ * mini app hash is complete. File/link content or mode edits advance ctime even when
  * mtime is restored; additions and removals advance their parent directory's ctime.
  * Any entry that does not strictly predate the marker therefore means it may be
  * leftover metadata. Equality is ambiguous on filesystems with coarse timestamp
- * resolution, so every plugin falls back to the content fingerprint.
+ * resolution, so every mini app falls back to the content fingerprint.
  */
 async function treePredatesMarker(root: string, markerWrittenAtNs: bigint): Promise<boolean> {
   try {
@@ -92,15 +92,15 @@ async function treePredatesMarker(root: string, markerWrittenAtNs: bigint): Prom
   }
 }
 
-/** The marker, when it describes exactly `pluginNames` and no staged tree changed after it. */
+/** The marker, when it describes exactly `miniAppNames` and no staged tree changed after it. */
 export async function validateStagedMarker(
   sourceRoot: string,
-  pluginNames: ReadonlySet<string>,
+  miniAppNames: ReadonlySet<string>,
 ): Promise<StagedMarker | null> {
   const marker = await readStagedMarker(sourceRoot)
   if (!marker) return null
-  if (Object.keys(marker.pluginHashes).some((name) => !pluginNames.has(name))) return null
-  for (const name of pluginNames) {
+  if (Object.keys(marker.miniAppHashes).some((name) => !miniAppNames.has(name))) return null
+  for (const name of miniAppNames) {
     if (!(await treePredatesMarker(join(sourceRoot, name), marker.writtenAtNs))) return null
   }
   return marker

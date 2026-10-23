@@ -186,7 +186,7 @@ export function requestFields(z: typeof Zod) {
       .positive()
       .optional()
       .describe(
-        'For send/save: timeout for the whole request including redirects, in milliseconds, e.g. `60000`. Omit to use the plugin default.',
+        'For send/save: timeout for the whole request including redirects, in milliseconds, e.g. `60000`. Omit to use the mini app default.',
       ),
     maxRedirects: z
       .number()

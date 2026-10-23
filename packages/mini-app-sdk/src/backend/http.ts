@@ -6,23 +6,23 @@ import { isApiError } from './errors'
 export type JsonErrorStatus = 400 | 401 | 403 | 404 | 409 | 422 | 500 | 503
 
 /**
- * WHERE a plugin route call is happening — resolved by the host PER REQUEST.
+ * WHERE a mini app route call is happening — resolved by the host PER REQUEST.
  *
- * A plugin backend is loaded once and wired once, so anything it captures at load time is frozen:
+ * A mini app backend is loaded once and wired once, so anything it captures at load time is frozen:
  * `ctx.cwd` is the project that happened to be current at boot, and it keeps saying so after the
- * user switches session to another project. A plugin whose state lives in the WORKSPACE (files
+ * user switches session to another project. A mini app whose state lives in the WORKSPACE (files
  * beside the code they describe, rather than one global pile in `~/.localix`) therefore cannot use
  * it — it would read and write the wrong project's files, silently, and only for the second
  * project onwards.
  *
  * So the scope rides the REQUEST. The host resolves it the same way the rest of the app does —
- * the session's cwd, else the project's, else the process's — and hands it to the plugin app as
- * its Hono environment.
+ * the session's cwd, else the project's, else the process's — and hands it to the mini app's Hono
+ * app as its Hono environment.
  */
 export interface MiniAppRouteScope {
   /** The resolved host user. */
   userId: string
-  /** The chat session the caller named, once the host checked the user owns it. Plugin data may
+  /** The chat session the caller named, once the host checked the user owns it. Mini app data may
    *  be session-owned. */
   sessionId?: string
   /** The project this call belongs to, or `''` for the projectless default scope. */
@@ -54,7 +54,7 @@ export type MiniAppRouteContext = {
  *
  * Separate from {@link MiniAppRouteContext} on purpose. One type used to serve both, so a
  * contributed router typed against it could read `c.get('userId')` — correct in the host's app,
- * `undefined` in every mounted plugin — and the compiler agreed. Keeping them apart is what makes
+ * `undefined` in every mounted mini app — and the compiler agreed. Keeping them apart is what makes
  * "which app am I mounted in?" a question the types answer.
  */
 export type HostRouteContext = {
@@ -65,7 +65,7 @@ export type HostRouteContext = {
 }
 
 /**
- * Stable JSON error envelope shared by host and plugin Hono routers.
+ * Stable JSON error envelope shared by host and mini app Hono routers.
  *
  * `message` is the one human sentence; `detail` is the raw engine/CLI text behind it, and is
  * omitted when there is nothing more specific to say. Without the second slot a route that HAD
@@ -85,9 +85,9 @@ export function jsonError(
 /**
  * The only part of a Zod failure this module reads.
  *
- * Structural on purpose rather than `z.ZodError`: the host and each plugin resolve their OWN zod, so
- * a nominal parameter type makes the same error object rejected across a package boundary even when
- * the versions match.
+ * Structural on purpose rather than `z.ZodError`: the host and each mini app resolve their OWN zod,
+ * so a nominal parameter type makes the same error object rejected across a package boundary even
+ * when the versions match.
  */
 export interface ZodIssueLike {
   path: readonly PropertyKey[]
@@ -112,12 +112,13 @@ export interface ZodIssueSummary {
  *
  * `ZodError.message` is NOT that text: it is `JSON.stringify(issues, null, 2)`, a multi-line dump of
  * objects with `origin`/`code`/`minimum` keys. Both error envelopes in this repo put it where a UI
- * shows a message — `jsonError`'s `{error:{code,message}}` and the plugins' flat
+ * shows a message — `jsonError`'s `{error:{code,message}}` and the mini apps' flat
  * `{error, code, detail}` — so a rejected request rendered as a wall of JSON with the actual reason
  * buried inside it. Measured on the real projects router: a 24-line blob for one empty field.
  *
  * Lives here because this file already owns the envelope, and because the alternative was five
- * plugins each formatting issues their own way — one rule with five implementations, which drifts.
+ * mini apps each formatting issues their own way — one rule with five implementations, which
+ * drifts.
  *
  * Envelope with a `detail` slot → use `headline` + `detail`; that is what {@link defaultErrorHandler}
  * does, now that `jsonError` carries one. Envelope without one → use `message`, which folds the

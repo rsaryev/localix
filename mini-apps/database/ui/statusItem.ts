@@ -38,7 +38,7 @@ export function useDatabaseStatusItem(sessionId: string | null): StatusItemState
   const workspace = useMiniAppWorkspace()
   // The same store the Database tabs and .sql files read, so a connect or rename there is here
   // at once — and the titlebar is not a separate copy of the list with its own request.
-  useStoreChanges({ plugin: 'database', sessionId: null }, refreshConnections)
+  useStoreChanges({ miniApp: 'database', sessionId: null }, refreshConnections)
   const { connections: list } = useConnectionsSnapshot()
   useEffect(() => ensureConnectionsListed(), [])
 
@@ -92,7 +92,7 @@ export function useDatabaseStatusItem(sessionId: string | null): StatusItemState
    * Dropping a connection, kept OFF the rows above so one gesture never means two things.
    *
    * One live connection is one row; several are a submenu. A panel to reach a single row is a
-   * hover for nothing, and the same rule decides the shape of a folded plugin in the `…` menu.
+   * hover for nothing, and the same rule decides the shape of a folded mini app in the `…` menu.
    */
   const disconnectEntries: MenuEntry[] =
     live.length === 0

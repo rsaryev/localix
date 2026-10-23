@@ -33,7 +33,7 @@ function harness(build: (log: string[]) => Modules) {
 
 const artifact = (name: string, revision: string): MiniAppUiArtifact => ({
   name,
-  entry: `/rpc/plugins/${name}/ui/entry.js`,
+  entry: `/rpc/mini-apps/${name}/ui/entry.js`,
   styles: [],
   revision,
 })
@@ -64,16 +64,16 @@ describe('converging on the snapshot', () => {
     expect([...runtime.loaded()]).toEqual([['sample', 'r1']])
   })
 
-  // One bad plugin used to reject the whole pass, and its caller awaits the pass before
-  // publishing the capability snapshot — so a single broken chunk hid EVERY plugin.
-  test('a plugin that fails to import is reported and skipped, not fatal to the pass', async () => {
+  // One bad mini app used to reject the whole pass, and its caller awaits the pass before
+  // publishing the capability snapshot — so a single broken chunk hid EVERY mini app.
+  test('a mini app that fails to import is reported and skipped, not fatal to the pass', async () => {
     const { runtime, log, failures } = harness((log) => ({ 'healthy@r1': version(log, 'r1') }))
     await runtime.reconcile([artifact('broken', 'r1'), artifact('healthy', 'r1')])
     expect(failures).toEqual(['broken'])
     expect(log).toEqual(['styles+ healthy@r1', 'register healthy@r1'])
   })
 
-  test('a plugin whose first import failed is retried on the next pass', async () => {
+  test('a mini app whose first import failed is retried on the next pass', async () => {
     let attempts = 0
     const { runtime } = harness(() => ({
       'flaky@r1': () => {
@@ -88,9 +88,9 @@ describe('converging on the snapshot', () => {
     expect([...runtime.loaded().keys()]).toEqual(['flaky'])
   })
 
-  // The caller registers each plugin's view as it lands; a pass-level signal would make every
-  // plugin wait for the slowest artifact again.
-  test('each plugin is reported settled as ITS work ends, not when the pass ends', async () => {
+  // The caller registers each mini app's view as it lands; a pass-level signal would make every
+  // mini app wait for the slowest artifact again.
+  test('each mini app is reported settled as ITS work ends, not when the pass ends', async () => {
     let releaseSlow!: () => void
     const slowGate = new Promise<void>((resolve) => {
       releaseSlow = resolve
@@ -105,12 +105,12 @@ describe('converging on the snapshot', () => {
       (name) => settled.push(name),
     )
     await new Promise((resolve) => setTimeout(resolve, 0))
-    // A failed plugin settles too: its tab is then genuinely unavailable, not still loading.
+    // A failed mini app settles too: its tab is then genuinely unavailable, not still loading.
     expect(settled.sort()).toEqual(['broken', 'fast'])
     releaseSlow()
     await pass
     expect(settled).toContain('slow')
-    // An unchanged plugin on the next pass settles at once.
+    // An unchanged mini app on the next pass settles at once.
     const again: string[] = []
     await runtime.reconcile([artifact('fast', 'r1')], (name) => again.push(name))
     expect(again).toContain('fast')
@@ -172,7 +172,7 @@ describe('replacing and unloading in place', () => {
     expect([...runtime.loaded()]).toEqual([['sample', 'r1']])
   })
 
-  test('a plugin that left the enabled set is unloaded, styles and all', async () => {
+  test('a mini app that left the enabled set is unloaded, styles and all', async () => {
     const { runtime, log } = harness((log) => ({ 'sample@r1': version(log, 'r1') }))
     await runtime.reconcile([artifact('sample', 'r1')])
     await runtime.reconcile([])

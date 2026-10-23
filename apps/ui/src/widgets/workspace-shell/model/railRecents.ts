@@ -4,15 +4,15 @@
  *
  * The two are deliberately separate stores. `railLayout` is ARRANGEMENT: the user
  * placed this entry here, and its invariant is a full canonical placement of every
- * known id. Recents are USAGE: opening an unpinned plugin view floats it into the
+ * known id. Recents are USAGE: opening an unpinned mini app view floats it into the
  * rail for a while, newest first, capped. A recent id therefore has to be in the
  * layout's `overflow` bucket AND rendered in the bar at the same time — which is
  * exactly the invariant `resolveRailAreas` must not lose. So recency lives here,
  * in its own storage key, and the rail renders the union.
  *
  * State keeps REFERENCES, not snapshots: an id whose
- * plugin got disabled stays in the list and is filtered out at resolve time, so
- * re-enabling the plugin restores its slot instead of silently forgetting it.
+ * mini app got disabled stays in the list and is filtered out at resolve time, so
+ * re-enabling the mini app restores its slot instead of silently forgetting it.
  */
 
 import { pushMru } from '@/shared/lib/mru'
@@ -57,7 +57,7 @@ export function removeRecent(state: RailRecentsState | null, id: string): RailRe
 /**
  * The ids actually rendered as recent slots: recency order, minus anything the
  * user pinned (it already has a permanent slot) and anything no longer available
- * (a disabled or uninstalled plugin).
+ * (a disabled or uninstalled mini app).
  */
 export function resolveRecents(
   state: RailRecentsState | null,

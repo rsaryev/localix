@@ -70,8 +70,8 @@ export {
  * one `GET /rpc/resource-refs` route lists children via this registry. Registering
  * ONE provider adds a whole new referenceable resource tree — no core edits.
  *
- * Lives in the plugin SDK so it stays free of host `features/*` value-imports; concrete
- * providers live in their own plugins/features and are injected at bootstrap.
+ * Lives in the mini app SDK so it stays free of host `features/*` value-imports; concrete
+ * providers live in their own mini apps/features and are injected at bootstrap.
  *
  * Pure of IO — the registry is a lookup table; providers do the work.
  */
@@ -155,7 +155,7 @@ export function createResourceProviderRegistry(
       if (existing === provider) return true
       if (existing) {
         console.warn(
-          `[resource-refs] duplicate resource provider "${provider.provider}" — keeping the first; a plugin must namespace its provider id`,
+          `[resource-refs] duplicate resource provider "${provider.provider}" — keeping the first; a mini app must namespace its provider id`,
         )
         return false
       }
@@ -166,7 +166,7 @@ export function createResourceProviderRegistry(
       const providerId = typeof provider === 'string' ? provider : provider.provider
       const live = byProvider.get(providerId)
       if (!live) return
-      // Identity-checked: a plugin's disable must not evict a provider it never owned.
+      // Identity-checked: a mini app's disable must not evict a provider it never owned.
       if (typeof provider !== 'string' && live !== provider) return
       byProvider.delete(providerId)
     },

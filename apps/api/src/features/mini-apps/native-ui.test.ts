@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import { makeMiniAppUi } from './native-context'
 
-describe('native plugin UI intents', () => {
+describe('native mini app UI intents', () => {
   test('offers a user-driven destination and never an automatic reveal', () => {
     const ui = makeMiniAppUi()
 
@@ -25,7 +25,7 @@ describe('native plugin UI intents', () => {
     expect(() =>
       makeMiniAppUi().offer({
         uri: 'localix://ui/action/command/plugins.enable',
-        label: 'Enable plugin',
+        label: 'Enable mini app',
       }),
     ).toThrow('Expected a canonical read-only')
   })

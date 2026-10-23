@@ -1,4 +1,4 @@
-//! Where a plugin app finds Localix, and the pure pieces of serving its page.
+//! Where a standalone mini app finds Localix, and the pure pieces of serving its page.
 use std::net::{SocketAddr, TcpStream};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -78,10 +78,10 @@ pub(crate) fn show_host(host: &Path) {
     let _ = command.stdin(Stdio::null()).spawn();
 }
 
-/// What the page reads before any of its code runs: the plugin it hosts, the app's project folder
+/// What the page reads before any of its code runs: the mini app it hosts, the app's project folder
 /// and the runtime's port.
-pub(crate) fn page_globals(plugin: &str, name: &str, project: &Path, port: u16) -> String {
-    let app = serde_json::json!({ "plugin": plugin, "name": name, "projectDir": project });
+pub(crate) fn page_globals(mini_app: &str, name: &str, project: &Path, port: u16) -> String {
+    let app = serde_json::json!({ "miniApp": mini_app, "name": name, "projectDir": project });
     format!(
         "window.__LOCALIX_APP={app};window.__LOCALIX_API_PORT={port};window.__LOCALIX_OAUTH_PORT={port};"
     )
@@ -133,8 +133,8 @@ pub(crate) fn mime_type(file: &Path) -> &'static str {
     }
 }
 
-/// The shell's own Content-Security-Policy (`tauri.conf.json`), so a plugin app's page runs under
-/// the same rules as the workspace that serves it through Tauri.
+/// The shell's own Content-Security-Policy (`tauri.conf.json`), so a standalone mini app's page
+/// runs under the same rules as the workspace that serves it through Tauri.
 pub(crate) fn content_security_policy() -> Option<String> {
     let config: serde_json::Value =
         serde_json::from_str(include_str!("../tauri.conf.json")).ok()?;
@@ -188,7 +188,7 @@ mod tests {
             Path::new("/h/.localix/apps/task-notes"),
             4321,
         );
-        assert!(script.contains(r#""plugin":"task-notes""#));
+        assert!(script.contains(r#""miniApp":"task-notes""#));
         assert!(script.contains(r#""projectDir":"/h/.localix/apps/task-notes""#));
         assert!(script.contains(r#"Board \"Q3\"</script>"#));
         assert!(script.contains("window.__LOCALIX_API_PORT=4321;"));

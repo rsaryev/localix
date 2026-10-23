@@ -99,7 +99,7 @@ export function createUiLocationRegistry(): UiLocationRegistry {
       byId.set(id, stored)
       byUri.set(uri, stored)
       if (stored.Icon) {
-        registerResourceRefIcons({ [uiLocationIconId(id)]: stored.Icon }, stored.pluginName)
+        registerResourceRefIcons({ [uiLocationIconId(id)]: stored.Icon }, stored.miniAppName)
       }
       notify()
       return true
@@ -115,7 +115,7 @@ export function createUiLocationRegistry(): UiLocationRegistry {
     removeOwner(owner) {
       let removed = false
       for (const [id, entry] of byId) {
-        if (entry.pluginName !== owner) continue
+        if (entry.miniAppName !== owner) continue
         byId.delete(id)
         byUri.delete(entry.uri)
         removed = true
@@ -130,7 +130,7 @@ export function createUiLocationRegistry(): UiLocationRegistry {
       const parsed = parseRegisteredUri(uri)
       if (!parsed) return null
       const entry = byUri.get(parsed.baseUri)
-      if (!entry || !isMiniAppContributionEnabled(entry.pluginName)) return null
+      if (!entry || !isMiniAppContributionEnabled(entry.miniAppName)) return null
       if (entry.effect === 'write' && !access?.allowWrite) return null
       const args = parseUiLocationArgs(entry.params ?? {}, parsed.searchParams)
       if (!args) return null
@@ -160,7 +160,7 @@ export function createUiLocationRegistry(): UiLocationRegistry {
     },
     build(id, args = {}, access) {
       const entry = byId.get(id)
-      if (!entry || !isMiniAppContributionEnabled(entry.pluginName)) return null
+      if (!entry || !isMiniAppContributionEnabled(entry.miniAppName)) return null
       if (entry.effect === 'write' && !access?.allowWrite) return null
       const uri = buildSerializedUiLocationUri(
         { uri: entry.uri, surface: entry.surface, params: entry.params ?? {} },
@@ -172,7 +172,7 @@ export function createUiLocationRegistry(): UiLocationRegistry {
     list(options) {
       const entries: UiLocationDescriptor[] = []
       for (const entry of byId.values()) {
-        if (!isMiniAppContributionEnabled(entry.pluginName)) continue
+        if (!isMiniAppContributionEnabled(entry.miniAppName)) continue
         if (
           options?.exposure &&
           (options.exposure === 'agent'
@@ -214,7 +214,7 @@ export function createUiLocationRegistry(): UiLocationRegistry {
       }
       // A batch that merely RETURNS false rolled back just as completely as one that
       // threw, and used to do it without a word. That silence is the expensive half: a
-      // caller registering a group (plugin views, plugin panels) returns false as soon as
+      // caller registering a group (mini app views, mini app panels) returns false as soon as
       // one member is rejected, so a single bad entry withdraws the whole group from the
       // catalog — and from the agent's synchronized copy of it.
       if (!accepted && !threw) {

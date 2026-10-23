@@ -38,7 +38,7 @@ describe('CommentsManager actions', () => {
       id: `${ACTION_OWNER}:track`,
       label: 'Track',
       Icon: () => null,
-      pluginName: ACTION_OWNER,
+      miniAppName: ACTION_OWNER,
       run: async () => {},
     }
     setEnabledMiniAppNames(new Set([ACTION_OWNER]))

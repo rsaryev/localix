@@ -42,7 +42,7 @@ function RailEntryControl({
  *
  * `variant="recent"` renders the same button in one of the rail's transient recent
  * slots (see railRecents). A recent slot cannot be dragged, reordered or pinned —
- * plugin views have no placement at all, so the only thing its menu offers is
+ * mini app views have no placement at all, so the only thing its menu offers is
  * dismissing it. Core entries keep the full placement menu.
  */
 export function CustomizableRailButton({
@@ -115,11 +115,11 @@ export function CustomizableRailButton({
   // Described, not hand-rolled: the walker owns the seams, so the leading/doubled rules a recent
   // slot's shorter list would otherwise leave behind never reach the screen.
   const menu: MenuEntry[] = [
-    // What the button's owner adds (a plugin's app actions) leads, above the rail's own rows.
+    // What the button's owner adds (a mini app's app actions) leads, above the rail's own rows.
     ...(entry.extraMenu?.length
       ? [...entry.extraMenu.map((item) => ({ ...item })), { separator: true } as const]
       : []),
-    ...((entry.plugin || entry.toolCategory !== undefined) && !isRecent && onUnpin
+    ...((entry.miniApp || entry.toolCategory !== undefined) && !isRecent && onUnpin
       ? [{ id: 'unpin', label: 'Unpin from rail', onSelect: () => onUnpin(entry.id) }]
       : []),
     ...(isRecent

@@ -1,12 +1,12 @@
 /**
- * PLUGIN UI ACTIONS — which wired handler answers a call from a plugin's sandboxed UI, and how
+ * MINI APP UI ACTIONS — which wired handler answers a call from a mini app's sandboxed UI, and how
  * long it may take.
  *
  * It follows the OPPOSITE scoping rule to everything else the backend host wires, which is why it
  * is its own table. Providers and routes are process-global, so `backend-host.ts` keeps ONE
- * discovered scope per plugin name; keying UI actions the same way would make a project-local
+ * discovered scope per mini app name; keying UI actions the same way would make a project-local
  * override answer with the global copy's handler. This table is keyed by the exact
- * (plugin, project) scope instead, so both coexist and a call reaches the one its context names.
+ * (mini app, project) scope instead, so both coexist and a call reaches the one its context names.
  *
  * Resolution refuses rather than guesses: an action that is not an OWN property of `uiActions` is
  * not available (`constructor` must not resolve through the prototype), two handlers for one
@@ -26,7 +26,7 @@ export class MiniAppUiActionError extends Error {
   }
 }
 
-/** One operation invoked by an enabled plugin's sandboxed UI. */
+/** One operation invoked by an enabled mini app's sandboxed UI. */
 export interface MiniAppUiActionCall {
   app: string
   action: string
@@ -36,7 +36,7 @@ export interface MiniAppUiActionCall {
 }
 
 export interface MiniAppUiActionTable {
-  /** Record `backend` under its exact (plugin, project) scope. */
+  /** Record `backend` under its exact (mini app, project) scope. */
   add(app: string, projectId: string, backend: BackendSubsystem): void
   invoke(call: MiniAppUiActionCall): Promise<unknown>
 }
@@ -72,13 +72,13 @@ export function createMiniAppUiActionTable(): MiniAppUiActionTable {
       if (handlers.length === 0) {
         throw new MiniAppUiActionError(
           'not_available',
-          `Plugin "${call.app}" exposes no UI action "${call.action}"`,
+          `Mini app "${call.app}" exposes no UI action "${call.action}"`,
         )
       }
       if (handlers.length > 1) {
         throw new MiniAppUiActionError(
           'ambiguous',
-          `Plugin "${call.app}" exposes UI action "${call.action}" more than once`,
+          `Mini app "${call.app}" exposes UI action "${call.action}" more than once`,
         )
       }
 
@@ -93,7 +93,7 @@ export function createMiniAppUiActionTable(): MiniAppUiActionTable {
                 reject(
                   new MiniAppUiActionError(
                     'timeout',
-                    `Plugin UI action timed out after ${timeoutMs}ms`,
+                    `Mini app UI action timed out after ${timeoutMs}ms`,
                   ),
                 ),
               timeoutMs,

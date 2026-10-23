@@ -16,12 +16,12 @@ import {
 } from './kit-layout'
 
 /**
- * Build a USER plugin's backend into one self-contained module the loader imports.
+ * Build a USER mini app's backend into one self-contained module the loader imports.
  *
  * The defect it stops: a user's mini app lives in `~/.localix/mini-apps/<name>` with no `node_modules`,
  * so importing its `backend/index.ts` directly failed on the first `import { Hono } from 'hono'`.
- * First-party plugins never hit it because staging pre-bundles them from the source tree — an
- * option an installed app does not have. The app bundles the plugin itself instead, leaving the
+ * First-party mini apps never hit it because staging pre-bundles them from the source tree — an
+ * option an installed app does not have. The app bundles the mini app itself instead, leaving the
  * shared modules to the host (which serves its own at runtime), and the mini app manifest names the
  * result (the `backend` field of `mini-app.json`; see `backend-pointer.ts`).
  *
@@ -42,19 +42,19 @@ const BUILD_FILE = /^index-[0-9a-f]{16}\.mjs$/u
 /**
  * The shared modules stay EXTERNAL: the host serves its own instance at runtime
  * (`backend-host-modules.ts`), the same way it does for the first-party backends. Bundling the
- * kit's copy put a zod, hono and SDK into every user plugin, and made its `ZodObject` a different
+ * kit's copy put a zod, hono and SDK into every user mini app, and made its `ZodObject` a different
  * class from the host's.
  */
-function hostModulesPlugin(pluginDir: string): Bun.BunPlugin {
+function hostModulesPlugin(miniAppDir: string): Bun.BunPlugin {
   const allowed = new Set(MINI_APP_BACKEND_SHARED_MODULES)
   return {
-    name: 'localix-plugin-backend-shared',
+    name: 'localix-mini-app-backend-shared',
     setup(build) {
       build.onResolve({ filter: /^[^./]/u }, (args) => {
         if (BUILTIN.test(args.path)) return undefined
         if (allowed.has(args.path)) return { path: args.path, external: true }
         throw new Error(
-          `${relative(pluginDir, args.importer)} imports "${args.path}", which a plugin backend cannot use — available: ${MINI_APP_BACKEND_SHARED_MODULES.join(', ')}, node:* and bun:*`,
+          `${relative(miniAppDir, args.importer)} imports "${args.path}", which a mini app backend cannot use — available: ${MINI_APP_BACKEND_SHARED_MODULES.join(', ')}, node:* and bun:*`,
         )
       })
     },
@@ -74,10 +74,10 @@ async function writeAtomically(path: string, bytes: string | Uint8Array): Promis
 
 /** Pruning is inert cleanup after both backend and UI have been published. */
 export async function pruneMiniAppBackendBuilds(
-  pluginDir: string,
+  miniAppDir: string,
   tools: string | null,
 ): Promise<void> {
-  const outDir = join(pluginDir, USER_MINI_APP_BACKEND_DIR)
+  const outDir = join(miniAppDir, USER_MINI_APP_BACKEND_DIR)
   for (const file of await fs.readdir(outDir).catch(() => [])) {
     const path = join(outDir, file)
     if (tools?.endsWith(`/${file}`) || !BUILD_FILE.test(file) || wasImportedByThisProcess(path))
@@ -90,30 +90,30 @@ export async function pruneMiniAppBackendBuilds(
 
 /** Drop a candidate whose manifest never advanced; repeated failed edits cannot fill dist. */
 export async function discardMiniAppBackendCandidate(
-  pluginDir: string,
+  miniAppDir: string,
   tools: string | null,
 ): Promise<void> {
   if (!tools) return
   // A malformed manifest is itself a failed check. It must not mask the report or leave every
   // failed candidate on disk; only a manifest that actually names this build protects it.
-  const pointer = await backendPointer(pluginDir)
+  const pointer = await backendPointer(miniAppDir)
   const manifest = await fs
     .readFile(pointer.path, 'utf8')
     .then((text) => JSON.parse(text) as Record<string, unknown>)
     .catch(() => null)
   if (manifest?.[pointer.field] === tools) return
-  const path = join(pluginDir, tools)
+  const path = join(miniAppDir, tools)
   if (!wasImportedByThisProcess(path)) await fs.rm(path, { force: true }).catch(() => {})
 }
 
 /** Point the manifest at a checked build, then prune builds this process has never loaded. */
 export async function publishMiniAppBackend(
-  pluginDir: string,
+  miniAppDir: string,
   tools: string | null,
   options: { prune?: boolean } = {},
 ): Promise<void> {
-  const pointer = await backendPointer(pluginDir)
-  const manifest = await readPointerManifest(pluginDir, pointer)
+  const pointer = await backendPointer(miniAppDir)
+  const manifest = await readPointerManifest(miniAppDir, pointer)
   const next = { ...manifest }
   if (tools) next[pointer.field] = tools
   else if (isUserMiniAppBackendBuild(next[pointer.field])) delete next[pointer.field]
@@ -122,23 +122,23 @@ export async function publishMiniAppBackend(
     await writeAtomically(pointer.path, `${JSON.stringify(next, null, 2)}\n`)
   }
 
-  if (options.prune !== false) await pruneMiniAppBackendBuilds(pluginDir, tools)
+  if (options.prune !== false) await pruneMiniAppBackendBuilds(miniAppDir, tools)
 }
 
 /**
- * Build `<pluginDir>/backend/index.ts`. A candidate stays unreferenced until checks pass; the
+ * Build `<miniAppDir>/backend/index.ts`. A candidate stays unreferenced until checks pass; the
  * default direct call publishes it for repository staging and callers that already validated it.
  */
 export async function buildMiniAppBackend(input: {
   kit: MiniAppKit
-  pluginDir: string
+  miniAppDir: string
   publish?: boolean
 }): Promise<string | null> {
-  const { kit, pluginDir } = input
-  await assertSafeAuthoringPaths(pluginDir)
-  const entry = join(pluginDir, USER_MINI_APP_BACKEND_SOURCE)
+  const { kit, miniAppDir } = input
+  await assertSafeAuthoringPaths(miniAppDir)
+  const entry = join(miniAppDir, USER_MINI_APP_BACKEND_SOURCE)
   if (!(await fs.stat(entry).catch(() => null))) {
-    if (input.publish !== false) await publishMiniAppBackend(pluginDir, null)
+    if (input.publish !== false) await publishMiniAppBackend(miniAppDir, null)
     return null
   }
   const result = await Bun.build({
@@ -146,24 +146,24 @@ export async function buildMiniAppBackend(input: {
     target: 'bun',
     format: 'esm',
     packages: 'bundle',
-    plugins: [hostModulesPlugin(pluginDir)],
+    plugins: [hostModulesPlugin(miniAppDir)],
     metafile: true,
     throw: false,
   })
   const output = result.outputs[0]
   if (!result.success || !output) {
-    throw new Error(`Backend build failed:\n${formatBuildLogs(result.logs, pluginDir)}`)
+    throw new Error(`Backend build failed:\n${formatBuildLogs(result.logs, miniAppDir)}`)
   }
   await assertContainedBuildInputs({
     metafile: result.metafile,
-    pluginDir,
+    miniAppDir,
     kitDir: kit.dir,
     sharedSpecifiers: new Set(MINI_APP_BACKEND_SHARED_MODULES),
   })
 
   const bytes = new Uint8Array(await output.arrayBuffer())
   const name = `index-${createHash('sha256').update(bytes).digest('hex').slice(0, 16)}.mjs`
-  const outDir = join(pluginDir, USER_MINI_APP_BACKEND_DIR)
+  const outDir = join(miniAppDir, USER_MINI_APP_BACKEND_DIR)
   await fs.mkdir(outDir, { recursive: true })
   const outFile = join(outDir, name)
   // Same content, same name: an unchanged build touches nothing.
@@ -181,6 +181,6 @@ export async function buildMiniAppBackend(input: {
   }
 
   const tools = `./${USER_MINI_APP_BACKEND_DIR}/${name}`
-  if (input.publish !== false) await publishMiniAppBackend(pluginDir, tools)
+  if (input.publish !== false) await publishMiniAppBackend(miniAppDir, tools)
   return tools
 }

@@ -117,10 +117,10 @@ export function createAppPhase({
     attention: agentNotifications.attention,
     notifications,
     mediaStore,
-    // LIVE plugin-route dispatcher — createApp mounts the backend host's stable
+    // LIVE mini-app-route dispatcher — createApp mounts the backend host's stable
     // middleware; the host's mutable mount table serves each wired subsystem's
-    // '/rpc/<id>' and survives hot plugin toggles.
-    pluginBackendHost: { middleware: () => backendHost.middleware(), firstReconcile },
+    // '/rpc/<id>' and survives hot mini app toggles.
+    miniAppBackendHost: { middleware: () => backendHost.middleware(), firstReconcile },
     wsFrameRegistry,
     resourceRefsRegistry,
     searchService,

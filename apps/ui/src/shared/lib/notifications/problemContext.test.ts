@@ -13,7 +13,8 @@ afterEach(() => {
 })
 
 /**
- * What a row says about a failed request, end to end from the plugin's problem to the stored entry.
+ * What a row says about a failed request, end to end from the mini app's problem to the stored
+ * entry.
  *
  * Before: the body read `engine_error — Docker returned an error.` (the code printed as a location,
  * the title twice) and the trace was a Kubernetes poll that happened to fail last.

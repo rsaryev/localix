@@ -4,7 +4,7 @@ import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-// The standalone preview only. The plugin's Localix artifact is built by the app's own builder
+// The standalone preview only. The mini app's Localix artifact is built by the app's own builder
 // (`apps/api/src/features/mini-apps/authoring/ui-build.ts`), never by this config. Keep the create-vite split
 // between an HTML dev entry and application source: preview-only providers and styles must
 // never become a second app inside Localix.

@@ -74,7 +74,7 @@ export function createSpaceTools(ctx: MiniAppContext, resolveRoot: ResolveRoot) 
     activeVerb: 'Arranging the board',
     description: [
       'Change the project’s spatial board with a batch of operations, applied in order and each on its own: a refused operation is reported and the others still land, so fix only the refused ones. Give create an id to connect it in the same batch. Omit x/y and use `in` (a frame) or `near` (an element) to have a free spot found. Files, folders, images and documents are references by path — relative inside the project. Pick the type that IS the thing: use `sequence` for a diagram edited as participants and messages, `mermaid` with props.source for complete Mermaid grammar (including branches and loops), and `shape`s joined by `connect` for individually editable flow nodes. Lay out with operations rather than computed coordinates: `arrange` (row, column, grid; `in` a frame lays out what it holds and fits the frame), `align`, `distribute`. `group` what belongs together and name the group id wherever ids are taken; `order` stacks (front, forward, backward, back). Frames are always drawn beneath everything else, so a frame’s background picture is an image `in` it with fit cover, sized to it, sent to the back and locked. A locked element changes only in an update that also passes locked: false. ' +
-        `To show the person what you laid out, use ${SPACE_TOOLS.view}; take a screenshot (browser at plugin:project-space) only when how it looks matters.`,
+        `To show the person what you laid out, use ${SPACE_TOOLS.view}; take a screenshot (browser at mini-app:project-space) only when how it looks matters.`,
       'Element types:',
       types,
     ].join('\n'),

@@ -18,7 +18,7 @@ export function useChatPageBuses({ hasHydrated }: { hasHydrated: boolean }): voi
   // Route every inspector open-request (file/diff/preview/work-item/agent reveals)
   // onto the editor grid as a WorkItem.
   useGridInspectorBus()
-  // The agent's `browser` commands for `plugin:<name>`: the workbench is where a plugin's view
+  // The agent's `browser` commands for `mini-app:<name>`: the workbench is where a mini app's view
   // lives, so this page is the host that opens and drives it.
   useMiniAppViewAgent()
 }

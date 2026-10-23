@@ -1,11 +1,11 @@
 /**
- * Something outside Localix that a plugin needs — Docker, git, a cluster's credential helper — and
- * the one fact about it a person can act on.
+ * Something outside Localix that a mini app needs — Docker, git, a cluster's credential helper —
+ * and the one fact about it a person can act on.
  *
  * Without this, "Docker is not installed", "Docker is installed but not running" and "Docker said
  * something odd" all reached the screen as one sentence with a Retry under it, and Retry fixes none
- * of the first two. Every plugin with an external dependency had to rediscover that, and none had:
- * the only install link in the whole product was a URL inside an error string.
+ * of the first two. Every mini app with an external dependency had to rediscover that, and none
+ * had: the only install link in the whole product was a URL inside an error string.
  *
  * So a failure that IS a missing prerequisite says so as data — which thing, which of the two
  * states, where to get it, and the command that starts it — and the host turns that into the right
@@ -25,7 +25,7 @@ export type PrerequisiteState =
   | 'signed-out'
 
 export interface Prerequisite {
-  /** Stable id within the plugin — `docker`, `git`, `gh`. Keys the recovery actions. */
+  /** Stable id within the mini app — `docker`, `git`, `gh`. Keys the recovery actions. */
   id: string
   /** What a person calls it: `Docker`, `Git`, `GitHub CLI`. */
   name: string

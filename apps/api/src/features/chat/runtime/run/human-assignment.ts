@@ -4,7 +4,7 @@
  * Agents never address the person with a mention: a question, decision or approval goes through
  * `ask`, which raises its own HITL card. What remains is a card handed to `@human` on the task
  * board — it blocks nothing, but it waits on them in a conversation they may not be looking at,
- * so it borrows the same surface: the stream frame, the attention item and the plugin hook.
+ * so it borrows the same surface: the stream frame, the attention item and the mini app hook.
  */
 import type { AgentStreamEvent } from '../../contracts'
 import type { AgentNotifications } from '../../../notifications/producers'
@@ -32,7 +32,7 @@ export interface HumanAssignmentIo {
   onHumanAssigned?: (event: HumanAssignment) => void
 }
 
-/** Tell the person: the stream frame, the attention item, the plugin hook. */
+/** Tell the person: the stream frame, the attention item, the mini app hook. */
 export function publishHumanAssignment(
   io: HumanAssignmentIo,
   userId: string,

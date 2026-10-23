@@ -17,7 +17,7 @@ import type { MiniAppCompletionReference } from '@localixai/mini-app-sdk/ui'
  * whenever B was on screen.
  *
  * `getContextReferences` identifies the active connection and focused tables. The
- * server resolves them through the plugin's Context Fabric provider, so this UI
+ * server resolves them through the mini app's Context Fabric provider, so this UI
  * never sends schema text, provider provenance, or sensitivity labels directly.
  */
 export function useSqlNextEdit(

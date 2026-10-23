@@ -31,19 +31,19 @@ export type WorkspaceStreamEvent =
       diagnostics: LspDiagnostic[]
     }
   | {
-      // Generic plugin→UI command envelope (`session.emitCommand`): a plugin tool
+      // Generic mini app→UI command envelope (`session.emitCommand`): a mini app tool
       // drives its own UI surface.
       // REPLAYABLE and non-coalescing: a command is an ordered state change, not a
-      // latest-wins tick. Core stays plugin-agnostic:
-      // it relays the envelope; the plugin's UI registers a sink for its
-      // (plugin, channel) key and parses `payload` with its own guard.
-      type: 'plugin.command'
+      // latest-wins tick. Core stays mini-app-agnostic:
+      // it relays the envelope; the mini app's UI registers a sink for its
+      // (mini app, channel) key and parses `payload` with its own guard.
+      type: 'mini-app.command'
       sessionId: string
-      /** The emitting plugin's name — the client command registry's first routing key. */
-      plugin: string
-      /** Plugin-chosen sub-channel (e.g. 'chart') — the second routing key. */
+      /** The emitting mini app's name — the client command registry's first routing key. */
+      miniApp: string
+      /** Mini-app-chosen sub-channel (e.g. 'chart') — the second routing key. */
       channel: string
-      /** Opaque to core; the plugin's two ends share the shape. */
+      /** Opaque to core; the mini app's two ends share the shape. */
       payload: unknown
       /** Unique per command — the client dedups replayed frames by it. */
       commandId: string

@@ -17,7 +17,7 @@ import { registerDiscoveredUiSurfaces, type DiscoveredUiSurface } from './uiSurf
  * nothing (no per-subsystem imports or calls live here).
  *
  * Every hook receives the {@link MiniAppUiHost} registration façade. Core feature
- * contribs may ignore it (they can reach the registries directly); PLUGIN hooks
+ * contribs may ignore it (they can reach the registries directly); MINI APP hooks
  * should register through it — that's the SDK contract an externally-loaded UI
  * will get too.
  *
@@ -31,7 +31,7 @@ import { registerDiscoveredUiSurfaces, type DiscoveredUiSurface } from './uiSurf
  *    own icon and, for some, its owner's model module. Nothing they feed —
  *    palette, global search, the anchor tree, the agent's published destination
  *    catalog — is consulted during first paint, and every one of those readers is
- *    already revision-subscribed because runtime plugin activation registers
+ *    already revision-subscribed because runtime mini app activation registers
  *    locations late too. So the glob moved behind one lazy boundary
  *    (`uiSurfaceManifest`) and the load is kicked off (not awaited) by
  *    `discoverUi()`: registration still starts at app composition, it simply does
@@ -103,7 +103,7 @@ export function whenUiSurfacesReady(): Promise<void> {
   return surfacesReady
 }
 
-/** Register core feature contributions once. Plugin contributions load separately. */
+/** Register core feature contributions once. Mini app contributions load separately. */
 export function discoverUi(): void {
   if (discovered) return
   discovered = true

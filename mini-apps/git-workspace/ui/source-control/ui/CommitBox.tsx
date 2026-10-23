@@ -10,7 +10,7 @@ import { Button } from '@localixai/kit/button'
 import { useCommitRecall } from '../model/useCommitRecall'
 import { CommitBoxFooter } from './CommitBoxFooter'
 
-// Namespaced, matching what the plugin's backend registers. The bare `'commit'` this used to send
+// Namespaced, matching what the mini app's backend registers. The bare `'commit'` this used to send
 // reached no surface at all once the id space opened: core owns only un-namespaced ids.
 const COMMIT_COMPLETION_SURFACE_ID = 'git-workspace.commit' as const
 

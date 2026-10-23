@@ -2,8 +2,8 @@ import { errorMessage } from '../../lib/errors'
 import { DeadlineExceededError, withTimeout } from '../../lib/timeout'
 
 /**
- * Shared hook-invocation primitive used by every plugin hook + memory-provider
- * call: run one host-supplied callback under a hard timeout with per-plugin
+ * Shared hook-invocation primitive used by every mini app hook + memory-provider
+ * call: run one host-supplied callback under a hard timeout with per-mini-app
  * try/catch isolation. A throwing or timed-out hook is logged and resolves to
  * `undefined` — callers treat that as "observe only" and the turn is never broken.
  */

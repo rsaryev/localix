@@ -4,7 +4,7 @@
  * transcript calls `codeSnippet.open({ ext, code })`; the chat feature registers a handler
  * that writes the snippet to a per-session scratch file with that extension and opens it in
  * the editor, where extension-based routing takes over. Kept GENERIC (no language named here) and in
- * shared/lib so the shared-layer CodeBlock can emit without importing a feature or a plugin.
+ * shared/lib so the shared-layer CodeBlock can emit without importing a feature or a mini app.
  */
 
 import { useSyncExternalStore } from 'react'
@@ -67,7 +67,7 @@ export function useCodeSnippetAvailable(): boolean {
  * Map a highlight LANGUAGE token to the scratch-file extension the "Open in editor" affordance
  * should use, or null when the language has no dedicated editor worth opening a scratch file
  * for. Generic + extensible: today only SQL dialects resolve (they route to the database
- * plugin's `.sql` editor with Run + autocomplete); other languages simply don't offer the
+ * mini app's `.sql` editor with Run + autocomplete); other languages simply don't offer the
  * button, matching the prior behaviour. This is language detection (like the shell "Run"
  * regex), NOT a subsystem reference.
  */

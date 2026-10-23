@@ -3,8 +3,8 @@ import { Chess, type Move as EngineMove, type Square } from 'chess.js'
 /**
  * THE ONE DOOR TO THE RULES. Chess is too large a rule set to write again — castling rights, en
  * passant, promotion, pins, stalemate, threefold repetition, the fifty-move rule, insufficient
- * material — so the plugin uses `chess.js` (BSD-2-Clause), a mature, tested implementation, and
- * nothing outside this file names it. Every other module asks here, in the plugin's own terms.
+ * material — so the mini app uses `chess.js` (BSD-2-Clause), a mature, tested implementation, and
+ * nothing outside this file names it. Every other module asks here, in the mini app's own terms.
  *
  * A position is REPLAYED from the moves played, never trusted from a stored FEN: the history is
  * what threefold repetition is decided on, so a position without it would be a different game.
@@ -18,7 +18,7 @@ export type { Square }
 export const PROMOTIONS = ['q', 'r', 'b', 'n'] as const
 export type Promotion = (typeof PROMOTIONS)[number]
 
-/** A legal move, in the plugin's terms. */
+/** A legal move, in the mini app's terms. */
 export interface Play {
   san: string
   from: Square

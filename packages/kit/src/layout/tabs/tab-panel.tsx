@@ -30,7 +30,7 @@ export type TabPanelProps = Omit<ComponentProps<'div'>, 'id' | 'aria-labelledby'
  * Accessible, keep-alive panel paired with a `TabBar` or `TabStrip` item.
  *
  * Keeping the wrapper mounted preserves editor cursors, scroll positions and live
- * plugin state; the native `hidden` attribute removes inactive content from both
+ * mini app state; the native `hidden` attribute removes inactive content from both
  * layout and the accessibility tree without inventing a second state mechanism.
  */
 export function TabPanel({ active, className, ...props }: TabPanelProps) {

@@ -55,7 +55,7 @@ export function useReaderLibrary({
       revision.value++
     }
   }, [refresh])
-  const live = useStoreChanges({ plugin: 'reader', sessionId: null }, () => void refresh())
+  const live = useStoreChanges({ miniApp: 'reader', sessionId: null }, () => void refresh())
   useVisiblePolling({ enabled: !live, intervalMs: LIBRARY_POLL_INTERVAL_MS, onTick: refresh })
 
   const replaceBooks = useCallback((updated: ReaderBookSummary[]) => {

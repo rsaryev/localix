@@ -168,7 +168,7 @@ export interface VolumesResponse {
 export interface NetworksResponse {
   networks: DockerNetwork[]
 }
-/** Whether the `docker compose` CLI plugin is available (drives the project Up action). */
+/** Whether the `docker compose` CLI mini app is available (drives the project Up action). */
 export interface ComposeAvailableResponse {
   available: boolean
 }

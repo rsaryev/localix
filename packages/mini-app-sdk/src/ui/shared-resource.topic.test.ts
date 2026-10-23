@@ -10,7 +10,7 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
 describe('a resource that follows a topic', () => {
   test('re-reads a loaded key when its topic is invalidated', async () => {
     // The whole point: a writer announces, and every reader corrects itself without either of them
-    // knowing the other exists. Two bundled plugins shipped the reader and the refresh function
+    // knowing the other exists. Two bundled mini apps shipped the reader and the refresh function
     // with nothing in between, and their titlebar showed the app's start-up state forever.
     let reads = 0
     const topic = resourceTopic('test:list')
@@ -25,7 +25,7 @@ describe('a resource that follows a topic', () => {
   })
 
   test('does not fetch a key nobody has asked for', async () => {
-    // An invalidation must not become a request per plugin per session. A key with no value has
+    // An invalidation must not become a request per mini app per session. A key with no value has
     // nothing to correct.
     let reads = 0
     const topic = resourceTopic('test:list')

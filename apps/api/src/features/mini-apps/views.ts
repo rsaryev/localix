@@ -49,7 +49,7 @@ export function requireEnabledMiniApp(catalog: MiniAppCatalog, name: string) {
 }
 
 /**
- * Read one HTML `file` from a plugin `dir`, path-confined to that directory
+ * Read one HTML `file` from a mini app `dir`, path-confined to that directory
  * (a manifest pointing outside is rejected) and capped at
  * MINI_APP_VIEW_HTML_CAP_BYTES — the same bound the inline-widget renderer enforces.
  */

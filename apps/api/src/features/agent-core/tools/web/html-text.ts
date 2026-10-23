@@ -7,7 +7,7 @@
  * cleaning search snippets. Pure, zero deps.
  *
  * Also the backing implementation of `ctx.helpers.decodeEntities/htmlToText/
- * stripToText` (features/mini-apps/native-helpers.ts), so drop-in plugins share
+ * stripToText` (features/mini-apps/native-helpers.ts), so drop-in mini apps share
  * this copy instead of inlining their own.
  */
 

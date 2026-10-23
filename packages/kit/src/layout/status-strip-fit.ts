@@ -2,7 +2,7 @@
  * How many contributed status items the titlebar shows, and how wide each may be.
  *
  * The cluster used to answer this with one number — show four, fold the rest into `…` — on a
- * window of any size. With eighteen bundled plugins that meant a maximised display showing four
+ * window of any size. With eighteen bundled mini apps that meant a maximised display showing four
  * glyphs and hiding seven, while a narrow window showed the same four and pushed the breadcrumb
  * into nothing. A cap is the right IDEA (a bar that grows until the path has nowhere left to
  * truncate is worse than a menu) but the number belongs to the available width.
@@ -10,7 +10,7 @@
  * The model has two levers a flat cap did not:
  *
  *   - an item can DROP ITS TEXT. Contributed items are icon + optional live text + badge, and the
- *     text is what makes them ~104px instead of ~28px. So a tight strip shows MORE plugins by
+ *     text is what makes them ~104px instead of ~28px. So a tight strip shows MORE mini apps by
  *     showing each one smaller, and what it drops moves into the tooltip, where nothing is lost.
  *     Icon-only is also the macOS status-bar reading — glyphs at a stable pitch, detail on demand;
  *   - the row's OTHER tenants are known. The titlebar holds three things: the navigation trail on
@@ -49,8 +49,8 @@ export const STATUS_STRIP_METRICS = {
 /**
  * The most of the titlebar the strip may claim, however much room the trail leaves it.
  *
- * Half. The plugin glyphs grow leftwards from the fixed cluster on the right, so this is the
- * literal centre of the window — a bar whose plugins reached past it would read as the plugins'
+ * Half. The mini app glyphs grow leftwards from the fixed cluster on the right, so this is the
+ * literal centre of the window — a bar whose mini apps reached past it would read as the mini apps'
  * bar with a path squeezed into the corner, whatever the measurements said was possible.
  */
 export const STRIP_MAX_SHARE = 0.5
@@ -66,7 +66,7 @@ export const BREADCRUMB_FLOOR = 180
 /**
  * The strip never disappears entirely: four glyphs and the `…` that carries the rest.
  *
- * An empty strip and a broken plugin host look identical from the user's chair, and the trail can
+ * An empty strip and a broken mini app host look identical from the user's chair, and the trail can
  * truncate — that is what its `minmax(0,1fr)` column is FOR — where the strip can only vanish.
  */
 export const STRIP_FLOOR =
@@ -76,7 +76,7 @@ export const STRIP_FLOOR =
  * What the strip renders before the first measurement lands.
  *
  * It used to be a flat four, which made the pre-measurement frame the one users actually saw: a
- * titlebar that had ten plugin glyphs to show opened with four and an `…`, and only a resize (or
+ * titlebar that had ten mini app glyphs to show opened with four and an `…`, and only a resize (or
  * a lucky re-render) ever replaced it. Four was also the wrong guess in the one direction that
  * costs something — folding items away is the destructive half of this decision, and guessing it
  * before measuring anything is a fold nobody asked for.
@@ -154,7 +154,7 @@ export function statusStripBudget(
  *   3. it does not fit                     → compact, and the excess folds into `…`.
  *
  * Text is all-or-nothing on purpose. Letting only the first few keep their text would make an
- * item's width depend on its POSITION, so enabling one plugin would silently re-shape another —
+ * item's width depend on its POSITION, so enabling one mini app would silently re-shape another —
  * and the strip would have to re-measure itself to know its own layout. One rule, no feedback.
  */
 export function fitStatusStrip({

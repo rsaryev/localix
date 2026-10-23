@@ -8,7 +8,7 @@ import type {
 import { registerUi } from './contrib'
 import { externalSessionUri } from './model/sessionResource'
 
-test('core external transcripts and resource anchors work without a plugin or extra rail entry', () => {
+test('core external transcripts and resource anchors work without a mini app or extra rail entry', () => {
   const workItems: WorkItemKindContribution[] = []
   const anchors: UiAnchorContribution[] = []
   const rail: unknown[] = []
@@ -24,7 +24,7 @@ test('core external transcripts and resource anchors work without a plugin or ex
   const kind = workItems.find((item) => item.kind === 'external-agent-transcript')!
   const uri = externalSessionUri('codex:s1')
   expect(kind.scope).toBe('global')
-  expect(kind.pluginName).toBeUndefined()
+  expect(kind.miniAppName).toBeUndefined()
   expect(kind.agentContext).toMatchObject({ tools: ['external_agent_sessions'] })
   expect(anchors[0]?.resolve(uri)).toMatchObject({
     kind: 'work-item',

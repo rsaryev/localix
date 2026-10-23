@@ -120,7 +120,7 @@ export const SLASH_COMMANDS: readonly SlashCommandSpec[] = [
   {
     name: 'open',
     title: 'Open',
-    description: 'Open a resource, file, chat, plugin surface, or settings anchor in the UI',
+    description: 'Open a resource, file, chat, mini app surface, or settings anchor in the UI',
     scope: 'client',
     category: 'context',
   },

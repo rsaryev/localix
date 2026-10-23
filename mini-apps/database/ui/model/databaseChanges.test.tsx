@@ -43,7 +43,7 @@ async function frameFromBackgroundChat(payload: unknown) {
   miniAppCommandBus.publish(
     {
       sessionId: 'background',
-      plugin: 'database',
+      miniApp: 'database',
       channel: 'changes',
       payload,
       commandId: `c${seq}`,

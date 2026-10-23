@@ -1,7 +1,7 @@
 /**
  * Vectors on demand — the ONE way anything in Localix gets vectors: semantic search's queries
- * (`semantic-index.ts`), group routing, plugins (`host.semantic.embed`/`rank`), and whatever comes
- * next. The semantic service builds one and hands it out as `service.vectors`.
+ * (`semantic-index.ts`), group routing, mini apps (`host.semantic.embed`/`rank`), and whatever
+ * comes next. The semantic service builds one and hands it out as `service.vectors`.
  *
  * No consumer names the model, keeps its own cosine or reaches into the engine: the model is chosen
  * in `models.ts` and its prompts in `families.ts`, so changing it rewrites no consumer. Results

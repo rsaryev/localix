@@ -177,7 +177,7 @@ export function useSessionRuntime(sessionId: string | null): SessionRuntime {
     ) => {
       if (!sessionId) return
       // The one shared send path (instant optimistic paint + failure cleanup +
-      // toast) — the plugin-panel bridge routes through the same helper.
+      // toast) — the mini-app-panel bridge routes through the same helper.
       await sendChatMessage(sessionId, prompt, {
         bindings,
         isInternal,

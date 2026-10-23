@@ -13,13 +13,13 @@
  * WHICH ONE IS ACTIVE IS NOT IN THESE FILES, and that is the decision this module turns on. Active
  * is one person's current target, not a property of the environment: committing it would mean a
  * colleague's `git pull` silently re-points your next send at their deployment, and a branch merge
- * would decide it by conflict resolution. So the pointer lives in the plugin's own state directory,
- * keyed by collection root, and the files stay pure.
+ * would decide it by conflict resolution. So the pointer lives in the mini app's own state
+ * directory, keyed by collection root, and the files stay pure.
  *
  * Secret values never live here. A variable marked `secret` stores only a `${secret:KEY}` pointer;
  * the value itself lives in Localix's native vault and is resolved only for the outgoing wire
  * request. Variables and secrets are shown separately, and secrets use the host capability instead
- * of a plugin-private secret database.
+ * of a mini-app-private secret database.
  */
 
 import { constants } from 'node:fs'

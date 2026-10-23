@@ -3,7 +3,7 @@ import type { RefProps } from '../../shared/types/app-links'
 
 /**
  * What an app link BECOMES on the board — the one decision every way a link arrives goes through:
- * a drag from the chat, a file tree, a tab, a plugin's panel, or a pasted `@session:…` /
+ * a drag from the chat, a file tree, a tab, a mini app's panel, or a pasted `@session:…` /
  * `localix://…` (turned into the same link by the host's grammar, `@localixai/kit/context-links`).
  *
  * A link to a file or a folder is the board's file or folder card, which reads the file; a
@@ -33,7 +33,7 @@ export function contentOfLink(link: MessageContextBindingDraft): LinkContent | n
     label: target.label,
     ...(target.uri ? { uri: target.uri } : {}),
     ...(target.attributes ? { attributes: target.attributes } : {}),
-    ...(link.plugin ? { plugin: link.plugin } : {}),
+    ...(link.miniApp ? { miniApp: link.miniApp } : {}),
   }
   return { kind: 'element', type: 'ref', props }
 }

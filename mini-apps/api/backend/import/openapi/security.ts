@@ -16,7 +16,9 @@ import type { RequestAuth } from '../../request-spec'
 import { resolveRef } from './pointer'
 import type { OADocument, OASecurityScheme } from './types'
 
-/** The vault key an imported scheme references. Namespaced like every other key this plugin mints. */
+/**
+ * The vault key an imported scheme references. Namespaced like every other key this mini app mints.
+ */
 export function securityKeyFor(apiSlug: string, schemeName: string): string {
   const slug = (s: string) =>
     s

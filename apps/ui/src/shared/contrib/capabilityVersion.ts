@@ -28,8 +28,8 @@ export function noteCapabilityDocument(
 
 /**
  * The staleness key of capability DOCUMENTS (`capabilityCache.ts`). `miniAppContribVersion` also
- * advances when a plugin's UI settles or reloads, which changes nothing a document carries —
- * keying the cache on it re-read every cached scope once per settled plugin batch at startup.
+ * advances when a mini app's UI settles or reloads, which changes nothing a document carries —
+ * keying the cache on it re-read every cached scope once per settled mini app batch at startup.
  */
 export function miniAppCapabilityVersion(): number {
   return capabilityVersion

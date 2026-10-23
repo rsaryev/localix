@@ -3,7 +3,7 @@ import { createContext, useContext, type ReactNode } from 'react'
 /**
  * Is this work item the ACTIVE tab of the ACTIVE (focused) editor group?
  *
- * `useWorkItemVisible` (plugin SDK) answers a different question: a side-by-side
+ * `useWorkItemVisible` (mini app SDK) answers a different question: a side-by-side
  * split has TWO visible bodies at once, and warm keep-alive keeps background
  * bodies mounted-but-hidden. Anything that must exist exactly once per window —
  * a status-bar contribution, a singleton side effect — needs the stricter

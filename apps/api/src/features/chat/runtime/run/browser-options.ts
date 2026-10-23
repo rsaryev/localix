@@ -8,7 +8,7 @@
  * Nothing is remembered here: a command names its tab by `preview_id`, which `open` returns and
  * derives from the target, and `close` only tells the UI which tabs to close.
  *
- * A `plugin:<name>` target is a plugin's workbench view, not a page: nothing is served or
+ * A `mini-app:<name>` target is a mini app's workbench view, not a page: nothing is served or
  * proxied for it. The workbench claims every command for it
  * and opens the view itself (`contracts/mini-app-view-target.ts`).
  */
@@ -52,9 +52,9 @@ export function buildBrowserOptions(input: {
         timeoutMs: opts?.timeoutMs,
       }),
     openPreview: async (openInput) => {
-      const plugin = parseMiniAppViewTarget(openInput.url)
-      const opened = plugin
-        ? openPluginView(plugin)
+      const miniApp = parseMiniAppViewTarget(openInput.url)
+      const opened = miniApp
+        ? openMiniAppView(miniApp)
         : await openPreviewCore(
             {
               userId,
@@ -93,18 +93,18 @@ export function buildBrowserOptions(input: {
   }
 }
 
-/** A plugin view "opens" by being addressed: the workbench opens the tab on the first command. */
-function openPluginView(plugin: string): OpenPreviewCoreResult {
-  const target = miniAppViewTarget(plugin)
+/** A mini app view "opens" by being addressed: the workbench opens the tab on the first command. */
+function openMiniAppView(miniApp: string): OpenPreviewCoreResult {
+  const target = miniAppViewTarget(miniApp)
   return {
     ok: true,
     url: target,
     previewId: target,
-    title: plugin,
+    title: miniApp,
     version: 0,
     frameBlocked: false,
     autoServed: false,
     background: false,
-    content: `The "${plugin}" mini app's view, open in its own workbench tab — not a web page. Drive it with snapshot, take_screenshot and steps (click, type, press, scroll) and read its errors with console; evaluate and viewport are not available on it.`,
+    content: `The "${miniApp}" mini app's view, open in its own workbench tab — not a web page. Drive it with snapshot, take_screenshot and steps (click, type, press, scroll) and read its errors with console; evaluate and viewport are not available on it.`,
   }
 }

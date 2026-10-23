@@ -47,7 +47,7 @@ function dbResourceBinding(item: WorkItemLike) {
  * activation, its `@resource:localix://resource/db` node glyphs, and the `.sql`-file editor into the OPEN
  * contrib registries — so core hardcodes the workbench nowhere. Discovered + invoked
  * generically by `shared/contrib/discover.ts` (`registerUi` export), mirroring the bundled
- * container / cluster workbench plugins. The bodies themselves live in `workItemBodies.tsx`.
+ * container / cluster workbench mini apps. The bodies themselves live in `workItemBodies.tsx`.
  */
 
 let registered = false
@@ -201,7 +201,7 @@ export function registerUi(host: MiniAppUiHost): void {
 
   // A database FILE (`localix.db`, `app.sqlite`, `scratch.db3`) opens as a
   // connection — its schema browser, not the code editor's view of its page bytes.
-  // The same extensions this plugin declares to the OS in its mini app manifest (`mini-app.json`)
+  // The same extensions this mini app declares to the OS in its mini app manifest (`mini-app.json`)
   // (`fileAssociations`), so a double-click in Finder and a click in the file tree
   // land in the same place. No `acceptsMedia`: a dropped/uploaded blob has no path
   // for the server to open, and a database is not something to read into memory.

@@ -35,7 +35,7 @@ export function createGameService(
   const newId = input.newId ?? (() => randomUUID())
   const table = createTurnTable({
     ...input,
-    plugin: 'chess',
+    miniApp: 'chess',
     noun: 'board',
     now,
     schema: gameSchema,

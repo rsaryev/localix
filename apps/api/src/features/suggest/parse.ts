@@ -1,11 +1,11 @@
 /**
  * Defensive parser for the unified suggestion reply. The model is instructed to output one labeled
- * line per requested surface (`chat: …` / `<plugin>.<surface>: …`). Models being models, we
+ * line per requested surface (`chat: …` / `<app>.<surface>: …`). Models being models, we
  * tolerate: code fences, blank/extra lines, label case drift, `-`/`—` separators, and — when only
  * ONE surface was requested — a reply that drops the label entirely (the whole first line is then
  * that surface's).
  *
- * The label charset includes `.` because a CONTRIBUTED surface id is namespaced by its plugin.
+ * The label charset includes `.` because a CONTRIBUTED surface id is namespaced by its mini app.
  * Without it every contributed answer parsed as no answer at all: the model replied correctly, the
  * line was dropped here, and the surface looked like a model that never has a suggestion.
  */

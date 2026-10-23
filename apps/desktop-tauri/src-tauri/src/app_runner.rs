@@ -1,11 +1,12 @@
-//! A plugin installed as its own Mac app.
+//! A mini app installed as its own Mac app.
 //!
 //! `Kanban.app` in `~/Applications/Localix Apps` is a copy-on-write clone of this binary with its
 //! own bundle id, name and icon, the way Chrome's installed web apps and Parallels' Windows apps
 //! are made. macOS therefore gives it its own Dock icon, menu bar, Cmd+Tab entry and window frame,
-//! while Localix stays the host: the runtime, the plugin and all of its data live there, and the
-//! app shows the plugin's page against it. `main` asks [`run_if_app`] before anything else, so a
-//! plugin app never starts the Tauri shell, its single-instance lock or a runtime of its own.
+//! while Localix stays the host: the runtime, the mini app and all of its data live there, and the
+//! app shows the mini app's page against it. `main` asks [`run_if_app`] before anything else, so a
+//! standalone mini app never starts the Tauri shell, its single-instance lock or a runtime of its
+//! own.
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
@@ -22,7 +23,7 @@ use objc2_web_kit::WKWebView;
 use crate::app_runner_host as host;
 use crate::app_runner_web::{configuration, Controller};
 
-/// The flag a plugin app starts Localix with: everything runs, no workspace shows.
+/// The flag a standalone mini app starts Localix with: everything runs, no workspace shows.
 pub(crate) const BACKGROUND_ARG: &str = "--background";
 /// The page's scheme and origin when the UI is served from the host bundle.
 pub(crate) const SCHEME: &str = "localix-app";
@@ -30,7 +31,11 @@ pub(crate) const PAGE_ORIGIN: &str = "localix-app://app";
 
 /// The Info.plist keys the installer writes and this runner reads.
 pub(crate) mod keys {
-    pub(crate) const PLUGIN: &str = "LocalixPlugin";
+    /// The mini app the bundle hosts.
+    pub(crate) const MINI_APP: &str = "LocalixMiniApp";
+    /// The same, as bundles made before mini apps were named apart from plugins wrote it. Read
+    /// only to find such a bundle; the next refresh rewrites it under [`MINI_APP`].
+    pub(crate) const LEGACY_MINI_APP: &str = "LocalixPlugin";
     /// The UI build directory, or the development server's URL.
     pub(crate) const UI: &str = "LocalixUi";
     /// The runtime's endpoint descriptor file.
@@ -53,7 +58,7 @@ pub(crate) enum Ui {
 }
 
 pub(crate) struct Config {
-    pub(crate) plugin: String,
+    pub(crate) mini_app: String,
     pub(crate) name: String,
     pub(crate) ui: Ui,
     pub(crate) endpoint: PathBuf,
@@ -61,7 +66,7 @@ pub(crate) struct Config {
     pub(crate) project: PathBuf,
 }
 
-/// Run as a plugin app when this bundle is one. False for Localix itself.
+/// Run as a standalone mini app when this bundle is one. False for Localix itself.
 pub(crate) fn run_if_app() -> bool {
     let (Some(config), Some(mtm)) = (config(), MainThreadMarker::new()) else {
         return false;
@@ -76,7 +81,8 @@ fn config() -> Option<Config> {
         let value = bundle.objectForInfoDictionaryKey(&NSString::from_str(key))?;
         Some(value.downcast::<NSString>().ok()?.to_string())
     };
-    let plugin = read(keys::PLUGIN).filter(|plugin| crate::app_bundle::valid_mini_app(plugin))?;
+    let mini_app =
+        read(keys::MINI_APP).filter(|mini_app| crate::app_bundle::valid_mini_app(mini_app))?;
     let ui = read(keys::UI)?;
     let ui = if ui.starts_with("http://") {
         Ui::Url(ui)
@@ -84,8 +90,8 @@ fn config() -> Option<Config> {
         Ui::Directory(PathBuf::from(ui))
     };
     Some(Config {
-        name: read("CFBundleName").unwrap_or_else(|| plugin.clone()),
-        plugin,
+        name: read("CFBundleName").unwrap_or_else(|| mini_app.clone()),
+        mini_app,
         ui,
         endpoint: PathBuf::from(read(keys::ENDPOINT)?),
         host: PathBuf::from(read(keys::HOST)?),
@@ -97,7 +103,7 @@ fn run(mtm: MainThreadMarker, config: Config) {
     // The project is found by its folder, so the folder has to exist before the page asks.
     if let Err(error) = std::fs::create_dir_all(&config.project) {
         crate::log::logln(format!(
-            "plugin app: cannot create {}: {error}",
+            "standalone mini app: cannot create {}: {error}",
             config.project.display()
         ));
     }

@@ -2,15 +2,17 @@ import type { MessageBinding } from '@localixai/agent'
 import type { MiniAppContext } from './context'
 
 /**
- * Lifecycle-hook + memory-provider type contracts for native plugins. These are
+ * Lifecycle-hook + memory-provider type contracts for native mini apps. These are
  * pure type/interface declarations (plus the cap constants) describing the events
- * the host runtime hands to a plugin's hooks and what each hook may return.
+ * the host runtime hands to a mini app's hooks and what each hook may return.
  */
 
-/** Event handed to `onPreToolCall` — fired before EVERY tool execution (built-in, plugin, MCP). */
+/**
+ * Event handed to `onPreToolCall` — fired before EVERY tool execution (built-in, mini app, MCP).
+ */
 export interface PreToolCallEvent {
   toolName: string
-  /** The model-validated input as it stands (earlier plugins' rewrites already applied). */
+  /** The model-validated input as it stands (earlier mini apps' rewrites already applied). */
   input: unknown
   sessionId: string
 }
@@ -43,10 +45,10 @@ export interface PostToolCallEvent {
 /**
  * `onPostToolCall` outcome: `void` to observe only, or any of:
  * - `{ replaceContent: string }` — REPLACES the model-facing tool result content
- *   (redaction, summarization). Non-empty string required; later plugins' post
+ *   (redaction, summarization). Non-empty string required; later mini apps' post
  *   hooks see the replaced content. `details` are untouched.
  * - `{ appendContent: string }` — appends a short note to the result content
- *   (capped at 1KB, prefixed with the plugin name). Applied after any replace.
+ *   (capped at 1KB, prefixed with the mini app name). Applied after any replace.
  */
 export type PostToolCallHookResult = void | { replaceContent?: string; appendContent?: string }
 
@@ -55,7 +57,7 @@ export interface UserMessageEvent {
   sessionId: string
   /** Id of the persisted user message that started this run. */
   messageId: string
-  /** The prompt text as it stands (earlier plugins' rewrites already applied). */
+  /** The prompt text as it stands (earlier mini apps' rewrites already applied). */
   text: string
 }
 
@@ -89,9 +91,9 @@ export type AssistantMessageHookResult = void | {
   bindings?: MessageBinding[]
 }
 
-/** Max bindings all plugins together may add to one assistant message. */
+/** Max bindings all mini apps together may add to one assistant message. */
 export const ASSISTANT_BINDINGS_MAX = 8
-/** Max model-bearing payload per plugin-added binding. */
+/** Max model-bearing payload per mini-app-added binding. */
 export const ASSISTANT_BINDING_DATA_CAP_BYTES = 8 * 1024 * 1024
 
 /** Event handed to `onSubagentStop` — fired when a child session of this run finishes. */
@@ -167,7 +169,7 @@ export interface HumanAssignedEvent {
  * - `onHumanAssigned(event)` — when a board card is assigned to the person, so an external
  *   channel can tell them. Observer-only.
  *
- * Every hook may be async. Each invocation is isolated per-plugin (a throwing hook is
+ * Every hook may be async. Each invocation is isolated per-mini-app (a throwing hook is
  * logged and never breaks the turn) and capped at 5 seconds (timeout ⇒ treated as void).
  * Hooks are added here ONLY when a host call site actually invokes them — a
  * declared-but-never-called hook is dead contract surface.
@@ -218,7 +220,7 @@ export interface MemoryRunEndEvent {
 /**
  * An external long-term memory backend, returned from a native module's
  * `register(ctx)` as `memory: {...}`. At most ONE provider is active at a time
- * (first enabled plugin wins; later declarations are ignored with a warning) —
+ * (first enabled mini app wins; later declarations are ignored with a warning) —
  * it AUGMENTS the built-in memory tool/notes rather than replacing the feature:
  *
  * - `loadContext(event)` — once per run while the system prompt is built. The

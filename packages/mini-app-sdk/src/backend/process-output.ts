@@ -2,10 +2,11 @@
  * Collect a `Bun.spawn` child's output — waiting for the PROCESS, never for a pipe someone else
  * holds, and never longer than the caller allows.
  *
- * This lived in the DevOps plugin, and the plugin template — the starting point of every plugin a
- * person builds — shipped its own version of the wait with exactly the defect this one closes:
- * `await Promise.all([pipe text, pipe text, proc.exited])`, plus a SIGTERM the child may ignore.
- * One owner here, beside `awaitBunChildGone`, so a copied plugin starts from the safe shape.
+ * This lived in the DevOps mini app, and the mini app template — the starting point of every mini
+ * app a person builds — shipped its own version of the wait with exactly the defect this one
+ * closes: `await Promise.all([pipe text, pipe text, proc.exited])`, plus a SIGTERM the child may
+ * ignore. One owner here, beside `awaitBunChildGone`, so a copied mini app starts from the safe
+ * shape.
  *
  * Release It!: put an explicit, intentional limit on a wait you do not control.
  */

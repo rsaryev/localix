@@ -105,10 +105,10 @@ export function useChatEventStream(enabled = true): void {
       answerClock.end(sessionId)
     }
     // Forward SAFE lifecycle signals (run start/completed/failed) to bridged
-    // plugin views. Additive + non-consuming: the SDK allow-list gates what
+    // mini app views. Additive + non-consuming: the SDK allow-list gates what
     // crosses, and every other branch below still runs unchanged.
     routeMiniAppSessionEvent(sessionId, parsed.type)
-    if (parsed.type === 'plugin.command') {
+    if (parsed.type === 'mini-app.command') {
       routeMiniAppCommand(sessionId, parsed)
       return
     }
@@ -154,7 +154,7 @@ export function useChatEventStream(enabled = true): void {
       return
     }
 
-    // Plugin-contributed session-event handlers (host.sessionEvents.register) —
+    // Mini-app-contributed session-event handlers (host.sessionEvents.register) —
     // AFTER the built-in routes so core keeps priority over its own types; a
     // contributed type is consumed here and never reaches the generic reducer.
     const contributed = sessionEventHandlersFor(parsed.type)
@@ -183,7 +183,7 @@ export function useChatEventStream(enabled = true): void {
 
     const activeId = useChatStore.getState().activeSessionId
 
-    // The Event Center rows for these frames (runs, requests, mentions, terminals, plugin
+    // The Event Center rows for these frames (runs, requests, mentions, terminals, mini app
     // problems) are recorded by the SERVER journal where each fact happens, and arrive over the
     // socket as `n` frames (`shared/lib/notifications/inboxSync.ts`). What is waiting on the
     // person across conversations is the server's attention roster (`attention.updated`, above).

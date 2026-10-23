@@ -8,9 +8,9 @@ export const RAIL_CATEGORY_LABELS: Record<RailToolCategory, string> = {
   games: 'Games',
 }
 
-/** Catalog membership is independent of plugin ownership. */
+/** Catalog membership is independent of mini app ownership. */
 export function isRailTool(entry: RailEntry): boolean {
-  return entry.plugin === true || entry.toolCategory !== undefined
+  return entry.miniApp === true || entry.toolCategory !== undefined
 }
 
 export function railToolCategoryFor(
@@ -18,7 +18,7 @@ export function railToolCategoryFor(
   categories?: ReadonlyMap<string, MiniAppCategory | undefined>,
 ): RailToolCategory {
   const category =
-    entry.toolCategory ?? (entry.pluginName ? categories?.get(entry.pluginName) : undefined)
+    entry.toolCategory ?? (entry.miniAppName ? categories?.get(entry.miniAppName) : undefined)
   if (category === 'games') return 'games'
   return category === 'development' || category === 'data' || category === 'content'
     ? 'workspace'

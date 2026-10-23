@@ -1,7 +1,7 @@
 /**
  * A GENERIC live-stream contribution seam for the multiplexed realtime socket.
  *
- * A `BackendSubsystem` (e.g. a bundled workbench plugin) contributes a live stream —
+ * A `BackendSubsystem` (e.g. a bundled workbench mini app) contributes a live stream —
  * a per-connection subscribe that spawns a stream and pushes tagged frames, torn down
  * on unsubscribe or socket close — WITHOUT `realtime/ws.ts` hardcoding each command
  * name / frame tag. ws.ts consults this registry for any command it does not otherwise
@@ -20,7 +20,7 @@ import { RESERVED_FRAME_TAGS } from '../ws-frame-tags'
  *
  * A stream of someone's own data (one chat's board, one user's inbox) has to know whose socket
  * asked. Taking the user from the params would let any socket name any user; with no identity at
- * all, a plugin could stream only data that belongs to nobody. The host binds it from the
+ * all, a mini app could stream only data that belongs to nobody. The host binds it from the
  * authenticated socket, so a contribution checks ownership against the one identity it can trust.
  */
 export interface WsFrameStreamContext {
@@ -60,8 +60,8 @@ export interface WsFrameContribution<Params = Record<string, unknown>, Handle = 
  * checks subscribe before unsubscribe, so a command reused in either direction is
  * UNRESOLVABLE — one branch silently wins and the other never starts / tears down. Rejecting
  * every cross-direction collision at registration turns register-order ambiguity into a
- * loud diagnostic. Registration is UNTRUSTED plugin data, so this returns a result instead
- * of throwing: the composition root logs the rejection, keeping one colliding plugin from
+ * loud diagnostic. Registration is UNTRUSTED mini app data, so this returns a result instead
+ * of throwing: the composition root logs the rejection, keeping one colliding mini app from
  * crashing boot for every other subsystem.
  */
 export type WsFrameRegistration =
@@ -81,13 +81,13 @@ export interface WsFrameRegistry {
    */
   register(contribution: WsFrameContribution): WsFrameRegistration
   /**
-   * Remove a contribution — hot plugin disable. Pass the CONTRIBUTION you registered, not a
+   * Remove a contribution — hot mini app disable. Pass the CONTRIBUTION you registered, not a
    * bare command: `register` rejects a duplicate `subscribeCommand` and keeps the first, but
    * the loser's record still carries that command, so removing by name evicted the WINNER's
-   * live stream — a plugin that is still enabled, with its subsystem and UI tab intact,
+   * live stream — a mini app that is still enabled, with its subsystem and UI tab intact,
    * silently refusing new subscribes. (Same rule as the resource-ref and search registries.)
    * Blocks NEW subscribes only: a live stream keeps its contribution reference inside its
-   * `WsFrameConnection`, so teardown remains the plugin's `onShutdown` / socket close.
+   * `WsFrameConnection`, so teardown remains the mini app's `onShutdown` / socket close.
    * Unknown or foreign entries are a no-op.
    */
   unregister(contribution: WsFrameContribution | string): void
@@ -144,7 +144,7 @@ export function createWsFrameRegistry(): WsFrameRegistry {
         typeof contribution === 'string' ? contribution : contribution.subscribeCommand
       const idx = contributions.findIndex((c) => c.subscribeCommand === command)
       if (idx < 0) return
-      // Identity-checked: a plugin's disable must not evict a contribution it never owned.
+      // Identity-checked: a mini app's disable must not evict a contribution it never owned.
       if (typeof contribution !== 'string' && contributions[idx] !== contribution) return
       contributions.splice(idx, 1)
     },
@@ -272,7 +272,7 @@ export function createWsFrameConnection(
         try {
           entry.contribution.stop(entry.handle)
         } catch {
-          /* plugin teardown failure must not escape the socket lifecycle */
+          /* mini app teardown failure must not escape the socket lifecycle */
         }
       }
       return true
@@ -284,7 +284,7 @@ export function createWsFrameConnection(
         try {
           contribution.stop(handle)
         } catch {
-          /* continue releasing every other plugin stream */
+          /* continue releasing every other mini app stream */
         }
       }
     },

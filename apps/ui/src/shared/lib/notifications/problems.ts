@@ -37,7 +37,7 @@ import type { NotificationAction, NotificationOrigin } from './types'
 const BODY_LINES = 6
 
 export interface PublishProblemsOptions {
-  /** Namespace for the condition identity — a plugin or feature id, e.g. `database`. */
+  /** Namespace for the condition identity — a mini app or feature id, e.g. `database`. */
   scope: string
   origin?: NotificationOrigin
   /** Opens the subject at a problem. When given, the entry carries an "Open" action. */
@@ -54,7 +54,9 @@ export interface PublishProblemsOptions {
    * without an unread badge — the person is already looking at it.
    */
   sourceVisible?: boolean
-  /** Who reported it — a plugin's display name — as a label on the derived origin (`notify.ts`). */
+  /**
+   * Who reported it — a mini app's display name — as a label on the derived origin (`notify.ts`).
+   */
   source?: string
 }
 

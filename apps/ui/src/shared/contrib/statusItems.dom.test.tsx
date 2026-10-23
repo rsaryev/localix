@@ -6,7 +6,7 @@ import { setEnabledMiniAppNames } from './miniAppActivation'
 import { registerStatusItem, StatusItems, statusItemsFor } from './statusItems'
 
 /** Every fixture owner, so the activation gate lets them through — see the fail-closed test. */
-const FIXTURE_PLUGINS = [
+const FIXTURE_MINI_APPS = [
   'fixture',
   'alpha',
   'mid',
@@ -24,7 +24,7 @@ let teardown: () => Promise<void>
 beforeAll(() => {
   teardown = registerDom()
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
-  setEnabledMiniAppNames(new Set(FIXTURE_PLUGINS))
+  setEnabledMiniAppNames(new Set(FIXTURE_MINI_APPS))
 })
 
 afterAll(async () => {
@@ -86,11 +86,11 @@ describe('contributed status items', () => {
   })
 
   test('an unknown placement is silence, not a throw — that is the version promise', async () => {
-    // A plugin built against a newer SDK naming a place this host has never heard of must simply
+    // A mini app built against a newer SDK naming a place this host has never heard of must simply
     // not appear. `placement` is an open string for exactly this reason.
     registerStatusItem({
       id: 'fixture:future',
-      pluginName: 'fixture',
+      miniAppName: 'fixture',
       placement: 'sidebar.footer.2027',
       useItem: () => item({ label: 'From the future' }),
     })
@@ -102,10 +102,10 @@ describe('contributed status items', () => {
     }
   })
 
-  test('the state a plugin returns is what the host renders', async () => {
+  test('the state a mini app returns is what the host renders', async () => {
     registerStatusItem({
       id: 'fixture:live',
-      pluginName: 'fixture',
+      miniAppName: 'fixture',
       placement: 'test.live',
       useItem: (sessionId) =>
         item({
@@ -130,7 +130,7 @@ describe('contributed status items', () => {
   test('`null` means no control at all, not an empty one', async () => {
     registerStatusItem({
       id: 'fixture:absent',
-      pluginName: 'fixture',
+      miniAppName: 'fixture',
       placement: 'test.absent',
       useItem: () => null,
     })
@@ -146,14 +146,14 @@ describe('contributed status items', () => {
     }
   })
 
-  test('nothing contributed shows before the backend confirms the plugin is on', async () => {
-    // Fail-closed is the rule for every plugin-owned contribution: until the capability snapshot
+  test('nothing contributed shows before the backend confirms the mini app is on', async () => {
+    // Fail-closed is the rule for every mini-app-owned contribution: until the capability snapshot
     // lands, "not loaded yet" must not be mistaken for "enabled". A status item is chrome, so an
     // item that flashed in and then vanished on the first snapshot would be the most visible
     // possible version of that mistake.
     registerStatusItem({
       id: 'fixture:gated',
-      pluginName: 'not-in-the-snapshot',
+      miniAppName: 'not-in-the-snapshot',
       placement: 'test.gated',
       useItem: () => item({ label: 'Should not appear' }),
     })
@@ -166,14 +166,14 @@ describe('contributed status items', () => {
   })
 
   test("one declaration renders in every place, on that place's own recipe", async () => {
-    // The same state object, three placements. This is what makes a plugin able to show one fact
+    // The same state object, three placements. This is what makes a mini app able to show one fact
     // in two rows without writing it twice — Git registers one hook for the titlebar AND the
     // composer, and the two cannot disagree because there is nothing to keep in sync.
     const declaration = () => item({ label: 'Everywhere', text: 'main', onClick: () => undefined })
     for (const placement of ['titlebar', 'composer', 'statusbar'] as const) {
       registerStatusItem({
         id: `fixture:${placement}`,
-        pluginName: 'fixture',
+        miniAppName: 'fixture',
         placement,
         useItem: declaration,
       })
@@ -188,10 +188,10 @@ describe('contributed status items', () => {
   })
 
   test('order comes from identity, so registration order cannot change it', async () => {
-    // Six items from three plugins, registered in a deliberately scrambled order. Sorting on
-    // `(pluginName, id)` is what makes the bar look the same however discovery happened to run —
+    // Six items from three mini apps, registered in a deliberately scrambled order. Sorting on
+    // `(miniAppName, id)` is what makes the bar look the same however discovery happened to run —
     // and what makes a numeric `order` field unnecessary, along with the race to claim `0`.
-    for (const [plugin, suffix] of [
+    for (const [miniApp, suffix] of [
       ['zeta', 'b'],
       ['alpha', 'b'],
       ['zeta', 'a'],
@@ -200,10 +200,10 @@ describe('contributed status items', () => {
       ['mid', 'b'],
     ] as const) {
       registerStatusItem({
-        id: `${plugin}:${suffix}`,
-        pluginName: plugin,
+        id: `${miniApp}:${suffix}`,
+        miniAppName: miniApp,
         placement: 'test.order',
-        useItem: () => item({ label: `${plugin}-${suffix}` }),
+        useItem: () => item({ label: `${miniApp}-${suffix}` }),
       })
     }
     expect(statusItemsFor('test.order').map((entry) => entry.id)).toEqual([
@@ -219,13 +219,13 @@ describe('contributed status items', () => {
   test('a throwing item removes itself and leaves its neighbours standing', async () => {
     registerStatusItem({
       id: 'aaa:good',
-      pluginName: 'aaa',
+      miniAppName: 'aaa',
       placement: 'test.blast',
       useItem: () => item({ label: 'Survivor' }),
     })
     registerStatusItem({
       id: 'bbb:broken',
-      pluginName: 'bbb',
+      miniAppName: 'bbb',
       placement: 'test.blast',
       useItem: () => {
         throw new Error('boom in useItem')
@@ -233,7 +233,7 @@ describe('contributed status items', () => {
     })
     registerStatusItem({
       id: 'ccc:good',
-      pluginName: 'ccc',
+      miniAppName: 'ccc',
       placement: 'test.blast',
       useItem: () => item({ label: 'Also fine' }),
     })
@@ -241,7 +241,7 @@ describe('contributed status items', () => {
     const view = await render(<StatusItems placement="test.blast" sessionId="s1" />)
     try {
       // Without a per-item boundary this throw reaches the app shell and the user sees a blank
-      // window instead of one plugin's missing glyph.
+      // window instead of one mini app's missing glyph.
       expect(view.html).toContain('Survivor')
       expect(view.html).toContain('Also fine')
     } finally {
@@ -250,7 +250,7 @@ describe('contributed status items', () => {
   })
 
   test('an item that registers after the bar mounted still reaches it', async () => {
-    // The regression this exists for: plugin UI chunks are imported once the capability snapshot
+    // The regression this exists for: mini app UI chunks are imported once the capability snapshot
     // resolves, which is AFTER the titlebar has painted. The registry is a plain module Map, so
     // without a change signal the strip keeps the answer it got at mount — every contributed glyph
     // registered into a bar that had already decided it had none, and the titlebar stayed empty
@@ -266,7 +266,7 @@ describe('contributed status items', () => {
       await view.mutate(() =>
         registerStatusItem({
           id: 'late:arrival',
-          pluginName: 'late',
+          miniAppName: 'late',
           placement: 'test.late',
           useItem: () => item({ label: 'Arrived late' }),
         }),
@@ -279,23 +279,23 @@ describe('contributed status items', () => {
 
   test('the enabled set landing after the bar mounted also reaches it', async () => {
     // The other half of the same signal, and the shape a RELAUNCH takes: the restored frame
-    // publishes the plugins we already believed, so the capability version — which only moves when
-    // the set does — never advances. The gate opening has to be news on its own.
+    // publishes the mini apps we already believed, so the capability version — which only moves
+    // when the set does — never advances. The gate opening has to be news on its own.
     registerStatusItem({
       id: 'gate:item',
-      pluginName: 'gate',
+      miniAppName: 'gate',
       placement: 'test.gate',
       useItem: () => item({ label: 'Gated open' }),
     })
-    setEnabledMiniAppNames(new Set(FIXTURE_PLUGINS.filter((name) => name !== 'gate')))
+    setEnabledMiniAppNames(new Set(FIXTURE_MINI_APPS.filter((name) => name !== 'gate')))
     const view = await render(<StatusItems placement="test.gate" sessionId="s1" />)
     try {
       expect(view.html).not.toContain('Gated open')
-      await view.mutate(() => setEnabledMiniAppNames(new Set(FIXTURE_PLUGINS)))
+      await view.mutate(() => setEnabledMiniAppNames(new Set(FIXTURE_MINI_APPS)))
       expect(view.html).toContain('Gated open')
     } finally {
       await view.close()
-      setEnabledMiniAppNames(new Set(FIXTURE_PLUGINS))
+      setEnabledMiniAppNames(new Set(FIXTURE_MINI_APPS))
     }
   })
 
@@ -303,7 +303,7 @@ describe('contributed status items', () => {
     for (const suffix of ['a', 'b', 'c', 'd', 'e', 'f']) {
       registerStatusItem({
         id: `over:${suffix}`,
-        pluginName: 'over',
+        miniAppName: 'over',
         placement: 'test.overflow',
         useItem: () => item({ label: `item-${suffix}` }),
       })

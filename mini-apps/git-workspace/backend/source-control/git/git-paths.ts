@@ -6,7 +6,7 @@
  * still the fallback — but it costs a process spawn per name, and the status
  * read asks for five of them on every poll tick. When the caller already knows
  * the per-worktree git dir (from {@link RepoContext}), joining is exact for
- * every per-worktree name this plugin reads and costs nothing.
+ * every per-worktree name this mini app reads and costs nothing.
  *
  * Two callers shared a byte-identical private copy of the spawn version before
  * this module existed (`rebase.ts` and `bisect.ts`); they now share this one.

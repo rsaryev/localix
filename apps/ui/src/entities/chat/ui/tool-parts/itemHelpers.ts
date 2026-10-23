@@ -89,7 +89,7 @@ export function itemErrorHeadline(item: ToolBackedItem): string | undefined {
 
 /**
  * True for tool items that must render OUTSIDE any ToolChain cluster (running
- * stream, HITL ask/quiz, a plugin's content surface) — folding them into a chain
+ * stream, HITL ask/quiz, a mini app's content surface) — folding them into a chain
  * digest would hide (and unmount) an interactive surface.
  */
 export function isStandaloneItem(item: AgentItem): boolean {

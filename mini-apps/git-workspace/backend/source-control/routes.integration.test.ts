@@ -270,7 +270,7 @@ describe('merge', () => {
 
 describe('typed refusals reach the browser as typed refusals', () => {
   /**
-   * The regression this pins is a whole class. The backend host serves a plugin
+   * The regression this pins is a whole class. The backend host serves a mini app
    * app with `wrapper.fetch(...)`, so a throw is caught by THAT app — never the
    * host's error boundary. Without `app.onError(defaultErrorHandler)` every one
    * of these became a bare 500 with a text body, `unwrapMiniAppResponse` found no

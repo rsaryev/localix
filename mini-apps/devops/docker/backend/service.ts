@@ -21,7 +21,7 @@ export const COMPOSE_NEGATIVE_TTL_MS = 60_000
 
 export function createDockerService(options: DockerServiceOptions = {}): DockerService {
   const backend = options.backend ?? createDockerBackend()
-  // A PRESENT Compose plugin does not vanish mid-process, so `true` is memoized for good. `false`
+  // A PRESENT Compose mini app does not vanish mid-process, so `true` is memoized for good. `false`
   // is not: it was also the answer while the CLI could not be found at all (the packaged app's PATH
   // bug) or before the person installed Docker, and memoized it hid the Up action until a restart.
   // It is re-probed after a minute instead — rare enough that UI polls stay free.

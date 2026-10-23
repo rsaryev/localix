@@ -8,7 +8,7 @@ answers with the mini app's tool.
 
 1. You play X on the board. The board asks the host to wake the chat it belongs to, with the
    position and the tools that answer it (`ctx.host.wake`).
-2. The host puts the `tic_tac_toe` tool on that chat's wire and starts a turn, marked "via Plugin"
+2. The host puts the `tic_tac_toe` tool on that chat's wire and starts a turn, marked "via Mini app"
    in the transcript.
 3. The agent calls `tic_tac_toe` with action `move`. While the game goes on that move ends its turn
    — the board shows it, so no chat line is needed. When a game ends, the result appears over the

@@ -48,13 +48,13 @@ export function bindMiniAppUiRuntime(next: MiniAppUiRuntime): () => void {
 }
 
 function currentRuntime(): MiniAppUiRuntime {
-  if (!runtime) throw new Error('Plugin UI runtime is not bound by the host')
+  if (!runtime) throw new Error('Mini app UI runtime is not bound by the host')
   return runtime
 }
 
 function miniAppDownloadPath(path: string): string {
   if (!path.startsWith('/rpc/') || path.startsWith('//')) {
-    throw new Error(`Plugin downloads must use a relative /rpc/* path: ${path}`)
+    throw new Error(`Mini app downloads must use a relative /rpc/* path: ${path}`)
   }
   return path
 }
@@ -149,7 +149,7 @@ export const miniAppSecrets = {
 
 function miniAppFrameTag(tag: string): string {
   if (!/^[a-z]$/.test(tag) || RESERVED_FRAME_TAGS.has(tag)) {
-    throw new Error(`Plugin realtime frame tag must be one lowercase non-core character: ${tag}`)
+    throw new Error(`Mini app realtime frame tag must be one lowercase non-core character: ${tag}`)
   }
   return tag
 }
@@ -222,13 +222,13 @@ export const miniAppClipboard = {
 function safeExternalUrl(value: string): string {
   const url = new URL(value)
   if (!['http:', 'https:', 'mailto:', 'tel:'].includes(url.protocol)) {
-    throw new Error(`Plugin external URLs must use http, https, mailto, or tel: ${url.protocol}`)
+    throw new Error(`Mini app external URLs must use http, https, mailto, or tel: ${url.protocol}`)
   }
   if ((url.protocol === 'http:' || url.protocol === 'https:') && !url.host) {
-    throw new Error('Plugin browser URLs must include a host')
+    throw new Error('Mini app browser URLs must include a host')
   }
   if ((url.protocol === 'mailto:' || url.protocol === 'tel:') && !url.pathname) {
-    throw new Error(`Plugin ${url.protocol.slice(0, -1)} URLs must include a destination`)
+    throw new Error(`Mini app ${url.protocol.slice(0, -1)} URLs must include a destination`)
   }
   return url.toString()
 }

@@ -83,7 +83,7 @@ export function createHttpSendAction(deps: HttpSendDeps) {
     }
 
     // The saved request's name rides along so the vault's activity log attributes the
-    // read to it; an ad-hoc send has no name to give and stays attributed to the plugin.
+    // read to it; an ad-hoc send has no name to give and stays attributed to the mini app.
     const auth = await resolveAuthSecrets(
       userId,
       resolved.auth,

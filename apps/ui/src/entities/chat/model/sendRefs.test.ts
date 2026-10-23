@@ -30,22 +30,22 @@ describe('refsFromContextBindingDrafts', () => {
   test('preserves opaque Reader resources and deduplicates repeated action context', () => {
     const binding = {
       kind: 'context' as const,
-      source: 'plugin' as const,
+      source: 'mini-app' as const,
       target: {
         kind: 'resource' as const,
-        token: '@resource:opaque:plugin-resource/book/0',
+        token: '@resource:opaque:mini-app-resource/book/0',
         label: 'Book · Chapter 1',
-        uri: 'opaque:plugin-resource/book/0',
+        uri: 'opaque:mini-app-resource/book/0',
       },
     }
     const refs = refsFromContextBindingDrafts([binding, binding])
 
     expect(refs).toHaveLength(1)
     expect(refs[0]).toMatchObject({
-      key: '@resource:opaque:plugin-resource/book/0',
-      uri: 'opaque:plugin-resource/book/0',
+      key: '@resource:opaque:mini-app-resource/book/0',
+      uri: 'opaque:mini-app-resource/book/0',
       label: 'Book · Chapter 1',
-      messageBinding: { source: 'plugin', target: binding.target },
+      messageBinding: { source: 'mini-app', target: binding.target },
     })
   })
 
@@ -54,7 +54,7 @@ describe('refsFromContextBindingDrafts', () => {
     const [ref] = refsFromContextBindingDrafts([
       {
         kind: 'context',
-        source: 'plugin',
+        source: 'mini-app',
         target: {
           kind: 'terminal',
           token: '@terminal:long-command',
@@ -73,7 +73,7 @@ describe('refsFromContextBindingDrafts', () => {
     const [ref] = refsFromContextBindingDrafts([
       {
         kind: 'context',
-        source: 'plugin',
+        source: 'mini-app',
         target: { kind: 'terminal', token: '@terminal:exact', label },
       },
     ])
@@ -148,14 +148,14 @@ describe('resolveSendRefs', () => {
     })
   })
 
-  // The owner is what brings the plugin's tools to the turn; dropping it here would send the tab's
-  // context and none of its tools.
-  test("an ambient plugin tab's owner rides to the wire", () => {
+  // The owner is what brings the mini app's tools to the turn; dropping it here would send the
+  // tab's context and none of its tools.
+  test("an ambient mini app tab's owner rides to the wire", () => {
     const [ambient] = refsFromContextBindingDrafts([
       {
         kind: 'context',
         source: 'active-tab',
-        plugin: 'fixture-board',
+        miniApp: 'fixture-board',
         target: {
           kind: 'resource',
           token: '@resource:localix://resource/fixture-board/board',
@@ -174,7 +174,7 @@ describe('resolveSendRefs', () => {
     expect(wire?.[0]).toMatchObject({
       kind: 'context',
       source: 'active-tab',
-      plugin: 'fixture-board',
+      miniApp: 'fixture-board',
     })
   })
 
@@ -359,7 +359,7 @@ describe('returned context bindings', () => {
     ])
   })
 
-  test('restores a plugin tab owner so its tool is active when the message is resent', () => {
+  test('restores a mini app tab owner so its tool is active when the message is resent', () => {
     const original: MessageContextBinding = {
       ...binding('@snippet:board', {
         kind: 'snippet',
@@ -367,7 +367,7 @@ describe('returned context bindings', () => {
         attributes: { content: 'Current board' },
       }),
       source: 'active-tab',
-      plugin: 'fixture-board',
+      miniApp: 'fixture-board',
     }
     const [restored] = contextRefsMissingFromComposerText('inspect the board', [original])
     const wire = resolveSendRefs({
@@ -379,7 +379,7 @@ describe('returned context bindings', () => {
 
     expect(wire?.[0]).toMatchObject({
       source: 'active-tab',
-      plugin: 'fixture-board',
+      miniApp: 'fixture-board',
       target: original.target,
     })
   })
@@ -406,7 +406,7 @@ describe('returned context bindings', () => {
     })
   })
 
-  test('preserves an opaque plugin URI, attributes, and active-tab provenance through send', () => {
+  test('preserves an opaque mini app URI, attributes, and active-tab provenance through send', () => {
     const target: MessageContextBinding['target'] = {
       kind: 'resource',
       token: '@resource:localix://resource/fixture-market/main/BTC-USD/candles/4h',

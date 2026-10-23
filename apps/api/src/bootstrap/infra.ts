@@ -84,7 +84,9 @@ export interface InfraPhase {
   mediaStore: ReturnType<typeof createMediaStore>
   /** Models on this computer: the `local` provider's and semantic search's one source. */
   localModels: LocalModelsService
-  /** The change feeds' consumers: the core's (producers write with `recordCoreChanges`), plugins'. */
+  /**
+   * The change feeds' consumers: the core's (producers write with `recordCoreChanges`), mini apps'.
+   */
   changes: ChangeFeeds
 }
 
@@ -92,7 +94,7 @@ export async function createInfraPhase(
   envSource: Record<string, string | undefined>,
   runtimeInfo?: BootstrapRuntimeInfo,
 ): Promise<InfraPhase> {
-  // Before anything can import a plugin backend: their shared imports resolve to the host's own
+  // Before anything can import a mini app backend: their shared imports resolve to the host's own
   // modules from here on (`features/mini-apps/backend-host-modules.ts`).
   installBackendHostModules()
   const env = loadEnv(envSource)

@@ -5,7 +5,7 @@ import { createPanelActions } from '@/shared/contrib/miniAppPanelActions'
 import { createPanelBridgeHost, type PanelWindowLike } from './panelBridgeCore'
 
 /**
- * Host side of the plugin-panel bridge, exercised with a FAKE iframe
+ * Host side of the mini-app-panel bridge, exercised with a FAKE iframe
  * contentWindow — the protocol contract, minus React and the DOM.
  */
 
@@ -28,7 +28,7 @@ function makeHost(win: PanelWindowLike | null, onBridged?: () => void) {
   return createPanelBridgeHost({
     getWindow: () => win,
     actions: createPanelActions(deps),
-    context: { pluginName: 'sample-plugin', projectId: '', panelName: 'demo' },
+    context: { miniAppName: 'sample-mini-app', projectId: '', panelName: 'demo' },
     onBridged,
     getNonce: () => NONCE,
   })
@@ -47,7 +47,7 @@ describe('createPanelBridgeHost', () => {
     host.handleMessage({ data: stamp(invokeMessage('req-1', 'ping', { n: 7 })), source: win })
     await flush()
     expect(win.posted).toEqual([
-      { lx: 'plugin-ui', v: 1, type: 'result', id: 'req-1', payload: { n: 7 } },
+      { lx: 'mini-app-ui', v: 1, type: 'result', id: 'req-1', payload: { n: 7 } },
     ])
   })
 
@@ -58,7 +58,7 @@ describe('createPanelBridgeHost', () => {
     await flush()
     expect(win.posted).toEqual([
       {
-        lx: 'plugin-ui',
+        lx: 'mini-app-ui',
         v: 1,
         type: 'error',
         id: 'req-2',
@@ -94,7 +94,7 @@ describe('createPanelBridgeHost', () => {
     host.postTheme({ theme: 'dark', vars: { '--background': '#000' } })
     expect(win.posted).toEqual([
       {
-        lx: 'plugin-ui',
+        lx: 'mini-app-ui',
         v: 1,
         type: 'theme',
         payload: { theme: 'dark', vars: { '--background': '#000' } },
@@ -128,7 +128,7 @@ describe('createPanelBridgeHost', () => {
     host.postSessionEvent('sess-9', 'run-completed')
     expect(win.posted).toEqual([
       {
-        lx: 'plugin-ui',
+        lx: 'mini-app-ui',
         v: 1,
         type: 'event',
         payload: { name: 'session', data: { phase: 'run-completed', sessionId: 'sess-9' } },
@@ -148,7 +148,7 @@ describe('createPanelBridgeHost', () => {
           return {}
         },
       }),
-      context: { pluginName: 'sample-plugin', projectId: '', panelName: 'demo' },
+      context: { miniAppName: 'sample-mini-app', projectId: '', panelName: 'demo' },
       getNonce: () => NONCE,
     })
     const msg = invokeMessage('drop-me', 'sendPrompt', { text: 'hi' })
@@ -172,7 +172,7 @@ describe('createPanelBridgeHost', () => {
           return {}
         },
       }),
-      context: { pluginName: 'sample-plugin', projectId: '', panelName: 'demo' },
+      context: { miniAppName: 'sample-mini-app', projectId: '', panelName: 'demo' },
       onBridged: () => bridgedCalls++,
       getNonce: () => NONCE,
     })
@@ -192,7 +192,7 @@ describe('createPanelBridgeHost', () => {
     const unbound = createPanelBridgeHost({
       getWindow: () => win,
       actions: createPanelActions({ getSessionId: () => 's1', sendMessage: async () => ({}) }),
-      context: { pluginName: 'sample-plugin', projectId: '', panelName: 'demo' },
+      context: { miniAppName: 'sample-mini-app', projectId: '', panelName: 'demo' },
       getNonce: () => null,
     })
     unbound.handleMessage({ data: stamp(readyMessage()), source: win })

@@ -1,4 +1,4 @@
 [test]
 # The kit preload warms Radix with a DOM so portals mount in DOM suites; the package-local runner
-# does not inherit the root preload (`scripts/plugin-test-preload.test.ts`).
+# does not inherit the root preload (`scripts/mini-app-test-preload.test.ts`).
 preload = ["../../scripts/test-deadline.ts", "../../packages/kit/test-preload.ts"]

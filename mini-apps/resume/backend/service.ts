@@ -142,7 +142,8 @@ export function createResumeService(workspace: string) {
         label: 'State before edit',
         recordedAt: current.updatedAt,
       })
-      // Recheck after snapshot IO: a regular file tool can edit outside this plugin's write queue.
+      // Recheck after snapshot IO: a regular file tool can edit outside this mini app's write
+      // queue.
       expectRevision(await get(userId, id), revision)
       const { revision: _oldRevision, ...stored } = current
       return persist(

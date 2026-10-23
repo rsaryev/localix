@@ -1,71 +1,73 @@
 /**
- * The PLUGIN KIT: everything the running app needs to scaffold, build and check a user's mini app,
- * shipped beside the staged first-party plugins (`resources/plugin-kit` in a release, the dev
- * staging root in development).
+ * The MINI APP KIT: everything the running app needs to scaffold, build and check a user's mini
+ * app, shipped beside the staged first-party mini apps (`resources/mini-app-kit` in a release, the
+ * dev staging root in development).
  *
- * The defect it stops: `/plugin create` used to run a script from the Localix source checkout and
- * hand the agent that checkout's path, so an agent asked for a plugin edited the application's own
- * repository — and on an installed app, which has no checkout, the command could not work at all.
- * A user's mini app is not part of the app. It is authored in `~/.localix/mini-apps/<name>` and the app
- * builds it with inputs it carries itself: the reference template, the export names of the modules
- * the host shares with plugin UI, the host theme's stylesheets, and prebuilt copies of the modules
- * a plugin backend may import. Staging (`scripts/stage-plugin-kit.mjs`) writes the kit; the API
- * reads it. This module is the one description of its layout both sides use.
+ * The defect it stops: `/mini-app create` used to run a script from the Localix source checkout and
+ * hand the agent that checkout's path, so an agent asked for a mini app edited the application's
+ * own repository — and on an installed app, which has no checkout, the command could not work at
+ * all. A user's mini app is not part of the app. It is authored in `~/.localix/mini-apps/<name>`
+ * and the app builds it with inputs it carries itself: the reference template, the export names of
+ * the modules the host shares with mini app UI, the host theme's stylesheets, and prebuilt copies
+ * of the modules a mini app backend may import. Staging (`scripts/stage-mini-app-kit.mjs`) writes
+ * the kit; the API reads it. This module is the one description of its layout both sides use.
  */
 
-/** The kit's directory name, a sibling of the staged plugins root. */
-export const PLUGIN_KIT_DIR_NAME = 'plugin-kit'
+/** The kit's directory name, a sibling of the staged mini apps root. */
+export const MINI_APP_KIT_DIR_NAME = 'mini-app-kit'
 /** The kit's self-description (see {@link MiniAppKitManifest}). */
-export const PLUGIN_KIT_MANIFEST = 'kit.json'
-export const PLUGIN_KIT_SCHEMA_VERSION = 1
-/** The reference plugin every scaffold forks. */
-export const PLUGIN_KIT_TEMPLATE_DIR = 'template'
+export const MINI_APP_KIT_MANIFEST = 'kit.json'
+export const MINI_APP_KIT_SCHEMA_VERSION = 1
+/** The reference mini app every scaffold forks. */
+export const MINI_APP_KIT_TEMPLATE_DIR = 'template'
 /** The template's own description of its layout (entry, domain, renames). */
 export const TEMPLATE_SCAFFOLD_FILE = 'scaffold.json'
 /** The host theme's stylesheets, imports rewritten to kit-relative paths. */
-export const PLUGIN_KIT_STYLES_DIR = 'ui/styles'
-/** Tailwind's utilities layer inside {@link PLUGIN_KIT_STYLES_DIR}: what a plugin emits. */
+export const MINI_APP_KIT_STYLES_DIR = 'ui/styles'
+/** Tailwind's utilities layer inside {@link MINI_APP_KIT_STYLES_DIR}: what a mini app emits. */
 export const TAILWIND_UTILITIES = 'tailwindcss/utilities.css'
 /** Prebuilt backend shared modules (one split build, so they share one zod). */
-export const PLUGIN_KIT_BACKEND_DIR = 'backend'
-/** `bun <runner> <pluginDir>` type-checks a user's mini app; prints one JSON diagnostic per line. */
-export const PLUGIN_KIT_TYPECHECK = 'typescript/check.mjs'
+export const MINI_APP_KIT_BACKEND_DIR = 'backend'
+/**
+ * `bun <runner> <miniAppDir>` type-checks a user's mini app; prints one JSON diagnostic per line.
+ */
+export const MINI_APP_KIT_TYPECHECK = 'typescript/check.mjs'
 /** `bun test --preload` for a user's mini app: serves the shared modules to its tests. */
-export const PLUGIN_KIT_TEST_PRELOAD = 'backend/test-preload.mjs'
+export const MINI_APP_KIT_TEST_PRELOAD = 'backend/test-preload.mjs'
 /** Packages a user's mini app's UI bundles from the kit (their ES module trees, source maps dropped). */
-export const PLUGIN_KIT_UI_VENDOR_DIR = 'ui/vendor'
+export const MINI_APP_KIT_UI_VENDOR_DIR = 'ui/vendor'
 /**
  * The kit catalog as Markdown — which module for which job — rendered at staging from
- * `@localixai/kit/catalog`. Every build copies it into the plugin under the same name, beside the
+ * `@localixai/kit/catalog`. Every build copies it into the mini app under the same name, beside the
  * generated `tsconfig.json`, so the agent reads it from its own folder.
  */
-export const PLUGIN_KIT_CATALOG = 'KIT.md'
+export const MINI_APP_KIT_CATALOG = 'KIT.md'
 
 /**
  * Packages a user's mini app's UI may import that are NOT host-shared: the build bundles them from the
  * kit's copy. Icons are the case — a shared instance would drag every icon into each import, while
- * the package's per-icon modules let the bundler keep only the ones a plugin uses (one icon: ~5 KB
- * against ~740 KB for a single prebundled file).
+ * the package's per-icon modules let the bundler keep only the ones a mini app uses (one icon: ~5
+ * KB against ~740 KB for a single prebundled file).
  */
 export const MINI_APP_UI_VENDOR_PACKAGES: readonly string[] = ['lucide-react', 'mediabunny']
 
 /**
- * Backend shared modules a plugin's UI bundles too, from the same prebuilt copy: the contracts in
+ * Backend shared modules a mini app's UI bundles too, from the same prebuilt copy: the contracts in
  * `shared/` are zod schemas both halves import, and a user's mini app has no other zod to resolve.
  */
 export const MINI_APP_UI_PREBUILT_MODULES: readonly string[] = ['zod']
 
 /**
- * The modules the HOST hands every plugin backend at runtime, instead of each bundle carrying its
- * own copy (`features/mini-apps/backend-host-modules.ts` serves them; staging and the user-plugin
+ * The modules the HOST hands every mini app backend at runtime, instead of each bundle carrying its
+ * own copy (`features/mini-apps/backend-host-modules.ts` serves them; staging and the user-mini-app
  * build leave them external).
  *
  * The defect: every first-party backend bundled its own zod, hono and SDK — 18 copies of zod, and
  * a 476 KB bundle for a game whose own code is 14 KB. Importing the 20 backends cost ~104 MB of RSS
  * against ~46 MB with one shared copy, measured on the staged bundles. One copy also means one
- * class identity: a plugin's `ZodObject` IS the host's. These are the exact specifiers first-party
- * backends import (measured from their build graphs); a specifier the host does not list is
- * bundled as before.
+ * class identity: a mini app's `ZodObject` IS the host's. These are the exact specifiers
+ * first-party backends import (measured from their build graphs); a specifier the host does not
+ * list is bundled as before.
  */
 export const MINI_APP_BACKEND_HOST_MODULES = [
   'hono',
@@ -84,8 +86,8 @@ export const MINI_APP_BACKEND_HOST_MODULES = [
 export type MiniAppBackendHostModule = (typeof MINI_APP_BACKEND_HOST_MODULES)[number]
 
 /**
- * Bare modules a USER plugin backend may import. They are not installed beside the plugin — a user
- * plugin has no `node_modules` — so the host provides each at runtime (every one is in
+ * Bare modules a USER mini app backend may import. They are not installed beside the mini app — a
+ * user mini app has no `node_modules` — so the host provides each at runtime (every one is in
  * {@link MINI_APP_BACKEND_HOST_MODULES}). Anything else bare is a build error that names this list;
  * `node:*` and `bun:*` are the runtime's own.
  */
@@ -101,7 +103,7 @@ export const MINI_APP_BACKEND_SHARED_MODULES: readonly string[] = [
 /**
  * What a user's mini app's TESTS may import besides {@link MINI_APP_BACKEND_SHARED_MODULES}: a test of
  * shared logic reaches the SDK's UI helpers (a message-context builder) without rendering anything.
- * Rendering tests need the host's DOM harness, which only the in-repo plugins have.
+ * Rendering tests need the host's DOM harness, which only the in-repo mini apps have.
  */
 export const MINI_APP_TEST_EXTRA_MODULES: readonly string[] = [
   '@localixai/mini-app-sdk/ui',
@@ -110,11 +112,11 @@ export const MINI_APP_TEST_EXTRA_MODULES: readonly string[] = [
 ]
 
 /**
- * The kit exports a plugin UI is built from, as `<kit id>:<export>` — the digest the agent's
+ * The kit exports a mini app UI is built from, as `<kit id>:<export>` — the digest the agent's
  * instruction carries lists exactly these, with their props. Everything else in the kit is still
  * importable and typed; these are the controls a copy should reach for before writing its own.
  */
-export const PLUGIN_KIT_DIGEST: readonly string[] = [
+export const MINI_APP_KIT_DIGEST: readonly string[] = [
   'button:Button',
   'icon-button:IconButton',
   'input:Input',
@@ -149,7 +151,7 @@ export function isUserMiniAppBackendBuild(tools: unknown): boolean {
 }
 
 export interface MiniAppKitManifest {
-  schemaVersion: typeof PLUGIN_KIT_SCHEMA_VERSION
+  schemaVersion: typeof MINI_APP_KIT_SCHEMA_VERSION
   /** `@localixai/kit/<id>` ids, sorted. */
   kitModules: string[]
   /**
@@ -158,11 +160,11 @@ export interface MiniAppKitManifest {
    * the declarations were real.
    */
   kitDigest?: string[]
-  /** The kit-relative {@link PLUGIN_KIT_CATALOG}. Absent in a kit staged before the catalog. */
+  /** The kit-relative {@link MINI_APP_KIT_CATALOG}. Absent in a kit staged before the catalog. */
   kitCatalog?: string
   /** Every UI shared specifier → its value export names (the shims re-export exactly these). */
   uiSharedExports: Record<string, string[]>
-  /** The stylesheet a plugin's utilities are compiled against, relative to the kit. */
+  /** The stylesheet a mini app's utilities are compiled against, relative to the kit. */
   hostStylesheet: string
   /** Backend and test shared specifiers → the kit-relative prebuilt module. */
   backendModules: Record<string, string>
@@ -178,7 +180,7 @@ export function isMiniAppKitManifest(value: unknown): value is MiniAppKitManifes
   if (!value || typeof value !== 'object') return false
   const record = value as Record<string, unknown>
   return (
-    record.schemaVersion === PLUGIN_KIT_SCHEMA_VERSION &&
+    record.schemaVersion === MINI_APP_KIT_SCHEMA_VERSION &&
     Array.isArray(record.kitModules) &&
     typeof record.hostStylesheet === 'string' &&
     !!record.uiSharedExports &&

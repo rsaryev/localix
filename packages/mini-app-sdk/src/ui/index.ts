@@ -1,5 +1,5 @@
 /**
- * Workbench UI contribution surface — the contracts a plugin's `ui/register.tsx`
+ * Workbench UI contribution surface — the contracts a mini app's `ui/register.tsx`
  * compiles against. The host (`apps/ui`) implements the registries and passes a
  * {@link MiniAppUiHost} into `registerUi(host)`.
  */
@@ -162,7 +162,7 @@ export type {
 } from './notifications'
 export { useProblemReport } from './use-problem-report'
 // Prerequisite recovery (Install / Start) has its own subpath, `./ui/prerequisite-recovery`, and the
-// shape its own, `./prerequisite`: the barrel is past its byte ceiling, and every plugin pays it.
+// shape its own, `./prerequisite`: the barrel is past its byte ceiling, and every mini app pays it.
 export type { OwnedProblemReport } from './use-problem-report'
 export {
   problemConsequenceLabel,
@@ -328,9 +328,9 @@ export {
   useVisiblePolling,
   useWorkItemVisible,
 } from './visibility'
-// Plugin-UI bridge protocol v1 — the postMessage contract for sandboxed
-// (third-party) plugin iframes. Types + framework-free runtime helpers shared
-// by the host and plugin sides.
+// Mini app UI bridge protocol v1 — the postMessage contract for sandboxed
+// (third-party) mini app iframes. Types + framework-free runtime helpers shared
+// by the host and mini app sides.
 export {
   MINI_APP_UI_BRIDGE_MARKER,
   MINI_APP_UI_BRIDGE_VERSION,
@@ -368,8 +368,8 @@ export type {
  * The provider-id vocabulary, re-exported for the UI half.
  *
  * It lives under `backend/` because that is where the owning contract is, but it is PURE DATA with no
- * imports — so a plugin UI that mints resource URIs can derive the id instead of re-spelling it. That
- * matters for exactly one shape today: the UI builds `localix://resource/<provider>/…` and the
+ * imports — so a mini app UI that mints resource URIs can derive the id instead of re-spelling it.
+ * That matters for exactly one shape today: the UI builds `localix://resource/<provider>/…` and the
  * backend's `providerSegments(PROVIDER, uri)` has to accept it, so a rename that moved one and not
  * the other would fail silently, with URIs that no longer resolve.
  */

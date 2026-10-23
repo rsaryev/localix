@@ -145,7 +145,7 @@ describe('MessageContextEvidence', () => {
     const ui = await mount([
       context('a', 'Browser tabs'),
       context('w', 'Working tree status', 'system'),
-      context('b', 'Git — plugin context'),
+      context('b', 'Git — mini app context'),
       context('c', 'terminal 5693f564'),
     ])
     try {

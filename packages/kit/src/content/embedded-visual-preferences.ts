@@ -1,9 +1,9 @@
 /**
- * OS visual-preference contract for sandboxed plugin panel documents.
+ * OS visual-preference contract for sandboxed mini app panel documents.
  *
  * Media queries do match inside an iframe, but host styles do not cross its
  * document boundary. The panel document injects this build-owned CSS so
- * a plugin cannot accidentally lose the workbench's contrast, transparency and
+ * a mini app cannot accidentally lose the workbench's contrast, transparency and
  * forced-color behavior merely because it runs in the security sandbox.
  */
 export const EMBEDDED_VISUAL_PREFERENCES_CSS = `

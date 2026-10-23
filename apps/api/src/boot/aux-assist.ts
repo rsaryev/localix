@@ -42,7 +42,7 @@ export interface AuxAssistDeps {
   chatService: ReturnType<typeof createChatService>
   userService: ReturnType<typeof createUserService>
   projectsService: ReturnType<typeof createProjectsService>
-  /** Plugin-contributed text-input completion surfaces, resolved per call. */
+  /** Mini-app-contributed text-input completion surfaces, resolved per call. */
   contributedCompletionSurface: (id: string) => MiniAppTextInputCompletionSurface | undefined
   /** Shared aux ledger — every aux call accumulates onto one row per (session, kind). */
   auxUsageRepo: ReturnType<typeof createUsageRepository>

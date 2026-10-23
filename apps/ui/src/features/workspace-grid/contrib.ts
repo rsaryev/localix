@@ -10,7 +10,7 @@ function listChildren(parent: string | null): UiAnchorNode[] {
       {
         uri: ROOT,
         label: 'Workspace views',
-        detail: 'Search, files, and plugin workbenches',
+        detail: 'Search, files, and mini app workbenches',
         hasChildren: true,
         icon: 'ui-views',
         group: 'Application',

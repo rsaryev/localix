@@ -1,7 +1,7 @@
 /**
  * A trading failure, said the way every other Localix failure is said.
  *
- * A venue that stops answering is the normal weather here, so this plugin grew a habit of writing
+ * A venue that stops answering is the normal weather here, so this mini app grew a habit of writing
  * the reason into an `EmptyHint` — grey text in the middle of a pane, gone the moment the next
  * poll succeeded, and never anywhere a person could find it afterwards. A market you were not
  * watching is exactly the one whose failure you need to read later.
@@ -16,7 +16,7 @@ import { useProblemReport } from '@localixai/mini-app-sdk/ui'
 import type { MiniAppProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
 import type { ProblemConsequence, ProblemReport } from '@localixai/mini-app-sdk/ui/problems'
 
-/** Namespace for this plugin's rows in the Event Center. */
+/** Namespace for this mini app's rows in the Event Center. */
 const SCOPE = 'trading'
 
 export interface TradingFailure {

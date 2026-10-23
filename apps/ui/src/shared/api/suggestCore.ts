@@ -3,7 +3,7 @@
  * fingerprinting and the capped cache write, kept dependency-free so the
  * dedupe/cache semantics are unit-testable without the WebSocket client.
  *
- * A SURFACE — core's chat composer, or any text field a plugin contributed — registers a PROVIDER
+ * A SURFACE — core's chat composer, or any text field a mini app contributed — registers a PROVIDER
  * that returns its current OFFER ("here is my context payload + a stable key for it"), or null when
  * the surface isn't idle-eligible right now. One request gathers every surface's offer, so a single
  * aux round-trip serves all of them; each surface keys its cache, the combined fingerprint keys in-flight

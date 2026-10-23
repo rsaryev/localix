@@ -9,11 +9,11 @@ import { ASSISTANT_BINDINGS_MAX, ASSISTANT_BINDING_DATA_CAP_BYTES } from './nati
 // Split out of hooks.ts; the historical `./hooks` import surface re-exports these.
 
 /**
- * Run every plugin's `onUserMessage` hook against the run's prompt text.
- * Rewrites compose in plugin load order (each later plugin sees the previous
+ * Run every mini app's `onUserMessage` hook against the run's prompt text.
+ * Rewrites compose in mini app load order (each later mini app sees the previous
  * rewrite); the return value is the MODEL-FACING text for this run — callers
  * never persist it over the user's original message. Returns the input text
- * unchanged when no enabled plugin declares the hook.
+ * unchanged when no enabled mini app declares the hook.
  */
 export async function runUserMessageHooks(
   hookEntries: readonly LoadedMiniAppHook[],
@@ -45,7 +45,7 @@ export async function runUserMessageHooks(
   return text
 }
 
-/** Structural guard at the plugin trust boundary. */
+/** Structural guard at the mini app trust boundary. */
 function isValidBinding(value: unknown): value is MessageBinding {
   if (!isRecord(value)) return false
   const { kind } = value
@@ -121,12 +121,12 @@ function bindingLabel(binding: MessageBinding): string {
 }
 
 /**
- * Run every plugin's `onAssistantMessage` hook against the run's final reply.
- * Content rewrites compose in plugin order (each later plugin sees the previous
- * rewrite); bindings accumulate across plugins, validated per entry and
+ * Run every mini app's `onAssistantMessage` hook against the run's final reply.
+ * Content rewrites compose in mini app order (each later mini app sees the previous
+ * rewrite); bindings accumulate across mini apps, validated per entry and
  * capped at {@link ASSISTANT_BINDINGS_MAX} total /
  * {@link ASSISTANT_BINDING_DATA_CAP_BYTES} bytes each (violations
- * dropped + logged). Returns `{}` when no enabled plugin declares the hook.
+ * dropped + logged). Returns `{}` when no enabled mini app declares the hook.
  */
 export async function runAssistantMessageHooks(
   hookEntries: readonly LoadedMiniAppHook[],

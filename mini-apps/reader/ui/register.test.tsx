@@ -10,9 +10,9 @@ import type { DedicatedViewerType } from '@localixai/mini-app-sdk/ui'
 
 import { registerUi } from './register'
 
-test('registers reader work items, links, and ebook editor through the plugin host', () => {
+test('registers reader work items, links, and ebook editor through the mini app host', () => {
   // A recording host from the SDK, not a hand-rolled literal: the contract owns which registries
-  // exist, so adding a seam to it can no longer break a plugin that does not use the seam.
+  // exist, so adding a seam to it can no longer break a mini app that does not use the seam.
   const { host, registrations } = recordingMiniAppUiHost()
   registerUi(host)
 

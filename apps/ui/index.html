@@ -96,7 +96,8 @@
           var uaData = navigator.userAgentData
           var platformText =
             (uaData && uaData.platform) || navigator.platform || navigator.userAgent || ''
-          // A plugin installed as its own Mac app (shared/lib/pluginApp.ts) has the same backing.
+          // A mini app installed as its own Mac app (shared/lib/standaloneApp.ts) has the same
+          // backing.
           var nativeMaterial =
             Boolean(window.__LOCALIX_APP) ||
             ((window.__LOCALIX_DESKTOP === true ||

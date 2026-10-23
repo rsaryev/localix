@@ -2,7 +2,7 @@
   "name": "@localix-mini-app/devops",
   "version": "1.0.0",
   "private": true,
-  "description": "Dependencies for the bundled DevOps Workspace. Docker and Kubernetes providers ship behind one plugin entrypoint and one workspace surface.",
+  "description": "Dependencies for the bundled DevOps Workspace. Docker and Kubernetes providers ship behind one mini app entrypoint and one workspace surface.",
   "license": "MIT",
   "type": "module",
   "scripts": {

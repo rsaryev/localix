@@ -1,7 +1,7 @@
 /**
- * The wire contract between this plugin's backend routes and its own UI — the ONE place the two
- * agree on a shape. The UI imports these types directly (the plugin owns both sides), so a route's
- * response can never drift from what the sidebar reads.
+ * The wire contract between this mini app's backend routes and its own UI — the ONE place the two
+ * agree on a shape. The UI imports these types directly (the mini app owns both sides), so a
+ * route's response can never drift from what the sidebar reads.
  *
  * Every request-bearing type here is the REDACTED view: a `RequestInfo` is what leaves the
  * process, and `store.redactSpec` is what makes it safe. The store's `SavedRequest` deliberately
@@ -103,8 +103,8 @@ export interface RequestEdit {
     form?: { name: string; value: string; disabled?: boolean }[]
   }
   /**
-   * Per-request send settings. Absent means "use the plugin default": `followRedirects` defaults
-   * to true, `timeoutMs` to the plugin's configured timeout, `maxRedirects` to the built-in cap.
+   * Per-request send settings. Absent means "use the mini app default": `followRedirects` defaults
+   * to true, `timeoutMs` to the mini app's configured timeout, `maxRedirects` to the built-in cap.
    * They live on the EDIT surface (not auth) because a browser may set them freely — none of them
    * can point a credential anywhere. A PUT REPLACES them: an omitted setting reverts to the
    * default rather than lingering from the stored copy.
@@ -186,7 +186,7 @@ export interface RedirectHop {
  * one redirect chain and is then dropped, and this is only what the last hop asked the client to
  * store — surfaced so the workbench can show, e.g., that a login actually set a session. The value
  * is shown as-is: a `Set-Cookie` the server just sent back to THIS caller is one it chose to
- * disclose, not a credential this plugin is holding.
+ * disclose, not a credential this mini app is holding.
  */
 export interface ResponseCookie {
   name: string
@@ -236,7 +236,7 @@ export interface ImportResponse {
 export const EXPORT_FORMATS = ['curl'] as const
 export type ExportFormat = (typeof EXPORT_FORMATS)[number]
 
-/** Every failure this plugin's routes can name. The UI branches on the code, not the message. */
+/** Every failure this mini app's routes can name. The UI branches on the code, not the message. */
 export type RestErrorCode =
   | 'request_not_found'
   | 'name_taken'

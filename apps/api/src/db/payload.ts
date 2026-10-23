@@ -106,7 +106,7 @@ export interface StoredSystemNotice {
 }
 
 /**
- * The ONE tone vocabulary (`StatusTone` in the plugin SDK says the same five words). `muted`
+ * The ONE tone vocabulary (`StatusTone` in the mini app SDK says the same five words). `muted`
  * was this union's word for `neutral` and it had no `error`, so a run that failed for good
  * rendered in warning amber beside an error row in the Event Center. Stored `muted` rows are
  * rewritten to `neutral` by the same migration: the codec keeps no compatibility branch.
@@ -151,16 +151,16 @@ export interface StoredMessagePayload extends AgentChatMessage {
   /**
    * Provenance of a non-user-typed turn — an OPAQUE tag (the domain `WakeSource`
    * union in chat/contracts narrows it). Orthogonal to `isInternal` (visibility):
-   * this records WHERE the turn came from (loop / plugin / sleep / media / …) for
+   * this records WHERE the turn came from (loop / mini app / sleep / media / …) for
    * display + analytics. The storage layer deliberately does NOT enumerate values.
    */
   origin?: string
   /**
-   * Plugins whose tools the turn answering this row carries — the plugin that woke it. The typed
-   * counterpart rides each context binding (`MessageContextBinding.plugin`); both are read by
-   * `runtime/run/surface-tools.ts`, never persisted onto the session.
+   * Mini apps whose tools the turn answering this row carries — the mini app that woke it. The
+   * typed counterpart rides each context binding (`MessageContextBinding.miniApp`); both are read
+   * by `runtime/run/surface-tools.ts`, never persisted onto the session.
    */
-  plugins?: string[]
+  miniApps?: string[]
   /**
    * UI-ONLY marker: rendered in the transcript but EXCLUDED from the model context
    * (the inverse of `isInternal`, which hides from the UI but feeds the model).

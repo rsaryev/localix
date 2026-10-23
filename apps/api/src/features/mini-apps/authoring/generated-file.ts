@@ -2,13 +2,13 @@ import { randomUUID } from 'node:crypto'
 import { promises as fs } from 'node:fs'
 
 /**
- * Write a file Localix GENERATES inside a user plugin (its `tsconfig.json`, its `KIT.md`): only
+ * Write a file Localix GENERATES inside a user mini app (its `tsconfig.json`, its `KIT.md`): only
  * when the content changed, atomically, and never through a link.
  *
  * Unchanged content is left untouched because the editor's language server watches these files — a
  * rewrite with the same bytes reloaded the project on every build. The write goes through a
  * temporary file and a rename, so a reader never sees half a file. A symlink or a directory at the
- * path is refused: the plugin folder is the user's, and following a link would write outside it.
+ * path is refused: the mini app folder is the user's, and following a link would write outside it.
  */
 export async function writeGeneratedFile(
   path: string,
@@ -20,7 +20,7 @@ export async function writeGeneratedFile(
     throw error
   })
   if (existing?.isSymbolicLink() || (existing && !existing.isFile())) {
-    throw new Error(`Plugin ${label} must be a regular file, not a symlink or directory`)
+    throw new Error(`Mini app ${label} must be a regular file, not a symlink or directory`)
   }
   if ((await fs.readFile(path, 'utf8').catch(() => null)) === content) return
   const temporary = `${path}.${randomUUID()}.tmp`

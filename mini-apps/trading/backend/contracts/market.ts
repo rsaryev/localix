@@ -3,7 +3,7 @@
  * do (`ExchangeInfo`), what it lists (`Market`), and what it currently quotes (`Ticker`,
  * `Candle`, `OrderBook`, `PublicTrade`, funding / open interest).
  *
- * This is the surface the plugin actually registers. Nothing here mentions ccxt: the
+ * This is the surface the mini app actually registers. Nothing here mentions ccxt: the
  * driver normalizes its raw structures into these shapes.
  */
 import { z } from 'zod'
@@ -46,13 +46,13 @@ export interface ExchangeInfo {
   /** Credential fields the venue REQUIRES for private calls. */
   requiredCredentials: CredentialField[]
   /**
-   * What this plugin can actually do at the venue — RESEARCH READS ONLY.
+   * What this mini app can actually do at the venue — RESEARCH READS ONLY.
    *
    * The account and order family used to live here too (balance, positions, openOrders, myTrades,
    * fetchOrder, fetchClosedOrders, createOrder, cancelOrder, closePosition, cancelAllOrders,
    * triggerOrders, takeProfitStopLoss, setLeverage, setMarginMode, editOrder, fundingHistory) and
    * every one was probed, reported over the route, and PRINTED TO THE MODEL by `market_data` as
-   * something the venue "can actually honour". After the plugin was stripped to research
+   * something the venue "can actually honour". After the mini app was stripped to research
    * (`e550f0cb1`: no keys, no account, no orders — and the ccxt client is now built without
    * credentials, so a private call cannot even authenticate) those were claims about operations that
    * no longer exist anywhere in the codebase. An agent asked to place an order read `createOrder` in

@@ -1,5 +1,5 @@
 /**
- * `database_client` — the plugin's ONE agent tool. Wiring only: validate → pick the verb →
+ * `database_client` — the mini app's ONE agent tool. Wiring only: validate → pick the verb →
  * delegate → announce what a successful write changed (`shared/database-changes.ts`).
  * The contract and its read/write classifier live in `database-tool-schema.ts`; each verb's body
  * stays its own module, the way `api_client` fronts requests and environments.
@@ -78,8 +78,8 @@ export function createDatabaseTool(options: { userId: string; ports: DatabaseToo
   }
 
   return defineAgentTool({
-    // Compound, like `api_client`: core is checked for plugin tool names as bare words
-    // (`plugin-identity-guard`), and a bare `database` is a word core rightly uses everywhere.
+    // Compound, like `api_client`: core is checked for mini app tool names as bare words
+    // (`mini-app-identity-guard`), and a bare `database` is a word core rightly uses everywhere.
     name: 'database_client',
     label: 'Database',
     activeVerb: 'Working with the database',

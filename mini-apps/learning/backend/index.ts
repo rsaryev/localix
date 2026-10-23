@@ -16,7 +16,7 @@ export function register(ctx: MiniAppContext): MiniAppRegistration {
   })
   const tutor = new LearningTutor(service, ctx.host?.wake)
   const feed = createStoreChangeFeed({
-    plugin: 'learning',
+    miniApp: 'learning',
     watchPath: ctx.watchPath ?? ctx.host?.watchPath,
     resolveDir: async (userId, sessionId) =>
       sessionId && storage ? storage.resolveDataDir(userId, sessionId) : null,

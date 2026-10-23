@@ -11,7 +11,7 @@
     rps-win var(--dur-slow) var(--ease-soft) var(--dur-slow) both;
 }
 
-/* The hand's size is the plugin's own, not a theme step: a host that retunes its type scale must
+/* The hand's size is the mini app's own, not a theme step: a host that retunes its type scale must
    not shrink the one thing the table is about. */
 .rps-glyph {
   display: inline-block;

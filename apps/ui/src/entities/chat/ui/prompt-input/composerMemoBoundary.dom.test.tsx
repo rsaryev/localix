@@ -14,7 +14,7 @@ afterAll(async () => {
 /**
  * The composer's draft text lives in ChatSurface, so EVERY keystroke re-renders the
  * whole composer subtree — including a header stack whose components take no part
- * in the draft at all (status tip, background jobs, plugin strips, loops, monitors,
+ * in the draft at all (status tip, background jobs, mini app strips, loops, monitors,
  * spend alert, queue) plus the usage read-out and the model picker.
  *
  * These are memo boundaries, so the point is not that `memo()` is present but that

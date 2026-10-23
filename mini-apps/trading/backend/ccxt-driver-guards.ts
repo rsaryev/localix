@@ -63,7 +63,7 @@ export async function attemptPublicReachRead(ex: PublicReachExchange): Promise<v
 // `withAccountChangeNote` (a note about a `setLeverage`/`setMarginMode` write that survived a
 // rejected order) and `nativeCancelAllCount` (a venue bulk-cancel, counted) lived here with ZERO
 // callers and zero tests after `e550f0cb1` removed the order path. The second one still ISSUED
-// `cancelAllOrders` — a live account write reachable from nothing, in a plugin that cannot
+// `cancelAllOrders` — a live account write reachable from nothing, in a mini app that cannot
 // authenticate. Both are gone; a future order surface brings back the helper WITH its caller.
 
 /** Refuse up front when the venue does not implement the call — a clear typed error

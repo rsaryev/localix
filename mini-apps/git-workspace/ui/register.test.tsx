@@ -11,7 +11,7 @@ import { registerUi } from './register'
 
 test('registers a native auxiliary Git Workspace with a resource anchor', () => {
   // The SDK's recording host, not a literal: this test used to enumerate the registries by hand
-  // and cast past the rest, so the day the contract grew a seam the plugin uses, `registerUi`
+  // and cast past the rest, so the day the contract grew a seam the mini app uses, `registerUi`
   // died on `undefined.register` inside a test whose job is to prove registration works.
   const { host, registrations } = recordingMiniAppUiHost()
   const workItems = registrations.workItems as WorkItemKindContribution[]
@@ -24,7 +24,7 @@ test('registers a native auxiliary Git Workspace with a resource anchor', () => 
 
   // Namespaced by owner. The host's `assertMiniAppOwnedIdentity` THROWS on a bare `git-workspace`,
   // and because `registerUi` latches `registered` before it registers anything, that first throw
-  // silently cost the plugin its entire UI — so the prefix is a contract, not a convention.
+  // silently cost the mini app its entire UI — so the prefix is a contract, not a convention.
   // A SESSION kind: the workspace shows one chat's repository. As a global tab it followed the chat
   // in front, so a switch put another chat's tree under the stage and commit buttons.
   expect(workItems[0]).toMatchObject({

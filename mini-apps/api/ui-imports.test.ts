@@ -1,7 +1,7 @@
 /**
  * WHAT THE BROWSER IS ALLOWED TO REACH.
  *
- * The plugin owns both sides, so its UI imports types and pure helpers straight from `backend/`.
+ * The mini app owns both sides, so its UI imports types and pure helpers straight from `backend/`.
  * That is the intended convention — but a backend module is written by someone thinking about a
  * server, and one import is all it takes:
  *
@@ -10,7 +10,7 @@
  *
  * Vite externalizes `node:` modules for the browser, so that import threw the moment it was
  * evaluated. `register.tsx` is EAGER — registration cannot be lazy — so it threw at app boot and
- * the entire app rendered a BLACK SCREEN. Not the plugin: the app.
+ * the entire app rendered a BLACK SCREEN. Not the mini app: the app.
  *
  * Nothing caught it. Both typechecks passed (types do not know about bundlers). `vite build`
  * passed (externalizing is not an error). `bun test` passed (bun HAS node:fs). Only running it

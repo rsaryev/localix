@@ -36,18 +36,18 @@ import { __resetCapabilityVersion, noteCapabilityDocument } from './capabilityVe
 import { rememberShellCapabilities, type ShellCapabilitiesFrame } from '@/shared/lib/shellSnapshot'
 
 /**
- * The LIVE capability set of the workbench's project — plugins, their enabled names,
- * plugin views and the tool surface — as a tiny subscribe/version
+ * The LIVE capability set of the workbench's project — mini apps, their enabled names,
+ * mini app views and the tool surface — as a tiny subscribe/version
  * external store (the `runtimeViews.ts` idiom). ChatPage used to fetch this once per
- * mount, so a plugin toggle only showed up after a page reload; now the server
+ * mount, so a mini app toggle only showed up after a page reload; now the server
  * publishes `resources.changed` once the backend host settles a re-wire, the runtime
  * calls {@link refetchMiniAppContrib}, and every gated surface (rail sections, palette
  * commands, workbench mounts, the Settings tool list) re-renders from here.
  *
  * ONE request feeds all of it: `GET /rpc/capabilities/snapshot`. It used to be three
- * (plugins + views) plus an independent `GET /rpc/tools` owned by Settings,
+ * (mini apps + views) plus an independent `GET /rpc/tools` owned by Settings,
  * and the two halves refreshed on DIFFERENT keys — which is exactly how disabling a
- * plugin could update the plugin list while its tools stayed listed as enabled.
+ * mini app could update the mini app list while its tools stayed listed as enabled.
  *
  * `enabledNames === null` means "not loaded yet" — gates treat it as disabled
  * (fail closed), exactly like the previous local-state shape they read.
@@ -84,8 +84,8 @@ const syncProblems = (act: (problems: typeof SyncProblems) => void): void =>
   void import('./miniAppSyncProblems').then(act, () => {})
 
 /**
- * A plugin's UI settled, gave up, or was replaced in place (a dev reload): surfaces keyed on the
- * enabled set or {@link miniAppContribVersion} must re-read. This used to notify once PER PLUGIN,
+ * A mini app's UI settled, gave up, or was replaced in place (a dev reload): surfaces keyed on the
+ * enabled set or {@link miniAppContribVersion} must re-read. This used to notify once PER MINI APP,
  * each a full app re-render (~55 ms, twenty at startup); now the pending sets and the version are
  * current at once and the fresh set object rides the next registry flush, once per burst.
  */
@@ -112,7 +112,7 @@ function reannounceNames(): void {
  * socket reconnect, or two pokes coalesced from a double toggle, both resolve to a
  * snapshot at a revision we already hold, and re-fetching four dependent catalogs for
  * it would be pure churn. The enabled-name comparison is the second half on purpose:
- * a plugin folder dropped straight onto disk changes what discovery returns WITHOUT
+ * a mini app folder dropped straight onto disk changes what discovery returns WITHOUT
  * going through any service, so no revision bump announces it — keying only on the
  * server revision would leave those dependents stale.
  */
@@ -127,7 +127,7 @@ function publish(next: MiniAppContribSnapshot): void {
   if (capabilitiesMoved) version += 1
   if (next.document) noteCapabilityDocument(next.document, next.enabledNames)
   for (const l of listeners) l()
-  // This snapshot costs a plugin-discovery round trip (measured: ~1.2s on a packaged
+  // This snapshot costs a mini-app-discovery round trip (measured: ~1.2s on a packaged
   // boot), and every gate treats "not loaded yet" as "disabled" — which is why the rail
   // starts empty and fills a second later. Record confirmed sets only, and only once the
   // project scope is established; `undefined` means we do not yet know whose they are.
@@ -143,7 +143,7 @@ function publish(next: MiniAppContribSnapshot): void {
 }
 
 /**
- * Paint the previous launch's capability set now, so the rail and the plugin surfaces are
+ * Paint the previous launch's capability set now, so the rail and the mini app surfaces are
  * whole in the first frame instead of appearing a second into the session.
  *
  * Deliberately NOT a version bump: this is the set we already believed, not news. The
@@ -169,7 +169,7 @@ export function restoreMiniAppContribFrame(
     tools: frame.tools as CapabilityToolSurface | null,
     revision: frame.revision,
   }
-  // Nothing of the frame's plugin UI is imported yet: every enabled artifact is a first load.
+  // Nothing of the frame's mini app UI is imported yet: every enabled artifact is a first load.
   claimMiniAppUiLoads(snapshot.miniApps)
   publishNames(snapshot.enabledNames)
   syncThirdPartyViews(snapshot.views)
@@ -179,9 +179,9 @@ export function restoreMiniAppContribFrame(
 /**
  * Establish a new project boundary before any project-scoped catalog is read.
  *
- * A route transition used to preserve the previous project's plugin snapshot
+ * A route transition used to preserve the previous project's mini app snapshot
  * until the new three-request discovery pass completed. During that window the
- * UI-location publisher could bind A's plugin destinations to B's immutable
+ * UI-location publisher could bind A's mini app destinations to B's immutable
  * catalog, and the Capabilities sidebar briefly rendered A's inventory in B.
  * Clear only on an actual scope change; transient failures inside one scope
  * still preserve its last known-good snapshot.
@@ -203,10 +203,10 @@ export interface MiniAppContribSource {
 
 export type { MiniAppUiDiscovery } from './miniAppUiLoads'
 
-// The plugin UI runtime stays out of first paint: which plugins to load is only known once the
+// The mini app UI runtime stays out of first paint: which mini apps to load is only known once the
 // snapshot resolves. A failed chunk import is forgotten, so the retry imports it again.
 let miniAppUiDiscovery: Promise<MiniAppUiDiscovery> | undefined
-const discoverMiniAppUiLazily: MiniAppUiDiscovery = (plugins, settled) => {
+const discoverMiniAppUiLazily: MiniAppUiDiscovery = (miniApps, settled) => {
   const loaded = (miniAppUiDiscovery ??= import('./miniAppUiDiscovery').then(
     ({ discoverEnabledMiniAppUi }) => discoverEnabledMiniAppUi,
     (error: unknown) => {
@@ -214,7 +214,7 @@ const discoverMiniAppUiLazily: MiniAppUiDiscovery = (plugins, settled) => {
       throw error
     },
   ))
-  return loaded.then((discover) => discover(plugins, settled))
+  return loaded.then((discover) => discover(miniApps, settled))
 }
 
 export function miniAppContribSourceFor(projectId: string | null): MiniAppContribSource {
@@ -226,12 +226,12 @@ export function miniAppContribSourceFor(projectId: string | null): MiniAppContri
  *
  * It used to be `miniAppContribSourceFor(null)`, a constant, so any caller that did not
  * hand in a source silently queried the GLOBAL scope. That is not a smaller answer, it
- * is a different one: bundled plugins carry their enabled state per project (an exact
+ * is a different one: bundled mini apps carry their enabled state per project (an exact
  * `projectId:name` match, no fallback to the global row), so against the live API the
- * same install reports **4 of 19 plugins enabled with no projectId and 13 of 17 with
+ * same install reports **4 of 19 mini apps enabled with no projectId and 13 of 17 with
  * one**. Every gated surface — rail sections, palette commands, workbench mounts —
- * reads `enabledNames`, so a snapshot taken in the wrong scope hides nine plugins'
- * contributions until something refetches in the right one. Opening Settings → Plugins
+ * reads `enabledNames`, so a snapshot taken in the wrong scope hides nine mini apps'
+ * contributions until something refetches in the right one. Opening Settings → Mini apps
  * is exactly such a refetch, which is why those surfaces appeared only after visiting it.
  *
  * `prepareMiniAppContribScope` already records the scope synchronously at the route
@@ -245,9 +245,9 @@ let currentLoad: () => Promise<boolean> = () => refetchMiniAppContrib()
 
 /**
  * Load the capability snapshot and reconcile every derived registry from it.
- * Fail closed BEFORE the first complete response: plugin UI remains hidden while
+ * Fail closed BEFORE the first complete response: mini app UI remains hidden while
  * bootstrap retries. Once established, a transient transport failure preserves the
- * last authoritative snapshot instead of making every plugin disappear. Concurrent
+ * last authoritative snapshot instead of making every mini app disappear. Concurrent
  * calls are ordered by request start, so an older slow response cannot roll a newer
  * toggle back.
  */
@@ -264,13 +264,13 @@ export async function refetchMiniAppContrib(
     // A newer request started while this one was in flight: its result owns the store.
     // This one counts as a success only when that successor really exists and will
     // publish — a superseded request that returned early without anyone publishing left
-    // the tool list (keyed on `version`) stale while the plugin list updated.
+    // the tool list (keyed on `version`) stale while the mini app list updated.
     if (request !== requestVersion) return supersededBySuccessor()
     const enabledNames = new Set(
       loaded.miniApps.flatMap((app: MiniAppRecord) => (app.enabled ? [app.name] : [])),
     )
     // `publish` registers the enabled views, which also reconciles removals for
-    // any plugin that dropped out (disabled/uninstalled) since the previous sync.
+    // any mini app that dropped out (disabled/uninstalled) since the previous sync.
     const firstLoad = snapshot.document === null
     const claim = claimMiniAppUiLoads(loaded.miniApps)
     publish({
@@ -281,7 +281,7 @@ export async function refetchMiniAppContrib(
       tools: loaded.tools,
       revision: loaded.revision,
     })
-    // Each plugin's UI registers as ITS artifact lands; this pass owns settling until the next
+    // Each mini app's UI registers as ITS artifact lands; this pass owns settling until the next
     // publish claims (`miniAppUiLoads.ts`). The version moves once, when the last one settles.
     await runMiniAppUiLoads(claim, loaded.miniApps, discoverMiniAppUi, announceMiniAppUiChanged)
     // Names and tools were published at `snapshotMs`; `uiMs` later every artifact had settled.
@@ -295,7 +295,7 @@ export async function refetchMiniAppContrib(
     syncFailing = false
     return true
   } catch (error) {
-    // A failed request did not establish that zero plugins are enabled. Preserve
+    // A failed request did not establish that zero mini apps are enabled. Preserve
     // `null` (cold start) or the last known-good snapshot and let the retry loop
     // converge once the sidecar is reachable again.
     if (request === requestVersion) {
@@ -315,9 +315,9 @@ export async function refetchMiniAppContrib(
  * newer request will publish in its place. But `requestVersion` is also bumped by
  * {@link prepareMiniAppContribScope}, which starts no request of its own, so a scope
  * change landing while the only load was in flight left the bump with no successor:
- * every plugin surface stayed empty, the loop had already declared success, and
+ * every mini app surface stayed empty, the loop had already declared success, and
  * nothing ever retried. That is the "the API answered 200 once and the workbench
- * shows no plugins at all" shape, with a healthy server and no error anywhere.
+ * shows no mini apps at all" shape, with a healthy server and no error anywhere.
  *
  * Our own request is still counted here, so >1 means somebody else is loading.
  */
@@ -344,7 +344,7 @@ export function adoptCapabilitySnapshot(loaded: CapabilitySnapshot): Promise<boo
   if (snapshot.document && loaded.revision < snapshot.document.revision) {
     return Promise.resolve(true)
   }
-  // Same path a fetched snapshot takes: plugin UI discovery, view registration and one
+  // Same path a fetched snapshot takes: mini app UI discovery, view registration and one
   // publish. Adopting must not be a second way to install state.
   return refetchMiniAppContrib({ loadSnapshot: async () => loaded })
 }
@@ -355,11 +355,11 @@ export function adoptCapabilitySnapshot(loaded: CapabilitySnapshot): Promise<boo
  * It used to return early unless the mutated project WAS the active one, on the theory
  * that "inactive projects need no frontend refresh". That theory had a hole: in Settings
  * the scope picker and the workbench's route project are routinely different values, so
- * toggling a plugin from Settings performed no immediate refetch at all and the UI only
+ * toggling a mini app from Settings performed no immediate refetch at all and the UI only
  * caught up when the server's debounced `resources.changed` poke arrived ~300ms later — if
  * it arrived. Converging the ACTIVE scope is both correct and cheap: the singleton always
  * describes the workbench's project, so re-reading it after any capability mutation
- * refreshes the surfaces the user is looking at (a global plugin toggled from a project
+ * refreshes the surfaces the user is looking at (a global mini app toggled from a project
  * scope participates in every scope anyway) and never publishes another project's set.
  */
 export function refetchActiveMiniAppContrib(): Promise<boolean> {
@@ -410,7 +410,7 @@ export function miniAppContribSnapshot(): MiniAppContribSnapshot {
 
 /**
  * Client staleness key, distinct from the server capability revision. Advances when
- * the revision or enabled set changes, and when a plugin UI change requests a reload.
+ * the revision or enabled set changes, and when a mini app UI change requests a reload.
  * A redundant snapshot still publishes without advancing this key.
  */
 export function miniAppContribVersion(): number {

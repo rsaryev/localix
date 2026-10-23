@@ -39,7 +39,7 @@ import {
 export * from './inlineCompletionPolicy'
 
 interface UseInlineCompletionInput<TPayload> {
-  /** Core's own id, or a plugin's namespaced one. */
+  /** Core's own id, or a mini app's namespaced one. */
   surface: InlineCompletionSurfaceId
   sessionId: string | null
   value: string

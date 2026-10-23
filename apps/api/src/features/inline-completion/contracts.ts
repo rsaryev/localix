@@ -44,7 +44,7 @@ export interface ChatInlineCompletionPayload {
 
 /**
  * The surfaces CORE itself owns. Anything else is a CONTRIBUTED surface: the id is namespaced by
- * its plugin (`<plugin>.<surface>`) and its payload is whatever that surface validates for
+ * its mini app (`<app>.<surface>`) and its payload is whatever that surface validates for
  * itself, which is why the map stops here rather than enumerating every field in the product.
  */
 export interface InlineCompletionSurfacePayloads {
@@ -71,8 +71,8 @@ export const INLINE_COMPLETION_SURFACE_IDS = [
 
 /**
  * A contributed surface id, distinguished by its namespace. The dot is the whole rule: core's own
- * ids never carry one, so a request cannot reach a plugin by accident and a plugin cannot claim a
- * core surface by naming it.
+ * ids never carry one, so a request cannot reach a mini app by accident and a mini app cannot claim
+ * a core surface by naming it.
  */
 export function isContributedSurfaceId(id: string): boolean {
   return id.includes('.')

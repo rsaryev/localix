@@ -13,7 +13,7 @@ import { toolMeta } from './meta'
 import { pretty } from './format'
 
 /**
- * Fallback card for tools without a specialized card (plugin tools, new
+ * Fallback card for tools without a specialized card (mini app tools, new
  * built-ins before they get one). Name + IN/OUT/ERR rows. Errors from
  * dismissed/aborted interactions render muted, not alarming.
  */

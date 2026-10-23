@@ -9,8 +9,8 @@ import type { BackendSubsystem } from '../ext/subsystem-contrib'
 import type { MiniAppRegistration } from '@localixai/mini-app-sdk/backend'
 
 /**
- * Structural shaping of whatever a native plugin's `register()` (or default/tools
- * export) returns into the real runtime shapes. Native plugins are TRUSTED but
+ * Structural shaping of whatever a native mini app's `register()` (or default/tools
+ * export) returns into the real runtime shapes. Native mini apps are TRUSTED but
  * untyped JS, so every exported value is structurally validated here before use.
  */
 

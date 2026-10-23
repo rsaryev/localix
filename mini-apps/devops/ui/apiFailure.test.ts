@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { hasApiFailure, parseApiFailure } from './apiFailure'
 
 describe('DevOps API failure parsing', () => {
-  test('preserves the typed plugin error envelope', () => {
+  test('preserves the typed mini app error envelope', () => {
     expect(
       parseApiFailure(
         {

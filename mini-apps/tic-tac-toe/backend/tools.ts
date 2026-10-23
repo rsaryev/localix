@@ -20,9 +20,9 @@ export const classifyTicTacToeCall = classifyByAction({
 /**
  * The agent's side of the game — ONE tool, `tic_tac_toe`, whose `action` says what it does: play
  * O, read the board, start a game. One tool rather than three, because every tool's schema rides
- * in every request of every run the plugin is loaded for; three tools cost three schemas and three
- * names the model has to choose between, for what is one conversation with one board. None of the
- * actions wakes anyone: the agent calling the tool is already the turn.
+ * in every request of every run the mini app is loaded for; three tools cost three schemas and
+ * three names the model has to choose between, for what is one conversation with one board. None of
+ * the actions wakes anyone: the agent calling the tool is already the turn.
  *
  * Every action acts on the board of the chat the call RUNS in — the session the host names in the
  * call's context — so an agent in one chat can never touch another chat's board.

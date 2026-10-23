@@ -40,7 +40,7 @@ describe('buildRailEntries', () => {
       ],
     })
     expect(entryMap.get('core-cli')?.statusLabel).toBe('CLI')
-    expect(entryMap.get('core-cli')?.plugin).toBeUndefined()
+    expect(entryMap.get('core-cli')?.miniApp).toBeUndefined()
     expect(resolveRailAreas(defs, null).status).toEqual(['core-cli'])
   })
   it('namespaces ids and preserves def order (sections → actions)', () => {
@@ -70,11 +70,11 @@ describe('buildRailEntries', () => {
     expect(defs.find((d) => d.id === 'b')?.defaultArea).toBe('overflow')
   })
 
-  it('pins every plugin view by default and lets each be unpinned independently', () => {
+  it('pins every mini app view by default and lets each be unpinned independently', () => {
     const { defs } = buildRailEntries({
       ...baseInput,
-      railSections: [section('alpha', { plugin: true, defaultArea: 'bar' })],
-      customizableActions: [action('beta:workspace', { plugin: true, defaultArea: 'bar' })],
+      railSections: [section('alpha', { miniApp: true, defaultArea: 'bar' })],
+      customizableActions: [action('beta:workspace', { miniApp: true, defaultArea: 'bar' })],
     })
     for (const id of ['section:alpha', 'beta:workspace']) {
       const def = defs.find((d) => d.id === id)
@@ -88,7 +88,7 @@ describe('buildRailEntries', () => {
     expect(resolveRailAreas(defs, pinned).bar).toEqual(['section:alpha', 'beta:workspace'])
   })
 
-  it('still lets a non-plugin (core) entry default to the bar and stay placeable', () => {
+  it('still lets a non-mini-app (core) entry default to the bar and stay placeable', () => {
     const { defs } = buildRailEntries({
       ...baseInput,
       railSections: [section('files', { defaultArea: 'bar' })],
@@ -98,13 +98,13 @@ describe('buildRailEntries', () => {
     expect(def?.placeable).toBeUndefined()
   })
 
-  it('puts categorized core tools in the catalog without assigning plugin ownership', () => {
+  it('puts categorized core tools in the catalog without assigning mini app ownership', () => {
     const { defs, entryMap } = buildRailEntries({
       ...baseInput,
       customizableActions: [action('usage', { toolCategory: 'utilities', defaultArea: 'bottom' })],
     })
     expect(defs[0]?.defaultArea).toBe('bar')
-    expect(defs[0]?.plugin).toBeUndefined()
+    expect(defs[0]?.miniApp).toBeUndefined()
     expect(entryMap.get('usage')?.toolCategory).toBe('utilities')
     const unpinned = moveRailItem(defs, null, 'usage', 'overflow', 0)
     expect(resolveRailAreas(defs, unpinned).bar).toEqual([])
@@ -155,13 +155,13 @@ describe('buildRailEntries', () => {
     expect(hit).toBe(true)
   })
 
-  it('carries the plugin flag onto section + action entries', () => {
+  it('carries the mini app flag onto section + action entries', () => {
     const { entryMap } = buildRailEntries({
       ...baseInput,
-      railSections: [section('docker', { plugin: true })],
-      customizableActions: [action('a', { plugin: true })],
+      railSections: [section('docker', { miniApp: true })],
+      customizableActions: [action('a', { miniApp: true })],
     })
-    expect(entryMap.get('section:docker')?.plugin).toBe(true)
-    expect(entryMap.get('a')?.plugin).toBe(true)
+    expect(entryMap.get('section:docker')?.miniApp).toBe(true)
+    expect(entryMap.get('a')?.miniApp).toBe(true)
   })
 })

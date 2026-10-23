@@ -59,7 +59,7 @@ function pruneOutput(target: PruneTarget, result: PruneResponse): string {
  * Engine API implementation of the stable container backend port.
  *
  * Core inventory, logs, stats, lifecycle actions and prune calls stay structured end-to-end.
- * Compose remains a deliberate CLI exception because it is a client-side plugin, not an Engine
+ * Compose remains a deliberate CLI exception because it is a client-side mini app, not an Engine
  * endpoint. SSH and TLS hosts are handled one level up by selecting the complete CLI fallback.
  */
 export function createDockerApiBackend(options: DockerApiBackendOptions): ContainerEngineBackend {

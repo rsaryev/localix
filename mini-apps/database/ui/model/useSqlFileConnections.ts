@@ -34,7 +34,7 @@ export interface SqlFileConnectionsState {
  * at once, and a focus revalidates by JOINING any running read — N tabs, one request.
  */
 export function useSqlFileConnections(): SqlFileConnectionsState {
-  useStoreChanges({ plugin: 'database', sessionId: null }, refreshConnections)
+  useStoreChanges({ miniApp: 'database', sessionId: null }, refreshConnections)
   const workItemVisible = useWorkItemVisible()
   const { connections, loading } = useConnectionsSnapshot()
   const [pickedId, setPickedId] = useState<string | null>(null)

@@ -5,8 +5,8 @@ import type { ProblemReport } from '@localixai/mini-app-sdk/ui/problems'
 import { setMiniAppSources } from './miniAppAttribution'
 import { createMiniAppToast, type AttributableToast } from './miniAppToast'
 
-const base = 'http://127.0.0.1:43110/rpc/plugins/acme/ui/'
-const pluginFrame = `onSelect@${base}entry.js?v=r1:12:88`
+const base = 'http://127.0.0.1:43110/rpc/mini-apps/acme/ui/'
+const miniAppFrame = `onSelect@${base}entry.js?v=r1:12:88`
 const hostFrame = 'error@tauri://localhost/assets/index-a1b2c3.js:9120:40'
 
 type Call = { method: string; message?: string; options?: Record<string, unknown> }
@@ -38,11 +38,11 @@ const report: ProblemReport = { subject: { label: 'orders.sql' }, problems: [{ m
 
 afterEach(() => setMiniAppSources([], new Map()))
 
-describe('the toast the host lends plugins', () => {
-  test("labels a plugin's row with its display name and keeps the rest of the options", () => {
-    setMiniAppSources([{ pluginName: 'acme', base }], new Map([['acme', 'Acme']]))
+describe('the toast the host lends mini apps', () => {
+  test("labels a mini app's row with its display name and keeps the rest of the options", () => {
+    setMiniAppSources([{ miniAppName: 'acme', base }], new Map([['acme', 'Acme']]))
     const calls: Call[] = []
-    const toast = createMiniAppToast(recordingHost(calls), () => `${hostFrame}\n${pluginFrame}`)
+    const toast = createMiniAppToast(recordingHost(calls), () => `${hostFrame}\n${miniAppFrame}`)
     toast.error('Could not connect', { description: 'refused' })
     toast('Saved')
     expect(calls).toEqual([
@@ -66,11 +66,11 @@ describe('the toast the host lends plugins', () => {
   })
 
   // Positive control for the spoofing rule: the name is the host's to give.
-  test('a plugin cannot file its row under a name it claims', () => {
-    setMiniAppSources([{ pluginName: 'acme', base }], new Map([['acme', 'Acme']]))
+  test('a mini app cannot file its row under a name it claims', () => {
+    setMiniAppSources([{ miniAppName: 'acme', base }], new Map([['acme', 'Acme']]))
     const calls: Call[] = []
     const claimed = { source: 'Git' } as unknown as Parameters<typeof toast.error>[1]
-    let toast = createMiniAppToast(recordingHost(calls), () => pluginFrame)
+    let toast = createMiniAppToast(recordingHost(calls), () => miniAppFrame)
     toast.error('a', claimed)
     toast = createMiniAppToast(recordingHost(calls), () => hostFrame)
     toast.error('b', claimed)
@@ -78,10 +78,10 @@ describe('the toast the host lends plugins', () => {
   })
 
   test('a problem report is labelled by attribution, else by its scope', () => {
-    setMiniAppSources([{ pluginName: 'acme', base }], new Map([['acme', 'Acme']]))
+    setMiniAppSources([{ miniAppName: 'acme', base }], new Map([['acme', 'Acme']]))
     const calls: Call[] = []
-    createMiniAppToast(recordingHost(calls), () => pluginFrame).problems(report, { scope: 'x' })
-    // From the shared hook's effect: no plugin frame, so the scope (the plugin id) names it.
+    createMiniAppToast(recordingHost(calls), () => miniAppFrame).problems(report, { scope: 'x' })
+    // From the shared hook's effect: no mini app frame, so the scope (the mini app id) names it.
     createMiniAppToast(recordingHost(calls), () => hostFrame).problems(report, { scope: 'acme' })
     createMiniAppToast(recordingHost(calls), () => hostFrame).problems(report, { scope: 'notes' })
     expect(calls.map((call) => call.options?.source)).toEqual(['Acme', 'Acme', 'notes'])

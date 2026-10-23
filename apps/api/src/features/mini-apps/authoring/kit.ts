@@ -2,13 +2,13 @@ import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 
 import {
-  PLUGIN_KIT_MANIFEST,
-  PLUGIN_KIT_TEMPLATE_DIR,
+  MINI_APP_KIT_MANIFEST,
+  MINI_APP_KIT_TEMPLATE_DIR,
   isMiniAppKitManifest,
   type MiniAppKitManifest,
 } from './kit-layout'
 
-/** A loaded plugin kit: where it is, and what it says about itself. */
+/** A loaded mini app kit: where it is, and what it says about itself. */
 export interface MiniAppKit {
   dir: string
   manifest: MiniAppKitManifest
@@ -25,14 +25,14 @@ export class MiniAppKitUnavailableError extends Error {}
 export async function loadMiniAppKit(dir: string): Promise<MiniAppKit> {
   let manifest: unknown
   try {
-    manifest = JSON.parse(await fs.readFile(join(dir, PLUGIN_KIT_MANIFEST), 'utf8'))
+    manifest = JSON.parse(await fs.readFile(join(dir, MINI_APP_KIT_MANIFEST), 'utf8'))
   } catch (error) {
     throw new MiniAppKitUnavailableError(
-      `This Localix build carries no plugin kit at ${dir} (${(error as Error).message}).`,
+      `This Localix build carries no mini app kit at ${dir} (${(error as Error).message}).`,
     )
   }
   if (!isMiniAppKitManifest(manifest)) {
-    throw new MiniAppKitUnavailableError(`The plugin kit at ${dir} has an unknown layout.`)
+    throw new MiniAppKitUnavailableError(`The mini app kit at ${dir} has an unknown layout.`)
   }
-  return { dir, manifest, templateDir: join(dir, PLUGIN_KIT_TEMPLATE_DIR) }
+  return { dir, manifest, templateDir: join(dir, MINI_APP_KIT_TEMPLATE_DIR) }
 }

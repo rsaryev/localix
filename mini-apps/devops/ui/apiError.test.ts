@@ -12,7 +12,7 @@ afterEach(() => {
   unbind = null
 })
 
-/** Answer every plugin request with `body` at `status`, recording what was asked. */
+/** Answer every mini app request with `body` at `status`, recording what was asked. */
 function answer(status: number, body: unknown) {
   const calls: Array<{ path: string; method: string }> = []
   unbind = bindMiniAppUiTransport({

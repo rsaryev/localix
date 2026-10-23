@@ -1,13 +1,13 @@
 /**
  * Environment operations over the FILE store — the same {@link EnvironmentService} contract the
- * rest of the plugin already speaks, so nothing above it changed.
+ * rest of the mini app already speaks, so nothing above it changed.
  *
  * Two things moved and both are visible here:
  *
  *   1. The records are files in the collection, shared through the repo.
- *   2. "Active" is no longer a field on a record. It is one person's pointer, kept in the plugin's
- *      state directory (see collection/active-environment.ts), because committing it would let a
- *      colleague's `git pull` re-point your next send at their deployment.
+ *   2. "Active" is no longer a field on a record. It is one person's pointer, kept in the mini
+ *      app's state directory (see collection/active-environment.ts), because committing it would
+ *      let a colleague's `git pull` re-point your next send at their deployment.
  *
  * That second move makes the old "exactly one active" enforcement disappear rather than move: a
  * single-valued pointer cannot have two winners, so the read-then-write loop that used to clear
@@ -37,7 +37,7 @@ interface EnvironmentVault {
 }
 
 /**
- * Plugin discovery may inspect `register()` before the real backend host is attached. A file
+ * Mini app discovery may inspect `register()` before the real backend host is attached. A file
  * service is memoized by collection root, so capturing that inspection-time (empty) Vault object
  * would permanently make secret saves fail with 503 even after the native host is available.
  * A provider keeps the filesystem handle memoized while resolving authority at the operation
@@ -49,7 +49,9 @@ function currentVault(source?: EnvironmentVaultSource): EnvironmentVault {
   return typeof source === 'function' ? source() : (source ?? {})
 }
 
-/** The wire/record shape the rest of the plugin expects, assembled from the file plus the pointer. */
+/**
+ * The wire/record shape the rest of the mini app expects, assembled from the file plus the pointer.
+ */
 function toSaved(environment: StoredEnvironment, activeName: string | null): SavedEnvironment {
   return {
     id: environment.name,

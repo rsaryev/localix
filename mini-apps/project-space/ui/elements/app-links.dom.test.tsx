@@ -114,7 +114,7 @@ test('its grip drags out the very link that was dropped in', async () => {
     token: '@call:tc_1',
     label: 'login.ts',
     attributes: { toolCallId: 'tc_1', sessionId: 's1' },
-    plugin: 'database',
+    miniApp: 'database',
   }
   const view = await mount(props)
   const data = new Map<string, string>()
@@ -136,7 +136,7 @@ test('its grip drags out the very link that was dropped in', async () => {
   expect(data.get('text/plain')).toBe('@call:tc_1')
   const back = readMessageBindingDrag(transfer as unknown as DataTransfer)
   expect(back).toMatchObject({
-    plugin: 'database',
+    miniApp: 'database',
     target: {
       kind: 'call',
       token: '@call:tc_1',

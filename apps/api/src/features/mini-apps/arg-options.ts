@@ -4,13 +4,13 @@ import { awaitChildGone, releaseChildPipes } from '../../lib/child-exit'
 import { childEnv } from '../../lib/login-shell-env'
 
 /**
- * Dynamic plugin-command argument options — the AGNOSTIC runner.
+ * Dynamic mini-app-command argument options — the AGNOSTIC runner.
  *
- * A plugin command arg can declare `optionsScript: "./path.ts"` (see
+ * A mini app command arg can declare `optionsScript: "./path.ts"` (see
  * `contracts-commands.ts`). When the composer opens that arg's picker, the core runs
  * the script in an isolated `bun` subprocess and renders whatever options come back.
  * The core knows nothing about what the values mean — git, docker, an HTTP API, all
- * live entirely inside the plugin's script.
+ * live entirely inside the mini app's script.
  *
  * Contract with the script (TS or JS, run by `bun` directly — no build step):
  *  - IN : a JSON request on stdin — `{ query, cwd, sessionId, argName, command, config }`.
@@ -71,7 +71,7 @@ export const ARG_OPTIONS_MAX_BYTES = 256 * 1024
 export const ARG_OPTIONS_MAX_ITEMS = 200
 
 /**
- * Run a plugin's options script and return its raw stdout. `scriptAbsPath` MUST be an
+ * Run a mini app's options script and return its raw stdout. `scriptAbsPath` MUST be an
  * already-resolved, confinement-checked absolute path (the caller owns that). Never
  * throws — returns `''` on any failure/timeout.
  */

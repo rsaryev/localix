@@ -96,8 +96,8 @@ describe('prepareBrowserArguments — the lifts reach the dispatch path', () => 
     expect(prepareBrowserArguments(opaque)).toBe(opaque)
     // `mini-app:<name>` parses as a URL too — with an opaque origin, "null". It is a mini app view's
     // address, and rewriting it would send every command to no host.
-    const pluginView = { action: 'snapshot', preview_id: 'mini-app:focus-timer' }
-    expect(prepareBrowserArguments(pluginView)).toBe(pluginView)
+    const miniAppView = { action: 'snapshot', preview_id: 'mini-app:focus-timer' }
+    expect(prepareBrowserArguments(miniAppView)).toBe(miniAppView)
   })
 
   test('a retired flat interaction is refused with the steps call that replaces it', () => {

@@ -5,16 +5,16 @@ import {
 } from '@localixai/mini-app-sdk/navigation'
 
 /**
- * Build a registry id from plugin-supplied identity that is valid by construction.
+ * Build a registry id from mini-app-supplied identity that is valid by construction.
  *
- * A location id must match `/^[a-z0-9][a-z0-9:._-]{0,127}$/`, but a plugin's view or
+ * A location id must match `/^[a-z0-9][a-z0-9:._-]{0,127}$/`, but a mini app's view or
  * panel name is declared as a bare string and camelCase is ordinary in JS. Synthesizing
- * `plugin-view.open.${fullName}` from `example:sqlConsole` therefore produced an invalid
+ * `mini-app-view.open.${fullName}` from `example:sqlConsole` therefore produced an invalid
  * id — and since views and panels register as ONE atomic batch, that single rejection
- * withdrew EVERY plugin destination from the catalog and from the agent's synchronized
+ * withdrew EVERY mini app destination from the catalog and from the agent's synchronized
  * copy of it.
  *
- * The id is our own registry key, not the plugin's identity: the addressable identity is
+ * The id is our own registry key, not the mini app's identity: the addressable identity is
  * the URI, which percent-encodes `fullName` and is unaffected. So the host normalizes the
  * key rather than requiring manifests to be lowercase. Two names that normalize alike
  * collide, which the registry already reports and which costs one destination instead of

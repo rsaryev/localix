@@ -1,7 +1,7 @@
 /**
  * `wake()` — the one admission path every turn that is not typed into an idle session takes: a
  * busy user send (priority 0), async wakes (priority 10: sub-agent and background-job
- * completions, loop fires, plugin wakes) and addressed agent tickets.
+ * completions, loop fires, mini app wakes) and addressed agent tickets.
  *
  * Its stages run in a fixed order because each one guards the next: validate (the session gate
  * is held through admission) → merge (a second address to a participant that is still waiting

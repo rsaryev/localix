@@ -102,13 +102,13 @@ const REPLAY_TIER: Record<AgentStreamEvent['type'], EventTier> = {
   // is just noise.
   'lsp.diagnostics': ['live-only', 'watched'],
   // Delivered out-of-band straight to the UI data bus, where it is drop-to-latest anyway.
-  // A plugin→UI command is an ordered state change the client must not miss — that is the
+  // A mini app→UI command is an ordered state change the client must not miss — that is the
   // whole reason it is replayable. The client dedups replays by `commandId`.
   // `roster`, because `emitCommandWithReply` AWAITS the client's answer: a filtered command
   // leaves the tool call hanging on a promise only that client can settle.
-  'plugin.command': ['replayable', 'roster'],
+  'mini-app.command': ['replayable', 'roster'],
   'preview.updated': ['replayable', 'roster'],
-  // Same blocking round-trip as `plugin.command`: `browser` waits for the host probe's
+  // Same blocking round-trip as `mini-app.command`: `browser` waits for the host probe's
   // `preview-result` reply.
   'preview.command': ['live-only', 'roster'],
   'preview.closed': ['replayable', 'roster'],

@@ -10,7 +10,7 @@ import {
 } from '@localixai/mini-app-sdk/resource-refs'
 import { mapKubeError } from './errors'
 
-/** The URI provider this plugin owns. */
+/** The URI provider this mini app owns. */
 export const PROVIDER = 'k8s'
 
 /** How many trailing log lines a `logs` node expands to. */

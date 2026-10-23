@@ -9,16 +9,16 @@ import {
 } from './uiLocations'
 
 /**
- * The RUNTIME third-party UI discovery pass — the installed-plugin counterpart
+ * The RUNTIME third-party UI discovery pass — the installed-mini-app counterpart
  * to the build-time eager glob in `discover.ts`. Where `discover.ts` statically
- * imports BUNDLED plugin UI (trusted, native, never removed), THIS module holds
- * the views declared by ENABLED third-party plugins, fetched as DATA from
- * `GET /rpc/plugins/views` (never code), each rendered as a sandboxed bridged
- * iframe in a work-item TAB — the single placement, so this store is one flat map. Because installed plugins can be disabled/uninstalled, these
- * registrations are REMOVABLE: {@link syncThirdPartyViews} reconciles the store
- * to exactly the current enabled set — a plugin that drops out is gone on the
- * next sync (unlike the static glob). A tiny subscribe/version store so React
- * surfaces re-render via `useSyncExternalStore` when the set changes.
+ * imports BUNDLED mini app UI (trusted, native, never removed), THIS module holds
+ * the views declared by ENABLED third-party mini apps, fetched as DATA from
+ * `GET /rpc/mini-apps/views` (never code), each rendered as a sandboxed bridged
+ * iframe in a work-item TAB — the single placement, so this store is one flat map. Because
+ * installed mini apps can be disabled/uninstalled, these registrations are REMOVABLE: {@link
+ * syncThirdPartyViews} reconciles the store to exactly the current enabled set — a mini app that
+ * drops out is gone on the next sync (unlike the static glob). A tiny subscribe/version store so
+ * React surfaces re-render via `useSyncExternalStore` when the set changes.
  */
 
 const views = new Map<string, MiniAppViewSpec>()
@@ -31,27 +31,27 @@ function syncViewLocations(specs: readonly MiniAppViewSpec[]): void {
   const accepted = batchUiLocationChanges(() => {
     for (const id of locationIds) unregisterUiLocation(id)
     for (const spec of specs) {
-      const id = miniAppLocationId('plugin-view.open', spec.fullName)
+      const id = miniAppLocationId('mini-app-view.open', spec.fullName)
       const registered = registerUiLocation(
         defineUiLocation({
           id,
-          uri: `localix://ui/plugin/view/${encodeURIComponent(spec.fullName)}`,
+          uri: `localix://ui/mini-app/view/${encodeURIComponent(spec.fullName)}`,
           title: spec.title,
-          description: `Open ${spec.app} plugin view`,
+          description: `Open ${spec.app} mini app view`,
           ...(spec.agentDescription ? { agent: { description: spec.agentDescription } } : {}),
-          keywords: [spec.app, 'plugin'],
-          group: 'Plugins',
-          pluginName: spec.app,
+          keywords: [spec.app, 'mini app'],
+          group: 'Mini apps',
+          miniAppName: spec.app,
           effect: 'read',
-          surface: 'plugin',
+          surface: 'mini-app',
           exposure: { search: true },
           resolve: () => ({
             kind: 'work-item',
-            workKind: 'plugin-view',
-            id: `plugin-view:${spec.fullName}`,
+            workKind: 'mini-app-view',
+            id: `mini-app-view:${spec.fullName}`,
             title: spec.title,
             payload: {
-              pluginName: spec.app,
+              miniAppName: spec.app,
               projectId: spec.projectId,
               viewId: spec.id,
             },
@@ -94,7 +94,7 @@ function sameViews(
 /**
  * Replace the registered third-party views with exactly `specs` (the enabled set
  * from the server). Removal is implicit: any previously-registered view NOT in
- * `specs` — a disabled/uninstalled plugin — is dropped, and its per-plugin custom
+ * `specs` — a disabled/uninstalled mini app — is dropped, and its per-mini-app custom
  * actions are cleared. Bumps the version + notifies subscribers only when the
  * registered set actually changed, so an idempotent re-sync is a no-op render.
  */
@@ -103,14 +103,14 @@ export function syncThirdPartyViews(specs: MiniAppViewSpec[]): void {
   for (const spec of specs) next.set(spec.fullName, spec)
   if (sameViews(views, next)) return
 
-  const prevPlugins = new Set([...views.values()].map((v) => v.app))
+  const prevMiniApps = new Set([...views.values()].map((v) => v.app))
   views.clear()
   for (const [fullName, spec] of next) views.set(fullName, spec)
   syncViewLocations(specs)
 
-  // Clear custom actions for plugins that no longer contribute any view.
-  const nextPlugins = new Set([...next.values()].map((v) => v.app))
-  for (const plugin of prevPlugins) if (!nextPlugins.has(plugin)) clearPanelActions(plugin)
+  // Clear custom actions for mini apps that no longer contribute any view.
+  const nextMiniApps = new Set([...next.values()].map((v) => v.app))
+  for (const miniApp of prevMiniApps) if (!nextMiniApps.has(miniApp)) clearPanelActions(miniApp)
 
   version += 1
   for (const l of listeners) l()
@@ -128,7 +128,7 @@ export function thirdPartyViewsVersion(): number {
   return version
 }
 
-/** Registered plugin views — each opens as an editor-grid tab from a rail button. */
+/** Registered mini app views — each opens as an editor-grid tab from a rail button. */
 export function listThirdPartyViews(): MiniAppViewSpec[] {
   return [...views.values()]
 }

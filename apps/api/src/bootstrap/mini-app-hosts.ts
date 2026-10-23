@@ -1,6 +1,6 @@
 import { createMiniAppBackendHost } from '../features/mini-apps/backend-host'
 import { loadMiniAppBackends } from '../features/mini-apps/loader'
-import { createMiniAppWakes } from '../features/mini-apps/plugin-wake'
+import { createMiniAppWakes } from '../features/mini-apps/mini-app-wake'
 import { resolveMiniAppRouteScope } from '../features/mini-apps/route-scope'
 import { loadScopesWithinBudget, PLUGIN_SCOPE_BUDGET_MS } from '../features/plugins/scope-load'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
@@ -13,7 +13,7 @@ import type { createSecretsStore } from '../features/secrets/store'
 import type { createSecretExposureShield } from '../features/secrets/exposure-shield'
 import type { createMediaStore } from '../features/media/store'
 import type { createLogger } from '../lib/logger'
-import { PLUGIN_WARNINGS, warnOnce } from '../lib/warn-once'
+import { MINI_APP_WARNINGS, warnOnce } from '../lib/warn-once'
 import { localixWorkspaceDir, userHome, type loadEnv } from '../lib/env'
 import type { createDatabase } from '../db'
 import type { RegistriesPhase } from './registries'
@@ -28,7 +28,7 @@ import {
 import {
   createFirstReconcileSignal,
   type FirstReconcile,
-} from '../features/mini-apps/plugin-route-boot-hold'
+} from '../features/mini-apps/mini-app-route-boot-hold'
 import type { InfraPhase } from './infra'
 
 export interface MiniAppHostsPhaseInput
@@ -83,21 +83,21 @@ export function createMiniAppHostsPhase({
   decisionService,
   changes,
 }: MiniAppHostsPhaseInput): MiniAppHostsPhase {
-  const warnPluginOnce = warnOnce(logger, PLUGIN_WARNINGS)
+  const warnMiniAppOnce = warnOnce(logger, MINI_APP_WARNINGS)
   const miniAppConditions = createMiniAppConditions(notifications, env.LOCALIX_DEFAULT_USER_ID)
   // The per-run load and every mini app context are built inside the chat runtime, out of reach.
   observeMiniAppConditions(miniAppConditions)
-  // LIVE plugin-backend wiring: plugins enabled in any exact session scope may
+  // LIVE mini-app-backend wiring: mini apps enabled in any exact session scope may
   // contribute process-global `BackendSubsystem`s (route mount + resource/search
   // providers + live WS frames + shutdown) — the bundled workbenches are examples.
   // The HOST owns the wiring as a reconciler (backend-host.ts): boot is the first
-  // `reconcile()`, and a plugin toggle re-converges the same way via `refresh()`,
-  // so enable/disable needs no restart. Failure-isolated per plugin inside
+  // `reconcile()`, and a mini app toggle re-converges the same way via `refresh()`,
+  // so enable/disable needs no restart. Failure-isolated per mini app inside
   // loadMiniAppBackends.
   // Late-bound settle hook: chatService (the stream registry the resources.changed
   // event rides) is created far below; the host reads this at settle time.
   const hostRefs: MiniAppHostRefs = {}
-  // Safe to read `hostRefs.wakes` per wake: a plugin wakes long after chat bound it.
+  // Safe to read `hostRefs.wakes` per wake: a mini app wakes long after chat bound it.
   const miniAppWakes = createMiniAppWakes({
     deliver: (...args) => hostRefs.wakes!.deliver(...args),
     logger,
@@ -107,7 +107,7 @@ export function createMiniAppHostsPhase({
     serviceRefs,
     semanticService,
     decisionService,
-    changes: changes.plugins,
+    changes: changes.miniApps,
     secretsStore,
     secretExposureShield,
     mediaStore,
@@ -116,12 +116,12 @@ export function createMiniAppHostsPhase({
   const backendScopeProjectsRepo = createProjectsRepository(db)
   const backendHost = createMiniAppBackendHost({
     /**
-     * WHERE a plugin route call is happening, resolved per request (`route-scope.ts`): the session
-     * id reaches `c.env` only once its ownership check passed. Read from the request rather than
-     * captured, because a backend is wired once and the user switches session freely.
+     * WHERE a mini app route call is happening, resolved per request (`route-scope.ts`): the
+     * session id reaches `c.env` only once its ownership check passed. Read from the request rather
+     * than captured, because a backend is wired once and the user switches session freely.
      *
      * Late-bound on purpose: `chatServiceForCwd` is assigned far below, long before any request
-     * arrives, and reading it through the closure is the same trick the plugin service already
+     * arrives, and reading it through the closure is the same trick the mini app service already
      * uses for `resolveSessionCwd`.
      */
     resolveScope: ({ userId, request }) =>
@@ -145,8 +145,8 @@ export function createMiniAppHostsPhase({
           projectId,
           cwd,
           logger: {
-            warn: (msg, meta) => warnPluginOnce({ event: 'plugin_backend.warn', msg, meta }),
-            // The boot load is the one worth timing: `plugins.loaded` lands in the runtime
+            warn: (msg, meta) => warnMiniAppOnce({ event: 'mini_app_backend.warn', msg, meta }),
+            // The boot load is the one worth timing: `mini_apps.loaded` lands in the runtime
             // log so `scripts/startup-budget.ts` can report what a launch spent here.
             info: (msg, meta) => logger.info({ ...(meta as object), msg }),
           },
@@ -162,7 +162,7 @@ export function createMiniAppHostsPhase({
         })),
         budgetMs: PLUGIN_SCOPE_BUDGET_MS,
         onLate: (projectId, ms) => {
-          logger.warn({ event: 'plugin_backend.scope_late', projectId, ms })
+          logger.warn({ event: 'mini_app_backend.scope_late', projectId, ms })
           backendHost.refresh()
         },
       })
@@ -171,7 +171,7 @@ export function createMiniAppHostsPhase({
       const seenScopeBackends = new Set<string>()
       for (const { backends: loaded, loaded: loadedSummaries } of results) {
         for (const backend of loaded) {
-          // A global plugin is part of every project catalog. Keep its one
+          // A global mini app is part of every project catalog. Keep its one
           // actual scope once; project-local overrides carry their own projectId.
           const key = `${backend.app}\x00${backend.projectId}\x00${backend.backend.id}`
           if (seenScopeBackends.has(key)) continue
@@ -181,8 +181,8 @@ export function createMiniAppHostsPhase({
         summaries.push(...loadedSummaries)
       }
       miniAppWakes.recordTools(summaries)
-      // Only when EVERY scope answered may a plugin none of them enables lose its rows: a late
-      // project's plugins are simply not in this pass yet.
+      // Only when EVERY scope answered may a mini app none of them enables lose its rows: a late
+      // project's mini apps are simply not in this pass yet.
       if (late.length === 0) await miniAppConditions.enabled(new Set(summaries.map((s) => s.name)))
       return scopedBackends
     },
@@ -195,22 +195,23 @@ export function createMiniAppHostsPhase({
     textInputSurfaceRegistry,
     onSettled: () => hostRefs.onCapabilitiesSettled?.(),
     logger: {
-      info: (msg) => logger.info({ event: 'plugin_backend.info', msg }),
-      warn: (msg, meta) => warnPluginOnce({ event: 'plugin_backend.warn', msg, meta }),
+      info: (msg) => logger.info({ event: 'mini_app_backend.info', msg }),
+      warn: (msg, meta) => warnMiniAppOnce({ event: 'mini_app_backend.warn', msg, meta }),
     },
   })
   const firstReconcile = createFirstReconcileSignal()
   const startBackendHost = (): void => {
-    // Plugin backends are an optional, late-bound layer, kept OFF the core readiness path: an
+    // Mini app backends are an optional, late-bound layer, kept OFF the core readiness path: an
     // unhealthy third-party register() must not stop /health, hydration or the UI. Consumers
     // resolve through registry getters and the dispatcher is live, so converging after core
     // composition is safe (it is also the hot-enable path); onSettled publishes
-    // resources.changed. A plugin request that arrives first waits (`plugin-route-boot-hold.ts`).
+    // resources.changed. A mini app request that arrives first waits
+    // (`mini-app-route-boot-hold.ts`).
     void backendHost
       .reconcile()
       .catch((error) => {
         logger.warn({
-          event: 'plugin_backend.boot_failed',
+          event: 'mini_app_backend.boot_failed',
           error: error instanceof Error ? error.message : String(error),
         })
       })

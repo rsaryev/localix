@@ -10,7 +10,7 @@
  * missing. Nothing failed, because a duplicated function that AGREES is invisible right up
  * until one copy moves.
  *
- * The boundary the comment cited is real but was the wrong way round: the plugin's UI already
+ * The boundary the comment cited is real but was the wrong way round: the mini app's UI already
  * imports its wire types from `../backend/contracts`, so the shared knowledge belongs HERE, in
  * the backend, where the type it renders is also declared. This module is deliberately pure —
  * types in, string out, no Node, no Hono — so the SPA bundle can carry it.

@@ -58,7 +58,7 @@ export function hasNativeFileViewer(pathOrName: string): boolean {
  *
  * `requestedBuiltin` outranks everything, including a remembered preference: it is not a guess
  * about what the reader usually wants but an explicit instruction from the OPEN — "show me the
- * text of this file" — and the only way to express it. Without it, a plugin owning a file type
+ * text of this file" — and the only way to express it. Without it, a mini app owning a file type
  * either wins silently (one match, no native viewer) or forces the chooser (one match plus a
  * native viewer), and neither can be answered with "the code, please".
  *

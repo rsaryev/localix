@@ -36,7 +36,7 @@ export const LISTS: readonly KitCatalogEntry[] = [
     provider: 'kit',
     exports: ['OverviewRegistryRow'],
     summary: 'A flat navigation row for overview screens.',
-    use: "The entries of a plugin's overview or index page.",
+    use: "The entries of a mini app's overview or index page.",
   },
   {
     specifier: k('detail-field'),

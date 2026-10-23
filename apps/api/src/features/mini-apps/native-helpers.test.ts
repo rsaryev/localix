@@ -120,9 +120,9 @@ describe('readJson / writeJson', () => {
     const missing = path.join(os.tmpdir(), 'localix-native-helpers-does-not-exist.json')
     expect(await h.readJson(missing, { fallback: true })).toEqual({ fallback: true })
   })
-  test('leaves no partial file behind — plugins inherit this write, not a choice', async () => {
-    // readJson+writeJson IS the whole-file read-modify-write loop the template plugin
-    // teaches, so a non-atomic writeFile here hands every plugin author a store that a
+  test('leaves no partial file behind — mini apps inherit this write, not a choice', async () => {
+    // readJson+writeJson IS the whole-file read-modify-write loop the template mini app
+    // teaches, so a non-atomic writeFile here hands every mini app author a store that a
     // torn save empties. Proof it goes through temp+rename: the target never exists in a
     // half state, and no temp is left lying next to it.
     const dir = path.join(os.tmpdir(), `localix-native-helpers-atomic-${process.pid}`)

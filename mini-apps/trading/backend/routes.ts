@@ -9,7 +9,7 @@
  * omission — this workbench charts and analyses markets, and a surface that cannot authenticate
  * cannot be made to trade by a bug, a prompt injection or a mistaken click.
  *
- * `userId` is supplied by the host through the generic plugin route context.
+ * `userId` is supplied by the host through the generic mini app route context.
  */
 import { Hono } from 'hono'
 import type { Context } from 'hono'

@@ -209,7 +209,7 @@
 /* Maximized editor grid: non-maximized leaves stay MOUNTED under
    visibility:hidden (GridView) so their state survives — but visibility does
    not pause CSS animations. Pause them explicitly so hidden leaves (pulsing
-   skeletons, carets, plugin animations…) stop ticking style recalcs invisibly. */
+   skeletons, carets, mini app animations…) stop ticking style recalcs invisibly. */
 [data-grid-hidden] * {
   animation-play-state: paused !important;
 }

@@ -89,7 +89,7 @@ export function formatResponse(spec: RequestSpec, res: SendResult, filter?: stri
   if (res.truncated) {
     lines.push('')
     lines.push(
-      `[truncated at ${res.bytes} bytes — the response was larger. Narrow it with a query parameter, or raise "Max response body" in the plugin settings.]`,
+      `[truncated at ${res.bytes} bytes — the response was larger. Narrow it with a query parameter, or raise "Max response body" in the mini app settings.]`,
     )
   }
   return lines.join('\n')

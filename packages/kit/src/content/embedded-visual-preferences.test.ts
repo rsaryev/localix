@@ -12,7 +12,7 @@ describe('sandboxed UI visual preferences', () => {
     expect(EMBEDDED_VISUAL_PREFERENCES_CSS).toContain('scroll-behavior:auto!important')
   })
 
-  test('derives increased-contrast chrome from the forwarded plugin palette', () => {
+  test('derives increased-contrast chrome from the forwarded mini app palette', () => {
     expect(EMBEDDED_VISUAL_PREFERENCES_CSS).toContain('@media (prefers-contrast: more)')
     expect(EMBEDDED_VISUAL_PREFERENCES_CSS).toContain(
       '--border:color-mix(in oklch,var(--foreground) 28%,var(--background))!important',
@@ -29,7 +29,7 @@ describe('sandboxed UI visual preferences', () => {
     expect(EMBEDDED_VISUAL_PREFERENCES_CSS).toContain('backdrop-filter:none!important')
   })
 
-  test('restores focus and selected boundaries after plugin CSS resets', () => {
+  test('restores focus and selected boundaries after mini app CSS resets', () => {
     expect(EMBEDDED_VISUAL_PREFERENCES_CSS).toContain('@media (forced-colors: active)')
     expect(EMBEDDED_VISUAL_PREFERENCES_CSS).toContain('outline:2px solid Highlight')
     expect(EMBEDDED_VISUAL_PREFERENCES_CSS).toContain("[aria-selected='true']")

@@ -26,7 +26,7 @@ interface WatchedMarket {
 /**
  * The market you are watching, and what it last traded at.
  *
- * Charts are the one plugin surface whose value expires: a price is about NOW, and a chart tab
+ * Charts are the one mini app surface whose value expires: a price is about NOW, and a chart tab
  * behind the chat is a chart you are not looking at. This is the case the seam's `metrics` shape
  * was designed for — a number that ticks, in `tabular-nums`, without shoving its neighbours
  * sideways as digits change.
@@ -38,12 +38,12 @@ interface WatchedMarket {
  *
  * Every action opens IN `sessionId`, the chat this titlebar belongs to, and lists only THAT chat's
  * charts. A chart is a session tab, and the workspace snapshot holds every chat's tabs with no
- * way (nor any business) for a plugin to tell whose they are — reading it, chat A's titlebar
+ * way (nor any business) for a mini app to tell whose they are — reading it, chat A's titlebar
  * listed chat B's markets. So the list comes from the chart-state store's entries for this chat,
  * which each mounted chart publishes with what reopens it; a click opens or focuses that market's
  * chart in this chat. No chat, no item: nothing to open in.
  *
- * No chart open, no item: this plugin is silent until you ask it something.
+ * No chart open, no item: this mini app is silent until you ask it something.
  */
 export function useTradingStatusItem(sessionId: string | null): StatusItemState | null {
   const workspace = useMiniAppWorkspace()
@@ -103,7 +103,7 @@ export function useTradingStatusItem(sessionId: string | null): StatusItemState 
     Icon: CandlestickChart,
     text: featured.symbol,
     // A metric rather than part of `text`: the host owns the alignment that stops a ticking
-    // number from jittering, and it is not this plugin's business how wide a digit is.
+    // number from jittering, and it is not this mini app's business how wide a digit is.
     ...(featured.last === undefined
       ? {}
       : {

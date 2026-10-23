@@ -10,7 +10,7 @@ import { safeFetch } from './safe-fetch'
  *
  * The core's own web-fetch tool already follows redirects manually for exactly this
  * reason (`apps/api/src/features/agent-core/tools/web/research-fetch.ts:104`). This
- * is the same rule, available to plugins, so a plugin author does not have to
+ * is the same rule, available to mini apps, so a mini app author does not have to
  * rediscover it.
  */
 

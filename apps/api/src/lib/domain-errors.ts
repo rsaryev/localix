@@ -4,7 +4,7 @@ import { ApiError } from '@localixai/mini-app-sdk/backend'
  * Domain errors: what a service, repository or runtime module throws when a request cannot be
  * served. Each names the kind of failure; `DOMAIN_ERROR_STATUS` is the one place a kind meets
  * HTTP. They stay `ApiError`s so every existing reader (the central error handler, the realtime
- * RPC replies, the plugin SDK) answers with the same status, code and body as before.
+ * RPC replies, the mini app SDK) answers with the same status, code and body as before.
  */
 export type DomainErrorKind =
   | 'invalid'

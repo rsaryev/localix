@@ -82,7 +82,7 @@ export function registerUi(host: MiniAppUiHost): void {
         `Change it with ${SPACE_TOOLS.apply}: a batch of create/update/delete/connect operations, each applied on its own.`,
         'Lay elements out with arrange, align and distribute instead of computing coordinates; group what belongs together.',
         `Show the person something with ${SPACE_TOOLS.view} (focus ids, an area, fit, zoom, pan); it answers with what is now in view.`,
-        'To see the board as a picture, open browser with url "plugin:project-space" and take a screenshot; it has no http address.',
+        'To see the board as a picture, open browser with url "mini-app:project-space" and take a screenshot; it has no http address.',
         'Put a file of the project on the board as a file element by its path — never paste its content into a note.',
       ],
     },

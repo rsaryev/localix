@@ -43,7 +43,7 @@ function useArrivals(game: Game): Move[] {
 
 /**
  * The grid, INLINE on purpose: it is the one layout everything here depends on, and a utility
- * class reaching a plugin through the host's de-duplicated sheet can be dropped.
+ * class reaching a mini app through the host's de-duplicated sheet can be dropped.
  */
 const GRID: CSSProperties = {
   display: 'grid',

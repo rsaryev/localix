@@ -134,7 +134,7 @@ export type MessageBindingSource =
   | 'drag'
   | 'active-tab'
   | 'slash'
-  | 'plugin'
+  | 'mini-app'
   | 'system'
 
 export type MessageBindingStatus =
@@ -163,7 +163,7 @@ export interface MessageBindingContribution {
 
 /**
  * A file/resource/session/snippet/etc. linked to a message. `target.kind` is an
- * open vocabulary: the host owns built-ins, plugins own opaque URI schemes.
+ * open vocabulary: the host owns built-ins, mini apps own opaque URI schemes.
  */
 export interface MessageContextBinding {
   kind: 'context'
@@ -173,11 +173,11 @@ export interface MessageContextBinding {
    *  retrying, or restoring the context remains one atomic operation. */
   assets?: MessageAttachment[]
   /**
-   * The plugin whose open view this context came from. The turn that answers the message carries
-   * that plugin's tools on the wire; a message sent after the view closed carries none. Minted by
-   * the host from the tab's owner — a plugin's own draft cannot name another plugin.
+   * The mini app whose open view this context came from. The turn that answers the message carries
+   * that mini app's tools on the wire; a message sent after the view closed carries none. Minted by
+   * the host from the tab's owner — a mini app's own draft cannot name another mini app.
    */
-  plugin?: string
+  miniApp?: string
   target: {
     kind: string
     token: string

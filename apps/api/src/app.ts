@@ -40,7 +40,7 @@ import { createMiniAppRoutes, type MiniAppRoutesService } from './features/mini-
 import {
   holdMiniAppRoutesUntilWired,
   type MiniAppRouteHost,
-} from './features/mini-apps/plugin-route-boot-hold'
+} from './features/mini-apps/mini-app-route-boot-hold'
 import { createAgentsRoutes, type AgentsRoutesService } from './features/agents/routes'
 import { createSkillsCuratorRoutes } from './features/skills-curator/routes'
 import type { SkillsCuratorService } from './features/skills-curator/service'
@@ -135,11 +135,11 @@ export interface AppDeps extends ConversationRouteDeps {
   storageService: StorageService
   /** `localix` shell-command install ("install in PATH"). */
   shellCommandService: ShellCommandService
-  /** LIVE plugin-route dispatcher — the backend host's stable middleware serving
+  /** LIVE mini-app-route dispatcher — the backend host's stable middleware serving
    *  each wired subsystem's '/rpc/<id>' from a mutable mount table, so a hot
-   *  plugin toggle adds/removes routes with no restart. Optional so lightweight
+   *  mini app toggle adds/removes routes with no restart. Optional so lightweight
    *  test harnesses can build the app without it. */
-  pluginBackendHost?: MiniAppRouteHost
+  miniAppBackendHost?: MiniAppRouteHost
   /** Generic WS-frame registry — subsystem-contributed live streams that the
    *  realtime socket consults for unrecognized subscribe/unsubscribe commands.
    *  Optional so lightweight test harnesses can build the app without it. */
@@ -180,7 +180,7 @@ export interface AppDeps extends ConversationRouteDeps {
 export function createApp(deps: AppDeps) {
   const app = new Hono<AppContext>()
 
-  // FIRST, before every route (websocket upgrades and plugin routes included): a foreign page or
+  // FIRST, before every route (websocket upgrades and mini app routes included): a foreign page or
   // a DNS-rebound name must never reach a handler — see `lib/local-origin-guard.ts`. Absent a
   // policy (lightweight harnesses) the strictest one applies: packaged origins only.
   const originPolicy =
@@ -219,16 +219,16 @@ h2{margin:0 0 .5rem}p{margin:0;color:#888;font-size:.9rem}</style></head>
 <script>setTimeout(()=>window.close(),2000)</script></body></html>`)
   }
 
-  // LIVE plugin-route dispatcher (a bundled subsystem's '/rpc/<id>'). Mounted on
+  // LIVE mini-app-route dispatcher (a bundled subsystem's '/rpc/<id>'). Mounted on
   // `app` HERE — before the fluent chain below mounts the '/rpc' chat catch-all —
   // so a wired subsystem's distinct path wins over the catch-all, exactly like the
   // static `app.route()` loop this replaces. The dispatcher reads the backend
-  // host's mount table PER REQUEST, so a hot plugin toggle adds/removes routes
+  // host's mount table PER REQUEST, so a hot mini app toggle adds/removes routes
   // with no restart; an unmatched path falls through to `next()` (the same 404 a
   // never-mounted route produced). These routes are untyped (not part of the
   // exported AppType) — subsystem UIs use untyped fetch. A request nothing answered
-  // before the first reconcile waits for it instead of reading a 404 as "no plugin".
-  if (deps.pluginBackendHost) app.use('*', holdMiniAppRoutesUntilWired(deps.pluginBackendHost))
+  // before the first reconcile waits for it instead of reading a 404 as "no mini app".
+  if (deps.miniAppBackendHost) app.use('*', holdMiniAppRoutesUntilWired(deps.miniAppBackendHost))
 
   // Liveness probe — dependency-free, so it lives in its own module and is mounted
   // here rather than declared inline in the typed chain below (see health.ts).
@@ -287,7 +287,7 @@ h2{margin:0 0 .5rem}p{margin:0;color:#888;font-size:.9rem}</style></head>
     .route(
       '/rpc/resource-refs',
       createResourceRefRoutes(deps.resourceRefsRegistry, {
-        // The same ownership gate the plugin route scope uses (`resolveSessionCwd`).
+        // The same ownership gate the mini app route scope uses (`resolveSessionCwd`).
         assertSessionAccess: async (...args) => {
           await deps.chatService.resolveSessionCwd(...args)
         },
@@ -314,7 +314,7 @@ h2{margin:0 0 .5rem}p{margin:0;color:#888;font-size:.9rem}</style></head>
       createTerminalStreamRoute({ service: deps.terminalService, logger: deps.logger }),
     )
     // Single multiplexed WebSocket — all live server→client events (chat firehose,
-    // notifications, plugin streams) on ONE connection per tab. See features/realtime/ws.ts.
+    // notifications, mini app streams) on ONE connection per tab. See features/realtime/ws.ts.
     .get(
       '/rpc/ws',
       createRealtimeRoute({
@@ -338,9 +338,9 @@ h2{margin:0 0 .5rem}p{margin:0;color:#888;font-size:.9rem}</style></head>
         // authenticated user rides as the last parameter, `callerUserId`).
         submitSecret: (...args) => deps.chatService.submitSecret(...args),
         previewResult: (...args) => deps.chatService.resolvePreviewCommand(...args),
-        miniAppCommandResult: (...args) => deps.chatService.resolvePluginCommand(...args),
+        miniAppCommandResult: (...args) => deps.chatService.resolveMiniAppCommand(...args),
         revokeSessionPermission: (...args) => deps.chatService.revokeSessionPermission(...args),
-        // Generic registry-driven live streams (backend subsystems / bundled plugins).
+        // Generic registry-driven live streams (backend subsystems / bundled mini apps).
         // ws.ts consults it for unrecognized subscribe/unsubscribe commands.
         wsFrames: deps.wsFrameRegistry,
         // The service IS the port (`RealtimeLspService` is a `Pick` of it), so it is

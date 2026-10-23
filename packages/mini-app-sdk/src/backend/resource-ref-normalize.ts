@@ -10,9 +10,9 @@ import type {
 
 /** One response cap for every client. Menus may window visually, never discard differently. */
 export const RESOURCE_BROWSE_LIMIT = 50
-/** A provider is an untrusted plugin boundary: never inspect an unbounded row array. */
+/** A provider is an untrusted mini app boundary: never inspect an unbounded row array. */
 export const RESOURCE_PROVIDER_NODE_LIMIT = 1_000
-/** Interactive browse and explicit expansion must not wait forever on a plugin. */
+/** Interactive browse and explicit expansion must not wait forever on a mini app. */
 export const RESOURCE_PROVIDER_TIMEOUT_MS = 5_000
 /** Direct `@resource:` expansion can bypass Context Fabric's per-provider budget. */
 export const RESOURCE_EXPANSION_MAX_BYTES = 64 * 1024
@@ -48,7 +48,7 @@ export const normalizeProviderNodes = (
   if (!Array.isArray(value)) return []
   const seen = new Set<string>()
   const nodes: ResourceNode[] = []
-  // Bound work before touching plugin-owned fields. The browse response is capped
+  // Bound work before touching mini-app-owned fields. The browse response is capped
   // again later, but doing that only after normalization still lets one provider
   // force arbitrarily many copies, regex passes and sort entries.
   for (let index = 0; index < Math.min(value.length, limit); index += 1) {
@@ -56,7 +56,7 @@ export const normalizeProviderNodes = (
     if (!candidate || typeof candidate !== 'object') continue
     const node = candidate as ResourceNode
     // A provider may only mint identities in the provider it registered. This keeps
-    // a broken/plugin-contributed tree from smuggling another provider's address
+    // a broken/mini-app-contributed tree from smuggling another provider's address
     // into the picker and preserves one owner for browse + expansion.
     if (
       typeof node.uri !== 'string' ||
@@ -100,7 +100,7 @@ export const normalizeProviderNodes = (
     }
     const icon =
       typeof node.icon === 'string' && PRESENTATION_TOKEN.test(node.icon) ? node.icon : undefined
-    // Rebuild from the public contract instead of spreading a plugin-owned object.
+    // Rebuild from the public contract instead of spreading a mini-app-owned object.
     // Besides making runtime output match the TypeScript shape, this prevents an
     // accidental provider-only field (credentials, raw response metadata, etc.)
     // from crossing the shared browse boundary.

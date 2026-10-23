@@ -119,7 +119,7 @@ describe('test tiers', () => {
   }
 
   // Bun reads bunfig.toml only where a run starts, so a package without the line runs its tests
-  // with the hook's GIT_* variables and the real network. The plugin template ships to users and
+  // with the hook's GIT_* variables and the real network. The mini app template ships to users and
   // the screenshot fixtures are sample projects; neither can name a file of this repository.
   test('every workspace that runs bun test lists the shared preload', () => {
     const missing: string[] = []

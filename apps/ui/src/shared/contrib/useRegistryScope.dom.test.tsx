@@ -64,8 +64,8 @@ describe('registry mutation feedback', () => {
     const root = createRoot(host)
     try {
       await act(async () => root.render(<Probe />))
-      await act(async () => state!.setError('Could not turn this plugin on or off.'))
-      expect(state!.error).toBe('Could not turn this plugin on or off.')
+      await act(async () => state!.setError('Could not turn this mini app on or off.'))
+      expect(state!.error).toBe('Could not turn this mini app on or off.')
       await act(async () => state!.setError(null))
       expect(state!.error).toBeNull()
     } finally {

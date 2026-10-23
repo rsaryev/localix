@@ -1,8 +1,8 @@
 /**
  * Filesystem-backed table store. Spreadsheet ingestion persists metadata + rows
- * under the plugin data directory and returns an id. The Table tab fetches rows lazily by id over `/rpc/table/:id/rows`
- * (server-side sort/filter/page), so a large table never rides through the model
- * context. Restart-safe: the tab re-fetches and the store rebuilds from disk.
+ * under the mini app data directory and returns an id. The Table tab fetches rows lazily by id over
+ * `/rpc/table/:id/rows` (server-side sort/filter/page), so a large table never rides through the
+ * model context. Restart-safe: the tab re-fetches and the store rebuilds from disk.
  *
  * Agnostic: knows nothing about chat/providers — rows in, id out, pages back.
  */

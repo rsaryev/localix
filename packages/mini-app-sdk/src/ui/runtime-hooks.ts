@@ -48,13 +48,13 @@ export function useMiniAppWorkspaceChanges(
   return answer?.sessionId === sessionId ? (answer?.live ?? null) : null
 }
 
-/** Session roster through the stable, store-agnostic plugin runtime port. */
+/** Session roster through the stable, store-agnostic mini app runtime port. */
 export function useMiniAppSessions(): readonly MiniAppSession[] {
   return useSyncExternalStore(miniAppSessions.subscribe, miniAppSessions.list, miniAppSessions.list)
 }
 
 /**
- * Ghost-text completion for a plugin's own text field — the same lifecycle, shared model call and
+ * Ghost-text completion for a mini app's own text field — the same lifecycle, shared model call and
  * working-set context as the chat composer. Declare the surface on the backend subsystem
  * (`textInputCompletionSurfaces`), then call this with the field's live state.
  */
@@ -76,7 +76,7 @@ export function useMiniAppEditPredictionEnabled(): boolean {
 /**
  * The live workspace snapshot — open work items and which item is focused.
  *
- * A plugin launcher needs both to render "open this" versus "you are already here", and
+ * A mini app launcher needs both to render "open this" versus "you are already here", and
  * reading them from the host's grid store instead is exactly the coupling the seam removes.
  */
 export function useMiniAppWorkspace(): MiniAppWorkspaceSnapshot {

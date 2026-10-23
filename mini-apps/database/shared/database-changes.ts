@@ -1,5 +1,5 @@
 /**
- * What the agent's `database_client` tool changed, announced to this plugin's UI.
+ * What the agent's `database_client` tool changed, announced to this mini app's UI.
  *
  * The defect it stops: the tool writes on the server — a connection saved, a table created, rows
  * inserted — and the workbench, which learns of its own writes from its own calls, did not learn
@@ -7,7 +7,7 @@
  * someone clicked refresh. Polling cannot close that gap for schemas and rows: it would introspect
  * and re-query the user's real database every few seconds to find out nothing moved.
  *
- * So the tool says what moved, once, on the plugin command bus (the API client's shape): the
+ * So the tool says what moved, once, on the mini app command bus (the API client's shape): the
  * backend emits a {@link DatabaseChange} after a successful write, the UI re-reads exactly that.
  * One value both sides import, so the name and the shape cannot drift apart.
  */

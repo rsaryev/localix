@@ -1,4 +1,4 @@
-//! A plugin app's `.icns`, assembled from PNG renditions the page draws.
+//! A standalone mini app's `.icns`, assembled from PNG renditions the page draws.
 //!
 //! An `.icns` file is a big-endian `icns` header followed by typed chunks; since macOS 10.7 the
 //! retina-era chunk types carry PNG data as is, so no image decoding happens here.

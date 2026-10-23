@@ -5,10 +5,10 @@ import { viewFor, type Game } from '../shared/game'
 import { cellName } from '../shared/rules'
 
 /**
- * HOW THE BOARD ASKS THE AGENT FOR ITS SHOT — the plugin's side of the host's wake contract.
+ * HOW THE BOARD ASKS THE AGENT FOR ITS SHOT — the mini app's side of the host's wake contract.
  *
  * The agent plays in the chat the board BELONGS to — never whichever chat is open now. When the
- * board needs its shot, the plugin wakes that session with what the agent may know — its own
+ * board needs its shot, the mini app wakes that session with what the agent may know — its own
  * side's view, never the user's fleet — and the tools that answer it (`ctx.host.wake`); the agent
  * replies by calling `battleship` to fire. Nothing here waits for that shot: the wake only says
  * whether the chat will take the turn, and the view shows the answer.

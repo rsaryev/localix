@@ -25,12 +25,12 @@ import { registerAction, removeActionsOf } from './actions'
 import { announcing, noteRegistryChange } from './registryChanges'
 
 function derivedLocationId(
-  contribution: { pluginName?: string },
+  contribution: { miniAppName?: string },
   surface: string,
   identity: string,
 ): string {
-  if (!contribution.pluginName) return `${surface}.${identity}`
-  const namespace = `${contribution.pluginName}:`
+  if (!contribution.miniAppName) return `${surface}.${identity}`
+  const namespace = `${contribution.miniAppName}:`
   const localIdentity = identity.startsWith(namespace) ? identity.slice(namespace.length) : identity
   return `${namespace}${surface}:${localIdentity}`
 }
@@ -47,7 +47,7 @@ function registerRailSection(contribution: RailSectionContribution): void {
     keywords: contribution.keywords ?? [],
     group: 'View',
     Icon: contribution.Icon,
-    pluginName: contribution.pluginName,
+    miniAppName: contribution.miniAppName,
     effect: 'read',
     surface: 'sidebar',
     exposure: { search: true },
@@ -67,7 +67,7 @@ function registerRailViewlet(contribution: RailViewletContribution): void {
     keywords: contribution.keywords ?? [],
     group: 'View',
     Icon: contribution.Icon,
-    pluginName: contribution.pluginName,
+    miniAppName: contribution.miniAppName,
     effect: 'read',
     surface: 'work-item',
     exposure: { search: true },
@@ -83,8 +83,8 @@ function registerRailViewlet(contribution: RailViewletContribution): void {
 /**
  * The singleton {@link MiniAppUiHost} — the narrow registration façade `discover.ts`
  * hands to every `registerUi(host)`. One adapter over the open registries, so a
- * plugin registers contributions WITHOUT importing host registry modules; a future
- * external UI loader passes the same object to dynamically-loaded plugins.
+ * mini app registers contributions WITHOUT importing host registry modules; a future
+ * external UI loader passes the same object to dynamically-loaded mini apps.
  */
 export const miniAppUiHost: MiniAppUiHost = announcing({
   workItems: { register: (c) => workItemKindRegistry.register(c) },
@@ -120,168 +120,168 @@ export const miniAppUiHost: MiniAppUiHost = announcing({
   },
 })
 
-function assertMiniAppOwnedIdentity(pluginName: string, surface: string, identity: string): void {
-  const namespace = `${pluginName}:`
+function assertMiniAppOwnedIdentity(miniAppName: string, surface: string, identity: string): void {
+  const namespace = `${miniAppName}:`
   if (identity.startsWith(namespace)) return
   throw new Error(
-    `[plugin-ui] ${surface} identity "${identity}" must be namespaced by owner "${namespace}"`,
+    `[mini-app-ui] ${surface} identity "${identity}" must be namespaced by owner "${namespace}"`,
   )
 }
 
 /**
- * Host façade for one statically discovered bundled plugin. Ownership is stamped by
- * discovery, never trusted from plugin code, and drives live enable/disable gating.
+ * Host façade for one statically discovered bundled mini app. Ownership is stamped by
+ * discovery, never trusted from mini app code, and drives live enable/disable gating.
  */
-export function miniAppUiHostFor(pluginName: string): MiniAppUiHost {
+export function miniAppUiHostFor(miniAppName: string): MiniAppUiHost {
   return announcing({
     workItems: {
       register: (contribution) => {
-        assertMiniAppOwnedIdentity(pluginName, 'work-item kind', contribution.kind)
-        workItemKindRegistry.register({ ...contribution, pluginName })
+        assertMiniAppOwnedIdentity(miniAppName, 'work-item kind', contribution.kind)
+        workItemKindRegistry.register({ ...contribution, miniAppName })
       },
     },
     railSections: {
       register: (contribution) => {
-        assertMiniAppOwnedIdentity(pluginName, 'rail section', contribution.id)
-        registerRailSection({ ...contribution, pluginName })
+        assertMiniAppOwnedIdentity(miniAppName, 'rail section', contribution.id)
+        registerRailSection({ ...contribution, miniAppName })
       },
     },
     railViewlets: {
       register: (contribution) => {
-        assertMiniAppOwnedIdentity(pluginName, 'rail viewlet', contribution.kind)
-        registerRailViewlet({ ...contribution, pluginName })
+        assertMiniAppOwnedIdentity(miniAppName, 'rail viewlet', contribution.kind)
+        registerRailViewlet({ ...contribution, miniAppName })
       },
     },
     search: {
       register: (contribution) => {
-        assertMiniAppOwnedIdentity(pluginName, 'search domain', contribution.id)
-        registerSearchDomain({ ...contribution, pluginName })
+        assertMiniAppOwnedIdentity(miniAppName, 'search domain', contribution.id)
+        registerSearchDomain({ ...contribution, miniAppName })
       },
     },
     anchors: {
       register: (contribution) => {
-        assertMiniAppOwnedIdentity(pluginName, 'resource anchor', contribution.id)
-        const owned = { ...contribution, pluginName }
+        assertMiniAppOwnedIdentity(miniAppName, 'resource anchor', contribution.id)
+        const owned = { ...contribution, miniAppName }
         const accepted = registerUiAnchor(owned)
-        if (accepted && owned.icons) registerResourceRefIcons(owned.icons, pluginName)
+        if (accepted && owned.icons) registerResourceRefIcons(owned.icons, miniAppName)
         return accepted
       },
     },
     locations: {
       register: (contribution) => {
-        assertMiniAppOwnedIdentity(pluginName, 'UI location', contribution.id)
-        return registerUiLocation({ ...contribution, pluginName })
+        assertMiniAppOwnedIdentity(miniAppName, 'UI location', contribution.id)
+        return registerUiLocation({ ...contribution, miniAppName })
       },
     },
     resourceRefIcons: {
-      register: (entries) => registerResourceRefIcons(entries, pluginName),
+      register: (entries) => registerResourceRefIcons(entries, miniAppName),
     },
     fileIcons: {
-      register: (name, data) => registerVscFileIcon(name, data, pluginName),
+      register: (name, data) => registerVscFileIcon(name, data, miniAppName),
     },
     fileEditors: {
       register: (contribution) => {
-        assertMiniAppOwnedIdentity(pluginName, 'file editor', contribution.id)
-        registerFileEditor({ ...contribution, pluginName })
+        assertMiniAppOwnedIdentity(miniAppName, 'file editor', contribution.id)
+        registerFileEditor({ ...contribution, miniAppName })
       },
     },
     fileFormats: {
-      register: (entries) => registerDedicatedViewerTypes(entries, pluginName),
+      register: (entries) => registerDedicatedViewerTypes(entries, miniAppName),
     },
     sessionEvents: {
       register: (type, handler) => {
-        assertMiniAppOwnedIdentity(pluginName, 'session event', type)
-        registerSessionEventHandler(type, handler, pluginName)
+        assertMiniAppOwnedIdentity(miniAppName, 'session event', type)
+        registerSessionEventHandler(type, handler, miniAppName)
       },
     },
     // The four seams below fill named holes in surfaces the HOST composes, rather than
     // contributing a surface of their own. Their registries already existed in this folder and
     // their contribution types already shipped in the SDK — only the façade was missing, so a
-    // plugin reaching for `host.workItemSlots` got `undefined.register(…)` and lost its whole
+    // mini app reaching for `host.workItemSlots` got `undefined.register(…)` and lost its whole
     // registration pass. Git Workspace was written against all four and could never load.
     //
-    // A SLOT and a SURFACE are host vocabulary, not plugin identity: the host defines
+    // A SLOT and a SURFACE are host vocabulary, not mini app identity: the host defines
     // `diff.interactive` and `chat.background`, and an unknown one simply renders nothing. So
     // they are not namespace-asserted — there is nothing to collide over, and an owner-prefixed
-    // slot name would address a hole that does not exist. The two that DO carry plugin-chosen ids
+    // slot name would address a hole that does not exist. The two that DO carry mini-app-chosen ids
     // are asserted like every other registration.
     workItemSlots: {
-      register: (contribution) => registerWorkItemSlot({ ...contribution, pluginName }),
+      register: (contribution) => registerWorkItemSlot({ ...contribution, miniAppName }),
     },
     sessionSurfaces: {
-      register: (contribution) => registerSessionSurface({ ...contribution, pluginName }),
+      register: (contribution) => registerSessionSurface({ ...contribution, miniAppName }),
     },
     fileEditorEnhancers: {
       register: (contribution) => {
-        assertMiniAppOwnedIdentity(pluginName, 'file editor enhancer', contribution.id)
-        registerFileEditorEnhancer({ ...contribution, pluginName })
+        assertMiniAppOwnedIdentity(miniAppName, 'file editor enhancer', contribution.id)
+        registerFileEditorEnhancer({ ...contribution, miniAppName })
       },
     },
     fileTreeDecorations: {
       register: (contribution) => {
-        assertMiniAppOwnedIdentity(pluginName, 'file tree decoration', contribution.id)
-        registerFileTreeDecoration({ ...contribution, pluginName })
+        assertMiniAppOwnedIdentity(miniAppName, 'file tree decoration', contribution.id)
+        registerFileTreeDecoration({ ...contribution, miniAppName })
       },
     },
-    // A status item carries a plugin-chosen id, so it is asserted. Its PLACEMENT is not: that is
+    // A status item carries a mini-app-chosen id, so it is asserted. Its PLACEMENT is not: that is
     // host vocabulary like a slot or a surface, and an unknown one renders nothing.
     statusItems: {
       register: (contribution) => {
-        assertMiniAppOwnedIdentity(pluginName, 'status item', contribution.id)
-        registerStatusItem({ ...contribution, pluginName })
+        assertMiniAppOwnedIdentity(miniAppName, 'status item', contribution.id)
+        registerStatusItem({ ...contribution, miniAppName })
       },
     },
-    // A tool card is keyed by the tool's name as the MODEL calls it, which the plugin's backend
+    // A tool card is keyed by the tool's name as the MODEL calls it, which the mini app's backend
     // chose and the agent's vocabulary fixes — it is not a namespaced UI identity, so it is not
     // asserted. A core tool's name never reaches the contributed card: the transcript consults
     // its own table first (`tool-parts/cards/meta.ts`).
     toolCards: {
-      register: (contribution) => registerToolCard({ ...contribution, pluginName }),
+      register: (contribution) => registerToolCard({ ...contribution, miniAppName }),
     },
     commentActions: {
       register: (contribution) => {
-        assertMiniAppOwnedIdentity(pluginName, 'comment action', contribution.id)
-        registerCommentAction({ ...contribution, pluginName })
+        assertMiniAppOwnedIdentity(miniAppName, 'comment action', contribution.id)
+        registerCommentAction({ ...contribution, miniAppName })
       },
     },
     actions: {
       register: (contribution) => {
-        assertMiniAppOwnedIdentity(pluginName, 'action', contribution.id)
-        registerAction({ ...contribution, pluginName })
+        assertMiniAppOwnedIdentity(miniAppName, 'action', contribution.id)
+        registerAction({ ...contribution, miniAppName })
       },
     },
   })
 }
 
 /**
- * Take back everything {@link miniAppUiHostFor} let `pluginName` register — the inverse of that
+ * Take back everything {@link miniAppUiHostFor} let `miniAppName` register — the inverse of that
  * façade, kept beside it so a new seam cannot be added without its removal
  * (`miniAppUiHost.test.ts` registers through every seam and requires this to empty each one).
  *
- * The registries were add-only, so the ONLY way to replace a plugin's UI was to throw the
- * whole page away: an edit to one plugin reloaded the app, mid-turn, while an agent was writing
- * that plugin. With removal, replacing a plugin is remove + register, and nothing outside the
- * plugin is touched. Every registry already stamps entries with their owner, so this can never
+ * The registries were add-only, so the ONLY way to replace a mini app's UI was to throw the
+ * whole page away: an edit to one mini app reloaded the app, mid-turn, while an agent was writing
+ * that mini app. With removal, replacing a mini app is remove + register, and nothing outside the
+ * mini app is touched. Every registry already stamps entries with their owner, so this can never
  * reach a core entry.
  */
-export function removeMiniAppUiContributions(pluginName: string): void {
-  workItemKindRegistry.removeOwner(pluginName)
-  railSectionRegistry.removeOwner(pluginName)
-  railViewletRegistry.removeOwner(pluginName)
-  removeSearchDomainsOf(pluginName)
-  removeUiAnchorsOf(pluginName)
-  removeUiLocationsOf(pluginName)
-  removeIconsOf(pluginName)
-  removeFileEditorsOf(pluginName)
-  removeDedicatedViewerTypesOf(pluginName)
-  removeSessionEventHandlersOf(pluginName)
-  removeWorkItemSlotsOf(pluginName)
-  removeSessionSurfacesOf(pluginName)
-  removeFileEditorEnhancersOf(pluginName)
-  removeFileTreeDecorationOf(pluginName)
-  removeStatusItemsOf(pluginName)
-  removeToolCardsOf(pluginName)
-  removeCommentActionsOf(pluginName)
-  removeActionsOf(pluginName)
+export function removeMiniAppUiContributions(miniAppName: string): void {
+  workItemKindRegistry.removeOwner(miniAppName)
+  railSectionRegistry.removeOwner(miniAppName)
+  railViewletRegistry.removeOwner(miniAppName)
+  removeSearchDomainsOf(miniAppName)
+  removeUiAnchorsOf(miniAppName)
+  removeUiLocationsOf(miniAppName)
+  removeIconsOf(miniAppName)
+  removeFileEditorsOf(miniAppName)
+  removeDedicatedViewerTypesOf(miniAppName)
+  removeSessionEventHandlersOf(miniAppName)
+  removeWorkItemSlotsOf(miniAppName)
+  removeSessionSurfacesOf(miniAppName)
+  removeFileEditorEnhancersOf(miniAppName)
+  removeFileTreeDecorationOf(miniAppName)
+  removeStatusItemsOf(miniAppName)
+  removeToolCardsOf(miniAppName)
+  removeCommentActionsOf(miniAppName)
+  removeActionsOf(miniAppName)
   noteRegistryChange()
 }

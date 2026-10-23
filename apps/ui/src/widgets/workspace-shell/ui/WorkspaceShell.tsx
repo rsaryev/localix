@@ -44,7 +44,7 @@ interface WorkspaceShellProps {
   onSectionChange?: (id: string | null) => void
   /** Action buttons rendered in the rail's top group, after the sections. */
   railActions?: RailAction[]
-  /** True while the catalog's enabled-plugin set is still loading. */
+  /** True while the catalog's enabled-mini-app set is still loading. */
   miniAppsPending?: boolean
   miniAppCategories?: ReadonlyMap<string, MiniAppCategory | undefined>
   miniAppsManageUri?: string
@@ -67,8 +67,8 @@ interface WorkspaceShellProps {
    *  browser / Windows / Linux it renders in a plain non-draggable top bar. Hidden
    *  on mobile widths. When omitted, no top bar is drawn. */
   titlebarContent?: ReactNode
-  /** `app`: a plugin installed as its own app (`shared/lib/pluginApp.ts`). Its window is the
-   *  plugin, so the workspace's own frame (rail, sidebar, top bar, status bar) is not drawn. */
+  /** `app`: a mini app installed as its own app (`shared/lib/standaloneApp.ts`). Its window is the
+   *  mini app, so the workspace's own frame (rail, sidebar, top bar, status bar) is not drawn. */
   chrome?: 'workspace' | 'app'
   children: ReactNode
 }
@@ -301,7 +301,7 @@ export function WorkspaceShell({
             titlebar): a plain, non-draggable bar with no traffic-light gap. */}
         {!isMobile &&
           titlebarContent &&
-          // A plugin app's page sits under its own window's macOS titlebar, like the desktop's.
+          // A standalone app's page sits under its own window's macOS titlebar, like the desktop's.
           ((isDesktop && IS_MAC) || !frame ? (
             <div
               data-tauri-drag-region
@@ -459,9 +459,9 @@ export function WorkspaceShell({
             )}
             {/* The answer to the person's own action when it had no control to stand beside. */}
             <TransientStatusLine />
-            {/* CONTRIBUTED items, before the editor's own status: a plugin's summary belongs with
+            {/* CONTRIBUTED items, before the editor's own status: a mini app's summary belongs with
               the session's, and keeping the editor segment last means Ln/Col does not jump
-              sideways as plugins come and go. */}
+              sideways as mini apps come and go. */}
             <StatusItems placement="statusbar" sessionId={statusSessionId} />
             {/* Right-aligned: the focused editor's Ln/Col,
               indentation and language land here instead of in a second bar

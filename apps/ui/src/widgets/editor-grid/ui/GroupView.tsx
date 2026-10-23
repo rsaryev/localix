@@ -16,10 +16,10 @@ import {
 } from '../model/windowTransfer'
 import { canTransferWorkItem } from '../model/windowTransferPayload'
 import {
-  pluginAppActions,
-  pluginAppSourceForKind,
-  useInstalledPluginApps,
-} from '@/features/plugin-apps'
+  standaloneAppActions,
+  standaloneAppSourceForKind,
+  useInstalledStandaloneApps,
+} from '@/features/standalone-mini-apps'
 import { revealInTree } from '@/shared/lib/explorerBus'
 import {
   useGridStore,
@@ -103,13 +103,13 @@ export const GroupView = memo(function GroupView({
     scopeActiveTab,
   )
   // Strip icons and tints come from each tab kind's registration, read during render: subscribe
-  // to exactly these kinds, or a plugin that registers after first paint keeps a generic icon.
+  // to exactly these kinds, or a mini app that registers after first paint keeps a generic icon.
   useWorkItemKindContributions(visibleTabs.flatMap((id) => (items[id] ? [items[id].kind] : [])))
-  // Each plugin tab offers its plugin's Mac app; a group can hold several plugins' tabs.
-  const pluginApps = useInstalledPluginApps()
+  // Each mini app tab offers its mini app's Mac app; a group can hold several mini apps' tabs.
+  const standaloneApps = useInstalledStandaloneApps()
   const appActionsFor = (item: WorkItem | undefined) => {
-    const source = item ? pluginAppSourceForKind(item.kind) : null
-    return source ? pluginAppActions(source, pluginApps) : []
+    const source = item ? standaloneAppSourceForKind(item.kind) : null
+    return source ? standaloneAppActions(source, standaloneApps) : []
   }
 
   // A chat tab closes like every other workspace tab. The session is preserved in history and
@@ -213,7 +213,7 @@ export const GroupView = memo(function GroupView({
               },
             ]
           : []),
-        // A plugin tab: make its plugin an app, or open and remove the one it has.
+        // A mini app tab: make its mini app an app, or open and remove the one it has.
         ...appActionsFor(item).map((action, index) => ({
           label: action.label,
           separatorBefore: index === 0,
@@ -309,7 +309,7 @@ export const GroupView = memo(function GroupView({
             // session switch (just hidden) instead of remounting. Hidden bodies are
             // display:none — DOM + state (scroll/cursor, iframe, xterm) preserved.
             // `data-work-item-*` is the stable address of a body in the DOM (the panel id carries a
-            // React `useId` prefix): the host drives a plugin's view through it for the agent.
+            // React `useId` prefix): the host drives a mini app's view through it for the agent.
             <TabPanel
               key={id}
               id={tabIds.panelId(id)}

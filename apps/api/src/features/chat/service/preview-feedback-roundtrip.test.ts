@@ -18,7 +18,7 @@ function previewBinding(id: string, note: string): MessageContextBinding {
   return {
     kind: 'context',
     id,
-    source: 'plugin',
+    source: 'mini-app',
     target: {
       kind: 'snippet',
       token: '@snippet:Preview feedback',

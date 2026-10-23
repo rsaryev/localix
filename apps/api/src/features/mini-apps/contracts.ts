@@ -4,8 +4,8 @@ import { MINI_APP_CATEGORIES } from '@localixai/mini-app-sdk/manifest'
 import { contributionInputSchema } from '../ext/contribution-input'
 import {
   miniAppViewSchema,
-  pluginPromptSectionSchema,
-  PROMPT_SECTIONS_MAX_PER_PLUGIN,
+  miniAppPromptSectionSchema,
+  PROMPT_SECTIONS_MAX_PER_MINI_APP,
   VIEWS_MAX_PER_MINI_APP,
   type MiniAppViewSpec,
 } from './contracts-contributions'
@@ -64,8 +64,8 @@ export interface MiniAppCommand {
 export const miniAppHostFieldsSchema = z.object({
   views: z.array(miniAppViewSchema).max(VIEWS_MAX_PER_MINI_APP).default([]),
   promptSections: z
-    .array(pluginPromptSectionSchema)
-    .max(PROMPT_SECTIONS_MAX_PER_PLUGIN)
+    .array(miniAppPromptSectionSchema)
+    .max(PROMPT_SECTIONS_MAX_PER_MINI_APP)
     .default([]),
   contributions: z.array(contributionInputSchema).max(1000).default([]),
   commandArgs: z.record(z.string(), z.array(miniAppCommandArgSchema)).default({}),

@@ -38,14 +38,14 @@ export const realtimeApi = {
     return result.resolved
   },
 
-  // Reply to an awaited `plugin.command` frame after the plugin's UI sink handled
-  // it — settles the server-side pending promise (plugin-command-registry).
+  // Reply to an awaited `mini-app.command` frame after the mini app's UI sink handled
+  // it — settles the server-side pending promise (mini-app-command-registry).
   async miniAppCommandResult(
     commandId: string,
     payload: { ok: boolean; result?: unknown; error?: string },
   ): Promise<void> {
     await eventSocket.request<{ resolved: boolean }>({
-      t: 'plugin-command-result',
+      t: 'mini-app-command-result',
       commandId,
       ...payload,
     })

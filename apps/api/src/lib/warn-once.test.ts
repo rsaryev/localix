@@ -14,7 +14,11 @@ describe('warnOnce', () => {
   test('warns the first time a cause is reported and demotes the repeats to debug', () => {
     const { lines, logger } = recorder()
     const warn = warnOnce(logger)
-    const entry = { event: 'plugin_backend.warn', msg: 'inspect failed', meta: { error: 'ENOENT' } }
+    const entry = {
+      event: 'mini_app_backend.warn',
+      msg: 'inspect failed',
+      meta: { error: 'ENOENT' },
+    }
     for (let i = 0; i < 40; i += 1) warn(entry)
     expect(lines.filter((line) => line.level === 'warn')).toHaveLength(1)
     expect(lines.filter((line) => line.level === 'debug')).toHaveLength(39)

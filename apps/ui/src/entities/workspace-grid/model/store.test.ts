@@ -269,7 +269,7 @@ describe('per-session scope', () => {
   })
 })
 
-describe('a plugin tab that belongs to one session', () => {
+describe('a mini app tab that belongs to one session', () => {
   // A contributed kind (not a core one) with no `scope: 'global'`: one instance per chat.
   const board = (scope: string): WorkItem => ({
     kind: 'game:board',

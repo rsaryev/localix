@@ -134,7 +134,7 @@ export function DbConsoleTab({
     .map((entry) => entry.at)
     .join(':')
 
-  // The plugin identifies its active connection + focused tables; the backend
+  // The mini app identifies its active connection + focused tables; the backend
   // Context Fabric resolver decides whether/how their live schema becomes context.
   const nextEditSource = useSqlNextEdit(
     useCallback(

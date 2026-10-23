@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 
 import type { StoredMessagePayload } from '../../../../db/payload'
-import { answeredRows, surfacePlugins, surfaceTools } from './surface-tools'
+import { answeredRows, surfaceMiniApps, surfaceTools } from './surface-tools'
 
-// Fixture plugin names: core code must not name a bundled plugin, tests included
-// (`scripts/plugin-identity-guard.mjs`), and these rules are about any plugin.
+// Fixture mini app names: core code must not name a bundled mini app, tests included
+// (`scripts/mini-app-identity-guard.mjs`), and these rules are about any mini app.
 const BOARD = 'fixture-board'
 const GAME = 'fixture-game'
 const STORE = 'fixture-store'
@@ -13,23 +13,23 @@ const CHART = 'fixture-chart'
 const row = (payload: Partial<StoredMessagePayload> & Pick<StoredMessagePayload, 'role'>) => ({
   payload: { id: crypto.randomUUID(), ...payload } as StoredMessagePayload,
 })
-/** A message the person sent with the given plugin tabs linked. */
-const said = (...plugins: string[]) =>
+/** A message the person sent with the given mini app tabs linked. */
+const said = (...miniApps: string[]) =>
   row({
     role: 'user',
     content: 'hi',
-    bindings: plugins.map((plugin, index) => ({
+    bindings: miniApps.map((miniApp, index) => ({
       kind: 'context' as const,
       id: `b${index}`,
       source: 'active-tab' as const,
-      plugin,
-      target: { kind: 'snippet', token: `@snippet:${plugin}`, label: plugin },
+      miniApp,
+      target: { kind: 'snippet', token: `@snippet:${miniApp}`, label: miniApp },
       resolution: { status: 'resolved' as const, contributions: [] },
     })),
   })
 const reply = () => row({ role: 'assistant', content: 'ok' })
-const woken = (plugins?: string[]) =>
-  row({ role: 'user', content: 'wake', isInternal: true, ...(plugins ? { plugins } : {}) })
+const woken = (miniApps?: string[]) =>
+  row({ role: 'user', content: 'wake', isInternal: true, ...(miniApps ? { miniApps } : {}) })
 
 describe('what the turn answers', () => {
   test('the latest run of user rows, past the replies that follow it', () => {
@@ -41,32 +41,32 @@ describe('what the turn answers', () => {
   })
 })
 
-describe('the plugins a turn brings', () => {
+describe('the mini apps a turn brings', () => {
   test('the tabs linked to the person’s latest message', () => {
-    expect(surfacePlugins([said(GAME), reply(), said(STORE, CHART)])).toEqual([STORE, CHART])
+    expect(surfaceMiniApps([said(GAME), reply(), said(STORE, CHART)])).toEqual([STORE, CHART])
   })
 
   test('a tab closed before the next message brings nothing', () => {
-    expect(surfacePlugins([said(STORE), reply(), said()])).toEqual([])
+    expect(surfaceMiniApps([said(STORE), reply(), said()])).toEqual([])
   })
 
   // A report or a job's exit wakes the session with a row that carries no tabs; reading only that
   // row flipped the tool list off and on between every report and reply — a cache miss each time.
   test('a wake with no tabs keeps the tabs the person last had open', () => {
-    expect(surfacePlugins([said(BOARD), reply(), woken(), reply(), woken()])).toEqual([BOARD])
+    expect(surfaceMiniApps([said(BOARD), reply(), woken(), reply(), woken()])).toEqual([BOARD])
   })
 
-  test('a plugin’s wake brings its plugin to the turn that answers it, and only to that turn', () => {
-    expect(surfacePlugins([said(), reply(), woken([GAME])])).toEqual([GAME])
-    expect(surfacePlugins([said(), reply(), woken([GAME]), reply(), said()])).toEqual([])
+  test('a mini app’s wake brings its mini app to the turn that answers it, and only to that turn', () => {
+    expect(surfaceMiniApps([said(), reply(), woken([GAME])])).toEqual([GAME])
+    expect(surfaceMiniApps([said(), reply(), woken([GAME]), reply(), said()])).toEqual([])
   })
 
   test('a /clear ends the context the tabs came from', () => {
     const cleared = row({ role: 'user', content: '/clear', contextBoundary: true })
-    expect(surfacePlugins([said(STORE), reply(), cleared, woken()])).toEqual([])
+    expect(surfaceMiniApps([said(STORE), reply(), cleared, woken()])).toEqual([])
   })
 
-  test('a binding a plugin did not own brings nothing', () => {
+  test('a binding a mini app did not own brings nothing', () => {
     const file = row({
       role: 'user',
       content: 'look',
@@ -80,7 +80,7 @@ describe('the plugins a turn brings', () => {
         },
       ],
     })
-    expect(surfacePlugins([file])).toEqual([])
+    expect(surfaceMiniApps([file])).toEqual([])
   })
 })
 
@@ -90,7 +90,7 @@ describe('the tools they bring', () => {
     { name: BOARD, toolNames: ['board_cards'] },
   ]
 
-  test('every tool each plugin registered on this load, by name', () => {
+  test('every tool each mini app registered on this load, by name', () => {
     expect(surfaceTools([BOARD, STORE], loaded)).toEqual([
       'board_cards',
       'store_browse',
@@ -101,7 +101,7 @@ describe('the tools they bring', () => {
     expect(surfaceTools([STORE, BOARD], loaded)).toEqual(surfaceTools([BOARD, STORE], loaded))
   })
 
-  test('a plugin that is not loaded brings nothing', () => {
+  test('a mini app that is not loaded brings nothing', () => {
     expect(surfaceTools(['uninstalled'], loaded)).toEqual([])
   })
 })

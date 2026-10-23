@@ -1,12 +1,12 @@
 /**
- * Host-owned client injected into every sandboxed plugin panel/view before the
- * plugin's HTML runs. It intentionally sits ABOVE the wire protocol: existing
+ * Host-owned client injected into every sandboxed mini app panel/view before the
+ * mini app's HTML runs. It intentionally sits ABOVE the wire protocol: existing
  * protocol-v1 documents keep working, while new documents acquire one frozen API
  * instead of reimplementing envelopes, correlation, timeouts, theme application,
  * and persisted state.
  *
  * Keep this source self-contained. It executes inside an opaque-origin srcDoc and
- * cannot import the application bundle. The static string contains no plugin data,
+ * cannot import the application bundle. The static string contains no mini app data,
  * so embedding it in a <script> cannot create an interpolation/injection seam.
  */
 const BOOTSTRAP_SOURCE = String.raw`
@@ -14,11 +14,11 @@ const BOOTSTRAP_SOURCE = String.raw`
   'use strict';
 
   // This document's bridge nonce. The host drops any message without it, so a page the frame
-  // later navigates to (same WindowProxy, new document) cannot speak for the plugin view.
+  // later navigates to (same WindowProxy, new document) cannot speak for the mini app view.
   var NONCE = '__LOCALIX_BRIDGE_NONCE__';
   if (document.currentScript) document.currentScript.remove();
 
-  var MARKER = 'plugin-ui';
+  var MARKER = 'mini-app-ui';
   var VERSION = 1;
   var DEFAULT_TIMEOUT_MS = 15000;
   var MAX_TIMEOUT_MS = 120000;
@@ -48,7 +48,7 @@ const BOOTSTRAP_SOURCE = String.raw`
 
   function reportListenerError(error) {
     if (typeof console !== 'undefined' && typeof console.error === 'function') {
-      console.error('[localix-plugin-ui] listener failed', error);
+      console.error('[localix-mini-app-ui] listener failed', error);
     }
   }
 
@@ -176,7 +176,7 @@ const BOOTSTRAP_SOURCE = String.raw`
     configurable: false,
     enumerable: false,
     value: function () {
-      if (acquired) throw new Error('The Localix plugin UI API has already been acquired');
+      if (acquired) throw new Error('The Localix mini app UI API has already been acquired');
       acquired = true;
       return api;
     }
@@ -188,6 +188,6 @@ const NONCE_RE = /^[A-Za-z0-9_-]{16,128}$/
 
 /** The bootstrap for ONE srcdoc document, stamped with that document's bridge nonce. */
 export function miniAppUiApiBootstrap(nonce: string): string {
-  if (!NONCE_RE.test(nonce)) throw new Error('Invalid plugin bridge nonce')
+  if (!NONCE_RE.test(nonce)) throw new Error('Invalid mini app bridge nonce')
   return BOOTSTRAP_SOURCE.replace('__LOCALIX_BRIDGE_NONCE__', nonce)
 }

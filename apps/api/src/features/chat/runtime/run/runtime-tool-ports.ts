@@ -94,7 +94,7 @@ export function buildOptionalToolPorts(
     ...(params.currentMessageId ? { currentMessageId: params.currentMessageId } : {}),
   })
 
-  // browser: OPEN + drive the Browser tabs through the injected probe — and a plugin's own view,
+  // browser: OPEN + drive the Browser tabs through the injected probe — and a mini app's own view,
   // which is why `mini_app_build` is told whether this run can look.
   const browser = buildBrowserOptions({
     deps,

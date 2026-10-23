@@ -80,7 +80,7 @@ export function eventsRestartDelay(attempt: number): number {
 export interface DockerEventsHub {
   /** Follow the stream; the listener hears the current status at once. Returns the unfollow. */
   subscribe(listener: (frame: DockerEventsFrame) => void): () => void
-  /** Plugin shutdown: drop every listener and stop the child. */
+  /** Mini app shutdown: drop every listener and stop the child. */
   stopAll(): void
 }
 

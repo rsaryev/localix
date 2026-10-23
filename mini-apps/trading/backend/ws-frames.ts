@@ -17,7 +17,7 @@ import type { StreamChannel, StreamParams } from './backend'
 import { type TradingStreamRegistry, streamKeyOf } from './stream'
 
 /** The PUBLIC market-data channels only. The private account set (orders / positions /
- *  balance / myTrades) is deliberately NOT accepted here — this plugin's surface streams no
+ *  balance / myTrades) is deliberately NOT accepted here — this mini app's surface streams no
  *  account state (see `index.ts`); the private channels return when the account surface
  *  registers its own contribution. */
 const CHANNELS: readonly StreamChannel[] = ['ticker', 'ohlcv', 'orderbook', 'trades']

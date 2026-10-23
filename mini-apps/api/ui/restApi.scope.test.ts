@@ -1,7 +1,7 @@
 /**
  * The client must NAME THE SESSION on every call — the one its caller belongs to.
  *
- * A collection is a directory inside a project, and the plugin's backend is wired once, so the
+ * A collection is a directory inside a project, and the mini app's backend is wired once, so the
  * only thing that can say which project a call is about is the call itself. Miss one route and it
  * silently reads the collection under the API process's own working directory — the repo the app
  * was launched from, not the one the user is looking at. That failure is invisible: the request

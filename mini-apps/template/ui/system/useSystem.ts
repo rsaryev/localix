@@ -19,7 +19,7 @@ export function useSystem(active: boolean) {
     intervalMs: SYSTEM_POLL_MS,
     active,
     failureMessage:
-      'Cannot read system information. Check that the plugin backend is running, then retry.',
+      'Cannot read system information. Check that the mini app backend is running, then retry.',
   })
   const [history, setHistory] = useState<SystemSnapshot[]>([])
   useEffect(() => {

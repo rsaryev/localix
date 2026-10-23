@@ -9,7 +9,7 @@ import {
 import type { LoadedMiniApps } from './loader-contract'
 
 /**
- * Memory-provider invocation — same isolation philosophy as the plugin hooks in
+ * Memory-provider invocation — same isolation philosophy as the mini app hooks in
  * [[hooks]], but with the more generous MEMORY_TIMEOUT_MS (backends do network
  * round-trips). Shares the [[hook-invoke]] primitive so the timeout/isolation
  * logic lives in exactly one place.

@@ -6,11 +6,11 @@ import { isMiniAppContributionEnabled, subscribeMiniAppActivation } from './mini
 /**
  * What else a batch of review comments can become, beside "Send to the agent".
  *
- * The comment composer mounts before plugin UI chunks register, and a button row that read this
- * map at mount would never show a plugin's action. So the row subscribes
- * ({@link useCommentActions}), and enabling or disabling a plugin moves the same signal.
+ * The comment composer mounts before mini app UI chunks register, and a button row that read this
+ * map at mount would never show a mini app's action. So the row subscribes
+ * ({@link useCommentActions}), and enabling or disabling a mini app moves the same signal.
  *
- * First registration of an id wins: an id is plugin-chosen, and a second owner silently replacing
+ * First registration of an id wins: an id is mini-app-chosen, and a second owner silently replacing
  * the first would send a person's comments somewhere they did not pick.
  */
 const contributions = new Map<string, CommentActionContribution>()
@@ -38,11 +38,11 @@ export function registerCommentAction(contribution: CommentActionContribution): 
   announceCommentActions()
 }
 
-/** Drop every comment action `owner` registered (a plugin reload or unload). */
+/** Drop every comment action `owner` registered (a mini app reload or unload). */
 export function removeCommentActionsOf(owner: string): void {
   let removed = false
   for (const [id, contribution] of contributions) {
-    if (contribution.pluginName !== owner) continue
+    if (contribution.miniAppName !== owner) continue
     contributions.delete(id)
     removed = true
   }
@@ -50,15 +50,16 @@ export function removeCommentActionsOf(owner: string): void {
 }
 
 /**
- * Every enabled action, sorted by `(pluginName, id)` — identity, not a declared position, so no
- * plugin can claim the slot beside "Send" and the row does not reorder with load timing.
+ * Every enabled action, sorted by `(miniAppName, id)` — identity, not a declared position, so no
+ * mini app can claim the slot beside "Send" and the row does not reorder with load timing.
  */
 export function commentActions(): readonly CommentActionContribution[] {
   if (snapshot?.version === version) return snapshot.actions
   const actions = [...contributions.values()]
-    .filter((action) => isMiniAppContributionEnabled(action.pluginName))
+    .filter((action) => isMiniAppContributionEnabled(action.miniAppName))
     .sort(
-      (a, b) => (a.pluginName ?? '').localeCompare(b.pluginName ?? '') || a.id.localeCompare(b.id),
+      (a, b) =>
+        (a.miniAppName ?? '').localeCompare(b.miniAppName ?? '') || a.id.localeCompare(b.id),
     )
   snapshot = { version, actions }
   return actions
@@ -71,7 +72,7 @@ function subscribeCommentActions(listener: () => void): () => void {
   }
 }
 
-/** The enabled actions, re-read on every registration, removal or plugin toggle. */
+/** The enabled actions, re-read on every registration, removal or mini app toggle. */
 export function useCommentActions(): readonly CommentActionContribution[] {
   return useSyncExternalStore(subscribeCommentActions, commentActions, commentActions)
 }

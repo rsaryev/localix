@@ -26,7 +26,7 @@ export type ComposerCommandButtonProps = Omit<
 
 /**
  * Shared clickable command token. It stages an editable command through the
- * canonical composer bus, so empty states, tips, and plugin surfaces never
+ * canonical composer bus, so empty states, tips, and mini app surfaces never
  * grow their own prompt-prefill path.
  */
 export function ComposerCommandButton({

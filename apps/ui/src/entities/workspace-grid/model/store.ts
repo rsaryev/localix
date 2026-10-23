@@ -139,7 +139,7 @@ export const useGridStore = create<GridStore>((set) => ({
         console.error(`[grid] refused to open "${item.id}": a ${item.kind} tab names no session`)
         return s
       }
-      // A plugin's session tab is one per session (`tabIdInScope`): opened from another chat it
+      // A mini app's session tab is one per session (`tabIdInScope`): opened from another chat it
       // becomes that chat's own tab instead of moving this one out of the chat it belongs to.
       const stamped = { ...item, scope, id: tabIdInScope(item.kind, item.id, scope) }
       // One chokepoint for the preview-tab preference: with it off, no open may take another
@@ -264,7 +264,7 @@ export function hydrateGrid(): void {
 }
 
 /**
- * Once the backend publishes the authoritative enabled-plugin set, close only tabs whose
+ * Once the backend publishes the authoritative enabled-mini-app set, close only tabs whose
  * registered owner is now confirmed disabled. During the cold `pending` phase those tabs
  * remain intact so a slow sidecar can never erase a user's saved layout.
  */
@@ -280,7 +280,7 @@ export function reconcileUnavailableContributedItems(): void {
   }
 
   for (const target of targets) useGridStore.getState().closeTabs(target.group, target.ids)
-  // `closeTabs` normally records user-closed tabs for Cmd+Shift+T. Plugin
+  // `closeTabs` normally records user-closed tabs for Cmd+Shift+T. Mini app
   // deactivation is a system reconciliation, though: retaining those items
   // would let reopenClosedTab resurrect a kind whose renderer is disabled.
   useGridStore.setState((state) => {

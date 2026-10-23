@@ -6,7 +6,7 @@ import { subscribeNative } from './subscribe'
 
 /**
  * `fs.watch`'s shape — a file or a directory, recursive or not, entry names relative to the
- * watched path — served by the native watcher, for callers (plugin backends) that cannot load the
+ * watched path — served by the native watcher, for callers (mini app backends) that cannot load the
  * addon themselves.
  *
  * Bun's recursive `fs.watch` on macOS delivers only part of a burst, so a caller trusting it as a

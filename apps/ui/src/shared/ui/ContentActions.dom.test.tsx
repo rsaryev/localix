@@ -22,7 +22,7 @@ test('answer fragments offer exact source, native targets and owning session; st
   setEnabledMiniAppNames(new Set(['fragment-fixture']))
   registerAction({
     id: 'fragment-fixture:save',
-    pluginName: 'fragment-fixture',
+    miniAppName: 'fragment-fixture',
     label: 'Save fragment',
     Icon: () => null,
     when: (context) => context.surface === 'chat.content',

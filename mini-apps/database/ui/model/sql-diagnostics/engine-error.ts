@@ -5,7 +5,7 @@
  * Why the NAME and not the engine's character position: only Postgres reports a position, and
  * it is an offset into the text the ENGINE received — after `?` placeholders were rewritten to
  * `$1`, after an EXPLAIN wrapper — so it lands on the wrong character of the editor's text. The
- * name is the same in both texts. Every engine the plugin speaks names the offender in one of a
+ * name is the same in both texts. Every engine the mini app speaks names the offender in one of a
  * few fixed sentences; an unrecognised message yields `null` and nothing is underlined.
  */
 export type EngineErrorKind = 'table' | 'column' | 'alias' | 'syntax'

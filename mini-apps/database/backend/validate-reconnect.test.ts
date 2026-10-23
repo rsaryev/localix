@@ -1,7 +1,7 @@
 /**
  * The live failures seen in the running app: `POST /:id/validate` answered 500 and
  * `POST /:id/reconnect` answered 400 for a saved in-memory SQLite connection whose driver was
- * gone (the plugin backend had been reloaded). Real service, real SQLite driver, real routes.
+ * gone (the mini app backend had been reloaded). Real service, real SQLite driver, real routes.
  */
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { mkdtemp, rm } from 'node:fs/promises'

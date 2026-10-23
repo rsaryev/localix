@@ -10,7 +10,7 @@ import type { Message } from '../model/types'
  * `sessionId` is nullable here and every other use in that file guards it. The render path used
  * `sessionId ?? ''` — silencing the type checker with a value the runtime rejects. The only net
  * around it was the ROOT error boundary, which is the same shape that took the entire workspace
- * down when a plugin built a `localix://` URI from an empty id during render.
+ * down when a mini app built a `localix://` URI from an empty id during render.
  */
 describe('messageTargetUri', () => {
   test('addresses a message that has a session', () => {

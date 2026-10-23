@@ -11,7 +11,7 @@
  * The API writes the target and the workbench reads it, so both parse it here and cannot disagree
  * about what one is. Browser-safe: no imports beyond the manifest's name rule.
  */
-import { PLUGIN_NAME_RE } from '@localixai/mini-app-sdk/manifest-primitives'
+import { MINI_APP_NAME_RE } from '@localixai/mini-app-sdk/manifest-primitives'
 
 export const MINI_APP_VIEW_PREFIX = 'mini-app:'
 
@@ -24,5 +24,5 @@ export function parseMiniAppViewTarget(target: string | null | undefined): strin
   const value = target?.trim()
   if (!value?.startsWith(MINI_APP_VIEW_PREFIX)) return null
   const name = value.slice(MINI_APP_VIEW_PREFIX.length).replace(/^\/+/u, '')
-  return PLUGIN_NAME_RE.test(name) ? name : null
+  return MINI_APP_NAME_RE.test(name) ? name : null
 }

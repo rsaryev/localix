@@ -103,7 +103,7 @@ describe('market_data tool', () => {
   })
 
   /**
-   * `e550f0cb1` removed trading from this plugin — "a removal, not a gate": no order path, no
+   * `e550f0cb1` removed trading from this mini app — "a removal, not a gate": no order path, no
    * credential field, no account client. The ccxt driver is now built WITHOUT credentials, so a
    * private call cannot even authenticate. But the venue report kept probing and printing the whole
    * account/order family, and this line goes to the MODEL: `supports: … balance, positions,
@@ -113,7 +113,7 @@ describe('market_data tool', () => {
    * `ExchangeInfo['capabilities']`, so no probe can put them back and no renderer can print them.
    * Asserted on the STRING, which survives the type change and keeps this test meaningful.
    */
-  it('advertises no account or order operation — this plugin cannot trade', async () => {
+  it('advertises no account or order operation — this mini app cannot trade', async () => {
     const r = await run(port(), { connection_id: 'c1' })
     const supports = /supports: (.*)/.exec(r.content)?.[1]
     expect(supports, 'the venue report must still have a supports line').toBeDefined()
@@ -135,7 +135,7 @@ describe('market_data tool', () => {
       'editOrder',
       'fundingHistory',
     ]) {
-      expect(supports, `${forbidden} is not a capability this plugin can honour`).not.toContain(
+      expect(supports, `${forbidden} is not a capability this mini app can honour`).not.toContain(
         forbidden,
       )
     }

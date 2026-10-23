@@ -1,5 +1,5 @@
 /**
- * Typed errors for this plugin's routes, built on the SDK's `defineTypedError` kit rather than a
+ * Typed errors for this mini app's routes, built on the SDK's `defineTypedError` kit rather than a
  * hand-rolled class — the same seam trading's `errors.ts` crosses, so the `{ error, code, detail }`
  * body shape and its friendly/raw split have one owner.
  *

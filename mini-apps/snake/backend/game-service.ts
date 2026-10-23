@@ -46,7 +46,7 @@ export const MAX_HEADINGS = 200
  * Stop, or a decision comes back without a move — whose reason the board then shows.
  */
 export function createGameService(input: {
-  /** The session's folder for this plugin; rejects for a session the user does not own. */
+  /** The session's folder for this mini app; rejects for a session the user does not own. */
   resolveDir?: (userId: string, sessionId: string) => Promise<string>
   /** `ctx.host.decisions` — the decision model, on the backend load. */
   decisions?: DecisionHost

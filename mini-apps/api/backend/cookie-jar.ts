@@ -9,7 +9,7 @@
  *   POST https://api.dev/login       Cookie: (none)   → 302, Set-Cookie: session=abc123
  *   GET  https://api.dev/dashboard   Cookie: (none)   → 200 "<html>Please log in</html>"
  *
- * The caller gets `200 OK`. Every other part of this plugin teaches that 2xx means it worked, so
+ * The caller gets `200 OK`. Every other part of this mini app teaches that 2xx means it worked, so
  * an agent reports a successful login while standing on the login page. A success status covering
  * a failed operation is the most expensive kind of wrong this integration produces, because
  * nothing looks wrong.

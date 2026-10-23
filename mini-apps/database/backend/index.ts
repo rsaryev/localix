@@ -1,5 +1,5 @@
 /**
- * Database workbench — bundled first-party plugin backend.
+ * Database workbench — bundled first-party mini app backend.
  *
  * `register(ctx)` gets (or lazily builds) the process-wide database service and
  * contributes it as a `BackendSubsystem`: the boot-time loader (`loadMiniAppBackends`)
@@ -7,11 +7,11 @@
  * providers, and calls `onShutdown` on shutdown. The ONE `database_client` agent tool (connections,
  * schema, browse, query and connection management behind an `action`; see `database-tool.ts`)
  * rides the same `register()` return so the orchestrator (an OPEN `openToolset` profile) picks it
- * up as a plugin tool — no core allowlist entry required.
+ * up as a mini app tool — no core allowlist entry required.
  *
  * The ONE host coupling — resolving `${secret:KEY}` tokens in a connection URL/password/
- * ssh block against the central vault — arrives through the GENERIC plugin host seam
- * `ctx.host.resolveSecret(userId, key)`. The database plugin never imports the core
+ * ssh block against the central vault — arrives through the GENERIC mini app host seam
+ * `ctx.host.resolveSecret(userId, key)`. The database mini app never imports the core
  * secrets subsystem; the host wires its real resolver into this seam at boot.
  *
  * `onShutdown` closes every live driver (+ SSH tunnel, rolling back any open manual
@@ -36,9 +36,9 @@ import {
 } from './context-provider'
 import { createDatabaseTool } from './database-tool'
 
-/** The generic host capabilities this plugin reads off the register context. Declared
- *  narrowly (a structural subset of the host `MiniAppContext`) so the plugin stays
- *  decoupled from core plugin internals — the loader passes the full context, of which
+/** The generic host capabilities this mini app reads off the register context. Declared
+ *  narrowly (a structural subset of the host `MiniAppContext`) so the mini app stays
+ *  decoupled from core mini app internals — the loader passes the full context, of which
  *  this is a subset. */
 type DatabaseRegisterContext = Pick<MiniAppContext, 'dataDir' | 'host' | 'userId' | 'watchPath'>
 
@@ -51,7 +51,7 @@ export async function register(ctx: DatabaseRegisterContext): Promise<MiniAppReg
     resolveSecret: ctx.host?.resolveSecret,
   })
   const feed = createStoreChangeFeed({
-    plugin: 'database',
+    miniApp: 'database',
     resolveDir: async () => ctx.dataDir,
     subscribeWrites: subscribeDatabaseWrites,
     watchPath: ctx.watchPath ?? ctx.host?.watchPath,
@@ -60,7 +60,7 @@ export async function register(ctx: DatabaseRegisterContext): Promise<MiniAppReg
   })
   const userId = ctx.userId
 
-  // The plugin's ONE agent tool (`database-tool.ts`): each verb's narrow port over the shared
+  // The mini app's ONE agent tool (`database-tool.ts`): each verb's narrow port over the shared
   // service, so every body stays testable with a fake.
   const listConnections = (u: string) => service.list(u)
   const databaseTool: AgentTool = createDatabaseTool({

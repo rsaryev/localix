@@ -66,7 +66,7 @@ export const EMPTY_RECORD: GameRecord = { won: 0, lost: 0, draw: 0 }
 export const scored = (record: GameRecord, status: Game['status']): GameRecord =>
   status === 'playing' ? record : { ...record, [status]: record[status] + 1 }
 
-/** The one game at this table — what the plugin keeps, and what every route answers with. */
+/** The one game at this table — what the mini app keeps, and what every route answers with. */
 export const gameSchema = z.object({
   id: z.string().min(1),
   board: z.array(pieceSchema.nullable()).length(64),

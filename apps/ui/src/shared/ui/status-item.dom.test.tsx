@@ -61,7 +61,7 @@ const item = (partial: Partial<StatusItemState> & { label: string }): StatusItem
 describe('the contributed status control', () => {
   test('a right-click opens a menu even on an item that declared none', async () => {
     // The failure this pins: an icon where right-click did nothing, which a user cannot tell apart
-    // from a plugin that broke.
+    // from a mini app that broke.
     const view = await render(
       <StatusItemControl
         state={item({ label: 'Reader', Icon: GitBranch, onClick: () => undefined })}
@@ -71,13 +71,13 @@ describe('the contributed status control', () => {
     try {
       const menu = await view.rightClick(view.host.querySelector('button')!)
       expect(menu?.textContent).toContain('Reader')
-      expect(menu?.textContent).toContain('Plugin settings…')
+      expect(menu?.textContent).toContain('Mini app settings…')
     } finally {
       await view.close()
     }
   })
 
-  test('a plugin’s own entries open first, with the host row after them', async () => {
+  test('a mini app’s own entries open first, with the host row after them', async () => {
     const view = await render(
       <StatusItemControl
         state={item({
@@ -91,7 +91,7 @@ describe('the contributed status control', () => {
     try {
       const text = (await view.rightClick(view.host.querySelector('button')!))?.textContent ?? ''
       expect(text.indexOf('Open Git Workspace')).toBeGreaterThanOrEqual(0)
-      expect(text.indexOf('Open Git Workspace')).toBeLessThan(text.indexOf('Plugin settings…'))
+      expect(text.indexOf('Open Git Workspace')).toBeLessThan(text.indexOf('Mini app settings…'))
     } finally {
       await view.close()
     }
@@ -107,7 +107,7 @@ describe('the contributed status control', () => {
     try {
       expect(view.host.querySelector('button')).toBeNull()
       const menu = await view.rightClick(view.host.querySelector('[aria-label="Readout"]')!)
-      expect(menu?.textContent).toContain('Plugin settings…')
+      expect(menu?.textContent).toContain('Mini app settings…')
     } finally {
       await view.close()
     }

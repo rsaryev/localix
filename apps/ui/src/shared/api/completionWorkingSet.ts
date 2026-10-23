@@ -1,7 +1,7 @@
 /**
  * The working set every completion request carries: what the user has open and visible right now.
  *
- * Every inline-completion surface — the chat composer, a commit subject, a plugin's field, the
+ * Every inline-completion surface — the chat composer, a commit subject, a mini app's field, the
  * code editor — gets it from HERE, so a new surface has open-tab context without writing a line
  * of it. It used to exist only for the chat composer (its ambient chips), which is why the code
  * editor predicted edits blind to the file open beside it.

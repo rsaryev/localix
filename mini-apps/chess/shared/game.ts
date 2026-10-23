@@ -54,7 +54,7 @@ export const recordSchema = z.object({
 export type GameRecord = z.infer<typeof recordSchema>
 export const EMPTY_RECORD: GameRecord = { won: 0, lost: 0, draw: 0 }
 
-/** The one game at this table — what the plugin keeps, and what every route answers with. */
+/** The one game at this table — what the mini app keeps, and what every route answers with. */
 export const gameSchema = z.object({
   id: z.string().min(1),
   /** Every move played, in order; the position is replayed from them. */

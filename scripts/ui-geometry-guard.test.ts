@@ -11,7 +11,7 @@ import { join, relative, resolve } from 'node:path'
  * written as a raw pixel height instead — `h-[43px]`, `min-h-[40px]` — is invisible
  * to that scale: it cannot be retuned with the theme and it silently stops lining up
  * with the row above it. `workbench-foundations.test.ts` pins the primitives; this
- * pins everything downstream of them, across the app AND every plugin, so the drift
+ * pins everything downstream of them, across the app AND every mini app, so the drift
  * cannot come back one panel at a time.
  *
  * Scope is deliberately narrow: only ARBITRARY PIXEL heights. Tailwind's own scale

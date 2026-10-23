@@ -4,7 +4,7 @@ import type { RailArea } from '../model/railLayout'
 
 /** A section that slides open in the sidebar panel (history, files, etc.) */
 export interface RailSection {
-  /** Opts a built-in destination into the shared tool catalog without plugin ownership. */
+  /** Opts a built-in destination into the shared tool catalog without mini app ownership. */
   toolCategory?: MiniAppCategory
   id: string
   icon: ReactNode
@@ -15,10 +15,10 @@ export interface RailSection {
   /** Where this section defaults in the CUSTOMIZABLE rail before the user moves
    *  it — 'bar' (always visible) or 'overflow' (in the "…" menu). Default 'bar'. */
   defaultArea?: RailArea
-  /** Plugin ownership, independent of grouping and pin placement. */
-  plugin?: boolean
-  /** The plugin's package name, used to look up its manifest category. */
-  pluginName?: string
+  /** Mini app ownership, independent of grouping and pin placement. */
+  miniApp?: boolean
+  /** The mini app's package name, used to look up its manifest category. */
+  miniAppName?: string
   /** Optional agent-context resource carried when this view is dragged to chat. */
   resourceUri?: string
 }
@@ -39,10 +39,10 @@ export interface RailEntry {
   /** Same shape as `RailAction.onClick` — a flattened action keeps its press origin. */
   onClick: (event?: { clientX: number; clientY: number }) => void
   chordId?: string
-  /** Plugin ownership, independent of grouping and pin placement. */
-  plugin?: boolean
-  /** The plugin's package name, set alongside `plugin: true`. */
-  pluginName?: string
+  /** Mini app ownership, independent of grouping and pin placement. */
+  miniApp?: boolean
+  /** The mini app's package name, set alongside `mini app: true`. */
+  miniAppName?: string
   resourceUri?: string
   /** Extra rows for the button's context menu, after the rail's own (an app action, …). */
   extraMenu?: readonly RailMenuItem[]
@@ -57,7 +57,7 @@ export interface RailMenuItem {
 /** A plain action button in the rail — fires a callback instead of toggling a panel/view. */
 export interface RailAction {
   statusLabel?: string
-  /** Opts a built-in destination into the shared tool catalog without plugin ownership. */
+  /** Opts a built-in destination into the shared tool catalog without mini app ownership. */
   toolCategory?: MiniAppCategory
   id: string
   icon: ReactNode
@@ -72,10 +72,10 @@ export interface RailAction {
   railPosition?: 'top' | 'bottom'
   /** Hide from the always-visible rail and surface inside the overflow menu instead. */
   overflowGroup?: 'workspace' | 'utilities'
-  /** Plugin ownership, independent of grouping and pin placement. */
-  plugin?: boolean
-  /** The plugin's package name, set alongside `plugin: true`. */
-  pluginName?: string
+  /** Mini app ownership, independent of grouping and pin placement. */
+  miniApp?: boolean
+  /** The mini app's package name, set alongside `mini app: true`. */
+  miniAppName?: string
   resourceUri?: string
   extraMenu?: readonly RailMenuItem[]
   /** Keybinding-registry command id — its live chord is appended to the tooltip. */
@@ -83,7 +83,7 @@ export interface RailAction {
   /** When set, this button represents a relocated inspector SECTION: it becomes
    *  draggable so it can be dragged back into the in-panel section row. */
   sectionId?: string
-  /** Marks a workspace VIEW toggle (Source Control / Usage / plugin viewlets / …) that
+  /** Marks a workspace VIEW toggle (Source Control / Usage / mini app viewlets / …) that
    *  participates in the customizable rail — pinnable/hideable/reorderable — as
    *  opposed to a FIXED global utility (Settings / Reset layout / Keep awake), which
    *  keeps its permanent slot. Default: fixed. */

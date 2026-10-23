@@ -9,7 +9,7 @@
   "apps/api/src/features/agents/service.ts": 321,
   "apps/api/src/features/chat/runtime/session-stream-registry.ts": 364,
   "apps/api/src/features/context-fabric/manager.ts": 545,
-  "apps/api/src/features/context-fabric/testing/plugin-contract-kit.ts": 399,
+  "apps/api/src/features/context-fabric/testing/mini-app-contract-kit.ts": 399,
   "apps/api/src/features/external-agents/backend/service.ts": 416,
   "apps/api/src/features/plugins/loader.ts": 400,
   "apps/api/src/features/plugins/marketplace-registry.ts": 329,

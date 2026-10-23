@@ -9,11 +9,11 @@ import type { Pair } from './request-spec'
  * nothing else legitimately lives there.
  *
  * That distinction was WRONG for fourteen iterations. `gitSafetyProblem` and `redactAuth` both
- * reasoned about `spec.auth` only, defended by "auth is the one place this plugin promises to hold
- * credentials" — while `import/har.ts` and `import/curl.ts` deliberately route credentials into
- * HEADERS instead (a HAR keeps its `Authorization` verbatim and folds cookies into one; curl keeps
- * an auth scheme it cannot sign, e.g. GitHub's own `Authorization: Token …`). Each module's comment
- * was true of itself; none was true of the composition.
+ * reasoned about `spec.auth` only, defended by "auth is the one place this mini app promises to
+ * hold credentials" — while `import/har.ts` and `import/curl.ts` deliberately route credentials
+ * into HEADERS instead (a HAR keeps its `Authorization` verbatim and folds cookies into one; curl
+ * keeps an auth scheme it cannot sign, e.g. GitHub's own `Authorization: Token …`). Each module's
+ * comment was true of itself; none was true of the composition.
  */
 /**
  * Beyond the three the HTTP specs define, an API-KEY header is a credential by its own NAME. That is

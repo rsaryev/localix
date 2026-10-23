@@ -5,7 +5,7 @@ import type { IconComponent, MiniAppOwnedContribution } from './contrib'
  *
  * The host owns the batch — the comments a person left on a file or a preview, and the "send to
  * the agent" action every surface shares. What else a batch can become (a card on a task board, an
- * issue in a tracker) is a plugin's to offer: the host renders every contributed action beside
+ * issue in a tracker) is a mini app's to offer: the host renders every contributed action beside
  * "Send", hands it the batch, and clears the comments once the action resolved. The host names no
  * destination itself.
  */
@@ -21,7 +21,7 @@ export interface CommentBatch {
 }
 
 export interface CommentActionContribution extends MiniAppOwnedContribution {
-  /** `<plugin>:<name>`, like every plugin-chosen identity. */
+  /** `<app>:<name>`, like every mini-app-chosen identity. */
   id: string
   /** The button's text, e.g. "Task". */
   label: string

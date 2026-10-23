@@ -1,12 +1,13 @@
 import type { MiniAppTextInputCompletionSurface } from '@localixai/mini-app-sdk/backend'
 
 /**
- * Every plugin's text-input completion surfaces, side by side.
+ * Every mini app's text-input completion surfaces, side by side.
  *
  * These used to be ONE capability (`textInput.completion`), and a capability is first-wins: the
- * first plugin to declare it owned every contributed surface, and a second plugin's fields were
- * warned about and ignored. Surfaces are keyed by their own id here, so two plugins never compete,
- * and an id must carry its owner's namespace, so no plugin can answer for another's field.
+ * first mini app to declare it owned every contributed surface, and a second mini app's fields were
+ * warned about and ignored. Surfaces are keyed by their own id here, so two mini apps never
+ * compete, and an id must carry its owner's namespace, so no mini app can answer for another's
+ * field.
  */
 
 export type SurfaceRegistration =
@@ -16,12 +17,12 @@ export type SurfaceRegistration =
 export interface TextInputSurfaceRegistry {
   register(
     surface: MiniAppTextInputCompletionSurface,
-    owner: { plugin: string; source: string },
+    owner: { miniApp: string; source: string },
   ): SurfaceRegistration
   /** Register every surface a subsystem declares; a rejection is warned, never thrown. */
   registerAll(
     surfaces: readonly MiniAppTextInputCompletionSurface[] | undefined,
-    owner: { plugin: string; source: string },
+    owner: { miniApp: string; source: string },
     warn?: (msg: string, meta?: unknown) => void,
   ): void
   unregisterBySource(source: string): void
@@ -31,7 +32,10 @@ export interface TextInputSurfaceRegistry {
 export function createTextInputSurfaceRegistry(): TextInputSurfaceRegistry {
   const entries = new Map<string, { surface: MiniAppTextInputCompletionSurface; source: string }>()
   const register: TextInputSurfaceRegistry['register'] = (surface, owner) => {
-    if (!surface.id.startsWith(`${owner.plugin}.`) || surface.id.length <= owner.plugin.length + 1)
+    if (
+      !surface.id.startsWith(`${owner.miniApp}.`) ||
+      surface.id.length <= owner.miniApp.length + 1
+    )
       return { status: 'rejected', reason: 'namespace' }
     if (entries.has(surface.id)) return { status: 'rejected', reason: 'duplicate' }
     entries.set(surface.id, { surface, source: owner.source })

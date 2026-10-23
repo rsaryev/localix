@@ -11,7 +11,7 @@ import type { Seat } from './ask-agent'
 /**
  * HOW THE BOARD ASKS THE DECISION MODEL FOR ITS MOVE — when the table's opponent is `decision`.
  *
- * The plugin asks the host's decision model itself (`ctx.host.decisions`): one `choice` question
+ * The mini app asks the host's decision model itself (`ctx.host.decisions`): one `choice` question
  * whose options are the legal moves in SAN — the notation the tool takes — each described in
  * plain words. No chat is woken and nothing is written in it; the spend is recorded against the
  * chat the board belongs to.

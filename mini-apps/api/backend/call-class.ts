@@ -1,5 +1,5 @@
 /**
- * The permission class of one call to each of the api plugin's two subjects — saved requests and
+ * The permission class of one call to each of the api mini app's two subjects — saved requests and
  * environments. `api_client` routes an operation to one of these and combines a batch with the
  * SDK's `widestCallClass`, so a `DELETE` cannot ride behind a `list` (`api-tool.ts`).
  */

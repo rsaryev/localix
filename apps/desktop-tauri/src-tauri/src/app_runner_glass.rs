@@ -1,9 +1,9 @@
-//! A plugin app's window material: the workspace's glass, edge to edge.
+//! A standalone mini app's window material: the workspace's glass, edge to edge.
 //!
 //! The same `NSVisualEffectView` the workspace sits on (`window_material.rs`): its material per
 //! appearance, `Active` so it keeps sampling the desktop when the window is not key, behind the
 //! whole window including the transparent titlebar. The page paints the same coats over it as the
-//! workspace does, because it marks itself a macOS desktop page (`shared/lib/pluginApp.ts`).
+//! workspace does, because it marks itself a macOS desktop page (`shared/lib/standaloneApp.ts`).
 use objc2::rc::Retained;
 use objc2::{MainThreadMarker, MainThreadOnly};
 use objc2_app_kit::{

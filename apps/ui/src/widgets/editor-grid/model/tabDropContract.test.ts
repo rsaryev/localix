@@ -11,7 +11,7 @@ import { workItemKindRegistry } from '@/shared/contrib/uiContrib'
 import { workItemToMessageBinding } from '@/entities/workspace-grid/model'
 
 // A subsystem-contributed tab kind that links as a `@resource:` ref (stands in for the
-// database plugin's `db-console`, which registers the SAME mapping via the registry). Proves
+// database mini app's `db-console`, which registers the SAME mapping via the registry). Proves
 // the contributed-tab → composer link contract without a core db literal.
 workItemKindRegistry.register({
   kind: 'test-resource-tab',
@@ -24,7 +24,7 @@ workItemKindRegistry.register({
     const uri = `localix://resource/fixture-db/${i.payload.connectionId}`
     return {
       kind: 'context',
-      source: 'plugin',
+      source: 'mini-app',
       target: { kind: 'resource', token: `@resource:${uri}`, label: i.title, uri },
     }
   },

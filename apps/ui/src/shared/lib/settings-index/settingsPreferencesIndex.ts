@@ -16,7 +16,7 @@ export const PREFERENCES_SETTINGS_INDEX: SettingsIndexEntry[] = [
     tab: 'preferences',
     tabLabel: 'Preferences',
     title: 'Recent views',
-    description: 'How recently opened plugin views appear in the navigation rail.',
+    description: 'How recently opened mini app views appear in the navigation rail.',
     keywords: ['rail', 'recent', 'dock', 'sidebar', 'icons', 'hover', 'collapse', 'noise'],
     anchor: 'prefs-rail-recents',
   },

@@ -2,11 +2,11 @@ import type { PaletteCommand } from './uiCommands'
 import { listThirdPartyViews } from './runtimeViews'
 
 /**
- * Build the command-palette entries for INSTALLED third-party plugin views — the
+ * Build the command-palette entries for INSTALLED third-party mini app views — the
  * counterpart of the bundled-subsystem "Open/Show …" commands. Pure over the
  * runtime-views store + injected openers, so it is unit-testable without React:
  * because it reads {@link listThirdPartyViews}, a view that dropped out of the store
- * (disabled/uninstalled plugin) yields no command on the next call — the command
+ * (disabled/uninstalled mini app) yields no command on the next call — the command
  * disappears exactly like the rail button.
  *
  * Every view Opens its grid tab (the CALLER supplies the same tab id its rail button
@@ -15,7 +15,7 @@ import { listThirdPartyViews } from './runtimeViews'
 export interface ThirdPartyViewCommandOpeners {
   /** Open a view as a grid tab. */
   openWorkItem(input: {
-    pluginName: string
+    miniAppName: string
     projectId: string
     viewId: string
     fullName: string
@@ -27,14 +27,14 @@ export function buildThirdPartyViewCommands(
   openers: ThirdPartyViewCommandOpeners,
 ): PaletteCommand[] {
   return listThirdPartyViews().map((v): PaletteCommand => ({
-    id: `view.plugin.${v.fullName}`,
+    id: `view.mini-app.${v.fullName}`,
     label: `Open ${v.title}`,
     group: 'View',
     effect: 'read',
-    keywords: [v.app, 'plugin'],
+    keywords: [v.app, 'mini app'],
     run: () =>
       openers.openWorkItem({
-        pluginName: v.app,
+        miniAppName: v.app,
         projectId: v.projectId,
         viewId: v.id,
         fullName: v.fullName,

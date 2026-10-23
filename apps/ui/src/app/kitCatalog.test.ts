@@ -7,7 +7,7 @@ import { KIT_CATALOG } from '@localixai/kit/catalog'
 
 /**
  * The host half of the kit catalog's completeness: the modules the app LENDS under
- * `@localixai/kit/<id>` (`app/kit/*.ts`) are described there too, so a plugin author finds the
+ * `@localixai/kit/<id>` (`app/kit/*.ts`) are described there too, so a mini app author finds the
  * code editor and the Markdown renderer in the same list as the button. The package's own test
  * pins its doors; it cannot read this directory, which is the app's.
  */

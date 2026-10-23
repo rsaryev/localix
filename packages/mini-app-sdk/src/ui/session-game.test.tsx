@@ -21,7 +21,7 @@ function Workspace(props: { active: boolean; publishMessageContext: PublishMessa
   return <p>the board</p>
 }
 const registerUi = sessionGameUi({
-  plugin: 'toy',
+  miniApp: 'toy',
   kind: 'toy:game',
   title: 'Toy',
   label: 'Toy — play against the agent',

@@ -106,7 +106,7 @@ export function tabMessageBindings(
       {
         ...binding,
         // Provenance is minted by the host at the point this static/live binding
-        // becomes ambient context; plugin drafts cannot spoof another source.
+        // becomes ambient context; mini app drafts cannot spoof another source.
         source: 'active-tab',
         target: { ...binding.target, token },
       },

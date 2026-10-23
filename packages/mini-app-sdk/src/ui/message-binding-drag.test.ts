@@ -218,17 +218,17 @@ describe('message-binding drag payload validation', () => {
     })
   })
 
-  // A dragged plugin tab brings its plugin's tools to the turn, so its owner survives the drop —
-  // and only as a plugin name.
-  test('the owner of a dragged plugin tab survives the drop; a malformed one is dropped', () => {
+  // A dragged mini app tab brings its mini app's tools to the turn, so its owner survives the drop
+  // — and only as a mini app name.
+  test('the owner of a dragged mini app tab survives the drop; a malformed one is dropped', () => {
     expect(
-      readMessageBindingDrag(withRawPayload({ ...validEnvelope, plugin: 'fixture-board' })),
+      readMessageBindingDrag(withRawPayload({ ...validEnvelope, miniApp: 'fixture-board' })),
     ).toMatchObject({
-      plugin: 'fixture-board',
+      miniApp: 'fixture-board',
     })
     expect(
-      readMessageBindingDrag(withRawPayload({ ...validEnvelope, plugin: '../../etc' })),
-    ).not.toHaveProperty('plugin')
+      readMessageBindingDrag(withRawPayload({ ...validEnvelope, miniApp: '../../etc' })),
+    ).not.toHaveProperty('miniApp')
   })
 
   test('an oversized payload is never armed and never read back', () => {

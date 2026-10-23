@@ -22,7 +22,7 @@ const MARKS_PATH = '/rpc/template/marks'
  */
 export function SystemMarks({ active }: { active: boolean }) {
   const marks = useStoreSnapshot({
-    plugin: 'template',
+    miniApp: 'template',
     sessionId: null,
     path: MARKS_PATH,
     schema: systemMarksSchema,

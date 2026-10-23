@@ -51,7 +51,7 @@ export function clampPaneSize(opts: {
  * container leaves for the other pane, then persisted to localStorage.
  *
  * SHARED, not database-owned. It was written for the SQL console's editor/results split and
- * lived in that plugin, but nothing in it knows about databases — it is the repo's answer to
+ * lived in that mini app, but nothing in it knows about databases — it is the repo's answer to
  * yaak's `SplitLayout`, and the API workspace needs exactly the same behaviour for its
  * sidebar width and its request/response split. A second copy would have been the alternative.
  *

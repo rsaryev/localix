@@ -1,5 +1,6 @@
 /**
- * `api_client` — the plugin's ONE agent tool. Wiring only: validate → pick the subject → delegate.
+ * `api_client` — the mini app's ONE agent tool. Wiring only: validate → pick the subject →
+ * delegate.
  *
  * The two bodies it fronts are unchanged and still live apart, because they are two subjects:
  * `http-request.ts` answers "what call do I make", `manage-environment.ts` answers "against which
@@ -132,7 +133,7 @@ export function createApiTool(deps: HttpRequestDeps): AgentTool {
       _onUpdate?: unknown,
       executionContext?: AgentToolExecutionContext,
     ) {
-      // Plugin discovery is cached per project, while collections are owned by sessions. Resolve
+      // Mini app discovery is cached per project, while collections are owned by sessions. Resolve
       // once for the whole batch so every operation observes the same exact session scope.
       const scoped = deps.resolveScope
         ? await deps.resolveScope(executionContext?.session?.id)
@@ -262,7 +263,7 @@ export function createApiTool(deps: HttpRequestDeps): AgentTool {
       !(action === 'import' && !(input as { save?: unknown } | null)?.save)
     if (deps.resolveScope && writesSessionCollection) {
       // Relative on purpose: the host resolves declared paths against the executing session's
-      // cwd. `ctx.cwd` can belong to the boot-time plugin load and would point permission rules
+      // cwd. `ctx.cwd` can belong to the boot-time mini app load and would point permission rules
       // at a different workspace than execute ultimately mutates.
       return [COLLECTION_DIR]
     }

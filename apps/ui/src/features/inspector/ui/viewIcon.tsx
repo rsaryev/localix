@@ -20,7 +20,7 @@ import {
  * Resolve a third-party view's optional Lucide icon-NAME hint to a real glyph.
  * A curated allow-list (not the whole lucide surface — that would bloat the
  * bundle and let a manifest name any of hundreds of icons); anything unknown or
- * absent falls back to the generic Puzzle plugin glyph.
+ * absent falls back to the generic Puzzle mini app glyph.
  */
 const VIEW_ICONS: Record<string, LucideIcon> = {
   gauge: Gauge,

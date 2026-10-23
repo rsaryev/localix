@@ -1,5 +1,5 @@
 /* ── The boards — the games' shared tile style ───────────────────────────────────────────────
-   Styled HERE, not with utility classes: utilities reach a plugin through the host's
+   Styled HERE, not with utility classes: utilities reach a mini app through the host's
    de-duplicated sheet, where a rule judged a duplicate of the host's can be dropped. The look is
    Tic-Tac-Toe's: faint-bordered tiles on a barely-there fill, marks as strokes, colours mixed from
    the theme so both themes read. */

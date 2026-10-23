@@ -109,7 +109,7 @@ export async function persistAndPublish(params: {
 /**
  * Insert a user message + an empty streaming assistant message and publish both
  * — the standard preamble for a continuation / wake run. Internal by default
- * (loop/plugin/continuation wakes); pass `internal: false` for a real user turn
+ * (loop/mini app/continuation wakes); pass `internal: false` for a real user turn
  * queued while the session was busy (so it renders as a normal user message and
  * is NOT hidden from the model context). Returns the persisted pair so the
  * caller can start a run on the assistant id.
@@ -134,8 +134,8 @@ export async function insertInternalTurn(params: {
    */
   to?: { participant: ParticipantRef; handle?: string }
   bindings?: MessageBinding[]
-  /** Plugins whose tools the answering turn carries — the plugin that woke it. */
-  plugins?: string[]
+  /** Mini apps whose tools the answering turn carries — the mini app that woke it. */
+  miniApps?: string[]
   /** The badge of a slash command that waited in the queue ("via /loop · every 5m"). */
   commandOrigin?: { command: string; label: string }
   /** Optimistic UI rows represented by this (possibly merged) queued turn. */
@@ -169,7 +169,7 @@ export async function insertInternalTurn(params: {
     ...(params.to ? { to: params.to.participant } : {}),
     ...(params.to?.handle ? { toSnapshot: { handle: params.to.handle } } : {}),
     ...(params.bindings && params.bindings.length > 0 ? { bindings: params.bindings } : {}),
-    ...(params.plugins?.length ? { plugins: params.plugins } : {}),
+    ...(params.miniApps?.length ? { miniApps: params.miniApps } : {}),
     ...(params.clientMessageIds?.length ? { clientMessageIds: params.clientMessageIds } : {}),
   })
 

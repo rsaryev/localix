@@ -170,13 +170,13 @@ describe('activeTabLinks', () => {
 
   test('one group links its open file and two contributed working sets', () => {
     const db = {
-      kind: 'plugin-view',
+      kind: 'mini-app-view',
       id: 'db',
       title: 'Local database',
       scope: '@global',
     } satisfies WorkItem
     const trade = {
-      kind: 'plugin-view',
+      kind: 'mini-app-view',
       id: 'trade',
       title: 'BTC/USDT',
       scope: '@global',
@@ -234,23 +234,23 @@ describe('activeTabLinks', () => {
     expect(activeTabLinks(twoGroups({ a: chat('a'), b: settings('b') }))).toEqual([])
   })
 
-  test('a third-party plugin view is ambient context even before its first snapshot', () => {
-    const pluginView = {
-      kind: 'plugin-view',
-      id: 'plugin-view:fixture.dashboard',
+  test('a third-party mini app view is ambient context even before its first snapshot', () => {
+    const miniAppView = {
+      kind: 'mini-app-view',
+      id: 'mini-app-view:fixture.dashboard',
       title: 'Fixture dashboard',
       scope: '@global',
-      payload: { pluginName: 'fixture', viewId: 'dashboard' },
+      payload: { miniAppName: 'fixture', viewId: 'dashboard' },
     } satisfies WorkItem
     const state = baseState({
-      root: makeLeaf('g1', [pluginView.id], pluginView.id),
+      root: makeLeaf('g1', [miniAppView.id], miniAppView.id),
       activeGroup: 'g1',
       activeScope: '@global',
       warmScopes: ['@global'],
-      items: { [pluginView.id]: pluginView },
+      items: { [miniAppView.id]: miniAppView },
     })
     const link = activeTabLink(state)
-    expect(link?.tabId).toBe(pluginView.id)
+    expect(link?.tabId).toBe(miniAppView.id)
     expect(link?.binding.target.kind).toBe('snippet')
     expect(link?.binding.target.attributes?.content).toContain('none published yet')
     expect(link?.binding.target.attributes?.content).toContain('Mini app: fixture')

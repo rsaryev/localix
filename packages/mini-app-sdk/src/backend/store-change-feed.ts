@@ -13,7 +13,7 @@ export const STORE_FEED_WINDOW_MS = 50
  * history would cost a database row per write and buy nothing.
  */
 export function createStoreChangeFeed(options: {
-  plugin: string
+  miniApp: string
   resolveDir: (userId: string, sessionId: string | null) => Promise<string | null>
   subscribeWrites: (listener: (path: string) => void) => () => void
   watchPath?: MiniAppPathWatch
@@ -22,7 +22,7 @@ export function createStoreChangeFeed(options: {
   acceptPath?: (userId: string, path: string) => boolean
   windowMs?: number
 }): { wsFrames: WsFrameContribution[]; onShutdown: () => void } {
-  const commands = storeFeedCommands(options.plugin)
+  const commands = storeFeedCommands(options.miniApp)
   const active = new Set<{
     stopped: boolean
     timer: ReturnType<typeof setTimeout> | null
@@ -52,7 +52,7 @@ export function createStoreChangeFeed(options: {
         start(params, send, { userId }) {
           const handle: Handle = { stopped: false, timer: null, releases: [] }
           const sessionId = sessionOf(params)
-          const frame: StoreFrame = { plugin: options.plugin, sessionId }
+          const frame: StoreFrame = { miniApp: options.miniApp, sessionId }
           const health = (live: boolean) => {
             if (!handle.stopped) send(JSON.stringify({ ...frame, live }))
           }

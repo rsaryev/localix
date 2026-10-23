@@ -154,11 +154,11 @@ describe('how a failure is worded', () => {
         ].join('\n'),
       ),
     ).toEqual([])
-    // A plugin's backend is not read for inline lines: it speaks to its UI, not to a person.
+    // A mini app's backend is not read for inline lines: it speaks to its UI, not to a person.
     expect(wordingViolations(`setError('Failed to load')`, 'x/backend/a.ts', false)).toEqual([])
   })
 
-  it('every literal failure in the host and in plugins follows it', () => {
+  it('every literal failure in the host and in mini apps follows it', () => {
     expect(scanSources(wordingViolations)).toEqual([])
   })
 })

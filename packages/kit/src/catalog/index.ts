@@ -49,7 +49,7 @@ const CATEGORY_TITLES: Record<KitCategory, string> = {
 
 /**
  * The catalog as compact Markdown: one table per category, one row per module. It is what the
- * plugin kit stages as `KIT.md` and what the authoring instruction points the agent at, so the
+ * mini app kit stages as `KIT.md` and what the authoring instruction points the agent at, so the
  * agent picks by JOB instead of guessing from export names.
  */
 export function renderKitCatalog(entries: readonly KitCatalogEntry[] = KIT_CATALOG): string {

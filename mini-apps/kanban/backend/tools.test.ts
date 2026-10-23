@@ -16,7 +16,9 @@ afterEach(() => {
 type Result = { content: string; isError?: boolean; details?: KanbanToolDetails }
 const SPEAKER = { agentId: 'builtin:localix', handle: 'localix' }
 
-/** The plugin's one tool, called as a run in `session` would: the host names session and speaker. */
+/**
+ * The mini app's one tool, called as a run in `session` would: the host names session and speaker.
+ */
 function tool() {
   const root = mkdtempSync(join(tmpdir(), 'kanban-tool-'))
   roots.push(root)
@@ -44,7 +46,7 @@ function tool() {
 }
 
 describe('kanban tool', () => {
-  test('the plugin gives the agent ONE tool', () => {
+  test('the mini app gives the agent ONE tool', () => {
     expect(tool().registered.map((candidate) => candidate.name)).toEqual(['kanban'])
   })
 

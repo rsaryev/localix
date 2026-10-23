@@ -4,7 +4,7 @@
  * it. Incoming host messages are accepted only when their channel matches and the
  * source is the parent window. targetOrigin is `'*'` because the preview is served
  * from an ephemeral-port origin the host can't predict (trust is by source, not
- * origin — mirrors the plugin-panel bridge).
+ * origin — mirrors the mini app panel bridge).
  */
 
 import { VF_BRIDGE_KEY, type VfHostMessage, type VfProbeMessage } from '../protocol/index'

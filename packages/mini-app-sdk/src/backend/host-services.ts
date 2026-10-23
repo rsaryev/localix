@@ -1,16 +1,16 @@
 /**
- * The HOST-SIDE half of the plugin backend seam: the process-wide capabilities the host
- * hands a plugin on the boot-time backend load, and the vocabulary they speak.
+ * The HOST-SIDE half of the mini app backend seam: the process-wide capabilities the host
+ * hands a mini app on the boot-time backend load, and the vocabulary they speak.
  *
- * GENERIC host-service seam handed to a plugin's `register(ctx)` so a bundled BACKEND
+ * GENERIC host-service seam handed to a mini app's `register(ctx)` so a bundled BACKEND
  * subsystem can reach a narrow, process-wide host capability without importing the core
- * feature that owns it. Deliberately minimal + subsystem-agnostic — any future plugin
- * backend consumes the same shape; the host names no individual plugin here. Populated
+ * feature that owns it. Deliberately minimal + subsystem-agnostic — any future mini app
+ * backend consumes the same shape; the host names no individual mini app here. Populated
  * on the boot-time backend load, and absent (undefined) on the per-run tool/hook load —
  * a backend singleton captures it once at boot.
  *
  * Separate from `context.ts` because these are what the HOST implements, not what a
- * plugin is handed per run: every interface here is a capability the host may or may not
+ * mini app is handed per run: every interface here is a capability the host may or may not
  * offer, each with its own reasoning about what it deliberately does NOT allow. Reading
  * `MiniAppContext` should not mean reading all of that first.
  */
@@ -48,9 +48,9 @@ export interface TerminalReadHost {
 }
 
 /**
- * Ownership-checked workspace lookup for project-local plugin data.
+ * Ownership-checked workspace lookup for project-local mini app data.
  *
- * The returned path is host authority, never a path supplied by plugin UI or encoded in an
+ * The returned path is host authority, never a path supplied by mini app UI or encoded in an
  * opaque resource URI. This keeps project-local providers usable from background registry
  * calls (resource expansion/search), where there is no HTTP `MiniAppRouteContext` carrying cwd.
  */
@@ -60,18 +60,18 @@ export interface WorkspaceScopeHost {
 }
 
 /**
- * WHAT, inside a plugin, is using a vault key — the unit a person would name when asked
+ * WHAT, inside a mini app, is using a vault key — the unit a person would name when asked
  * "who uses this credential?".
  *
- * Deliberately opaque to the host: `type` and `id` are the plugin's own vocabulary (an API
+ * Deliberately opaque to the host: `type` and `id` are the mini app's own vocabulary (an API
  * request's name, a database connection's id), and the host only stores and echoes them back.
- * A host that understood them would need a case for every plugin, which is the coupling this
+ * A host that understood them would need a case for every mini app, which is the coupling this
  * whole seam exists to avoid.
  */
 export interface SecretConsumer {
-  /** The plugin's kind of object, e.g. `api-request`. */
+  /** The mini app's kind of object, e.g. `api-request`. */
   type: string
-  /** That object's id within the plugin, e.g. the saved request's name. */
+  /** That object's id within the mini app, e.g. the saved request's name. */
   id: string
   /** Which field of it holds the reference, e.g. `auth.token`. */
   field: string
@@ -80,7 +80,7 @@ export interface SecretConsumer {
 }
 
 /**
- * The user's PROJECTS, for a plugin whose resource tree is rooted in them rather than in the one
+ * The user's PROJECTS, for a mini app whose resource tree is rooted in them rather than in the one
  * session it was called from.
  *
  * Distinct from {@link WorkspaceScopeHost} on purpose: that answers "where does this id live?" for
@@ -113,15 +113,16 @@ export interface WorkspacesHost {
 }
 
 /**
- * One turn a plugin asks for: something happened in the plugin — a person moved in its view, a
- * condition it watches came true — and the agent should act on it now, through the plugin's tools.
+ * One turn a mini app asks for: something happened in the mini app — a person moved in its view, a
+ * condition it watches came true — and the agent should act on it now, through the mini app's
+ * tools.
  *
- * The plugin names the session, what happened and which of ITS OWN tools answer it; the host does
- * the rest. The turn that answers carries the plugin's tools on the wire — for that turn, not
+ * The mini app names the session, what happened and which of ITS OWN tools answer it; the host does
+ * the rest. The turn that answers carries the mini app's tools on the wire — for that turn, not
  * stored on the session — so the agent does not spend its first call finding them; it frames the
  * message so the agent can tell it from something
- * the person typed; and it stamps the provenance itself ("via Plugin"), so a plugin cannot pose as
- * a person or a loop.
+ * the person typed; and it stamps the provenance itself ("via Mini app"), so a mini app cannot pose
+ * as a person or a loop.
  */
 export interface MiniAppWakeRequest {
   /** The session's owner: `c.env.userId` in a route, the user who armed a watcher. */
@@ -131,8 +132,8 @@ export interface MiniAppWakeRequest {
   /** What happened, in a sentence or two, for the agent to read. */
   message: string
   /**
-   * The plugin's own tools the agent answers with. Each must be one this plugin registered; a wake
-   * naming any other is refused, and the reason names it.
+   * The mini app's own tools the agent answers with. Each must be one this mini app registered; a
+   * wake naming any other is refused, and the reason names it.
    */
   tools?: readonly string[]
   /**
@@ -144,7 +145,7 @@ export interface MiniAppWakeRequest {
 }
 
 /**
- * What became of a wake. Answered, never thrown: when nobody will answer, the plugin decides what
+ * What became of a wake. Answered, never thrown: when nobody will answer, the mini app decides what
  * happens instead — a game plays its own move, a watcher keeps its alert for later.
  */
 export type MiniAppWakeOutcome =
@@ -152,48 +153,48 @@ export type MiniAppWakeOutcome =
   | { status: 'delivered' }
   /** The session is gone or cannot take a wake. Nothing to retry. */
   | { status: 'missed'; reason: string }
-  /** The request broke this contract: an empty message, a tool the plugin does not own. */
+  /** The request broke this contract: an empty message, a tool the mini app does not own. */
   | { status: 'refused'; reason: string }
   /** The host failed to take it. */
   | { status: 'failed'; reason: string }
 
 export interface MiniAppHostServices {
-  /** Resolve a trusted project root for session/project-scoped plugin resources. */
+  /** Resolve a trusted project root for session/project-scoped mini app resources. */
   workspaceScope?: WorkspaceScopeHost
   /** Enumerate the user's projects — the roots of a project-rooted resource provider. */
   workspaces?: WorkspacesHost
   /**
-   * Read a live terminal. The host binds the user; the plugin passes the session.
+   * Read a live terminal. The host binds the user; the mini app passes the session.
    *
    * READ-ONLY by construction — there is no `write` here. The host's own terminal control does
-   * write, and handing that to plugins would let one type into a pane the user is watching. That
+   * write, and handing that to mini apps would let one type into a pane the user is watching. That
    * is a decision to take on purpose, not one to inherit from a convenience.
    */
   terminalRead?: TerminalReadHost
-  /** Native file watching for the plugin's own paths (see {@link MiniAppPathWatch}). */
+  /** Native file watching for the mini app's own paths (see {@link MiniAppPathWatch}). */
   watchPath?: MiniAppPathWatch
   /**
-   * Session-isolated durable artifact storage for the owning plugin.
+   * Session-isolated durable artifact storage for the owning mini app.
    *
-   * The host binds this capability to the plugin name and verifies that `userId`
-   * owns `sessionId` before returning a directory. Plugins never construct
+   * The host binds this capability to the mini app name and verifies that `userId`
+   * owns `sessionId` before returning a directory. Mini apps never construct
    * `~/.localix` paths themselves; a request for one session never reaches another's folder.
    * Only the backend's own cleanup lists the folders it already has (`listDataDirs`).
    */
   sessionStorage?: MiniAppContext['sessionStorage']
   /** The enabled agents of a session's scope, read-only (see {@link MiniAppAgentDirectory}). */
   agents?: MiniAppAgentDirectory
-  /** The embedding seam: the index of the plugin's own collections, and vectors on demand. */
+  /** The embedding seam: the index of the mini app's own collections, and vectors on demand. */
   semantic?: SemanticIndexHost
   /** The decision-model seam (see {@link DecisionHost}); spend is recorded per session. */
   decisions?: DecisionHost
   changes?: ChangeFeedHost
   /**
-   * Provider-neutral desktop file intents. Plugins may prepare an artifact, while
+   * Provider-neutral desktop file intents. Mini apps may prepare an artifact, while
    * the host remains the sole owner of platform launch mechanics.
    *
    * REJECTS when the operating system refuses, with the reason it gave. These used
-   * to resolve `{ opened: true }` no matter what happened, so a plugin could not
+   * to resolve `{ opened: true }` no matter what happened, so a mini app could not
    * tell an artifact the user is now looking at from one that went nowhere.
    */
   files?: {
@@ -204,13 +205,13 @@ export interface MiniAppHostServices {
   /**
    * Resolve one `${secret:KEY}` value for a user against the central write-only vault.
    * Returns undefined when the secret is absent. Resolution ONLY — it never lists or
-   * enumerates keys, so a plugin can fill a stored token (a DB connection URL/password)
+   * enumerates keys, so a mini app can fill a stored token (a DB connection URL/password)
    * without gaining read access to the vault.
    *
-   * `consumer` names WHAT inside the plugin is using the key, and the host folds it into the
+   * `consumer` names WHAT inside the mini app is using the key, and the host folds it into the
    * vault's audit context. Without it the trail names only the extension, which is
    * useless when that extension owns many saved objects. With it the entry
-   * names the request. Optional, so a plugin that has only one consumer stays as it was.
+   * names the request. Optional, so a mini app that has only one consumer stays as it was.
    */
   resolveSecret: (
     userId: string,
@@ -222,46 +223,46 @@ export interface MiniAppHostServices {
    * was taken and nothing was written; the caller picks another name.
    *
    * The counterpart of {@link resolveSecret}, and deliberately the WEAKER half of the host's own
-   * `set`. It exists for one job: a plugin holding a literal credential the user gave it (pasted
+   * `set`. It exists for one job: a mini app holding a literal credential the user gave it (pasted
    * in a cURL command, typed into a connection form) can move that literal into the vault and keep
-   * only a `${secret:KEY}` reference — so the plaintext never settles in the plugin's own store.
-   * Without it a plugin can USE the vault but never fill it, which leaves "paste a token" and
+   * only a `${secret:KEY}` reference — so the plaintext never settles in the mini app's own store.
+   * Without it a mini app can USE the vault but never fill it, which leaves "paste a token" and
    * "keep the token out of a plaintext file" as mutually exclusive.
    *
    * Three things it deliberately is NOT:
-   *   - not an overwrite: a plugin cannot replace a credential another integration depends on;
+   *   - not an overwrite: a mini app cannot replace a credential another integration depends on;
    *   - not a read: writing a key grants no ability to resolve it back, here or anywhere;
-   *   - not an enumeration: a plugin still cannot learn which keys exist, and a `false` says only
+   *   - not an enumeration: a mini app still cannot learn which keys exist, and a `false` says only
    *     that THIS name is taken — which it must be told, or it cannot pick a free one.
    */
   storeSecret: (userId: string, key: string, value: string) => Promise<boolean>
   /**
-   * Declare that one of the plugin's own objects REFERENCES a vault key.
+   * Declare that one of the mini app's own objects REFERENCES a vault key.
    *
-   * This is not a permission and grants nothing: it is the plugin telling the vault who its
+   * This is not a permission and grants nothing: it is the mini app telling the vault who its
    * consumers are, so the vault can answer "what breaks if I delete this?" — which it already
    * refuses to do blindly (`remove` reports `in_use` rather than orphaning a reference).
    *
    * Resolves `false` when the key does not exist, so a caller can distinguish "recorded" from
    * "you referenced something that is not there". Optional: a host without a binding registry
-   * simply omits it, and the plugin keeps working with a less informative vault.
+   * simply omits it, and the mini app keeps working with a less informative vault.
    */
   bindSecret?: (userId: string, key: string, consumer: SecretConsumer) => Promise<boolean>
   /**
-   * Start a turn in a session, answered through this plugin's tools — see
-   * {@link MiniAppWakeRequest}. Wake-only: a plugin can wake a session it was given the id of,
+   * Start a turn in a session, answered through this mini app's tools — see
+   * {@link MiniAppWakeRequest}. Wake-only: a mini app can wake a session it was given the id of,
    * never read one.
    *
-   * For events the agent did not cause: a person acting in the plugin's view, a condition a
-   * watcher saw. Never from the plugin's own tool — the agent's call would wake the agent, whose
+   * For events the agent did not cause: a person acting in the mini app's view, a condition a
+   * watcher saw. Never from the mini app's own tool — the agent's call would wake the agent, whose
    * next call would wake it again.
    *
-   * Optional: a leaner host omits it, and the plugin carries on without the agent.
+   * Optional: a leaner host omits it, and the mini app carries on without the agent.
    */
   wake?: (request: MiniAppWakeRequest) => Promise<MiniAppWakeOutcome>
   /**
    * The host's media store (chat uploads / generated artifacts), by-id only — a
-   * plugin can read the bytes behind a media id it was handed (e.g. a dropped
+   * mini app can read the bytes behind a media id it was handed (e.g. a dropped
    * document to extract) and persist bytes it produced (e.g. a generated .docx)
    * so chat/UI can address them. No listing/enumeration.
    */

@@ -1,7 +1,7 @@
 /**
- * Type barrel for the documents plugin's UI — re-exports the backend contract
+ * Type barrel for the documents mini app's UI — re-exports the backend contract
  * types the viewers/clients consume, so UI code has ONE import site and never
- * reaches into backend module paths (mirrors the database plugin's dbClient.ts).
+ * reaches into backend module paths (mirrors the database mini app's dbClient.ts).
  */
 export type {
   DocumentFormat,

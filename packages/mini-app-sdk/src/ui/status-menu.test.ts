@@ -12,7 +12,7 @@ const row = (name: string) => ({ id: `x:${name}`, label: name, onSelect: () => {
 
 describe('statusMenuList', () => {
   test('an empty collection contributes NOTHING — not a title, not a rule', () => {
-    // The dangling separator every plugin had: `[open, —, ...section]` with an empty section.
+    // The dangling separator every mini app had: `[open, —, ...section]` with an empty section.
     expect(statusMenuList({ header: 'Open books', items: [], row })).toEqual([])
   })
 

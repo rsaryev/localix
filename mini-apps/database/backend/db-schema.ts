@@ -15,7 +15,7 @@ import type {
 } from './drivers/port'
 
 /**
- * Narrow port for schema DISCOVERY — the `database_client` tool's `schema` verb. The plugin's
+ * Narrow port for schema DISCOVERY — the `database_client` tool's `schema` verb. The mini app's
  * `register()` (backend/index.ts) adapts the shared service to it, so the tool depends
  * only on this shape. Introspection only: never connection URLs or credentials.
  */

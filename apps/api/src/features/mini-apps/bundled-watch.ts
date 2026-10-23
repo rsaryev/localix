@@ -5,14 +5,14 @@ import { subscribeNative } from '../fs-watch/subscribe'
 import { STAGED_MARKER_FILE } from './staged-marker'
 
 /**
- * Push, where bundled-plugin synchronization is pull.
+ * Push, where bundled-mini-app synchronization is pull.
  *
- * `syncBundledMiniApps` runs when something asks for the plugin catalog, and it memoizes for
- * ten seconds. A plugin re-staged while the API runs (a scaffold, a backend edit) therefore
+ * `syncBundledMiniApps` runs when something asks for the mini app catalog, and it memoizes for
+ * ten seconds. A mini app re-staged while the API runs (a scaffold, a backend edit) therefore
  * reached the API only when somebody next asked AND the memo had expired — in practice, when
- * the user typed `/plugin reload` and then waited. The staged root announces every change by
+ * the user typed `/mini-app reload` and then waited. The staged root announces every change by
  * rewriting one marker file; watching that file turns the change into the same `onChanged`
- * a plugin toggle raises, so the catalog, the hosts and every connected client converge on
+ * a mini app toggle raises, so the catalog, the hosts and every connected client converge on
  * their own.
  *
  * Only the marker is the signal: staging writes many files and the marker LAST, so the marker
@@ -22,7 +22,7 @@ import { STAGED_MARKER_FILE } from './staged-marker'
  * Bun's directory watch stopped delivering with no error — measured: after a burst of re-stages
  * the API logged nothing for a marker rewritten minutes later, or for a direct `touch` of it —
  * and a burst could report the marker's event under another entry's name. Either way the next
- * build never reached the API, and a plugin whose last sync had failed stayed missing until a
+ * build never reached the API, and a mini app whose last sync had failed stayed missing until a
  * restart. That is why a 2s `stat` poll ran beside it, for good. The native watcher reports
  * every path it sees and REPORTS a loss instead of going quiet (FSEvents' and inotify's
  * dropped-events overflow both arrive as errors), so the poll is no longer a permanent second
@@ -33,7 +33,7 @@ import { STAGED_MARKER_FILE } from './staged-marker'
 export const STAGED_MARKER_POLL_MS = 2000
 
 /**
- * Everything below the root's top level. The marker lives AT the top, and the staged plugin
+ * Everything below the root's top level. The marker lives AT the top, and the staged mini app
  * trees under it are never the signal; ignoring them keeps an inotify backend from adding a
  * kernel watch for every staged directory. Matched relative to the subscribed root.
  */
@@ -97,7 +97,7 @@ export function watchStagedMiniAppsRoot({
   const degrade = (error: unknown) => {
     if (closed) return
     log(
-      `staged plugins watch failed, polling the marker instead: ${error instanceof Error ? error.message : String(error)}`,
+      `staged mini apps watch failed, polling the marker instead: ${error instanceof Error ? error.message : String(error)}`,
     )
     check()
     if (!stopPolling) stopPolling = every(check, pollMs)

@@ -3,7 +3,7 @@
  * (git today); the service depends on this port, never on git directly. A
  * resolver picks the backend that owns a given working directory — today that's
  * a one-entry registry, but new backends (jj, hg, …) drop in by appending to
- * the list, mirroring the plugin/provider drop-in model. New operations
+ * the list, mirroring the mini app/provider drop-in model. New operations
  * (stage, commit, push, …) extend this interface and every backend implements
  * them; the service and routes grow additively.
  */

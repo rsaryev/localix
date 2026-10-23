@@ -1,16 +1,16 @@
 import { readdirSync, rmSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
-import { kitCacheRoot } from './plugin-kit-cache.mjs'
+import { kitCacheRoot } from './mini-app-kit-cache.mjs'
 import { stageDropins, stageMiniAppKitBeside } from './stage-dropins.mjs'
-import { watchMiniAppKitInputs, watchPluginsForRestage } from './dev-plugin-watch.mjs'
+import { watchMiniAppKitInputs, watchMiniAppsForRestage } from './dev-mini-app-watch.mjs'
 import { repoRoot } from './lib/paths.mjs'
 import { STAGED_APPS_DIR } from './lib/bundled-roots.mjs'
 
 const repo = repoRoot()
 const apiDir = join(repo, 'apps', 'api')
-const devStageRoot = join(repo, '.turbo', 'dev-plugins', String(process.pid))
-const stagedPlugins = join(devStageRoot, STAGED_APPS_DIR)
+const devStageRoot = join(repo, '.turbo', 'dev-mini-apps', String(process.pid))
+const stagedMiniApps = join(devStageRoot, STAGED_APPS_DIR)
 
 /**
  * Drop staging trees left by dev runs that are no longer alive.
@@ -22,7 +22,7 @@ const stagedPlugins = join(devStageRoot, STAGED_APPS_DIR)
  *
  * Conservative on purpose: PIDs are reused, so a directory whose number belongs to ANY live
  * process is kept. The failure mode is then leaving a dead tree for the next run to collect,
- * never deleting a tree a running dev server is serving plugins from.
+ * never deleting a tree a running dev server is serving mini apps from.
  */
 function pruneOrphanedStageTrees() {
   const root = dirname(devStageRoot)
@@ -49,35 +49,35 @@ function pruneOrphanedStageTrees() {
 
 pruneOrphanedStageTrees()
 
-// Runtime discovery is intentionally .localix-only. First-party repo plugins are
+// Runtime discovery is intentionally .localix-only. First-party repo mini apps are
 // authoring sources, so development uses the same self-contained staging boundary
-// as packaged builds before managed copies are synchronized into ~/.localix. The plugin kit comes
-// first: the UI builds read it, and the API needs it to create and build user plugins.
-// Kits staged for identical inputs are reused across launches (`plugin-kit-cache.mjs`).
+// as packaged builds before managed copies are synchronized into ~/.localix. The mini app kit comes
+// first: the UI builds read it, and the API needs it to create and build user mini apps.
+// Kits staged for identical inputs are reused across launches (`mini-app-kit-cache.mjs`).
 const kitCache = kitCacheRoot(repo)
-stageMiniAppKitBeside({ repoRoot: repo, outPlugins: stagedPlugins, cacheRoot: kitCache })
+stageMiniAppKitBeside({ repoRoot: repo, outMiniApps: stagedMiniApps, cacheRoot: kitCache })
 stageDropins({
   repoRoot: repo,
-  outPlugins: stagedPlugins,
+  outMiniApps: stagedMiniApps,
   log: (message) => console.log(`[dev-api] ${message}`),
-  // Development keeps booting when one plugin is mid-edit. A compile error in any single plugin
+  // Development keeps booting when one mini app is mid-edit. A compile error in any single mini app
   // used to abort staging, which killed the API, which killed `bun run dev` — the whole workspace
   // held hostage by one file. The error is still printed in full; only the blast radius changed.
   // Release staging (prepare-sidecar.mjs) deliberately keeps the default `fatal`.
-  onPluginError: 'skip',
+  onMiniAppError: 'skip',
 })
-// Boot staging is a snapshot; a plugin created or whose backend changed while the API runs
-// is re-staged on its own, so `/plugin create` and a backend edit no longer need a restart.
-const pluginWatcher = watchPluginsForRestage({
+// Boot staging is a snapshot; a mini app created or whose backend changed while the API runs
+// is re-staged on its own, so `/mini-app create` and a backend edit no longer need a restart.
+const miniAppWatcher = watchMiniAppsForRestage({
   repoRoot: repo,
-  outPlugins: stagedPlugins,
+  outMiniApps: stagedMiniApps,
   log: (message) => console.log(`[dev-api] ${message}`),
 })
 // The kit follows its inputs the same way, so the reloading API never reads a kit older than
 // its own authoring code.
 const kitWatcher = watchMiniAppKitInputs({
   repoRoot: repo,
-  outPlugins: stagedPlugins,
+  outMiniApps: stagedMiniApps,
   cacheRoot: kitCache,
   log: (message) => console.log(`[dev-api] ${message}`),
 })
@@ -87,7 +87,7 @@ const spawnApi = () =>
     cwd: apiDir,
     env: {
       ...process.env,
-      LOCALIX_BUNDLED_MINI_APPS_DIR: stagedPlugins,
+      LOCALIX_BUNDLED_MINI_APPS_DIR: stagedMiniApps,
     },
     stdin: 'inherit',
     stdout: 'inherit',
@@ -214,7 +214,7 @@ try {
   process.exitCode = await waitForFinalExit()
 } finally {
   supervisor.stop()
-  pluginWatcher.close()
+  miniAppWatcher.close()
   kitWatcher.close()
   rmSync(devStageRoot, { recursive: true, force: true })
 }

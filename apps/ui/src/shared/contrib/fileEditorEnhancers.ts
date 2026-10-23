@@ -6,10 +6,10 @@ export function registerFileEditorEnhancer(contribution: FileEditorEnhancerContr
   if (!enhancers.some((candidate) => candidate.id === contribution.id)) enhancers.push(contribution)
 }
 
-/** Drop every enhancer `owner` registered (a plugin reload or unload). */
+/** Drop every enhancer `owner` registered (a mini app reload or unload). */
 export function removeFileEditorEnhancersOf(owner: string): void {
   for (let index = enhancers.length - 1; index >= 0; index -= 1) {
-    if (enhancers[index]?.pluginName === owner) enhancers.splice(index, 1)
+    if (enhancers[index]?.miniAppName === owner) enhancers.splice(index, 1)
   }
 }
 

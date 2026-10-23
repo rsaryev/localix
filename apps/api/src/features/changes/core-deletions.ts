@@ -1,10 +1,10 @@
 /**
- * The core's deletions as a plugin hears them (`host.changes.followCoreDeletions`): a read-only
+ * The core's deletions as a mini app hears them (`host.changes.followCoreDeletions`): a read-only
  * consumer on the core stream that hands on agents, chats, projects and provider connections that
  * are gone — their refs only — and ignores everything else.
  *
  * An agent's catalog key is "deleted" on a rename too (`agents/service.ts` records the old key
- * deleted and the new one upserted together). A plugin storing the stable id must not unassign a
+ * deleted and the new one upserted together). A mini app storing the stable id must not unassign a
  * renamed agent, so an agent deletion is passed on only when no later notice brought its id back.
  */
 import type { CoreDeletion } from '@localixai/mini-app-sdk/backend'
@@ -52,11 +52,11 @@ export function coreDeletionHandlers(
   }
 }
 
-/** One plugin's core consumers, named `plugin:<plugin>:<consumer>`; a re-subscribe replaces. */
+/** One mini app's core consumers, named `mini-app:<app>:<consumer>`; a re-subscribe replaces. */
 export function createCoreDeletionFollower(deps: { agentLivesOn: LivesOn; core: CoreChangeFeed }) {
   const running = new Map<string, () => Promise<void>>()
-  return async (pluginName: string, consumer: string, handler: Handler) => {
-    const name = `plugin:${pluginName}:${consumer}`
+  return async (miniAppName: string, consumer: string, handler: Handler) => {
+    const name = `mini-app:${miniAppName}:${consumer}`
     await running.get(name)?.()
     const started = await deps.core.subscribe(
       name,

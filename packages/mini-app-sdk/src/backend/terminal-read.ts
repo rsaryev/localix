@@ -1,5 +1,5 @@
 /**
- * Read-only access to the chat's terminals: what a plugin that watches external agents reads. The
+ * Read-only access to the chat's terminals: what a mini app that watches external agents reads. The
  * host checks ownership on every call, the same boundary the interactive `terminal` tool uses.
  */
 

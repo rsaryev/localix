@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 import type { ActionContext, ActionContribution } from '@localixai/mini-app-sdk/ui'
 import { isMiniAppContributionEnabled, subscribeMiniAppActivation } from './miniAppActivation'
 
-// Late plugin loading and activation must update already rendered content. First owner wins,
+// Late mini app loading and activation must update already rendered content. First owner wins,
 // as with comment actions: a collision must never change where a person's content is sent.
 const entries = new Map<string, ActionContribution>()
 const listeners = new Set<() => void>()
@@ -27,7 +27,7 @@ export function registerAction(action: ActionContribution): void {
 export function removeActionsOf(owner: string): void {
   let changed = false
   for (const [id, action] of entries) {
-    if (action.pluginName !== owner) continue
+    if (action.miniAppName !== owner) continue
     entries.delete(id)
     changed = true
   }
@@ -36,9 +36,10 @@ export function removeActionsOf(owner: string): void {
 
 export function contributedActions(): readonly ActionContribution[] {
   return (snapshot ??= [...entries.values()]
-    .filter((action) => isMiniAppContributionEnabled(action.pluginName))
+    .filter((action) => isMiniAppContributionEnabled(action.miniAppName))
     .sort(
-      (a, b) => (a.pluginName ?? '').localeCompare(b.pluginName ?? '') || a.id.localeCompare(b.id),
+      (a, b) =>
+        (a.miniAppName ?? '').localeCompare(b.miniAppName ?? '') || a.id.localeCompare(b.id),
     ))
 }
 

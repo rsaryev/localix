@@ -24,7 +24,7 @@ export type AutomaticProviderContribution = ContextProviderContribution & {
 export interface ContextProviderDiagnostic {
   providerId: string
   providerVersion: string
-  /** Subsystem/plugin id that contributed this (undefined for core-registered). */
+  /** Subsystem/mini app id that contributed this (undefined for core-registered). */
   source?: string
   destinations: readonly ContextDestination[]
   activation: 'explicit' | 'automatic'
@@ -37,11 +37,11 @@ export interface ContextProviderRegistry {
   /** Strict registration for TRUSTED core-owned contributions. Throws on any
    *  validation failure or collision (core contributions are always well-formed). */
   register(contribution: ContextProviderContribution): () => void
-  /** Non-throwing registration for PLUGIN/subsystem-sourced contributions. Validates
+  /** Non-throwing registration for MINI APP/subsystem-sourced contributions. Validates
    *  the declarative envelope, enforces namespace + version uniqueness, records a
-   *  content-free diagnostic, and never throws for a plugin-shaped defect. */
+   *  content-free diagnostic, and never throws for a mini-app-shaped defect. */
   tryRegister(contribution: ContextProviderContribution, source: string): ContextProviderDiagnostic
-  /** Remove every contribution registered under `source` — hot plugin disable.
+  /** Remove every contribution registered under `source` — hot mini app disable.
    *  Diagnostics keep their history; only the live entries drop. */
   unregisterBySource(sourceId: string): void
   resolvers(destination: ContextDestination): ResolverContribution[]
@@ -93,7 +93,7 @@ export function createContextProviderRegistry(): ContextProviderRegistry {
 
   const commit = (contribution: ContextProviderContribution, source: string | undefined) => {
     const key = keyFor(contribution)
-    // Plugin objects are data. Copy the declarative array at registration so a
+    // Mini app objects are data. Copy the declarative array at registration so a
     // provider cannot expand its routing surface by mutating its own input later.
     entries.set(key, { ...contribution, destinations: [...contribution.destinations] })
     sources.set(key, source)
@@ -125,7 +125,7 @@ export function createContextProviderRegistry(): ContextProviderRegistry {
       if (!validation.ok) return record(contribution, source, 'rejected', validation.reason)
       const key = keyFor(contribution)
       if (entries.has(key)) {
-        // Same id@version already present — a namespace/version collision. A plugin
+        // Same id@version already present — a namespace/version collision. A mini app
         // must namespace its provider id; the first registration wins.
         const previousSource = sources.get(key)
         const reason: ContributionRejectReason =
@@ -145,7 +145,7 @@ export function createContextProviderRegistry(): ContextProviderRegistry {
     resolvers(destination) {
       // Specific before generic: the manager takes the FIRST resolver that supports a reference,
       // and registration order is boot order, so a generic bridge registered by core would
-      // otherwise answer every reference a plugin's own resolver was written for.
+      // otherwise answer every reference a mini app's own resolver was written for.
       const candidates = [...entries.values()]
         .filter(hasResolver)
         .filter(

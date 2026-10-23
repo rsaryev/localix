@@ -11,7 +11,7 @@ let teardown: () => Promise<void>
 beforeAll(async () => {
   teardown = registerDom()
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
-  // The plugin SDK binds TableGrid as a lazy host component. Warm the host modules
+  // The mini app SDK binds TableGrid as a lazy host component. Warm the host modules
   // once so these tests exercise row mutations rather than Suspense timing.
   await warmMiniAppUiComponents()
 })

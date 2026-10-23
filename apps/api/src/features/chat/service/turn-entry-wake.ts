@@ -23,7 +23,7 @@ const DELIVERED: WakeDelivery = { delivered: true }
 /**
  * Load the target of a wake, distinguishing "no such session" from "the store failed".
  *
- * Both wake entry points below are fire-and-forget at every call site (a plugin, the
+ * Both wake entry points below are fire-and-forget at every call site (a mini app, the
  * sleep timer, a finished child's report), so neither can propagate: an
  * unhandled rejection there would take out an unrelated turn. But `catch(() => null)`
  * made a transient repository error indistinguishable from a deleted session, and the
@@ -47,7 +47,7 @@ async function loadWakeTarget(
 
 /**
  * Push an internal message into a CHAT session and run it — how a producer that is not the
- * person (a loop, a finished child, a plugin) starts a turn. No-op if the session is gone or
+ * person (a loop, a finished child, a mini app) starts a turn. No-op if the session is gone or
  * isn't a chat session.
  *
  * It ANSWERS whether the wake landed. Every producer is fire-and-forget by design (a
@@ -113,7 +113,7 @@ function wakeParams(session: SessionRecord, request: WakeRequest) {
     content,
     source,
     ...(extraDisabledTools ? { extraDisabledTools } : {}),
-    ...(request.plugin ? { plugins: [request.plugin] } : {}),
+    ...(request.miniApp ? { miniApps: [request.miniApp] } : {}),
     ...(coalesce ? { coalesce } : {}),
     ...(report ? { report } : {}),
     ...(deliveryKey ? { deliveryKey, ...(receipt ? { receipt } : {}) } : {}),

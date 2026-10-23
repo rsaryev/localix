@@ -4,17 +4,17 @@ import { compile } from 'tailwindcss'
 
 import { isPathWithin } from '../../../lib/path-containment'
 import type { MiniAppKit } from './kit'
-import { PLUGIN_KIT_STYLES_DIR, TAILWIND_UTILITIES } from './kit-layout'
+import { MINI_APP_KIT_STYLES_DIR, TAILWIND_UTILITIES } from './kit-layout'
 
 /**
- * The utilities a plugin's own sources use, compiled against the HOST theme — no preflight, no
+ * The utilities a mini app's own sources use, compiled against the HOST theme — no preflight, no
  * theme tokens, nothing the host stylesheet already emits.
  *
- * Why here and with these inputs: the host stylesheet is not part of a plugin, and on an installed
- * app there is no source tree to reference. The kit carries the theme's stylesheets with every
- * import rewritten to a kit-relative path, so the compiler reads only files inside the kit. The
- * compiler is Tailwind's JavaScript core, and candidates are every class-shaped token of the
- * plugin's sources ({@link candidatesOf}; Tailwind ignores the ones that are not utilities) — no
+ * Why here and with these inputs: the host stylesheet is not part of a mini app, and on an
+ * installed app there is no source tree to reference. The kit carries the theme's stylesheets with
+ * every import rewritten to a kit-relative path, so the compiler reads only files inside the kit.
+ * The compiler is Tailwind's JavaScript core, and candidates are every class-shaped token of the
+ * mini app's sources ({@link candidatesOf}; Tailwind ignores the ones that are not utilities) — no
  * native scanner binary, so the same build runs on every platform the app ships to.
  */
 
@@ -26,7 +26,7 @@ const CANDIDATE_FINE = /[^\s"'`<>{}=;,()\\]+/gu
 /**
  * Tokens split only where a class string ends. A class may itself hold `(`, `)`, `,` and `=` —
  * `text-(--chart-2)`, `max-w-[min(26rem,100%)]`, `data-[state=open]:flex` — and the fine split
- * alone cut every one of those in pieces, so the utility was never generated and the plugin's
+ * alone cut every one of those in pieces, so the utility was never generated and the mini app's
  * element silently rendered unstyled: an X drawn in the fallback colour, a board as wide as its pane.
  */
 const CANDIDATE_WHOLE = /[^\s"'`<>{};\\]+/gu
@@ -49,7 +49,7 @@ async function listSources(dir: string): Promise<string[]> {
 }
 
 /** A provider may keep its UI below its own folder (for example `kubernetes/ui`).
- * Discover those source roots before compiling; scanning only the plugin root's `ui` silently
+ * Discover those source roots before compiling; scanning only the mini app root's `ui` silently
  * drops layout utilities while the provider's JavaScript still bundles and renders. */
 async function findSourceDirs(dir: string): Promise<string[]> {
   const entries = await fs.readdir(dir, { withFileTypes: true }).catch(() => [])
@@ -63,8 +63,8 @@ async function findSourceDirs(dir: string): Promise<string[]> {
   return nested.flat()
 }
 
-export async function pluginCandidates(pluginDir: string): Promise<string[]> {
-  const sourceDirs = await findSourceDirs(pluginDir)
+export async function miniAppCandidates(miniAppDir: string): Promise<string[]> {
+  const sourceDirs = await findSourceDirs(miniAppDir)
   const files = (await Promise.all(sourceDirs.map(listSources))).flat()
   const candidates = new Set<string>()
   for (const file of files) {
@@ -73,8 +73,8 @@ export async function pluginCandidates(pluginDir: string): Promise<string[]> {
   return [...candidates]
 }
 
-export async function buildMiniAppStylesheet(kit: MiniAppKit, pluginDir: string): Promise<string> {
-  const stylesRoot = join(kit.dir, PLUGIN_KIT_STYLES_DIR)
+export async function buildMiniAppStylesheet(kit: MiniAppKit, miniAppDir: string): Promise<string> {
+  const stylesRoot = join(kit.dir, MINI_APP_KIT_STYLES_DIR)
   const host = join(kit.dir, kit.manifest.hostStylesheet)
   const input = [
     `@reference ${JSON.stringify(host)};`,
@@ -93,5 +93,5 @@ export async function buildMiniAppStylesheet(kit: MiniAppKit, pluginDir: string)
       throw new Error(`the host stylesheet loads no JavaScript (${id})`)
     },
   })
-  return compiler.build(await pluginCandidates(pluginDir))
+  return compiler.build(await miniAppCandidates(miniAppDir))
 }

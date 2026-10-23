@@ -43,7 +43,7 @@ export type VaultDeleteResult =
   | { status: 'in_use'; bindings: VaultBinding[] }
 
 export interface VaultUseContext {
-  actorType?: 'user' | 'agent' | 'plugin' | 'system'
+  actorType?: 'user' | 'agent' | 'plugin' | 'mini-app' | 'system'
   actorId?: string
   consumerType?: string
   consumerId?: string

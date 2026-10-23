@@ -32,10 +32,10 @@ function model(overrides: Partial<DockerResourceDetailModel> = {}): DockerResour
   }
 }
 
-// The content renders the host's `ProblemLine`. The plugin's own preload binds the SDK's stand-ins,
-// but a run of this file from the repository root loads only the root preload, and the first
-// render threw "Plugin UI components are not bound by the host". The suite binds them itself and
-// restores whatever it shadowed, so its doubles never become the next suite's host.
+// The content renders the host's `ProblemLine`. The mini app's own preload binds the SDK's
+// stand-ins, but a run of this file from the repository root loads only the root preload, and the
+// first render threw "Mini app UI components are not bound by the host". The suite binds them
+// itself and restores whatever it shadowed, so its doubles never become the next suite's host.
 let unbindHostComponents: (() => void) | undefined
 beforeAll(() => {
   unbindHostComponents = bindMiniAppUiTestDoubles()

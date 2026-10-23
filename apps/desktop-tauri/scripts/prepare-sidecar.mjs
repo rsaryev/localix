@@ -1,12 +1,12 @@
 // Stage everything the packaged Tauri app needs to resolve/start the shared API
 // daemon through a one-shot sidecar launcher (a real `bun.exe` running a
 // bundled `server.js`, NOT `bun build --compile`: the app also runs Bun itself, to build and
-// run the user's own plugins, so the runtime ships as a real binary either way).
+// run the user's own mini apps, so the runtime ships as a real binary either way).
 //
 // Produces (under src-tauri/):
 //   binaries/bun-<triple>.exe   the native Bun runtime (Tauri sidecar)
 //   resources/server.js         the API bundled to one JS file, migrations and `kysely` included
-//   resources/plugin-kit/       what the app needs to create, build and test USER mini apps
+//   resources/mini-app-kit/     what the app needs to create, build and test USER mini apps
 //                               (template, shared-module exports, theme stylesheets)
 //
 // Pass --ui to ALSO build apps/ui into apps/ui/dist (the prod frontendDist).
@@ -43,7 +43,7 @@ import {
   resourcesDir as resources,
 } from './tauri-staging.mjs'
 import { stageMiniAppKitBeside } from '../../../scripts/stage-dropins.mjs'
-import { MINI_APP_KIT_INPUTS } from '../../../scripts/stage-plugin-kit.mjs'
+import { MINI_APP_KIT_INPUTS } from '../../../scripts/stage-mini-app-kit.mjs'
 import { BUNDLED_DIRS, STAGED_APPS_DIR } from '../../../scripts/lib/bundled-roots.mjs'
 import { BUILD_STAMP_ENV, resolveBuildStamp } from '../../../scripts/build-stamp.mjs'
 import {
@@ -77,7 +77,7 @@ const stagedCliPackage = buildStagedCliPackageMetadata(
 const log = (...a) => console.log('[prepare-sidecar]', ...a)
 
 // Packaging inputs are large, but their metadata is cheap to scan. Keep the
-// expensive API/plugin bundle and UI type-check/build independent so a Rust-
+// expensive API/mini app bundle and UI type-check/build independent so a Rust-
 // only rebuild reuses both staged layers. The cache lives under Cargo target and
 // therefore disappears naturally on `cargo clean`.
 const cacheFile = join(desktop, 'src-tauri', 'target', 'localix-prepare-cache.json')
@@ -123,9 +123,9 @@ const runtimeKey = fingerprint([
   join(repo, 'scripts', 'lib', 'bundled-roots.mjs'),
   join(repo, 'scripts', 'embed-migrations-plugin.mjs'),
   join(desktop, 'scripts', 'sidecar-bun.mjs'),
-  join(repo, 'scripts', 'stage-plugin-ui.mjs'),
-  join(repo, 'scripts', 'build-plugin-ui.mjs'),
-  // Everything the plugin kit is made from — the same list the dev watcher re-stages on.
+  join(repo, 'scripts', 'stage-mini-app-ui.mjs'),
+  join(repo, 'scripts', 'build-mini-app-ui.mjs'),
+  // Everything the mini app kit is made from — the same list the dev watcher re-stages on.
   ...MINI_APP_KIT_INPUTS.map((input) => join(repo, input)),
   join(repo, 'scripts', 'stage-third-party-notices.mjs'),
   join(repo, 'scripts', 'rust-third-party-notices.mjs'),
@@ -150,7 +150,7 @@ const runtimeReady =
   Object.values(SCRIPT_EXTENSION_FILES).every((file) => existsSync(join(resources, file))) &&
   existsSync(join(resources, 'visual-feedback-probe.js')) &&
   existsSync(join(resources, 'visual-feedback-native-probe.js')) &&
-  existsSync(join(resources, 'plugin-kit', 'kit.json')) &&
+  existsSync(join(resources, 'mini-app-kit', 'kit.json')) &&
   existsSync(join(resources, 'cli', 'server', 'cli.js')) &&
   existsSync(join(resources, 'cli', 'package.json')) &&
   existsSync(join(resources, 'LICENSE')) &&
@@ -171,7 +171,8 @@ if (!runtimeReady) {
     desktop: { targetTriple: hostTriple() },
   })
 
-  // ── 1. bundle the API to resources/server.js (plugins stay on disk). Use --outdir (not --outfile) so bun can also emit the native
+  // ── 1. bundle the API to resources/server.js (mini apps stay on disk). Use --outdir (not
+  // --outfile) so bun can also emit the native
   //       required `.node` addons it references beside server.js — --outfile refuses
   //       multiple outputs.
   //       --entry-naming pins the entry filename to server.js.
@@ -186,7 +187,7 @@ if (!runtimeReady) {
   if (!hostAddon) log(`warning: no native file watcher for ${process.platform}-${process.arch}`)
   const watcherExternals = PARCEL_WATCHER_ADDONS.filter((addon) => addon !== hostAddon)
   log('bundling API →', serverOut)
-  // The migrations are compiled into server.js by the plugin: nothing is staged beside it, and
+  // The migrations are compiled into server.js by the Bun plugin: nothing is staged beside it, and
   // `kysely` is bundled with the migrations instead of copied next to loose files.
   const bundled = await Bun.build({
     entrypoints: [apiEntry],
@@ -244,7 +245,7 @@ if (!runtimeReady) {
   // The app ships no mini app (rule X5): the store installs them from the hosted catalog the
   // release publishes (`scripts/pack-mini-apps.mjs`). It ships the kit, which the installed app
   // needs to create and build the person's own mini apps without a source tree.
-  stageMiniAppKitBeside({ repoRoot: repo, outPlugins: join(resources, STAGED_APPS_DIR) })
+  stageMiniAppKitBeside({ repoRoot: repo, outMiniApps: join(resources, STAGED_APPS_DIR) })
 
   // ── 3b. the `localix` CLI, staged INSIDE the bundle (no separate CLI product) ──
   // The shim (bin/localix.mjs) + the launcher bundle it imports (runCli). lib.rs points
@@ -300,7 +301,7 @@ if (!runtimeReady) {
   cache.runtime = runtimeKey
   cache.runtimeVariant = runtimeVariant
 } else {
-  log('runtime inputs unchanged — reusing staged API, plugins, CLI and Bun')
+  log('runtime inputs unchanged — reusing staged API, mini apps, CLI and Bun')
 }
 
 // Tauri signs its main executable and declared sidecars, but native modules copied
@@ -360,13 +361,13 @@ if (buildUi) {
   if (!existsSync(join(repo, 'apps', 'ui', 'dist', 'index.html'))) {
     throw new Error('UI build did not produce apps/ui/dist/index.html')
   }
-  // A plugin installed as its own Mac app is a separate process: it cannot read the UI Tauri
+  // A mini app installed as its own Mac app is a separate process: it cannot read the UI Tauri
   // embeds in the shell binary, so it serves this copy from the bundle (`app_runner_scheme.rs`).
   if (process.platform === 'darwin') {
     const staged = join(resources, 'ui')
     rmSync(staged, { recursive: true, force: true })
     cpSync(join(repo, 'apps', 'ui', 'dist'), staged, { recursive: true })
-    log('UI staged for plugin apps')
+    log('UI staged for standalone mini apps')
   }
   log('UI ready')
 }

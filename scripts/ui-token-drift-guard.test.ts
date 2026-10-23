@@ -7,8 +7,8 @@ import { assertPositiveControl, scanSources } from '../apps/api/src/lib/source-l
  * Repo-wide guard for the design TOKENS a class string must come from.
  *
  * The rules are `apps/api/src/contracts/ui-token-rules.ts`, which says why each exists; this
- * applies them to the app AND every bundled plugin, and `mini_app_build` applies the same list to
- * a plugin a person builds. It reads comment-stripped source (`scanSources`), so prose that
+ * applies them to the app AND every bundled mini app, and `mini_app_build` applies the same list to
+ * a mini app a person builds. It reads comment-stripped source (`scanSources`), so prose that
  * explains a removed literal does not trip it, and each rule carries a positive control proving
  * it still fires.
  */
@@ -21,8 +21,8 @@ const repoRoot = resolve(import.meta.dir, '..')
  */
 const EXEMPT: ReadonlyArray<{ file: string; why: string }> = []
 
-// A plugin's BACKEND carries no class strings, only prose — "prices are rounded through the
-// venue's rules" is a sentence, not a radius — so plugins are scanned where their UI lives.
+// A mini app's BACKEND carries no class strings, only prose — "prices are rounded through the
+// venue's rules" is a sentence, not a radius — so mini apps are scanned where their UI lives.
 // The kit is where the primitives live: every consumer inherits a drifted value from there, so
 // leaving it out would stop enforcing the rules on the code they were written for.
 const INCLUDE = [

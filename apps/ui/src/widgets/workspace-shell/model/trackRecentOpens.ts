@@ -2,7 +2,7 @@ import type { RailEntry } from '../ui/shellTypes'
 
 /**
  * Return a copy of `entries` where every UNPINNED id's `onClick` also records the
- * open, so launching a plugin view floats it into the rail's recent slots.
+ * open, so launching a mini app view floats it into the rail's recent slots.
  *
  * Only unpinned ids are wrapped: a pinned entry already owns a permanent slot, and
  * touching it would let it evict a genuine recent. Pure — no React/DOM — so the

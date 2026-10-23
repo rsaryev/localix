@@ -70,7 +70,7 @@ async function connectionJson(c: Context, run: () => Promise<DbConnectionInfo | 
 /**
  * SQL console + schema browser backend. Connections are per-user (registry keyed by
  * userId); every read/write is ownership-gated by the user identity injected into
- * the generic plugin route context by the host. Query
+ * the generic mini app route context by the host. Query
  * errors surface as 400 with the engine message so the console can render them.
  * Asking the agent about a query is a plain chat message (the console links the
  * connection as `@resource:` + the SQL into the composer) — there is no bespoke

@@ -1,5 +1,5 @@
 /* ── The board ────────────────────────────────────────────────────────────────────────────────
-   Cells and tiles are styled HERE, not with utility classes: utilities reach a plugin through the
+   Cells and tiles are styled HERE, not with utility classes: utilities reach a mini app through the
    host's de-duplicated sheet, where a rule judged a duplicate of the host's can be dropped (live,
    Tic-Tac-Toe's tiles collapsed into one column). Where each one sits is inline, from
    `geometry.ts`. Colours are mixed from the theme's tokens, the way Chess and Checkers mix their

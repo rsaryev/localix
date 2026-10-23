@@ -18,7 +18,7 @@ export function installWindowChromeState(): void {
   const root = document.documentElement
 
   // ── Inactive-window dimming ────────────────────────────────────────────────
-  // Focus moving INTO an embedded iframe (preview, plugin panel) fires
+  // Focus moving INTO an embedded iframe (preview, mini app panel) fires
   // a top-window 'blur' while the OS window is still focused — defer and check
   // document.hasFocus() (true when any frame in the window has focus) so we
   // only dim on a real OS-level focus loss.

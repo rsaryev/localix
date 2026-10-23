@@ -41,14 +41,14 @@ describe('scopeKindOf', () => {
   })
 
   test('every panel that reads a session belongs to one', () => {
-    // Problems, Activity, Search, the Browser and plugin views used to be global and follow the
+    // Problems, Activity, Search, the Browser and mini app views used to be global and follow the
     // chat on screen; each now belongs to the chat it was opened in.
     for (const k of [
       'problems',
       'message-replay',
       'global-search',
       'preview',
-      'plugin-view',
+      'mini-app-view',
     ] as const) {
       expect(scopeKindOf(k)).toBe('session')
     }
@@ -68,7 +68,7 @@ describe('isSingleton', () => {
       'agent',
       'transcript',
       'live-file-change',
-      'plugin-view',
+      'mini-app-view',
       'terminal',
     ] as const) {
       expect(isSingleton(k)).toBe(false)
@@ -101,7 +101,7 @@ describe('capsOf', () => {
     expect(capsOf('not-a-real-kind' as WorkItemKind)).toEqual({})
   })
 
-  test('pending plugin ownership waits only for plugin-exclusive kinds', () => {
+  test('pending mini app ownership waits only for mini-app-exclusive kinds', () => {
     const host = miniAppUiHostFor('pending-render-fixture')
     host.workItems.register({
       kind: 'pending-render-fixture:item',
@@ -121,7 +121,7 @@ describe('capsOf', () => {
     expect(isPendingContributedKind('chat')).toBe(false)
   })
 
-  test('an enabled plugin cannot replace a reserved core-kind contract', () => {
+  test('an enabled mini app cannot replace a reserved core-kind contract', () => {
     const host = miniAppUiHostFor('core-kind-collision-fixture')
     expect(() =>
       host.workItems.register({

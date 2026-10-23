@@ -11,7 +11,7 @@ function memoryStorage() {
   }
 }
 
-describe('plugin UI storage helpers', () => {
+describe('mini app UI storage helpers', () => {
   test('round-trips strings and JSON through an injected store', () => {
     const storage = memoryStorage()
 

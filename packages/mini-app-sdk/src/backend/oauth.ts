@@ -6,12 +6,12 @@ export type { ManifestOAuthSpec } from './oauth-manifest'
 export type { OAuthCredential } from './oauth-types'
 
 /**
- * OAuth socket for plugins (`ctx.oauth`) — a generic PKCE engine exposed to
- * plugin code so a Spotify/Google/GitHub tool never copy-pastes the
+ * OAuth socket for mini apps (`ctx.oauth`) — a generic PKCE engine exposed to
+ * mini app code so a Spotify/Google/GitHub tool never copy-pastes the
  * verifier/challenge/loopback dance. Pure-data specs (`ManifestOAuthSpec`) drive
  * the flow.
  *
- * Token PERSISTENCE deliberately stays with the plugin (`ctx.stateDir` +
+ * Token PERSISTENCE deliberately stays with the mini app (`ctx.stateDir` +
  * `ctx.helpers.readJson/writeJson`) — the host doesn't take custody of
  * third-party credentials beyond the declared `config` secrets.
  */

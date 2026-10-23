@@ -1,5 +1,5 @@
 /**
- * DECISIONS — the decision-model seam the host offers to its own features and to plugins.
+ * DECISIONS — the decision-model seam the host offers to its own features and to mini apps.
  *
  * A decision model (Jev through OpenRouter, System One protocol) writes no text: it reads a
  * structured `state` and answers typed questions — a pick among options, or the probability that a
@@ -35,8 +35,8 @@ export interface DecisionAsk {
 
 export interface DecisionOptions {
   /**
-   * What the decision is for (`routing`, `browser.link`, `triage`): names it in the log. A plugin's
-   * purpose is namespaced by the host (`plugin:<name>:<purpose>`).
+   * What the decision is for (`routing`, `browser.link`, `triage`): names it in the log. A mini
+   * app's purpose is namespaced by the host (`mini-app:<name>:<purpose>`).
    */
   purpose: string
   /** The session the decision serves: its spend is recorded against it. */
@@ -59,7 +59,7 @@ export type DecisionOutcome =
   | { status: 'answered'; model: string; ms: number; answers: Record<string, DecisionAnswer> }
   | { status: 'unavailable' | 'deadline' | 'cancelled' | 'failed'; model?: string; ms: number }
 
-/** The host capability a plugin backend receives as `host.decisions`. */
+/** The host capability a mini app backend receives as `host.decisions`. */
 export interface DecisionHost {
   /** The model that would answer for this user now, or null when none can. */
   available(userId: string): Promise<{ model: string } | null>

@@ -37,8 +37,8 @@ describe('workbench chrome groups', () => {
     expect(wrapping).toContain('flex-wrap')
   })
 
-  // Plugins draw their headers with this toolbar and rely on its bottom seam instead of adding
-  // their own (one plugin's chart chrome did, until that became the toolbar's job alone).
+  // Mini apps draw their headers with this toolbar and rely on its bottom seam instead of adding
+  // their own (one mini app's chart chrome did, until that became the toolbar's job alone).
   test('draws the default bottom seam itself', () => {
     const html = renderToStaticMarkup(<WorkbenchToolbar aria-label="Chart controls" />)
 

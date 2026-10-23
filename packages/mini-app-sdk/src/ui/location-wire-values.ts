@@ -15,7 +15,7 @@ export const UI_SURFACE_KINDS: ReadonlySet<string> = new Set<UiSurfaceKind>([
   'overlay',
   'picker',
   'settings',
-  'plugin',
+  'mini-app',
   'command',
   'action',
 ])

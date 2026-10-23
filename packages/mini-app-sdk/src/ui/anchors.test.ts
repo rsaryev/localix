@@ -48,7 +48,7 @@ describe('isUiNavigationAction', () => {
       isUiNavigationAction({
         type: 'ui.navigate',
         uri: 'localix://ui/action/command/plugins.enable',
-        label: 'Enable plugin',
+        label: 'Enable mini app',
       }),
     ).toBe(false)
     expect(isUiNavigationAction({ type: 'ui.navigate', uri: 'localix://ui/settings/tools' })).toBe(
@@ -100,7 +100,7 @@ describe('isUiNavigationSuggestions', () => {
     type: 'ui.navigate',
     uri: 'localix://ui/settings/plugins',
     label: 'Plugins',
-    description: 'Open installed plugin settings.',
+    description: 'Open installed mini app settings.',
   } as const
 
   test('accepts a bounded, duplicate-free list of safe navigation actions', () => {

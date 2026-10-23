@@ -27,7 +27,7 @@ import {
 
 /** Minimal hook entry — ctx is unused by the hook runner itself. */
 function entry(app: string, hooks: MiniAppHooks): LoadedMiniAppHook {
-  return { app, hooks, ctx: { pluginName: app } as unknown as MiniAppContext }
+  return { app, hooks, ctx: { miniAppName: app } as unknown as MiniAppContext }
 }
 
 function makeEchoTool(calls: unknown[] = []): AgentTool {
@@ -465,7 +465,7 @@ describe('memory provider invocation', () => {
   const mem = (provider: Partial<MemoryProvider>, app = 'mem') => ({
     app,
     provider: provider as MemoryProvider,
-    ctx: { pluginName: app } as unknown as MiniAppContext,
+    ctx: { miniAppName: app } as unknown as MiniAppContext,
   })
   const EVENT = {
     sessionId: 's1',

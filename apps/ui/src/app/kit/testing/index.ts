@@ -1,5 +1,5 @@
-// The kit's TEST harness: what a plugin's tests need from the host to exercise a real
-// integration — a DOM, and the host buses a plugin reaches through the SDK. Never part of a
+// The kit's TEST harness: what a mini app's tests need from the host to exercise a real
+// integration — a DOM, and the host buses a mini app reaches through the SDK. Never part of a
 // runtime artifact (`isMiniAppUiSharedModule` excludes `@localixai/kit/testing*`); tests resolve
 // it to this file through their tsconfig paths.
 export { registerDom } from '@localixai/kit/testing/dom'

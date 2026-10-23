@@ -117,7 +117,7 @@ describe('editor grid memo boundaries', () => {
     const { createRoot } = await import('react-dom/client')
     const { WorkItemBody } = await import('./registry')
     const { setEnabledMiniAppNames } = await import('@/shared/contrib/miniAppActivation')
-    // Settle plugin activation, so an unknown kind is "unsupported" (a cheap, real
+    // Settle mini app activation, so an unknown kind is "unsupported" (a cheap, real
     // body) instead of the "restoring workspace" placeholder.
     setEnabledMiniAppNames(new Set())
 

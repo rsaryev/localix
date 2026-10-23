@@ -32,7 +32,7 @@ export interface SendOptions {
 }
 
 /**
- * Poll one plugin route while the surface is visible, and send the actions that change it.
+ * Poll one mini app route while the surface is visible, and send the actions that change it.
  *
  * Polling is the SDK's `useVisiblePolling` (host work-item visibility, document visibility, no
  * overlapping ticks); this hook adds what a snapshot needs: a bounded request, schema validation,

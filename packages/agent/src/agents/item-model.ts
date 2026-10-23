@@ -19,7 +19,7 @@ import type { AgentSource } from './sources'
  *    one is a tool call under the hood, so they share `ToolBackedBase` (toolCallId,
  *    name, input, model-facing resultText, error) for LLM reconstruction, plus
  *    type-specific rich fields for display. A small set is SPECIALIZED for rich
- *    rendering; everything else (built-ins, plugin tools, CLI dynamic tools) is the
+ *    rendering; everything else (built-ins, mini app tools, CLI dynamic tools) is the
  *    GENERIC `tool_call`, which is the escape hatch for unspecialized calls.
  *
  * Items belong to a TURN (`turnIndex`) so the LLM wire can be rebuilt in causal
@@ -79,7 +79,7 @@ export type CommandJobStatus = 'running' | 'completed' | 'failed' | 'killed' | '
 interface ToolBackedBase extends AgentItemBase {
   /** Matches the wire `tool_call` id. */
   toolCallId: string
-  /** The tool's own name (`bash`, a plugin tool), even when the model called its `modelName`. */
+  /** The tool's own name (`bash`, a mini app tool), even when the model called its `modelName`. */
   name: string
   /** Parsed tool arguments from the model. */
   input?: unknown
@@ -204,7 +204,7 @@ export interface McpCallItem extends ToolBackedBase {
 
 /**
  * Generic tool call — the escape hatch for every tool we don't specialize
- * (built-ins like read/search/delegate, ALL plugin tools, CLI dynamic tools).
+ * (built-ins like read/search/delegate, ALL mini app tools, CLI dynamic tools).
  */
 export interface ToolCallItem extends ToolBackedBase {
   type: 'tool_call'

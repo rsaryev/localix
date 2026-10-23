@@ -73,7 +73,7 @@ export async function bootstrap(
   } = infra
   // Semantic search, built from infra alone; every later phase that consumes it gets this one.
   const semanticService = buildSemanticService(infra)
-  // Decisions, built from infra alone too: group routing and every plugin host ask through it.
+  // Decisions, built from infra alone too: group routing and every mini app host ask through it.
   const decisionService = buildDecisionService(infra)
   // Before any discovery: convert pre-native plugin installs once (idempotent, logged).
   await migrateLegacyPluginInstalls({ db, homeDir: userHome(), logger })
@@ -182,7 +182,7 @@ export async function bootstrap(
     deleteSession: (...args) => chatService.deleteSession(...args),
     warn: (message) => logger.warn({ event: 'storage.prune_failed', message }),
   })
-  // The plugin hosts' late-bound references to chat, and the ONE wake delivery `wakes`.
+  // The mini app hosts' late-bound references to chat, and the ONE wake delivery `wakes`.
   const { wakes } = bindChatHostRefs({ hostRefs, chatService, env, logger, notifications, db })
 
   const { auxUsageRepo, startEngines, triggerConditions } = await createEnginesPhase({

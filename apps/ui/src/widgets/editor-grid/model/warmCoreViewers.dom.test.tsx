@@ -47,27 +47,27 @@ describe('warm-hidden core viewers', () => {
     await act(async () => root.unmount())
   })
 
-  test('media bytes and plugin HTML wait for selection and stay cached while warm', async () => {
+  test('media bytes and mini app HTML wait for selection and stay cached while warm', async () => {
     const React = await import('react')
     const { createRoot } = await import('react-dom/client')
     const { act } = React
-    const { BridgedPluginView } = await import('@/features/inspector/ui/BridgedPluginView')
+    const { BridgedMiniAppView } = await import('@/features/inspector/ui/BridgedMiniAppView')
     const { MediaFileTab } = await import('@/features/inspector/ui/MediaFileTab')
     const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
 
     const mediaFetch = spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response('hello', { headers: { 'content-type': 'text/plain' } }),
     )
-    let pluginFetches = 0
+    let miniAppFetches = 0
     const fetchHtml = () => {
-      pluginFetches++
+      miniAppFetches++
       return Promise.resolve('<p>Plugin</p>')
     }
     function Surface({ visible }: { visible: boolean }) {
       return (
         <WorkItemVisibilityProvider visible={visible}>
           <MediaFileTab mediaId="media-1" name="note.txt" />
-          <BridgedPluginView pluginName="example" viewName="panel" fetchHtml={fetchHtml} />
+          <BridgedMiniAppView miniAppName="example" viewName="panel" fetchHtml={fetchHtml} />
         </WorkItemVisibilityProvider>
       )
     }
@@ -78,14 +78,14 @@ describe('warm-hidden core viewers', () => {
       await settle()
     })
     expect(mediaFetch).toHaveBeenCalledTimes(0)
-    expect(pluginFetches).toBe(0)
+    expect(miniAppFetches).toBe(0)
 
     await act(async () => {
       root.render(<Surface visible />)
       await settle()
     })
     expect(mediaFetch).toHaveBeenCalledTimes(1)
-    expect(pluginFetches).toBe(1)
+    expect(miniAppFetches).toBe(1)
 
     await act(async () => root.render(<Surface visible={false} />))
     await act(async () => {
@@ -93,7 +93,7 @@ describe('warm-hidden core viewers', () => {
       await settle()
     })
     expect(mediaFetch).toHaveBeenCalledTimes(1)
-    expect(pluginFetches).toBe(1)
+    expect(miniAppFetches).toBe(1)
 
     await act(async () => root.unmount())
     mediaFetch.mockRestore()

@@ -85,14 +85,14 @@ export async function askDecisionForTurn(
  * fresh: a turn queued behind another finds the position it owes now, or nothing to do. A turn that
  * throws is logged; the board's own patience offers Ask again.
  */
-export function decisionTurns(plugin: string) {
+export function decisionTurns(miniApp: string) {
   const runs = new Map<string, Promise<void>>()
   return {
     start(seat: Seat, run: () => Promise<void>): void {
       const key = `${seat.userId}:${seat.sessionId}`
       const turn = (runs.get(key) ?? Promise.resolve())
         .then(run)
-        .catch((error) => console.warn(`[${plugin}] the decision model's turn failed`, error))
+        .catch((error) => console.warn(`[${miniApp}] the decision model's turn failed`, error))
       runs.set(key, turn)
       void turn.finally(() => {
         if (runs.get(key) === turn) runs.delete(key)

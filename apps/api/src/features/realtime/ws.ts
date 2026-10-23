@@ -14,7 +14,7 @@ import type { InboxChange } from '../notifications/contracts'
 import type { AgentStreamEvent, MessageBinding } from '../chat/contracts'
 import type { ToolSurface } from '@localixai/agent/agents'
 import type { PreviewResultPayload } from '../chat/runtime/preview-command-registry'
-import type { MiniAppCommandResultPayload } from '../chat/runtime/plugin-command-registry'
+import type { MiniAppCommandResultPayload } from '../chat/runtime/mini-app-command-registry'
 import {
   parseRealtimeCommand,
   type InlineCompletionPayload,
@@ -30,7 +30,7 @@ import { encodeSessionCursor, parseSessionCursor } from '../ext/ws-frame'
 import { createLspChannel, type RealtimeLspService } from './ws-lsp'
 
 // ONE WebSocket per browser tab carries EVERY live server→client event (chat
-// session firehose, notifications, plugin streams), replacing the previous fleet of SSE
+// session firehose, notifications, mini app streams), replacing the previous fleet of SSE
 // EventSources. A browser allows only 6 concurrent HTTP/1.1 connections per
 // origin SHARED ACROSS TABS, so each long-lived SSE burned a slot and a couple
 // of tabs would exhaust the pool (the page itself then hung). WebSockets are
@@ -88,7 +88,7 @@ export interface RealtimeDeps {
     payload: PreviewResultPayload,
     callerUserId?: string,
   ) => { ok: boolean }
-  // Settle a pending awaited plugin command (`emitCommandWithReply`) from the
+  // Settle a pending awaited mini app command (`emitCommandWithReply`) from the
   // client sink's reply. Optional so partial dep sets in tests still build.
   miniAppCommandResult?: (
     commandId: string,
@@ -127,7 +127,7 @@ export interface RealtimeDeps {
     sessionId: string,
     toolName?: string,
   ) => Promise<string[] | null>
-  // GENERIC live-stream contributions (backend subsystems / bundled plugins). A
+  // GENERIC live-stream contributions (backend subsystems / bundled mini apps). A
   // subsystem contributes a subscribe/unsubscribe command pair + a tagged frame
   // stream; ws.ts consults this registry for any command it does not otherwise
   // recognize. Optional so partial dep sets still build.
@@ -713,8 +713,8 @@ export function createRealtimeRoute(deps: RealtimeDeps) {
           reply({ ok: true, result: { resolved: settled?.ok ?? false } })
           return
         }
-        if (command.kind === 'plugin-command-result') {
-          // A plugin's client sink answered an awaited command — settle its promise.
+        if (command.kind === 'mini-app-command-result') {
+          // A mini app's client sink answered an awaited command — settle its promise.
           const { commandId, ok, result, error } = command.body
           const settled = deps.miniAppCommandResult?.(commandId, { ok, result, error }, userId)
           reply({ ok: true, result: { resolved: settled?.ok ?? false } })
@@ -763,9 +763,9 @@ export function createRealtimeRoute(deps: RealtimeDeps) {
           return
         }
         // Generic WS-frame registry: a command ws.ts doesn't recognize may be a
-        // subsystem/plugin-contributed live stream (subscribe/unsubscribe). Consult
+        // subsystem/mini-app-contributed live stream (subscribe/unsubscribe). Consult
         // the registry before treating it as truly unknown. This is the sole home of
-        // subsystem live streams — a bundled subsystem plugin registers its
+        // subsystem live streams — a bundled subsystem mini app registers its
         // subscribe/unsubscribe command pair + frame tag into the registry here.
         if (command.kind === 'unknown' && command.t && frameConn) {
           if (frameConn.subscribe(command.t, command.data)) {

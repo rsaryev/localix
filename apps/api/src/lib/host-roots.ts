@@ -20,7 +20,7 @@ import { isPathWithin } from './path-containment'
  * output file): which directories are the application?
  *
  *   - SOURCE layout (development): this file sits at `apps/api/src/lib/`, so the checkout root
- *     is four levels up. That covers the dev plugin staging under `<repo>/.turbo` as well.
+ *     is four levels up. That covers the dev mini app staging under `<repo>/.turbo` as well.
  *   - BUNDLED layout (packaged): the server bundle's directory, plus its staging container when
  *     that is one of the known shapes (`resources/` in the desktop app, `server/` in the CLI
  *     package), plus the enclosing `*.app` bundle on macOS.

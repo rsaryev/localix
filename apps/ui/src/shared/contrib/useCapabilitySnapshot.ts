@@ -8,7 +8,7 @@ import { invalidateCapabilities, useCapabilities } from './capabilityCache'
  *
  * Settings is the reason this takes a scope at all: its picker routinely points at a
  * project that is NOT the one the workbench is showing, which is precisely how the
- * "plugin list updated but its tools stayed enabled" bug survived — two surfaces, two
+ * "mini app list updated but its tools stayed enabled" bug survived — two surfaces, two
  * endpoints, reconciled by hand.
  *
  * The fetching itself lives in {@link ./capabilityCache}, so this hook no longer owns

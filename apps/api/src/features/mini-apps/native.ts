@@ -13,15 +13,15 @@ import { makeContext } from './native-context'
 export { makeContext } from './native-context'
 
 /**
- * Native-plugin runtime: the context handed to a plugin's `register(ctx)`, the
+ * Native-mini-app runtime: the context handed to a mini app's `register(ctx)`, the
  * dynamic-import of its entrypoint, and the structural shaping/validation of whatever
  * it exports into real AgentTools. Importing a module here RUNS its top-level code,
- * so callers must only do so for enabled plugins (the trust gate lives in the loader).
+ * so callers must only do so for enabled mini apps (the trust gate lives in the loader).
  *
- * Native plugins are TRUSTED LOCAL CODE — imported in-process, not sandboxed. The
+ * Native mini apps are TRUSTED LOCAL CODE — imported in-process, not sandboxed. The
  * enable toggle is the security boundary; there is no isolation beyond it by design.
  *
- * The plugin-facing CONTRACT (MiniAppContext + hook/channel types) is OWNED by
+ * The mini-app-facing CONTRACT (MiniAppContext + hook/channel types) is OWNED by
  * `@localixai/mini-app-sdk` — this module implements it and re-exports the types so
  * the historical `./native` import surface stays stable.
  */
@@ -36,7 +36,7 @@ export { type MiniAppProblemSink } from './problem-reporter'
 
 // Lifecycle-hook + memory-provider type contracts live in hook-contracts.ts; the
 // values + types are re-exported here so the historical './native' import surface
-// (hooks.ts, loader.ts, prompt-context.ts, finalize.ts, plugin tests) stays stable.
+// (hooks.ts, loader.ts, prompt-context.ts, finalize.ts, mini app tests) stays stable.
 export {
   ASSISTANT_BINDINGS_MAX,
   ASSISTANT_BINDING_DATA_CAP_BYTES,
@@ -128,16 +128,19 @@ export async function importNativeModule(
 }
 
 /**
- * Import a discovered plugin's native entrypoints to read model/UI metadata from
+ * Import a discovered mini app's native entrypoints to read model/UI metadata from
  * its real AgentTool definitions. This DOES run the
- * plugin's module top-level, so callers must only invoke it for enabled plugins
+ * mini app's module top-level, so callers must only invoke it for enabled mini apps
  * (the trust gate). Returns descriptors that would actually register (reserved/
  * invalid and duplicate names excluded) plus any import error.
  */
 export async function inspectMiniAppTools(
-  plugin: DiscoveredMiniApp,
+  miniApp: DiscoveredMiniApp,
   config: MiniAppConfigValues,
-  /** The scope the inspection runs as; `homeDir` is where the plugin's roots live (see `makeContext`). */
+  /**
+   * The scope the inspection runs as; `homeDir` is where the mini app's roots live (see
+   * `makeContext`).
+   */
   runtime: { userId?: string; cwd?: string; host?: MiniAppHostServices; homeDir: string },
   logger?: { warn: (msg: string, meta?: unknown) => void },
 ): Promise<{
@@ -161,23 +164,23 @@ export async function inspectMiniAppTools(
   const channelNames: string[] = []
   let error: string | undefined
   // `register(ctx)` is expected to return invariant definitions, but it is ordinary
-  // trusted plugin code and can still derive metadata from userId/cwd. Inspect with
+  // trusted mini app code and can still derive metadata from userId/cwd. Inspect with
   // the same scope context the runtime loader receives so Settings and the model do
-  // not silently see different rosters for a context-sensitive plugin.
+  // not silently see different rosters for a context-sensitive mini app.
   const ctx = makeContext(
-    plugin.name,
-    plugin.dir,
+    miniApp.name,
+    miniApp.dir,
     config,
     () => {},
-    runtime.cwd ?? plugin.dir,
+    runtime.cwd ?? miniApp.dir,
     runtime.userId ?? 'local-user',
     runtime.homeDir,
-    // A plugin whose contributions depend on a host SERVICE — one that isolates a workspace, say —
-    // returns nothing without it, and inspecting it hostless reports a plugin that contributes
+    // A mini app whose contributions depend on a host SERVICE — one that isolates a workspace, say
+    // — returns nothing without it, and inspecting it hostless reports a mini app that contributes
     // nothing rather than one that could not be asked. Callers that have a host pass it.
     runtime.host,
   )
-  for (const entry of plugin.backendEntries) {
+  for (const entry of miniApp.backendEntries) {
     try {
       const { tools, backends, channels } = await importNativeModule(entry, ctx)
       channelNames.push(...channels.map((channel) => channel.name))
@@ -204,7 +207,7 @@ export async function inspectMiniAppTools(
     } catch (err) {
       const message = errorMessage(err)
       error = error ? `${error}; ${message}` : message
-      logger?.warn(`mini app "${plugin.name}" inspect failed for ${entry}`, {
+      logger?.warn(`mini app "${miniApp.name}" inspect failed for ${entry}`, {
         error: message,
       })
     }

@@ -40,7 +40,7 @@ const PLACEMENT_POLICY: Record<CoreWorkItemKind, PlacementRole> = {
   // Settings tab it is also reachable from, not stacked into the companion column.
   agent: 'editor',
   stats: 'editor',
-  'plugin-view': 'editor',
+  'mini-app-view': 'editor',
   'global-search': 'editor',
   // The live preview opens as a TAB in the editor group — center stage, where
   // files open — not its own column (the previous policy; see
@@ -74,7 +74,7 @@ export function roleForKind(kind: WorkItemKind): PlacementRole {
   // A contribution may declare which default area it belongs to; without one it lands in the
   // primary editor area, which is right for the document-shaped surfaces most of them are. The
   // declaration exists so a conversation-shaped contribution can stack with the chats in `aux`
-  // instead of opening center stage — without core learning that plugin's kind.
+  // instead of opening center stage — without core learning that mini app's kind.
   // Reserved core kinds always retain their explicit policy.
   const contributed = activeWorkItemContribution(kind)
   if (contributed) return contributed.placement === 'aux' ? 'aux' : 'editor'

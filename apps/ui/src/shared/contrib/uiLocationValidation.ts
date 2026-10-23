@@ -17,7 +17,7 @@ const UI_SURFACE_KINDS = new Set([
   'overlay',
   'picker',
   'settings',
-  'plugin',
+  'mini-app',
   'command',
   'action',
 ])
@@ -41,9 +41,9 @@ function validExposure(exposure: UiLocationExposure | undefined): exposure is Ui
  *
  * Rejection used to be a bare `false`. For a statically discovered `*.surface.ts` that
  * still failed startup — but with the generic "invalid or colliding metadata", which does
- * not say which of thirteen rules was broken. For a plugin or runtime view it failed
+ * not say which of thirteen rules was broken. For a mini app or runtime view it failed
  * SILENTLY: the destination simply never existed, and because runtime views register as
- * one atomic batch, a single malformed entry rolled back every plugin destination and then
+ * one atomic batch, a single malformed entry rolled back every mini app destination and then
  * propagated that absence to the agent's synchronized catalog.
  *
  * The conditions and their order are unchanged. Returning the normalized uri and the

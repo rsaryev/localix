@@ -20,9 +20,9 @@ export const RESOURCE_BINDING_FIX =
   'register a resourceProvider (with contextProviders) in backend/index.ts that expands this URI, or drop toMessageBinding and publish the visible state with publishMessageContext'
 
 /** One `file:line` problem per resource binding when the backend registers no provider. */
-export async function checkMiniAppBindings(pluginDir: string): Promise<string[]> {
+export async function checkMiniAppBindings(miniAppDir: string): Promise<string[]> {
   const scan = (include: string[]) =>
-    scanSources({ root: pluginDir, include, skip: isTest, minFiles: 0 })
+    scanSources({ root: miniAppDir, include, skip: isTest, minFiles: 0 })
   const [ui, backend] = await Promise.all([scan(UI_SOURCES), scan(BACKEND_SOURCES)])
   if (backend.some(({ code }) => RESOURCE_PROVIDER.test(code))) return []
   const problems: string[] = []

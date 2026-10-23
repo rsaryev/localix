@@ -58,10 +58,10 @@ function harness(saved: DbConnectionInfo[] = [connection()]) {
     },
   }
   const tool = createDatabaseTool({ userId: 'u', ports })
-  const emitted: Array<{ plugin: string; channel: string; payload: unknown }> = []
+  const emitted: Array<{ miniApp: string; channel: string; payload: unknown }> = []
   const session = {
-    emitCommand: (plugin: string, channel: string, payload: unknown) =>
-      emitted.push({ plugin, channel, payload }),
+    emitCommand: (miniApp: string, channel: string, payload: unknown) =>
+      emitted.push({ miniApp, channel, payload }),
   }
   const run = (input: Record<string, unknown>) =>
     tool.execute('t', databaseToolSchema.parse(input) as DatabaseToolInput, undefined, undefined, {
@@ -210,10 +210,10 @@ describe('the ONE database tool', () => {
     await h.run({ action: 'test', file: ':memory:' })
     await h.run({ action: 'reconnect', connection_id: 'nope' })
     expect(h.emitted).toEqual([
-      { plugin: 'database', channel: 'changes', payload: { type: 'connections' } },
-      { plugin: 'database', channel: 'changes', payload: { type: 'schema', connectionId: 'c1' } },
-      { plugin: 'database', channel: 'changes', payload: { type: 'data', connectionId: 'c1' } },
-      { plugin: 'database', channel: 'changes', payload: { type: 'data' } },
+      { miniApp: 'database', channel: 'changes', payload: { type: 'connections' } },
+      { miniApp: 'database', channel: 'changes', payload: { type: 'schema', connectionId: 'c1' } },
+      { miniApp: 'database', channel: 'changes', payload: { type: 'data', connectionId: 'c1' } },
+      { miniApp: 'database', channel: 'changes', payload: { type: 'data' } },
     ])
   })
 })

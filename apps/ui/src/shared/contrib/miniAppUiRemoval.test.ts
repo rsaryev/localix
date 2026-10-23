@@ -27,7 +27,7 @@ const LOCATION_URI = `localix://ui/work-item/viewlet/${encodeURIComponent('remov
 
 type Seam = keyof MiniAppUiHost
 /**
- * One registration and one "is it there?" per seam of the plugin façade. The completeness check
+ * One registration and one "is it there?" per seam of the mini app façade. The completeness check
  * below compares these keys with the façade itself, so a seam added to `miniAppUiHostFor` without
  * a removal in `removeMiniAppUiContributions` fails here instead of leaking on the next reload.
  */
@@ -189,7 +189,7 @@ afterAll(() => {
   setEnabledMiniAppNames(null)
 })
 
-test('every seam a plugin can register through is one the host can take back', () => {
+test('every seam a mini app can register through is one the host can take back', () => {
   const host = miniAppUiHostFor(OWNER)
   expect(Object.keys(SEAMS).sort()).toEqual(Object.keys(host).sort())
   setEnabledMiniAppNames(new Set([OWNER]))

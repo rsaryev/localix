@@ -1,5 +1,5 @@
 /**
- * THE COMPLETION CONTRACT — what a plugin field or editor asks the host's model for, and what
+ * THE COMPLETION CONTRACT — what a mini app field or editor asks the host's model for, and what
  * comes back: ghost text for a text input, edit predictions for a code editor, and the references
  * that ground both.
  *
@@ -15,8 +15,8 @@ import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 
 /**
  * Something a completion should know about, named the way a message binding's target names it.
- * A plugin editor passes its own anchors (a statement's tables); the host adds what is open on
- * screen and resolves everything server-side, so a plugin never sends content it read itself.
+ * A mini app editor passes its own anchors (a statement's tables); the host adds what is open on
+ * screen and resolves everything server-side, so a mini app never sends content it read itself.
  */
 export interface MiniAppCompletionReference {
   kind: string
@@ -28,10 +28,10 @@ export interface MiniAppCompletionReference {
 }
 
 /**
- * Ghost-text completion for a text field a plugin owns. The plugin names its backend surface
- * (`<plugin>.<field>`, declared on its `BackendSubsystem`) and passes the field's live state; the
+ * Ghost-text completion for a text field a mini app owns. The mini app names its backend surface
+ * (`<app>.<field>`, declared on its `BackendSubsystem`) and passes the field's live state; the
  * host owns the debounce, the one shared model call, caching, stale-reply protection, retries and
- * Tab/Escape — and attaches what the user has open, so the field is grounded without plugin code.
+ * Tab/Escape — and attaches what the user has open, so the field is grounded without mini app code.
  */
 export interface MiniAppTextInputCompletionInput<TPayload = unknown> {
   surface: string

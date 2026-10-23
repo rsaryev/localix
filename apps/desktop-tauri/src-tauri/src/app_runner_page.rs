@@ -1,5 +1,5 @@
-//! A plugin app's page: loading it against the runtime, the scripts every load runs first, and
-//! the short notices shown while there is no page to load.
+//! A standalone mini app's page: loading it against the runtime, the scripts every load runs first,
+//! and the short notices shown while there is no page to load.
 use objc2::{DefinedClass, MainThreadMarker, MainThreadOnly};
 use objc2_foundation::{NSString, NSURLRequest, NSURL};
 use objc2_web_kit::{WKUserScript, WKUserScriptInjectionTime};
@@ -9,7 +9,7 @@ use crate::app_runner_host as host;
 use crate::app_runner_web::Controller;
 
 impl Controller {
-    /// Load the plugin's page against the runtime on `port`, replacing whatever is shown.
+    /// Load the mini app's page against the runtime on `port`, replacing whatever is shown.
     pub(crate) fn load_page(&self, mtm: MainThreadMarker, port: u16) {
         let Some(web_view) = self.ivars().web_view.get() else {
             return;
@@ -36,7 +36,7 @@ impl Controller {
             return;
         };
         let config = &self.ivars().config;
-        let globals = host::page_globals(&config.plugin, &config.name, &config.project, port);
+        let globals = host::page_globals(&config.mini_app, &config.name, &config.project, port);
         let title_row = crate::native_chrome::measure(window)
             .map(crate::native_chrome::apply_script)
             .unwrap_or_default();

@@ -1,5 +1,5 @@
 /**
- * Bounded-concurrency map for repository fan-out. Kept plugin-local so the Git
+ * Bounded-concurrency map for repository fan-out. Kept mini-app-local so the Git
  * implementation does not reach through the host's private utility tree.
  */
 export async function mapLimit<T, R>(

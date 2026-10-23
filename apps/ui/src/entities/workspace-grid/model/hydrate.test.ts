@@ -1,5 +1,5 @@
-// A tab contributed by a lazily loaded bundled plugin must survive cold restore even
-// before the backend confirms which plugin modules may execute. Unknown kinds are
+// A tab contributed by a lazily loaded bundled mini app must survive cold restore even
+// before the backend confirms which mini app modules may execute. Unknown kinds are
 // retained during that pending phase and reconciled after the authoritative snapshot.
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { loadGrid, type PersistedGrid } from './persistence'

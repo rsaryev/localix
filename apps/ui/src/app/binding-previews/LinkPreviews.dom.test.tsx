@@ -5,8 +5,8 @@ import type { UiSession } from '@/shared/api/contracts'
 import { registerDom } from '@localixai/kit/testing/dom'
 
 /**
- * A link dropped outside the chat (a plugin's board) is drawn by the host from the conversation it
- * points into — whether or not that conversation is open — and says plainly when the target is
+ * A link dropped outside the chat (a mini app's board) is drawn by the host from the conversation
+ * it points into — whether or not that conversation is open — and says plainly when the target is
  * not on this machine instead of drawing an empty card.
  */
 let teardown: () => Promise<void>
@@ -54,7 +54,7 @@ async function mount(binding: MessageContextBindingDraft) {
   const { MemoryRouter } = await import('react-router')
   const { useChatStore } = await import('@/entities/chat/model/store')
   const { backendClient } = await import('@/shared/api/client')
-  const { PluginContextBindingPreview } = await import('../pluginBindingComponents')
+  const { MiniAppContextBindingPreview } = await import('../miniAppBindingComponents')
   useChatStore.setState({ sessions: [session], allSessions: [session] })
   // A session the store does not hold is read from the server: here, one that is gone.
   const original = spyOn(backendClient, 'getSession').mockRejectedValue(new Error('not found'))
@@ -64,7 +64,7 @@ async function mount(binding: MessageContextBindingDraft) {
   await act(async () =>
     root.render(
       <MemoryRouter>
-        <PluginContextBindingPreview binding={binding} sessionId={null} />
+        <MiniAppContextBindingPreview binding={binding} sessionId={null} />
       </MemoryRouter>,
     ),
   )

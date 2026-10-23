@@ -18,7 +18,7 @@ export interface UiInvocationAccess {
   allowWrite?: boolean
 }
 
-/** Parse always-present core destinations. Plugin providers remain registry-owned. */
+/** Parse always-present core destinations. Mini app providers remain registry-owned. */
 export function parseCoreUiUri(
   uri: string,
   access: UiInvocationAccess = {},
@@ -62,7 +62,7 @@ interface ResolvedUiNavigation {
 }
 
 /**
- * Resolve one canonical URI through plugin ownership first, then core namespaces.
+ * Resolve one canonical URI through mini app ownership first, then core namespaces.
  *
  * Resolution is not a lookup: it validates typed arguments and RUNS the owner's
  * `resolve(args)` (and `present(args)`), which allocates a target descriptor. Callers

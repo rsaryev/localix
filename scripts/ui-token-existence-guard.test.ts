@@ -10,7 +10,7 @@ import { assertPositiveControl, scanSources } from '../apps/api/src/lib/source-l
  * Tailwind v4 emits nothing for `bg-surface-subtle` when `--color-surface-subtle` does not exist,
  * so a misspelt token paints nothing and passes the build, the types and a glance at the screen.
  * The rule and its reasoning live in `apps/api/src/contracts/ui-token-existence.ts`; this applies
- * it to the app, the kit, the SDK and every bundled plugin, against the kit's own theme file —
+ * it to the app, the kit, the SDK and every bundled mini app, against the kit's own theme file —
  * read here, not copied, so a token added to the theme is usable the moment it exists.
  */
 

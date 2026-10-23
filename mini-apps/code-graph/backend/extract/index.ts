@@ -63,7 +63,7 @@ function countLines(text: string): number {
   return text.endsWith('\n') ? lines - 1 : lines
 }
 
-/** One file's facts, or null for a file this plugin does not read (or should not). */
+/** One file's facts, or null for a file this mini app does not read (or should not). */
 export async function extractFile(path: string, text: string): Promise<FileExtraction | null> {
   const language = languageOf(path)
   if (!language || text.length > MAX_FILE_BYTES || looksMinified(text)) return null

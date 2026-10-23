@@ -18,7 +18,7 @@ import { useDocumentsStatusItem } from './statusItem'
  * UI registration for the bundled Documents workbench: the dedicated file viewers
  * (PDF / office document / spreadsheet-as-table) and content-type routing entries.
  * Discovered and invoked generically by
- * `shared/contrib/discover.ts` (`registerUi` export), mirroring the database plugin.
+ * `shared/contrib/discover.ts` (`registerUi` export), mirroring the database mini app.
  */
 
 // All bodies render under the editor-grid's WorkItemBody Suspense boundary, so the
@@ -110,8 +110,8 @@ export function registerUi(host: MiniAppUiHost): void {
   registered = true
 
   // The routing registry every core layer consults (grid routing, auto-open of
-  // produced documents, drag-to-open, open-externally): this plugin owns the six
-  // dedicated-viewer formats. Without the plugin, everything degrades to the
+  // produced documents, drag-to-open, open-externally): this mini app owns the six
+  // dedicated-viewer formats. Without the mini app, everything degrades to the
   // plain editor — exactly the honest absence contentTypeRouting documents.
   host.fileFormats.register({
     pdf: { contentType: PDF_CONTENT_TYPE, viewer: 'pdf', openExternally: true },
@@ -162,7 +162,7 @@ export function registerUi(host: MiniAppUiHost): void {
     acceptsMedia: true,
   })
 
-  // Which documents are inside a viewer right now — the plugin's one live fact, declared rather
+  // Which documents are inside a viewer right now — the mini app's one live fact, declared rather
   // than drawn. It has no workspace to launch, so this is the only chrome it asks for.
   host.statusItems.register({
     id: 'documents:open',

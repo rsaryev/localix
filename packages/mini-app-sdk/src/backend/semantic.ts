@@ -1,5 +1,5 @@
 /**
- * SEMANTIC INDEX — the embedding seam the host offers to search providers and plugins.
+ * SEMANTIC INDEX — the embedding seam the host offers to search providers and mini apps.
  *
  * One mechanism, three consumers. The host runs ONE embedding engine (a local model by
  * default) and keeps ONE vector store. A producer never computes or stores vectors itself:
@@ -62,7 +62,10 @@ export interface SemanticSourcePage {
  * reported changed. A key `read` does not return is treated as deleted.
  */
 export interface SemanticSource {
-  /** Collection name. A plugin's names are namespaced by the host (`plugin:<name>:<collection>`). */
+  /**
+   * Collection name. A mini app's names are namespaced by the host
+   * (`mini-app:<name>:<collection>`).
+   */
   collection: string
   /** What a person calls these items (`Messages`, `Cards`), where the index lists its categories. */
   label?: string
@@ -118,9 +121,9 @@ export interface SemanticQuery {
   similar(collection: string, options?: SemanticSimilarOptions): Promise<SemanticMatch[]>
 }
 
-/** Where the index stands, for a plugin deciding whether to offer meaning-based features. */
+/** Where the index stands, for a mini app deciding whether to offer meaning-based features. */
 export interface SemanticIndexStatus {
-  /** Always true: semantic search has no off switch. Kept for plugins that read it. */
+  /** Always true: semantic search has no off switch. Kept for mini apps that read it. */
   enabled: boolean
   ready: boolean
   model: { id: string; label: string; dimensions: number } | null
@@ -162,14 +165,14 @@ export interface SemanticVectors {
   ): Promise<SemanticRanking | null>
 }
 
-/** The host capability a plugin backend receives as `host.semantic`. */
+/** The host capability a mini app backend receives as `host.semantic`. */
 export interface SemanticIndexHost extends Omit<SemanticVectors, 'ready'> {
   status(): SemanticIndexStatus
-  /** Register a source of the plugin's own items. Returns the unregister disposer. */
+  /** Register a source of the mini app's own items. Returns the unregister disposer. */
   registerSource(source: SemanticSource): () => void
-  /** Tell the host these keys of the plugin's collection changed (or were deleted). */
+  /** Tell the host these keys of the mini app's collection changed (or were deleted). */
   changed(collection: string, keys: readonly string[]): void
-  /** Query one of the plugin's own collections. Empty until the embedding model is ready. */
+  /** Query one of the mini app's own collections. Empty until the embedding model is ready. */
   query(
     userId: string,
     collection: string,

@@ -8,7 +8,7 @@ beforeAll(async () => {
   teardown = registerDom()
   ;(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
   // A failed apply renders the host's lazy ProblemLine. Bind and warm it here rather than
-  // depending on whichever other plugin suite happened to run first.
+  // depending on whichever other mini app suite happened to run first.
   await warmMiniAppUiComponents()
 })
 afterAll(async () => {

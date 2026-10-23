@@ -1,18 +1,18 @@
 import { z } from 'zod'
 
 /**
- * plugin.json manifest primitives — the common core schema, constants, and pure
- * helpers shared between the host's full zod schema (`apps/api` plugins feature)
- * and external tooling (the template, plugin-builder, marketplaces). The host
+ * mini-app.json manifest primitives — the common core schema, constants, and pure
+ * helpers shared between the host's full zod schema (`apps/api` mini apps feature)
+ * and external tooling (the template, the builder, marketplaces). The host
  * extends the core with the contributions it implements and re-exports these
  * primitives so there is exactly one statement of each cross-host rule.
  */
 
-import { PLUGIN_NAME_RE, MINI_APP_CATEGORIES, MINI_APP_CONFIG_TYPES } from './primitives'
+import { MINI_APP_NAME_RE, MINI_APP_CATEGORIES, MINI_APP_CONFIG_TYPES } from './primitives'
 
 export {
-  PLUGIN_NAME_RE,
-  PLUGIN_QUALIFIED_NAME_RE,
+  MINI_APP_NAME_RE,
+  MINI_APP_QUALIFIED_NAME_RE,
   MINI_APP_API_VERSION,
   MINI_APP_SURFACE_AGENT,
   MINI_APP_SURFACE_WORKBENCH,
@@ -24,7 +24,7 @@ export {
 export type { MiniAppCategory, MiniAppConfigType } from './primitives'
 
 /**
- * One user-config option declared under `plugin.json.config`. Values remain scalar
+ * One user-config option declared under `mini-app.json` `config`. Values remain scalar
  * even when `multiple` is set: that Claude Code compatibility field is an authoring
  * hint, not an array storage mode. `title`, `min`, and `max` are hints too; a host may
  * choose whether to render or enforce them.
@@ -47,7 +47,7 @@ export type MiniAppConfigOption = z.output<typeof miniAppConfigOptionSchema>
 
 /**
  * ── OS FILE ASSOCIATIONS ───────────────────────────────────────────────────────
- * A plugin that ships a dedicated viewer/editor for a file family declares that
+ * A mini app that ships a dedicated viewer/editor for a file family declares that
  * family HERE, so the desktop bundle can tell the operating system "Localix opens
  * these". Runtime routing already lives beside the viewer (`host.fileEditors` /
  * `registerDedicatedViewerTypes`); this manifest field is the same knowledge
@@ -55,16 +55,16 @@ export type MiniAppConfigOption = z.output<typeof miniAppConfigOptionSchema>
  * `Info.plist` (macOS), NSIS/MSI registry writes (Windows) and `.desktop` `MimeType=`
  * (Linux), all of which are frozen at package time.
  *
- * The desktop packaging step aggregates every BUNDLED plugin's declarations into
+ * The desktop packaging step aggregates every BUNDLED mini app's declarations into
  * `apps/desktop-tauri/src-tauri/tauri.conf.json` (`bundle.fileAssociations`), which
  * a gate keeps byte-identical to what the manifests say. A dropped-in / marketplace
- * plugin may declare associations too, but they are inert: the shell it would have to
+ * mini app may declare associations too, but they are inert: the shell it would have to
  * amend was already signed and installed. That asymmetry is inherent to how every OS
  * registers handlers, so the field is honest about it rather than pretending.
  *
  * A declaration is an OPENING CLAIM, not a runtime guarantee: if the user disables
- * the plugin, the OS still routes the double-click to Localix and the file degrades
- * to whatever core can show (the plain editor) — exactly as if no plugin existed.
+ * the mini app, the OS still routes the double-click to Localix and the file degrades
+ * to whatever core can show (the plain editor) — exactly as if no mini app existed.
  *
  * Field names/values mirror Tauri's `FileAssociation` 1:1 (`ext`, `name`,
  * `description`, `mimeType`, `role`, `rank`) so aggregation stays a copy, never a
@@ -99,7 +99,7 @@ export function normalizeFileAssociationExt(ext: string): string {
 }
 
 /**
- * One `plugin.json.fileAssociations` entry. `name` is required (unlike Tauri, which
+ * One `mini-app.json` `fileAssociations` entry. `name` is required (unlike Tauri, which
  * falls back to `ext[0]`) because it is what Finder/Explorer show the user as the
  * file's KIND — an aggregated bundle where one family renders as "db" and another as
  * "PDF Document" reads as a bug, so the manifest makes the label a decision rather
@@ -134,10 +134,10 @@ export type MiniAppFileAssociationInput = z.input<typeof miniAppFileAssociationS
 export type MiniAppFileAssociation = z.output<typeof miniAppFileAssociationSchema>
 
 /**
- * Host-independent fields every Localix plugin manifest starts with. The API host
+ * Host-independent fields every Localix mini app manifest starts with. The API host
  * extends this schema with the contribution kinds it implements; keeping these
  * fields here prevents authoring tools and the host from silently disagreeing on
- * plugin identity, API compatibility, surface declarations, or config options.
+ * mini app identity, API compatibility, surface declarations, or config options.
  *
  * `surfaces` stays optional and unnormalized here. Parsing preserves the manifest
  * as authored; consumers call {@link normalizeMiniAppSurfaces} when they need the
@@ -146,21 +146,21 @@ export type MiniAppFileAssociation = z.output<typeof miniAppFileAssociationSchem
 export const miniAppManifestCoreSchema = z.object({
   name: z
     .string()
-    .regex(PLUGIN_NAME_RE, 'Plugin name must be letters, numbers, dashes or underscores.'),
+    .regex(MINI_APP_NAME_RE, 'Mini app name must be letters, numbers, dashes or underscores.'),
   version: z.string().default('0.0.0'),
   apiVersion: z.number().int().positive().optional(),
   /**
-   * Authoring scaffolds may live beside first-party plugins without becoming a
-   * distributable plugin. Generic discovery and packaging inspect this flag;
-   * no host-owned list of concrete plugin names is required.
+   * Authoring scaffolds may live beside first-party mini apps without becoming a
+   * distributable mini app. Generic discovery and packaging inspect this flag;
+   * no host-owned list of concrete mini app names is required.
    */
   private: z.boolean().optional(),
   category: z.enum(MINI_APP_CATEGORIES).optional(),
   surfaces: z.array(z.string()).optional(),
   config: z.record(z.string(), miniAppConfigOptionSchema).optional(),
   /**
-   * File families this plugin can open, projected onto the OS's handler registry at
-   * PACKAGE time. See {@link miniAppFileAssociationSchema} — bundled plugins only.
+   * File families this mini app can open, projected onto the OS's handler registry at
+   * PACKAGE time. See {@link miniAppFileAssociationSchema} — bundled mini apps only.
    */
   fileAssociations: z.array(miniAppFileAssociationSchema).optional(),
 })

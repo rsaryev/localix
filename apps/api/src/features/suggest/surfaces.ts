@@ -3,7 +3,7 @@
  * has a typed payload, an admitted and clipped context string, prompt rules,
  * and an output cleaner. Domain context is loaded outside this registry.
  *
- * A PLUGIN field needs none of this: it declares a `MiniAppTextInputCompletionSurface` on its
+ * A MINI APP field needs none of this: it declares a `MiniAppTextInputCompletionSurface` on its
  * backend subsystem. Only a surface core itself owns is added here (plus its payload in the
  * browser-safe map and its validation in `ws-commands.ts`).
  */
@@ -41,7 +41,7 @@ export const SURFACE_FRAMING_BYTE_CEILING = MAX_DRAFT_BYTES * 6 + 600
 
 /**
  * The one ceiling on a surface's OWN context (a transcript digest, a commit change set), applied
- * by the service to every surface — core's and a plugin's — before `actionable`/`buildFragment`
+ * by the service to every surface — core's and a mini app's — before `actionable`/`buildFragment`
  * see it. Surfaces used to clip themselves, and one did not: a commit context passed through
  * whole while the declared budget assumed it was clipped like the chat digest.
  */
@@ -106,7 +106,10 @@ const chatSurface: InlineCompletionSurfaceSpec<InlineCompletionSurfacePayloads['
   clean: (raw, payload) => cleanInlineCompletion(raw, payload.draft),
 }
 
-/** The surfaces CORE owns. A plugin's live beside these, resolved through the completion capability. */
+/**
+ * The surfaces CORE owns. A mini app's live beside these, resolved through the completion
+ * capability.
+ */
 const CORE_SURFACES: {
   [K in keyof InlineCompletionSurfacePayloads]: InlineCompletionSurfaceSpec<
     InlineCompletionSurfacePayloads[K]

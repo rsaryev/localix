@@ -2,7 +2,7 @@
  * The source-control DOMAIN MODEL — what a working tree, its history, and an
  * in-progress rewrite ARE, in VCS-neutral terms. `git` is one backend (see
  * ports.ts), not the vocabulary: adding a second backend must not require new
- * shapes here. Shared by the plugin backend and UI.
+ * shapes here. Shared by the mini app backend and UI.
  *
  * The HTTP request schemas that VALIDATE INTO this model live next door in
  * `requests.ts` — they change when a route changes, which is a different reason

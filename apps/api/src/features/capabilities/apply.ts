@@ -9,7 +9,7 @@ import type { CapabilitySnapshotService } from './snapshot'
 
 /**
  * How long a change that re-wires live hosts waits for them before answering anyway. Long
- * enough for a normal reconcile, short enough that a wedged plugin backend costs one slow
+ * enough for a normal reconcile, short enough that a wedged mini app backend costs one slow
  * response rather than a hung request.
  */
 const SETTLE_TIMEOUT_MS = 3_000

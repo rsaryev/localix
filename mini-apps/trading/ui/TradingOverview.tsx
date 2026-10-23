@@ -107,8 +107,8 @@ export function TradingOverview({
           <div className="min-w-0">
             <h2 className="text-xs font-medium text-foreground">Research-first safety boundary</h2>
             <p className="mt-0.5 text-xs leading-relaxed text-text-faint">
-              The registered market browser uses public, read-only exchange data. This plugin entry
-              point does not register an account or order-execution surface.
+              The registered market browser uses public, read-only exchange data. This mini app
+              entry point does not register an account or order-execution surface.
             </p>
           </div>
         </section>

@@ -5,7 +5,7 @@ import { setMessageBindingDrag } from '@localixai/mini-app-sdk/ui/message-bindin
 /**
  * Makes anything the chat SHOWS as a link draggable as that link — a sent pill, a composer chip,
  * a message, an attachment, a path in a tool card — onto any surface that takes links: another
- * composer, a plugin board, an editor tab.
+ * composer, a mini app board, an editor tab.
  *
  * Every one of those used to be click-only, so a person could see a session, a call or a file in
  * the chat and have no way to carry it anywhere but by retyping its token. One helper, so each

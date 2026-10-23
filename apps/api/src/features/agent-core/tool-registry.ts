@@ -42,7 +42,7 @@ export interface ToolRegistryPolicy {
    * non-runtime callers and focused unit tests.
    */
   toolSurface?: ToolSurface
-  /** Plugin/MCP native tools injected by the host; profile and surface gates still apply. */
+  /** Mini app/MCP native tools injected by the host; profile and surface gates still apply. */
   extraTools?: readonly AgentTool[]
   /** Tool names to exclude from the runtime. Excluded tools are invisible to the agent. */
   disabledTools?: readonly string[]
@@ -137,7 +137,7 @@ export interface OptionalToolPorts {
   delegate?: DelegateToolPort
   agents?: AgentsToolPort
   loops?: LoopsToolOptions
-  /** The host's plugin authoring: build, test and reload (or create) one user plugin. */
+  /** The host's mini app authoring: build, test and reload (or create) one user mini app. */
   mini_app_build?: MiniAppBuildToolOptions
   browser?: BrowserToolDeps
   /** The chat's topic boundary, built for the leader or sole participant of a chat. */
@@ -209,7 +209,7 @@ export function createRuntimeToolRegistry(
 
   // Every built-in is a CANDIDATE, built or not: a port the host left empty still gets a row,
   // so "the tool is simply not there" is no longer a state the ledger can express.
-  // extraTools are an EXPLICIT injection (plugin native tools, and the core-NAMED tools a
+  // extraTools are an EXPLICIT injection (mini app native tools, and the core-NAMED tools a
   // host owns — `vault`, `external_agent_sessions`). On an OPEN profile the caller decided to expose
   // every enabled plugin tool; on a CLOSED profile (an unattended worker) a plugin tool
   // survives only when the role declared it — the ledger's shape layer applies exactly that

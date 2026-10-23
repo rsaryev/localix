@@ -1,10 +1,10 @@
 import type { MenuActionEntry, MenuEntry } from './status-items'
 
 /**
- * The LIST half of a status item's menu — the part every contributing plugin writes the same way
+ * The LIST half of a status item's menu — the part every contributing mini app writes the same way
  * and got subtly wrong in a different place.
  *
- * A status item's menu is two things stacked: what the plugin can DO, and what it currently HAS.
+ * A status item's menu is two things stacked: what the mini app can DO, and what it currently HAS.
  * The second half is always a live collection — open books, saved connections, running tunnels,
  * boards, courses, charts, environments — and it always needs the same four decisions:
  *
@@ -14,7 +14,7 @@ import type { MenuActionEntry, MenuEntry } from './status-items'
  *     and sends the person looking for something that is right there;
  *   - nothing at all when the collection is empty — including no title and no separator.
  *
- * Every plugin made those four decisions independently. Three spelled the overflow row by hand
+ * Every mini app made those four decisions independently. Three spelled the overflow row by hand
  * with three different phrasings, two forgot it and truncated silently, and the empty case left a
  * dangling separator in most of them. This is one implementation of the four, and it returns
  * entries — so a caller still decides where the section sits and what surrounds it.

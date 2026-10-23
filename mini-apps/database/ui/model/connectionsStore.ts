@@ -7,7 +7,7 @@ import { copyNullRecord, createNullRecord, defineRecordValue } from '../../share
 import { DATABASE_CONNECTIONS } from './topics'
 
 /**
- * The ONE copy of the saved-connection list in this plugin's UI.
+ * The ONE copy of the saved-connection list in this mini app's UI.
  *
  * The defect it stops: three readers each fetched the same list on their own. The titlebar item
  * held a shared resource, every `useDbConnections` instance (the Database workspace, each

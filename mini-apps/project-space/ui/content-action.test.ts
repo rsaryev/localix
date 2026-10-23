@@ -125,7 +125,7 @@ test('a refused board placement does not open a destination or report success', 
   }
 })
 
-test('add, delete and re-add the same fragment; live plugin eligibility follows undo and redo', async () => {
+test('add, delete and re-add the same fragment; live mini app eligibility follows undo and redo', async () => {
   const root = mkdtempSync(join(tmpdir(), 'space-repeat-'))
   roots.push(root)
   const routes = createSpaceRoutes()

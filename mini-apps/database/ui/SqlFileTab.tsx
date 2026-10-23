@@ -30,7 +30,7 @@ import { QueryParametersDialog } from './ui/QueryParametersDialog'
  * (or the selection) and renders results in the shared virtualized grid.
  *
  * Contributed via the open `fileEditors` registry (see `register.tsx`), so the core
- * editor grid routes `.sql` paths here without naming this plugin.
+ * editor grid routes `.sql` paths here without naming this mini app.
  */
 export function SqlFileTab(props: React.ComponentProps<typeof FileTab>) {
   const { active, live, setActiveId } = useSqlFileConnections()

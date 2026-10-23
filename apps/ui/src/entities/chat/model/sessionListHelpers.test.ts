@@ -384,7 +384,7 @@ describe('mergeSessionState — a writer touching an out-of-scope session must n
 
   test('a genuinely NEW session is still added to allSessions', () => {
     // The reverse direction: without the append, a session created after the snapshot
-    // (a plugin's dispatch, a recurring task firing) would never reach the roster at all.
+    // (a mini app's dispatch, a recurring task firing) would never reach the roster at all.
     const p1 = mk({ id: 'mine', projectId: 'p1' })
     const fresh = mk({ id: 'fresh', projectId: 'p1' })
     const state = { activeProjectId: 'p1', sessions: [p1], allSessions: [p1] }

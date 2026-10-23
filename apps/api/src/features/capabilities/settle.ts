@@ -1,13 +1,13 @@
 /**
  * "The wiring this mutation started has finished."
  *
- * Enabling a plugin does two things at different speeds: it commits the enable state
+ * Enabling a mini app does two things at different speeds: it commits the enable state
  * (immediate) and it re-wires every live host — channels, backend routes, monitors
  * (debounced, asynchronous). The revision is bumped BEFORE that re-wire, on purpose,
  * so no snapshot can be stamped with a pre-mutation number.
  *
  * That leaves one gap for a caller that wants to ANSWER with a snapshot: reading it
- * the instant the state is committed can describe a plugin whose backend is still
+ * the instant the state is committed can describe a mini app whose backend is still
  * coming up. The stream poke already waits for the settle; this module lets a request
  * wait for the same signal, so `POST /rpc/capabilities/toggle` can hand back a
  * document that is true of the running system, not merely of the database.

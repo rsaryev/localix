@@ -18,7 +18,7 @@ const WORKSPACE_KIND = 'reader:workspace'
  * It costs nothing. Open books are work items, and the workspace snapshot is already a
  * subscription every contributed item holds: no request, no cache, no poll.
  *
- * Nothing open, no control — a session that is not reading hears nothing from this plugin.
+ * Nothing open, no control — a session that is not reading hears nothing from this mini app.
  *
  * Both tab kinds are session kinds, so every row opens in the session the item is drawn for
  * (`sessionId`). Opened without one, the host had to guess a chat, and a book revealed from one

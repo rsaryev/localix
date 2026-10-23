@@ -15,7 +15,7 @@ import {
  * owner, one width tier and one scrim (`packages/kit/src/overlays/modal-surface.test.tsx`). That
  * proves nothing about a product dialog that forgets its `DialogBody`, measures itself by hand, or
  * reaches past the shells to radix/vaul and paints its own scrim. The kit never reads the host, so
- * the same detectors — with their positive controls in the kit — run over the app and the plugins
+ * the same detectors — with their positive controls in the kit — run over the app and the mini apps
  * here.
  */
 const REPO_ROOT = new URL('../../../../../', import.meta.url).pathname

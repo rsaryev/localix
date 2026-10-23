@@ -141,21 +141,21 @@ describe('composerTips — the pool is derived from this scope', () => {
       snapshot({
         miniApps: [
           miniApp({
-            name: 'chess',
-            displayName: 'Chess',
+            name: 'tabletop',
+            displayName: 'Tabletop',
             enabled: false,
-            description: 'Play chess against the agent. Legal moves only.',
+            description: 'Play tabletop games against the agent. Legal moves only.',
           }),
         ],
       }),
     )
-    const tip = tips.find((t) => t.id === 'mini-app:chess')
-    expect(tip?.text).toContain('the "Chess" mini app')
+    const tip = tips.find((t) => t.id === 'mini-app:tabletop')
+    expect(tip?.text).toContain('the "Tabletop" mini app')
     expect(tip?.text).not.toMatch(/plugin/iu)
     expect(tip?.actions?.[0].kind === 'navigate' ? tip.actions[0].uri : '').toContain(
-      'settings/mini-apps/mini-app-chess',
+      'settings/mini-apps/mini-app-tabletop',
     )
-    expect(new RegExp(tip?.when?.textPattern ?? '$^', 'i').test('a game of chess?')).toBe(true)
+    expect(new RegExp(tip?.when?.textPattern ?? '$^', 'i').test('a tabletop game?')).toBe(true)
   })
 
   test('an enabled plugin is not advertised as something to enable', () => {

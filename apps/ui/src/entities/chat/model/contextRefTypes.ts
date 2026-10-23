@@ -69,7 +69,7 @@ export interface UseContextRefsResult {
    * the budget blocks the send; an empty array when there are no refs at all.
    */
   refsForSend: (text: string) => Promise<MessageContextBinding[] | null>
-  /** Budget and materialize an explicit plugin action's context without staging chips/text. */
+  /** Budget and materialize an explicit mini app action's context without staging chips/text. */
   bindingsForSend: (
     bindings: readonly MessageContextBindingDraft[],
   ) => Promise<MessageContextBinding[] | null>

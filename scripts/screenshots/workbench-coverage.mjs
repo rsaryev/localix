@@ -34,9 +34,9 @@ export const additionalSurfaceEvidence = {
 
 export async function inspectWorkbenchCoverage() {
   const bundledRoot = miniAppsRoot(repoRoot)
-  const pluginDirs = await fs.readdir(bundledRoot, { withFileTypes: true })
+  const miniAppDirs = await fs.readdir(bundledRoot, { withFileTypes: true })
   const owners = []
-  for (const dir of pluginDirs.filter((entry) => entry.isDirectory())) {
+  for (const dir of miniAppDirs.filter((entry) => entry.isDirectory())) {
     const manifest = readExtensionManifest(path.join(bundledRoot, dir.name))
     if (manifest.surfaces?.includes('workbench')) owners.push(dir.name)
   }

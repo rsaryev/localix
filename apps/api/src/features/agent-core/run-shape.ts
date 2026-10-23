@@ -30,7 +30,7 @@ import { DESCRIPTIONS, GUIDANCE, NON_INTERACTIVE_BASH_FEATURES } from './run-sha
  * and the agent, and it computes the surface.
  *
  * WHICH tools a shape may carry is not decided here either: every catalog entry declares its
- * own `exposure` per shape (`tool-names.ts`, `AgentTool.exposure` for plugin tools), and this
+ * own `exposure` per shape (`tool-names.ts`, `AgentTool.exposure` for mini app tools), and this
  * module only reads it. The per-shape allowlists that used to live beside this file were a
  * second answer to the same question, kept in sync by hand.
  */
@@ -56,7 +56,7 @@ export interface RunAgent {
   prompt?: string
   /**
    * A delegated child run as a Claude Code plugin agent type that lists no `tools`: as there, it
-   * "inherits every tool available to subagents" — the main conversation's MCP and plugin tools
+   * "inherits every tool available to subagents" — the main conversation's MCP and mini app tools
    * too (`chat/runtime/run-profile.ts`). Ignored with a `tools` list and outside a subagent.
    */
   inheritsConversationTools?: boolean
@@ -66,7 +66,7 @@ export interface RunProfile {
   shape: RunShape
   description: string
   /**
-   * Keyed by an OPEN vocabulary: built-in names AND plugin/MCP tool names, which are
+   * Keyed by an OPEN vocabulary: built-in names AND mini app/MCP tool names, which are
    * unknown at compile time (an agent declares its own `tools` list). Read it through
    * {@link isToolDirect} (typed, for a built-in) or {@link declaresTool} (untyped, for a
    * name that only exists at runtime) — never by indexing.
@@ -78,7 +78,7 @@ export interface RunProfile {
    * "declared but the shape can never carry it".
    */
   declaredTools: readonly string[] | null
-  /** Per-tool feature switches. Built-ins only — a plugin tool has no host-known features. */
+  /** Per-tool feature switches. Built-ins only — a mini app tool has no host-known features. */
   disabledToolFeatures?: Partial<Record<ToolName, readonly string[]>>
   /**
    * May this run receive MCP tools (which are dynamic, so they can't be listed in
@@ -92,7 +92,7 @@ export interface RunProfile {
   openToolset?: boolean
   /**
    * A subagent that takes the tools a chat admits by default beside its shape's built-ins: MCP
-   * tools, plugin and mod tools whose chat exposure is `default` (`tool-ledger.ts`).
+   * tools, mini app and mod tools whose chat exposure is `default` (`tool-ledger.ts`).
    */
   inheritsConversation?: boolean
   prompt: RunPromptProfile
@@ -111,7 +111,7 @@ function directTools(names: readonly string[]): Record<string, ToolVisibility> {
 
 /**
  * The exposure of ANY tool name for a shape: the catalog's answer for a built-in, the
- * plugin default for a name the catalog does not know (a plugin tool's own `exposure`
+ * mini app default for a name the catalog does not know (a mini app tool's own `exposure`
  * is read off the tool OBJECT by the ledger, which is the only place that holds it).
  */
 export function exposureLevel(
@@ -232,7 +232,7 @@ export function toolExposure(profile: RunProfile, toolName: string): ToolVisibil
 /**
  * Is this tool exposed DIRECTLY — for a name only known at RUNTIME?
  *
- * The open half of the vocabulary: plugin and MCP tool names, which no type can
+ * The open half of the vocabulary: mini app and MCP tool names, which no type can
  * enumerate. Callers iterate over tool OBJECTS rather than re-typing a name, so there is
  * no name to get wrong. Everything else must use {@link isToolDirect}, which is typed.
  */

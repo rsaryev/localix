@@ -25,7 +25,7 @@ function isPublicMarketData(uri: string): boolean {
  * the guarantee: the hand-rolled resolver this replaces omitted the check in `estimate`.
  *
  * The provider is NOT passed: the factory derives it from the expander, which is this
- * plugin's own `ResourceRefProvider` and therefore the authority on its provider namespace.
+ * mini app's own `ResourceRefProvider` and therefore the authority on its provider namespace.
  */
 export function createTradingPublicContextProvider(
   service: ResourceTradingService,

@@ -22,7 +22,7 @@ const KEYS: Record<string, Direction> = {
 /** A drag shorter than this is a tap, not a turn. */
 const SWIPE_PX = 24
 
-/** Inline on purpose: the host's de-duplicated sheet may drop a utility a plugin relies on. */
+/** Inline on purpose: the host's de-duplicated sheet may drop a utility a mini app relies on. */
 const BOARD: CSSProperties = {
   position: 'relative',
   aspectRatio: '1 / 1',

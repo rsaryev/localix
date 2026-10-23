@@ -1,7 +1,7 @@
 /**
  * The cURL serializer's one non-negotiable claim: a real credential NEVER reaches exported text.
  *
- * A curl string is the most copy-pasteable artifact this plugin makes — into a chat, an issue, a
+ * A curl string is the most copy-pasteable artifact this mini app makes — into a chat, an issue, a
  * shell history — so the test that matters is that a literal is MASKED while a `${secret:KEY}`
  * reference (a pointer, not a secret) survives verbatim, keeping the command reproducible.
  */

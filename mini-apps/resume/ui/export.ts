@@ -17,7 +17,7 @@ export async function downloadResume(
     return
   }
   if (format === 'docx') {
-    // Compose with the installed Documents plugin through its public API; no office library copy.
+    // Compose with the installed Documents mini app through its public API; no office library copy.
     const response = await postMiniAppJson('/rpc/documents/generate', {
       format,
       content: exportDocument(resume.document, 'markdown'),

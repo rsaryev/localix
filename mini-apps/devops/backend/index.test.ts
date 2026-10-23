@@ -3,8 +3,8 @@ import type { BackendSubsystem } from '@localixai/mini-app-sdk/backend'
 
 import { register } from './index'
 
-describe('DevOps plugin registration', () => {
-  test('owns both providers behind one plugin entrypoint', async () => {
+describe('DevOps mini app registration', () => {
+  test('owns both providers behind one mini app entrypoint', async () => {
     const contribution = await register()
     const backends: BackendSubsystem[] = Array.isArray(contribution.backend)
       ? contribution.backend
@@ -17,7 +17,7 @@ describe('DevOps plugin registration', () => {
       '/rpc/docker',
       '/rpc/kubernetes',
     ])
-    // The DevOps plugin contributes NO agent tools: `docker_inspect`, `kubernetes_get` and
+    // The DevOps mini app contributes NO agent tools: `docker_inspect`, `kubernetes_get` and
     // `kubernetes_manage` wrapped verbs of CLIs the agent already drives through `bash`, at
     // ~1.1k tokens of schema per request. Asserted as EMPTY, not merely "not those three",
     // so a re-added tool has to come back through this test.

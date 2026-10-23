@@ -75,7 +75,7 @@ export function failureSentence(error: unknown, fallback: string): string {
 
 /**
  * The two error bodies a route actually answers with — the same pair the SDK's
- * `unwrapMiniAppResponse` reads, and read here the same way so core and plugin calls cannot
+ * `unwrapMiniAppResponse` reads, and read here the same way so core and mini app calls cannot
  * disagree about what the server said. The host envelope is NESTED
  * (`{ error: { code, message, detail } }`); several routes hand-roll a FLAT one
  * (`{ error, code, detail }`), which is what `toErrorInfo()` spreads into. The flat shape is

@@ -1,16 +1,16 @@
 import type { IconComponent, MiniAppOwnedContribution } from './contrib'
 
 /**
- * STATUS ITEMS — the one way a plugin puts something in the workbench's persistent chrome.
+ * STATUS ITEMS — the one way a mini app puts something in the workbench's persistent chrome.
  *
  * One seam for the titlebar cluster, the composer's context row and the status bar, and it is
- * declarative: a plugin says WHAT it has to show, the host owns how it looks and where it goes.
+ * declarative: a mini app says WHAT it has to show, the host owns how it looks and where it goes.
  * Each place it replaces was a free React surface, and each drifted the way free surfaces do — the
  * contributed titlebar button grew its own height, its own hover and no focus ring beside two host
  * buttons that had all three; the contributed composer pills rendered flat and padless beside the
  * project chip because they took the class string and left the geometry behind.
  *
- * So none of this vocabulary lets a plugin draw. That is the point, not an oversight: one
+ * So none of this vocabulary lets a mini app draw. That is the point, not an oversight: one
  * `Component` field and the chrome is a canvas again.
  */
 
@@ -49,7 +49,7 @@ export interface MenuActionEntry {
    * A short right-aligned value: the count behind a row, the branch a switcher is on, the age of
    * a run. NOT a second sentence — the host truncates it and never wraps.
    *
-   * It exists so a plugin stops folding facts into `label` as `Connections (2 live)`, which reads
+   * It exists so a mini app stops folding facts into `label` as `Connections (2 live)`, which reads
    * as part of the action's name and breaks the column every other menu in the app aligns on.
    */
   hint?: string
@@ -117,7 +117,7 @@ export interface MenuSubmenuEntry {
   /**
    * The row shown, disabled, when `items` is empty — "No other branches", "Nothing running".
    *
-   * A submenu that opens on nothing is the defect this closes: every plugin here builds `items`
+   * A submenu that opens on nothing is the defect this closes: every mini app here builds `items`
    * from live data, and the empty case produced a trigger with a chevron and a blank panel behind
    * it. Saying WHY it is empty is the whole difference between a quiet answer and a broken menu.
    */
@@ -132,8 +132,8 @@ export interface MenuSeparatorEntry {
 /**
  * A group title above the rows it names.
  *
- * The alternative every plugin reached for was a disabled action row, which is a title that can be
- * focused, is announced as an unavailable command, and sits in the same column as the things it
+ * The alternative every mini app reached for was a disabled action row, which is a title that can
+ * be focused, is announced as an unavailable command, and sits in the same column as the things it
  * labels. A header is none of those. A header with nothing under it is dropped, so building one
  * above a spread of live rows is safe when the spread is empty.
  */
@@ -147,7 +147,7 @@ export interface MenuHeaderEntry {
  *
  * Separate from {@link StatusItemState.text} because it is NOT a string. Folding it into one
  * would cost the tone and the `tabular-nums` alignment that stop a live counter from jittering,
- * and would put the arrows' size in the plugin's hands.
+ * and would put the arrows' size in the mini app's hands.
  */
 export interface StatusMetric {
   icon?: IconComponent
@@ -157,7 +157,10 @@ export interface StatusMetric {
   tone?: StatusTone
 }
 
-/** What a plugin currently has to show. Returned fresh from {@link StatusItemContribution.useItem}. */
+/**
+ * What a mini app currently has to show. Returned fresh from {@link
+ * StatusItemContribution.useItem}.
+ */
 export interface StatusItemState {
   /** Accessible name and tooltip. Required — an unlabeled control in the chrome is not one. */
   label: string
@@ -181,14 +184,14 @@ export interface StatusItemState {
 }
 
 export interface StatusItemContribution extends MiniAppOwnedContribution {
-  /** `<plugin>:<item>` — namespace-asserted like every other plugin-chosen identity. */
+  /** `<app>:<item>` — namespace-asserted like every other mini-app-chosen identity. */
   id: string
   /**
    * A named place the HOST owns: `'titlebar'`, `'composer'` and `'statusbar'` today.
    *
    * An open string rather than a closed union, exactly like `SessionSurfaceContribution.surface`.
-   * A plugin built against a newer SDK simply does not render on an older host, instead of failing
-   * to compile or throwing at runtime. An unknown placement shows nothing, quietly.
+   * A mini app built against a newer SDK simply does not render on an older host, instead of
+   * failing to compile or throwing at runtime. An unknown placement shows nothing, quietly.
    */
   placement: string
   /**
@@ -196,10 +199,10 @@ export interface StatusItemContribution extends MiniAppOwnedContribution {
    * item has nothing to show right now — the host renders no control at all, rather than an empty
    * one.
    *
-   * THE PLUGIN'S OBLIGATION: nothing per RENDER. Reading a store or a subscription is free;
+   * THE MINI APP'S OBLIGATION: nothing per RENDER. Reading a store or a subscription is free;
    * establishing one subscription on mount is fine and is what a live item is made of. What must
-   * not happen is work on every render, or a poll each item starts for itself when the plugin
-   * already has that data somewhere else. Twenty plugins means twenty of these on every render of
+   * not happen is work on every render, or a poll each item starts for itself when the mini app
+   * already has that data somewhere else. Twenty mini apps means twenty of these on every render of
    * the bar. Same discipline as `FileTreeDecorationContribution.useIndex`.
    */
   useItem: (sessionId: string | null) => StatusItemState | null
@@ -208,7 +211,7 @@ export interface StatusItemContribution extends MiniAppOwnedContribution {
 /**
  * Placements the host renders today.
  *
- * Exported as data so a plugin can name one without spelling a literal, and so the set is
+ * Exported as data so a mini app can name one without spelling a literal, and so the set is
  * discoverable. It is deliberately NOT the type of `placement` — see the field's own note.
  */
 export const STATUS_ITEM_PLACEMENTS = ['titlebar', 'composer', 'statusbar'] as const

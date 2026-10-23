@@ -18,7 +18,7 @@ async function source(): Promise<string> {
 
 describe('the vault decides what is referenceable', () => {
   test('items with no reference are filtered out', async () => {
-    // The host capability owns filtering; plugin UI cannot accidentally widen it by consuming raw
+    // The host capability owns filtering; mini app UI cannot accidentally widen it by consuming raw
     // vault metadata.
     expect(await source()).toContain('miniAppSecrets')
     expect(await source()).toContain('.listReferences()')
@@ -30,10 +30,10 @@ describe('the vault decides what is referenceable', () => {
     expect(code).toContain('reference: secret.reference')
   })
 
-  test('it reads the host vault capability rather than a core client or plugin route', async () => {
+  test('it reads the host vault capability rather than a core client or mini app route', async () => {
     const code = await source()
     expect(code).toContain("from '@localixai/mini-app-sdk/ui/runtime'")
-    // No host module at all: the plugin reaches the host only through the SDK and the kit.
+    // No host module at all: the mini app reaches the host only through the SDK and the kit.
     expect(code).not.toMatch(/from ['"]@\//u)
   })
 })

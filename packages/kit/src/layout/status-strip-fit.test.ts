@@ -42,7 +42,7 @@ describe('what the strip is allowed to spend', () => {
   })
 
   test('the strip never vanishes, however narrow the window or deep the path', () => {
-    // An empty strip and a broken plugin host look identical. The trail truncates instead — that
+    // An empty strip and a broken mini app host look identical. The trail truncates instead — that
     // is what its `minmax(0,1fr)` column is for.
     for (const width of [420, 560, 700]) {
       expect(statusStripBudget(width, 6)).toBeGreaterThanOrEqual(
@@ -65,7 +65,7 @@ describe('what the strip is allowed to spend', () => {
 describe('contributed status strip fit', () => {
   test('before the first measurement every item is on the bar, as a glyph', () => {
     // The regression this pins: the unmeasured frame used to show a flat FOUR and fold the rest
-    // into `…`, which is the frame users actually saw — a titlebar with ten plugins opened with
+    // into `…`, which is the frame users actually saw — a titlebar with ten mini apps opened with
     // four glyphs and a menu, and only a resize replaced it. Compact fits at any plausible
     // titlebar width, so nothing has to be hidden to render safely before measuring.
     expect(fitStatusStrip({ containerWidth: null, count: 9, max: 12 })).toEqual({
@@ -81,8 +81,8 @@ describe('contributed status strip fit', () => {
     })
   })
 
-  test('every bundled titlebar plugin fits an ordinary window', () => {
-    // The user-facing promise: on any window worth calling a desktop one, a plugin that has
+  test('every bundled titlebar mini app fits an ordinary window', () => {
+    // The user-facing promise: on any window worth calling a desktop one, a mini app that has
     // something to say gets a glyph on the bar rather than a row in `…`.
     for (const titlebar of [900, 1100, 1440, 1920]) {
       const fit = fitStatusStrip({
@@ -164,7 +164,7 @@ describe('contributed status strip fit', () => {
   })
 
   test('a deepening path never widens the strip', () => {
-    // The other monotonicity: opening a sub-session must not make plugin glyphs APPEAR. A trail
+    // The other monotonicity: opening a sub-session must not make mini app glyphs APPEAR. A trail
     // that grows can only ever take room back.
     for (const width of [700, 1100, 1600]) {
       let previous = Number.POSITIVE_INFINITY

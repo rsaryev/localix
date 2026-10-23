@@ -13,7 +13,7 @@ import { setEnabledMiniAppNames } from './miniAppActivation'
 
 /**
  * The RUNTIME third-party UI discovery store: fetched-view specs registered as
- * removable work-item entries. Unlike the static bundled glob, a plugin that drops
+ * removable work-item entries. Unlike the static bundled glob, a mini app that drops
  * out of a later sync is GONE — the removal contract phase 2 needs.
  */
 
@@ -36,16 +36,16 @@ describe('syncThirdPartyViews', () => {
     syncThirdPartyViews([view('mon', 'dash'), view('mon', 'panel')])
     expect(listThirdPartyViews().map((v) => v.fullName)).toEqual(['mon:dash', 'mon:panel'])
     for (const [uri, id] of [
-      ['localix://ui/plugin/view/mon%3Adash', 'plugin-view:mon:dash'],
-      ['localix://ui/plugin/view/mon%3Apanel', 'plugin-view:mon:panel'],
+      ['localix://ui/mini-app/view/mon%3Adash', 'mini-app-view:mon:dash'],
+      ['localix://ui/mini-app/view/mon%3Apanel', 'mini-app-view:mon:panel'],
     ] as const) {
       const location = resolveUiLocation(uri)
-      expect(location?.descriptor).toMatchObject({ effect: 'read', surface: 'plugin' })
-      expect(location?.target).toMatchObject({ kind: 'work-item', workKind: 'plugin-view', id })
+      expect(location?.descriptor).toMatchObject({ effect: 'read', surface: 'mini-app' })
+      expect(location?.target).toMatchObject({ kind: 'work-item', workKind: 'mini-app-view', id })
     }
   })
 
-  test('REMOVES views for a plugin that drops out of a later sync', () => {
+  test('REMOVES views for a mini app that drops out of a later sync', () => {
     syncThirdPartyViews([view('a', 'v'), view('b', 'w')])
     expect(listThirdPartyViews()).toHaveLength(2)
     // b disabled/uninstalled → only a remains.
@@ -54,7 +54,7 @@ describe('syncThirdPartyViews', () => {
     // everything disabled → empty.
     syncThirdPartyViews([])
     expect(listThirdPartyViews()).toEqual([])
-    expect(resolveUiLocation('localix://ui/plugin/view/a%3Av')).toBeNull()
+    expect(resolveUiLocation('localix://ui/mini-app/view/a%3Av')).toBeNull()
   })
 
   test('bumps the version + notifies subscribers only on a real change', () => {
@@ -93,7 +93,7 @@ describe('syncThirdPartyViews', () => {
     syncThirdPartyViews([view('mon', 'dash')])
     expect(
       listUiLocations({ exposure: 'agent' }).some(
-        (location) => location.uri === 'localix://ui/plugin/view/mon%3Adash',
+        (location) => location.uri === 'localix://ui/mini-app/view/mon%3Adash',
       ),
     ).toBe(false)
 
@@ -105,7 +105,7 @@ describe('syncThirdPartyViews', () => {
     ])
     expect(
       listUiLocations({ exposure: 'agent' }).find(
-        (location) => location.uri === 'localix://ui/plugin/view/mon%3Adash',
+        (location) => location.uri === 'localix://ui/mini-app/view/mon%3Adash',
       )?.agent?.description,
     ).toBe('Open monitoring metrics when a dashboard would help.')
   })

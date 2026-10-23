@@ -6,8 +6,8 @@ import type { LoadedMiniAppHook } from './loader-contract'
 import { isRecord } from '../../lib/record'
 import { HOOK_TIMEOUT_MS, invokeHook, type HookRunOptions } from './hook-invoke'
 
-// Tool-call hooks: the pre/post wrapping that lets plugins audit, block, or
-// annotate EVERY tool call (built-in, plugin, MCP alike). Split out of hooks.ts
+// Tool-call hooks: the pre/post wrapping that lets mini apps audit, block, or
+// annotate EVERY tool call (built-in, mini app, MCP alike). Split out of hooks.ts
 // so the wrapping logic and its schema-reparse guard stand on their own; the
 // historical `./hooks` import surface re-exports these unchanged.
 
@@ -28,9 +28,9 @@ function toolHookEntries(entries: readonly LoadedMiniAppHook[]): LoadedMiniAppHo
 }
 
 /**
- * Wrap every tool's `execute` with the plugins' pre/post tool-call hooks.
- * Returns the SAME array when no enabled plugin declares a tool-call hook
- * (zero overhead on the common path). Hook order = plugin load order:
+ * Wrap every tool's `execute` with the mini apps' pre/post tool-call hooks.
+ * Returns the SAME array when no enabled mini app declares a tool-call hook
+ * (zero overhead on the common path). Hook order = mini app load order:
  * pre hooks chain (first `block` wins; `input` rewrites compose, each validated
  * against the tool's schema); post hooks all run, appends accumulate (each
  * capped at POST_APPEND_CAP_BYTES).
@@ -50,7 +50,7 @@ export function wrapToolsWithHooks(
     async execute(toolCallId, input, signal, onUpdate, context) {
       let effectiveInput = input
 
-      // ---- Pre hooks: run in plugin order; first block wins, rewrites compose.
+      // ---- Pre hooks: run in mini app order; first block wins, rewrites compose.
       for (const { app, hooks } of entries) {
         if (!hooks.onPreToolCall) continue
         const outcome = await invokeHook(
@@ -79,7 +79,7 @@ export function wrapToolsWithHooks(
       // A THROWN tool error is converted here rather than left to propagate. The
       // failure guard outside this wrapper converts it anyway (for counting), so
       // nothing downstream changes — but a throw that flew past this point took the
-      // post hooks with it, and a plugin that redacts or annotates results was blind
+      // post hooks with it, and a mini app that redacts or annotates results was blind
       // to exactly the calls that failed. Convert, run the post hooks against the
       // error result, return it: rethrowing afterwards would undo the conversion.
       let result: AgentToolResult

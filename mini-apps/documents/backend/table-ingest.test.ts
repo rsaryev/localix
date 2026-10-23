@@ -20,7 +20,7 @@ describe('open-as-table ingest', () => {
     const file = path.join(dir, 'big.csv')
     await writeFile(file, lines.join('\n'))
 
-    ;(globalThis as { [k: symbol]: unknown })[Symbol.for('localix.plugin.documents.services')] =
+    ;(globalThis as { [k: symbol]: unknown })[Symbol.for('localix.mini-app.documents.services')] =
       undefined
     const { tableService } = getDocumentsServices(path.join(dir, 'data'))
     const meta = await tableService.ingest('u1', 's1', { path: file })

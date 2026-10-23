@@ -162,7 +162,7 @@ export function createMiniAppService(deps: MiniAppServiceDeps) {
   /** Creating, building and reloading the person's own mini apps (`authoring/`). */
   const authoring = createMiniAppAuthoring({
     discover: () => discoverMiniApps({ homeDir: deps.homeDir }),
-    pluginsRoot: miniAppInstallRoot('global', null, deps.homeDir),
+    miniAppsRoot: miniAppInstallRoot('global', null, deps.homeDir),
     kitDir: deps.miniAppKitDir ?? miniAppKitDir,
     allowed: async (userId, app) =>
       (await readAvailability(deps.db, { userId, agentId: DEFAULT_AGENT_ID })).effectFor(

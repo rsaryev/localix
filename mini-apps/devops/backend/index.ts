@@ -1,9 +1,9 @@
 /**
- * DevOps Workspace — the single bundled DevOps plugin entrypoint.
+ * DevOps Workspace — the single bundled DevOps mini app entrypoint.
  *
  * Docker and Kubernetes remain separate provider modules because they have
  * different transports and lifecycle needs. They are deliberately composed here
- * into one plugin registration, one package boundary, and one enable/disable
+ * into one mini app registration, one package boundary, and one enable/disable
  * decision. Keeping the provider subsystem ids and RPC paths stable avoids
  * breaking existing resource references, search hits, and saved integrations.
  */

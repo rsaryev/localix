@@ -2,7 +2,7 @@
   "name": "@localix-mini-app/template",
   "version": "0.1.0",
   "private": true,
-  "description": "System Overview plugin and reference template with a native Bun backend.",
+  "description": "System Overview mini app and reference template with a native Bun backend.",
   "license": "MIT",
   "type": "module",
   "scripts": {

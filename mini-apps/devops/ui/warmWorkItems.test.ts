@@ -12,8 +12,8 @@ describe('warm-hidden DevOps work items', () => {
    * './errors'`, and THAT file imported the `./backend` barrel — which re-exports `net-safety`,
    * which reaches for `node:dns`. Vite externalizes `node:dns` to a stub that throws on first
    * property access, so importing the DevOps UI entrypoint threw, `bundledMiniAppUi` caught it
-   * per-plugin, and the only visible symptom was a DevOps workspace missing from the rail and
-   * the Capabilities panel while the plugin itself still listed as enabled.
+   * per-mini-app, and the only visible symptom was a DevOps workspace missing from the rail and
+   * the Capabilities panel while the mini app itself still listed as enabled.
    *
    * So the assertion follows the EDGE, not a fixed pair of files: everything the UI can reach
    * transitively is held to the browser-safe entrypoints. `check-architecture.mjs` cannot catch
@@ -32,7 +32,7 @@ describe('warm-hidden DevOps work items', () => {
     }
 
     for (const [name, source] of Object.entries(chain)) {
-      expect(source, `${name} is reachable from plugin UI`).not.toContain(
+      expect(source, `${name} is reachable from mini app UI`).not.toContain(
         "from '@localixai/mini-app-sdk/backend'",
       )
     }

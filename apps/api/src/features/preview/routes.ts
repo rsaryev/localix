@@ -109,9 +109,9 @@ export function createPreviewRoutes(deps: PreviewRoutesDeps) {
     .post('/open', zValidator('json', openSchema), async (c) => {
       const result = await deps.openPreview(c.get('userId'), c.req.valid('json'))
       // The core's refusal is a sentence for the model. Sent flat as `{ok:false, content}` it was
-      // invisible to the UI: `unwrap()` reads the app envelope, so a plugin's "Preview" button got
-      // a 400 with no message and reported nothing at all. The envelope is what every other route
-      // speaks, and `content` is already the sentence a person can act on.
+      // invisible to the UI: `unwrap()` reads the app envelope, so a mini app's "Preview" button
+      // got a 400 with no message and reported nothing at all. The envelope is what every other
+      // route speaks, and `content` is already the sentence a person can act on.
       if (!result.ok) return jsonError(c, 400, 'preview_refused', result.content)
       return c.json(result, 200)
     })

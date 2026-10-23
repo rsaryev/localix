@@ -27,7 +27,7 @@ import { watchStagedMiniAppsRoot } from '../features/mini-apps/bundled-watch'
 import { retireLegacyPluginCopies } from '../features/mini-apps/legacy-plugin-copies'
 import { recoverDelegationReports } from '../features/chat/service/recover-delegation'
 import { sweepOrphanSessionData } from '../features/mini-apps/session-storage'
-import { PLUGIN_WARNINGS, warnOnce } from '../lib/warn-once'
+import { MINI_APP_WARNINGS, warnOnce } from '../lib/warn-once'
 import type { StorageMaintenance } from './storage-maintenance'
 import { armModelCatalogChecks } from '../features/catalog/refresh-schedule'
 
@@ -89,14 +89,14 @@ export function createOpsTimersPhase({
   notifications,
   miniAppConditions,
 }: OpsTimersPhaseInput): OpsTimersPhase {
-  const warnPluginOnce = warnOnce(logger, PLUGIN_WARNINGS)
+  const warnMiniAppOnce = warnOnce(logger, MINI_APP_WARNINGS)
   // What is wrong with a Claude Code plugin (its load, its monitors), as Event Center conditions.
   // The per-run plugin load is built inside the chat runtime, out of reach: observed here.
   const pluginConditions = createPluginConditions(notifications, env.LOCALIX_DEFAULT_USER_ID)
   observePluginConditions(pluginConditions)
-  // Plugin channels: long-running platform bridges contributed by
-  // enabled plugins. Inbound messages run a full agent turn in a persistent
-  // chat session; the final reply is returned to the platform by the plugin.
+  // Mini app channels: long-running platform bridges contributed by
+  // enabled mini apps. Inbound messages run a full agent turn in a persistent
+  // chat session; the final reply is returned to the platform by the mini app.
   // `workspace` gives channels the same management surface the UI sidebar has
   // (list/create/switch/stop sessions, projects, models) — see ChannelWorkspaceApi.
   const channelUserId = env.LOCALIX_DEFAULT_USER_ID
@@ -117,8 +117,8 @@ export function createOpsTimersPhase({
     workspace: channelWorkspace,
     conditions: miniAppConditions,
     logger: {
-      info: (msg) => logger.info({ event: 'plugin_channel.info', msg }),
-      warn: (msg, meta) => warnPluginOnce({ event: 'plugin_channel.warn', msg, meta }),
+      info: (msg) => logger.info({ event: 'mini_app_channel.info', msg }),
+      warn: (msg, meta) => warnMiniAppOnce({ event: 'mini_app_channel.warn', msg, meta }),
     },
   })
   hostRefs.channelHost = channelHost
@@ -181,14 +181,14 @@ export function createOpsTimersPhase({
       }
     }
 
-    // A plugin whose source did not build or install is raised as a condition, each time the
+    // A mini app whose source did not build or install is raised as a condition, each time the
     // staged root settles: after a sync, so a copy that failed in THIS pass is in the report.
     const reportStagingFailures = (root: string) =>
       syncBundledMiniApps(root, userHome())
         .then(() => bundledStagingFailures(root, userHome()))
         .then((failures) => miniAppConditions.stagingFailed(failures))
         .catch((error) =>
-          logger.warn({ event: 'plugins.staging_report_failed', error: errorMessage(error) }),
+          logger.warn({ event: 'mini_apps.staging_report_failed', error: errorMessage(error) }),
         )
     // Bundled mini apps re-staged while this process runs (a scaffold, a backend save in the
     // dev workspace, an app update that lands a new staged root) announce themselves through
@@ -248,7 +248,7 @@ export function createOpsTimersPhase({
     // the ledger the reconcile repairs, and a plugin bridge or monitor starting a second later
     // is invisible — while `signal` (shutdown) keeps a host from starting after its stop.
     const idleTasks: IdleTask[] = [
-      { name: 'plugin_channels', run: () => channelHost.start() },
+      { name: 'mini_app_channels', run: () => channelHost.start() },
       { name: 'plugin_monitors', run: () => monitorHost.start() },
       {
         name: 'staging_report',

@@ -6,7 +6,7 @@ import { describe, expect, test } from 'bun:test'
  * A right-click menu is the surface a user judges an editor's polish by, and the app has exactly
  * one: `packages/kit/src/overlays/context-menu.tsx` over `POPOVER_SURFACE`/`MENU_ITEM`, with
  * the dropdown family as its click-triggered twin. Nothing about that is enforced by the type system —
- * a feature or a plugin can reach past it to Radix and get a menu that is *almost* the app's, or
+ * a feature or a mini app can reach past it to Radix and get a menu that is *almost* the app's, or
  * transcribe the danger recipe into a `className` and get an item that is *almost* the app's
  * destructive item. Both happened, in both directions, before this file existed: three separate
  * spellings of the delete row, and an API-plugin context menu whose Delete had no tint at all while

@@ -4,7 +4,7 @@
 
 :root {
   /* Workbench geometry stays physical while Settings scales typography through
-     the root font size. These are the shared density primitives for host + plugin
+     the root font size. These are the shared density primitives for host + mini app
      chrome: controls scale by semantic tier, never by a one-off component value. */
   --chrome-control-xs: 20px;
   --chrome-control-sm: 24px;
@@ -14,7 +14,7 @@
   --chrome-control-touch: 40px;
   /* Glyphs are deliberately NOT tokenized. There is one icon ladder and it is
      Tailwind's spacing scale — `size-2.5 / 3 / 3.5 / 4 / 4.5` = 10/12/14/16/18px —
-     used at ~every icon in the app and in every plugin. A parallel
+     used at ~every icon in the app and in every mini app. A parallel
      `--icon-xs…lg` token set (12/14/16/18px) once existed here and lost: four
      files used it against hundreds using `size-*`, it was never redefined per
      theme or density, so it bought no theming power and only made the same
@@ -32,7 +32,7 @@
   /* The reading measure: how wide a column of long-form PROSE may grow — a lesson, an article.
      A panel body is as wide as its pane (the 'centred literal column' rule in
      `ui-token-rules.ts`); prose is the one
-     exception, because a line past ~75 characters is not readable. Named so a plugin that reads
+     exception, because a line past ~75 characters is not readable. Named so a mini app that reads
      like a page asks for the same measure instead of picking its own literal. */
   --reading-measure: 48rem;
   --workbench-rail-width: 48px;
@@ -96,7 +96,7 @@
   --z-tooltip: 300;
 }
 
-/* Filter geometry belongs to the host component. Plugin stylesheets ship after the
+/* Filter geometry belongs to the host component. Mini app stylesheets ship after the
    host stylesheet, so generic responsive utility selectors can override one another. */
 .lx-workbench-filter-bar {
   container-type: inline-size;

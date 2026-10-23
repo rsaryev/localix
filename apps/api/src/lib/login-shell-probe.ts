@@ -25,7 +25,7 @@ export const PROBE_BUDGET_MS = 3_000
 /**
  * How long output may still arrive after the shell exits. A dependency-free copy of the
  * child-exit drain rather than an import of it: this module sits under `childEnv`, which
- * every spawn in the API reaches, and must not pull the plugin SDK into that path.
+ * every spawn in the API reaches, and must not pull the mini app SDK into that path.
  */
 const EXIT_DRAIN_MS = 100
 

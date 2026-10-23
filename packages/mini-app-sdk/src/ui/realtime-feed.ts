@@ -1,8 +1,8 @@
 /**
- * Follow a plugin's realtime stream — subscribe over `miniAppRealtime`, hear frames by tag, know
+ * Follow a mini app's realtime stream — subscribe over `miniAppRealtime`, hear frames by tag, know
  * whether the stream is live, and survive a reconnect.
  *
- * Nine plugins wrote this by hand, and each copy carried its own subset of the same fixes:
+ * Nine mini apps wrote this by hand, and each copy carried its own subset of the same fixes:
  *
  * - A new socket drops every server-side subscription, and the frames sent while it was down are
  *   gone. A copy that did not re-subscribe on reconnect showed a view that silently stopped at the
@@ -25,9 +25,9 @@ import { useEffect, useRef, useState } from 'react'
 import { miniAppRealtime } from './runtime'
 
 export interface RealtimeFeedSpec<Key, Frame> {
-  /** The plugin's frame tag: one lowercase character that core does not reserve. */
+  /** The mini app's frame tag: one lowercase character that core does not reserve. */
   readonly tag: string
-  /** The subscribe and unsubscribe commands for one key (`{ t: '<plugin>:x.subscribe', … }`). */
+  /** The subscribe and unsubscribe commands for one key (`{ t: '<app>:x.subscribe', … }`). */
   readonly subscribe: (key: Key) => Record<string, unknown>
   readonly unsubscribe: (key: Key) => Record<string, unknown>
   /** A key's identity; keys with one id share a subscription. Default `String(key)`. */

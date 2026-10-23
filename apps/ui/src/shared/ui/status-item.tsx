@@ -20,8 +20,8 @@ import { WorkbenchStatusButton, WorkbenchStatusItem } from '@localixai/kit/workb
 /**
  * The one control every contributed status item becomes.
  *
- * A plugin describes what it has; this decides what that looks like. The seam it replaced handed
- * plugins a React surface, and the contributed button promptly grew its own height, its own hover
+ * A mini app describes what it has; this decides what that looks like. The seam it replaced handed
+ * mini apps a React surface, and the contributed button promptly grew its own height, its own hover
  * and no focus ring while sitting between two host buttons that had all three. Owning the render
  * is what makes that impossible rather than merely discouraged.
  *
@@ -29,11 +29,11 @@ import { WorkbenchStatusButton, WorkbenchStatusItem } from '@localixai/kit/workb
  * the titlebar, `ComposerChip` above the input, `WorkbenchStatusButton` in the status bar — and
  * splitting them into three files would be the first step towards three behaviours.
  *
- * TWO uniformities the host owns and a plugin cannot opt out of:
+ * TWO uniformities the host owns and a mini app cannot opt out of:
  *   - a RIGHT-CLICK always opens a menu (see {@link statusItemMenuEntries}), even on an item whose
  *     author declared none. An icon that answers nothing is indistinguishable from a broken one;
- *   - `compact` drops the live text to the tooltip, so a narrow bar shows MORE plugins rather than
- *     fewer. The strip decides that once, for every item at once — see `status-strip-fit.ts`.
+ *   - `compact` drops the live text to the tooltip, so a narrow bar shows MORE mini apps rather
+ *     than fewer. The strip decides that once, for every item at once — see `status-strip-fit.ts`.
  */
 export function StatusItemControl({
   state,
@@ -48,7 +48,7 @@ export function StatusItemControl({
   const hint = useChordHint()
   const { label, chordId, menu, onClick } = state
   // With no primary action but a DECLARED menu, the left click opens the menu — the behaviour of
-  // every other icon in this chrome that has only one thing to offer. Read from the plugin's own
+  // every other icon in this chrome that has only one thing to offer. Read from the mini app's own
   // `menu`, never from the host-augmented entries: the uniform right-click menu must not turn a
   // display-only item into a button.
   const opensMenuOnClick = !onClick && Boolean(menu?.length)

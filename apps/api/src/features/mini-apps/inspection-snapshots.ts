@@ -12,17 +12,17 @@ import { inspectMiniAppTools } from './native'
 import { createBoundedCache } from '../../lib/bounded-cache'
 
 /**
- * The tool roster of one enabled native plugin, for the snapshot and Settings — without running
+ * The tool roster of one enabled native mini app, for the snapshot and Settings — without running
  * its `register()` again for an answer already known.
  *
- * Listing is read-only: it must not repeatedly run a native plugin's register() just to
+ * Listing is read-only: it must not repeatedly run a native mini app's register() just to
  * rediscover the same tool names, within a process (the memory tier here) or across a restart
  * (the disk tier, `inspection-store.ts`). Both are keyed by the actual inspection inputs, local to
- * one plugin service (never process-global) and bounded. Runtime loading remains entirely
+ * one mini app service (never process-global) and bounded. Runtime loading remains entirely
  * separate.
  */
 
-type PluginConfig = MiniAppConfigValues
+type MiniAppConfig = MiniAppConfigValues
 
 interface InspectionSnapshot {
   app: string
@@ -46,13 +46,13 @@ const cloneInspection = (value: MiniAppToolInspection): MiniAppToolInspection =>
 })
 
 async function inspectionFingerprint(
-  plugin: DiscoveredMiniApp,
-  config: PluginConfig,
+  miniApp: DiscoveredMiniApp,
+  config: MiniAppConfig,
   userId: string,
   cwd: string,
 ): Promise<string> {
   const entryVersions = await Promise.all(
-    plugin.backendEntries.map(async (entry) => {
+    miniApp.backendEntries.map(async (entry) => {
       try {
         const stat = await fs.stat(entry)
         return [entry, stat.mtimeMs, stat.size]
@@ -64,14 +64,14 @@ async function inspectionFingerprint(
   // Config may contain secrets. Retain only a digest in the cache metadata,
   // never the serialized config itself.
   return createHash('sha256')
-    .update(JSON.stringify({ manifest: plugin.manifest, config, entryVersions, userId, cwd }))
+    .update(JSON.stringify({ manifest: miniApp.manifest, config, entryVersions, userId, cwd }))
     .digest('hex')
 }
 
 export interface MiniAppInspections {
   inspect(
-    plugin: DiscoveredMiniApp,
-    config: PluginConfig,
+    miniApp: DiscoveredMiniApp,
+    config: MiniAppConfig,
     userId: string,
     cwd: string,
   ): Promise<MiniAppToolInspection>
@@ -96,7 +96,7 @@ export function createMiniAppInspections(deps: {
         store.drop()
         return
       }
-      // A global plugin participates in every selected project. Its lifecycle or
+      // A global mini app participates in every selected project. Its lifecycle or
       // config mutation invalidates every context-specific inspection; a
       // project-scoped mutation remains confined to that exact project.
       const matches = (entry: { app: string; projectId: string }) =>
@@ -105,9 +105,9 @@ export function createMiniAppInspections(deps: {
       store.drop(matches)
     },
 
-    async inspect(plugin, config, userId, cwd) {
-      const key = `${plugin.dir}\u0000${userId}\u0000${cwd}`
-      const fingerprint = await inspectionFingerprint(plugin, config, userId, cwd)
+    async inspect(miniApp, config, userId, cwd) {
+      const key = `${miniApp.dir}\u0000${userId}\u0000${cwd}`
+      const fingerprint = await inspectionFingerprint(miniApp, config, userId, cwd)
       const cached = snapshots.peek(key)
       if (cached?.fingerprint === fingerprint) {
         snapshots.get(key) // only a current snapshot counts as a use
@@ -117,11 +117,11 @@ export function createMiniAppInspections(deps: {
       // The durable read sits INSIDE the shared promise, so concurrent callers of one key (the
       // snapshot's two scopes, the cache warm) still share one attempt, disk hit or not.
       const run = async (): Promise<MiniAppToolInspection> => {
-        const durable = await durableInspectionFingerprint(plugin, fingerprint)
+        const durable = await durableInspectionFingerprint(miniApp, fingerprint)
         const stored = durable ? await store.get(key, durable) : null
         if (stored) return stored
         const inspected = await inspectMiniAppTools(
-          plugin,
+          miniApp,
           config,
           { userId, cwd, homeDir: deps.homeDir },
           deps.logger,
@@ -139,8 +139,8 @@ export function createMiniAppInspections(deps: {
         return inspected
       }
       const snapshot: InspectionSnapshot = {
-        app: plugin.name,
-        projectId: plugin.projectId,
+        app: miniApp.name,
+        projectId: miniApp.projectId,
         fingerprint,
         result: Promise.resolve().then(run),
       }

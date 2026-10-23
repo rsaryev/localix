@@ -6,7 +6,7 @@
  * boot, but under Bun a `Bun.spawn` that passes no `env` resolves its executable against the PATH
  * the process STARTED with — so `Bun.spawn(['docker', …])` threw `Executable not found in $PATH:
  * "docker"` on a machine where `/usr/local/bin/docker` was right there, and the DevOps sidebar said
- * "Docker returned an error." Every plugin spawn has to pass the CURRENT environment, and lookups
+ * "Docker returned an error." Every mini app spawn has to pass the CURRENT environment, and lookups
  * must read the current PATH explicitly; this module is the one place that knows how.
  *
  * It also appends the well-known install directories a GUI app's PATH tends to miss (Homebrew,

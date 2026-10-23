@@ -15,7 +15,7 @@ type SessionScope = {
  * there is no second `contextRefs`/`contextCapture` channel.
  *
  * Resolution itself is Context Fabric's (`context-fabric/binding-capture.ts`): one path for every
- * kind, so a linked file and a plugin's resource pass the same admission policy. This function
+ * kind, so a linked file and a mini app's resource pass the same admission policy. This function
  * only picks the bindings that need it and writes the answers back in place.
  */
 export async function resolveMessageBindings(

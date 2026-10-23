@@ -14,7 +14,7 @@ import { GIT_WORKSPACE_KIND } from '../workItemKinds'
  *
  * This replaces a hand-written titlebar button that had drifted from the host recipe on every
  * axis that matters — its own height, no focus ring, no pressed feedback — while sitting between
- * two host buttons that had all three. Nothing here decides how anything looks: the plugin says
+ * two host buttons that had all three. Nothing here decides how anything looks: the mini app says
  * what is true about the repository and the host renders it the way it renders its own.
  */
 

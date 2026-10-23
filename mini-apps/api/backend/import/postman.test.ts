@@ -349,7 +349,7 @@ describe('body', () => {
   })
 
   test('a graphql body imports as the JSON POST it always was on the wire', () => {
-    // This plugin no longer has a GraphQL feature, and this import lost nothing by it.
+    // This mini app no longer has a GraphQL feature, and this import lost nothing by it.
     // `{query, variables}` over `application/json` is what graphql-over-http specifies, and it is
     // exactly what went out before: the old `application/graphql` mimeType was an internal marker
     // that `encodeBody` translated to JSON at send time. Same bytes, one fewer concept.

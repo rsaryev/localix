@@ -1,7 +1,7 @@
 /**
- * REST client for this plugin's own backend (`/rpc/api`).
+ * REST client for this mini app's own backend (`/rpc/api`).
  *
- * The plugin owns both sides, so the response types come from `../backend/contracts` rather than
+ * The mini app owns both sides, so the response types come from `../backend/contracts` rather than
  * being restated here — the UI never guesses a shape the backend might change.
  *
  * No `x-user-id` header: the API resolves and sanitises identity at its own boundary, and a
@@ -31,7 +31,7 @@ export { RestApiError }
  * The one client, assembled from its two halves.
  *
  * Spread rather than nested (`restApi.environments.create`) because the caller's question is
- * "what can I ask the API plugin", not "which file is it written in" — and moving a verb between
+ * "what can I ask the API mini app", not "which file is it written in" — and moving a verb between
  * halves must not be a breaking change for the twenty surfaces that call it.
  *
  * Every verb takes the chat it acts for FIRST — the session of the surface that calls it — because

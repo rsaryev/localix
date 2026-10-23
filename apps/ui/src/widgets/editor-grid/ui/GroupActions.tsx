@@ -6,7 +6,7 @@ import { IconButton } from '@localixai/kit/icon-button'
 
 /**
  * The actions of a GROUP of tabs, at the right end of its tab strip, level with the tabs — so they
- * act on the panel as a whole, whatever tab it shows: a chat, a file, a plugin.
+ * act on the panel as a whole, whatever tab it shows: a chat, a file, a mini app.
  *
  * One action for now: fill the workbench with this group, or give the space back. It is the grid's
  * own maximize (`maximizeGroup`) and the "Maximize editor group" command's, so the shortcut, the
@@ -17,9 +17,9 @@ import { IconButton } from '@localixai/kit/icon-button'
  * A plain icon button with a panel glyph, like the app's other frame controls; maximized, the other
  * side of the glyph turns dashed — that panel is hidden.
  *
- * `app` is the shown tab's own action when that tab is a plugin's: install the plugin as its own
- * Mac app, or open the one it has. It names its plugin, because a group can hold several plugins'
- * tabs and the button speaks only for the one on screen; every tab's menu offers the same.
+ * `app` is the shown tab's own action when that tab is a mini app's: install the mini app as its
+ * own Mac app, or open the one it has. It names its mini app, because a group can hold several mini
+ * apps' tabs and the button speaks only for the one on screen; every tab's menu offers the same.
  */
 export function GroupActions({
   groupId,

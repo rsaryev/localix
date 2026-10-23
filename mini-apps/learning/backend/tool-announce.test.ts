@@ -45,8 +45,8 @@ function harness() {
   const context = {
     session: {
       id: 'chat-1',
-      emitCommand: (plugin: string, channel: string, payload: unknown) =>
-        commands.push([plugin, channel, payload]),
+      emitCommand: (miniApp: string, channel: string, payload: unknown) =>
+        commands.push([miniApp, channel, payload]),
     },
   }
   const run = (input: unknown) => tool.execute('call', input, undefined, undefined, context)

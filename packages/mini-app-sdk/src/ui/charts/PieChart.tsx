@@ -20,7 +20,7 @@ interface PieChartProps {
 
 const MAX_SLICES = 8
 
-/** Pie renderer shared by host and plugin table surfaces. */
+/** Pie renderer shared by host and mini app table surfaces. */
 export function PieChart({ columns, rows, spec, width, height }: PieChartProps) {
   const model = useMemo(() => {
     const byId = new Map(columns.map((c) => [c.id, c]))

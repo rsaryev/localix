@@ -19,7 +19,7 @@ async function fixture(): Promise<{ source: string; home: string }> {
   return { source: join(root, 'mini-apps'), home: join(root, 'home') }
 }
 
-async function writePlugin(
+async function writeMiniApp(
   source: string,
   name: string,
   description: string,
@@ -39,16 +39,16 @@ async function managedFingerprint(home: string, name: string): Promise<string> {
 
 async function writeStagedMarker(
   source: string,
-  pluginHashes: Record<string, string>,
+  miniAppHashes: Record<string, string>,
   overrides: Record<string, unknown> = {},
 ): Promise<void> {
   await fs.writeFile(
     join(source, '.localix-staged.json'),
     JSON.stringify({
-      kind: 'localix-staged-plugins',
+      kind: 'localix-staged-mini-apps',
       schemaVersion: 3,
       hashAlgorithm: 'sha256',
-      pluginHashes,
+      miniAppHashes,
       unavailable: {},
       ...overrides,
     }),
@@ -83,7 +83,7 @@ afterEach(async () => {
 describe('the mini apps a source offers are installed only when chosen', () => {
   test('a sync installs nothing the person did not choose', async () => {
     const { source, home } = await fixture()
-    await writePlugin(source, 'weather', 'v1')
+    await writeMiniApp(source, 'weather', 'v1')
 
     expect(await syncBundledMiniApps(source, home)).toEqual(new Set())
     expect(await fs.readdir(join(home, '.localix/mini-apps')).catch(() => [])).toEqual([])
@@ -91,15 +91,15 @@ describe('the mini apps a source offers are installed only when chosen', () => {
 
   test('one chosen is installed alone, refreshed by later syncs, and stays gone once removed', async () => {
     const { source, home } = await fixture()
-    await writePlugin(source, 'weather', 'v1')
-    await writePlugin(source, 'notes', 'v1')
+    await writeMiniApp(source, 'weather', 'v1')
+    await writeMiniApp(source, 'notes', 'v1')
 
     const installed = async () =>
       (await fs.readdir(join(home, '.localix/mini-apps'))).filter((name) => !name.startsWith('.'))
     await installBundledMiniApp(source, home, 'weather')
     expect(await installed()).toEqual(['weather'])
 
-    await writePlugin(source, 'weather', 'v2')
+    await writeMiniApp(source, 'weather', 'v2')
     __resetBundledSyncCache()
     await syncBundledMiniApps(source, home)
     expect(
@@ -118,10 +118,10 @@ describe('the mini apps a source offers are installed only when chosen', () => {
   })
 })
 
-describe('bundled plugin installation', () => {
+describe('bundled mini app installation', () => {
   test('copies first-party sources into the global .localix root', async () => {
     const { source, home } = await fixture()
-    await writePlugin(source, 'weather', 'v1')
+    await writeMiniApp(source, 'weather', 'v1')
 
     await installShipped(source, home)
     const managed = await syncBundledMiniApps(source, home)
@@ -134,17 +134,17 @@ describe('bundled plugin installation', () => {
       JSON.parse(
         await fs.readFile(join(home, '.localix/mini-apps/weather/.localix-managed.json'), 'utf8'),
       ),
-    ).toMatchObject({ kind: 'localix-bundled-plugin' })
+    ).toMatchObject({ kind: 'localix-bundled-mini-app' })
   })
 
-  test('retires the managed copy of a plugin that no longer ships, never a user plugin', async () => {
+  test('retires the managed copy of a mini app that no longer ships, never a user mini app', async () => {
     const { source, home } = await fixture()
     const installRoot = join(home, '.localix', 'mini-apps')
-    await writePlugin(source, 'weather', 'v1')
-    await writePlugin(source, 'retired', 'v1')
+    await writeMiniApp(source, 'weather', 'v1')
+    await writeMiniApp(source, 'retired', 'v1')
     await installShipped(source, home)
     await syncBundledMiniApps(source, home)
-    await writePlugin(installRoot, 'mine', 'a user plugin, no marker')
+    await writeMiniApp(installRoot, 'mine', 'a user mini app, no marker')
 
     await fs.rm(join(source, 'retired'), { recursive: true })
     // A complete staging that no longer lists it: the only proof of removal the sync accepts.
@@ -160,9 +160,9 @@ describe('bundled plugin installation', () => {
     expect(names.some((name) => name.startsWith('.sync-retired-retired-'))).toBe(true)
   })
 
-  test('a plugin mid-restage (no complete staging to prove removal) is not retired', async () => {
+  test('a mini app mid-restage (no complete staging to prove removal) is not retired', async () => {
     const { source, home } = await fixture()
-    await writePlugin(source, 'weather', 'v1')
+    await writeMiniApp(source, 'weather', 'v1')
     await installShipped(source, home)
     await syncBundledMiniApps(source, home)
     await fs.rm(join(source, 'weather'), { recursive: true })
@@ -174,8 +174,8 @@ describe('bundled plugin installation', () => {
 
   test('never overwrites an unmarked same-name user installation', async () => {
     const { source, home } = await fixture()
-    await writePlugin(source, 'weather', 'bundled')
-    await writePlugin(join(home, '.localix', 'mini-apps'), 'weather', 'user')
+    await writeMiniApp(source, 'weather', 'bundled')
+    await writeMiniApp(join(home, '.localix', 'mini-apps'), 'weather', 'user')
 
     await installShipped(source, home)
 
@@ -187,12 +187,35 @@ describe('bundled plugin installation', () => {
     ).toMatchObject({ description: 'user' })
   })
 
-  test('restores the previous managed copy when activating an update fails', async () => {
+  test('a copy marked before the rename is still ours: the next sync refreshes and re-marks it', async () => {
     const { source, home } = await fixture()
-    await writePlugin(source, 'weather', 'v1')
+    await writeMiniApp(source, 'weather', 'v1')
     await installShipped(source, home)
     await syncBundledMiniApps(source, home)
-    await writePlugin(source, 'weather', 'updated version')
+    const installDir = join(home, '.localix/mini-apps/weather')
+    const markerPath = join(installDir, '.localix-managed.json')
+    const marker = JSON.parse(await fs.readFile(markerPath, 'utf8')) as Record<string, unknown>
+    await fs.writeFile(markerPath, JSON.stringify({ ...marker, kind: 'localix-bundled-plugin' }))
+    await writeMiniApp(source, 'weather', 'v2')
+    __resetBundledSyncCache()
+
+    const managed = await syncBundledMiniApps(source, home)
+
+    expect(managed.has('weather')).toBe(true)
+    expect(JSON.parse(await fs.readFile(join(installDir, 'mini-app.json'), 'utf8'))).toMatchObject({
+      description: 'v2',
+    })
+    expect(JSON.parse(await fs.readFile(markerPath, 'utf8'))).toMatchObject({
+      kind: 'localix-bundled-mini-app',
+    })
+  })
+
+  test('restores the previous managed copy when activating an update fails', async () => {
+    const { source, home } = await fixture()
+    await writeMiniApp(source, 'weather', 'v1')
+    await installShipped(source, home)
+    await syncBundledMiniApps(source, home)
+    await writeMiniApp(source, 'weather', 'updated version')
     // These tests drive a SECOND pass; step past the freshness window so it runs.
     __resetBundledSyncCache()
 
@@ -207,7 +230,7 @@ describe('bundled plugin installation', () => {
 
     let managed: Set<string>
     try {
-      // One plugin that cannot be copied no longer rejects the pass for every other plugin.
+      // One mini app that cannot be copied no longer rejects the pass for every other mini app.
       managed = await syncBundledMiniApps(source, home)
     } finally {
       rename.mockRestore()
@@ -221,11 +244,11 @@ describe('bundled plugin installation', () => {
     expect(failure?.reason).toContain('simulated activation failure')
   })
 
-  test('a plugin the stager could not build keeps its last good copy and reports why', async () => {
+  test('a mini app the stager could not build keeps its last good copy and reports why', async () => {
     const { source, home } = await fixture()
     const installRoot = join(home, '.localix', 'mini-apps')
-    await writePlugin(source, 'weather', 'v1')
-    await writePlugin(source, 'broken', 'v1')
+    await writeMiniApp(source, 'weather', 'v1')
+    await writeMiniApp(source, 'broken', 'v1')
     await installShipped(source, home)
     await syncBundledMiniApps(source, home)
 
@@ -246,9 +269,9 @@ describe('bundled plugin installation', () => {
     ])
   })
 
-  test('a plugin that never built is reported with no copy to fall back on', async () => {
+  test('a mini app that never built is reported with no copy to fall back on', async () => {
     const { source, home } = await fixture()
-    await writePlugin(source, 'weather', 'v1')
+    await writeMiniApp(source, 'weather', 'v1')
     await installShipped(source, home)
     await syncBundledMiniApps(source, home)
     await writeStagedMarker(
@@ -264,13 +287,13 @@ describe('bundled plugin installation', () => {
     ])
   })
 
-  test('a marker naming a staged plugin as unavailable is not trusted', async () => {
+  test('a marker naming a staged mini app as unavailable is not trusted', async () => {
     const { source, home } = await fixture()
-    await writePlugin(source, 'weather', 'v1')
+    await writeMiniApp(source, 'weather', 'v1')
     await installShipped(source, home)
     await syncBundledMiniApps(source, home)
     const previousFingerprint = await managedFingerprint(home, 'weather')
-    await writePlugin(source, 'weather', 'v2')
+    await writeMiniApp(source, 'weather', 'v2')
     await writeStagedMarker(
       source,
       { weather: previousFingerprint },
@@ -282,10 +305,10 @@ describe('bundled plugin installation', () => {
 
   test('retires the previous copy instead of deleting it, and prunes retired copies only on demand', async () => {
     const { source, home } = await fixture()
-    await writePlugin(source, 'weather', 'v1')
+    await writeMiniApp(source, 'weather', 'v1')
     await installShipped(source, home)
     await syncBundledMiniApps(source, home)
-    await writePlugin(source, 'weather', 'v2')
+    await writeMiniApp(source, 'weather', 'v2')
     __resetBundledSyncCache()
 
     const installed = await syncBundledMiniApps(source, home)
@@ -306,7 +329,7 @@ describe('bundled plugin installation', () => {
     ).toMatchObject({ description: 'v1' })
 
     // A later sync in the same process leaves it alone; the sweep is an explicit start-of-process act.
-    await writePlugin(source, 'weather', 'v3')
+    await writeMiniApp(source, 'weather', 'v3')
     __resetBundledSyncCache()
     await syncBundledMiniApps(source, home)
     expect(
@@ -321,7 +344,7 @@ describe('bundled plugin installation', () => {
 
   test('detects same-size content changes even when timestamps are preserved', async () => {
     const { source, home } = await fixture()
-    await writePlugin(source, 'weather', 'v1')
+    await writeMiniApp(source, 'weather', 'v1')
     const sourceManifest = join(source, 'weather/mini-app.json')
     const writtenStat = await fs.stat(sourceManifest)
     const fixedMtime = new Date(Math.floor(writtenStat.mtimeMs))
@@ -330,7 +353,7 @@ describe('bundled plugin installation', () => {
     await installShipped(source, home)
     await syncBundledMiniApps(source, home)
 
-    await writePlugin(source, 'weather', 'v2')
+    await writeMiniApp(source, 'weather', 'v2')
     await fs.utimes(sourceManifest, originalStat.atime, originalStat.mtime)
     const updatedStat = await fs.stat(sourceManifest)
     expect(updatedStat.size).toBe(originalStat.size)
@@ -346,9 +369,9 @@ describe('bundled plugin installation', () => {
     ).toMatchObject({ description: 'v2' })
   })
 
-  test('uses a current staged hash without reading the plugin tree again', async () => {
+  test('uses a current staged hash without reading the mini app tree again', async () => {
     const { source, home } = await fixture()
-    await writePlugin(source, 'weather', 'v1')
+    await writeMiniApp(source, 'weather', 'v1')
     await installShipped(source, home)
     await syncBundledMiniApps(source, home)
     const fingerprint = await managedFingerprint(home, 'weather')
@@ -374,7 +397,7 @@ describe('bundled plugin installation', () => {
       path: Parameters<typeof realReadFile>[0],
       options: Parameters<typeof realReadFile>[1],
     ) => {
-      if (path === sourceManifest) throw new Error('plugin tree was read')
+      if (path === sourceManifest) throw new Error('mini app tree was read')
       return await realReadFile(path, options)
     }) as typeof fs.readFile)
     try {
@@ -386,22 +409,22 @@ describe('bundled plugin installation', () => {
 
   test('falls back when the staged marker is absent', async () => {
     const { source, home } = await fixture()
-    await writePlugin(source, 'weather', 'v1')
+    await writeMiniApp(source, 'weather', 'v1')
     await installShipped(source, home)
     await syncBundledMiniApps(source, home)
     const previousFingerprint = await managedFingerprint(home, 'weather')
-    await writePlugin(source, 'weather', 'v2')
+    await writeMiniApp(source, 'weather', 'v2')
 
     await expectFallbackUpdate(source, home, previousFingerprint)
   })
 
   test('falls back when the staged marker is malformed', async () => {
     const { source, home } = await fixture()
-    await writePlugin(source, 'weather', 'v1')
+    await writeMiniApp(source, 'weather', 'v1')
     await installShipped(source, home)
     await syncBundledMiniApps(source, home)
     const previousFingerprint = await managedFingerprint(home, 'weather')
-    await writePlugin(source, 'weather', 'v2')
+    await writeMiniApp(source, 'weather', 'v2')
     await fs.writeFile(join(source, '.localix-staged.json'), '{not json')
 
     await expectFallbackUpdate(source, home, previousFingerprint)
@@ -409,23 +432,23 @@ describe('bundled plugin installation', () => {
 
   test('falls back when the staged marker uses an old schema', async () => {
     const { source, home } = await fixture()
-    await writePlugin(source, 'weather', 'v1')
+    await writeMiniApp(source, 'weather', 'v1')
     await installShipped(source, home)
     await syncBundledMiniApps(source, home)
     const previousFingerprint = await managedFingerprint(home, 'weather')
-    await writePlugin(source, 'weather', 'v2')
+    await writeMiniApp(source, 'weather', 'v2')
     await writeStagedMarker(source, { weather: previousFingerprint }, { schemaVersion: 1 })
 
     await expectFallbackUpdate(source, home, previousFingerprint)
   })
 
-  test('falls back when the staged marker is missing the plugin hash', async () => {
+  test('falls back when the staged marker is missing the mini app hash', async () => {
     const { source, home } = await fixture()
-    await writePlugin(source, 'weather', 'v1')
+    await writeMiniApp(source, 'weather', 'v1')
     await installShipped(source, home)
     await syncBundledMiniApps(source, home)
     const previousFingerprint = await managedFingerprint(home, 'weather')
-    await writePlugin(source, 'weather', 'v2')
+    await writeMiniApp(source, 'weather', 'v2')
     await writeStagedMarker(source, {})
 
     await expectFallbackUpdate(source, home, previousFingerprint)
@@ -433,31 +456,31 @@ describe('bundled plugin installation', () => {
 
   test('falls back when the staged hash differs from the managed hash on disk', async () => {
     const { source, home } = await fixture()
-    await writePlugin(source, 'weather', 'v1')
+    await writeMiniApp(source, 'weather', 'v1')
     await installShipped(source, home)
     await syncBundledMiniApps(source, home)
-    await writePlugin(source, 'weather', 'v2')
+    await writeMiniApp(source, 'weather', 'v2')
     const stagedFingerprint = '0'.repeat(64)
     await writeStagedMarker(source, { weather: stagedFingerprint })
 
     await expectFallbackUpdate(source, home, stagedFingerprint)
   })
 
-  test('falls back when the staged marker predates a plugin tree change', async () => {
+  test('falls back when the staged marker predates a mini app tree change', async () => {
     const { source, home } = await fixture()
-    await writePlugin(source, 'weather', 'v1')
+    await writeMiniApp(source, 'weather', 'v1')
     await installShipped(source, home)
     await syncBundledMiniApps(source, home)
     const previousFingerprint = await managedFingerprint(home, 'weather')
     await writeStagedMarker(source, { weather: previousFingerprint })
-    await writePlugin(source, 'weather', 'v2')
+    await writeMiniApp(source, 'weather', 'v2')
 
     await expectFallbackUpdate(source, home, previousFingerprint)
   })
 
   test('a completed pass answers again instead of re-walking every tree', async () => {
     const { source, home } = await fixture()
-    await writePlugin(source, 'weather', 'v1')
+    await writeMiniApp(source, 'weather', 'v1')
     await installShipped(source, home)
     await syncBundledMiniApps(source, home)
 
@@ -465,7 +488,7 @@ describe('bundled plugin installation', () => {
     // A startup runs discovery ~10 times (per backend-host scope, per capability
     // snapshot, and for each catalog that reloads when the snapshot publishes),
     // and paying that walk each time put two 2.4s requests in the launch path.
-    await writePlugin(source, 'weather', 'v2')
+    await writeMiniApp(source, 'weather', 'v2')
     await syncBundledMiniApps(source, home)
 
     expect(
@@ -481,9 +504,9 @@ describe('bundled plugin installation', () => {
     ).toMatchObject({ description: 'v2' })
   })
 
-  // A deleted plugin leaves its directory behind on a developer's disk, holding only ignored
+  // A deleted mini app leaves its directory behind on a developer's disk, holding only ignored
   // build output. Staged, it became an empty "managed" copy in the user's home that never left.
-  test('a directory with no manifest is not a plugin; a malformed manifest still is', async () => {
+  test('a directory with no manifest is not a mini app; a malformed manifest still is', async () => {
     const { source, home } = await fixture()
     await fs.mkdir(join(source, 'retired', '.turbo'), { recursive: true })
     await fs.mkdir(join(source, 'broken'), { recursive: true })
@@ -504,7 +527,7 @@ describe('bundled plugin installation', () => {
 
   test('skips authoring and metadata directories', async () => {
     const { source, home } = await fixture()
-    await writePlugin(source, 'scaffold', 'authoring only', { private: true })
+    await writeMiniApp(source, 'scaffold', 'authoring only', { private: true })
     await fs.mkdir(join(source, '.localix-plugin'), { recursive: true })
 
     await installShipped(source, home)

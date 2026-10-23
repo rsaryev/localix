@@ -26,10 +26,10 @@ const DEFS: RailItemDef[] = [
   { id: 'utility:reset', defaultArea: 'status' },
 ]
 
-it('restores old forced plugin overflow once and retains new explicit unpins', () => {
+it('restores old forced mini app overflow once and retains new explicit unpins', () => {
   const defs: RailItemDef[] = [
-    { id: 'reader', defaultArea: 'bar', plugin: true },
-    { id: 'game-one', defaultArea: 'bar', plugin: true },
+    { id: 'reader', defaultArea: 'bar', miniApp: true },
+    { id: 'game-one', defaultArea: 'bar', miniApp: true },
     { id: 'files', defaultArea: 'top' },
     { id: 'usage', defaultArea: 'bar', tool: true },
     { id: 'vault', defaultArea: 'bar', tool: true },
@@ -57,13 +57,13 @@ it('restores old forced plugin overflow once and retains new explicit unpins', (
 
 describe('resolveRailAreas · non-placeable entries', () => {
   // Entries explicitly marked non-placeable must ignore saved visible placements.
-  const DEFS_WITH_PLUGIN: RailItemDef[] = [
+  const DEFS_WITH_MINI_APP: RailItemDef[] = [
     { id: 'section:files', defaultArea: 'bar' },
     { id: 'viewlet:reader', defaultArea: 'overflow', placeable: false },
   ]
 
   it('forces a non-placeable entry to overflow even when the saved layout pinned it', () => {
-    const areas = resolveRailAreas(DEFS_WITH_PLUGIN, {
+    const areas = resolveRailAreas(DEFS_WITH_MINI_APP, {
       entries: [
         { id: 'viewlet:reader', area: 'bar' },
         { id: 'section:files', area: 'bar' },
@@ -75,7 +75,7 @@ describe('resolveRailAreas · non-placeable entries', () => {
 
   it('forces it to overflow from every visible zone, not just the bar', () => {
     for (const area of ['top', 'bar', 'bottom', 'status'] as const) {
-      const areas = resolveRailAreas(DEFS_WITH_PLUGIN, {
+      const areas = resolveRailAreas(DEFS_WITH_MINI_APP, {
         entries: [{ id: 'viewlet:reader', area }],
       })
       expect(areas[area]).not.toContain('viewlet:reader')
@@ -84,7 +84,7 @@ describe('resolveRailAreas · non-placeable entries', () => {
   })
 
   it('still honors a saved placement for a placeable entry', () => {
-    const areas = resolveRailAreas(DEFS_WITH_PLUGIN, {
+    const areas = resolveRailAreas(DEFS_WITH_MINI_APP, {
       entries: [{ id: 'section:files', area: 'status' }],
     })
     expect(areas.status).toEqual(['section:files'])
@@ -137,12 +137,12 @@ describe('resolveRailAreas', () => {
   it('drops stale ids that no longer exist among the defs', () => {
     const state = {
       entries: [
-        { id: 'viewlet:removed-plugin', area: 'bar' as const },
+        { id: 'viewlet:removed-mini-app', area: 'bar' as const },
         { id: 'section:files', area: 'bar' as const },
       ],
     }
     const { bar } = resolveRailAreas(DEFS, state)
-    expect(bar).not.toContain('viewlet:removed-plugin')
+    expect(bar).not.toContain('viewlet:removed-mini-app')
     expect(bar[0]).toBe('section:files')
   })
 

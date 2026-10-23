@@ -10,7 +10,7 @@ useDefault = true
 description = "Synthetic secret-shaped fixtures and content hashes"
 paths = [
   '''\.test\.(?:ts|tsx|mjs)$''',
-  '''^apps/api/src/features/context-fabric/testing/plugin-contract-kit\.ts$''',
+  '''^apps/api/src/features/context-fabric/testing/mini-app-contract-kit\.ts$''',
   # Removed with the old vendored runtime, but `gitleaks git` scans history, where its content hashes remain.
   '''^vendor/[^/]+/packages/ai/src/providers/data/\.manifest\.json$''',
 ]

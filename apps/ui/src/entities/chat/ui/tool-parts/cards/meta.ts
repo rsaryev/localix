@@ -225,9 +225,9 @@ const CORE_META: Record<ToolName, ToolMeta> = {
     stackable: false,
   },
   mini_app_build: {
-    label: 'Built plugin',
-    noun: 'plugins',
-    verb: 'Building plugin',
+    label: 'Built mini app',
+    noun: 'mini apps',
+    verb: 'Building mini app',
     icon: Plug,
     stackable: false,
   },

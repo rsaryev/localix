@@ -6,12 +6,12 @@ import { readKitStylesheet } from '@localixai/kit/testing/stylesheet'
 const uiRoot = resolve(import.meta.dir, '../..')
 
 /**
- * Bundled plugin UI surfaces that mount the shared tab row, found by scanning the plugin
- * tree. Core may hold plugin UI to a shared contract; it may not name a concrete plugin.
+ * Bundled mini app UI surfaces that mount the shared tab row, found by scanning the mini app
+ * tree. Core may hold mini app UI to a shared contract; it may not name a concrete mini app.
  */
-const pluginTabBarConsumers = () => {
-  const pluginsRoot = resolve(uiRoot, '../../..', 'mini-apps')
-  return readdirSync(pluginsRoot, { encoding: 'utf8', recursive: true })
+const miniAppTabBarConsumers = () => {
+  const miniAppsRoot = resolve(uiRoot, '../../..', 'mini-apps')
+  return readdirSync(miniAppsRoot, { encoding: 'utf8', recursive: true })
     .filter(
       (entry) =>
         entry.endsWith('.tsx') &&
@@ -20,22 +20,22 @@ const pluginTabBarConsumers = () => {
     )
     .map((entry) => ({
       path: `mini-apps/${entry}`,
-      source: readFileSync(resolve(pluginsRoot, entry), 'utf8'),
+      source: readFileSync(resolve(miniAppsRoot, entry), 'utf8'),
     }))
     .filter(({ source }) => source.includes('<TabBar'))
 }
 
 describe('workbench foundation contracts', () => {
-  test('no bundled plugin surface suppresses the shared tab-row seam', () => {
+  test('no bundled mini app surface suppresses the shared tab-row seam', () => {
     // The seam belongs to the primitive. A consumer that needs a control beside the tabs passes
     // `trailing` instead of suppressing the line and redrawing it. Core must not know which
-    // plugin that is: discover the consumers instead of naming a tree.
-    const pluginConsumers = pluginTabBarConsumers()
+    // mini app that is: discover the consumers instead of naming a tree.
+    const miniAppConsumers = miniAppTabBarConsumers()
     expect(
-      pluginConsumers.length,
-      'no bundled plugin surface mounts the shared tab row',
+      miniAppConsumers.length,
+      'no bundled mini app surface mounts the shared tab row',
     ).toBeGreaterThan(0)
-    for (const { path, source } of pluginConsumers) {
+    for (const { path, source } of miniAppConsumers) {
       expect(source, `${path} suppresses the shared tab-row seam`).not.toContain('border-b-0')
     }
   })

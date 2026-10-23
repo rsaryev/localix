@@ -114,7 +114,7 @@ function setupClipboard(writeText: (text: string) => Promise<boolean>) {
   return calls
 }
 
-describe('plugin clipboard interaction', () => {
+describe('mini app clipboard interaction', () => {
   test('a confirmed write posts no Event Center row', async () => {
     const written: string[] = []
     const calls = setupClipboard(async (text) => {

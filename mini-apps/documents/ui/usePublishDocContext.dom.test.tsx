@@ -40,7 +40,7 @@ describe('usePublishDocContext', () => {
         bindings: [
           {
             kind: 'context',
-            source: 'plugin',
+            source: 'mini-app',
             target: {
               kind: 'resource',
               token: `@resource:${docUri('doc-1')}`,

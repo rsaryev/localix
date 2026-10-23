@@ -21,7 +21,7 @@ import type {
   TerminalControl,
 } from '../../agent-core/tools/terminal/terminal-job'
 import type { PreviewControl } from '../../agent-core/tools/preview/preview-control'
-import type { MiniAppCommandControl } from './plugin-command-registry'
+import type { MiniAppCommandControl } from './mini-app-command-registry'
 import type { MiniAppAuthoring } from '../../mini-apps/authoring/service'
 import type { MediaStore } from '../../media/store'
 import type { MonitorService } from '../../monitors/service'
@@ -91,12 +91,15 @@ export interface RunnerDeps {
   readTerminalJob?: (input: { userId: string; terminalId: string }) => TerminalSnapshot | null
   /** Drives the interactive `terminal` tool (open/screen/keys/type/list/close). */
   terminalControl?: TerminalControl
-  /** Backs the `mini_app_build` tool: the host's authoring of the user's own plugins. */
+  /** Backs the `mini_app_build` tool: the host's authoring of the user's own mini apps. */
   miniAppAuthoring?: MiniAppAuthoring
   /** Drives the `browser` tool — relays commands to the open preview's probe. */
   previewControl?: PreviewControl
-  /** Awaitable plugin→UI command relay — backs `ToolSessionContext.emitCommandWithReply` for tools that read their own UI surface back. */
-  pluginCommands?: MiniAppCommandControl
+  /**
+   * Awaitable mini app→UI command relay — backs `ToolSessionContext.emitCommandWithReply` for tools
+   * that read their own UI surface back.
+   */
+  miniAppCommands?: MiniAppCommandControl
   /**
    * The monitor service — backs `bash until` waits and `jobs read` for a watch that has no
    * PTY. Absent (tests, hosts without it) simply means `until` is unavailable.

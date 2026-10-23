@@ -62,7 +62,7 @@ export function Grid({
     buttons.current[next]?.focus()
   }
 
-  // The tracks, INLINE: utility classes reach a plugin through the host's de-duplicated sheet,
+  // The tracks, INLINE: utility classes reach a mini app through the host's de-duplicated sheet,
   // where a rule can be dropped — live, a board's tiles once collapsed into one column.
   const gap = Math.max(2, Math.round(cell * 0.08))
   const tile = cell - gap

@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { OverviewRegistryRow } from './overview-registry-row'
 
 describe('OverviewRegistryRow presentation', () => {
-  test('renders plugin navigation as a flat metric registry row', () => {
+  test('renders mini app navigation as a flat metric registry row', () => {
     const html = renderToStaticMarkup(
       <OverviewRegistryRow
         title="Container engine"

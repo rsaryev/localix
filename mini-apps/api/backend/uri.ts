@@ -1,5 +1,5 @@
 /**
- * PURE `localix://resource/api` URI grammar — the one source of truth for this plugin's resource
+ * PURE `localix://resource/api` URI grammar — the one source of truth for this mini app's resource
  * tree, shared by the resource provider, the search provider, the context provider AND THE UI.
  *
  * The only import is `@localixai/mini-app-sdk/navigation`, and that is deliberate: it is a leaf
@@ -27,7 +27,7 @@ import { localixResourceUri, parseLocalixUri } from '@localixai/mini-app-sdk/nav
 
 /**
  * The provider segment, spelled here because this file must stay off the backend barrel (see the
- * header). `uri.provider.test.ts` pins it to this plugin's provider id — a test can
+ * header). `uri.provider.test.ts` pins it to this mini app's provider id — a test can
  * import the SDK because a test is not the browser.
  */
 const API_PROVIDER = 'api'

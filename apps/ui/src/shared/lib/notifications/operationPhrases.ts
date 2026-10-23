@@ -93,7 +93,7 @@ const SOCKET_OPERATIONS: Readonly<Record<string, string>> = {
   resize: 'Could not reach the terminal',
   cancel: 'Could not cancel the request',
   'preview-result': 'Could not return the preview result',
-  'plugin-command-result': 'Could not return the command result',
+  'mini-app-command-result': 'Could not return the command result',
   'inline.complete': 'Could not get a suggestion',
   predictNextEdit: 'Could not get a suggestion',
 }

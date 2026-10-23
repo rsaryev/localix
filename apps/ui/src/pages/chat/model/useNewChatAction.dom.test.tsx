@@ -63,7 +63,7 @@ describe('useNewChatAction DOM boundary', () => {
     }
   })
 
-  test("a plugin app's New chat starts the app's conversation, not a workspace chat", async () => {
+  test("a standalone app's New chat starts the app's conversation, not a workspace chat", async () => {
     const React = await import('react')
     const { act, useRef } = React
     const { createRoot } = await import('react-dom/client')

@@ -7,7 +7,7 @@ import { isToolBackedItem } from '@localixai/agent/agents/items'
  *
  * DERIVED, deliberately. There is no table, no route, no WS event and no new persistence field:
  * the records already live in `agent_messages.payload_json.items[].sources`, and the
- * context-system document rejects "a second contextRefs/contextCapture/plugin-source-card/MCP-
+ * context-system document rejects "a second contextRefs/contextCapture/mini-app-source-card/MCP-
  * source persistence field" by name. Recomputing from the messages the store already holds costs
  * one pass over an array that is already in memory, and cannot go stale against the transcript
  * because it IS the transcript.

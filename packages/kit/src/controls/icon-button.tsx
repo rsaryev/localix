@@ -4,7 +4,7 @@ import { Button } from './button'
 import { ActionTooltip } from '../overlays/action-tooltip'
 
 /**
- * The subtle square icon action used throughout workbench and plugin chrome.
+ * The subtle square icon action used throughout workbench and mini app chrome.
  * Geometry delegates to Button's semantic control scale, so a toolbar action
  * stays stable regardless of the icon component rendered inside it.
  */

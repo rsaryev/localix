@@ -1,5 +1,5 @@
-//! Plugin apps on disk: `~/Applications/Localix Apps/<Name>.app`, one per plugin the person
-//! installed as an app. The bundles are the only record, so the list is whatever is there: a
+//! Standalone mini apps on disk: `~/Applications/Localix Apps/<Name>.app`, one per mini app the
+//! person installed as an app. The bundles are the only record, so the list is whatever is there: a
 //! bundle someone deleted in Finder is simply gone, and nothing else needs reconciling.
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -11,7 +11,7 @@ pub(crate) use crate::app_bundle_names::valid_mini_app;
 use crate::app_bundle_names::{bundle_id_part, bundle_name};
 use crate::app_runner::keys;
 
-/// The executable inside every plugin app: a clone of the host binary (`app_runner.rs`).
+/// The executable inside every standalone mini app: a clone of the host binary (`app_runner.rs`).
 pub(crate) const EXECUTABLE: &str = "localix-app";
 pub(crate) const ICON: &str = "app";
 /// Which host build a bundle was made from; a different build re-clones its binary.
@@ -24,7 +24,7 @@ static CHANGES: std::sync::Mutex<()> = std::sync::Mutex::new(());
 #[derive(Clone, Debug, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct InstalledApp {
-    pub(crate) plugin: String,
+    pub(crate) mini_app: String,
     pub(crate) name: String,
     pub(crate) path: PathBuf,
     /// The app's project folder; the workspace makes the project for it at install.
@@ -47,7 +47,7 @@ fn apps_dir() -> Option<PathBuf> {
     Some(PathBuf::from(home).join("Applications").join(folder))
 }
 
-fn bundle_id(app: &AppHandle, plugin: &str) -> String {
+fn bundle_id(app: &AppHandle, mini_app: &str) -> String {
     let flavour = if cfg!(debug_assertions) {
         "dev.app"
     } else {
@@ -56,11 +56,11 @@ fn bundle_id(app: &AppHandle, plugin: &str) -> String {
     format!(
         "{}.{flavour}.{}",
         app.config().identifier,
-        bundle_id_part(plugin)
+        bundle_id_part(mini_app)
     )
 }
 
-/// Every plugin app in the folder, read back from the bundles themselves.
+/// Every standalone mini app in the folder, read back from the bundles themselves.
 pub(crate) fn installed() -> Vec<InstalledApp> {
     let Some(entries) = apps_dir().and_then(|dir| std::fs::read_dir(dir).ok()) else {
         return Vec::new();
@@ -76,27 +76,29 @@ pub(crate) fn installed() -> Vec<InstalledApp> {
 fn read_bundle(path: &Path) -> Option<InstalledApp> {
     let plist = std::fs::read_to_string(path.join("Contents/Info.plist")).ok()?;
     let read = |key: &str| plist_string(&plist, key);
-    let plugin = read(keys::PLUGIN).filter(|plugin| valid_mini_app(plugin))?;
+    let mini_app = read(keys::MINI_APP)
+        .or_else(|| read(keys::LEGACY_MINI_APP))
+        .filter(|mini_app| valid_mini_app(mini_app))?;
     Some(InstalledApp {
-        name: read("CFBundleName").unwrap_or_else(|| plugin.clone()),
+        name: read("CFBundleName").unwrap_or_else(|| mini_app.clone()),
         bundle_id: read("CFBundleIdentifier")?,
         host_build: read(HOST_BUILD),
         project_dir: read(keys::PROJECT).map(PathBuf::from),
         path: path.to_path_buf(),
-        plugin,
+        mini_app,
     })
 }
 
-/// Make (or remake) the bundle for `plugin`, then swap it in whole: a half-written app is never
+/// Make (or remake) the bundle for `mini_app`, then swap it in whole: a half-written app is never
 /// visible to Finder, Spotlight or the Dock. `icon` is the finished `.icns`.
 pub(crate) fn install(
     app: &AppHandle,
-    plugin: &str,
+    mini_app: &str,
     title: &str,
     icon: &[u8],
 ) -> Result<InstalledApp, String> {
-    if !valid_mini_app(plugin) {
-        return Err(format!("invalid plugin name {plugin:?}"));
+    if !valid_mini_app(mini_app) {
+        return Err(format!("invalid mini app name {mini_app:?}"));
     }
     let _change = CHANGES
         .lock()
@@ -104,23 +106,25 @@ pub(crate) fn install(
     let name = bundle_name(title).ok_or("the app needs a name")?;
     let dir = apps_dir().ok_or("no home folder")?;
     std::fs::create_dir_all(&dir).map_err(|error| error.to_string())?;
-    let previous = installed().into_iter().find(|entry| entry.plugin == plugin);
-    // Another plugin's app may already use this title; keep both.
+    let previous = installed()
+        .into_iter()
+        .find(|entry| entry.mini_app == mini_app);
+    // Another mini app's app may already use this title; keep both.
     let taken =
         |path: &Path| path.exists() && previous.as_ref().is_none_or(|entry| entry.path != path);
     let mut target = dir.join(format!("{name}.app"));
     if taken(&target) {
-        target = dir.join(format!("{name} ({plugin}).app"));
+        target = dir.join(format!("{name} ({mini_app}).app"));
     }
     let host = host(app)?;
     // The app's project lives in this folder; the workspace finds or creates the project for it
     // right after, so the app always opens into a project of its own.
-    let project = host.projects.join(plugin);
+    let project = host.projects.join(mini_app);
     std::fs::create_dir_all(&project).map_err(|error| format!("{}: {error}", project.display()))?;
-    let id = bundle_id(app, plugin);
-    let staged = dir.join(format!(".{plugin}.{}.app", std::process::id()));
+    let id = bundle_id(app, mini_app);
+    let staged = dir.join(format!(".{mini_app}.{}.app", std::process::id()));
     let _ = std::fs::remove_dir_all(&staged);
-    let built = build(&staged, &id, &name, plugin, &host, icon);
+    let built = build(&staged, &id, &name, mini_app, &host, icon);
     if let Err(error) = built {
         let _ = std::fs::remove_dir_all(&staged);
         return Err(error);
@@ -138,7 +142,7 @@ fn build(
     bundle: &Path,
     id: &str,
     name: &str,
-    plugin: &str,
+    mini_app: &str,
     host: &Host,
     icon: &[u8],
 ) -> Result<(), String> {
@@ -153,7 +157,7 @@ fn build(
     std::fs::copy(&host.executable, &executable).map_err(|error| error.to_string())?;
     write(
         contents.join("Info.plist"),
-        info_plist(id, name, plugin, host).as_bytes(),
+        info_plist(id, name, mini_app, host).as_bytes(),
     )?;
     write(contents.join("PkgInfo"), b"APPL????")?;
     // A refresh of a bundle whose icon went missing keeps the generic one, not an empty file.
@@ -204,21 +208,24 @@ pub(crate) fn refresh(app: &AppHandle) {
             .join("Contents/Resources")
             .join(format!("{ICON}.icns"));
         let icon = std::fs::read(icon_file).unwrap_or_default();
-        if let Err(error) = install(app, &entry.plugin, &entry.name, &icon) {
+        if let Err(error) = install(app, &entry.mini_app, &entry.name, &icon) {
             crate::log::logln(format!(
-                "plugin app {}: refresh failed: {error}",
-                entry.plugin
+                "standalone mini app {}: refresh failed: {error}",
+                entry.mini_app
             ));
         }
     }
 }
 
-/// Move a plugin's app to the Trash, quitting it first.
-pub(crate) fn uninstall(plugin: &str) -> Result<(), String> {
+/// Move a mini app's app to the Trash, quitting it first.
+pub(crate) fn uninstall(mini_app: &str) -> Result<(), String> {
     let _change = CHANGES
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner());
-    let Some(entry) = installed().into_iter().find(|entry| entry.plugin == plugin) else {
+    let Some(entry) = installed()
+        .into_iter()
+        .find(|entry| entry.mini_app == mini_app)
+    else {
         return Ok(());
     };
     terminate(&entry.bundle_id);
@@ -230,12 +237,12 @@ pub(crate) fn uninstall(plugin: &str) -> Result<(), String> {
         .map_err(|error| error.localizedDescription().to_string())
 }
 
-/// Launch (or bring forward) a plugin's app.
-pub(crate) fn open(plugin: &str) -> Result<(), String> {
+/// Launch (or bring forward) a mini app's app.
+pub(crate) fn open(mini_app: &str) -> Result<(), String> {
     let entry = installed()
         .into_iter()
-        .find(|entry| entry.plugin == plugin)
-        .ok_or("this plugin is not installed as an app")?;
+        .find(|entry| entry.mini_app == mini_app)
+        .ok_or("this mini app is not installed as an app")?;
     Command::new("/usr/bin/open")
         .arg(&entry.path)
         .spawn()
@@ -256,5 +263,25 @@ fn terminate(bundle_id: &str) {
     let id = objc2_foundation::NSString::from_str(bundle_id);
     for running in NSRunningApplication::runningApplicationsWithBundleIdentifier(&id) {
         running.terminate();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_bundle_made_before_the_rename_is_still_found() {
+        let app = std::env::temp_dir().join(format!("localix-legacy-{}.app", std::process::id()));
+        std::fs::create_dir_all(app.join("Contents")).unwrap();
+        std::fs::write(
+            app.join("Contents/Info.plist"),
+            "<plist><dict><key>CFBundleIdentifier</key><string>ai.localix.tauri.app.board</string>\
+             <key>LocalixPlugin</key><string>board</string></dict></plist>",
+        )
+        .unwrap();
+        let found = read_bundle(&app).map(|entry| entry.mini_app);
+        std::fs::remove_dir_all(&app).unwrap();
+        assert_eq!(found.as_deref(), Some("board"));
     }
 }

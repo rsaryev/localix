@@ -37,8 +37,8 @@ describe('isLiveOnlyEvent', () => {
       'run.started',
       'run.completed',
       'terminal.finished', // absent from live snapshots after exit; replay settles the missed boundary
-      // A plugin→UI command is an ordered state change, so it must survive a reconnect.
-      'plugin.command',
+      // A mini app→UI command is an ordered state change, so it must survive a reconnect.
+      'mini-app.command',
     ] as const) {
       expect(isLiveOnlyEvent(type)).toBe(false)
     }
@@ -64,14 +64,14 @@ describe('isLiveOnlyEvent', () => {
   })
 })
 
-describe('plugin.command replay', () => {
+describe('mini-app.command replay', () => {
   test('a command published while the client was away is replayed after its cursor', () => {
     const registry = createSessionStreamRegistry()
     const sessionId = 'session-cmd'
     registry.publish('u1', sessionId, {
-      type: 'plugin.command',
+      type: 'mini-app.command',
       sessionId,
-      plugin: 'fixture-plugin',
+      miniApp: 'fixture-mini-app',
       channel: 'chart',
       payload: { action: 'open', symbol: 'BTC/USDC:USDC' },
       commandId: 'cmd-1',
@@ -84,11 +84,11 @@ describe('plugin.command replay', () => {
       (p) =>
         replayed.push({
           type: p.event.type,
-          commandId: p.event.type === 'plugin.command' ? p.event.commandId : undefined,
+          commandId: p.event.type === 'mini-app.command' ? p.event.commandId : undefined,
         }),
       { since: '0' },
     )
-    expect(replayed).toEqual([{ type: 'plugin.command', commandId: 'cmd-1' }])
+    expect(replayed).toEqual([{ type: 'mini-app.command', commandId: 'cmd-1' }])
     unsubscribe()
   })
 
@@ -97,9 +97,9 @@ describe('plugin.command replay', () => {
     const sessionId = 'session-cmd2'
     for (const commandId of ['cmd-a', 'cmd-b']) {
       registry.publish('u1', sessionId, {
-        type: 'plugin.command',
+        type: 'mini-app.command',
         sessionId,
-        plugin: 'sample-plugin',
+        miniApp: 'sample-mini-app',
         channel: 'chart',
         payload: {},
         commandId,
@@ -110,7 +110,7 @@ describe('plugin.command replay', () => {
     const unsubscribe = registry.subscribe(
       sessionId,
       (p) => {
-        if (p.event.type === 'plugin.command') seen.push(p.event.commandId)
+        if (p.event.type === 'mini-app.command') seen.push(p.event.commandId)
       },
       { since: '0' },
     )
@@ -562,13 +562,13 @@ describe('createSessionStreamRegistry', () => {
   })
 })
 
-describe('resources.changed replay (the plugin-toggle poke)', () => {
+describe('resources.changed replay (the mini-app-toggle poke)', () => {
   // It carries no state, so `live-only` looked right. But it is the ONLY signal that
-  // refreshes the client's plugin contribution set, and that set is NOT session state —
+  // refreshes the client's mini app contribution set, and that set is NOT session state —
   // so "a reconnecting client reconciles from the DB anyway" never covered it. Its old
   // rationale ("refetches on mount anyway") conflated a socket reconnect with a MOUNT:
   // the page stays up, the store keeps its snapshot, and nothing refetches. Dropped, the
-  // rail/palette sat on a stale plugin set until the next toggle or a reload.
+  // rail/palette sat on a stale mini app set until the next toggle or a reload.
   test('a toggle published while the firehose was away is replayed on reconnect', () => {
     const registry = createSessionStreamRegistry()
     registry.publish('u1', '', { type: 'resources.changed', resources: ['capabilities'] })
@@ -688,7 +688,7 @@ describe('subscribeScoped', () => {
   })
 
   // A run that BLOCKS on the client must never be scoped away: the HITL inbox is global by
-  // design, and an awaited plugin/preview command has no other way to be settled. A background
+  // design, and an awaited mini app/preview command has no other way to be settled. A background
   // sub-agent whose approval prompt was filtered would hang with nothing on screen to unblock it.
   test('blocking round-trips and notification producers reach an unwatched session', () => {
     const registry = createSessionStreamRegistry()
@@ -702,7 +702,7 @@ describe('subscribeScoped', () => {
       sessionId: 'background',
     } as unknown as AgentStreamEvent)
     registry.publish(userId, 'background', {
-      type: 'plugin.command',
+      type: 'mini-app.command',
       sessionId: 'background',
     } as unknown as AgentStreamEvent)
     registry.publish(userId, 'background', {
@@ -713,12 +713,12 @@ describe('subscribeScoped', () => {
       type: 'child_session.updated',
       sessionId: 'background',
     } as unknown as AgentStreamEvent)
-    // …and the plugin-set poke, which has an EMPTY publish key no watched set could ever match.
+    // …and the mini-app-set poke, which has an EMPTY publish key no watched set could ever match.
     registry.publish(userId, '', { type: 'resources.changed', resources: ['capabilities'] })
 
     expect(seen).toEqual([
       'hitl.requested',
-      'plugin.command',
+      'mini-app.command',
       'terminal.finished',
       'child_session.updated',
       'resources.changed',
@@ -833,7 +833,7 @@ describe('requiresWatchedSession', () => {
     'plan.presented', // opens the plan tab even while the person watches a delegated child
     'attention.updated', // the user's whole "waiting on you" set — not session state at all
     'terminal.finished', // notification + settles a wait missed while away
-    'plugin.command', // awaited round-trip — only the client can settle it
+    'mini-app.command', // awaited round-trip — only the client can settle it
     'preview.command', // same, for the `browser` tool
     'preview.updated', // background hosts mount without selecting the conversation
     'preview.closed', // background hosts release without selecting the conversation

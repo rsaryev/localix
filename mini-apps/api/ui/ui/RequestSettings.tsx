@@ -3,7 +3,7 @@ import { Switch } from '@localixai/kit/switch'
 import type { RequestEdit as RequestDraft } from '../../backend/contracts'
 import { FormRow } from './FormRow'
 
-/** The request's transport settings: redirects and timeout, blank meaning the plugin default. */
+/** The request's transport settings: redirects and timeout, blank meaning the mini app default. */
 export function RequestSettings({
   draft,
   patch,
@@ -11,7 +11,8 @@ export function RequestSettings({
   draft: RequestDraft
   patch: (next: Partial<RequestDraft>) => void
 }) {
-  // The whole `followRedirects` fallback is `true` — the plugin default when the request sets none.
+  // The whole `followRedirects` fallback is `true` — the mini app default when the request sets
+  // none.
   const followRedirects = draft.followRedirects ?? true
   return (
     <div>
@@ -58,7 +59,7 @@ export function RequestSettings({
         </FormRow>
       </div>
       <p className="px-3 py-2 text-2xs text-text-faint">
-        Leave a field blank to use the plugin default. Saved with the request.
+        Leave a field blank to use the mini app default. Saved with the request.
       </p>
     </div>
   )

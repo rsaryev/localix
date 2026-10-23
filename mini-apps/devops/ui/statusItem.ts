@@ -32,7 +32,7 @@ const forwards = createSharedResource<PortForward[]>(() => kubernetesApi.listPor
  * up wondering why 5432 is taken. It also changes only when this app changes it, so one
  * subscription keeps it honest with no polling at all.
  *
- * No tunnels, no control: the normal state of this plugin is silence.
+ * No tunnels, no control: the normal state of this mini app is silence.
  *
  * The tunnels are the machine's, so they show in every bar. Opening the workspace is not: it is a
  * session kind, so it opens in the chat this bar belongs to (`sessionId`), and a bar outside any

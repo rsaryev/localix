@@ -25,7 +25,7 @@ describe('where a running model may take an entry', () => {
   test("a delegator's message joins its child's run; a report only after a tool turn", () => {
     expect(joinPoint(event('d', { source: 'delegator' }).value)).toBe('boundary')
     expect(joinPoint(report('r', 'agent:lead').value)).toBe('tool-turn')
-    for (const source of ['loop', 'bg-job', 'external', 'plugin', 'hook'] as const)
+    for (const source of ['loop', 'bg-job', 'external', 'mini-app', 'hook'] as const)
       expect(joinPoint(event(source, { source }).value)).toBe('never')
   })
 })

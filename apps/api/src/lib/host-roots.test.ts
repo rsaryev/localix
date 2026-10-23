@@ -80,7 +80,7 @@ describe('hostRoots (this process, running from source)', () => {
   test('includes the checkout this test runs from', () => {
     expect(existsSync(path.join(checkout, 'apps', 'api', 'package.json'))).toBe(true)
     expect(hostRootContaining(path.join(checkout, 'apps/api/src/lib/env.ts'))).toBeDefined()
-    expect(hostRootContaining(path.join(checkout, '.turbo/dev-plugins/1/x'))).toBeDefined()
+    expect(hostRootContaining(path.join(checkout, '.turbo/dev-mini-apps/1/x'))).toBeDefined()
   })
 
   test('never contains ~/.localix', () => {

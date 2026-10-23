@@ -19,14 +19,14 @@ import { DEFAULT_PUBLIC_EXCHANGE_ID, publicConnectionId } from './public-connect
  * (open / set_timeframe / set_indicators / set_chart_type / navigate), mirroring `manage_orders`.
  *
  * Route B (typed command stream): it does not touch the venue at all — it validates, resolves the
- * connection, and emits ONE command payload as a `plugin.command` stream frame
- * (`session.emitCommand` → `plugin.command` → miniAppCommandBus), keyed `trading`/`chart`.
+ * connection, and emits ONE command payload as a `mini-app.command` stream frame
+ * (`session.emitCommand` → `mini-app.command` → miniAppCommandBus), keyed `trading`/`chart`.
  * Replayable + non-coalescing: two back-to-back commands both arrive, and a reconnecting client
  * still receives what it missed (deduped by the envelope's commandId). The trading UI's sink
  * opens/focuses the chart tab and applies the command — unless the run belongs to a BACKGROUND
  * session, in which case the sink applies without stealing focus. Mutating actions are
  * fire-and-forget: the result text states what was COMMANDED — the chart in the UI is where it
- * shows. `snapshot` is the one ROUND-TRIP: it awaits the sink's reply over the plugin-command
+ * shows. `snapshot` is the one ROUND-TRIP: it awaits the sink's reply over the mini-app-command
  * registry (`emitCommandWithReply`, correlated by commandId) and is strictly read-only — the sink
  * answers from its state store and never opens the tab.
  */

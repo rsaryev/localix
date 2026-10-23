@@ -27,7 +27,13 @@ function mapStorage(): Storage {
 beforeEach(() => installTestLocalStorage(mapStorage()))
 afterEach(() => removeTestLocalStorage())
 
-const frame = { revision: 7, enabledNames: ['sample-plugin'], miniApps: [], views: [], tools: null }
+const frame = {
+  revision: 7,
+  enabledNames: ['sample-mini-app'],
+  miniApps: [],
+  views: [],
+  tools: null,
+}
 
 describe('shell snapshot', () => {
   test('the roster written on one launch is the frame the next one paints', () => {
@@ -40,7 +46,7 @@ describe('shell snapshot', () => {
     rememberShellCapabilities(null, frame)
     const stored = readShellSnapshot<{ id: string }>(null)
     expect(stored?.sessions).toHaveLength(1)
-    expect(stored?.capabilities?.enabledNames).toEqual(['sample-plugin'])
+    expect(stored?.capabilities?.enabledNames).toEqual(['sample-mini-app'])
   })
 
   test('a frame from another project is not this project’s frame', () => {

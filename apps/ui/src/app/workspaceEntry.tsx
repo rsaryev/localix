@@ -4,7 +4,7 @@ import App from './App.tsx'
 import { router } from './routing/router'
 import { RootErrorBoundary } from './RootErrorBoundary'
 import { applyPlatformDataset } from '@localixai/kit/environment'
-import { pluginApp, stampPluginAppDataset } from '@/shared/lib/pluginApp'
+import { standaloneApp, stampStandaloneAppDataset } from '@/shared/lib/standaloneApp'
 import { installNativeContextMenu } from '@/shared/lib/nativeContextMenu'
 import { installLocationLedger } from '@/entities/chat/model/locationLedger'
 import { installWindowChromeState } from '@/shared/lib/windowChrome'
@@ -24,11 +24,11 @@ import { restoreShellFrame } from '@/entities/chat/model/restoreShellFrame'
 import { waitForRuntimeCapabilities } from '@/shared/contrib/runtimeCapabilityReadiness'
 import { tauriFrontendLog } from '@/shared/lib/tauri'
 import { installPluginTheme } from '@/shared/theme/pluginTheme'
-import './pluginRuntime'
-import { installPluginSharedModules } from './pluginSharedModules'
+import './miniAppRuntime'
+import { installMiniAppSharedModules } from './miniAppSharedModules'
 
-// Before any plugin UI artifact is imported: they take React, the SDK and the kit from here.
-installPluginSharedModules()
+// Before any mini app UI artifact is imported: they take React, the SDK and the kit from here.
+installMiniAppSharedModules()
 
 // First line of our own code to run. The shell stamps `setup entered` and
 // `webview created`; this closes the gap between them and `shell.paint` by
@@ -39,16 +39,16 @@ tauriFrontendLog(
   'startup',
   `entry.script epochMs=${Date.now()} docStart=${window.__LOCALIX_DOC_START ?? 0}`,
 )
-// Re-apply the persisted plugin color theme (an overlay on the appearance) before first paint.
+// Re-apply the persisted mini app color theme (an overlay on the appearance) before first paint.
 installPluginTheme()
 // Stamp data-os / data-desktop on <html> so CSS can key native-feel styling off
 // the platform (native scrollbars, font stacks, chrome) before first paint.
 applyPlatformDataset()
-// A plugin installed as its own Mac app draws on the same glass as the macOS workspace.
-stampPluginAppDataset()
+// A mini app installed as its own Mac app draws on the same glass as the macOS workspace.
+stampStandaloneAppDataset()
 // Native-app chrome: suppress the browser's right-click menu in the desktop shell
 // (kept over editable fields + selections). No-op in a plain browser.
-installNativeContextMenu(isDesktop || pluginApp() !== null)
+installNativeContextMenu(isDesktop || standaloneApp() !== null)
 // Desktop window-chrome state: stamp data-window-inactive / data-fullscreen on
 // <html> so the custom titlebar dims when unfocused and drops the traffic-light
 // padding in native fullscreen. No-op in a plain browser.
@@ -74,7 +74,7 @@ registerSessionPreviews(inspectorSessionPreviews)
 // The editor grid lays out chat tabs; the chat workspace widget draws them.
 registerChatSurface(ChatSurface)
 terminalBus.setFinisher(finishTerminalTabs)
-// Every completion surface (composer, commit subject, plugin fields, the code editor) carries
+// Every completion surface (composer, commit subject, mini app fields, the code editor) carries
 // what is open on screen; the grid is the one thing that knows it.
 registerCompletionWorkingSet(workspaceCompletionWorkingSet)
 // Before the first render, not after the first response: the workbench shell is restored

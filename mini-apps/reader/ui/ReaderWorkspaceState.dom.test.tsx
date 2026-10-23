@@ -14,8 +14,8 @@ let unbindComponents: (() => void) | undefined
 
 /**
  * The reader renders `ProblemLine`, which the SDK resolves from the HOST-bound component set — in
- * the app that binding happens in `pluginRuntime.ts`, and a test that never performs it makes the
- * very first render throw "Plugin UI components are not bound by the host". Bound to the same
+ * the app that binding happens in `miniAppRuntime.ts`, and a test that never performs it makes the
+ * very first render throw "Mini app UI components are not bound by the host". Bound to the same
  * minimal stubs a host binding provides, with `ProblemLine` rendering the real headline so a
  * raw driver message cannot slip onto the surface unnoticed.
  */

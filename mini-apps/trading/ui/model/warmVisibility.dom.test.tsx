@@ -73,7 +73,7 @@ describe('warm-hidden trading auxiliary work', () => {
   })
 
   // The concentration-history test that stood here exercised `useConcentration`, a hook that
-  // computed position concentration from the ACCOUNT book. `e550f0cb1` stripped this plugin to
+  // computed position concentration from the ACCOUNT book. `e550f0cb1` stripped this mini app to
   // research and deleted it, but the test kept importing it — so `apps/ui` type-check has been RED
   // ever since (TS2307, a module that does not exist). The warm-hidden INVARIANT it covered is
   // still covered, by the two tests around it: work parks while hidden and resumes on show.

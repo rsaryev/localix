@@ -1,14 +1,15 @@
 /**
  * The one reader of `@localixai/mini-app-sdk`'s export map.
  *
- * ~11 bundled plugins and every plugin-facing surface in `apps/ui` compile against that map, and it
- * is ~32 subpaths of HAND-WRITTEN JSON pointing into a `dist` nobody reviews. The build is a bare
- * `tsc --project tsconfig.build.json`: there is no bundler entry list, so nothing anywhere derives
- * the map from the tree or the tree from the map. Two failures follow, and both are silent:
+ * ~11 bundled mini apps and every mini-app-facing surface in `apps/ui` compile against that map,
+ * and it is ~32 subpaths of HAND-WRITTEN JSON pointing into a `dist` nobody reviews. The build is a
+ * bare `tsc --project tsconfig.build.json`: there is no bundler entry list, so nothing anywhere
+ * derives the map from the tree or the tree from the map. Two failures follow, and both are silent:
  *
  *   1. a subpath points at a `dist` path that is never emitted — `import` resolves to a 404 in every
  *      consumer that isn't running out of a stale build directory, and
- *   2. `types` and `import` drift apart, so a plugin type-checks against one module and runs another.
+ *   2. `types` and `import` drift apart, so a mini app type-checks against one module and runs
+ *      another.
  *
  * Neither shows up in `tsc --noEmit`, which reads `src` and never opens the manifest.
  *
@@ -113,7 +114,7 @@ export function exportMapProblems(map: ExportMap): string[] {
     if (declaredTypes.slice('./dist/'.length, -'.d.ts'.length) !== base) {
       problems.push(
         `${at}: "types" and "import" name DIFFERENT modules ("${declaredTypes}" vs ` +
-          `"${declaredImport}"). A plugin would type-check against one file and run another.`,
+          `"${declaredImport}"). A mini app would type-check against one file and run another.`,
       )
       continue
     }

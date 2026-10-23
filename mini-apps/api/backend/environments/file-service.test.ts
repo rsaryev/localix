@@ -50,7 +50,7 @@ describe('environments are files in the collection', () => {
 })
 
 describe('secret variables use the native vault', () => {
-  test('a memoized service sees Vault authority bound after plugin inspection', async () => {
+  test('a memoized service sees Vault authority bound after mini app inspection', async () => {
     const secrets = new Map<string, string>()
     let nativeVault:
       | {

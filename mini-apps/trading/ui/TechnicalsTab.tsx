@@ -27,7 +27,7 @@ import { DEFAULT_TIMEFRAME, TECHNICALS_TIMEFRAMES } from '../backend/timeframes'
 /**
  * The TECHNICALS tab — a full technical-rating page for one market, opened from
  * the chart's control cluster. Three gauges (Oscillators / Summary / Moving Averages) over the two
- * vote tables, then the plugin's own analysis lenses (structure, VWAP, value area, confluence,
+ * vote tables, then the mini app's own analysis lenses (structure, VWAP, value area, confluence,
  * volatility). Everything is computed CLIENT-SIDE from the same
  * candles the chart loads, by the same `backend/analysis` + indicator math the agent's detect
  * uses — one math, every surface.

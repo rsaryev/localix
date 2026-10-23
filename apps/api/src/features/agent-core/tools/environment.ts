@@ -24,8 +24,8 @@ export function resolveToolCwd(cwd: string | undefined, defaultCwd?: string): st
 /**
  * POSIX single-quote wrapping: makes an arbitrary string safe as ONE shell word. Shell-arg
  * escaping for the file/search/patch tools and the ssh/docker backends — a divergent copy is a
- * command-injection risk, so the implementation lives once in the plugin SDK (shared with plugin
- * backends and the browser) and this module only re-exports it for the server side.
+ * command-injection risk, so the implementation lives once in the mini app SDK (shared with mini
+ * app backends and the browser) and this module only re-exports it for the server side.
  */
 export { shellQuote } from '@localixai/mini-app-sdk/backend'
 

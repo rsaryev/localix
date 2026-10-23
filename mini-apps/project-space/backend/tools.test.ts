@@ -15,7 +15,7 @@ afterEach(() => {
 
 type Result = { content: string; isError?: boolean; details?: { reveal?: unknown } }
 
-/** The plugin's tools, called as a run in chat `s1` would, over a fresh project folder. */
+/** The mini app's tools, called as a run in chat `s1` would, over a fresh project folder. */
 function tools() {
   const root = mkdtempSync(join(tmpdir(), 'project-space-tools-'))
   roots.push(root)

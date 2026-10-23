@@ -10,9 +10,9 @@
     "noEmit": true,
     "declaration": false,
     "declarationMap": false,
-    // The kit is the plugin's only view of the host: `@localixai/kit/<id>` is a door of the
+    // The kit is the mini app's only view of the host: `@localixai/kit/<id>` is a door of the
     // package (`packages/kit/src/entries`) or a module the host lends (`apps/ui/src/app/kit`).
-    // `@/*` is here solely so the compiler can follow a lent module's own imports; plugin code
+    // `@/*` is here solely so the compiler can follow a lent module's own imports; mini app code
     // never names it (the artifact build and `plugin-boundary-contract.test.ts` both refuse it).
     "paths": {
       "@localixai/kit/*": ["../../packages/kit/src/entries/*", "../../apps/ui/src/app/kit/*"],

@@ -42,7 +42,7 @@ function num(v: unknown): number {
 }
 
 /** Bar / line / area / scatter on a shared cartesian frame. */
-/** Cartesian renderer shared by host and plugin table surfaces. */
+/** Cartesian renderer shared by host and mini app table surfaces. */
 export function CartesianChart({ columns, rows, spec, width, height }: CartesianChartProps) {
   const plotW = Math.max(10, width - M.left - M.right)
   const plotH = Math.max(10, height - M.top - M.bottom)

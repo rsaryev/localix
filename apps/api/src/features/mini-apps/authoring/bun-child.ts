@@ -2,9 +2,9 @@ import { createBoundedOutput } from '../../agent-core/tools/bash/bash-output'
 
 /**
  * Run the app's own Bun (`process.execPath` — the binary the app ships, on every platform) on a
- * user plugin, bounded in time and output. The plugin checks run their tools this way rather than
- * in the API process: the type checker is synchronous and a test run executes plugin code, and
- * neither may stall or crash the process every session depends on.
+ * user mini app, bounded in time and output. The mini app checks run their tools this way rather
+ * than in the API process: the type checker is synchronous and a test run executes mini app code,
+ * and neither may stall or crash the process every session depends on.
  */
 export async function runBun(
   args: readonly string[],

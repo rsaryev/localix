@@ -246,7 +246,7 @@ describe('UiNavigationActionPart', () => {
       await import('@/shared/contrib/uiLocations')
     const { ItemView } = await import('@/entities/chat/ui/tool-parts/ItemView')
     const locationId = 'test.ui-action.activation'
-    const uri = 'localix://ui/plugin/test-activation'
+    const uri = 'localix://ui/mini-app/test-activation'
     const item: ToolCallItem = {
       id: 'ui-plugin-activation',
       type: 'tool_call',
@@ -269,9 +269,9 @@ describe('UiNavigationActionPart', () => {
         id: locationId,
         uri,
         title: 'Plugin surface',
-        pluginName: 'test-ui-action-plugin',
+        miniAppName: 'test-ui-action-plugin',
         effect: 'read',
-        surface: 'plugin',
+        surface: 'mini-app',
         exposure: {},
         resolve: () => ({ kind: 'settings', tab: 'plugins' }),
       }),

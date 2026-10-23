@@ -11,13 +11,13 @@ import type {
  *
  * Menus in this app are built by spreading live data into a literal —
  * `[open, { separator: true }, ...rows, { separator: true }, ...actions]` — and the host then
- * appends its own `Plugin settings…` behind one more separator. Every one of those spreads can be
+ * appends its own `Mini app settings…` behind one more separator. Every one of those spreads can be
  * empty, and each empty one leaves a seam the author never wrote: a rule against the panel's top
- * edge, two rules with nothing between them, a rule hanging under the last row. Ten plugins build
+ * edge, two rules with nothing between them, a rule hanging under the last row. Ten mini apps build
  * their menus that way and every one of them had at least one.
  *
  * Fixing that at each call site is ten fixes and a rule nobody can enforce. Fixing it here is one,
- * and it makes the empty case something a plugin author is allowed to stop thinking about.
+ * and it makes the empty case something a mini app author is allowed to stop thinking about.
  *
  * Pure, so the whole decision is unit-testable without a DOM; {@link MenuEntries} renders it.
  */

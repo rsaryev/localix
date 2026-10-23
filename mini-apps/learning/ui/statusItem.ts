@@ -32,7 +32,8 @@ function progressOf(course: CourseSummary): string | null {
  * study surface is worst at showing you — it lives inside the course tab, which is the one place
  * you cannot see while doing anything else.
  *
- * No courses in this session, no control. The plugin is silent for every chat that is not studying.
+ * No courses in this session, no control. The mini app is silent for every chat that is not
+ * studying.
  */
 export function useLearningStatusItem(sessionId: string | null): StatusItemState | null {
   const workspace = useMiniAppWorkspace()

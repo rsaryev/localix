@@ -10,11 +10,11 @@
  *
  *   person   the person's words, sent while the session was busy
  *   command  a slash command sent while busy, kept whole until its turn (`QueuedCommand`)
- *   event    a machine wake: a loop, a job, a hook, a plugin, a delegator's message, …
+ *   event    a machine wake: a loop, a job, a hook, a mini app, a delegator's message, …
  *   report   a delegated child's report to the participant who delegated
  *   ticket   execution intent: one participant answers (`AgentTurnTicket`)
  *
- * What every kind shares is the envelope. The delivery attributes (bindings, surface, plugins, …)
+ * What every kind shares is the envelope. The delivery attributes (bindings, surface, mini apps, …)
  * are shared too: the delivery stage reads them alike, whoever produced them.
  */
 import type { ToolSurface } from '@localixai/agent/agents'
@@ -39,8 +39,8 @@ interface Envelope {
   /** Originating optimistic UI row; correlation only, never a durable message id. */
   clientMessageId?: string
   extraDisabledTools?: string[]
-  /** Plugins whose tools the answering turn carries; lands on the turn's row. */
-  plugins?: string[]
+  /** Mini apps whose tools the answering turn carries; lands on the turn's row. */
+  miniApps?: string[]
   bindings?: MessageBinding[]
   /** The client surface the words were sent from (the workbench catalog), never authority. */
   toolSurface?: ToolSurface
@@ -167,7 +167,7 @@ export function createPendingTurn(params: EnqueueParams, queuedAt: string): Pend
     ...(params.source ? { source: params.source } : {}),
     ...(params.clientMessageId ? { clientMessageId: params.clientMessageId } : {}),
     ...(params.extraDisabledTools ? { extraDisabledTools: params.extraDisabledTools } : {}),
-    ...(params.plugins?.length ? { plugins: params.plugins } : {}),
+    ...(params.miniApps?.length ? { miniApps: params.miniApps } : {}),
     ...(params.bindings ? { bindings: params.bindings } : {}),
     ...(params.toolSurface ? { toolSurface: params.toolSurface } : {}),
     ...(params.executionContext ? { executionContext: params.executionContext } : {}),

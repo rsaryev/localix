@@ -1,27 +1,27 @@
 /**
- * A plugin router's request validator — one definition, one choice per plugin: its envelope.
+ * A mini app router's request validator — one definition, one choice per mini app: its envelope.
  *
  * WHY THIS EXISTS. `@hono/zod-validator` does not throw on a schema failure, so a failure never
  * reaches the router's `onError`; without a hook it answers the raw safeParse result, a JSON dump
  * of the Zod issue array that a UI renders as the error message (or, where the client reads
- * `error` as a string, as `[object Object]`). Every bundled plugin had fixed that the same way —
+ * `error` as a string, as `[object Object]`). Every bundled mini app had fixed that the same way —
  * a `validated()` wrapper installing a hook around `summarizeZodIssues` — and there were eleven
  * copies of it across ten routers, differing only in which of three envelopes they answered in.
  * Eleven copies of one rule drift the way any copies do; learning and external-agents had already
  * drifted into sending the summary OBJECT, which their clients showed as `[object Object]`.
  *
- * So the rule lives here and a plugin states only what genuinely differs — the envelope its client
- * reads:
+ * So the rule lives here and a mini app states only what genuinely differs — the envelope its
+ * client reads:
  *
  *  - `nested` (default): {@link jsonError}'s `{ error: { code, message, detail } }`, which the SDK
  *    client (`unwrapMiniAppResponse`) reads;
- *  - `flat`: `{ error, code, detail }`, the typed-error body of the workbench plugins whose
+ *  - `flat`: `{ error, code, detail }`, the typed-error body of the workbench mini apps whose
  *    clients read `error` as the sentence and branch on `code`;
  *  - `text`: `{ error }` — a bare sentence, for clients that read nothing else.
  *
  * Built on `hono/validator` rather than `@hono/zod-validator`, with the same input/output typing
  * (so a typed `hc` client keeps its request types) and the same async parse, and without adding
- * a dependency every plugin a person builds would have to resolve.
+ * a dependency every mini app a person builds would have to resolve.
  */
 import type { Env, MiddlewareHandler, ValidationTargets } from 'hono'
 import { validator, type InferInput } from 'hono/validator'
@@ -58,7 +58,7 @@ export type RouteValidator = <
 ) => MiddlewareHandler<E, P, RouteValidatorInput<Target, input<Schema>, output<Schema>>>
 
 /**
- * Build a plugin's validator once: `const validated = routeValidator({ envelope: 'flat' })`, then
+ * Build a mini app's validator once: `const validated = routeValidator({ envelope: 'flat' })`, then
  * `validated('json', schema)` on each route and `c.req.valid('json')` in the handler.
  */
 export function routeValidator(options: RouteValidatorOptions = {}): RouteValidator {

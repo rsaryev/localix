@@ -110,7 +110,7 @@ export function createLearningCourseTool(
         if (input.action === 'guide') {
           return {
             content: await readFile(
-              resolve(ctx.pluginDir, 'skills/build-learning-course/references/course-bundle.md'),
+              resolve(ctx.miniAppDir, 'skills/build-learning-course/references/course-bundle.md'),
               'utf8',
             ),
           }

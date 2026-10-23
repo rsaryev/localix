@@ -20,7 +20,7 @@ import { ROUTE_PATH } from '../../shared/resource'
 
 export function useGame(active: boolean) {
   const game = useTableGame({
-    plugin: 'rock-paper-scissors',
+    miniApp: 'rock-paper-scissors',
     route: ROUTE_PATH,
     schema: playerViewSchema,
     active,

@@ -12,7 +12,7 @@ import { buildSnapshot, type ViewQuery } from './snapshot'
  * an action (reindex, dismiss the agent's highlight) shows its result without a second request.
  *
  * The project is the request's own: `c.env.cwd` is resolved per call from the chat the view
- * belongs to, never captured when the plugin loaded — a backend loaded once would otherwise keep
+ * belongs to, never captured when the mini app loaded — a backend loaded once would otherwise keep
  * mapping the first project it saw after the person switched chats.
  */
 export function createGraphRoutes(dataDir: string) {

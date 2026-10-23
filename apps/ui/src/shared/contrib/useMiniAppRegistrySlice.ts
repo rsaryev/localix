@@ -3,15 +3,15 @@ import { miniAppActivationVersion, subscribeMiniAppActivation } from './miniAppA
 import { registryChangeVersion, subscribeRegistryChanges } from './registryChanges'
 
 /**
- * Re-render when THIS consumer's piece of the plugin registries moves — and only then.
+ * Re-render when THIS consumer's piece of the mini app registries moves — and only then.
  *
  * A surface that read a registry during render (`sessionSurfacesFor`, `workItemSlot`, a kind's
- * contribution) used to re-read it only when its parent re-rendered, so a plugin registering after
- * the first paint stayed invisible under it. Subscribing every such surface to one global counter
- * would fix that and bring back the other defect — every registry flush re-rendering every tab,
- * strip and slot on screen. So each consumer names its slice: the flush re-runs the selector, and
- * React re-renders only when the slice differs from the last one by `sameSlice` (element-wise for
- * arrays, `Object.is` otherwise).
+ * contribution) used to re-read it only when its parent re-rendered, so a mini app registering
+ * after the first paint stayed invisible under it. Subscribing every such surface to one global
+ * counter would fix that and bring back the other defect — every registry flush re-rendering every
+ * tab, strip and slot on screen. So each consumer names its slice: the flush re-runs the selector,
+ * and React re-renders only when the slice differs from the last one by `sameSlice` (element-wise
+ * for arrays, `Object.is` otherwise).
  *
  * The slice is recomputed only when the registries or the activation state moved since it was
  * cached, which keeps `getSnapshot` stable as `useSyncExternalStore` requires.

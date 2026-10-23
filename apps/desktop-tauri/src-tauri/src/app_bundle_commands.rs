@@ -1,4 +1,5 @@
-//! The workspace's commands for plugin apps. Each checks that a trusted workspace is calling.
+//! The workspace's commands for standalone mini apps. Each checks that a trusted workspace is
+//! calling.
 use base64::Engine;
 use tauri::{AppHandle, Webview};
 
@@ -16,7 +17,7 @@ pub(crate) struct IconRendition {
 #[derive(serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct InstallRequest {
-    plugin: String,
+    mini_app: String,
     name: String,
     icons: Vec<IconRendition>,
 }
@@ -27,7 +28,8 @@ pub(crate) fn mini_app_apps(caller: Webview) -> Result<Vec<InstalledApp>, String
     Ok(crate::app_bundle::installed())
 }
 
-/// Install (or reinstall) a plugin as its own app. The workspace makes its project, then opens it.
+/// Install (or reinstall) a mini app as its own app. The workspace makes its project, then opens
+/// it.
 #[tauri::command]
 pub(crate) async fn mini_app_install(
     app: AppHandle,
@@ -47,22 +49,22 @@ pub(crate) async fn mini_app_install(
         .collect::<Result<Vec<_>, _>>()?;
     let icon = crate::app_icon::icns(&renditions)?;
     tauri::async_runtime::spawn_blocking(move || {
-        crate::app_bundle::install(&app, &request.plugin, &request.name, &icon)
+        crate::app_bundle::install(&app, &request.mini_app, &request.name, &icon)
     })
     .await
     .map_err(|error| error.to_string())?
 }
 
 #[tauri::command]
-pub(crate) fn mini_app_open(caller: Webview, plugin: String) -> Result<(), String> {
+pub(crate) fn mini_app_open(caller: Webview, mini_app: String) -> Result<(), String> {
     require_workspace(&caller)?;
-    crate::app_bundle::open(&plugin)
+    crate::app_bundle::open(&mini_app)
 }
 
 #[tauri::command]
-pub(crate) async fn mini_app_uninstall(caller: Webview, plugin: String) -> Result<(), String> {
+pub(crate) async fn mini_app_uninstall(caller: Webview, mini_app: String) -> Result<(), String> {
     require_workspace(&caller)?;
-    tauri::async_runtime::spawn_blocking(move || crate::app_bundle::uninstall(&plugin))
+    tauri::async_runtime::spawn_blocking(move || crate::app_bundle::uninstall(&mini_app))
         .await
         .map_err(|error| error.to_string())?
 }

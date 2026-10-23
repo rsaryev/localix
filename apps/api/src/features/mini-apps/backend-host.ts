@@ -1,33 +1,33 @@
 /**
- * PLUGIN BACKEND HOST — the live composition seam that makes plugin backends hot.
+ * MINI APP BACKEND HOST — the live composition seam that makes mini app backends hot.
  *
- * Boot used to wire every enabled plugin's `BackendSubsystem` exactly once: routes
+ * Boot used to wire every enabled mini app's `BackendSubsystem` exactly once: routes
  * mounted via a static `app.route()` loop, providers registered in one bootstrap
- * pass. Toggling a plugin therefore needed a process restart. This host owns that
+ * pass. Toggling a mini app therefore needed a process restart. This host owns that
  * wiring as a RECONCILER instead: `reconcile()` recomputes the desired set (via the
  * same failure-isolated `loadMiniAppBackends` path boot used) and diffs it against
- * what is currently wired, per plugin — enable wires, disable unwires, boot is just
+ * what is currently wired, per mini app — enable wires, disable unwires, boot is just
  * the first reconcile. There is exactly ONE wiring code path.
  *
  * Route mounting is the part Hono cannot do live (routes cannot be unmounted), so
  * the static loop is replaced by ONE stable dispatcher middleware reading a mutable
  * mount table per request. Delegating with `wrapper.fetch(c.req.raw)` drops the parent
- * context, so a plugin route cannot read `c.get('userId')` — that used to be called
- * lossless because plugins re-derived the user from the host's env module, which is
+ * context, so a mini app route cannot read `c.get('userId')` — that used to be called
+ * lossless because mini apps re-derived the user from the host's env module, which is
  * precisely the boundary crossing `plugin-boundary-contract.test.ts` polices. The resolved
  * scope (user, project, CURRENT cwd) now travels as the mounted app's `c.env` instead.
  *
  * SDK capabilities follow the same wire/unwire lifecycle as every other
  * contribution. They used to be the boot-frozen exception — resolved ONCE into chat deps at
- * bootstrap and never unregistered — which broke hot toggling in both directions: a plugin enabled
- * after boot never lit up, and a plugin DISABLED after boot kept serving core, because `deps` still
- * held the function it had captured. Fixed by making the consumer side resolve LATE (bootstrap
- * passes a resolver, not a value) AND unregistering here; either half alone leaves the other path
- * live.
+ * bootstrap and never unregistered — which broke hot toggling in both directions: a mini app
+ * enabled after boot never lit up, and a mini app DISABLED after boot kept serving core, because
+ * `deps` still held the function it had captured. Fixed by making the consumer side resolve LATE
+ * (bootstrap passes a resolver, not a value) AND unregistering here; either half alone leaves the
+ * other path live.
  *
  * Ordering rules: wire registers providers FIRST and mounts the route LAST (a route
  * never serves before its providers exist); unwire runs `onShutdown()` FIRST (stops
- * the plugin's live streams/sockets), then unregisters, then drops the mount.
+ * the mini app's live streams/sockets), then unregisters, then drops the mount.
  */
 import { Hono } from 'hono'
 import type { Env, Schema } from 'hono'
@@ -51,13 +51,13 @@ interface WiredBackend {
 }
 
 export function createMiniAppBackendHost(deps: MiniAppBackendHostDeps): MiniAppBackendHost {
-  /** Wired subsystems by OWNING PLUGIN name (a plugin may contribute several). */
+  /** Wired subsystems by OWNING MINI APP name (a mini app may contribute several). */
   const wired = new Map<string, WiredBackend[]>()
   /**
-   * The code revision each wired plugin was wired from. "Already wired" used to mean "wired
-   * under this NAME", so a plugin whose backend was rebuilt kept serving the first build it ever
-   * wired — a timer plugin rebuilt three times and `/rpc/timer` kept answering 404 from the
-   * template's routes. A plugin whose revision moved is unwired and wired again.
+   * The code revision each wired mini app was wired from. "Already wired" used to mean "wired
+   * under this NAME", so a mini app whose backend was rebuilt kept serving the first build it ever
+   * wired — a timer mini app rebuilt three times and `/rpc/timer` kept answering 404 from the
+   * template's routes. A mini app whose revision moved is unwired and wired again.
    */
   const wiredRevisions = new Map<string, string>()
   /** Exact-scope UI handlers; unlike process-global providers, project overrides coexist. */
@@ -65,7 +65,7 @@ export function createMiniAppBackendHost(deps: MiniAppBackendHostDeps): MiniAppB
   /** Live mount table the dispatcher reads per request. */
   const mounts = new Map<string, Hono>()
   /** Subsystem ids whose capabilities are currently registered — one register per id, so a
-   *  reconcile that reloads an already-wired plugin does not re-register (and re-warn). Cleared
+   *  reconcile that reloads an already-wired mini app does not re-register (and re-warn). Cleared
    *  by `unwireBackend`, or a re-enable would be skipped as already-wired. */
   const capabilitiesWired = new Set<string>()
   let searchRegistry: SearchProviderRegistry | undefined
@@ -80,7 +80,7 @@ export function createMiniAppBackendHost(deps: MiniAppBackendHostDeps): MiniAppB
       capabilitiesWired.add(backend.id)
       deps.capabilityRegistry.register(backend.id, backend.capabilities)
     }
-    // WS-frame contributions are UNTRUSTED plugin data: a duplicate subscribe/
+    // WS-frame contributions are UNTRUSTED mini app data: a duplicate subscribe/
     // unsubscribe command is unroutable, so a collision is rejected LOUDLY here
     // instead of crashing the reconcile for every other subsystem.
     for (const frame of backend.wsFrames ?? []) {
@@ -104,7 +104,7 @@ export function createMiniAppBackendHost(deps: MiniAppBackendHostDeps): MiniAppB
     }
     deps.textInputSurfaceRegistry?.registerAll(
       backend.textInputCompletionSurfaces,
-      { plugin: app, source: backend.id },
+      { miniApp: app, source: backend.id },
       deps.logger?.warn,
     )
     if (backend.searchProvider) searchRegistry?.register(backend.searchProvider)
@@ -116,9 +116,9 @@ export function createMiniAppBackendHost(deps: MiniAppBackendHostDeps): MiniAppB
       // FIRST-WINS on a duplicate path, out loud — the rule every other contribution in
       // this function already follows (wsFrames + context providers return `rejected`,
       // capabilities warn, `capabilitiesWired` guards). `routeMount.path` is a free
-      // string from the plugin ('/rpc/<id>' is a convention, not a constraint), so two
-      // plugins CAN claim one path — and plugin-builder tells authors to copy a bundled
-      // plugin's structure. Overwriting served the first plugin's route from the
+      // string from the mini app ('/rpc/<id>' is a convention, not a constraint), so two
+      // mini apps CAN claim one path — and mini-app-builder tells authors to copy a bundled
+      // mini app's structure. Overwriting served the first mini app's route from the
       // SECOND's app, silently, while every id-keyed guard beside it stayed happy.
       const taken = mounts.get(backend.routeMount.path)
       if (taken) {
@@ -134,18 +134,18 @@ export function createMiniAppBackendHost(deps: MiniAppBackendHostDeps): MiniAppB
         mounts.set(backend.routeMount.path, wrapper)
       }
     }
-    deps.logger?.info?.(`plugin backend wired: ${app}/${backend.id}`)
+    deps.logger?.info?.(`mini app backend wired: ${app}/${backend.id}`)
     return { backend, wrapper }
   }
 
   async function unwireBackend(app: string, entry: WiredBackend): Promise<void> {
     const { backend } = entry
-    // Shutdown FIRST: it stops the plugin's live WS streams and child processes,
+    // Shutdown FIRST: it stops the mini app's live WS streams and child processes,
     // which the registry unregisters below cannot reach (they only block NEW work).
     try {
       await Promise.resolve(backend.onShutdown?.())
     } catch (err) {
-      deps.logger?.warn(`plugin backend "${backend.id}" onShutdown threw`, { error: String(err) })
+      deps.logger?.warn(`mini app backend "${backend.id}" onShutdown threw`, { error: String(err) })
     }
     for (const frame of backend.wsFrames ?? []) {
       // Pass the frame, not its command — this loop walks every frame the subsystem DECLARED,
@@ -159,8 +159,8 @@ export function createMiniAppBackendHost(deps: MiniAppBackendHostDeps): MiniAppB
     }
     // Pass the provider, not its id — an id-only disable evicts whoever holds that id.
     if (backend.searchProvider) searchRegistry?.unregister(backend.searchProvider)
-    // Capabilities too: leaving them registered meant a DISABLED plugin's implementation kept
-    // serving core (a host fallback called into a plugin the user had turned off). The
+    // Capabilities too: leaving them registered meant a DISABLED mini app's implementation kept
+    // serving core (a host fallback called into a mini app the user had turned off). The
     // `capabilitiesWired` entry goes with it, so a re-enable registers again instead of being
     // skipped as already-wired.
     deps.capabilityRegistry.unregister(backend.id)
@@ -170,17 +170,17 @@ export function createMiniAppBackendHost(deps: MiniAppBackendHostDeps): MiniAppB
     deps.subsystemRegistry.unregister(backend.id)
     // Identity-checked, like `activeRuns.get(id) === abort` in run-teardown: a disable
     // must only ever drop the mount it OWNS. Deleting by path alone tore the route out
-    // from under a still-enabled plugin that had won the path first — its subsystem and
+    // from under a still-enabled mini app that had won the path first — its subsystem and
     // UI tab stayed, only `/rpc/...` went dead, with nothing said.
     if (entry.wrapper && mounts.get(backend.routeMount!.path) === entry.wrapper) {
       mounts.delete(backend.routeMount!.path)
     }
-    deps.logger?.info?.(`plugin backend unwired: ${app}/${backend.id}`)
+    deps.logger?.info?.(`mini app backend unwired: ${app}/${backend.id}`)
   }
 
   async function reconcileNow(): Promise<void> {
-    // Fresh load = fresh `register()` runs for every enabled plugin. That is the
-    // per-run loader's status quo (register() already runs per turn); for a plugin
+    // Fresh load = fresh `register()` runs for every enabled mini app. That is the
+    // per-run loader's status quo (register() already runs per turn); for a mini app
     // that is ALREADY wired the fresh duplicate is simply discarded and the wired
     // instance kept, so live streams/services are never churned by an unrelated
     // toggle.
@@ -236,11 +236,11 @@ export function createMiniAppBackendHost(deps: MiniAppBackendHostDeps): MiniAppB
         const path = c.req.path
         for (const [prefix, wrapper] of mounts) {
           if (path === prefix || path.startsWith(`${prefix}/`)) {
-            // The raw request loses the parent context, which is why a plugin route cannot read
+            // The raw request loses the parent context, which is why a mini app route cannot read
             // `c.get('userId')`. Hono's second `fetch` argument IS the mounted app's `c.env`, so
-            // the resolved scope travels there instead of being re-derived by every plugin from
+            // the resolved scope travels there instead of being re-derived by every mini app from
             // the host's own env module (which is how that boundary got crossed in the first
-            // place). Resolution failures degrade to no environment rather than a 500: a plugin
+            // place). Resolution failures degrade to no environment rather than a 500: a mini app
             // route that does not need scope must keep working.
             const userId = c.get('userId') as string | undefined
             let scope: MiniAppRouteScope | undefined
@@ -248,7 +248,7 @@ export function createMiniAppBackendHost(deps: MiniAppBackendHostDeps): MiniAppB
               try {
                 scope = await deps.resolveScope({ userId, request: c.req.raw })
               } catch (err) {
-                deps.logger?.warn('plugin route scope resolution failed', { error: String(err) })
+                deps.logger?.warn('mini app route scope resolution failed', { error: String(err) })
               }
             }
             return wrapper.fetch(c.req.raw, scope)
@@ -263,7 +263,7 @@ export function createMiniAppBackendHost(deps: MiniAppBackendHostDeps): MiniAppB
           try {
             await reconcileReported()
           } catch (err) {
-            deps.logger?.warn('plugin backend reconcile failed', { error: String(err) })
+            deps.logger?.warn('mini app backend reconcile failed', { error: String(err) })
           }
           // Settle AFTER convergence (even a failed one — the UI refetch is cheap
           // and self-correcting), so a listener never observes half-wired routes.

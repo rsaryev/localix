@@ -2,7 +2,7 @@
  * `sendRequest` — the redirect chain and its guards.
  *
  * This file exists because a review found that the single most security-critical module in the
- * plugin had NO test. Its header made four emphatic claims — every hop is guarded, credentials do
+ * mini app had NO test. Its header made four emphatic claims — every hop is guarded, credentials do
  * not survive a cross-origin hop, a 303 becomes a GET, redirects are bounded — and not one of them
  * would have failed if the code had regressed. Prose is not a guard.
  *
@@ -470,8 +470,8 @@ describe('a login redirect carries its cookie — the 200 that meant nothing', (
   // Measured before this existed:
   //   POST https://api.dev/login       Cookie: (none)  → 302, Set-Cookie: session=abc123
   //   GET  https://api.dev/dashboard   Cookie: (none)  → 200 "<html>Please log in</html>"
-  // The caller got `200 OK` and every other line this plugin writes teaches that 2xx worked, so an
-  // agent reports a successful login while standing on the login page. We follow the redirect
+  // The caller got `200 OK` and every other line this mini app writes teaches that 2xx worked, so
+  // an agent reports a successful login while standing on the login page. We follow the redirect
   // ourselves, so we are the thing that has to carry the cookie. Nothing did.
   const cookieOf = (c: Call) =>
     Object.entries(c.headers).find(([k]) => k.toLowerCase() === 'cookie')?.[1]
@@ -618,8 +618,8 @@ describe('timeoutMs is honoured — it was declared, documented, passed in, and 
   // passed it. Nothing in send.ts read it. The TOOL path happened to survive because it separately
   // wrapped the call in `ctx.helpers.withTimeoutSignal`; the ROUTE path passed it in good faith and
   // got nothing, so a workbench send hung as long as the server did. Measured: `timeoutMs: 200`
-  // returned after 3011ms. The third guarantee this plugin split across two send paths and lost one
-  // of — after `guard` and `unfilledPathParams`.
+  // returned after 3011ms. The third guarantee this mini app split across two send paths and lost
+  // one of — after `guard` and `unfilledPathParams`.
 
   /**
    * A fetch that HONOURS the signal, the way a real one does.

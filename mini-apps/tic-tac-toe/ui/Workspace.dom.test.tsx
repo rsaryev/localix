@@ -84,7 +84,7 @@ async function mount(sessionId: string | null, failFirstRead = false, unreachabl
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)
-  // The host wraps every plugin tab in the session it BELONGS to.
+  // The host wraps every mini app tab in the session it BELONGS to.
   const render = (active = true) =>
     act(async () =>
       root.render(

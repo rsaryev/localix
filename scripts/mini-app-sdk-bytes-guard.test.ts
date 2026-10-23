@@ -6,15 +6,15 @@ import { fixtureDist, measure, type Measured, measureSubpaths } from './mini-app
 /**
  * A byte budget on every public subpath of `@localixai/mini-app-sdk`.
  *
- * ~50k lines of plugin UI import this SDK, and its cost is invisible from the inside: the build is a
- * plain `tsc`, so nothing reports what a subpath weighs, and the `./ui` barrel re-exports 166 names
- * from across the tree. Two regressions hide in that shape, and a type-check sees neither:
+ * ~50k lines of mini app UI import this SDK, and its cost is invisible from the inside: the build
+ * is a plain `tsc`, so nothing reports what a subpath weighs, and the `./ui` barrel re-exports 166
+ * names from across the tree. Two regressions hide in that shape, and a type-check sees neither:
  *
- *   1. a subpath quietly grows — someone hangs a heavy module off a barrel eleven plugins import;
+ *   1. a subpath quietly grows — someone hangs a heavy module off a barrel eleven mini apps import;
  *   2. a subpath stops being TREE-SHAKEABLE. Today `import { CSV_CONTENT_TYPE } from '…/ui'` costs
  *      40 bytes out of a 57 KB barrel. One top-level side effect in a module along that chain, or
  *      one `sideEffects: false` dropped from the manifest, and that single import starts dragging
- *      the whole barrel into every plugin bundle. Nothing else in this repo would notice.
+ *      the whole barrel into every mini app bundle. Nothing else in this repo would notice.
  *
  * The measurement is a real bundle (see `mini-app-sdk-bytes.ts`) and the numbers are pinned in
  * `mini-app-sdk-bytes-baseline.json`, in the same ratchet shape as `source-size-guard.test.ts`: a pin
@@ -95,7 +95,7 @@ if (process.argv.includes('--regen')) {
           const grew = Math.round((bytes / budget - 1) * 100)
           return (
             `${subpath}: budget ${budget} bytes, now ${bytes} bytes (+${grew}%, allowance ` +
-            `${DRIFT_ALLOWANCE * 100}%). Every plugin importing this subpath pays it. Move the new ` +
+            `${DRIFT_ALLOWANCE * 100}%). Every mini app importing this subpath pays it. Move the new ` +
             'weight behind its own subpath, or — if the growth is the point — regenerate the ' +
             'baseline in the same commit so a reviewer sees the number change.'
           )

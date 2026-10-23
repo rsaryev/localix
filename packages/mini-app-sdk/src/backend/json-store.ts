@@ -5,7 +5,7 @@ import { createStoreChangeFeed } from './store-change-feed'
 import type { z } from 'zod'
 
 /**
- * Durable JSON state for a plugin, kept under `ctx.dataDir` or a session folder.
+ * Durable JSON state for a mini app, kept under `ctx.dataDir` or a session folder.
  *
  * What a person creates must survive a restart, a rebuild and a closed pane, and the agent's
  * tools must see exactly what the view shows. Written ad hoc, that goes wrong in three known ways:
@@ -96,7 +96,7 @@ export function openJsonStore<T>(options: {
 /**
  * The change feed for stores opened with `openJsonStore`: a committed write under a followed
  * folder nudges that scope's open view. Feeds filter by folder, so one module-level listener set
- * serves every plugin in the process.
+ * serves every mini app in the process.
  */
 export function createJsonStoreFeed(
   options: Omit<Parameters<typeof createStoreChangeFeed>[0], 'subscribeWrites'>,

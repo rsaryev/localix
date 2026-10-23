@@ -8,7 +8,7 @@ const publish = (next: Gesture | null) => {
   for (const listener of listeners) listener()
 }
 
-/** Native webviews must yield to every app drag, including plugin resources and kit sashes. */
+/** Native webviews must yield to every app drag, including mini app resources and kit sashes. */
 export const workbenchGesture = {
   active: () => current !== null || getFileDropActive(),
   subscribe(listener: () => void) {

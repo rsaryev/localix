@@ -9,7 +9,7 @@ import type { ResourceNode } from '@localixai/mini-app-sdk/backend'
 import { buildResourceUri, linkAction } from '@localixai/mini-app-sdk/backend'
 import type { ResourceDockerService } from './resource-provider'
 
-/** The URI provider this plugin owns. */
+/** The URI provider this mini app owns. */
 export const PROVIDER = 'docker'
 
 /** How many trailing log lines a `logs` node expands to. */

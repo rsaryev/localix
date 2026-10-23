@@ -4,14 +4,15 @@ import { join, relative, resolve } from 'node:path'
 import { sourceTree } from '@localixai/source-lint'
 
 /**
- * A plugin's rendered surface is never the application.
+ * A mini app's rendered surface is never the application.
  *
- * A contributed component is plugin code on the host's render path, and React gives an unhandled
+ * A contributed component is mini app code on the host's render path, and React gives an unhandled
  * render error to the NEAREST boundary. Without one at the contribution site that is the root
- * boundary, so a single plugin throwing replaces the entire workspace with an error screen. That is
- * not hypothetical: the comment at `editor-grid/ui/registry.tsx` records it happening live, from a
- * `localix://` URI built with an empty id. (The work-item site itself is
- * `editor-grid/ui/MiniAppWorkItemBody.tsx`, which also remounts the boundary on a plugin rebuild.)
+ * boundary, so a single mini app throwing replaces the entire workspace with an error screen. That
+ * is not hypothetical: the comment at `editor-grid/ui/registry.tsx` records it happening live, from
+ * a `localix://` URI built with an empty id. (The work-item site itself is
+ * `editor-grid/ui/MiniAppWorkItemBody.tsx`, which also remounts the boundary on a mini app
+ * rebuild.)
  *
  * Both known sites are wrapped today. This test is what keeps the next one from not being: the
  * convention is invisible at the moment somebody adds a third contribution point, and nothing else
@@ -33,7 +34,7 @@ function rendersElement(source: string, name: string): boolean {
   return new RegExp(`<${name}[\\s/>]`, 'u').test(source)
 }
 
-describe('contributed plugin surfaces render inside a boundary', () => {
+describe('contributed mini app surfaces render inside a boundary', () => {
   // `sourceTree` is the anti-void assertion: it throws rather than hand back an empty list, and the
   // witnesses below make it throw if either known contribution site is moved or renamed.
   const files = sourceTree({
@@ -51,7 +52,7 @@ describe('contributed plugin surfaces render inside a boundary', () => {
   test('the known contribution sites are the ones this guard is written against', () => {
     const sites = files.filter(({ source }) => CONTRIBUTED_COMPONENT.test(source))
     expect(sites.map((site) => site.path).sort()).toEqual([
-      // A named hole in a host surface, and the chain of hooks a plugin wraps an open file in.
+      // A named hole in a host surface, and the chain of hooks a mini app wraps an open file in.
       // Both render a registry entry's `Component`, which is what puts them on this list.
       'apps/ui/src/shared/contrib/FileEditorEnhancements.tsx',
       'apps/ui/src/shared/contrib/WorkItemSlot.tsx',

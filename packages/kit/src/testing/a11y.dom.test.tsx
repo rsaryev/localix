@@ -4,7 +4,7 @@ import { describeAxeViolations, findAxeViolations } from './axe-check'
 
 /**
  * The shared primitives are what every surface is built from, in the app and in every bundled
- * plugin, so an accessibility defect here is one defect in one file and a hundred broken screens.
+ * mini app, so an accessibility defect here is one defect in one file and a hundred broken screens.
  *
  * These are the checks the static rules cannot make. `jsx-a11y` reads source; it cannot tell that a
  * rendered button has no accessible name, because the name is missing rather than wrong and absence

@@ -1,6 +1,6 @@
 /**
  * The design TOKENS a class string must take its value from — one list for the app, its bundled
- * plugins and every plugin a person builds.
+ * mini apps and every mini app a person builds.
  *
  * Every rule is a value that already has a token, and every one drifted the same way before it
  * was a check: a literal is a bet that nobody will retune the system, and each copy placed that
@@ -10,10 +10,10 @@
  * `docs/internals/visual-system.md` says which token answers each question.
  *
  * Two readers, so one owner: the repository guard (`scripts/ui-token-drift-guard.test.ts`) scans
- * the app and the bundled plugins, and `mini_app_build` scans a user's mini app, which lives in
- * `~/.localix/mini-apps` where no repository guard can see it (a generated plugin once shipped `text-red-500`,
- * `bg-emerald-500` and a bare `rounded` through every build step). A second copy of this list
- * would drift from the first exactly the way the literals it forbids did.
+ * the app and the bundled mini apps, and `mini_app_build` scans a user's mini app, which lives in
+ * `~/.localix/mini-apps` where no repository guard can see it (a generated mini app once shipped
+ * `text-red-500`, `bg-emerald-500` and a bare `rounded` through every build step). A second copy of
+ * this list would drift from the first exactly the way the literals it forbids did.
  *
  * Browser-safe and dependency-free. Each rule carries a line of code in its drifted shape, the
  * guard's positive control.
@@ -100,7 +100,7 @@ export const UI_TOKEN_RULES: readonly UiTokenRule[] = [
   {
     // A panel already has a width: the one the user gave its pane. Centring a literal cap inside
     // it spends that width on two empty gutters — Settings and the Vault did it at `max-w-7xl` and
-    // `max-w-4xl`, then Database, DevOps, Trading and the plugin template at `max-w-2xl`/`6xl`,
+    // `max-w-4xl`, then Database, DevOps, Trading and the mini app template at `max-w-2xl`/`6xl`,
     // numbers that agreed with nothing and showed only once someone widened the window. The
     // offence is the PAIR in one string: a bare `max-w-2xl` on a `<p>` is a measure on text, and a
     // bare `mx-auto` has no column. Long-form prose that is a column (a lesson) asks for the named

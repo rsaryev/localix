@@ -166,7 +166,7 @@ const NO_DELTAS: ReadonlyMap<
  * an in-progress rebase (conflict/stop) is detected and reported on `.rebase`, and
  * an in-progress bisect on `.bisect`, so the header can surface their banners.
  *
- * PROCESS BUDGET. This is the hottest read in the plugin: the poller runs it for
+ * PROCESS BUDGET. This is the hottest read in the mini app: the poller runs it for
  * every discovered repo on every tick, and each git spawn costs ~10 ms whatever
  * it is asked. So it issues the fewest it can:
  *

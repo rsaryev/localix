@@ -1,6 +1,6 @@
 /**
  * Translating the flat, model-facing `HttpRequestInput` into the structured `RequestSpec` the
- * rest of the plugin speaks. Pure — the one place the flat/structured impedance mismatch lives,
+ * rest of the mini app speaks. Pure — the one place the flat/structured impedance mismatch lives,
  * so neither the schema nor the sender has to know about the other's shape.
  *
  * Runs AFTER `httpRequestProblem()`, so it may assume the well-formedness that helper enforces

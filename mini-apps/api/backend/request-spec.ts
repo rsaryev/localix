@@ -95,7 +95,7 @@ export interface RequestSpec {
   /** Follow 3xx responses. Each hop is re-checked against the SSRF guard. Defaults to true. */
   followRedirects?: boolean
   /**
-   * Per-request send overrides. Absent means "use the plugin's configured default" — these do NOT
+   * Per-request send overrides. Absent means "use the mini app's configured default" — these do NOT
    * duplicate the config, they OVERRIDE it for the one request that sets them (a slow report that
    * needs 60s, an endpoint whose redirect chain is longer than the global cap). `timeoutMs` bounds
    * the WHOLE chain, not each hop; `maxRedirects` caps how many hops are followed before the send

@@ -8,7 +8,7 @@ import {
 /**
  * Central, framework-neutral registry for live context published by mounted tab bodies.
  *
- * The registry deliberately knows neither plugin names nor URI namespaces. A plugin publishes
+ * The registry deliberately knows neither mini app names nor URI namespaces. A mini app publishes
  * canonical binding drafts; the grid combines them with the tab's static contribution and the
  * composer later turns the same drafts into refs. Keeping this outside React state also lets a
  * chart/log viewer publish at its own cadence without rewriting the persisted WorkItem payload.
@@ -66,16 +66,16 @@ export function publishLiveTabMessageContext(
 ): void {
   const current = publications.get(tabId)
   // Every producer crosses the same runtime boundary, and the value is validated BEFORE anything
-  // reads it. Reading `context.bindings` first let one plugin that published
+  // reads it. Reading `context.bindings` first let one mini app that published
   // `{ strategy: 'replace', text }` crash its whole tab ("undefined is not an object (evaluating
-  // 'context.bindings.length')") — types are erased at runtime, and a plugin built
+  // 'context.bindings.length')") — types are erased at runtime, and a mini app built
   // by the app is not type-checked. Malformed input clears the tab's context, loudly, and never
   // throws into the render.
   const removal = context === null || (Array.isArray(context.bindings) && !context.bindings.length)
   const normalized = removal ? null : normalizePublishedMessageContext(context)
   if (!removal && !normalized) {
     console.warn(
-      '[plugin-ui] ignored an invalid live message context: publish { strategy, bindings } built with the SDK binding drafts',
+      '[mini-app-ui] ignored an invalid live message context: publish { strategy, bindings } built with the SDK binding drafts',
       context,
     )
   }
@@ -87,7 +87,7 @@ export function publishLiveTabMessageContext(
   }
   const next: PublishedMessageContext = {
     strategy: normalized.strategy,
-    // The host owns the stored value: do not retain mutable plugin objects, and
+    // The host owns the stored value: do not retain mutable mini app objects, and
     // enforce the same facet ceiling used at the sandbox boundary.
     bindings: normalized.bindings
       .slice(0, PUBLISHED_MESSAGE_CONTEXT_MAX_BINDINGS)

@@ -37,7 +37,7 @@ describe('routeValidator', () => {
     expect(JSON.stringify(body)).not.toContain('ZodError')
   })
 
-  test('flat is { error, code, detail } with the plugin code', async () => {
+  test('flat is { error, code, detail } with the mini app code', async () => {
     const res = await post(appWith({ envelope: 'flat', code: 'bad_request' }), { name: '' })
     const body = (await res.json()) as { error: string; code: string; detail: string }
     expect(typeof body.error).toBe('string')

@@ -10,7 +10,7 @@ beforeAll(() => {
 })
 afterAll(() => teardown())
 
-test('core and plugin tools share pins, grouping and a catalog; management opens Settings', async () => {
+test('core and mini app tools share pins, grouping and a catalog; management opens Settings', async () => {
   const React = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { WorkspaceShell } = await import('./WorkspaceShell')
@@ -64,8 +64,8 @@ test('core and plugin tools share pins, grouping and a catalog; management opens
           label: id,
           icon: <span />,
           customizable: true,
-          plugin: true,
-          pluginName: id,
+          miniApp: true,
+          miniAppName: id,
           onClick: () => opened.push(id),
         })),
       ]}

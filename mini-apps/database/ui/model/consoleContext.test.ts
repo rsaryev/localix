@@ -70,7 +70,7 @@ describe('mergeMessageContext (two authors, one tab slot)', () => {
   test('a file-view selection keeps its replace strategy and comes first', () => {
     const own = {
       strategy: 'replace' as const,
-      bindings: [{ kind: 'context', source: 'plugin', target: { kind: 'snippet' } }] as never,
+      bindings: [{ kind: 'context', source: 'mini-app', target: { kind: 'snippet' } }] as never,
     }
     const merged = mergeMessageContext(own, [facet])
     expect(merged?.strategy).toBe('replace')

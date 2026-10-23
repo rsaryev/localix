@@ -8,7 +8,7 @@ import {
 } from '@/entities/workspace-grid/model'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { requireOpenChat } from '@/shared/lib/pageOpenChat'
-import { pluginAppActions, useInstalledPluginApps } from '@/features/plugin-apps'
+import { standaloneAppActions, useInstalledStandaloneApps } from '@/features/standalone-mini-apps'
 import { openPageWorkItem } from './openPageWorkItem'
 import { miniAppViewRailAction } from './miniAppViewRailAction'
 import { requestConfirmation } from '@/shared/lib/confirmAction'
@@ -34,9 +34,9 @@ interface ViewletDef {
   defaultArea: RailArea
   /** Keybinding id whose live chord annotates the rail tooltip (opt-in). */
   chordId?: string
-  /** Contributed by a bundled plugin's `ui/register.tsx`; grouped by manifest category. */
-  plugin?: boolean
-  pluginName?: string
+  /** Contributed by a bundled mini app's `ui/register.tsx`; grouped by manifest category. */
+  miniApp?: boolean
+  miniAppName?: string
   resourceUri?: string
 }
 
@@ -81,9 +81,9 @@ const coreViewlets = (openSessionId: string | null): ViewletDef[] => [
 interface UseRailActionsArgs {
   /** The chat the page has open — where a session view a rail button opens belongs. */
   openSessionId: string | null
-  /** Third-party plugin VIEWS — one rail button each, each opening its bridged
+  /** Third-party mini app VIEWS — one rail button each, each opening its bridged
    *  iframe as an editor-grid tab of the open chat. */
-  pluginViews: MiniAppViewSpec[]
+  miniAppViews: MiniAppViewSpec[]
   capabilityScope: string
   /** Host "keep awake" toggle state (rail button in the bottom group). */
   keepAwake: ReturnType<typeof useSystemToggle>
@@ -94,17 +94,17 @@ interface UseRailActionsArgs {
 
 /**
  * Builds the LEFT-rail action buttons for the workspace shell, now driving the
- * editor grid directly (plugin views + Settings open as grid WorkItems).
+ * editor grid directly (mini app views + Settings open as grid WorkItems).
  *
  * The built-in section viewlets (Office / Source Control / Terminal / Usage)
  * don't get a rail button each — they open as grid tabs from
- * their own surfaces. What remains here is what nothing else surfaces: plugin
+ * their own surfaces. What remains here is what nothing else surfaces: mini app
  * views (content-driven), the host keep-awake toggle, reset-layout, and
  * Settings as a familiar always-there entry point.
  */
 export function useRailActions({
   openSessionId,
-  pluginViews,
+  miniAppViews,
   capabilityScope,
   keepAwake,
   isMobile,
@@ -112,7 +112,7 @@ export function useRailActions({
   setConfirmKeepAwake,
 }: UseRailActionsArgs): RailAction[] {
   'use no memo'
-  // React Compiler otherwise retains the assembled action array from before async plugin
+  // React Compiler otherwise retains the assembled action array from before async mini app
   // registration, even after the activation revision and contributed viewlets change.
   const resetLayout = useGridStore((s) => s.resetLayout)
   // The id + kind of the FOCUSED group's VISIBLE active tab (scope-correct — not the
@@ -143,19 +143,19 @@ export function useRailActions({
         label: v.label,
         defaultArea: v.defaultArea,
         chordId: v.chordId,
-        // Core feature contribs use the same open registry as bundled plugins.
+        // Core feature contribs use the same open registry as bundled mini apps.
         // Ownership is stamped only by miniAppUiHostFor(), so provenance—not the
         // fact that an entry was contributed—decides which overflow group owns it.
-        plugin: isMiniAppRailViewlet(v),
+        miniApp: isMiniAppRailViewlet(v),
         toolCategory: v.toolCategory,
-        pluginName: v.pluginName,
-        resourceUri: v.pluginName
+        miniAppName: v.miniAppName,
+        resourceUri: v.miniAppName
           ? capabilityResourceUri({
               kind: 'view',
               id: v.kind,
               scope: capabilityScope,
               label: v.label,
-              description: `View contributed by ${v.pluginName}`,
+              description: `View contributed by ${v.miniAppName}`,
               enabled: true,
             })
           : undefined,
@@ -166,11 +166,11 @@ export function useRailActions({
   )
   const viewlets: ViewletDef[] = [...coreViewlets(openSessionId), ...contributedViewlets]
 
-  // A plugin's rail button also offers its screen as a Mac app (`features/plugin-apps`).
-  const pluginApps = useInstalledPluginApps()
-  const appMenu = (pluginName: string | undefined, title: string, Icon: ViewletDef['icon']) =>
-    pluginName
-      ? pluginAppActions({ plugin: pluginName, title, Icon }, pluginApps).map(
+  // A mini app's rail button also offers its screen as a Mac app (`features/standalone-mini-apps`).
+  const standaloneApps = useInstalledStandaloneApps()
+  const appMenu = (miniAppName: string | undefined, title: string, Icon: ViewletDef['icon']) =>
+    miniAppName
+      ? standaloneAppActions({ miniApp: miniAppName, title, Icon }, standaloneApps).map(
           ({ id, label, run }) => ({ id, label, onSelect: run }),
         )
       : undefined
@@ -192,9 +192,9 @@ export function useRailActions({
         open,
         defaultArea,
         chordId,
-        plugin,
+        miniApp,
         toolCategory,
-        pluginName,
+        miniAppName,
         resourceUri,
       }) => {
         // Active when a tab of this kind is the focused tab; clicking it then closes
@@ -209,11 +209,11 @@ export function useRailActions({
           active: isActive,
           customizable: true,
           defaultArea,
-          plugin,
+          miniApp,
           toolCategory,
-          pluginName,
+          miniAppName,
           resourceUri,
-          extraMenu: appMenu(pluginName, label, icon),
+          extraMenu: appMenu(miniAppName, label, icon),
           onClick: () =>
             runWorkspaceViewAction(() =>
               isActive && focusedActiveId ? closeGridTab(focusedActiveId) : open(),
@@ -221,7 +221,7 @@ export function useRailActions({
         }
       },
     ),
-    ...pluginViews.map((view) =>
+    ...miniAppViews.map((view) =>
       miniAppViewRailAction({
         view,
         focusedActiveId,

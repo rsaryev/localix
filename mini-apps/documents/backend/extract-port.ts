@@ -1,9 +1,9 @@
 /**
- * The plugin's implementation of the standard `document.extract` capability: maps the
+ * The mini app's implementation of the standard `document.extract` capability: maps the
  * documents service's `ExtractedDocument` onto agent-core's narrow
  * `DocumentExtractPort` shape (the seam the core `read`
  * office-fallback consume). Relocated from the chat runtime's boundary adapter —
- * the mapping belongs to whoever OWNS the service, which is now this plugin.
+ * the mapping belongs to whoever OWNS the service, which is now this mini app.
  */
 import type {
   DocExtractMetadata,

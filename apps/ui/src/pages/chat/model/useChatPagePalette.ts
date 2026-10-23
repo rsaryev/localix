@@ -13,7 +13,7 @@ import { buildThirdPartyViewCommands } from '@/shared/contrib/thirdPartyViewComm
 import { railSectionRegistry, railViewletRegistry } from '@/shared/contrib/uiContrib'
 import { setUiCommands, type PaletteCommand } from '@/shared/contrib/uiCommands'
 import { useUiLocationCommands } from '@/shared/contrib/useUiLocationCommands'
-import { pluginAppActions, useInstalledPluginApps } from '@/features/plugin-apps'
+import { standaloneAppActions, useInstalledStandaloneApps } from '@/features/standalone-mini-apps'
 import { openPageWorkItem } from './openPageWorkItem'
 
 interface ChatPagePaletteOptions {
@@ -85,7 +85,7 @@ export function useChatPagePalette({
   }, [enabledMiniAppNames, setSidebarOpen, switchSection])
 
   // Palette opens are page commands: a view opens in the chat the page has open.
-  const pluginApps = useInstalledPluginApps()
+  const standaloneApps = useInstalledStandaloneApps()
   const contributedViewletCommands = useMemo<PaletteCommand[]>(() => {
     void enabledMiniAppNames
     return railViewletRegistry.list().flatMap((viewlet) => [
@@ -102,15 +102,15 @@ export function useChatPagePalette({
             title: viewlet.title,
           }),
       },
-      // A plugin's screen can also be its own Mac app (`features/plugin-apps`).
-      ...(viewlet.pluginName
-        ? pluginAppActions(
+      // A mini app's screen can also be its own Mac app (`features/standalone-mini-apps`).
+      ...(viewlet.miniAppName
+        ? standaloneAppActions(
             {
-              plugin: viewlet.pluginName,
+              miniApp: viewlet.miniAppName,
               title: viewlet.title,
               Icon: viewlet.Icon,
             },
-            pluginApps,
+            standaloneApps,
           ).map((action) => ({
             ...action,
             group: 'App',
@@ -119,18 +119,18 @@ export function useChatPagePalette({
           }))
         : []),
     ])
-  }, [enabledMiniAppNames, openSessionId, pluginApps])
+  }, [enabledMiniAppNames, openSessionId, standaloneApps])
 
   const thirdPartyViewCommands = useMemo<PaletteCommand[]>(() => {
     // The builder reads the runtime store directly; this version is its invalidation token.
     void thirdPartyViewsVersion
     return buildThirdPartyViewCommands({
-      openWorkItem: ({ pluginName, projectId, viewId, fullName, title }) =>
+      openWorkItem: ({ miniAppName, projectId, viewId, fullName, title }) =>
         openPageWorkItem(openSessionId, {
-          workKind: 'plugin-view',
-          id: `plugin-view:${fullName}`,
+          workKind: 'mini-app-view',
+          id: `mini-app-view:${fullName}`,
           title,
-          payload: { pluginName, projectId, viewId },
+          payload: { miniAppName, projectId, viewId },
         }),
     })
   }, [thirdPartyViewsVersion, openSessionId])
@@ -427,7 +427,7 @@ export function useChatPagePalette({
     ],
   )
 
-  // Plugin command search and URI-anchor activation consume the same registry.
+  // Mini app command search and URI-anchor activation consume the same registry.
   useEffect(() => setUiCommands(commands), [commands])
   return commands
 }

@@ -28,12 +28,12 @@ const ROOT_READERS = [
   'scripts/check-architecture.mjs',
   'scripts/check-public-repo.mjs',
   'scripts/dev-api.mjs',
-  'scripts/dev-plugin-watch.mjs',
+  'scripts/dev-mini-app-watch.mjs',
   'scripts/pre-commit-plan.mjs',
   'scripts/screenshots/workbench-coverage.mjs',
   'scripts/stage-dropins.mjs',
-  'scripts/stage-plugin-kit.mjs',
-  'scripts/stage-plugin-ui.mjs',
+  'scripts/stage-mini-app-kit.mjs',
+  'scripts/stage-mini-app-ui.mjs',
   'scripts/stage-third-party-notices.mjs',
 ]
 

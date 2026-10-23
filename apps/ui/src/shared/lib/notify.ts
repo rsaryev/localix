@@ -22,7 +22,7 @@ interface NotificationOptions {
   /** Structured provenance for publishers that know a more precise resource than the active chat. */
   origin?: NotificationOrigin
   /**
-   * Who published this, for a row that would otherwise read "System" — a plugin's display name,
+   * Who published this, for a row that would otherwise read "System" — a mini app's display name,
    * set by the host's attribution (`shared/contrib/miniAppToast.ts`). A LABEL on the row's origin,
    * not an origin of its own: the row still files under the chat it happened in.
    */

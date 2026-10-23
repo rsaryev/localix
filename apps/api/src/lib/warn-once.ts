@@ -1,11 +1,11 @@
 /**
  * Log a warning once per distinct cause, and the repeats quietly.
  *
- * A plugin that cannot load is reported again by every pass that reaches it: one launch of a
- * workspace with two broken plugins wrote forty near-identical `plugin_backend.warn` lines, which
- * buried the one line that said what was wrong and made a healthy start read as a noisy one. The
- * first report of a cause stays a warning; the same cause again goes to `debug`, still on record
- * when a log level is turned up, never lost.
+ * A mini app that cannot load is reported again by every pass that reaches it: one launch of a
+ * workspace with two broken mini apps wrote forty near-identical `mini_app_backend.warn` lines,
+ * which buried the one line that said what was wrong and made a healthy start read as a noisy one.
+ * The first report of a cause stays a warning; the same cause again goes to `debug`, still on
+ * record when a log level is turned up, never lost.
  */
 export interface WarnLogger {
   warn(entry: Record<string, unknown>): void
@@ -21,6 +21,9 @@ function causeOf(entry: Record<string, unknown>): string {
 
 /** The causes already warned about by plugin loading, shared by every site that reports them. */
 export const PLUGIN_WARNINGS = new Set<string>()
+
+/** The same for mini app loading: its backends, channels and service. */
+export const MINI_APP_WARNINGS = new Set<string>()
 
 /** A logger that warns once per cause (`seen` is per process unless one is passed in). */
 export function warnOnce(logger: WarnLogger, seen: Set<string> = new Set()): WarnLogger['warn'] {

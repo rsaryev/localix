@@ -7,8 +7,8 @@ import { FALLBACK_META, toolDisplayLabel, toolMeta } from './meta'
 import { contributedToolCard, getToolCard, TOOL_CARDS } from './registry'
 
 /**
- * A plugin's tool reads through the same table as a built-in one (`host.toolCards`), and these are
- * the contract guards: each names the mutation that turns it red.
+ * A mini app's tool reads through the same table as a built-in one (`host.toolCards`), and these
+ * are the contract guards: each names the mutation that turns it red.
  */
 const OWNER = 'tool-card-fixture'
 const Icon = () => null
@@ -17,7 +17,7 @@ const Card = () => null
 function contribution(tool: string, label = 'Board'): ToolCardContribution {
   return {
     tool,
-    pluginName: OWNER,
+    miniAppName: OWNER,
     presentation: { label, noun: 'tasks', verb: 'Updating board', Icon, stackable: true },
     Component: Card,
   }
@@ -29,7 +29,7 @@ afterEach(() => {
 })
 
 describe('contributed tool presentation', () => {
-  test('a plugin tool reads with its own row, the same object every time', () => {
+  test('a mini app tool reads with its own row, the same object every time', () => {
     // MUTATION: drop the contributed lookup from `toolMeta` → the fallback wrench, red.
     setEnabledMiniAppNames(new Set([OWNER]))
     registerToolCard(contribution('fixture_board'))
@@ -43,7 +43,7 @@ describe('contributed tool presentation', () => {
     expect(getToolCard('fixture_board')).toBe(Card)
   })
 
-  test('a disabled plugin leaves its tool generic', () => {
+  test('a disabled mini app leaves its tool generic', () => {
     // MUTATION: skip the activation gate in `toolCardFor` → red.
     setEnabledMiniAppNames(new Set())
     registerToolCard(contribution('fixture_board'))
@@ -52,7 +52,7 @@ describe('contributed tool presentation', () => {
     expect(contributedToolCard('fixture_board')).toBeUndefined()
   })
 
-  test('a plugin cannot restyle or replace a built-in tool', () => {
+  test('a mini app cannot restyle or replace a built-in tool', () => {
     // MUTATION: consult the contributed table before the core one → red.
     setEnabledMiniAppNames(new Set([OWNER]))
     registerToolCard(contribution('read', 'Hijacked'))

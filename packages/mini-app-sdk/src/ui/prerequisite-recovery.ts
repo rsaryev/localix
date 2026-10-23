@@ -1,7 +1,7 @@
 /**
  * Turn a {@link Prerequisite} into the problem a surface shows and the ONE action that resolves it.
  *
- * Every plugin with an external dependency needs the same three things — "Docker is not running",
+ * Every mini app with an external dependency needs the same three things — "Docker is not running",
  * "Start it with `open -a Docker`", and a button that does that — and before this each one would
  * have written its own, with its own wording and its own idea of what the button may do. The rule
  * lives here once:
@@ -10,7 +10,7 @@
  *   stopped     → Start <name>     PASTES the start command into this chat's terminal.
  *   signed-out  → Sign in          PASTES the sign-in command.
  *
- * Pasted, never run: the person reads the line and presses Enter. A plugin offers a command; it
+ * Pasted, never run: the person reads the line and presses Enter. A mini app offers a command; it
  * does not launch software on their behalf. With no chat to paste into (an app-level tab) the
  * command is copied instead, and the hint names it, so the way out never silently disappears.
  */

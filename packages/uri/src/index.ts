@@ -6,7 +6,7 @@ export type LocalixUiPrimitive =
   | 'overlay'
   | 'picker'
   | 'settings'
-  | 'plugin'
+  | 'mini-app'
   | 'command'
   | 'action'
 
@@ -17,7 +17,7 @@ export const LOCALIX_UI_PRIMITIVES: ReadonlySet<string> = new Set<LocalixUiPrimi
   'overlay',
   'picker',
   'settings',
-  'plugin',
+  'mini-app',
   'command',
   'action',
 ])

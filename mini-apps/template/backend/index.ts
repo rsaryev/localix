@@ -9,7 +9,7 @@ import { createSystemReader } from './system'
 import { createProcessService } from './processes'
 import { createSystemMarks } from './system-marks'
 
-/** The router's mount path: `/rpc/<plugin name>`, so it is this plugin's own. */
+/** The router's mount path: `/rpc/<mini app name>`, so it is this mini app's own. */
 export const ROUTE_PATH = '/rpc/template'
 
 // Module-level: the host calls `register(ctx)` more than once (the backend, and each run's
@@ -38,7 +38,7 @@ export function register(ctx: MiniAppContext): MiniAppRegistration {
   // instead of polling for it. A per-chat store would resolve `ctx.sessionStorage` here instead.
   const feed = createStoreFeed({
     watchPath: ctx.watchPath ?? ctx.host?.watchPath,
-    plugin: 'template',
+    miniApp: 'template',
     resolveDir: async (_userId, sessionId) => (sessionId === null ? ctx.dataDir : null),
   })
   return {
@@ -101,7 +101,7 @@ export function register(ctx: MiniAppContext): MiniAppRegistration {
         mutates: true,
         // WHERE the change lands, for the permission gate and session modes. `mutates: true`
         // alone reads as `external` (the widest class), so a session that refuses network side
-        // effects would refuse a local note too. Marks live in the plugin's data directory and
+        // effects would refuse a local note too. Marks live in the mini app's data directory and
         // outlive the chat: the agent's own durable state, `host`.
         classify: () => ({ effect: 'host' }),
         permissionPaths: () => [],

@@ -61,9 +61,9 @@ const TranscriptTab = lazy(() =>
 const MessageReplayTab = lazy(() =>
   import('@/features/inspector/ui/MessageReplayTab').then((m) => ({ default: m.MessageReplayTab })),
 )
-const BridgedPluginView = lazy(() =>
-  import('@/features/inspector/ui/BridgedPluginView').then((m) => ({
-    default: m.BridgedPluginView,
+const BridgedMiniAppView = lazy(() =>
+  import('@/features/inspector/ui/BridgedMiniAppView').then((m) => ({
+    default: m.BridgedMiniAppView,
   })),
 )
 
@@ -127,9 +127,9 @@ function WorkItemBodyInner({
   resolvedTheme,
   publishMessageContext,
 }: WorkItemBodyProps & { publishMessageContext: PublishMessageContext }) {
-  // Plugin-exclusive kinds render through their contributed Component, which a plugin rebuild can
-  // replace under the open tab (see MiniAppWorkItemBody). A contributed body is not the
-  // application: a plugin that threw during render used to hit the ROOT boundary and replace the
+  // Mini-app-exclusive kinds render through their contributed Component, which a mini app rebuild
+  // can replace under the open tab (see MiniAppWorkItemBody). A contributed body is not the
+  // application: a mini app that threw during render used to hit the ROOT boundary and replace the
   // whole workspace. Reserved core kinds always take the built-in switch below.
   if (!isCoreWorkItemKind(item.kind))
     return (
@@ -197,7 +197,7 @@ function WorkItemBodyInner({
         )
       if (contributedEditors.length === 0) return renderBuiltin()
       // One match renders directly unless core also has a meaningful native
-      // image/text surface; two plugins show the generic chooser unless exactly one is
+      // image/text surface; two mini apps show the generic chooser unless exactly one is
       // `preferred` (`initialFileEditorSelection`).
       return (
         <ContributedFileBody
@@ -236,17 +236,17 @@ function WorkItemBodyInner({
       return <DiffWorkItemBody item={item} />
     case 'preview':
       return <SessionPreview item={item} active={visible} />
-    case 'plugin-view': {
-      const pluginName = p<string>(item, 'pluginName') ?? ''
+    case 'mini-app-view': {
+      const miniAppName = p<string>(item, 'miniAppName') ?? ''
       const projectId = p<string>(item, 'projectId') ?? ''
       const viewId = p<string>(item, 'viewId') ?? ''
       return (
-        <BridgedPluginView
-          pluginName={pluginName}
+        <BridgedMiniAppView
+          miniAppName={miniAppName}
           projectId={projectId}
           viewName={viewId}
           title={item.title}
-          fetchHtml={() => backendClient.getMiniAppViewHtml(pluginName, viewId, { projectId })}
+          fetchHtml={() => backendClient.getMiniAppViewHtml(miniAppName, viewId, { projectId })}
           publishMessageContext={publishMessageContext}
         />
       )

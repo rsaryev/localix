@@ -1,8 +1,8 @@
 /**
- * Singleton registry + dispatcher for `plugin.command` session-stream frames — the
- * typed channel for plugin→UI COMMANDS. A plugin's
- * `ui/register.tsx` registers a sink for its (plugin, channel) key; the chat
- * runtime's demultiplexer publishes every `plugin.command` frame here.
+ * Singleton registry + dispatcher for `mini-app.command` session-stream frames — the
+ * typed channel for mini app→UI COMMANDS. A mini app's
+ * `ui/register.tsx` registers a sink for its (mini app, channel) key; the chat
+ * runtime's demultiplexer publishes every `mini-app.command` frame here.
  *
  * Three properties a coalescing data bus (the retired `ui.data` path) cannot give a command:
  * - NON-COALESCING — every command is delivered, in stream order (no 32 ms
@@ -20,14 +20,14 @@ export interface MiniAppCommandEvent {
   sessionId: string
   /** True when that session is the one on screen — the sink's focus-policy input. */
   active: boolean
-  /** Opaque plugin payload — the sink parses it with its own structural guard. */
+  /** Opaque mini app payload — the sink parses it with its own structural guard. */
   payload: unknown
   commandId: string
   seq: number
   /**
    * Answer an AWAITED command (`emitCommandWithReply` on the backend): the stream
    * router binds it to this frame's `commandId` and relays it over the
-   * `plugin-command-result` WS RPC to settle the server-side pending promise.
+   * `mini-app-command-result` WS RPC to settle the server-side pending promise.
    * A sink that has nothing to say simply never calls it — the server times out
    * to an honest `noReply`. Dedup above guarantees at most one delivery per
    * commandId, so a replayed frame can never double-reply.
@@ -35,17 +35,17 @@ export interface MiniAppCommandEvent {
   reply?: (payload: MiniAppCommandReply) => void
 }
 
-/** A sink's answer to one awaited command. `result` is the plugin's own shape. */
+/** A sink's answer to one awaited command. `result` is the mini app's own shape. */
 export interface MiniAppCommandReply {
   ok: boolean
   result?: unknown
   error?: string
 }
 
-/** The `plugin.command` frame as the stream router hands it over (sans `type`). */
+/** The `mini-app.command` frame as the stream router hands it over (sans `type`). */
 export interface MiniAppCommandFrame {
   sessionId: string
-  plugin: string
+  miniApp: string
   channel: string
   payload: unknown
   commandId: string
@@ -54,7 +54,7 @@ export interface MiniAppCommandFrame {
 
 type Handler = (event: MiniAppCommandEvent) => void
 
-const key = (plugin: string, channel: string) => `${plugin}:${channel}`
+const key = (miniApp: string, channel: string) => `${miniApp}:${channel}`
 
 const handlers = new Map<string, Set<Handler>>()
 
@@ -65,9 +65,9 @@ const appliedCommandIds = new Set<string>()
 const MAX_APPLIED_IDS = 500
 
 export const miniAppCommandBus = {
-  /** Register a sink for one (plugin, channel) key. Returns the unsubscribe. */
-  register(plugin: string, channel: string, handler: Handler): () => void {
-    const k = key(plugin, channel)
+  /** Register a sink for one (mini app, channel) key. Returns the unsubscribe. */
+  register(miniApp: string, channel: string, handler: Handler): () => void {
+    const k = key(miniApp, channel)
     let set = handlers.get(k)
     if (!set) {
       set = new Set()
@@ -83,10 +83,10 @@ export const miniAppCommandBus = {
   },
 
   /**
-   * Dispatch one frame to its (plugin, channel) sinks. `active` is computed by the
+   * Dispatch one frame to its (mini app, channel) sinks. `active` is computed by the
    * caller (the stream router) against the chat store. A frame whose `commandId`
    * was already applied (replay) is dropped; a frame with no registered sink is
-   * dropped too — core cannot queue for a plugin UI that never registered.
+   * dropped too — core cannot queue for a mini app UI that never registered.
    */
   publish(
     frame: MiniAppCommandFrame,
@@ -96,7 +96,7 @@ export const miniAppCommandBus = {
     if (appliedCommandIds.has(frame.commandId)) return
     if (appliedCommandIds.size >= MAX_APPLIED_IDS) appliedCommandIds.clear()
     appliedCommandIds.add(frame.commandId)
-    const set = handlers.get(key(frame.plugin, frame.channel))
+    const set = handlers.get(key(frame.miniApp, frame.channel))
     if (!set) return
     const event: MiniAppCommandEvent = {
       sessionId: frame.sessionId,

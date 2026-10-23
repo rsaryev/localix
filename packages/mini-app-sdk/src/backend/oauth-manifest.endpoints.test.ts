@@ -4,7 +4,7 @@ import { createManifestOAuthAdapter } from './oauth-manifest'
 import type { ManifestOAuthSpec } from './oauth-manifest'
 
 /**
- * A manifest's endpoint URLs are UNTRUSTED input — a plugin author writes them, and
+ * A manifest's endpoint URLs are UNTRUSTED input — a mini app author writes them, and
  * the marketplace model means that author is not necessarily the user. Two of them
  * leave the process: `token.url` receives the authorization code, and
  * `authorize.url` is handed to the user's browser. Neither was checked.
@@ -18,7 +18,7 @@ const spec = (over: Partial<ManifestOAuthSpec> = {}): ManifestOAuthSpec => ({
 })
 
 const build = (over: Partial<ManifestOAuthSpec>) => () =>
-  createManifestOAuthAdapter('plugin:probe', spec(over))
+  createManifestOAuthAdapter('mini-app:probe', spec(over))
 
 describe('manifest OAuth endpoints', () => {
   test('an https spec builds, as before', () => {
@@ -58,9 +58,9 @@ describe('manifest OAuth endpoints', () => {
     expect(build({ token: { url: 'not a url' } })).toThrow()
   })
 
-  test('the refusal names the plugin and the offending field', () => {
-    // A plugin author has to be able to tell WHICH of three URLs is wrong.
+  test('the refusal names the mini app and the offending field', () => {
+    // A mini app author has to be able to tell WHICH of three URLs is wrong.
     expect(build({ refresh: { url: 'http://example.com/refresh' } })).toThrow(/refresh/)
-    expect(build({ refresh: { url: 'http://example.com/refresh' } })).toThrow(/plugin:probe/)
+    expect(build({ refresh: { url: 'http://example.com/refresh' } })).toThrow(/mini-app:probe/)
   })
 })

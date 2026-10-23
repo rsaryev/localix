@@ -1,7 +1,7 @@
 /**
  * The Kubernetes routes, exercised through Hono's own `app.request()` — no server, no port.
  *
- * This file exists because the plugin had NO route test at all, and the two claims most worth
+ * This file exists because the mini app had NO route test at all, and the two claims most worth
  * pinning are boundary ones the service tests cannot see:
  *
  *  1. A validation failure answers the SAME `{ error, code, detail }` body every other failure

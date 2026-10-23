@@ -3,10 +3,10 @@
     "bytes": 514
   },
   "./app-manifest": {
-    "bytes": 2841
+    "bytes": 2826
   },
   "./backend": {
-    "bytes": 49191,
+    "bytes": 47446,
     "shake": {
       "export": "ASSISTANT_BINDINGS_MAX",
       "bytes": 31
@@ -19,19 +19,19 @@
     "bytes": 2546
   },
   "./legacy-manifest": {
-    "bytes": 3765
+    "bytes": 3767
   },
   "./manifest": {
-    "bytes": 2807
+    "bytes": 2836
   },
   "./manifest-label": {
-    "bytes": 719
+    "bytes": 721
   },
   "./manifest-primitives": {
-    "bytes": 841
+    "bytes": 857
   },
   "./navigation": {
-    "bytes": 4073
+    "bytes": 443
   },
   "./opponent": {
     "bytes": 811
@@ -40,7 +40,7 @@
     "bytes": 1994
   },
   "./resource-refs": {
-    "bytes": 12172
+    "bytes": 10421
   },
   "./rich-text": {
     "bytes": 3611
@@ -56,44 +56,44 @@
     }
   },
   "./session-resource": {
-    "bytes": 2250
+    "bytes": 520
   },
   "./store-changes": {
-    "bytes": 489
+    "bytes": 490
   },
   "./typed-error": {
     "bytes": 905
   },
   "./ui": {
-    "bytes": 64279,
+    "bytes": 62553,
     "shake": {
       "export": "CSV_CONTENT_TYPE",
       "bytes": 40
     }
   },
   "./ui-artifact": {
-    "bytes": 976
+    "bytes": 994
   },
   "./ui/chart-export": {
-    "bytes": 2632
+    "bytes": 2636
   },
   "./ui/charts": {
-    "bytes": 8608
+    "bytes": 8610
   },
   "./ui/classes": {
     "bytes": 926
   },
   "./ui/commands": {
-    "bytes": 760
+    "bytes": 762
   },
   "./ui/comments": {
     "bytes": 1085
   },
   "./ui/components": {
-    "bytes": 1045
+    "bytes": 1048
   },
   "./ui/file-resource-sync": {
-    "bytes": 6778
+    "bytes": 6782
   },
   "./ui/file-types": {
     "bytes": 2166,
@@ -110,13 +110,13 @@
     }
   },
   "./ui/game-table": {
-    "bytes": 9918
+    "bytes": 9935
   },
   "./ui/interactions": {
-    "bytes": 1754
+    "bytes": 1758
   },
   "./ui/message-binding-drag": {
-    "bytes": 7628
+    "bytes": 7638
   },
   "./ui/now": {
     "bytes": 670
@@ -125,13 +125,13 @@
     "bytes": 1326
   },
   "./ui/prerequisite-recovery": {
-    "bytes": 2542
+    "bytes": 2550
   },
   "./ui/problems": {
     "bytes": 1529
   },
   "./ui/realtime-feed": {
-    "bytes": 3087
+    "bytes": 3091
   },
   "./ui/resource-sync": {
     "bytes": 2438
@@ -143,22 +143,22 @@
     "bytes": 644
   },
   "./ui/route-snapshot": {
-    "bytes": 5506
+    "bytes": 5511
   },
   "./ui/runtime": {
-    "bytes": 4137
+    "bytes": 4164
   },
   "./ui/runtime-hooks": {
-    "bytes": 3119
+    "bytes": 3128
   },
   "./ui/segmented-control": {
-    "bytes": 3583
+    "bytes": 3585
   },
   "./ui/session-activity": {
     "bytes": 1389
   },
   "./ui/session-game": {
-    "bytes": 983
+    "bytes": 985
   },
   "./ui/session-tree": {
     "bytes": 435
@@ -167,28 +167,28 @@
     "bytes": 3655
   },
   "./ui/stats-charts": {
-    "bytes": 4321
+    "bytes": 4323
   },
   "./ui/storage": {
     "bytes": 900
   },
   "./ui/store-resource": {
-    "bytes": 3834
+    "bytes": 3842
   },
   "./ui/store-snapshot": {
-    "bytes": 9284
+    "bytes": 9299
   },
   "./ui/table": {
     "bytes": 32
   },
   "./ui/testing": {
-    "bytes": 3265
+    "bytes": 3269
   },
   "./ui/transport": {
-    "bytes": 3586
+    "bytes": 3601
   },
   "./ui/use-problem-report": {
-    "bytes": 1725
+    "bytes": 1727
   },
   "./ui/utilities": {
     "bytes": 3683

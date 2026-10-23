@@ -1,7 +1,7 @@
 import type { OAuthAdapter, OAuthCredential, OAuthRequestAuth } from './oauth-types'
 
 /**
- * Manifest-driven OAuth-PKCE engine for plugin account connections. A plugin
+ * Manifest-driven OAuth-PKCE engine for mini app account connections. A mini app
  * declares the flow as data — authorize/token endpoints, clientId, scopes,
  * parameter names and response-field mappings — and the engine turns it into a
  * runnable `OAuthAdapter` without service-specific host code.
@@ -161,7 +161,7 @@ const LOOPBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]'])
 /**
  * Reject an endpoint a manifest should never have declared.
  *
- * These URLs are untrusted input: a plugin author writes them, and in a marketplace
+ * These URLs are untrusted input: a mini app author writes them, and in a marketplace
  * that author is not necessarily the user. Two of them leave the process —
  * `token.url` receives the authorization CODE, and `authorize.url` is handed to the
  * user's browser — so a cleartext hop hands the code to anyone on the path, and a

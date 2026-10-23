@@ -22,8 +22,8 @@ function directory() {
   return { agents, asked }
 }
 
-describe('plugin agent directory', () => {
-  // A name a plugin stores from here (say, a card's assignee) must be one the host would also
+describe('mini app agent directory', () => {
+  // A name a mini app stores from here (say, a card's assignee) must be one the host would also
   // run: listing a disabled agent hands out an address that delegation then refuses.
   test('lists only enabled agents of the session’s own scope', async () => {
     const { agents, asked } = directory()
@@ -52,7 +52,7 @@ describe('plugin agent directory', () => {
   })
 
   // The session is resolved through an owner-scoped lookup BEFORE the registry is read: a
-  // plugin passing a foreign or deleted session id must be refused, not shown someone's agents.
+  // mini app passing a foreign or deleted session id must be refused, not shown someone's agents.
   test('refuses a session the user does not own, without reading the registry', async () => {
     const { agents, asked } = directory()
     await expect(agents.list('intruder', 'chat-1')).rejects.toThrow('Session not found')

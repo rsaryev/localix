@@ -350,7 +350,7 @@ export function ChatSurface({ sessionId, isFocused, resolvedTheme }: ChatSurface
 
   return (
     <WorkItemSessionProvider sessionId={sessionId}>
-      {/* Render-null lifecycle surfaces a plugin attaches to a live chat — a repository poller is
+      {/* Render-null lifecycle surfaces a mini app attaches to a live chat — a repository poller is
           one. The host reports only what it owns: whether this chat is focused, and whether a turn
           is running. Anything else a surface needs about the session's directory it watches for
           itself, because the host no longer knows what would make it change. */}

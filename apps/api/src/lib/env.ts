@@ -38,14 +38,14 @@ import type { LogLevel } from './logger'
  * Two roots derive from this one, and only two:
  *   - MACHINE-level key/token state → here (`~/.localix/vault`, `~/.localix/mcp-oauth`);
  *   - host-owned blobs that belong to a DB row → beside the db — move the db and
- *     its blobs must move with it. Plugin data roots come from MiniAppContext.
+ *     its blobs must move with it. Mini app data roots come from MiniAppContext.
  */
 export function localixHome(): string {
   return path.join(userHome(), '.localix')
 }
 
 /**
- * The user's home, for a caller that must be TOLD it (plugin discovery and staging take it as
+ * The user's home, for a caller that must be TOLD it (mini app discovery and staging take it as
  * `homeDir`). The production value of every such parameter comes from here; a test passes a
  * fixture, since Bun reads the home once per process and reassigning `HOME` changes nothing.
  */
@@ -55,12 +55,12 @@ export function userHome(): string {
 
 /**
  * `~/.localix/workspace` — the default project's directory, and the NEUTRAL cwd for any agent
- * tool or plugin host that was given none.
+ * tool or mini app host that was given none.
  *
  * The defect it replaces: those fallbacks read `process.cwd()`, the API's launch directory —
  * the monorepo checkout in development, the install directory in a packaged build — so a call
  * without a cwd ran inside the host application itself. Owned here (not in `features/projects`)
- * because agent-core and the plugin hosts need it and must not import a feature to get it.
+ * because agent-core and the mini app hosts need it and must not import a feature to get it.
  */
 export function localixWorkspaceDir(): string {
   return path.join(localixHome(), 'workspace')

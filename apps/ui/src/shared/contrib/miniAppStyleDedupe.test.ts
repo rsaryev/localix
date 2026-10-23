@@ -10,9 +10,9 @@ const sheet = (rules: FakeRule[]) => ({
 const HOST_FLEX_COL_REVERSE = '.flex-col-reverse { flex-direction: column-reverse; }'
 const HOST_SM_ROW = '.sm\\:flex-row { @media (width >= 40rem) { flex-direction: row; } }'
 
-describe('plugin utilities minus the host', () => {
-  test('a plugin copy of a host utility is dropped, so it cannot out-rank the host variant', () => {
-    // The observed defect: a plugin's unlayered `.flex-col-reverse` beat the host's
+describe('mini app utilities minus the host', () => {
+  test('a mini app copy of a host utility is dropped, so it cannot out-rank the host variant', () => {
+    // The observed defect: a mini app's unlayered `.flex-col-reverse` beat the host's
     // layered `sm:flex-row`, and every dialog footer stacked its buttons at desktop widths.
     const host = hostRuleTexts([
       sheet([
@@ -32,14 +32,14 @@ describe('plugin utilities minus the host', () => {
     ])
   })
 
-  test('a rule the host does not emit stays, including a plugin-only variant', () => {
+  test('a rule the host does not emit stays, including a mini-app-only variant', () => {
     const host = hostRuleTexts([sheet([{ cssText: HOST_FLEX_COL_REVERSE }])])
     const rules: FakeRule[] = [{ cssText: HOST_SM_ROW }]
     expect(dropHostDuplicates(sheet(rules), host)).toBe(0)
     expect(rules).toHaveLength(1)
   })
 
-  test('a token utility matches although the plugin wrote its fallback', () => {
+  test('a token utility matches although the mini app wrote its fallback', () => {
     // The observed defect: Database's `.px-2` carried `var(--spacing, 0.25rem)`, never matched the
     // host's `var(--spacing)`, stayed unlayered and beat the host's `pl-8` on every gutter menu
     // row — each icon sat on its label.
@@ -87,8 +87,8 @@ describe('plugin utilities minus the host', () => {
     )
   })
 
-  // Every plugin mount asked, and every ask re-read the whole host stylesheet.
-  test('a host sheet is read once however many plugins mount against it', () => {
+  // Every mini app mount asked, and every ask re-read the whole host stylesheet.
+  test('a host sheet is read once however many mini apps mount against it', () => {
     let reads = 0
     const rules = [{ cssText: HOST_FLEX_COL_REVERSE }]
     const counted = {

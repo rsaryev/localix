@@ -24,8 +24,8 @@ import { probeDriver, type LiveEntry } from './live-entry'
 /**
  * Narrow read-side secrets capability the service needs to fill `${secret:KEY}` tokens
  * in a connection string at connect time. Declared LOCALLY (not imported from the core
- * secrets subsystem) so this plugin stays decoupled from it — the host adapts its real
- * vault to this shape via the generic plugin `ctx.host.resolveSecret` seam (see
+ * secrets subsystem) so this mini app stays decoupled from it — the host adapts its real
+ * vault to this shape via the generic mini app `ctx.host.resolveSecret` seam (see
  * `backend/index.ts`). Only `resolve` is used; the secrets grammar helpers
  * (`hasSecretTokens`/`resolveSecretTokens`) are pure and reused directly.
  */

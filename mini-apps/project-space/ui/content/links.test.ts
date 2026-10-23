@@ -55,14 +55,14 @@ describe('what an app link becomes on the board', () => {
     expect(spaceTypes.read('ref', props, 1).status).toBe('ok')
   })
 
-  test('a provider resource keeps its URI and the plugin it came from', () => {
+  test('a provider resource keeps its URI and the mini app it came from', () => {
     const link: MessageContextBindingDraft = {
       ...createMessageBindingDraft('resource', 'localix://resource/database/c1/users', 'users'),
-      plugin: 'database',
+      miniApp: 'database',
     }
     expect(contentOfLink(link)).toMatchObject({
       type: 'ref',
-      props: { kind: 'resource', uri: 'localix://resource/database/c1/users', plugin: 'database' },
+      props: { kind: 'resource', uri: 'localix://resource/database/c1/users', miniApp: 'database' },
     })
   })
 

@@ -2,7 +2,7 @@ import type { MiniAppHostServices } from '@localixai/mini-app-sdk/backend'
 import type { MiniAppHostRefs } from './mini-app-host-refs'
 
 /**
- * The two workspace capabilities a plugin backend may hold, built from the late-bound host refs.
+ * The two workspace capabilities a mini app backend may hold, built from the late-bound host refs.
  *
  * They are deliberately SEPARATE seams rather than one. `workspaceScope` answers "where does this
  * id live?" for an id the caller already has — the narrow thing a session- or project-scoped
@@ -11,13 +11,13 @@ import type { MiniAppHostRefs } from './mini-app-host-refs'
  * scope host would hand every consumer of a narrow resolver the ability to list a whole workspace.
  *
  * Both read through `hostRefs` rather than capturing a service, because the chat and projects
- * services are created after the plugin host phase and rebind on reload.
+ * services are created after the mini app host phase and rebind on reload.
  */
 export function workspaceCapabilities(
   hostRefs: MiniAppHostRefs,
 ): Pick<MiniAppHostServices, 'workspaceScope' | 'workspaces'> {
   // Every session-half door goes through the chat service's `sessionCoordination`. Reading it per
-  // call rather than destructuring it once is what keeps a plugin working across a chat-service
+  // call rather than destructuring it once is what keeps a mini app working across a chat-service
   // rebind — the ref is replaced, not mutated.
   const coordination = () => hostRefs.chatServiceForCwd?.sessionCoordination
   return {

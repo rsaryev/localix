@@ -67,13 +67,13 @@ function renderItemInner(item: AgentItem, isForeign: boolean) {
       if (isForeign) return <GenericToolCard item={item} />
       const interactive = INTERACTIVE[item.name as PresentableToolName]
       if (interactive) return interactive(item)
-      // A plugin's card for its own tool comes BEFORE the navigation sniff: the card
+      // A mini app's card for its own tool comes BEFORE the navigation sniff: the card
       // owns its output, an offered destination included, and a bare button would hide
       // everything else the call returned.
       const Contributed = contributedToolCard(item.name)
       if (Contributed) return <Contributed item={item} />
       // Standard serialized navigation actions are tool-name agnostic: built-ins
-      // and plugins without a card get the same minimal, host-resolved button.
+      // and mini apps without a card get the same minimal, host-resolved button.
       if (isUiNavigationOutput(item.output)) return <UiNavigationActionPart item={item} />
       const Card = getToolCard(item.name) ?? GenericToolCard
       return <Card item={item} />
@@ -99,7 +99,7 @@ export const ItemView = memo(function ItemView({ item }: { item: AgentItem }) {
   // ToolLine reads it via context and renders the explain-shield for any card.
   const gate = 'toolCallId' in item ? (item.gate ?? null) : null
   const isForeign = useIsForeignTranscript()
-  // A plugin's card registers after the transcript painted; subscribing re-renders this item
+  // A mini app's card registers after the transcript painted; subscribing re-renders this item
   // into it instead of leaving the generic card up until the item next changes.
   useToolCardsVersion()
   return (

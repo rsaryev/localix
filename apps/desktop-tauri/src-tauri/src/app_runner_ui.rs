@@ -1,5 +1,5 @@
-//! What a plugin app's page may ask of the window: a link out, a file to open, an alert or a
-//! confirmation. WebKit does none of these on its own; without a delegate a `<input type=file>`
+//! What a standalone mini app's page may ask of the window: a link out, a file to open, an alert or
+//! a confirmation. WebKit does none of these on its own; without a delegate a `<input type=file>`
 //! or a `confirm()` silently does nothing.
 use objc2::rc::Retained;
 use objc2::runtime::{Bool, NSObject, NSObjectProtocol};

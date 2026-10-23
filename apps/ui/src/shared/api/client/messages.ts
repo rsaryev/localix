@@ -41,7 +41,7 @@ export const messagesApi = {
     isInternal?: boolean,
     /** Optimistic user-row identity for exact server-queue reconciliation. */
     clientMessageId?: string,
-    /** Owning session scope. A warm/plugin surface can send outside the active
+    /** Owning session scope. A warm/mini app surface can send outside the active
      * route, so its run must never inherit another project's UI catalog. */
     projectId?: string | null,
   ): Promise<SendMessageResult> {

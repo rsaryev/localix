@@ -2,7 +2,7 @@
  * "Leaving" as an explicit, testable guarantee.
  *
  * A graceful teardown is a sequence of awaits over subsystems that own foreign children —
- * PTYs, language servers, plugin backends, preview servers. Any one of them can fail to
+ * PTYs, language servers, mini app backends, preview servers. Any one of them can fail to
  * settle, and an unbounded sequence turns that into a process which has stopped serving,
  * never finished its cleanup, and never exits. For a runtime that holds a cross-process
  * lease, that is the worst possible end state: it is indistinguishable from a healthy

@@ -76,7 +76,7 @@ export function useResourceDrill(input: ResourceDrillInput): ResourceDrill {
     () => new Map(),
   )
 
-  // Provider trees are live (connections and plugin enablement can change). Do
+  // Provider trees are live (connections and mini app enablement can change). Do
   // not carry a successful or failed page across closing/reopening the picker.
   useEffect(() => {
     if (resourceMode) return

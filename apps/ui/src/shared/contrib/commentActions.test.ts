@@ -6,8 +6,8 @@ import { setEnabledMiniAppNames } from './miniAppActivation'
 
 const Icon = () => null
 
-function action(pluginName: string, id: string): CommentActionContribution {
-  return { id: `${pluginName}:${id}`, label: id, Icon, pluginName, run: async () => {} }
+function action(miniAppName: string, id: string): CommentActionContribution {
+  return { id: `${miniAppName}:${id}`, label: id, Icon, miniAppName, run: async () => {} }
 }
 
 afterEach(() => {
@@ -29,7 +29,7 @@ test('the row is ordered by identity, not by load order', () => {
   expect(commentActions()).toBe(commentActions())
 })
 
-test('a disabled plugin offers nothing, and re-enabling it brings the action back', () => {
+test('a disabled mini app offers nothing, and re-enabling it brings the action back', () => {
   // MUTATION: drop the activation filter → red.
   setEnabledMiniAppNames(new Set())
   registerCommentAction(action('alpha-fixture', 'task'))

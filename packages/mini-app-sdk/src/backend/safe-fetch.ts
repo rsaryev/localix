@@ -1,5 +1,5 @@
 /**
- * An SSRF-safe `fetch` for plugin backends.
+ * An SSRF-safe `fetch` for mini app backends.
  *
  * `checkUrlSafety` reasons about ONE url. `fetch` follows redirects by default, so
  * the obvious composition — check the url, then fetch it — leaves the hole the check
@@ -11,10 +11,10 @@
  * The core's web-fetch tool already follows redirects manually for exactly this
  * reason — see `apps/api/src/features/agent-core/tools/web/research-fetch.ts`, "Follow
  * redirects manually so EVERY hop passes the SSRF check". This is the same rule
- * packaged for plugins, so nobody has to rediscover it, and the SDK's obvious usage
+ * packaged for mini apps, so nobody has to rediscover it, and the SDK's obvious usage
  * is the safe one.
  *
- * Not a policy decision about WHAT a plugin may reach: a host with a legitimate need
+ * Not a policy decision about WHAT a mini app may reach: a host with a legitimate need
  * for internal targets passes its own `resolve`, exactly as `checkUrlSafety` allows.
  */
 
@@ -40,7 +40,7 @@ export type SafeFetchResult =
   | { ok: true; response: Response; url: string }
   | { ok: false; error: string }
 
-/** Schemes a plugin may fetch. `file:`/`data:`/`blob:` are not network reads. */
+/** Schemes a mini app may fetch. `file:`/`data:`/`blob:` are not network reads. */
 const ALLOWED_PROTOCOLS = new Set(['http:', 'https:'])
 
 const DEFAULT_MAX_REDIRECTS = 5

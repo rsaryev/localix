@@ -28,10 +28,10 @@ export interface FileIconData {
 }
 
 /**
- * The registration surface the host passes to a plugin's `registerUi(host)`.
- * One narrow façade over the host's open registries — a plugin registers its
+ * The registration surface the host passes to a mini app's `registerUi(host)`.
+ * One narrow façade over the host's open registries — a mini app registers its
  * contributions through this instead of importing host registry modules, so an
- * externally-loaded UI (a future dynamic loader) can hand a plugin the same
+ * externally-loaded UI (a future dynamic loader) can hand a mini app the same
  * object. The host builds the singleton adapter over its real registries.
  */
 export interface MiniAppUiHost {
@@ -57,11 +57,11 @@ export interface MiniAppUiHost {
   fileIcons: { register(name: string, data: FileIconData): void }
   /** Specialised file-type editors (predicate + component). */
   fileEditors: { register(contribution: FileEditorContribution): void }
-  /** File extension → content-type/viewer routing owned by this plugin. */
+  /** File extension → content-type/viewer routing owned by this mini app. */
   fileFormats: { register(entries: Record<string, DedicatedViewerType>): void }
   /**
    * Session-stream event handlers for event types CORE does not route itself
-   * (e.g. a plugin backend's own `<domain>.updated` frames). Dispatched by the
+   * (e.g. a mini app backend's own `<domain>.updated` frames). Dispatched by the
    * chat runtime after its built-in routes; a handled type does not reach the
    * generic store reducer. Handlers must be idempotent per (sessionId, event).
    */
@@ -70,7 +70,7 @@ export interface MiniAppUiHost {
   }
   /**
    * A named hole in a surface the HOST lays out — `diff.interactive`, `diff.provenance` — rather
-   * than a surface of the plugin's own. The host owns the vocabulary; an unknown slot renders
+   * than a surface of the mini app's own. The host owns the vocabulary; an unknown slot renders
    * nothing, and at most one contribution wins per slot.
    */
   workItemSlots: { register(contribution: WorkItemSlotContribution): void }
@@ -79,16 +79,18 @@ export interface MiniAppUiHost {
    * (`chat.background` for a render-null poller, `composer.context`, `breadcrumb.trailing`).
    */
   sessionSurfaces: { register(contribution: SessionSurfaceContribution): void }
-  /** Extra chrome injected into the file editor for files this plugin claims (git history, blame). */
+  /**
+   * Extra chrome injected into the file editor for files this mini app claims (git history, blame).
+   */
   fileEditorEnhancers: { register(contribution: FileEditorEnhancerContribution): void }
   /** Per-path badges in the file tree, indexed once per session (VCS status and the like). */
   fileTreeDecorations: { register(contribution: FileTreeDecorationContribution): void }
   /**
    * An item in the workbench's persistent chrome — the titlebar cluster or the status bar.
-   * Declarative: the plugin supplies a hook returning what to show, the host owns the control.
+   * Declarative: the mini app supplies a hook returning what to show, the host owns the control.
    */
   statusItems: { register(contribution: StatusItemContribution): void }
-  /** How the plugin's own tools read in the transcript: presentation, and optionally a card. */
+  /** How the mini app's own tools read in the transcript: presentation, and optionally a card. */
   toolCards: { register(contribution: ToolCardContribution): void }
   /** What else a batch of review comments can become, beside "Send to the agent". */
   commentActions: { register(contribution: CommentActionContribution): void }

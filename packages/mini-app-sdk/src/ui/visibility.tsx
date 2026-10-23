@@ -10,7 +10,7 @@ import {
 } from 'react'
 
 /**
- * Synchronous visibility of the work item that owns a plugin subtree.
+ * Synchronous visibility of the work item that owns a mini app subtree.
  *
  * Hosts commonly keep inactive work items mounted to preserve local state. This
  * signal lets extension hooks stop I/O before the browser's asynchronous

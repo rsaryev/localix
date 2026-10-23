@@ -15,7 +15,7 @@ function tabsOf(sessionId: string): PreviewEntry[] {
 /** Whether no host in this window could ever answer the command: it names a tab not in its strip. */
 export function namesUnknownTab(event: PreviewCommandEvent): boolean {
   const id = event.command.previewId
-  if (!id || event.command.action === 'history' || id.startsWith('plugin:')) return false
+  if (!id || event.command.action === 'history' || id.startsWith('mini-app:')) return false
   return !tabsOf(event.sessionId).some((tab) => tab.previewId === id)
 }
 

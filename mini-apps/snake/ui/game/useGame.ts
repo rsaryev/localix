@@ -17,7 +17,7 @@ export const MODEL_PLAY_POLL_MS = 400
 
 export function useGame(active: boolean) {
   const game = useTableGame({
-    plugin: 'snake',
+    miniApp: 'snake',
     route: ROUTE_PATH,
     schema: gameSchema,
     active,

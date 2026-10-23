@@ -14,7 +14,7 @@ export interface TurnGameState {
 
 /** The hosts a game's backend load hands its table; only the backend load carries wake/decisions. */
 export interface TurnTableHosts {
-  /** The session's folder for this plugin; rejects for a session the user does not own. */
+  /** The session's folder for this mini app; rejects for a session the user does not own. */
   resolveDir?: (userId: string, sessionId: string) => Promise<string>
   /** `ctx.host.wake` — present on the backend load, where the routes live. */
   wake?: Wake
@@ -23,8 +23,8 @@ export interface TurnTableHosts {
 }
 
 export interface TurnTableOptions<G extends TurnGameState, A> extends TurnTableHosts {
-  /** The plugin's name, for the decision model's failed-turn log. */
-  plugin: string
+  /** The mini app's name, for the decision model's failed-turn log. */
+  miniApp: string
   /** What the game is called when there is nowhere to keep it: "board", "table". */
   noun: string
   now: () => string
@@ -103,7 +103,7 @@ export function createTurnTable<G extends TurnGameState, A>(options: TurnTableOp
     )
   }
 
-  const turns = decisionTurns(options.plugin)
+  const turns = decisionTurns(options.miniApp)
 
   /**
    * The decision model's turns while the table owes one, each written as it lands and only while

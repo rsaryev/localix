@@ -20,7 +20,7 @@ export interface ExtractInput {
  * Backs the inspector office/PDF viewers: office text/slides → Markdown, spreadsheets
  * → a dataview table. The heavy extraction is cached content-addressed server-side.
  * Raw fetch (not the typed hono client): the route is mounted by the bundled
- * documents PLUGIN, so it is not part of core's `AppType`.
+ * documents MINI APP, so it is not part of core's `AppType`.
  *
  * Failures arrive as `MiniAppApiError`, carrying the route's classified sentence and the
  * extraction library's own words in `detail`. This file used to hand-roll that reader,

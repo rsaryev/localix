@@ -3,7 +3,7 @@
  * spread into the facade in `./client`.
  *
  * The read replaces the fan-out every capability surface used to do for itself —
- * plugins, panels, views, tools, one request each, reconciled by hand. The write
+ * mini apps, panels, views, tools, one request each, reconciled by hand. The write
  * replaces five toggle endpoints across four features, each of which answered with its
  * own record shape and left the client to re-read the document it had just invalidated.
  *

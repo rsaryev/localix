@@ -153,7 +153,7 @@ export function createSessionStreamRegistry() {
   const replayGlobal = (userId: string, entry: GlobalSubscriber, since: number) => {
     // Iterate a SNAPSHOT, not the live ring: a subscriber that re-enters publish()
     // during replay (any callback that does more than ws.send — a future in-process
-    // subscriber, a plugin re-publishing on a replayed frame) would otherwise mutate
+    // subscriber, a mini app re-publishing on a replayed frame) would otherwise mutate
     // the array mid-`for…of`; the new envelope (id > since) gets BOTH fanned live and
     // re-visited by this loop → the same frame delivered twice. The copy freezes the
     // replay set at subscribe time so it stays disjoint from the live fan. See the

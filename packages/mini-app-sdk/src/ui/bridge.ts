@@ -1,9 +1,9 @@
 /**
- * Plugin-UI bridge protocol v1 — the typed postMessage contract between a
- * sandboxed plugin iframe (inspector panel today; bridged views later) and the
+ * Mini app UI bridge protocol v1 — the typed postMessage contract between a
+ * sandboxed mini app iframe (inspector panel today; bridged views later) and the
  * Localix host window.
  *
- * Design: a versioned envelope `{ lx: 'plugin-ui', v: 1, type, id?, payload }`.
+ * Design: a versioned envelope `{ lx: 'mini-app-ui', v: 1, type, id?, payload }`.
  * The `lx` marker keeps bridge traffic distinguishable from every other
  * postMessage on the page; `v` lets a future v2 coexist. Message types:
  *
@@ -19,13 +19,13 @@
  *             session lifecycle phases described below.
  *
  * Pure types + tiny framework-free helpers, usable verbatim on BOTH sides.
- * Plugin authors bundle their side themselves (inline script or their own
+ * Mini app authors bundle their side themselves (inline script or their own
  * build); nothing here depends on React or the DOM libs beyond structural
  * `postMessage` shapes.
  */
 
-/** Envelope marker — fixed discriminator for plugin-UI bridge traffic. */
-export const MINI_APP_UI_BRIDGE_MARKER = 'plugin-ui' as const
+/** Envelope marker — fixed discriminator for mini app UI bridge traffic. */
+export const MINI_APP_UI_BRIDGE_MARKER = 'mini-app-ui' as const
 /** Protocol version this module speaks. */
 export const MINI_APP_UI_BRIDGE_VERSION = 1 as const
 
@@ -63,14 +63,14 @@ export interface MiniAppBridgeEventPayload {
   data?: unknown
 }
 
-/** Options for one host action invoked through the injected plugin UI API. */
+/** Options for one host action invoked through the injected mini app UI API. */
 export interface MiniAppUiInvokeOptions {
   /** Wall-clock request timeout. The host bootstrap clamps it to 100 ms–2 min. */
   timeoutMs?: number
 }
 
 /**
- * Stable, host-injected client available inside every sandboxed plugin panel/view
+ * Stable, host-injected client available inside every sandboxed mini app panel/view
  * through `acquireLocalixApi()`. It is the ergonomic layer over this file's
  * protocol-v1 envelopes: one frozen
  * instance, explicit opt-in, correlated requests, persisted view state, and live
@@ -86,15 +86,15 @@ export interface MiniAppUiApi {
     payload?: unknown,
     options?: MiniAppUiInvokeOptions,
   ): Promise<T>
-  /** Call one named operation exposed by this plugin's own backend subsystem. */
+  /** Call one named operation exposed by this mini app's own backend subsystem. */
   callBackend<T = unknown>(
     action: string,
     payload?: unknown,
     options?: MiniAppUiInvokeOptions,
   ): Promise<T>
-  /** Read this plugin+view's persisted JSON scratch state. */
+  /** Read this mini app+view's persisted JSON scratch state. */
   getState<T = unknown>(): Promise<T | null>
-  /** Persist this plugin+view's JSON scratch state and return the accepted value. */
+  /** Persist this mini app+view's JSON scratch state and return the accepted value. */
   setState<T>(value: T): Promise<T>
   /** Current host appearance already applied to the iframe document. */
   getTheme(): 'light' | 'dark'
@@ -154,7 +154,7 @@ export function forwardableSessionPhase(type: string): MiniAppSessionPhase | nul
     : null
 }
 
-/** Structural guard for a forwarded `session`-event payload (for the plugin side + tests). */
+/** Structural guard for a forwarded `session`-event payload (for the mini app side + tests). */
 export function isSessionEventData(data: unknown): data is MiniAppBridgeSessionEventData {
   if (typeof data !== 'object' || data === null) return false
   const d = data as Record<string, unknown>

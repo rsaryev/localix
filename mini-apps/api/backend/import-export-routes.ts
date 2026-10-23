@@ -20,7 +20,7 @@ interface ImportRouteDeps extends Pick<RestRouteScope, 'collection' | 'uid' | 'e
 /**
  * The workbench import payload. `source` is pasted text (a cURL command, an OpenAPI/Swagger spec, a
  * Postman/Insomnia export, a HAR). `save` writes them; absent/false is a preview. `dir` is accepted
- * for wire-parity with the agent tool but refused here — reading repo files needs the plugin's
+ * for wire-parity with the agent tool but refused here — reading repo files needs the mini app's
  * working directory, which the tool has and these routes do not.
  */
 const importSchema = z.object({
@@ -54,7 +54,7 @@ export function registerImportRoute<TSchema extends Schema>(
               error: 'Directory import is not available from the workbench.',
               code: 'bad_request' as const,
               detail:
-                "Reading the repo's exported files needs the plugin's working directory, which the " +
+                "Reading the repo's exported files needs the mini app's working directory, which the " +
                 'agent tool has and these routes do not. Paste the source into "source" instead, or run ' +
                 'a directory import through the agent.',
             },

@@ -1,6 +1,6 @@
 /**
- * The database workbench UI's type surface. The plugin owns its backend and UI, so these types are
- * imported from the plugin's backend modules. One barrel keeps every UI import uniform and
+ * The database workbench UI's type surface. The mini app owns its backend and UI, so these types
+ * are imported from the mini app's backend modules. One barrel keeps every UI import uniform and
  * depth-independent (`../dbClient`).
  */
 export type {

@@ -5,7 +5,8 @@ import { join, relative } from 'node:path'
 import {
   installManagedCopy,
   MARKER_FILE,
-  MARKER_KIND,
+  isManagedMarkerKind,
+  type MARKER_KIND,
   pruneRetiredManagedCopies,
   retireUnshippedManagedCopies,
 } from './managed-copy'
@@ -16,17 +17,17 @@ import { MINI_APPS_SUBDIR } from './paths'
 /** Install roots whose retired copies this process already swept (once, before any import). */
 const prunedRoots = new Set<string>()
 const syncs = new Map<string, Promise<Set<string>>>()
-/** Plugins the last pass could not copy into the install root, with the error. */
+/** Mini apps the last pass could not copy into the install root, with the error. */
 const installErrors = new Map<string, string>()
 const settled = new Map<string, { at: number; result: Set<string> }>()
 
 /**
  * How long a completed sync answers for later callers.
  *
- * The pass content-hashes every bundled plugin tree to decide whether its managed
+ * The pass content-hashes every bundled mini app tree to decide whether its managed
  * copy is current — 152 MB across 897 files in the packaged build. Re-measured on
  * the shipped bundle: 93–102ms with a warm page cache, and it is the source of the
- * 910/1095ms plugin-settle outliers when cold. Deduplicating only CONCURRENT callers left a
+ * 910/1095ms mini-app-settle outliers when cold. Deduplicating only CONCURRENT callers left a
  * startup paying that repeatedly: discovery runs once per backend-host scope, once
  * per capability snapshot, and again for the tool, command and skill catalogs that
  * reload when the snapshot publishes. The packaged log showed two of them landing
@@ -43,12 +44,12 @@ const settled = new Map<string, { at: number; result: Set<string> }>()
  * stat-only 17ms vs content 93ms, so it buys ~76ms on a path that is already off
  * first paint, and it pays for that by losing exactly what
  * "detects same-size content changes even when timestamps are preserved" pins — a
- * release that pins build timestamps could then ship plugin code the app never
+ * release that pins build timestamps could then ship mini app code the app never
  * notices, and the user keeps running the old backend with no signal at all.
  *
  * Hashing only small files does not rescue it: the four files above 8 MB are 142 of
  * the 152 MB but only half the time (93ms → 41ms — the rest is 897 lstat calls, not
- * bytes), and three of those four ARE the plugins' `index.bundle.mjs`. That excludes
+ * bytes), and three of those four ARE the mini apps' `index.bundle.mjs`. That excludes
  * the shipped code from the check while keeping the check's cost.
  */
 const SYNC_FRESH_MS = 10_000
@@ -58,7 +59,7 @@ interface ManagedMarker {
   fingerprint: string
 }
 
-/** A first-party plugin whose current source did not build, as the staged root records it. */
+/** A first-party mini app whose current source did not build, as the staged root records it. */
 export interface BundledStagingFailure {
   name: string
   reason: string
@@ -122,7 +123,7 @@ async function readMarker(dir: string): Promise<ManagedMarker | null> {
     const parsed = JSON.parse(
       await fs.readFile(join(dir, MARKER_FILE), 'utf8'),
     ) as Partial<ManagedMarker>
-    return parsed.kind === MARKER_KIND && typeof parsed.fingerprint === 'string'
+    return isManagedMarkerKind(parsed.kind) && typeof parsed.fingerprint === 'string'
       ? (parsed as ManagedMarker)
       : null
   } catch {
@@ -153,7 +154,7 @@ async function syncOnce(
     return managed
   }
 
-  const pluginEntries = []
+  const miniAppEntries = []
   for (const entry of entries) {
     if (!entry.isDirectory() || entry.name.startsWith('.')) continue
     // No mini-app.json = not a mini app (a deleted one's leftover build output); staging it
@@ -161,14 +162,14 @@ async function syncOnce(
     const manifest = await readJson(join(sourceRoot, entry.name, MINI_APP_MANIFEST_FILE))
     if (manifest === undefined) continue
     if ((manifest as { private?: unknown } | null)?.private === true) continue
-    pluginEntries.push(entry)
+    miniAppEntries.push(entry)
   }
   const stagedMarker = await validateStagedMarker(
     sourceRoot,
-    new Set(pluginEntries.map((entry) => entry.name)),
+    new Set(miniAppEntries.map((entry) => entry.name)),
   )
 
-  for (const entry of pluginEntries) {
+  for (const entry of miniAppEntries) {
     const sourceDir = join(sourceRoot, entry.name)
     const installDir = join(installRoot, entry.name)
     const currentMarker = await readMarker(installDir)
@@ -177,13 +178,13 @@ async function syncOnce(
       .then(() => true)
       .catch(() => false)
 
-    // A same-named plugin installed by the user is never overwritten or promoted
+    // A same-named mini app installed by the user is never overwritten or promoted
     // to trusted/bundled status. Only copies carrying our marker are refreshed.
     if (destinationExists && !currentMarker) continue
     // Not installed, and not being installed now: the person did not choose it.
     if (!destinationExists && !install.has(entry.name)) continue
 
-    const stagedFingerprint = stagedMarker?.pluginHashes[entry.name]
+    const stagedFingerprint = stagedMarker?.miniAppHashes[entry.name]
     // The staged hash is only a fast equality proof for a managed copy already
     // carrying that exact fingerprint. A missing/different on-disk marker always
     // pays the source-of-truth content walk before anything is installed or marked.
@@ -192,8 +193,8 @@ async function syncOnce(
         ? stagedFingerprint
         : await fingerprintTree(sourceDir)
     if (currentMarker?.fingerprint !== fingerprint) {
-      // One plugin that cannot be copied (EPERM from a Windows file lock or antivirus, ENOSPC)
-      // used to reject the whole pass, and with it every plugin in the catalog. It is recorded
+      // One mini app that cannot be copied (EPERM from a Windows file lock or antivirus, ENOSPC)
+      // used to reject the whole pass, and with it every mini app in the catalog. It is recorded
       // instead; a copy it could not replace stays served.
       try {
         await installManagedCopy(sourceDir, installDir, fingerprint)
@@ -207,21 +208,21 @@ async function syncOnce(
     managed.add(entry.name)
   }
 
-  // A managed copy (ours, by marker) whose plugin is no longer shipped is retired. "No longer
+  // A managed copy (ours, by marker) whose mini app is no longer shipped is retired. "No longer
   // shipped" needs a staged marker AND agreement from both sources: absent from the marker (a
-  // plugin mid-restage is still listed there) and absent from the directory (a marker may omit a
-  // hash and fall back per plugin). Anything less would unload a plugin that is only being
-  // rebuilt. A plugin the stager could not BUILD is still shipped: its copy from the last build
-  // that worked keeps running rather than vanishing over one compile error. A user's own plugin
+  // mini app mid-restage is still listed there) and absent from the directory (a marker may omit a
+  // hash and fall back per mini app). Anything less would unload a mini app that is only being
+  // rebuilt. A mini app the stager could not BUILD is still shipped: its copy from the last build
+  // that worked keeps running rather than vanishing over one compile error. A user's own mini app
   // (no managed marker) is never touched.
   if (stagedMarker) {
     for (const name of Object.keys(stagedMarker.unavailable)) {
       if (await readMarker(join(installRoot, name))) managed.add(name)
     }
     const shipped = [
-      ...Object.keys(stagedMarker.pluginHashes),
+      ...Object.keys(stagedMarker.miniAppHashes),
       ...Object.keys(stagedMarker.unavailable),
-      ...pluginEntries.map((e) => e.name),
+      ...miniAppEntries.map((e) => e.name),
     ]
     await retireUnshippedManagedCopies(installRoot, new Set(shipped), async (dir) =>
       Boolean(await readMarker(dir)),
@@ -278,10 +279,10 @@ export async function installBundledMiniApp(
 }
 
 /**
- * The first-party plugins that are not running their current source, and why: the stager could
+ * The first-party mini apps that are not running their current source, and why: the stager could
  * not build one (the marker's `unavailable`), or the sync could not copy one into the install
  * root. The caller raises each as a condition — before this, both were a console line in the dev
- * terminal and a plugin missing from the list.
+ * terminal and a mini app missing from the list.
  */
 export async function bundledStagingFailures(
   sourceRoot: string,
@@ -304,7 +305,7 @@ export async function bundledStagingFailures(
 /**
  * Forget the recently-completed pass so the NEXT discovery re-reads the source root now
  * instead of after the freshness window. The staged-root watcher calls this when the
- * marker changes, which is how a plugin re-staged while the API runs appears without
+ * marker changes, which is how a mini app re-staged while the API runs appears without
  * waiting out {@link SYNC_FRESH_MS}. An in-flight pass is left to finish.
  */
 export function invalidateBundledSync(): void {

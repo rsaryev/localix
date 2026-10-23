@@ -18,8 +18,8 @@ import {
  * What a link to the CONVERSATION looks like outside the chat: a session as its title, state and
  * last word; a message as the message; a tool call as the very card the transcript draws for it.
  *
- * These are the host's own renderers lent to a plugin through `ContextBindingPreview`, so a tool
- * call on a board is not a plugin's approximation of the chat's card that drifts from it — it IS
+ * These are the host's own renderers lent to a mini app through `ContextBindingPreview`, so a tool
+ * call on a board is not a mini app's approximation of the chat's card that drifts from it — it IS
  * that card (`ItemView`), inside the same session context and timing the transcript gives it
  * (`MessageReplayTab` composes it the same way). A link whose target is gone says so in one line.
  */

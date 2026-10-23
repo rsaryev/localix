@@ -30,7 +30,7 @@ export interface DiffConflictActions {
 
 /**
  * Every open names the chat its tab belongs to. An open that named none used to be stamped with
- * whatever chat was on screen, so a tool card in a background pane, a terminal link or a plugin
+ * whatever chat was on screen, so a tool card in a background pane, a terminal link or a mini app
  * opened its file in another chat's workspace. The caller always knows whose content it is.
  */
 interface SessionBound {
@@ -50,7 +50,7 @@ export interface OpenFileRequest extends SessionBound {
   ephemeral?: boolean
   /** Single-click preview — reuse the active preview slot (file-tree click-through). */
   replace?: boolean
-  /** Show the built-in code editor even if a plugin registered one for this file type. */
+  /** Show the built-in code editor even if a mini app registered one for this file type. */
   openWith?: 'builtin'
 }
 

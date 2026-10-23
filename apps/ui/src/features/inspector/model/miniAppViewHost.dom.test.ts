@@ -10,11 +10,11 @@ afterAll(async () => {
 })
 
 /**
- * The agent drives a plugin's workbench view through the browser vocabulary. Each case pins a
+ * The agent drives a mini app's workbench view through the browser vocabulary. Each case pins a
  * way that could go wrong: the wrong subtree, a command that would run inside the app itself, and
- * a plugin that is not there.
+ * a mini app that is not there.
  */
-describe('plugin view host', () => {
+describe('mini app view host', () => {
   /** The command's chat is the one on screen, as when the person watches the agent work. */
   const here = { sessionId: 'S1', activeSessionId: 'S1' }
 
@@ -25,11 +25,11 @@ describe('plugin view host', () => {
     railViewletRegistry.register({
       kind: 'focus-timer:workspace',
       title: 'Focus Timer',
-      pluginName: 'focus-timer',
+      miniAppName: 'focus-timer',
     } as never)
     workItemKindRegistry.register({
       kind: 'focus-timer:workspace',
-      pluginName: 'focus-timer',
+      miniAppName: 'focus-timer',
     } as never)
     // What the grid renders for an open tab (GroupView's TabPanel carries the address).
     document.body.innerHTML = `
@@ -46,11 +46,11 @@ describe('plugin view host', () => {
     }
   }
 
-  test('a snapshot reads the plugin panel and nothing of the app around it', async () => {
+  test('a snapshot reads the mini app panel and nothing of the app around it', async () => {
     const cleanup = await withView()
     try {
-      const { runPluginViewCommand } = await import('./miniAppViewHost')
-      const reply = await runPluginViewCommand('focus-timer', { action: 'snapshot' }, here)
+      const { runMiniAppViewCommand } = await import('./miniAppViewHost')
+      const reply = await runMiniAppViewCommand('focus-timer', { action: 'snapshot' }, here)
       expect(reply.ok).toBe(true)
       const tree = reply.result?.snapshot?.tree ?? ''
       expect(tree).toContain('Start')
@@ -67,7 +67,7 @@ describe('plugin view host', () => {
   })
 
   test('evaluate is refused — alone or inside steps — before anything runs', async () => {
-    const { runPluginViewCommand } = await import('./miniAppViewHost')
+    const { runMiniAppViewCommand } = await import('./miniAppViewHost')
     for (const command of [
       { action: 'evaluate' as const, expression: 'document.cookie' },
       {
@@ -75,17 +75,17 @@ describe('plugin view host', () => {
         steps: [{ action: 'evaluate' as const, expression: 'localStorage.clear()' }],
       },
     ]) {
-      const reply = await runPluginViewCommand('focus-timer', command, here)
+      const reply = await runMiniAppViewCommand('focus-timer', command, here)
       expect(reply).toMatchObject({ ok: false, errorCode: 'bad_request' })
       expect(reply.error).toContain('inside the Localix app')
     }
   })
 
-  test('an unknown plugin names the views this window does have', async () => {
+  test('an unknown mini app names the views this window does have', async () => {
     const cleanup = await withView()
     try {
-      const { runPluginViewCommand } = await import('./miniAppViewHost')
-      const reply = await runPluginViewCommand('focus-timr', { action: 'snapshot' }, here)
+      const { runMiniAppViewCommand } = await import('./miniAppViewHost')
+      const reply = await runMiniAppViewCommand('focus-timr', { action: 'snapshot' }, here)
       expect(reply).toMatchObject({ ok: false, errorCode: 'not_found' })
       expect(reply.error).toContain('focus-timer')
     } finally {
@@ -97,8 +97,8 @@ describe('plugin view host', () => {
     // An agent in a background chat screenshotted the person's chat's board.
     const cleanup = await withView()
     try {
-      const { runPluginViewCommand } = await import('./miniAppViewHost')
-      const reply = await runPluginViewCommand(
+      const { runMiniAppViewCommand } = await import('./miniAppViewHost')
+      const reply = await runMiniAppViewCommand(
         'focus-timer',
         { action: 'snapshot' },
         { sessionId: 'S2', activeSessionId: 'S1' },
@@ -124,8 +124,8 @@ describe('plugin view host', () => {
       },
     }
     try {
-      const { runPluginViewCommand } = await import('./miniAppViewHost')
-      const reply = await runPluginViewCommand('focus-timer', { action: 'screenshot' }, here)
+      const { runMiniAppViewCommand } = await import('./miniAppViewHost')
+      const reply = await runMiniAppViewCommand('focus-timer', { action: 'screenshot' }, here)
       expect(reply).toMatchObject({ ok: true, result: { action: 'screenshot', image } })
       expect(calls.map((call) => call.command)).toEqual(['workbench_snapshot'])
       expect(calls[0]?.args).toMatchObject({ width: 640, height: 480 })
@@ -147,8 +147,8 @@ describe('plugin view host', () => {
       )
       document.querySelector<HTMLElement>('[data-work-item-id$="@S9"]')!.getBoundingClientRect =
         () => ({ width: 640, height: 480 }) as DOMRect
-      const { runPluginViewCommand } = await import('./miniAppViewHost')
-      const reply = await runPluginViewCommand('focus-timer', { action: 'snapshot' }, here)
+      const { runMiniAppViewCommand } = await import('./miniAppViewHost')
+      const reply = await runMiniAppViewCommand('focus-timer', { action: 'snapshot' }, here)
       const tree = reply.result?.snapshot?.tree ?? ''
       expect(tree).toContain('25:00')
       expect(tree).not.toContain('Another chat')

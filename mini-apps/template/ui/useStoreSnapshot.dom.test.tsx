@@ -50,7 +50,9 @@ function fakeHost() {
         if (String(payload.t).endsWith('.subscribe')) {
           queueMicrotask(() => {
             for (const handler of frames)
-              handler(JSON.stringify({ plugin: 'probe', sessionId: payload.sessionId, live: true }))
+              handler(
+                JSON.stringify({ miniApp: 'probe', sessionId: payload.sessionId, live: true }),
+              )
           })
         }
         return String(payload.t).endsWith('.subscribe') ? { subscribed: true } : {}
@@ -75,8 +77,8 @@ function fakeHost() {
 
 /**
  * A board saw the agent's move only when its poll came round, and polled every 800 ms to keep that
- * short. The store feed's nudge re-reads at once; a nudge for another plugin or chat does not; and
- * the hook says whether it is live, which is what lets the poll fall back to the slow backstop.
+ * short. The store feed's nudge re-reads at once; a nudge for another mini app or chat does not;
+ * and the hook says whether it is live, which is what lets the poll fall back to the slow backstop.
  */
 test('a nudge for this scope re-reads at once; one for another scope does not', async () => {
   const { act } = await import('react')
@@ -86,7 +88,7 @@ test('a nudge for this scope re-reads at once; one for another scope does not', 
   let live = null as boolean | null
   function Probe({ id }: { id: string }) {
     const state = useStoreSnapshot({
-      plugin: 'probe',
+      miniApp: 'probe',
       sessionId: 'chat-1',
       path: `/rpc/probe/count?${id}`,
       schema: z.object({ n: z.number() }),
@@ -106,14 +108,14 @@ test('a nudge for this scope re-reads at once; one for another scope does not', 
     expect(host.commands).toEqual(['probe:store.subscribe chat-1'])
 
     host.set(1)
-    await act(async () => host.frame({ plugin: 'probe', sessionId: 'chat-1' }))
+    await act(async () => host.frame({ miniApp: 'probe', sessionId: 'chat-1' }))
     expect(element.textContent).toBe('1')
 
     const before = host.reads()
     host.set(2)
     await act(async () => {
-      host.frame({ plugin: 'other', sessionId: 'chat-1' })
-      host.frame({ plugin: 'probe', sessionId: 'chat-2' })
+      host.frame({ miniApp: 'other', sessionId: 'chat-1' })
+      host.frame({ miniApp: 'probe', sessionId: 'chat-2' })
     })
     expect(host.reads()).toBe(before)
     expect(element.textContent).toBe('1')
@@ -146,7 +148,7 @@ test('two views of one scope share one subscription, and the last to leave ends 
   const host = fakeHost()
   const changed: string[] = []
   const follow = (name: string) =>
-    storeFeed.follow({ plugin: 'probe', sessionId: 'chat-1' }, { frame: () => changed.push(name) })
+    storeFeed.follow({ miniApp: 'probe', sessionId: 'chat-1' }, { frame: () => changed.push(name) })
   try {
     let leaveA = () => {}
     let leaveB = () => {}
@@ -156,7 +158,7 @@ test('two views of one scope share one subscription, and the last to leave ends 
     })
     expect(host.commands).toEqual(['probe:store.subscribe chat-1'])
     leaveA()
-    host.frame({ plugin: 'probe', sessionId: 'chat-1' })
+    host.frame({ miniApp: 'probe', sessionId: 'chat-1' })
     expect(changed).toEqual(['b'])
     expect(host.commands).toEqual(['probe:store.subscribe chat-1'])
     await act(async () => leaveB())

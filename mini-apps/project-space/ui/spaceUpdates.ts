@@ -167,7 +167,7 @@ export function watchSpaceUpdates(sessionId: string, onChange: () => void) {
       poll()
     })
     let offStream: (() => void) | null = null
-    // During a plugin update its UI can precede its backend. An unsupported WS command raises
+    // During a mini app update its UI can precede its backend. An unsupported WS command raises
     // a host notification, so wait for a successful HTTP response advertising the stream.
     entry.connect = () => {
       if (entry.view?.liveUpdates !== true) {
@@ -219,7 +219,7 @@ export function watchSpaceUpdates(sessionId: string, onChange: () => void) {
 /**
  * A poll can return after a newer save and erase it on screen. Invalidate reads when a write
  * starts, serialize writes (including undo), and share the saved answer before opening its tab.
- * This follows the board mirror's write-through pattern in the kanban plugin.
+ * This follows the board mirror's write-through pattern in the kanban mini app.
  */
 export function writeSpace<T extends SpaceView>(sessionId: string, write: () => Promise<T>) {
   const entry = entryFor(sessionId)

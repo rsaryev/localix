@@ -24,7 +24,7 @@ import { normalizeProjectSettings } from '../../projects/contracts'
 import { safeJsonParse } from '../../../lib/json'
 import { createAgentRunner, type AgentRunner } from '../runtime/agent-runner'
 import { createHitlRegistry, type HitlRegistry } from '../runtime/hitl-registry'
-import { createMiniAppCommandRegistry } from '../runtime/plugin-command-registry'
+import { createMiniAppCommandRegistry } from '../runtime/mini-app-command-registry'
 import { createPreviewCommandRegistry } from '../runtime/preview-command-registry'
 import { createSessionStreamRegistry } from '../runtime/session-stream-registry'
 import { createKeyedSerializer } from '../../../lib/keyed-serializer'
@@ -63,7 +63,7 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
     deps.hitlRegistry ??
     createHitlRegistry({
       // An approval card's payload is built from the raw tool input, and three consumers read it
-      // (the wire, plugin hooks, the reconnect detail) — see HitlRegistryOptions.
+      // (the wire, mini app hooks, the reconnect detail) — see HitlRegistryOptions.
       sanitizePayload: deps.sanitizeToolInput
         ? (userId, payload) => (userId ? deps.sanitizeToolInput!(userId, payload) : payload)
         : undefined,
@@ -84,10 +84,10 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
   // user's own iframe preview through its injected probe is the ONLY preview-control
   // backend (the external headless-browser backend was removed).
   const previewRegistry = createPreviewCommandRegistry({ streamRegistry })
-  // Awaitable plugin→UI command relay (`emitCommandWithReply`): publishes a
-  // `plugin.command` frame and parks a promise the client sink settles via the
-  // `plugin-command-result` WS RPC — the preview relay's generic sibling.
-  const pluginCommands = createMiniAppCommandRegistry({ streamRegistry })
+  // Awaitable mini app→UI command relay (`emitCommandWithReply`): publishes a
+  // `mini-app.command` frame and parks a promise the client sink settles via the
+  // `mini-app-command-result` WS RPC — the preview relay's generic sibling.
+  const miniAppCommands = createMiniAppCommandRegistry({ streamRegistry })
   // Per-session preview-target registry: bash records a detected dev-server URL here,
   // and browser lazily auto-opens it on the first drive action (the single
   // instance is shared by both via the runner deps).
@@ -115,7 +115,7 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
       readTerminalJob: deps.readTerminalJob,
       terminalControl: deps.terminalControl,
       previewControl: previewRegistry,
-      pluginCommands,
+      miniAppCommands,
       miniAppAuthoring: miniAppService.authoring,
       // Read lazily: `deps.monitors` is a forward-holder getter (bootstrap/chat-service-deps),
       // so a snapshot taken here would be the `undefined` from before the service exists.
@@ -169,7 +169,7 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
     hitlRegistry,
     streamRegistry,
     previewRegistry,
-    pluginCommands,
+    miniAppCommands,
     runner,
     // Serializes every write-path mutation of ONE session (send / edit / rollback /
     // fork / thread append / external turn) so two concurrent entries can never

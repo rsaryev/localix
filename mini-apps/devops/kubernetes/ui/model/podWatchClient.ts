@@ -1,6 +1,6 @@
 // Client side of the live pod watch, over the SDK's realtime feed, shared by the sidebar hook
 // (`useKubernetes`) and the pod tab so their frame demux / re-subscribe behavior can't drift.
-// Frames arrive on the `w` frame tag (the plugin's `WsFrameContribution`); subscribe/unsubscribe
+// Frames arrive on the `w` frame tag (the mini app's `WsFrameContribution`); subscribe/unsubscribe
 // ride the `devops:k8s.watch.subscribe`/`devops:k8s.watch.unsubscribe` WS commands. All sends are
 // best-effort — a failed subscribe just leaves the poll fallback in charge.
 import { createRealtimeFeed } from '@localixai/mini-app-sdk/ui/realtime-feed'

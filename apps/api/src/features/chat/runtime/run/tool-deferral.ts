@@ -29,7 +29,7 @@ export function splitDeferredTools(
   wrapped: readonly AgentTool[],
   sourceByTool: ReadonlyMap<string, string>,
   activatedForSession: readonly string[],
-  /** Tools an open plugin view or a plugin's wake brings to THIS turn (`surface-tools.ts`). */
+  /** Tools an open mini app view or a mini app's wake brings to THIS turn (`surface-tools.ts`). */
   surfaceTools: readonly string[] = [],
 ): {
   /** Core tools: on the wire because every run works with them. */
@@ -80,9 +80,9 @@ export function splitDeferredTools(
  * How many activated tools one session may carry on the wire.
  *
  * Sticky activation trades schema tokens for turns, and the trade stops paying at some point: a session
- * that wandered through every installed plugin would otherwise send every suite forever. The oldest
- * activation is dropped first, and dropping one costs nothing worse than one `activate_tools` call if the
- * model needs it again.
+ * that wandered through every installed mini app would otherwise send every suite forever. The
+ * oldest activation is dropped first, and dropping one costs nothing worse than one
+ * `activate_tools` call if the model needs it again.
  */
 export const MAX_SESSION_ACTIVATED_TOOLS = 24
 

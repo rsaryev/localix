@@ -4,10 +4,10 @@ import { drawBoard, lastMoveLine, recordLine, threatLine } from '../shared/descr
 import { freeCells, type Game } from '../shared/game'
 
 /**
- * HOW THE BOARD ASKS THE AGENT FOR ITS MOVE — the plugin's side of the host's wake contract.
+ * HOW THE BOARD ASKS THE AGENT FOR ITS MOVE — the mini app's side of the host's wake contract.
  *
  * The agent plays in the chat the board BELONGS to — never whichever chat is open now. When the
- * board needs its move, the plugin wakes that session with the position and the tools that answer
+ * board needs its move, the mini app wakes that session with the position and the tools that answer
  * it (`ctx.host.wake`), and the agent replies by calling `tic_tac_toe` to move. Nothing here waits for
  * that move: the wake only says whether the chat will take the turn, and the view shows the answer
  * — "thinking", or why it could not be reached — so a board never waits for a move nobody was

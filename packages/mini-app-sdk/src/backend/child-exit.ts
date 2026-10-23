@@ -100,7 +100,7 @@ export function awaitChildGone(
 
 /**
  * A `Bun.spawn` child, as much of it as a teardown needs. Deliberately STRUCTURAL: the
- * callers are the bundled workbench plugins (kubernetes port-forwards + pod watches, and
+ * callers are the bundled workbench mini apps (kubernetes port-forwards + pod watches, and
  * anything that follows), whose own tests inject a fake, so it must not demand a real
  * `Subprocess`.
  */

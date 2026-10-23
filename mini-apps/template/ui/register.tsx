@@ -47,7 +47,7 @@ export function registerUi(host: MiniAppUiHost): void {
         'Use the published snapshot to explain what the user sees.',
         'Call system_overview for a fresh server snapshot; never infer that this is the browser device.',
         'Call system_processes for current process identifiers and resource usage.',
-        'When the user asks to manage a process, use its PID with native system tools and apply the normal confirmation and safety rules; the plugin intentionally hardcodes no process actions.',
+        'When the user asks to manage a process, use its PID with native system tools and apply the normal confirmation and safety rules; the mini app intentionally hardcodes no process actions.',
       ],
     },
   })

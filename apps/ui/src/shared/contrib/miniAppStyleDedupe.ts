@@ -1,28 +1,28 @@
 /**
- * A plugin's utility sheet, minus every rule the host stylesheet already has.
+ * A mini app's utility sheet, minus every rule the host stylesheet already has.
  *
- * The defect this exists to stop: a plugin's utilities are compiled by their OWN Tailwind build,
+ * The defect this exists to stop: a mini app's utilities are compiled by their OWN Tailwind build,
  * so they are sorted among themselves, not among the host's, and they arrive unlayered — and an
  * unlayered rule beats any rule inside the host's `@layer utilities`, whatever the order. The
- * moment one plugin used `flex-col-reverse`, its copy of that class out-ranked the host's
+ * moment one mini app used `flex-col-reverse`, its copy of that class out-ranked the host's
  * `sm:flex-row` on every host element carrying both: every dialog footer in the app stacked its
- * buttons at desktop widths, because one plugin that used the class was enabled.
+ * buttons at desktop widths, because one mini app that used the class was enabled.
  *
  * Dropping the duplicates is exact rather than heuristic. A rule the host already emits has the
- * same declarations in both sheets (the plugin is compiled against the host theme), so removing
- * the plugin's copy changes nothing but precedence — the host's copy, in the host's own sorted
+ * same declarations in both sheets (the mini app is compiled against the host theme), so removing
+ * the mini app's copy changes nothing but precedence — the host's copy, in the host's own sorted
  * order, is the one that applies. What stays is only what the host does not emit, and a host
- * element never carries a class the host does not emit; a plugin element carrying a host class
- * alongside a plugin-only variant still gets the variant, because that variant stays unlayered.
+ * element never carries a class the host does not emit; a mini app element carrying a host class
+ * alongside a mini-app-only variant still gets the variant, because that variant stays unlayered.
  */
 
 /**
  * A rule's text with every `var(--x, fallback)` reduced to `var(--x)`.
  *
- * "Same declarations in both sheets" was not literally true. The plugin is compiled with the host
+ * "Same declarations in both sheets" was not literally true. The mini app is compiled with the host
  * theme as a `@reference`, and in that mode Tailwind writes each theme value WITH its fallback —
  * `padding-inline: calc(var(--spacing, 0.25rem) * 2)` where the host writes `calc(var(--spacing)
- * * 2)`. Compared as text, no utility that reads a token matched, so a plugin kept its unlayered
+ * * 2)`. Compared as text, no utility that reads a token matched, so a mini app kept its unlayered
  * copy of hundreds of them (161 in Database alone) and out-ranked the host's layered rules: a
  * menu row's `px-2` beat its own `pl-8`, and every icon in a gutter menu sat on its label. In the
  * host document the variable is always defined, so the fallback never applies and dropping it
@@ -55,7 +55,7 @@ export function canonicalRuleText(text: string): string {
 /**
  * One host sheet's canonical rule texts, keyed by the sheet object.
  *
- * Each plugin's mount asked for the host's rules, and each ask re-walked and re-canonicalized the
+ * Each mini app's mount asked for the host's rules, and each ask re-walked and re-canonicalized the
  * whole host stylesheet — thousands of rules, twenty times over at startup (84 ms of main thread
  * in the startup profile). A host sheet does not change under a mount; when its source does (a
  * dev HMR update), the element gets a NEW sheet object, which misses here and is read afresh.
@@ -68,7 +68,7 @@ function readSheetTexts(sheet: Pick<CSSStyleSheet, 'cssRules'>): ReadonlySet<str
   const texts = new Set<string>()
   const walk = (rules: ArrayLike<CSSRule>) => {
     for (const rule of Array.from(rules)) {
-      // A layer block (`@layer utilities { … }`) groups rules; its members are what a plugin
+      // A layer block (`@layer utilities { … }`) groups rules; its members are what a mini app
       // duplicates. A style rule is recorded whole, nested `@media` variant included.
       if (isLayerBlock(rule)) walk(rule.cssRules)
       else texts.add(canonicalRuleText(rule.cssText))

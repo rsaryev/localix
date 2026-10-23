@@ -23,7 +23,7 @@ export function applyGridInspectorRequest(req: InspectorRequest): void {
   // The generic focus location is intentionally weaker than openWorkItem:
   // it may only reveal an exact tab whose payload is already resident and
   // visible in the current scope. This makes payload-bound tabs addressable
-  // without accepting HTML, patches, plans, or plugin data through a URI.
+  // without accepting HTML, patches, plans, or mini app data through a URI.
   if (req.kind === 'focus-work-item') {
     const st = useGridStore.getState()
     const target = resolveExistingWorkItemFocus(st, req.id)

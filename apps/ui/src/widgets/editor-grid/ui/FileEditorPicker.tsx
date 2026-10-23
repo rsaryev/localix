@@ -118,7 +118,7 @@ export function ContributedFileBody({
   /**
    * The OPEN asked for the built-in code editor. A registered editor otherwise wins silently
    * when it is the only match, so this is the only way a caller can say "show me the text" for
-   * a file type a plugin owns. Not remembered: it is this request's intent, not a preference.
+   * a file type a mini app owns. Not remembered: it is this request's intent, not a preference.
    */
   requestedBuiltin?: boolean
   editorProps: FileEditorProps
@@ -136,7 +136,7 @@ export function ContributedFileBody({
 
   // The pick is per-tab STATE, so a re-open of an already-mounted tab never re-runs the
   // initializer — and a re-open is exactly how "show me the text" arrives for a file whose
-  // tab already shows a plugin editor. `revealAt` is stamped by every open request, so a
+  // tab already shows a mini app editor. `revealAt` is stamped by every open request, so a
   // changed value IS a new request; honour its builtin ask, and only its (a plain re-open
   // must not clobber what the person picked).
   const [seenRevealAt, setSeenRevealAt] = useState(editorProps.revealAt)
@@ -149,7 +149,7 @@ export function ContributedFileBody({
   const chosen = picked ? matches.find((m) => m.id === picked) : undefined
   if (chosen) {
     const Tab = chosen.Component
-    // A contributed file editor is plugin code on the same footing as a contributed tab body.
+    // A contributed file editor is mini app code on the same footing as a contributed tab body.
     const body = (
       <SurfaceErrorBoundary key={chosen.id} surface={`The ${chosen.id} editor`}>
         <Tab {...editorProps} />

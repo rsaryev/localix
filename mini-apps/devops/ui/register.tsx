@@ -86,7 +86,7 @@ export function registerUi(host: MiniAppUiHost): void {
       nextSteps: [
         'Choose Docker or Kubernetes and inspect the visible live resources.',
         'Select a container, pod, or resource to publish its current state.',
-        'Use the visible read-only controls; this plugin advertises no agent tools.',
+        'Use the visible read-only controls; this mini app advertises no agent tools.',
       ],
     },
   })
@@ -103,7 +103,7 @@ export function registerUi(host: MiniAppUiHost): void {
     title: 'DevOps',
     label: 'DevOps — containers & Kubernetes',
     // A full workspace belongs in the central grid. Keep its launcher with other
-    // bundled plugin workbenches under `… → Plugins`, not in the narrow primary rail.
+    // bundled mini app workbenches under `… → Mini apps`, not in the narrow primary rail.
     defaultArea: 'overflow',
     keywords: [
       'workspace',

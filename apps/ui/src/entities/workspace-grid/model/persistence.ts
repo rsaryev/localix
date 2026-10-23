@@ -80,9 +80,9 @@ export function emptyEditorState(rootGroupId: string): EditorState {
  *
  * A stored tab that names no scope was written before every tab had one: it is dropped, never
  * shown in whichever chat opens first. A known kind is checked against its declaration (a session
- * kind stored without a session is dropped; an app-level one is global). A kind whose plugin has
+ * kind stored without a session is dropped; an app-level one is global). A kind whose mini app has
  * not registered yet keeps its stored scope verbatim — guessing 'session' for it dropped every
- * global tab of a plugin still loading.
+ * global tab of a mini app still loading.
  */
 function restoredScope(kind: WorkItem['kind'], stored: string | undefined): string | null {
   if (!stored) return null

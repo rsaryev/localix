@@ -169,8 +169,8 @@ describe('what it writes', () => {
 
 describe('the export directory cannot escape the working tree', () => {
   test.each(['../evil', '../../tmp/evil', '/etc', '../'])('%p is refused', async (subdir) => {
-    // `subdir` arrives from a tool argument. A plugin that writes wherever a model asks is a
-    // plugin that writes to ~/.ssh.
+    // `subdir` arrives from a tool argument. A mini app that writes wherever a model asks is a
+    // mini app that writes to ~/.ssh.
     const cwd = await tmpRepo()
     expect(exportDirFor(cwd, subdir)).toBeNull()
     expect('problem' in (await run(cwd, [saved('a')], { subdir }))).toBe(true)

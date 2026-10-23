@@ -116,7 +116,7 @@ test('checks deleted sources and every transitive consumer of a shared contract'
   expect(api.affected.map((workspace) => workspace.name)).toEqual(['shared', 'api', 'ui'])
 })
 
-test('includes API consumers for plugin backends and all packages for shared compiler changes', () => {
+test('includes API consumers for mini app backends and all packages for shared compiler changes', () => {
   expect(
     planChecks(['mini-apps/example/backend/index.ts'], workspaces, () => false).typed.map(
       (workspace) => workspace.name,

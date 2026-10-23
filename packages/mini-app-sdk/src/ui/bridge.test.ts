@@ -31,9 +31,9 @@ describe('isMiniAppBridgeMessage', () => {
     expect(isMiniAppBridgeMessage({ type: 'ready' })).toBe(false)
     // A foreign bridge's marker must never be mistaken for ours.
     expect(isMiniAppBridgeMessage({ __iwBridge: 'ch', type: 'ready' })).toBe(false)
-    expect(isMiniAppBridgeMessage({ lx: 'plugin-ui', v: 2, type: 'ready' })).toBe(false)
-    expect(isMiniAppBridgeMessage({ lx: 'plugin-ui', v: 1, type: 'hijack' })).toBe(false)
-    expect(isMiniAppBridgeMessage({ lx: 'plugin-ui', v: 1, type: 'invoke', id: 7 })).toBe(false)
+    expect(isMiniAppBridgeMessage({ lx: 'mini-app-ui', v: 2, type: 'ready' })).toBe(false)
+    expect(isMiniAppBridgeMessage({ lx: 'mini-app-ui', v: 1, type: 'hijack' })).toBe(false)
+    expect(isMiniAppBridgeMessage({ lx: 'mini-app-ui', v: 1, type: 'invoke', id: 7 })).toBe(false)
   })
 })
 
@@ -45,7 +45,7 @@ describe('forwarded session events', () => {
   })
 
   // `fs.changed` stays off on purpose, and the reason is not volume: it carries ABSOLUTE paths of
-  // the person's files, and this bridge feeds sandboxed iframes from installed plugins that were
+  // the person's files, and this bridge feeds sandboxed iframes from installed mini apps that were
   // promised phase + session id only. Native workbench UI hears file changes through its own door,
   // `miniAppFiles.watchWorkspace` (coalesced, scoped to one chat — `workspace-changes.ts`), which
   // never reaches an iframe.
@@ -56,7 +56,7 @@ describe('forwarded session events', () => {
   test('everything else — tool I/O, hitl, previews, junk — is NEVER forwarded', () => {
     for (const t of [
       'ui.data',
-      'plugin.command',
+      'mini-app.command',
       'hitl.requested',
       'preview.updated',
       'terminal.opened',
@@ -71,7 +71,7 @@ describe('forwarded session events', () => {
     const msg = sessionEventMessage('sess-1', 'run-completed')
     expect(isMiniAppBridgeMessage(msg)).toBe(true)
     expect(msg).toEqual({
-      lx: 'plugin-ui',
+      lx: 'mini-app-ui',
       v: 1,
       type: 'event',
       payload: { name: SESSION_EVENT_NAME, data: { phase: 'run-completed', sessionId: 'sess-1' } },

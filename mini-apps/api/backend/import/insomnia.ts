@@ -197,7 +197,7 @@ export function insomniaNotes(text: string): string[] {
   if (tags.length > 0) {
     notes.push(
       `This export uses Insomnia TEMPLATE TAGS (${tags.map((x) => `\`{% ${x} %}\``).join(', ')}), which are ` +
-        'evaluated by its template engine — faker values, response chaining, prompts. This plugin substitutes ' +
+        'evaluated by its template engine — faker values, response chaining, prompts. This mini app substitutes ' +
         'variables and does not evaluate anything, so those are left as literal text and the requests using them ' +
         'need a real value before they will work.',
     )

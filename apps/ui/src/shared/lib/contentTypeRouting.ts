@@ -1,5 +1,5 @@
 // Content-type routing for the inspector file viewers — REGISTRY-backed. A
-// subsystem/plugin that ships dedicated viewers registers its extensions here
+// subsystem/mini app that ships dedicated viewers registers its extensions here
 // (`registerDedicatedViewerTypes`); the pure helpers below read the registry.
 // No React / DOM / network — just string math over paths + content-types.
 //
@@ -29,17 +29,17 @@ export {
 export type { DedicatedViewerType, FileViewerKind } from '@localixai/mini-app-sdk/ui/file-types'
 
 // extension (no dot, lowercased) → registered format
-type RegisteredViewerType = DedicatedViewerType & { pluginName?: string }
+type RegisteredViewerType = DedicatedViewerType & { miniAppName?: string }
 const registry = new Map<string, RegisteredViewerType[]>()
 
 /**
  * Register dedicated-viewer formats (extension → content-type/viewer). Called by
  * the subsystem that owns the viewers; last write wins per
- * extension so a user plugin could override a bundled mapping.
+ * extension so a user mini app could override a bundled mapping.
  */
 export function registerDedicatedViewerTypes(
   entries: Record<string, DedicatedViewerType>,
-  pluginName?: string,
+  miniAppName?: string,
 ): void {
   for (const [ext, entry] of Object.entries(entries)) {
     const key = ext.toLowerCase()
@@ -47,7 +47,7 @@ export function registerDedicatedViewerTypes(
     if (
       variants.some(
         (candidate) =>
-          candidate.pluginName === pluginName &&
+          candidate.miniAppName === miniAppName &&
           candidate.contentType === entry.contentType &&
           candidate.viewer === entry.viewer &&
           candidate.openExternally === entry.openExternally,
@@ -55,15 +55,15 @@ export function registerDedicatedViewerTypes(
     ) {
       continue
     }
-    variants.push({ ...entry, pluginName })
+    variants.push({ ...entry, miniAppName })
     registry.set(key, variants)
   }
 }
 
-/** Drop every format `owner` registered (a plugin reload or unload). */
+/** Drop every format `owner` registered (a mini app reload or unload). */
 export function removeDedicatedViewerTypesOf(owner: string): void {
   for (const [key, variants] of registry) {
-    const kept = variants.filter((entry) => entry.pluginName !== owner)
+    const kept = variants.filter((entry) => entry.miniAppName !== owner)
     if (kept.length) registry.set(key, kept)
     else registry.delete(key)
   }
@@ -71,7 +71,7 @@ export function removeDedicatedViewerTypesOf(owner: string): void {
 
 function registeredType(path: string): RegisteredViewerType | undefined {
   const variants = registry.get(fileExtension(path))
-  return variants?.findLast((entry) => isMiniAppContributionEnabled(entry.pluginName))
+  return variants?.findLast((entry) => isMiniAppContributionEnabled(entry.miniAppName))
 }
 
 /** MIME content-type for a recognized viewer format, else `undefined` (opens in editor). */
@@ -89,7 +89,7 @@ export function isOpenExternallyType(contentType: string | undefined): boolean {
   if (contentType === undefined) return false
   for (const variants of registry.values()) {
     const entry = variants.findLast((candidate) =>
-      isMiniAppContributionEnabled(candidate.pluginName),
+      isMiniAppContributionEnabled(candidate.miniAppName),
     )
     if (entry?.contentType === contentType) return entry.openExternally === true
   }

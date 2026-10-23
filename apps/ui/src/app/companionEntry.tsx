@@ -15,11 +15,11 @@ import { waitForRuntimeCapabilities } from '@/shared/contrib/runtimeCapabilityRe
 import { bindMiniAppUiToast } from '@localixai/mini-app-sdk/ui'
 import { createMiniAppToast } from '@/shared/contrib/miniAppToast'
 import { toast } from '@/shared/lib/notify'
-import './pluginRuntime'
-import { installPluginSharedModules } from './pluginSharedModules'
+import './miniAppRuntime'
+import { installMiniAppSharedModules } from './miniAppSharedModules'
 import { discoverUi } from '@/shared/contrib/discover'
 
-installPluginSharedModules()
+installMiniAppSharedModules()
 discoverUi()
 
 const stopQuitFlush = installQuitFlush()
@@ -30,8 +30,8 @@ registerAgentRunPreflight(waitForRuntimeCapabilities)
 registerSessionPreviews(inspectorSessionPreviews)
 // A finished terminal retires its transcript actions here too.
 terminalBus.setFinisher(finishTerminalTabs)
-// Plugin views in the shared transcript publish through the host's notifications here too; without
-// this binding their first toast throws.
+// Mini app views in the shared transcript publish through the host's notifications here too;
+// without this binding their first toast throws.
 bindMiniAppUiToast(createMiniAppToast(toast))
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

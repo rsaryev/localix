@@ -3,10 +3,10 @@ import { parseMiniAppViewTarget } from '@localixai/api/mini-app-view-target'
 import { useChatStore } from '@/entities/chat/model/store'
 import { backendClient } from '@/shared/api/client'
 import { previewControlBus } from '@/shared/lib/previewControlBus'
-import { runPluginViewCommand } from '../model/miniAppViewHost'
+import { runMiniAppViewCommand } from '../model/miniAppViewHost'
 
 /**
- * Answer the agent's `browser` commands for `plugin:<name>` targets from this window's workbench.
+ * Answer the agent's `browser` commands for `mini-app:<name>` targets from this window's workbench.
  *
  * Same relay contract as every other Browser host (`useNativeBrowserAgent`): claim the command
  * first, so a second window — or a remount — can never run the same click twice, then execute it
@@ -18,15 +18,15 @@ export function useMiniAppViewAgent(): void {
     const hostId = crypto.randomUUID()
     const inFlight = new Set<string>()
     return previewControlBus.subscribe((event) => {
-      const plugin = parseMiniAppViewTarget(event.command.previewId)
-      if (!plugin || inFlight.has(event.commandId)) return
+      const miniApp = parseMiniAppViewTarget(event.command.previewId)
+      if (!miniApp || inFlight.has(event.commandId)) return
       inFlight.add(event.commandId)
       const respond = (payload: Record<string, unknown>) =>
         backendClient.previewResult(event.commandId, { ...payload, hostId })
       void (async () => {
         if (!(await respond({ ok: false, claim: true }))) return
         previewControlBus.acknowledge(event.commandId)
-        const reply = await runPluginViewCommand(plugin, event.command, {
+        const reply = await runMiniAppViewCommand(miniApp, event.command, {
           sessionId: event.sessionId,
           activeSessionId: useChatStore.getState().activeSessionId,
         })

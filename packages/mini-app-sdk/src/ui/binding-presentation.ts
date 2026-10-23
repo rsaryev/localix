@@ -61,7 +61,7 @@ const TEXT_PREVIEW_EXTENSIONS = new Set([
   'yml',
 ])
 
-/** Canonical file path carried by a context binding, without depending on a plugin's model. */
+/** Canonical file path carried by a context binding, without depending on a mini app's model. */
 export function contextBindingFilePath(binding: MessageContextBindingDraft): string | null {
   if (binding.target.kind !== 'file') return null
   if (contextBindingMediaId(binding)) return null

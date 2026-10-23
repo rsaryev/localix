@@ -119,7 +119,7 @@ describe('the agent’s tools', () => {
     } as unknown as MiniAppContext
     const registered = register(ctx).tools ?? []
     /**
-     * One `action` of the plugin's one tool, called as a run in `session` would: the host names
+     * One `action` of the mini app's one tool, called as a run in `session` would: the host names
      * the session in the context.
      */
     const act = async (action: string, input: object, session: string | null = 's1') => {
@@ -141,7 +141,7 @@ describe('the agent’s tools', () => {
     return { act, registered, sessionStorage }
   }
 
-  test('the plugin gives the agent ONE tool, every action behind it', () => {
+  test('the mini app gives the agent ONE tool, every action behind it', () => {
     expect(tools().registered.map((tool) => tool.name)).toEqual(['checkers'])
   })
 

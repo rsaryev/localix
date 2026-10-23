@@ -26,7 +26,7 @@ export function register(ctx: MiniAppContext): MiniAppRegistration {
   // polling for it. The folder is the host's, resolved with the socket's own user.
   const feed = createJsonStoreFeed({
     watchPath: ctx.watchPath ?? ctx.host?.watchPath,
-    plugin: 'checkers',
+    miniApp: 'checkers',
     resolveDir: async (userId, sessionId) =>
       sessionId && storage ? storage.resolveDataDir(userId, sessionId) : null,
   })

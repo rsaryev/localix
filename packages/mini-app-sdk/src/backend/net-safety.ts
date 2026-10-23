@@ -1,14 +1,14 @@
 /**
- * Shared SSRF guard + bounded body reader for built-ins and native plugins.
+ * Shared SSRF guard + bounded body reader for built-ins and native mini apps.
  *
  * Pure, dependency-free (node:dns + node:net only): every fetch hop resolves its
  * host and is rejected when it points at a loopback / private / link-local
  * address, and the response body is streamed with a hard byte cap so a
  * model-supplied URL to a huge resource can't OOM the process.
  *
- * This module is part of the backend plugin contract so every model-supplied URL
+ * This module is part of the backend mini app contract so every model-supplied URL
  * crosses the same policy implementation. Hosts may re-export it for compatibility;
- * plugins must import it from `@localixai/mini-app-sdk/backend`, never through host internals.
+ * mini apps must import it from `@localixai/mini-app-sdk/backend`, never through host internals.
  */
 
 import { promises as dns } from 'node:dns'

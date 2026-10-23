@@ -23,7 +23,7 @@ export interface MergeConflictState {
  *
  * Core owns this, and deliberately knows nothing about git: `<<<<<<<` / `=======` / `>>>>>>>` in a
  * file is a TEXT fact, and a file carrying them is conflicted whether it arrived from a merge, a
- * rebase, a patch that half-applied, or an agent that wrote them by accident. The git plugin's
+ * rebase, a patch that half-applied, or an agent that wrote them by accident. The git mini app's
  * side of the arrangement is already written down in `useSourceControlDiffs`: opening a conflicted
  * path plainly "is what turns the resolver on", with no flag passed and no host contract to grow.
  *

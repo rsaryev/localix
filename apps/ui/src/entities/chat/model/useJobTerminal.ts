@@ -61,7 +61,7 @@ export function useJobTerminal() {
   return { openJobTerminal, openIfJobSession }
 }
 
-/** Imperative counterpart used by the app-level plugin runtime adapter. */
+/** Imperative counterpart used by the app-level mini app runtime adapter. */
 export function revealJobSession(sessionId: string): boolean {
   const { allSessions } = useChatStore.getState()
   const target = allSessions.find((session) => session.id === sessionId)

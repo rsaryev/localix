@@ -43,7 +43,7 @@ import { AttentionDialog } from '@/entities/chat/ui/attention/AttentionDialog'
 import { SetupAnnouncement } from '@/widgets/workspace-tips/ui/SetupAnnouncement'
 import { FolderTree } from 'lucide-react'
 import { discoverUi } from '@/shared/contrib/discover'
-import { pluginApp } from '@/shared/lib/pluginApp'
+import { standaloneApp } from '@/shared/lib/standaloneApp'
 import { useMiniApp } from '../model/useMiniApp'
 import { railSectionRegistry, railViewletRegistry } from '@/shared/contrib/uiContrib'
 import { useSystemToggle } from '@/shared/hooks/useSystemToggle'
@@ -133,20 +133,20 @@ const ProjectSwitcher = lazy(() =>
 // hydration is a tab silently dropped from the user's saved layout. Module scope is
 // what guarantees the order holds before React renders anything.
 //
-// Core subsystems register synchronously. Bundled plugin modules are imported only
+// Core subsystems register synchronously. Bundled mini app modules are imported only
 // after the API confirms they are enabled. The expensive half of discovery — the
 // ~80 colocated `*.surface` declarations, which feed nothing on the paint path — is
 // already staged behind `whenUiSurfacesReady()` inside `discoverUi()`.
 discoverUi()
 // Restore core layout immediately, independently of backend availability. Unknown
-// plugin kinds are retained during the cold activation phase and reconciled once
-// the first authoritative plugin snapshot arrives.
+// mini app kinds are retained during the cold activation phase and reconciled once
+// the first authoritative mini app snapshot arrives.
 hydrateGrid()
 
 const NO_RUNTIME_STATUS = () => undefined
 
-/** Set when this page is a plugin installed as its own app; fixed for the page's life. */
-const PLUGIN_APP = pluginApp()
+/** Set when this page is a mini app installed as its own app; fixed for the page's life. */
+const STANDALONE_APP = standaloneApp()
 
 function useRuntimeStatus(): RuntimeStatus | undefined {
   return useSyncExternalStore(subscribeRuntimeStatus, runtimeStatus, NO_RUNTIME_STATUS)
@@ -199,7 +199,7 @@ export function ChatPage() {
   // A neutral landing that mints a fresh GLOBAL draft: the bare index ("/") OR
   // "/global" with no session. We do NOT resurrect the last chat there.
   const isHomeRoute =
-    !PLUGIN_APP &&
+    !STANDALONE_APP &&
     !isLegacyRoute &&
     routeProjectId === null &&
     !routeSessionId &&
@@ -222,7 +222,7 @@ export function ChatPage() {
   }, [sidebarOpen, isMobile])
 
   const { resolvedTheme } = useTheme()
-  const pluginAppChat = useMiniApp(PLUGIN_APP, {
+  const standaloneAppChat = useMiniApp(STANDALONE_APP, {
     hasHydrated,
     enabledMiniAppNames,
     activeSessionId,
@@ -347,8 +347,8 @@ export function ChatPage() {
     routeProjectId,
     isLegacyRoute,
     isHomeRoute,
-    // A plugin app opens its own conversation (`useMiniApp`), never the last workspace.
-    isColdIndex: !PLUGIN_APP && routePathname === '/',
+    // A standalone app opens its own conversation (`useMiniApp`), never the last workspace.
+    isColdIndex: !STANDALONE_APP && routePathname === '/',
     activeSessionId,
     isMobile,
     sidebarOpen,
@@ -391,7 +391,7 @@ export function ChatPage() {
     setSidebarOpen,
     setWorkspaceSymbols,
     startNewChatRef,
-    replaceNewChat: pluginAppChat.newConversation,
+    replaceNewChat: standaloneAppChat.newConversation,
     switchSection,
     thirdPartyViewsVersion: thirdPartyViewsV,
     toggleSidebar,
@@ -409,13 +409,13 @@ export function ChatPage() {
     toggleSidebar,
   })
 
-  const pluginViews = useMiniAppContributionsSync({
+  const miniAppViews = useMiniAppContributionsSync({
     hasHydrated,
     routeProjectId: contribScope,
     thirdPartyViewsV,
   })
   const railActions = useRailActions({
-    pluginViews,
+    miniAppViews,
     capabilityScope,
     openSessionId: activeSessionId,
     keepAwake,
@@ -435,14 +435,14 @@ export function ChatPage() {
       label: s.title,
       content: <s.Sidebar />,
       defaultArea: 'overflow' as const,
-      plugin: true,
-      pluginName: s.pluginName,
+      miniApp: true,
+      miniAppName: s.miniAppName,
       resourceUri: capabilityResourceUri({
         kind: 'view',
         id: s.id,
         scope: capabilityScope,
         label: s.title,
-        description: `View contributed by ${s.pluginName || 'a plugin'}`,
+        description: `View contributed by ${s.miniAppName || 'a mini app'}`,
         enabled: true,
       }),
     }))
@@ -460,7 +460,7 @@ export function ChatPage() {
 
   return (
     <WorkspaceShell
-      chrome={PLUGIN_APP ? 'app' : 'workspace'}
+      chrome={STANDALONE_APP ? 'app' : 'workspace'}
       isMobile={isMobile}
       sidebarOpen={sidebarOpen}
       activeSectionId={activeSectionId}
@@ -538,10 +538,10 @@ export function ChatPage() {
       titlebarContent={
         <TitlebarContent
           app={
-            PLUGIN_APP
+            STANDALONE_APP
               ? {
-                  name: PLUGIN_APP.name,
-                  projectId: pluginAppChat.projectId,
+                  name: STANDALONE_APP.name,
+                  projectId: standaloneAppChat.projectId,
                   onNewChat: startNewChat,
                 }
               : undefined
@@ -580,7 +580,7 @@ export function ChatPage() {
           registries (render null) — core mounts them generically, naming none. A
           rail SECTION's Mount (e.g. k8s port-forward cleanup) and a rail VIEWLET's
           Mount components both land here. */}
-          {/* Each behind its own boundary. These are ALWAYS mounted, so a plugin that throws
+          {/* Each behind its own boundary. These are ALWAYS mounted, so a mini app that throws
               here is strictly worse than one that throws in a tab: without containment it takes
               the workspace down at composition, on every start, with no tab to close. The
               fallback renders nothing visible for a render-null component — the console name and
@@ -678,7 +678,7 @@ export function ChatPage() {
           request, a plan, a mention — raised one at a time from the shared attention roster. */}
           <AttentionDialog />
           {/* Setup over the chat the launch opened: on a first run, and from the palette. */}
-          {!PLUGIN_APP && <SetupAnnouncement />}
+          {!STANDALONE_APP && <SetupAnnouncement />}
           <ConfirmDialog
             open={confirmKeepAwake}
             variant="default"

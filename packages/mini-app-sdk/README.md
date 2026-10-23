@@ -1,20 +1,20 @@
 # `@localixai/mini-app-sdk`
 
-Workspace contracts and shared helpers for Localix plugins. Bundled plugin code compiles against
+Workspace contracts and shared helpers for Localix mini apps. Bundled mini app code compiles against
 this package; the API and UI hosts implement the capabilities and registries it describes.
 
-This is a private workspace package, not an independently published SDK. Bundled plugins use the
-source workspace; user plugins use the plugin kit supplied by Localix, including host-shared UI
+This is a private workspace package, not an independently published SDK. Bundled mini apps use the
+source workspace; user mini apps use the mini app kit supplied by Localix, including host-shared UI
 modules and generated declarations. Start with
-[Build with the agent](../../docs/extending/build-with-the-agent.md) for user-plugin creation and
-checks, or [Build plugins](../../docs/extending/mini-apps.md) for registration contracts.
+[Build with the agent](../../docs/extending/build-with-the-agent.md) for user-mini-app creation and
+checks, or [Build mini apps](../../docs/extending/mini-apps.md) for registration contracts.
 
 ## Consumers
 
-Bundled plugins use the backend, UI, resource, and navigation contracts. The
-[API plugin host](../../apps/api/src/features/plugins/native.ts) supplies backend capabilities and
-extends the manifest schema, while the [UI host](../../apps/ui/src/shared/contrib/host.ts) adapts UI
-contributions to application registries.
+Bundled mini apps use the backend, UI, resource, and navigation contracts. The
+[API mini app host](../../apps/api/src/features/mini-apps/native.ts) supplies backend capabilities
+and extends the manifest schema, while the [UI host](../../apps/ui/src/shared/contrib/host.ts)
+adapts UI contributions to application registries.
 
 ## Common workspace entry points
 
@@ -49,7 +49,7 @@ Use the same source-to-read protocol as core:
   retries.
 - `ui/file-resource-sync`: `useFileResourceSync` for project JSON; a healthy watcher has no poll
   timer.
-- `ui/store-resource`: one refcounted store feed across plugins and scopes, with source health.
+- `ui/store-resource`: one refcounted store feed across mini apps and scopes, with source health.
 - `ui/store-snapshot` and `ui/route-snapshot`: validated snapshots and mutation ordering for boards.
 - `bounded-cache`: `createBoundedCache`, the LRU cache bounded by entries and weight that the API
   and the kit re-export.
@@ -59,15 +59,15 @@ Use the same source-to-read protocol as core:
   acts on the board's own chat; `sessionGameUi` (`ui/session-game`) registers the board, its
   launcher and its anchor; `opponent` and `agent-wait` carry the opponent's name and wait clock.
 
-See [Plugin synchronization](../../docs/extending/mini-app-sync.md). Draft merging stays with the
+See [Mini app synchronization](../../docs/extending/mini-app-sync.md). Draft merging stays with the
 resource owner; a cache must expire before an invalidation can produce an authoritative read.
 
 ## Limits
 
-- A typed bridge limits the operations its interface exposes; it is not a runtime sandbox for plugin
-  code. Native plugin UI imports run in the host document.
+- A typed bridge limits the operations its interface exposes; it is not a runtime sandbox for mini
+  app code. Native mini app UI imports run in the host document.
 
-- The SDK does not discover, load, authorize, or isolate a plugin. Those responsibilities remain
+- The SDK does not discover, load, authorize, or isolate a mini app. Those responsibilities remain
   with the API and UI hosts.
 - `MiniAppContext` capabilities are host-supplied. Optional host services can be absent, and the
   boot-time backend context exposes services that are not present on per-run tool and hook loads.
@@ -77,8 +77,8 @@ resource owner; a cache must expire before an invalidation can produce an author
   contribution kinds it supports.
 - Backend utilities are not a browser surface. UI code should use the UI, navigation, or narrowly
   selected resource-reference contracts instead.
-- File associations affect operating-system packaging only for bundled plugins; declarations from
-  later-installed plugins cannot amend an already-built desktop bundle.
+- File associations affect operating-system packaging only for bundled mini apps; declarations from
+  later-installed mini apps cannot amend an already-built desktop bundle.
 
 ## Source of truth
 
@@ -94,4 +94,4 @@ resource owner; a cache must expire before an invalidation can produce an author
 - [Per-chat resource address](./src/session-resource.ts)
 - [Runtime ports](./src/ui/runtime.ts)
 - [Tab session context](./src/ui/work-item-session.tsx)
-- [Plugin authoring guide](../../docs/extending/mini-apps.md)
+- [Mini app authoring guide](../../docs/extending/mini-apps.md)

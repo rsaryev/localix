@@ -16,14 +16,14 @@ afterAll(async () => {
 
 /**
  * The titlebar's `…` menu is the ONLY place a contributed item is rendered outside the strip's own
- * per-item boundary, and it is reached by a click rather than by paint — so a plugin that throws
+ * per-item boundary, and it is reached by a click rather than by paint — so a mini app that throws
  * here used to unwind past the whole workbench to the route's `errorElement`. From the user's
- * chair: the window is replaced by a crash screen (titlebar, plugin glyphs and the event bell with
- * it) and the journal gains a "Route failed" row carrying a raw minified React message. Whether an
- * item fits is a layout accident; it must not decide whether one broken plugin costs a glyph or a
- * route.
+ * chair: the window is replaced by a crash screen (titlebar, mini app glyphs and the event bell
+ * with it) and the journal gains a "Route failed" row carrying a raw minified React message.
+ * Whether an item fits is a layout accident; it must not decide whether one broken mini app costs a
+ * glyph or a route.
  */
-test('a plugin that throws inside the “…” menu costs its own row, never the route', async () => {
+test('a mini app that throws inside the “…” menu costs its own row, never the route', async () => {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { TitlebarOverflowItems } = await import('./TitlebarOverflowItems')
@@ -33,13 +33,13 @@ test('a plugin that throws inside the “…” menu costs its own row, never th
   const items: StatusItemContribution[] = [
     {
       id: 'overflow:healthy',
-      pluginName: 'healthy',
+      miniAppName: 'healthy',
       placement: 'titlebar',
       useItem: () => ({ label: 'Still here', onClick: () => undefined }),
     },
     {
       id: 'overflow:broken',
-      pluginName: 'broken',
+      miniAppName: 'broken',
       placement: 'titlebar',
       useItem: () => {
         throw new Error('boom in an overflow row')
@@ -55,7 +55,7 @@ test('a plugin that throws inside the “…” menu costs its own row, never th
       root.render(
         <DropdownMenu open>
           <DropdownMenuTrigger asChild>
-            <button type="button" aria-label="More plugin items" />
+            <button type="button" aria-label="More mini app items" />
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <TitlebarOverflowItems items={items} sessionId="s1" />

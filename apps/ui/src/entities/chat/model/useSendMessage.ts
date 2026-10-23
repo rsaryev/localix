@@ -191,7 +191,7 @@ export function useSendMessage({
       }
 
       // Always send immediately. If a run is active the BACKEND queues it (with
-      // priority over loop/plugin wakes) and surfaces session_queue.updated; the
+      // priority over loop/mini app wakes) and surfaces session_queue.updated; the
       // queue therefore survives a page reload. Pin to the bottom so the answer
       // streams into view (plain stick-to-bottom — no smart runway).
       // Put the text BACK on failure rather than discarding the rejection: the

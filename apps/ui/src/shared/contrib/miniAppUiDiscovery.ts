@@ -16,20 +16,20 @@ import {
 } from './miniAppUiRuntime'
 
 /**
- * The workbench's ONE plugin UI runtime, wired to the host: artifacts come from the capability
+ * The workbench's ONE mini app UI runtime, wired to the host: artifacts come from the capability
  * snapshot, are imported by URL from the API, register through the ownership-stamping façade and
  * are taken back by owner. Loaded lazily by `enabledMiniApps.ts`, only once a snapshot names
- * enabled plugins, so no plugin code or loader metadata sits on first paint.
+ * enabled mini apps, so no mini app code or loader metadata sits on first paint.
  *
- * Nothing here knows about development or about who built a plugin: a UI edit becomes a new
- * artifact revision (staged for a first-party plugin, built by the API for a user plugin), the API
- * announces it, the next snapshot carries it, and the runtime replaces that plugin — the same path
- * a release takes.
+ * Nothing here knows about development or about who built a mini app: a UI edit becomes a new
+ * artifact revision (staged for a first-party mini app, built by the API for a user mini app), the
+ * API announces it, the next snapshot carries it, and the runtime replaces that mini app — the same
+ * path a release takes.
  */
 
-const warnPluginUiFailure: MiniAppUiFailureReporter = (pluginName, error) => {
+const warnMiniAppUiFailure: MiniAppUiFailureReporter = (miniAppName, error) => {
   console.warn(
-    `[plugin-ui] "${pluginName}" could not load its UI; the running version (if any) stays`,
+    `[mini-app-ui] "${miniAppName}" could not load its UI; the running version (if any) stays`,
     error,
   )
 }
@@ -42,15 +42,16 @@ function artifactUrl(path: string, revision: string): string {
 }
 
 /**
- * Attach one plugin's sheets and resolve when they applied (or failed: a sheet is not fatal).
+ * Attach one mini app's sheets and resolve when they applied (or failed: a sheet is not fatal).
  *
  * The Tailwind utilities sheet is fetched and adopted with the host's duplicates removed (see
- * `miniAppStyleDedupe`), so a plugin cannot out-rank the host on the host's own elements. A `<link>`
- * cannot do that: on the desktop the artifact comes from the API's origin, and a cross-origin
- * sheet's rules cannot be read or edited. Only that sheet: an adopted sheet resolves `url()`
- * against the document rather than the artifact, which a component's own CSS (fonts, images) may
- * rely on, and only the utilities duplicate the host. Where adoption is unavailable or the fetch
- * fails, the sheet falls back to a plain link — the plugin still renders with its old precedence.
+ * `miniAppStyleDedupe`), so a mini app cannot out-rank the host on the host's own elements. A
+ * `<link>` cannot do that: on the desktop the artifact comes from the API's origin, and a
+ * cross-origin sheet's rules cannot be read or edited. Only that sheet: an adopted sheet resolves
+ * `url()` against the document rather than the artifact, which a component's own CSS (fonts,
+ * images) may rely on, and only the utilities duplicate the host. Where adoption is unavailable or
+ * the fetch fails, the sheet falls back to a plain link — the mini app still renders with its old
+ * precedence.
  */
 async function mountStyles(artifact: MiniAppUiArtifact): Promise<() => void> {
   const utilities = artifact.styles.filter(isUtilitiesSheet)
@@ -63,7 +64,7 @@ async function mountStyles(artifact: MiniAppUiArtifact): Promise<() => void> {
 }
 
 /**
- * The sheet `ui-build.ts` writes the plugin's host-themed Tailwind utilities to. The snapshot
+ * The sheet `ui-build.ts` writes the mini app's host-themed Tailwind utilities to. The snapshot
  * carries it as the full path the API serves it at, so it is matched by its file name.
  */
 const isUtilitiesSheet = (style: string) => style.split(/[?#]/u)[0].endsWith('/utilities.css')
@@ -92,7 +93,7 @@ function linkStyles(artifact: MiniAppUiArtifact, styles: readonly string[]): Pro
     const link = document.createElement('link')
     link.rel = 'stylesheet'
     link.href = artifactUrl(style, artifact.revision)
-    link.dataset.plugin = artifact.name
+    link.dataset.miniApp = artifact.name
     return link
   })
   const applied = links.map(
@@ -107,14 +108,14 @@ function linkStyles(artifact: MiniAppUiArtifact, styles: readonly string[]): Pro
 }
 
 /**
- * The host's shared modules, which the app layer installs at boot (`app/pluginSharedModules.ts`),
+ * The host's shared modules, which the app layer installs at boot (`app/miniAppSharedModules.ts`),
  * loaded far enough that an artifact can read the preloaded ones synchronously. Read through the
  * SDK contract, so this layer never imports the kit the app composes.
  */
 async function sharedModulesReady(): Promise<void> {
   const scope = globalThis as unknown as Record<string, MiniAppUiSharedModules | undefined>
   const shared = scope[MINI_APP_UI_SHARED_GLOBAL]
-  if (!shared) throw new Error('[plugin-ui] the host installed no shared modules for plugin UI')
+  if (!shared) throw new Error('[mini-app-ui] the host installed no shared modules for mini app UI')
   await Promise.all(MINI_APP_UI_PRELOADED_MODULES.map((specifier) => shared.load(specifier)))
 }
 
@@ -139,44 +140,44 @@ function miniAppUiRuntime() {
     hostFor: miniAppUiHostFor,
     remove: removeMiniAppUiContributions,
     announce: announceMiniAppUiChanged,
-    report: warnPluginUiFailure,
+    report: warnMiniAppUiFailure,
   })
   return runtime
 }
 
-/** The enabled plugins that ship a UI artifact, as the runtime's input. */
-export function miniAppUiArtifacts(plugins: readonly MiniAppRecord[]): MiniAppUiArtifact[] {
-  return plugins.flatMap((plugin) =>
-    plugin.enabled && plugin.ui ? [{ name: plugin.name, ...plugin.ui }] : [],
+/** The enabled mini apps that ship a UI artifact, as the runtime's input. */
+export function miniAppUiArtifacts(miniApps: readonly MiniAppRecord[]): MiniAppUiArtifact[] {
+  return miniApps.flatMap((miniApp) =>
+    miniApp.enabled && miniApp.ui ? [{ name: miniApp.name, ...miniApp.ui }] : [],
   )
 }
 
 /**
- * What attribution needs to name a plugin from a stack frame: every installed plugin's display
+ * What attribution needs to name a mini app from a stack frame: every installed mini app's display
  * name, and the directory each loaded artifact is imported from. The directory is resolved from
  * the SAME URL `importEntry` imports, so the frames of the entry and of every chunk it loads
  * relative to itself lie under it; resolving `.` also drops the revision query, which a chunk's
  * URL does not carry.
  */
-export function miniAppSources(plugins: readonly MiniAppRecord[]): {
+export function miniAppSources(miniApps: readonly MiniAppRecord[]): {
   sources: MiniAppUiSource[]
   names: Map<string, string>
 } {
   return {
-    sources: miniAppUiArtifacts(plugins).map((artifact) => ({
-      pluginName: artifact.name,
+    sources: miniAppUiArtifacts(miniApps).map((artifact) => ({
+      miniAppName: artifact.name,
       base: new URL('.', artifactUrl(artifact.entry, artifact.revision)).href,
     })),
-    names: new Map(plugins.map((plugin) => [plugin.name, plugin.displayName || plugin.name])),
+    names: new Map(miniApps.map((miniApp) => [miniApp.name, miniApp.displayName || miniApp.name])),
   }
 }
 
-/** Converge the workbench on the UI of exactly these (enabled) plugins; see `reconcile`. */
+/** Converge the workbench on the UI of exactly these (enabled) mini apps; see `reconcile`. */
 export const discoverEnabledMiniAppUi = (
-  plugins: readonly MiniAppRecord[],
-  settled?: (pluginName: string, ok: boolean) => void,
+  miniApps: readonly MiniAppRecord[],
+  settled?: (miniAppName: string, ok: boolean) => void,
 ): Promise<void> => {
-  const { sources, names } = miniAppSources(plugins)
+  const { sources, names } = miniAppSources(miniApps)
   setMiniAppSources(sources, names)
-  return miniAppUiRuntime().reconcile(miniAppUiArtifacts(plugins), settled)
+  return miniAppUiRuntime().reconcile(miniAppUiArtifacts(miniApps), settled)
 }

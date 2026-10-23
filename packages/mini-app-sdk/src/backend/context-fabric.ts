@@ -1,15 +1,15 @@
 /**
- * Context-fabric contracts — the context-provider surface a plugin backend
+ * Context-fabric contracts — the context-provider surface a mini app backend
  * contributes to (`ContextProviderContribution`, `ContextResolver`,
  * `AutomaticContextProvider`, and the value types they exchange). Pure types:
- * the host (`apps/api`) implements the fabric and consumes these; plugins only
- * describe the contributions they register. Moved here so plugins depend on the
+ * the host (`apps/api`) implements the fabric and consumes these; mini apps only
+ * describe the contributions they register. Moved here so mini apps depend on the
  * SDK instead of deep-importing `apps/api/src/features/context-fabric/contracts`.
  */
 
 /**
  * Who the context is for. `inline-completion` serves every text-input ghost surface (chat
- * composer, commit subject, any plugin field) and `edit-prediction` every editor; a provider
+ * composer, commit subject, any mini app field) and `edit-prediction` every editor; a provider
  * declares which of them its content suits, so a keystroke never pays for a chat-sized read.
  */
 export type ContextDestination =
@@ -150,8 +150,8 @@ export interface ContextProviderContribution {
   /**
    * A generic resolver that bridges a whole scheme (every `localix://resource/*`) and should be
    * consulted only when no specific resolver supports the reference. Without it the first
-   * registered resolver answered: core's generic bridge registers before plugins load, so it
-   * silently shadowed every plugin's own resolver and its priority/kind semantics.
+   * registered resolver answered: core's generic bridge registers before mini apps load, so it
+   * silently shadowed every mini app's own resolver and its priority/kind semantics.
    */
   fallback?: boolean
 }

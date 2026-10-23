@@ -1,21 +1,22 @@
 import type { Capabilities, CapabilityKey, CapabilityShapes } from '@localixai/mini-app-sdk/backend'
 
 /**
- * Registry of plugin-contributed SDK capabilities.
+ * Registry of mini-app-contributed SDK capabilities.
  * FIRST-WINS: at most one provider per key — like the memory-provider rule, the
- * first enabled plugin to declare a capability owns it and a later declaration is
- * a loud diagnostic (plugin contributions are untrusted data; a collision must
+ * first enabled mini app to declare a capability owns it and a later declaration is
+ * a loud diagnostic (mini app contributions are untrusted data; a collision must
  * degrade to a warning the author sees, never crash boot for everyone else).
  */
 export interface CapabilityRegistry {
   /** Register every capability a subsystem declares. Collisions are warned + skipped. */
   register(sourceId: string, capabilities: Capabilities | undefined): void
   /**
-   * Drop everything a subsystem contributed — hot plugin DISABLE.
+   * Drop everything a subsystem contributed — hot mini app DISABLE.
    *
-   * Without this a disabled plugin's capability stayed registered and core kept calling into it: the
-   * user turned the plugin off and its code still ran. Unknown ids are a no-op, and only the entries
-   * this source actually owns are removed (a first-wins loser must not be able to evict the winner).
+   * Without this a disabled mini app's capability stayed registered and core kept calling into it:
+   * the user turned the mini app off and its code still ran. Unknown ids are a no-op, and only the
+   * entries this source actually owns are removed (a first-wins loser must not be able to evict the
+   * winner).
    */
   unregister(sourceId: string): void
   /** The registered implementation for a key, or undefined (feature degrades). */

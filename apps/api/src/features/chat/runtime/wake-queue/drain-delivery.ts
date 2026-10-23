@@ -73,7 +73,7 @@ export async function deliverBand(
     ? [...new Set(turns.flatMap((turn) => turn.extraDisabledTools ?? []))]
     : undefined
   const bindings = turns.flatMap((turn) => turn.bindings ?? [])
-  const plugins = [...new Set(turns.flatMap((turn) => turn.plugins ?? []))]
+  const miniApps = [...new Set(turns.flatMap((turn) => turn.miniApps ?? []))]
   const sources = new Set(turns.map((turn) => turn.source).filter(Boolean))
   const origin = sources.size === 1 ? [...sources][0] : undefined
   const routedTo = bandRecipient(turns)
@@ -123,7 +123,7 @@ export async function deliverBand(
     ...(command?.origin ? { commandOrigin: command.origin } : {}),
     ...(routedTo ? { to: routedTo } : {}),
     ...(bindings.length > 0 ? { bindings } : {}),
-    ...(plugins.length > 0 ? { plugins } : {}),
+    ...(miniApps.length > 0 ? { miniApps } : {}),
     clientMessageIds: turns.flatMap((turn) => (turn.clientMessageId ? [turn.clientMessageId] : [])),
     ...(store ? { messageIds: queueDeliveryMessageIds(head.batch ?? bandIds[0]!) } : {}),
   })

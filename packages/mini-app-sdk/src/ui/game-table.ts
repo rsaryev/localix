@@ -20,8 +20,8 @@ export const IDLE_POLL_MS = 4000
  * itself — quickly while `quick` says the other side is playing, slowly otherwise.
  */
 export function useTableGame<T>(options: {
-  plugin: string
-  /** The router's mount path, `/rpc/<plugin>`; the game is read at `<route>/game`. */
+  miniApp: string
+  /** The router's mount path, `/rpc/<app>`; the game is read at `<route>/game`. */
   route: string
   schema: z.ZodType<T>
   active: boolean
@@ -34,7 +34,7 @@ export function useTableGame<T>(options: {
   const table = sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ''
   const [quick, setQuick] = useState(false)
   const polled = useStoreSnapshot({
-    plugin: options.plugin,
+    miniApp: options.miniApp,
     sessionId,
     path: `${route}/game${table}`,
     schema: options.schema,

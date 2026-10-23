@@ -1,8 +1,8 @@
 /**
  * One standardized status vocabulary for WORK in progress — the composer row strips (sub-sessions,
- * background jobs, plugin strips). Each domain maps its own status onto a small set of TONES; the
+ * background jobs, mini app strips). Each domain maps its own status onto a small set of TONES; the
  * tone picks a `StatusDot` color from the shared palette, so a green "done" / amber "running" /
- * red "error" pip means the same thing in every strip — and, through the kit, in every plugin
+ * red "error" pip means the same thing in every strip — and, through the kit, in every mini app
  * surface that draws the same work.
  *
  * Named for what it describes, a unit of work, because the SDK's `StatusTone` (`status-tone.ts`)

@@ -5,12 +5,12 @@ export type PinnedRailArea = Exclude<RailArea, 'overflow'>
 export interface RailItemDef {
   id: string
   defaultArea: RailArea
-  plugin?: boolean
+  miniApp?: boolean
   tool?: boolean
   /**
    * `false` for an entry that has no rail placement. It always resolves to
    * `overflow`, even if a saved layout placed it somewhere visible. Defaults to
-   * placeable; plugin tools can be pinned and moved like core entries.
+   * placeable; mini app tools can be pinned and moved like core entries.
    */
   placeable?: boolean
 }
@@ -23,6 +23,6 @@ export interface RailPlacement {
 
 export interface RailLayoutState {
   entries: RailPlacement[]
-  /** Restore former plugin overflow defaults and move built-in tools from the lower rail. */
+  /** Restore former mini app overflow defaults and move built-in tools from the lower rail. */
   legacyMiniAppPins?: boolean
 }

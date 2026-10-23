@@ -1,7 +1,7 @@
 /**
  * The `config_change` HITL contract — an agent PROPOSES a configuration change and a human
  * approves or declines it with one click. Pure types on the generic HITL bases, beside
- * `hitl-confirm.ts` so a plugin backend can raise the same request kind through the host's
+ * `hitl-confirm.ts` so a mini app backend can raise the same request kind through the host's
  * controller instead of deep-importing the host.
  *
  * The payload is the CARD the user sees, already rendered by the host's remedy registry:
@@ -21,7 +21,7 @@ export interface ConfigChangePayload {
   toolCallId: string
   /** Stable id of the proposal row the host recorded; the answer resolves against it. */
   proposalId: string
-  /** The remedy that will apply the change (`tool.enable`, `plugin.enable`, …). */
+  /** The remedy that will apply the change (`tool.enable`, `miniApp.enable`, …). */
   remedyId: string
   /** One line: what the agent wants to change. */
   title: string

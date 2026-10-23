@@ -3,7 +3,7 @@ import { twMerge } from 'tailwind-merge'
 
 /**
  * Keyboard-focus treatment for a directly focused form control. Keep this in
- * the SDK so host and plugin UI use one visible contract instead of restyling
+ * the SDK so host and mini app UI use one visible contract instead of restyling
  * `outline-none` inputs independently.
  *
  * One INSET hairline, and nothing else. Three earlier spellings all read as a collar rather than

@@ -23,10 +23,10 @@ export interface BuiltRailEntries {
  * Unify sidebar SECTIONS + workspace VIEWS into one customizable entry set with
  * stable, namespaced ids (`section:*`, action ids). Def
  * ORDER seeds the default arrangement and decides where a brand-new entry (e.g. a
- * freshly enabled plugin panel) lands. Pure — no React/DOM — so the id/area/active
+ * freshly enabled mini app panel) lands. Pure — no React/DOM — so the id/area/active
  * mapping can be unit-tested.
  *
- * Plugin views are pinned by default and grouped in the rail. Explicit unpins use overflow.
+ * Mini app views are pinned by default and grouped in the rail. Explicit unpins use overflow.
  */
 export function buildRailEntries(input: BuildRailEntriesInput): BuiltRailEntries {
   const entryMap = new Map<string, RailEntry>()
@@ -37,8 +37,8 @@ export function buildRailEntries(input: BuildRailEntriesInput): BuiltRailEntries
       isRailTool(entry)
         ? {
             id: entry.id,
-            defaultArea: !entry.plugin && defaultArea === 'status' ? 'status' : 'bar',
-            plugin: entry.plugin,
+            defaultArea: !entry.miniApp && defaultArea === 'status' ? 'status' : 'bar',
+            miniApp: entry.miniApp,
             tool: true,
           }
         : { id: entry.id, defaultArea },
@@ -53,9 +53,9 @@ export function buildRailEntries(input: BuildRailEntriesInput): BuiltRailEntries
         label: s.label,
         active: input.sidebarOpen && input.activeSection === s.id,
         onClick: () => input.onSectionClick(s.id),
-        plugin: s.plugin,
+        miniApp: s.miniApp,
         toolCategory: s.toolCategory,
-        pluginName: s.pluginName,
+        miniAppName: s.miniAppName,
         resourceUri: s.resourceUri,
       },
       s.defaultArea ?? 'bar',
@@ -71,9 +71,9 @@ export function buildRailEntries(input: BuildRailEntriesInput): BuiltRailEntries
         active: !!a.active,
         onClick: a.onClick,
         chordId: a.chordId,
-        plugin: a.plugin,
+        miniApp: a.miniApp,
         toolCategory: a.toolCategory,
-        pluginName: a.pluginName,
+        miniAppName: a.miniAppName,
         resourceUri: a.resourceUri,
         extraMenu: a.extraMenu,
       },

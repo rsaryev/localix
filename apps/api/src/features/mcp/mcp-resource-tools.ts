@@ -245,7 +245,7 @@ export function buildMcpResourceTools(args: {
   resourceServers: string[]
   servers: McpServerRecord[]
   cwd: string
-  /** Effective user/project denylist shared with built-in, plugin, and MCP call tools. */
+  /** Effective user/project denylist shared with built-in, mini app, and MCP call tools. */
   disabledTools?: ReadonlySet<string>
   manager: {
     listResources(servers: McpServerRecord[], cwd: string): Promise<McpResourceListRow[]>

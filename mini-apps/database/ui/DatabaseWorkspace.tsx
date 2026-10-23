@@ -36,7 +36,7 @@ export function DatabaseWorkspace({
 
   // No ground coat: the hosting pane already paints one, and under the host's macOS glass theme
   // the ground tokens carry alpha — a second pane-sized coat compounds into an opaque slab (85%
-  // over 70% is 95.5%, which is why this plugin's pane rendered black). On the opaque themes the
+  // over 70% is 95.5%, which is why this mini app's pane rendered black). On the opaque themes the
   // pane's coat is the identical color, so inheriting it changes nothing.
   return (
     <div className="@container h-full min-h-0">

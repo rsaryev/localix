@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { manifestAuthorSchema } from './app'
 import { miniAppManifestCoreSchema } from './index'
-import { PLUGIN_NAME_RE, PLUGIN_QUALIFIED_NAME_RE } from './primitives'
+import { MINI_APP_NAME_RE, MINI_APP_QUALIFIED_NAME_RE } from './primitives'
 
 /**
  * ── BEFORE THE SPLIT ──────────────────────────────────────────────────────────
@@ -12,7 +12,7 @@ import { PLUGIN_NAME_RE, PLUGIN_QUALIFIED_NAME_RE } from './primitives'
 export const LEGACY_MINI_APP_MANIFEST_DIR = '.localix-app'
 export const LEGACY_MINI_APP_MANIFEST_FILE = `${LEGACY_MINI_APP_MANIFEST_DIR}/app.json`
 
-/** How Localix offers one of the plugin's commands; the prompt stays the plugin's. */
+/** How Localix offers one of the mini app's commands; the prompt stays the mini app's. */
 export const legacyMiniAppCommandSchema = z.object({
   /** Argument chips and pickers in the composer; they assemble the command's argument string. */
   args: z.array(z.unknown()).optional(),
@@ -26,7 +26,7 @@ export type LegacyMiniAppCommand = z.infer<typeof legacyMiniAppCommandSchema>
 export const legacyMiniAppManifestSchema = miniAppManifestCoreSchema.extend({
   name: z
     .string()
-    .regex(PLUGIN_NAME_RE, 'A mini app name must be letters, numbers, dashes or underscores.'),
+    .regex(MINI_APP_NAME_RE, 'A mini app name must be letters, numbers, dashes or underscores.'),
   /** The plugin's version wins when both declare one, as `plugin.json` wins in Claude Code. */
   version: z.string().optional(),
   displayName: z.string().optional(),
@@ -44,9 +44,9 @@ export const legacyMiniAppManifestSchema = miniAppManifestCoreSchema.extend({
   dependencies: z
     .array(z.union([z.string(), z.object({ name: z.string(), version: z.string().optional() })]))
     .optional(),
-  /** Keyed by the plugin's command name (`review`, or `db:migrate` for a nested one). */
+  /** Keyed by the mini app's command name (`review`, or `db:migrate` for a nested one). */
   commands: z
-    .record(z.string().regex(PLUGIN_QUALIFIED_NAME_RE), legacyMiniAppCommandSchema)
+    .record(z.string().regex(MINI_APP_QUALIFIED_NAME_RE), legacyMiniAppCommandSchema)
     .optional(),
   views: z.array(z.unknown()).optional(),
   promptSections: z.array(z.unknown()).optional(),

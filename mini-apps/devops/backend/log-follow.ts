@@ -12,7 +12,7 @@ export interface LogSource {
 export interface LogFollowHub<Target> {
   /** Follow `target`'s log; the listener hears the current status at once. Returns the unfollow. */
   subscribe(target: Target, listener: (frame: LogFollowFrame) => void): () => void
-  /** Plugin shutdown: drop every listener and stop every source. */
+  /** Mini app shutdown: drop every listener and stop every source. */
   stopAll(): void
 }
 

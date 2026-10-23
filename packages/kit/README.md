@@ -1,8 +1,9 @@
 # @localixai/kit
 
 The Localix UI kit: the controls, overlays, rows, states, class recipes and design tokens the
-workbench and every plugin view are built from. The app and plugins import the same modules,
-`@localixai/kit/<id>`; a plugin takes them from the running host, so there is one instance of each.
+workbench and every mini app view are built from. The app and mini apps import the same modules,
+`@localixai/kit/<id>`; a mini app takes them from the running host, so there is one instance of
+each.
 
 ```ts
 import { Button } from '@localixai/kit/button'
@@ -10,8 +11,8 @@ import { EmptyHint } from '@localixai/kit/empty-hint'
 ```
 
 - **Which module for which job:** the catalog, `src/catalog/`, published as
-  [docs/extending/ui-kit.md](../../docs/extending/ui-kit.md) and, for a user plugin, as `KIT.md` in
-  its folder.
+  [docs/extending/ui-kit.md](../../docs/extending/ui-kit.md) and, for a user mini app, as `KIT.md`
+  in its folder.
 - **The paint contract:** [docs/internals/visual-system.md](../../docs/internals/visual-system.md).
 - **Changing the kit:** [AGENTS.md](AGENTS.md).
 - **Brand mark attribution:** [NOTICE.md](NOTICE.md), covering the paths used by coding-agent marks.
@@ -22,11 +23,11 @@ import { EmptyHint } from '@localixai/kit/empty-hint'
 | ------------------------------- | --------------------------------------------------------------------------------------- |
 | `@localixai/kit/<id>`           | A component or helper module declared in `src/entries/<id>.ts`; no package-root barrel. |
 | `@localixai/kit/styles.css`     | The shared stylesheet cascade from `styles/index.css`; imported by the host.            |
-| `@localixai/kit/catalog`        | The module catalog used by plugin authoring and documentation.                          |
+| `@localixai/kit/catalog`        | The module catalog used by mini app authoring and documentation.                        |
 | `@localixai/kit/testing/<name>` | Source-level test helpers; use only in tests.                                           |
 
 The package exports TypeScript source and CSS. It has no build script or compiled `dist` entry; the
-application and plugin compiler bundle the appropriate entry points.
+application and mini app compiler bundle the appropriate entry points.
 
 ## Layout
 

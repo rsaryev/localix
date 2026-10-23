@@ -3,7 +3,7 @@ import { localixResourceUri, parseLocalixUri } from '@localixai/mini-app-sdk/nav
 /**
  * PURE `localix://resource/trade` URI grammar — the one source of truth for the trading resource tree,
  * shared by the backend resource provider AND the UI (which imports these builders +
- * the category/leaf token sets, exactly as the Docker plugin's UI imports
+ * the category/leaf token sets, exactly as the Docker mini app's UI imports
  * `DOCKER_CATEGORIES` from `../backend/contracts`). No IO, no imports: a small total
  * parser + builder over a discriminated union.
  *
@@ -80,7 +80,7 @@ export type TradeUriNode =
       connectionId: string
       symbol: string
       leaf: MarketLeaf
-      /** Optional only for candles/technicals; plugin-owned live-view refinement. */
+      /** Optional only for candles/technicals; mini-app-owned live-view refinement. */
       timeframe?: string
     }
 

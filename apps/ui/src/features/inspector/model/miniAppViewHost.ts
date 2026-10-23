@@ -9,55 +9,55 @@ import { inspector } from '@/shared/lib/inspectorBus'
 import type { ActuateResult, EmbeddedActuator } from '@localixai/visual-feedback/embedded'
 
 /**
- * Run one agent `browser` command against a plugin's workbench view (`plugin:<name>`).
+ * Run one agent `browser` command against a mini app's workbench view (`mini-app:<name>`).
  *
- * The chain, in the order it runs: WHICH view — the plugin's rail viewlet, which is what its own
+ * The chain, in the order it runs: WHICH view — the mini app's rail viewlet, which is what its own
  * launcher opens, or its only work-item kind; OPEN or focus it the way that launcher does, unless
  * it is already on screen; WAIT for a view it just opened to be laid out and quiet; RUN the command
- * through the embedded actuator scoped to that panel, reading the plugin's own error buffer as its
- * console; NAME the result after the view rather than the window around it.
+ * through the embedded actuator scoped to that panel, reading the mini app's own error buffer as
+ * its console; NAME the result after the view rather than the window around it.
  *
  * Two commands are refused, each for a reason the page case does not have: `evaluate` would run
- * in the Localix window itself, with everything the app can reach, not in a page the plugin owns;
+ * in the Localix window itself, with everything the app can reach, not in a page the mini app owns;
  * `viewport` would resize a pane the person arranged. Everything else is the browser's own
- * vocabulary, so the agent drives the plugin it built exactly as it drives a web page.
+ * vocabulary, so the agent drives the mini app it built exactly as it drives a web page.
  */
 
-interface PluginView {
+interface MiniAppView {
   kind: string
   id: string
   title: string
 }
 
-export type PluginViewReply = ActuateResult
+export type MiniAppViewReply = ActuateResult
 
 const PANEL_TIMEOUT_MS = 6_000
 const QUIET_MS = 300
 const SETTLE_CAP_MS = 4_000
 
-export function resolvePluginView(plugin: string): PluginView | null {
-  const viewlet = railViewletRegistry.list().find((entry) => entry.pluginName === plugin)
+export function resolveMiniAppView(miniApp: string): MiniAppView | null {
+  const viewlet = railViewletRegistry.list().find((entry) => entry.miniAppName === miniApp)
   if (viewlet) return { kind: viewlet.kind, id: viewlet.kind, title: viewlet.title }
-  const kinds = workItemKindRegistry.list().filter((entry) => entry.pluginName === plugin)
+  const kinds = workItemKindRegistry.list().filter((entry) => entry.miniAppName === miniApp)
   const only = kinds.length === 1 ? kinds[0] : undefined
-  return only ? { kind: only.kind, id: only.kind, title: miniAppLabel(plugin) } : null
+  return only ? { kind: only.kind, id: only.kind, title: miniAppLabel(miniApp) } : null
 }
 
 /** The refusal a command earns before anything opens, or null when it may run. */
-export function refusal(command: PreviewCommand): PluginViewReply | null {
+export function refusal(command: PreviewCommand): MiniAppViewReply | null {
   const asked = [command.action, ...(command.steps ?? []).map((step) => step.action)]
   if (asked.includes('evaluate'))
     return {
       ok: false,
       errorCode: 'bad_request',
       error:
-        'evaluate is not available on a plugin view: it would run inside the Localix app, not in a page the plugin owns. Read the view with snapshot or take_screenshot, and the plugin with its own tools.',
+        'evaluate is not available on a mini app view: it would run inside the Localix app, not in a page the mini app owns. Read the view with snapshot or take_screenshot, and the mini app with its own tools.',
     }
   if (command.action === 'viewport')
     return {
       ok: false,
       errorCode: 'bad_request',
-      error: 'A plugin view fills the workbench pane it is open in; it has no viewport to set.',
+      error: 'A mini app view fills the workbench pane it is open in; it has no viewport to set.',
     }
   return null
 }
@@ -65,12 +65,12 @@ export function refusal(command: PreviewCommand): PluginViewReply | null {
 function loadedViews(): string {
   const names = railViewletRegistry
     .list()
-    .flatMap((entry) => (entry.pluginName ? [entry.pluginName] : []))
-  return names.length ? ` Plugin views in this window: ${names.join(', ')}.` : ''
+    .flatMap((entry) => (entry.miniAppName ? [entry.miniAppName] : []))
+  return names.length ? ` Mini app views in this window: ${names.join(', ')}.` : ''
 }
 
 /**
- * The panel of the tab opened as `id` that is on screen. A plugin's session tab carries its
+ * The panel of the tab opened as `id` that is on screen. A mini app's session tab carries its
  * session in its id (`tabIdInScope`), and only the active session's is visible — so the visible
  * one is the view in front of the person, never another chat's hidden copy.
  */
@@ -134,17 +134,17 @@ function settle(panel: HTMLElement): Promise<void> {
  * and the app's URL, and the screenshot with the panel's CSS classes.
  */
 function asView(
-  reply: PluginViewReply,
+  reply: MiniAppViewReply,
   command: PreviewCommand,
-  plugin: string,
-  view: PluginView,
-): PluginViewReply {
+  miniApp: string,
+  view: MiniAppView,
+): MiniAppViewReply {
   const result = reply.result
   if (!result) return reply
   const snapshot = result.snapshot && {
     ...result.snapshot,
     title: view.title,
-    url: miniAppViewTarget(plugin),
+    url: miniAppViewTarget(miniApp),
   }
   const whole = result.action === 'screenshot' && !command.ref && !command.selector
   return {
@@ -152,7 +152,7 @@ function asView(
     result: {
       ...result,
       ...(snapshot ? { snapshot } : {}),
-      ...(whole ? { target: `${view.title} (${miniAppViewTarget(plugin)})` } : {}),
+      ...(whole ? { target: `${view.title} (${miniAppViewTarget(miniApp)})` } : {}),
     },
   }
 }
@@ -169,15 +169,15 @@ function paneBackdrop(): string | undefined {
 
 const actuators = new Map<string, Promise<EmbeddedActuator>>()
 
-function actuatorFor(plugin: string): Promise<EmbeddedActuator> {
-  let actuator = actuators.get(plugin)
+function actuatorFor(miniApp: string): Promise<EmbeddedActuator> {
+  let actuator = actuators.get(miniApp)
   if (!actuator) {
-    // Loaded on the first look at any plugin view: the actuator and its rasterizer are not
-    // something a window that never inspects a plugin should carry.
+    // Loaded on the first look at any mini app view: the actuator and its rasterizer are not
+    // something a window that never inspects a mini app should carry.
     actuator = import('@localixai/visual-feedback/embedded').then(({ createEmbeddedActuator }) =>
-      createEmbeddedActuator({ console: miniAppErrorBuffer(plugin), backdrop: paneBackdrop }),
+      createEmbeddedActuator({ console: miniAppErrorBuffer(miniApp), backdrop: paneBackdrop }),
     )
-    actuators.set(plugin, actuator)
+    actuators.set(miniApp, actuator)
   }
   return actuator
 }
@@ -195,27 +195,27 @@ export interface CommandChat {
  * is answered from its own chat's tab or not at all; bringing that chat to the front would take
  * the person's screen away from them, so the refusal says what to read instead.
  */
-function notOnScreen(view: PluginView): PluginViewReply {
+function notOnScreen(view: MiniAppView): MiniAppViewReply {
   return {
     ok: false,
     errorCode: 'failed',
-    error: `${view.title} belongs to each chat, and this chat is not the one on screen: the person is in another chat, so this chat's ${view.title} is not drawn and cannot be looked at now. Read it with the plugin's own tools instead.`,
+    error: `${view.title} belongs to each chat, and this chat is not the one on screen: the person is in another chat, so this chat's ${view.title} is not drawn and cannot be looked at now. Read it with the mini app's own tools instead.`,
   }
 }
 
-export async function runPluginViewCommand(
-  plugin: string,
+export async function runMiniAppViewCommand(
+  miniApp: string,
   command: PreviewCommand,
   chat: CommandChat,
-): Promise<PluginViewReply> {
+): Promise<MiniAppViewReply> {
   const refused = refusal(command)
   if (refused) return refused
-  const view = resolvePluginView(plugin)
+  const view = resolveMiniAppView(miniApp)
   if (!view)
     return {
       ok: false,
       errorCode: 'not_found',
-      error: `No workbench view of a plugin named "${plugin}" is loaded in this window — it is not enabled, has no UI, or its UI failed to load.${loadedViews()}`,
+      error: `No workbench view of a mini app named "${miniApp}" is loaded in this window — it is not enabled, has no UI, or its UI failed to load.${loadedViews()}`,
     }
   const perChat = scopeKindOf(view.kind) === 'session'
   if (perChat && chat.activeSessionId !== chat.sessionId) return notOnScreen(view)
@@ -242,10 +242,10 @@ export async function runPluginViewCommand(
     }
   if (!shown) await settle(panel)
   const native = await nativePanelShot(command, panel)
-  if (native) return asView(native, command, plugin, view)
-  const actuator = await actuatorFor(plugin)
+  if (native) return asView(native, command, miniApp, view)
+  const actuator = await actuatorFor(miniApp)
   const reply = await actuator.run(command as Parameters<EmbeddedActuator['run']>[0], panel)
-  return asView(reply, command, plugin, view)
+  return asView(reply, command, miniApp, view)
 }
 
 /**
@@ -260,7 +260,7 @@ export async function runPluginViewCommand(
 async function nativePanelShot(
   command: PreviewCommand,
   panel: HTMLElement,
-): Promise<PluginViewReply | null> {
+): Promise<MiniAppViewReply | null> {
   if (command.action !== 'screenshot' || command.ref || command.selector) return null
   const invoke = platformCapabilities().desktop.invoker()
   if (!invoke) return null

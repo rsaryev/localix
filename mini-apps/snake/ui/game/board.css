@@ -1,5 +1,5 @@
 /* ── The board ────────────────────────────────────────────────────────────────────────────────
-   Styled HERE, not with utility classes: utilities reach a plugin through the host's
+   Styled HERE, not with utility classes: utilities reach a mini app through the host's
    de-duplicated sheet, where a rule judged a duplicate of the host's can be dropped. A flat,
    diagrammatic field: the same bordered surface as the 2048 board, a hairline grid that is barely
    there, the snake as one flat stroke and the food as a small square. Colours are mixed from the

@@ -12,7 +12,7 @@ const UI_SURFACE_KINDS = new Set<UiSurfaceKind>([
   'overlay',
   'picker',
   'settings',
-  'plugin',
+  'mini-app',
   'command',
   'action',
 ])

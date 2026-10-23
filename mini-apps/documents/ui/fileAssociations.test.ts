@@ -76,7 +76,7 @@ describe('documents file associations', () => {
     }
   })
 
-  test('the formats the plugin ships viewers for are all declared', () => {
+  test('the formats the mini app ships viewers for are all declared', () => {
     // The inverse direction: a viewer nobody told the OS about is invisible outside
     // the app. Listed explicitly so ADDING a viewer fails here until the manifest
     // catches up, rather than silently shipping half-wired.

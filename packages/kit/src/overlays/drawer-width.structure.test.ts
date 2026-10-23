@@ -8,7 +8,7 @@ import {
 } from '../testing/overlay-contracts'
 
 /**
- * The kit half of the rule. The same scan over the app and the plugins is a host contract and
+ * The kit half of the rule. The same scan over the app and the mini apps is a host contract and
  * lives in `apps/ui/src/shared/ui/overlays.contract.test.ts`, because the kit never reads the host;
  * both halves run the one detector in `testing/overlay-contracts`, which the control below covers.
  */

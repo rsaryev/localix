@@ -14,7 +14,7 @@ beforeAll(() => {
 })
 afterAll(() => teardown())
 
-test('plugin eligibility hides and restores a button live; fast clicks run once and subscriptions release', async () => {
+test('mini app eligibility hides and restores a button live; fast clicks run once and subscriptions release', async () => {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const unbind = bindMiniAppUiTestDoubles()
@@ -28,7 +28,7 @@ test('plugin eligibility hides and restores a button live; fast clicks run once 
   setEnabledMiniAppNames(new Set(['live-action']))
   registerAction({
     id: 'live-action:save',
-    pluginName: 'live-action',
+    miniAppName: 'live-action',
     label: 'Save',
     Icon: () => null,
     when: () => needed,

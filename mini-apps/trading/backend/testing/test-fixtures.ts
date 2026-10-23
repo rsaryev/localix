@@ -1,5 +1,5 @@
 /**
- * TEST-ONLY fixtures for the trading backend. Nothing in the plugin imports this module —
+ * TEST-ONLY fixtures for the trading backend. Nothing in the mini app imports this module —
  * it is not part of `backend/index.ts`'s reachable graph, so it is never bundled.
  *
  * It exists because the two contracts the tests impersonate — `ExchangeInfo['capabilities']`

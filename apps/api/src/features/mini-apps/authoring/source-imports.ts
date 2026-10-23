@@ -23,22 +23,22 @@ async function installedPackageRoot(from: string, name: string): Promise<string 
 }
 
 /**
- * Verify Bun's resolved graph before writing or publishing a user plugin build. Intercepting
+ * Verify Bun's resolved graph before writing or publishing a user mini app build. Intercepting
  * relative imports with onResolve changes Bun's tree shaking (a single icon then bundles every
  * icon), so inspect the metafile after Bun resolves static and literal dynamic imports itself.
  *
- * The defect this stops is a plugin FILE reaching out of its directory (`../../secret`). A
+ * The defect this stops is a mini app FILE reaching out of its directory (`../../secret`). A
  * dependency is not that: Bun installs workspace dependencies hoisted into the repository's
  * `node_modules` (or links a workspace package from `packages/`), so a bare `@tanstack/…` import
  * legitimately resolves outside the mini app. Rejecting every outside input took the UI of every
- * bundled plugin with a dependency down. So an input is admitted when it is the plugin's, the
- * kit's, or reached from a plugin file through a bare specifier that resolves into its actual
+ * bundled mini app with a dependency down. So an input is admitted when it is the mini app's, the
+ * kit's, or reached from a mini app file through a bare specifier that resolves into its actual
  * node_modules package. That package's own graph is trusted the way the kit's is. A tsconfig
  * alias spelled like a package does not earn that trust when it points at an arbitrary file.
  */
 export async function assertContainedBuildInputs(input: {
   metafile: Bun.BuildMetafile | undefined
-  pluginDir: string
+  miniAppDir: string
   kitDir: string
   virtualInputs?: ReadonlySet<string>
   sharedSpecifiers?: ReadonlySet<string>
@@ -48,9 +48,9 @@ export async function assertContainedBuildInputs(input: {
   const { metafile, virtualInputs } = input
   const base = input.cwd ?? process.cwd()
   const at = (path: string) => resolve(base, path)
-  if (!metafile) throw new Error('The plugin build returned no import graph to validate')
-  const [pluginRoot, kitRoot] = await Promise.all([
-    fs.realpath(input.pluginDir),
+  if (!metafile) throw new Error('The mini app build returned no import graph to validate')
+  const [miniAppRoot, kitRoot] = await Promise.all([
+    fs.realpath(input.miniAppDir),
     fs.realpath(input.kitDir),
   ])
   const inputs = metafile.inputs
@@ -88,7 +88,7 @@ export async function assertContainedBuildInputs(input: {
     Object.keys(inputs).map(async (key) => {
       if (virtualInputs?.has(key)) return
       const realFile = await fs.realpath(at(key))
-      if (isPathWithin(pluginRoot, realFile)) miniAppFiles.push(key)
+      if (isPathWithin(miniAppRoot, realFile)) miniAppFiles.push(key)
       else if (isPathWithin(kitRoot, realFile)) packageEntries.push(...edgesOf(key))
       else outside.add(key)
     }),
@@ -102,10 +102,10 @@ export async function assertContainedBuildInputs(input: {
         if (input.sharedSpecifiers?.has(specifier)) continue
         if (!FILE_IMPORT.test(specifier)) {
           // A tsconfig `paths` alias is also spelled like a package. It may resolve to any file
-          // outside this plugin, so trust it only when it actually lands in a package installed
+          // outside this mini app, so trust it only when it actually lands in a package installed
           // through node_modules (workspace package symlinks included), or in the shipped kit.
           const target = await realOf({ path: imported.path, from: dirname(file) })
-          if (target && !isPathWithin(pluginRoot, target) && !isPathWithin(kitRoot, target)) {
+          if (target && !isPathWithin(miniAppRoot, target) && !isPathWithin(kitRoot, target)) {
             const name = packageName(specifier)
             const packageRoot = name && (await installedPackageRoot(dirname(file), name))
             if (!packageRoot || !isPathWithin(packageRoot, target)) {
@@ -124,7 +124,7 @@ export async function assertContainedBuildInputs(input: {
         // specifier, so resolve that with Bun rather than inferring from the output path.
         const resolved = Bun.resolveSync(specifier, dirname(file))
         const realTarget = await fs.realpath(resolved)
-        if (!isPathWithin(pluginRoot, realTarget)) {
+        if (!isPathWithin(miniAppRoot, realTarget)) {
           throw new Error(`${key} imports "${specifier}" outside the mini app`)
         }
       }
@@ -152,8 +152,8 @@ export async function assertContainedBuildInputs(input: {
     const edge = pending.pop()!
     const real = await realOf(edge)
     const root = real === undefined ? undefined : await packageRootOf(real)
-    // The plugin's own package.json is never a dependency root.
-    if (root === undefined || trustedRoots.has(root) || isPathWithin(pluginRoot, root)) continue
+    // The mini app's own package.json is never a dependency root.
+    if (root === undefined || trustedRoots.has(root) || isPathWithin(miniAppRoot, root)) continue
     trustedRoots.add(root)
     for (const { key, real: file } of realKeys) {
       if (outside.has(key) && isPathWithin(root, file)) {

@@ -102,7 +102,7 @@ describe('reading', () => {
 
   test('streams are isolated: a consumer never sees another stream', async () => {
     const { db, feed } = await createFeedTestbed(registry, 'core')
-    const other = createChangeFeed({ db, stream: 'plugin:x', registry, retryDelayMs: () => 0 })
+    const other = createChangeFeed({ db, stream: 'mini-app:x', registry, retryDelayMs: () => 0 })
     const seen: string[] = []
     const consumer = await feed.subscribe('index', { note: collect(seen) }, { kind: 'reactor' })
     other.publish(note('elsewhere'))

@@ -10,7 +10,7 @@ import type { Seat } from './ask-agent'
 /**
  * HOW THE TABLE ASKS THE DECISION MODEL FOR ITS MOVE — when the table's opponent is `decision`.
  *
- * The plugin asks the host's decision model itself (`ctx.host.decisions`): one `choice` question,
+ * The mini app asks the host's decision model itself (`ctx.host.decisions`): one `choice` question,
  * rock, paper or scissors. Fairness is this table's whole point, so the state is built from the
  * FINISHED rounds alone — both picks and how each went — and the score. The current round never
  * reaches it: not the person's move, not its digest, not whether they have chosen. The pick is then

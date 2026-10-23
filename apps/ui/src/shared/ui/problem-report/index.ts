@@ -6,8 +6,8 @@
 
 export { ProblemLine, type ProblemLineProps } from './ProblemLine'
 export { ProblemState, type ProblemStateProps } from './ProblemState'
-// One implementation for core and plugins alike: the hook needs only React and the bound toast, so
-// it lives in the SDK and the app reads it from there rather than keeping a second copy.
+// One implementation for core and mini apps alike: the hook needs only React and the bound toast,
+// so it lives in the SDK and the app reads it from there rather than keeping a second copy.
 export {
   useProblemReport,
   type OwnedProblemReport,

@@ -81,15 +81,15 @@ export interface AgentTool<TInput = unknown, TDetails = unknown> {
    *
    * Omit for surface-agnostic tools. A workbench/desktop-only tool declares the
    * host capability it consumes (for example `workbench-ui`) at its registration
-   * source, including plugin-owned tools unknown to core.
+   * source, including mini-app-owned tools unknown to core.
    */
   availability?: ToolAvailability
   /**
    * Input modalities the MODEL must read for this tool to be worth offering (`['image']` for a
    * tool whose whole output is a picture). The ledger's `model` layer withholds the tool from a
    * run whose model cannot read them — a text-only model handed a picture-only tool spends a
-   * turn on a result it is then told it cannot see. Declared here, on the tool, so a plugin or MCP tool
-   * states it the same way a built-in does.
+   * turn on a result it is then told it cannot see. Declared here, on the tool, so a mini app or
+   * MCP tool states it the same way a built-in does.
    */
   requiresModelInput?: readonly string[]
   /**
@@ -177,9 +177,9 @@ export interface AgentTool<TInput = unknown, TDetails = unknown> {
    * The host derives these facts from a switch over tool NAMES, which by construction can only know
    * about its own built-ins. A tool it does not recognise produced NO paths — and no paths means
    * `outsideWorkspace: false`, so the default `mutates + outside-workspace → ask` rule cannot fire
-   * and a user's own path `pattern` rule has nothing to match. A plugin tool that writes files was
-   * therefore able to write anywhere on disk with no prompt. Declaring targets here is how a tool
-   * the host has never heard of becomes visible to the rules that already exist.
+   * and a user's own path `pattern` rule has nothing to match. A mini app tool that writes files
+   * was therefore able to write anywhere on disk with no prompt. Declaring targets here is how a
+   * tool the host has never heard of becomes visible to the rules that already exist.
    *
    * Return every path the call could write or delete, absolute or relative (the host resolves them
    * against the session cwd/root exactly as it does for its own tools). Declare the DIRECTORY too
@@ -188,8 +188,8 @@ export interface AgentTool<TInput = unknown, TDetails = unknown> {
    * Must be pure and synchronous — it runs on the permission path, before the gate decides — and
    * conservative: when the target cannot be predicted, return the widest path the call could touch,
    * because an undeclared path is an unguarded one. The host ignores a throw or a non-array result
-   * (a plugin bug must not break the gate) and its own facts always win for a tool it does handle,
-   * so this can widen what the rules see but never narrow it.
+   * (a mini app bug must not break the gate) and its own facts always win for a tool it does
+   * handle, so this can widen what the rules see but never narrow it.
    */
   permissionPaths?: (input: unknown) => string[]
   /**
@@ -236,7 +236,7 @@ export interface AgentTool<TInput = unknown, TDetails = unknown> {
    *
    * Replaces the boolean `interactiveOnly` (chat-or-not) and the host's central per-shape
    * allowlists: a tool that renders into the user's chat says `subagent: 'never'`, a tool a
-   * focused child may opt into says `'opt-in'`. Omit for the plugin default
+   * focused child may opt into says `'opt-in'`. Omit for the mini app default
    * ({@link DEFAULT_TOOL_EXPOSURE}): on the wire in a chat, declarable elsewhere.
    */
   exposure?: ToolExposure

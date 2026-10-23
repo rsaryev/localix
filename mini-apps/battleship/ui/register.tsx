@@ -11,7 +11,7 @@ const Workspace = lazy(() =>
 
 /** One board per chat, its launcher and the anchor its tool opens (`sessionGameUi`). */
 export const registerUi = sessionGameUi({
-  plugin: 'battleship',
+  miniApp: 'battleship',
   kind: GAME_KIND,
   title: 'Battleship',
   label: 'Battleship — play against the agent',

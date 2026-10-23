@@ -62,7 +62,7 @@ import { renderRecentQueriesForContext } from './recent-query-context'
 import { getDatabaseDriverManifest } from '../shared/driver-catalog'
 import { ownRecordValue } from '../shared/safe-record'
 
-/** The URI provider this plugin owns — derived from the shared vocabulary, never re-spelled.
+/** The URI provider this mini app owns — derived from the shared vocabulary, never re-spelled.
  *  (Core still dispatches ARBITRARY provider strings; the vocabulary is shared, not closed.) */
 const PROVIDER = DATABASE_RESOURCE_PROVIDER
 

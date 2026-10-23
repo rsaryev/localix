@@ -384,7 +384,7 @@ export function ResponsePane({
               <AlertTriangle className="mt-px size-3.5 shrink-0" aria-hidden />
               <span className="min-w-0 flex-1">
                 Response truncated at {formatBytes(response.bytes)}. Raise the max body size in the
-                plugin settings to see the rest.
+                mini app settings to see the rest.
               </span>
             </div>
           )}

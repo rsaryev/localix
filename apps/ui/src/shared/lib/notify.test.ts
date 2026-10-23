@@ -65,7 +65,7 @@ describe('notification compatibility publisher', () => {
     })
   })
 
-  // A plugin's row used to read "System". Its label must name the plugin WITHOUT replacing the
+  // A mini app's row used to read "System". Its label must name the mini app WITHOUT replacing the
   // origin the row would get, or it would stop filing under the chat it happened in.
   it('labels the derived origin with the source instead of replacing it', () => {
     setActiveEventRoute('/project/PRJ-1/LOCALIX-19')

@@ -37,7 +37,7 @@ export interface ActionContribution extends MiniAppOwnedContribution {
   Icon: IconComponent
   /** Synchronous, cheap and free of side effects; called during rendering and before running. */
   when(context: ActionContext): boolean
-  /** Optional live eligibility. The host rechecks `when`; the plugin owns state and I/O. */
+  /** Optional live eligibility. The host rechecks `when`; the mini app owns state and I/O. */
   subscribe?(context: ActionContext, onChange: () => void): () => void
   run(context: ActionContext): Promise<{ message?: string } | void>
 }

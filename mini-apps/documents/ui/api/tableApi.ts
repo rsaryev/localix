@@ -21,7 +21,7 @@ export interface TableRowsQuery {
 /**
  * REST client for the inspector Table tab (lazy rows, export, open-in-app).
  * Raw fetch (not the typed hono client): the `/rpc/table` routes are mounted by
- * the bundled documents PLUGIN, so they are not part of core's `AppType`.
+ * the bundled documents MINI APP, so they are not part of core's `AppType`.
  */
 export const tableApi = {
   async getMeta(id: string): Promise<TableMeta> {
@@ -68,7 +68,7 @@ export const tableApi = {
   async open(id: string, targetId: string): Promise<{ opened?: true; error?: string }> {
     return unwrap(await postJson(`/rpc/table/${encodeURIComponent(id)}/open`, { targetId }))
   },
-  /** Plugin-relative export route consumed by the host's download capability. */
+  /** Mini-app-relative export route consumed by the host's download capability. */
   exportPath(id: string, format = 'csv'): string {
     return `/rpc/table/${id}/export?format=${encodeURIComponent(format)}`
   },

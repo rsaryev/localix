@@ -22,7 +22,7 @@ import { LocalixBorderBeam, RECOMMENDED_BEAM_INTENSITY } from '../feedback/local
  * `ContextMenu*` and `DropdownMenu*` are separate component families, and this file used to be two
  * near-identical recursive walkers with a comment excusing the copy. They drifted exactly where a
  * copy drifts — one spelled `danger` as bare `text-status-error`, the shared `tone="danger"` recipe
- * (which also tints the highlight) reached neither, and the API plugin's context menu lost the
+ * (which also tints the highlight) reached neither, and the API mini app's context menu lost the
  * treatment altogether while its dropdown kept it.
  *
  * Passing the family in as data (`menu-families.ts`) is the whole fix. Add an entry kind here and
@@ -31,7 +31,7 @@ import { LocalixBorderBeam, RECOMMENDED_BEAM_INTENSITY } from '../feedback/local
  * What the walker owns, and no call site may re-decide:
  *   - the SEAMS. Menus are built by spreading live data between literal separators, so an empty
  *     spread leaves a rule against the top edge or two rules in a row. `normalizeMenuEntries` is
- *     what lets a plugin write `[open, —, ...rows, —, ...actions]` and stop worrying;
+ *     what lets a mini app write `[open, —, ...rows, —, ...actions]` and stop worrying;
  *   - the leading COLUMN. If anything in a level carries an icon, everything in that level is
  *     indented, so a list of branches reads as a column rather than a ragged edge; a check never
  *     claims it — `selected` and `checked` rows both end on theirs;
@@ -41,7 +41,7 @@ import { LocalixBorderBeam, RECOMMENDED_BEAM_INTENSITY } from '../feedback/local
 export type { MenuFamilyName }
 
 /**
- * Render a described menu into `family`'s components. Nests through submenus, so a plugin's
+ * Render a described menu into `family`'s components. Nests through submenus, so a mini app's
  * `items` group reads the same at any depth.
  *
  * Each row is a Radix menu control. An optional trailing action is a sibling control in a

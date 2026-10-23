@@ -34,7 +34,7 @@ import { chartToMessageBinding, technicalsToMessageBinding } from './model/tabBi
 /**
  * UI registration for the bundled Trading subsystem. Contributes one root Trading Workspace
  * plus its chart/technicals work-item kinds through the {@link MiniAppUiHost}
- * registration façade (the plugin-SDK contract). It is discovered + invoked
+ * registration façade (the mini app SDK contract). It is discovered + invoked
  * generically by `shared/contrib/discover.ts`.
  */
 
@@ -130,7 +130,7 @@ export function registerUi(host: MiniAppUiHost): void {
   if (registered) return
   registered = true
 
-  // The `manage_chart` tool's UI sink: `plugin.command` frames keyed `trading`/`chart`
+  // The `manage_chart` tool's UI sink: `mini-app.command` frames keyed `trading`/`chart`
   // open/focus the market's chart tab and forward the command onto chartControlBus (see
   // agentChartCommands.ts for the placement policy — a chart opens in the issuing chat).
   initAgentChartCommands()

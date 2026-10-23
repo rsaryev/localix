@@ -2,7 +2,7 @@
  * Response history — the last few sends of each saved request: send, then flip back through what
  * came before.
  *
- * IN-MEMORY, DELIBERATELY. A response body is the one payload in this plugin that routinely
+ * IN-MEMORY, DELIBERATELY. A response body is the one payload in this mini app that routinely
  * carries real data (user records, tokens the API echoes back) and can be megabytes; persisting
  * it would turn `~/.localix` into an unredacted archive of every API the user ever hit, which is
  * a very different privacy contract from the redacted-specs-only file the store keeps. Losing

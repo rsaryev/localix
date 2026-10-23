@@ -33,7 +33,7 @@ export interface BoardSeat {
 }
 
 export interface BoardServiceDeps {
-  /** The session's plugin folder; the host rejects a session the user does not own. */
+  /** The session's mini app folder; the host rejects a session the user does not own. */
   resolveDir: (userId: string, sessionId: string) => Promise<string>
   /** The agents a card may be assigned to. Absent: a card cannot name one. */
   agents?: MiniAppAgentDirectory

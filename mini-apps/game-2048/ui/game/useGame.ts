@@ -15,7 +15,7 @@ import { ROUTE_PATH } from '../../shared/resource'
 
 export function useGame(active: boolean) {
   const game = useTableGame({
-    plugin: 'game-2048',
+    miniApp: 'game-2048',
     route: ROUTE_PATH,
     schema: gameSchema,
     active,

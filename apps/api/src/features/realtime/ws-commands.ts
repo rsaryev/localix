@@ -50,9 +50,9 @@ const previewResultSchema = z.object({
     .optional(),
   notEngaged: z.boolean().optional(),
 })
-// Reply to an awaited `plugin.command` frame (`emitCommandWithReply`): settles the
-// server-side pending promise keyed by commandId (plugin-command-registry).
-const pluginCommandResultSchema = z.object({
+// Reply to an awaited `mini-app.command` frame (`emitCommandWithReply`): settles the
+// server-side pending promise keyed by commandId (mini-app-command-registry).
+const miniAppCommandResultSchema = z.object({
   commandId: z.string().min(1),
   ok: z.boolean(),
   result: z.unknown().optional(),
@@ -145,8 +145,8 @@ const completionReferencesSchema = z
 const inlineCompletionSchema = z.object({
   sessionId: z.string().min(1),
   references: completionReferencesSchema.optional(),
-  // Core validates the surfaces it OWNS. A contributed one is namespaced (`plugin.field`) and
-  // validates its own payload inside the plugin, because core cannot know its shape — all that is
+  // Core validates the surfaces it OWNS. A contributed one is namespaced (`<app>.field`) and
+  // validates its own payload inside the mini app, because core cannot know its shape — all that is
   // enforced here is the bound on how much of it may arrive at once.
   surfaces: z
     .object({
@@ -240,7 +240,7 @@ export type RealtimeCommand =
   | { kind: 'interact'; body: z.infer<typeof toolInteractSchema> }
   | { kind: 'submit-secret'; body: z.infer<typeof submitSecretSchema> }
   | { kind: 'preview-result'; body: z.infer<typeof previewResultSchema> }
-  | { kind: 'plugin-command-result'; body: z.infer<typeof pluginCommandResultSchema> }
+  | { kind: 'mini-app-command-result'; body: z.infer<typeof miniAppCommandResultSchema> }
   | { kind: 'lsp.open'; sessionId: string; file: string; content: string }
   | { kind: 'lsp.change'; sessionId: string; file: string; content: string }
   | { kind: 'lsp.close'; sessionId: string; file: string }
@@ -314,10 +314,10 @@ export function parseRealtimeCommand(msg: unknown): RealtimeCommand {
     return { kind: 'preview-result', body: parsed.data }
   }
 
-  if (envelope.data.t === 'plugin-command-result') {
-    const parsed = pluginCommandResultSchema.safeParse(envelope.data)
+  if (envelope.data.t === 'mini-app-command-result') {
+    const parsed = miniAppCommandResultSchema.safeParse(envelope.data)
     if (!parsed.success) return { kind: 'invalid', reason: 'bad_payload' }
-    return { kind: 'plugin-command-result', body: parsed.data }
+    return { kind: 'mini-app-command-result', body: parsed.data }
   }
 
   if (envelope.data.t === 'stop') {

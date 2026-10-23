@@ -8,7 +8,7 @@
  * a new `exchangeId`) — never a new field here.
  *
  * Split by domain, and the split carries information: `market` is the PUBLIC, read-only
- * surface the plugin actually registers, while `account` is the DORMANT execution
+ * surface the mini app actually registers, while `account` is the DORMANT execution
  * vocabulary that no live route reads. Import from `./contracts` as before — this barrel
  * is the single public face.
  */

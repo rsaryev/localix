@@ -24,11 +24,11 @@ afterAll(async () => {
 })
 
 /**
- * `useIndex` is a hook the PLUGIN owns, chosen at runtime, and plugin UI discovery finishes after
- * first paint. A consumer that simply called `contribution?.useIndex(...)` therefore ran zero hooks
- * on its first render and the provider's hooks on its next — a hook-order violation, which React
- * answers by unmounting the tree. In a packaged build that lands as a minified React error at the
- * route boundary, journalled as "Route failed" with nothing in it naming the file tree.
+ * `useIndex` is a hook the MINI APP owns, chosen at runtime, and mini app UI discovery finishes
+ * after first paint. A consumer that simply called `contribution?.useIndex(...)` therefore ran zero
+ * hooks on its first render and the provider's hooks on its next — a hook-order violation, which
+ * React answers by unmounting the tree. In a packaged build that lands as a minified React error at
+ * the route boundary, journalled as "Route failed" with nothing in it naming the file tree.
  *
  * The contract is that a runtime-chosen hook may only change with a new component INSTANCE, so the
  * consumer keys itself on the provider's identity. This test holds both halves: the crash is gone,
@@ -61,7 +61,7 @@ test('a decoration provider registering after first paint remounts rather than r
     expect(host.textContent).toBe('plain')
     const beforeRegistration = renders
 
-    // What plugin discovery does, one capability snapshot later.
+    // What mini app discovery does, one capability snapshot later.
     await act(async () => {
       registerFileTreeDecoration({
         id: 'test:decorations',

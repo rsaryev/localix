@@ -1,5 +1,5 @@
 /**
- * How the navigation rail presents its RECENT plugin views (see
+ * How the navigation rail presents its RECENT mini app views (see
  * widgets/workspace-shell/model/railRecents for the MRU model itself).
  *
  * A recent slot is transient by nature, so three icons sitting in the rail at rest

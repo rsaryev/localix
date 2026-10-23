@@ -12,7 +12,7 @@ import { frameHandlers } from './subscription'
  * without re-stringifying:
  *
  *   session: "s\n<boot-epoch>:<sequence>\n<sessionId>\n<event-json>"   (coalesced, see session-frames.ts)
- *   plugin:  "<tag>\n<payload-json>"
+ *   mini app:  "<tag>\n<payload-json>"
  *   rpc:     "r\n{"id","ok","result"|"error","code","status"}"
  *
  * A handler that throws is isolated and reported: one feature's bug must not cost every other

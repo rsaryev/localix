@@ -13,11 +13,11 @@ import type { PublishMessageContext } from './message-bindings'
  * the game's tool opens — a board URI that names its chat opens there (`session`); the bare one,
  * in the chat it is followed from.
  *
- * Returns the plugin's `registerUi`, which registers once per host however often it is called.
+ * Returns the mini app's `registerUi`, which registers once per host however often it is called.
  */
 export function sessionGameUi(game: {
-  plugin: string
-  /** The work item's kind, `<plugin>:game`. */
+  miniApp: string
+  /** The work item's kind, `<app>:game`. */
   kind: string
   title: string
   /** The launcher's label: the title and what the game is. */
@@ -69,8 +69,8 @@ export function sessionGameUi(game: {
       Icon,
     })
     host.anchors.register({
-      id: `${game.plugin}:game-anchor`,
-      namespaces: [game.plugin],
+      id: `${game.miniApp}:game-anchor`,
+      namespaces: [game.miniApp],
       icons: { game: Icon },
       resolve: (uri) => {
         const session = game.sessionOf(uri)

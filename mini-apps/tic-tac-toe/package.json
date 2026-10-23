@@ -2,7 +2,7 @@
   "name": "@localix-mini-app/tic-tac-toe",
   "version": "0.1.0",
   "private": true,
-  "description": "Dependencies for the bundled Tic-Tac-Toe plugin: a board whose moves wake the agent in the open chat.",
+  "description": "Dependencies for the bundled Tic-Tac-Toe mini app: a board whose moves wake the agent in the open chat.",
   "license": "MIT",
   "type": "module",
   "scripts": {

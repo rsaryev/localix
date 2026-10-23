@@ -6,10 +6,10 @@ import { USER_PARTICIPANT } from '../../db/participant'
 /**
  * The host half of `ctx.agents`: which agents a chat can name, answered from the registry.
  *
- * Two rules make it safe to hand to a plugin. The session is resolved BEFORE the registry is
- * read, through an owner-scoped lookup, so a plugin passing a foreign or deleted session id is
+ * Two rules make it safe to hand to a mini app. The session is resolved BEFORE the registry is
+ * read, through an owner-scoped lookup, so a mini app passing a foreign or deleted session id is
  * refused rather than shown another user's agents. And only ENABLED agents of the session's own
- * scope are listed — a name a plugin stores from here must be one the host would also run — plus
+ * scope are listed — a name a mini app stores from here must be one the host would also run — plus
  * the person, marked `kind: 'human'`.
  *
  * Both halves are ports so the same directory serves the boot-time backend (late-bound refs)

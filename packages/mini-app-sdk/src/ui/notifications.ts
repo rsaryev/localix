@@ -12,7 +12,7 @@ export interface MiniAppToastOptions {
   }
   /**
    * The way OUT, beside `action`'s way forward. The host has always rendered it; the SDK simply
-   * never declared it, so a plugin offering "Undo" next to "Keep" could not type the pair.
+   * never declared it, so a mini app offering "Undo" next to "Keep" could not type the pair.
    */
   cancel?: {
     label: string
@@ -24,12 +24,12 @@ type MiniAppToastMethod = (message: string, options?: MiniAppToastOptions) => Mi
 
 export interface MiniAppProblemsOptions {
   /**
-   * Namespace for the report's identity — use the plugin id. The host names the row after the
-   * calling plugin by itself (see "Attribution" below); when it cannot tell (a report published
+   * Namespace for the report's identity — use the mini app id. The host names the row after the
+   * calling mini app by itself (see "Attribution" below); when it cannot tell (a report published
    * from a shared hook's effect), this id is the name it falls back to.
    */
   scope: string
-  /** True while the plugin's own surface is showing the same report. */
+  /** True while the mini app's own surface is showing the same report. */
   sourceVisible?: boolean
   /** Opens the subject at a problem; adds an "Open" action to the notification. */
   onOpen?: (location: ProblemLocation) => void
@@ -49,15 +49,15 @@ export interface MiniAppToast extends MiniAppToastMethod {
   /**
    * Publish a structured problem report to the host's notification centre.
    *
-   * A plugin that renders its own problems on its own surface is only half done — a person not
-   * looking at that surface learns nothing. Reporting here as well is what makes a plugin's
+   * A mini app that renders its own problems on its own surface is only half done — a person not
+   * looking at that surface learns nothing. Reporting here as well is what makes a mini app's
    * failures as visible as the host's own.
    */
   problems: (report: ProblemReport, options: MiniAppProblemsOptions) => string | undefined
   /** The subject validates again; settle whatever the centre still says about it. */
   problemsCleared: (subject: Pick<ProblemReport, 'subject'>, scope: string) => void
   /**
-   * The plugin shows this failure on its own surface (an error line under a form), so the host's
+   * The mini app shows this failure on its own surface (an error line under a form), so the host's
    * generic "could not …" row for the failed request must not duplicate it. Optional: an older
    * host does not offer it, and {@link acknowledgeInline} degrades to nothing.
    */
@@ -65,21 +65,22 @@ export interface MiniAppToast extends MiniAppToastMethod {
 }
 
 /*
- * Attribution. Every plugin shares this one `toast`, so a row the host recorded from it used to be
- * indistinguishable from the host's own: "System", no plugin name. The host therefore attributes
- * each call to the plugin that made it — it matches the calling stack frames against the URLs it
- * loaded each plugin's UI from, the way an editor blames an extension for the error it threw — and
- * files the row under that plugin's name. A plugin passes nothing for this, and cannot claim to be
- * another plugin: the name comes from where the code was loaded, not from anything it says.
+ * Attribution. Every mini app shares this one `toast`, so a row the host recorded from it used to
+ * be indistinguishable from the host's own: "System", no mini app name. The host therefore
+ * attributes each call to the mini app that made it — it matches the calling stack frames against
+ * the URLs it loaded each mini app's UI from, the way an editor blames an extension for the error
+ * it threw — and files the row under that mini app's name. A mini app passes nothing for this, and
+ * cannot claim to be another mini app: the name comes from where the code was loaded, not from
+ * anything it says.
  *
- * A call whose stack no longer holds the plugin (a rejection handled on a later microtask) is the
- * one case frames cannot answer, so the helpers here that publish LATER record the plugin's call
+ * A call whose stack no longer holds the mini app (a rejection handled on a later microtask) is the
+ * one case frames cannot answer, so the helpers here that publish LATER record the mini app's call
  * site when they are called and lend it to the host for the duration of the publish.
  */
 let deferredCallSite: string | undefined
 
 /**
- * Host side of attribution: the stack of the plugin call that scheduled the notification being
+ * Host side of attribution: the stack of the mini app call that scheduled the notification being
  * published right now, when the publishing frame itself no longer contains it. Undefined outside
  * such a publish — the host then reads the live stack.
  */
@@ -101,14 +102,14 @@ let hostToast: MiniAppToast | undefined
 
 function requireHostToast(): MiniAppToast {
   if (!hostToast) {
-    throw new Error('Plugin UI toast used before the host notification surface was bound')
+    throw new Error('Mini app UI toast used before the host notification surface was bound')
   }
   return hostToast
 }
 
 /**
- * Bind the plugin-facing notification surface to the host's notification adapter.
- * The host owns routing, policy and attribution (which plugin a row names — see above); the SDK
+ * Bind the mini-app-facing notification surface to the host's notification adapter.
+ * The host owns routing, policy and attribution (which mini app a row names — see above); the SDK
  * only preserves the familiar toast call shape. The returned unbind RESTORES the binding this one
  * shadowed — the scope rule every host binding follows (`bindMiniAppUiRuntime`).
  */
@@ -146,14 +147,14 @@ export const toast: MiniAppToast = Object.assign(notify, {
 })
 
 /**
- * Say that a failure is already on the plugin's own surface.
+ * Say that a failure is already on the mini app's own surface.
  *
- * Every failed request a plugin makes travels through the host's transport, which writes a generic
- * journal row for it unless the failure is reported within a moment. An inline error line under the
- * control IS that report, but the host cannot see it — so the person got the failure twice: once
- * where they were looking and once as an unread row pointing back at it. Call this where the error
- * is set (`setError(...)`); it degrades to nothing on a host without the capability, like
- * `toast.problems`, because it sits on the failure path itself.
+ * Every failed request a mini app makes travels through the host's transport, which writes a
+ * generic journal row for it unless the failure is reported within a moment. An inline error line
+ * under the control IS that report, but the host cannot see it — so the person got the failure
+ * twice: once where they were looking and once as an unread row pointing back at it. Call this
+ * where the error is set (`setError(...)`); it degrades to nothing on a host without the
+ * capability, like `toast.problems`, because it sits on the failure path itself.
  */
 export function acknowledgeInline(error?: unknown): void {
   hostToast?.acknowledgeInline?.(error)
@@ -163,13 +164,13 @@ export function acknowledgeInline(error?: unknown): void {
  * Run a fire-and-forget action, and SAY SO when it fails.
  *
  * A described menu row's `onSelect` returns `void`, so every asynchronous action behind one has to
- * dispose of its own rejection — and the two shapes a plugin reaches for both lose it. `void
+ * dispose of its own rejection — and the two shapes a mini app reaches for both lose it. `void
  * promise` leaves an unhandled rejection nobody sees; `promise.catch(() => {})` is worse, because
  * it is deliberate. The reported symptom is the same either way and it is the most confusing one a
  * UI has: the row highlights, the menu closes, and nothing happens, with no way to tell a refused
  * action from a broken one.
  *
- * It happened in three plugins at once — a database that would not connect, a port-forward that
+ * It happened in three mini apps at once — a database that would not connect, a port-forward that
  * would not stop, an environment that would not switch — which is what makes it worth a name
  * rather than three catch blocks.
  *
@@ -180,9 +181,9 @@ export function acknowledgeInline(error?: unknown): void {
  * re-open the hole this closes.
  */
 export function runMiniAppAction(run: () => Promise<unknown> | void, failure: string): void {
-  // Recorded NOW, while the plugin's frame is on the stack: the rejection below is handled on a
+  // Recorded NOW, while the mini app's frame is on the stack: the rejection below is handled on a
   // later microtask whose stack holds only this module, which the host cannot attribute.
-  const callSite = new Error('plugin action call site').stack
+  const callSite = new Error('mini app action call site').stack
   const report = (error: unknown) =>
     publishFrom(callSite, () => toast.error(failure, { description: describeFailure(error) }))
   try {

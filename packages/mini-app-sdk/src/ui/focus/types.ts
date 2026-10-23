@@ -1,10 +1,10 @@
 /**
  * Who owns the keyboard right now, and what it will tolerate.
  *
- * Lives in the SDK rather than in the workspace app because a plugin workbench has exactly the same
- * problem: it opens surfaces, wants keys while they are up, and must not fire behind a host dialog.
- * One stack shared by the host and every plugin is the only version of that which can answer
- * correctly — two stacks would each be confidently wrong about the other's overlays.
+ * Lives in the SDK rather than in the workspace app because a mini app workbench has exactly the
+ * same problem: it opens surfaces, wants keys while they are up, and must not fire behind a host
+ * dialog. One stack shared by the host and every mini app is the only version of that which can
+ * answer correctly — two stacks would each be confidently wrong about the other's overlays.
  *
  * The alternative — and what this replaces — is asking the DOM. `actionContextFromTarget` used to
  * answer "is a menu open?" with a querySelector for `[data-radix-popper-content-wrapper]`: a

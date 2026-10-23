@@ -8,7 +8,7 @@
  * fixes one request.
  *
  * So the field offers only the vault metadata exposed through the host capability. The capability
- * omits managed items that must stay opaque; this plugin merely adapts the returned `secret:KEY`
+ * omits managed items that must stay opaque; this mini app merely adapts the returned `secret:KEY`
  * handle to the `${secret:KEY}` template syntax understood by API requests.
  *
  * Nothing new is exposed. The capability returns METADATA — keys, labels and references — never a value; the

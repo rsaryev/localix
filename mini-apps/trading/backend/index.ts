@@ -1,5 +1,5 @@
 /**
- * Trading plugin backend. It mounts the chart/order-book API, public market-data stream bridge,
+ * Trading mini app backend. It mounts the chart/order-book API, public market-data stream bridge,
  * read-only market-data tool, and Localix chart-control tool. Credentialed account and order
  * capabilities are not registered by this entry point.
  */
@@ -16,18 +16,18 @@ import { createTradingWsFrames } from './ws-frames'
 import { DEFAULT_PUBLIC_EXCHANGE_ID, publicConnectionId } from './public-connection'
 import { createTradingPublicContextProvider } from './context-provider'
 
-/** The generic host capabilities this plugin reads off the register context. Declared
- *  narrowly (a structural subset of the host `MiniAppContext`) so the plugin stays decoupled
- *  from core plugin internals. Only the BOOT-time load carries `host`; the per-run tool load
+/** The generic host capabilities this mini app reads off the register context. Declared
+ *  narrowly (a structural subset of the host `MiniAppContext`) so the mini app stays decoupled
+ *  from core mini app internals. Only the BOOT-time load carries `host`; the per-run tool load
  *  arrives without one, and the singleton's latest-real-host-wins binding covers it. */
 type TradingRegisterContext = Pick<MiniAppContext, 'dataDir' | 'host' | 'userId'>
 
 export async function register(ctx: TradingRegisterContext): Promise<MiniAppRegistration> {
   // The ONE host coupling — resolving `${secret:KEY}` credentials against the central vault —
-  // arrives through the generic plugin host seam. Bind it into the process-wide singleton so a
+  // arrives through the generic mini app host seam. Bind it into the process-wide singleton so a
   // per-run tool load (no host) still resolves secrets bound at boot. The create-only writer
   // (`setIfAbsent`) rides the same pass, so a pasted literal credential can be vaulted without
-  // this plugin ever gaining overwrite access.
+  // this mini app ever gaining overwrite access.
   const hostResolve = ctx.host?.resolveSecret
   const service = getTradingService({
     dataDir: ctx.dataDir,

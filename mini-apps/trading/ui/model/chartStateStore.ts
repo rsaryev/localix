@@ -60,7 +60,7 @@ const keyOf = (sessionId: string, tabId: string) => `${sessionId}${SEPARATOR}${t
 /**
  * The floor between announcements, in ms.
  *
- * `patch` runs on every candle push — the fastest writer in this plugin. That is the right rate
+ * `patch` runs on every candle push — the fastest writer in this mini app. That is the right rate
  * for a chart and the wrong rate for anything outside it: a subscriber that re-rendered per tick
  * would drag whatever it lives in along at the market's pace. The chart itself does not use this
  * channel (it owns the data it publishes), so nobody is slowed down by the coalescing, and a

@@ -15,7 +15,7 @@ import { declareWatchedAtConnect, reconcileWatchedSessions } from './subscriptio
 /**
  * Dialling, opening, closing and redialling the one socket.
  *
- * ONE WebSocket carries every live server→client event (chat session firehose + plugin streams).
+ * ONE WebSocket carries every live server→client event (chat session firehose + mini app streams).
  * Browsers cap HTTP/1.1 at 6 concurrent connections PER ORIGIN shared across ALL tabs, so the
  * previous fleet of SSE EventSources (chat firehose + a stream per subscriber, per tab) exhausted the pool and hung page loads once two tabs were open. WebSockets live under a
  * separate, much larger budget and carry no per-frame HTTP overhead.

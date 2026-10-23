@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { ROUTE_PATH, createRoutes } from '../backend/index'
 
-// The preview runs the SAME router as the plugin, on loopback only, over a data folder of its
+// The preview runs the SAME router as the mini app, on loopback only, over a data folder of its
 // own (never the app's). Vite proxies its fixed path; no application credentials or sessions are
 // fabricated.
 const dataDir = fileURLToPath(new URL('../.preview-data', import.meta.url))

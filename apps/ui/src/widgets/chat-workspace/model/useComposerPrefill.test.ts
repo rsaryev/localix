@@ -34,12 +34,12 @@ describe('context-bound immediate submit ownership', () => {
         bindings: [
           {
             kind: 'context',
-            source: 'plugin',
+            source: 'mini-app',
             target: {
               kind: 'resource',
-              token: '@resource:opaque:plugin-resource/book/0',
+              token: '@resource:opaque:mini-app-resource/book/0',
               label: 'Chapter 1',
-              uri: 'opaque:plugin-resource/book/0',
+              uri: 'opaque:mini-app-resource/book/0',
             },
           },
         ],

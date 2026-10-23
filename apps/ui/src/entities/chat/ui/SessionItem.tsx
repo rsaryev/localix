@@ -76,7 +76,7 @@ export const SessionItem = memo(function SessionItem({
   const toggleUnreadSession = useChatStore((s) => s.toggleUnreadSession)
   const toggleArchiveSession = useChatStore((s) => s.toggleArchiveSession)
 
-  // A thread nests under the chat it belongs to — a plugin's activity log
+  // A thread nests under the chat it belongs to — a mini app's activity log
   // (`system` session) or a message-anchored side-conversation (a chat keyed by
   // `message-thread:`). Mark both with a thread icon (not the fork glyph).
   const isThread =

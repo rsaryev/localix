@@ -65,7 +65,7 @@ describe('a failed first UI load is not a settle', () => {
   test('it stays loading, is retried on the startup backoff, and loads on a later pass', async () => {
     const clock = manualClock()
     let attempts = 0
-    const discover: MiniAppUiDiscovery = async (_plugins, settled) => {
+    const discover: MiniAppUiDiscovery = async (_miniApps, settled) => {
       attempts += 1
       settled?.('flaky', attempts >= 3)
     }
@@ -93,7 +93,7 @@ describe('a failed first UI load is not a settle', () => {
 
   test('past its budget it reads failed: not loading, still keeping its tabs', async () => {
     const clock = manualClock()
-    const discover: MiniAppUiDiscovery = async (_plugins, settled) => settled?.('broken', false)
+    const discover: MiniAppUiDiscovery = async (_miniApps, settled) => settled?.('broken', false)
     const claim = claimMiniAppUiLoads([withUi('broken')])
     await runMiniAppUiLoads(
       claim,
@@ -114,7 +114,7 @@ describe('a failed first UI load is not a settle', () => {
   test('a newer publish disowns the older pass: its settles and its retry timer', async () => {
     const clock = manualClock()
     let settle!: MiniAppUiSettled
-    const discover: MiniAppUiDiscovery = async (_plugins, settled) => {
+    const discover: MiniAppUiDiscovery = async (_miniApps, settled) => {
       settle = settled!
       settled?.('slow', false)
     }
@@ -136,15 +136,15 @@ describe('a failed first UI load is not a settle', () => {
 })
 
 // The grid's side of a failed import (its restored tabs are kept) is pinned where the grid lives:
-// `entities/workspace-grid/model/failedPluginTab.test.ts`.
+// `entities/workspace-grid/model/failedMiniAppTab.test.ts`.
 describe('the capability store over the UI loads', () => {
   // Ownership used to move when a newer request STARTED; the one-shot refetch on socket connect
-  // failing then orphaned the pass that did publish, and the plugin stayed pending for good.
+  // failing then orphaned the pass that did publish, and the mini app stayed pending for good.
   test('settles stay with the publishing pass when a newer request fails before publishing', async () => {
     let settle!: MiniAppUiSettled
     const published = refetchMiniAppContrib(
       { loadSnapshot: async () => snapshot([withUi('late')]) },
-      (_plugins, settled) => {
+      (_miniApps, settled) => {
         settle = settled!
         return new Promise<void>(() => {})
       },
@@ -162,13 +162,13 @@ describe('the capability store over the UI loads', () => {
     void published
   })
 
-  // Measured: each settle re-rendered the app synchronously, one ~55 ms long task per plugin.
-  test('N plugins settling in one burst notify every subscriber exactly once', async () => {
+  // Measured: each settle re-rendered the app synchronously, one ~55 ms long task per mini app.
+  test('N mini apps settling in one burst notify every subscriber exactly once', async () => {
     const names = ['a', 'b', 'c', 'd', 'e']
     let settle!: MiniAppUiSettled
     void refetchMiniAppContrib(
       { loadSnapshot: async () => snapshot([...names.map(withUi), plain('core-ish')]) },
-      (_plugins, settled) => {
+      (_miniApps, settled) => {
         settle = settled!
         return new Promise<void>(() => {})
       },

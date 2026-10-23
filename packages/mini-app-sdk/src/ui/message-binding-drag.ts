@@ -111,7 +111,7 @@ function tokenFor(kind: MessageBindingTargetKind, id: string): string {
   }
 }
 
-/** Build the same architecture-neutral binding draft used by plugin UI contributions. */
+/** Build the same architecture-neutral binding draft used by mini app UI contributions. */
 export function createMessageBindingDraft(
   kind: MessageBindingTargetKind,
   id: string,

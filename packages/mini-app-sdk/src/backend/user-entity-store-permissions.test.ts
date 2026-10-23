@@ -9,7 +9,8 @@ import { createUserEntityStore } from './user-entity-store'
 /**
  * Every store built on this primitive holds user-owned entities AS AUTHORED, and those routinely
  * carry live credentials: a database connection URL with an embedded password
- * (an earlier plugin store stored records as-is), a REST request header with an API key, an exchange key/secret/passphrase.
+ * (an earlier mini app store stored records as-is), a REST request header with an API key, an
+ * exchange key/secret/passphrase.
  *
  * They were written at the process default — 0644 inside a 0755 directory — so any other local
  * account could read them. The mode parameter already existed and `atomicWriteFile`'s own doc

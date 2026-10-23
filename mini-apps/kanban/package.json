@@ -2,7 +2,7 @@
   "name": "@localix-mini-app/kanban",
   "version": "0.1.0",
   "private": true,
-  "description": "Dependencies for the bundled Kanban board plugin: one passive task board per chat.",
+  "description": "Dependencies for the bundled Kanban board mini app: one passive task board per chat.",
   "license": "MIT",
   "type": "module",
   "scripts": {

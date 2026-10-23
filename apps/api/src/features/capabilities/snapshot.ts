@@ -255,7 +255,7 @@ export function createCapabilitySnapshotService(
             // `loadEnabledPlugins` during run assembly — reaching them from a settings request
             // would mean running that load here. The names are already on the plugin record, so
             // naming them costs nothing and turns a silent under-count into a stated one.
-            // No bundled plugin declares any today (checked: 0 of 19), which is precisely why
+            // No bundled mini app declares any today (checked: 0 of 19), which is precisely why
             // this would otherwise go unnoticed until someone installs one that does.
             unprobed: [
               ...new Set([

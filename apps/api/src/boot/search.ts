@@ -48,8 +48,8 @@ export interface SearchCompositionDeps {
   db: Kysely<AppDatabase>
   projectsService: ReturnType<typeof createProjectsService>
   chatService: ReturnType<typeof createChatService>
-  /** A bundled subsystem (workbench plugin) contributes its own search provider —
-   *  LIVE through the backend host, so a hot plugin toggle adds/removes its group. */
+  /** A bundled subsystem (workbench mini app) contributes its own search provider —
+   *  LIVE through the backend host, so a hot mini app toggle adds/removes its group. */
   backendHost: Pick<MiniAppBackendHost, 'setSearchRegistry'>
   secretsService: ReturnType<typeof createSecretsService>
   skillsCuratorService: ReturnType<typeof createSkillsCuratorService>
@@ -104,7 +104,7 @@ export function buildSearchService(
   registry.register(createSessionsSearchProvider(chatSearchPort))
   registry.register(createMessagesSearchProvider(chatSearchPort))
 
-  // A bundled subsystem's search provider is wired LIVE by the plugin backend host:
+  // A bundled subsystem's search provider is wired LIVE by the mini app backend host:
   // handing it the registry
   // here registers the already-wired subsystems' providers at this exact spot
   // (between messages and files — that is where their groups appear), and a later

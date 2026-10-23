@@ -88,14 +88,14 @@ describe('recordChanges', () => {
       woken.push('core')
       void rows(db).then((list) => seenAtSignal.push(list.length))
     })
-    const offPlugin = onRecorded('plugin:x', () => woken.push('plugin'))
+    const offMiniApp = onRecorded('mini-app:x', () => woken.push('mini-app'))
     await recordChanges(db, 'core', note('n1'))
     await Promise.resolve()
     await new Promise((resolve) => setTimeout(resolve, 0))
     expect(woken).toEqual(['core'])
     expect(seenAtSignal).toEqual([1])
     offCore()
-    offPlugin()
+    offMiniApp()
   })
 
   test('a throwing listener neither fails the producer nor silences the others', async () => {

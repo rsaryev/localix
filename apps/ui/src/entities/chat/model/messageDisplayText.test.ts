@@ -5,7 +5,7 @@ import { messageDisplayText } from './messageDisplayText'
 const tokens = [
   '@snippet:Browser tabs',
   '@resource:localix://resource/git/PRJ-3/status',
-  '@snippet:Git — plugin context',
+  '@snippet:Git — mini app context',
   '@terminal:e6a4d616',
   '@terminal:44ff402e',
   '@snippet:18cfa91a-2dbd-4c31-90b2-deaf98898e90',

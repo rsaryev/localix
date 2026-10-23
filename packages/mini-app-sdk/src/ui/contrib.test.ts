@@ -35,7 +35,7 @@ describe('snippetMessageBindingDraft', () => {
 })
 
 describe('normalizePublishedMessageContext', () => {
-  test('forces plugin provenance and canonicalizes an opaque resource token', () => {
+  test('forces mini app provenance and canonicalizes an opaque resource token', () => {
     expect(
       normalizePublishedMessageContext({
         strategy: 'replace',
@@ -58,7 +58,7 @@ describe('normalizePublishedMessageContext', () => {
       bindings: [
         {
           kind: 'context',
-          source: 'plugin',
+          source: 'mini-app',
           target: {
             kind: 'resource',
             token: '@resource:localix://resource/acme/workspace/live',
@@ -89,7 +89,7 @@ describe('normalizePublishedMessageContext', () => {
     ).toBeNull()
   })
 
-  test('rejects plugin attempts to impersonate core-owned target kinds', () => {
+  test('rejects mini app attempts to impersonate core-owned target kinds', () => {
     expect(
       normalizePublishedMessageContext({
         strategy: 'replace',

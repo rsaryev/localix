@@ -7,7 +7,7 @@ import { projectRef } from './contracts'
 /**
  * A project announces every change in its transaction: `project` when its scope moves (it exists,
  * moved folder, was renamed, deleted or restored), `project.settings` for a settings-only write —
- * a kind of its own, so scope consumers (plugin backends) do not reload on every settings write.
+ * a kind of its own, so scope consumers (mini app backends) do not reload on every settings write.
  */
 const announce = (
   trx: Parameters<typeof recordCoreChanges>[0],

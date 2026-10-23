@@ -14,7 +14,7 @@ import { isSectionId, resolveNavScope, scopePath, type SectionId } from '@/share
  * `projectId` is not a scope — it is the index (`/`) and the legacy `/chat/:id`
  * link, both of which resolve to a real project before anything is addressable.
  *
- * Settings/Stats/plugin views are inspector panels (no URL); they're opened via
+ * Settings/Stats/mini app views are inspector panels (no URL); they're opened via
  * the inspector store, not this hook.
  */
 export interface RoutedNavigation {

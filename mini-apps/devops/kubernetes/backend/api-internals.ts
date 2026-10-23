@@ -195,8 +195,8 @@ export async function readManifest(
  *
  * Discovery endpoints have no typed client method worth the indirection (`/apis/<gv>` would mean one
  * generated class per group), and `kubernetesFetch` already carries the TLS/auth the rest of the
- * plugin uses. Non-2xx becomes a rejection so `discoverClusterResources` records the group-version as
- * unavailable rather than parsing an error body as a resource list.
+ * mini app uses. Non-2xx becomes a rejection so `discoverClusterResources` records the
+ * group-version as unavailable rather than parsing an error body as a resource list.
  */
 export function clusterJsonFetcher(config: k8s.KubeConfig): FetchClusterJson {
   const server = config.getCurrentCluster()?.server

@@ -38,7 +38,7 @@ function slug(value: string, fallback: string): string {
   )
 }
 
-/** Stable, plugin-scoped starting key; collisions suffix instead of overwriting. */
+/** Stable, mini-app-scoped starting key; collisions suffix instead of overwriting. */
 export function vaultKeyForEnvironment(environment: string, variable: string): string {
   return `REST_ENV_${slug(environment, 'ENV')}_${slug(variable, 'SECRET')}`
 }

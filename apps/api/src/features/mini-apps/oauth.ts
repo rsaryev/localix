@@ -11,12 +11,12 @@ import {
 
 /**
  * Host implementation of `ctx.oauth` — the {@link MiniAppOAuth} contract is OWNED
- * by `@localixai/mini-app-sdk` (plugins compile against it); this module provides
- * the generic PKCE engine exposed to plugin code so a Spotify/Google/GitHub tool
+ * by `@localixai/mini-app-sdk` (mini apps compile against it); this module provides
+ * the generic PKCE engine exposed to mini app code so a Spotify/Google/GitHub tool
  * never copy-pastes the verifier/challenge/loopback dance. Pure-data specs
  * (`ManifestOAuthSpec`) drive the flow.
  *
- * Token PERSISTENCE deliberately stays with the plugin (`ctx.stateDir` +
+ * Token PERSISTENCE deliberately stays with the mini app (`ctx.stateDir` +
  * `ctx.helpers.readJson/writeJson`) — the host doesn't take custody of
  * third-party credentials beyond the declared `config` secrets.
  */
@@ -33,20 +33,20 @@ const SUCCESS_HTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Co
 // The callback receives an authorization code, so its listener never leaves this machine.
 const LOOPBACK_CALLBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]'])
 
-export function makeMiniAppOAuth(pluginName: string): MiniAppOAuth {
+export function makeMiniAppOAuth(miniAppName: string): MiniAppOAuth {
   return {
     beginLogin(spec, opts) {
       if (spec.callbackMode !== 'local-server' || !spec.localServer) {
         throw new Error(
-          `[plugin:${pluginName}] beginLogin requires callbackMode 'local-server' with a localServer {host, port, path}`,
+          `[mini-app:${miniAppName}] beginLogin requires callbackMode 'local-server' with a localServer {host, port, path}`,
         )
       }
       if (!LOOPBACK_CALLBACK_HOSTS.has(spec.localServer.host)) {
         throw new Error(
-          `[plugin:${pluginName}] localServer.host must be a loopback address, got "${spec.localServer.host}"`,
+          `[mini-app:${miniAppName}] localServer.host must be a loopback address, got "${spec.localServer.host}"`,
         )
       }
-      const adapter = createManifestOAuthAdapter(`plugin:${pluginName}`, spec)
+      const adapter = createManifestOAuthAdapter(`mini-app:${miniAppName}`, spec)
       const state = base64url(randomBytes(24))
       const verifier = base64url(randomBytes(32))
       const challenge = base64url(createHash('sha256').update(verifier).digest())
@@ -123,9 +123,9 @@ export function makeMiniAppOAuth(pluginName: string): MiniAppOAuth {
     },
 
     async refresh(spec, refreshToken) {
-      const adapter = createManifestOAuthAdapter(`plugin:${pluginName}`, spec)
+      const adapter = createManifestOAuthAdapter(`mini-app:${miniAppName}`, spec)
       if (!adapter.refresh) {
-        throw new Error(`[plugin:${pluginName}] spec declares no refresh config`)
+        throw new Error(`[mini-app:${miniAppName}] spec declares no refresh config`)
       }
       return adapter.refresh(refreshToken)
     },

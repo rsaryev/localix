@@ -10,8 +10,8 @@ afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true })
 })
 
-/** A plugin folder holding exactly `files`. */
-function plugin(files: Record<string, string>): string {
+/** A mini app folder holding exactly `files`. */
+function miniApp(files: Record<string, string>): string {
   const dir = mkdtempSync(join(tmpdir(), 'route-check-'))
   dirs.push(dir)
   for (const [path, text] of Object.entries(files)) {
@@ -21,9 +21,9 @@ function plugin(files: Record<string, string>): string {
   return dir
 }
 
-describe('a user plugin route reads its body through a validator', () => {
+describe('a user mini app route reads its body through a validator', () => {
   test('a raw parse is reported with its line and the fix', async () => {
-    const dir = plugin({
+    const dir = miniApp({
       'backend/routes.ts': [
         "import { Hono } from 'hono'",
         "export const routes = new Hono().post('/move', async (context) => {",
@@ -41,7 +41,7 @@ describe('a user plugin route reads its body through a validator', () => {
   })
 
   test('jsonBody, a response helper, a comment and a test are not offenders', async () => {
-    const dir = plugin({
+    const dir = miniApp({
       'backend/routes.ts': [
         "import { jsonBody } from '@localixai/mini-app-sdk/backend'",
         '// Never c.req.json() here: see jsonBody.',
@@ -53,7 +53,7 @@ describe('a user plugin route reads its body through a validator', () => {
     expect(await checkMiniAppRoutes(dir)).toEqual([])
   })
 
-  test('a plugin without a backend has nothing to check', async () => {
-    expect(await checkMiniAppRoutes(plugin({ 'ui/register.tsx': 'export {}' }))).toEqual([])
+  test('a mini app without a backend has nothing to check', async () => {
+    expect(await checkMiniAppRoutes(miniApp({ 'ui/register.tsx': 'export {}' }))).toEqual([])
   })
 })

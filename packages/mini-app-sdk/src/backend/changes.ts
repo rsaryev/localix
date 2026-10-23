@@ -1,9 +1,9 @@
 /**
- * CHANGE FEED — the host's one mechanism for "what changed", offered to a plugin for its own
- * items: the plugin records thin notices, and any number of its consumers read them, each at its
+ * CHANGE FEED — the host's one mechanism for "what changed", offered to a mini app for its own
+ * items: the mini app records thin notices, and any number of its consumers read them, each at its
  * own durable cursor (a consumer that was down catches up on start). The core's chats, messages
- * and capabilities flow through the same mechanism; a plugin's stream is its own
- * (`plugin:<name>`), so it can neither read nor write another's. Of the core's stream a plugin
+ * and capabilities flow through the same mechanism; a mini app's stream is its own
+ * (`mini-app:<name>`), so it can neither read nor write another's. Of the core's stream a mini app
  * reads only deletions (`followCoreDeletions`). This feed is for backend consumers; an open view
  * refreshes through `createStoreChangeFeed` (ephemeral, covers external file edits).
  *
@@ -17,9 +17,9 @@ export type MiniAppChange<Entity extends string = string> =
   | { entity: Entity; op: 'resync' }
 
 /**
- * A core entity that is gone, as a plugin hears it: its ref only, never its content. A plugin
+ * A core entity that is gone, as a mini app hears it: its ref only, never its content. A mini app
  * cleans up what it kept about it (a card's assignee, a cached chat). `agent` is a deleted agent,
- * never one renamed: `id` is its last handle, `agentId` its stable id (what a plugin stores).
+ * never one renamed: `id` is its last handle, `agentId` its stable id (what a mini app stores).
  */
 export type CoreDeletion =
   | { entity: 'agent'; ref: { id: string; scope: string; agentId?: string } }
@@ -27,15 +27,15 @@ export type CoreDeletion =
   | { entity: 'project'; ref: { id: string; userId: string } }
   | { entity: 'provider.connection'; ref: { id: string; userId: string; providerId: string } }
 
-/** The host capability a plugin backend receives as `host.changes`. */
+/** The host capability a mini app backend receives as `host.changes`. */
 export interface ChangeFeedHost {
   /**
-   * Record changes to the plugin's stream. Fire-and-forget: never awaited, never thrown — a
+   * Record changes to the mini app's stream. Fire-and-forget: never awaited, never thrown — a
    * notice that cannot be written is logged and left to the consumers' reconcile.
    */
   record(changes: MiniAppChange | readonly MiniAppChange[]): void
   /**
-   * Read the plugin's stream as `consumer` (a name stable across restarts: it owns the cursor).
+   * Read the mini app's stream as `consumer` (a name stable across restarts: it owns the cursor).
    * A handler that throws is retried with backoff from the same notice. A new consumer starts
    * past what is already recorded. Resolves with the stop once its cursor is placed.
    */

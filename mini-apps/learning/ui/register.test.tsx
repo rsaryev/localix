@@ -12,9 +12,9 @@ import { registerUi } from './register'
 /**
  * Registration goes through the SDK's recording host, not a hand-built literal.
  *
- * The literal this replaced named every seam the plugin used and cast past the rest, so the day
+ * The literal this replaced named every seam the mini app used and cast past the rest, so the day
  * the contract grew one more, `registerUi` died on `undefined.register` — inside the test whose
- * job is to prove registration works. Four plugins hit that at once when status items landed. The
+ * job is to prove registration works. Four mini apps hit that at once when status items landed. The
  * completeness check belongs in the package that owns the contract, and does.
  */
 test('keeps the library and course tabs session-scoped', () => {

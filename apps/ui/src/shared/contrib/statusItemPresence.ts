@@ -5,10 +5,10 @@ import { useSyncExternalStore } from 'react'
  * on, and the one thing the registry beside it cannot answer.
  *
  * A contribution is a standing declaration; whether it draws anything is a question its `useItem`
- * answers per session, and most bundled plugins answer `null` (no open books, no environments, no
+ * answers per session, and most bundled mini apps answer `null` (no open books, no environments, no
  * running port-forwards, no charts). Budgeting the titlebar on declarations therefore spent slots
  * on items that draw nothing: ten registrations, four glyphs, and an `…` whose rows were the two
- * remaining declarations — also `null`, so the menu opened EMPTY. A bar hiding its plugins behind
+ * remaining declarations — also `null`, so the menu opened EMPTY. A bar hiding its mini apps behind
  * a button that does nothing is what was reported, and this store is the fix.
  *
  * Presence cannot be asked for, only observed: `useItem` is a hook, so the only place its answer

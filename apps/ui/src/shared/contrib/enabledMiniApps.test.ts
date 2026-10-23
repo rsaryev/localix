@@ -22,7 +22,7 @@ import type { MiniAppUiSettled } from './miniAppUiLoads'
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
 
-function plugin(name: string, enabled = true): MiniAppRecord {
+function miniApp(name: string, enabled = true): MiniAppRecord {
   return { name, enabled } as MiniAppRecord
 }
 
@@ -75,29 +75,29 @@ afterEach(() => {
   __resetThirdPartyViews()
 })
 
-describe('plugin contribution synchronization', () => {
-  test('a restored capability frame is not a completed plugin UI discovery', async () => {
+describe('mini app contribution synchronization', () => {
+  test('a restored capability frame is not a completed mini app UI discovery', async () => {
     restoreMiniAppContribFrame(null, {
       revision: 3,
       enabledNames: ['sample'],
-      miniApps: [plugin('sample')],
+      miniApps: [miniApp('sample')],
       views: [],
       tools: EMPTY_TOOLS,
     })
     expect(miniAppContribSnapshot().enabledNames).toEqual(new Set(['sample']))
     expect(miniAppContribSnapshot().document).toBeNull()
 
-    await refetchMiniAppContrib(source({ revision: 3, miniApps: [plugin('sample')] }))
+    await refetchMiniAppContrib(source({ revision: 3, miniApps: [miniApp('sample')] }))
     expect(miniAppContribSnapshot().document).not.toBeNull()
   })
 
-  test('a restored frame holds its UI plugins pending, so their restored tabs are not closed', () => {
+  test('a restored frame holds its UI mini apps pending, so their restored tabs are not closed', () => {
     restoreMiniAppContribFrame(null, {
       revision: 3,
       enabledNames: ['sample', 'plain'],
       miniApps: [
-        { ...plugin('sample'), ui: { entry: '/ui/sample.js', styles: [], revision: 'r1' } },
-        plugin('plain'),
+        { ...miniApp('sample'), ui: { entry: '/ui/sample.js', styles: [], revision: 'r1' } },
+        miniApp('plain'),
       ],
       views: [],
       tools: EMPTY_TOOLS,
@@ -107,7 +107,7 @@ describe('plugin contribution synchronization', () => {
     expect(areMiniAppContributionsPending()).toBe(true)
   })
 
-  test('the production default loader does not receive the retry attempt as a plugin source', () => {
+  test('the production default loader does not receive the retry attempt as a mini app source', () => {
     // startStartupRetry calls load(failureIndex); passing refetchMiniAppContrib directly would hand
     // that number to it as the MiniAppContribSource and every retry would throw.
     const source = readFileSync(new URL('./enabledMiniApps.ts', import.meta.url), 'utf8')
@@ -123,7 +123,7 @@ describe('plugin contribution synchronization', () => {
         loadSnapshot: async () => {
           attempts += 1
           if (attempts === 1) throw new Error('sidecar not listening')
-          return snapshot({ miniApps: [plugin('sample')] })
+          return snapshot({ miniApps: [miniApp('sample')] })
         },
       }),
     )
@@ -146,9 +146,9 @@ describe('plugin contribution synchronization', () => {
     stop()
   })
 
-  test('a transient failure preserves the last authoritative plugin UI', async () => {
+  test('a transient failure preserves the last authoritative mini app UI', async () => {
     const initial = source({
-      miniApps: [plugin('catalog'), plugin('sample')],
+      miniApps: [miniApp('catalog'), miniApp('sample')],
       views: [view('sample', 'chart')],
     })
     expect(await refetchMiniAppContrib(initial)).toBe(true)
@@ -174,7 +174,7 @@ describe('plugin contribution synchronization', () => {
   test('a project boundary clears the previous scope before its replacement loads', async () => {
     prepareMiniAppContribScope('project-a')
     await refetchMiniAppContrib(
-      source({ miniApps: [plugin('sample')], views: [view('sample', 'chart')] }),
+      source({ miniApps: [miniApp('sample')], views: [view('sample', 'chart')] }),
     )
     expect(miniAppContribSnapshot().enabledNames).toEqual(new Set(['sample']))
     expect(listThirdPartyViews().map((row) => row.fullName)).toEqual(['sample:chart'])
@@ -190,7 +190,7 @@ describe('plugin contribution synchronization', () => {
       revision: -1,
     })
     expect(listThirdPartyViews()).toEqual([])
-    expect(resolveUiLocation('localix://ui/plugin/view/sample%3Achart')).toBeNull()
+    expect(resolveUiLocation('localix://ui/mini-app/view/sample%3Achart')).toBeNull()
   })
 
   test('a late response from the previous project cannot repopulate the new scope', async () => {
@@ -202,7 +202,7 @@ describe('plugin contribution synchronization', () => {
     const oldRequest = refetchMiniAppContrib({ loadSnapshot: () => pending })
 
     prepareMiniAppContribScope('project-b')
-    releaseOld(snapshot({ miniApps: [plugin('sample')] }))
+    releaseOld(snapshot({ miniApps: [miniApp('sample')] }))
     await oldRequest
 
     expect(miniAppContribSnapshot()).toEqual({
@@ -216,7 +216,7 @@ describe('plugin contribution synchronization', () => {
   })
 
   // The shape behind "the server answered 200 once and the workbench shows no
-  // plugins at all, while Settings lists them fine": a scope change bumps the
+  // mini apps at all, while Settings lists them fine": a scope change bumps the
   // request version WITHOUT starting a request, so the in-flight load found itself
   // superseded by nobody. Reporting success there stopped the retry loop forever.
   test('a superseded request with no successor is not reported as a successful sync', async () => {
@@ -229,13 +229,13 @@ describe('plugin contribution synchronization', () => {
 
     // A scope boundary invalidates the load, but starts nothing in its place.
     prepareMiniAppContribScope('project-b')
-    release(snapshot({ miniApps: [plugin('sample')] }))
+    release(snapshot({ miniApps: [miniApp('sample')] }))
 
     expect(await onlyRequest).toBe(false)
     expect(miniAppContribSnapshot().miniApps).toEqual([])
 
     // …so the retry loop keeps going, and the next load fills the new scope.
-    await refetchMiniAppContrib(source({ miniApps: [plugin('sample')] }))
+    await refetchMiniAppContrib(source({ miniApps: [miniApp('sample')] }))
     expect(miniAppContribSnapshot().miniApps.map((p) => p.name)).toEqual(['sample'])
   })
 
@@ -246,9 +246,9 @@ describe('plugin contribution synchronization', () => {
       releaseOld = resolve
     })
     const oldRequest = refetchMiniAppContrib({ loadSnapshot: () => oldPending })
-    const newRequest = refetchMiniAppContrib(source({ miniApps: [plugin('newer')] }))
+    const newRequest = refetchMiniAppContrib(source({ miniApps: [miniApp('newer')] }))
 
-    releaseOld(snapshot({ miniApps: [plugin('older')] }))
+    releaseOld(snapshot({ miniApps: [miniApp('older')] }))
     // The older load is done retrying — its successor owns publication.
     expect(await oldRequest).toBe(true)
     expect(await newRequest).toBe(true)
@@ -258,19 +258,19 @@ describe('plugin contribution synchronization', () => {
   test('a mutation in ANOTHER scope still converges the active project catalog', async () => {
     // The reported bug. Settings' scope picker and the workbench's route project are
     // routinely different values, and this converge used to return early unless they
-    // matched — so toggling a plugin from Settings refetched NOTHING, and the tool list
+    // matched — so toggling a mini app from Settings refetched NOTHING, and the tool list
     // and contributed views only caught up if the server's debounced poke arrived.
     // Converging the active scope after any capability mutation is both correct (the
     // singleton always describes the workbench's project) and cheap.
     prepareMiniAppContribScope('project-a')
-    let enabled = [plugin('catalog')]
+    let enabled = [miniApp('catalog')]
     const loadActive = mock(() => refetchMiniAppContrib(source({ miniApps: enabled })))
     const stop = startMiniAppContribSync(loadActive)
     await flush()
     expect(miniAppContribSnapshot().enabledNames).toEqual(new Set(['catalog']))
 
-    // A plugin toggled while a DIFFERENT scope is selected in Settings.
-    enabled = [plugin('catalog'), plugin('sample')]
+    // A mini app toggled while a DIFFERENT scope is selected in Settings.
+    enabled = [miniApp('catalog'), miniApp('sample')]
     expect(await refetchActiveMiniAppContrib()).toBe(true)
     expect(loadActive).toHaveBeenCalledTimes(2)
     expect(miniAppContribSnapshot().enabledNames).toEqual(new Set(['catalog', 'sample']))
@@ -281,7 +281,7 @@ describe('plugin contribution synchronization', () => {
     // The client-side reload key for dependent endpoints (plugin commands, skills)
     // must not advance for a redundant poke — a replayed `resources.changed` on
     // socket reconnect, or two pokes coalesced from one double toggle.
-    const settled = source({ revision: 7, miniApps: [plugin('sample')] })
+    const settled = source({ revision: 7, miniApps: [miniApp('sample')] })
     await refetchMiniAppContrib(settled)
     const converged = miniAppContribVersion()
 
@@ -290,14 +290,14 @@ describe('plugin contribution synchronization', () => {
     expect(miniAppContribSnapshot().revision).toBe(7)
 
     // A real mutation does advance it.
-    await refetchMiniAppContrib(source({ revision: 8, miniApps: [plugin('sample', false)] }))
+    await refetchMiniAppContrib(source({ revision: 8, miniApps: [miniApp('sample', false)] }))
     expect(miniAppContribVersion()).toBe(converged + 1)
   })
 
-  test('a plugin UI reload re-reads derived surfaces but never stales capability documents', async () => {
-    // Cached capability documents used to key on the UI reload counter, so every plugin
+  test('a mini app UI reload re-reads derived surfaces but never stales capability documents', async () => {
+    // Cached capability documents used to key on the UI reload counter, so every mini app
     // batch that settled at startup re-fetched every cached scope's whole snapshot.
-    await refetchMiniAppContrib(source({ revision: 7, miniApps: [plugin('sample')] }))
+    await refetchMiniAppContrib(source({ revision: 7, miniApps: [miniApp('sample')] }))
     const documents = miniAppCapabilityVersion()
     const surfaces = miniAppContribVersion()
 
@@ -305,12 +305,12 @@ describe('plugin contribution synchronization', () => {
     expect(miniAppContribVersion()).toBe(surfaces + 1)
     expect(miniAppCapabilityVersion()).toBe(documents)
 
-    await refetchMiniAppContrib(source({ revision: 8, miniApps: [plugin('sample', false)] }))
+    await refetchMiniAppContrib(source({ revision: 8, miniApps: [miniApp('sample', false)] }))
     expect(miniAppCapabilityVersion()).toBe(documents + 1)
   })
 
   test('switching scope does not stale other scopes; a moved server or set in one scope does', async () => {
-    await refetchMiniAppContrib(source({ revision: 7, miniApps: [plugin('sample')] }))
+    await refetchMiniAppContrib(source({ revision: 7, miniApps: [miniApp('sample')] }))
     const documents = miniAppCapabilityVersion()
 
     prepareMiniAppContribScope('PRJ-1')
@@ -318,7 +318,7 @@ describe('plugin contribution synchronization', () => {
       source({
         revision: 7,
         scope: { projectId: 'PRJ-1', agentId: null },
-        miniApps: [plugin('sample'), plugin('kanban')],
+        miniApps: [miniApp('sample'), miniApp('kanban')],
       }),
     )
     expect(miniAppCapabilityVersion()).toBe(documents)
@@ -351,10 +351,10 @@ describe('plugin contribution synchronization', () => {
 
   test('reordering the same enabled names publishes the new document without advancing the reload key', async () => {
     await refetchMiniAppContrib(
-      source({ revision: 7, miniApps: [plugin('first'), plugin('second')] }),
+      source({ revision: 7, miniApps: [miniApp('first'), miniApp('second')] }),
     )
     const converged = miniAppContribVersion()
-    const reordered = snapshot({ revision: 7, miniApps: [plugin('second'), plugin('first')] })
+    const reordered = snapshot({ revision: 7, miniApps: [miniApp('second'), miniApp('first')] })
     await refetchMiniAppContrib({ loadSnapshot: async () => reordered })
     expect(miniAppContribVersion()).toBe(converged)
     expect(miniAppContribSnapshot().document).toBe(reordered)
@@ -362,15 +362,15 @@ describe('plugin contribution synchronization', () => {
     expect([...miniAppContribSnapshot().enabledNames!]).toEqual(['second', 'first'])
   })
 
-  test('a plugin set that changed WITHOUT a revision bump still advances the reload key', async () => {
-    // A plugin folder dropped straight onto disk changes what discovery returns without
+  test('a mini app set that changed WITHOUT a revision bump still advances the reload key', async () => {
+    // A mini app folder dropped straight onto disk changes what discovery returns without
     // going through any service, so nothing bumps the server revision. Keying dependents
     // on the revision alone would leave them stale.
-    await refetchMiniAppContrib(source({ revision: 4, miniApps: [plugin('sample')] }))
+    await refetchMiniAppContrib(source({ revision: 4, miniApps: [miniApp('sample')] }))
     const converged = miniAppContribVersion()
 
     await refetchMiniAppContrib(
-      source({ revision: 4, miniApps: [plugin('sample'), plugin('dropped-in')] }),
+      source({ revision: 4, miniApps: [miniApp('sample'), miniApp('dropped-in')] }),
     )
     expect(miniAppContribVersion()).toBe(converged + 1)
   })
@@ -382,15 +382,17 @@ describe('plugin contribution synchronization', () => {
     })
     const oldRequest = refetchMiniAppContrib({ loadSnapshot: () => pending })
 
-    await refetchMiniAppContrib(source({ miniApps: [plugin('catalog'), plugin('sample', false)] }))
-    resolveOld(snapshot({ miniApps: [plugin('catalog'), plugin('sample')] }))
+    await refetchMiniAppContrib(
+      source({ miniApps: [miniApp('catalog'), miniApp('sample', false)] }),
+    )
+    resolveOld(snapshot({ miniApps: [miniApp('catalog'), miniApp('sample')] }))
     await oldRequest
 
     expect(miniAppContribSnapshot().enabledNames).toEqual(new Set(['catalog']))
     expect(miniAppContribVersion()).toBe(1)
   })
 
-  test('an older response cannot publish after its plugin chunk finishes late', async () => {
+  test('an older response cannot publish after its mini app chunk finishes late', async () => {
     let releaseDiscovery!: () => void
     let discoveryStarted!: () => void
     const started = new Promise<void>((resolve) => {
@@ -403,12 +405,12 @@ describe('plugin contribution synchronization', () => {
       })
 
     const oldRequest = refetchMiniAppContrib(
-      source({ miniApps: [plugin('sample')] }),
+      source({ miniApps: [miniApp('sample')] }),
       blockedDiscovery,
     )
     await started
 
-    await refetchMiniAppContrib(source({ miniApps: [plugin('catalog')] }), async () => {})
+    await refetchMiniAppContrib(source({ miniApps: [miniApp('catalog')] }), async () => {})
     // The older response published when ITS snapshot landed (names do not wait for UI);
     // the newer one published over it. What the late chunk must not do is publish again.
     const settledVersion = miniAppContribVersion()
@@ -419,16 +421,16 @@ describe('plugin contribution synchronization', () => {
     expect(miniAppContribVersion()).toBe(settledVersion)
   })
 
-  test('names publish before plugin UI loads; each view registers as its artifact settles', async () => {
+  test('names publish before mini app UI loads; each view registers as its artifact settles', async () => {
     const withUi = (name: string) => ({
-      ...plugin(name),
+      ...miniApp(name),
       ui: { entry: `/ui/${name}.js`, styles: [], revision: 'r1' },
     })
     const settlers: MiniAppUiSettled[] = []
     let finishDiscovery!: () => void
     const refetched = refetchMiniAppContrib(
-      source({ miniApps: [withUi('slow'), withUi('fast'), plugin('no-ui')] }),
-      (_plugins, settled) => {
+      source({ miniApps: [withUi('slow'), withUi('fast'), miniApp('no-ui')] }),
+      (_mini_apps, settled) => {
         settlers.push(settled!)
         return new Promise<void>((resolve) => {
           finishDiscovery = resolve
@@ -440,7 +442,7 @@ describe('plugin contribution synchronization', () => {
 
     // The snapshot is in hand, so every name gate opens now — not after the slowest artifact.
     expect(miniAppContribSnapshot().enabledNames).toEqual(new Set(['slow', 'fast', 'no-ui']))
-    // A plugin whose UI has not registered yet reads as pending, so a restored tab of its
+    // A mini app whose UI has not registered yet reads as pending, so a restored tab of its
     // kind is kept rather than closed as unavailable.
     expect(miniAppContributionActivation('slow')).toBe('pending')
     expect(miniAppContributionActivation('no-ui')).toBe('enabled')
@@ -450,7 +452,7 @@ describe('plugin contribution synchronization', () => {
     settlers[0]!('fast', true)
     expect(miniAppContributionActivation('fast')).toBe('enabled')
     expect(miniAppContributionActivation('slow')).toBe('pending')
-    // One plugin settling is not a capability change: other scopes' documents stay fresh.
+    // One mini app settling is not a capability change: other scopes' documents stay fresh.
     expect(miniAppContribVersion()).toBe(beforeSettle)
 
     settlers[0]!('slow', true)
@@ -461,7 +463,7 @@ describe('plugin contribution synchronization', () => {
 
     // A later refetch of the same set does not re-enter the pending state for loaded UI.
     await refetchMiniAppContrib(
-      source({ miniApps: [withUi('slow'), withUi('fast'), plugin('no-ui')] }),
+      source({ miniApps: [withUi('slow'), withUi('fast'), miniApp('no-ui')] }),
       async () => {},
     )
     expect(miniAppContributionActivation('slow')).toBe('enabled')
@@ -469,7 +471,7 @@ describe('plugin contribution synchronization', () => {
 
   test('a successful empty response really removes disabled contributions', async () => {
     await refetchMiniAppContrib(
-      source({ miniApps: [plugin('sample')], views: [view('sample', 'chart')] }),
+      source({ miniApps: [miniApp('sample')], views: [view('sample', 'chart')] }),
     )
     await refetchMiniAppContrib(source())
 
@@ -477,8 +479,8 @@ describe('plugin contribution synchronization', () => {
     expect(listThirdPartyViews()).toEqual([])
   })
 
-  test('retains an installed plugin even when it contributes no UI views', async () => {
-    await refetchMiniAppContrib(source({ miniApps: [plugin('commands-only')] }))
+  test('retains an installed mini app even when it contributes no UI views', async () => {
+    await refetchMiniAppContrib(source({ miniApps: [miniApp('commands-only')] }))
 
     expect(miniAppContribSnapshot().miniApps.map((record) => record.name)).toEqual([
       'commands-only',
@@ -486,37 +488,37 @@ describe('plugin contribution synchronization', () => {
     expect(listThirdPartyViews()).toEqual([])
   })
 
-  test('derives removable UI locations from runtime plugin views', async () => {
+  test('derives removable UI locations from runtime mini app views', async () => {
     await refetchMiniAppContrib(
-      source({ miniApps: [plugin('monitoring')], views: [view('monitoring', 'usage')] }),
+      source({ miniApps: [miniApp('monitoring')], views: [view('monitoring', 'usage')] }),
     )
 
-    const location = resolveUiLocation('localix://ui/plugin/view/monitoring%3Ausage')
+    const location = resolveUiLocation('localix://ui/mini-app/view/monitoring%3Ausage')
     expect(location?.descriptor).toMatchObject({
       effect: 'read',
-      surface: 'plugin',
+      surface: 'mini-app',
     })
     expect(location?.target).toEqual({
       kind: 'work-item',
-      workKind: 'plugin-view',
-      id: 'plugin-view:monitoring:usage',
+      workKind: 'mini-app-view',
+      id: 'mini-app-view:monitoring:usage',
       title: 'usage',
-      payload: { pluginName: 'monitoring', projectId: '', viewId: 'usage' },
+      payload: { miniAppName: 'monitoring', projectId: '', viewId: 'usage' },
     })
 
     await refetchMiniAppContrib(source())
-    expect(resolveUiLocation('localix://ui/plugin/view/monitoring%3Ausage')).toBeNull()
+    expect(resolveUiLocation('localix://ui/mini-app/view/monitoring%3Ausage')).toBeNull()
   })
 })
 
 /**
- * Bundled plugins carry their enabled state PER PROJECT, so the scope a refetch runs
+ * Bundled mini apps carry their enabled state PER PROJECT, so the scope a refetch runs
  * in decides how much of the surface exists. Measured against the live API on one
- * install: 4 of 19 plugins enabled with no `projectId`, 13 of 17 with one. A
- * no-argument refetch that ignored the prepared scope therefore hid nine plugins'
- * views until Settings → Plugins happened to refetch in the right scope.
+ * install: 4 of 19 mini apps enabled with no `projectId`, 13 of 17 with one. A
+ * no-argument refetch that ignored the prepared scope therefore hid nine mini apps'
+ * views until Settings → Mini apps happened to refetch in the right scope.
  */
-describe('plugin contrib default scope', () => {
+describe('mini app contrib default scope', () => {
   const captureScope = async (run: () => Promise<unknown>): Promise<Array<string | null>> => {
     const seen: Array<string | null> = []
     const real = backendClient.fetchCapabilitySnapshot.bind(backendClient)

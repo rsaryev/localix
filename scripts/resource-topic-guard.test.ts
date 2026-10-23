@@ -1,15 +1,16 @@
 import { describe, expect, test } from 'bun:test'
 
 /**
- * ONE invalidation protocol, for every plugin.
+ * ONE invalidation protocol, for every mini app.
  *
  * "This data just moved, and the surfaces showing it are somewhere else" is a cross-cutting
- * problem, and five bundled plugins solved it five times with the same twenty lines: a module
+ * problem, and five bundled mini apps solved it five times with the same twenty lines: a module
  * holding a `Set` of listeners, an `announceX`, a `subscribeX`. The duplication was not the
  * expensive part. TWO of the five were quietly incomplete — Database had a reader and a refresh
  * function with nothing in between, and the API client announced only for the agent's writes — so
  * a titlebar glyph went on naming an environment the user had switched away from, and a database
- * they had disconnected. A mechanism each plugin re-derives is a mechanism some plugins get wrong.
+ * they had disconnected. A mechanism each mini app re-derives is a mechanism some mini apps get
+ * wrong.
  *
  * `mini-app-sdk/ui/resource-topics` is that mechanism now: `resourceTopic(name)` is imported by both
  * sides, a writer calls `.invalidate()`, and `createSharedResource(load, { topic })` follows it by
@@ -25,8 +26,8 @@ const REPO_ROOT = new URL('../', import.meta.url).pathname
  * A hand-rolled announce/subscribe pair.
  *
  * Anchored on the EXPORTED announce verb rather than on `new Set`, because a set of listeners is a
- * perfectly ordinary thing for a plugin to own (a store, a bus, a watcher over someone else's
- * events). What is not ordinary is a plugin exporting its own "something changed, go and look"
+ * perfectly ordinary thing for a mini app to own (a store, a bus, a watcher over someone else's
+ * events). What is not ordinary is a mini app exporting its own "something changed, go and look"
  * broadcast — that is this protocol, spelled again.
  */
 const HAND_ROLLED_ANNOUNCE =
@@ -41,7 +42,7 @@ interface Offence {
   readonly reason: string
 }
 
-async function pluginUiFiles(): Promise<string[]> {
+async function miniAppUiFiles(): Promise<string[]> {
   const paths: string[] = []
   for (const path of new Bun.Glob('*/{ui,frontend}/**/*.{ts,tsx}').scanSync({
     cwd: `${REPO_ROOT}/mini-apps`,
@@ -61,26 +62,26 @@ function detect(source: string): string | null {
 }
 
 describe('the resource invalidation protocol has one implementation', () => {
-  test('no plugin re-declares an announce/subscribe pair of its own', async () => {
+  test('no mini app re-declares an announce/subscribe pair of its own', async () => {
     const offences: Offence[] = []
-    for (const path of await pluginUiFiles()) {
+    for (const path of await miniAppUiFiles()) {
       const reason = detect(await Bun.file(`${REPO_ROOT}/${path}`).text())
       if (reason) offences.push({ path, reason })
     }
     expect(offences.map((offence) => `${offence.path} — ${offence.reason}`)).toEqual([])
   })
 
-  test('every plugin that names a topic namespaces it with its own name', async () => {
-    // `resourceTopic('boards')` from two plugins is one topic, and each would refresh on the
+  test('every mini app that names a topic namespaces it with its own name', async () => {
+    // `resourceTopic('boards')` from two mini apps is one topic, and each would refresh on the
     // other's writes. The namespace is what keeps a global registry from colliding.
     const offences: string[] = []
-    for (const path of await pluginUiFiles()) {
+    for (const path of await miniAppUiFiles()) {
       const source = await Bun.file(`${REPO_ROOT}/${path}`).text()
       for (const match of source.matchAll(/resourceTopic\(\s*'([^']*)'/gu)) {
         const name = match[1] ?? ''
-        const plugin = path.split('/')[1] ?? ''
-        if (!name.startsWith(`${plugin}:`)) {
-          offences.push(`${path} — topic '${name}' is not namespaced as '${plugin}:…'`)
+        const miniApp = path.split('/')[1] ?? ''
+        if (!name.startsWith(`${miniApp}:`)) {
+          offences.push(`${path} — topic '${name}' is not namespaced as '${miniApp}:…'`)
         }
       }
     }

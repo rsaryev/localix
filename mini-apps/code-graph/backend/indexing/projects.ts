@@ -43,7 +43,7 @@ export function projectIndex(dataDir: string, root: string): ProjectIndex {
   return index
 }
 
-/** Close every cache: the plugin is being unloaded. */
+/** Close every cache: the mini app is being unloaded. */
 export function closeProjects(): void {
   for (const index of projects.values()) index.close()
   projects.clear()

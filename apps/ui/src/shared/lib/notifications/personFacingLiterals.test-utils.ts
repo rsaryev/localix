@@ -107,7 +107,7 @@ const ROOTS = [
   resolve(import.meta.dir, '../../../../../../packages/mini-app-sdk/src'),
 ]
 
-/** A plugin's backend and shared code speak to its UI and the agent, not to a person directly. */
+/** A mini app's backend and shared code speak to its UI and the agent, not to a person directly. */
 const isUiPath = (root: number, path: string) =>
   root === 0 || (root === 1 ? /(^|\/)ui\//.test(path) : path.startsWith('ui/'))
 

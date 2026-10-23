@@ -21,7 +21,7 @@ import { createSetTopicPort } from '../set-topic-port'
 import { buildRunToolRegistry } from '../runtime-tools'
 import type { SkillCommandPolicyRef } from '../skill-tool-ports'
 import { resolveRunDisabledTools } from '../run-tool-policy'
-import { surfacePlugins, surfaceTools } from '../surface-tools'
+import { surfaceMiniApps, surfaceTools } from '../surface-tools'
 import { assembleRunTools } from '../tool-assembly'
 import { assertRunToolRequirements } from '../tool-requirements'
 import { listEnabledPluginWorkflows } from '../../../../plugins/workflow-commands'
@@ -164,7 +164,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     modelInput: turn.modelInput,
     disabledTools,
     toolSurface,
-    surfaceTools: surfaceTools(surfacePlugins(params.historyMessages), loadedMiniApps.loaded),
+    surfaceTools: surfaceTools(surfaceMiniApps(params.historyMessages), loadedMiniApps.loaded),
     backgroundToolNames,
     mutatingToolNames,
   })

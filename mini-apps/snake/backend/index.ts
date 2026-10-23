@@ -20,7 +20,7 @@ export function register(ctx: MiniAppContext): MiniAppRegistration {
   // The open board hears every write to its chat's game — the model's moves included.
   const feed = createJsonStoreFeed({
     watchPath: ctx.watchPath ?? ctx.host?.watchPath,
-    plugin: 'snake',
+    miniApp: 'snake',
     resolveDir: async (userId, sessionId) =>
       sessionId && storage ? storage.resolveDataDir(userId, sessionId) : null,
   })

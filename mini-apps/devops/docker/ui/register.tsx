@@ -15,7 +15,7 @@ import { DockerContainerBody, DockerManifestTab, DockerResourceBody } from './re
  * The body adapters live in `register/bodies.tsx` and URI activation in
  * `register/anchor.ts`, so this file reads as the contribution list it is.
  *
- * The provider intentionally does not own a rail section: the root DevOps plugin
+ * The provider intentionally does not own a rail section: the root DevOps mini app
  * composes it with Kubernetes behind the single DevOps Workspace entry.
  */
 export function registerDockerContributions(host: MiniAppUiHost): void {

@@ -9,9 +9,9 @@ describe('file editor selection', () => {
     expect(initialFileEditorSelection(['example:book'], null, false)).toBe('example:book')
   })
 
-  test('offers Open with when a plugin and the native image viewer both match', () => {
+  test('offers Open with when a mini app and the native image viewer both match', () => {
     expect(hasNativeFileViewer('cover.PNG')).toBe(true)
-    expect(initialFileEditorSelection(['image-plugin:editor'], null, true)).toBeNull()
+    expect(initialFileEditorSelection(['image-mini-app:editor'], null, true)).toBeNull()
   })
 
   test('offers Open with when Reader and the native text editor both match', () => {
@@ -19,12 +19,12 @@ describe('file editor selection', () => {
     expect(initialFileEditorSelection(['example:text-view'], null, true)).toBeNull()
   })
 
-  test('offers Open with when two plugins match the same file', () => {
+  test('offers Open with when two mini apps match the same file', () => {
     expect(initialFileEditorSelection(['alpha:editor', 'beta:editor'], null, false)).toBeNull()
   })
 
-  test('honors remembered native and plugin choices', () => {
-    expect(initialFileEditorSelection(['image-plugin:editor'], BUILTIN_EDITOR_CHOICE, true)).toBe(
+  test('honors remembered native and mini app choices', () => {
+    expect(initialFileEditorSelection(['image-mini-app:editor'], BUILTIN_EDITOR_CHOICE, true)).toBe(
       BUILTIN_EDITOR_CHOICE,
     )
     expect(initialFileEditorSelection(['alpha:editor', 'beta:editor'], 'beta:editor', false)).toBe(
@@ -32,7 +32,7 @@ describe('file editor selection', () => {
     )
   })
 
-  test('ignores a stale remembered plugin', () => {
+  test('ignores a stale remembered mini app', () => {
     expect(initialFileEditorSelection(['example:book'], 'removed:editor', false)).toBe(
       'example:book',
     )
@@ -59,14 +59,16 @@ describe('a preferred editor opens without the chooser', () => {
   })
 
   test('a meaningful native viewer still asks first', () => {
-    expect(initialFileEditorSelection(['plugin:md'], null, true, false, ['plugin:md'])).toBeNull()
+    expect(
+      initialFileEditorSelection(['mini-app:md'], null, true, false, ['mini-app:md']),
+    ).toBeNull()
   })
 })
 
 describe('an open that asks for the code editor', () => {
-  test('gets it even when a plugin owns the file type', () => {
-    // The case that made a button look dead: a plugin registers an editor for a compound
-    // `.scene.json` type, so asking to open the file itself rendered the plugin surface again.
+  test('gets it even when a mini app owns the file type', () => {
+    // The case that made a button look dead: a mini app registers an editor for a compound
+    // `.scene.json` type, so asking to open the file itself rendered the mini app surface again.
     expect(initialFileEditorSelection(['example:scene-file'], null, false, true)).toBe(
       BUILTIN_EDITOR_CHOICE,
     )
@@ -82,7 +84,7 @@ describe('an open that asks for the code editor', () => {
     )
   })
 
-  test('outranks a remembered plugin preference', () => {
+  test('outranks a remembered mini app preference', () => {
     // A remembered choice answers "what does this reader usually want"; the request answers
     // "what did this open ask for", and only the second one knows.
     expect(initialFileEditorSelection(['example:book'], 'example:book', false, true)).toBe(

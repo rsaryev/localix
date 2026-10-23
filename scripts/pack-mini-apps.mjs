@@ -51,9 +51,9 @@ if (values.source) {
 const work = mkdtempSync(join(tmpdir(), 'localix-mini-apps-'))
 try {
   const staged = join(work, 'mini-apps')
-  stageMiniAppKitBeside({ repoRoot, outPlugins: staged })
+  stageMiniAppKitBeside({ repoRoot, outMiniApps: staged })
   // A release ships no app whose source does not build: skip it and say so, never fail the rest.
-  stageDropins({ repoRoot, outPlugins: staged, log, onPluginError: 'skip', uiSourceMaps: false })
+  stageDropins({ repoRoot, outMiniApps: staged, log, onMiniAppError: 'skip', uiSourceMaps: false })
   const catalog = await packMiniAppCatalog({
     stagedRoot: staged,
     outDir: resolve(values.out),

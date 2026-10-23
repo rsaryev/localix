@@ -1,5 +1,5 @@
 /**
- * The MODEL-FACING CONTRACT of `database_client` — the plugin's ONE agent tool.
+ * The MODEL-FACING CONTRACT of `database_client` — the mini app's ONE agent tool.
  *
  * It was three (`db_schema`, `db_browse`, `db_query`), and managing connections would have made a
  * fourth: four names whose descriptions each had to explain the other three ("use db_browse after

@@ -3,7 +3,7 @@ import { miniAppErrorDetail } from '@localixai/mini-app-sdk/ui'
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 /**
- * How this plugin reports a failed git operation.
+ * How this mini app reports a failed git operation.
  *
  * Git answers in stderr, and stderr is never one sentence: a rejected push is four lines of
  * `error:`/`hint:`, a blocked checkout names every file it would overwrite. Every op here used to

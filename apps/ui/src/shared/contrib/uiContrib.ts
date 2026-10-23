@@ -14,7 +14,7 @@ import { isMiniAppContributionEnabled } from './miniAppActivation'
  * (discovered generically — see `shared/contrib/discover.ts`), so CORE names no
  * individual subsystem.
  *
- * The contribution CONTRACTS are OWNED by `@localixai/mini-app-sdk/ui` (plugins
+ * The contribution CONTRACTS are OWNED by `@localixai/mini-app-sdk/ui` (mini apps
  * compile against the SDK); this module implements the registries and re-exports
  * the types so internal `@/shared/contrib/*` import sites stay unchanged.
  *
@@ -29,7 +29,7 @@ export type {
 
 interface Registry<T> {
   register(x: T): void
-  /** Lookup regardless of live plugin activation (used only by cold persistence). */
+  /** Lookup regardless of live mini app activation (used only by cold persistence). */
   getRegistered(key: string): T | undefined
   get(key: string): T | undefined
   /** Returns entries in insertion order. */
@@ -39,7 +39,7 @@ interface Registry<T> {
 }
 
 /** Map-backed registry keyed by the entry's `kind` or `id`. */
-function createRegistry<T extends { kind?: string; id?: string; pluginName?: string }>(
+function createRegistry<T extends { kind?: string; id?: string; miniAppName?: string }>(
   label: string,
 ): Registry<T> {
   const entries = new Map<string, T>()
@@ -60,15 +60,15 @@ function createRegistry<T extends { kind?: string; id?: string; pluginName?: str
     },
     get(key) {
       const entry = entries.get(key)
-      return entry && isMiniAppContributionEnabled(entry.pluginName) ? entry : undefined
+      return entry && isMiniAppContributionEnabled(entry.miniAppName) ? entry : undefined
     },
     list() {
       return Array.from(entries.values()).filter((entry) =>
-        isMiniAppContributionEnabled(entry.pluginName),
+        isMiniAppContributionEnabled(entry.miniAppName),
       )
     },
     removeOwner(owner) {
-      for (const [key, entry] of entries) if (entry.pluginName === owner) entries.delete(key)
+      for (const [key, entry] of entries) if (entry.miniAppName === owner) entries.delete(key)
     },
   }
 }
@@ -79,13 +79,13 @@ export const railViewletRegistry = createRegistry<RailViewletContribution>('rail
 
 /**
  * A contributed kind's manifest owner also owns every process-global work-item
- * instance id created under that kind. Core kinds have no pluginName and retain
+ * instance id created under that kind. Core kinds have no miniAppName and retain
  * their existing id contracts.
  */
 export function assertMiniAppOwnedWorkItemInstance(request: MiniAppWorkItemRequest): void {
-  const owner = workItemKindRegistry.getRegistered(request.workKind)?.pluginName
+  const owner = workItemKindRegistry.getRegistered(request.workKind)?.miniAppName
   if (!owner || request.id.startsWith(`${owner}:`)) return
   throw new Error(
-    `[plugin-ui] work-item instance "${request.id}" must be namespaced by owner "${owner}:"`,
+    `[mini-app-ui] work-item instance "${request.id}" must be namespaced by owner "${owner}:"`,
   )
 }

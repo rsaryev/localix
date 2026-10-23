@@ -7,7 +7,7 @@
  * result was DDL that no engine will parse — handed to a HUMAN as a runnable dump, and to
  * the MODEL as the `localix://resource/db` resource it takes for the schema's ground truth.
  *
- * Same argument `ddl.ts` already makes for itself: the plugin's UI imports its wire types
+ * Same argument `ddl.ts` already makes for itself: the mini app's UI imports its wire types
  * from `../backend/*`, so shared knowledge belongs here, beside the type it renders. Pure —
  * types in, string out — so the SPA bundle can carry it.
  */

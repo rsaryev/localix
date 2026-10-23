@@ -116,7 +116,7 @@ const messageBindingSourceSchema = z.enum([
   'drag',
   'active-tab',
   'slash',
-  'plugin',
+  'mini-app',
   'system',
 ])
 const messageBindingStatusSchema = z.enum([
@@ -146,7 +146,7 @@ export const messageContextBindingSchema = z.object({
   id: z.string().min(1),
   source: messageBindingSourceSchema,
   assets: z.array(messageAttachmentSchema).max(8).optional(),
-  plugin: z
+  miniApp: z
     .string()
     .max(128)
     .regex(/^[a-z0-9][a-z0-9._-]*$/iu)

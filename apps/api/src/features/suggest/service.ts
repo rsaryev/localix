@@ -60,7 +60,7 @@ export interface InlineCompletionServiceDeps extends AuxLanguageModelDeps, Surfa
    */
   resolveContext: SurfaceContextResolver
   /**
-   * The surface a plugin contributed under this id, or undefined. Resolved per call so a plugin
+   * The surface a mini app contributed under this id, or undefined. Resolved per call so a mini app
    * toggle takes effect in both directions; core's own surfaces never reach it.
    */
   contributedSurface?: (id: string) => MiniAppTextInputCompletionSurface | undefined

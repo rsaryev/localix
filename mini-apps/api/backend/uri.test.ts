@@ -44,7 +44,7 @@ describe('round-trip', () => {
 
 describe('parseRestUri refuses what we never minted', () => {
   test.each([
-    ['localix://resource/trade/BTC', 'another plugin’s provider'],
+    ['localix://resource/trade/BTC', 'another mini app’s provider'],
     ['localix://resource/api/a/b', 'a second segment — our tree is flat'],
     ['rest://github-user', 'the retired scheme'],
     ['not a uri', 'not a uri at all'],

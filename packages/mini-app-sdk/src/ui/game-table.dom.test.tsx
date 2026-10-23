@@ -38,7 +38,7 @@ async function mount(sessionId: string | null) {
   let latest!: ReturnType<typeof useTableGame<Game>>
   function Probe() {
     latest = useTableGame({
-      plugin: 'toy',
+      miniApp: 'toy',
       route: '/rpc/toy',
       schema,
       active: true,

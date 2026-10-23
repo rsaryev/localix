@@ -29,7 +29,7 @@ import type { createDigestLoaders } from '../boot/digests'
 import type { RegistriesPhase } from './registries'
 import type { MiniAppHostRefs } from './mini-app-host-refs'
 import type { createMiniAppBackendHost } from '../features/mini-apps/backend-host'
-import { PLUGIN_WARNINGS, warnOnce } from '../lib/warn-once'
+import { MINI_APP_WARNINGS, PLUGIN_WARNINGS, warnOnce } from '../lib/warn-once'
 
 export interface DomainServicesPhaseInput
   extends
@@ -81,10 +81,11 @@ export function createDomainServicesPhase({
   notifications,
 }: DomainServicesPhaseInput): DomainServicesPhase {
   const warnPluginOnce = warnOnce(logger, PLUGIN_WARNINGS)
+  const warnMiniAppOnce = warnOnce(logger, MINI_APP_WARNINGS)
   // One generic resolver bridges every opaque resource scheme into Context Fabric.
-  // Core never imports or branches on a concrete plugin/domain here.
+  // Core never imports or branches on a concrete mini app/domain here.
   //
-  // It is the FALLBACK for every destination: a plugin's own resolver answers its scheme first.
+  // It is the FALLBACK for every destination: a mini app's own resolver answers its scheme first.
   // It used to be prediction-only, so a chat send resolved the very same URI through a second,
   // host-side expander with no Fabric policy — the duplicate this registration removes. The
   // quota is chat-sized because a sent message owes the model what the user linked; completion
@@ -149,8 +150,8 @@ export function createDomainServicesPhase({
     return project?.workingDir ?? null
   }
   hostRefs.resolveProjectCwd = resolveProjectCwd
-  // The enumerating half of the `workspaces` plugin seam. Mapped to the seam's own shape here
-  // rather than handing the service over, so a plugin never sees a project DTO field the seam
+  // The enumerating half of the `workspaces` mini app seam. Mapped to the seam's own shape here
+  // rather than handing the service over, so a mini app never sees a project DTO field the seam
   // did not promise.
   hostRefs.listProjects = async (userId: string) =>
     (await projectsService.listProjects(userId)).projects.map((project) => ({
@@ -213,7 +214,7 @@ export function createDomainServicesPhase({
     resolveProjectCwd,
     resolveSessionCwd,
     invokeUiAction: (...args) => backendHost.invokeUiAction(...args),
-    logger: { warn: (msg, meta) => warnPluginOnce({ event: 'mini-app.warn', msg, meta }) },
+    logger: { warn: (msg, meta) => warnMiniAppOnce({ event: 'mini-app.warn', msg, meta }) },
   })
   // Managed-Agents registry: file-backed reusable agents + their `agents` ext-state. The
   // invocation registry is the agents service's own dependency and nothing else's, so it is

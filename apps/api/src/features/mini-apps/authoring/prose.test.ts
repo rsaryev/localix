@@ -47,11 +47,11 @@ describe('the authoring guidance teaches push before polling', () => {
   })
 
   // Regression: asked for calories from a photo, a copy stopped to report the kit had no vision
-  // API, because nothing told it that the chat agent beside the plugin reads the photo itself.
+  // API, because nothing told it that the chat agent beside the mini app reads the photo itself.
   test.each([
     ['the instruction', instruction],
     ['AGENTS.md', guide],
-  ])('%s says the agent does the understanding and the plugin keeps state', (_, text) => {
+  ])('%s says the agent does the understanding and the mini app keeps state', (_, text) => {
     for (const phrase of ['multimodal', 'chat', 'tools', 'vision', 'wakes the agent']) {
       expect(text, phrase).toContain(phrase)
     }
@@ -66,7 +66,7 @@ describe('the authoring guidance teaches push before polling', () => {
   test.each([
     ['the instruction', instruction],
     ['AGENTS.md', guide],
-  ])('%s teaches the host models for the plugin’s own small picks', (_, text) => {
+  ])('%s teaches the host models for the mini app’s own small picks', (_, text) => {
     expect(text).toContain(HOST_JUDGMENT_CONTRACT)
     for (const phrase of ['ctx.host.semantic.rank', 'ctx.host.decisions.decide', 'fallback']) {
       expect(text, phrase).toContain(phrase)

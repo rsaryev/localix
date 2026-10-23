@@ -40,7 +40,7 @@ function GitWorkspaceBody({
   // followed the focused chat once, as an app-level tab: after a switch, a Git tab opened from one
   // chat's branch pill staged and committed in another chat's working tree.
   //
-  // Read through the SDK's session seam rather than the host's chat store: a plugin does not get
+  // Read through the SDK's session seam rather than the host's chat store: a mini app does not get
   // to reach into core feature state, and the seam already publishes the project needed here.
   const sessionId = useWorkItemSessionId()
   const sessions = useMiniAppSessions()
@@ -111,7 +111,7 @@ function ProvenanceSlot({ value }: { value?: unknown }) {
 
 let registered = false
 
-/** Register the Git surface through the same open workbench seams as other bundled plugins. */
+/** Register the Git surface through the same open workbench seams as other bundled mini apps. */
 export function registerUi(host: MiniAppUiHost): void {
   if (registered) return
   registered = true

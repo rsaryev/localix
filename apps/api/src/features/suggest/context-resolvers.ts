@@ -39,7 +39,7 @@ export type InlineCompletionContextResolverMap = {
 export interface InlineCompletionContextResolverDeps {
   chatService: Pick<ReturnType<typeof createChatService>, 'getInlineCompletionContext'>
   /**
-   * A contributed surface resolves its OWN context — the plugin that owns the field is the only
+   * A contributed surface resolves its OWN context — the mini app that owns the field is the only
    * thing that knows what grounds a completion in it. Absent → the surface declines, which is the
    * same outcome as an unregistered id.
    */

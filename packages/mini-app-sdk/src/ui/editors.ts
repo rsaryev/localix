@@ -2,7 +2,7 @@ import type { ComponentType, ReactNode } from 'react'
 import type { MiniAppOwnedContribution, PublishMessageContext } from './contrib'
 
 /**
- * File-type editor contribution — a plugin that has a specialised editor for a
+ * File-type editor contribution — a mini app that has a specialised editor for a
  * family of file paths (a Dockerfile / Compose manifest, …) registers a
  * predicate + component instead of the host's editor-grid routing table
  * hardcoding the detection + import. The grid consults contributions FIRST,
@@ -13,7 +13,7 @@ import type { MiniAppOwnedContribution, PublishMessageContext } from './contrib'
 export interface FileEditorProps {
   itemId?: string
   /** The chat the file tab belongs to. Every file tab is opened into one, so an editor never has
-   *  to guess — the old optional field sent plugin editors to the active chat to fill it. */
+   *  to guess — the old optional field sent mini app editors to the active chat to fill it. */
   sessionId: string
   path: string
   line?: number
@@ -45,7 +45,7 @@ export interface FileEditorProps {
 
 export interface FileEditorContribution extends MiniAppOwnedContribution {
   /**
-   * Stable identity, `<plugin>.<editor>` by convention (e.g. `sample.spreadsheet`,
+   * Stable identity, `<app>.<editor>` by convention (e.g. `sample.spreadsheet`,
    * `sample.sql`). Persisted as the user's remembered "open with" choice when
    * several contributions match the same file — so it must survive renames/reloads.
    */
@@ -81,7 +81,7 @@ export interface FileEditorContribution extends MiniAppOwnedContribution {
  *
  * The difference from {@link FileEditorContribution} is who owns the viewport: an editor
  * contribution answers "open this file with what?", while an enhancer answers "while the host's
- * editor is open on this file, also render this". A plugin that wants to add history, blame or a
+ * editor is open on this file, also render this". A mini app that wants to add history, blame or a
  * conflict bar to EVERY file has no business claiming the editor itself, and before this seam
  * existed its only options were to do exactly that or to reach into host internals.
  */
@@ -90,12 +90,12 @@ export interface FileEditorContribution extends MiniAppOwnedContribution {
  *
  * It is a render-prop, not a panel: an enhancer computes augmentations for a file — a dirty-diff
  * model, a blame source — and hands them back for the host to draw into its editor chrome. It does
- * not own pixels, which is why one can attach to a file type another plugin renders.
+ * not own pixels, which is why one can attach to a file type another mini app renders.
  *
  * The contribution record is deliberately open. The host owns the vocabulary of what an editor
  * augmentation may be, and today that vocabulary is `dirtyDiff` and `blameSource` — both in the
  * public design-system surface — but naming them here would freeze a list the host has not
- * finished writing. It narrows on its side; a plugin passes what it computed.
+ * finished writing. It narrows on its side; a mini app passes what it computed.
  */
 export interface FileEditorEnhancerProps extends FileEditorProps {
   // A property, not a method shorthand: it is a callback the host passes down, and the shorthand
@@ -104,7 +104,7 @@ export interface FileEditorEnhancerProps extends FileEditorProps {
 }
 
 export interface FileEditorEnhancerContribution extends MiniAppOwnedContribution {
-  /** Stable identity, `<plugin>.<enhancer>` by convention. */
+  /** Stable identity, `<app>.<enhancer>` by convention. */
   id: string
   /** Which files this enhancer attaches to; `() => true` for all of them. */
   match: (path: string) => boolean
@@ -151,7 +151,7 @@ export interface FileTreeDecorationIndex {
  * badge slot per row, so two providers would silently race for it; the host keeps the first.
  */
 export interface FileTreeDecorationContribution extends MiniAppOwnedContribution {
-  /** Stable identity, `<plugin>.<decoration>` by convention. */
+  /** Stable identity, `<app>.<decoration>` by convention. */
   id: string
   /** The hook the tree calls, once, with the session whose tree is on screen. */
   useIndex: (sessionId: string | null) => FileTreeDecorationIndex

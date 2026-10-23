@@ -2,10 +2,10 @@
  * Moving a literal credential into the vault, so a saved request holds a REFERENCE and never the
  * secret itself.
  *
- * This is the missing half of the plugin's own advice. Importing a cURL command with
+ * This is the missing half of the mini app's own advice. Importing a cURL command with
  * `Authorization: Bearer ghp_abc` used to write that token, in the clear, into
  * `~/.localix/rest-requests/<user>.json`, and then print a note telling the user to "store it in
- * the vault and use a ${secret:KEY} reference" — advice with no path to follow, because a plugin
+ * the vault and use a ${secret:KEY} reference" — advice with no path to follow, because a mini app
  * could resolve the vault but never fill it. Pasting a token and keeping it out of a plaintext
  * file were mutually exclusive. `ctx.host.storeSecret` is what closes that, and this module is
  * what spends it.
@@ -23,8 +23,8 @@ export type StoreSecret = (userId: string, key: string, value: string) => Promis
  * A vault key from a request name: `api` scope + the request + the field.
  *
  * Scoped on purpose. The vault is one flat namespace shared with every other integration, so a
- * bare `GITHUB_TOKEN` minted from a request called `github` would be a name another plugin (or the
- * user) plausibly wants. A `REST_` prefix makes a collision mean "this plugin already vaulted
+ * bare `GITHUB_TOKEN` minted from a request called `github` would be a name another mini app (or
+ * the user) plausibly wants. A `REST_` prefix makes a collision mean "this mini app already vaulted
  * something for this request", which is a question we can answer, rather than "somebody else owns
  * this name", which is not ours to resolve.
  */

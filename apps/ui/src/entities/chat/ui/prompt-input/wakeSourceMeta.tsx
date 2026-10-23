@@ -34,8 +34,8 @@ const WAKE_SOURCE_ICON: Record<WakeSource, LucideIcon> = {
   'user-steer': User,
   hook: Webhook,
   external: Radio,
-  // The glyph the rail and the settings already use for a plugin.
-  plugin: Puzzle,
+  // The glyph the rail and the settings already use for a mini app.
+  'mini-app': Puzzle,
   subagent: Bot,
   // The person marked a message and that asked for a turn — the one wake that comes from a
   // gesture rather than from typing, so it gets the gesture's own glyph.

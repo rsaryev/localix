@@ -1,6 +1,6 @@
 /**
  * Per-run tool assembly: gathers MCP tools onto the built-in registry tools, wraps every tool with
- * plugin tool-call hooks and the repeat-failure guard, and populates the shared background-tool
+ * mini app tool-call hooks and the repeat-failure guard, and populates the shared background-tool
  * name set. Driven by the tools stage (`stages/tools.ts`).
  */
 import type { AgentTool, ToolSurface } from '@localixai/agent/agents'
@@ -47,7 +47,7 @@ export interface AssembleRunToolsOptions {
   capabilities: ResolvedCapabilities
   modelInput?: readonly string[]
   toolSurface?: ToolSurface
-  /** Tools the turn's open plugin views and plugin wakes bring (`surface-tools.ts`). */
+  /** Tools the turn's open mini app views and mini app wakes bring (`surface-tools.ts`). */
   surfaceTools?: readonly string[]
   /** Shared set populated in place from each tool's declared `background` flag. */
   backgroundToolNames: Set<string>
@@ -185,7 +185,7 @@ export async function assembleRunTools(
   allTools.push(...claimedMods.tools)
   // ---------------------------------------------------------------------
 
-  // Every wrapper, in the order tool-wrapper-chain.ts declares — plugin hooks and CC hooks
+  // Every wrapper, in the order tool-wrapper-chain.ts declares — mini app hooks and CC hooks
   // innermost, then the timeout promoter, then the three no-progress guards. The order and
   // its reasons live with the list, so the composition dump and the code cannot disagree.
   // Inside the chain while a mod hears `tool.call` or `tool.check`, or a Claude Code hook hears
@@ -214,15 +214,15 @@ export async function assembleRunTools(
   for (const t of allTools) if (t.background) backgroundToolNames.add(t.name)
   if (mutatingToolNames) recordMutatingTools(allTools, mutatingToolNames)
 
-  // ---- Deferral: only external plugin and MCP call tools go behind `activate_tools` -------
+  // ---- Deferral: only external mini app and MCP call tools go behind `activate_tools` -------
   //
-  // Plugin and MCP call catalogues can grow without bound. Core tools are a bounded product
+  // Mini app and MCP call catalogues can grow without bound. Core tools are a bounded product
   // contract and always stay visible, so an agent never spends a turn loading a capability the
   // application itself owns.
   //
   // Deferred does NOT mean unavailable. Every implementation remains in `dispatchTools`;
   // `activate_tools` tells the runtime which full schemas to append for the next model turn.
-  // Wrapping happens BEFORE this split, so a deferred tool keeps its plugin hooks, its CC
+  // Wrapping happens BEFORE this split, so a deferred tool keeps its mini app hooks, its CC
   // hooks and its failure guard — deferral is a wire decision and nothing else.
   const sourceByTool = new Map<string, string>()
   // A closed list NAMED its MCP tools: they ride the wire like its built-ins, no activator.

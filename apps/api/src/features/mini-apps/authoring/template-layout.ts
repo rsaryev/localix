@@ -71,7 +71,7 @@ export function copyDomain(scaffold: TemplateScaffold, name: string): string[] {
   })
 }
 
-/** Plugin-relative POSIX paths of every file under `dir`, build output excluded. */
+/** Mini-app-relative POSIX paths of every file under `dir`, build output excluded. */
 export function listFiles(dir: string, base: string = dir, out: string[] = []): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     if (SKIP_DIRS.has(entry.name)) continue
@@ -126,11 +126,11 @@ export function frameDomainImports(templateDir: string): string[] {
  * last: a mini app with no test at all is reported whatever its origin.
  */
 export function findTemplateResidue(
-  pluginDir: string,
+  miniAppDir: string,
   name: string,
   scaffold: TemplateScaffold,
 ): string[] {
-  const files = listFiles(pluginDir)
+  const files = listFiles(miniAppDir)
   const problems: string[] = []
   const domainNamed = new RegExp(scaffold.domainNamedPaths.join('|'), 'iu')
 
@@ -153,7 +153,7 @@ export function findTemplateResidue(
   // The guide is the agent's: one that still describes the template's tools misleads it.
   const guideFile = (path: string) => path === 'guide.md' || path.startsWith('guide/')
   for (const file of files.filter((path) => CODE_EXT.test(path) || guideFile(path))) {
-    const match = readFileSync(join(pluginDir, file), 'utf8').match(tokens)
+    const match = readFileSync(join(miniAppDir, file), 'utf8').match(tokens)
     if (match) problems.push(`${file} still names the template domain (\`${match[0]}\`)`)
   }
 
@@ -161,7 +161,7 @@ export function findTemplateResidue(
   // it surfaced as a bare "JSON Parse error" with no file, and the agent spent a turn finding it.
   // Still thrown: an unreadable manifest is an error, never excusable residue on a fresh copy.
   try {
-    JSON.parse(readFileSync(join(pluginDir, MINI_APP_MANIFEST_FILE), 'utf8'))
+    JSON.parse(readFileSync(join(miniAppDir, MINI_APP_MANIFEST_FILE), 'utf8'))
   } catch (error) {
     throw new Error(`${MINI_APP_MANIFEST_FILE} is not valid JSON: ${(error as Error).message}`)
   }

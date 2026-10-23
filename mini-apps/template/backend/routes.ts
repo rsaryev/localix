@@ -14,7 +14,7 @@ export interface TemplateServices {
 /**
  * Read-only GETs for the live data, and the routes that change the marks. A read that fails
  * answers 503 with a fixed message: the readers touch OS APIs and a process list, and an error
- * string from either could carry a path or a command line the plugin promises never to expose.
+ * string from either could carry a path or a command line the mini app promises never to expose.
  * A change answers with the NEW state, so the view shows it without a second request, and reads
  * its body through `jsonBody`: a body that did not arrive as JSON could have come from any page.
  */

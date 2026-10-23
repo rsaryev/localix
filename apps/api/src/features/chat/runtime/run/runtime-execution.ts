@@ -44,28 +44,28 @@ export function buildRuntimeToolContext(input: {
       id: sessionId,
       scratchDir: input.scratchDir,
       ...(input.speaker ? { speaker: input.speaker } : {}),
-      emitCommand: (plugin, channel, payload) =>
+      emitCommand: (miniApp, channel, payload) =>
         deps.streamRegistry.publish(userId, sessionId, {
-          type: 'plugin.command',
+          type: 'mini-app.command',
           sessionId,
-          plugin,
+          miniApp,
           channel,
           payload,
           commandId: randomUUID(),
           seq: ++commandSequence,
         }),
-      ...(deps.pluginCommands
+      ...(deps.miniAppCommands
         ? {
             emitCommandWithReply: (
-              plugin: string,
+              miniApp: string,
               channel: string,
               payload: unknown,
               timeoutMs?: number,
             ) =>
-              deps.pluginCommands!.send({
+              deps.miniAppCommands!.send({
                 userId,
                 sessionId,
-                plugin,
+                miniApp,
                 channel,
                 payload,
                 seq: ++commandSequence,

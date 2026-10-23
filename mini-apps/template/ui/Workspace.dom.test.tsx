@@ -11,7 +11,7 @@ const priorActEnvironment = actEnvironment.IS_REACT_ACT_ENVIRONMENT
 beforeAll(() => {
   teardown = registerDom()
   // The dashboard reports failures through the host's `ProblemLine`, which the SDK resolves from
-  // the host-bound component set; bind the same test doubles a plugin preload would.
+  // the host-bound component set; bind the same test doubles a mini app preload would.
   unbindDoubles = bindMiniAppUiTestDoubles()
   actEnvironment.IS_REACT_ACT_ENVIRONMENT = true
 })

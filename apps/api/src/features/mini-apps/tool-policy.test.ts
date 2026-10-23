@@ -11,7 +11,7 @@ import { BUILTIN_TOOL_NAMES } from '../agent-core/tool-names'
 const builtins = new Set<string>(BUILTIN_TOOL_NAMES)
 const aBuiltin = [...builtins][0] // a real reserved name from the canonical set
 
-describe('plugin tool-name policy', () => {
+describe('mini app tool-name policy', () => {
   test('accepts a well-formed, non-reserved name', () => {
     expect(isAcceptableToolName('my_tool')).toBe(true)
     expect(isAcceptableToolName('search2')).toBe(true)
@@ -39,9 +39,9 @@ describe('plugin tool-name policy', () => {
     expect(isAcceptableToolName('vault')).toBe(false)
   })
 
-  test('does not reserve valid names owned by plugins (not core built-ins)', () => {
-    // Synthetic plugin names stay absent from BUILTIN_TOOL_NAMES and acceptable to the loader.
-    // This guards the former leak where plugin-owned names lived in core's tool catalog.
+  test('does not reserve valid names owned by mini apps (not core built-ins)', () => {
+    // Synthetic mini app names stay absent from BUILTIN_TOOL_NAMES and acceptable to the loader.
+    // This guards the former leak where mini-app-owned names lived in core's tool catalog.
     for (const name of ['sample_reader', 'sample_writer']) {
       expect(BUILTIN_TOOL_NAMES).not.toContain(name)
       expect(isReservedToolName(name)).toBe(false)
@@ -59,7 +59,7 @@ describe('plugin tool-name policy', () => {
   })
 
   test('rejects the mcp_ namespace (reserved for MCP server tools)', () => {
-    // A plugin tool named mcp_* would shadow a real namespaced MCP tool
+    // A mini app tool named mcp_* would shadow a real namespaced MCP tool
     // (mcp_<server>_<tool>) in the shared, last-writer-wins tool map.
     expect(isAcceptableToolName('mcp_github_search')).toBe(false)
     expect(isAcceptableToolName('MCP_Github')).toBe(false) // case-insensitive
@@ -81,8 +81,8 @@ describe('plugin tool-name policy', () => {
 
   test('reserves core-owned names that are not tools', () => {
     // `request_secret` is a HITL request KIND raised by the `vault` tool (and formerly a
-    // tool of its own). It is in no tool registry, so nothing else would stop a plugin
-    // from claiming it — and a plugin tool wearing that name makes the transcript and the
+    // tool of its own). It is in no tool registry, so nothing else would stop a mini app
+    // from claiming it — and a mini app tool wearing that name makes the transcript and the
     // audit trail ambiguous about which surface asked the user for a credential.
     expect(isReservedToolName('request_secret')).toBe(true)
     expect(isAcceptableToolName('request_secret')).toBe(false)
@@ -91,7 +91,7 @@ describe('plugin tool-name policy', () => {
   })
 })
 
-describe('plugin tool model metadata budget', () => {
+describe('mini app tool model metadata budget', () => {
   test('keeps ordinary detailed descriptions unchanged', () => {
     const description = 'What it does. When to use it. How to call it. Important caveat.'
     expect(capMiniAppToolDescription(description)).toBe(description)

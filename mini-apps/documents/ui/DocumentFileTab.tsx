@@ -81,7 +81,7 @@ export function DocumentFileTab({
   }, [path, mediaId, reloadNonce, workItemVisible])
 
   // A binary Office file cannot be expanded through the generic `@file:` path
-  // reader. Replace it with the documents plugin's extracted, bounded `localix://resource/doc`
+  // reader. Replace it with the documents mini app's extracted, bounded `localix://resource/doc`
   // resource as soon as the viewer has the content-addressed cache id.
   useEffect(() => {
     if (!publishMessageContext) return

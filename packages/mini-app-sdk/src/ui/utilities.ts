@@ -172,7 +172,7 @@ export function findLast<T>(
  * Return a NEW Set with `value` toggled — added if absent, removed if present.
  *
  * Immutable, so it drops straight into `setState(prev => toggleInSet(prev, v))`. It is the reducer
- * behind every collapse/selection Set in the workbench, and a plugin rendering a tree needs the
+ * behind every collapse/selection Set in the workbench, and a mini app rendering a tree needs the
  * same one rather than reaching into host `shared/lib` for a four-line generic.
  */
 export function toggleInSet<T>(set: ReadonlySet<T>, value: T): Set<T> {

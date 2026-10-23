@@ -8,7 +8,7 @@
    only on purpose.
 
    A consumer imports this file after `tailwindcss` (the layers use its `@theme`, `@utility` and
-   `@custom-variant`) and before its own rules: the app in `apps/ui/src/app/index.css`, a plugin
+   `@custom-variant`) and before its own rules: the app in `apps/ui/src/app/index.css`, a mini app
    through `@reference` in its artifact build. */
 @import './theme-dark.css';
 @import './theme-light.css';

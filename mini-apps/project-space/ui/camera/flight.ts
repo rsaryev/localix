@@ -8,7 +8,7 @@ import type { CameraViewport } from '@localixai/kit/canvas'
  * Nuij ("Smooth and efficient zooming and panning", 2003) instead rises as the distance grows —
  * you see the destination come into view before descending on it — and for a near target it is
  * all but a straight glide. The formula is d3's `interpolateZoom` (the one d3-zoom animates
- * with), restated over a board viewport instead of pulling d3 into the plugin for thirty lines.
+ * with), restated over a board viewport instead of pulling d3 into the mini app for thirty lines.
  *
  * A view is its centre and its width in BOARD units; `rho` is how high the swing rises (√2, d3's
  * default and the paper's recommendation).

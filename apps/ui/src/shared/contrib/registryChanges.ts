@@ -1,18 +1,18 @@
 import type { MiniAppUiHost } from '@localixai/mini-app-sdk/ui'
 
 /**
- * ONE coalesced signal for "a host registry changed" — a plugin registered or removed a
- * contribution, a plugin's first UI load settled, a dev rebuild replaced a module.
+ * ONE coalesced signal for "a host registry changed" — a mini app registered or removed a
+ * contribution, a mini app's first UI load settled, a dev rebuild replaced a module.
  *
- * Two defects shaped it. Surfaces that read a registry during render (a restored plugin tab, a tab
- * icon, a session surface such as the Git poller, a diff slot, an editor enhancer) re-read only
+ * Two defects shaped it. Surfaces that read a registry during render (a restored mini app tab, a
+ * tab icon, a session surface such as the Git poller, a diff slot, an editor enhancer) re-read only
  * when something ELSE re-rendered them, so a restored tab sat on "Restoring…" until an unrelated
  * bump and a closed-and-reopened panel was the only thing that "fixed" it. And the signal that did
- * exist fired once PER PLUGIN: each settle re-rendered the whole app, which a startup trace
- * measured as one ~55 ms long task per plugin, twenty back to back.
+ * exist fired once PER MINI APP: each settle re-rendered the whole app, which a startup trace
+ * measured as one ~55 ms long task per mini app, twenty back to back.
  *
  * So registry state changes synchronously (a reader always sees the current registry), and the
- * NOTIFICATION is deferred to the next frame: every change in the burst — N plugins registering,
+ * NOTIFICATION is deferred to the next frame: every change in the burst — N mini apps registering,
  * N settles — produces exactly one flush. The flush runs each queued follow-up once (deduped by
  * identity: the activation broadcast, the capability store's re-announce) and then wakes the
  * registry listeners, which `useMiniAppRegistrySlice` narrows so only a consumer whose slice
@@ -53,7 +53,7 @@ export function noteRegistryChange(followUp?: Flush): void {
  * A registration façade whose every seam notes a registry change after it registers.
  *
  * Wrapping the FAÇADE (`host.ts`) rather than each registry makes the note total: a seam added to
- * the interface is announced without anyone remembering to. Missing one is how a plugin that
+ * the interface is announced without anyone remembering to. Missing one is how a mini app that
  * registered after the first paint stayed invisible under an open tab or surface.
  */
 export function announcing(host: MiniAppUiHost): MiniAppUiHost {

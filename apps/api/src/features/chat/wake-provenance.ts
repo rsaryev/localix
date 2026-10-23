@@ -4,8 +4,8 @@
  * from, exactly like the sibling leaves (`item-format`, `slash-catalog`, `context-refs`).
  *
  * The rule: a wake turn (loop / board / sleep / bg-job / bg-monitor / hook /
- * external / plugin / sub-agent) is persisted as a HIDDEN (`isInternal`) user message carrying the
- * `WakeSource`, immediately followed by the visible assistant response. The hidden row never
+ * external / mini app / sub-agent) is persisted as a HIDDEN (`isInternal`) user message carrying
+ * the `WakeSource`, immediately followed by the visible assistant response. The hidden row never
  * renders, so its source is LIFTED onto the id of the next visible ASSISTANT message — that
  * is what lets a transcript say "via loop" and explain why the agent acted with nobody typing.
  *
@@ -56,7 +56,7 @@ export const WAKE_SOURCE_LABEL: Record<WakeSource, string> = {
   'user-steer': 'Mid-run',
   hook: 'Hook',
   external: 'External',
-  plugin: 'Plugin',
+  'mini-app': 'Mini app',
   subagent: 'Sub-agent',
   reaction: 'Reaction',
   delegator: 'Delegator',
@@ -72,7 +72,10 @@ export function isWakeSource(source: unknown): source is WakeSource {
   return typeof source === 'string' && WAKE_SOURCES.has(source)
 }
 
-/** Safe display lookup: unknown legacy/plugin origins stay inert instead of crashing a surface. */
+/**
+ * Safe display lookup: unknown and retired origins (a `plugin` wake from before the rename) stay
+ * inert instead of crashing a surface.
+ */
 export function wakeSourceLabel(source: unknown): string | undefined {
   return isWakeSource(source) ? WAKE_SOURCE_LABEL[source] : undefined
 }

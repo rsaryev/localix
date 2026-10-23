@@ -2,11 +2,11 @@ import { z } from 'zod'
 
 /**
  * A SEALED VALUE: something one player commits to — a move, a word, a number — that nobody else may
- * read until the plugin reveals it, and that its owner cannot change after committing.
+ * read until the mini app reveals it, and that its owner cannot change after committing.
  *
  * The owning backend keeps the whole {@link Sealed} record and hands every other audience only
  * {@link sealedView}: before the reveal that is the digest alone, after it the value and the salt
- * that let anyone recompute the digest ({@link verifySealed}). Hiding is the plugin's job — the
+ * that let anyone recompute the digest ({@link verifySealed}). Hiding is the mini app's job — the
  * server never sends the value early; the digest only proves afterwards that nothing was swapped.
  *
  * This module is isomorphic (WebCrypto only), so a view can verify what the backend revealed. The
@@ -18,7 +18,7 @@ const digestSchema = z.string().regex(/^[0-9a-f]{64}$/)
 
 /** The whole commitment, as the owning backend stores it. Never send it to another audience. */
 export const sealedSchema = z.object({
-  /** Who committed: a player, a seat, an agent id — the plugin decides. */
+  /** Who committed: a player, a seat, an agent id — the mini app decides. */
   owner: z.string().min(1),
   value: z.string(),
   salt: z.string().min(1),

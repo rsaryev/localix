@@ -1,4 +1,4 @@
-// The ambient declarations travel WITH the module that needs them. A plugin workspace compiles
+// The ambient declarations travel WITH the module that needs them. A mini app workspace compiles
 // this file through its import graph and never sees `apps/ui`'s own includes, so without the
 // reference its type-check failed on the untyped inline-edit registry import below. An `import`
 // cannot carry it: the file holds only ambient `declare module` blocks and is not a module.

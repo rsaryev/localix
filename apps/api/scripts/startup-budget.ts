@@ -59,7 +59,7 @@ export interface BootAnalysis {
   writes: BootRequest[]
   /** Slowest individual calls, worst first. */
   slowest: BootRequest[]
-  /** Every plugin load in the window — more than one means the boot loaded them twice. */
+  /** Every mini app load in the window — more than one means the boot loaded them twice. */
   miniAppLoads: MiniAppLoad[]
 }
 

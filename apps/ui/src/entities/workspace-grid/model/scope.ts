@@ -44,15 +44,15 @@ export function sessionOfScope(itemScope: ScopeId | undefined): string | null {
 }
 
 /**
- * The id a PLUGIN's session-scoped tab takes in its session: `<id>@<session>`.
+ * The id a MINI APP's session-scoped tab takes in its session: `<id>@<session>`.
  *
- * The defect this stops: tabs are de-duplicated by id across every scope, and a plugin opens its
+ * The defect this stops: tabs are de-duplicated by id across every scope, and a mini app opens its
  * tab under a fixed id (the launcher uses the kind itself). Opening it from chat B found chat A's
  * tab and re-stamped it with B's scope, so a session-scoped surface — a game board, a book — left
  * the chat it belonged to and took that chat's state with it. Qualifying the id by its session
  * makes "the board of this chat" one tab per chat, whatever id the opener used.
  *
- * Plugin kinds and core SINGLETONS, only in a session: a singleton (the Browser, Problems,
+ * Mini app kinds and core SINGLETONS, only in a session: a singleton (the Browser, Problems,
  * Activity, Search) is one tab per chat, so its fixed id needs the same qualification. Other core
  * kinds keep their own id contracts (a chat tab's id is its session), and an app-level tab has one
  * instance by design. Idempotent, so a restored or re-opened tab keeps the id it already has.

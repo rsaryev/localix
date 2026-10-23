@@ -8,7 +8,7 @@ import type { Message, UiSession } from '@/shared/api/contracts'
 
 /**
  * The conversation a link points into — a session, one of its messages, one of its tool calls —
- * for a preview drawn OUTSIDE the chat (a plugin's board, a card anywhere).
+ * for a preview drawn OUTSIDE the chat (a mini app's board, a card anywhere).
  *
  * The chat store holds only the sessions the person has opened; a link on a board usually points
  * at one they have not opened in this window. So the store is asked first, and otherwise the

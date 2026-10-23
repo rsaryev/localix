@@ -68,7 +68,7 @@ const defaults: PlatformCapabilities = {
     reload: () => window.location.reload(),
   },
   external: {
-    // Every host and plugin surface shares the same routing and OS confirmation policy.
+    // Every host and mini app surface shares the same routing and OS confirmation policy.
     open: confirmAndOpenExternal,
     requestOpen: confirmExternalHandoff,
   },

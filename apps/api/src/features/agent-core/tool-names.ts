@@ -283,7 +283,7 @@ export function builtinToolExposure(name: string): ToolExposure | undefined {
 export { ACTIVATE_TOOLS_TOOL_NAME } from './tool-names-reserved'
 
 /**
- * The consolidated MCP-resource tool. Core-named (so settings can toggle it and a plugin cannot
+ * The consolidated MCP-resource tool. Core-named (so settings can toggle it and a mini app cannot
  * shadow it), but MCP-provenance: it is only built when a connected server advertises
  * `resources`, and run assembly defers it along with the rest of the MCP surface.
  */

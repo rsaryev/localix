@@ -8,7 +8,7 @@ describe('chartMessageContext', () => {
       bindings: [
         {
           kind: 'context',
-          source: 'plugin',
+          source: 'mini-app',
           target: {
             kind: 'resource',
             token:

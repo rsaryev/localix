@@ -35,7 +35,7 @@ describe('workItemToMessageBinding', () => {
         const uri = `localix://resource/fixture-db/${i.payload.connectionId}`
         return {
           kind: 'context',
-          source: 'plugin',
+          source: 'mini-app',
           target: { kind: 'resource', token: `@resource:${uri}`, label: i.title, uri },
         }
       },
@@ -46,7 +46,7 @@ describe('workItemToMessageBinding', () => {
       ),
     ).toEqual({
       kind: 'context',
-      source: 'plugin',
+      source: 'mini-app',
       target: {
         kind: 'resource',
         token: '@resource:localix://resource/fixture-db/c1',
@@ -90,7 +90,7 @@ describe('workItemToMessageBinding', () => {
 
   it('gives every contributed work item guidance even before it publishes live state', () => {
     workItemKindRegistry.register({
-      kind: 'test-empty-plugin-view',
+      kind: 'test-empty-mini-app-view',
       Component: (() => null) as never,
       Icon: (() => null) as never,
       agentContext: {
@@ -99,71 +99,71 @@ describe('workItemToMessageBinding', () => {
       },
     })
     const bindings = workItemToMessageBindings(
-      item({ kind: 'test-empty-plugin-view', title: 'Empty fixture' }),
+      item({ kind: 'test-empty-mini-app-view', title: 'Empty fixture' }),
     )
     expect(bindings).toHaveLength(1)
     expect(bindings[0]?.target.attributes?.content).toContain('Live state: none published yet')
     expect(bindings[0]?.target.attributes?.content).toContain('fixture_tool')
-    // No owning plugin, no address to give: the browser line is only for a plugin's own view.
-    expect(bindings[0]?.target.attributes?.content).not.toContain('plugin:')
+    // No owning mini app, no address to give: the browser line is only for a mini app's own view.
+    expect(bindings[0]?.target.attributes?.content).not.toContain('mini-app:')
   })
 
-  it("tells the agent the address of a plugin's own view", () => {
+  it("tells the agent the address of a mini app's own view", () => {
     workItemKindRegistry.register({
-      kind: 'fixture-plugin:view',
-      pluginName: 'fixture-plugin',
+      kind: 'fixture-mini-app:view',
+      miniAppName: 'fixture-mini-app',
       Component: (() => null) as never,
       Icon: (() => null) as never,
       agentContext: { nextSteps: ['Inspect it.'] },
     } as never)
-    setEnabledMiniAppNames(new Set(['fixture-plugin']))
+    setEnabledMiniAppNames(new Set(['fixture-mini-app']))
     try {
-      const [binding] = workItemToMessageBindings(item({ kind: 'fixture-plugin:view' }))
+      const [binding] = workItemToMessageBindings(item({ kind: 'fixture-mini-app:view' }))
       expect(binding?.target.attributes?.content).toContain(
-        'the browser tool with url "mini-app:fixture-plugin"',
+        'the browser tool with url "mini-app:fixture-mini-app"',
       )
     } finally {
-      workItemKindRegistry.removeOwner('fixture-plugin')
+      workItemKindRegistry.removeOwner('fixture-mini-app')
       setEnabledMiniAppNames(null)
     }
   })
 
-  // The owner is what brings the plugin's tools to the turn — so the HOST says it, on every facet
-  // the tab links, over whatever a plugin's own draft claimed.
-  it("stamps each of a plugin tab's bindings with its owner, over the plugin's own claim", () => {
+  // The owner is what brings the mini app's tools to the turn — so the HOST says it, on every facet
+  // the tab links, over whatever a mini app's own draft claimed.
+  it("stamps each of a mini app tab's bindings with its owner, over the mini app's own claim", () => {
     workItemKindRegistry.register({
-      kind: 'fixture-plugin:board',
-      pluginName: 'fixture-plugin',
+      kind: 'fixture-mini-app:board',
+      miniAppName: 'fixture-mini-app',
       Component: (() => null) as never,
       Icon: (() => null) as never,
       toMessageBinding: () => ({
         ...resourceMessageBindingDraft({ uri: 'localix://resource/fixture/1', label: 'one' }),
-        plugin: 'another-plugin',
+        miniApp: 'another-mini-app',
       }),
     } as never)
-    setEnabledMiniAppNames(new Set(['fixture-plugin']))
+    setEnabledMiniAppNames(new Set(['fixture-mini-app']))
     try {
-      const bindings = workItemToMessageBindings(item({ kind: 'fixture-plugin:board' }))
+      const bindings = workItemToMessageBindings(item({ kind: 'fixture-mini-app:board' }))
       expect(bindings.length).toBeGreaterThan(1)
-      expect(bindings.map((binding) => binding.plugin)).toEqual(
-        bindings.map(() => 'fixture-plugin'),
+      expect(bindings.map((binding) => binding.miniApp)).toEqual(
+        bindings.map(() => 'fixture-mini-app'),
       )
     } finally {
-      workItemKindRegistry.removeOwner('fixture-plugin')
+      workItemKindRegistry.removeOwner('fixture-mini-app')
       setEnabledMiniAppNames(null)
     }
   })
 
-  it('a core tab has no owner, and a plugin-view tab names the plugin it shows', () => {
+  it('a core tab has no owner, and a mini-app-view tab names the mini app it shows', () => {
     const file = workItemToMessageBinding(
       item({ kind: 'file', title: 'a.ts', payload: { path: '/a.ts' } }),
     )
     expect(file).not.toHaveProperty('plugin')
     const view = workItemToMessageBindings(
-      item({ kind: 'plugin-view', title: 'Board', payload: { pluginName: 'fixture-board' } }),
+      item({ kind: 'mini-app-view', title: 'Board', payload: { miniAppName: 'fixture-board' } }),
     )
     expect(view.length).toBeGreaterThan(0)
-    expect(view.every((binding) => binding.plugin === 'fixture-board')).toBe(true)
+    expect(view.every((binding) => binding.miniApp === 'fixture-board')).toBe(true)
   })
 
   it('retains guidance beside a resource when live state replaces the static binding', () => {

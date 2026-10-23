@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import {
-  PLUGIN_CONTEXT_MAX_TIMEOUT_MS,
-  PLUGIN_CONTEXT_MAX_TOKENS,
+  MINI_APP_CONTEXT_MAX_TIMEOUT_MS,
+  MINI_APP_CONTEXT_MAX_TOKENS,
   validateContextContribution,
 } from './contribution-validate'
 import type {
@@ -38,18 +38,18 @@ describe('validateContextContribution', () => {
     expect(result).toMatchObject({ ok: false, reason: 'invalid_metadata' })
   })
 
-  test('rejects a token budget over the plugin ceiling', () => {
+  test('rejects a token budget over the mini app ceiling', () => {
     const result = validateContextContribution({
       ...base,
-      maxTokens: PLUGIN_CONTEXT_MAX_TOKENS + 1,
+      maxTokens: MINI_APP_CONTEXT_MAX_TOKENS + 1,
     })
     expect(result).toMatchObject({ ok: false, reason: 'invalid_metadata' })
   })
 
-  test('rejects a timeout over the plugin ceiling', () => {
+  test('rejects a timeout over the mini app ceiling', () => {
     const result = validateContextContribution({
       ...base,
-      timeoutMs: PLUGIN_CONTEXT_MAX_TIMEOUT_MS + 1,
+      timeoutMs: MINI_APP_CONTEXT_MAX_TIMEOUT_MS + 1,
     })
     expect(result).toMatchObject({ ok: false, reason: 'invalid_metadata' })
   })

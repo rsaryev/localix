@@ -45,7 +45,7 @@ export function useReaderLibraryBooks(
   }, [refresh, refreshKey])
 
   const live = useStoreChanges(
-    { plugin: 'reader', sessionId: null },
+    { miniApp: 'reader', sessionId: null },
     () => void refresh(),
     refreshKey !== null,
   )

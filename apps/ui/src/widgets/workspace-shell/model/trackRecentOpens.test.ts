@@ -30,13 +30,13 @@ describe('trackRecentOpens', () => {
 
   it('preserves every entry and its other fields', () => {
     const entries = new Map([
-      ['view:a', { ...entry('view:a', () => {}), plugin: true, label: 'Alpha' }],
+      ['view:a', { ...entry('view:a', () => {}), miniApp: true, label: 'Alpha' }],
       ['view:b', entry('view:b', () => {})],
     ])
     const tracked = trackRecentOpens(entries, new Set(['view:a']), () => {})
 
     expect([...tracked.keys()]).toEqual(['view:a', 'view:b'])
     expect(tracked.get('view:a')?.label).toBe('Alpha')
-    expect(tracked.get('view:a')?.plugin).toBe(true)
+    expect(tracked.get('view:a')?.miniApp).toBe(true)
   })
 })

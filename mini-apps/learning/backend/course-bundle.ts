@@ -192,7 +192,7 @@ export async function loadCourseBundle(
     throw validationError({
       code: 'invalid-root',
       file: manifestPath,
-      message: 'The course manifest is outside the workspace and plugin data directories.',
+      message: 'The course manifest is outside the workspace and mini app data directories.',
       fix: 'Author the bundle under the workspace .localix/learning-drafts directory.',
     })
   }

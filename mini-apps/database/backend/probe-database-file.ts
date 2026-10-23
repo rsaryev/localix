@@ -29,7 +29,7 @@ import {
  */
 export async function probeDatabaseFile(path: string): Promise<DatabaseFileProbe> {
   // The extension gate runs first so a probe can never be used to stat arbitrary paths
-  // for their readability — it answers only about files this plugin claims to open.
+  // for their readability — it answers only about files this mini app claims to open.
   if (!isDatabaseFilePath(path)) return { openable: false, reason: 'not-a-database-extension' }
 
   let handle: Awaited<ReturnType<typeof open>> | undefined

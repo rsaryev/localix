@@ -1,10 +1,10 @@
 /**
  * Run one request against a connection, and survive the backend having forgotten it.
  *
- * The defect: the backend's live drivers live in memory. An API restart or a plugin reload empties
- * that registry while the saved connection — and this UI's row, still "connected" — survive, so the
- * next Run answered `connection_not_found` and asked for a reconnect by hand, for a connection one
- * reconnect away from working. The shape is "reconnect and retry".
+ * The defect: the backend's live drivers live in memory. An API restart or a mini app reload
+ * empties that registry while the saved connection — and this UI's row, still "connected" —
+ * survive, so the next Run answered `connection_not_found` and asked for a reconnect by hand, for a
+ * connection one reconnect away from working. The shape is "reconnect and retry".
  *
  * Why retrying is safe: that code is the server refusing BEFORE any driver is reached — nothing
  * ran, so re-sending a write cannot apply it twice. Exactly once: a connection still gone after a

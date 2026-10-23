@@ -19,7 +19,7 @@ import {
 /**
  * HOW THE BOARD ASKS THE DECISION MODEL FOR ITS NEXT MOVE — when the model steers.
  *
- * The plugin asks the host's decision model itself (`ctx.host.decisions`): one `choice` question
+ * The mini app asks the host's decision model itself (`ctx.host.decisions`): one `choice` question
  * whose options are the headings the snake may take now (never straight back into itself). What
  * code can see for certain about each heading — whether it dies, whether it eats, how far the food
  * is after it, and how many free cells the head can still reach (a flood fill, the way to tell an

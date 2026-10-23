@@ -69,8 +69,8 @@ export interface ToolGcReport {
 /**
  * Flatten a snapshot into the (name, source, originId) triples the rule set judges.
  *
- * `enabled` is authoritative for the builtin+plugin half: it is `computeToolSurface`'s output, so a
- * tool switched off in settings is already gone. Attribution comes from `catalog`, which is
+ * `enabled` is authoritative for the builtin+mini app half: it is `computeToolSurface`'s output, so
+ * a tool switched off in settings is already gone. Attribution comes from `catalog`, which is
  * the same projection's metadata — never a second
  * lookup that could disagree about which plugin owns a name.
  */

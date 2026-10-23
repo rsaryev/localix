@@ -92,12 +92,12 @@ export type WakeSource =
    * (another agent, CI, a monitor) via `POST /rpc/webhook/...`, not our frontend. */
   | 'external'
   /**
-   * A PLUGIN ASKED FOR A TURN: something happened in it — a person moved in its view, a
-   * condition it watches came true — and the agent answers through the plugin's own tools
-   * (`features/mini-apps/plugin-wake.ts`). Its own source because "External" named a webhook,
-   * and a person playing a game in a plugin tab is not one.
+   * A MINI APP ASKED FOR A TURN: something happened in it — a person moved in its view, a
+   * condition it watches came true — and the agent answers through the mini app's own tools
+   * (`features/mini-apps/mini-app-wake.ts`). Its own source because "External" named a webhook,
+   * and a person playing a game in a mini app tab is not one.
    */
-  | 'plugin'
+  | 'mini-app'
   /** A background (non-blocking) delegate child finished — its final result is
    * pushed back into the parent session as this wake. */
   | 'subagent'
@@ -175,13 +175,13 @@ export interface WakeRequest {
   /** Tools the woken turn may not call (a fixed loop may not reschedule itself). */
   extraDisabledTools?: string[]
   /**
-   * The plugin whose tools the woken turn answers with. They ride the wake's row onto the wire
+   * The mini app whose tools the woken turn answers with. They ride the wake's row onto the wire
    * for the turn that answers it (`runtime/run/surface-tools.ts`) — a turn woken to call a
-   * plugin's tool used to find it deferred and spend its first call fetching the schema. They
+   * mini app's tool used to find it deferred and spend its first call fetching the schema. They
    * are NOT kept on the session: a board that woke the chat once used to leave its tool on every
    * later request, long after the board was closed.
    */
-  plugin?: string
+  miniApp?: string
   /**
    * WAKES OF ONE STREAM, ANSWERED ONCE: wakes that share this key and wait in the queue together
    * open ONE turn, their contents in order. For a producer that fires in bursts — a monitor's
@@ -217,7 +217,7 @@ export interface DelegatedReport {
  * runtime state (process-local, not persisted) — carried on the session list +
  * detail so a page reload restores the strip, and pushed live via
  * `session_queue.updated`. `kind` distinguishes a user message ('user', the
- * removable kind) from an internal wake ('wake' — a /loop tick, a plugin, a report).
+ * removable kind) from an internal wake ('wake' — a /loop tick, a mini app, a report).
  */
 export interface SessionQueueItem {
   id: string

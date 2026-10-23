@@ -171,10 +171,10 @@ export function createChatServicePhase({
     providerConnectionsService,
     lspManager,
     mediaStore,
-    // Plugin capabilities resolve PER USE: resolving once at boot would freeze hot
+    // Mini app capabilities resolve PER USE: resolving once at boot would freeze hot
     // enable/disable in both directions. An absent provider degrades gracefully.
     documentExtract: () => capabilityRegistry.get(CAP_DOCUMENT_EXTRACT),
-    // Resolve-only vault port for runtime features that name a secret — the plugin host's seam.
+    // Resolve-only vault port for runtime features that name a secret — the mini app host's seam.
     resolveSecret: async (userId, key) => {
       const value = await secretsStore.resolve(userId, key, {
         actorType: 'agent',
@@ -257,7 +257,7 @@ export function createChatServicePhase({
     sanitizeText: (...args) => secretExposureShield.redactText(...args),
     // Quiet @-link resolution: every binding sent with a message resolves HERE, at send time,
     // through Context Fabric in the session's own scope and workspace — one path and one
-    // admission policy for a linked file, a snippet and a plugin's resource alike.
+    // admission policy for a linked file, a snippet and a mini app's resource alike.
     resolveContextBindings: async (userId, session, bindings) =>
       captureContextBindings(
         contextManager,

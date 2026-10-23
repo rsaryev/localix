@@ -107,10 +107,10 @@ export interface ResourceProviderRegistry {
   /** Register a provider. A DUPLICATE provider is rejected and the FIRST registration wins
    *  — the rule its sibling registries already enforce (context-fabric's `tryRegister`,
    *  ws-frame's by-construction reject, search-provider's). This used to overwrite, so a
-   *  plugin claiming `git` silently shadowed the core provider registered at boot.
+   *  mini app claiming `git` silently shadowed the core provider registered at boot.
    *  Returns false when the provider was already taken by someone else. */
   register(provider: ResourceRefProvider): boolean
-  /** Remove a provider — hot plugin disable. Pass the provider object you registered, not a bare
+  /** Remove a provider — hot mini app disable. Pass the provider object you registered, not a bare
    *  provider id: with an id alone a disable removed whatever currently sits under it, which
    *  on a collision is somebody else's live provider — including CORE's, which nothing
    *  re-registers. Unknown/foreign entries are a no-op. */
@@ -133,7 +133,7 @@ export interface ResourceProviderRegistry {
   expand(userId: string, uri: string, scope?: ResourceRefScope): Promise<ResourceExpansion>
 }
 
-/** Host policy for plugin-owned resource calls. All fields are optional so the
+/** Host policy for mini-app-owned resource calls. All fields are optional so the
  *  zero-argument registry API remains source- and runtime-compatible. */
 export interface ResourceProviderRegistryOptions {
   /** Wall-clock deadline for one provider list/expand call. */

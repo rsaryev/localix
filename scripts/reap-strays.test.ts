@@ -18,7 +18,7 @@ describe('reap-strays: what counts as left behind', () => {
 
   test('a bun test is stray only past the deadline, however it was launched', () => {
     const rows = ps([
-      ` 10  5 25:00 bun test scripts/plugin-ui-artifact.test.ts`,
+      ` 10  5 25:00 bun test scripts/mini-app-ui-artifact.test.ts`,
       ` 11  5 03:00 bun test apps/ui/src`,
       ` 12  5 30:00 /Users/me/.bun/bin/bun x test`,
     ])

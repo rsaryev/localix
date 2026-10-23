@@ -1,30 +1,31 @@
 import type { MiniAppUiHost } from '@localixai/mini-app-sdk/ui'
 
 /**
- * The lifecycle of plugin UI inside a RUNNING workbench: load, replace and unload one
- * plugin while everything else stays mounted.
+ * The lifecycle of mini app UI inside a RUNNING workbench: load, replace and unload one
+ * mini app while everything else stays mounted.
  *
- * A plugin's UI is a built artifact the API serves (`PluginRecord.ui`), not host source. The host
- * converges on the capability snapshot: a plugin whose artifact revision moved is replaced, a
- * plugin that left the enabled set is unloaded, and nothing else is touched. It is the same path
- * in development and in a packaged app — there is no page reload anywhere in it. (Plugin UI used
- * to be compiled into the host and add-only, so a changed plugin could only be shown by reloading
- * the whole app, which the dev server did mid-turn.)
+ * A mini app's UI is a built artifact the API serves (`MiniAppRecord.ui`), not host source. The
+ * host converges on the capability snapshot: a mini app whose artifact revision moved is replaced,
+ * a mini app that left the enabled set is unloaded, and nothing else is touched. It is the same
+ * path in development and in a packaged app — there is no page reload anywhere in it. (Mini app UI
+ * used to be compiled into the host and add-only, so a changed mini app could only be shown by
+ * reloading the whole app, which the dev server did mid-turn.)
  *
  * The rules, each answering a failure:
- *  - Import first, swap second. A plugin being edited is broken most of the time; a failed import
+ *  - Import first, swap second. A mini app being edited is broken most of the time; a failed import
  *    keeps the running version, and nothing is removed until a replacement is in hand.
  *  - A registration that throws midway is rolled back and the previous module re-registered, so a
- *    bad build costs the plugin its update, never its presence.
+ *    bad build costs the mini app its update, never its presence.
  *  - Styles swap with the module: the new sheets are loaded before the old registrations go, and
  *    the old sheets leave after, so a replaced panel never renders unstyled.
- *  - One queue per plugin; the latest wanted revision wins and stale queued work is skipped.
- *  - Failures are per plugin and reported, never thrown: one broken plugin cannot hide the rest.
+ *  - One queue per mini app; the latest wanted revision wins and stale queued work is skipped.
+ *  - Failures are per mini app and reported, never thrown: one broken mini app cannot hide the
+ *    rest.
  */
 
-type PluginUiModule = { registerUi?: (host: MiniAppUiHost) => void }
+type MiniAppUiModule = { registerUi?: (host: MiniAppUiHost) => void }
 
-/** One enabled plugin's artifact, from the snapshot. */
+/** One enabled mini app's artifact, from the snapshot. */
 export interface MiniAppUiArtifact {
   name: string
   entry: string
@@ -32,18 +33,18 @@ export interface MiniAppUiArtifact {
   revision: string
 }
 
-/** Told which plugin's UI failed to load, so a broken one is diagnosable. */
-export type MiniAppUiFailureReporter = (pluginName: string, error: unknown) => void
+/** Told which mini app's UI failed to load, so a broken one is diagnosable. */
+export type MiniAppUiFailureReporter = (miniAppName: string, error: unknown) => void
 
 export interface MiniAppUiRuntimeDeps {
   /** Import one artifact entry at one revision. */
   importEntry: (artifact: MiniAppUiArtifact) => Promise<unknown>
   /** Attach an artifact's stylesheets; resolves once they applied, with their removal. */
   mountStyles: (artifact: MiniAppUiArtifact) => Promise<() => void>
-  /** The ownership-stamping registration façade for one plugin. */
-  hostFor: (pluginName: string) => MiniAppUiHost
-  /** Take back everything `pluginName` registered. */
-  remove: (pluginName: string) => void
+  /** The ownership-stamping registration façade for one mini app. */
+  hostFor: (miniAppName: string) => MiniAppUiHost
+  /** Take back everything `miniAppName` registered. */
+  remove: (miniAppName: string) => void
   /** Registries changed without a capability publish: every surface re-reads. */
   announce: () => void
   report: MiniAppUiFailureReporter
@@ -51,28 +52,28 @@ export interface MiniAppUiRuntimeDeps {
 
 export interface MiniAppUiRuntime {
   /**
-   * Converge on exactly these enabled artifacts. `settled` hears each plugin as ITS work ends
+   * Converge on exactly these enabled artifacts. `settled` hears each mini app as ITS work ends
    * (registered, failed or unchanged), so one slow artifact does not hold back the others. `ok`
    * says whether the wanted revision is what is registered now: a failed import is not a load,
-   * and a caller that counted it as one closed the plugin's tabs as unavailable.
+   * and a caller that counted it as one closed the mini app's tabs as unavailable.
    */
   reconcile(
     artifacts: readonly MiniAppUiArtifact[],
-    settled?: (pluginName: string, ok: boolean) => void,
+    settled?: (miniAppName: string, ok: boolean) => void,
   ): Promise<void>
-  /** Name → revision of every plugin whose UI is registered right now. */
+  /** Name → revision of every mini app whose UI is registered right now. */
   loaded(): ReadonlyMap<string, string>
 }
 
 interface Loaded {
   revision: string
-  module: PluginUiModule
+  module: MiniAppUiModule
   unmountStyles: () => void
 }
 
 export function createMiniAppUiRuntime(deps: MiniAppUiRuntimeDeps): MiniAppUiRuntime {
   const loaded = new Map<string, Loaded>()
-  /** What the latest reconcile wants per plugin: a revision, or null for "not loaded". */
+  /** What the latest reconcile wants per mini app: a revision, or null for "not loaded". */
   const wanted = new Map<string, string | null>()
   const queues = new Map<string, Promise<void>>()
 
@@ -85,15 +86,15 @@ export function createMiniAppUiRuntime(deps: MiniAppUiRuntimeDeps): MiniAppUiRun
     return next
   }
 
-  function register(name: string, module: PluginUiModule): void {
+  function register(name: string, module: MiniAppUiModule): void {
     module.registerUi?.(deps.hostFor(name))
   }
 
   async function install(artifact: MiniAppUiArtifact): Promise<void> {
-    let module: PluginUiModule
+    let module: MiniAppUiModule
     let unmountStyles: () => void
     try {
-      module = (await deps.importEntry(artifact)) as PluginUiModule
+      module = (await deps.importEntry(artifact)) as MiniAppUiModule
       unmountStyles = await deps.mountStyles(artifact)
     } catch (error) {
       deps.report(artifact.name, error)
@@ -115,7 +116,7 @@ export function createMiniAppUiRuntime(deps: MiniAppUiRuntimeDeps): MiniAppUiRun
           register(artifact.name, previous.module)
           loaded.set(artifact.name, previous)
         } catch {
-          // It registered once; if it cannot again, the plugin stays out until the next build.
+          // It registered once; if it cannot again, the mini app stays out until the next build.
           previous.unmountStyles()
         }
       }

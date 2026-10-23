@@ -5,7 +5,7 @@ import { localixUri, parseLocalixUri } from '@localixai/mini-app-sdk/navigation'
  * sides import, so a writer and a reader can never disagree on a spelling.
  */
 
-/** The router's mount path: `/rpc/<plugin name>`, so it is this plugin's own. */
+/** The router's mount path: `/rpc/<mini app name>`, so it is this mini app's own. */
 export const ROUTE_PATH = '/rpc/kanban'
 
 /** One board per chat session (`scope: 'session'`). */

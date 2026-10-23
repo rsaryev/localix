@@ -52,7 +52,7 @@ export function createSourceControlRoutes(service: SourceControlService, forge: 
    * Turn a thrown `ApiError` into the shared `{ error: { code, message } }` body.
    *
    * This router was the only bundled one without it, and the consequence was
-   * invisible from here: the backend host mounts a plugin app and serves it with
+   * invisible from here: the backend host mounts a mini app's Hono app and serves it with
    * `wrapper.fetch(...)`, so an uncaught throw is caught by THAT app's own error
    * handling, never the host's. Every carefully typed git refusal — the whole
    * point of `git_branch_not_merged`, `git_rebase_conflict`, `git_merge_conflict`,

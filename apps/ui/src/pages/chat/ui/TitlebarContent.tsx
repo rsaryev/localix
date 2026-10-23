@@ -28,7 +28,7 @@ export function TitlebarContent({
   const titlebarWidth = useElementWidth(rowRef)
   const hint = useChordHint()
 
-  // A plugin app (`shared/lib/pluginApp.ts`): its own project is the root of the path, the
+  // A standalone app (`shared/lib/standaloneApp.ts`): its own project is the root of the path, the
   // conversation crumb is the app's history, and New chat is the one way in to a new one there,
   // since the app has no rail or sidebar.
   if (app) {

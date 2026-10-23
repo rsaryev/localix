@@ -19,7 +19,7 @@
     },
     "create": {
       "description": "Build a personal adaptive course in Learning Studio",
-      "prompt": "Build a Learning Studio course for $ARGUMENTS. Call learning_course action guide for the format and\nquality checklist. Use preferences already given; ask together for missing preferences that change\nthe route. Do not ask about generation strategy: prepare one complete module at a time. Write a\ncompact outline JSON and use action draft with outline_path to create the pending hierarchy. Author\nevery lesson in the first module in depth, then validate and activate the course. The plugin can\nrequest later modules as the learner advances; inspect generation failures if the tutor wake does\nnot reach an agent. Keep long prose in Markdown."
+      "prompt": "Build a Learning Studio course for $ARGUMENTS. Call learning_course action guide for the format and\nquality checklist. Use preferences already given; ask together for missing preferences that change\nthe route. Do not ask about generation strategy: prepare one complete module at a time. Write a\ncompact outline JSON and use action draft with outline_path to create the pending hierarchy. Author\nevery lesson in the first module in depth, then validate and activate the course. The mini app can\nrequest later modules as the learner advances; inspect generation failures if the tutor wake does\nnot reach an agent. Keep long prose in Markdown."
     },
     "lesson": {
       "description": "Generate one pending lesson from the current course outline",

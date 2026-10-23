@@ -9,7 +9,7 @@ import type { ExchangeInfo, PrecisionMode } from './contracts'
 import type { MarketFees } from './fees'
 
 /**
- * Narrow READ-ONLY port the market_data tool needs — the plugin's `register()`
+ * Narrow READ-ONLY port the market_data tool needs — the mini app's `register()`
  * (`backend/index.ts`) adapts the READ methods of the trading service onto it, so this
  * file never imports the service (or a driver). By construction the port has NO
  * order-placing / cancelling method: it is STRUCTURALLY impossible for this tool to

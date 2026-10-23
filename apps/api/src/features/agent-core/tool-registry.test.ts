@@ -106,7 +106,7 @@ describe('createRuntimeToolRegistry', () => {
 
   test('one descriptor policy drives desktop availability and capability-less absence', () => {
     const uiOnlyTool = {
-      name: 'plugin_ui_only',
+      name: 'mini_app_ui_only',
       description: 'Open an interactive workbench panel',
       inputSchema: {} as never,
       activeVerb: 'Opening panel',
@@ -119,13 +119,13 @@ describe('createRuntimeToolRegistry', () => {
     const direct = createRuntimeToolRegistry({
       policy: { extraTools: [uiOnlyTool], toolSurface: desktop },
     })
-    expect(direct.toolNames).toContain('plugin_ui_only')
+    expect(direct.toolNames).toContain('mini_app_ui_only')
 
     // A surface without the capability gets no roster entry at all.
     const terminal = createRuntimeToolRegistry({
       policy: { extraTools: [uiOnlyTool], toolSurface: capabilityLess },
     })
-    expect(terminal.toolNames).not.toContain('plugin_ui_only')
+    expect(terminal.toolNames).not.toContain('mini_app_ui_only')
   })
 
   test('BUILTIN_TOOL_NAMES is the canonical reserved set (no dups; covers the core tools)', () => {

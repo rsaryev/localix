@@ -2,7 +2,7 @@
 export type FileViewerKind = 'pdf' | 'document' | 'spreadsheet' | 'editor'
 
 // The extension → media-type vocabulary and the binary sniff are shared with the server and
-// plugin backends, so they live in the web-standard `../media-types` leaf.
+// mini app backends, so they live in the web-standard `../media-types` leaf.
 export {
   BINARY_SNIFF_LENGTH,
   CSV_CONTENT_TYPE,

@@ -89,7 +89,7 @@ function requestShellResync(): void {
  * `tauri dev` and `dev:workspace` start the API and Vite side by side, and the page
  * paints while the API is still booting. With no barrier every startup read failed
  * into the retry ladder, whose later steps are 5s and 10s: one measured launch
- * reached `plugins.ready` 19.7s after paint, after 5–8 failed requests, for an API
+ * reached `miniApps.ready` 19.7s after paint, after 5–8 failed requests, for an API
  * that was answering within ~2s. So a dev build polls the API's own `/health` — the
  * origin the launcher attests, armed by `shared/api/internal.ts` — at a short
  * interval, once, and then stays open: an API restart later is the ladder's job.

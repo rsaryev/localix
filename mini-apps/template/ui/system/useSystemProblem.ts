@@ -3,7 +3,7 @@
  *
  * The dashboard wrote each failure as a hand-made `<p role="alert">` in a warning colour: three
  * copies with their own wording, gone the moment the next poll succeeded, never in the Event
- * Center where a person could read it afterwards. A copied plugin inherits whatever this file
+ * Center where a person could read it afterwards. A copied mini app inherits whatever this file
  * does, so it reports through the host's `ProblemLine` contract instead.
  *
  * A hook, not a component: the surfaces decide what to draw with early branches, and a publisher

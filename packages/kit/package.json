@@ -2,7 +2,7 @@
   "name": "@localixai/kit",
   "version": "0.1.0",
   "private": true,
-  "description": "The Localix UI kit: the primitives, recipes and tokens the app and every plugin build their surfaces from.",
+  "description": "The Localix UI kit: the primitives, recipes and tokens the app and every mini app build their surfaces from.",
   "keywords": [
     "components",
     "design-system",

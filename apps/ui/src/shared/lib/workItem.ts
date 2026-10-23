@@ -5,7 +5,7 @@
 // renderer + reviver) supplies behavior, so this stays pure + unit-testable.
 
 /**
- * The closed host-owned vocabulary. Runtime plugin kinds remain open below, but
+ * The closed host-owned vocabulary. Runtime mini app kinds remain open below, but
  * every policy that must cover host UI can key off this value instead of copying
  * an uncheckable string union. Adding a host renderer starts here and therefore
  * makes every `Record<CoreWorkItemKind, ...>` fail until its metadata is supplied.
@@ -15,7 +15,7 @@ export const CORE_WORK_ITEM_KINDS = [
   'file',
   'diff',
   'preview',
-  'plugin-view',
+  'mini-app-view',
   'live-file-change',
   // One agent's profile — who it is, what it runs on, what it may use — opened wherever that
   // agent is named. It is a tab rather than a dialog inside Settings because the same identity

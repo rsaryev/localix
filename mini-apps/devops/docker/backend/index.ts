@@ -1,5 +1,5 @@
 /**
- * Docker provider backend inside the bundled DevOps Workspace plugin.
+ * Docker provider backend inside the bundled DevOps Workspace mini app.
  *
  * `register()` contributes a lazily chosen backend (`createLazyDockerBackend`): the Docker Engine
  * API when the daemon is directly reachable, the CLI as the compatibility fallback, re-probed so a

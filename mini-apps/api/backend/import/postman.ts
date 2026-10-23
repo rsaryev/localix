@@ -1,7 +1,7 @@
 /**
  * Postman v2 collection → RequestSpecs. The format most teams already have.
  *
- * Three things matter for this plugin's flat request model:
+ * Three things matter for this mini app's flat request model:
  *
  *   1. AUTH INHERITS (see ./postman/auth.ts). The parent chain is threaded through the import so a
  *      collection-level bearer reaches each flat saved request.
@@ -87,7 +87,7 @@ function convertBody(
       return { mimeType: 'multipart/form-data', form: pairs(body.formdata) }
     case 'graphql': {
       // A GraphQL call IS a JSON POST — `{query, variables}` over `application/json` is what
-      // graphql-over-http specifies and what this always put on the wire, back when the plugin
+      // graphql-over-http specifies and what this always put on the wire, back when the mini app
       // carried an `application/graphql` marker and translated it at send time. The marker is
       // gone; the bytes are identical. So a Postman GraphQL request still imports, and still
       // sends exactly what it sent before — it is simply a POST with a JSON body now, which is
@@ -258,7 +258,7 @@ export function postmanNotes(text: string): string[] {
   if (dynamic.length > 0) {
     notes.push(
       `This collection uses Postman's DYNAMIC variables (${dynamic.map((d) => `\`{{$${d}}}\``).join(', ')}), ` +
-        'which are generated per send and which this plugin does not implement — they are NOT resolved and NOT ' +
+        'which are generated per send and which this mini app does not implement — they are NOT resolved and NOT ' +
         'reported as missing, so a request using one would send the literal text. Replace each with a real value, ' +
         'or with an environment variable you define.',
     )

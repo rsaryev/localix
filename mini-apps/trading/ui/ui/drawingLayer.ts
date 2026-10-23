@@ -138,7 +138,7 @@ export function createDrawingLayer(): DrawingLayer {
         }
         case 'marker':
           // Trade markers are NOT layer objects: they render through lightweight-charts'
-          // native series-marker plugin, owned by ChartCanvas (`seriesMarkersOf`).
+          // native series-marker mini app, owned by ChartCanvas (`seriesMarkersOf`).
           break
       }
     }

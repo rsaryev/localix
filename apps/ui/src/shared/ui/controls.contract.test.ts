@@ -17,8 +17,8 @@ import { expectNoRawOwners } from '@localixai/kit/testing/ownership-contract'
  * A primitive the product routes around no longer owns its behavior: a raw `<select>` brings its
  * own keyboard model, a hand-written `role="switch"` its own announcement. The kit proves its own
  * sources keep each rule (`packages/kit/src/controls/*.contract.test.ts`), but the kit never reads
- * the host, so the same detectors run over the app and the plugins here. Every primitive that owns
- * a raw control lives in the kit now, so no host file is exempt.
+ * the host, so the same detectors run over the app and the mini apps here. Every primitive that
+ * owns a raw control lives in the kit now, so no host file is exempt.
  */
 const REPO_ROOT = new URL('../../../../../', import.meta.url).pathname
 const HOST_ROOTS = ['apps/ui/src', 'mini-apps'] as const

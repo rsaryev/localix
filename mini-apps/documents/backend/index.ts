@@ -1,5 +1,5 @@
 /**
- * Documents workbench — bundled first-party plugin backend.
+ * Documents workbench — bundled first-party mini app backend.
  *
  * `register(ctx)` gets (or lazily builds) the process-wide documents + table
  * services and contributes them as two `BackendSubsystem`s: the boot-time loader
@@ -10,9 +10,9 @@
  *     and attachment-spill text previews. There is no `documents.generate` capability:
  *     generation is reachable through `POST /rpc/documents/generate`, not a model tool.
  *
- * Host couplings arrive through the GENERIC plugin host seam only: media bytes
+ * Host couplings arrive through the GENERIC mini app host seam only: media bytes
  * in/out via `ctx.host.media` (a dropped document's bytes; persisting generated
- * docx/xlsx/pdf). The plugin never imports the core media store.
+ * docx/xlsx/pdf). The mini app never imports the core media store.
  */
 import {
   CAP_DOCUMENT_EXTRACT,
@@ -26,8 +26,8 @@ import { createDocumentsRoutes } from './documents/routes'
 import { createTableRoutes } from './table/routes'
 import { createDocumentsResourceProvider } from './resource-provider'
 
-/** The generic host capabilities this plugin reads off the register context —
- *  a structural subset of the host `MiniAppContext` (see the database plugin). */
+/** The generic host capabilities this mini app reads off the register context —
+ *  a structural subset of the host `MiniAppContext` (see the database mini app). */
 interface DocumentsRegisterContext extends Pick<MiniAppContext, 'dataDir' | 'userId'> {
   host?: DocumentsHost
   /** The session's working directory — relative tool paths resolve against it. */
@@ -75,7 +75,7 @@ export function register(ctx: DocumentsRegisterContext): MiniAppRegistration {
         routeMount: { path: '/rpc/table', app: createTableRoutes(tableService) },
       },
     ],
-    // NO agent tools. This plugin is a WORKBENCH and a set of capability ports, not a
+    // NO agent tools. This mini app is a WORKBENCH and a set of capability ports, not a
     // model surface: the Table tab, the document viewers, the `doc` resource provider and
     // the search/context providers are all user-facing, and `extract` is consumed by the
     // core `read` tool (office/PDF files come back as text instead of a binary refusal).

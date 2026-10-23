@@ -2,10 +2,10 @@
  * `{{ name }}` variable substitution. Pure: no environment, no storage, no engine.
  *
  * THIS IS DELIBERATELY NOT A TEMPLATE LANGUAGE. A real template engine, with tags, filters and a
- * plugin extension surface, brings a sandboxing question with it.
+ * mini app extension surface, brings a sandboxing question with it.
  *
  * We have one problem: pointing a saved request at dev instead of prod. Importing a template
- * engine to solve it would import that sandboxing question too, into a plugin whose whole job is
+ * engine to solve it would import that sandboxing question too, into a mini app whose whole job is
  * sending user-supplied strings at the network. Substitution is the feature; an engine is a
  * language. So: no dependency, no tags, no filters, no expressions — a name maps to a string.
  *

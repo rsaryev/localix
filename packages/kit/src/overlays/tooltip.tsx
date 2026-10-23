@@ -43,7 +43,7 @@ function Tooltip({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Root
 
   // The app root provides one shared delay group so moving across adjacent IDE
   // actions reveals their labels without restarting the delay. Keep an isolated
-  // fallback for plugin previews, tests and independently mounted surfaces.
+  // fallback for mini app previews, tests and independently mounted surfaces.
   return hasSharedProvider ? root : <TooltipProvider>{root}</TooltipProvider>
 }
 

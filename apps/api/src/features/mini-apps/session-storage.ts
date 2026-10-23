@@ -4,20 +4,20 @@ import { join, resolve } from 'node:path'
 import { defaultDbFile, localixHome, resolveDbFile } from '../../lib/env'
 
 /**
- * THE ONE PLACE A PLUGIN KEEPS DATA THAT BELONGS TO ONE CHAT SESSION — and the guarantee that it
+ * THE ONE PLACE A MINI APP KEEPS DATA THAT BELONGS TO ONE CHAT SESSION — and the guarantee that it
  * goes when that session does.
  *
  * The defect this layout exists to stop: session data used to live inside the session's sandbox
- * (`workspace/<session>/.localix/plugin-data/<plugin>`), so it was removed only as a side effect
+ * (`workspace/<session>/.localix/mini-app-data/<app>`), so it was removed only as a side effect
  * of the sandbox cleanup — which, on purpose, never touches a session filed in a project (its
  * directory is the user's) or a sub-session (it shares the root's). A game played in a project
  * chat outlived the chat. So session data has its OWN tree, keyed by session first:
  *
- *   ~/.localix/session-data/<session id>/<plugin name>/
+ *   ~/.localix/session-data/<session id>/<mini app name>/
  *
  * Deleting a session removes `session-data/<id>` for every session in the deleted subtree
- * ({@link discardSessionData}), for every plugin at once, without knowing which plugins wrote
- * there — a new plugin is covered the day it ships, and no plugin can opt out by forgetting.
+ * ({@link discardSessionData}), for every mini app at once, without knowing which mini apps wrote
+ * there — a new mini app is covered the day it ships, and no mini app can opt out by forgetting.
  */
 
 const SAFE_MINI_APP_NAME = /^[a-z0-9][a-z0-9._-]{0,127}$/
@@ -34,7 +34,7 @@ export function sessionDataRoot(databaseFile = resolveDbFile()): string {
     : `${database}.session-data`
 }
 
-/** One session's folder: every plugin's data for it lives beneath. */
+/** One session's folder: every mini app's data for it lives beneath. */
 export function sessionDataDir(sessionId: string, root = sessionDataRoot()): string {
   if (!sessionId.trim()) throw new Error('A session id is required')
   // Encoded, so an id can never name a path outside its own folder ("..", "a/b").
@@ -51,7 +51,7 @@ export function miniAppSessionDataDir(
 }
 
 /**
- * The plugin's folder for a session, created on first use. `authorize` runs FIRST and rejects a
+ * The mini app's folder for a session, created on first use. `authorize` runs FIRST and rejects a
  * session the user does not own or that no longer exists — before anything touches the disk, so
  * a stale id can never recreate the folder of a deleted session.
  */
@@ -69,10 +69,11 @@ export async function resolveMiniAppSessionDataDir(options: {
 }
 
 /**
- * Remove every plugin's data for `sessionIds` — a deleted session and its whole subtree. Runs after
- * the session rows are gone, so the ownership check above already refuses these ids and nothing can
- * write the folders back. Best-effort per folder: a folder that will not delete (an open handle)
- * must not fail the deletion of the session itself, nor stop the others from being removed.
+ * Remove every mini app's data for `sessionIds` — a deleted session and its whole subtree. Runs
+ * after the session rows are gone, so the ownership check above already refuses these ids and
+ * nothing can write the folders back. Best-effort per folder: a folder that will not delete (an
+ * open handle) must not fail the deletion of the session itself, nor stop the others from being
+ * removed.
  */
 export async function discardSessionData(
   sessionIds: readonly string[],
@@ -120,7 +121,7 @@ export async function sweepOrphanSessionData(input: {
 }
 
 /**
- * The folders `app` already has, one per session, without creating any: what a plugin's
+ * The folders `app` already has, one per session, without creating any: what a mini app's
  * cross-chat cleanup walks (a deleted agent unassigned from every board).
  */
 export async function listMiniAppSessionDataDirs(

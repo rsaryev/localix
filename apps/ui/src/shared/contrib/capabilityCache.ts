@@ -192,7 +192,7 @@ async function sendRuleChanges(
     changes,
   })
   // The workbench's own scope goes through the singleton, so the rail, the capability
-  // gates and the plugin UI all converge from this one document. Any other scope —
+  // gates and the mini app UI all converge from this one document. Any other scope —
   // Settings pointed at a project that is not open — lands in this cache instead.
   const adopted = await adoptCapabilitySnapshot(next)
   if (!adopted) {

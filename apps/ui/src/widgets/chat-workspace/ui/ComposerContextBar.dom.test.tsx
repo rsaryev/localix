@@ -34,7 +34,7 @@ test('the agent pill is in the context row beside the project, above the compose
   ).sessions[0]!
   useChatStore.setState({ sessions: [linked], allSessions: [linked] })
   registerSessionSurface({
-    pluginName: 'linked-agent-test',
+    miniAppName: 'linked-agent-test',
     surface: 'composer.context',
     Component: LinkedAgentTerminalPill,
   })

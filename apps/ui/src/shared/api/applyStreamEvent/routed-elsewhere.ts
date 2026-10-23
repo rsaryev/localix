@@ -6,7 +6,7 @@
  *
  *   child_session.*   → `store.ts` `_applyStreamEvent` short-circuits these into the sub-session
  *                       list before this reducer is ever called.
- *   plugin.command / preview.* / fs.changed / terminal.opened
+ *   mini-app.command / preview.* / fs.changed / terminal.opened
  *                     → `agent-runtime.ts` `handleSessionEvent` routes these to their buses
  *                       (`sessionEventRouters.ts`) and returns before reaching the store.
  *   terminal.state    → `agent-runtime.ts` hands it to the terminal feature's state store
@@ -33,7 +33,7 @@ export const routedElsewhereReducers: StreamReducers<
   | 'resources.changed'
   | 'child_session.updated'
   | 'child_session.activity'
-  | 'plugin.command'
+  | 'mini-app.command'
   | 'preview.updated'
   | 'preview.command'
   | 'preview.closed'
@@ -48,7 +48,7 @@ export const routedElsewhereReducers: StreamReducers<
   'resources.changed': untouched,
   'child_session.updated': untouched,
   'child_session.activity': untouched,
-  'plugin.command': untouched,
+  'mini-app.command': untouched,
   'preview.updated': untouched,
   'preview.command': untouched,
   'preview.closed': untouched,

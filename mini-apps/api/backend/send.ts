@@ -96,7 +96,7 @@ export { RequestTimeoutError } from './send-errors'
  *
  * It lives HERE now, in the one function that fetches, because that is the only place no caller
  * can forget. `ALLOW_PRIVATE_NETWORK` deliberately does NOT relax it: that setting is about
- * reaching your own LAN, and no value of it should make `file://` a thing this plugin does.
+ * reaching your own LAN, and no value of it should make `file://` a thing this mini app does.
  */
 async function guard(url: URL, allowPrivate: boolean, resolveHost?: HostResolver): Promise<void> {
   // `blocked`, not `bad_request`: both of these are well-formed urls we are REFUSING. The route
@@ -112,7 +112,7 @@ async function guard(url: URL, allowPrivate: boolean, resolveHost?: HostResolver
   if (problem) {
     throw new SendError(
       'blocked',
-      `${problem}. Enable "Allow private/internal hosts" in the REST API Client plugin settings to call it anyway.`,
+      `${problem}. Enable "Allow private/internal hosts" in the REST API Client mini app settings to call it anyway.`,
     )
   }
 }
@@ -140,7 +140,7 @@ export async function sendRequest(spec: RequestSpec, opts: SendOptions): Promise
   // nothing, so a send from the workbench hung for exactly as long as the server did. Measured:
   // `timeoutMs: 200` returned after 3011ms.
   //
-  // That is the third time this plugin has split a guarantee across two send paths and lost one
+  // That is the third time this mini app has split a guarantee across two send paths and lost one
   // (see `guard` and `unfilledPathParams` above). An option a function accepts and ignores is
   // worse than one it does not accept: the caller has no way to notice.
   //
@@ -151,7 +151,7 @@ export async function sendRequest(spec: RequestSpec, opts: SendOptions): Promise
 
   // Refused BEFORE the fetch, and here rather than in a caller, for the same reason `guard` lives
   // in this function: every send funnels through it, so this is the one place no caller can forget
-  // — a saved request, an imported one and a one-shot all arrive here. The lesson this plugin has
+  // — a saved request, an imported one and a one-shot all arrive here. The lesson this mini app has
   // already paid for twice is that a check living next to the feature that motivated it is a check
   // the composition escapes.
   // Before `buildUrl`, because `new URL` throws a raw TypeError and that TypeError was what the

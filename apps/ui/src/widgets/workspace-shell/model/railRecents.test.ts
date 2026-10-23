@@ -65,7 +65,7 @@ describe('resolveRecents', () => {
     expect(state.ids).toEqual(['view:b', 'view:a'])
   })
 
-  it('hides an entry whose plugin is disabled, and restores it when the plugin returns', () => {
+  it('hides an entry whose mini app is disabled, and restores it when the mini app returns', () => {
     const state = touchRecent(emptyRailRecents(), 'view:gone')
     expect(resolveRecents(state, known(), pinned())).toEqual([])
     expect(resolveRecents(state, known('view:gone'), pinned())).toEqual(['view:gone'])

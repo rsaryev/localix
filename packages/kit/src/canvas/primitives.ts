@@ -1,7 +1,7 @@
 /**
  * The flow library's names a board's own nodes need, re-exported from the host's ONE copy.
  *
- * A plugin that bundled its own `@xyflow/react` would get a second store context: its `Handle`
+ * A mini app that bundled its own `@xyflow/react` would get a second store context: its `Handle`
  * would look for a provider the host's `Canvas` never gave it, and throw. So a node reaches the
  * library only through here (`scripts/canvas-surface-guard.test.ts`), and a name is added when a
  * board needs it — this list is the review, not an `export *`.

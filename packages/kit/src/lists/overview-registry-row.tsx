@@ -8,7 +8,7 @@ export interface OverviewRegistryMetric {
 }
 
 /**
- * Flat navigation row shared by plugin overview screens. The workbench already
+ * Flat navigation row shared by mini app overview screens. The workbench already
  * supplies the containing surface, so this keeps hierarchy in typography,
  * dividers, and hover rather than nesting another card.
  */

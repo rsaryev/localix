@@ -17,7 +17,7 @@ export type RealtimeConnection = 'live' | 'reconnecting'
  *
  * `eventSocket` has published `onDisconnect`/`onConnected` all along with NOTHING
  * consuming either, so a sustained outage looked exactly like an idle app: the
- * transcript, the session roster and every plugin surface simply stopped
+ * transcript, the session roster and every mini app surface simply stopped
  * updating, with no way to tell "nothing is happening" from "nothing is
  * arriving". The run watchdog rescues a stalled agent run from the DB, but that
  * is recovery, not feedback.

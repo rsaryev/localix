@@ -1,7 +1,7 @@
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /**
- * Shared stat-dashboard primitives, reused by the Usage page and plugin stats
+ * Shared stat-dashboard primitives, reused by the Usage page and mini app stats
  * tabs (through the kit). They carry the visual identity (quiet rules, a mono
  * number and a tracked uppercase label) so every dashboard stays in lockstep.
  *

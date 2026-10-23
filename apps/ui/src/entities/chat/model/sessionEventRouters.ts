@@ -12,21 +12,21 @@ import { miniAppCommandBus } from '@localixai/mini-app-sdk/ui/commands'
 import { miniAppSessionEventBus } from './miniAppSessionEventBus'
 
 /**
- * Typed plugin→UI command (`session.emitCommand` on the backend): dispatch to the
- * per-plugin sink registry, never through the store. The frame is
+ * Typed mini app→UI command (`session.emitCommand` on the backend): dispatch to the
+ * per-mini-app sink registry, never through the store. The frame is
  * replayable and non-coalescing; the bus dedups replays by `commandId`. The router
  * only computes the focus-policy input — whether the command came from the ACTIVE
- * session — so plugin sinks can honor "background sessions must not steal focus"
+ * session — so mini app sinks can honor "background sessions must not steal focus"
  * without importing the chat store.
  */
 export function routeMiniAppCommand(
   sessionId: string,
-  parsed: Extract<AgentStreamEvent, { type: 'plugin.command' }>,
+  parsed: Extract<AgentStreamEvent, { type: 'mini-app.command' }>,
 ): void {
   miniAppCommandBus.publish(
     {
       sessionId,
-      plugin: parsed.plugin,
+      miniApp: parsed.miniApp,
       channel: parsed.channel,
       payload: parsed.payload,
       commandId: parsed.commandId,
@@ -34,7 +34,7 @@ export function routeMiniAppCommand(
     },
     openPolicy(useChatStore.getState().activeSessionId, sessionId) === 'focus',
     // Reply seam for AWAITED commands (`emitCommandWithReply`): the sink's answer
-    // rides the `plugin-command-result` WS RPC back to settle the server-side
+    // rides the `mini-app-command-result` WS RPC back to settle the server-side
     // pending promise, correlated by this frame's commandId. Fire-and-forget —
     // a lost socket just lets the server time out to its honest noReply.
     (payload) => void backendClient.miniAppCommandResult(parsed.commandId, payload).catch(() => {}),
@@ -42,7 +42,7 @@ export function routeMiniAppCommand(
 }
 
 /**
- * Forward a SAFE session-lifecycle signal to bridged plugin views. The SDK
+ * Forward a SAFE session-lifecycle signal to bridged mini app views. The SDK
  * allow-list ({@link forwardableSessionPhase}) decides which internal event
  * types may cross and under which phase — only run start/completed/failed, and
  * only their phase + session id (never tool payloads, error text or secrets).

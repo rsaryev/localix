@@ -23,9 +23,10 @@ const top: ContainerTop = {
   processes: [['42', 'node server.js']],
 }
 
-// The panels render the host's problem line. The plugin preload binds its double, but the combined
-// `bun test plugins` run loads no plugin preload, so the suite binds what it renders itself — and
-// gives the binding back, so the next plugin's suite meets its own host, not these stubs.
+// The panels render the host's problem line. The mini app preload binds its double, but the
+// combined `bun test mini-apps` run loads no mini app preload, so the suite binds what it renders
+// itself — and gives the binding back, so the next mini app's suite meets its own host, not these
+// stubs.
 let unbindDoubles: () => void
 beforeAll(() => {
   unbindDoubles = bindMiniAppUiTestDoubles()

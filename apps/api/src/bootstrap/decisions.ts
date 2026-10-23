@@ -1,7 +1,7 @@
 /**
  * Composition of decisions: the decision service over the listed models (`decisions/models.ts`),
  * each reached through the user's provider connections, the usage ledger and the API log. Needs only infra, so it is built beside semantic search and handed to
- * every consumer — group routing (chat) and plugin hosts (`host.decisions`).
+ * every consumer — group routing (chat) and mini app hosts (`host.decisions`).
  */
 import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../db/types'

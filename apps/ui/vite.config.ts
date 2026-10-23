@@ -6,7 +6,7 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills'
 import path from 'node:path'
 import { resolveBuildStamp } from '../../scripts/build-stamp.mjs'
 import { failOnNodeBuiltin } from './build/fail-on-node-builtin'
-import { refreshPluginSharedModules } from './build/refresh-plugin-shared-modules'
+import { refreshMiniAppSharedModules } from './build/refresh-mini-app-shared-modules'
 
 // No THIRD_PARTY_NOTICES here: this dist is only ever the desktop app's embedded frontend, and
 // the app already carries the same notices (the same `stageThirdPartyNotices` call) in its
@@ -44,8 +44,8 @@ export default defineConfig(({ command }) => {
       host: process.env.VITE_DEV_HOST || undefined,
       fs: {
         // Workspace packages (`packages/*`, `vendor/*`) resolve to real paths OUTSIDE this
-        // Vite root (apps/ui); allow the monorepo root so they load in dev. Plugins are not
-        // among them: a plugin's UI is a built artifact the API serves, never host source.
+        // Vite root (apps/ui); allow the monorepo root so they load in dev. Mini apps are not
+        // among them: a mini app's UI is a built artifact the API serves, never host source.
         allow: [path.resolve(__dirname, '../..')],
       },
       proxy: {
@@ -80,7 +80,7 @@ export default defineConfig(({ command }) => {
       // either way); the profiler reports it as 95% of one phase because it is the only plugin
       // resolving in that phase, not because the phase is expensive.
       failOnNodeBuiltin(),
-      refreshPluginSharedModules(),
+      refreshMiniAppSharedModules(),
       nodePolyfills({ include: ['events', 'process', 'buffer'] }),
       react(),
       // React Compiler only in production builds. In dev it injects a per-component

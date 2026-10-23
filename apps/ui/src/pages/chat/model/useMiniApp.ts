@@ -7,22 +7,25 @@ import {
   subscribeMiniAppActivation,
 } from '@/shared/contrib/miniAppActivation'
 import { viewStateStore } from '@/shared/lib/view-state/store'
-import { ensurePluginAppProject } from '@/shared/lib/pluginAppProject'
+import { ensureStandaloneAppProject } from '@/shared/lib/standaloneAppProject'
 import { toast } from '@/shared/lib/notify'
 import {
-  pluginAppViewState,
-  postToPluginApp,
-  rememberPluginAppSession,
-  type PluginAppContext,
-} from '@/shared/lib/pluginApp'
+  standaloneAppViewState,
+  postToStandaloneApp,
+  rememberStandaloneAppSession,
+  type StandaloneAppContext,
+} from '@/shared/lib/standaloneApp'
 import type { ResolvedTheme } from '@/shared/theme/useTheme'
 import { openPageWorkItem } from './openPageWorkItem'
-import { appConversation, startConversation } from './pluginAppConversation'
-import { reportPluginAppAvailable, reportPluginAppUnavailable } from './pluginAppProblem'
+import { appConversation, startConversation } from './standaloneAppConversation'
+import {
+  reportStandaloneAppAvailable,
+  reportStandaloneAppUnavailable,
+} from './standaloneAppProblem'
 
-interface PluginAppOptions {
+interface StandaloneAppOptions {
   hasHydrated: boolean
-  /** The enabled plugins once the capability snapshot is known; null before. */
+  /** The enabled mini apps once the capability snapshot is known; null before. */
   enabledMiniAppNames: ReadonlySet<string> | null
   activeSessionId: string | null
   goToSession: (id: string, options?: { project?: string }) => void
@@ -30,19 +33,19 @@ interface PluginAppOptions {
 }
 
 /**
- * Run the page as a plugin app (`shared/lib/pluginApp.ts`): open the app's conversation, show the
- * plugin's own screen in it, and keep the native window told which conversation and theme it is
- * showing. Inert in the workspace, where `app` is null.
+ * Run the page as a standalone app (`shared/lib/standaloneApp.ts`): open the app's conversation,
+ * show the mini app's own screen in it, and keep the native window told which conversation and
+ * theme it is showing. Inert in the workspace, where `app` is null.
  */
 export function useMiniApp(
-  app: PluginAppContext | null,
+  app: StandaloneAppContext | null,
   {
     hasHydrated,
     enabledMiniAppNames,
     activeSessionId,
     goToSession,
     resolvedTheme,
-  }: PluginAppOptions,
+  }: StandaloneAppOptions,
 ): { newConversation: (() => void) | null; projectId: string | null } {
   const [projectId, setProjectId] = useState<string | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(null)
@@ -51,7 +54,7 @@ export function useMiniApp(
   useEffect(() => {
     if (!app || !hasHydrated) return
     let live = true
-    ensurePluginAppProject(app.projectDir, app.name)
+    ensureStandaloneAppProject(app.projectDir, app.name)
       .then(async (project) => {
         const conversation = await appConversation(app, project)
         if (!live) return
@@ -79,30 +82,30 @@ export function useMiniApp(
   useEffect(() => {
     if (!app || !projectId || !activeSessionId || activeProjectId !== projectId) return
     setSessionId(activeSessionId)
-    rememberPluginAppSession(app.plugin, activeSessionId)
-    viewStateStore.set(pluginAppViewState(app.plugin), { sessionId: activeSessionId })
+    rememberStandaloneAppSession(app.miniApp, activeSessionId)
+    viewStateStore.set(standaloneAppViewState(app.miniApp), { sessionId: activeSessionId })
   }, [app, projectId, activeSessionId, activeProjectId])
 
-  // The plugin's screen is the rail entry it contributes; it registers when its UI has loaded.
+  // The mini app's screen is the rail entry it contributes; it registers when its UI has loaded.
   // Each of the app's conversations gets it once; closing it there is the person's choice.
   const activation = useSyncExternalStore(subscribeMiniAppActivation, miniAppActivationVersion)
   const opened = useRef(new Set<string>())
   useEffect(() => {
     if (!app || !sessionId || activeSessionId !== sessionId || opened.current.has(sessionId)) return
     void activation
-    const screen = railViewletRegistry.list().find((viewlet) => viewlet.pluginName === app.plugin)
+    const screen = railViewletRegistry.list().find((viewlet) => viewlet.miniAppName === app.miniApp)
     if (!screen) return
     opened.current.add(sessionId)
     openPageWorkItem(sessionId, { workKind: screen.kind, id: screen.kind, title: screen.title })
   }, [app, sessionId, activeSessionId, activation])
 
-  // A plugin turned off or removed in Localix leaves the app with only its chat: one standing
-  // problem while that lasts, settled when the plugin is back.
-  const available = app && enabledMiniAppNames ? enabledMiniAppNames.has(app.plugin) : null
+  // A mini app turned off or removed in Localix leaves the app with only its chat: one standing
+  // problem while that lasts, settled when the mini app is back.
+  const available = app && enabledMiniAppNames ? enabledMiniAppNames.has(app.miniApp) : null
   useEffect(() => {
     if (!app || available === null) return
-    if (available) reportPluginAppAvailable(app)
-    else reportPluginAppUnavailable(app)
+    if (available) reportStandaloneAppAvailable(app)
+    else reportStandaloneAppUnavailable(app)
   }, [app, available])
 
   // Requests waiting on the person in the app's conversation badge its Dock icon.
@@ -110,7 +113,7 @@ export function useMiniApp(
     sessionId ? state.items.filter((item) => item.sessionId === sessionId).length : 0,
   )
   useEffect(() => {
-    if (app) postToPluginApp({ type: 'badge', text: waiting > 0 ? String(waiting) : null })
+    if (app) postToStandaloneApp({ type: 'badge', text: waiting > 0 ? String(waiting) : null })
   }, [app, waiting])
 
   // New chat in an app starts it over in a new conversation of its project (a new game, an empty
@@ -128,10 +131,10 @@ export function useMiniApp(
   }, [app, projectId, goToSession])
 
   useEffect(() => {
-    if (app) postToPluginApp({ type: 'theme', dark: resolvedTheme === 'dark' })
+    if (app) postToStandaloneApp({ type: 'theme', dark: resolvedTheme === 'dark' })
   }, [app, resolvedTheme])
   useEffect(() => {
-    if (app) postToPluginApp({ type: 'session', id: sessionId })
+    if (app) postToStandaloneApp({ type: 'session', id: sessionId })
   }, [app, sessionId])
   return { newConversation: app ? newConversation : null, projectId }
 }

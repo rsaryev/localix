@@ -466,14 +466,14 @@ describe('UiLocationRegistry', () => {
     expect(registry.revision()).toBe(2)
   })
 
-  test('publishes plugin activation changes as live singleton catalog revisions', () => {
+  test('publishes mini app activation changes as live singleton catalog revisions', () => {
     const startRevision = uiLocationRevision()
     let notifications = 0
     const unsubscribe = subscribeUiLocations(() => {
       notifications += 1
     })
 
-    setEnabledMiniAppNames(new Set(['ui-location-plugin']))
+    setEnabledMiniAppNames(new Set(['ui-location-mini-app']))
     expect(uiLocationRevision()).toBe(startRevision + 1)
     expect(notifications).toBe(1)
 
@@ -484,12 +484,12 @@ describe('UiLocationRegistry', () => {
     unsubscribe()
   })
 
-  test('keeps plugin-owned definitions registered while gating every public lookup', () => {
+  test('keeps mini-app-owned definitions registered while gating every public lookup', () => {
     const registry = createUiLocationRegistry()
     expect(
       registry.register(
-        location('plugin.open', {
-          pluginName: 'ui-location-plugin',
+        location('mini-app.open', {
+          miniAppName: 'ui-location-mini-app',
           exposure: { search: true },
         }),
       ),
@@ -497,22 +497,22 @@ describe('UiLocationRegistry', () => {
 
     setEnabledMiniAppNames(null)
     expect(registry.list()).toEqual([])
-    expect(registry.search('plugin')).toEqual([])
-    expect(registry.build('plugin.open')).toBeNull()
-    expect(registry.resolve('localix://ui/work-item/plugin.open/open')).toBeNull()
+    expect(registry.search('mini-app')).toEqual([])
+    expect(registry.build('mini-app.open')).toBeNull()
+    expect(registry.resolve('localix://ui/work-item/mini-app.open/open')).toBeNull()
 
-    setEnabledMiniAppNames(new Set(['ui-location-plugin']))
-    expect(registry.list().map((entry) => entry.id)).toEqual(['plugin.open'])
-    expect(registry.search('plugin').map((entry) => entry.id)).toEqual(['plugin.open'])
-    expect(registry.build('plugin.open')).toBe('localix://ui/work-item/plugin.open/open')
-    expect(registry.resolve('localix://ui/work-item/plugin.open/open')?.descriptor.id).toBe(
-      'plugin.open',
+    setEnabledMiniAppNames(new Set(['ui-location-mini-app']))
+    expect(registry.list().map((entry) => entry.id)).toEqual(['mini-app.open'])
+    expect(registry.search('mini-app').map((entry) => entry.id)).toEqual(['mini-app.open'])
+    expect(registry.build('mini-app.open')).toBe('localix://ui/work-item/mini-app.open/open')
+    expect(registry.resolve('localix://ui/work-item/mini-app.open/open')?.descriptor.id).toBe(
+      'mini-app.open',
     )
 
     setEnabledMiniAppNames(new Set())
     expect(registry.list()).toEqual([])
-    expect(registry.build('plugin.open')).toBeNull()
-    expect(registry.resolve('localix://ui/work-item/plugin.open/open')).toBeNull()
+    expect(registry.build('mini-app.open')).toBeNull()
+    expect(registry.resolve('localix://ui/work-item/mini-app.open/open')).toBeNull()
   })
 })
 
@@ -566,7 +566,7 @@ describe('rejection is reported, not swallowed', () => {
     const registry = createUiLocationRegistry()
     const { result, warnings } = captureWarnings(() =>
       registry.batch(() => {
-        // A group registration — plugin views and panels register exactly like this.
+        // A group registration — mini app views and panels register exactly like this.
         if (!registry.register(valid as never)) return false
         return registry.register({ ...valid, id: 'diag.bad', title: '' } as never)
       }),
@@ -595,14 +595,14 @@ describe('rejection is reported, not swallowed', () => {
 describe('miniAppLocationId', () => {
   const VALID_ID = /^[a-z0-9][a-z0-9:._-]{0,127}$/
 
-  test('normalizes plugin-supplied names that the registry would otherwise reject', () => {
-    // camelCase is ordinary in JS and the plugin contract accepts any string, so the
+  test('normalizes mini-app-supplied names that the registry would otherwise reject', () => {
+    // camelCase is ordinary in JS and the mini app contract accepts any string, so the
     // previous raw interpolation produced an invalid id for a perfectly normal manifest.
-    expect(miniAppLocationId('plugin-view.open', 'sample:sqlConsole')).toBe(
-      'plugin-view.open.sample:sqlconsole',
+    expect(miniAppLocationId('mini-app-view.open', 'sample:sqlConsole')).toBe(
+      'mini-app-view.open.sample:sqlconsole',
     )
-    expect(miniAppLocationId('plugin-panel.open', 'Sample:Chart View')).toBe(
-      'plugin-panel.open.sample:chart-view',
+    expect(miniAppLocationId('mini-app-panel.open', 'Sample:Chart View')).toBe(
+      'mini-app-panel.open.sample:chart-view',
     )
   })
 
@@ -618,30 +618,30 @@ describe('miniAppLocationId', () => {
       `${'x'.repeat(300)}:v`,
       'emoji:🚀view',
     ]) {
-      expect(miniAppLocationId('plugin-view.open', name)).toMatch(VALID_ID)
+      expect(miniAppLocationId('mini-app-view.open', name)).toMatch(VALID_ID)
     }
   })
 
   test('keeps an already-valid name byte-identical apart from the prefix', () => {
-    expect(miniAppLocationId('plugin-view.open', 'sample:container-logs')).toBe(
-      'plugin-view.open.sample:container-logs',
+    expect(miniAppLocationId('mini-app-view.open', 'sample:container-logs')).toBe(
+      'mini-app-view.open.sample:container-logs',
     )
   })
 
   test('a normalized id registers, so one odd view no longer withdraws the group', () => {
     const registry = createUiLocationRegistry()
     const view = (fullName: string) => ({
-      id: miniAppLocationId('plugin-view.open', fullName),
-      uri: `localix://ui/plugin/view/${encodeURIComponent(fullName)}`,
+      id: miniAppLocationId('mini-app-view.open', fullName),
+      uri: `localix://ui/mini-app/view/${encodeURIComponent(fullName)}`,
       title: `View ${fullName}`,
-      keywords: ['plugin'],
+      keywords: ['mini app'],
       effect: 'read' as const,
-      surface: 'plugin' as const,
+      surface: 'mini-app' as const,
       exposure: { search: true },
       params: {},
       resolve: () => ({
         kind: 'work-item' as const,
-        workKind: 'plugin-view',
+        workKind: 'mini-app-view',
         id: fullName,
         title: fullName,
       }),
@@ -658,6 +658,6 @@ describe('miniAppLocationId', () => {
         .list()
         .map((entry) => entry.id)
         .sort(),
-    ).toEqual(['plugin-view.open.sample:container-logs', 'plugin-view.open.sample:sqlconsole'])
+    ).toEqual(['mini-app-view.open.sample:container-logs', 'mini-app-view.open.sample:sqlconsole'])
   })
 })

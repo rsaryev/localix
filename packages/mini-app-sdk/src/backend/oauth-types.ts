@@ -1,8 +1,8 @@
 /**
- * Generic OAuth contracts used by the plugin SDK's account-connection helper.
+ * Generic OAuth contracts used by the mini app SDK's account-connection helper.
  * Concrete flows are supplied as DATA (a manifest spec consumed by the engine
  * in `oauth-manifest.ts`); the host generates state/PKCE and runs the loopback
- * callback or device-code polling without coupling plugins to a provider SDK.
+ * callback or device-code polling without coupling mini apps to a provider SDK.
  */
 
 /** Credential returned by an OAuth exchange/refresh. Static-key providers return only accessToken. */

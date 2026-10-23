@@ -74,7 +74,7 @@ export function searchCommands(
   return hits.sort((a, b) => b.score - a.score).slice(0, limit)
 }
 
-/** Addressable frontend surfaces; descriptors contain no models, plugins, or result data. */
+/** Addressable frontend surfaces; descriptors contain no models, mini apps, or result data. */
 export function searchUiLocations(
   query: string,
   locations: readonly UiLocationDescriptor[] = listUiLocations({ exposure: 'search' }),

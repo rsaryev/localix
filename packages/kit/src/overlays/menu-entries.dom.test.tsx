@@ -141,12 +141,12 @@ describe('the described-menu walker', () => {
 
   test('the seams an empty spread leaves are gone by the time anything renders', async () => {
     // `[open, —, ...rows, —, ...actions]` with no rows and no actions: the shape every bundled
-    // plugin builds, on a session with nothing to list.
+    // mini app builds, on a session with nothing to list.
     const view = await openMenu([
       { id: 'open', label: 'Open', onSelect: () => {} },
       { separator: true },
       { separator: true },
-      { id: 'settings', label: 'Plugin settings…', onSelect: () => {} },
+      { id: 'settings', label: 'Mini app settings…', onSelect: () => {} },
       { separator: true },
     ])
     try {
@@ -165,7 +165,7 @@ describe('the described-menu walker', () => {
     ])
     try {
       expect(view.menu?.textContent).toContain('Running')
-      // A disabled item is what plugins reached for instead, and it is focusable and announced as
+      // A disabled item is what mini apps reached for instead, and it is focusable and announced as
       // a command. A label is neither.
       expect(view.menu?.querySelectorAll('[role="menuitem"]')).toHaveLength(1)
     } finally {

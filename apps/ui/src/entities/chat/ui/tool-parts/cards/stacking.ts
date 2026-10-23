@@ -22,7 +22,7 @@ export const READ_ONLY_MIN_COUNT = 2
 
 /**
  * Bucket consecutive tool-backed items into foldable runs: read-only calls merge across tool
- * names, and consecutive calls of one stackable tool (write, edit, a plugin tool, …) merge
+ * names, and consecutive calls of one stackable tool (write, edit, a mini app tool, …) merge
  * with each other.
  *
  * A call joins its group WHILE IT RUNS. It used to stand apart until it completed, so every call

@@ -2,8 +2,8 @@
  * Context Fabric adapter for `localix://resource/api` requests — what makes an `@`-mentioned request land in the
  * model's context automatically, rather than only being expandable on demand.
  *
- * The provider is NOT passed: the factory derives it from the expander, which is this plugin's own
- * `ResourceRefProvider` and therefore the authority on the namespace it owns.
+ * The provider is NOT passed: the factory derives it from the expander, which is this mini app's
+ * own `ResourceRefProvider` and therefore the authority on the namespace it owns.
  *
  * SENSITIVITY: `project`, the factory's default, is the honest label. A saved request is not
  * `public` — its url and headers describe a private API, and a `${secret:KEY}` reference names a

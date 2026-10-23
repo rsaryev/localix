@@ -8,7 +8,7 @@ import { withAppViewLine } from './native-app-view'
 const BOARD = 'localix://resource/fixture-board/s1'
 const offer = { type: 'ui.navigate', uri: BOARD, label: 'Open board' }
 
-function pluginTool(result: AgentToolResult): AgentTool {
+function miniAppTool(result: AgentToolResult): AgentTool {
   const tools = asToolArray({
     name: 'fixture_board',
     description: 'Fixture board',
@@ -18,9 +18,9 @@ function pluginTool(result: AgentToolResult): AgentTool {
   return tools[0]!
 }
 
-describe('native plugin app views', () => {
-  test('names an offered destination to the model through the plugin tool adapter', async () => {
-    const result = await pluginTool({ content: 'Created LX-1.', details: offer }).execute('c1', {})
+describe('native mini app views', () => {
+  test('names an offered destination to the model through the mini app tool adapter', async () => {
+    const result = await miniAppTool({ content: 'Created LX-1.', details: offer }).execute('c1', {})
 
     expect(result.content).toBe(`Created LX-1.\nApp view: ${BOARD}`)
     expect(result.details).toEqual(offer)

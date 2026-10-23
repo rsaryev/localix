@@ -9,8 +9,8 @@ the agent answers with the mini app's own tool.
 1. You move on the board: click a piece, then the square it goes to. A pawn reaching the last rank
    asks which piece it becomes. The board asks the host to wake the chat it belongs to, with the
    position, the FEN, the legal moves and the tools that answer it (`ctx.host.wake`).
-2. The host puts the `chess` tool on that chat's wire and starts a turn, marked "via Plugin" in the
-   transcript.
+2. The host puts the `chess` tool on that chat's wire and starts a turn, marked "via Mini app" in
+   the transcript.
 3. The agent calls `chess` with action `move` and one of the legal moves, in SAN. While the game
    goes on that move ends its turn — the board shows it, so no chat line is needed. When a game
    ends, the result appears over the board.

@@ -48,7 +48,7 @@ describe('resolveOpenScope', () => {
     'problems',
     'message-replay',
     'global-search',
-    'plugin-view',
+    'mini-app-view',
   ] as const
 
   test('a session kind lands in the session its opener names', () => {

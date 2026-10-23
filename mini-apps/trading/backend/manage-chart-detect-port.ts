@@ -19,5 +19,5 @@ export interface ChartDetectPort {
 
 /** The UI command channel, when the run has one — detect only uses it for `auto_draw`. */
 export interface DetectCommandSink {
-  emitCommand?(plugin: string, channel: string, payload: ChartCommandPayload): void
+  emitCommand?(miniApp: string, channel: string, payload: ChartCommandPayload): void
 }

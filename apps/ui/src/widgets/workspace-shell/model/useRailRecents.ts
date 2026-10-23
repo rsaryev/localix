@@ -38,7 +38,7 @@ function persist(state: RailRecentsState): void {
  *
  * `knownIds` is the live set of available entry ids and `pinnedIds` those the user
  * placed by hand; both are filtered out at resolve time rather than on write, so a
- * disabled plugin's slot comes back when the plugin does.
+ * disabled mini app's slot comes back when the mini app does.
  */
 export function useRailRecents(
   knownIds: ReadonlySet<string>,

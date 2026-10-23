@@ -46,7 +46,7 @@ export interface ContainerEngineBackend {
   removeVolume(name: string, force: boolean): Promise<void>
   removeNetwork(id: string): Promise<void>
   prune(target: PruneTarget): Promise<PruneResult>
-  /** True when the `docker compose` CLI plugin is installed (cheap version probe). */
+  /** True when the `docker compose` CLI mini app is installed (cheap version probe). */
   composeAvailable(): Promise<boolean>
   /** Bring a Compose project up detached (`docker compose -p <project> up -d`). */
   composeUp(project: string): Promise<void>
@@ -213,7 +213,7 @@ export function createDockerBackend(options: DockerBackendOptions = {}): Contain
     },
     async composeAvailable() {
       // A cheap probe: `docker compose version` succeeds only when the Compose v2
-      // CLI plugin is present. Any failure (old docker, no plugin) ⇒ unavailable,
+      // CLI mini app is present. Any failure (old docker, no mini app) ⇒ unavailable,
       // never an error — the caller (service) memoizes this.
       try {
         await exec(['compose', 'version'])

@@ -12,7 +12,7 @@ import {
  * they surface as thrown errors so the bridge can post a correlated `error`.
  */
 
-const ctx = { pluginName: 'sample-plugin', projectId: '', panelName: 'demo' }
+const ctx = { miniAppName: 'sample-mini-app', projectId: '', panelName: 'demo' }
 
 function makeDeps(sessionId: string | null) {
   const sends: Array<{ sessionId: string; text: string }> = []
@@ -69,13 +69,13 @@ describe('createPanelActions', () => {
     expect(await actions.get('getContext')!(undefined, ctx)).toEqual({
       sessionId: 'session-7',
       theme: 'light',
-      plugin: 'sample-plugin',
+      miniApp: 'sample-mini-app',
       projectId: '',
       view: 'demo',
     })
   })
 
-  test("callBackend binds the mounted plugin, project, view, and the view's own session", async () => {
+  test("callBackend binds the mounted mini app, project, view, and the view's own session", async () => {
     const calls: unknown[] = []
     const actions = createPanelActions({
       ...makeDeps('session-7').deps,
@@ -95,7 +95,7 @@ describe('createPanelActions', () => {
     ).toEqual({ ok: true })
     expect(calls).toEqual([
       {
-        app: 'sample-plugin',
+        app: 'sample-mini-app',
         projectId: 'project-1',
         viewId: 'demo',
         sessionId: 'session-7',
@@ -107,7 +107,7 @@ describe('createPanelActions', () => {
 
   test('callBackend rejects malformed actions before crossing the host boundary', () => {
     const actions = createPanelActions(makeDeps('s1').deps)
-    expect(actions.get('callBackend')!({ action: '../other-plugin' }, ctx)).rejects.toThrow(
+    expect(actions.get('callBackend')!({ action: '../other-mini-app' }, ctx)).rejects.toThrow(
       'valid non-empty',
     )
   })
@@ -120,16 +120,16 @@ describe('createPanelActions', () => {
       readViewState: (scope: string) => store.get(scope) ?? null,
       writeViewState: (scope: string, value: unknown) => void store.set(scope, value),
     }
-    const actions = createPanelActions(deps, 'sample-plugin')
+    const actions = createPanelActions(deps, 'sample-mini-app')
     expect(await actions.get('getViewState')!(undefined, ctx)).toBeNull()
     expect(await actions.get('setViewState')!({ tab: 2 }, ctx)).toEqual({ saved: true })
     expect(await actions.get('getViewState')!(undefined, ctx)).toEqual({ tab: 2 })
-    // The scope embeds plugin+view, so another view's slot is untouched.
+    // The scope embeds mini app+view, so another view's slot is untouched.
     expect(store.size).toBe(1)
-    expect([...store.keys()][0]).toContain('sample-plugin')
+    expect([...store.keys()][0]).toContain('sample-mini-app')
   })
 
-  test('view state is ISOLATED per (plugin, view) — no cross-plugin read', async () => {
+  test('view state is ISOLATED per (mini app, view) — no cross-mini-app read', async () => {
     const store = new Map<string, unknown>()
     const deps = {
       getSessionId: () => 's1',
@@ -137,23 +137,23 @@ describe('createPanelActions', () => {
       readViewState: (scope: string) => store.get(scope) ?? null,
       writeViewState: (scope: string, value: unknown) => void store.set(scope, value),
     }
-    const xCtx = { pluginName: 'plugin-x', projectId: '', panelName: 'view' }
-    const yCtx = { pluginName: 'plugin-y', projectId: '', panelName: 'view' }
-    await createPanelActions(deps, 'plugin-x').get('setViewState')!({ secret: 'x' }, xCtx)
+    const xCtx = { miniAppName: 'mini-app-x', projectId: '', panelName: 'view' }
+    const yCtx = { miniAppName: 'mini-app-y', projectId: '', panelName: 'view' }
+    await createPanelActions(deps, 'mini-app-x').get('setViewState')!({ secret: 'x' }, xCtx)
     // Y invokes getViewState with its OWN context → sees nothing of X's.
     expect(
-      await createPanelActions(deps, 'plugin-y').get('getViewState')!(undefined, yCtx),
+      await createPanelActions(deps, 'mini-app-y').get('getViewState')!(undefined, yCtx),
     ).toBeNull()
     expect(
-      await createPanelActions(deps, 'plugin-x').get('getViewState')!(undefined, xCtx),
+      await createPanelActions(deps, 'mini-app-x').get('getViewState')!(undefined, xCtx),
     ).toEqual({
       secret: 'x',
     })
   })
 
-  test('the read-only context built-ins are available to EVERY plugin (authz unchanged)', () => {
+  test('the read-only context built-ins are available to EVERY mini app (authz unchanged)', () => {
     const anon = createPanelActions(makeDeps('s1').deps)
-    const scoped = createPanelActions(makeDeps('s1').deps, 'anyPlugin')
+    const scoped = createPanelActions(makeDeps('s1').deps, 'anyMiniApp')
     for (const table of [anon, scoped]) {
       expect(table.get('getContext')).toBeDefined()
       expect(table.get('getViewState')).toBeDefined()
@@ -162,7 +162,7 @@ describe('createPanelActions', () => {
     }
   })
 
-  test('publishMessageContext validates sandbox input and forces plugin provenance', async () => {
+  test('publishMessageContext validates sandbox input and forces mini app provenance', async () => {
     const published: unknown[] = []
     const actions = createPanelActions({
       ...makeDeps('s1').deps,
@@ -192,7 +192,7 @@ describe('createPanelActions', () => {
       bindings: [
         {
           kind: 'context',
-          source: 'plugin',
+          source: 'mini-app',
           target: {
             kind: 'resource',
             token: '@resource:localix://resource/demo/current/view',
@@ -210,47 +210,47 @@ describe('createPanelActions', () => {
     expect(published.at(-1)).toBeNull()
   })
 
-  test("a plugin's registered actions extend ITS table, but built-ins win a collision", async () => {
-    registerPanelAction('sample-plugin', 'customAction', () => 'custom-result')
-    registerPanelAction('sample-plugin', 'ping', () => 'shadowed!')
+  test("a mini app's registered actions extend ITS table, but built-ins win a collision", async () => {
+    registerPanelAction('sample-mini-app', 'customAction', () => 'custom-result')
+    registerPanelAction('sample-mini-app', 'ping', () => 'shadowed!')
     const { deps } = makeDeps('s1')
-    const actions = createPanelActions(deps, 'sample-plugin')
+    const actions = createPanelActions(deps, 'sample-mini-app')
     expect(await actions.get('customAction')!(undefined, ctx)).toBe('custom-result')
-    // A plugin registration must NOT shadow a built-in capability.
+    // A mini app registration must NOT shadow a built-in capability.
     expect(await actions.get('ping')!(undefined, ctx)).toBe('pong')
-    clearPanelActions('sample-plugin')
+    clearPanelActions('sample-mini-app')
   })
 
-  test('AUTHZ: a plugin cannot invoke another plugin’s custom action', async () => {
-    registerPanelAction('plugin-x', 'secretX', () => 'x-only')
-    registerPanelAction('plugin-y', 'secretY', () => 'y-only')
+  test('AUTHZ: a mini app cannot invoke another mini app’s custom action', async () => {
+    registerPanelAction('mini-app-x', 'secretX', () => 'x-only')
+    registerPanelAction('mini-app-y', 'secretY', () => 'y-only')
     const { deps } = makeDeps('s1')
     // X's table sees X's action but NOT Y's, and vice versa.
-    const tableX = createPanelActions(deps, 'plugin-x')
-    const tableY = createPanelActions(deps, 'plugin-y')
+    const tableX = createPanelActions(deps, 'mini-app-x')
+    const tableY = createPanelActions(deps, 'mini-app-y')
     expect(await tableX.get('secretX')!(undefined, ctx)).toBe('x-only')
     expect(tableX.get('secretY')).toBeUndefined()
     expect(await tableY.get('secretY')!(undefined, ctx)).toBe('y-only')
     expect(tableY.get('secretX')).toBeUndefined()
-    // Built-ins remain available to every plugin.
+    // Built-ins remain available to every mini app.
     expect(tableX.get('ping')).toBeDefined()
     expect(tableY.get('ping')).toBeDefined()
-    clearPanelActions('plugin-x')
-    clearPanelActions('plugin-y')
+    clearPanelActions('mini-app-x')
+    clearPanelActions('mini-app-y')
   })
 
-  test('clearPanelActions drops a plugin’s custom actions (disable/uninstall)', async () => {
+  test('clearPanelActions drops a mini app’s custom actions (disable/uninstall)', async () => {
     registerPanelAction('gone', 'act', () => 'v')
     expect(createPanelActions(makeDeps('s1').deps, 'gone').get('act')).toBeDefined()
     clearPanelActions('gone')
     expect(createPanelActions(makeDeps('s1').deps, 'gone').get('act')).toBeUndefined()
   })
 
-  test('with no pluginName, only the built-ins are available (no custom actions)', async () => {
-    registerPanelAction('somePlugin', 'act', () => 'v')
+  test('with no miniAppName, only the built-ins are available (no custom actions)', async () => {
+    registerPanelAction('someMiniApp', 'act', () => 'v')
     const actions = createPanelActions(makeDeps('s1').deps)
     expect(actions.get('act')).toBeUndefined()
     expect(actions.get('ping')).toBeDefined()
-    clearPanelActions('somePlugin')
+    clearPanelActions('someMiniApp')
   })
 })

@@ -247,7 +247,7 @@ export interface UiLocationDescriptor {
 
 /**
  * Minimal, read-only invariant published to the backend. It intentionally omits
- * UI callbacks, icons, plugin ownership, search keywords, and application data.
+ * UI callbacks, icons, mini app ownership, search keywords, and application data.
  */
 export interface UiAgentLocationDescriptor {
   uri: string

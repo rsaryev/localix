@@ -57,7 +57,7 @@ describe('notifyWatchedFiles — fan-out to a root’s servers', () => {
       [repo.record],
       [
         { path: '/repo/app/src-tauri/target/debug/deps/a.rlib', type: 'create' },
-        { path: '/repo/.turbo/dev-plugins/1/plugins/x/index.js', type: 'update' },
+        { path: '/repo/.turbo/dev-mini-apps/1/mini-apps/x/index.js', type: 'update' },
         { path: '/repo/node_modules/.bin/tsc', type: 'update' },
         { path: '/repo/web/.next/server/page.js', type: 'update' },
         { path: '/repo/src/targets.ts', type: 'update' },

@@ -8,7 +8,7 @@
  * known", and deleting a key silently broke every request that used it.
  *
  * So a save registers its references. That is the whole feature: no new permission, no value ever
- * read back. The plugin says "request `github-user` uses GITHUB_TOKEN in auth.token"; the vault
+ * read back. The mini app says "request `github-user` uses GITHUB_TOKEN in auth.token"; the vault
  * decides what to do with that.
  *
  * BEST-EFFORT ON PURPOSE. A failed bind must never fail the save: the request is valid and the

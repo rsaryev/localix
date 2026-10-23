@@ -3,13 +3,13 @@
  *
  * `register()` runs MORE THAN ONCE per process: once at boot (route/subsystem contribution
  * via `loadMiniAppBackends`) and again per agent run (the tool contribution, via the per-run
- * plugin loader). BOTH must share ONE `TradingService`, because the live-driver registry
+ * mini app loader). BOTH must share ONE `TradingService`, because the live-driver registry
  * (open exchange clients, their keep-alive sockets and rate-limiters) lives in memory on the
  * instance — a second instance would re-authenticate on every agent call and leak sockets.
  *
  * So the service is held on `globalThis` (surviving the fresh per-call module import the
- * plugin loader does) and built lazily on first `register()`. The one host capability it
- * needs — resolving `${secret:KEY}` credentials — arrives through the generic plugin
+ * mini app loader does) and built lazily on first `register()`. The one host capability it
+ * needs — resolving `${secret:KEY}` credentials — arrives through the generic mini app
  * `ctx.host.resolveSecret` seam; the boot-time load supplies the real resolver, and the
  * latest real host always wins.
  */
@@ -25,7 +25,7 @@ interface Holder {
   storeSecret?: StoreSecret
 }
 
-const GLOBAL_KEY = Symbol.for('localix.plugin.trading.services')
+const GLOBAL_KEY = Symbol.for('localix.mini-app.trading.services')
 
 function holder(): Holder {
   const g = globalThis as { [key: symbol]: Holder | undefined }

@@ -2,8 +2,8 @@
 // for a whole-schema export.
 //
 // The CREATE itself is NOT built here: it is one piece of knowledge with one owner,
-// `../../backend/ddl` — the same renderer the `localix://resource/db` resource expander uses (the plugin's
-// UI already imports its wire types across that boundary). What this module owns is the
+// `../../backend/ddl` — the same renderer the `localix://resource/db` resource expander uses (the
+// mini app's UI already imports its wire types across that boundary). What this module owns is the
 // HUMAN reading: a schema browser also shows explicit indexes, PostgreSQL table state/rules,
 // and native triggers.
 import {
@@ -57,7 +57,7 @@ export function buildTableDDL(table: DbTableSchema, dialect: DbDialect): string 
  *
  * There is deliberately no bounded "schema summary for the prompt" counterpart here. The
  * SQL console grounds edit prediction by sending the connection's `localix://resource/db` RESOURCE REFERENCE
- * (`useSqlNextEdit`), which the server expands through the plugin's registered Context Fabric
+ * (`useSqlNextEdit`), which the server expands through the mini app's registered Context Fabric
  * provider — so schema content, its provenance, and its sensitivity label are decided on the
  * server, and this UI never hands schema text to a model task itself.
  */

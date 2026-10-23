@@ -105,7 +105,7 @@ describe('wakeSession answers whether the wake landed', () => {
   })
 
   // A board that woke the chat once used to leave its tool on the session for good.
-  test('a plugin’s wake carries its plugin to the queued row, and writes nothing to the session', async () => {
+  test('a mini app’s wake carries its mini app to the queued row, and writes nothing to the session', async () => {
     const woke: Record<string, unknown>[] = []
     const record = { ...chat, activatedTools: ['github_create_issue'] } as SessionRecord
     const context = {
@@ -124,11 +124,11 @@ describe('wakeSession answers whether the wake landed', () => {
 
     const res = await wakeSession(
       context,
-      request('your move', { source: 'plugin', plugin: 'board-game' }),
+      request('your move', { source: 'mini-app', miniApp: 'board-game' }),
     )
 
     expect(res).toEqual({ delivered: true })
-    expect(woke[0]).toMatchObject({ plugins: ['board-game'] })
+    expect(woke[0]).toMatchObject({ miniApps: ['board-game'] })
     expect(record.activatedTools).toEqual(['github_create_issue'])
   })
 

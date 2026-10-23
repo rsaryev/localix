@@ -59,7 +59,7 @@ export interface RestRoutesDeps {
    * about status codes and redaction.
    */
   collection?: (cwd: string | undefined, sessionId?: string) => CollectionStore
-  /** Send settings, resolved from plugin config by the caller — routes own no config parsing. */
+  /** Send settings, resolved from mini app config by the caller — routes own no config parsing. */
   send: { timeoutMs: number; maxBodyBytes: number; allowPrivateNetwork: boolean }
 }
 
@@ -243,7 +243,7 @@ export function createRestRoutes(deps: RestRoutesDeps) {
         if (rendered.wire.problems.length > 0) {
           throw new RestError('bad_request', rendered.wire.problems.join(' '))
         }
-        // The request's timeout override wins over the plugin default. Validated positive HERE
+        // The request's timeout override wins over the mini app default. Validated positive HERE
         // rather than trusting the stored value: a spec from an import or an older schema could
         // carry a non-positive number the PUT schema would now reject, and the send path is the one
         // that must refuse to act on it.
