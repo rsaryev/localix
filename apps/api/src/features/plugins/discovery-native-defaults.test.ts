@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
 
 import { MANIFEST_FILE } from '@localixai/claude-plugin'
-import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
+import { LEGACY_MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 
 import { loadManifest } from './discovery'
@@ -47,7 +47,7 @@ describe('native entrypoint defaults', () => {
 
   test('a mini app keeps the tools/ convention and its declared backend', async () => {
     const byConvention = await load({
-      [MINI_APP_MANIFEST_FILE]: JSON.stringify({ name: 'app' }),
+      [LEGACY_MINI_APP_MANIFEST_FILE]: JSON.stringify({ name: 'app' }),
       'tools/index.ts': TOOLS,
     })
     expect(byConvention.entrypoints.toolEntries).toEqual([join(dir(), 'tools/index.ts')])
@@ -56,7 +56,10 @@ describe('native entrypoint defaults', () => {
   test('a mini app beside a Claude Code plugin runs its declared backend', async () => {
     const plugin = await load({
       [MANIFEST_FILE]: JSON.stringify({ name: 'both' }),
-      [MINI_APP_MANIFEST_FILE]: JSON.stringify({ name: 'both', backend: './backend/index.ts' }),
+      [LEGACY_MINI_APP_MANIFEST_FILE]: JSON.stringify({
+        name: 'both',
+        backend: './backend/index.ts',
+      }),
       'backend/index.ts': TOOLS,
     })
     expect(plugin.error).toBeUndefined()

@@ -17,7 +17,7 @@ import { findManifestPath } from './discovery'
 import { PLUGIN_NAME_RE } from './contracts'
 import { marketplaceOnlyHint } from './claude-code-marketplace'
 import { fetchGitTree } from './git-fetch'
-import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
+import { LEGACY_MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 import { publishExtensionTree, type ExtensionPublicationLifecycle } from '../ext/publish-tree'
 
 export interface MaterializedPluginSource {
@@ -114,7 +114,7 @@ async function manifestName(dir: string): Promise<string> {
   // A mini app names itself; else the plugin's manifest (Claude Code's, or a legacy one) does.
   const pluginManifest = await findManifestPath(dir)
   const declared =
-    (await readManifestName(join(dir, MINI_APP_MANIFEST_FILE))) ??
+    (await readManifestName(join(dir, LEGACY_MINI_APP_MANIFEST_FILE))) ??
     (pluginManifest ? await readManifestName(pluginManifest) : null)
   const hint = declared ? null : await marketplaceOnlyHint(dir)
   if (hint) throw new InvalidRequestError('plugin_claude_marketplace', hint)

@@ -2,7 +2,7 @@ import { join } from 'node:path'
 import { listSubdirs, pathExists } from '../ext/fs-discovery'
 import { isExtensionPublicationArtifact } from '../ext/publish-tree'
 import { COMPONENT_MARKERS } from '@localixai/claude-plugin'
-import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
+import { LEGACY_MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 import { locateManifest, PLUGIN_MANIFEST_CANDIDATES } from './manifest-locate'
 import { loadManifest } from './manifest-load'
 import { withWorkflowCommands } from './workflow-commands'
@@ -18,7 +18,12 @@ export async function findManifestPath(dir: string): Promise<string | null> {
  * one a Claude Code plugin — its manifest or a default component location (the manifest is
  * optional). A legacy `tools/` entrypoint counts too. Bare dirs (e.g. a `cache`) are skipped.
  */
-const EXTENSION_MARKERS = [...COMPONENT_MARKERS, MINI_APP_MANIFEST_FILE, 'plugin.json', 'tools']
+const EXTENSION_MARKERS = [
+  ...COMPONENT_MARKERS,
+  LEGACY_MINI_APP_MANIFEST_FILE,
+  'plugin.json',
+  'tools',
+]
 
 async function isPluginDir(dir: string): Promise<boolean> {
   // Check all markers in parallel — any one present makes this an extension.

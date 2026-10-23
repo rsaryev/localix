@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { MANIFEST_FILE } from '@localixai/claude-plugin'
-import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
+import { LEGACY_MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 import { LEGACY_MANIFEST_FILE } from './read'
 
 /**
@@ -21,7 +21,7 @@ const exists = (path: string) =>
   )
 
 export async function backendPointer(dir: string): Promise<BackendPointer> {
-  const app = join(dir, MINI_APP_MANIFEST_FILE)
+  const app = join(dir, LEGACY_MINI_APP_MANIFEST_FILE)
   if (await exists(app)) return { path: app, field: 'backend' }
   const legacy = join(dir, LEGACY_MANIFEST_FILE)
   if (!(await exists(join(dir, MANIFEST_FILE))) && (await exists(legacy)))

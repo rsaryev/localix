@@ -3,7 +3,7 @@ import { promises as fs } from 'node:fs'
 import { basename, join } from 'node:path'
 
 import { MANIFEST_FILE } from '@localixai/claude-plugin'
-import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
+import { LEGACY_MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 import { TEMPLATE_SCAFFOLD_FILE } from './kit-layout'
 import type { MiniAppKit } from './kit'
 import { writeMiniAppKitCatalog } from './kit-catalog'
@@ -206,7 +206,7 @@ export async function scaffoldUserMiniApp(input: ScaffoldInput): Promise<Scaffol
       description,
       version: '0.1.0',
     })
-    await patchManifest(staging, MINI_APP_MANIFEST_FILE, { name, defaultEnabled: undefined })
+    await patchManifest(staging, LEGACY_MINI_APP_MANIFEST_FILE, { name, defaultEnabled: undefined })
     await fs.writeFile(
       join(staging, 'README.md'),
       readme({ name, displayName, description, scaffold }),

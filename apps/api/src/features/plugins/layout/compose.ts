@@ -4,9 +4,9 @@ import {
   type PluginIssue,
 } from '@localixai/claude-plugin'
 import {
-  MINI_APP_MANIFEST_FILE,
-  miniAppManifestSchema,
-  type MiniAppManifest,
+  LEGACY_MINI_APP_MANIFEST_FILE,
+  legacyMiniAppManifestSchema,
+  type LegacyMiniAppManifest,
 } from '@localixai/mini-app-sdk/app-manifest'
 import { summarizeZodIssues } from '@localixai/mini-app-sdk/backend'
 import { fromClaudePlugin } from './claude-code'
@@ -65,7 +65,7 @@ export function composeManifest(files: ManifestFiles, folderName: string): Compo
     issues.push({
       severity: 'warning',
       path: 'plugin.json',
-      message: `plugin.json is ignored: this folder has ${files.app ? MINI_APP_MANIFEST_FILE : MANIFEST_FILE}`,
+      message: `plugin.json is ignored: this folder has ${files.app ? LEGACY_MINI_APP_MANIFEST_FILE : MANIFEST_FILE}`,
     })
 
   let plugin: Record<string, unknown> | null = null
@@ -79,19 +79,19 @@ export function composeManifest(files: ManifestFiles, folderName: string): Compo
   if (!files.app) return { layout, raw: plugin, issues }
 
   if ('readError' in files.app) return fail(layout, issues, files.app.readError)
-  const parsedApp = miniAppManifestSchema.safeParse(files.app.json)
+  const parsedApp = legacyMiniAppManifestSchema.safeParse(files.app.json)
   if (!parsedApp.success)
     return fail(
       layout,
       issues,
-      `Invalid ${MINI_APP_MANIFEST_FILE}: ${summarizeZodIssues(parsedApp.error).message}`,
+      `Invalid ${LEGACY_MINI_APP_MANIFEST_FILE}: ${summarizeZodIssues(parsedApp.error).message}`,
     )
   const app = parsedApp.data
   if (plugin && plugin.name !== app.name)
     return fail(
       layout,
       issues,
-      `${MINI_APP_MANIFEST_FILE} names "${app.name}" but its plugin is "${String(plugin.name)}": a mini app and its plugin share one name`,
+      `${LEGACY_MINI_APP_MANIFEST_FILE} names "${app.name}" but its plugin is "${String(plugin.name)}": a mini app and its plugin share one name`,
     )
   return { layout, raw: withMiniApp(plugin ?? { name: app.name }, app), issues }
 }
@@ -121,7 +121,7 @@ const LOCALIX = [
 
 function withMiniApp(
   plugin: Record<string, unknown>,
-  app: MiniAppManifest,
+  app: LegacyMiniAppManifest,
 ): Record<string, unknown> {
   // Written for Localix, not imported: the mini app's author gets the authoring nudges.
   const { origin: _origin, ...out }: Record<string, unknown> = { ...plugin }
