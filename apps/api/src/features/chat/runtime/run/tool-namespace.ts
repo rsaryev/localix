@@ -37,22 +37,30 @@ export function indexToolPresentation(
  * The provider/runtime boundary requires one descriptor per name. MCP tools are
  * discovered after the built-in/plugin registry, so they are the secondary
  * owner: a colliding MCP name must not reach either model or dispatch.
+ *
+ * A tool's model name (`modelName`) is a second name on the wire. One that another tool already
+ * answers to is dropped — the tool is offered under its own name instead, never left out.
  */
 export function claimSecondaryTools(
   primary: readonly AgentTool[],
   secondary: readonly AgentTool[],
 ): ClaimedToolSet {
   const claimed = new Set(primary.map((tool) => tool.name))
+  const wire = new Set(primary.flatMap((tool) => [tool.name, tool.modelName ?? tool.name]))
   const tools: AgentTool[] = []
   const conflicts = new Set<string>()
 
   for (const tool of secondary) {
-    if (claimed.has(tool.name)) {
+    if (claimed.has(tool.name) || wire.has(tool.name)) {
       conflicts.add(tool.name)
       continue
     }
     claimed.add(tool.name)
-    tools.push(tool)
+    wire.add(tool.name)
+    const { modelName, ...rest } = tool
+    const keep = modelName !== undefined && !wire.has(modelName)
+    if (keep) wire.add(modelName)
+    tools.push(keep || modelName === undefined ? tool : rest)
   }
 
   return {

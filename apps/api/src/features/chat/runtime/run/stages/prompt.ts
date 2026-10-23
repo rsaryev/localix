@@ -55,7 +55,8 @@ export async function buildRunPrompt(
     providerId,
     agentProfile: toolset.agentProfile,
     runtimeTools: toolset.runtimeTools,
-    wireToolNames: toolset.tools.map((tool) => tool.name),
+    // The roster names each tool as the model is offered it (an MCP tool's `modelName`).
+    wireToolNames: toolset.tools.map((tool) => tool.modelName ?? tool.name),
     loadedPlugins: inputs.loadedPlugins,
     frozenContext: inputs.frozenContext,
     pinnedSkills: inputs.pinnedSkills,

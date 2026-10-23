@@ -62,6 +62,27 @@ describe('toolset', () => {
     )
   })
 
+  test('a model name must be a provider tool name no other tool answers to', () => {
+    const query = {
+      ...makeTool(),
+      name: 'mcp_kit_db_query',
+      modelName: 'mcp__plugin_kit_db__query',
+    }
+    expect(() => validateToolRegistry([query])).not.toThrow()
+    expect(() => validateToolRegistry([query, { ...makeTool(), modelName: query.name }])).toThrow(
+      'Model tool name mcp_kit_db_query is taken by mcp_kit_db_query; ask cannot use it',
+    )
+    expect(() =>
+      validateToolRegistry([query, { ...makeTool(), modelName: query.modelName }]),
+    ).toThrow('is taken by mcp_kit_db_query')
+    expect(() => validateToolRegistry([{ ...query, modelName: 'mcp__a.b' }])).toThrow(
+      'Invalid model name for tool mcp_kit_db_query: mcp__a.b',
+    )
+    expect(() => validateToolRegistry([{ ...query, modelName: `m${'x'.repeat(64)}` }])).toThrow(
+      'Invalid model name',
+    )
+  })
+
   test('returns an empty tool list for empty or missing sources', () => {
     expect(getAgentTools(null)).toEqual([])
     expect(getAgentTools(undefined)).toEqual([])

@@ -5,6 +5,7 @@ import path from 'node:path'
 
 import {
   STDIO_SERVER,
+  callTool,
   configure,
   events,
   offer,
@@ -52,8 +53,6 @@ export const CC_MCP_SERVER_SCENARIOS = [
   },
   {
     name: 'cc-mcp: a plugin MCP tool reaches the model as mcp__plugin_<plugin>_<server>__<tool>',
-    known:
-      'Localix offers the tool as mcp_<plugin>_<server>_<tool> (single underscores); the Claude Code form exists only as a hook alias.',
     async run(rt) {
       const log = serverLog(rt, 'naming')
       const files = { 'server.mjs': STDIO_SERVER, '.mcp.json': { mcpServers: { db: stdio(log) } } }
@@ -63,7 +62,49 @@ export const CC_MCP_SERVER_SCENARIOS = [
         // is callable as: mcp__plugin_my-plugin_database-tools__query" (mcp.md)
         const name = await offer(rt, session, 'namekit', 'db')
         assert.equal(name, 'mcp__plugin_namekit_db__echo')
+        const read = await callTool(rt, session, name, { text: 'named' })
+        assert.ok(read.includes('echo:named'), `the call by that name ran: ${read}`)
+        // The transcript keeps Localix's own name: it is the tool's identity for rules and grants.
+        const stored = JSON.stringify((await rt.detail(session.id)).messages)
+        const item = (tool) => new RegExp(`\\\\?"name\\\\?":\\\\?"${tool}\\\\?"`)
+        assert.match(stored, item('mcp_namekit_db_echo'), 'the call is stored under the own name')
+        assert.doesNotMatch(stored, item('mcp__plugin_namekit_db__echo'), 'not the model name')
       })
+    },
+  },
+  {
+    name: 'cc-mcp: a stored deny on the tool’s own name still refuses a call made by its Claude Code name',
+    async run(rt) {
+      const log = serverLog(rt, 'naming-deny')
+      const files = { 'server.mjs': STDIO_SERVER, '.mcp.json': { mcpServers: { db: stdio(log) } } }
+      const scope = { agentId: rt.agentIds.localix }
+      // A class, not `*`: the tool stays on offer and the gate is what refuses the call (the echo
+      // tool declares `readOnlyHint`, so its calls are `effect:read`).
+      const deny = { action: 'tool:mcp_denykit_db_echo', resource: 'effect:read', effect: 'deny' }
+      // Re-read before each write: installing the plugin writes the same scope in between.
+      const update = async (change) => {
+        const now = await rt.api(`/capabilities/rules?agentId=${encodeURIComponent(scope.agentId)}`)
+        const body = { ...scope, rules: change(now.rules), expectedRevision: now.revision }
+        await rt.api('/capabilities/rules', body, 'PUT')
+      }
+      await update((rules) => [...rules, deny])
+      try {
+        await withPlugin(rt, 'denykit', files, async () => {
+          const session = await rt.createSession({ title: 'MCP naming deny' })
+          const name = await offer(rt, session, 'denykit', 'db')
+          assert.equal(name, 'mcp__plugin_denykit_db__echo', 'the tool is offered, not withheld')
+          const read = await callTool(rt, session, name, { text: 'refused' })
+          assert.ok(!read.includes('echo:refused'), `the denied call ran: ${read}`)
+          assert.ok(!/not found/i.test(read), `the call was refused, not lost: ${read}`)
+          assert.match(read, /Blocked: \S+ is not permitted here/, `the rule refused it: ${read}`)
+          const calls = events(log).filter((e) => e.event === 'call')
+          assert.deepEqual(calls, [], 'the server never received the call')
+        })
+      } finally {
+        await update((rules) =>
+          rules.filter((rule) => rule.action !== deny.action || rule.resource !== deny.resource),
+        )
+      }
     },
   },
   {

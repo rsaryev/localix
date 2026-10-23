@@ -167,14 +167,13 @@ export async function assembleRunTools(
       `[agent-runner] Ignoring MCP tools whose names are already owned by the runtime registry: ${claimedMcp.conflicts.join(', ')}`,
     )
   }
-  const acceptedMcpModelNames = new Set(claimedMcp.tools.map((tool) => tool.name))
-  const acceptedServers = new Set(
-    [...acceptedMcpModelNames].map((name) => mcp.gather?.serverByTool[name]),
-  )
+  // Each accepted MCP tool's name → the name the model is offered it under (the inventory's).
+  const acceptedMcp = new Map(claimedMcp.tools.map((tool) => [tool.name, tool.modelName]))
+  const acceptedServers = new Set([...acceptedMcp.keys()].map((n) => mcp.gather?.serverByTool[n]))
   mcpInstructions = mcp.instructions.filter((entry) => acceptedServers.has(entry.server))
   mcpInventory = mcp.inventory.flatMap((entry) => {
     if (entry.pending || entry.failed) return [entry]
-    const tools = entry.tools.filter((name) => acceptedMcpModelNames.has(name))
+    const tools = entry.tools.flatMap((n) => (acceptedMcp.has(n) ? [acceptedMcp.get(n) ?? n] : []))
     return tools.length > 0 ? [{ ...entry, tools }] : []
   })
   // ---- Mods' tools (`$.tool.register`) — an open toolset only, like MCP ----------------
@@ -225,7 +224,7 @@ export async function assembleRunTools(
   const sourceByTool = new Map<string, string>()
   // A closed list NAMED its MCP tools: they ride the wire like its built-ins, no activator.
   for (const [name, server] of Object.entries(mcp.gather?.serverByTool ?? {}))
-    if (agentProfile.openToolset && acceptedMcpModelNames.has(name)) sourceByTool.set(name, server)
+    if (agentProfile.openToolset && acceptedMcp.has(name)) sourceByTool.set(name, server)
   for (const tool of [...loadedPlugins.tools, ...claimedMods.tools])
     if (!sourceByTool.has(tool.name)) sourceByTool.set(tool.name, 'plugins')
   const activatedForSession = session.activatedTools ?? []

@@ -102,6 +102,12 @@ export interface AgentTool<TInput = unknown, TDetails = unknown> {
   /** Human-readable label shown in UI (defaults to name) */
   label?: string
   /**
+   * The name the MODEL sees and calls, when it differs from {@link name}. Only the wire uses it:
+   * the runtime declares the tool under it and maps calls back, so `name` stays the identity every
+   * rule, grant, hook and transcript holds. `[A-Za-z_][A-Za-z0-9_-]*`, at most 64 characters.
+   */
+  modelName?: string
+  /**
    * Other names a host's extensions address this tool by, outside the model's own name — an MCP
    * tool's `mcp__<server>__<tool>`, which hooks written for another agent match on.
    */

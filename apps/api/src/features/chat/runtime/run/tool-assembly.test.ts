@@ -55,6 +55,20 @@ describe('claimSecondaryTools', () => {
       conflicts: ['mcp_docs_read'],
     })
   })
+
+  test('a model name another tool already answers to is dropped; the tool stays', () => {
+    const first = { ...tool('mcp_a_b_c_t'), modelName: 'mcp__plugin_a_b_c__t' }
+    const clash = { ...tool('mcp_a_b_c_t_2'), modelName: 'mcp__plugin_a_b_c__t' }
+    const ownName = { ...tool('mcp_x_y_t'), modelName: 'read' }
+    const { tools, conflicts } = claimSecondaryTools([tool('read')], [first, clash, ownName])
+    expect(conflicts).toEqual([])
+    expect(tools.map((t) => [t.name, t.modelName])).toEqual([
+      ['mcp_a_b_c_t', 'mcp__plugin_a_b_c__t'],
+      ['mcp_a_b_c_t_2', undefined],
+      ['mcp_x_y_t', undefined],
+    ])
+    expect(tools[0]).toBe(first)
+  })
 })
 
 /**

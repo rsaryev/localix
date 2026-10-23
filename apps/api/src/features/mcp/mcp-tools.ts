@@ -199,6 +199,16 @@ export function claudeCodeMcpToolName(server: McpServerRecord, tool: string): st
 }
 
 /**
+ * A plugin server's tool reaches the model under Claude Code's name, the one its skills use, where
+ * every provider accepts it (≤ 64 characters); `mcp_<server>_<tool>` stays the tool's identity.
+ */
+export function pluginToolModelName(server: McpServerRecord, tool: string): string | undefined {
+  if (!server.id.startsWith('plugin:')) return undefined
+  const name = claudeCodeMcpToolName(server, tool)
+  return /^[A-Za-z_][A-Za-z0-9_-]{0,63}$/.test(name) ? name : undefined
+}
+
+/**
  * Where a server's definition came from, as a Claude Code hook's `mcp_server` reports it: a
  * plugin's server under its scoped `plugin:<plugin>:<server>` name, a server the person added
  * under its own name, `user` when it serves every chat and `local` when it serves one project.
@@ -222,9 +232,11 @@ export function buildToolForServer(
   const maxResultChars = resolveMcpResultMaxChars(def.maxResultChars)
   const callClass = classifyMcpTool(def.annotations)
   const mutates = callClass.effect !== 'read'
+  const modelName = pluginToolModelName(server, def.name)
 
   return {
     name: toolName,
+    ...(modelName ? { modelName } : {}),
     description,
     label: `${server.name} · ${def.name}`,
     // Claude Code's address for it: a plugin's server as `plugin_<plugin>_<server>`.

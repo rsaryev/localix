@@ -45,3 +45,27 @@ describe('an MCP tool as Claude Code names it', () => {
     expect(local.mcpServer).toEqual({ name: 'memory', source: 'local' })
   })
 })
+
+describe('the name an MCP tool reaches the model under', () => {
+  const plugin = record({ id: 'plugin:namekit:db', name: 'namekit_db' })
+
+  test('a plugin server’s tool: Claude Code’s name, its own name kept as the identity', () => {
+    const tool = buildToolForServer(plugin, client, { name: 'echo', inputSchema: {} })
+    expect(tool.modelName).toBe('mcp__plugin_namekit_db__echo')
+    expect(tool.name).toBe('mcp_namekit_db_echo')
+  })
+
+  test('a Claude Code name past 64 characters falls back to the own name', () => {
+    const long = 'q'.repeat(64 - 'mcp__plugin_namekit_db__'.length + 1)
+    const tool = buildToolForServer(plugin, client, { name: long, inputSchema: {} })
+    expect(tool.modelName).toBeUndefined()
+    expect(tool.name.length).toBeLessThanOrEqual(64)
+    const fits = buildToolForServer(plugin, client, { name: long.slice(1), inputSchema: {} })
+    expect(fits.modelName).toHaveLength(64)
+  })
+
+  test('a server the person added keeps its own name on the wire', () => {
+    const tool = buildToolForServer(record({}), client, { name: 'create', inputSchema: {} })
+    expect(tool.modelName).toBeUndefined()
+  })
+})

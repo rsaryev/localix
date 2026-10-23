@@ -37,13 +37,16 @@ function shortDescription(value: string | undefined): string {
   return `${normalized.slice(0, MAX_DESCRIPTION_LENGTH - 1).trimEnd()}…`
 }
 
+/** The name the model knows a tool by: its model name (an MCP tool's Claude Code name), or its own. */
+const shownName = (tool: AgentTool): string => tool.modelName ?? tool.name
+
 /** Stable, compact catalog shown to the model instead of full parameter schemas. */
 export function renderToolCatalog(entries: readonly DeferredToolEntry[]): string {
   return [...entries]
-    .sort((a, b) => a.tool.name.localeCompare(b.tool.name))
+    .sort((a, b) => shownName(a.tool).localeCompare(shownName(b.tool)))
     .map(
       (entry) =>
-        `- ${entry.tool.name} [${entry.source}]: ${shortDescription(entry.tool.description)}`,
+        `- ${shownName(entry.tool)} [${entry.source}]: ${shortDescription(entry.tool.description)}`,
     )
     .join('\n')
 }
@@ -78,14 +81,24 @@ export interface ActivateToolsToolOptions {
 export function createActivateToolsTool(options: ActivateToolsToolOptions) {
   const entries = [...options.entries].sort((a, b) => a.tool.name.localeCompare(b.tool.name))
   const availableByName = new Map(entries.map((entry) => [entry.tool.name, entry]))
+  // The catalog shows a tool under its model name and the model calls it by that, so a request
+  // for it needs no correction; `details` keeps the tool's own name, which the runtime reveals.
+  const nameByModelName = new Map<string, string>()
+  for (const { tool } of entries)
+    if (tool.modelName && !availableByName.has(tool.modelName))
+      nameByModelName.set(tool.modelName, tool.name)
   // A tool's other names resolve to it: an MCP tool's Claude Code name `mcp__<server>__<tool>`
   // (a plugin's server as `plugin_<plugin>_<server>`) is the one the person's docs and skills
   // use. A tool's own name always wins over another tool's alias.
   const nameByAlias = new Map<string, string>()
   for (const entry of entries)
     for (const alias of entry.tool.aliases ?? [])
-      if (!availableByName.has(alias) && !nameByAlias.has(alias))
+      if (!availableByName.has(alias) && !nameByModelName.has(alias) && !nameByAlias.has(alias))
         nameByAlias.set(alias, entry.tool.name)
+  const shown = (name: string) => {
+    const tool = availableByName.get(name)?.tool
+    return tool ? shownName(tool) : name
+  }
   // Seeded from the session, so a name activated on an earlier turn is reported as already active
   // rather than re-announced — and the model is told the truth either way.
   const active = new Set<string>(options.sessionActive ?? [])
@@ -123,8 +136,10 @@ export function createActivateToolsTool(options: ActivateToolsToolOptions) {
         ...new Set(
           input.names.map((raw) => {
             const name = raw.trim()
-            const own = nameByAlias.get(name)
-            if (own) renamed.push(`${name} is ${own}`)
+            const modelNamed = nameByModelName.get(name)
+            if (modelNamed) return modelNamed
+            const own = availableByName.has(name) ? name : nameByAlias.get(name)
+            if (own && shown(own) !== name) renamed.push(`${name} is ${shown(own)}`)
             return own ?? name
           }),
         ),
@@ -149,13 +164,13 @@ export function createActivateToolsTool(options: ActivateToolsToolOptions) {
         if (released?.length) {
           // Report it as part of the same answer: the model is deciding what to call next right here.
           lines.push(
-            `Released to stay within this session's tool budget: ${released.join(', ')}. ` +
+            `Released to stay within this session's tool budget: ${released.map(shown).join(', ')}. ` +
               'Activate again if you still need it.',
           )
           for (const name of released) active.delete(name)
         }
         lines.push(
-          `Activated: ${activated.join(', ')}. Their full schemas will be available on the next model turn, ` +
+          `Activated: ${activated.map(shown).join(', ')}. Their full schemas will be available on the next model turn, ` +
             'and stay available for the rest of this session — do not activate them again.',
         )
       }
@@ -164,7 +179,7 @@ export function createActivateToolsTool(options: ActivateToolsToolOptions) {
       }
       if (alreadyActive.length > 0) {
         lines.push(
-          `Already active in this session: ${alreadyActive.join(', ')}. Call them directly.`,
+          `Already active in this session: ${alreadyActive.map(shown).join(', ')}. Call them directly.`,
         )
       }
       if (unknown.length > 0) {

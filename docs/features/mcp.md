@@ -19,8 +19,16 @@ all.
 | Sign in with OAuth                        | Settings on a challenged HTTP server                              | The button appears only after a live probe reports an authentication challenge     |
 | List and read resources                   | `mcp_resources` with `list`, `list_templates`, and `read` actions | The tool appears only after a live server advertises the `resources` capability    |
 
-Model-facing tool names use `mcp_<server>_<tool>`. Unsupported characters become underscores, names
-stop at 64 characters, and collisions receive a numeric suffix.
+A tool is named `mcp_<server>_<tool>`. Unsupported characters become underscores, names stop at 64
+characters, and collisions receive a numeric suffix. Permission rules, tool switches, approvals,
+activations, transcripts and usage all use this name.
+
+A plugin's server is offered to the model under Claude Code's name instead,
+`mcp__plugin_<plugin>_<server>__<tool>`, so a plugin's skills and commands can call its tools as
+written. Only the model sees that name: a call made under it runs as `mcp_<plugin>_<server>_<tool>`,
+and a rule written for that name still applies. When Claude Code's name is longer than 64
+characters, or another tool of the run already uses it, the model gets
+`mcp_<plugin>_<server>_<tool>`.
 
 ## How it works
 

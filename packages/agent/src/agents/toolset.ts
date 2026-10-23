@@ -77,6 +77,19 @@ export function validateToolRegistry(
     throw new Error(`Duplicate dispatch tool names: ${duplicateDispatchNames.join(', ')}`)
   }
 
+  // A model name is a second key for the same tool: a provider must accept it, and no other tool
+  // may answer to it, or a call made under it could not be routed back.
+  const owners = new Map(dispatchTools.map((tool) => [tool.name, tool.name]))
+  for (const { name, modelName } of dispatchTools) {
+    if (modelName === undefined || modelName === name) continue
+    if (!MODEL_TOOL_NAME.test(modelName))
+      throw new Error(`Invalid model name for tool ${name}: ${modelName}`)
+    const owner = owners.get(modelName)
+    if (owner !== undefined)
+      throw new Error(`Model tool name ${modelName} is taken by ${owner}; ${name} cannot use it`)
+    owners.set(modelName, name)
+  }
+
   const dispatchNames = new Set(dispatchTools.map((tool) => tool.name))
   const missingDispatchNames: string[] = []
   for (const tool of modelTools) {
@@ -89,6 +102,9 @@ export function validateToolRegistry(
     )
   }
 }
+
+/** What every provider accepts as a tool name ({@link AgentTool.modelName}). */
+const MODEL_TOOL_NAME = /^[A-Za-z_][A-Za-z0-9_-]{0,63}$/
 
 function flattenToolSources(sources: readonly AgentToolSource[]): AgentTool[] {
   const tools = new Map<string, AgentTool>()

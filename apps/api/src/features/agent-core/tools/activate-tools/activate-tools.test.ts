@@ -195,3 +195,52 @@ describe('a tool requested by its Claude Code name', () => {
     expect(result.details?.alreadyActive).toEqual([])
   })
 })
+
+describe('a tool offered under a model name', () => {
+  // A plugin's MCP tool reaches the model under Claude Code's name; its own name stays the identity.
+  const mcpTool = {
+    ...tool('mcp_namekit_db_echo', 'Echo the text back.'),
+    modelName: 'mcp__plugin_namekit_db__echo',
+    aliases: ['mcp__plugin_namekit_db__echo'],
+  }
+  const entries = [buildDeferredEntry(mcpTool, 'namekit_db'), ...ENTRIES]
+
+  test('the catalog lists it under the model name', () => {
+    const activate = createActivateToolsTool({ entries })
+    expect(activate.description).toContain('- mcp__plugin_namekit_db__echo [namekit_db]: Echo')
+    expect(activate.description).not.toContain('mcp_namekit_db_echo')
+  })
+
+  test('a request by the model name activates the own name, with nothing to correct', async () => {
+    const activate = createActivateToolsTool({ entries })
+    const result = await activate.execute(
+      'call-1',
+      { names: ['mcp__plugin_namekit_db__echo'] },
+      {} as never,
+    )
+    expect(result.details?.activated).toEqual(['mcp_namekit_db_echo'])
+    expect(result.content).toContain('Activated: mcp__plugin_namekit_db__echo.')
+    expect(result.content).not.toContain('Call these by their names here')
+    expect(result.content).not.toContain('mcp_namekit_db_echo')
+  })
+
+  test('a request by the own name is told the model name to call', async () => {
+    const activate = createActivateToolsTool({ entries })
+    const result = await activate.execute('call-1', { names: ['mcp_namekit_db_echo'] }, {} as never)
+    expect(result.details?.activated).toEqual(['mcp_namekit_db_echo'])
+    expect(result.content).toContain('mcp_namekit_db_echo is mcp__plugin_namekit_db__echo')
+  })
+
+  test('already active is reported under the model name', async () => {
+    const activate = createActivateToolsTool({ entries, sessionActive: ['mcp_namekit_db_echo'] })
+    const result = await activate.execute(
+      'call-1',
+      { names: ['mcp__plugin_namekit_db__echo'] },
+      {} as never,
+    )
+    expect(result.details?.alreadyActive).toEqual(['mcp_namekit_db_echo'])
+    expect(result.content).toContain(
+      'Already active in this session: mcp__plugin_namekit_db__echo.',
+    )
+  })
+})

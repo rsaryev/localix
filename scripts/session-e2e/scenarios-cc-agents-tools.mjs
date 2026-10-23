@@ -53,7 +53,8 @@ export const CC_AGENT_TOOL_SCENARIOS = [
         '.mcp.json': JSON.stringify({ mcpServers: { ctl: mcpServer(rt, 'ag-mcpx') } }),
       }
       await withPlugins(rt, { [plugin]: files }, async () => {
-        const echo = 'mcp_e2e_ag_mcpx_ctl_echo'
+        // The model is offered (and calls) the tool under Claude Code's name for it.
+        const echo = `mcp__plugin_${plugin}_ctl__echo`
         const { children } = await delegateTurn(rt, 'Agent MCP allowlist', [
           delegateStep(`${plugin}:caller`, [
             { tool: echo, args: { text: 'MCPX-PING' } },

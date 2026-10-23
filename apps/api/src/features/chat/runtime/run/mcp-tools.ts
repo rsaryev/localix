@@ -15,7 +15,7 @@ type McpServerList = Awaited<ReturnType<RunEnv['mcpRepo']['listForScope']>>
 
 export interface McpInventoryEntry {
   server: string
-  /** Direct MCP tool names already present in the provider tool payload. */
+  /** The server's loaded tools; assembly names them as the model is offered them (`modelName`). */
   tools: string[]
   /** Optional server is still connecting; its tools may join on the next turn. */
   pending?: boolean

@@ -26,6 +26,7 @@ import type { RunContext } from './run-handle'
 import { judgeTurnBoundary } from './stop'
 import { streamTurn } from './turn'
 import { toRunTool, type CallEnvironment, type RunTool } from './tools/call'
+import { createToolNaming } from './tools/naming'
 import { createNestedCalls } from './tools/nested'
 import { createToolRoster } from './tools/roster'
 import { refuseTruncatedCalls, runToolBatch, type SettledCall } from './tools/schedule'
@@ -47,9 +48,12 @@ export async function runLoop(input: LoopInput, run: RunContext): Promise<AgentR
   const dispatchTools = input.dispatchTools ?? input.tools
   validateToolRegistry(input.tools, dispatchTools)
   const tools = new Map<string, RunTool>(dispatchTools.map((tool) => [tool.name, toRunTool(tool)]))
-  const roster = createToolRoster(input.tools, tools, input.onSchemaCompacted)
+  // A tool offered under a model name is called by it; the run knows it by its own (`naming.ts`).
+  const naming = createToolNaming(dispatchTools)
+  const roster = createToolRoster(input.tools, tools, input.onSchemaCompacted, naming)
   const env: CallEnvironment = {
     tools,
+    naming,
     context: input.toolExecutionContext,
     beforeToolCall: input.beforeToolCall,
     afterToolCall: input.afterToolCall,
@@ -126,13 +130,14 @@ export async function runLoop(input: LoopInput, run: RunContext): Promise<AgentR
         input.session,
         {
           systemPrompt: input.systemPrompt,
-          messages: modelMessages(view),
+          messages: naming.outbound(modelMessages(view)),
           tools: roster.declarations(),
           ...(input.reasoningEffort ? { reasoningEffort: input.reasoningEffort } : {}),
           ...(input.maxOutputTokens ? { maxOutputTokens: input.maxOutputTokens } : {}),
           signal,
         },
         emit,
+        naming,
       )
       const { message } = last
       await append(message, false)

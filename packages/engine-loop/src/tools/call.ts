@@ -21,6 +21,7 @@ import type { EmitEvent } from '../run-handle'
 import { parseToolArguments } from './arguments'
 import type { JsonSchema } from './coerce'
 import { withHumanInLoopEvents } from './human-in-loop'
+import type { ToolNaming } from './naming'
 import { createProgressPump } from './progress'
 import {
   abortedResult,
@@ -59,6 +60,8 @@ export interface CallEnvironment {
   callToolFor?: (parent: ToolCallRequest) => NonNullable<AgentToolExecutionContext['callTool']>
   /** How long a stopped tool may wind down before its call is closed; defaults to `STOP_GRACE_MS`. */
   stopGraceMs?: number
+  /** A call may name a tool as the model knows it; it is resolved under the tool's own name. */
+  naming?: Pick<ToolNaming, 'internal'>
 }
 
 /**
@@ -92,7 +95,9 @@ export type AdmittedCall =
     }
   | { kind: 'settled'; call: ToolCallRequest; outcome: CallOutcome }
 
-export function resolveCall(env: CallEnvironment, call: ToolCallRequest): ResolvedCall {
+export function resolveCall(env: CallEnvironment, requested: ToolCallRequest): ResolvedCall {
+  const name = env.naming?.internal(requested.name) ?? requested.name
+  const call = name === requested.name ? requested : { ...requested, name }
   const runTool = env.tools.get(call.name)
   if (!runTool)
     return {

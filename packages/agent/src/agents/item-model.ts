@@ -79,7 +79,7 @@ export type CommandJobStatus = 'running' | 'completed' | 'failed' | 'killed' | '
 interface ToolBackedBase extends AgentItemBase {
   /** Matches the wire `tool_call` id. */
   toolCallId: string
-  /** Tool name as the model called it (e.g. `bash`, `read`, a plugin tool). */
+  /** The tool's own name (`bash`, a plugin tool), even when the model called its `modelName`. */
   name: string
   /** Parsed tool arguments from the model. */
   input?: unknown

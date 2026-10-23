@@ -209,7 +209,7 @@ plugin's validation, never dropped silently. In October 2026 all 328 plugins of 
 | `skills`, root `SKILL.md`                                               | Supported                                                                                         |
 | `hooks`                                                                 | Supported on every event; see [Hook events](#hook-events)                                         |
 | Hooks modules (`modules` in `hooks/hooks.json`, a mod)                  | Supported; see [Mods](#mods)                                                                      |
-| `mcpServers`, `.mcp.json`                                               | Supported, with MCP elicitation                                                                   |
+| `mcpServers`, `.mcp.json`                                               | Supported, with MCP elicitation and Claude Code's tool names                                      |
 | `lspServers`, `.lsp.json`                                               | Supported over stdio; see [Language servers](../features/lsp.md)                                  |
 | `userConfig` with `sensitive`                                           | Supported                                                                                         |
 | `monitors`, `experimental.monitors`, `monitors/monitors.json`           | Supported; an `on-skill-invoke` monitor starts the first time its skill or command runs in a chat |
