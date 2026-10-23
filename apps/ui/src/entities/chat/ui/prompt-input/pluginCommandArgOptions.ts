@@ -112,12 +112,36 @@ async function resolveOptions(
   }
 }
 
-/** The installed mini apps, for `/mini-app enable|disable|remove`. */
+/** A catalog by where it lives, as the store's catalog menu names it. */
+function catalogLabel(url: string): string {
+  try {
+    const parsed = new URL(url)
+    return parsed.protocol === 'file:' ? 'A folder on this computer' : parsed.host
+  } catch {
+    return url
+  }
+}
+
+/** The catalogs the person added, for `/mini-app catalog remove`; the built-in one stays. */
+async function addedCatalogOptions(): Promise<SlashArgOption[]> {
+  const catalogs = await backendClient.listMiniAppCatalogs().catch(() => [])
+  return catalogs
+    .filter((catalog) => !catalog.builtIn)
+    .map((catalog) => ({
+      value: catalog.url,
+      label: catalogLabel(catalog.url),
+      description: catalog.url,
+    }))
+}
+
+/** The installed mini apps, for `/mini-app enable|disable|remove`; added catalogs for `catalog remove`. */
 export async function loadMiniAppCommandArgOptions(
   argName: string,
   action: string | undefined,
   query: string,
 ): Promise<SlashArgOption[]> {
+  if (argName === 'catalog')
+    return (await addedCatalogOptions()).filter((option) => matches(option, query))
   if (argName !== 'app') return []
   const only = onlyFor(action)
   return miniAppContribSnapshot()

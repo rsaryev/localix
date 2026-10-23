@@ -4,6 +4,7 @@ import type { MiniAppRecord } from '../../mini-apps/contracts'
 import type { MessageMutationResponse } from '../contracts'
 import type { SessionRecord } from '../repository'
 import type { CommandHandlerContext, DirectReply } from './command-handlers'
+import { handleMiniAppCatalogCommand } from './command-handlers-mini-apps-catalog'
 import { handleMiniAppCreateSubcommand } from './command-handlers-mini-apps-create'
 
 /** The slice of {@link CommandHandlerContext} the `/mini-app` sub-commands need. */
@@ -20,6 +21,9 @@ const MINI_APP_SUBCOMMAND_USAGE = [
   '/mini-app disable <name>',
   '/mini-app remove <name>',
   '/mini-app reload',
+  '/mini-app catalog list',
+  '/mini-app catalog add <url>',
+  '/mini-app catalog remove <url>',
 ] as const
 
 /** One row of the listing: its state first, so what holds an app back is what the eye meets. */
@@ -57,6 +61,17 @@ export async function handleMiniAppsControlCommand(
 
   if (sub === 'create') {
     return handleMiniAppCreateSubcommand(ctx, userId, session, prompt, directReply)
+  }
+
+  if (sub === 'catalog') {
+    let response: MessageMutationResponse | undefined
+    await handleMiniAppCatalogCommand(
+      miniAppService,
+      tokens[2]?.toLowerCase(),
+      tokens.slice(3).join(' ').trim(),
+      async (text) => (response = await directReply(text)),
+    )
+    return response!
   }
 
   if (sub === 'reload') {

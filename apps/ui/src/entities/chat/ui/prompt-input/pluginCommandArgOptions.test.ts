@@ -143,3 +143,29 @@ describe('loadMiniAppCommandArgOptions', () => {
     )
   })
 })
+
+describe('/mini-app catalog remove', () => {
+  test('offers the catalogs the person added, never the built-in one', async () => {
+    const real = backendClient.listMiniAppCatalogs.bind(backendClient)
+    backendClient.listMiniAppCatalogs = async () => [
+      {
+        url: 'https://github.com/rsaryev/localix/releases/latest/download/mini-app-catalog.json',
+        builtIn: true,
+      },
+      { url: 'https://ada.test/mini-app-catalog.json', builtIn: false },
+      { url: 'file:///Users/ada/catalog/mini-app-catalog.json', builtIn: false },
+    ]
+    try {
+      const options = await loadMiniAppCommandArgOptions('catalog', 'catalog', '')
+      expect(options.map((o) => [o.value, o.label])).toEqual([
+        ['https://ada.test/mini-app-catalog.json', 'ada.test'],
+        ['file:///Users/ada/catalog/mini-app-catalog.json', 'A folder on this computer'],
+      ])
+      expect(
+        (await loadMiniAppCommandArgOptions('catalog', 'catalog', 'ada.test')).map((o) => o.label),
+      ).toEqual(['ada.test'])
+    } finally {
+      backendClient.listMiniAppCatalogs = real
+    }
+  })
+})

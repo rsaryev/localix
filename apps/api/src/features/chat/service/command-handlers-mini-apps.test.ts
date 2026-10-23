@@ -133,4 +133,77 @@ describe('/mini-app', () => {
     expect(text).toContain('/mini-app create <what it should do>')
     expect(text).not.toMatch(/plugin/iu)
   })
+
+  describe('catalog', () => {
+    const HOSTED =
+      'https://github.com/rsaryev/localix/releases/latest/download/mini-app-catalog.json'
+    const ADA = 'https://ada.test/mini-app-catalog.json'
+    const entry = (name: string, source: string) => ({ name, source })
+    const service = (calls: string[] = []) => ({
+      catalogs: {
+        list: async () => [
+          { url: HOSTED, builtIn: true },
+          { url: ADA, builtIn: false },
+        ],
+        preview: async (url: string) => {
+          calls.push(`preview ${url}`)
+          if (url.includes('broken'))
+            throw new Error('The mini app catalog at broken.test answered 404')
+          return { url, publishers: ['Ada'], apps: 2, icons: [], verified: false, added: false }
+        },
+        add: async (url: string) => void calls.push(`add ${url}`),
+        remove: async (url: string) => {
+          calls.push(`remove ${url}`)
+          if (url === HOSTED)
+            throw new Error('The Localix catalog comes with Localix and cannot be removed')
+        },
+      },
+      store: {
+        list: async () => ({
+          entries: [entry('chess', HOSTED), entry('kanban', HOSTED), entry('notes', ADA)],
+          problems: [],
+        }),
+      },
+    })
+
+    test('list shows each catalog with its app count, the built-in one marked', async () => {
+      const text = await run(service(), '/mini-app catalog list')
+      expect(text).toContain(`Localix _(built in)_ — 2 apps · ${HOSTED}`)
+      expect(text).toContain(`ada.test — 1 app · ${ADA}`)
+      expect(await run(service(), '/mini-app catalog')).toBe(text)
+    })
+
+    test('add reads the catalog first and says who publishes it, or why it was refused', async () => {
+      const calls: string[] = []
+      expect(await run(service(calls), '/mini-app catalog add https://bob.test/c.json')).toBe(
+        'Added the catalog at `https://bob.test/c.json`: 2 apps from Ada, shown as unverified. They are in the store now.',
+      )
+      expect(calls).toEqual(['preview https://bob.test/c.json', 'add https://bob.test/c.json'])
+      const refused: string[] = []
+      expect(await run(service(refused), '/mini-app catalog add https://broken.test/c.json')).toBe(
+        'The catalog was not added: The mini app catalog at broken.test answered 404',
+      )
+      expect(refused).toEqual(['preview https://broken.test/c.json'])
+      expect(await run(service(), '/mini-app catalog add')).toBe(
+        'Usage: `/mini-app catalog add <url>`',
+      )
+    })
+
+    test('remove takes an added catalog away; the built-in one stays', async () => {
+      const calls: string[] = []
+      expect(await run(service(calls), `/mini-app catalog remove ${ADA}`)).toBe(
+        `Removed the catalog at \`${ADA}\`. Apps you installed from it stay installed.`,
+      )
+      expect(await run(service(calls), `/mini-app catalog remove ${HOSTED}`)).toBe(
+        'Remove failed: The Localix catalog comes with Localix and cannot be removed',
+      )
+    })
+
+    test('the usage lists the catalog actions', async () => {
+      const text = await run({}, '/mini-app nope')
+      expect(text).toContain('/mini-app catalog list')
+      expect(text).toContain('/mini-app catalog add <url>')
+      expect(text).toContain('/mini-app catalog remove <url>')
+    })
+  })
 })

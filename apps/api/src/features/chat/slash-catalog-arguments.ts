@@ -129,7 +129,36 @@ export const MINI_APP_ARGS: SlashArgSpec[] = [
         label: 'reload',
         description: 'Rebuild your own mini apps and reload every mini app in place',
       },
+      {
+        value: 'catalog',
+        label: 'catalog',
+        description: 'List, add or remove the catalogs the store reads',
+      },
     ],
+  },
+  {
+    name: 'csub',
+    type: 'choice',
+    when: { arg: 'action', equals: 'catalog' },
+    placeholder: 'Pick a catalog action…',
+    options: [
+      { value: 'list', label: 'list', description: 'The catalogs and how many apps each offers' },
+      { value: 'add', label: 'add', description: 'Read a catalog by its address, then add it' },
+      { value: 'remove', label: 'remove', description: 'Remove a catalog you added' },
+    ],
+  },
+  {
+    name: 'catalog',
+    type: 'choice',
+    dynamic: true,
+    when: { arg: 'csub', equals: 'remove' },
+    placeholder: 'Pick a catalog you added…',
+  },
+  {
+    name: 'curl',
+    type: 'text',
+    when: { arg: 'csub', equals: 'add' },
+    placeholder: 'https://…/mini-app-catalog.json or file://…',
   },
   {
     name: 'app',
