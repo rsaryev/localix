@@ -176,6 +176,6 @@ plugin names is no longer read. The managed copies earlier versions synchronized
 | 0     | This contract; Workflows removed.                                                                    | Done  |
 | 1     | `mini-app.json` and `guide.md`; the bundled mini apps converted; no `.claude-plugin/` in a mini app. | Done  |
 | 2     | `features/mini-apps` split from `features/plugins`; the composed manifest and legacy layout removed. | Done  |
-| 3     | Separate storage, records, routes, settings and model-facing names; the start-up migration.          | Doing |
+| 3     | Separate storage, records, routes, settings and model-facing names; the start-up migration.          | Done  |
 | 4     | Release archives, `catalog.json`, the install and update queue, the picker; nothing bundled.         | Done  |
 | 5     | Tests, guards, screenshots, docs and copy that assumed bundled mini apps.                            |       |
