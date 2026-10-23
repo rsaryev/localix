@@ -81,6 +81,20 @@ const WRITE_KEYWORDS = [
   'LOAD',
   'IMPORT',
   'LOAD_EXTENSION', // SQLite `load_extension(...)` loads native code
+  // T-SQL runs a batch without `;` separators, so each reserved statement word that changes
+  // server state can follow a read: `SELECT 1 KILL 53`.
+  'KILL',
+  'DENY',
+  'BACKUP',
+  'RESTORE',
+  'SHUTDOWN',
+  'RECONFIGURE',
+  'DBCC',
+  'CHECKPOINT',
+  'WRITETEXT',
+  'UPDATETEXT',
+  // ENABLE/DISABLE are not reserved and are common column names; only the trigger statement writes.
+  '(?:ENABLE|DISABLE)\\s+TRIGGER',
 ]
 
 const WRITE_KEYWORD_RE = new RegExp(`\\b(?:${WRITE_KEYWORDS.join('|')})\\b`, 'g')

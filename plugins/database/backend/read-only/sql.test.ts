@@ -79,6 +79,31 @@ describe('isReadOnlyStatement', () => {
     expect(isReadOnlyStatement("SELECT load_extension('/tmp/x.so')")).toBe(false)
   })
 
+  it('rejects a T-SQL statement that follows a read in a separator-less batch', () => {
+    for (const batch of [
+      'SELECT 1 KILL 53',
+      'SELECT 1 DENY SELECT ON dbo.t TO public',
+      "SELECT 1 BACKUP DATABASE d TO DISK = N'x.bak'",
+      "SELECT 1 RESTORE DATABASE d FROM DISK = N'x.bak'",
+      'SELECT 1 SHUTDOWN WITH NOWAIT',
+      'SELECT 1 RECONFIGURE',
+      'SELECT 1 DBCC CHECKDB',
+      'SELECT 1 CHECKPOINT',
+      'SELECT 1 DISABLE TRIGGER trg ON dbo.t',
+      'SELECT 1 ENABLE  TRIGGER ALL ON DATABASE',
+      "SELECT 1 WRITETEXT t.c @ptr N'x'",
+      "SELECT 1 UPDATETEXT t.c @ptr 0 NULL N'x'",
+    ]) {
+      expect(isReadOnlyStatement(batch)).toBe(false)
+    }
+  })
+
+  it('keeps ordinary reads that use enable/disable as names', () => {
+    expect(isReadOnlyStatement('SELECT enable, disable FROM settings WHERE enable = 1')).toBe(true)
+    expect(isReadOnlyStatement('SELECT s.enable FROM settings s ORDER BY s.disable')).toBe(true)
+    expect(isReadOnlyStatement("SELECT name FROM sys.triggers WHERE name = 'KILL'")).toBe(true)
+  })
+
   it('distinguishes PRAGMA read from PRAGMA write forms', () => {
     expect(isReadOnlyStatement('PRAGMA table_info(users)')).toBe(true)
     expect(isReadOnlyStatement('PRAGMA journal_mode')).toBe(true)
