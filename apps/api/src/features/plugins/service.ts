@@ -743,6 +743,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       pluginsRoot: pluginInstallRoot('global', null, home),
       kitDir: deps.pluginKitDir ?? pluginKitDir,
       installedSource: async (userId, name) => (await repo.get(userId, '', name))?.source ?? null,
+      allowed: (userId, plugin) => verdictFor(userId, plugin),
       enable: (userId, name) => service.setEnabled(userId, { name, enabled: true }),
       disable: (userId, name) => service.setEnabled(userId, { name, enabled: false }),
       changed: () => service.onChanged?.(),

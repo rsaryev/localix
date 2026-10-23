@@ -56,7 +56,9 @@ new plugin never edits one you already have. The copy comes from the
 in the plugin kit and lives under `~/.localix/plugins/<name>`. The agent is told the plugin's folder
 and nothing else; the Localix application's own files are off limits to it. To change a plugin you
 already have, ask for the change in chat: the agent edits its folder and rebuilds it with
-`plugin_build`.
+`plugin_build`. Only a plugin of yours under `~/.localix/plugins` that is switched on is rebuilt: a
+build runs the plugin's code, so a plugin you have not allowed, a Claude Code install and an
+in-place folder are never built.
 
 The reference copy builds and passes its tests before its domain is changed. Its frame reaches the
 domain only through the entries — `ui/Workspace.tsx`, and `createRoutes` and `register` in

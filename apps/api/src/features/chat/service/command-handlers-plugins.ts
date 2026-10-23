@@ -75,7 +75,7 @@ export async function handlePluginsControlCommand(
     let rebuilt: Awaited<ReturnType<typeof pluginService.authoring.rebuildAll>> = []
     let rebuildError: string | null = null
     try {
-      rebuilt = await pluginService.authoring.rebuildAll()
+      rebuilt = await pluginService.authoring.rebuildAll(userId)
     } catch (err) {
       rebuildError = errorMessage(err)
     }

@@ -28,7 +28,7 @@ export async function runPluginBuild(
   if (description) return createPlugin(authoring, userId, { ...input, description })
 
   try {
-    const { report } = await authoring.build(input.name)
+    const { report } = await authoring.build(userId, input.name)
     const text = formatPluginCheck(input.name, report)
     return {
       text: report.ok && options.canLook ? `${text}\n\n${lookHint(input.name)}` : text,

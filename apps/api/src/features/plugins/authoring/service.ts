@@ -1,6 +1,8 @@
 import { existsSync, promises as fs } from 'node:fs'
 import { join } from 'node:path'
 
+import { isPathBelow } from '../../../lib/path-containment'
+
 import type { DiscoveredPlugin } from '../discovery'
 import {
   checkUserPlugin,
@@ -38,6 +40,11 @@ export interface PluginAuthoringDeps {
   kitDir(): string
   /** A marketplace/git install retains its source and is never a copy to build out. */
   installedSource?(userId: string, name: string): Promise<string | null>
+  /**
+   * Whether the user allowed this plugin to run. Building runs its code (Bun.build, its tests),
+   * and the authoring markers are files the plugin ships itself, so they prove nothing.
+   */
+  allowed(userId: string, plugin: DiscoveredPlugin): Promise<boolean>
   /** Record consent and notify hosts. Creating a plugin IS asking for it to run. */
   enable(userId: string, name: string): Promise<unknown>
   /** Reverse an activation that may have committed before a later notification failed. */
@@ -65,9 +72,12 @@ export interface PluginAuthoring {
    */
   freeName(userId: string, base: string): Promise<string>
   /** Build, test and reload one user plugin. Throws when `name` is not one. */
-  build(name: string): Promise<{ plugin: DiscoveredPlugin; report: PluginCheckReport }>
+  build(
+    userId: string,
+    name: string,
+  ): Promise<{ plugin: DiscoveredPlugin; report: PluginCheckReport }>
   /** Rebuild every user plugin authored in the kit layout; `/plugin reload` runs it. */
-  rebuildAll(): Promise<{ name: string; report: PluginCheckReport }[]>
+  rebuildAll(userId: string): Promise<{ name: string; report: PluginCheckReport }[]>
 }
 
 export class UserPluginNotFoundError extends Error {}
@@ -108,6 +118,17 @@ export async function isAuthoredUserPlugin(plugin: DiscoveredPlugin): Promise<bo
 }
 
 export function createPluginAuthoring(deps: PluginAuthoringDeps): PluginAuthoring {
+  /**
+   * A plugin the app may build for this user: authored in the kit layout, a folder of the user's
+   * own plugins root (never a Claude Code install or an in-place folder, which Localix does not
+   * write to), and allowed to run.
+   */
+  const buildable = async (userId: string, plugin: DiscoveredPlugin): Promise<boolean> =>
+    !plugin.claudeCodeInstall &&
+    !plugin.inPlaceInstall &&
+    isPathBelow(deps.pluginsRoot, plugin.dir) &&
+    (await isAuthoredUserPlugin(plugin)) &&
+    (await deps.allowed(userId, plugin))
   const kit = (): Promise<PluginKit> => loadPluginKit(deps.kitDir())
   const active = new Map<string, Promise<void>>()
   const withPluginLock = async <T>(name: string, run: () => Promise<T>): Promise<T> => {
@@ -208,14 +229,14 @@ export function createPluginAuthoring(deps: PluginAuthoringDeps): PluginAuthorin
         }
       }),
 
-    build: (name) =>
+    build: (userId, name) =>
       withPluginLock(name, async () => {
         const plugin = (await deps.discover()).find(
           (candidate) => candidate.manifest.name === name && !candidate.bundled,
         )
-        if (!plugin || !(await isAuthoredUserPlugin(plugin))) {
+        if (!plugin || !(await buildable(userId, plugin))) {
           throw new UserPluginNotFoundError(
-            `No user plugin named "${name}" to build — first-party plugins ship built, and a user plugin needs an authored copy, ${USER_PLUGIN_BACKEND_SOURCE} or ui/register.tsx.`,
+            `No user plugin named "${name}" to build — first-party plugins ship built, and a user plugin needs an authored copy, ${USER_PLUGIN_BACKEND_SOURCE} or ui/register.tsx, in your plugins folder, switched on.`,
           )
         }
         const report = await check(plugin)
@@ -223,9 +244,9 @@ export function createPluginAuthoring(deps: PluginAuthoringDeps): PluginAuthorin
         return { plugin, report }
       }),
 
-    async rebuildAll() {
+    async rebuildAll(userId) {
       const discovered = await deps.discover()
-      const authored = await Promise.all(discovered.map(isAuthoredUserPlugin))
+      const authored = await Promise.all(discovered.map((plugin) => buildable(userId, plugin)))
       const plugins = discovered.filter((_, index) => authored[index])
       if (plugins.length === 0) return []
       const loaded = await kit()
