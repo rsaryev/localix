@@ -6,6 +6,7 @@ import {
   A7_HTTP_ERRORS_IN_ROUTES,
 } from './architecture/api-rules'
 import { loadSources, planted, ratchet, type Rule, type Source } from './architecture/kit'
+import { X1_LAYERS_APART } from './architecture/layer-rules'
 import {
   A1_PACKAGE_CYCLES,
   A2_AGNOSTIC_CORE,
@@ -59,6 +60,11 @@ describe('architecture rules against the repository', () => {
     TIMEOUT,
   )
   test('A7 HTTP errors only in routes', () => enforce(A7_HTTP_ERRORS_IN_ROUTES, repo()), TIMEOUT)
+  test(
+    'X1 plugins and mini apps import nothing of each other',
+    () => enforce(X1_LAYERS_APART, repo()),
+    TIMEOUT,
+  )
 })
 
 const manifest = (name: string, deps: string[]) =>
@@ -71,6 +77,29 @@ const manifest = (name: string, deps: string[]) =>
   )
 
 describe('positive and negative controls', () => {
+  test('X1 fires when one layer imports the other, types included, and not for a consumer', () => {
+    const hits = X1_LAYERS_APART.detect([
+      planted(
+        'apps/api/src/features/plugins/x.ts',
+        "import type { MiniAppManifest } from '@localixai/mini-app-sdk/app-manifest'",
+      ),
+      planted(
+        'apps/api/src/features/mini-apps/y.ts',
+        "import { loadManifest } from '../plugins/discovery'",
+      ),
+      planted(
+        'packages/mini-app-sdk/src/z.ts',
+        "import { MANIFEST_FILE } from '@localixai/claude-plugin'",
+      ),
+      planted(
+        'apps/api/src/features/chat/both.ts',
+        "import { a } from '../plugins/loader'\nimport { b } from '../mini-apps/discovery'",
+      ),
+    ])
+    expect(hits).toHaveLength(3)
+    expect(hits.join('\n')).not.toContain('features/chat')
+  })
+
   test('A1 fires on a package cycle, not on a chain', () => {
     expect(A1_PACKAGE_CYCLES.detect([manifest('a', ['b']), manifest('b', ['a'])])).toEqual([
       'package cycle a -> b',

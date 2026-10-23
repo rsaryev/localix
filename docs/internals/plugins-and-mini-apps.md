@@ -25,7 +25,8 @@ This page is the contract for the split. The status table at the end says what i
 | X4  | The core names no mini app. A feature that needs one (a task board) asks for a capability a mini app declares, never for a mini app by name.                                                                                     |
 | X5  | Localix ships no mini app. Every mini app, first-party included, is installed and updated from a catalog.                                                                                                                        |
 
-`scripts/check-architecture.mjs` enforces X1 and X4; the loaders enforce X2.
+`scripts/architecture-rules.test.ts` enforces X1, with a baseline in
+`scripts/architecture-baselines/x1.json` that only shrinks; the loaders enforce X2.
 
 ## Plugins
 
