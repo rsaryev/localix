@@ -10,7 +10,7 @@
     "build": "tsc -b && vite build && bun run check:startup",
     "check:startup": "bun ../../scripts/check-ui-startup-budget.mjs",
     "type-check": "tsc -b",
-    "test": "bun ../../scripts/test-shards.mjs 4 src",
+    "test": "bun ../../scripts/test-shards.mjs 4 src build",
     "preview": "vite preview",
     "clean": "shx rm -rf dist .turbo"
   },

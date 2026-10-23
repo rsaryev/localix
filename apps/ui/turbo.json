@@ -23,7 +23,13 @@
       "inputs": [
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/plugins/**/ui/**",
-        "$TURBO_ROOT$/plugins/**/backend/**"
+        "$TURBO_ROOT$/plugins/**/backend/**",
+        "$TURBO_ROOT$/scripts/test-deadline.ts",
+        "$TURBO_ROOT$/scripts/test-globals-guard.ts",
+        "$TURBO_ROOT$/scripts/test-shards.mjs",
+        "$TURBO_ROOT$/scripts/test-all.mjs",
+        "$TURBO_ROOT$/packages/testing/src/**",
+        "$TURBO_ROOT$/packages/kit/test-preload.ts"
       ],
       "outputs": []
     },

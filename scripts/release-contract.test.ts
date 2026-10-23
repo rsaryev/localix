@@ -19,34 +19,7 @@ const packageManagerVersion = String(rootPackage.packageManager).replace(/^bun@/
 const workflowValues = (source: string, key: string) =>
   [...source.matchAll(new RegExp(`^\\s*${key}:\\s*([^\\s#]+)`, 'gmu'))].map((match) => match[1])
 
-const unscheduledTests = (files: string[], commands: string): string[] => {
-  const scheduled = new Set(commands.split(/\s+/u))
-  return files.filter((file) => !scheduled.has(file)).sort()
-}
-
 describe('release workflow contract', () => {
-  // A guard left out of the explicit runner silently disappears from both CI and release checks.
-  // Discover the script tests so adding one requires wiring it into a mandatory verification gate.
-  test('schedules every repository script test through a required verification gate', () => {
-    const files = [...new Bun.Glob('scripts/**/*.test.ts').scanSync({ cwd: root })]
-    expect(files.length).toBeGreaterThan(0)
-    expect(
-      unscheduledTests(
-        files,
-        `${rootPackage.scripts['test:repo']} ${rootPackage.scripts['test:repo:slow']} ${rootPackage.scripts['check:release']}`,
-      ),
-    ).toEqual([])
-  })
-
-  test('positive control: the coverage detector reports an unscheduled guard', () => {
-    expect(
-      unscheduledTests(
-        ['scripts/first.test.ts', 'scripts/missing.test.ts'],
-        'bun test scripts/first.test.ts',
-      ),
-    ).toEqual(['scripts/missing.test.ts'])
-  })
-
   test('is valid YAML with the expected release jobs', () => {
     const workflow = Bun.YAML.parse(release) as Record<string, Record<string, unknown>>
     expect(Object.keys(workflow.on)).toEqual(['workflow_dispatch'])

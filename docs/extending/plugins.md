@@ -328,9 +328,9 @@ wrote beside an imported Claude Code plugin, which is skipped silently.
 
 ### Test and package
 
-In the repository, run `bun test ./path/to/my-app`, then `bun run test:dropins`, `type-check` and
-`lint`. A standalone extension brings its own tests; bundle any package dependencies into the
-backend and point `backend` at that file.
+In the repository, run `bun test ./path/to/my-app`, then `bun run test`, `type-check` and `lint`. A
+standalone extension brings its own tests; bundle any package dependencies into the backend and
+point `backend` at that file.
 
 ## Bundled extensions
 

@@ -64,7 +64,6 @@ are:
 
 ```bash
 bun run build
-bun run check:release
 bun run type-check
 bun run check:tests
 bun run test
@@ -72,10 +71,11 @@ bun run check:bundle
 ```
 
 Build first when reproducing CI locally: type checks read workspace declarations from built output.
-CI runs `bun run test` as two parallel slices, `bun run test:unit` (every package's unit tests) and
-`bun run test:system` (integration tests and repository guards). `check:release` runs the release
-and workflow contract tests. `check:tests` type-checks test files, while `test` executes them.
-`check:bundle` stages the desktop bundle and starts its API outside the checkout.
+Tests have two tiers in every workspace, the `scripts` workspace of repository contracts included:
+`bun run test` (unit tests) and `bun run test:integration` (real processes, PTYs and watchers). Both
+run through Turbo, which replays a package whose inputs did not change; CI runs them as parallel
+jobs. `check:tests` type-checks test files, while `test` executes them. `bun run coverage` holds the
+coverage gates. `check:bundle` stages the desktop bundle and starts its API outside the checkout.
 
 The workflows have separate responsibilities:
 

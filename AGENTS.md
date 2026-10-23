@@ -80,7 +80,9 @@ tests never sleep: inject the delay, clock or window as an option. Use `@localix
 dirs (`tempDirPerTest`), processes (`run`, deadline + SIGKILL), git (`scratchGitEnv`) and network
 (stub `fetch`; real hosts fail). Each file passes alone and under `--isolate`; run big suites as
 shards (`scripts/test-shards.mjs`), never `--parallel`. A test exercises behaviour; it never reads
-source or style files as text to assert on code, class names or copy.
+source or style files as text to assert on code, class names or copy. `bun run coverage` holds every
+package's line-coverage floor, fails a source file no test loads, and needs 80% of a pull request's
+changed lines run by tests.
 
 ## Commits and Pull Requests
 

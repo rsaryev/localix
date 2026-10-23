@@ -347,7 +347,6 @@ for (const link of ['CONTRIBUTING.md', 'SECURITY.md', 'CODE_OF_CONDUCT.md', 'LIC
 const contributing = await readFile(join(root, 'CONTRIBUTING.md'), 'utf8')
 const requiredValidationCommands = [
   'bun run build',
-  'bun run check:release',
   'bun run type-check',
   'bun run check:tests',
   'bun run test',
@@ -366,12 +365,8 @@ assert(
   'Shared setup must use a frozen install',
 )
 assert(ci.includes('uses: ./.github/actions/setup-workspace'), 'CI must use shared workspace setup')
-// CI runs `bun run test` as its two slices, in parallel jobs (see scripts/test-all.mjs).
-const requiredCiGates = [
-  ...requiredValidationCommands.filter((command) => command !== 'bun run test'),
-  'bun run test:unit',
-  'bun run test:system',
-]
+// CI runs both test tiers, each in a job of its own.
+const requiredCiGates = [...requiredValidationCommands, 'bun run test:integration']
 for (const gate of requiredCiGates) {
   assert(ci.includes(gate), `CI must run: ${gate}`)
 }

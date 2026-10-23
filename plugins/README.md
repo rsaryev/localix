@@ -145,7 +145,7 @@ bun run --cwd plugins/code-graph type-check
 
 Choose the matching plugin path and available package script. Hook-only plugins may have no package
 script. Build required workspace dependencies before raw package checks; see
-[Contributing](../CONTRIBUTING.md). CI owns the complete `test:dropins`, type, and repository gates.
+[Contributing](../CONTRIBUTING.md). CI owns the complete test, type, and repository gates.
 
 The [plugin SDK](../packages/plugin-sdk/README.md) owns typed host contracts. The
 [public authoring guide](../docs/extending/plugins.md) owns user-facing examples and should be

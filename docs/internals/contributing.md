@@ -100,28 +100,31 @@ available. The hook does not rewrite or stage tracked files, but type checks may
 output. Staged files and affected packages must have no unstaged edits; stage or stash them before
 committing.
 
-Before every push, `.githooks/pre-push` runs the CI gates `check:release`, `type-check`,
-`check:tests`, and `test` for the packages that differ from `origin/main` and every package that
-depends on them (Turbo's `--affected`; a global input selects all of them), three tasks at a time.
-`TURBO_FILTER= git push` checks the whole tree. Pull-request CI runs the same selection against the
-pull request's base; `main` checks the whole tree. The gates check the working tree, so commit or
-stash tracked changes before pushing.
+Before every push, `.githooks/pre-push` runs the CI gates `type-check`, `check:tests`, and `test`
+for the packages that differ from `origin/main` and every package that depends on them (Turbo's
+`--affected`; a global input selects all of them), three tasks at a time. `TURBO_FILTER= git push`
+checks the whole tree. Pull-request CI runs the same selection against the pull request's base;
+`main` checks the whole tree. The gates check the working tree, so commit or stash tracked changes
+before pushing.
 
 Hooks never pass git's repository variables (`GIT_DIR`, `GIT_INDEX_FILE` and the rest) to the tools
 and tests they start: a test that creates a scratch repository would otherwise act on this one,
 which is what a commit from a linked worktree used to do. Tests that run git build their environment
 with `scripts/scratch-git-env.mjs`; the git-workspace runner drops the variables
 `git rev-parse --local-env-vars` lists. A commit made under a scratch identity (`*.invalid`,
-`*.test`, `*.example`, `localhost`) is refused. `bun run test` runs the package suites and the
-repository tests in `test:repo` side by side and prints the repository output when it finishes. Run
-optional architecture, documentation, and audit checks when relevant. `bun run check:rust`
-reproduces native validation, including the full Rust test suite.
+`*.test`, `*.example`, `localhost`) is refused.
+
+Every workspace has two test tiers, run through Turbo: `test` for unit tests and `test:integration`
+for files named `*.integration.test.ts`. The repository's own contracts live in the `scripts`
+workspace like any package's tests, so a new file runs without being listed anywhere. Run optional
+architecture, documentation, and audit checks when relevant. `bun run check:rust` reproduces native
+validation, including the full Rust test suite.
 
 ### Workflows and releases
 
 | Workflow          | Runs when                                            | Jobs and result                                                                                                        |
 | ----------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `Checks`          | PR, push to main, manual run                         | Four parallel `App` jobs and `Desktop (Rust) and repository scans`, reported as `Checks passed`; nothing is published. |
+| `Checks`          | PR, push to main, manual run                         | Five parallel `App` jobs and `Desktop (Rust) and repository scans`, reported as `Checks passed`; nothing is published. |
 | `Desktop Release` | Manual run from main                                 | Prepare release and require green CI → validate changelog and signing → create draft → build → publish.                |
 | `Website Deploy`  | Website input changes, published release, manual run | Build and deploy the website; same-repository PRs get previews. Production requires `LANDING_PRODUCTION=true`.         |
 
@@ -132,9 +135,10 @@ exact commit.
 
 `Checks passed` fails when any job fails or is cancelled and names each job's result, so branch
 protection needs to require only that status. The app jobs run in parallel, each building from its
-own Turbo archive: `types` (source and test types), `unit tests` (`bun run test:unit`),
-`integration and repository tests` (`check:release` and `bun run test:system`) and `desktop bundle`
-(a smoke test of the staged bundle). One failing job does not stop the others.
+own Turbo archive: `types` (source and test types), `unit tests` (`bun run test`),
+`integration tests` (`bun run test:integration`), `desktop bundle` (a smoke test of the staged
+bundle) and `coverage` (`bun run coverage`, see [Testing](testing.md#coverage)). One failing job
+does not stop the others.
 
 A failing job lists its failing tests, type errors and Turbo tasks on the run's summary page
 (`scripts/ci-failure-summary.mjs`). The other job scans the history for secrets with gitleaks, lints
@@ -239,8 +243,6 @@ format check as a read-only gate before review.
   before starting a full development runtime for that database.
 - `bun run check:rust` exits successfully with a visible skip when Rust, Cargo, or Clippy is absent.
   A skipped local check is not evidence that Rust changes compile.
-- `bun run test:dropins` is separate because runtime-loaded plugins are not all discovered through
-  Turbo's package graph.
 - Development starts with `bun install --frozen-lockfile`, so a pull that moved `bun.lock` installs
   what it pins before anything builds. A lockfile that no longer matches its `package.json` is
   reported and development continues on what is installed.

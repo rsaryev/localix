@@ -26,8 +26,10 @@ export async function ensureFixtureService({ root, directory = captureRoot, port
     } catch (error) {
       if (error.name === 'TimeoutError')
         throw new Error(`Port ${port} is occupied by an unresponsive service; leave it running.`)
-      // Connection refusal means there is no fixture service to reuse.
-      if (error.cause?.code !== 'ECONNREFUSED' && error.code !== 'ConnectionRefused') throw error
+      // Connection refusal means there is no fixture service to reuse. Bun names it on the error
+      // itself (`ECONNREFUSED`, or `ConnectionRefused` in older releases), Node on its cause.
+      const code = error.code ?? error.cause?.code
+      if (code !== 'ECONNREFUSED' && code !== 'ConnectionRefused') throw error
     }
     if (existing) {
       let value

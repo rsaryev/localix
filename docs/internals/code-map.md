@@ -9,8 +9,8 @@ page says where to put a change.
 ```bash
 bun run dev                  # native desktop app (Tauri)
 bun run dev:workspace        # API and UI dev servers without the desktop shell
-bun run test                 # every workspace suite, then the repository contract tests
-bun run test:repo            # repository contract tests only (guards, boundaries, budgets)
+bun run test                 # every workspace's unit tests, the scripts workspace included
+bun run test:integration     # real processes, PTYs and watchers, every workspace
 bun run type-check           # tsc across workspaces (`check:tests` covers test files)
 bun run lint:changed         # oxlint on files that differ from main, the fast local loop
 bun run format               # oxfmt --write

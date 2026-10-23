@@ -1,0 +1,184 @@
+import { describe, expect, test } from 'bun:test'
+import { changedLines, evaluate, ratchet } from './gates.mjs'
+
+const lines = (entries: [number, number][]) => new Map(entries)
+
+/** Two packages: `a` runs 3 of its 4 lines, `b` runs 1 of 2; `b/never.ts` is loaded by no test. */
+const coverage = new Map([
+  [
+    'pkg/a/x.ts',
+    lines([
+      [1, 1],
+      [2, 1],
+      [3, 0],
+      [4, 2],
+    ]),
+  ],
+  [
+    'pkg/b/y.ts',
+    lines([
+      [1, 1],
+      [2, 0],
+    ]),
+  ],
+])
+const sources = {
+  'pkg/a': ['pkg/a/x.ts'],
+  'pkg/b': ['pkg/b/y.ts', 'pkg/b/never.ts'],
+}
+
+describe('package floors', () => {
+  test('a package at or above its floor passes and one below it fails', () => {
+    const result = evaluate({
+      coverage,
+      sources,
+      baseline: { floors: { 'pkg/a': 75, 'pkg/b': 60 }, unloaded: ['pkg/b/never.ts'] },
+    })
+
+    expect(result.packages).toEqual([
+      { pkg: 'pkg/a', covered: 3, total: 4, percent: 75, floor: 75, ok: true },
+      { pkg: 'pkg/b', covered: 1, total: 2, percent: 50, floor: 60, ok: false },
+    ])
+    expect(result.ok).toBe(false)
+  })
+
+  test('a package with tests but no recorded floor fails until a floor is recorded', () => {
+    const result = evaluate({
+      coverage,
+      sources,
+      baseline: { floors: { 'pkg/a': 70 }, unloaded: ['pkg/b/never.ts'] },
+    })
+
+    expect(result.packages.find((row) => row.pkg === 'pkg/b')).toMatchObject({
+      floor: null,
+      ok: false,
+    })
+  })
+})
+
+describe('files no test loads', () => {
+  test('a new source file that no test loads fails', () => {
+    const result = evaluate({
+      coverage,
+      sources,
+      baseline: { floors: { 'pkg/a': 0, 'pkg/b': 0 }, unloaded: [] },
+    })
+
+    expect(result.unloaded).toEqual({ added: ['pkg/b/never.ts'], stale: [] })
+    expect(result.ok).toBe(false)
+  })
+
+  test('a listed file that a test now loads must leave the list, so it only shrinks', () => {
+    const result = evaluate({
+      coverage,
+      sources,
+      baseline: { floors: { 'pkg/a': 0, 'pkg/b': 0 }, unloaded: ['pkg/b/never.ts', 'pkg/a/x.ts'] },
+    })
+
+    expect(result.unloaded).toEqual({ added: [], stale: ['pkg/a/x.ts'] })
+    expect(result.ok).toBe(false)
+  })
+
+  test('a listed file that was deleted must leave the list too', () => {
+    const result = evaluate({
+      coverage,
+      sources,
+      baseline: {
+        floors: { 'pkg/a': 0, 'pkg/b': 0 },
+        unloaded: ['pkg/b/never.ts', 'pkg/b/gone.ts'],
+      },
+    })
+
+    expect(result.unloaded.stale).toEqual(['pkg/b/gone.ts'])
+  })
+})
+
+describe('changed lines', () => {
+  test('reads the new-side line numbers of every hunk', () => {
+    const diff = `diff --git a/pkg/a/x.ts b/pkg/a/x.ts
+--- a/pkg/a/x.ts
++++ b/pkg/a/x.ts
+@@ -1,0 +2,2 @@
++one
++two
+@@ -9 +12 @@
+-old
++new
+diff --git a/gone.ts b/gone.ts
+--- a/gone.ts
++++ /dev/null
+@@ -1,2 +0,0 @@
+-a
+-b
+`
+    expect(changedLines(diff)).toEqual(new Map([['pkg/a/x.ts', [2, 3, 12]]]))
+  })
+
+  test('the changed lines that tests can run must reach the threshold', () => {
+    const result = evaluate({
+      coverage,
+      sources,
+      baseline: { floors: { 'pkg/a': 0, 'pkg/b': 0 }, unloaded: ['pkg/b/never.ts'] },
+      // Line 9 of x.ts holds no statement, so it does not count.
+      changed: new Map([['pkg/a/x.ts', [2, 3, 9]]]),
+      diffThreshold: 80,
+    })
+
+    expect(result.diff).toEqual({
+      covered: 1,
+      total: 2,
+      percent: 50,
+      threshold: 80,
+      uncovered: { 'pkg/a/x.ts': [3] },
+      unloaded: [],
+      ok: false,
+    })
+  })
+
+  test('a changed file that no test loads fails the diff whatever the percentage', () => {
+    const result = evaluate({
+      coverage,
+      sources,
+      baseline: { floors: { 'pkg/a': 0, 'pkg/b': 0 }, unloaded: ['pkg/b/never.ts'] },
+      changed: new Map([
+        ['pkg/b/never.ts', [1]],
+        ['README.md', [1]],
+      ]),
+      diffThreshold: 80,
+    })
+
+    expect(result.diff).toMatchObject({ total: 0, unloaded: ['pkg/b/never.ts'], ok: false })
+  })
+})
+
+describe('ratchet', () => {
+  test('floors rise to what was measured and never fall; the unloaded list only shrinks', () => {
+    const measured = evaluate({
+      coverage,
+      sources,
+      baseline: {
+        floors: { 'pkg/a': 80, 'pkg/b': 10 },
+        unloaded: ['pkg/b/never.ts', 'pkg/a/x.ts'],
+      },
+    })
+
+    expect(
+      ratchet(
+        { floors: { 'pkg/a': 80, 'pkg/b': 10 }, unloaded: ['pkg/b/never.ts', 'pkg/a/x.ts'] },
+        measured,
+      ),
+    ).toEqual({
+      floors: { 'pkg/a': 80, 'pkg/b': 50 },
+      unloaded: ['pkg/b/never.ts'],
+    })
+  })
+
+  test('a first recording takes what is measured, including the files no test loads yet', () => {
+    const measured = evaluate({ coverage, sources, baseline: { floors: {}, unloaded: [] } })
+
+    expect(ratchet({ floors: {}, unloaded: [] }, measured, { adopt: true })).toEqual({
+      floors: { 'pkg/a': 75, 'pkg/b': 50 },
+      unloaded: ['pkg/b/never.ts'],
+    })
+  })
+})

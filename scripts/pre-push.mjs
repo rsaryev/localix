@@ -12,7 +12,7 @@
 import { runOrExit } from './lib/run.mjs'
 import { scrubGitEnv } from './scratch-git-env.mjs'
 
-const GATES = ['check:release', 'type-check', 'check:tests', 'test']
+const GATES = ['type-check', 'check:tests', 'test', 'test:integration']
 
 const uncommitted = runOrExit('git', ['status', '--porcelain', '-z', '--untracked-files=no'], {
   cwd: process.cwd(),

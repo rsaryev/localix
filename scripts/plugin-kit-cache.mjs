@@ -16,7 +16,7 @@ import { join, relative } from 'node:path'
  * Every `bun run dev` staged the kit from scratch into a new per-PID tree: a `tsc` over the kit's
  * declarations plus a backend bundle, measured at up to 333% CPU and 1.5GB for ~3s of every
  * launch, for a kit whose inputs had not changed since the last one. The suites that load a kit
- * (`plugin-kit.test.ts`, `plugin-ui-artifact.test.ts`) paid the same on every run — an agent
+ * (`plugin-kit.integration.test.ts`, `plugin-ui-artifact.test.ts`) paid the same on every run — an agent
  * re-running one three times in thirty seconds kept three cores busy for nothing. The kit holds no
  * absolute paths (packaging already relocates it), so a kit staged once is valid wherever the
  * inputs are the same; a change to staging itself changes the key, so a test still stages fresh

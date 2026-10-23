@@ -72,7 +72,7 @@
     "dev": "bun ../../scripts/dev-api.mjs",
     "start": "bun bin/localix",
     "build": "tsc -p tsconfig.build.json",
-    "test": "bun ../../scripts/test-shards.mjs 4 --no-orphans --path-ignore-patterns='**/*.integration.test.ts' src",
+    "test": "bun ../../scripts/test-shards.mjs 4 --no-orphans --path-ignore-patterns='**/*.integration.test.ts' src scripts",
     "test:integration": "bun ../../scripts/test-shards.mjs 3 --no-orphans integration.test",
     "type-check": "tsc --noEmit -p tsconfig.json --incremental --tsBuildInfoFile node_modules/.tmp/tsconfig.tsbuildinfo",
     "type-check:tests": "tsc --noEmit -p tsconfig.test.json",

@@ -33,14 +33,7 @@ type Workflow = {
 const ci = Bun.YAML.parse(read('.github/workflows/ci.yml')) as Workflow
 const release = Bun.YAML.parse(read('.github/workflows/release.yml')) as Workflow
 const landing = Bun.YAML.parse(read('.github/workflows/landing.yml')) as Workflow
-const gates = [
-  'check:release',
-  'type-check',
-  'check:tests',
-  'test:unit',
-  'test:system',
-  'check:bundle',
-]
+const gates = ['type-check', 'check:tests', 'test', 'test:integration', 'check:bundle', 'coverage']
 const slices = ci.jobs.app.strategy?.matrix.include ?? []
 /** Every `bun run <script>` the app matrix runs, slice by slice. */
 const sliceCommands = slices.flatMap((slice) =>
@@ -168,7 +161,13 @@ describe('CI minute budget contract', () => {
   test('checks the workspace as parallel slices that together run every gate', () => {
     const app = ci.jobs.app
     expect(app.strategy?.['fail-fast']).toBe(false)
-    expect(slices.map((slice) => slice.cache)).toEqual(['types', 'unit', 'system', 'bundle'])
+    expect(slices.map((slice) => slice.cache)).toEqual([
+      'types',
+      'unit',
+      'integration',
+      'bundle',
+      'coverage',
+    ])
     expect([...sliceCommands].sort()).toEqual(gates.map((gate) => `bun run ${gate}`).sort())
     // One install and one build per slice, the build before the slice's own commands.
     const runs = app.steps.map((step) => step.run ?? step.uses ?? '')
@@ -198,11 +197,14 @@ describe('CI minute budget contract', () => {
     expect(summary?.run).toContain('>> "$GITHUB_STEP_SUMMARY"')
   })
 
-  test('the slices run what a local bun run test runs, split in two', () => {
+  test('the slices run the two tiers a local run has, through Turbo and its cache', () => {
     const scripts = JSON.parse(read('package.json')).scripts as Record<string, string>
-    expect(scripts.test).toBe('bun scripts/test-all.mjs')
-    expect(scripts['test:unit']).toBe('bun scripts/test-all.mjs unit')
-    expect(scripts['test:system']).toBe('bun scripts/test-all.mjs system')
+    expect(scripts.test).toBe(
+      'bunx turbo test --concurrency=${TURBO_CONCURRENCY:-50%} ${TURBO_FILTER:-}',
+    )
+    expect(scripts['test:integration']).toBe(
+      'bunx turbo test:integration --concurrency=${TURBO_CONCURRENCY:-50%} ${TURBO_FILTER:-}',
+    )
   })
 
   test('release verification requires green CI instead of repeating its gates', () => {
@@ -258,14 +260,15 @@ describe('CI minute budget contract', () => {
     expect(ci.jobs.app.env).toEqual({
       TURBO_FILTER: "${{ github.event_name == 'pull_request' && '--affected' || '' }}",
       TURBO_SCM_BASE: '${{ github.event.pull_request.base.sha }}',
+      // The coverage gate also holds a pull request's changed lines to the threshold.
+      COVERAGE_BASE: '${{ github.event.pull_request.base.sha }}',
     })
     const scripts = JSON.parse(read('package.json')).scripts as Record<string, string>
-    for (const gate of ['type-check', 'check:tests'])
+    for (const gate of ['type-check', 'check:tests', 'test', 'test:integration'])
       expect(scripts[gate]).toContain('${TURBO_FILTER:-}')
     // The repository tests run on every change and import built packages, so the build is never
     // filtered; Turbo replays every unchanged package from the cache main saved.
     expect(scripts.build).toBe('bunx turbo build')
-    expect(read('scripts/test-all.mjs')).toContain('...filter')
   })
 
   test('cancels a superseded pull-request run, never a run for a commit on main', () => {

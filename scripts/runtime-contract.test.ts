@@ -97,7 +97,7 @@ describe('the shell and the runtime stay on one contract', () => {
       return Number(match[1])
     }
     // Also enforced by the Rust compiler (`const _: () = assert!`); this keeps the check running
-    // where there is no toolchain, such as `check:release`.
+    // where there is no toolchain, such as the scripts workspace's tests.
     expect(seconds('READY_TIMEOUT_SECS') * 1000).toBeGreaterThan(protocol.RUNTIME_ATTACH_WAIT_MS)
     expect(seconds('SHUTDOWN_WAIT') * 1000).toBeGreaterThan(protocol.RUNTIME_SHUTDOWN_DEADLINE_MS)
   })

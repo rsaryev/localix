@@ -42,20 +42,24 @@ jobs:
               bun run check:tests
           - check: unit tests
             cache: unit
-            run: bun run test:unit
-          # Real processes, PTYs and watchers (each package's test:integration), the repository
-          # guards and the release-tooling tests.
-          - check: integration and repository tests
-            cache: system
-            run: |
-              bun run check:release
-              bun run test:system
+            run: bun run test
+          # Real processes, PTYs and watchers: every package's test:integration, the scripts
+          # workspace's included.
+          - check: integration tests
+            cache: integration
+            run: bun run test:integration
           # Stages the desktop bundle and starts its API from a copy outside the checkout, the way
           # the packaged app does: a missing resource or an unresolved vendored module shows up
           # here instead of in a release leg that has already been signed and notarized.
           - check: desktop bundle
             cache: bundle
             run: bun run check:bundle
+          # Every package's unit tests under coverage: each package holds its recorded floor, no
+          # source file goes untested, and a pull request's changed lines are run by tests
+          # (docs/internals/testing.md#coverage).
+          - check: coverage
+            cache: coverage
+            run: bun run coverage
     # A pull request checks and tests only the packages it changes and their dependents (Turbo's
     # --affected against its base; a global input selects everything). Main deliberately checks
     # the whole tree, unfiltered, so every main commit has a full run a release can rely on. The
@@ -64,6 +68,7 @@ jobs:
     env:
       TURBO_FILTER: ${{ github.event_name == 'pull_request' && '--affected' || '' }}
       TURBO_SCM_BASE: ${{ github.event.pull_request.base.sha }}
+      COVERAGE_BASE: ${{ github.event.pull_request.base.sha }}
     steps:
       # History only where it is read: --affected needs the pull request's base; main runs the
       # whole tree from one commit.
@@ -74,7 +79,7 @@ jobs:
           fetch-depth: ${{ github.event_name == 'pull_request' && 0 || 1 }}
 
       - name: Install ripgrep and zsh for tests
-        if: matrix.cache == 'unit' || matrix.cache == 'system'
+        if: matrix.cache == 'unit' || matrix.cache == 'integration' || matrix.cache == 'coverage'
         run: |
           for attempt in 1 2 3; do
             sudo apt-get update && sudo apt-get install -y --no-install-recommends ripgrep zsh && break

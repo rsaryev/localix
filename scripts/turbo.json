@@ -1,0 +1,54 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_ROOT$/.githooks/**",
+        "$TURBO_ROOT$/.github/**",
+        "$TURBO_ROOT$/apps/**",
+        "$TURBO_ROOT$/assets/**",
+        "$TURBO_ROOT$/config/**",
+        "$TURBO_ROOT$/docs/**",
+        "$TURBO_ROOT$/packages/**",
+        "$TURBO_ROOT$/plugins/**",
+        "$TURBO_ROOT$/scripts/**",
+        "$TURBO_ROOT$/vendor/**",
+        "$TURBO_ROOT$/*",
+        "!$TURBO_ROOT$/**/node_modules/**",
+        "!$TURBO_ROOT$/**/.turbo/**",
+        "!$TURBO_ROOT$/**/dist/**",
+        "!$TURBO_ROOT$/**/target/**",
+        "!$TURBO_ROOT$/**/.localix/**",
+        "!$TURBO_ROOT$/**/coverage/**",
+        "!$TURBO_ROOT$/**/tmp/**"
+      ],
+      "outputs": []
+    },
+    "test:integration": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_ROOT$/.githooks/**",
+        "$TURBO_ROOT$/.github/**",
+        "$TURBO_ROOT$/apps/**",
+        "$TURBO_ROOT$/assets/**",
+        "$TURBO_ROOT$/config/**",
+        "$TURBO_ROOT$/docs/**",
+        "$TURBO_ROOT$/packages/**",
+        "$TURBO_ROOT$/plugins/**",
+        "$TURBO_ROOT$/scripts/**",
+        "$TURBO_ROOT$/vendor/**",
+        "$TURBO_ROOT$/*",
+        "!$TURBO_ROOT$/**/node_modules/**",
+        "!$TURBO_ROOT$/**/.turbo/**",
+        "!$TURBO_ROOT$/**/dist/**",
+        "!$TURBO_ROOT$/**/target/**",
+        "!$TURBO_ROOT$/**/.localix/**",
+        "!$TURBO_ROOT$/**/coverage/**",
+        "!$TURBO_ROOT$/**/tmp/**"
+      ],
+      "outputs": []
+    }
+  }
+}

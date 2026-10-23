@@ -894,6 +894,20 @@
       "name": "@localix-plugin/webhook-notifier",
       "version": "1.0.0",
     },
+    "scripts": {
+      "name": "@localixai/scripts",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@localixai/agent": "workspace:*",
+        "@localixai/api": "workspace:*",
+        "@localixai/change-feed": "workspace:*",
+        "@localixai/kit": "workspace:*",
+        "@localixai/plugin-kit-compiler": "workspace:*",
+        "@localixai/plugin-sdk": "workspace:*",
+        "@localixai/source-lint": "workspace:*",
+        "@localixai/testing": "workspace:*",
+      },
+    },
     "vendor/monaco-editor-runtime": {
       "name": "monaco-editor",
       "version": "0.57.0-localix.0",
@@ -1247,6 +1261,8 @@
     "@localixai/plugin-kit-compiler": ["@localixai/plugin-kit-compiler@workspace:packages/plugin-kit-compiler"],
 
     "@localixai/plugin-sdk": ["@localixai/plugin-sdk@workspace:packages/plugin-sdk"],
+
+    "@localixai/scripts": ["@localixai/scripts@workspace:scripts"],
 
     "@localixai/search": ["@localixai/search@workspace:packages/search"],
 

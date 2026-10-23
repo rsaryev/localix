@@ -28,7 +28,7 @@ let kit: PluginKit
 let dirs = 0
 
 beforeAll(async () => {
-  // A child, as staging runs it (see plugin-kit.test.ts). Synchronous, so the hook's own 30 s
+  // A child, as staging runs it (see plugin-kit.integration.test.ts). Synchronous, so the hook's own 30 s
   // timeout cannot fire while it blocks: the child gets its OWN deadline, or a stalled staging
   // froze this whole test process (found at 1000% CPU after eight minutes).
   // Reuses a kit staged for identical inputs (`plugin-kit-cache.mjs`).

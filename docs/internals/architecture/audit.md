@@ -10,11 +10,11 @@ Counts are from import scans of non-test files on 2026-10-21. A finding names th
 
 The stages in [the migration plan](migration-plan.md) have since landed. The baselines in
 `scripts/architecture-baselines/` now read A1–A8: 0, C1: 3, C4: 1, C6: 0, C7: 1, checked on every
-`bun run test:repo`. The change feed is no longer read by the semantic index alone: the relay to
-client topics, the usage ledger projector, route repair, agent seats, capability cleanup, session
-residue and the plugin backends consume it (`apps/api/src/bootstrap/core-reactors.ts`). The findings
-below record the code as it was on 2026-10-21, as the starting point those stages fixed; they are
-not the current state.
+`bun run test`. The change feed is no longer read by the semantic index alone: the relay to client
+topics, the usage ledger projector, route repair, agent seats, capability cleanup, session residue
+and the plugin backends consume it (`apps/api/src/bootstrap/core-reactors.ts`). The findings below
+record the code as it was on 2026-10-21, as the starting point those stages fixed; they are not the
+current state.
 
 ## Scorecard
 

@@ -94,11 +94,14 @@ const OUTERMOST_PAINTERS = new Map<string, string>([
 
 /** Another session owns this tree; it is swept on its own schedule. */
 const SKIP_DIRS = new Set(['node_modules', 'dist', 'git-workspace', '__snapshots__'])
+// Paths are repository-relative and read from here, so the guard reads the same tree wherever the
+// run starts (the scripts workspace runs from scripts/).
+const REPO = join(import.meta.dir, '..')
 
 function* sourceFiles(dir: string): Generator<string> {
   let entries
   try {
-    entries = readdirSync(dir, { withFileTypes: true })
+    entries = readdirSync(join(REPO, dir), { withFileTypes: true })
   } catch {
     return
   }
@@ -152,15 +155,17 @@ function classNameExpressions(source: string): { classes: string; raw: string; l
 describe('pane ground painting', () => {
   test('only the outermost pane paints the window ground', () => {
     const offenders: string[] = []
+    let scanned = 0
     for (const root of ROOTS) {
       try {
-        statSync(root)
+        statSync(join(REPO, root))
       } catch {
         continue
       }
       for (const file of sourceFiles(root)) {
+        scanned++
         if (OUTERMOST_PAINTERS.has(file)) continue
-        for (const expression of classNameExpressions(readFileSync(file, 'utf8'))) {
+        for (const expression of classNameExpressions(readFileSync(join(REPO, file), 'utf8'))) {
           // Tested against `raw`, which still has the comments the marker is written in.
           if (EXPLICIT_ALLOW.test(expression.raw)) continue
           const classes = expression.classes
@@ -174,13 +179,15 @@ describe('pane ground painting', () => {
         }
       }
     }
+    // A scan that found no files proves nothing: it must have read the UI it guards.
+    expect(scanned).toBeGreaterThan(500)
     expect(offenders).toEqual([])
   })
 
   test('every allowlisted painter still exists and still paints', () => {
     // An allowlist that outlives its files silently re-opens the hole it was cut for.
     for (const [file, reason] of OUTERMOST_PAINTERS) {
-      const source = readFileSync(file, 'utf8')
+      const source = readFileSync(join(REPO, file), 'utf8')
       expect(GROUND_FILL.test(source), `${file} no longer paints a ground (${reason})`).toBe(true)
     }
   })

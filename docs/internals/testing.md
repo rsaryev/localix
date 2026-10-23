@@ -93,6 +93,37 @@ transpiles the module graph again: on apps/api's chat tests four isolated worker
 the CPU of a serial run, while four shards finished 2.5 times faster than serial at 1.4 times its
 CPU.
 
+## Coverage
+
+`bun run coverage` runs every package's unit tests under Bun's line coverage and holds three gates.
+CI runs it as its own slice; a pull request also passes its base as `COVERAGE_BASE`.
+
+| Gate             | Rule                                                                                         |
+| ---------------- | -------------------------------------------------------------------------------------------- |
+| Package floor    | Each package keeps at least the line coverage recorded in `config/coverage.json`.            |
+| No untested file | Every source file with code is loaded by at least one of its package's tests.                |
+| Changed lines    | In a pull request, at least 80% of the changed lines that hold a statement are run by tests. |
+
+How it counts, and why Bun's own `coverageThreshold` is not enough:
+
+- Bun lists only the files a test imported, so a file no test loads would not lower its number. The
+  script takes the file list from git instead. A module of only types or `export … from` lines has
+  no code and does not count.
+- A sharded package's shards are measured separately and merged; Bun would judge each shard alone.
+- A package is credited only for its own files. Code another package's tests happen to run is not
+  tested by this package, and the number must not depend on which packages ran.
+- Bun measures lines and functions, not branches. A branch on its own line still shows as uncovered
+  when no test takes it.
+
+The recorded baseline only gets stricter. `bun run coverage --update` raises each floor to what was
+measured and removes files that tests now load from the `unloaded` list; it never lowers a floor or
+adds a file. A file that a test starts to load, or that is deleted, fails the run until the list is
+updated, so the list cannot go stale. Use `--packages apps/api,packages/agent` while working on a
+few packages and `--base origin/main` to see the changed-lines gate locally.
+
+Test helpers, fixtures and generated files are excluded by `exclude` in the config. Everything else
+is product code that a test, written first, should run.
+
 ## Finding a slow test
 
 Write per-test timings with `bun test --reporter=junit --reporter-outfile=timings.xml src` and sort

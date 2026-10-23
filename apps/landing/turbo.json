@@ -8,7 +8,16 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/docs/**"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/docs/**",
+        "$TURBO_ROOT$/scripts/test-deadline.ts",
+        "$TURBO_ROOT$/scripts/test-globals-guard.ts",
+        "$TURBO_ROOT$/scripts/test-shards.mjs",
+        "$TURBO_ROOT$/scripts/test-all.mjs",
+        "$TURBO_ROOT$/packages/testing/src/**",
+        "$TURBO_ROOT$/packages/kit/test-preload.ts"
+      ],
       "outputs": []
     }
   }

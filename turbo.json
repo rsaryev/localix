@@ -32,32 +32,27 @@
     },
     "test": {
       "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/scripts/test-deadline.ts",
+        "$TURBO_ROOT$/scripts/test-globals-guard.ts",
+        "$TURBO_ROOT$/scripts/test-shards.mjs",
+        "$TURBO_ROOT$/scripts/test-all.mjs",
+        "$TURBO_ROOT$/packages/testing/src/**",
+        "$TURBO_ROOT$/packages/kit/test-preload.ts"
+      ],
       "outputs": []
     },
     "test:integration": {
       "dependsOn": ["^build"],
-      "outputs": []
-    },
-    "//#test:repo:slow": {
       "inputs": [
-        "scripts/plugin-kit*",
-        "scripts/stage-plugin-kit*",
-        "scripts/test-deadline*",
-        "scripts/test-globals-guard.ts",
-        "packages/testing/src/**",
-        "scripts/scratch-git-env.mjs",
-        "scripts/lib/**",
-        "apps/api/src/**",
-        "apps/ui/src/app/**",
-        "apps/ui/src/shared/ui/**",
-        "packages/*/src/**",
-        "packages/*/package.json",
-        "packages/kit/styles/**",
-        "packages/kit/test-preload.ts",
-        "plugins/template/**",
-        "bunfig.toml",
-        "bun.lock",
-        "tsconfig*.json"
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/scripts/test-deadline.ts",
+        "$TURBO_ROOT$/scripts/test-globals-guard.ts",
+        "$TURBO_ROOT$/scripts/test-shards.mjs",
+        "$TURBO_ROOT$/scripts/test-all.mjs",
+        "$TURBO_ROOT$/packages/testing/src/**",
+        "$TURBO_ROOT$/packages/kit/test-preload.ts"
       ],
       "outputs": []
     },

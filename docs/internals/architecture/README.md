@@ -149,8 +149,8 @@ rule that the code already breaks starts with a baseline: a committed list of to
 one must be removed from the list. This is the same ratchet the UI token guards use.
 
 The rule checks are `scripts/architecture-rules.test.ts` (A1 cycles, A2–A7) and
-`scripts/architecture-flow-rules.test.ts` (A8, C1, C4, C6, C7), both run by `bun run test:repo`.
-Their detectors live in `scripts/architecture/` and their baselines in
+`scripts/architecture-flow-rules.test.ts` (A8, C1, C4, C6, C7), both run by the scripts workspace's
+`bun run test`. Their detectors live in `scripts/architecture/` and their baselines in
 `scripts/architecture-baselines/<rule>.json`. Each key names a file or an edge, never a line, so an
 unrelated edit does not churn it, and each rule has a positive control that proves it still fires.
 After a fix, rewrite the baselines with `ARCHITECTURE_BASELINE=write` set on the same `bun test`

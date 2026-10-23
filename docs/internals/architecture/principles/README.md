@@ -29,6 +29,6 @@ Read [the architecture overview](../../architecture.md) for the system and
 - `packages/oxlint-rules` holds per-node rules for the visual system. None of its rules concerns
   module boundaries today.
 - `scripts/architecture-rules.test.ts` (A1–A7) and `scripts/architecture-flow-rules.test.ts` (A8,
-  C1, C4, C6, C7) check the rules against their baselines; both run in `bun run test:repo`.
+  C1, C4, C6, C7) check the rules against their baselines; both run in `bun run test`.
 - Source-reading boundary tests use `@localixai/source-lint` (`packages/source-lint`) and
   `apps/api/src/lib/source-lint.ts`.

@@ -1,0 +1,22 @@
+{
+  "name": "@localixai/scripts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Repository tooling and the tests that hold the repository's contracts: CI, releases, guards and budgets.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test": "bun test --timeout 60000 --path-ignore-patterns='**/*.integration.test.ts' .",
+    "test:integration": "bun test integration.test"
+  },
+  "devDependencies": {
+    "@localixai/agent": "workspace:*",
+    "@localixai/api": "workspace:*",
+    "@localixai/change-feed": "workspace:*",
+    "@localixai/kit": "workspace:*",
+    "@localixai/plugin-kit-compiler": "workspace:*",
+    "@localixai/plugin-sdk": "workspace:*",
+    "@localixai/source-lint": "workspace:*",
+    "@localixai/testing": "workspace:*"
+  }
+}
