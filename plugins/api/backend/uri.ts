@@ -51,12 +51,6 @@ export function buildRequestUri(name: string): string {
   return localixResourceUri(API_PROVIDER, [name])
 }
 
-/** True when `uri` belongs to this plugin. */
-export function isRestUri(uri: string): boolean {
-  const parsed = parseLocalixUri(uri)
-  return parsed?.primitive === 'resource' && parsed.breadcrumbs[0] === API_PROVIDER
-}
-
 /** Parse a `localix://resource/api` URI, or null when it is not ours / not well-formed. */
 export function parseRestUri(uri: string): RestUriNode | null {
   const parsed = parseLocalixUri(uri)

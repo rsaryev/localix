@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'bun:test'
 import { createBashTool } from './bash'
-import { SSHEnvironment, DockerEnvironment, localEnvironment } from '../environments'
+import { localEnvironment } from '../environments/local'
+import { SSHEnvironment, DockerEnvironment } from '../environments/remote'
 import type { ExecutionEnvironment } from '../environment'
 import type { AsyncToolRegistry, ToolAction } from '@localixai/agent/agents'
 import { FAST_SETTLE } from './test-settle'

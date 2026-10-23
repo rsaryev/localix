@@ -2,7 +2,8 @@ import { expect, test } from 'bun:test'
 import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createAesCipher, plaintextCipher } from './cipher'
-import { createSecretsStore, VaultPayloadError } from './store'
+import { createSecretsStore } from './store'
+import { VaultPayloadError } from './store-internals'
 
 test('metadata updates preserve the value through a new authenticated version', async () => {
   const db = createDatabase()

@@ -57,9 +57,6 @@ UI platform ports: `apps/ui/src/shared/lib/platformCapabilities.ts` wraps clipbo
 and reload. `scripts/check-architecture.mjs` reports "direct clipboard access bypasses
 platformCapabilities" and "direct openExternal import bypasses platformCapabilities".
 
-Isolated runs: `bun run test:sessions` boots an isolated API with a scripted model (see
-`scripts/session-e2e/README.md`).
-
 ## Known gaps
 
 - Storage is mostly not a port: feature repositories import `kysely` directly, so a feature service

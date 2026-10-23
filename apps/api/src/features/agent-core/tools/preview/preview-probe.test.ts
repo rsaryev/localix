@@ -4,15 +4,13 @@ import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import {
-  injectProbeIntoHtml,
   buildInjectedPreviewUrl,
-  forwardProxyHeaders,
   ensureStaticServer,
   disposePreviewServers,
   getPreviewProbeJs,
-  resolveProbeEntry,
-  resolvePrebuiltProbeFile,
 } from './preview-probe'
+import { forwardProxyHeaders } from './preview-proxy'
+import { injectProbeIntoHtml, resolveProbeEntry, resolvePrebuiltProbeFile } from './probe-inject'
 
 const PROBE = 'data-vf-probe'
 

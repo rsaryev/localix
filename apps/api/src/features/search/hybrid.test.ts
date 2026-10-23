@@ -1,13 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import {
-  ftsOrQuery,
-  fuse,
-  isLookupQuery,
-  queryTerms,
-  strongCount,
-  unitScore,
-  wordCoverage,
-} from './hybrid'
+import { ftsOrQuery, fuse, isLookupQuery, queryTerms, unitScore, wordCoverage } from './hybrid'
 
 // Russian words, escaped so the source stays ASCII.
 const WHERE = '\u0433\u0434\u0435' // "where"
@@ -88,10 +80,8 @@ describe('fuse', () => {
     expect(fuse(inputs, { zGate: 2, lookup: true })[0]!.key).toBe('exact')
   })
 
-  test('scores map into (0, 1) and strongCount folds the tail', () => {
+  test('scores map into (0, 1)', () => {
     expect(unitScore(0)).toBe(0)
     expect(unitScore(100)).toBeLessThan(1)
-    expect(strongCount([6, 5, 3.1, 1, 0.5])).toBe(3)
-    expect(strongCount([])).toBe(0)
   })
 })

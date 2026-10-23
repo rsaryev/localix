@@ -34,7 +34,7 @@ export function buildSkillsSection(skillsContext: string): string | null {
 /**
  * Skills forced in by a keyword in the user's message. Volatile by nature — the trigger is
  * this turn's message — so it renders in the tail rather than the cached prefix; see
- * `../cache-tiers.ts`. Says WHICH keyword fired, because a procedure appearing unbidden is
+ * `../cache-tiers.test.ts`. Says WHICH keyword fired, because a procedure appearing unbidden is
  * confusing otherwise, and shares the pinned skills' aggregate cap and honest omission
  * notice rather than inventing a second budget.
  */

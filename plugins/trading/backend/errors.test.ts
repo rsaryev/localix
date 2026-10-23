@@ -1,12 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import {
-  breachAdvice,
-  breachOf,
-  mapTradingError,
-  toErrorInfo,
-  TradingError,
-  withBreach,
-} from './errors'
+import { mapTradingError, toErrorInfo, TradingError } from './errors'
 
 describe('mapTradingError — classifies by ccxt error CLASS NAME', () => {
   test('a known ccxt error class name maps to its code', () => {
@@ -150,49 +143,5 @@ describe('toErrorInfo', () => {
     expect(mapTradingError(new InvalidOrder('Order must have minimum value of $10')).code).toBe(
       'invalid_order',
     )
-  })
-})
-
-describe('breach taxonomy (structural vs quantitative)', () => {
-  test('withBreach survives being read as duck-typed unknown — including across module graphs', () => {
-    const err = withBreach(new TradingError('risk_blocked'), {
-      kind: 'quantitative',
-      limit: 'max-order-notional',
-      limitValue: 100,
-      attemptedValue: 500,
-    })
-    // The per-run tool loader re-imports this module, so the classification must ride a PLAIN
-    // property — simulate the foreign graph by reading a structural clone-ish plain object.
-    const foreign = { message: err.message, breach: (err as unknown as { breach: unknown }).breach }
-    expect(breachOf(err)).toEqual({
-      kind: 'quantitative',
-      limit: 'max-order-notional',
-      limitValue: 100,
-      attemptedValue: 500,
-    })
-    expect(breachOf(foreign)).toEqual(breachOf(err))
-  })
-
-  test('breachOf refuses shapes that only look like a breach', () => {
-    expect(breachOf(new TradingError('risk_blocked'))).toBeUndefined()
-    expect(breachOf({ breach: { kind: 'sideways', limit: 'x' } })).toBeUndefined()
-    expect(breachOf({ breach: { kind: 'structural' } })).toBeUndefined() // no limit name
-    expect(breachOf(null)).toBeUndefined()
-    expect(breachOf('nope')).toBeUndefined()
-  })
-
-  test('the advice says the OPPOSITE next moves: structural = do not retry; quantitative = show the numbers and ask', () => {
-    const structural = breachAdvice({ kind: 'structural', limit: 'symbol-fence' })
-    expect(structural).toContain('STRUCTURAL')
-    expect(structural).toContain('Do not retry')
-    const quantitative = breachAdvice({
-      kind: 'quantitative',
-      limit: 'max-order-notional',
-      limitValue: 100,
-      attemptedValue: 500,
-    })
-    expect(quantitative).toContain('QUANTITATIVE')
-    expect(quantitative).toContain('attempted 500 vs limit 100')
-    expect(quantitative).toContain('never resize silently')
   })
 })

@@ -51,41 +51,6 @@ export function normalizeFinishReason(stop: StopReason | undefined): EditPredict
   }
 }
 
-/**
- * Whether a thrown provider error is worth a single retry within budget: transient
- * transport failures (HTTP 429 / 5xx / timeouts / network resets) are retryable; a
- * 4xx (other than 429), an abort, or a parse/shape error is NOT. Best-effort and
- * duck-typed — the engine never imports a concrete provider's error class.
- */
-export function classifyRetryable(error: unknown): boolean {
-  if (error && typeof error === 'object') {
-    const status =
-      (error as { status?: unknown; statusCode?: unknown }).status ??
-      (error as { statusCode?: unknown }).statusCode
-    if (typeof status === 'number') return status === 429 || (status >= 500 && status <= 599)
-    const name = (error as { name?: unknown }).name
-    if (name === 'AbortError') return false
-    const code = (error as { code?: unknown }).code
-    if (
-      typeof code === 'string' &&
-      /^(ETIMEDOUT|ECONNRESET|ECONNREFUSED|EAI_AGAIN|ENOTFOUND)$/.test(code)
-    ) {
-      return true
-    }
-  }
-  const rawMessage = (error as { message?: unknown } | null | undefined)?.message
-  const message =
-    typeof rawMessage === 'string' ? rawMessage : typeof error === 'string' ? error : ''
-  // Text is the last resort for errors that carry no structure. A bare 3-digit number
-  // is not a status ("500 files", "got 503 rows"): it counts only at the head of the message
-  // or after `status`/`HTTP`, the way providers print a status line.
-  return (
-    /\b(too many requests|rate limit|timed? ?out|timeout|econnreset|network error|fetch failed)\b/i.test(
-      message,
-    ) || /(?:^|\b(?:status|http)\b[\s:/\d.]*?)(?:429|5\d\d)\b/i.test(message.trimStart())
-  )
-}
-
 /** Build the default provider-backed adapter for a resolved (provider, model). */
 export function createLanguageModelAdapter(
   model: LanguageModel,

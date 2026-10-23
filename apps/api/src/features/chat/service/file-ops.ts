@@ -16,7 +16,7 @@ export { readFile, writeFile, listDirectory } from './file-content'
 import * as treeOps from './file-tree-ops'
 import { invalidateFileList } from './file-list-cache'
 
-export { revealEntry, incrementName } from './file-tree-ops'
+export { revealEntry } from './file-tree-ops'
 
 /**
  * Every tree MUTATION adds or removes a path, which makes the memoized `rg --files`
@@ -45,5 +45,5 @@ export const deleteEntry = invalidatingFileList(treeOps.deleteEntry)
 export const duplicateEntry = invalidatingFileList(treeOps.duplicateEntry)
 export const undoLastFileOp = invalidatingFileList(treeOps.undoLastFileOp)
 
-export { findFiles, searchContent, replaceContent, searchPaths, deriveFolders } from './file-search'
+export { findFiles, searchContent, replaceContent } from './file-search'
 export type { FindFilesOptions, ContentSearchOptions, ReplaceContentResult } from './file-search'

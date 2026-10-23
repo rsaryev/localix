@@ -1,10 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
-import {
-  liftTrailingScreenshot,
-  prepareBrowserArguments,
-  retiredInteractionMessage,
-} from './browser-input'
+import { prepareBrowserArguments } from './browser-input'
+import { liftTrailingScreenshot, retiredInteractionMessage } from './browser-lift'
 import {
   buildPreviewCommand,
   browserInputSchema,

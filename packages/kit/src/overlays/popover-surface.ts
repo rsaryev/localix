@@ -70,8 +70,6 @@ export const MENU_LABEL =
   'select-none px-2 py-1 text-2xs font-medium uppercase tracking-wider text-text-faint'
 export const MENU_SEPARATOR = '-mx-1 my-1 h-px bg-border'
 export const MENU_SHORTCUT = 'ml-auto shrink-0 pl-4 text-2xs tracking-normal text-text-faint'
-export const MENU_INDICATOR =
-  'absolute left-2 flex size-3.5 shrink-0 items-center justify-center text-text-soft'
 /** The radio check at the END of a row — a choice list reads its label first, its state last. */
 export const MENU_TRAILING_INDICATOR =
   'ml-auto flex size-3.5 shrink-0 items-center justify-center text-text-faint'

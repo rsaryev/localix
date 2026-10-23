@@ -5,8 +5,7 @@
  * `message.updated`, so every window shows the same marks and a reload keeps them. It never
  * reaches the model — the agent's text is unchanged; the marks are the reader's.
  */
-import type { MessagePinIo } from './message-pins'
-import { publishMessageSnapshot } from '../runtime/message-persistence'
+import { writeMessageState, type MessagePinIo } from './message-pins'
 
 /** A reply holds a few dozen boxes at most; the ceiling bounds what a client can make us store. */
 export const MAX_TASK_STATES = 500
@@ -22,23 +21,6 @@ export async function setMessageTask(
   if ((states[params.key] ?? false) === params.checked && params.key in states) return false
   const next = { ...states, [params.key]: params.checked }
   if (Object.keys(next).length > MAX_TASK_STATES) return false
-  const at = io.now()
-  const patch = { taskStates: next }
-  const written = await io.repo.updateMessage(
-    params.userId,
-    params.sessionId,
-    params.messageId,
-    patch,
-    at,
-  )
-  publishMessageSnapshot({
-    streamRegistry: io.streamRegistry,
-    userId: params.userId,
-    sessionId: params.sessionId,
-    messageId: params.messageId,
-    payload: written?.payload ?? { ...message.payload, ...patch },
-    createdAt: message.createdAt,
-    updatedAt: at,
-  })
+  await writeMessageState(io, params, message, { taskStates: next })
   return true
 }

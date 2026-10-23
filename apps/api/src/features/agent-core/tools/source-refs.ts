@@ -78,15 +78,6 @@ export function discoveredFileSource(input: { path: string; line?: number }): Ag
   return { ...fileSource(input), role: 'discovered' }
 }
 
-/** A symbol the agent navigated to. Same URI as a file — a symbol IS a place in one. */
-export function symbolSource(input: { path: string; line?: number; name: string }): AgentSource {
-  return {
-    ...fileSource({ path: input.path, line: input.line }),
-    kind: 'symbol',
-    title: input.name,
-  }
-}
-
 /**
  * Another session whose content informed this answer — a sub-agent's report, a history hit.
  *

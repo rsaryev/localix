@@ -22,11 +22,6 @@ export function enginePluginMcpToolName(plugin: string, server: string, tool: st
   return sanitizeMcpName(`mcp_${plugin}_${server}_${tool}`)
 }
 
-/** The CC address for the same tool: `mcp__plugin_<plugin>_<server>__<tool>`. */
-export function ccPluginMcpToolName(plugin: string, server: string, tool: string): string {
-  return `mcp__plugin_${plugin}_${server}__${tool}`
-}
-
 /**
  * Map a full CC plugin MCP tool name (`mcp__plugin_<plugin>_<server>__<tool>`) to the
  * engine's form (`mcp_<plugin>_<server>_<tool>`), or `undefined` when the input is not

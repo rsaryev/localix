@@ -1,6 +1,7 @@
 import {
   findLeaf,
   leaves as treeLeaves,
+  renormalize,
   type BranchNode,
   type GridNode,
   type LeafNode,
@@ -79,12 +80,6 @@ export interface LayoutConstraints {
   dims?: GridDims
 }
 
-function renorm(sizes: number[]): number[] {
-  const total = sizes.reduce((a, b) => a + b, 0)
-  if (total <= 0) return sizes.map(() => 1 / sizes.length)
-  return sizes.map((s) => s / total)
-}
-
 /**
  * Clamp fractional split sizes so no child falls below its minimum along the split
  * axis, given the branch's pixel `spanPx`. `minPx` is a single floor for every
@@ -146,7 +141,7 @@ export function computeLayout(
   }
   const branch = node
   const horizontal = branch.orientation === 'h'
-  let fractions = renorm(
+  let fractions = renormalize(
     branch.sizes.length === branch.children.length ? branch.sizes : branch.children.map(() => 1),
   )
   // Enforce minimum pixel sizes when a real viewport is known — this is what stops

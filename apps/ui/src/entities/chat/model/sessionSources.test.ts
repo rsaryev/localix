@@ -1,12 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { AgentItem, AgentSource } from '@localixai/agent/agents'
 
-import {
-  answerSources,
-  collectSessionSources,
-  sourceKindGroups,
-  type SourceBearingMessage,
-} from './sessionSources'
+import { answerSources, collectSessionSources, type SourceBearingMessage } from './sessionSources'
 
 const source = (over: Partial<AgentSource> = {}): AgentSource => ({
   id: 'src',
@@ -209,29 +204,5 @@ describe('answerSources', () => {
       'file:///read',
       'https://example.com/cited',
     ])
-  })
-})
-
-describe('sourceKindGroups', () => {
-  test('groups by kind, in the order each kind first appeared', () => {
-    const groups = sourceKindGroups(
-      collectSessionSources([
-        message('m1', [
-          [
-            source({ kind: 'file', uri: 'file:///a' }),
-            source({ kind: 'web', uri: 'https://example.com/1' }),
-            source({ kind: 'file', uri: 'file:///b' }),
-            source({ kind: 'session', uri: 'localix://ui/work-item/chat?session=X' }),
-          ],
-        ]),
-      ]),
-    )
-
-    expect(groups.map((g) => g.kind)).toEqual(['file', 'web', 'session'])
-    expect(groups[0]?.sources.map((s) => s.uri)).toEqual(['file:///a', 'file:///b'])
-  })
-
-  test('an empty registry produces no groups, not one empty group', () => {
-    expect(sourceKindGroups([])).toEqual([])
   })
 })

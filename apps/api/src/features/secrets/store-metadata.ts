@@ -119,6 +119,33 @@ export const insertAudit = (
     })
     .execute()
 
+/** One immutable version of an item's encrypted fields. */
+export const insertItemVersion = (
+  database: VaultDb,
+  input: {
+    id: string
+    itemId: string
+    version: number
+    encrypted: string
+    reason: string
+    at: string
+  },
+) =>
+  database
+    .insertInto('vault_item_versions')
+    .values({
+      id: input.id,
+      item_id: input.itemId,
+      version: input.version,
+      encrypted_payload: input.encrypted,
+      payload_ref: null,
+      payload_schema: 'localix.fields.v1',
+      reason: input.reason,
+      created_at: input.at,
+      redacted_at: null,
+    })
+    .execute()
+
 /** A vault item changed or went away: announced in the write's transaction, by its key. */
 export const announceVaultItem = (
   tx: Transaction<AppDatabase>,

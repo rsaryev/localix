@@ -2,7 +2,17 @@
 // change touches are run by tests. The recorded baseline only ever gets stricter.
 
 /** @typedef {import('./lcov.mjs').Coverage} Coverage */
-/** @typedef {{ floors: Record<string, number>, unloaded: string[] }} Baseline */
+/**
+ * `floors` are percentages; `uncovered` caps each package's lines no test runs. A package passes at
+ * or above its floor, or below it while its untested lines have not grown: deleting dead code that
+ * tests covered lowers the percentage without adding an untested line.
+ *
+ * @typedef {{
+ *   floors: Record<string, number>,
+ *   uncovered?: Record<string, number>,
+ *   unloaded: string[],
+ * }} Baseline
+ */
 
 /** @param {number} covered @param {number} total */
 const percent = (covered, total) => (total ? Math.floor((1000 * covered) / total) / 10 : 100)
@@ -60,15 +70,13 @@ export function evaluate({ coverage, sources, baseline, changed, diffThreshold =
         }
       }
       const floor = baseline.floors[pkg] ?? null
+      const maxUncovered = baseline.uncovered?.[pkg] ?? null
       const measured = percent(covered, total)
-      return {
-        pkg,
-        covered,
-        total,
-        percent: measured,
-        floor,
-        ok: floor !== null && measured >= floor,
-      }
+      const uncovered = total - covered
+      const ok =
+        floor !== null &&
+        (measured >= floor || (maxUncovered !== null && uncovered <= maxUncovered))
+      return { pkg, covered, total, percent: measured, floor, uncovered, maxUncovered, ok }
     })
 
   const sourceSet = new Set(Object.values(sources).flat())
@@ -141,12 +149,16 @@ function diffCoverage(coverage, sources, changed, threshold) {
 export function ratchet(baseline, measured, { adopt = false } = {}) {
   /** @type {Record<string, number>} */
   const floors = {}
+  /** @type {Record<string, number>} */
+  const uncovered = {}
   for (const row of measured.packages) {
     const previous = baseline.floors[row.pkg]
     floors[row.pkg] = previous === undefined ? row.percent : Math.max(previous, row.percent)
+    const ceiling = baseline.uncovered?.[row.pkg]
+    uncovered[row.pkg] = ceiling === undefined ? row.uncovered : Math.min(ceiling, row.uncovered)
   }
   const stale = new Set(measured.unloaded.stale)
   const kept = baseline.unloaded.filter((file) => !stale.has(file))
   const unloaded = adopt ? [...new Set([...kept, ...measured.unloaded.added])].sort() : kept
-  return { floors, unloaded }
+  return { floors, uncovered, unloaded }
 }

@@ -7,7 +7,7 @@ import {
   trackSpawnedProcess,
   trackedProcessCount,
 } from './orphan-guard'
-import { isAlive } from '../features/agent-core/tools/bash/process-tree'
+import { isAlive } from './process-tree'
 
 const waitUntilGone = async (pid: number): Promise<boolean> => {
   const deadline = Date.now() + 2_000

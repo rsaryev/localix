@@ -1,5 +1,6 @@
 import type { TypeRegistry } from '../registry/registry'
 import type { SpaceDocument, SpaceElement } from '../format/document'
+import { boundsOfBoxes } from './layout'
 
 /**
  * The board's geometry questions: what a frame holds, and where a new element may go.
@@ -102,12 +103,7 @@ export function placeNear(
 
 export function contentBounds(space: SpaceDocument): Box | null {
   const boxes = Object.values(space.elements)
-  if (boxes.length === 0) return null
-  const x = Math.min(...boxes.map((box) => box.x))
-  const y = Math.min(...boxes.map((box) => box.y))
-  const right = Math.max(...boxes.map((box) => box.x + box.w))
-  const bottom = Math.max(...boxes.map((box) => box.y + box.h))
-  return { x, y, w: right - x, h: bottom - y }
+  return boxes.length === 0 ? null : boundsOfBoxes(boxes)
 }
 
 /**

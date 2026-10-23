@@ -6,7 +6,7 @@
  * event, and environment files can be rewritten on disk. A picker showing a stale "staging" while
  * requests go to prod is worse than no picker. The tool's change arrives on `API_ENVIRONMENTS`, a
  * file rewritten in `.localix/api/environments/` through the workspace watcher
- * (`collectionChanges.ts`); the poll is used only while that watcher is unavailable.
+ * (`useFileResourceSync`); the poll is used only while that watcher is unavailable.
  */
 
 import { useCallback, useRef, useState } from 'react'

@@ -4,7 +4,7 @@
  * The list changes underneath us: the AGENT saves and imports requests during a chat turn, in this
  * same window, with no focus change to notice. It hears those changes rather than polling for
  * them — the `api_client` tool's `collection_changed` command, and the workspace watcher for a
- * collection file rewritten on disk (`collectionChanges.ts`) — and re-reads at once.
+ * collection file rewritten on disk (`useFileResourceSync`) — and re-reads at once.
  *
  * The poll is the backstop for a missed event: slow while the watcher is live, at the old 15 s
  * while it is not (a remote chat, a failed watcher), plus `refreshOnFocus` for coming back to the

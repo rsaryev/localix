@@ -3,12 +3,12 @@ import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 
 import {
-  buildMarketplaceManifest,
   marketplaceEntrySchema,
   marketplaceSchema,
   resolveEntryName,
   validateMarketplace,
 } from './marketplace'
+import { buildMarketplaceManifest } from './marketplace-build'
 import { discoverBundledPlugins } from './discovery'
 
 describe('validateMarketplace', () => {

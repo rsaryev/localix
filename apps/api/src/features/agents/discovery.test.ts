@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdtemp, mkdir, writeFile, rm, symlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { discoverAgents, listAgentFiles, parseAgentRecordJson, projectAgentsDir } from './discovery'
+import { discoverAgents, listAgentFiles, projectAgentsDir } from './discovery'
 import { builtinAgentRecord } from './builtin'
 
 const roots: string[] = []
@@ -29,7 +29,6 @@ describe('native agent discovery', () => {
     await put(root, 'valid.json', definition('id-1'))
     await put(root, 'foreign.json', { ...definition('id-2'), tools: ['Bash'] })
     await writeFile(join(root, 'foreign.md'), '---\nname: foreign\n---\nForeign instructions.')
-    expect(await parseAgentRecordJson(join(root, 'foreign.json'))).toBeNull()
     expect((await listAgentFiles(root)).map((file) => file.record.id)).toEqual(['id-1'])
   })
   test('symlinks and malformed files cannot contribute definitions', async () => {

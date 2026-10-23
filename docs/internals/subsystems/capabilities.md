@@ -327,8 +327,6 @@ availability gates; the client selects and paces eligible tips.
 - [The resolver](../../../apps/api/src/features/capabilities/resolve.ts) ·
   [resolve.test.ts](../../../apps/api/src/features/capabilities/resolve.test.ts)
 - [Availability read and write](../../../apps/api/src/features/capabilities/availability.ts)
-- [Role preset translation](../../../apps/api/src/features/capabilities/agent-preset.ts) ·
-  [agent-preset.test.ts](../../../apps/api/src/features/capabilities/agent-preset.test.ts)
 - [Seeding a role's defaults](../../../apps/api/src/features/capabilities/seed-agent-presets.ts) ·
   [seed-agent-presets.test.ts](../../../apps/api/src/features/capabilities/seed-agent-presets.test.ts)
 - [Rule storage](../../../apps/api/src/features/capabilities/rule-repository.ts)

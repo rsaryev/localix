@@ -170,5 +170,5 @@ whole multiple of its threshold after dismissal.
 - [Usage range calculation](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/hooks/usageRange.ts)
 - [Usage queries and paging lifecycle](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/hooks/useUsageStats.ts)
 - [Usage workbench](https://github.com/rsaryev/localix/blob/main/apps/ui/src/widgets/editor-grid/ui/StatsPanel.tsx)
-- [Composer usage indicator](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/chat/ui/prompt-input/UsageIndicator.tsx)
+- [Composer usage indicator](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/chat/ui/prompt-input/ParticipantUsageRow.tsx)
 - [Spend alert policy](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/spendAlert.ts)

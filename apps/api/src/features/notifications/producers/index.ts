@@ -97,4 +97,4 @@ export async function startAgentNotifications(deps: {
 
 export type { HitlLifecycleObserver } from '../../attention/sources'
 export type { LookupSession } from './facts'
-export { recordInterruptedRuns, settleStaleRequests } from './boot'
+export { recordInterruptedRuns } from './boot'

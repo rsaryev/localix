@@ -4,11 +4,7 @@ import { createRuntimeToolRegistry } from './tool-registry'
 import { BUILTIN_TOOL_NAMES } from './tool-names'
 import { TOOL_GC_PROTECTED } from './tool-policy-sets'
 import {
-  resolveToolBudget,
   resolveToolGc,
-  TOOL_BUDGET_HOT_MARGIN,
-  TOOL_BUDGET_HYSTERESIS,
-  TOOL_BUDGET_WARN_DEFAULT,
   TOOL_GC_MIN_TOTAL_CALLS,
   type ToolGcSurfaced,
   type ToolGcUsage,
@@ -317,54 +313,5 @@ describe('tool GC — routing and ordering', () => {
     // Re-running the same input must not reshuffle it; a list that moves cannot be reviewed
     // with checkboxes.
     expect(resolveToolGc(input).suggestions.map((s) => s.name)).toEqual(names)
-  })
-})
-
-describe('tool budget', () => {
-  test('a stock surface is neutral', () => {
-    expect(resolveToolBudget({ total: 37 }).level).toBe('neutral')
-  })
-
-  test('crossing the warn line turns it amber, and the margin above it hot', () => {
-    expect(resolveToolBudget({ total: TOOL_BUDGET_WARN_DEFAULT }).level).toBe('warn')
-    expect(
-      resolveToolBudget({ total: TOOL_BUDGET_WARN_DEFAULT + TOOL_BUDGET_HOT_MARGIN }).level,
-    ).toBe('hot')
-  })
-
-  test('hysteresis: it does not flap on a surface parked at the threshold', () => {
-    const warn = TOOL_BUDGET_WARN_DEFAULT
-    // Rising past the line.
-    expect(resolveToolBudget({ total: warn, wasWarn: false }).level).toBe('warn')
-    // One tool off again — still amber, because clearing needs the whole gap.
-    expect(resolveToolBudget({ total: warn - 1, wasWarn: true }).level).toBe('warn')
-    expect(resolveToolBudget({ total: warn - TOOL_BUDGET_HYSTERESIS, wasWarn: true }).level).toBe(
-      'warn',
-    )
-    expect(
-      resolveToolBudget({ total: warn - TOOL_BUDGET_HYSTERESIS - 1, wasWarn: true }).level,
-    ).toBe('neutral')
-    // And the gap does not let a rising surface sneak in early.
-    expect(resolveToolBudget({ total: warn - 1, wasWarn: false }).level).toBe('neutral')
-  })
-
-  test('hot ignores hysteresis — it is a ceiling, not a mood', () => {
-    const hot = TOOL_BUDGET_WARN_DEFAULT + TOOL_BUDGET_HOT_MARGIN
-    expect(resolveToolBudget({ total: hot, wasWarn: false }).level).toBe('hot')
-    expect(resolveToolBudget({ total: hot, wasWarn: true }).level).toBe('hot')
-  })
-
-  test('a configured warn moves both lines together', () => {
-    expect(resolveToolBudget({ total: 30, warn: 24 })).toEqual({
-      level: 'warn',
-      warn: 24,
-      hot: 24 + TOOL_BUDGET_HOT_MARGIN,
-    })
-  })
-
-  test('a nonsense configured warn falls back to the default', () => {
-    expect(resolveToolBudget({ total: 40, warn: 0 }).warn).toBe(TOOL_BUDGET_WARN_DEFAULT)
-    expect(resolveToolBudget({ total: 40, warn: -5 }).warn).toBe(TOOL_BUDGET_WARN_DEFAULT)
-    expect(resolveToolBudget({ total: 40, warn: null }).warn).toBe(TOOL_BUDGET_WARN_DEFAULT)
   })
 })

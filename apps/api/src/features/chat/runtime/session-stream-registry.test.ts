@@ -1,9 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import {
-  createSessionStreamRegistry,
-  isLiveOnlyEvent,
-  requiresWatchedSession,
-} from './session-stream-registry'
+import { createSessionStreamRegistry, isLiveOnlyEvent } from './session-stream-registry'
+import { requiresWatchedSession } from './session-stream-policy'
 import type { AgentStreamEvent } from '../contracts'
 
 /**

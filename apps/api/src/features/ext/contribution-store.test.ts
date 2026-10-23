@@ -5,7 +5,6 @@ import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createCapabilitySourceRepository } from '../capabilities/source-repository'
 import { agentContributionSchema } from '../agents/contribution'
-import { decodeClaudeCodeAgent } from '../cc-settings/agent-format'
 import { createContributionKindRegistry } from './contribution-kinds'
 import { createContributionStore } from './contribution-store'
 
@@ -151,22 +150,5 @@ describe('owned contribution publication', () => {
     expect(await store.getCurrent('u', source.id)).toEqual(original)
     await sql`DROP TRIGGER fail_test_contribution`.execute(db)
     expect((await store.publish('u', source.id, 1, [item('valid', 'changed')])).revision).toBe(2)
-  })
-
-  test('a decoded agent stores native behavior and inert policy separately from registry metadata', async () => {
-    const { db, source, store } = await fixture()
-    const artifact = decodeClaudeCodeAgent(
-      '---\nname: reviewer\ntools: [Read]\n---\nReview.',
-      'agent.md',
-    )
-    if (artifact.status !== 'accepted') throw new Error('Expected accepted artifact')
-    const snapshot = await store.publish('u', source.id, 0, [
-      { kind: 'agent', key: 'reviewer', value: artifact.value },
-    ])
-    expect(snapshot.contributions[0]?.value).toEqual(artifact.value)
-    expect(snapshot.contributions[0]?.id).toStartWith('contribution:')
-    expect(
-      await db.selectFrom('capability_rule').selectAll().where('user_id', '=', 'u').execute(),
-    ).toEqual([])
   })
 })

@@ -125,22 +125,3 @@ export function answerSources(sources: readonly AgentSource[]): AgentSource[] {
 export function answerSourcesOfMessage(message: SourceBearingMessage): AgentSource[] {
   return answerSources(collectSessionSources([message]))
 }
-
-/**
- * Group for presentation so web, file, and other provenance remain distinct; grouping reduces
- * the scan cost as the registry grows.
- *
- * Groups appear in the order their first member was seen, so the grouping never reorders the trail
- * it is grouping.
- */
-export function sourceKindGroups<T extends AgentSource>(
-  sources: readonly T[],
-): { kind: string; sources: T[] }[] {
-  const groups = new Map<string, T[]>()
-  for (const source of sources) {
-    const existing = groups.get(source.kind)
-    if (existing) existing.push(source)
-    else groups.set(source.kind, [source])
-  }
-  return [...groups].map(([kind, items]) => ({ kind, sources: items }))
-}

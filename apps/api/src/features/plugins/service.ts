@@ -80,7 +80,6 @@ import { inPlaceInstallFor, inPlacePublication } from './install-in-place'
 
 // Repo-clone + tree-copy install primitives live in ./install-helpers; re-exported
 // here so existing importers of `./service` keep their import surface unchanged.
-export { copyPluginTree } from './install-helpers'
 // Service interface + deps live in ./service-types; re-exported
 // here so the historical `./service` import surface stays unchanged.
 export type { PluginService, PluginServiceDeps } from './service-types'
@@ -244,6 +243,21 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       ),
     )
 
+  /** One scope's plugin catalog, built where its project runs (the workspace when global). */
+  const scopeCatalog = async (userId: string, scopeProjectId: string | null | undefined) => {
+    const projectId = scopeProjectId ?? ''
+    const runtimeCwd = (projectId ? await cwdFor(userId, projectId) : null) ?? localixWorkspaceDir()
+    const catalog = await buildPluginCatalog({
+      repo,
+      availability: await readAvailability(deps.db, { userId, agentId: DEFAULT_AGENT_ID }),
+      userId,
+      projectId,
+      cwd: projectId ? runtimeCwd : null,
+      homeDir: home,
+    })
+    return { projectId, runtimeCwd, catalog }
+  }
+
   /** `update`; a marketplace update has just refreshed the marketplace and says so. */
   const updatePlugin = async (
     userId: string,
@@ -280,17 +294,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
     listOutputStyles: (userId, opts) =>
       listScopeOutputStyles({ catalogFor, cwdFor, homeDir: home }, userId, opts?.projectId ?? ''),
     async listPlugins(userId, opts) {
-      const projectId = opts?.projectId ?? ''
-      const runtimeCwd =
-        (projectId ? await cwdFor(userId, projectId) : null) ?? localixWorkspaceDir()
-      const catalog = await buildPluginCatalog({
-        repo,
-        availability: await readAvailability(deps.db, { userId, agentId: DEFAULT_AGENT_ID }),
-        userId,
-        projectId,
-        cwd: projectId ? runtimeCwd : null,
-        homeDir: home,
-      })
+      const { projectId, runtimeCwd, catalog } = await scopeCatalog(userId, opts?.projectId)
       return { plugins: await recordsFromCatalog(userId, catalog, projectId, runtimeCwd) }
     },
 
@@ -304,17 +308,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
      * (`buildPluginCatalog`), one pass.
      */
     async listPluginContributions(userId, opts) {
-      const projectId = opts?.projectId ?? ''
-      const runtimeCwd =
-        (projectId ? await cwdFor(userId, projectId) : null) ?? localixWorkspaceDir()
-      const catalog = await buildPluginCatalog({
-        repo,
-        availability: await readAvailability(deps.db, { userId, agentId: DEFAULT_AGENT_ID }),
-        userId,
-        projectId,
-        cwd: projectId ? runtimeCwd : null,
-        homeDir: home,
-      })
+      const { projectId, runtimeCwd, catalog } = await scopeCatalog(userId, opts?.projectId)
       return {
         plugins: await recordsFromCatalog(userId, catalog, projectId, runtimeCwd),
         views: listViewsFromCatalog(catalog, projectId),

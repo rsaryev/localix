@@ -13,7 +13,7 @@ import {
   normalizeRelatedInformation,
   normalizeDiagnostic,
   diagnosticsOverlappingRange,
-} from './lsp-client'
+} from './lsp-normalize'
 import type { LspDiagnostic } from './lsp-client'
 
 describe('normalizeTextEdits', () => {

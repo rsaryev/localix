@@ -4,15 +4,16 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 import { pluginManifestSchema, type PluginManifest } from './contracts'
-import type { DiscoveredPlugin, ResolvedEntrypoints } from './discovery'
+import type { DiscoveredPlugin } from './discovery'
+import type { ResolvedEntrypoints } from './discovery-entrypoints'
 import { normalizeCcToolName } from './discovery'
 import { isAcceptableToolName, isReservedToolName, TOOL_NAME_RE } from './tool-policy'
 import { buildMcpRecords, buildPluginOptionEnv, collectMcpConfigTokens, pluginDataDir } from './mcp'
-import { pluginConfigOptionSchema } from './contracts'
+import { pluginConfigOptionSchema } from './contracts-config'
 import { validatePlugin } from './validate'
 import { pluginTrustClass } from './enable'
 import { trustFallback } from '../ext/trust'
-import { copyPluginTree } from './service'
+import { copyPluginTree } from './install-helpers'
 
 /**
  * Build a COMPLETE `ResolvedEntrypoints` — a plugin that contributes nothing,

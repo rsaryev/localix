@@ -31,8 +31,7 @@ const LOOKBACK = 60
 const ENTRY_Z = 2
 const EXIT_Z = 0.5
 
-/** Timestamp-intersection close alignment + log-return correlation and beta of A on B. Shared
- *  by the pair read and the portfolio concentration warnings — one alignment rule everywhere.
+/** Timestamp-intersection close alignment + log-return correlation and beta of A on B.
  *  Null below `minBars` aligned closes or on a zero-variance leg. */
 export function alignedReturnStats(
   a: readonly Candle[],

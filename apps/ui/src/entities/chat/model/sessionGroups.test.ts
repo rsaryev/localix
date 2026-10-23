@@ -5,7 +5,6 @@ import {
   conversationKey,
   groupParticipants,
   isConversationGroup,
-  latestChatWith,
   sessionAgentHandle,
 } from './sessionGroups'
 
@@ -81,22 +80,6 @@ describe('agentGroups', () => {
   })
 })
 
-describe('latestChatWith', () => {
-  test('takes you back to what you were last doing with them', () => {
-    // By TIME, not by list position: the list may be sorted by title or have pinned rows on
-    // top, and "go to this agent" is a question about when, not about order.
-    const sessions = [chat('old', 'qa', 1), chat('new', 'qa', 9), chat('other', 'lead', 99)]
-    expect(latestChatWith(sessions, 'qa')?.id).toBe('new')
-  })
-
-  test('an agent with no chats has none', () => {
-    // The caller starts one instead — an agent you have never used is exactly the case the
-    // breadcrumb has to answer for.
-    expect(latestChatWith([chat('a', 'qa', 1)], 'lead')).toBeUndefined()
-    expect(latestChatWith([], 'qa')).toBeUndefined()
-  })
-})
-
 describe('multi-participant conversations', () => {
   test('a conversation gathers under its participants, not under one of them', () => {
     // Filing it under the first participant reads as "a chat with lead" and hides the other two —
@@ -150,11 +133,5 @@ describe('multi-participant conversations', () => {
   test('a one-to-one is never mistaken for a multi-participant conversation', () => {
     expect(isConversationGroup(sessionAgentHandle(chat('c1', 'lead', 1)))).toBe(false)
     expect(groupParticipants('lead')).toEqual(['lead'])
-  })
-
-  test('a conversation does not answer for one of its participants', () => {
-    // `latestChatWith('lead')` means "take me back to my one-to-one with lead"; handing it a
-    // multi-participant conversation would open one two other agents are also in.
-    expect(latestChatWith([conversation('r1', ['lead', 'qa'], 9)], 'lead')).toBeUndefined()
   })
 })

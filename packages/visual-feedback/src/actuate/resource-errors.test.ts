@@ -7,7 +7,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
 
-import { installResourceErrorCapture, scanFailedStylesheets } from './resource-errors'
+import { installResourceErrorCapture } from './resource-errors'
 
 describe('installResourceErrorCapture', () => {
   beforeAll(() => GlobalRegistrator.register())
@@ -52,15 +52,6 @@ describe('installResourceErrorCapture', () => {
     window.dispatchEvent(new Event('error')) // target is window, not an element
     expect(cap.read()).toHaveLength(0)
     cap.uninstall()
-  })
-
-  test('scanFailedStylesheets flags a <link> whose sheet never loaded (pre-listener 404)', () => {
-    const link = document.createElement('link')
-    link.setAttribute('rel', 'stylesheet')
-    link.setAttribute('href', 'assets/theme.css')
-    document.head.appendChild(link) // happy-dom does not load it → link.sheet stays null
-    // Pure scan (the read-time secondary signal), independent of readyState gating.
-    expect(scanFailedStylesheets(document)).toContain('stylesheet assets/theme.css')
   })
 
   test('a clean page yields nothing', () => {

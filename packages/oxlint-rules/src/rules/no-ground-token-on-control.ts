@@ -22,6 +22,7 @@
  * and the SDK's UI kit: a drifting one-off in a feature costs one screen, a drifting PRIMITIVE
  * costs every screen that uses it.
  */
+import { attributeName, literalText } from '../jsx.ts'
 import type { Node, Rule, RuleContext } from '../types.ts'
 
 const SCOPES = ['/packages/kit/src/', '/apps/ui/src/shared/ui/', '/packages/plugin-sdk/src/ui/']
@@ -35,20 +36,6 @@ const GROUND_FILL = /\bbg-(?:surface-raised|surface-sunken|background)(?![-/\w])
 
 /** Frost makes an alpha'd raised surface a material; without it the class is a slab. */
 const HAS_BLUR = /\bbackdrop-blur/u
-
-function attributeName(node: Node): string | null {
-  const name = node.name as Node | undefined
-  return name?.type === 'JSXIdentifier' ? (name.name as string) : null
-}
-
-function literalText(value: Node | undefined): string | null {
-  if (value?.type === 'Literal') return typeof value.value === 'string' ? value.value : null
-  if (value?.type === 'TemplateLiteral') {
-    const quasis = value.quasis as Node[] | undefined
-    return (quasis ?? []).map((quasi) => (quasi.value as { raw?: string })?.raw ?? '').join(' ')
-  }
-  return null
-}
 
 export const noGroundTokenOnControl: Rule = {
   create(context: RuleContext) {

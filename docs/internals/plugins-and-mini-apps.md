@@ -74,9 +74,8 @@ gives plugins and mini apps separate records has one seam to cut.
 
 ## Migration
 
-- Bundled extensions ship in the new layout. Each root `plugin.json` was split once with
-  `splitLegacyManifest` (`apps/api/src/features/plugins/layout/split.ts`), the inverse of
-  `compose.ts`.
+- Bundled extensions ship in the new layout. Each root `plugin.json` was split once into the two
+  manifests, the inverse of `compose.ts`.
 - A Claude Code plugin installs in place: no native `plugin.json` is written next to it any more.
   Folders imported by earlier versions carry both files; the `.claude-plugin/` manifest wins.
 - A legacy root `plugin.json` keeps loading. `/plugin create` writes the new layout.

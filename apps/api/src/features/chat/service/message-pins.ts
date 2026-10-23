@@ -25,8 +25,22 @@ export async function setMessagePinned(
 ): Promise<boolean> {
   const message = await io.repo.getMessage(params.userId, params.sessionId, params.messageId)
   if (!message || (message.payload.pinned === true) === params.pinned) return false
+  await writeMessageState(io, params, message, {
+    pinned: params.pinned ? (true as const) : undefined,
+  })
+  return true
+}
+
+type StoredMessage = NonNullable<Awaited<ReturnType<ChatRepository['getMessage']>>>
+
+/** Store a person's mark on a message (pin, ticked box) and publish the row as `message.updated`. */
+export async function writeMessageState(
+  io: MessagePinIo,
+  params: { userId: string; sessionId: string; messageId: string },
+  message: StoredMessage,
+  patch: Pick<StoredMessage['payload'], 'pinned' | 'taskStates'>,
+): Promise<void> {
   const at = io.now()
-  const patch = { pinned: params.pinned ? (true as const) : undefined }
   const written = await io.repo.updateMessage(
     params.userId,
     params.sessionId,
@@ -43,5 +57,4 @@ export async function setMessagePinned(
     createdAt: message.createdAt,
     updatedAt: at,
   })
-  return true
 }

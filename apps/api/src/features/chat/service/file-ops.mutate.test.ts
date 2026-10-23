@@ -11,9 +11,9 @@ import {
   duplicateEntry,
   undoLastFileOp,
   listDirectory,
-  incrementName,
   writeFile,
 } from './file-ops'
+import { incrementName } from './file-tree-ops'
 import { listRemoteDirectory } from './file-content'
 import type { FileOpsContext } from './file-ops'
 import { contentHash } from './file-ops-context'

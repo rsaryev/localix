@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'bun:test'
 import {
-  buildUsageEvent,
   normalizeUsage,
   providerIdFromModel,
   recordAuxCallUsage,
@@ -196,42 +195,6 @@ describe('usageEventFields', () => {
       cacheWrite1hTokens: 0,
       reasoningTokens: 9,
       totalTokens: 5,
-      costUsd: 0,
-      costSource: 'estimated',
-    })
-  })
-})
-
-describe('buildUsageEvent', () => {
-  it('merges usage normalization with event identity fields', () => {
-    expect(
-      buildUsageEvent(
-        {
-          messageId: 'm1',
-          sessionId: 's1',
-          rootSessionId: 'r1',
-          userId: 'u1',
-          providerConnectionId: 'pc1',
-          providerId: 'openai',
-          modelId: 'openai/gpt-5.4',
-        },
-        { inputTokens: 4, outputTokens: 6 },
-      ),
-    ).toEqual({
-      messageId: 'm1',
-      sessionId: 's1',
-      rootSessionId: 'r1',
-      userId: 'u1',
-      providerConnectionId: 'pc1',
-      providerId: 'openai',
-      modelId: 'openai/gpt-5.4',
-      inputTokens: 4,
-      outputTokens: 6,
-      cacheReadTokens: 0,
-      cacheWriteTokens: 0,
-      cacheWrite1hTokens: 0,
-      reasoningTokens: 0,
-      totalTokens: 10,
       costUsd: 0,
       costSource: 'estimated',
     })

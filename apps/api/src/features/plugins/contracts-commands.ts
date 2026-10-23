@@ -100,7 +100,6 @@ export type PluginCommand = z.infer<typeof pluginCommandSchema>
 export const pluginCommandOptionsSchema = pluginCommandSchema
   .pick({ args: true, featured: true, activateTools: true })
   .partial()
-export type PluginCommandOptions = z.infer<typeof pluginCommandOptionsSchema>
 
 /**
  * UI-facing per-command spec returned by the commands endpoint. The `prompt`

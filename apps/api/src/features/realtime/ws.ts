@@ -21,7 +21,6 @@ import {
   type PredictNextEditPayload,
 } from './ws-commands'
 import type { EditPrediction, NextEditResult } from '../edit-prediction/contracts'
-export { parseRealtimeCommand } from './ws-commands'
 import {
   createWsFrameConnection,
   type WsFrameConnection,
@@ -397,15 +396,6 @@ export function backpressureAction(
   if (bufferedBytes > hardCloseThreshold) return 'close'
   if (liveOnly && bufferedBytes > dropThreshold) return 'drop'
   return 'send'
-}
-
-/** Whether the soft valve drops a frame (a hard-close decision is not a drop). */
-export function shouldDropFrame(
-  liveOnly: boolean,
-  bufferedBytes: number,
-  threshold: number = REALTIME_BACKPRESSURE_DROP_BYTES,
-): boolean {
-  return backpressureAction(liveOnly, bufferedBytes, threshold) === 'drop'
 }
 
 /** Current send-buffer depth, read defensively: 0 if the runtime doesn't expose it (→ never drops). */

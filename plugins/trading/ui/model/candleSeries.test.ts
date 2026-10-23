@@ -3,7 +3,6 @@ import type { Candle } from '../../backend/contracts'
 import {
   classifyCandleUpdate,
   movingAverage,
-  toCandlestickData,
   toVolumeData,
   upsertBar,
   upsertCandles,
@@ -16,13 +15,6 @@ const bar = (time: number, close: number, open = close, volume = 1): Candle => (
   low: Math.min(open, close),
   close,
   volume,
-})
-
-describe('toCandlestickData', () => {
-  test('maps seconds time straight through with OHLC', () => {
-    const [d] = toCandlestickData([bar(1700000000, 105, 100)])
-    expect(d).toEqual({ time: 1700000000, open: 100, high: 105, low: 100, close: 105 } as never)
-  })
 })
 
 describe('toVolumeData', () => {

@@ -16,6 +16,7 @@
  * The match is exact-class: `rounded` as a standalone class or variant target (`hover:rounded`),
  * never `rounded-md`, `rounded-full`, or an identifier that merely contains the word.
  */
+import { attributeName, literalText } from '../jsx.ts'
 import type { Node, Rule, RuleContext } from '../types.ts'
 
 // The kit is where the primitives live; out of scope, the scale would stop holding in them.
@@ -23,20 +24,6 @@ const SCOPES = ['/apps/ui/src/', '/packages/kit/src/', '/packages/plugin-sdk/src
 
 /** Bare `rounded` as a whole class token, optionally behind variants (`md:rounded`). */
 const BARE_ROUNDED = /(?:^|\s)(?:[\w-]+:)*rounded(?=\s|$)/u
-
-function attributeName(node: Node): string | null {
-  const name = node.name as Node | undefined
-  return name?.type === 'JSXIdentifier' ? (name.name as string) : null
-}
-
-function literalText(value: Node | undefined): string | null {
-  if (value?.type === 'Literal') return typeof value.value === 'string' ? value.value : null
-  if (value?.type === 'TemplateLiteral') {
-    const quasis = value.quasis as Node[] | undefined
-    return (quasis ?? []).map((quasi) => (quasi.value as { raw?: string })?.raw ?? '').join(' ')
-  }
-  return null
-}
 
 export const noOffScaleRadius: Rule = {
   create(context: RuleContext) {

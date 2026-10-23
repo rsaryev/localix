@@ -1,4 +1,4 @@
-import { closeSync, constants, fstatSync, lstatSync, openSync, readSync } from 'node:fs'
+import { closeSync, constants, fstatSync, lstatSync, openSync, readSync, type Stats } from 'node:fs'
 import { lstat, open } from 'node:fs/promises'
 
 /** Matches the remote-skill resource ceiling: large prompts are rejected, never truncated. */
@@ -51,6 +51,30 @@ function decodeSkillMarkdown(bytes: Uint8Array, path: string): string {
   }
 }
 
+function assertRegularFile(stat: Stats, path: string): void {
+  if (!stat.isFile()) {
+    throw new SkillFileReadError('not_regular_file', path, 'path is not a regular file')
+  }
+}
+
+/** The opened descriptor is still the file at `path`, and it fits the ceiling. */
+function assertSameFileWithinLimit(stat: Stats, pathStat: Stats, path: string): void {
+  if (!pathStat.isFile() || pathStat.dev !== stat.dev || pathStat.ino !== stat.ino) {
+    throw new SkillFileReadError(
+      'changed_during_read',
+      path,
+      'file identity changed while it was being opened',
+    )
+  }
+  if (stat.size > MAX_SKILL_MARKDOWN_BYTES) {
+    throw new SkillFileReadError(
+      'too_large',
+      path,
+      `file is ${stat.size} bytes; limit is ${MAX_SKILL_MARKDOWN_BYTES} bytes`,
+    )
+  }
+}
+
 /**
  * Read one UTF-8 skill/command file without ever allocating or reading beyond the
  * configured ceiling. The open handle pins the file identity; a final one-byte probe
@@ -62,24 +86,9 @@ export async function readSkillMarkdownFile(path: string): Promise<string> {
   const handle = await open(path, skillReadFlags())
   try {
     const stat = await handle.stat()
-    if (!stat.isFile()) {
-      throw new SkillFileReadError('not_regular_file', path, 'path is not a regular file')
-    }
+    assertRegularFile(stat, path)
     const pathStat = await lstat(path)
-    if (!pathStat.isFile() || pathStat.dev !== stat.dev || pathStat.ino !== stat.ino) {
-      throw new SkillFileReadError(
-        'changed_during_read',
-        path,
-        'file identity changed while it was being opened',
-      )
-    }
-    if (stat.size > MAX_SKILL_MARKDOWN_BYTES) {
-      throw new SkillFileReadError(
-        'too_large',
-        path,
-        `file is ${stat.size} bytes; limit is ${MAX_SKILL_MARKDOWN_BYTES} bytes`,
-      )
-    }
+    assertSameFileWithinLimit(stat, pathStat, path)
 
     const bytes = Buffer.allocUnsafe(stat.size)
     let offset = 0
@@ -112,24 +121,9 @@ export function readSkillMarkdownFileSync(path: string): string {
   const fd = openSync(path, skillReadFlags())
   try {
     const stat = fstatSync(fd)
-    if (!stat.isFile()) {
-      throw new SkillFileReadError('not_regular_file', path, 'path is not a regular file')
-    }
+    assertRegularFile(stat, path)
     const pathStat = lstatSync(path)
-    if (!pathStat.isFile() || pathStat.dev !== stat.dev || pathStat.ino !== stat.ino) {
-      throw new SkillFileReadError(
-        'changed_during_read',
-        path,
-        'file identity changed while it was being opened',
-      )
-    }
-    if (stat.size > MAX_SKILL_MARKDOWN_BYTES) {
-      throw new SkillFileReadError(
-        'too_large',
-        path,
-        `file is ${stat.size} bytes; limit is ${MAX_SKILL_MARKDOWN_BYTES} bytes`,
-      )
-    }
+    assertSameFileWithinLimit(stat, pathStat, path)
 
     const bytes = Buffer.allocUnsafe(stat.size)
     let offset = 0

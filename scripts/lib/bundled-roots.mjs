@@ -16,9 +16,6 @@ export const BUNDLED_APPS_PREFIX = `${BUNDLED_APPS_DIR}/`
 /** The folder a build stages them into, beside `server.js` (`resources/<dir>`). */
 export const STAGED_APPS_DIR = 'plugins'
 
-/** The folder a contained plugin sits in inside its app (`<app>/plugins/<plugin>/`). */
-const CONTAINED_PLUGINS_DIR = 'plugins'
-
 /** The absolute bundled root of a checkout. */
 export function bundledAppsRoot(repoRoot) {
   return join(repoRoot, BUNDLED_APPS_DIR)
@@ -38,19 +35,4 @@ export function appOfPath(rel) {
   const [root, app, ...rest] = segmentsOf(rel)
   if (root !== BUNDLED_APPS_DIR || !app || rest.length === 0) return null
   return { app, rest: rest.join('/') }
-}
-
-/**
- * The contained plugin a repository-relative path lies in: `<root>/<app>/plugins/<plugin>/…` is
- * `{ app, plugin, rest }`. Null anywhere else, which today is every path: no bundled extension
- * holds its plugin in a `plugins/` subfolder yet.
- * @param {string} rel
- * @returns {{ app: string, plugin: string, rest: string } | null}
- */
-export function pluginOfPath(rel) {
-  const owner = appOfPath(rel)
-  if (!owner) return null
-  const [folder, plugin, ...rest] = segmentsOf(owner.rest)
-  if (folder !== CONTAINED_PLUGINS_DIR || !plugin || rest.length === 0) return null
-  return { app: owner.app, plugin, rest: rest.join('/') }
 }

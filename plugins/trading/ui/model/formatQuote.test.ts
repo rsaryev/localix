@@ -4,7 +4,6 @@ import {
   chartPriceFormat,
   decimalsForValue,
   decimalsFromTick,
-  formatBalance,
   formatCompactVolume,
   formatCountdown,
   formatFixed,
@@ -167,40 +166,6 @@ describe('chartPriceFormat', () => {
 
   test('an empty price sample still yields the venue-declared decimals', () => {
     expect(chartPriceFormat(mkt(0.01), 'tick')).toEqual({ precision: 2, minMove: 0.01 })
-  })
-})
-
-describe('formatBalance', () => {
-  test('an exact zero is the only value allowed to print 0', () => {
-    expect(formatBalance(0)).toBe('0')
-  })
-
-  test('a dust balance is never rendered as 0', () => {
-    // Hyperliquid's BTC size step. Four fixed decimals rounded this to `0` — while the panel
-    // showed the row precisely because the account still holds it.
-    expect(formatBalance(0.00001)).toBe('0.00001')
-    expect(formatBalance(0.00000123)).toBe('0.00000123')
-  })
-
-  test('four significant digits below 1', () => {
-    expect(formatBalance(0.0001234567)).toBe('0.0001235')
-    expect(formatBalance(0.5)).toBe('0.5')
-  })
-
-  test('a value smaller than the cap is reported as a bound, not rounded away', () => {
-    expect(formatBalance(1e-12)).toBe('<0.00000001')
-    expect(formatBalance(-1e-12)).toBe('>-0.00000001')
-  })
-
-  test('at or above 1 it keeps four decimals and drops trailing zeros', () => {
-    expect(formatBalance(1)).toBe('1')
-    expect(formatBalance(1234.56789)).toBe('1,234.5679')
-  })
-
-  test('absent or non-finite is unknown, not zero', () => {
-    expect(formatBalance(undefined)).toBe('—')
-    expect(formatBalance(null)).toBe('—')
-    expect(formatBalance(Number.NaN)).toBe('—')
   })
 })
 

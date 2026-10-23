@@ -117,22 +117,3 @@ export function agentGroups(
       return (order.get(a.handle) ?? Infinity) - (order.get(b.handle) ?? Infinity)
     })
 }
-
-/**
- * The chat to land on when someone picks an agent — their most recent one, or none.
- *
- * "Most recent" and not "the first in the list": the list may be sorted by title, or have
- * pinned rows on top, and picking an agent from a breadcrumb means "take me back to what I
- * was doing with them", which is a question about time and nothing else.
- */
-export function latestChatWith(
-  sessions: readonly UiSession[],
-  handle: string,
-): UiSession | undefined {
-  let latest: UiSession | undefined
-  for (const session of sessions) {
-    if (sessionAgentHandle(session) !== handle) continue
-    if (!latest || session.updatedAt > latest.updatedAt) latest = session
-  }
-  return latest
-}

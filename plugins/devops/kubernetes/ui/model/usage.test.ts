@@ -13,7 +13,6 @@ import {
   nodeReservation,
   nodeUsageDisplay,
   podUsageKey,
-  totalPodUsage,
   usagePercent,
   usagePollDelay,
 } from './usage'
@@ -207,17 +206,5 @@ describe('pacing', () => {
     // open view. It still retries, because the add-on can be installed.
     expect(usagePollDelay(false)).toBe(USAGE_ABSENT_RETRY_MS)
     expect(USAGE_ABSENT_RETRY_MS).toBeGreaterThan(USAGE_POLL_MS)
-  })
-})
-
-describe('totalPodUsage', () => {
-  test('sums the namespace', () => {
-    expect(totalPodUsage([pod('a', 'x', 5, 10), pod('a', 'y', 7, 20)])).toEqual({
-      cpuNanos: 12,
-      memoryBytes: 30,
-    })
-  })
-  test('absent metrics total to zero rather than throwing', () => {
-    expect(totalPodUsage(null)).toEqual({ cpuNanos: 0, memoryBytes: 0 })
   })
 })

@@ -50,7 +50,6 @@
     "screenshots:prepare": "bun scripts/screenshots/runtime.mjs",
     "screenshots:seed": "bun scripts/screenshots/seed.mjs",
     "test:screenshots": "bun scripts/screenshots/run.mjs",
-    "test:sessions": "bun scripts/session-e2e/run.mjs",
     "screenshots:update": "bun scripts/screenshots/run.mjs --update",
     "screenshots:publish": "bun scripts/screenshots/publish.mjs",
     "screenshots:audit": "bun scripts/screenshots/audit.mjs",

@@ -14,8 +14,8 @@ import { openSessionEnv, resolveAgainst, type FileOpsContext } from './file-ops-
 import type { FileContentSearchResult, FileSearchResult } from '../contracts'
 
 import { searchPaths, type FindFilesOptions } from './file-path-search'
-export { deriveFolders, searchPaths, type FindFilesOptions } from './file-path-search'
-export { commitReplacePlans, type ReplaceContentResult } from './replace-commit'
+export { type FindFilesOptions } from './file-path-search'
+export { type ReplaceContentResult } from './replace-commit'
 
 /**
  * Project SEARCH over a session's working tree: file-name search (⌘P quick-open,

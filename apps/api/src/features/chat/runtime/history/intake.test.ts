@@ -8,7 +8,7 @@ import { estimateChatMessageTokens } from '@localixai/agent'
 
 import type { PersistedMessage } from '../../contracts'
 import { resolveContextBudgetFrame } from '../context-budget'
-import { estimateHistoryTokens } from '../context-token-estimate'
+import { estimateMessageTokens } from '../context-token-estimate'
 import { createChatHistoryRun } from './chat-strategy'
 import { intakeTurn, rewriteModelPrompt } from './intake'
 import { freshLane, freshView, TEST_IDENTITY } from './test-fixtures'
@@ -95,7 +95,8 @@ describe('intake → strategy', () => {
     const prompt = message('prompt', 'Continue from the evidence above.')
     const raw = [first, ...toolHeavy, prompt]
     const frame = resolveContextBudgetFrame({ contextWindow: 32_000 })
-    expect(estimateHistoryTokens(raw)).toBeGreaterThan(frame.trigger)
+    const estimated = raw.reduce((total, m) => total + estimateMessageTokens(m), 0)
+    expect(estimated).toBeGreaterThan(frame.trigger)
 
     let summarizeCalls = 0
     const taken = await intake(raw, () => summarizeCalls++)

@@ -62,10 +62,12 @@ skills.
 ## Code budget
 
 Product code stays under **500,000 lines**, counted by `bun run check:size` (CI fails above it).
-Comments and blank lines do not count, so explaining code costs nothing; tests, test helpers,
-generated and vendored code do not count either. The limit is in `config/code-budget.json` and is
-not raised. Keep under it by deleting dead code, duplication and code another package already
-provides; a change that adds code makes room for it. Never compress code or strip comments to fit.
+Comments and blank lines do not count, so explaining code costs nothing. Only what ships counts:
+tests, test helpers, generated and vendored code, and the tooling that builds, checks and tests the
+product (`scripts/`, `apps/*/scripts`, build plugins, lint rules, config files) do not. The limit is
+in `config/code-budget.json` and is not raised. Keep under it by deleting dead code, duplication and
+code another package already provides; a change that adds code makes room for it. Never compress
+code or strip comments to fit.
 
 ## Tests first (TDD)
 
@@ -130,11 +132,9 @@ without one (`scripts/assert-release-changelog.mjs`). Then follow the steps in
 
 For changes to how a run is assembled or routed (run policy axes in
 `apps/api/src/features/chat/policy`, prompt sections in `agent-core/prompt`, tool gating,
-membership, handoffs), run the end-to-end scenarios with
-`bun run test:sessions --grep '<behaviour>'`. They boot an isolated API with a scripted model and
-assert on the transcript and on the prompt and tools each model request carried. Use `--keep` and
-the request log to debug a conversation behaviour. Add a scenario for a new behaviour. See
-[scripts/session-e2e/README.md](scripts/session-e2e/README.md). Not part of the normal suite or CI.
+membership, handoffs), the API's own tests pin the behaviour, written first. To watch it end to end,
+start the API (`bun run dev:web` keeps an isolated database) and drive the conversation through its
+HTTP API; stop the servers you started.
 
 ## UI evidence and screenshots
 

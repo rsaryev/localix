@@ -39,6 +39,24 @@ describe('database driver catalog', () => {
     }
   })
 
+  test('the non-SQL engines share one network-only, browse-only capability set', () => {
+    for (const dialect of ['redis', 'mongodb', 'elasticsearch'] as const) {
+      expect(DATABASE_DRIVER_CATALOG[dialect].capabilities).toEqual({
+        multipleSchemas: false,
+        returning: false,
+        queryCancel: false,
+        manualTransactions: false,
+        sshTunnel: true,
+        tls: true,
+        dataBrowser: true,
+        rowEditing: false,
+        explain: false,
+        relationships: false,
+        schemaEditing: false,
+      })
+    }
+  })
+
   test('schema editors get driver-owned types and unique DEFAULT expressions', () => {
     for (const driver of DATABASE_DRIVERS) {
       const values = driver.schemaDefaultExpressions.map((expression) => expression.value)

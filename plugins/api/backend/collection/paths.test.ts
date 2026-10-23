@@ -4,7 +4,6 @@ import {
   LEGACY_REQUEST_EXT,
   REQUEST_EXT,
   folderOf,
-  leafOf,
   normalizeRequestName,
   requestFilePath,
   requestNameFor,
@@ -88,14 +87,12 @@ describe('names we refuse to store', () => {
 })
 
 describe('the tree falls out of the name', () => {
-  test('folder and leaf split at the last separator', () => {
+  test('the folder splits at the last separator', () => {
     expect(folderOf('users/admin/list')).toBe('users/admin')
-    expect(leafOf('users/admin/list')).toBe('list')
   })
 
   test('a request at the root has no folder', () => {
     expect(folderOf('ping')).toBe('')
-    expect(leafOf('ping')).toBe('ping')
   })
 })
 

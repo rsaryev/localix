@@ -83,10 +83,3 @@ export interface OAuthAdapter {
   /** Refresh an access token (only OAuth providers with refresh tokens). */
   refresh?: (refreshToken: string) => Promise<OAuthCredential>
 }
-
-/** Public OAuth-login metadata for the UI (no secrets). */
-export interface OAuthProviderInfo {
-  providerId: string
-  loginLabel: string
-  loginDescription: string
-}

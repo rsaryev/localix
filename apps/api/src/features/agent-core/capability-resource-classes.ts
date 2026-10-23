@@ -214,7 +214,3 @@ export function matchesResourceClass(resource: string, call: ClassifiedCall): bo
   const entry = BY_VALUE.get(resource)
   return entry?.test ? entry.test(call) : undefined
 }
-
-/** The classes a rule of this kind can name — what the editor offers for that row. */
-export const resourceClassesFor = (kind: CapabilityKind): ResourceClass[] =>
-  RESOURCE_CLASSES.filter((entry) => (entry.appliesTo as readonly CapabilityKind[]).includes(kind))

@@ -9,14 +9,10 @@ import type { Kysely } from 'kysely'
 import { createDatabase, destroyDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import type { AppDatabase } from '../../db'
-import {
-  isSecretHandle,
-  secretHandleKey,
-  toSecretHandle,
-  type CreateSecretRequest,
-} from './contracts'
+import { isSecretHandle, toSecretHandle, type CreateSecretRequest } from './contracts'
 import { createAesCipher, plaintextCipher } from './cipher'
-import { createSecretsStore, migrateLegacySecrets, VaultPayloadError } from './store'
+import { createSecretsStore, migrateLegacySecrets } from './store'
+import { VaultPayloadError } from './store-internals'
 import { createSecretsService } from './service'
 import { hasSecretTokens, resolveSecretTokens } from '@localixai/plugin-sdk/backend'
 
@@ -69,8 +65,6 @@ describe('secret handles', () => {
     expect(toSecretHandle('DB_PASS')).toBe('secret:DB_PASS')
     expect(isSecretHandle('secret:DB_PASS')).toBe(true)
     expect(isSecretHandle('plain')).toBe(false)
-    expect(secretHandleKey('secret:DB_PASS')).toBe('DB_PASS')
-    expect(secretHandleKey('plain')).toBeNull()
   })
 })
 

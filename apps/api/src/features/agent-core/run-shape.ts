@@ -174,7 +174,7 @@ export function resolveRunProfile(
   const shape = runShapeOf(session.sessionKind)
   // A CHAT does not read the agent's tool list here, and that is not an inconsistency.
   // A record's list reaches a chat through its own capability scope (`agent:<handle>`),
-  // which `capabilities/agent-preset.ts` seeds ONCE and the user then owns — so a tool
+  // which `capabilities/seed-agent-presets.ts` seeds ONCE and the user then owns — so a tool
   // switched back on in Capabilities stays on. Enforcing the same list a second time from
   // the run surface would silently overrule that screen, which is the exact failure the
   // seed-don't-overlay rule exists to prevent. An unattended run has no such screen in the

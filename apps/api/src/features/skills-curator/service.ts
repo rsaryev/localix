@@ -18,7 +18,6 @@ import {
 } from './skill-fs'
 
 // Re-export so the historical './service' import surface (curator tests) stays stable.
-export { ARCHIVE_DIR_NAME } from './skill-fs'
 
 /** Never used and older than this ⇒ stale. */
 export const STALE_AFTER_DAYS = 30

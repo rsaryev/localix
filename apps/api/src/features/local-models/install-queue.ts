@@ -187,5 +187,3 @@ export function createInstallQueue(deps: {
     },
   }
 }
-
-export type InstallQueue = ReturnType<typeof createInstallQueue>

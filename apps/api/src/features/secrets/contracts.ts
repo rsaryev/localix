@@ -56,32 +56,40 @@ export const rotateSecretRequestSchema = z.object({
 })
 export type RotateSecretRequest = z.infer<typeof rotateSecretRequestSchema>
 
+/** The value-free metadata fields a Vault item edit may change (route and agent tool). */
+export const secretMetadataPatchShape = {
+  title: z.string().trim().min(1).max(120).optional(),
+  description: z.string().trim().max(500).optional(),
+  type: vaultItemTypeSchema.optional(),
+  tags: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
+}
+
+/** A metadata edit must change something. */
+export function requireMetadataField(
+  input: { title?: string; description?: string; type?: unknown; tags?: unknown },
+  context: z.RefinementCtx,
+): void {
+  if (
+    input.title === undefined &&
+    input.description === undefined &&
+    input.type === undefined &&
+    input.tags === undefined
+  ) {
+    context.addIssue({
+      code: 'custom',
+      message: 'At least one metadata field must be provided',
+    })
+  }
+}
+
 /**
  * Value-free metadata edit. It still advances the immutable Vault version so
  * optimistic concurrency covers titles/descriptions/tags as well as rotations.
  */
 export const updateSecretMetadataRequestSchema = z
-  .object({
-    expectedVersion: z.number().int().positive(),
-    title: z.string().trim().min(1).max(120).optional(),
-    description: z.string().trim().max(500).optional(),
-    type: vaultItemTypeSchema.optional(),
-    tags: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
-  })
+  .object({ expectedVersion: z.number().int().positive(), ...secretMetadataPatchShape })
   .strict()
-  .superRefine((input, context) => {
-    if (
-      input.title === undefined &&
-      input.description === undefined &&
-      input.type === undefined &&
-      input.tags === undefined
-    ) {
-      context.addIssue({
-        code: 'custom',
-        message: 'At least one metadata field must be provided',
-      })
-    }
-  })
+  .superRefine(requireMetadataField)
 export type UpdateSecretMetadataRequest = z.infer<typeof updateSecretMetadataRequestSchema>
 
 export const secretKeyParamsSchema = z.object({ key: secretKeySchema })
@@ -146,11 +154,6 @@ export interface SecretMeta {
 
 export function isSecretHandle(value: string): boolean {
   return value.startsWith(SECRET_PREFIX)
-}
-
-/** The key inside a `secret:<KEY>` handle, or null when it isn't a handle. */
-export function secretHandleKey(value: string): string | null {
-  return isSecretHandle(value) ? value.slice(SECRET_PREFIX.length) : null
 }
 
 export function toSecretHandle(key: string): string {

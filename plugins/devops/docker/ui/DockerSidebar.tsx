@@ -1,8 +1,8 @@
-import type { DockerResourceView } from './model/dockerView'
+import { loadDockerView, saveDockerView, type DockerResourceView } from './model/dockerView'
 import type { DockerWorkbenchModel } from './model/useDocker'
 import { useDockerSidebarActions } from './model/useDockerSidebarActions'
-import { useDockerSidebarView } from './model/useDockerSidebarView'
 import { DevOpsProblem } from '../../ui/DevOpsProblem'
+import { useSidebarView } from '../../ui/model/useSidebarView'
 import { DockerSidebarDialog } from './ui/DockerSidebarDialog'
 import { DockerSidebarHeader } from './ui/DockerSidebarHeader'
 import { DockerSidebarInventory } from './ui/DockerSidebarInventory'
@@ -17,7 +17,11 @@ export function DockerSidebarView({
   requestedResource?: DockerResourceView
   embedded?: boolean
 }) {
-  const { view, setFilter, setResource, setSort } = useDockerSidebarView(requestedResource)
+  const { view, setFilter, setResource, setSort } = useSidebarView(
+    loadDockerView,
+    saveDockerView,
+    requestedResource,
+  )
   const actions = useDockerSidebarActions(docker)
   const counts: Record<DockerResourceView, number> = {
     containers: docker.containers.length,

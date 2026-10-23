@@ -3,10 +3,10 @@ import { clusterPulse } from '../model/clusterPulse'
 import type { KubeIssue } from '../model/kubernetesState'
 import type { KubernetesWorkbenchModel } from '../model/useKubernetes'
 import { useKubernetesSidebarActions } from '../model/useKubernetesSidebarActions'
-import { useKubernetesSidebarView } from '../model/useKubernetesSidebarView'
 import { useUsageMetrics } from '../model/useUsageMetrics'
-import type { K8sResourceView } from '../model/viewState'
+import { loadK8sView, saveK8sView, type K8sResourceView } from '../model/viewState'
 import { DevOpsProblem } from '../../../ui/DevOpsProblem'
+import { useSidebarView } from '../../../ui/model/useSidebarView'
 import { KubernetesSidebarDialogs } from './KubernetesSidebarDialogs'
 import { KubernetesSidebarHeader } from './KubernetesSidebarHeader'
 import { KubernetesSidebarInventory } from './KubernetesSidebarInventory'
@@ -21,7 +21,11 @@ export function KubernetesSidebarView({
   requestedResource?: K8sResourceView
   embedded?: boolean
 }) {
-  const { view, setFilter, setResource, setSort } = useKubernetesSidebarView(requestedResource)
+  const { view, setFilter, setResource, setSort } = useSidebarView(
+    loadK8sView,
+    saveK8sView,
+    requestedResource,
+  )
   const actions = useKubernetesSidebarActions(kubernetes)
   const pulse = useMemo(
     () => clusterPulse(kubernetes.pods, kubernetes.deployments, kubernetes.nodes),

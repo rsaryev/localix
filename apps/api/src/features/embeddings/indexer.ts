@@ -294,5 +294,3 @@ export function createIndexer(deps: IndexerDeps) {
     idle: () => running ?? Promise.resolve(),
   }
 }
-
-export type Indexer = ReturnType<typeof createIndexer>

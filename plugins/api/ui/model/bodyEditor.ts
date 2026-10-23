@@ -1,9 +1,9 @@
 /**
- * Pure helpers behind the body editor — language mapping, JSON diagnostics, and `{{variable}}`
+ * Pure helpers behind the body editor — language mapping, JSON formatting, and `{{variable}}`
  * completions. Framework-free so the shared editor layer can adapt and unit-test them directly.
  */
 
-import type { EditorCompletionItem, EditorDiagnostic } from '@localixai/kit/code-editor'
+import type { EditorCompletionItem } from '@localixai/kit/code-editor'
 
 /** The editor grammar for a body mime type. Unknown types edit as plain text, never crash. */
 export function editorLanguage(mimeType: string | undefined): string {
@@ -12,44 +12,6 @@ export function editorLanguage(mimeType: string | undefined): string {
   if (t.includes('html')) return 'html'
   if (t.includes('xml')) return 'xml'
   return 'text'
-}
-
-/** `offset` → line/character, both 0-based — the shape EditorDiagnostic wants. */
-function positionAt(text: string, offset: number): { line: number; character: number } {
-  const upTo = text.slice(0, Math.max(0, Math.min(offset, text.length)))
-  const line = (upTo.match(/\n/g) ?? []).length
-  const character = upTo.length - (upTo.lastIndexOf('\n') + 1)
-  return { line, character }
-}
-
-/**
- * A single parse diagnostic for an invalid JSON body, or none for valid/empty text.
- *
- * The position comes out of V8's message (`… at position N` / `(line L column C)`) when it
- * offers one; a browser that words it differently still gets the squiggle, just at the start.
- * A body being TYPED is invalid most of the time — the caller debounces, not this function.
- */
-export function jsonDiagnostics(text: string): EditorDiagnostic[] {
-  if (text.trim() === '') return []
-  try {
-    JSON.parse(text)
-    return []
-  } catch (err) {
-    const message = err instanceof Error ? err.message : 'Invalid JSON'
-    const at = /at position (\d+)/.exec(message)
-    const { line, character } = positionAt(text, at ? Number(at[1]) : 0)
-    return [
-      {
-        line,
-        character,
-        endLine: line,
-        endCharacter: character + 1,
-        severity: 'error',
-        message,
-        source: 'json',
-      },
-    ]
-  }
 }
 
 /**

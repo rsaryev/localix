@@ -5,7 +5,6 @@ import {
   RESOURCE_CLASSES,
   matchesResourceClass,
   resourceClassOf,
-  resourceClassesFor,
   type ClassifiedCall,
 } from './capability-resource-classes'
 import { matchesCapabilityCall } from './capability-call-match'
@@ -63,6 +62,8 @@ describe('the one list', () => {
   })
 
   test('a class is offered only where it could mean something', () => {
+    const resourceClassesFor = (kind: string) =>
+      RESOURCE_CLASSES.filter((entry) => (entry.appliesTo as readonly string[]).includes(kind))
     const toolClasses = resourceClassesFor('tool').map((entry) => entry.value)
     expect(toolClasses).toContain('dangerous')
     expect(toolClasses).toContain('outside-workspace')

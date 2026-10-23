@@ -141,5 +141,3 @@ export function createRouteRepair(ports: RouteRepairPorts) {
 
   return { repairUser, repairAll, handlers }
 }
-
-export type RouteRepair = ReturnType<typeof createRouteRepair>

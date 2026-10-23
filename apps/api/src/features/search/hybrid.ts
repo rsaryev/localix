@@ -169,12 +169,3 @@ export function fuse(
 export function unitScore(fused: number): number {
   return Math.min(0.99, fused / (fused + 3))
 }
-
-/** How many leading results score at least `ratio` × the best — the rest are weak matches. */
-export function strongCount(scores: readonly number[], ratio = 0.5): number {
-  const top = scores[0]
-  if (top === undefined || top <= 0) return scores.length
-  let n = 0
-  while (n < scores.length && scores[n]! >= top * ratio) n += 1
-  return n
-}

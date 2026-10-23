@@ -10,9 +10,10 @@
  * behind its own argv, and no amount of pattern matching recovers it.
  *
  * A launch therefore DECLARES what it starts instead of leaving us to recover it:
- * `LOCALIX_AGENT=<provider>` and `LOCALIX_AGENT_CWD=<path>` lead the line (see `shared/launch.ts`,
- * which describes delegated CLI commands). Core terminal shortcuts and hand-typed commands may
- * omit these declarations; the reader also recognises supported bare executable names.
+ * `LOCALIX_AGENT=<provider>` and `LOCALIX_AGENT_CWD=<path>` lead the line (see
+ * `owned-session-routes.ts`, which opens delegated CLI terminals). Core terminal shortcuts and
+ * hand-typed commands may omit these declarations; the reader also recognises supported bare
+ * executable names.
  */
 
 export interface LaunchKind {

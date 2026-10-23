@@ -10,16 +10,19 @@ import {
   type ResumeDocument,
 } from './schema'
 
+/** The document's title, target role and job description — the same edit for the editor and the agent. */
+export const metadataOperationSchema = z.strictObject({
+  op: z.literal('metadata'),
+  value: z.strictObject({
+    title: z.string().trim().min(1).max(500).optional(),
+    targetRole: z.string().max(500).optional(),
+    jobDescription: z.string().max(16_000).optional(),
+  }),
+})
+
 export const operationSchema = z.discriminatedUnion('op', [
   z.strictObject({ op: z.literal('header'), value: headerSchema.partial() }),
-  z.strictObject({
-    op: z.literal('metadata'),
-    value: z.strictObject({
-      title: z.string().trim().min(1).max(500).optional(),
-      targetRole: z.string().max(500).optional(),
-      jobDescription: z.string().max(16_000).optional(),
-    }),
-  }),
+  metadataOperationSchema,
   z.strictObject({ op: z.literal('presentation'), value: presentationSchema }),
   z.strictObject({ op: z.literal('addSection'), section: sectionSchema }),
   z.strictObject({

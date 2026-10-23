@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { makePluginUi } from './native'
+import { makePluginUi } from './native-context'
 
 describe('native plugin UI intents', () => {
   test('offers a user-driven destination and never an automatic reveal', () => {

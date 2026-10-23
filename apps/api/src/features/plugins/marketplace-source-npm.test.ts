@@ -6,14 +6,13 @@ import { join } from 'node:path'
 
 import { stubFetch, fetchUrl } from '../../testing/fetch-stub'
 import {
-  DEFAULT_NPM_REGISTRY,
-  downloadNpmTarball,
   fetchNpmPlugin,
   npmMetadataUrl,
   parseNpmEntrySource,
   pickNpmVersion,
-  verifyNpmIntegrity,
 } from './marketplace-source-npm'
+import { downloadNpmTarball, verifyNpmIntegrity } from './marketplace-npm-integrity'
+import { DEFAULT_NPM_REGISTRY } from './marketplace-npm-registry'
 
 /**
  * npm plugin sources: name parsing, registry URL building, version picking (exact /

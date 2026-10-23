@@ -80,24 +80,6 @@ export function firstChangedLine(diffText: string): number | undefined {
   return undefined
 }
 
-/** Total renderable (non-meta) line count across hunks. */
-export function countDiffLines(hunks: DiffHunk[]): number {
-  return hunks.reduce((n, h) => n + h.lines.filter((l) => l.type !== 'meta').length, 0)
-}
-
-/** Added vs deleted line counts across all hunks — for an at-a-glance +X −Y stat. */
-export function countDiffStats(hunks: DiffHunk[]): { additions: number; deletions: number } {
-  let additions = 0
-  let deletions = 0
-  for (const h of hunks) {
-    for (const l of h.lines) {
-      if (l.type === 'add') additions++
-      else if (l.type === 'del') deletions++
-    }
-  }
-  return { additions, deletions }
-}
-
 // Kept as a re-export for the established `@/shared/ui/diff` public API. The
 // implementation lives with the editor language registry so path detection and
 // the selectable editor language modes stay aligned.

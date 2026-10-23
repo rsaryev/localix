@@ -7,8 +7,6 @@ import {
   type ExecutionCapability,
 } from '../../agent-core/execution-capabilities'
 
-export { ORCHESTRATION_DELEGATE_TASK } from '../../agent-core/execution-capabilities'
-
 /** Typed provenance of the invocation that owns one agent run. */
 export type RunInvocation =
   | { kind: 'root'; source?: WakeSource }
@@ -71,26 +69,6 @@ export function childExecutionContext(
     invocation,
     authority: { capabilities: capabilitiesForInvocation(invocation) },
     ...(clientSurface ? { clientSurface } : {}),
-  }
-}
-
-/** A continuation retains its owning host and cannot regain previously removed authority. */
-export function continuationExecutionContext(
-  previous: RunExecutionContext,
-  source: WakeSource,
-): RunExecutionContext {
-  const invocation =
-    previous.invocation.kind === 'root' || previous.invocation.kind === 'channel'
-      ? { ...previous.invocation, source }
-      : previous.invocation
-  return {
-    invocation,
-    authority: {
-      capabilities: capabilitiesForInvocation(invocation).filter((capability) =>
-        previous.authority.capabilities.includes(capability),
-      ),
-    },
-    ...(previous.clientSurface ? { clientSurface: previous.clientSurface } : {}),
   }
 }
 

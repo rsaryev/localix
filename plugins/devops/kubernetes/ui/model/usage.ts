@@ -172,17 +172,3 @@ export function nodeReservation(
     memoryPercent: usagePercent(memoryBytes, node.allocatableMemoryBytes),
   }
 }
-
-/** Total live usage across a namespace — the footer figure for a pod list. */
-export function totalPodUsage(rows: readonly PodUsage[] | null): {
-  cpuNanos: number
-  memoryBytes: number
-} {
-  return (rows ?? []).reduce(
-    (total, row) => ({
-      cpuNanos: total.cpuNanos + row.cpuNanos,
-      memoryBytes: total.memoryBytes + row.memoryBytes,
-    }),
-    { cpuNanos: 0, memoryBytes: 0 },
-  )
-}

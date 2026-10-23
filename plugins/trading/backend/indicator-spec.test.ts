@@ -286,3 +286,43 @@ describe('indicatorKindLabel / indicatorParamFields / withIndicatorParam', () =>
     expect(normalizeIndicatorId('EMA 200')).toBe('ema:200')
   })
 })
+
+describe('the shared arms: every period kind and every parameterless kind', () => {
+  const PARAMLESS: IndicatorKind[] = [
+    'vwap',
+    'obv',
+    'volume',
+    'ao',
+    'vwapband',
+    'pivots',
+    'ad',
+    'coppock',
+    'kst',
+    'klinger',
+  ]
+
+  test('a period kind validates its period, ids as kind:period, labels it and edits it', () => {
+    for (const kind of PERIOD_KINDS) {
+      const p: IndicatorParams = { kind, period: 21 }
+      expect(validIndicatorParams(p)).toBe(p)
+      expect(validIndicatorParams({ kind, period: 0 })).toBeNull()
+      expect(indicatorId(p)).toBe(`${kind}:21`)
+      expect(indicatorLabel(p)).toBe(`${indicatorKindLabel(kind)} 21`)
+      expect(indicatorParamFields(p)).toEqual([{ label: 'Period', value: 21 }])
+      expect(withIndicatorParam(p, 0, 34)).toEqual({ kind, period: 34 })
+    }
+  })
+
+  test('a parameterless kind is always valid, ids as its kind and has no fields', () => {
+    for (const kind of PARAMLESS) {
+      const p = { kind } as IndicatorParams
+      expect(validIndicatorParams(p)).toBe(p)
+      expect(indicatorId(p)).toBe(kind)
+      expect(indicatorParamFields(p)).toEqual([])
+      expect(withIndicatorParam(p, 0, 5)).toBe(p)
+    }
+    for (const kind of ['obv', 'volume', 'ad', 'coppock', 'kst', 'klinger'] as const) {
+      expect(indicatorLabel({ kind })).toBe(indicatorKindLabel(kind))
+    }
+  })
+})

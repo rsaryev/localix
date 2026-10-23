@@ -3,7 +3,13 @@ import type { AppDatabase } from '../../db'
 import type { SecretCipher } from './cipher'
 import type { SecretMeta, UpdateSecretMetadataRequest } from './contracts'
 import type { VaultItemMetadata, VaultMutationResult, VaultUseContext } from './store-contracts'
-import { announceVaultItem, insertAudit, metadataFor, toMeta } from './store-metadata'
+import {
+  announceVaultItem,
+  insertAudit,
+  insertItemVersion,
+  metadataFor,
+  toMeta,
+} from './store-metadata'
 import { payloadContext, VaultPayloadError, type EncryptedPayloadV1 } from './store-payload'
 
 export {
@@ -64,20 +70,14 @@ export const createItem = async (
           deleted_at: null,
         })
         .execute()
-      await tx
-        .insertInto('vault_item_versions')
-        .values({
-          id: versionId,
-          item_id: itemId,
-          version: 1,
-          encrypted_payload: encrypted,
-          payload_ref: null,
-          payload_schema: 'localix.fields.v1',
-          reason: 'created',
-          created_at: timestamp,
-          redacted_at: null,
-        })
-        .execute()
+      await insertItemVersion(tx, {
+        id: versionId,
+        itemId,
+        version: 1,
+        encrypted,
+        reason: 'created',
+        at: timestamp,
+      })
       await tx
         .insertInto('vault_aliases')
         .values({
@@ -137,20 +137,14 @@ export const rotateItem = async (
       payloadContext(userId, current.id, nextVersion),
     )
 
-    await tx
-      .insertInto('vault_item_versions')
-      .values({
-        id: id(),
-        item_id: current.id,
-        version: nextVersion,
-        encrypted_payload: encrypted,
-        payload_ref: null,
-        payload_schema: 'localix.fields.v1',
-        reason: 'rotated',
-        created_at: timestamp,
-        redacted_at: null,
-      })
-      .execute()
+    await insertItemVersion(tx, {
+      id: id(),
+      itemId: current.id,
+      version: nextVersion,
+      encrypted,
+      reason: 'rotated',
+      at: timestamp,
+    })
     const update = await tx
       .updateTable('vault_items')
       .set({ current_version: nextVersion, updated_at: timestamp })
@@ -231,20 +225,14 @@ export const updateItemMetadata = async (
       JSON.stringify(payload),
       payloadContext(userId, current.id, nextVersion),
     )
-    await tx
-      .insertInto('vault_item_versions')
-      .values({
-        id: id(),
-        item_id: current.id,
-        version: nextVersion,
-        encrypted_payload: encrypted,
-        payload_ref: null,
-        payload_schema: 'localix.fields.v1',
-        reason: 'metadata_updated',
-        created_at: timestamp,
-        redacted_at: null,
-      })
-      .execute()
+    await insertItemVersion(tx, {
+      id: id(),
+      itemId: current.id,
+      version: nextVersion,
+      encrypted,
+      reason: 'metadata_updated',
+      at: timestamp,
+    })
     const update = await tx
       .updateTable('vault_items')
       .set({

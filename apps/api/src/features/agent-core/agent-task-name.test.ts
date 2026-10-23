@@ -7,7 +7,6 @@ import {
   AGENT_TASK_SEGMENT_MAX,
   agentTaskPath,
   agentTaskPathHasPrefix,
-  agentTaskSegmentOf,
   claimAgentTaskPath,
   deriveAgentTaskSegment,
   isCanonicalAgentTaskPath,
@@ -88,7 +87,7 @@ describe('claimAgentTaskPath — the collision rule', () => {
     const taken = new Set([`/root/${leaf}`])
     const claimed = claimAgentTaskPath(`/root/${leaf}`, taken)
     expect(claimed).toBe(`/root/${'a'.repeat(AGENT_TASK_SEGMENT_MAX - 2)}_2`)
-    expect(agentTaskSegmentOf(claimed)).toMatch(AGENT_TASK_NAME_PATTERN)
+    expect(claimed.slice(claimed.lastIndexOf('/') + 1)).toMatch(AGENT_TASK_NAME_PATTERN)
   })
 
   test('always terminates on a densely occupied tree, and every name stays valid', () => {
@@ -220,10 +219,7 @@ describe('agentTaskPathHasPrefix — the listing filter', () => {
 })
 
 describe('path helpers', () => {
-  test('agentTaskPath and agentTaskSegmentOf are inverses', () => {
-    const path = agentTaskPath('/root/audit', 'probe_lint')
-    expect(path).toBe('/root/audit/probe_lint')
-    expect(agentTaskSegmentOf(path)).toBe('probe_lint')
-    expect(agentTaskSegmentOf(AGENT_TASK_ROOT_PATH)).toBe('root')
+  test('agentTaskPath appends a segment to its parent', () => {
+    expect(agentTaskPath('/root/audit', 'probe_lint')).toBe('/root/audit/probe_lint')
   })
 })

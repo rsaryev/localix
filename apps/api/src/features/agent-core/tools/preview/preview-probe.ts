@@ -14,18 +14,9 @@
  * server pools down together.
  */
 
-export {
-  getPreviewProbeJs,
-  getNativeBrowserProbeJs,
-  injectProbeIntoHtml,
-  invalidatePreviewProbe,
-  resolvePrebuiltProbeFile,
-  resolveProbeEntry,
-  warmPreviewProbe,
-  type ProbeCacheDeps,
-} from './probe-inject'
+export { getPreviewProbeJs, getNativeBrowserProbeJs, warmPreviewProbe } from './probe-inject'
 export { ensureStaticServer } from './preview-static'
-export { buildInjectedPreviewUrl, forwardProxyHeaders } from './preview-proxy'
+export { buildInjectedPreviewUrl } from './preview-proxy'
 
 import { disposeProxyServers } from './preview-proxy'
 import { disposeStaticServers } from './preview-static'

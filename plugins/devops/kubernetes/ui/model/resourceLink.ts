@@ -1,14 +1,5 @@
-import type { KubeManifestKind } from '../../backend/contracts'
 import { nodeUri, podUri, workloadUri, type WorkloadKind } from '../../backend/resource-nodes'
 import { encodeResourceSegment } from '@localixai/plugin-sdk/resource-refs'
-
-export interface K8sManifestRef {
-  kind: KubeManifestKind
-  name: string
-  /** The namespace — ignored for cluster-scoped nodes. */
-  namespace: string
-  context?: string
-}
 
 type K8sPodView = 'logs' | 'describe' | 'events' | 'manifest'
 type K8sWorkloadView = 'describe' | 'events' | 'manifest'
@@ -75,21 +66,4 @@ export function buildK8sNodeViewUri(input: {
   view: K8sNodeView
 }): string {
   return `${buildK8sNodeUri(input)}/${input.view}`
-}
-
-/**
- * Build the `localix://resource/k8s/…/manifest` resource URI the composer links, matching the k8s
- * resource provider's grammar:
- *   pod                → localix://resource/k8s/<ctx>/<ns>/<pod>/manifest
- *   deployment/service → localix://resource/k8s/<ctx>/<ns>/<kind>/<name>/manifest
- *   node               → localix://resource/k8s/<ctx>/node/<name>/manifest (cluster-scoped)
- * A blank context yields a `current` marker so the URI still parses (the provider
- * falls back to kubeconfig's current-context).
- */
-export function buildK8sManifestUri({ kind, name, namespace, context }: K8sManifestRef): string {
-  if (kind === 'node') return buildK8sNodeViewUri({ name, context, view: 'manifest' })
-  if (kind === 'pod') {
-    return buildK8sPodViewUri({ name, namespace, context, view: 'manifest' })
-  }
-  return buildK8sWorkloadViewUri({ kind, name, namespace, context, view: 'manifest' })
 }

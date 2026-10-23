@@ -12,6 +12,7 @@ export {
   leaves,
   leafIds,
   findLeaf,
+  renormalize,
 } from './tree'
 export { groupOfTab } from './itemOps'
 export {

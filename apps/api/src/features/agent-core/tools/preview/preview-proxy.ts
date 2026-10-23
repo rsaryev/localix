@@ -15,13 +15,6 @@ import { createPreviewServerCache } from './preview-server-cache'
 import { isOwnLoopbackOrigin, rejectForeignHost } from './preview-host-guard'
 import { websocketRelay, type WsRelay } from './preview-websocket-relay'
 
-export {
-  PREVIEW_WS_MAX_QUEUED_FRAMES,
-  PREVIEW_WS_MAX_BUFFERED_BYTES,
-  previewWsMessageBytes,
-  sendOrQueuePreviewWsMessage,
-} from './preview-websocket-relay'
-
 /** One proxy server per upstream origin, reused across calls (like the static server). */
 const proxyServers = createPreviewServerCache('proxy')
 

@@ -1,6 +1,7 @@
 import { promises as fs } from 'node:fs'
 import { expect } from '@playwright/test'
-import { api, databaseFile, fixtureFile, uiOrigin, verifyDemoRuntime } from './runtime.mjs'
+import { fixtureFile, uiOrigin } from './runtime.mjs'
+import { seedTranscript } from './transcript-fixture.mjs'
 
 const TITLE = 'Codemode card fixture'
 
@@ -56,22 +57,11 @@ const codemodeItem = {
 
 /** Run by `seed.mjs` under Bun: it writes the transcript straight into the capture database. */
 export async function seedCodemodeCard(fixture) {
-  await verifyDemoRuntime()
-  const { Database } = await import('bun:sqlite')
-  const { serializeMessagePayload } = await import('../../apps/api/src/db/payload-codec.ts')
-  const sessions = await api('/sessions')
-  const list = Array.isArray(sessions) ? sessions : (sessions.sessions ?? [])
-  const session =
-    list.find((item) => item.title === TITLE && item.projectId === fixture.projectId) ??
-    (await api('/sessions', { title: TITLE, projectId: fixture.projectId }))
-  const db = new Database(databaseFile, { strict: true })
-  try {
-    const owner = db.query('SELECT project_id FROM agent_sessions WHERE id=?').get(session.id)
-    if (owner?.project_id !== fixture.projectId)
-      throw new Error('The codemode fixture must live in the dedicated capture project.')
-    // Rewritten on every seed, so the card always renders this exact call.
-    db.query('DELETE FROM agent_messages WHERE session_id=?').run(session.id)
-    const rows = [
+  fixture.codemodeSessionId = await seedTranscript(fixture, {
+    title: TITLE,
+    label: 'codemode',
+    idPrefix: 'capture-codemode',
+    rows: [
       {
         role: 'user',
         content: 'Check the release files and run the release test in one go.',
@@ -89,34 +79,8 @@ export async function seedCodemodeCard(fixture) {
           },
         ],
       },
-    ]
-    let parent = null
-    for (const [index, row] of rows.entries()) {
-      const id = `capture-codemode-${session.id}-${index}`
-      db.query(
-        'INSERT INTO agent_messages(id,session_id,user_id,sequence,role,payload_json,parent_id) VALUES (?,?,?,?,?,?,?)',
-      ).run(
-        id,
-        session.id,
-        'local-user',
-        index + 1,
-        row.role,
-        serializeMessagePayload({ id, ...row }),
-        parent,
-      )
-      parent = id
-    }
-    const now = new Date().toISOString()
-    db.query('UPDATE agent_sessions SET leaf_id=?,last_message_at=?,updated_at=? WHERE id=?').run(
-      parent,
-      now,
-      now,
-      session.id,
-    )
-  } finally {
-    db.close()
-  }
-  fixture.codemodeSessionId = session.id
+    ],
+  })
 }
 
 /** Open a conversation from the history, where a fresh layout keeps it collapsed. */

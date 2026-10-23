@@ -9,15 +9,14 @@ import {
   decodeResumeCursor,
   gapFrame,
   mergeRealtimeToolSurface,
-  parseRealtimeCommand,
   REALTIME_BACKPRESSURE_DROP_BYTES,
   REALTIME_BACKPRESSURE_HARD_CLOSE_BYTES,
   admitWatchedSessions,
   REALTIME_MAX_WATCHED_SESSIONS,
   parseWatchQuery,
-  shouldDropFrame,
   realtimeConnectionToolSurface,
 } from './ws'
+import { parseRealtimeCommand } from './ws-commands'
 import type { StreamEnvelope } from '../chat/runtime/session-stream-registry'
 import { encodeSessionCursor } from '../ext/ws-frame'
 import { createRuntimeToolRegistry } from '../agent-core/tool-registry'
@@ -156,8 +155,10 @@ describe('realtime client tool surface', () => {
   })
 })
 
-describe('shouldDropFrame (backpressure valve)', () => {
+describe('the soft backpressure valve (a hard-close decision is not a drop)', () => {
   const T = REALTIME_BACKPRESSURE_DROP_BYTES
+  const shouldDropFrame = (liveOnly: boolean, bytes: number, threshold = T) =>
+    backpressureAction(liveOnly, bytes, threshold) === 'drop'
 
   it('drops a live-only frame only once the buffer exceeds the threshold', () => {
     expect(shouldDropFrame(true, T + 1)).toBe(true)

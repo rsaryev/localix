@@ -25,7 +25,6 @@ export type CapabilitySnapshotQuery = z.infer<typeof capabilitySnapshotQuerySche
  * import. A tip is composed FROM this document; it is not part of describing what a
  * scope can do, and the two change for different reasons.
  */
-export { TIP_SIGNALS } from './tip-contracts'
 export type { ComposerTipAction, ComposerTip } from './tip-contracts'
 
 /**

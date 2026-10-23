@@ -2,11 +2,8 @@ import { describe, it, expect, beforeEach, afterAll } from 'bun:test'
 import { createHmac } from 'node:crypto'
 import { join, resolve } from 'node:path'
 
-import {
-  makeHelpers,
-  type PluginContext,
-  type PluginHooks,
-} from '../../../apps/api/src/features/plugins/native'
+import type { PluginContext, PluginHooks } from '../../../apps/api/src/features/plugins/native'
+import { makeHelpers } from '../../../apps/api/src/features/plugins/native-helpers'
 
 /**
  * Behavior tests for the bundled `webhook-notifier` plugin (plugins/webhook-notifier):

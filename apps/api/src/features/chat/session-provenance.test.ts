@@ -11,14 +11,11 @@ import {
   parseSessionProvenance,
   serializeSessionProvenance,
   sessionExecutionClass,
-  sessionTopology,
   type SessionProvenance,
 } from './session-provenance'
 
-const cases: Array<
-  [SessionProvenance, 'root' | 'child', 'interactive' | 'isolated-worker' | 'passive']
-> = [
-  [{ kind: 'root' }, 'root', 'interactive'],
+const cases: Array<[SessionProvenance, 'interactive' | 'isolated-worker' | 'passive']> = [
+  [{ kind: 'root' }, 'interactive'],
   [
     {
       kind: 'task-delegation',
@@ -26,7 +23,6 @@ const cases: Array<
       toolCallId: 'tool',
       parentParticipant: 'lead',
     },
-    'child',
     'isolated-worker',
   ],
   // A workflow agent run in a worktree keeps the folder it works in.
@@ -37,7 +33,6 @@ const cases: Array<
       toolCallId: 'tool',
       workingDir: '/home/me/.localix/worktrees/root/wf-1-1',
     },
-    'child',
     'isolated-worker',
   ],
   // …or the one a WorktreeCreate hook made, wherever it put it.
@@ -49,27 +44,21 @@ const cases: Array<
       workingDir: '/srv/checkouts/wf-1-1',
       worktreeByHook: true,
     },
-    'child',
     'isolated-worker',
   ],
-  [{ kind: 'loop', parentSessionId: 'p', loopId: 'loop' }, 'child', 'isolated-worker'],
-  [{ kind: 'hook', parentSessionId: 'p', phase: 'verifier' }, 'child', 'isolated-worker'],
-  [{ kind: 'skill-fork', parentSessionId: 'p' }, 'child', 'isolated-worker'],
-  [{ kind: 'thread', parentSessionId: 'p', phase: 'message' }, 'child', 'interactive'],
-  [{ kind: 'fork', parentSessionId: 'p' }, 'child', 'interactive'],
-  [
-    { kind: 'external-agent', parentSessionId: 'p', toolCallId: 'tool' },
-    'child',
-    'isolated-worker',
-  ],
-  [{ kind: 'unknown-origin' }, 'child', 'passive'],
+  [{ kind: 'loop', parentSessionId: 'p', loopId: 'loop' }, 'isolated-worker'],
+  [{ kind: 'hook', parentSessionId: 'p', phase: 'verifier' }, 'isolated-worker'],
+  [{ kind: 'skill-fork', parentSessionId: 'p' }, 'isolated-worker'],
+  [{ kind: 'thread', parentSessionId: 'p', phase: 'message' }, 'interactive'],
+  [{ kind: 'fork', parentSessionId: 'p' }, 'interactive'],
+  [{ kind: 'external-agent', parentSessionId: 'p', toolCallId: 'tool' }, 'isolated-worker'],
+  [{ kind: 'unknown-origin' }, 'passive'],
 ]
 
 describe('session provenance', () => {
-  test('round-trips every discriminator and derives topology/execution centrally', () => {
-    for (const [provenance, topology, executionClass] of cases) {
+  test('round-trips every discriminator and derives execution centrally', () => {
+    for (const [provenance, executionClass] of cases) {
       expect(parseSessionProvenance(serializeSessionProvenance(provenance))).toEqual(provenance)
-      expect(sessionTopology(provenance)).toBe(topology)
       expect(sessionExecutionClass(provenance)).toBe(executionClass)
     }
   })

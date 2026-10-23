@@ -1,11 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import {
-  createEnvironment,
-  LocalEnvironment,
-  SSHEnvironment,
-  DockerEnvironment,
-  localEnvironment,
-} from './index'
+import { createEnvironment } from './index'
+import { SSHEnvironment, DockerEnvironment } from './remote'
+import { LocalEnvironment, localEnvironment } from './local'
 import type { ExecutionEnvironmentConfig } from '../environment'
 
 /**

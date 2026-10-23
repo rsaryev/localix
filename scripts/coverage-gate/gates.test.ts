@@ -36,10 +36,47 @@ describe('package floors', () => {
     })
 
     expect(result.packages).toEqual([
-      { pkg: 'pkg/a', covered: 3, total: 4, percent: 75, floor: 75, ok: true },
-      { pkg: 'pkg/b', covered: 1, total: 2, percent: 50, floor: 60, ok: false },
+      {
+        pkg: 'pkg/a',
+        covered: 3,
+        total: 4,
+        percent: 75,
+        floor: 75,
+        uncovered: 1,
+        maxUncovered: null,
+        ok: true,
+      },
+      {
+        pkg: 'pkg/b',
+        covered: 1,
+        total: 2,
+        percent: 50,
+        floor: 60,
+        uncovered: 1,
+        maxUncovered: null,
+        ok: false,
+      },
     ])
     expect(result.ok).toBe(false)
+  })
+
+  // Deleting dead code that tests covered lowers a package's percentage without adding a single
+  // untested line; the floor must not punish that. More untested lines still fail.
+  test('below its floor, a package passes while its untested lines have not grown', () => {
+    const baseline = {
+      floors: { 'pkg/a': 90, 'pkg/b': 0 },
+      uncovered: { 'pkg/a': 1 },
+      unloaded: ['pkg/b/never.ts'],
+    }
+    const result = evaluate({ coverage, sources, baseline })
+    expect(result.packages[0]).toMatchObject({ percent: 75, floor: 90, uncovered: 1, ok: true })
+
+    const grown = evaluate({
+      coverage: new Map([...coverage, ['pkg/a/z.ts', lines([[1, 0]])]]),
+      sources: { ...sources, 'pkg/a': ['pkg/a/x.ts', 'pkg/a/z.ts'] },
+      baseline,
+    })
+    expect(grown.packages[0]).toMatchObject({ uncovered: 2, maxUncovered: 1, ok: false })
   })
 
   test('a package with tests but no recorded floor fails until a floor is recorded', () => {
@@ -169,8 +206,23 @@ describe('ratchet', () => {
       ),
     ).toEqual({
       floors: { 'pkg/a': 80, 'pkg/b': 50 },
+      uncovered: { 'pkg/a': 1, 'pkg/b': 1 },
       unloaded: ['pkg/b/never.ts'],
     })
+  })
+
+  test('the untested-lines ceiling only falls', () => {
+    const measured = evaluate({
+      coverage,
+      sources,
+      baseline: { floors: {}, uncovered: { 'pkg/a': 0, 'pkg/b': 5 }, unloaded: ['pkg/b/never.ts'] },
+    })
+    expect(
+      ratchet(
+        { floors: {}, uncovered: { 'pkg/a': 0, 'pkg/b': 5 }, unloaded: ['pkg/b/never.ts'] },
+        measured,
+      ).uncovered,
+    ).toEqual({ 'pkg/a': 0, 'pkg/b': 1 })
   })
 
   test('a first recording takes what is measured, including the files no test loads yet', () => {
@@ -178,6 +230,7 @@ describe('ratchet', () => {
 
     expect(ratchet({ floors: {}, unloaded: [] }, measured, { adopt: true })).toEqual({
       floors: { 'pkg/a': 75, 'pkg/b': 50 },
+      uncovered: { 'pkg/a': 1, 'pkg/b': 1 },
       unloaded: ['pkg/b/never.ts'],
     })
   })

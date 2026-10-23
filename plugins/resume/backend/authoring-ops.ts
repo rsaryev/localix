@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { idSchema, presentationSchema, sectionTypes, type ResumeDocument } from '../shared/schema'
-import { applyOperation, type ResumeOperation } from '../shared/operations'
+import { applyOperation, metadataOperationSchema, type ResumeOperation } from '../shared/operations'
 import {
   entryInputSchema,
   headerInputSchema,
@@ -16,14 +16,7 @@ const index = z.number().int().min(0)
 
 export const authoringOperationSchema = z.discriminatedUnion('op', [
   z.strictObject({ op: z.literal('header'), value: headerInputSchema }),
-  z.strictObject({
-    op: z.literal('metadata'),
-    value: z.strictObject({
-      title: z.string().trim().min(1).max(500).optional(),
-      targetRole: z.string().max(500).optional(),
-      jobDescription: z.string().max(16_000).optional(),
-    }),
-  }),
+  metadataOperationSchema,
   z.strictObject({ op: z.literal('presentation'), value: presentationSchema.partial() }),
   z.strictObject({ op: z.literal('addSection'), section: sectionInputSchema }),
   z.strictObject({

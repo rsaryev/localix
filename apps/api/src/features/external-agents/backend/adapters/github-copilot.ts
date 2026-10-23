@@ -55,7 +55,7 @@ import { clip, pathExists, revisionOf, jsonlRecords } from './fs-read'
 import { foldOnward, resumableFold } from './summary-fold'
 import { firstText } from './json-util'
 import { eventWindow } from './event-window'
-import { tailTurnState, TURN_TAIL_BYTES } from '../live/turn-state'
+import { readAppendedTurnState } from './append-turn-state'
 import { linkKeyOf } from '../../shared/identity'
 import { mapConcurrent } from './usage'
 
@@ -269,17 +269,6 @@ async function readTranscript(req: TranscriptRequest): Promise<TranscriptResult>
   return { ...window.result(), ...(truncated ? { sourceTruncated: true } : {}) }
 }
 
-/** See `ProviderAdapter.readTurnState`: this format appends, so its last records answer. */
-async function readTurnState(ref: SourceRef, _env: AdapterEnv, now: number) {
-  return tailTurnState(
-    ref.sourcePath,
-    TURN_TAIL_BYTES,
-    ref.updatedAtHint ?? now,
-    now,
-    (path, bytes) => jsonlRecords(path, bytes, { fromEnd: true }),
-  )
-}
-
 export const githubCopilotAdapter: ProviderAdapter = {
   id: ID,
   command: 'copilot',
@@ -294,6 +283,6 @@ export const githubCopilotAdapter: ProviderAdapter = {
   },
   foldSummary: (ref, previous) => foldSummary(ref, previous),
   readTranscript,
-  readTurnState,
+  readTurnState: readAppendedTurnState,
   resumeCommand: (id) => `copilot --resume=${shellQuote(id)}`,
 }

@@ -18,6 +18,7 @@
 import type { AgentTool, AgentToolExecutionContext, AgentToolResult } from '@localixai/agent/agents'
 
 import type { PreToolUseVerdictCarrier } from '../agent-core/permission-hook-decision'
+import { reparseToolInput } from '../agent-core/tools/reparse-input'
 import { isBlockedThrow, resultFromThrow } from '../agent-core/tools/tool-error-result'
 import { joinContext } from './runtime-results'
 import { failureText, withContextReminder } from './tool-hook-results'
@@ -32,26 +33,6 @@ export class CcHookBlockedError extends Error {
     super(`Tool call blocked by hook: ${reason}`)
     this.name = 'CcHookBlockedError'
   }
-}
-
-/** Re-validate a PreToolUse input rewrite against the tool's Zod schema (if any). */
-function reparse(
-  tool: AgentTool,
-  rewrite: unknown,
-): { ok: true; input: unknown } | { ok: false; error: string } {
-  const schema = tool.inputSchema as
-    | {
-        safeParse?: (v: unknown) => {
-          success: boolean
-          data?: unknown
-          error?: { message?: string }
-        }
-      }
-    | undefined
-  if (!schema || typeof schema.safeParse !== 'function') return { ok: true, input: rewrite }
-  const parsed = schema.safeParse(rewrite)
-  if (parsed.success) return { ok: true, input: parsed.data }
-  return { ok: false, error: parsed.error?.message ?? 'schema re-parse failed' }
 }
 
 /**
@@ -69,7 +50,7 @@ export function approvedInputFor(
   if (!runtime.active) return undefined
   const approved = runtime.takeApprovedInput(toolCallId)
   if (!approved) return undefined
-  const reparsed = reparse(tool, approved.input)
+  const reparsed = reparseToolInput(tool, approved.input)
   if (reparsed.ok) return { input: reparsed.input }
   logger.warn(
     `[cc-hooks] PermissionRequest updatedInput for "${tool.name}" ignored (schema re-parse failed: ${reparsed.error})`,
@@ -135,7 +116,7 @@ export function wrapToolsWithCcHooks(
       // discarded, the original call goes to the gate without it.
       let decision = pre.decision
       if (pre.didRewrite && pre.updatedInput !== undefined) {
-        const reparsed = reparse(tool, pre.updatedInput)
+        const reparsed = reparseToolInput(tool, pre.updatedInput)
         if (reparsed.ok) {
           effectiveInput = reparsed.input
         } else {

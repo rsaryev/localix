@@ -234,26 +234,3 @@ export function resolveToolGc(input: ToolGcInput): ToolGcReport {
 
   return { evidence, suggestions }
 }
-
-export type ToolBudgetLevel = 'neutral' | 'warn' | 'hot'
-
-/**
- * Where the surface sits against its budget.
- *
- * `wasWarn` is an input rather than module state because hysteresis is inherently a function of
- * the previous answer, and a pure rule that quietly remembered one would be neither pure nor
- * testable. The caller owns the one bit; this owns the arithmetic.
- */
-export function resolveToolBudget(input: {
-  total: number
-  warn?: number | null
-  wasWarn?: boolean
-}): { level: ToolBudgetLevel; warn: number; hot: number } {
-  const warn = input.warn && input.warn > 0 ? Math.floor(input.warn) : TOOL_BUDGET_WARN_DEFAULT
-  const hot = warn + TOOL_BUDGET_HOT_MARGIN
-  if (input.total >= hot) return { level: 'hot', warn, hot }
-  // Rising crosses at `warn`; falling only clears once it is clearly back under. Between the two
-  // the previous answer stands, which is exactly what stops a boundary surface from flapping.
-  const threshold = input.wasWarn ? warn - TOOL_BUDGET_HYSTERESIS : warn
-  return { level: input.total >= threshold ? 'warn' : 'neutral', warn, hot }
-}

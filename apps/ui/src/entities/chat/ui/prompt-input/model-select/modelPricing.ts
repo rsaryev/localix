@@ -19,7 +19,3 @@ export function formatTokenPrice(usdPerMillion: number): string {
   if (usdPerMillion < 0.001) return `$${(usdPerMillion * 1000).toFixed(3)}/B`
   return `$${usdPerMillion.toFixed(2)}`
 }
-
-export function compactTokenPrice(usdPerMillion: number): string {
-  return usdPerMillion % 1 === 0 ? usdPerMillion.toFixed(0) : usdPerMillion.toFixed(2)
-}

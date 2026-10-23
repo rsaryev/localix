@@ -73,6 +73,32 @@ test('registers Database as a root workspace and routes resource anchors into Ex
     },
   })
 
+  // Connection, table and diagram tabs link the db resource they carry, and nothing else.
+  for (const kind of ['database:connection', 'database:table', 'database:diagram']) {
+    const contribution = workItems.find((item) => item.kind === kind)
+    const tab = (resourceUri: string) => ({
+      kind,
+      id: `${kind}:x`,
+      title: 'users',
+      payload: { resourceUri, color: 'blue' },
+    })
+    expect(
+      contribution?.toMessageBinding?.(tab('localix://resource/db/primary/_/public/users'), {
+        session: null,
+      }),
+    ).toMatchObject({
+      target: { kind: 'resource', uri: 'localix://resource/db/primary/_/public/users' },
+    })
+    expect(
+      contribution?.toMessageBinding?.(tab('localix://resource/trade/primary'), { session: null }),
+    ).toBeNull()
+    expect(contribution?.iconTint?.(tab('localix://resource/db/primary'))).toBe(
+      workItems
+        .find((item) => item.kind === 'database:console')
+        ?.iconTint?.(tab('localix://resource/db/primary')),
+    )
+  }
+
   expect(anchor?.resolve('localix://resource/db/primary/_/public/users')).toEqual({
     kind: 'work-item',
     workKind: 'database:workspace',

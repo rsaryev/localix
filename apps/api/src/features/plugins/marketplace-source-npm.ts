@@ -14,13 +14,6 @@ import { assertGunzipWithin } from './marketplace-gzip-limit'
 import { downloadNpmTarball } from './marketplace-npm-integrity'
 import { DEFAULT_NPM_REGISTRY, npmHop, userNpmRegistryFor } from './marketplace-npm-registry'
 
-export { DEFAULT_NPM_REGISTRY } from './marketplace-npm-registry'
-export {
-  downloadNpmTarball,
-  MAX_NPM_TARBALL_BYTES,
-  verifyNpmIntegrity,
-} from './marketplace-npm-integrity'
-
 const execFileAsync = promisify(execFile)
 
 /**

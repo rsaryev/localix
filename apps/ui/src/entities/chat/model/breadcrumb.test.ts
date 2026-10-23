@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { buildBreadcrumb, forkSiblings, type BreadcrumbSegment } from './breadcrumb'
+import { buildBreadcrumb, type BreadcrumbSegment } from './breadcrumb'
 import type { UiSession } from '@/shared/api/contracts'
 
 // Minimal UiSession factory — only the fields the breadcrumb reads matter.
@@ -84,21 +84,5 @@ describe('buildBreadcrumb', () => {
     expect(subs).toHaveLength(2)
     expect(subs[0]).toMatchObject({ isCurrent: false, activeChildId: 's3' })
     expect(subs[1]).toMatchObject({ isCurrent: true, activeChildId: null })
-  })
-})
-
-describe('forkSiblings', () => {
-  it('returns chat children of a parent, oldest-first, excluding sub-agents/jobs', () => {
-    const root = session({ id: 's1' })
-    const forkB = session({ id: 's3', parentSessionId: 's1', createdAt: 20 })
-    const forkA = session({ id: 's2', parentSessionId: 's1', createdAt: 10 })
-    const worker = session({
-      id: 's4',
-      parentSessionId: 's1',
-      sessionKind: 'subagent',
-      createdAt: 5,
-    })
-    const siblings = forkSiblings([root, forkB, forkA, worker], 's1')
-    expect(siblings.map((s) => s.id)).toEqual(['s2', 's3'])
   })
 })

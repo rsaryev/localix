@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { discoverBundledPlugins } from '../apps/api/src/features/plugins/discovery'
-import { pluginBackendIdentityProblems } from '../apps/api/src/features/plugins/backend-host'
+import { pluginBackendIdentityProblems } from '../apps/api/src/features/plugins/backend-host-plan'
 import { inspectPluginTools } from '../apps/api/src/features/plugins/native'
 import { resolvePluginConfig } from '../apps/api/src/features/plugins/config'
 import type { PluginHostServices } from '@localixai/plugin-sdk/backend'

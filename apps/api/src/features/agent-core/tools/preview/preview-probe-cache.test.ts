@@ -13,7 +13,8 @@
  */
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 
-import { getPreviewProbeJs, invalidatePreviewProbe, type ProbeCacheDeps } from './preview-probe'
+import { getPreviewProbeJs } from './preview-probe'
+import { invalidatePreviewProbe, type ProbeCacheDeps } from './probe-inject'
 
 /** A build that returns a fresh, identity-distinct string each time it runs. */
 function countingBuild(): {

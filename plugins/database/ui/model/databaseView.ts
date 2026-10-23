@@ -29,11 +29,6 @@ export function saveDatabaseConnectionId(connectionId: string): void {
   saveString(DATABASE_CONNECTION_KEY, connectionId)
 }
 
-/** Extract the connection target from any Database resource anchor. */
-export function connectionIdFromDatabaseUri(uri: unknown): string | null {
-  return databaseTargetFromUri(uri)?.connectionId ?? null
-}
-
 export interface DatabaseResourceTarget {
   connectionId: string
   schema?: string

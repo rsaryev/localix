@@ -4,7 +4,6 @@ import {
   PREVIEW_VIEWPORT_FILL,
   PREVIEW_VIEWPORT_PRESETS,
   isFixedViewport,
-  matchViewportPreset,
   rotateViewport,
   viewportSizeLabel,
 } from './previewViewportPresets'
@@ -32,16 +31,5 @@ describe('previewViewportPresets', () => {
   it('labels only fixed sizes', () => {
     expect(viewportSizeLabel({ label: 'x', width: 393, height: 852 })).toBe('393 × 852')
     expect(viewportSizeLabel(PREVIEW_VIEWPORT_FILL)).toBeNull()
-  })
-
-  it('matches a preset back from its size regardless of orientation', () => {
-    expect(matchViewportPreset(393, 852).label).toBe('iPhone 15 Pro')
-    // Rotated — the menu must still show the device as the active row.
-    expect(matchViewportPreset(852, 393).label).toBe('iPhone 15 Pro')
-  })
-
-  it('falls back to fill for a null or unknown size', () => {
-    expect(matchViewportPreset(null, null)).toBe(PREVIEW_VIEWPORT_FILL)
-    expect(matchViewportPreset(1234, 5678)).toBe(PREVIEW_VIEWPORT_FILL)
   })
 })

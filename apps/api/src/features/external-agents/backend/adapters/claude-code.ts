@@ -23,7 +23,7 @@ import type {
 } from './types'
 import { clip, pathExists, revisionOf, jsonlRecords } from './fs-read'
 import { eventWindow } from './event-window'
-import { tailTurnState, TURN_TAIL_BYTES } from '../live/turn-state'
+import { readAppendedTurnState } from './append-turn-state'
 import { asRecord, asString, contentParts } from './json-util'
 import { mapConcurrent } from './usage'
 import { ID, summarizeClaudeCode as summarize, foldClaudeCode } from './claude-summary'
@@ -216,17 +216,6 @@ async function readTranscript(req: TranscriptRequest): Promise<TranscriptResult>
   return { ...window.result(), ...(truncated ? { sourceTruncated: true } : {}) }
 }
 
-/** See `ProviderAdapter.readTurnState`: this format appends, so its last records answer. */
-async function readTurnState(ref: SourceRef, _env: AdapterEnv, now: number) {
-  return tailTurnState(
-    ref.sourcePath,
-    TURN_TAIL_BYTES,
-    ref.updatedAtHint ?? now,
-    now,
-    (path, bytes) => jsonlRecords(path, bytes, { fromEnd: true }),
-  )
-}
-
 export const claudeCodeAdapter: ProviderAdapter = {
   id: ID,
   command: 'claude',
@@ -245,5 +234,5 @@ export const claudeCodeAdapter: ProviderAdapter = {
   },
   foldSummary: (ref, previous) => foldClaudeCode(ref, previous),
   readTranscript,
-  readTurnState,
+  readTurnState: readAppendedTurnState,
 }

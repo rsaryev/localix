@@ -20,8 +20,8 @@ export interface PromptSection {
   readonly id: string
   readonly tier: PromptTier
   /**
-   * The heading it renders under, for the cache-boundary contract (`cache-tiers.ts`). Absent only
-   * for the agent's identity, which carries the agent's own text.
+   * The heading it renders under, for the cache-boundary contract (`cache-tiers.test.ts`). Absent
+   * only for the agent's identity, which carries the agent's own text.
    */
   readonly heading?: string
   render(facts: PromptFacts): string | null | undefined

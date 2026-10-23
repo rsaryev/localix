@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import type { AssistantMessage, StopReason } from '@localixai/agent'
 import type { LanguageModel } from '@localixai/agent/runtime'
-import {
-  classifyRetryable,
-  createLanguageModelAdapter,
-  messageText,
-  normalizeFinishReason,
-} from './adapter'
+import { createLanguageModelAdapter, messageText, normalizeFinishReason } from './adapter'
 import type { NormalizedModelRequest } from './contracts'
 
 const REQUEST: NormalizedModelRequest = {
@@ -71,27 +66,6 @@ describe('normalizeFinishReason', () => {
       expect(normalizeFinishReason(stop)).toBe(expected as never)
     })
   }
-})
-
-describe('classifyRetryable', () => {
-  it('retries transient transport failures', () => {
-    expect(classifyRetryable({ status: 429 })).toBe(true)
-    expect(classifyRetryable({ status: 503 })).toBe(true)
-    expect(classifyRetryable({ statusCode: 500 })).toBe(true)
-    expect(classifyRetryable({ code: 'ETIMEDOUT' })).toBe(true)
-    expect(classifyRetryable(new Error('429 Too Many Requests'))).toBe(true)
-    expect(classifyRetryable(new Error('gateway timeout'))).toBe(true)
-    expect(classifyRetryable(new Error('HTTP 503 Service Unavailable'))).toBe(true)
-    expect(classifyRetryable(new Error('request failed with status 502'))).toBe(true)
-  })
-  it('does not retry a client error, an abort, or a parse error', () => {
-    expect(classifyRetryable({ status: 400 })).toBe(false)
-    expect(classifyRetryable({ status: 404 })).toBe(false)
-    expect(classifyRetryable({ name: 'AbortError' })).toBe(false)
-    expect(classifyRetryable(new Error('unexpected token in JSON'))).toBe(false)
-    expect(classifyRetryable(new Error('prompt exceeds 500 files'))).toBe(false)
-    expect(classifyRetryable(new Error('network drive path not allowed'))).toBe(false)
-  })
 })
 
 describe('createLanguageModelAdapter', () => {

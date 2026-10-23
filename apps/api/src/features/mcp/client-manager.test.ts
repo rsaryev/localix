@@ -1,12 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 
-import {
-  MCP_DESCRIPTION_MAX_CHARS,
-  createMcpClientManager,
-  filterToolDefs,
-  mapCallResult,
-  type McpClientLike,
-} from './client-manager'
+import { createMcpClientManager } from './client-manager'
+import { filterToolDefs, type McpClientLike } from './mcp-wire'
+import { MCP_DESCRIPTION_MAX_CHARS } from './mcp-tools'
+import { mapCallResult } from './mcp-result'
 import { McpAuthenticationRequiredError } from './mcp-connect'
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js'
 import { classifyMcpTool, isTransportError } from './mcp-tools'

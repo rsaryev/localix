@@ -114,18 +114,6 @@ export function depthTotals(
   return { bidSize, askSize, bidShare: total > 0 ? bidSize / total : null }
 }
 
-export function marketableLimit(
-  side: OrderSide,
-  price: number,
-  bids: readonly OrderBookLevel[],
-  asks: readonly OrderBookLevel[],
-): boolean | null {
-  if (!Number.isFinite(price) || price <= 0) return null
-  const { bestBid, bestAsk } = orderBookSpread(bids, asks)
-  if (side === 'buy') return bestAsk === null ? null : price >= bestAsk
-  return bestBid === null ? null : price <= bestBid
-}
-
 export function estimateSlippage(
   book: { bids: readonly OrderBookLevel[]; asks: readonly OrderBookLevel[] },
   side: OrderSide,

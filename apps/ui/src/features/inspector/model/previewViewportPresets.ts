@@ -60,19 +60,3 @@ export function rotateViewport(p: PreviewViewportPreset): PreviewViewportPreset 
 export function viewportSizeLabel(p: PreviewViewportPreset): string | null {
   return isFixedViewport(p) ? `${p.width} × ${p.height}` : null
 }
-
-/**
- * Match a preset back from a size, ignoring orientation — so a rotated iPad still
- * reads as "iPad Mini" in the menu's checked state instead of falling back to the
- * fill row. Returns the fill preset for a null size.
- */
-export function matchViewportPreset(
-  width: number | null,
-  height: number | null,
-): PreviewViewportPreset {
-  if (width === null || height === null) return PREVIEW_VIEWPORT_FILL
-  const hit = PREVIEW_VIEWPORT_PRESETS.find(
-    (p) => (p.width === width && p.height === height) || (p.width === height && p.height === width),
-  )
-  return hit ?? PREVIEW_VIEWPORT_FILL
-}

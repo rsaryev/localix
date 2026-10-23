@@ -1,13 +1,10 @@
 import { describe, expect, it } from 'bun:test'
-import { coerceCell } from '@localixai/dataview'
 import {
   buildBoundDelete,
   buildBoundInsert,
   buildBoundUpdate,
-  buildDelete,
   buildInsert,
   buildInsertsFromRows,
-  buildUpdate,
   coerceMutationCell,
   qualifiedTable,
   type MutationTarget,
@@ -58,18 +55,6 @@ describe('row mutations', () => {
     expect(qualifiedTable({ table: 'orgs', dialect: 'sqlite' })).toBe('"orgs"')
   })
 
-  it('builds an UPDATE keyed by the primary key', () => {
-    const sql = buildUpdate(pg, { name: 'Ada', active: true }, { id: 7 })
-    expect(sql).toBe(
-      'UPDATE "public"."users" SET "name" = \'Ada\', "active" = TRUE WHERE "id" = 7;',
-    )
-  })
-
-  it('builds a composite-key DELETE', () => {
-    const t: MutationTarget = { table: 'link', dialect: 'sqlite', pk: ['a', 'b'] }
-    expect(buildDelete(t, { a: 1, b: 2 })).toBe('DELETE FROM "link" WHERE "a" = 1 AND "b" = 2;')
-  })
-
   it('builds an INSERT, omitting undefined values', () => {
     const sql = buildInsert(sqlite, { id: 1, name: 'Zoe', note: undefined })
     expect(sql).toBe('INSERT INTO "users" ("id", "name") VALUES (1, \'Zoe\');')
@@ -77,21 +62,20 @@ describe('row mutations', () => {
 
   it('refuses to update/delete without a primary key', () => {
     const t: MutationTarget = { table: 'x', dialect: 'sqlite', pk: [] }
-    expect(() => buildUpdate(t, { a: 1 }, {})).toThrow()
-    expect(() => buildDelete(t, {})).toThrow()
+    expect(() => buildBoundUpdate(t, { a: 1 }, {})).toThrow()
+    expect(() => buildBoundDelete(t, {})).toThrow()
   })
 
   it('addresses a null key value with IS NULL, not `= NULL` (would match nothing)', () => {
     // `col = NULL` is always false; the row must still be addressable when a key value is null.
-    expect(buildDelete(sqlite, { id: null })).toBe('DELETE FROM "users" WHERE "id" IS NULL;')
-    expect(buildUpdate(sqlite, { name: 'x' }, { id: null })).toBe(
-      'UPDATE "users" SET "name" = \'x\' WHERE "id" IS NULL;',
-    )
-    // composite key with one null part
-    const t: MutationTarget = { table: 'link', dialect: 'sqlite', pk: ['a', 'b'] }
-    expect(buildDelete(t, { a: 1, b: null })).toBe(
-      'DELETE FROM "link" WHERE "a" = 1 AND "b" IS NULL;',
-    )
+    expect(buildBoundDelete(sqlite, { id: null })).toEqual({
+      sql: 'DELETE FROM "users" WHERE "id" IS NULL;',
+      params: [],
+    })
+    expect(buildBoundUpdate(sqlite, { name: 'x' }, { id: null })).toEqual({
+      sql: 'UPDATE "users" SET "name" = ? WHERE "id" IS NULL;',
+      params: ['x'],
+    })
   })
 
   it('builds executable mutations with values kept in driver parameters', () => {
@@ -131,36 +115,6 @@ describe('row mutations', () => {
       sql: 'INSERT INTO [users] DEFAULT VALUES;',
       params: [],
     })
-  })
-})
-
-// The inline-grid fast path: the raw text a user types is coerced by the column's
-// declared type (via dataview's coerceCell) before rowMutations inlines it. These pin
-// the contract the SQL console relies on for double-click cell edits.
-describe('inline cell edit (coerce → single-cell UPDATE)', () => {
-  it('coerces a numeric cell and keys the UPDATE by the PK', () => {
-    const next = coerceCell('42', 'int')
-    expect(buildUpdate(pg, { age: next }, { id: 7 })).toBe(
-      'UPDATE "public"."users" SET "age" = 42 WHERE "id" = 7;',
-    )
-  })
-
-  it('coerces a boolean cell per dialect', () => {
-    expect(buildUpdate(pg, { active: coerceCell('true', 'bool') }, { id: 1 })).toBe(
-      'UPDATE "public"."users" SET "active" = TRUE WHERE "id" = 1;',
-    )
-  })
-
-  it('sets an explicit NULL (null bypasses coercion in the console)', () => {
-    expect(buildUpdate(sqlite, { note: null }, { id: 3 })).toBe(
-      'UPDATE "users" SET "note" = NULL WHERE "id" = 3;',
-    )
-  })
-
-  it('keeps text cells as strings, escaping quotes', () => {
-    expect(buildUpdate(sqlite, { name: coerceCell("O'Brien", 'text') }, { id: 3 })).toBe(
-      'UPDATE "users" SET "name" = \'O\'\'Brien\' WHERE "id" = 3;',
-    )
   })
 })
 

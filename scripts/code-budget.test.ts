@@ -1,5 +1,11 @@
 import { describe, expect, test } from 'bun:test'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { budgetFiles, measureBudget } from './code-budget.mjs'
+
+const recorded = JSON.parse(
+  readFileSync(join(import.meta.dir, '..', 'config/code-budget.json'), 'utf8'),
+) as { limit: number; exclude: string[] }
 
 const config = {
   limit: 10,
@@ -30,6 +36,37 @@ describe('budgetFiles', () => {
       'packages/kit/styles/chrome.css',
       'scripts/coverage.mjs',
     ])
+  })
+})
+
+describe('the recorded budget', () => {
+  test('counts what ships, not the tooling that builds, checks and tests it', () => {
+    const files = [
+      'apps/api/src/index.ts',
+      'apps/ui/src/app/main.tsx',
+      'packages/kit/src/controls/button.tsx',
+      'plugins/chess/backend/routes.ts',
+      'apps/desktop-tauri/src-tauri/src/main.rs',
+      'scripts/coverage.mjs',
+      'scripts/check-architecture.mjs',
+      'scripts/screenshots/capture.mjs',
+      'apps/api/scripts/check-compression.ts',
+      'apps/desktop-tauri/scripts/prepare-sidecar.mjs',
+      'apps/landing/scripts/build-docs.mjs',
+      'apps/ui/build/fail-on-node-builtin.ts',
+      'apps/ui/vite.config.ts',
+      'packages/oxlint-rules/src/rules/no-off-scale-radius.ts',
+      'packages/source-lint/src/scan.ts',
+      '.githooks/pre-commit',
+    ]
+    expect(budgetFiles(files, recorded.exclude)).toEqual([
+      'apps/api/src/index.ts',
+      'apps/ui/src/app/main.tsx',
+      'packages/kit/src/controls/button.tsx',
+      'plugins/chess/backend/routes.ts',
+      'apps/desktop-tauri/src-tauri/src/main.rs',
+    ])
+    expect(recorded.limit).toBe(500_000)
   })
 })
 

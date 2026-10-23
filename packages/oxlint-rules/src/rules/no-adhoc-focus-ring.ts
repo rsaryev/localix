@@ -23,6 +23,7 @@
  *
  * The fix at a reported site is almost always deleting the ring classes and adding `focus-ring`.
  */
+import { attributeName, literalText } from '../jsx.ts'
 import type { Node, Rule, RuleContext } from '../types.ts'
 
 // The kit is where the primitives live; out of scope, the rule would skip the code it was cut for.
@@ -58,20 +59,6 @@ export const CONTRACT_OWNERS = [
  */
 const ADHOC_FOCUS_RING =
   /\b(?:focus(?:-visible|-within)?|has-\[:focus-visible\]|peer-focus(?:-visible)?|group-focus(?:-visible|-within)?):ring(?:-[\w[\]/.-]+)?\b/u
-
-function attributeName(node: Node): string | null {
-  const name = node.name as Node | undefined
-  return name?.type === 'JSXIdentifier' ? (name.name as string) : null
-}
-
-function literalText(value: Node | undefined): string | null {
-  if (value?.type === 'Literal') return typeof value.value === 'string' ? value.value : null
-  if (value?.type === 'TemplateLiteral') {
-    const quasis = value.quasis as Node[] | undefined
-    return (quasis ?? []).map((quasi) => (quasi.value as { raw?: string })?.raw ?? '').join(' ')
-  }
-  return null
-}
 
 export const noAdhocFocusRing: Rule = {
   create(context: RuleContext) {

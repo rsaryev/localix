@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { deriveFolders, searchPaths } from './file-ops'
+import { deriveFolders, searchPaths } from './file-path-search'
 
 const files = [
   'src/FileTab.tsx',

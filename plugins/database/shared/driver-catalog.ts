@@ -140,6 +140,21 @@ const SQL_CAPABILITIES = {
   schemaEditing: true,
 } as const
 
+/** Redis, MongoDB and Elasticsearch: reached over the network, browsed, never edited as rows. */
+const NON_SQL_CAPABILITIES = {
+  multipleSchemas: false,
+  returning: false,
+  queryCancel: false,
+  manualTransactions: false,
+  sshTunnel: true,
+  tls: true,
+  dataBrowser: true,
+  rowEditing: false,
+  explain: false,
+  relationships: false,
+  schemaEditing: false,
+} as const
+
 const FULL_COLUMN_MUTATIONS = {
   addColumn: true,
   dropColumn: true,
@@ -554,19 +569,7 @@ export const DATABASE_DRIVER_CATALOG = {
     queryParameters: { syntaxes: [], bindStyle: null },
     schemaDataTypes: [],
     schemaDefaultExpressions: [],
-    capabilities: {
-      multipleSchemas: false,
-      returning: false,
-      queryCancel: false,
-      manualTransactions: false,
-      sshTunnel: true,
-      tls: true,
-      dataBrowser: true,
-      rowEditing: false,
-      explain: false,
-      relationships: false,
-      schemaEditing: false,
-    },
+    capabilities: NON_SQL_CAPABILITIES,
   },
   mongodb: {
     id: 'mongodb',
@@ -588,19 +591,7 @@ export const DATABASE_DRIVER_CATALOG = {
     queryParameters: { syntaxes: [], bindStyle: null },
     schemaDataTypes: [],
     schemaDefaultExpressions: [],
-    capabilities: {
-      multipleSchemas: false,
-      returning: false,
-      queryCancel: false,
-      manualTransactions: false,
-      sshTunnel: true,
-      tls: true,
-      dataBrowser: true,
-      rowEditing: false,
-      explain: false,
-      relationships: false,
-      schemaEditing: false,
-    },
+    capabilities: NON_SQL_CAPABILITIES,
   },
   elasticsearch: {
     id: 'elasticsearch',
@@ -622,19 +613,7 @@ export const DATABASE_DRIVER_CATALOG = {
     queryParameters: { syntaxes: [], bindStyle: null },
     schemaDataTypes: [],
     schemaDefaultExpressions: [],
-    capabilities: {
-      multipleSchemas: false,
-      returning: false,
-      queryCancel: false,
-      manualTransactions: false,
-      sshTunnel: true,
-      tls: true,
-      dataBrowser: true,
-      rowEditing: false,
-      explain: false,
-      relationships: false,
-      schemaEditing: false,
-    },
+    capabilities: NON_SQL_CAPABILITIES,
   },
 } as const satisfies Record<DbDialect, DatabaseDriverManifest>
 

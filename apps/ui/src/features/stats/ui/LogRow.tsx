@@ -2,7 +2,7 @@ import { cn } from '@localixai/plugin-sdk/ui/classes'
 import type { UsageLogRow } from '@/shared/api/contracts'
 import {
   formatDuration,
-  formatLogDate,
+  formatShortDateTime,
   formatTokens,
   formatUsd,
   providerLabel,
@@ -36,7 +36,7 @@ export function LogRow({
       data-index={index}
       className="border-b border-border-faint transition-colors last:border-0 hover:bg-surface-hover"
     >
-      <td className={cn(TD, 'text-text-soft')}>{formatLogDate(r.createdAt)}</td>
+      <td className={cn(TD, 'text-text-soft')}>{formatShortDateTime(r.createdAt)}</td>
       <td className={cn(TD, 'font-mono text-text-soft')} title={r.modelId}>
         {shortKey(r.modelId)}
       </td>

@@ -4,7 +4,7 @@ import { USAGE_AUXILIARY_KINDS, USAGE_KIND_LABELS } from '@localixai/api/client'
 import {
   formatBucketLabel,
   formatDuration,
-  formatLogDate,
+  formatShortDateTime,
   formatTokens,
   formatUsd,
   kindLabel,
@@ -73,7 +73,7 @@ describe('date formatters return the raw input on bad data', () => {
     expect(formatBucketLabel('')).toBe('')
     expect(formatBucketLabel('not-a-date')).toBe('not-a-date')
   })
-  test('formatLogDate', () => {
-    expect(formatLogDate('garbage')).toBe('garbage')
+  test('formatShortDateTime', () => {
+    expect(formatShortDateTime('garbage')).toBe('garbage')
   })
 })

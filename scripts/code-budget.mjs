@@ -1,12 +1,13 @@
 #!/usr/bin/env bun
 // The product code budget: Localix stays under `limit` lines of code (config/code-budget.json).
 // A line counts when it holds code; comments and blank lines do not, so explaining code never
-// costs budget. Tests, test helpers, generated and vendored code do not count either.
+// costs budget. Only what ships counts: tests, test helpers, generated and vendored code, and the
+// tooling that builds, checks and tests the product (see `exclude` in the config) do not.
 //
 //   bun run check:size          fails when the product code is over the limit
 //
 // Past the limit, new code is paid for by deleting dead code and duplication elsewhere.
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -75,7 +76,11 @@ function main() {
     maxBuffer: 256 << 20,
   })
   if (listed.status !== 0) throw new Error(`git ls-files failed: ${listed.stderr}`)
-  const files = budgetFiles(listed.stdout.split('\n').filter(Boolean), config.exclude)
+  // The working tree is measured: a file deleted but not yet committed is gone.
+  const present = listed.stdout
+    .split('\n')
+    .filter((file) => file && existsSync(join(repoRoot, file)))
+  const files = budgetFiles(present, config.exclude)
   const result = measureBudget(
     files,
     (file) => readFileSync(join(repoRoot, file), 'utf8'),

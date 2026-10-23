@@ -1,15 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { ChatUsagePayload } from '@localixai/agent'
 
-import {
-  cacheHitRate,
-  combineUsage,
-  selectAssistantUsage,
-  selectLatestCacheDiagnostics,
-  uncachedInputTokens,
-} from './usageMath'
-
-const msg = (role: string, extra: Record<string, unknown> = {}) => ({ role, ...extra }) as never
+import { cacheHitRate, combineUsage, uncachedInputTokens } from './usageMath'
 
 describe('cacheHitRate', () => {
   test('divides by inputTokens (which already INCLUDES cacheRead), not input+cacheRead', () => {
@@ -39,43 +31,6 @@ describe('uncachedInputTokens', () => {
   test('is undefined unless both provider figures are present', () => {
     expect(uncachedInputTokens(undefined, 5)).toBeUndefined()
     expect(uncachedInputTokens(5, undefined)).toBeUndefined()
-  })
-})
-
-describe('selectAssistantUsage', () => {
-  test('keeps only assistant messages that recorded tokens, mapping to their usage', () => {
-    const out = selectAssistantUsage([
-      msg('user', { usage: { totalTokens: 5 } }), // wrong role
-      msg('assistant', { usage: { totalTokens: 0 } }), // no tokens → dropped
-      msg('assistant', {}), // no usage → dropped
-      msg('assistant', { usage: { totalTokens: 12, inputTokens: 8 } }),
-    ])
-    expect(out).toEqual([{ totalTokens: 12, inputTokens: 8 }])
-  })
-
-  test('empty input → empty array', () => {
-    expect(selectAssistantUsage([])).toEqual([])
-  })
-})
-
-describe('selectLatestCacheDiagnostics', () => {
-  test('returns the most recent assistant message cacheDiagnostics', () => {
-    const out = selectLatestCacheDiagnostics([
-      msg('assistant', { cacheDiagnostics: { id: 'old' } }),
-      msg('user', { cacheDiagnostics: { id: 'ignored' } }),
-      msg('assistant', { cacheDiagnostics: { id: 'new' } }),
-      msg('assistant', {}), // newer but no diagnostics → skipped, keep 'new'
-    ])
-    expect(out).toEqual({ id: 'new' } as never)
-  })
-
-  test('undefined when no assistant message carried diagnostics', () => {
-    expect(
-      selectLatestCacheDiagnostics([
-        msg('assistant', {}),
-        msg('user', { cacheDiagnostics: { id: 'x' } }),
-      ]),
-    ).toBeUndefined()
   })
 })
 

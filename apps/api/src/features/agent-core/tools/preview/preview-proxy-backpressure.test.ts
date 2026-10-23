@@ -5,7 +5,7 @@ import {
   PREVIEW_WS_MAX_QUEUED_FRAMES,
   previewWsMessageBytes,
   sendOrQueuePreviewWsMessage,
-} from './preview-proxy'
+} from './preview-websocket-relay'
 
 type Relay = Parameters<typeof sendOrQueuePreviewWsMessage>[0]
 

@@ -39,25 +39,6 @@ export interface SubSessionSegment {
 
 export type BreadcrumbSegment = ScopeSegment | SessionSegment | SubSessionSegment
 
-interface ChatLike {
-  sessionKind?: UiSession['sessionKind']
-}
-
-/** A navigable chat (not a sub-agent / job) — the only fork-menu targets. */
-function isChat(s: ChatLike): boolean {
-  return s.sessionKind !== 'subagent' && s.sessionKind !== 'job'
-}
-
-/**
- * The fork children of a session (chat siblings sharing this parent), oldest-first.
- * These are the siblings offered at the sub-session level.
- */
-export function forkSiblings(sessions: UiSession[], parentId: string): UiSession[] {
-  return sessions
-    .filter((s) => isChat(s) && s.parentSessionId === parentId)
-    .sort((a, b) => a.createdAt - b.createdAt)
-}
-
 export interface BuildBreadcrumbArgs {
   activeSession: UiSession | null | undefined
   allSessions: UiSession[]

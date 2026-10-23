@@ -31,14 +31,12 @@ import type {
 
 // Re-export the MCP wire surface (helpers + types) so the historical
 // `./client-manager` import path stays stable for service.ts and the tests.
-export { filterToolDefs, mapCallResult, MCP_DESCRIPTION_MAX_CHARS } from './mcp-wire'
-export type { McpClientLike, McpGatherResult, McpToolDef } from './mcp-wire'
+export type { McpGatherResult } from './mcp-wire'
 export {
   RequiredMcpServersError,
   type McpClientManagerOptions,
   type McpGatherOptions,
   type McpProbeResult,
-  type RequiredMcpServerFailure,
 } from './client-manager-types'
 
 /**

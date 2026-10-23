@@ -38,20 +38,6 @@ export function configFieldBase(
 }
 
 /**
- * Merge a `setConfig` value patch onto the existing stored config, honoring the
- * secret rule shared by both ext subsystems: a secret left BLANK ('') means
- * "keep the current value", not "clear it". Non-secret values (and non-empty
- * secrets) overwrite. Returns a fresh object — the caller persists it.
- */
-export function mergeConfigValues(
-  declared: Record<string, ConfigOptionBase>,
-  existing: Record<string, string | number | boolean> | undefined,
-  values: Record<string, string | number | boolean>,
-): Record<string, string | number | boolean> {
-  return { ...existing, ...configPatchValues(declared, values) }
-}
-
-/**
  * Normalize one wire-level config patch before an atomic repository merge.
  * Secret blanks are omissions, not writes; all other primitive values retain
  * their exact type (including false, zero, and the non-secret empty string).

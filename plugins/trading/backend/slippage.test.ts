@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { OrderBookLevel } from './contracts'
-import { depthTotals, estimateSlippage, marketableLimit, orderBookSpread } from './slippage'
+import { depthTotals, estimateSlippage, orderBookSpread } from './slippage'
 
 describe('estimateSlippage', () => {
   const asks: OrderBookLevel[] = [
@@ -125,36 +125,6 @@ describe('orderBookSpread', () => {
       spread: null,
       spreadBps: null,
     })
-  })
-})
-
-describe('marketableLimit — does a limit order cross the book (taker) or rest (maker)?', () => {
-  const bids: OrderBookLevel[] = [[100, 5]]
-  const asks: OrderBookLevel[] = [[101, 5]]
-
-  test('a buy at/above the best ask crosses (taker)', () => {
-    expect(marketableLimit('buy', 101, bids, asks)).toBe(true)
-    expect(marketableLimit('buy', 102, bids, asks)).toBe(true)
-  })
-
-  test('a buy below the best ask rests (maker)', () => {
-    expect(marketableLimit('buy', 100.5, bids, asks)).toBe(false)
-  })
-
-  test('a sell at/below the best bid crosses (taker)', () => {
-    expect(marketableLimit('sell', 100, bids, asks)).toBe(true)
-    expect(marketableLimit('sell', 99, bids, asks)).toBe(true)
-  })
-
-  test('a sell above the best bid rests (maker)', () => {
-    expect(marketableLimit('sell', 100.5, bids, asks)).toBe(false)
-  })
-
-  test('null when the relevant side is empty or the price is not positive', () => {
-    expect(marketableLimit('buy', 101, bids, [])).toBeNull()
-    expect(marketableLimit('sell', 100, [], asks)).toBeNull()
-    expect(marketableLimit('buy', 0, bids, asks)).toBeNull()
-    expect(marketableLimit('buy', Number.NaN, bids, asks)).toBeNull()
   })
 })
 

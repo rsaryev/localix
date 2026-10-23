@@ -1,7 +1,11 @@
 import { resourceMessageBindingDraft } from '@localixai/plugin-sdk/ui'
 
 import { setMessageBindingDrag } from '@localixai/plugin-sdk/ui/message-binding-drag'
-import type { DevOpsResourceLink } from './resourceChat'
+
+export interface DevOpsResourceLink {
+  uri: string
+  label: string
+}
 
 /**
  * Write the complete native drag payload expected by the main composer.

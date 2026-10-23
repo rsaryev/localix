@@ -37,6 +37,24 @@ export const PERIOD_KINDS = [
 ] as const
 export type PeriodKind = (typeof PERIOD_KINDS)[number]
 
+/** Kinds with no parameter at all — one shape, one arm everywhere they share an answer. */
+const PARAMLESS_KINDS = [
+  'vwap',
+  'obv',
+  'volume',
+  'ao',
+  'vwapband',
+  'pivots',
+  'ad',
+  'coppock',
+  'kst',
+  'klinger',
+] as const
+type ParamlessKind = (typeof PARAMLESS_KINDS)[number]
+
+const PERIOD_KIND_SET: ReadonlySet<string> = new Set(PERIOD_KINDS)
+const PARAMLESS_KIND_SET: ReadonlySet<string> = new Set(PARAMLESS_KINDS)
+
 export type IndicatorParams =
   | { kind: PeriodKind; period: number }
   /** `bbw`/`bbpct` are Bollinger DERIVATIVES (width / %B) — same two parameters, own panes. */
@@ -75,6 +93,18 @@ export type IndicatorParams =
   | { kind: 'volume' }
 
 export type IndicatorKind = IndicatorParams['kind']
+
+/** Narrows to the one-period shape, so a switch keeps only the kinds with an arm of their own. */
+function isPeriodParams(p: IndicatorParams): p is Extract<IndicatorParams, { kind: PeriodKind }> {
+  return PERIOD_KIND_SET.has(p.kind)
+}
+
+/** Narrows to the parameterless shapes, for the functions that answer them all alike. */
+function isParamlessParams(
+  p: IndicatorParams,
+): p is Extract<IndicatorParams, { kind: ParamlessKind }> {
+  return PARAMLESS_KIND_SET.has(p.kind)
+}
 
 /** Defaults used when a spelling names a kind but not (all of) its parameters. */
 const DEFAULTS = {
@@ -211,6 +241,8 @@ const period = (n: number) => intIn(n, 1, 500)
 
 /** Validate a parsed candidate; null when a parameter is out of range or inconsistent. */
 export function validIndicatorParams(p: IndicatorParams): IndicatorParams | null {
+  if (isPeriodParams(p)) return period(p.period) ? p : null
+  if (isParamlessParams(p)) return p
   switch (p.kind) {
     case 'bollinger':
     case 'bbw':
@@ -229,40 +261,6 @@ export function validIndicatorParams(p: IndicatorParams): IndicatorParams | null
       return period(p.tenkan) && period(p.kijun) && period(p.senkou) && p.tenkan <= p.kijun
         ? p
         : null
-    case 'vwap':
-    case 'obv':
-    case 'volume':
-    case 'ao':
-    case 'vwapband':
-    case 'pivots':
-    case 'ad':
-    case 'coppock':
-    case 'kst':
-    case 'klinger':
-      return p
-    case 'sma':
-    case 'ema':
-    case 'rsi':
-    case 'atr':
-    case 'adx':
-    case 'hma':
-    case 'dema':
-    case 'alma':
-    case 'lsma':
-    case 'cci':
-    case 'cmf':
-    case 'aroon':
-    case 'chop':
-    case 'trix':
-    case 'williamsr':
-    case 'cmo':
-    case 'donchian':
-    case 'efi':
-    case 'dpo':
-    case 'fisher':
-    case 'hv':
-    case 'eom':
-      return period(p.period) ? p : null
   }
 }
 
@@ -358,6 +356,8 @@ export function parseIndicatorId(raw: string): IndicatorParams | null {
 
 /** The canonical id for a spec — the ONLY spelling stored, compared, or shown to the agent. */
 export function indicatorId(p: IndicatorParams): string {
+  if (isPeriodParams(p)) return `${p.kind}:${p.period}`
+  if (isParamlessParams(p)) return p.kind
   switch (p.kind) {
     case 'bollinger':
       return `bb:${p.period}:${p.stdDev}`
@@ -375,40 +375,6 @@ export function indicatorId(p: IndicatorParams): string {
       return `stoch:${p.k}:${p.kSmooth}:${p.d}`
     case 'ichimoku':
       return `ichimoku:${p.tenkan}:${p.kijun}:${p.senkou}`
-    case 'vwap':
-    case 'obv':
-    case 'volume':
-    case 'ao':
-    case 'vwapband':
-    case 'pivots':
-    case 'ad':
-    case 'coppock':
-    case 'kst':
-    case 'klinger':
-      return p.kind
-    case 'sma':
-    case 'ema':
-    case 'rsi':
-    case 'atr':
-    case 'adx':
-    case 'hma':
-    case 'dema':
-    case 'alma':
-    case 'lsma':
-    case 'cci':
-    case 'cmf':
-    case 'aroon':
-    case 'chop':
-    case 'trix':
-    case 'williamsr':
-    case 'cmo':
-    case 'donchian':
-    case 'efi':
-    case 'dpo':
-    case 'fisher':
-    case 'hv':
-    case 'eom':
-      return `${p.kind}:${p.period}`
   }
 }
 
@@ -563,6 +529,7 @@ export function indicatorCategory(kind: IndicatorKind): IndicatorCategory {
 /** Human label for menus / tool results — names the parameters, so the reader knows what is on. */
 export function indicatorLabel(p: IndicatorParams): string {
   const name = indicatorKindLabel(p.kind)
+  if (isPeriodParams(p)) return `${name} ${p.period}`
   switch (p.kind) {
     case 'bollinger':
     case 'bbw':
@@ -597,29 +564,6 @@ export function indicatorLabel(p: IndicatorParams): string {
     case 'kst':
     case 'klinger':
       return name
-    case 'sma':
-    case 'ema':
-    case 'rsi':
-    case 'atr':
-    case 'adx':
-    case 'hma':
-    case 'dema':
-    case 'alma':
-    case 'lsma':
-    case 'cci':
-    case 'cmf':
-    case 'aroon':
-    case 'chop':
-    case 'trix':
-    case 'williamsr':
-    case 'cmo':
-    case 'donchian':
-    case 'efi':
-    case 'dpo':
-    case 'fisher':
-    case 'hv':
-    case 'eom':
-      return `${name} ${p.period}`
   }
 }
 
@@ -629,6 +573,8 @@ export function indicatorLabel(p: IndicatorParams): string {
  * label cannot drift: a kind that grows a parameter grows a field.
  */
 export function indicatorParamFields(p: IndicatorParams): Array<{ label: string; value: number }> {
+  if (isPeriodParams(p)) return [{ label: 'Period', value: p.period }]
+  if (isParamlessParams(p)) return []
   switch (p.kind) {
     case 'bollinger':
     case 'bbw':
@@ -666,40 +612,6 @@ export function indicatorParamFields(p: IndicatorParams): Array<{ label: string;
         { label: 'Kijun', value: p.kijun },
         { label: 'Senkou B', value: p.senkou },
       ]
-    case 'vwap':
-    case 'obv':
-    case 'volume':
-    case 'ao':
-    case 'vwapband':
-    case 'pivots':
-    case 'ad':
-    case 'coppock':
-    case 'kst':
-    case 'klinger':
-      return []
-    case 'sma':
-    case 'ema':
-    case 'rsi':
-    case 'atr':
-    case 'adx':
-    case 'hma':
-    case 'dema':
-    case 'alma':
-    case 'lsma':
-    case 'cci':
-    case 'cmf':
-    case 'aroon':
-    case 'chop':
-    case 'trix':
-    case 'williamsr':
-    case 'cmo':
-    case 'donchian':
-    case 'efi':
-    case 'dpo':
-    case 'fisher':
-    case 'hv':
-    case 'eom':
-      return [{ label: 'Period', value: p.period }]
   }
 }
 
@@ -709,6 +621,8 @@ export function withIndicatorParam(
   index: number,
   value: number,
 ): IndicatorParams {
+  if (isPeriodParams(p)) return { ...p, period: value }
+  if (isParamlessParams(p)) return p
   switch (p.kind) {
     case 'bollinger':
     case 'bbw':
@@ -737,40 +651,6 @@ export function withIndicatorParam(
         : index === 1
           ? { ...p, kijun: value }
           : { ...p, senkou: value }
-    case 'vwap':
-    case 'obv':
-    case 'volume':
-    case 'ao':
-    case 'vwapband':
-    case 'pivots':
-    case 'ad':
-    case 'coppock':
-    case 'kst':
-    case 'klinger':
-      return p
-    case 'sma':
-    case 'ema':
-    case 'rsi':
-    case 'atr':
-    case 'adx':
-    case 'hma':
-    case 'dema':
-    case 'alma':
-    case 'lsma':
-    case 'cci':
-    case 'cmf':
-    case 'aroon':
-    case 'chop':
-    case 'trix':
-    case 'williamsr':
-    case 'cmo':
-    case 'donchian':
-    case 'efi':
-    case 'dpo':
-    case 'fisher':
-    case 'hv':
-    case 'eom':
-      return { ...p, period: value }
   }
 }
 

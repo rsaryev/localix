@@ -1,12 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import {
-  referencesSecrets,
-  resolveSecretEnv,
-  secretEnvName,
-  SECRET_ENV_PREFIX,
-  substituteSecretEnv,
-} from './secrets'
+import { resolveSecretEnv, secretEnvName, SECRET_ENV_PREFIX, substituteSecretEnv } from './secrets'
 
 describe('secretEnvName', () => {
   test('folds vault-legal characters a shell cannot name', () => {
@@ -45,7 +39,6 @@ describe('substituteSecretEnv', () => {
     const { command, keys } = await substituteSecretEnv(raw)
     expect(command).toBe(raw)
     expect(keys).toEqual([])
-    expect(referencesSecrets(raw)).toBe(false)
   })
 })
 

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
-import { computeStats, DEFAULT_STATS_DAYS, STATS_PROJECT_LIMIT, STATS_SESSION_LIMIT } from './stats'
+import { computeStats, DEFAULT_STATS_DAYS, STATS_PROJECT_LIMIT } from './stats'
+import { STATS_SESSION_LIMIT } from './stats-rankings'
 import type { SessionSummary, SessionTokenUsage, TokenUsage } from '../../shared/contracts'
 
 const NOW = Date.parse('2026-08-03T12:00:00.000Z')

@@ -1,13 +1,6 @@
 // Pure display formatters for the usage indicator (token counts + cost),
 // extracted from UsageIndicator so the threshold/rounding logic is testable.
 
-/** Compact token count: 999 / 1.5k / 2.5m. */
-export function formatCompactTokens(value: number): string {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}m`
-  if (value >= 1000) return `${Math.round(value / 100) / 10}k`
-  return String(value)
-}
-
 const costFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',

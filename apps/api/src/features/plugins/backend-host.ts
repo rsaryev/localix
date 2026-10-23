@@ -41,7 +41,6 @@ import type { PluginBackendHostDeps, PluginBackendHost } from './backend-host-co
 import { planPluginBackends } from './backend-host-plan'
 
 export type { PluginBackendHostDeps, PluginBackendHost } from './backend-host-contracts'
-export { pluginBackendIdentityProblems } from './backend-host-plan'
 
 const REFRESH_DEBOUNCE_MS = 300
 

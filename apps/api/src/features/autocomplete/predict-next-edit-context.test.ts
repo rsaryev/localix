@@ -2,9 +2,6 @@ import { describe, expect, it } from 'bun:test'
 import {
   extractIdentifiers,
   symbolsNearCursor,
-  identifiersForLspLookup,
-  baseNameNoExt,
-  parseImportBasenames,
   rankContextWindows,
   packContextWindows,
   pickRelevantExcerpt,
@@ -13,6 +10,11 @@ import {
   renderWindowGroup,
   type ContextWindowInput,
 } from './predict-next-edit-context'
+import {
+  identifiersForLspLookup,
+  baseNameNoExt,
+  parseImportBasenames,
+} from './predict-context-signals'
 import { estimateTokens } from '../../lib/tokens'
 
 describe('extractIdentifiers', () => {

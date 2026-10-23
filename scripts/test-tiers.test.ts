@@ -140,8 +140,8 @@ describe('test tiers', () => {
   // "slow" list) is a second place a test must be registered, and the one it is forgotten in.
   test('the repository runs two tiers, `test` and `test:integration`, both through Turbo', () => {
     const { scripts } = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
-    // `test:screenshots` and `test:sessions` run scenarios on request (AGENTS.md), not a tier.
-    const onRequest = new Set(['test:screenshots', 'test:sessions'])
+    // `test:screenshots` runs capture scenarios on request (AGENTS.md), not a tier.
+    const onRequest = new Set(['test:screenshots'])
     expect(
       Object.keys(scripts).filter((name) => /^test\b/u.test(name) && !onRequest.has(name)),
     ).toEqual(['test', 'test:integration'])

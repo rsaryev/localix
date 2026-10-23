@@ -7,11 +7,10 @@ import type { DiscoveredPlugin } from './discovery'
 import type { PluginConfigValues } from './config'
 import { capPluginToolDescription, isAcceptableToolName } from './tool-policy'
 import type { PluginToolDescriptor } from './contracts'
-export { makeHelpers } from './native-helpers'
 import { isPlainObject } from './mcp'
 
 import { makeContext } from './native-context'
-export { makeContext, makePluginUi } from './native-context'
+export { makeContext } from './native-context'
 
 /**
  * Native-plugin runtime: the context handed to a plugin's `register(ctx)`, the

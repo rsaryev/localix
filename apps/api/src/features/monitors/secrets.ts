@@ -46,11 +46,6 @@ export interface SecretSubstitution {
   keys: string[]
 }
 
-/** Does this command reference the vault at all? Cheap pre-check for the callers' policy rules. */
-export function referencesSecrets(command: string): boolean {
-  return hasSecretTokens(command)
-}
-
 /**
  * Rewrite `${secret:KEY}` → `$LOCALIX_SECRET_KEY` and report the keys. Resolves nothing:
  * no value is read here, so this half stays testable without a vault.

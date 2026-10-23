@@ -20,8 +20,6 @@ import { toDto, applyProjectSettingsPatch } from './project-record'
 import { assertProjectDeletable, resolveDefaultProject } from './default-project'
 import { assertAbsolutePath, inspectPath, normalizeDir } from './inspect-path'
 
-export { applyProjectSettingsPatch } from './project-record'
-
 export interface ProjectsServiceDeps {
   db: Kysely<AppDatabase>
   now?: () => string

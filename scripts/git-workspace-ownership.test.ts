@@ -31,7 +31,6 @@ const EXTERNAL_FORMAT_LITERALS = new Map([
     'apps/api/src/features/plugins/discovery-cc-files.ts',
     "trimmedFrontmatterField(fields.isolation) === 'worktree' ? ('isolated' as const) : undefined",
   ],
-  ['apps/api/src/features/cc-settings/agent-format.test.ts', "'isolation: worktree\\n'"],
 ])
 
 /**

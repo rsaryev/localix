@@ -2,6 +2,7 @@ import { constants as fsConstants, promises as fs } from 'node:fs'
 
 import { confineToDir } from '../../ext/fs-discovery'
 import { isPathWithin } from '../../../lib/path-containment'
+import { codeSpanRanges, createFenceTracker, insideAnyRange } from '../../../lib/markdown-code'
 import { alignToCharBoundary } from '../../agent-core/tools/file/file-utils'
 
 /** Max bytes inlined per `@path` file reference (keeps the prompt bounded). */
@@ -91,27 +92,6 @@ function neutralizeFenceClosers(body: string): string {
   return body.replace(/```/g, '``\u200B`')
 }
 
-/** Byte-index ranges of inline code spans (`` `...` ``) on a single line. */
-function codeSpanRanges(line: string): Array<[number, number]> {
-  const ranges: Array<[number, number]> = []
-  const re = /`+/g
-  let open: { index: number; len: number } | null = null
-  let m: RegExpExecArray | null
-  while ((m = re.exec(line))) {
-    const len = m[0].length
-    if (!open) open = { index: m.index, len }
-    else if (open.len === len) {
-      ranges.push([open.index, m.index + len])
-      open = null
-    }
-  }
-  return ranges
-}
-
-function insideAnyRange(index: number, ranges: Array<[number, number]>): boolean {
-  return ranges.some(([s, e]) => index >= s && index < e)
-}
-
 /**
  * Expand Claude Code `@path` file references. A `@relative/path` at line-start or
  * after whitespace is replaced by the referenced file's content, fenced with its
@@ -139,25 +119,12 @@ export async function expandFileReferences(text: string, bases: string[]): Promi
   let expandedBytes = 0
   let candidatesChecked = 0
   let budgetNoticeEmitted = false
-  let inFence = false
-  let fenceMarker = ''
+  const insideFence = createFenceTracker()
   // `@` at line-start or after whitespace; spec is non-space, non-backtick chars.
   const refRe = /(^|\s)@([^\s`]+)/g
 
   for (const line of lines) {
-    const fence = line.match(/^\s*(```+|~~~+)/)
-    if (fence) {
-      const marker = fence[1][0].repeat(3)
-      if (!inFence) {
-        inFence = true
-        fenceMarker = marker
-      } else if (fenceMarker === marker) {
-        inFence = false
-      }
-      out.push(line)
-      continue
-    }
-    if (inFence) {
+    if (insideFence(line)) {
       out.push(line)
       continue
     }

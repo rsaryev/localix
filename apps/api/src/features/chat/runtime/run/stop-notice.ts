@@ -41,11 +41,6 @@ export function stopNotice(reason: AgentStopReason | undefined): string | null {
   }
 }
 
-/** Whether this ending means work may be left undone (drives the notice + telemetry). */
-export function isAbnormalStop(reason: AgentStopReason | undefined): boolean {
-  return stopNotice(reason) !== null
-}
-
 /**
  * Endings that mean THE MODEL IS STUCK, as opposed to merely unlucky.
  *

@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, test } from 'bun:test'
-import { buildCollectionUri, buildRequestUri, isRestUri, parseRestUri } from './uri'
+import { buildCollectionUri, buildRequestUri, parseRestUri } from './uri'
 import { PROVIDER } from './resource-provider-id'
 
 describe('the provider comes from the shared vocabulary', () => {
@@ -19,7 +19,6 @@ describe('the collection level', () => {
   test('the bare provider URI is the collection, not a malformed request', () => {
     expect(buildCollectionUri()).toBe('localix://resource/api')
     expect(parseRestUri(buildCollectionUri())).toEqual({ kind: 'collection' })
-    expect(isRestUri(buildCollectionUri())).toBe(true)
   })
 })
 
@@ -34,7 +33,6 @@ describe('round-trip', () => {
   ])('%p survives build → parse', (name) => {
     const uri = buildRequestUri(name)
     expect(parseRestUri(uri)).toEqual({ kind: 'request', name })
-    expect(isRestUri(uri)).toBe(true)
   })
 
   test('a name is encoded into ONE segment — a slash never splits it', () => {
@@ -55,6 +53,5 @@ describe('parseRestUri refuses what we never minted', () => {
     ['localix://resource/api/%E0%A4%A', 'a malformed percent-escape'],
   ])('%p is rejected (%s)', (uri) => {
     expect(parseRestUri(uri)).toBeNull()
-    expect(isRestUri(uri) && parseRestUri(uri) !== null).toBe(false)
   })
 })

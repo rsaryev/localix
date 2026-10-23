@@ -1,6 +1,3 @@
-import { splitCompoundCommand } from '../agent-core/tools/bash/bash-command-shape'
-import type { CcRuleCall, CcTier } from './permission-rules'
-
 /**
  * Compile a VALUE specifier (Skill, Agent, MCP; Bash has its own) to a regex SOURCE: `**\/` →
  * optional intermediate dirs, `**` → any, `*` → one segment, `?` → one char — and
@@ -87,15 +84,4 @@ export function matchBashSpecifier(specifier: string, cmd: string): boolean {
   }
   if (spec.includes('*')) return bashWildcardMatch(spec, v)
   return v === spec
-}
-
-export function matchBash(specifier: string | undefined, call: CcRuleCall, tier: CcTier): boolean {
-  if (specifierIsAll(specifier)) return true
-  if (call.command === undefined || call.command.trim() === '') return false
-  const subs = splitCompoundCommand(call.command)
-  if (subs === null) return false // substitution — can't confidently match
-  const spec = specifier!
-  return tier === 'allow'
-    ? subs.every((s) => matchBashSpecifier(spec, s)) // allow: EVERY subcommand must match
-    : subs.some((s) => matchBashSpecifier(spec, s)) // deny/ask: ANY subcommand matches
 }

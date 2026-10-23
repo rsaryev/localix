@@ -21,8 +21,6 @@ import { reportBody } from '../../agent-core/tools/child-report'
 import { agentParticipant } from '../../../db/participant'
 import type { DelegatedReport, WakeRequest } from '../contracts'
 
-export { childReport } from '../../agent-core/tools/child-report'
-
 /** One run of a child, as its report states it (`DelegatedReport` on the wake). */
 export type DelegationReportInput = DelegatedReport
 

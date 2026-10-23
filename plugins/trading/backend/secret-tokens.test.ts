@@ -1,12 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { TradingConnectionConfig } from './contracts'
 import { TradingError } from './errors'
-import {
-  credentialFields,
-  isVaulted,
-  resolveConfigSecrets,
-  type ResolveSecret,
-} from './secret-tokens'
+import { credentialFields, resolveConfigSecrets, type ResolveSecret } from './secret-tokens'
 
 function baseConfig(credentials: TradingConnectionConfig['credentials']): TradingConnectionConfig {
   return { exchangeId: 'binance', credentials }
@@ -134,12 +129,5 @@ describe('credentialFields', () => {
 
   test('no credentials at all yields an empty list', () => {
     expect(credentialFields({ exchangeId: 'binance' })).toEqual([])
-  })
-})
-
-describe('isVaulted', () => {
-  test('true for a value carrying a ${secret:KEY} token, false for a literal', () => {
-    expect(isVaulted('${secret:API_KEY}')).toBe(true)
-    expect(isVaulted('plain-value')).toBe(false)
   })
 })

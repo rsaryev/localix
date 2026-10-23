@@ -100,7 +100,7 @@ CI runs it as its own slice; a pull request also passes its base as `COVERAGE_BA
 
 | Gate             | Rule                                                                                         |
 | ---------------- | -------------------------------------------------------------------------------------------- |
-| Package floor    | Each package keeps at least the line coverage recorded in `config/coverage.json`.            |
+| Package floor    | Each package keeps its recorded line coverage, or at least adds no untested line.            |
 | No untested file | Every source file with code is loaded by at least one of its package's tests.                |
 | Changed lines    | In a pull request, at least 80% of the changed lines that hold a statement are run by tests. |
 
@@ -115,11 +115,13 @@ How it counts, and why Bun's own `coverageThreshold` is not enough:
 - Bun measures lines and functions, not branches. A branch on its own line still shows as uncovered
   when no test takes it.
 
-The recorded baseline only gets stricter. `bun run coverage --update` raises each floor to what was
-measured and removes files that tests now load from the `unloaded` list; it never lowers a floor or
-adds a file. A file that a test starts to load, or that is deleted, fails the run until the list is
-updated, so the list cannot go stale. Use `--packages apps/api,packages/agent` while working on a
-few packages and `--base origin/main` to see the changed-lines gate locally.
+A package below its floor still passes while its untested lines have not grown: deleting dead code
+that tests covered lowers the percentage without adding an untested line. The recorded baseline only
+gets stricter. `bun run coverage --update` raises each floor to what was measured and removes files
+that tests now load from the `unloaded` list; it never lowers a floor or adds a file. A file that a
+test starts to load, or that is deleted, fails the run until the list is updated, so the list cannot
+go stale. Use `--packages apps/api,packages/agent` while working on a few packages and
+`--base origin/main` to see the changed-lines gate locally.
 
 Test helpers, fixtures and generated files are excluded by `exclude` in the config. Everything else
 is product code that a test, written first, should run.

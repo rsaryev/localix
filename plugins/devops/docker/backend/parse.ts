@@ -9,6 +9,7 @@ import type {
   DockerVolume,
 } from './contracts'
 import { CONTAINER_STATES } from './contracts'
+import { str } from '../../backend/coerce'
 
 /**
  * Pure parsers for the `docker … --format '{{json .}}'` line-delimited output.
@@ -60,17 +61,6 @@ function eachJsonLine(stdout: string): Record<string, unknown>[] {
     }
   }
   return rows
-}
-
-const str = (v: unknown): string => {
-  if (typeof v === 'string') return v
-  if (v == null) return ''
-  if (typeof v === 'number' || typeof v === 'boolean' || typeof v === 'bigint') return String(v)
-  try {
-    return JSON.stringify(v) ?? ''
-  } catch {
-    return ''
-  }
 }
 
 /**

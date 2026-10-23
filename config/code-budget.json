@@ -11,6 +11,15 @@
     "**/*.test-utils.ts",
     "**/*.test-utils.tsx",
     "**/test-harness.ts",
-    "**/test-preload.ts"
+    "**/test-preload.ts",
+    "scripts/**",
+    "apps/*/scripts/**",
+    "apps/ui/build/**",
+    "packages/oxlint-rules/**",
+    "packages/source-lint/**",
+    "**/*.config.ts",
+    "**/*.config.mjs",
+    "**/*.config.js",
+    ".githooks/**"
   ]
 }

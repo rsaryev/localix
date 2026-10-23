@@ -1,11 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import {
-  editorLanguage,
-  formatJsonBody,
-  jsonDiagnostics,
-  offsetAt,
-  variableCompletions,
-} from './bodyEditor'
+import { editorLanguage, formatJsonBody, offsetAt, variableCompletions } from './bodyEditor'
 
 describe('formatJsonBody', () => {
   test('pretty-prints valid JSON', () => {
@@ -24,22 +18,6 @@ describe('editorLanguage', () => {
     expect(editorLanguage('application/xml')).toBe('xml')
     expect(editorLanguage('text/plain')).toBe('text')
     expect(editorLanguage(undefined)).toBe('text')
-  })
-})
-
-describe('jsonDiagnostics', () => {
-  test('valid and empty bodies produce nothing', () => {
-    expect(jsonDiagnostics('{"a": 1}')).toEqual([])
-    expect(jsonDiagnostics('')).toEqual([])
-    expect(jsonDiagnostics('   ')).toEqual([])
-  })
-
-  test('an invalid body produces one error with a position', () => {
-    const [d] = jsonDiagnostics('{\n  "a": ,\n}')
-    expect(d.severity).toBe('error')
-    // Wherever the runtime points, the squiggle lands inside the document, not off the end.
-    expect(d.line).toBeGreaterThanOrEqual(0)
-    expect(d.line).toBeLessThanOrEqual(2)
   })
 })
 

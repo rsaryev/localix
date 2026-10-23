@@ -2,7 +2,6 @@ import { describe, expect, it } from 'bun:test'
 
 import {
   ccMcpMatcherVariants,
-  ccPluginMcpToolName,
   ccPluginMcpToolToEngine,
   enginePluginMcpToolName,
   pluginServerRefToEngineMcpTool,
@@ -21,9 +20,6 @@ describe('mcp-names pure mapping', () => {
   it('round-trips the two name forms for a plugin server tool', () => {
     expect(enginePluginMcpToolName('sample-plugin', 'feed', 'get_quote')).toBe(
       'mcp_sample_plugin_feed_get_quote',
-    )
-    expect(ccPluginMcpToolName('sample-plugin', 'feed', 'get_quote')).toBe(
-      'mcp__plugin_sample-plugin_feed__get_quote',
     )
     expect(ccPluginMcpToolToEngine('mcp__plugin_sample-plugin_feed__get_quote')).toBe(
       'mcp_sample_plugin_feed_get_quote',

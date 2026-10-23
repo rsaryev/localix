@@ -71,8 +71,6 @@ export function createHistoryModes(repo: HistorySearchRepo, userId: string) {
   }
 }
 
-export type HistoryModes = ReturnType<typeof createHistoryModes>
-
 async function runDiscovery(
   repo: HistorySearchRepo,
   userId: string,

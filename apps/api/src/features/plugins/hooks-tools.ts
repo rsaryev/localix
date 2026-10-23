@@ -1,5 +1,6 @@
 import type { AgentTool, AgentToolResult } from '@localixai/agent/agents'
 
+import { reparseToolInput } from '../agent-core/tools/reparse-input'
 import { isBlockedThrow, resultFromThrow } from '../agent-core/tools/tool-error-result'
 import type { LoadedPluginHook } from './loader'
 import { isPlainObject } from './mcp'
@@ -19,31 +20,6 @@ export class ToolCallBlockedError extends Error {
     super(`Tool call blocked by plugin "${pluginName}": ${reason}`)
     this.name = 'ToolCallBlockedError'
   }
-}
-
-/**
- * Validate a pre-hook input rewrite against the tool's schema. Zod schemas
- * (anything with `safeParse`) are re-parsed — a failing rewrite is rejected.
- * Non-zod schemas (e.g. MCP JSON schemas) can't be re-parsed host-side; the
- * rewrite is accepted as-is and the downstream tool owns validation.
- */
-function reparseRewrite(
-  tool: AgentTool,
-  rewrite: unknown,
-): { ok: true; input: unknown } | { ok: false; error: string } {
-  const schema = tool.inputSchema as
-    | {
-        safeParse?: (v: unknown) => {
-          success: boolean
-          data?: unknown
-          error?: { message?: string }
-        }
-      }
-    | undefined
-  if (!schema || typeof schema.safeParse !== 'function') return { ok: true, input: rewrite }
-  const parsed = schema.safeParse(rewrite)
-  if (parsed.success) return { ok: true, input: parsed.data }
-  return { ok: false, error: parsed.error?.message ?? 'schema re-parse failed' }
 }
 
 /** Entries that actually declare a tool-call hook (cheap pre-filter). */
@@ -89,7 +65,7 @@ export function wrapToolsWithHooks(
           throw new ToolCallBlockedError(pluginName, outcome.block)
         }
         if ('input' in outcome) {
-          const reparsed = reparseRewrite(tool, outcome.input)
+          const reparsed = reparseToolInput(tool, outcome.input)
           if (reparsed.ok) {
             effectiveInput = reparsed.input
           } else {

@@ -2,12 +2,7 @@ import type { AgentStreamEvent } from '../contracts'
 import { pushToRing } from './session-stream-replay-ring'
 import { NON_REPLAYABLE_EVENTS, WATCH_GATED_EVENTS } from './session-stream-policy'
 
-export {
-  isLiveOnlyEvent,
-  LIVE_ONLY_EVENT_TYPES,
-  requiresWatchedSession,
-  ROSTER_EVENT_TYPES,
-} from './session-stream-policy'
+export { isLiveOnlyEvent } from './session-stream-policy'
 
 type Subscriber = (event: StreamEnvelope) => void
 

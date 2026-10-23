@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'bun:test'
 
-import { createMcpClientManager, type McpClientLike } from '../../mcp/client-manager'
+import { createMcpClientManager } from '../../mcp/client-manager'
+import type { McpClientLike } from '../../mcp/mcp-wire'
 import { McpAuthenticationRequiredError } from '../../mcp/mcp-connect'
 import type { McpServerRecord } from '../../mcp/repository'
 import { createMcpConditions } from './mcp'

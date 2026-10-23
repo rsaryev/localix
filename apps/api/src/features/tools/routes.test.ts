@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
-import { builtinToolManifest, createToolsRoutes, toolManifest } from './routes'
+import { createToolsRoutes } from './routes'
+import { builtinToolManifest, toolManifest } from './catalog'
 import { BUILTIN_TOOL_CATALOG, BUILTIN_TOOL_NAMES } from '../agent-core/tool-names'
 
 const meta = (name: string) => builtinToolManifest().find((tool) => tool.name === name)

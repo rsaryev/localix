@@ -68,7 +68,6 @@ export type SessionProvenance =
    * NOT a read-time fallback. */
   | { kind: 'unknown-origin' }
 
-export type SessionTopology = 'root' | 'child'
 export type SessionExecutionClass = 'interactive' | 'isolated-worker' | 'passive'
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -208,10 +207,6 @@ export function parseSessionProvenance(raw: string): SessionProvenance {
 
 export function serializeSessionProvenance(provenance: SessionProvenance): string {
   return JSON.stringify(provenance)
-}
-
-export function sessionTopology(provenance: SessionProvenance): SessionTopology {
-  return provenance.kind === 'root' ? 'root' : 'child'
 }
 
 export function sessionExecutionClass(provenance: SessionProvenance): SessionExecutionClass {

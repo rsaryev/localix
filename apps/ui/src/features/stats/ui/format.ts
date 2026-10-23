@@ -42,6 +42,3 @@ export function formatShortDateTime(raw: string): string {
     minute: '2-digit',
   })
 }
-
-/** SQLite CURRENT_TIMESTAMP ("YYYY-MM-DD HH:MM:SS", UTC) or ISO → "Jun 7, 13:21". */
-export const formatLogDate = formatShortDateTime

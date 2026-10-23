@@ -148,26 +148,3 @@ export function mapCcToolList(list: string[], opts: { dropUnknown: boolean }): s
   }
   return out
 }
-
-/**
- * Classify a tool name token from the perspective of the engine.
- *
- * - `'engine'`  — the lowercased token is already a valid engine tool name
- *   (caller is responsible for checking against BUILTIN_TOOL_NAMES).
- * - `'cc-gap'`  — the token maps to an engine tool but with semantic differences
- *   (see CC_SEMANTIC_GAPS); a validation warning is appropriate.
- * - `'cc'`      — the token maps cleanly to an engine equivalent with no known gap.
- * - `'unknown'` — not recognized in CC_TOOL_NAME_MAP; the caller decides what to do.
- *
- * The raw token is stripped of YAML quoting and CC pattern syntax before classification.
- */
-export function classifyToolName(name: string): 'engine' | 'cc-gap' | 'cc' | 'unknown' {
-  const bare = stripCcToken(name)
-  const lower = bare.toLowerCase()
-  if (CC_SEMANTIC_GAPS[lower]) return 'cc-gap'
-  const mapped = CC_TOOL_NAME_MAP[lower]
-  if (!mapped) return 'unknown'
-  // If the mapped name equals the input (e.g. "bash"→"bash"), it's already an engine name.
-  if (mapped === lower) return 'engine'
-  return 'cc'
-}

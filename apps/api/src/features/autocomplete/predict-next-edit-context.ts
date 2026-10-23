@@ -11,13 +11,7 @@
  */
 
 import { extractIdentifiers, baseNameNoExt } from './predict-context-signals'
-export {
-  extractIdentifiers,
-  symbolsNearCursor,
-  identifiersForLspLookup,
-  baseNameNoExt,
-  parseImportBasenames,
-} from './predict-context-signals'
+export { extractIdentifiers, symbolsNearCursor } from './predict-context-signals'
 
 /** One related-context window fed to the ranker. `recencyIndex` 0 = newest. */
 export interface ContextWindowInput {

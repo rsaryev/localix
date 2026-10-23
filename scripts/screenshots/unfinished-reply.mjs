@@ -1,7 +1,8 @@
 import { promises as fs } from 'node:fs'
 import { expect } from '@playwright/test'
 import { openConversation } from './codemode-card.mjs'
-import { api, databaseFile, fixtureFile, uiOrigin, verifyDemoRuntime } from './runtime.mjs'
+import { fixtureFile, uiOrigin } from './runtime.mjs'
+import { seedTranscript } from './transcript-fixture.mjs'
 
 const TITLE = 'Unfinished reply fixture'
 const CUT_OFF =
@@ -55,48 +56,12 @@ const rows = [
 
 /** Run by `seed.mjs` under Bun: it writes the transcript straight into the capture database. */
 export async function seedUnfinishedReply(fixture) {
-  await verifyDemoRuntime()
-  const { Database } = await import('bun:sqlite')
-  const { serializeMessagePayload } = await import('../../apps/api/src/db/payload-codec.ts')
-  const sessions = await api('/sessions')
-  const list = Array.isArray(sessions) ? sessions : (sessions.sessions ?? [])
-  const session =
-    list.find((item) => item.title === TITLE && item.projectId === fixture.projectId) ??
-    (await api('/sessions', { title: TITLE, projectId: fixture.projectId }))
-  const db = new Database(databaseFile, { strict: true })
-  try {
-    const owner = db.query('SELECT project_id FROM agent_sessions WHERE id=?').get(session.id)
-    if (owner?.project_id !== fixture.projectId)
-      throw new Error('The unfinished-reply fixture must live in the dedicated capture project.')
-    // Rewritten on every seed, so the reply is always the conversation's unfinished last turn.
-    db.query('DELETE FROM agent_messages WHERE session_id=?').run(session.id)
-    let parent = null
-    for (const [index, row] of rows.entries()) {
-      const id = `capture-unfinished-${session.id}-${index}`
-      db.query(
-        'INSERT INTO agent_messages(id,session_id,user_id,sequence,role,payload_json,parent_id) VALUES (?,?,?,?,?,?,?)',
-      ).run(
-        id,
-        session.id,
-        'local-user',
-        index + 1,
-        row.role,
-        serializeMessagePayload({ id, ...row }),
-        parent,
-      )
-      parent = id
-    }
-    const now = new Date().toISOString()
-    db.query('UPDATE agent_sessions SET leaf_id=?,last_message_at=?,updated_at=? WHERE id=?').run(
-      parent,
-      now,
-      now,
-      session.id,
-    )
-  } finally {
-    db.close()
-  }
-  fixture.unfinishedReplySessionId = session.id
+  fixture.unfinishedReplySessionId = await seedTranscript(fixture, {
+    title: TITLE,
+    label: 'unfinished-reply',
+    idPrefix: 'capture-unfinished',
+    rows,
+  })
 }
 
 export async function composeUnfinishedReply(page) {

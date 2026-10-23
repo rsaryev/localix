@@ -12,10 +12,10 @@ import {
   discoverPlugins,
   discoverBundledPlugins,
   loadManifest,
-  resolveEntrypoints,
   bundledPluginsRoot,
   pluginInstallRoot,
 } from './discovery'
+import { resolveEntrypoints } from './discovery-entrypoints'
 
 describe('plugin path resolvers', () => {
   it('bundledPluginsRoot self-locates a plugins/ root (no env)', () => {

@@ -1,10 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import {
-  connectionIdFromDatabaseUri,
-  databaseTargetFromUri,
-  normalizeDatabaseArea,
-} from './databaseView'
+import { databaseTargetFromUri, normalizeDatabaseArea } from './databaseView'
 
 describe('Database Workspace navigation', () => {
   test('accepts supported areas and safely normalizes unknown values', () => {
@@ -15,14 +11,20 @@ describe('Database Workspace navigation', () => {
   })
 
   test('extracts the connection id from connection and nested resource anchors', () => {
-    expect(connectionIdFromDatabaseUri('localix://resource/db/primary')).toBe('primary')
-    expect(connectionIdFromDatabaseUri('localix://resource/db/primary/_/public/users')).toBe(
+    expect(databaseTargetFromUri('localix://resource/db/primary')?.connectionId ?? null).toBe(
       'primary',
     )
-    expect(connectionIdFromDatabaseUri('localix://resource/db/team%20db/_/main')).toBe('team db')
-    expect(connectionIdFromDatabaseUri('localix://resource/trade/primary')).toBeNull()
-    expect(connectionIdFromDatabaseUri('localix://resource/db/')).toBeNull()
-    expect(connectionIdFromDatabaseUri('localix://resource/db/%E0%A4%A')).toBeNull()
+    expect(
+      databaseTargetFromUri('localix://resource/db/primary/_/public/users')?.connectionId ?? null,
+    ).toBe('primary')
+    expect(
+      databaseTargetFromUri('localix://resource/db/team%20db/_/main')?.connectionId ?? null,
+    ).toBe('team db')
+    expect(
+      databaseTargetFromUri('localix://resource/trade/primary')?.connectionId ?? null,
+    ).toBeNull()
+    expect(databaseTargetFromUri('localix://resource/db/')?.connectionId ?? null).toBeNull()
+    expect(databaseTargetFromUri('localix://resource/db/%E0%A4%A')?.connectionId ?? null).toBeNull()
   })
 
   test('parses schema/table/column deep links without losing encoded names', () => {

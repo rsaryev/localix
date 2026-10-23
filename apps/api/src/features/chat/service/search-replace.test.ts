@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { commitReplacePlans } from './file-search'
+import { commitReplacePlans } from './replace-commit'
 import { applyReplace, buildReplaceRegExp } from './search-replace'
 
 const run = (text: string, query: string, replacement: string, opts = {}) => {

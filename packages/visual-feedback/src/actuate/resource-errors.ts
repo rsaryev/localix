@@ -58,22 +58,6 @@ function labelFor(el: Element): string | null {
   return `${kind} ${shortUrl(src)}`
 }
 
-/**
- * Scan `<link rel="stylesheet">` for a null `.sheet` — a stylesheet that failed (or
- * was blocked) leaves no sheet once loading is done. Pure over a document-like so it
- * is unit-testable; the caller gates it on `readyState === 'complete'` to avoid
- * flagging a sheet that is merely still loading.
- */
-export function scanFailedStylesheets(doc: Document): string[] {
-  const out: string[] = []
-  for (const link of Array.from(doc.querySelectorAll('link[rel~="stylesheet"]'))) {
-    const l = link as HTMLLinkElement
-    const href = l.getAttribute('href')
-    if (href && l.sheet == null) out.push(`stylesheet ${shortUrl(href)}`)
-  }
-  return out
-}
-
 export function installResourceErrorCapture(): ResourceErrorCapture {
   const seen = new Set<string>()
   const items: string[] = []

@@ -6,7 +6,6 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn, FIELD_SURFACE } from '@localixai/plugin-sdk/ui/classes'
 import { Button } from './button'
 import { Input } from './input'
-import { Textarea } from './textarea'
 
 function InputGroup({ className, ...props }: React.ComponentProps<'div'>) {
   return (
@@ -131,18 +130,6 @@ function InputGroupButton({
   )
 }
 
-function InputGroupText({ className, ...props }: React.ComponentProps<'span'>) {
-  return (
-    <span
-      className={cn(
-        "flex items-center gap-2 text-xs/relaxed text-text-soft [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4",
-        className,
-      )}
-      {...props}
-    />
-  )
-}
-
 function InputGroupInput({ className, ...props }: React.ComponentProps<typeof Input>) {
   return (
     <Input
@@ -156,24 +143,4 @@ function InputGroupInput({ className, ...props }: React.ComponentProps<typeof In
   )
 }
 
-function InputGroupTextarea({ className, ...props }: React.ComponentProps<'textarea'>) {
-  return (
-    <Textarea
-      data-slot="input-group-control"
-      className={cn(
-        'flex-1 resize-none rounded-none border-0 bg-transparent py-2 shadow-none ring-0 focus-visible:ring-0 aria-invalid:ring-0',
-        className,
-      )}
-      {...props}
-    />
-  )
-}
-
-export {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupText,
-  InputGroupInput,
-  InputGroupTextarea,
-}
+export { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput }

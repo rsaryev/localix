@@ -112,27 +112,3 @@ export function isUnsafeRelPath(path: string): boolean {
 export function isKebabCase(name: string): boolean {
   return /^[a-z0-9]+(-[a-z0-9]+)*$/.test(name)
 }
-
-// ---------------------------------------------------------------------------
-// Reasoning-effort regex
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Undeclared template-token collector
-// ---------------------------------------------------------------------------
-
-/**
- * Extract every `${KEY}` or `${user_config.KEY}` token from `text` and return
- * the bare key names (i.e. after stripping the `user_config.` prefix).
- *
- * @param text  A string that may contain `${…}` token references.
- * @returns A Set of bare key strings found in the text.
- */
-export function collectTextTokens(text: string): Set<string> {
-  const tokens = new Set<string>()
-  for (const m of text.matchAll(/\$\{([\w.]+)\}/g)) {
-    const raw = m[1]
-    tokens.add(raw.startsWith('user_config.') ? raw.slice('user_config.'.length) : raw)
-  }
-  return tokens
-}

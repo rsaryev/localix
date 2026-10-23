@@ -10,7 +10,6 @@ import {
   isRequiredConfigMissing,
   isUnsafeRelPath,
   isKebabCase,
-  collectTextTokens,
 } from './manifest-validate'
 
 describe('editDistance', () => {
@@ -205,37 +204,5 @@ describe('isDeclarableEffort', () => {
     expect(resolveDeclaredReasoningEffort('hgih')).toBeUndefined()
     expect(resolveDeclaredReasoningEffort(undefined)).toBeUndefined()
     expect(resolveDeclaredReasoningEffort('   ')).toBeUndefined()
-  })
-})
-
-describe('collectTextTokens', () => {
-  it('returns bare key names for ${KEY} tokens', () => {
-    const tokens = collectTextTokens('Hello ${FOO} and ${BAR}')
-    expect(tokens.has('FOO')).toBe(true)
-    expect(tokens.has('BAR')).toBe(true)
-    expect(tokens.size).toBe(2)
-  })
-
-  it('strips the user_config. prefix', () => {
-    const tokens = collectTextTokens('Value is ${user_config.MY_KEY}')
-    expect(tokens.has('MY_KEY')).toBe(true)
-    expect(tokens.has('user_config.MY_KEY')).toBe(false)
-  })
-
-  it('handles mixed declared and user_config. tokens', () => {
-    const tokens = collectTextTokens('${DIRECT} and ${user_config.INDIRECT}')
-    expect(tokens.has('DIRECT')).toBe(true)
-    expect(tokens.has('INDIRECT')).toBe(true)
-    expect(tokens.size).toBe(2)
-  })
-
-  it('returns an empty set when no tokens are present', () => {
-    expect(collectTextTokens('no tokens here').size).toBe(0)
-  })
-
-  it('deduplicates repeated references', () => {
-    const tokens = collectTextTokens('${KEY} and ${KEY} again')
-    expect(tokens.size).toBe(1)
-    expect(tokens.has('KEY')).toBe(true)
   })
 })

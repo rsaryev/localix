@@ -15,10 +15,7 @@ export {
   isMcpAuthenticationRequiredError,
 } from './mcp-connect'
 
-export { mapCallResult } from './mcp-result'
-
 export {
-  MCP_DESCRIPTION_MAX_CHARS,
   resolveConnectTimeoutMs,
   filterToolDefs,
   modelVisibleToolDefs,

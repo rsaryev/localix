@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { compactTokenPrice, formatTokenPrice, hasKnownTokenPricing } from './modelPricing'
+import { formatTokenPrice, hasKnownTokenPricing } from './modelPricing'
 
 describe('model pricing presentation', () => {
   test('recognizes only finite non-negative input/output prices', () => {
@@ -15,7 +15,5 @@ describe('model pricing presentation', () => {
     expect(formatTokenPrice(-1_000_000)).toBe('—')
     expect(formatTokenPrice(0.000_001)).toBe('$0.001/B')
     expect(formatTokenPrice(2.5)).toBe('$2.50')
-    expect(compactTokenPrice(2)).toBe('2')
-    expect(compactTokenPrice(2.5)).toBe('2.50')
   })
 })

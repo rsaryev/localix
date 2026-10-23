@@ -36,9 +36,14 @@ function git(args) {
   return result.stdout
 }
 
-/** The repository's files: tracked ones and new ones not yet added, minus the ignored. */
+/**
+ * The working tree's files: tracked ones and new ones not yet added, minus the ignored and the ones
+ * deleted but not yet committed.
+ */
 const trackedFiles = () =>
-  git(['ls-files', '--cached', '--others', '--exclude-standard']).split('\n').filter(Boolean)
+  git(['ls-files', '--cached', '--others', '--exclude-standard'])
+    .split('\n')
+    .filter((file) => file && existsSync(join(repoRoot, file)))
 
 /** Every workspace package with a `test` script, keyed by its directory. */
 export function testedPackages(files = trackedFiles()) {
@@ -148,7 +153,7 @@ function print(result) {
   for (const row of result.packages) {
     const mark = row.ok ? ' ' : '✗'
     console.log(
-      `${mark} ${row.pkg.padEnd(34)} ${String(row.percent).padStart(5)}%  floor ${row.floor ?? '—'}`,
+      `${mark} ${row.pkg.padEnd(34)} ${String(row.percent).padStart(5)}%  floor ${row.floor ?? '—'}  untested ${row.uncovered}/${row.maxUncovered ?? '—'}`,
     )
   }
   if (result.unloaded.added.length) {
@@ -200,6 +205,7 @@ async function main(argv) {
     const scope = new Set(Object.values(sources).flat())
     const baseline = {
       floors: config.floors,
+      uncovered: config.uncovered ?? {},
       // With --packages, only the listed packages' files are judged.
       unloaded: only
         ? config.unloaded.filter((file) => only.some((dir) => file.startsWith(`${dir}/`)))
@@ -228,13 +234,22 @@ async function main(argv) {
         : next.unloaded
       writeFileSync(
         CONFIG_PATH,
-        `${JSON.stringify({ ...config, floors: { ...config.floors, ...next.floors }, unloaded }, null, 2)}\n`,
+        `${JSON.stringify(
+          {
+            ...config,
+            floors: { ...config.floors, ...next.floors },
+            uncovered: { ...config.uncovered, ...next.uncovered },
+            unloaded,
+          },
+          null,
+          2,
+        )}\n`,
       )
       console.log(`\nRecorded ${CONFIG_PATH.slice(repoRoot.length + 1)}.`)
       return evaluate({
         coverage,
         sources,
-        baseline: { floors: next.floors, unloaded: next.unloaded },
+        baseline: next,
         changed,
         diffThreshold: config.diffThreshold,
       }).ok

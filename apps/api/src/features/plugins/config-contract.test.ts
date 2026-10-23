@@ -1,8 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 import { pluginConfigOptionSchema as sdkPluginConfigOptionSchema } from '@localixai/plugin-sdk/manifest'
 
-import { parseTypedConfig } from '../ext/config'
-import { pluginConfigOptionSchema, setPluginConfigRequestSchema } from './contracts'
+import { scalarConfig } from '../capabilities/source-repository'
+import { setPluginConfigRequestSchema } from './contracts'
+import { pluginConfigOptionSchema } from './contracts-config'
 import { resolvePluginConfig, type PluginConfigValues } from './config'
 import { buildPluginOptionEnv } from './mcp'
 import type { PluginManifest } from './contracts'
@@ -23,9 +24,9 @@ import type { PluginManifest } from './contracts'
  *   1. WRITE   `setPluginConfigRequestSchema.values` is a Zod record of
  *              `string | number | boolean`. A `null` is REJECTED at the route; it never
  *              reaches the column.
- *   2. READ    every read of the `plugins` table goes through `repository.ts` `mapRow` →
- *              `parseTypedConfig`, which keeps ONLY primitives. A `null`, array, or
- *              object in the column is DROPPED, so it cannot leave the repository.
+ *   2. READ    every reader passes the stored config through `scalarConfig`
+ *              (`capabilities/source-repository.ts`), which keeps ONLY primitives. A
+ *              `null`, array, or object in the column is DROPPED before it is resolved.
  *   3. DEFAULT `pluginConfigOptionSchema.default` is `z.union([string, number, boolean])
  *              .optional()`. A manifest cannot declare a null default either.
  *
@@ -37,6 +38,9 @@ import type { PluginManifest } from './contracts'
  *
  * Each barrier below is falsifiable: widen any one of the three and this file goes red.
  */
+
+/** A stored `config` column as every reader sees it: parsed, then `scalarConfig`. */
+const readStored = (raw: string) => scalarConfig(JSON.parse(raw) as Record<string, unknown>)
 
 const mkManifest = (config: PluginManifest['config']): PluginManifest =>
   ({ name: 'p', config }) as PluginManifest
@@ -61,9 +65,9 @@ describe('PluginConfigValues is honest — every path in filters non-primitives'
     }
   })
 
-  test('BARRIER 2 (read): parseTypedConfig DROPS a stored null / array / object', () => {
-    // Every read of the `plugins` table goes through this (repository.ts mapRow).
-    expect(parseTypedConfig('{"a":"x","nil":null,"list":[1,2],"nested":{"k":1}}')).toStrictEqual({
+  test('BARRIER 2 (read): scalarConfig DROPS a stored null / array / object', () => {
+    // Every reader passes the stored config through this before resolvePluginConfig.
+    expect(readStored('{"a":"x","nil":null,"list":[1,2],"nested":{"k":1}}')).toStrictEqual({
       a: 'x',
     })
   })
@@ -80,7 +84,7 @@ describe('PluginConfigValues is honest — every path in filters non-primitives'
 
   test('END-TO-END: resolvePluginConfig only ever emits primitives, so the type holds', () => {
     // Feed it the WORST case each barrier permits: a manifest default plus stored values
-    // that already came through parseTypedConfig.
+    // that already came through scalarConfig.
     const manifest = mkManifest({
       WITH_DEFAULT: {
         type: 'string',
@@ -92,7 +96,7 @@ describe('PluginConfigValues is honest — every path in filters non-primitives'
       OVERRIDDEN: { type: 'number', description: '', required: false, secret: false, default: 1 },
       NO_DEFAULT: { type: 'string', description: '', required: false, secret: false },
     })
-    const stored = parseTypedConfig('{"OVERRIDDEN":9,"NIL":null,"LIST":[1]}')
+    const stored = readStored('{"OVERRIDDEN":9,"NIL":null,"LIST":[1]}')
     const resolved: PluginConfigValues = resolvePluginConfig(manifest, stored)
 
     // The default applies; the stored value WINS over it; NO_DEFAULT stays absent; and the
@@ -158,7 +162,7 @@ describe('`multiple: true` is a manifest HINT, not a storage mode', () => {
     const manifest = mkManifest({
       TAGS: { type: 'string', description: '', required: false, secret: false, multiple: true },
     })
-    const resolved = resolvePluginConfig(manifest, parseTypedConfig('{"TAGS":"a,b,c"}'))
+    const resolved = resolvePluginConfig(manifest, readStored('{"TAGS":"a,b,c"}'))
     expect(resolved).toStrictEqual({ TAGS: 'a,b,c' })
     // …and it reaches the plugin as one string, for the plugin to split itself.
     expect(buildPluginOptionEnv(resolved)).toStrictEqual({ CLAUDE_PLUGIN_OPTION_TAGS: 'a,b,c' })
@@ -171,6 +175,6 @@ describe('`multiple: true` is a manifest HINT, not a storage mode', () => {
     expect(
       setPluginConfigRequestSchema.safeParse({ name: 'p', values: { TAGS: ['a', 'b'] } }).success,
     ).toBe(false)
-    expect(parseTypedConfig('{"TAGS":["a","b"]}')).toStrictEqual({})
+    expect(readStored('{"TAGS":["a","b"]}')).toStrictEqual({})
   })
 })

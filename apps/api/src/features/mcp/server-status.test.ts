@@ -1,6 +1,7 @@
 import { expect, test } from 'bun:test'
 
-import { createMcpClientManager, type McpClientLike } from './client-manager'
+import { createMcpClientManager } from './client-manager'
+import type { McpClientLike } from './mcp-wire'
 import type { McpServerRecord } from './repository'
 
 const server = (over: Partial<McpServerRecord>): McpServerRecord => ({

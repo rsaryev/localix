@@ -1,33 +1,46 @@
 import { describe, expect, test } from 'bun:test'
 import {
-  buildK8sManifestUri,
   buildK8sNodeUri,
+  buildK8sNodeViewUri,
   buildK8sPodUri,
   buildK8sPodViewUri,
   buildK8sWorkloadUri,
+  buildK8sWorkloadViewUri,
 } from './resourceLink'
 
-describe('buildK8sManifestUri', () => {
+describe('k8s resource view URIs', () => {
   test('pod → ns-scoped manifest leaf', () => {
     expect(
-      buildK8sManifestUri({ kind: 'pod', name: 'web-1', namespace: 'apps', context: 'prod' }),
+      buildK8sPodViewUri({ name: 'web-1', namespace: 'apps', context: 'prod', view: 'manifest' }),
     ).toBe('localix://resource/k8s/prod/apps/web-1/manifest')
   })
   test('deployment/service → kind-tagged leaf', () => {
     expect(
-      buildK8sManifestUri({ kind: 'deployment', name: 'web', namespace: 'apps', context: 'prod' }),
+      buildK8sWorkloadViewUri({
+        kind: 'deployment',
+        name: 'web',
+        namespace: 'apps',
+        context: 'prod',
+        view: 'manifest',
+      }),
     ).toBe('localix://resource/k8s/prod/apps/deployment/web/manifest')
     expect(
-      buildK8sManifestUri({ kind: 'service', name: 'web-svc', namespace: 'apps', context: 'prod' }),
+      buildK8sWorkloadViewUri({
+        kind: 'service',
+        name: 'web-svc',
+        namespace: 'apps',
+        context: 'prod',
+        view: 'manifest',
+      }),
     ).toBe('localix://resource/k8s/prod/apps/service/web-svc/manifest')
   })
   test('node → cluster-scoped leaf (no namespace)', () => {
-    expect(
-      buildK8sManifestUri({ kind: 'node', name: 'node-1', namespace: '', context: 'prod' }),
-    ).toBe('localix://resource/k8s/prod/node/node-1/manifest')
+    expect(buildK8sNodeViewUri({ name: 'node-1', context: 'prod', view: 'manifest' })).toBe(
+      'localix://resource/k8s/prod/node/node-1/manifest',
+    )
   })
   test('blank context falls back to a "current" marker', () => {
-    expect(buildK8sManifestUri({ kind: 'pod', name: 'web-1', namespace: 'apps' })).toBe(
+    expect(buildK8sPodViewUri({ name: 'web-1', namespace: 'apps', view: 'manifest' })).toBe(
       'localix://resource/k8s/current/apps/web-1/manifest',
     )
   })

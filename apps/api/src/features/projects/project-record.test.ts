@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { applyProjectSettingsPatch } from './service'
+import { applyProjectSettingsPatch } from './project-record'
 import type { ProjectSettings, ProjectSettingsPatch } from './contracts'
 
 test('settings patches accept frozen inputs and preserve omitted fields without mutating either', () => {

@@ -1,4 +1,6 @@
 import { parsePrerequisite, type Prerequisite } from '@localixai/plugin-sdk/prerequisite'
+import type { ProblemRequest } from '@localixai/plugin-sdk/ui/problems'
+import { problemRequestOf } from '@localixai/plugin-sdk/ui/transport'
 
 interface ApiFailureRecord {
   error?: unknown
@@ -54,4 +56,43 @@ export function parseApiFailure<Code extends string = string>(
 /** Successful plugin payloads never carry `error`; keep that contract explicit. */
 export function hasApiFailure(body: unknown): boolean {
   return record(body)?.error !== undefined
+}
+
+/** A failed DevOps RPC, typed by its provider's error codes. Each provider names its own subclass. */
+export class DevOpsApiError<Code extends string> extends Error {
+  readonly code?: Code
+  readonly detail?: string
+  /** A stopped local engine or a missing credential helper. */
+  readonly prerequisite?: Prerequisite
+  /** The call that failed — the Event Center traces exactly this request. */
+  readonly request?: ProblemRequest
+  constructor(
+    message: string,
+    code?: Code,
+    detail?: string,
+    extra: { prerequisite?: Prerequisite; request?: ProblemRequest } = {},
+  ) {
+    super(message)
+    this.code = code
+    this.detail = detail
+    this.prerequisite = extra.prerequisite
+    this.request = extra.request
+  }
+}
+
+/** The typed body of a provider response, or its failure thrown as that provider's error. */
+export async function readApiResponse<T, Code extends string>(
+  res: Response,
+  method: string,
+  ApiError: new (...args: ConstructorParameters<typeof DevOpsApiError<Code>>) => Error,
+): Promise<T> {
+  const json = (await res.json().catch(() => null)) as T | null
+  if (!res.ok || hasApiFailure(json)) {
+    const failure = parseApiFailure<Code>(json, res.status)
+    throw new ApiError(failure.message, failure.code, failure.detail, {
+      prerequisite: failure.prerequisite,
+      request: problemRequestOf(res, method),
+    })
+  }
+  return json as T
 }

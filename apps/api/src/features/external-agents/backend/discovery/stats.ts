@@ -17,8 +17,6 @@ import { fold, foldModels, usageInWindow, type WindowUsage } from './stats-usage
 import { heaviestSessions, mostDelegating, providersOutsideWindow } from './stats-rankings'
 import { DAY_MS, dayKey, buildTrend } from './stats-trend'
 
-export { STATS_SESSION_LIMIT } from './stats-rankings'
-
 export type { ExternalAgentStats, StatsQuery }
 export { DEFAULT_STATS_DAYS, MAX_STATS_DAYS }
 

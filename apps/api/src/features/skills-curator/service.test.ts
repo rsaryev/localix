@@ -4,7 +4,8 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
 import { discoverFilesystemSkills } from '../agent-core/skill-discovery'
-import { createSkillsCuratorService, ARCHIVE_DIR_NAME, CURATOR_INTERVAL_DAYS } from './service'
+import { createSkillsCuratorService, CURATOR_INTERVAL_DAYS } from './service'
+import { ARCHIVE_DIR_NAME } from './skill-fs'
 import type { SkillScope, SkillUsageRecord, SkillUsageRepository } from './repository'
 
 const DAY_MS = 24 * 60 * 60 * 1000

@@ -1,12 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import {
-  childReport,
   delegationReportKey,
   delegationReportMessage,
   delegationReportRecipient,
   delegationReportSession,
   delegationReportWake,
 } from './delegation-report'
+import { childReport } from '../../agent-core/tools/child-report'
 
 /**
  * The bound on what a finished child injects into its parent's conversation.

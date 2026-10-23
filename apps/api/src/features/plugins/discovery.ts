@@ -17,7 +17,6 @@ export { findManifestPath } from './discovery-directory-scan'
 
 // Re-export so importers (loader.ts, discovery.test.ts) keep their existing
 // `./discovery` surface for entrypoint resolution.
-export { resolveEntrypoints, type ResolvedEntrypoints } from './discovery-entrypoints'
 
 /**
  * Filesystem plugin discovery. A plugin is a directory with a `plugin.json`

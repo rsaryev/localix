@@ -107,5 +107,3 @@ export function createExactSpecs(deps: {
     flush: () => file.flush(),
   }
 }
-
-export type ExactSpecs = ReturnType<typeof createExactSpecs>

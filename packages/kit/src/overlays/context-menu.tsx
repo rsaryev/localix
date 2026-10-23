@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { ContextMenu as ContextMenuPrimitive } from 'radix-ui'
-import { Check, ChevronRight } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { cn } from '@localixai/plugin-sdk/ui/classes'
 import { useOverlayFocus } from '@localixai/plugin-sdk/ui/focus'
 import { OVERLAY_ENTER_EXIT, OVERLAY_SLIDE } from './overlay-motion'
@@ -13,18 +13,14 @@ import {
   MENU_ITEM,
   MENU_LABEL,
   MENU_SEPARATOR,
-  MENU_SHORTCUT,
-  MENU_TRAILING_INDICATOR,
   POPOVER_SURFACE,
 } from './popover-surface'
 import type { MenuItemTone } from './popover-surface'
 
 const ContextMenu = ContextMenuPrimitive.Root
 const ContextMenuTrigger = ContextMenuPrimitive.Trigger
-const ContextMenuGroup = ContextMenuPrimitive.Group
 const ContextMenuPortal = ContextMenuPrimitive.Portal
 const ContextMenuSub = ContextMenuPrimitive.Sub
-const ContextMenuRadioGroup = ContextMenuPrimitive.RadioGroup
 
 const ContextMenuSubTrigger = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.SubTrigger>,
@@ -126,25 +122,6 @@ const ContextMenuCheckboxItem = React.forwardRef<
 ))
 ContextMenuCheckboxItem.displayName = ContextMenuPrimitive.CheckboxItem.displayName
 
-const ContextMenuRadioItem = React.forwardRef<
-  React.ElementRef<typeof ContextMenuPrimitive.RadioItem>,
-  React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.RadioItem>
->(({ className, children, ...props }, ref) => (
-  <ContextMenuPrimitive.RadioItem
-    ref={ref}
-    className={cn(MENU_ITEM, 'data-[state=checked]:font-medium', className)}
-    {...props}
-  >
-    <span className="min-w-0 flex-1 truncate">{children}</span>
-    <span className={MENU_TRAILING_INDICATOR}>
-      <ContextMenuPrimitive.ItemIndicator>
-        <Check aria-hidden="true" className="size-3" strokeWidth={2.5} />
-      </ContextMenuPrimitive.ItemIndicator>
-    </span>
-  </ContextMenuPrimitive.RadioItem>
-))
-ContextMenuRadioItem.displayName = ContextMenuPrimitive.RadioItem.displayName
-
 const ContextMenuLabel = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.Label>,
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Label> & { inset?: boolean }
@@ -165,25 +142,16 @@ const ContextMenuSeparator = React.forwardRef<
 ))
 ContextMenuSeparator.displayName = ContextMenuPrimitive.Separator.displayName
 
-function ContextMenuShortcut({ className, ...props }: React.ComponentProps<'span'>) {
-  return <span className={cn(MENU_SHORTCUT, className)} {...props} />
-}
-ContextMenuShortcut.displayName = 'ContextMenuShortcut'
-
 export {
   ContextMenu,
   ContextMenuTrigger,
   ContextMenuContent,
-  ContextMenuGroup,
   ContextMenuPortal,
   ContextMenuSub,
   ContextMenuSubContent,
   ContextMenuSubTrigger,
-  ContextMenuRadioGroup,
   ContextMenuItem,
   ContextMenuCheckboxItem,
-  ContextMenuRadioItem,
   ContextMenuLabel,
   ContextMenuSeparator,
-  ContextMenuShortcut,
 }

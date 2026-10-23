@@ -1,7 +1,7 @@
 // REST client for the Docker workbench backend (`/rpc/docker`). A missing daemon
 // comes back as a typed `{ code: 'engine_unavailable' }` with a 503 — we surface
 // that so the sidebar can render an empty state instead of an error toast.
-import { pluginApiFetch, problemRequestOf } from '@localixai/plugin-sdk/ui/transport'
+import { pluginApiFetch } from '@localixai/plugin-sdk/ui/transport'
 import type {
   ComposeAvailableResponse,
   ContainerLogs,
@@ -19,42 +19,14 @@ import type {
   VolumesResponse,
 } from '../backend/contracts'
 import type { DockerErrorCode } from '../backend/errors'
-import type { Prerequisite } from '@localixai/plugin-sdk/prerequisite'
-import type { ProblemRequest } from '@localixai/plugin-sdk/ui/problems'
-import { hasApiFailure, parseApiFailure } from '../../ui/apiFailure'
+import { DevOpsApiError, readApiResponse } from '../../ui/apiFailure'
 
-export class DockerApiError extends Error {
-  readonly code?: DockerErrorCode
-  readonly detail?: string
-  readonly prerequisite?: Prerequisite
-  /** The call that failed — the Event Center traces exactly this request. */
-  readonly request?: ProblemRequest
-  constructor(
-    message: string,
-    code?: DockerErrorCode,
-    detail?: string,
-    extra: { prerequisite?: Prerequisite; request?: ProblemRequest } = {},
-  ) {
-    super(message)
-    this.name = 'DockerApiError'
-    this.code = code
-    this.detail = detail
-    this.prerequisite = extra.prerequisite
-    this.request = extra.request
-  }
+export class DockerApiError extends DevOpsApiError<DockerErrorCode> {
+  override readonly name = 'DockerApiError'
 }
 
-async function readOr<T>(res: Response, method: string): Promise<T> {
-  const json = (await res.json().catch(() => null)) as T | null
-  if (!res.ok || hasApiFailure(json)) {
-    const failure = parseApiFailure<DockerErrorCode>(json, res.status)
-    throw new DockerApiError(failure.message, failure.code, failure.detail, {
-      prerequisite: failure.prerequisite,
-      request: problemRequestOf(res, method),
-    })
-  }
-  return json as T
-}
+const readOr = <T>(res: Response, method: string) =>
+  readApiResponse<T, DockerErrorCode>(res, method, DockerApiError)
 
 const base = '/rpc/docker'
 

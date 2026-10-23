@@ -8,7 +8,6 @@ import {
   isLegalFleet,
   knownCells,
   neighbours,
-  openHits,
   placeFleet,
   type Ship,
 } from './rules'
@@ -118,10 +117,6 @@ describe('a shot', () => {
     const agentTurn = { ...fire(fresh(), 'you', 'J10'), waiting: asked }
     expect(fire(agentTurn, 'agent', 'A1').waiting).toEqual(asked)
     expect(fire(agentTurn, 'agent', 'J10').waiting).toBeNull()
-  })
-
-  test('open hits are the hits on ships still afloat', () => {
-    expect(openHits(FIXED, [c('A1'), c('E3'), c('F3'), c('J10')]).map(cellName)).toEqual(['A1'])
   })
 })
 

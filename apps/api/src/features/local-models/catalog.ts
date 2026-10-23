@@ -245,5 +245,3 @@ export function createLocalCatalog(deps: {
     seed: exact.seed,
   }
 }
-
-export type LocalCatalog = ReturnType<typeof createLocalCatalog>

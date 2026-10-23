@@ -42,10 +42,6 @@ async function readAgentFile(file: string): Promise<AgentFile | null> {
   }
 }
 
-export async function parseAgentRecordJson(file: string): Promise<AgentRecord | null> {
-  return (await readAgentFile(file))?.record ?? null
-}
-
 export async function listAgentFiles(dir: string): Promise<AgentFile[]> {
   let names: string[]
   try {

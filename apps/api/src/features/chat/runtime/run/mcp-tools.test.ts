@@ -2,9 +2,9 @@ import { afterEach, expect, spyOn, test } from 'bun:test'
 import {
   createMcpClientManager,
   mcpClientManager,
-  type McpClientLike,
   type McpGatherResult,
 } from '../../../mcp/client-manager'
+import type { McpClientLike } from '../../../mcp/mcp-wire'
 import type { McpServerRecord } from '../../../mcp/repository'
 import { UNDECIDED, type AvailabilityReader } from '../../../capabilities/availability'
 import type { SessionRecord } from '../../repository'

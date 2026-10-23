@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
-import { createMcpClientManager, type McpClientLike } from './client-manager'
+import { createMcpClientManager } from './client-manager'
+import type { McpClientLike } from './mcp-wire'
 import {
   CHANNEL_NOTIFICATION,
   type ChannelBinding,

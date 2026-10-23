@@ -27,7 +27,6 @@ import { pluginConfigFieldSchema } from './contracts-config'
 
 export { PLUGIN_NAME_RE, PLUGIN_QUALIFIED_NAME_RE, PLUGIN_API_VERSION } from './contracts-base'
 
-export { pluginConfigOptionSchema } from './contracts-config'
 export type { PluginConfigType, PluginConfigOption, PluginConfigField } from './contracts-config'
 export {
   PLUGIN_VIEW_HTML_CAP_BYTES,

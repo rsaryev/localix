@@ -1,10 +1,17 @@
 import { describe, expect, test } from 'bun:test'
 import { detectLaunchCwd, detectLaunchKind } from './launch-kinds'
-import { agentLaunchCommand } from '../../shared/launch'
+import { shellQuote } from '@localixai/plugin-sdk/backend'
 
 /**
- * Representative delegated CLIs exercise the shared declaration emitter and live parser.
+ * The declaration a delegated launch leads with, written the way `owned-session-routes.ts` writes
+ * it: `LOCALIX_AGENT=<provider>`, then `LOCALIX_AGENT_CWD=<quoted path>` when there is a directory.
  */
+function agentLaunchCommand(input: { provider: string; executable: string; cwd?: string }) {
+  const cwdPart = input.cwd ? `LOCALIX_AGENT_CWD=${shellQuote(input.cwd)} ` : ''
+  return `LOCALIX_AGENT=${input.provider} ${cwdPart}${input.executable}`
+}
+
+/** Representative delegated CLIs exercise the declaration and the live parser. */
 const PROFILES = [
   { provider: 'claude-code', executable: 'claude' },
   { provider: 'codex', executable: 'codex' },

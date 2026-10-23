@@ -24,7 +24,7 @@
  */
 import { describe, expect, test } from 'bun:test'
 import type { AgentStopReason } from '@localixai/agent/agents'
-import { isAbnormalStop, isLoopingStop, stopNotice } from './stop-notice'
+import { isLoopingStop, stopNotice } from './stop-notice'
 
 /**
  * Every member of the union, and what it means for the user.
@@ -104,7 +104,6 @@ describe('stopNotice', () => {
   test('ordinary and already-surfaced endings stay silent', () => {
     for (const reason of NORMAL) {
       expect(stopNotice(reason), `${reason} should not produce a notice`).toBeNull()
-      expect(isAbnormalStop(reason)).toBe(false)
     }
   })
 
@@ -132,6 +131,6 @@ describe('isLoopingStop', () => {
 
   test('every looping stop is also an abnormal stop, so the user always sees why', () => {
     for (const reason of reasons)
-      if (isLoopingStop(reason)) expect(isAbnormalStop(reason)).toBe(true)
+      if (isLoopingStop(reason)) expect(stopNotice(reason)).not.toBeNull()
   })
 })

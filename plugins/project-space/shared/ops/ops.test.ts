@@ -4,7 +4,7 @@ import { spaceTypes } from '../types'
 import { applyOps } from './apply'
 import type { SpaceOp } from './contract'
 import { applyPatch } from './draft'
-import { frameOf, membersOf } from './geometry'
+import { contentBounds, frameOf, membersOf } from './geometry'
 
 /** A predictable id sequence, so ids in assertions are the ids the board made. */
 function counter() {
@@ -102,5 +102,25 @@ describe('history patches', () => {
     const blocked = applyPatch(agent, edit.patch, 0)
     expect(blocked.conflicts).toEqual(['n'])
     expect(blocked.space.elements.n?.props.text).toBe('agent')
+  })
+})
+
+describe('content bounds', () => {
+  test('an empty board has none; otherwise the box spans every element', () => {
+    expect(contentBounds(emptySpace())).toBeNull()
+    const { space } = run(emptySpace(), [
+      { op: 'create', type: 'note', id: 'a', x: -40, y: 10, w: 100, h: 50 },
+      { op: 'create', type: 'note', id: 'b', x: 200, y: -30, w: 60, h: 20 },
+    ])
+    const { a, b } = space.elements as Record<
+      'a' | 'b',
+      { x: number; y: number; w: number; h: number }
+    >
+    expect(contentBounds(space)).toEqual({
+      x: -40,
+      y: -30,
+      w: Math.max(a.x + a.w, b.x + b.w) + 40,
+      h: Math.max(a.y + a.h, b.y + b.h) + 30,
+    })
   })
 })

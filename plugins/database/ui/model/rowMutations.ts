@@ -1,7 +1,7 @@
 // Pure builders for single-row UPDATE / DELETE / INSERT, targeting a table by its
-// primary key. Values are inlined as escaped SQL literals (no bind params — see
-// sqlLiteral for why). Requires a non-empty primary key for UPDATE/DELETE so a row is
-// addressed unambiguously. Framework-free + unit-tested.
+// primary key. Executed mutations keep values in driver parameters; the INSERT text
+// builders inline escaped SQL literals (see sqlLiteral). Requires a non-empty primary key
+// for UPDATE/DELETE so a row is addressed unambiguously. Framework-free + unit-tested.
 import type { DbDialect } from '../dbClient'
 import { coerceCell, type TableCellType, type TableCellValue } from '@localixai/dataview'
 import { quoteIdent } from './sqlIdent'
@@ -75,21 +75,6 @@ export function qualifiedTable(t: Pick<MutationTarget, 'table' | 'schema' | 'dia
   return t.schema ? `${quoteIdent(t.schema, t.dialect)}.${table}` : table
 }
 
-function whereByPk(t: MutationTarget, keyValues: Record<string, unknown>): string {
-  return t.pk
-    .map((col) => {
-      const lhs = quoteIdent(col, t.dialect)
-      const v = ownRecordValue(keyValues, col)
-      // `col = NULL` is always false in SQL, so a null key value would make the UPDATE/DELETE
-      // silently match zero rows. Use `IS NULL` so the row is still addressed. (Real PK columns
-      // are non-null, but introspected "PKs" on views / engines without enforced keys can slip.)
-      return v === null || v === undefined
-        ? `${lhs} IS NULL`
-        : `${lhs} = ${sqlLiteral(v, t.dialect)}`
-    })
-    .join(' AND ')
-}
-
 function bindValue(t: MutationTarget, params: unknown[], value: unknown): string {
   params.push(value)
   return t.dialect === 'postgres' ? `$${params.length}` : '?'
@@ -104,6 +89,9 @@ function boundWhereByPk(
     .map((col) => {
       const lhs = quoteIdent(col, t.dialect)
       const value = ownRecordValue(keyValues, col)
+      // `col = NULL` is always false in SQL, so a null key value would make the UPDATE/DELETE
+      // silently match zero rows. Use `IS NULL` so the row is still addressed. (Real PK columns
+      // are non-null, but introspected "PKs" on views / engines without enforced keys can slip.)
       return value === null || value === undefined
         ? `${lhs} IS NULL`
         : `${lhs} = ${bindValue(t, params, value)}`
@@ -111,23 +99,7 @@ function boundWhereByPk(
     .join(' AND ')
 }
 
-/** UPDATE the row identified by `keyValues` (its PK), setting `changes` (col → new value). */
-export function buildUpdate(
-  t: MutationTarget,
-  changes: Record<string, unknown>,
-  keyValues: Record<string, unknown>,
-): string {
-  if (t.pk.length === 0) throw new Error('Cannot update a row without a primary key')
-  const cols = Object.keys(changes)
-  if (cols.length === 0) throw new Error('No changes to update')
-  const set = cols
-    .map((c) => `${quoteIdent(c, t.dialect)} = ${sqlLiteral(changes[c], t.dialect)}`)
-    .join(', ')
-  return `UPDATE ${qualifiedTable(t)} SET ${set} WHERE ${whereByPk(t, keyValues)};`
-}
-
-/** Parameterized UPDATE for execution. Unlike {@link buildUpdate}, no cell value is
- * interpolated into executable SQL. */
+/** Parameterized UPDATE for execution: no cell value is interpolated into executable SQL. */
 export function buildBoundUpdate(
   t: MutationTarget,
   changes: Record<string, unknown>,
@@ -142,12 +114,6 @@ export function buildBoundUpdate(
     .join(', ')
   const where = boundWhereByPk(t, keyValues, params)
   return { sql: `UPDATE ${qualifiedTable(t)} SET ${set} WHERE ${where};`, params }
-}
-
-/** DELETE the row identified by `keyValues` (its PK). */
-export function buildDelete(t: MutationTarget, keyValues: Record<string, unknown>): string {
-  if (t.pk.length === 0) throw new Error('Cannot delete a row without a primary key')
-  return `DELETE FROM ${qualifiedTable(t)} WHERE ${whereByPk(t, keyValues)};`
 }
 
 /** Parameterized DELETE for execution. */

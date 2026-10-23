@@ -13,7 +13,8 @@ import { promises as fs } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 import { discoverBundledPlugins, bundledPluginsRoot } from '../src/features/plugins/discovery'
-import { buildMarketplaceManifest, validateMarketplace } from '../src/features/plugins/marketplace'
+import { validateMarketplace } from '../src/features/plugins/marketplace'
+import { buildMarketplaceManifest } from '../src/features/plugins/marketplace-build'
 import {
   MARKETPLACE_CATALOG_FILE,
   MARKETPLACE_METADATA_FILE,

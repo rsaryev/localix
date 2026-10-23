@@ -1,6 +1,11 @@
 import { z } from 'zod'
 
-import { secretKeySchema, vaultItemTypeSchema } from './contracts'
+import {
+  requireMetadataField,
+  secretKeySchema,
+  secretMetadataPatchShape,
+  vaultItemTypeSchema,
+} from './contracts'
 
 /**
  * WHAT THE MODEL IS SHOWN: one flat object, every field once.
@@ -70,25 +75,10 @@ const updateActionSchema = z
     action: z.literal('update'),
     key: secretKeySchema,
     expected_version: z.number().int().positive(),
-    title: z.string().trim().min(1).max(120).optional(),
-    description: z.string().trim().max(500).optional(),
-    type: vaultItemTypeSchema.optional(),
-    tags: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
+    ...secretMetadataPatchShape,
   })
   .strict()
-  .superRefine((input, context) => {
-    if (
-      input.title === undefined &&
-      input.description === undefined &&
-      input.type === undefined &&
-      input.tags === undefined
-    ) {
-      context.addIssue({
-        code: 'custom',
-        message: 'At least one metadata field must be provided',
-      })
-    }
-  })
+  .superRefine(requireMetadataField)
 
 const rotateActionSchema = z
   .object({

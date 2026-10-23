@@ -5,16 +5,7 @@
  * unit-testable.
  */
 
-export const str = (v: unknown): string => {
-  if (typeof v === 'string') return v
-  if (v == null) return ''
-  if (typeof v === 'number' || typeof v === 'boolean' || typeof v === 'bigint') return String(v)
-  try {
-    return JSON.stringify(v) ?? ''
-  } catch {
-    return ''
-  }
-}
+export { str } from '../../backend/coerce'
 export const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0)
 
 /** Parse a top-level JSON document; returns null on empty/invalid input. */

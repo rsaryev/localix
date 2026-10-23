@@ -83,12 +83,6 @@ export function folderOf(name: string): string {
   return at === -1 ? '' : name.slice(0, at)
 }
 
-/** The last segment — what a tree shows on the row. */
-export function leafOf(name: string): string {
-  const at = name.lastIndexOf('/')
-  return at === -1 ? name : name.slice(at + 1)
-}
-
 /**
  * Absolute file path for a request name under `root`, or `null` when the name escapes it.
  *

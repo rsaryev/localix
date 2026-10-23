@@ -86,13 +86,6 @@ export function knownCells(fleet: readonly Ship[], shots: readonly number[]): Se
   return known
 }
 
-/** Hits on ships not yet sunk — where the next shot should go. */
-export const openHits = (fleet: readonly Ship[], shots: readonly number[]) =>
-  shots.filter((cell) => {
-    const ship = shipAt(fleet, cell)
-    return ship !== undefined && !isSunk(ship, shots)
-  })
-
 /** Whether `fleet` is a legal fleet: the right ships, straight, in bounds and never touching. */
 export function isLegalFleet(fleet: readonly Ship[]): boolean {
   const sizes = fleet.map((ship) => ship.cells.length).sort((a, b) => b - a)

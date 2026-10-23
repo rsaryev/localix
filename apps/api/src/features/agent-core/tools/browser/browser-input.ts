@@ -169,11 +169,7 @@ export const textOnlyBrowserInputSchema = z.preprocess(
   refineBrowserInput(textOnlyObject),
 )
 
-export {
-  liftTrailingScreenshot,
-  prepareBrowserArguments,
-  retiredInteractionMessage,
-} from './browser-lift'
+export { prepareBrowserArguments } from './browser-lift'
 
 export type BrowserInput = z.infer<typeof advertisedObject>
 

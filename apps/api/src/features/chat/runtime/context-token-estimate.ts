@@ -76,12 +76,6 @@ function computeMessageTokens(m: PersistedMessage): number {
   return base + tokens + images * IMAGE_TOKEN_ESTIMATE
 }
 
-export function estimateHistoryTokens(messages: PersistedMessage[]): number {
-  let total = 0
-  for (const m of messages) total += estimateMessageTokens(m)
-  return total
-}
-
 /**
  * The same anchored rule applied after model-facing attachment materialization.
  *

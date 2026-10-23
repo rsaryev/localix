@@ -1,6 +1,3 @@
-export { LocalEnvironment, localEnvironment } from './local'
-export { SSHEnvironment, DockerEnvironment } from './remote'
-
 import type { ExecutionEnvironment, ExecutionEnvironmentConfig } from '../environment'
 import { localEnvironment } from './local'
 import { SSHEnvironment, DockerEnvironment } from './remote'

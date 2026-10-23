@@ -21,17 +21,8 @@ import {
 } from './store-internals'
 
 export { defaultLegacySecretsDir, migrateLegacySecrets } from './legacy-migration'
-export { VaultPayloadError } from './store-internals'
 
-export type {
-  VaultItemMetadata,
-  VaultResolution,
-  VaultMutationResult,
-  VaultBinding,
-  VaultDeleteResult,
-  VaultUseContext,
-  SecretsStore,
-} from './store-contracts'
+export type { VaultMutationResult, VaultDeleteResult, SecretsStore } from './store-contracts'
 
 /** Key material remains outside the application database for backend portability. */
 export function defaultSecretsDir(): string {

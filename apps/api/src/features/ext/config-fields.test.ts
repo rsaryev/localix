@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 
-import { configFieldBase, configPatchValues, mergeConfigValues } from './config-fields'
+import { configFieldBase, configPatchValues } from './config-fields'
 
 describe('configFieldBase', () => {
   it('masks secrets: value is always null and isSet only when stored', () => {
@@ -45,7 +45,14 @@ describe('configFieldBase', () => {
   })
 })
 
-describe('mergeConfigValues', () => {
+/** A patch merged onto the stored config the way the repositories do: blank secrets keep theirs. */
+const mergeConfigValues = (
+  declared: Parameters<typeof configPatchValues>[0],
+  existing: Record<string, string | number | boolean> | undefined,
+  values: Record<string, string | number | boolean>,
+) => ({ ...existing, ...configPatchValues(declared, values) })
+
+describe('a config patch merged onto the stored config', () => {
   it('overwrites non-secret values onto the existing config', () => {
     expect(mergeConfigValues({ host: {} }, { host: 'old', keep: 'x' }, { host: 'new' })).toEqual({
       host: 'new',

@@ -29,22 +29,8 @@ import {
 } from './lsp-protocol'
 import { killProcessTree, stillRunning } from '../agent-core/tools/bash/process-tree'
 
-// Re-export the LSP protocol types + normalizers so the historical `./lsp-client`
-// import surface stays stable for every existing importer and test.
-export {
-  normalizeDocumentHighlights,
-  normalizeInlayHints,
-  normalizeDocumentColors,
-  normalizeDocumentSymbols,
-  normalizePrepareRename,
-  normalizeSignatureHelp,
-  normalizeWorkspaceEdit,
-  normalizeTextEdits,
-  normalizeCodeActions,
-  normalizeRelatedInformation,
-  normalizeDiagnostic,
-  diagnosticsOverlappingRange,
-} from './lsp-protocol'
+// Re-export the LSP protocol types so the historical `./lsp-client` import surface stays
+// stable for every existing importer.
 export type {
   LspClientInfo,
   LspCodeAction,

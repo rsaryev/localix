@@ -21,9 +21,7 @@ export {
   normalizePrepareRename,
   normalizeTextEdits,
   normalizeCodeActions,
-  normalizeRelatedInformation,
   normalizeDiagnostic,
-  diagnosticsOverlappingRange,
 } from './lsp-normalize'
 
 export type {

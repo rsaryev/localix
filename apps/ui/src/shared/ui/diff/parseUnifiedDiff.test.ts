@@ -1,12 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import {
-  countDiffLines,
-  countDiffStats,
-  firstChangedLine,
-  languageFromPath,
-  parseUnifiedDiff,
-} from './parseUnifiedDiff'
+import { firstChangedLine, languageFromPath, parseUnifiedDiff } from './parseUnifiedDiff'
 
 const VALID_DIFF = `--- a/file.ts
 +++ b/file.ts
@@ -86,35 +80,6 @@ describe('parseUnifiedDiff — fallback for non-patch fragments', () => {
       [1, undefined], // del → old side only
       [2, 2], // ctx → both
     ])
-  })
-})
-
-describe('countDiffLines', () => {
-  test('counts all renderable lines, excluding meta', () => {
-    expect(countDiffLines(parseUnifiedDiff(VALID_DIFF))).toBe(5)
-    const withMeta = [
-      {
-        header: '',
-        lines: [
-          { type: 'add' as const, text: 'a' },
-          { type: 'meta' as const, text: '\\ No newline at end of file' },
-        ],
-      },
-    ]
-    expect(countDiffLines(withMeta)).toBe(1)
-  })
-})
-
-describe('countDiffStats', () => {
-  test('splits added vs deleted lines (ctx/meta excluded)', () => {
-    expect(countDiffStats(parseUnifiedDiff(VALID_DIFF))).toEqual({ additions: 2, deletions: 1 })
-  })
-  test('zero changes for a context-only / empty diff', () => {
-    expect(countDiffStats([])).toEqual({ additions: 0, deletions: 0 })
-    expect(countDiffStats(parseUnifiedDiff(' just context\n more context'))).toEqual({
-      additions: 0,
-      deletions: 0,
-    })
   })
 })
 

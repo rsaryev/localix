@@ -3,12 +3,12 @@ import { promises as fs } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 
-import {
-  makeHelpers,
-  type PluginContext,
-  type PluginHooks,
-  type AssistantMessageEvent,
+import type {
+  PluginContext,
+  PluginHooks,
+  AssistantMessageEvent,
 } from '../../../apps/api/src/features/plugins/native'
+import { makeHelpers } from '../../../apps/api/src/features/plugins/native-helpers'
 
 /**
  * Behavior tests for the bundled `deliverable` plugin (plugins/deliverable):

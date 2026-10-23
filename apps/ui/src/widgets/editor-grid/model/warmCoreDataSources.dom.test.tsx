@@ -171,44 +171,4 @@ describe('warm-hidden core work-item data sources', () => {
     await act(async () => root.unmount())
     search.mockRestore()
   })
-
-  test('seeded review lists start only when selected', async () => {
-    const React = await import('react')
-    const { createRoot } = await import('react-dom/client')
-    const { act } = React
-    const { useSeededLiveList } = await import('@/entities/chat/model/useSeededLiveList')
-    const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
-
-    const seedCalls: string[] = []
-    const fetchList = (sessionId: string) => {
-      seedCalls.push(sessionId)
-      return Promise.resolve<string[]>([])
-    }
-    function ReviewSeed() {
-      useSeededLiveList('session-1', undefined, fetchList)
-      return null
-    }
-    function Surface({ visible }: { visible: boolean }) {
-      return (
-        <WorkItemVisibilityProvider visible={visible}>
-          <ReviewSeed />
-        </WorkItemVisibilityProvider>
-      )
-    }
-
-    const root = createRoot(document.createElement('div'))
-    await act(async () => {
-      root.render(<Surface visible={false} />)
-      await settle()
-    })
-    expect(seedCalls).toEqual([])
-
-    await act(async () => {
-      root.render(<Surface visible />)
-      await settle()
-    })
-    expect(seedCalls).toEqual(['session-1'])
-
-    await act(async () => root.unmount())
-  })
 })

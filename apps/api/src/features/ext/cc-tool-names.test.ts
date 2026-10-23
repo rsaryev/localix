@@ -5,7 +5,6 @@ import {
   normalizeCcToolName,
   normalizeMcpToolAlias,
   mapCcToolList,
-  classifyToolName,
 } from './cc-tool-names'
 
 describe('CC_TOOL_NAME_MAP', () => {
@@ -174,44 +173,6 @@ describe('mapCcToolList', () => {
       dropUnknown: true,
     })
     expect(result).toEqual(['bash', 'search'])
-  })
-})
-
-describe('classifyToolName', () => {
-  it('classifies engine names (map identity: bash→bash)', () => {
-    expect(classifyToolName('bash')).toBe('engine')
-    expect(classifyToolName('read')).toBe('engine')
-    expect(classifyToolName('Bash')).toBe('engine')
-  })
-
-  it('classifies clean CC mappings (no semantic gap)', () => {
-    expect(classifyToolName('Read')).toBe('engine') // read→read is identity
-    expect(classifyToolName('Grep')).toBe('cc') // grep→search, no gap
-    expect(classifyToolName('Agent')).toBe('unknown')
-    expect(classifyToolName('TodoWrite')).toBe('unknown') // no core task tool to map to
-  })
-
-  it('classifies semantic-gap CC tools as cc-gap', () => {
-    expect(classifyToolName('NotebookEdit')).toBe('cc-gap')
-    expect(classifyToolName('MultiEdit')).toBe('cc')
-    expect(classifyToolName('SendMessage')).toBe('unknown')
-    expect(classifyToolName('TeamCreate')).toBe('unknown')
-    expect(classifyToolName('TeamDelete')).toBe('unknown')
-  })
-
-  it('classifies WebFetch/WebSearch as clean CC aliases for research', () => {
-    expect(classifyToolName('WebFetch')).toBe('cc')
-    expect(classifyToolName('WebSearch')).toBe('cc')
-  })
-
-  it('classifies unknown tool names as unknown', () => {
-    expect(classifyToolName('XyzTotallyUnknown')).toBe('unknown')
-    expect(classifyToolName('fake-tool')).toBe('unknown')
-  })
-
-  it('strips CC pattern syntax before classifying', () => {
-    expect(classifyToolName('Bash(git *)')).toBe('engine')
-    expect(classifyToolName('WebFetch(https://example.com)')).toBe('cc')
   })
 })
 

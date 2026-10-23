@@ -81,8 +81,3 @@ export function credentialFields(config: TradingConnectionConfig): CredentialFie
   if (!creds) return []
   return CREDENTIAL_FIELDS.filter((f) => Boolean(creds[f]))
 }
-
-/** True when a credential is a vault reference rather than a literal (UI: don't re-vault). */
-export function isVaulted(value: string): boolean {
-  return hasSecretTokens(value)
-}

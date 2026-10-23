@@ -23,8 +23,6 @@ import type { Market, PrecisionMode } from '../../backend/contracts'
 const DEFAULT_PRICE_DECIMALS = 2
 const DEFAULT_AMOUNT_DECIMALS = 4
 const MAX_DECIMALS = 8
-/** Enough digits that a small balance is a number, not a rounding artefact. */
-const SIGNIFICANT_DIGITS = 4
 
 /** Expand a possibly-exponent number (`1e-7`) into plain fixed notation for decimal
  *  counting — `String(0.0000001)` is `'1e-7'`, which hides the decimal count. */
@@ -211,43 +209,6 @@ export function chartPriceFormat(
   const fromPrices = prices.reduce((max, p) => Math.max(max, decimalsOf(p)), 0)
   const precision = Math.min(MAX_DECIMALS, Math.max(fromTick, fromPrices))
   return { precision, minMove: Number((10 ** -precision).toFixed(MAX_DECIMALS)) }
-}
-
-/**
- * A wallet balance, in the currency's own units — NOT a price, so no market and no tick exists to
- * read a precision from.
- *
- * A fixed decimal cap renders small holdings as `0`. Hyperliquid's BTC size step is `0.00001`, so a
- * position closed at the minimum leaves a balance that four decimals report as nothing — and the
- * panel shows the row precisely BECAUSE the balance is non-zero. Printing `0` there is a claim about
- * money the account still holds.
- *
- * So: at least four SIGNIFICANT digits below 1, four decimals at or above it, and a value too small
- * to survive {@link MAX_DECIMALS} is reported as a bound (`<0.00000001`) rather than rounded away.
- * An exact zero is the one value allowed to print `0`.
- */
-export function formatBalance(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) return '—'
-  if (value === 0) return '0'
-
-  const abs = Math.abs(value)
-  if (abs >= 1)
-    return value.toLocaleString(undefined, {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: DEFAULT_AMOUNT_DECIMALS,
-    })
-
-  // Below 1, show four digits of actual value rather than four digits of leading zeros.
-  const leadingZeros = -Math.floor(Math.log10(abs)) - 1
-  const decimals = Math.min(MAX_DECIMALS, leadingZeros + SIGNIFICANT_DIGITS)
-  // Anything that still rounds to nothing at the cap is reported as a bound. `0` would be a lie.
-  if (Number(abs.toFixed(decimals)) === 0) {
-    return `${value < 0 ? '>-' : '<'}${(10 ** -MAX_DECIMALS).toFixed(MAX_DECIMALS)}`
-  }
-  return value.toLocaleString(undefined, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: decimals,
-  })
 }
 
 /**

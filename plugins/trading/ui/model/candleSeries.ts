@@ -1,10 +1,10 @@
-import type { CandlestickData, HistogramData, LineData, UTCTimestamp } from 'lightweight-charts'
+import type { HistogramData, LineData, UTCTimestamp } from 'lightweight-charts'
 import type { Candle } from '../../backend/contracts'
 
 /**
  * Adapts the agnostic `Candle[]` (whose `time` is UNIX SECONDS — exactly what
- * lightweight-charts wants) into the library's `CandlestickData` + `HistogramData`
- * (volume) arrays, and provides the streaming `upsertBar` merge used by the poll
+ * lightweight-charts wants) into the library's `HistogramData` (volume) and `LineData`
+ * arrays, and provides the streaming `upsertBar` merge used by the poll
  * loop so a live tick replaces the in-progress bar instead of re-fetching all history.
  * Pure (no chart handle) so the mapping + merge are unit-tested.
  */
@@ -13,16 +13,6 @@ import type { Candle } from '../../backend/contracts'
 export interface VolumeColors {
   up: string
   down: string
-}
-
-export function toCandlestickData(candles: Candle[]): CandlestickData[] {
-  return candles.map((c) => ({
-    time: c.time as UTCTimestamp,
-    open: c.open,
-    high: c.high,
-    low: c.low,
-    close: c.close,
-  }))
 }
 
 /**

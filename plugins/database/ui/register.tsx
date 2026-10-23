@@ -4,6 +4,7 @@ import {
   resourceMessageBindingDraft,
   localixUriNamespace,
   type PluginUiHost,
+  type WorkItemLike,
 } from '@localixai/plugin-sdk/ui'
 import { isDatabaseFilePath } from '../shared/database-file'
 import { connectionTextClass } from './model/connectionColor'
@@ -28,6 +29,17 @@ import {
   DbTableBody,
   SqlFileEditorBody,
 } from './workItemBodies'
+
+/** Tab-strip icon tint by the connection's color tag. */
+const connectionTint = (item: WorkItemLike) =>
+  connectionTextClass(item.payload?.color as string | undefined)
+
+/** A tab that carries a `localix://resource/db/…` URI links exactly that resource to chat. */
+function dbResourceBinding(item: WorkItemLike) {
+  const uri = item.payload?.resourceUri
+  if (typeof uri !== 'string' || localixUriNamespace(uri) !== 'db') return null
+  return resourceMessageBindingDraft({ uri, label: item.title })
+}
 
 /**
  * UI registration for the bundled Database workbench. Contributes its editor-grid
@@ -68,13 +80,9 @@ export function registerUi(host: PluginUiHost): void {
     Component: DbConnectionBody,
     Icon: Database,
     restorable: true,
-    iconTint: (item) => connectionTextClass(item.payload?.color as string | undefined),
+    iconTint: connectionTint,
     agentContext: DATABASE_AGENT_CONTEXT,
-    toMessageBinding: (item) => {
-      const uri = item.payload?.resourceUri
-      if (typeof uri !== 'string' || localixUriNamespace(uri) !== 'db') return null
-      return resourceMessageBindingDraft({ uri, label: item.title })
-    },
+    toMessageBinding: dbResourceBinding,
   })
 
   host.workItems.register({
@@ -82,8 +90,7 @@ export function registerUi(host: PluginUiHost): void {
     Component: DbConsoleBody,
     Icon: Database,
     restorable: true,
-    // Tab-strip icon tint by the connection's color tag.
-    iconTint: (item) => connectionTextClass(item.payload?.color as string | undefined),
+    iconTint: connectionTint,
     agentContext: DATABASE_AGENT_CONTEXT,
     // Dragging a console tab onto chat links its connection as `@resource:localix://resource/db/<id>`.
     toMessageBinding: (item) => {
@@ -104,13 +111,9 @@ export function registerUi(host: PluginUiHost): void {
     Component: DbTableBody,
     Icon: Table2,
     restorable: true,
-    iconTint: (item) => connectionTextClass(item.payload?.color as string | undefined),
+    iconTint: connectionTint,
     agentContext: DATABASE_AGENT_CONTEXT,
-    toMessageBinding: (item) => {
-      const uri = item.payload?.resourceUri
-      if (typeof uri !== 'string' || localixUriNamespace(uri) !== 'db') return null
-      return resourceMessageBindingDraft({ uri, label: item.title })
-    },
+    toMessageBinding: dbResourceBinding,
   })
 
   host.workItems.register({
@@ -118,13 +121,9 @@ export function registerUi(host: PluginUiHost): void {
     Component: DbDiagramBody,
     Icon: Network,
     restorable: true,
-    iconTint: (item) => connectionTextClass(item.payload?.color as string | undefined),
+    iconTint: connectionTint,
     agentContext: DATABASE_AGENT_CONTEXT,
-    toMessageBinding: (item) => {
-      const uri = item.payload?.resourceUri
-      if (typeof uri !== 'string' || localixUriNamespace(uri) !== 'db') return null
-      return resourceMessageBindingDraft({ uri, label: item.title })
-    },
+    toMessageBinding: dbResourceBinding,
   })
 
   // The live connection in the titlebar, and its writability — what a query is about to touch.

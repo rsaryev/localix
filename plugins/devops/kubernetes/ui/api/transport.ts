@@ -5,46 +5,17 @@
  * Split from `kubernetesApi.ts` so that file is only the call surface, and so a
  * transport concern (a header, an error shape, the base path) has one home.
  */
-import { pluginApiFetch, problemRequestOf } from '@localixai/plugin-sdk/ui/transport'
-import type { Prerequisite } from '@localixai/plugin-sdk/prerequisite'
-import type { ProblemRequest } from '@localixai/plugin-sdk/ui/problems'
+import { pluginApiFetch } from '@localixai/plugin-sdk/ui/transport'
 
 import type { KubeErrorCode } from '../../backend/errors'
-import { hasApiFailure, parseApiFailure } from '../../../ui/apiFailure'
+import { DevOpsApiError, readApiResponse } from '../../../ui/apiFailure'
 
-export class KubeApiError extends Error {
-  readonly code?: KubeErrorCode
-  readonly detail?: string
-  /** A stopped local engine or a missing credential helper. */
-  readonly prerequisite?: Prerequisite
-  /** The call that failed — the Event Center traces exactly this request. */
-  readonly request?: ProblemRequest
-  constructor(
-    message: string,
-    code?: KubeErrorCode,
-    detail?: string,
-    extra: { prerequisite?: Prerequisite; request?: ProblemRequest } = {},
-  ) {
-    super(message)
-    this.name = 'KubeApiError'
-    this.code = code
-    this.detail = detail
-    this.prerequisite = extra.prerequisite
-    this.request = extra.request
-  }
+export class KubeApiError extends DevOpsApiError<KubeErrorCode> {
+  override readonly name = 'KubeApiError'
 }
 
-async function readOr<T>(res: Response, method: string): Promise<T> {
-  const json = (await res.json().catch(() => null)) as T | null
-  if (!res.ok || hasApiFailure(json)) {
-    const failure = parseApiFailure<KubeErrorCode>(json, res.status)
-    throw new KubeApiError(failure.message, failure.code, failure.detail, {
-      prerequisite: failure.prerequisite,
-      request: problemRequestOf(res, method),
-    })
-  }
-  return json as T
-}
+const readOr = <T>(res: Response, method: string) =>
+  readApiResponse<T, KubeErrorCode>(res, method, KubeApiError)
 
 const base = '/rpc/kubernetes'
 

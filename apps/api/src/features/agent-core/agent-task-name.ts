@@ -102,12 +102,6 @@ export function agentTaskPath(parentPath: string, segment: string): string {
   return `${parentPath}/${segment}`
 }
 
-/** Leaf segment of a canonical path — what a roster line shows when the tree is shallow. */
-export function agentTaskSegmentOf(path: string): string {
-  const cut = path.lastIndexOf('/')
-  return cut < 0 ? path : path.slice(cut + 1)
-}
-
 /** A full canonical path: `/root`, or `/root` followed by one or more valid segments. */
 export function isCanonicalAgentTaskPath(path: string): boolean {
   if (path === AGENT_TASK_ROOT_PATH) return true

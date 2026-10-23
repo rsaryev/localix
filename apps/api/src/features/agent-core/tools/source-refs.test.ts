@@ -7,7 +7,6 @@ import {
   fileSource,
   fileUiUri,
   sessionSource,
-  symbolSource,
 } from './source-refs'
 
 describe('source refs', () => {
@@ -60,14 +59,6 @@ describe('source refs', () => {
     expect(fileSource({ path: 'src/a.ts', line: 7 }).role).toBe('consulted')
   })
 
-  test('a symbol is a place in a file, and says so', () => {
-    const source = symbolSource({ path: 'src/a.ts', line: 10, name: 'resolveThing' })
-    expect(source.kind).toBe('symbol')
-    expect(source.title).toBe('resolveThing')
-    // Same URI shape as the file it lives in — one navigation path, not two.
-    expect(source.uri).toBe('localix://ui/work-item/file?path=src%2Fa.ts&line=10')
-  })
-
   test('a session source opens that session', () => {
     expect(sessionSource({ sessionId: 'LOCALIX-9', title: 'Audit auth' })).toMatchObject({
       kind: 'session',
@@ -96,7 +87,6 @@ describe('source refs', () => {
     // inflate payload_json and the WS snapshot on exactly the read-heavy sessions where it hurts.
     for (const source of [
       fileSource({ path: 'src/a.ts' }),
-      symbolSource({ path: 'src/a.ts', name: 'x' }),
       sessionSource({ sessionId: 'LOCALIX-9' }),
     ]) {
       expect(source.snippet).toBeUndefined()
@@ -109,7 +99,6 @@ describe('source refs', () => {
     const built = [
       fileSource({ path: 'src/a.ts', line: 3 }),
       discoveredFileSource({ path: 'src/b.ts' }),
-      symbolSource({ path: 'src/c.ts', line: 9, name: 'thing' }),
       sessionSource({ sessionId: 'LOCALIX-9' }),
     ]
 

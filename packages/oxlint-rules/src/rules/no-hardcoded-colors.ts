@@ -17,6 +17,7 @@
  * the stylesheet that defines the token never loaded, and a rule that reported that would be asking
  * the crash screen to depend on the thing that crashed.
  */
+import { attributeName, literalText } from '../jsx.ts'
 import type { Node, Rule, RuleContext } from '../types.ts'
 
 /** A `var()` call including its fallback — removed before matching, fallback and all. */
@@ -25,21 +26,6 @@ const VAR_CALL = /var\([^()]*(?:\([^()]*\)[^()]*)*\)/gu
 const PAINTED_COLOR = /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?|oklch|oklab|color)\(/u
 /** A Tailwind arbitrary value carrying a literal colour: `bg-[#abc]`, `text-[rgb(0_0_0)]`. */
 const ARBITRARY_COLOR = /\[(?:#[0-9a-fA-F]{3,8}|(?:rgba?|hsla?|oklch|oklab)\()/u
-
-function attributeName(node: Node): string | null {
-  const name = node.name as Node | undefined
-  return name?.type === 'JSXIdentifier' ? (name.name as string) : null
-}
-
-/** The literal text of a string-ish value node, or `null` when it is dynamic. */
-function literalText(value: Node | undefined): string | null {
-  if (value?.type === 'Literal') return typeof value.value === 'string' ? value.value : null
-  if (value?.type === 'TemplateLiteral') {
-    const quasis = value.quasis as Node[] | undefined
-    return (quasis ?? []).map((quasi) => (quasi.value as { raw?: string })?.raw ?? '').join(' ')
-  }
-  return null
-}
 
 /** The text with every `var()` call removed, so a token's fallback is not read as a painted colour. */
 function paintedPart(text: string): string {

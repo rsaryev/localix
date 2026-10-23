@@ -8,7 +8,8 @@ import { createMemoryWorkRepository } from '../../work/memory-repository'
 import { createWorkRegistry } from '../../work/registry'
 import type { InboxEntry } from '../contracts'
 import { createNotificationJournal } from '../journal'
-import { settleStaleRequests, startAgentNotifications } from '.'
+import { settleStaleRequests } from './boot'
+import { startAgentNotifications } from '.'
 import type { SessionFacts } from './facts'
 
 const databases: ReturnType<typeof createDatabase>[] = []

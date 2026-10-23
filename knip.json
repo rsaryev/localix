@@ -7,13 +7,21 @@
       "entry": [
         "plugins/*/tools/**/*.mjs",
         "plugins/*/hooks/**/*.mjs",
-        "plugins/*/arg-sources/**/*.ts",
-        "scripts/*.mjs",
-        "scripts/*.ts",
-        "scripts/session-e2e/provider.mjs",
-        "scripts/screenshots/*.mjs"
+        "plugins/*/arg-sources/**/*.ts"
       ],
-      "project": ["plugins/**/*.{ts,mjs}", "scripts/**/*.{mjs,ts}"]
+      "project": ["plugins/**/*.{ts,mjs}"]
+    },
+    "scripts": {
+      "entry": [
+        "*.mjs",
+        "*.ts",
+        "lib/wait.mjs",
+        "screenshots/{audit,fixture-service,publish,run,runtime,scripted-provider,seed,workbench-coverage}.mjs",
+        "screenshots/playwright.config.mjs",
+        "screenshots/*.pw.mjs",
+        "**/*.test.{ts,mjs}"
+      ],
+      "project": ["**/*.{mjs,ts}"]
     },
     "apps/api": {
       "entry": [

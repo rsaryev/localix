@@ -1,8 +1,8 @@
 /**
  * Is the user typing into this element right now?
  *
- * The companion to `isNonTextWritingKey`: that one asks about the KEY, this one about the TARGET,
- * and a surface deciding whether a keypress is a shortcut usually needs both. Shared because the
+ * This asks about the TARGET, not the KEY: a surface deciding whether a keypress is a shortcut
+ * checks where the user is typing. Shared because the
  * two copies that existed disagreed — one covered `contentEditable`, the other checked only
  * `INPUT` and `TEXTAREA`, so digit shortcuts fired while the user typed into a rich-text field.
  */

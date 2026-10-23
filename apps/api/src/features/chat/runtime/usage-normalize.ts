@@ -24,18 +24,6 @@ export interface UsageLike {
   costSource?: string
 }
 
-export interface UsageEventBase {
-  messageId: string
-  sessionId: string
-  rootSessionId?: string | null
-  userId: string
-  providerConnectionId?: string | null
-  providerId?: string | null
-  modelId: string
-  /** The participant this turn belongs to — in a room, the speaker; in a private chat, the one agent. */
-  agentId?: string | null
-}
-
 function finiteNonnegative(value: number | undefined): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : undefined
 }
@@ -117,13 +105,6 @@ export function usageEventFields(
     totalTokens: normalized.totalTokens,
     costUsd: normalized.totalCost,
     costSource: normalized.costSource as UsageEventInput['costSource'],
-  }
-}
-
-export function buildUsageEvent(base: UsageEventBase, usage: UsageLike): UsageEventInput {
-  return {
-    ...base,
-    ...usageEventFields(usage),
   }
 }
 

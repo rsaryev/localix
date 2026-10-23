@@ -2,7 +2,6 @@ import {
   theirMove,
   viewerMayMove,
   viewOwesAgentMove,
-  type GameRecord,
   type Move,
   type PlayerView,
   type RoundView,
@@ -61,12 +60,6 @@ export function headline(view: PlayerView): string {
 export function announcement(view: PlayerView): string {
   const verdict = verdictLine(view.round)
   return [headline(view), verdict].filter(Boolean).join('. ').concat('.')
-}
-
-export function scoreLine(record: GameRecord): string {
-  if (record.won + record.lost + record.draw === 0) return ''
-  const draws = record.draw === 1 ? '1 draw' : `${record.draw} draws`
-  return ` · Score ${record.won}–${record.lost}, ${draws}`
 }
 
 /** Who opens the next round — the side that did not open this one. */

@@ -6,18 +6,12 @@ function newestTimestamp(left: string | undefined, right: string): string {
   return left && left.localeCompare(right) > 0 ? left : right
 }
 
-export function bookFromPath(
-  path: string,
-  parsed: ParsedReaderDocument,
-  previous: ReaderBookSummary | undefined,
-  size: number,
-  updatedAt: string,
-): ReaderBookSummary {
+/** What a book shows from its source, under the reader's own overrides and shelves. */
+function sourceFields(parsed: ParsedReaderDocument, previous: ReaderBookSummary | undefined) {
   const sourceTitle = parsed.document.title
   const sourceAuthor = parsed.document.author
   const overrides = previous?.overrides
   return {
-    path,
     ...(parsed.cover ? { cover: parsed.cover } : {}),
     title: overrides?.title ?? sourceTitle,
     ...((overrides?.author ?? sourceAuthor) ? { author: overrides?.author ?? sourceAuthor } : {}),
@@ -26,6 +20,19 @@ export function bookFromPath(
     ...(overrides ? { overrides } : {}),
     ...(previous?.collectionIds ? { collectionIds: previous.collectionIds } : {}),
     format: parsed.document.format,
+  }
+}
+
+export function bookFromPath(
+  path: string,
+  parsed: ParsedReaderDocument,
+  previous: ReaderBookSummary | undefined,
+  size: number,
+  updatedAt: string,
+): ReaderBookSummary {
+  return {
+    path,
+    ...sourceFields(parsed, previous),
     size,
     updatedAt: newestTimestamp(previous?.updatedAt, updatedAt),
   }
@@ -38,20 +45,10 @@ export function bookFromMedia(
   previous: ReaderBookSummary | undefined,
   size: number,
 ): ReaderBookSummary {
-  const sourceTitle = parsed.document.title
-  const sourceAuthor = parsed.document.author
-  const overrides = previous?.overrides
   return {
     path: name?.trim() || mediaId,
     mediaId,
-    ...(parsed.cover ? { cover: parsed.cover } : {}),
-    title: overrides?.title ?? sourceTitle,
-    ...((overrides?.author ?? sourceAuthor) ? { author: overrides?.author ?? sourceAuthor } : {}),
-    sourceTitle,
-    ...(sourceAuthor ? { sourceAuthor } : {}),
-    ...(overrides ? { overrides } : {}),
-    ...(previous?.collectionIds ? { collectionIds: previous.collectionIds } : {}),
-    format: parsed.document.format,
+    ...sourceFields(parsed, previous),
     size,
     updatedAt: new Date().toISOString(),
   }

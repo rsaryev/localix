@@ -7,7 +7,6 @@ import {
   BUNDLED_APPS_PREFIX,
   appOfPath,
   bundledAppsRoot,
-  pluginOfPath,
 } from './bundled-roots.mjs'
 
 const repoRoot = resolve(import.meta.dir, '../..')
@@ -60,18 +59,6 @@ describe('bundled roots', () => {
     expect(appOfPath(BUNDLED_APPS_DIR)).toBeNull()
     expect(appOfPath('apps/ui/src/main.tsx')).toBeNull()
     expect(appOfPath(`packages/${BUNDLED_APPS_PREFIX}demo-app/x.ts`)).toBeNull()
-  })
-
-  test('a path inside an app plugins folder names its contained plugin', () => {
-    expect(
-      pluginOfPath(`${BUNDLED_APPS_PREFIX}demo-app/plugins/demo-app/skills/play/SKILL.md`),
-    ).toEqual({
-      app: 'demo-app',
-      plugin: 'demo-app',
-      rest: 'skills/play/SKILL.md',
-    })
-    expect(pluginOfPath(`${BUNDLED_APPS_PREFIX}demo-app/skills/play/SKILL.md`)).toBeNull()
-    expect(pluginOfPath(`${BUNDLED_APPS_PREFIX}demo-app/plugins/demo-app`)).toBeNull()
   })
 
   test('the bundled root of a checkout is its bundled folder', () => {
