@@ -6,6 +6,7 @@
   "workspaces": [
     "apps/*",
     "packages/*",
+    "mini-apps/*",
     "plugins/*",
     "scripts",
     "vendor/monaco-editor-runtime"

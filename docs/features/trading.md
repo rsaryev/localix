@@ -113,15 +113,15 @@ required, and applies the command through the chart control bus.
 
 ## Source of truth
 
-- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/plugins/trading/.localix-app/app.json)
-- [Registered routes, tools, references, search, and streams](https://github.com/rsaryev/localix/blob/main/plugins/trading/backend/index.ts)
-- [Public profile contract](https://github.com/rsaryev/localix/blob/main/plugins/trading/backend/public-connection.ts)
-- [Read-only service](https://github.com/rsaryev/localix/blob/main/plugins/trading/backend/service.ts)
-- [HTTP routes](https://github.com/rsaryev/localix/blob/main/plugins/trading/backend/routes.ts)
-- [Live-stream registry](https://github.com/rsaryev/localix/blob/main/plugins/trading/backend/stream.ts)
-- [Workbench registration](https://github.com/rsaryev/localix/blob/main/plugins/trading/ui/register.tsx)
-- [Chart workspace](https://github.com/rsaryev/localix/blob/main/plugins/trading/ui/TradingChartTab.tsx)
-- [Public context adapter](https://github.com/rsaryev/localix/blob/main/plugins/trading/backend/context-provider.ts)
-- [`market_data`](https://github.com/rsaryev/localix/blob/main/plugins/trading/backend/market-data.ts)
+- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/mini-apps/trading/.localix-app/app.json)
+- [Registered routes, tools, references, search, and streams](https://github.com/rsaryev/localix/blob/main/mini-apps/trading/backend/index.ts)
+- [Public profile contract](https://github.com/rsaryev/localix/blob/main/mini-apps/trading/backend/public-connection.ts)
+- [Read-only service](https://github.com/rsaryev/localix/blob/main/mini-apps/trading/backend/service.ts)
+- [HTTP routes](https://github.com/rsaryev/localix/blob/main/mini-apps/trading/backend/routes.ts)
+- [Live-stream registry](https://github.com/rsaryev/localix/blob/main/mini-apps/trading/backend/stream.ts)
+- [Workbench registration](https://github.com/rsaryev/localix/blob/main/mini-apps/trading/ui/register.tsx)
+- [Chart workspace](https://github.com/rsaryev/localix/blob/main/mini-apps/trading/ui/TradingChartTab.tsx)
+- [Public context adapter](https://github.com/rsaryev/localix/blob/main/mini-apps/trading/backend/context-provider.ts)
+- [`market_data`](https://github.com/rsaryev/localix/blob/main/mini-apps/trading/backend/market-data.ts)
   and
-  [`manage_chart`](https://github.com/rsaryev/localix/blob/main/plugins/trading/backend/manage-chart.ts)
+  [`manage_chart`](https://github.com/rsaryev/localix/blob/main/mini-apps/trading/backend/manage-chart.ts)

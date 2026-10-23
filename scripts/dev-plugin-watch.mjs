@@ -17,7 +17,7 @@ import {
   stagePluginKitBesideAsync,
 } from './stage-dropins.mjs'
 import { PLUGIN_KIT_INPUTS } from './stage-plugin-kit.mjs'
-import { BUNDLED_APPS_DIR, bundledAppsRoot } from './lib/bundled-roots.mjs'
+import { BUNDLED_DIRS, bundledRoots } from './lib/bundled-roots.mjs'
 
 /**
  * The kit inputs that decide its LAYOUT: the stagers and the layout contract the API's authoring
@@ -187,28 +187,33 @@ export function watchPluginsForRestage({
       setTimer(() => flush(name), debounceMs),
     )
   }
-  // The REAL path is subscribed and events are made relative to it: FSEvents reports real paths,
-  // so a repository reached through a symlink would otherwise relate nothing to `plugins/`.
-  let pluginsDir = bundledAppsRoot(repoRoot)
-  try {
-    pluginsDir = realpathSync(pluginsDir)
-  } catch {
-    /* a missing directory fails the subscription, which logs it */
-  }
-  const watcher = subscribe(
-    pluginsDir,
-    (events) => {
-      for (const event of events) {
-        const name = pluginNameForChange(relative(pluginsDir, event.path))
-        if (name) schedule(name)
-      }
-    },
-    {
-      ignore: NATIVE_IGNORE,
-      onError: (error) =>
-        log(`plugin watcher stopped: ${error instanceof Error ? error.message : String(error)}`),
-    },
-  )
+  // Each bundled folder (mini apps and plugins) is watched. The REAL path is subscribed and
+  // events are made relative to it: FSEvents reports real paths, so a repository reached through
+  // a symlink would otherwise relate nothing to the folder.
+  const watchers = bundledRoots(repoRoot).map((root) => {
+    let bundledDir = root
+    try {
+      bundledDir = realpathSync(bundledDir)
+    } catch {
+      /* a missing directory fails the subscription, which logs it */
+    }
+    return subscribe(
+      bundledDir,
+      (events) => {
+        for (const event of events) {
+          const name = pluginNameForChange(relative(bundledDir, event.path))
+          if (name) schedule(name)
+        }
+      },
+      {
+        ignore: NATIVE_IGNORE,
+        onError: (error) =>
+          log(
+            `extension watcher stopped: ${error instanceof Error ? error.message : String(error)}`,
+          ),
+      },
+    )
+  })
   // A plugin that failed on an unresolved import is fixed by `bun install`, which changes nothing
   // under `plugins/` — so without this, the fix the error message asks for left the plugin missing
   // until `bun run dev` was restarted. Only the plugins the marker names as failed re-stage.
@@ -222,12 +227,14 @@ export function watchPluginsForRestage({
   for (const dependencyWatcher of dependencyWatchers) {
     dependencyWatcher.on('error', (error) => log(`dependency watcher stopped: ${error.message}`))
   }
-  log(`watching ${BUNDLED_APPS_DIR}${sep} for plugins to re-stage`)
+  log(
+    `watching ${BUNDLED_DIRS.map((dir) => `${dir}${sep}`).join(' and ')} for extensions to re-stage`,
+  )
   return {
     close: () => {
       for (const timer of pending.values()) clearTimeout(timer)
       pending.clear()
-      watcher.close()
+      for (const watcher of watchers) watcher.close()
       for (const dependencyWatcher of dependencyWatchers) dependencyWatcher.close()
     },
   }

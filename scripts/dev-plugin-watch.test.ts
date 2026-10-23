@@ -205,6 +205,8 @@ describe('dev plugin watcher', () => {
   test('a real scaffold burst re-stages every plugin it touched (native watcher)', async () => {
     const repoRoot = mkdtempSync(join(tmpdir(), 'dev-plugin-watch-'))
     try {
+      // A checkout has both bundled folders.
+      mkdirSync(join(repoRoot, 'mini-apps'))
       mkdirSync(join(repoRoot, 'plugins'))
       const restaged = new Set<string>()
       const lines: string[] = []

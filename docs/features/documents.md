@@ -89,8 +89,8 @@ paths.
 
 ## Source of truth
 
-- [Extraction windows and full cache](https://github.com/rsaryev/localix/blob/main/plugins/documents/backend/documents/service.ts)
-- [Full table ingestion](https://github.com/rsaryev/localix/blob/main/plugins/documents/backend/singleton.ts)
-- [Generation responses](https://github.com/rsaryev/localix/blob/main/plugins/documents/backend/documents/routes.ts)
-- [Generation input contract](https://github.com/rsaryev/localix/blob/main/plugins/documents/backend/documents/generate-contracts.ts)
-- [Bounded resource expansion](https://github.com/rsaryev/localix/blob/main/plugins/documents/backend/resource-provider.ts)
+- [Extraction windows and full cache](https://github.com/rsaryev/localix/blob/main/mini-apps/documents/backend/documents/service.ts)
+- [Full table ingestion](https://github.com/rsaryev/localix/blob/main/mini-apps/documents/backend/singleton.ts)
+- [Generation responses](https://github.com/rsaryev/localix/blob/main/mini-apps/documents/backend/documents/routes.ts)
+- [Generation input contract](https://github.com/rsaryev/localix/blob/main/mini-apps/documents/backend/documents/generate-contracts.ts)
+- [Bounded resource expansion](https://github.com/rsaryev/localix/blob/main/mini-apps/documents/backend/resource-provider.ts)

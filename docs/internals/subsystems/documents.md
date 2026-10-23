@@ -66,9 +66,9 @@ and spreadsheets enter the table pipeline described in [Native data view interna
 
 ## Source of truth
 
-- [Plugin registration](../../../plugins/documents/backend/index.ts)
-- [Extraction service](../../../plugins/documents/backend/documents/service.ts)
-- [Capability adapter](../../../plugins/documents/backend/extract-port.ts)
-- [Documents routes](../../../plugins/documents/backend/documents/routes.ts)
-- [Table service](../../../plugins/documents/backend/table/service.ts)
-- [UI registration](../../../plugins/documents/ui/register.tsx)
+- [Plugin registration](../../../mini-apps/documents/backend/index.ts)
+- [Extraction service](../../../mini-apps/documents/backend/documents/service.ts)
+- [Capability adapter](../../../mini-apps/documents/backend/extract-port.ts)
+- [Documents routes](../../../mini-apps/documents/backend/documents/routes.ts)
+- [Table service](../../../mini-apps/documents/backend/table/service.ts)
+- [UI registration](../../../mini-apps/documents/ui/register.tsx)

@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path'
 import { STATUS_ITEM_PLACEMENTS } from '@localixai/plugin-sdk/ui'
 
 const REPO_ROOT = resolve(import.meta.dir, '..')
-const PLUGINS_ROOT = join(REPO_ROOT, 'plugins')
+const PLUGINS_ROOT = join(REPO_ROOT, 'mini-apps')
 /** The titlebar action recipe, through the kit's door or the host path it moved out of. */
 const CHROME_ACTION_IMPORT = /['"](?:@localixai\/kit|@\/shared\/ui)\/chrome-action['"]/u
 
@@ -19,7 +19,7 @@ function pluginUiSources(): { path: string; source: string }[] {
         !/\.(?:dom\.)?test\.tsx?$/u.test(entry),
     )
     .map((entry) => ({
-      path: `plugins/${entry}`,
+      path: `mini-apps/${entry}`,
       source: readFileSync(join(PLUGINS_ROOT, entry), 'utf8'),
     }))
 }

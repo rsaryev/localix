@@ -20,9 +20,9 @@ Localix uses Bun 1.4.4 and Turborepo. [CONTRIBUTING.md](CONTRIBUTING.md) documen
 ## Project Structure
 
 `apps/` holds the Hono API, React/Vite UI, Tauri shell, and landing website. Shared libraries live
-in `packages/`, extensions in `plugins/`, automation in `scripts/`, configuration in `config/`, docs
-in `docs/`, and media in `assets/`. Keep feature code within its owner; use typed ports for
-cross-feature behavior.
+in `packages/`, mini apps in `mini-apps/`, plugins in `plugins/`, automation in `scripts/`,
+configuration in `config/`, docs in `docs/`, and media in `assets/`. Keep feature code within its
+owner; use typed ports for cross-feature behavior.
 
 ## Plugins and mini apps
 

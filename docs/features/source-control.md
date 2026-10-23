@@ -139,11 +139,11 @@ A failed later step does not undo earlier successful Git commands.
 
 ## Source of truth
 
-- [Source-control routes](https://github.com/rsaryev/localix/blob/main/plugins/git-workspace/backend/source-control/routes.ts)
-- [Source-control service](https://github.com/rsaryev/localix/blob/main/plugins/git-workspace/backend/source-control/service.ts)
-- [Git mutation and synchronization policy](https://github.com/rsaryev/localix/blob/main/plugins/git-workspace/backend/source-control/git/actions.ts)
-- [Git process boundary](https://github.com/rsaryev/localix/blob/main/plugins/git-workspace/backend/source-control/git/cli.ts)
-- [Repository discovery](https://github.com/rsaryev/localix/blob/main/plugins/git-workspace/backend/source-control/repos/discovery.ts)
-- [Source Control panel](https://github.com/rsaryev/localix/blob/main/plugins/git-workspace/ui/source-control/ui/SourceControlTab.tsx)
-- [Interactive staging](https://github.com/rsaryev/localix/blob/main/plugins/git-workspace/ui/source-control/ui/DiffStagingView.tsx)
-- [Commit history operations](https://github.com/rsaryev/localix/blob/main/plugins/git-workspace/ui/source-control/ui/CommitGraph.tsx)
+- [Source-control routes](https://github.com/rsaryev/localix/blob/main/mini-apps/git-workspace/backend/source-control/routes.ts)
+- [Source-control service](https://github.com/rsaryev/localix/blob/main/mini-apps/git-workspace/backend/source-control/service.ts)
+- [Git mutation and synchronization policy](https://github.com/rsaryev/localix/blob/main/mini-apps/git-workspace/backend/source-control/git/actions.ts)
+- [Git process boundary](https://github.com/rsaryev/localix/blob/main/mini-apps/git-workspace/backend/source-control/git/cli.ts)
+- [Repository discovery](https://github.com/rsaryev/localix/blob/main/mini-apps/git-workspace/backend/source-control/repos/discovery.ts)
+- [Source Control panel](https://github.com/rsaryev/localix/blob/main/mini-apps/git-workspace/ui/source-control/ui/SourceControlTab.tsx)
+- [Interactive staging](https://github.com/rsaryev/localix/blob/main/mini-apps/git-workspace/ui/source-control/ui/DiffStagingView.tsx)
+- [Commit history operations](https://github.com/rsaryev/localix/blob/main/mini-apps/git-workspace/ui/source-control/ui/CommitGraph.tsx)

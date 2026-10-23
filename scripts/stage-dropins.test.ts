@@ -200,13 +200,13 @@ describe('stageDropins', () => {
       "1 | import { generateKeyBetween } from 'fractional-indexing'",
       '                                      ^',
       'error: Could not resolve: "fractional-indexing". Maybe you need to "bun install"?',
-      '    at /repo/plugins/project-space/shared/format/order.ts:1:36',
+      '    at /repo/mini-apps/project-space/shared/format/order.ts:1:36',
       '',
       'error: Could not resolve: "left-pad"',
     ].join('\n')
     expect(bunBuildFailureReason(stderr, '/repo')).toBe(
       [
-        'error: Could not resolve: "fractional-indexing". Maybe you need to "bun install"? (plugins/project-space/shared/format/order.ts:1:36)',
+        'error: Could not resolve: "fractional-indexing". Maybe you need to "bun install"? (mini-apps/project-space/shared/format/order.ts:1:36)',
         'error: Could not resolve: "left-pad"',
       ].join('\n'),
     )
@@ -272,12 +272,12 @@ describe('stageDropins', () => {
     roots.push(root)
     const outPlugins = join(root, 'staged', 'plugins')
     write(
-      join(root, 'plugins', 'built-locally', 'plugin.json'),
+      join(root, 'mini-apps', 'built-locally', 'plugin.json'),
       JSON.stringify({ name: 'built-locally', version: '1.0.0' }),
     )
-    write(join(root, 'plugins', 'built-locally', 'dist', 'preview', 'index.html'), '<p>local</p>')
-    write(join(root, 'plugins', 'built-locally', 'docs', 'dist', 'kept.md'), 'nested\n')
-    write(join(root, 'plugins', 'built-locally', 'ui', 'register.tsx'), 'export {}\n')
+    write(join(root, 'mini-apps', 'built-locally', 'dist', 'preview', 'index.html'), '<p>local</p>')
+    write(join(root, 'mini-apps', 'built-locally', 'docs', 'dist', 'kept.md'), 'nested\n')
+    write(join(root, 'mini-apps', 'built-locally', 'ui', 'register.tsx'), 'export {}\n')
     write(
       join(root, 'plugins', 'prebuilt', 'plugin.json'),
       JSON.stringify({ name: 'prebuilt', version: '1.0.0', skills: './dist/skills' }),
@@ -302,7 +302,7 @@ describe('stageDropins', () => {
     expect(uiBuilds).toEqual([
       [
         join(import.meta.dir, 'build-plugin-ui.mjs'),
-        join(root, 'plugins', 'built-locally'),
+        join(root, 'mini-apps', 'built-locally'),
         join(outPlugins, 'built-locally', 'dist', 'ui'),
         join(root, 'staged', 'plugin-kit'),
         NO_SOURCE_MAPS_FLAG,
@@ -314,7 +314,7 @@ describe('stageDropins', () => {
     const root = mkdtempSync(join(tmpdir(), 'localix-stage-dropins-'))
     roots.push(root)
     const outPlugins = join(root, 'staged', 'plugins')
-    const pluginDir = join(root, 'plugins', 'compiled-ui')
+    const pluginDir = join(root, 'mini-apps', 'compiled-ui')
     write(
       join(pluginDir, 'plugin.json'),
       JSON.stringify({

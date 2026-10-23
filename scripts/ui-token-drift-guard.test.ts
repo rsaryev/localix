@@ -28,9 +28,9 @@ const EXEMPT: ReadonlyArray<{ file: string; why: string }> = []
 const INCLUDE = [
   'apps/ui/src/**/*.{ts,tsx}',
   'packages/kit/src/**/*.{ts,tsx}',
-  'plugins/**/*.tsx',
-  'plugins/**/ui/**/*.ts',
-  'plugins/**/frontend/**/*.ts',
+  'mini-apps/**/*.tsx',
+  'mini-apps/**/ui/**/*.ts',
+  'mini-apps/**/frontend/**/*.ts',
 ]
 // The kit's `src/testing/` is the renamed home of the `*.test-utils.ts` helpers: test support that
 // plants shapes on purpose, never a class string a surface renders.

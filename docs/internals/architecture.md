@@ -104,11 +104,11 @@ persistence around the `AgentRuntime` port. The production composition root supp
 owns that interface and its event contract.
 
 Kanban is a bundled mini app
-([`app.json`](https://github.com/rsaryev/localix/blob/main/plugins/kanban/.localix-app/app.json)): a
-passive board per chat, stored in that chat's plugin folder. Core names no board. The plugin reaches
-the host only through generic seams — per-chat storage, the agent directory, the tool's bound
-speaker, a resource and a search provider, and a live-frame stream. It creates no session and starts
-no run; agents create child sessions only with the `delegate` tool. The
+([`app.json`](https://github.com/rsaryev/localix/blob/main/mini-apps/kanban/.localix-app/app.json)):
+a passive board per chat, stored in that chat's plugin folder. Core names no board. The plugin
+reaches the host only through generic seams — per-chat storage, the agent directory, the tool's
+bound speaker, a resource and a search provider, and a live-frame stream. It creates no session and
+starts no run; agents create child sessions only with the `delegate` tool. The
 [Kanban guide](../features/task-board.md) owns the board's lifecycle.
 
 ## Configuration

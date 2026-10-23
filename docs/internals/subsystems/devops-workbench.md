@@ -128,12 +128,12 @@ contracts live in [Docker provider internals](docker-workbench.md) and
 
 ## Source of truth
 
-- [Plugin manifest](../../../plugins/devops/.localix-app/app.json)
-- [Backend composition](../../../plugins/devops/backend/index.ts)
-- [UI composition](../../../plugins/devops/ui/register.tsx)
-- [Root workspace](../../../plugins/devops/ui/DevOpsWorkspace.tsx)
-- [Overview derivation](../../../plugins/devops/ui/model/devopsOverview.ts)
-- [Docker backend registration](../../../plugins/devops/docker/backend/index.ts)
-- [Kubernetes backend registration](../../../plugins/devops/kubernetes/backend/index.ts)
-- [Docker UI registration](../../../plugins/devops/docker/ui/register.tsx)
-- [Kubernetes UI registration](../../../plugins/devops/kubernetes/ui/register.tsx)
+- [Plugin manifest](../../../mini-apps/devops/.localix-app/app.json)
+- [Backend composition](../../../mini-apps/devops/backend/index.ts)
+- [UI composition](../../../mini-apps/devops/ui/register.tsx)
+- [Root workspace](../../../mini-apps/devops/ui/DevOpsWorkspace.tsx)
+- [Overview derivation](../../../mini-apps/devops/ui/model/devopsOverview.ts)
+- [Docker backend registration](../../../mini-apps/devops/docker/backend/index.ts)
+- [Kubernetes backend registration](../../../mini-apps/devops/kubernetes/backend/index.ts)
+- [Docker UI registration](../../../mini-apps/devops/docker/ui/register.tsx)
+- [Kubernetes UI registration](../../../mini-apps/devops/kubernetes/ui/register.tsx)

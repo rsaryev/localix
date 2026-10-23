@@ -60,62 +60,80 @@ const validPid = (pid: number | undefined | null): pid is number =>
  * enough for that to be reachable. Omitting it keeps the pid-derived behaviour, which is the
  * best an unverified caller can do.
  */
+/** What the escalation needs from the OS; tests pass their own to decide it without processes. */
+export interface ProcessSignals {
+  platform: NodeJS.Platform
+  kill: (pid: number, signal: NodeJS.Signals) => void
+  isAlive: (pid: number) => boolean
+  afterGrace: (run: () => void, graceMs: number) => void
+  /** Windows: `taskkill /T` for the tree, `/F` to force it. */
+  taskkill: (pid: number, force: boolean) => void
+}
+
+const REAL_SIGNALS: ProcessSignals = {
+  platform: process.platform,
+  kill: (pid, signal) => process.kill(pid, signal),
+  isAlive,
+  afterGrace: (run, graceMs) => setTimeout(run, graceMs).unref(),
+  taskkill: (pid, force) => {
+    try {
+      spawn('taskkill', [...(force ? ['/F'] : []), '/T', '/PID', String(pid)], {
+        stdio: 'ignore',
+        detached: true,
+        windowsHide: true,
+      })
+    } catch {
+      /* ignore */
+    }
+  },
+}
+
 export function killProcessTree(
   pid: number | undefined,
   graceMs = DEFAULT_KILL_GRACE_MS,
   stillRunning?: () => boolean,
+  os: ProcessSignals = REAL_SIGNALS,
 ): void {
   if (!validPid(pid)) return
 
-  if (process.platform === 'win32') {
-    const taskkill = (force: boolean) => {
-      try {
-        spawn('taskkill', [...(force ? ['/F'] : []), '/T', '/PID', String(pid)], {
-          stdio: 'ignore',
-          detached: true,
-          windowsHide: true,
-        })
-      } catch {
-        /* ignore */
-      }
-    }
-    taskkill(false)
-    setTimeout(() => {
+  if (os.platform === 'win32') {
+    os.taskkill(pid, false)
+    os.afterGrace(() => {
       if (stillRunning?.() === false) return
-      if (isAlive(pid)) taskkill(true)
-    }, graceMs).unref()
+      if (os.isAlive(pid)) os.taskkill(pid, true)
+    }, graceMs)
     return
   }
 
   // Unix: kill the process group (negative pid), falling back to the pid.
   try {
-    process.kill(-pid, 'SIGTERM')
+    os.kill(-pid, 'SIGTERM')
   } catch {
     try {
-      process.kill(pid, 'SIGTERM')
+      os.kill(pid, 'SIGTERM')
     } catch {
       return
     }
   }
-  setTimeout(() => {
+  os.afterGrace(() => {
     // Asked before either kill form: the group number is derived from the same pid, so a
     // recycled pid that became its own group leader would make the group check agree too.
     if (stillRunning?.() === false) return
-    if (isAlive(-pid)) {
+    if (os.isAlive(-pid)) {
       try {
-        process.kill(-pid, 'SIGKILL')
+        os.kill(-pid, 'SIGKILL')
         return
       } catch {
         /* fall through */
       }
     }
-    if (!isAlive(pid)) return
+    if (!os.isAlive(pid)) return
     try {
-      process.kill(pid, 'SIGKILL')
+      os.kill(pid, 'SIGKILL')
     } catch {
       /* already gone */
     }
-  }, graceMs).unref()
+  }, graceMs)
 }
 
 /**

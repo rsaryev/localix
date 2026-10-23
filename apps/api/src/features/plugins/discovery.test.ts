@@ -13,6 +13,7 @@ import {
   discoverBundledPlugins,
   loadManifest,
   bundledPluginsRoot,
+  bundledSourceRoots,
   pluginInstallRoot,
 } from './discovery'
 import { resolveEntrypoints } from './discovery-entrypoints'
@@ -24,6 +25,30 @@ describe('plugin path resolvers', () => {
     expect(root.length).toBeGreaterThan(0)
     expect(root.endsWith('plugins')).toBe(true)
   })
+  it('a checkout reads its bundled mini apps and bundled plugins from folders of their own', () => {
+    const previous = process.env.LOCALIX_BUNDLED_PLUGINS_DIR
+    delete process.env.LOCALIX_BUNDLED_PLUGINS_DIR
+    try {
+      const roots = bundledSourceRoots()
+      expect(roots.map((root) => root.split(/[\\/]/u).pop())).toEqual(['mini-apps', 'plugins'])
+    } finally {
+      if (previous !== undefined) process.env.LOCALIX_BUNDLED_PLUGINS_DIR = previous
+    }
+  })
+
+  it('a named bundled root is the one root, as a packaged app stages both into', async () => {
+    const previous = process.env.LOCALIX_BUNDLED_PLUGINS_DIR
+    const staged = await fs.mkdtemp(join(tmpdir(), 'bundled-staged-'))
+    process.env.LOCALIX_BUNDLED_PLUGINS_DIR = staged
+    try {
+      expect(bundledSourceRoots()).toEqual([staged])
+    } finally {
+      if (previous === undefined) delete process.env.LOCALIX_BUNDLED_PLUGINS_DIR
+      else process.env.LOCALIX_BUNDLED_PLUGINS_DIR = previous
+      await fs.rm(staged, { recursive: true, force: true })
+    }
+  })
+
   it('pluginInstallRoot: project+cwd → cwd, else home', () => {
     expect(pluginInstallRoot('project', '/work', '/home/u')).toBe(
       join(resolve('/work'), '.localix/plugins'),

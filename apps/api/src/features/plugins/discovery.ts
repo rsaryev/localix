@@ -1,4 +1,5 @@
-import { join, resolve } from 'node:path'
+import { existsSync } from 'node:fs'
+import { basename, dirname, join, resolve } from 'node:path'
 
 import { mergeByPrecedence, pathExists as _pathExists } from '../ext/fs-discovery'
 import { normalizeCcToolName } from '../ext/cc-tool-names'
@@ -65,6 +66,20 @@ export function bundledPluginsRoot(): string {
  * `discoverBundledPlugins()` deliberately does not use this gate — marketplace
  * generation and validation still inspect the raw authoring tree in-place.
  */
+/**
+ * Every first-party source folder. A checkout keeps the two layers apart: its bundled mini apps
+ * in `mini-apps/` beside the bundled plugins in `plugins/` (AGENTS.md, "Plugins and mini apps").
+ * A packaged app, or a test that names the root with LOCALIX_BUNDLED_PLUGINS_DIR, has the one
+ * root a build stages both into.
+ */
+export function bundledSourceRoots(): string[] {
+  const root = bundledPluginsRoot()
+  if (envString('LOCALIX_BUNDLED_PLUGINS_DIR') || basename(root) !== 'plugins') return [root]
+  // A packaged app's staged root has no `mini-apps/` beside it: everything is staged into it.
+  const miniApps = join(dirname(root), 'mini-apps')
+  return existsSync(miniApps) ? [miniApps, root] : [root]
+}
+
 export async function bundledPluginsSyncRoot(): Promise<string | null> {
   const explicit = envString('LOCALIX_BUNDLED_PLUGINS_DIR')
   const root = bundledPluginsRoot()
@@ -169,9 +184,11 @@ export async function discoverPlugins(opts: {
  * applies the same sort via `mergeByPrecedence`.
  */
 export async function discoverBundledPlugins(): Promise<DiscoveredPlugin[]> {
-  const found = await scanDirs(bundledPluginsRoot(), [''], 'global', '', {
-    bundled: true,
-  })
+  const found = (
+    await Promise.all(
+      bundledSourceRoots().map((root) => scanDirs(root, [''], 'global', '', { bundled: true })),
+    )
+  ).flat()
   return found.sort((a, b) => a.manifest.name.localeCompare(b.manifest.name))
 }
 

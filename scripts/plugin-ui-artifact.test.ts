@@ -403,7 +403,7 @@ describe('staging a plugin UI', () => {
   /** A repo with one plugin and a staged copy that already carries a built artifact. */
   function staged() {
     const repo = tempDir()
-    write(join(repo, 'plugins', 'demo', 'ui', 'register.tsx'), 'export {}\n')
+    write(join(repo, 'mini-apps', 'demo', 'ui', 'register.tsx'), 'export {}\n')
     const outPlugins = join(tempDir(), 'plugins')
     write(join(outPlugins, 'demo', 'dist', 'ui', 'manifest.json'), '{"revision":"old"}')
     return { repo, outPlugins, artifact: join(outPlugins, 'demo', 'dist', 'ui') }
@@ -480,10 +480,10 @@ describe('staging a plugin UI', () => {
     write(join(artifact, 'chunks', 'panel-old.js'), 'export const Panel = "old"\n')
     write(join(artifact, '.current-files.json'), '["chunks/panel-old.js"]\n')
     write(
-      join(repo, 'plugins', 'demo', 'ui', 'register.tsx'),
+      join(repo, 'mini-apps', 'demo', 'ui', 'register.tsx'),
       'export const lazyPanel = () => import("./Panel")\n',
     )
-    write(join(repo, 'plugins', 'demo', 'ui', 'Panel.tsx'), 'export const Panel = "new"\n')
+    write(join(repo, 'mini-apps', 'demo', 'ui', 'Panel.tsx'), 'export const Panel = "new"\n')
     const runUiBuild = (command: string, args: string[]) =>
       execFileSync(command, [...args.slice(0, 3), kit.dir], {
         stdio: 'pipe',

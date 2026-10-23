@@ -34,7 +34,7 @@ import {
   localixManifestFile,
   readExtensionManifest,
 } from './lib/extension-manifest.mjs'
-import { bundledAppsRoot } from './lib/bundled-roots.mjs'
+import { bundledFolderOf, bundledRoots } from './lib/bundled-roots.mjs'
 import {
   discardStagedUiArtifact,
   pluginKitDirOf,
@@ -118,7 +118,7 @@ const UNDER_BUILD_OUTPUT_RE = /^(?:\.\/)?dist(?:\/|$)/u
  *
  * A plugin's `dist/` is otherwise build output, gitignored, and never what the app runs: staging
  * builds the UI artifact into `dist/ui` itself, after the copy. Copied, it made the shipped tree
- * depend on the build machine — a local `plugins/template/dist` (vite preview assets, a tsc emit)
+ * depend on the build machine — a local `mini-apps/template/dist` (vite preview assets, a tsc emit)
  * rode into a release built on a laptop and not into one built by CI.
  */
 function manifestDeclaresBuildOutput(pluginDir) {
@@ -305,16 +305,23 @@ export function stageDropins({
   runUiBuild = execFileSync,
   uiSourceMaps = true,
 }) {
-  const repoPlugins = bundledAppsRoot(repoRoot)
-  const privatePlugins = privatePluginDirs(repoPlugins)
   /** @type {{ name: string, reason: string }[]} */
   const skipped = []
 
+  // Both bundled folders, mini apps and plugins, stage into the one root the API reads.
   if (existsSync(outPlugins)) rmSync(outPlugins, { recursive: true })
-  cpSync(repoPlugins, outPlugins, {
-    recursive: true,
-    filter: makeCopyFilter(repoPlugins, { skipTopDirs: privatePlugins }),
-  })
+  /** @type {string[]} */
+  const names = []
+  for (const repoPlugins of bundledRoots(repoRoot)) {
+    if (!existsSync(repoPlugins)) continue
+    const privatePlugins = privatePluginDirs(repoPlugins)
+    cpSync(repoPlugins, outPlugins, {
+      recursive: true,
+      force: true,
+      filter: makeCopyFilter(repoPlugins, { skipTopDirs: privatePlugins }),
+    })
+    for (const name of readdirSync(repoPlugins)) if (!privatePlugins.has(name)) names.push(name)
+  }
 
   // Pre-bundle tools FROM THE REPO TREE, where workspace deps (declared in a
   // plugin's own package.json) and `@localixai/*` imports resolve. This includes
@@ -324,8 +331,7 @@ export function stageDropins({
   // --outdir (not --outfile) lets native .node addons referenced by a backend
   // (e.g. ssh2's DB SSH tunnel) be emitted beside the bundle.
   const staging = { repoRoot, outPlugins, log, onPluginError }
-  for (const name of readdirSync(repoPlugins)) {
-    if (privatePlugins.has(name)) continue
+  for (const name of names) {
     const failure = bundleStagedPluginBackend(name, staging)
     if (failure) skipped.push(failure)
     // After the backend: a plugin removed for a backend failure has no copy to put a UI into.
@@ -351,7 +357,6 @@ export function stageDropins({
  * left as copied.
  */
 function bundleStagedPluginBackend(name, { repoRoot, outPlugins, log, onPluginError }) {
-  const repoPlugins = bundledAppsRoot(repoRoot)
   // The backend entry lives in the Localix layer: a mini app's `backend`, or a legacy `tools`.
   const manifestPath = localixManifestFile(join(outPlugins, name))
   if (!manifestPath) return null
@@ -359,8 +364,8 @@ function bundleStagedPluginBackend(name, { repoRoot, outPlugins, log, onPluginEr
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
   if (typeof manifest[field] !== 'string' || !BUNDLEABLE_TOOLS_ENTRY_RE.test(manifest[field]))
     return null
-  const repoEntry = join(repoPlugins, name, manifest[field])
-  const repoPlugin = join(repoPlugins, name)
+  const repoPlugin = bundledFolderOf(repoRoot, name) ?? join(outPlugins, name)
+  const repoEntry = join(repoPlugin, manifest[field])
   const stagedPlugin = join(outPlugins, name)
   const outDir = join(outPlugins, name, 'backend')
   const protectedSourceDirs = manifestRuntimeSourceDirs(
@@ -433,13 +438,16 @@ export function restagePlugin({
   onPluginError = 'skip',
   runUiBuild = execFileSync,
 }) {
-  const repoPlugins = bundledAppsRoot(repoRoot)
-  const repoPlugin = join(repoPlugins, name)
+  const repoPlugin = bundledFolderOf(repoRoot, name)
+  const repoPlugins = repoPlugin ? dirname(repoPlugin) : bundledRoots(repoRoot)[0]
   const stagedPlugin = join(outPlugins, name)
   // Set the running UI aside first: a UI build that fails mid-edit puts it back.
   const previousUi = existsSync(stagedPlugin) ? takeStagedUiArtifact(stagedPlugin) : null
   rmSync(stagedPlugin, { recursive: true, force: true })
-  const present = hasExtensionManifest(repoPlugin) && !privatePluginDirs(repoPlugins).has(name)
+  const present =
+    repoPlugin !== null &&
+    hasExtensionManifest(repoPlugin) &&
+    !privatePluginDirs(repoPlugins).has(name)
   let failure = null
   if (present) {
     // The filter reasons about paths RELATIVE TO THE PLUGINS ROOT (`<name>/ui/…`), same as

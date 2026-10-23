@@ -35,7 +35,7 @@ keeps the maintainer contract for registration, ports, state ownership, and fail
 
 ### Registered surface
 
-[`register()`](../../../plugins/trading/backend/index.ts) returns one backend contribution and two
+[`register()`](../../../mini-apps/trading/backend/index.ts) returns one backend contribution and two
 tools:
 
 | Contribution | Registered mechanism                                | Invariant and failure mode                                                |
@@ -63,23 +63,23 @@ public:<exchange> id
   -> close registry entries during plugin shutdown
 ```
 
-[`public-connection.ts`](../../../plugins/trading/backend/public-connection.ts) parses public ids
+[`public-connection.ts`](../../../mini-apps/trading/backend/public-connection.ts) parses public ids
 and builds a configuration with `readonly: true` and `agentTrading: off`. It accepts exchange ids
 made from letters, digits, underscores, and hyphens.
 
-[`connection-registry.ts`](../../../plugins/trading/backend/connection-registry.ts) single-flights
+[`connection-registry.ts`](../../../mini-apps/trading/backend/connection-registry.ts) single-flights
 first access per user and connection. A failed probe closes the half-open driver. `closeAll` evicts
 read caches and settles every driver close during shutdown.
 
-[`backend.ts`](../../../plugins/trading/backend/backend.ts) defines the venue-neutral read port. The
-current implementation uses ccxt for request/response reads and ccxt.pro for optional streaming.
+[`backend.ts`](../../../mini-apps/trading/backend/backend.ts) defines the venue-neutral read port.
+The current implementation uses ccxt for request/response reads and ccxt.pro for optional streaming.
 Normalization occurs before backend data crosses into the service or UI contracts.
 
 ### Reads, caches, and streams
 
-[`service.ts`](../../../plugins/trading/backend/service.ts) composes the registry, cached reads, and
-stream factory. It lazily loads one normalized market table per live driver; an explicit reload asks
-the venue again.
+[`service.ts`](../../../mini-apps/trading/backend/service.ts) composes the registry, cached reads,
+and stream factory. It lazily loads one normalized market table per live driver; an explicit reload
+asks the venue again.
 
 The stream registry pools one client per connection and one loop per connection, channel, symbol,
 and timeframe. The first subscriber starts a loop. The last subscriber starts a five-second idle
@@ -94,7 +94,7 @@ pauses its REST fallback; a down or unavailable stream lets polling resume.
 
 ### Resource and context boundary
 
-[`uri.ts`](../../../plugins/trading/backend/uri.ts) is the only parser and builder for trade
+[`uri.ts`](../../../mini-apps/trading/backend/uri.ts) is the only parser and builder for trade
 resources. The implemented tree is connection, market type, market, then one of these leaves:
 
 | Leaf         | Expansion                                             |
@@ -109,9 +109,9 @@ resources. The implemented tree is connection, market type, market, then one of 
 Unified symbols remain one encoded URI segment. Literal `.` and `..` segments, unknown leaves, and
 malformed timeframe refinements are rejected.
 
-[`context-provider.ts`](../../../plugins/trading/backend/context-provider.ts) applies the public-id
-gate to support checks, estimation, and resolution. Its five-second timeout and 8,000-token quota
-bound each captured contribution.
+[`context-provider.ts`](../../../mini-apps/trading/backend/context-provider.ts) applies the
+public-id gate to support checks, estimation, and resolution. Its five-second timeout and
+8,000-token quota bound each captured contribution.
 
 ### Tools and UI state
 
@@ -123,7 +123,7 @@ cannot place or cancel an order because its injected port has no write method.
 the target chart tab. `snapshot` reads the last-known chart-state map. `detect` reads up to 200
 candles server-side; `auto_draw` additionally publishes bounded drawing commands.
 
-[`register.tsx`](../../../plugins/trading/ui/register.tsx) registers the root workspace,
+[`register.tsx`](../../../mini-apps/trading/ui/register.tsx) registers the root workspace,
 `trading-chart`, and `trading-technicals` work items. It also owns the rail viewlet, lazy search
 scope, resource anchors, and chart command listener.
 
@@ -183,20 +183,20 @@ scope, resource anchors, and chart command listener.
 
 ## Source of truth
 
-- [Chart action effect classifier](../../../plugins/trading/backend/manage-chart-class.ts)
+- [Chart action effect classifier](../../../mini-apps/trading/backend/manage-chart-class.ts)
 
-- [Plugin manifest](../../../plugins/trading/.localix-app/app.json)
-- [Backend registration](../../../plugins/trading/backend/index.ts)
-- [Public connection contract](../../../plugins/trading/backend/public-connection.ts)
-- [Exchange backend port](../../../plugins/trading/backend/backend.ts)
-- [Connection registry](../../../plugins/trading/backend/connection-registry.ts)
-- [Trading service](../../../plugins/trading/backend/service.ts)
-- [Public HTTP routes](../../../plugins/trading/backend/routes.ts)
-- [Market-data tool](../../../plugins/trading/backend/market-data.ts)
-- [Chart-control tool](../../../plugins/trading/backend/manage-chart.ts)
-- [Live stream registry](../../../plugins/trading/backend/stream.ts)
-- [WebSocket frame contribution](../../../plugins/trading/backend/ws-frames.ts)
-- [Resource URI grammar](../../../plugins/trading/backend/uri.ts)
-- [Public context provider](../../../plugins/trading/backend/context-provider.ts)
-- [Workbench registration](../../../plugins/trading/ui/register.tsx)
-- [Chart tab](../../../plugins/trading/ui/TradingChartTab.tsx)
+- [Plugin manifest](../../../mini-apps/trading/.localix-app/app.json)
+- [Backend registration](../../../mini-apps/trading/backend/index.ts)
+- [Public connection contract](../../../mini-apps/trading/backend/public-connection.ts)
+- [Exchange backend port](../../../mini-apps/trading/backend/backend.ts)
+- [Connection registry](../../../mini-apps/trading/backend/connection-registry.ts)
+- [Trading service](../../../mini-apps/trading/backend/service.ts)
+- [Public HTTP routes](../../../mini-apps/trading/backend/routes.ts)
+- [Market-data tool](../../../mini-apps/trading/backend/market-data.ts)
+- [Chart-control tool](../../../mini-apps/trading/backend/manage-chart.ts)
+- [Live stream registry](../../../mini-apps/trading/backend/stream.ts)
+- [WebSocket frame contribution](../../../mini-apps/trading/backend/ws-frames.ts)
+- [Resource URI grammar](../../../mini-apps/trading/backend/uri.ts)
+- [Public context provider](../../../mini-apps/trading/backend/context-provider.ts)
+- [Workbench registration](../../../mini-apps/trading/ui/register.tsx)
+- [Chart tab](../../../mini-apps/trading/ui/TradingChartTab.tsx)

@@ -10,7 +10,7 @@ const uiRoot = resolve(import.meta.dir, '../..')
  * tree. Core may hold plugin UI to a shared contract; it may not name a concrete plugin.
  */
 const pluginTabBarConsumers = () => {
-  const pluginsRoot = resolve(uiRoot, '../../..', 'plugins')
+  const pluginsRoot = resolve(uiRoot, '../../..', 'mini-apps')
   return readdirSync(pluginsRoot, { encoding: 'utf8', recursive: true })
     .filter(
       (entry) =>
@@ -19,7 +19,7 @@ const pluginTabBarConsumers = () => {
         !/\.(?:dom\.)?test\.tsx$/u.test(entry),
     )
     .map((entry) => ({
-      path: `plugins/${entry}`,
+      path: `mini-apps/${entry}`,
       source: readFileSync(resolve(pluginsRoot, entry), 'utf8'),
     }))
     .filter(({ source }) => source.includes('<TabBar'))

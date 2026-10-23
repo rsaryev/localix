@@ -90,4 +90,4 @@ same board.
 - [The model-facing tool](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/plugin-build.ts)
 - [The authoring service and its checks](https://github.com/rsaryev/localix/tree/main/apps/api/src/features/plugins/authoring)
 - [The `/plugin create` command](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/command-handlers-plugins-create.ts)
-- [The template every plugin forks](https://github.com/rsaryev/localix/tree/main/plugins/template)
+- [The template every plugin forks](https://github.com/rsaryev/localix/tree/main/mini-apps/template)

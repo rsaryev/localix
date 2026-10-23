@@ -54,6 +54,7 @@ const ROOTS = [
   'apps/landing/src',
   'apps/desktop-tauri/src-tauri/src',
   'packages',
+  'mini-apps',
   'plugins',
 ]
 const SKIP_DIRS = new Set([
@@ -106,7 +107,7 @@ function countLines(file: string): number {
  */
 function inMeasuredPlane(repoPath: string): boolean {
   if (repoPath.startsWith('apps/')) return true
-  return /^(packages|plugins)\/[^/]+\/(src|backend|frontend|ui|styles)\//.test(repoPath)
+  return /^(packages|mini-apps|plugins)\/[^/]+\/(src|backend|frontend|ui|styles)\//.test(repoPath)
 }
 
 function measure(): Map<string, number> {

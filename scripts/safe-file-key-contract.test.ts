@@ -142,7 +142,7 @@ const PLUGIN_EXEMPTION_RE = /^\s*\/\/\s*@safe-file-key-exemption\s+(rule|fileKey
 async function pluginOwnedExemptions(root: string): Promise<Exemptions> {
   const files = await scanSources({
     root,
-    include: ['plugins/**/*.ts'],
+    include: ['mini-apps/**/*.ts'],
     skip: (f) => f.endsWith('.test.ts'),
     minFiles: 0,
   })
@@ -210,7 +210,7 @@ const SCAN_GLOBS = [
   'apps/api/src/**/*.ts',
   'apps/ui/src/**/*.ts',
   'packages/*/src/**/*.ts',
-  'plugins/**/*.ts',
+  'mini-apps/**/*.ts',
 ]
 
 const REPO_ROOT = path.resolve(import.meta.dir, '..')
@@ -356,14 +356,14 @@ describe('safe-file-key contract', () => {
   test('plugin-owned exemptions are discovered without a host-side plugin catalog', async () => {
     await assertPositiveControl({
       subject: 'an unblessed plugin-owned file-key lookalike',
-      file: 'plugins/sample/backend/display-name.ts',
+      file: 'mini-apps/sample/backend/display-name.ts',
       offender: `export const displayName = (k: string): string => k.replace(/[^A-Za-z0-9_-]/g, '-')\n`,
       detect: offendersIn,
     })
 
     const offenders = await withPlantedSources(
       {
-        'plugins/sample/backend/display-name.ts': [
+        'mini-apps/sample/backend/display-name.ts': [
           '// @safe-file-key-exemption rule -- Slugs a display label; it is never a path key.',
           `export const displayName = (k: string): string => k.replace(/[^A-Za-z0-9_-]/g, '-')`,
         ].join('\n'),

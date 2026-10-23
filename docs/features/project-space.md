@@ -325,6 +325,6 @@ the layers panel asked. Shift+2 is the exception on purpose: it shows the select
 
 ## Source of truth
 
-- [Plugin](https://github.com/rsaryev/localix/tree/main/plugins/project-space)
-- [Board file format](https://github.com/rsaryev/localix/blob/main/plugins/project-space/shared/format/schema.ts)
-- [Element type contract](https://github.com/rsaryev/localix/blob/main/plugins/project-space/shared/registry/contract.ts)
+- [Plugin](https://github.com/rsaryev/localix/tree/main/mini-apps/project-space)
+- [Board file format](https://github.com/rsaryev/localix/blob/main/mini-apps/project-space/shared/format/schema.ts)
+- [Element type contract](https://github.com/rsaryev/localix/blob/main/mini-apps/project-space/shared/registry/contract.ts)

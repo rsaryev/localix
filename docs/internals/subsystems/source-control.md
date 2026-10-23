@@ -46,14 +46,14 @@ user + session + optional repoRoot
   -> route returns the typed result
 ```
 
-| Module                                                                                           | Invariant                                                                 | Failure mode                                                                                  |
-| ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| [`ports.ts`](../../../plugins/git-workspace/backend/source-control/ports.ts)                     | The service depends on `SourceControlBackend`, not Git modules            | Adding an operation requires every backend to implement it                                    |
-| [`repos/discovery.ts`](../../../plugins/git-workspace/backend/source-control/repos/discovery.ts) | Discovery is bounded and stops below each repository found under the root | Unreadable directories are skipped; capped roots are omitted                                  |
-| [`repos/service.ts`](../../../plugins/git-workspace/backend/source-control/repos/service.ts)     | An explicit `repoRoot` must match a discovered root                       | Unknown, forged, or stale roots resolve to `null`; they never retarget the primary repository |
-| [`service.ts`](../../../plugins/git-workspace/backend/source-control/service.ts)                 | Every mutation requires a repository and returns freshly read status      | Missing repositories produce `not_a_repo`; decoration reads degrade                           |
-| [`git/backend.ts`](../../../plugins/git-workspace/backend/source-control/git/backend.ts)         | One Git implementation maps the complete port to focused modules          | A missing method is a compile-time contract failure                                           |
-| [`git/cli.ts`](../../../plugins/git-workspace/backend/source-control/git/cli.ts)                 | Git receives argument arrays with terminal and askpass prompting disabled | Local commands time out; non-zero exits remain caller-classified results                      |
+| Module                                                                                             | Invariant                                                                 | Failure mode                                                                                  |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [`ports.ts`](../../../mini-apps/git-workspace/backend/source-control/ports.ts)                     | The service depends on `SourceControlBackend`, not Git modules            | Adding an operation requires every backend to implement it                                    |
+| [`repos/discovery.ts`](../../../mini-apps/git-workspace/backend/source-control/repos/discovery.ts) | Discovery is bounded and stops below each repository found under the root | Unreadable directories are skipped; capped roots are omitted                                  |
+| [`repos/service.ts`](../../../mini-apps/git-workspace/backend/source-control/repos/service.ts)     | An explicit `repoRoot` must match a discovered root                       | Unknown, forged, or stale roots resolve to `null`; they never retarget the primary repository |
+| [`service.ts`](../../../mini-apps/git-workspace/backend/source-control/service.ts)                 | Every mutation requires a repository and returns freshly read status      | Missing repositories produce `not_a_repo`; decoration reads degrade                           |
+| [`git/backend.ts`](../../../mini-apps/git-workspace/backend/source-control/git/backend.ts)         | One Git implementation maps the complete port to focused modules          | A missing method is a compile-time contract failure                                           |
+| [`git/cli.ts`](../../../mini-apps/git-workspace/backend/source-control/git/cli.ts)                 | Git receives argument arrays with terminal and askpass prompting disabled | Local commands time out; non-zero exits remain caller-classified results                      |
 
 The discovery walk is breadth-first. A repository found below the scan root becomes a boundary. The
 root itself may still be traversed so a repository used as a container can expose child repositories
@@ -62,7 +62,7 @@ outside skipped directories.
 Git reports paths relative to the repository top level, while a `-- <path>` pathspec is read
 relative to the process directory. A session directory inside a repository would therefore miss
 every file it names.
-[`git/repo-root.ts`](../../../plugins/git-workspace/backend/source-control/git/repo-root.ts) wraps
+[`git/repo-root.ts`](../../../mini-apps/git-workspace/backend/source-control/git/repo-root.ts) wraps
 the Git backend once, so each method receives the top level instead of the session directory. It
 finds that directory by walking up to the nearest `.git` entry, which starts no process and is never
 cached, so a new nested repository is seen immediately.
@@ -73,12 +73,12 @@ header actions follow that focus.
 
 The UI store compares each poll in constant time: equal `changeVersion`s plus equal branch-level
 fields mean an unchanged tree
-([`snapshotIdentity.ts`](../../../plugins/git-workspace/ui/source-control/model/git-store/snapshotIdentity.ts)),
+([`snapshotIdentity.ts`](../../../mini-apps/git-workspace/ui/source-control/model/git-store/snapshotIdentity.ts)),
 so an idle poll keeps every cached reference and re-renders nothing. Every write is one row of
-[`mutations.ts`](../../../plugins/git-workspace/ui/source-control/model/git-store/mutations.ts),
+[`mutations.ts`](../../../mini-apps/git-workspace/ui/source-control/model/git-store/mutations.ts),
 whose required `bumpsLog` says whether it moves a ref the commit graph draws. The graph, the HEAD
 message and the pull-request list re-read only when the HEAD stamp changes
-([`headStamp.ts`](../../../plugins/git-workspace/ui/source-control/model/git-store/headStamp.ts)),
+([`headStamp.ts`](../../../mini-apps/git-workspace/ui/source-control/model/git-store/headStamp.ts)),
 not each time their tab is shown again.
 
 The panel uses shared workbench toolbars and controls; secondary Git actions live in the header's
@@ -94,7 +94,7 @@ Syntax highlighting and word marks are computed per mounted line and cached
 ([`lineCache.ts`](../../../apps/ui/src/shared/ui/diff/document/lineCache.ts)). Pinned file and hunk
 headers are an overlay whose geometry comes from the row offsets
 ([`diffSticky.ts`](../../../apps/ui/src/shared/ui/diff/document/diffSticky.ts)). The staging view
-([`useStagingDiff.ts`](../../../plugins/git-workspace/ui/source-control/model/useStagingDiff.ts))
+([`useStagingDiff.ts`](../../../mini-apps/git-workspace/ui/source-control/model/useStagingDiff.ts))
 keys each line by its raw-diff index, so a change run of the document is the payload of a block op.
 
 ### Reads and mutations
@@ -126,16 +126,16 @@ without `-z`, a non-ASCII path is C-quoted and a rename printed as `old => new`,
 joins porcelain status by path.
 
 Every diff read goes through
-[`git/diff-read.ts`](../../../plugins/git-workspace/backend/source-control/git/diff-read.ts). When a
-patch exceeds the 8 MB capture limit, the result sets `truncated` and keeps the complete files that
-fit (a single-file diff keeps its complete lines). Before this, the overflow was treated as a
+[`git/diff-read.ts`](../../../mini-apps/git-workspace/backend/source-control/git/diff-read.ts). When
+a patch exceeds the 8 MB capture limit, the result sets `truncated` and keeps the complete files
+that fit (a single-file diff keeps its complete lines). Before this, the overflow was treated as a
 failure and the diff showed as empty. `binary` is set only when the diff has no text hunk. A commit
 that changes one image and several source files therefore still renders its text. The UI's
 working-tree diff samples at most 200 untracked files and caps each patch; anything left out sets
 `truncated`.
 
 A HEAD-relative command runs first, and HEAD is checked only if that command fails
-([`git/head-or-unborn.ts`](../../../plugins/git-workspace/backend/source-control/git/head-or-unborn.ts)).
+([`git/head-or-unborn.ts`](../../../mini-apps/git-workspace/backend/source-control/git/head-or-unborn.ts)).
 A repository with commits therefore needs one process per file diff, hunk read or line-staging read.
 
 Commits and amends made through the service append the Localix co-author trailer. The service then
@@ -151,9 +151,9 @@ Git processes nor rolls back completed commands when a later command fails.
 
 ### Partial changes and drift guards
 
-[`line-staging.ts`](../../../plugins/git-workspace/backend/source-control/git/line-staging.ts) reads
-a full-context Git diff, fingerprints it, builds a patch for selected raw diff-line indexes, and
-pipes that patch to `git apply`. Stage applies forward to the index; unstage and discard
+[`line-staging.ts`](../../../mini-apps/git-workspace/backend/source-control/git/line-staging.ts)
+reads a full-context Git diff, fingerprints it, builds a patch for selected raw diff-line indexes,
+and pipes that patch to `git apply`. Stage applies forward to the index; unstage and discard
 reverse-apply.
 
 The file diff is re-read immediately before application. A different fingerprint returns
@@ -162,38 +162,38 @@ the capture limit has no selectable lines (`truncated: true`). Any line operatio
 `line_stage_too_large`, because a patch built from a cut diff would stage lines that Git never
 finished printing.
 
-[`hunks.ts`](../../../plugins/git-workspace/backend/source-control/git/hunks.ts) reads zero-context
-hunks for editor gutter actions. Revert re-derives the hunk, validates its index and header,
-confines the path to the repository, and splices the committed lines into the file. Untracked and
-binary files do not offer granular hunk revert. When the diff is truncated, the last hunk may be
-incomplete, so it is dropped and cannot be reverted.
+[`hunks.ts`](../../../mini-apps/git-workspace/backend/source-control/git/hunks.ts) reads
+zero-context hunks for editor gutter actions. Revert re-derives the hunk, validates its index and
+header, confines the path to the repository, and splices the committed lines into the file.
+Untracked and binary files do not offer granular hunk revert. When the diff is truncated, the last
+hunk may be incomplete, so it is dropped and cannot be reverted.
 
 ### History operations
 
-| Family            | Owning module                                                                              | Invariant                                                               | Failure boundary                                                                   |
-| ----------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Branches          | [`branches.ts`](../../../plugins/git-workspace/backend/source-control/git/branches.ts)     | Git validates names and worktree occupancy                              | Safe delete refuses unmerged work; force delete uses `-D`                          |
-| Commit operations | [`commit-ops.ts`](../../../plugins/git-workspace/backend/source-control/git/commit-ops.ts) | Hashes and reset modes become separate argv tokens                      | Revert and cherry-pick conflicts leave Git's sequencer state                       |
-| Rebase            | [`rebase.ts`](../../../plugins/git-workspace/backend/source-control/git/rebase.ts)         | A generated todo is installed through a non-interactive sequence editor | Dirty trees are refused; conflicts leave rebase state for continue, skip, or abort |
-| Bisect            | [`bisect.ts`](../../../plugins/git-workspace/backend/source-control/git/bisect.ts)         | Git refs and files remain the source of bisect state                    | Invalid starting refs are rejected before a stuck session can begin                |
-| Stash             | [`stash.ts`](../../../plugins/git-workspace/backend/source-control/git/stash.ts)           | Stash indexes are validated integers                                    | Missing entries and conflicts use typed errors                                     |
+| Family            | Owning module                                                                                | Invariant                                                               | Failure boundary                                                                   |
+| ----------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Branches          | [`branches.ts`](../../../mini-apps/git-workspace/backend/source-control/git/branches.ts)     | Git validates names and worktree occupancy                              | Safe delete refuses unmerged work; force delete uses `-D`                          |
+| Commit operations | [`commit-ops.ts`](../../../mini-apps/git-workspace/backend/source-control/git/commit-ops.ts) | Hashes and reset modes become separate argv tokens                      | Revert and cherry-pick conflicts leave Git's sequencer state                       |
+| Rebase            | [`rebase.ts`](../../../mini-apps/git-workspace/backend/source-control/git/rebase.ts)         | A generated todo is installed through a non-interactive sequence editor | Dirty trees are refused; conflicts leave rebase state for continue, skip, or abort |
+| Bisect            | [`bisect.ts`](../../../mini-apps/git-workspace/backend/source-control/git/bisect.ts)         | Git refs and files remain the source of bisect state                    | Invalid starting refs are rejected before a stuck session can begin                |
+| Stash             | [`stash.ts`](../../../mini-apps/git-workspace/backend/source-control/git/stash.ts)           | Stash indexes are validated integers                                    | Missing entries and conflicts use typed errors                                     |
 
 The panel has no separate merge-conflict editor. Rebase, revert, and cherry-pick conflicts appear in
 the normal Changes tree; users resolve and stage files through the existing editor or terminal.
 
 ### Remote and forge boundaries
 
-[`remote-ops.ts`](../../../plugins/git-workspace/backend/source-control/git/remote-ops.ts)
+[`remote-ops.ts`](../../../mini-apps/git-workspace/backend/source-control/git/remote-ops.ts)
 implements `fetch --prune`, `pull --ff-only`, and push. Push retries with `-u origin HEAD` only when
 Git reports that the current branch lacks an upstream.
 
 Forge integration is a separate port under
-[`forge/`](../../../plugins/git-workspace/backend/source-control/forge/ports.ts). The current
+[`forge/`](../../../mini-apps/git-workspace/backend/source-control/forge/ports.ts). The current
 backend invokes `gh` without reading or storing its token. Missing CLI, missing authentication, and
 a non-GitHub remote produce unavailable forge state while Git status and mutations continue working.
 
 The availability probe in
-[`gh-status.ts`](../../../plugins/git-workspace/backend/source-control/forge/gh-status.ts) runs
+[`gh-status.ts`](../../../mini-apps/git-workspace/backend/source-control/forge/gh-status.ts) runs
 `gh auth status` and `gh repo view` concurrently; a missing binary is the spawn's `ENOENT`, so no
 `gh --version` runs. The probe caches the in-flight promise for 60 seconds, process-wide for
 authentication and per repository root for the remote, so concurrent callers share one pair of
@@ -251,19 +251,19 @@ Directory discovery skips hidden directories plus `node_modules`, `dist`, `build
 
 ## Source of truth
 
-- [Backend contract](../../../plugins/git-workspace/backend/source-control/ports.ts)
-- [Source-control service](../../../plugins/git-workspace/backend/source-control/service.ts)
-- [RPC routes](../../../plugins/git-workspace/backend/source-control/routes.ts)
-- [Git backend composition](../../../plugins/git-workspace/backend/source-control/git/backend.ts)
-- [Git process boundary](../../../plugins/git-workspace/backend/source-control/git/cli.ts)
-- [Repository top level](../../../plugins/git-workspace/backend/source-control/git/repo-root.ts)
-- [Diff reads and truncation](../../../plugins/git-workspace/backend/source-control/git/diff-read.ts)
-- [Repository discovery](../../../plugins/git-workspace/backend/source-control/repos/discovery.ts)
-- [Repository scope validation](../../../plugins/git-workspace/backend/source-control/repos/service.ts)
-- [Git mutations and remote policy](../../../plugins/git-workspace/backend/source-control/git/actions.ts)
-- [Line-level staging](../../../plugins/git-workspace/backend/source-control/git/line-staging.ts)
-- [Granular hunk revert](../../../plugins/git-workspace/backend/source-control/git/hunks.ts)
-- [Forge service](../../../plugins/git-workspace/backend/source-control/forge/service.ts)
-- [Forge availability probe](../../../plugins/git-workspace/backend/source-control/forge/gh-status.ts)
-- [Source Control store](../../../plugins/git-workspace/ui/source-control/model/store.ts)
-- [Source Control panel](../../../plugins/git-workspace/ui/source-control/ui/SourceControlTab.tsx)
+- [Backend contract](../../../mini-apps/git-workspace/backend/source-control/ports.ts)
+- [Source-control service](../../../mini-apps/git-workspace/backend/source-control/service.ts)
+- [RPC routes](../../../mini-apps/git-workspace/backend/source-control/routes.ts)
+- [Git backend composition](../../../mini-apps/git-workspace/backend/source-control/git/backend.ts)
+- [Git process boundary](../../../mini-apps/git-workspace/backend/source-control/git/cli.ts)
+- [Repository top level](../../../mini-apps/git-workspace/backend/source-control/git/repo-root.ts)
+- [Diff reads and truncation](../../../mini-apps/git-workspace/backend/source-control/git/diff-read.ts)
+- [Repository discovery](../../../mini-apps/git-workspace/backend/source-control/repos/discovery.ts)
+- [Repository scope validation](../../../mini-apps/git-workspace/backend/source-control/repos/service.ts)
+- [Git mutations and remote policy](../../../mini-apps/git-workspace/backend/source-control/git/actions.ts)
+- [Line-level staging](../../../mini-apps/git-workspace/backend/source-control/git/line-staging.ts)
+- [Granular hunk revert](../../../mini-apps/git-workspace/backend/source-control/git/hunks.ts)
+- [Forge service](../../../mini-apps/git-workspace/backend/source-control/forge/service.ts)
+- [Forge availability probe](../../../mini-apps/git-workspace/backend/source-control/forge/gh-status.ts)
+- [Source Control store](../../../mini-apps/git-workspace/ui/source-control/model/store.ts)
+- [Source Control panel](../../../mini-apps/git-workspace/ui/source-control/ui/SourceControlTab.tsx)

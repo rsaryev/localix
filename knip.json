@@ -5,11 +5,11 @@
   "workspaces": {
     ".": {
       "entry": [
-        "plugins/*/tools/**/*.mjs",
-        "plugins/*/hooks/**/*.mjs",
-        "plugins/*/arg-sources/**/*.ts"
+        "mini-apps/*/tools/**/*.mjs",
+        "mini-apps/*/hooks/**/*.mjs",
+        "mini-apps/*/arg-sources/**/*.ts"
       ],
-      "project": ["plugins/**/*.{ts,mjs}"]
+      "project": ["mini-apps/**/*.{ts,mjs}"]
     },
     "scripts": {
       "entry": [
@@ -67,7 +67,7 @@
     "apps/desktop-tauri": {
       "entry": ["scripts/**/*.test.ts", "scripts/check-*.mjs"]
     },
-    "plugins/*": {
+    "mini-apps/*": {
       "entry": [
         "ui/register.tsx",
         "backend/index.ts",
@@ -78,7 +78,7 @@
       ],
       "project": ["**/*.{ts,tsx}"]
     },
-    "plugins/devops": {
+    "mini-apps/devops": {
       "entry": [
         "ui/register.tsx",
         "backend/index.ts",
@@ -90,7 +90,7 @@
       "project": ["**/*.{ts,tsx}"],
       "ignoreDependencies": ["@happy-dom/global-registrator", "radix-ui"]
     },
-    "plugins/template": {
+    "mini-apps/template": {
       "entry": ["backend/index.ts", "ui/system/SystemMarks.tsx", "**/*.test.{ts,tsx}"],
       "project": ["**/*.{ts,tsx}"],
       "ignore": ["ui/register.example.tsx"]

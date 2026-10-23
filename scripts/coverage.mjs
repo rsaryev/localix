@@ -51,7 +51,7 @@ export function testedPackages(files = trackedFiles()) {
   const packages = {}
   for (const file of files) {
     if (!file.endsWith('/package.json') || file.includes('node_modules/')) continue
-    if (!/^(?:apps|packages|plugins|scripts)\//u.test(file)) continue
+    if (!/^(?:apps|packages|mini-apps|plugins|scripts)\//u.test(file)) continue
     const script = JSON.parse(readFileSync(join(repoRoot, file), 'utf8')).scripts?.test
     if (script) packages[file.slice(0, -'/package.json'.length)] = script
   }

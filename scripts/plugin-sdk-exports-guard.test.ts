@@ -32,7 +32,7 @@ import {
  * fails if the detector comes back quiet.
  */
 
-const CONSUMER_ROOTS = ['apps/api/src', 'apps/ui/src', 'packages', 'plugins']
+const CONSUMER_ROOTS = ['apps/api/src', 'apps/ui/src', 'packages', 'mini-apps']
 
 /** `from '@localixai/plugin-sdk/ui/classes'` — the specifier, never a mention in prose. */
 const SDK_SPECIFIER = /(?:from|import|require)\s*\(?\s*['"]@localixai\/plugin-sdk([^'"]*)['"]/g
@@ -174,7 +174,7 @@ describe('plugin-sdk subpaths and their importers agree', () => {
     roots: CONSUMER_ROOTS.map((root) => join(repoRoot, root)),
     mustInclude: [
       'apps/ui/src/shared/contrib/uiLocations.ts',
-      /plugins\/database\/ui\/register\.tsx$/,
+      /mini-apps\/database\/ui\/register\.tsx$/,
     ],
     minFiles: 500,
     label: 'the first-party consumers of @localixai/plugin-sdk',

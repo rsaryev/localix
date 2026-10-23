@@ -52,7 +52,7 @@ setDefaultTimeout(30_000)
 const ROOT = path.resolve(import.meta.dir, '..', '..', '..', '..')
 
 /** Route surfaces: the host's own features, and every bundled plugin's backend. */
-const INCLUDE = ['apps/api/src/features/**/*.ts', 'plugins/**/backend/**/*.ts']
+const INCLUDE = ['apps/api/src/features/**/*.ts', 'mini-apps/**/backend/**/*.ts']
 
 /** The rule's own file, and tests, may name the call in prose or in a probe. */
 const skipTests = (f: string): boolean => f.includes('.test.')
@@ -106,7 +106,7 @@ describe('mutating routes must not parse their own body', () => {
     // commented out, stays silent — so this file's own header cannot satisfy the guard.
     await assertPositiveControl({
       subject: 'a route parsing its body with c.req.json() instead of zValidator',
-      file: 'plugins/evil/backend/routes.ts',
+      file: 'mini-apps/evil/backend/routes.ts',
       offender: [
         "import { Hono } from 'hono'",
         'export function createRoutes() {',

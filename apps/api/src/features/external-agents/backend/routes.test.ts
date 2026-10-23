@@ -1,6 +1,6 @@
 /**
  * The routes, exercised through Hono's own `app.request()` — no server and no port, mounted the way
- * the backend host mounts them (the pattern in plugins/database/backend/routes.test.ts).
+ * the backend host mounts them (the pattern in mini-apps/database/backend/routes.test.ts).
  *
  * What this pins: `/items` is the ONLY transcript route the plugin exposes, so every reading a human
  * gets — the preview and the durable import — comes through it. A field the schema accepts and the

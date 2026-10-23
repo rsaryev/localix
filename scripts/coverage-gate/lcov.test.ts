@@ -101,21 +101,21 @@ describe('ownCoverage', () => {
       ['packages/markdown/src/a.ts', new Map([[1, 1]])],
       ['packages/kit/src/button.tsx', new Map([[1, 1]])],
       ['packages/plugin-sdk/dist/ui.js', new Map([[1, 1]])],
-      ['plugins/devops/kubernetes/ui/b.ts', new Map([[1, 1]])],
-      ['plugins/devops/ui/c.ts', new Map([[1, 1]])],
+      ['mini-apps/devops/kubernetes/ui/b.ts', new Map([[1, 1]])],
+      ['mini-apps/devops/ui/c.ts', new Map([[1, 1]])],
     ])
     const packages = [
       'packages/markdown',
       'packages/kit',
-      'plugins/devops',
-      'plugins/devops/kubernetes',
+      'mini-apps/devops',
+      'mini-apps/devops/kubernetes',
     ]
 
     expect([...ownCoverage(report, 'packages/markdown', packages).keys()]).toEqual([
       'packages/markdown/src/a.ts',
     ])
-    expect([...ownCoverage(report, 'plugins/devops', packages).keys()]).toEqual([
-      'plugins/devops/ui/c.ts',
+    expect([...ownCoverage(report, 'mini-apps/devops', packages).keys()]).toEqual([
+      'mini-apps/devops/ui/c.ts',
     ])
   })
 })

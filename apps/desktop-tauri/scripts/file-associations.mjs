@@ -31,11 +31,11 @@ import {
   hasExtensionManifest,
   readExtensionManifest,
 } from '../../../scripts/lib/extension-manifest.mjs'
-import { BUNDLED_APPS_DIR, bundledAppsRoot } from '../../../scripts/lib/bundled-roots.mjs'
+import { MINI_APPS_DIR, miniAppsRoot } from '../../../scripts/lib/bundled-roots.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url)) // apps/desktop-tauri/scripts
 export const repoRoot = resolve(here, '..', '..', '..')
-export const pluginsDir = bundledAppsRoot(repoRoot)
+export const pluginsDir = miniAppsRoot(repoRoot)
 export const tauriConfigPath = resolve(here, '..', 'src-tauri', 'tauri.conf.json')
 
 /**
@@ -294,11 +294,11 @@ export function pluginFileAssociations() {
     const declared = manifest.fileAssociations
     if (declared === undefined) continue
     if (!Array.isArray(declared)) {
-      throw new Error(`${BUNDLED_APPS_DIR}/${name}: fileAssociations must be an array`)
+      throw new Error(`${MINI_APPS_DIR}/${name}: fileAssociations must be an array`)
     }
     for (const entry of declared) {
       out.push({
-        owner: `${BUNDLED_APPS_DIR}/${name}`,
+        owner: `${MINI_APPS_DIR}/${name}`,
         association: normalizeAssociation(entry, name),
       })
     }
@@ -316,8 +316,8 @@ export function pluginFileAssociations() {
  * nobody intended.
  *
  * But "one BUNDLE entry" is not "one layer may render it". Several layers legitimately
- * open the same format — a PDF has both a fidelity viewer (`plugins/documents`) and a
- * reflowed reading view (`plugins/reader`), and each plugin's own tests require it to
+ * open the same format — a PDF has both a fidelity viewer (`mini-apps/documents`) and a
+ * reflowed reading view (`mini-apps/reader`), and each plugin's own tests require it to
  * declare what it can open. Rejecting the overlap would force one of them to lie about
  * its capability to satisfy a packaging constraint.
  *

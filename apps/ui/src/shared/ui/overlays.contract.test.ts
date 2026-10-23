@@ -16,7 +16,7 @@ import {
  * run over the app and the plugins here.
  */
 const REPO_ROOT = new URL('../../../../../', import.meta.url).pathname
-const hostSources = () => tsxSourcesUnder(REPO_ROOT, ['apps/ui/src', 'plugins'])
+const hostSources = () => tsxSourcesUnder(REPO_ROOT, ['apps/ui/src', 'mini-apps'])
 
 describe('command input glyph', () => {
   test('every dialog palette owns one command root, input, and scrolling list', async () => {

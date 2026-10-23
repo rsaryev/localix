@@ -36,7 +36,7 @@ import {
 const REPO_ROOT = path.resolve(import.meta.dir, '..')
 
 /** Canonical bundled plugin backends. `packages/cli/server/**` is gitignored BUILD OUTPUT. */
-const INCLUDE = ['plugins/**/backend/**/*.ts']
+const INCLUDE = ['mini-apps/**/backend/**/*.ts']
 
 /**
  * A tool declaring `mutates: true` that contributes NO filesystem path, keyed by name + the reason's
@@ -196,7 +196,7 @@ describe('bundled plugin tools that mutate are visible to the permission rules',
       `export const t = defineAgentTool({\n  name: 'planted_writer',\n  mutates: true,\n${extra}  async execute() { return { content: 'x' } },\n})\n`
 
     expect(
-      await withPlantedSources({ 'plugins/x/backend/w.ts': tool('') }, (root) =>
+      await withPlantedSources({ 'mini-apps/x/backend/w.ts': tool('') }, (root) =>
         undeclaredMutators(root, 1),
       ),
     ).toEqual(['planted_writer'])
@@ -204,7 +204,7 @@ describe('bundled plugin tools that mutate are visible to the permission rules',
     // And a declaration clears it.
     expect(
       await withPlantedSources(
-        { 'plugins/x/backend/w.ts': tool('  permissionPaths: (i) => [i.path],\n') },
+        { 'mini-apps/x/backend/w.ts': tool('  permissionPaths: (i) => [i.path],\n') },
         (root) => undeclaredMutators(root, 1),
       ),
     ).toEqual([])
@@ -213,7 +213,7 @@ describe('bundled plugin tools that mutate are visible to the permission rules',
     expect(
       await withPlantedSources(
         {
-          'plugins/x/backend/r.ts': `export const t = defineAgentTool({\n  name: 'planted_reader',\n  async execute() { return { content: 'x' } },\n})\n`,
+          'mini-apps/x/backend/r.ts': `export const t = defineAgentTool({\n  name: 'planted_reader',\n  async execute() { return { content: 'x' } },\n})\n`,
         },
         (root) => undeclaredMutators(root, 1),
       ),
@@ -265,7 +265,7 @@ describe('bundled plugin tools that write class their calls', () => {
     const tool = (extra: string) =>
       `export const t = defineAgentTool({\n  name: 'planted_writer',\n  mutates: true,\n${extra}  async execute() { return { content: 'x' } },\n})\n`
     const run = (extra: string) =>
-      withPlantedSources({ 'plugins/x/backend/w.ts': tool(extra) }, (root) =>
+      withPlantedSources({ 'mini-apps/x/backend/w.ts': tool(extra) }, (root) =>
         unclassifiedWriters(root, 1),
       )
     expect(await run('')).toEqual(['planted_writer'])

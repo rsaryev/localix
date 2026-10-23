@@ -79,7 +79,7 @@ trading markets, and Kanban cards. Their owning plugins define tier, matching, r
 shutdown behavior; global search only enforces the registry contract.
 
 The Kanban plugin's `kanban:tasks` domain
-([`references.ts`](../../../plugins/kanban/backend/references.ts)) is eager and matches a card's
+([`references.ts`](../../../mini-apps/kanban/backend/references.ts)) is eager and matches a card's
 title, description and id. It reads only the board of the query's `sessionId` — the chat the search
 tab or palette belongs to — and returns no hits without one, because a board belongs to its chat.
 

@@ -38,7 +38,7 @@ const REPO_ROOT = path.resolve(import.meta.dir, '..')
 /** Every UI source outside the kit: the workbench, the plugin views, the SDK's own components. */
 const INCLUDE = [
   'apps/ui/src/**/*.{ts,tsx}',
-  'plugins/*/ui/**/*.{ts,tsx}',
+  'mini-apps/*/ui/**/*.{ts,tsx}',
   'packages/plugin-sdk/src/ui/**/*.{ts,tsx}',
 ]
 
@@ -84,7 +84,7 @@ const BASELINE: Exemptions = {
   // The board's colour picker is a swatch GRID, not a list of rows — the check is drawn INSIDE
   // the chosen swatch, where a menu row's trailing check has no place to go. Its option picker in
   // the same file is `MenuEntries` `selected` rows.
-  [exemptionKey('plugins/project-space/ui/board/pickers.tsx', 'hand-check')]: {
+  [exemptionKey('mini-apps/project-space/ui/board/pickers.tsx', 'hand-check')]: {
     reason: 'Board colour swatch grid marks the chosen swatch inside the swatch itself.',
   },
 }

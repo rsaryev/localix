@@ -30,7 +30,13 @@ setDefaultTimeout(30_000)
  */
 
 /** Plugin source globs — .ts/.tsx/.mjs, the three a bundled plugin ships. */
-const PLUGIN_GLOBS = ['plugins/**/*.ts', 'plugins/**/*.tsx', 'plugins/**/*.mjs']
+const PLUGIN_GLOBS = [
+  'mini-apps/**/*.ts',
+  'mini-apps/**/*.tsx',
+  'mini-apps/**/*.mjs',
+  'plugins/**/*.ts',
+  'plugins/**/*.mjs',
+]
 
 /**
  * A deep import (or re-export) of the host tree by relative path: two-or-more `../` segments
@@ -82,13 +88,13 @@ describe('plugin → host boundary contract', () => {
   test('POSITIVE CONTROL — a planted deep import fires, and never when commented out', async () => {
     await assertPositiveControl({
       subject: 'a plugin deep import of apps/api/src',
-      file: 'plugins/planted/backend/index.ts',
+      file: 'mini-apps/planted/backend/index.ts',
       offender: `import { thing } from '../../../apps/api/src/lib/thing'\nexport const use = () => thing()\n`,
       detect: (root) => offendersIn(root, 1),
     })
     await assertPositiveControl({
       subject: 'a plugin deep import of packages/kit/src',
-      file: 'plugins/planted/ui/Panel.tsx',
+      file: 'mini-apps/planted/ui/Panel.tsx',
       offender: `import { Button } from '../../../packages/kit/src/controls/button'\nexport const B = Button\n`,
       detect: (root) => offendersIn(root, 1),
     })
@@ -135,7 +141,7 @@ describe('plugin → host UI boundary contract', () => {
     ]) {
       await assertPositiveControl({
         subject: 'a plugin import of apps/ui/src through @/',
-        file: 'plugins/planted/ui/Panel.test.tsx',
+        file: 'mini-apps/planted/ui/Panel.test.tsx',
         offender,
         detect: (root) => hostAliasImportsIn(root, 1),
       })

@@ -3,7 +3,7 @@ import path from 'node:path'
 import { Database } from 'bun:sqlite'
 import { serializeMessagePayload } from '../../apps/api/src/db/payload-codec.ts'
 import { api, prepare, verifyDemoRuntime, databaseFile, fixtureFile } from './runtime.mjs'
-import { createTemplateDocument } from '../../plugins/resume/shared/templates.ts'
+import { createTemplateDocument } from '../../mini-apps/resume/shared/templates.ts'
 import { seedContent } from './content-workbenches.mjs'
 import { seedGames } from './game-workbenches.mjs'
 import { seedDeveloper } from './developer-workbenches.mjs'
@@ -15,7 +15,7 @@ import { ensureDemoAgents } from './demo-agents.mjs'
 import { seedPartyRoutes } from './party-route.mjs'
 import { seedCodemodeCard } from './codemode-card.mjs'
 import { seedUnfinishedReply } from './unfinished-reply.mjs'
-import { emptyEntry } from '../../plugins/resume/shared/schema.ts'
+import { emptyEntry } from '../../mini-apps/resume/shared/schema.ts'
 
 await verifyDemoRuntime()
 const root = await prepare()

@@ -151,15 +151,15 @@
       }
     },
     {
-      "files": ["plugins/**/*.mjs"],
+      "files": ["mini-apps/**/*.mjs", "plugins/**/*.mjs"],
       "rules": {
         "typescript/consistent-type-imports": "off"
       }
     },
     {
       "files": [
-        "plugins/documents/backend/documents/drivers/docx.ts",
-        "plugins/documents/backend/documents/drivers/doc.ts",
+        "mini-apps/documents/backend/documents/drivers/docx.ts",
+        "mini-apps/documents/backend/documents/drivers/doc.ts",
         "apps/api/src/features/agent-core/tools/web/readable-extract.ts"
       ],
       // The /// <reference> to documents/drivers/vendor.d.ts is load-bearing, not legacy:

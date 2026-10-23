@@ -35,10 +35,10 @@ export function budgetFiles(files, exclude) {
   )
 }
 
-/** apps/api, packages/kit, plugins/chess; scripts, vendor and the rest by their first directory. */
+/** apps/api, packages/kit, mini-apps/chess; scripts, vendor and the rest by their first directory. */
 function areaOf(file) {
   const parts = file.split('/')
-  return ['apps', 'packages', 'plugins'].includes(parts[0] ?? '')
+  return ['apps', 'packages', 'mini-apps', 'plugins'].includes(parts[0] ?? '')
     ? parts.slice(0, 2).join('/')
     : parts[0]
 }

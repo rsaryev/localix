@@ -143,15 +143,15 @@ These values are implementation constants, not Settings controls.
 - [Data tables](../../apps/ui/src/features/inspector/ui/table/TableGrid.tsx)
 - [Usage requests log](../../apps/ui/src/features/stats/ui/LogsTable.tsx) ·
   [row renderer](../../apps/ui/src/features/stats/ui/LogRow.tsx)
-- [Kanban column cap](../../plugins/kanban/ui/board/columnCap.ts) ·
-  [board](../../plugins/kanban/ui/board/board.tsx) ·
-  [drop index](../../plugins/kanban/ui/board/useKanbanDrag.ts)
+- [Kanban column cap](../../mini-apps/kanban/ui/board/columnCap.ts) ·
+  [board](../../mini-apps/kanban/ui/board/board.tsx) ·
+  [drop index](../../mini-apps/kanban/ui/board/useKanbanDrag.ts)
 - [Event journal retention cap](../../apps/ui/src/shared/lib/notifications/core.ts)
-- [Live logs](../../plugins/devops/ui/LiveLogViewport.tsx)
+- [Live logs](../../mini-apps/devops/ui/LiveLogViewport.tsx)
 - [External-agent history](../../apps/ui/src/features/external-agents/ui/ExternalHistoryList.tsx)
-- [Changes-tree rows](../../plugins/git-workspace/ui/source-control/ui/changes-tree/changesTreeRows.ts)
-  · [tree](../../plugins/git-workspace/ui/source-control/ui/changes-tree/ChangesTree.tsx) ·
-  [shared scroll area](../../plugins/git-workspace/ui/source-control/ui/changes-tree/ChangesScrollArea.tsx)
+- [Changes-tree rows](../../mini-apps/git-workspace/ui/source-control/ui/changes-tree/changesTreeRows.ts)
+  · [tree](../../mini-apps/git-workspace/ui/source-control/ui/changes-tree/ChangesTree.tsx) ·
+  [shared scroll area](../../mini-apps/git-workspace/ui/source-control/ui/changes-tree/ChangesScrollArea.tsx)
 - [Diff document](../../apps/ui/src/shared/ui/diff/document/diffDocument.ts) ·
   [row layout](../../apps/ui/src/shared/ui/diff/document/diffRows.ts) ·
   [pinned headers](../../apps/ui/src/shared/ui/diff/document/diffSticky.ts) ·

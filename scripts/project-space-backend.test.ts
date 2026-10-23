@@ -15,11 +15,11 @@ import { createCapabilityRegistry } from '../apps/api/src/features/ext/capabilit
 import { createWsFrameRegistry } from '../apps/api/src/features/ext/ws-frame-registry'
 import { createResourceProviderRegistry } from '../apps/api/src/features/agent-core/resource-refs/provider'
 import { createContextProviderRegistry } from '../apps/api/src/features/context-fabric/registry'
-import { register } from '../plugins/project-space/backend'
-import { ROUTE_PATH, SPACE_SUBSCRIBE } from '../plugins/project-space/shared/resource'
-import manifest from '../plugins/project-space/.claude-plugin/plugin.json'
-import type { SpaceView } from '../plugins/project-space/shared/api'
-import { spaceStore } from '../plugins/project-space/backend/space-store'
+import { register } from '../mini-apps/project-space/backend'
+import { ROUTE_PATH, SPACE_SUBSCRIBE } from '../mini-apps/project-space/shared/resource'
+import manifest from '../mini-apps/project-space/.claude-plugin/plugin.json'
+import type { SpaceView } from '../mini-apps/project-space/shared/api'
+import { spaceStore } from '../mini-apps/project-space/backend/space-store'
 
 // Direct route tests cannot detect the host rejecting a whole backend for an invalid WS name.
 // Exercise the real composition seam: the HTTP board and its advertised stream must both wire.

@@ -139,10 +139,10 @@ whose actual destination you control.
 
 ## Source of truth
 
-- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/plugins/api/.localix-app/app.json)
-- [Tool schema](https://github.com/rsaryev/localix/blob/main/plugins/api/backend/api-tool-schema.ts)
-- [Request routes](https://github.com/rsaryev/localix/blob/main/plugins/api/backend/routes.ts)
-- [Request sender and network policy](https://github.com/rsaryev/localix/blob/main/plugins/api/backend/send.ts)
-- [Import chain](https://github.com/rsaryev/localix/blob/main/plugins/api/backend/import/registry.ts)
-- [Repository export](https://github.com/rsaryev/localix/blob/main/plugins/api/backend/git-sync/action.ts)
-- [Workspace registration](https://github.com/rsaryev/localix/blob/main/plugins/api/ui/register.tsx)
+- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/mini-apps/api/.localix-app/app.json)
+- [Tool schema](https://github.com/rsaryev/localix/blob/main/mini-apps/api/backend/api-tool-schema.ts)
+- [Request routes](https://github.com/rsaryev/localix/blob/main/mini-apps/api/backend/routes.ts)
+- [Request sender and network policy](https://github.com/rsaryev/localix/blob/main/mini-apps/api/backend/send.ts)
+- [Import chain](https://github.com/rsaryev/localix/blob/main/mini-apps/api/backend/import/registry.ts)
+- [Repository export](https://github.com/rsaryev/localix/blob/main/mini-apps/api/backend/git-sync/action.ts)
+- [Workspace registration](https://github.com/rsaryev/localix/blob/main/mini-apps/api/ui/register.tsx)

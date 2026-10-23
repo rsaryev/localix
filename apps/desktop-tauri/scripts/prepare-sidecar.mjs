@@ -50,7 +50,7 @@ import {
   stagePluginKitBeside,
 } from '../../../scripts/stage-dropins.mjs'
 import { PLUGIN_KIT_INPUTS } from '../../../scripts/stage-plugin-kit.mjs'
-import { BUNDLED_APPS_DIR, STAGED_APPS_DIR } from '../../../scripts/lib/bundled-roots.mjs'
+import { BUNDLED_DIRS, STAGED_APPS_DIR } from '../../../scripts/lib/bundled-roots.mjs'
 import { BUILD_STAMP_ENV, resolveBuildStamp } from '../../../scripts/build-stamp.mjs'
 import {
   buildVisualFeedbackProbe,
@@ -122,7 +122,7 @@ const cache = readCache()
 const runtimeKey = fingerprint([
   join(repo, 'apps', 'api'),
   join(repo, 'packages'),
-  join(repo, BUNDLED_APPS_DIR),
+  ...BUNDLED_DIRS.map((dir) => join(repo, dir)),
   join(desktop, 'scripts'),
   join(repo, 'scripts', 'build-visual-feedback-probe.mjs'),
   join(repo, 'scripts', 'stage-dropins.mjs'),
@@ -356,7 +356,7 @@ if (buildUi) {
       join(repo, 'apps', 'ui'),
       join(repo, 'apps', 'api'),
       join(repo, 'packages'),
-      join(repo, BUNDLED_APPS_DIR),
+      ...BUNDLED_DIRS.map((dir) => join(repo, dir)),
       join(repo, 'vendor', 'monaco-editor-runtime'),
       join(repo, 'bun.lock'),
       join(repo, 'tsconfig.base.json'),

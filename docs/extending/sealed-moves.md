@@ -58,4 +58,4 @@ apart through the tool context's `session.speaker.agentId` and pass it to `seal`
 - [Sealing in the item funnel](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/sealed-items.ts)
 - [Tool presentation contract](https://github.com/rsaryev/localix/blob/main/packages/agent/src/agents/tool-definition.ts)
 - [Commitments and views](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/sealed.ts)
-- [Rock Paper Scissors rules and per-seat view](https://github.com/rsaryev/localix/blob/main/plugins/rock-paper-scissors/shared/game.ts)
+- [Rock Paper Scissors rules and per-seat view](https://github.com/rsaryev/localix/blob/main/mini-apps/rock-paper-scissors/shared/game.ts)

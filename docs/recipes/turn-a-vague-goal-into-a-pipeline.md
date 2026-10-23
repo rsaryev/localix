@@ -52,4 +52,4 @@ before marking its card complete. Schedule dependent work only after its prerequ
 
 - [Delegate input schema](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/delegate.ts)
 - [Delegation admission](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/delegate-start.ts)
-- [Board tool actions](https://github.com/rsaryev/localix/blob/main/plugins/kanban/backend/tools.ts)
+- [Board tool actions](https://github.com/rsaryev/localix/blob/main/mini-apps/kanban/backend/tools.ts)

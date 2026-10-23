@@ -44,11 +44,11 @@ interface Offence {
 async function pluginUiFiles(): Promise<string[]> {
   const paths: string[] = []
   for (const path of new Bun.Glob('*/{ui,frontend}/**/*.{ts,tsx}').scanSync({
-    cwd: `${REPO_ROOT}/plugins`,
+    cwd: `${REPO_ROOT}/mini-apps`,
   })) {
     if (path.includes('node_modules') || path.includes('/dist/')) continue
     if (/\.(?:test|spec|dom\.test)\.tsx?$/u.test(path)) continue
-    paths.push(`plugins/${path}`)
+    paths.push(`mini-apps/${path}`)
   }
   return paths.sort()
 }

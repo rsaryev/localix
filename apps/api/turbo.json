@@ -5,17 +5,18 @@
     "type-check": {
       "dependsOn": ["^build", "docs:gen"],
       "outputs": [],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/plugins/**"]
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/mini-apps/**", "$TURBO_ROOT$/plugins/**"]
     },
     "type-check:tests": {
       "dependsOn": ["^build", "docs:gen"],
       "outputs": [],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/plugins/**"]
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/mini-apps/**", "$TURBO_ROOT$/plugins/**"]
     },
     "test": {
       "dependsOn": ["^build"],
       "inputs": [
         "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/mini-apps/**",
         "$TURBO_ROOT$/plugins/**",
         "$TURBO_ROOT$/scripts/test-deadline.ts",
         "$TURBO_ROOT$/scripts/test-globals-guard.ts",
@@ -30,6 +31,7 @@
       "dependsOn": ["^build"],
       "inputs": [
         "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/mini-apps/**",
         "$TURBO_ROOT$/plugins/**",
         "$TURBO_ROOT$/scripts/test-deadline.ts",
         "$TURBO_ROOT$/scripts/test-globals-guard.ts",

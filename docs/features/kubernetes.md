@@ -109,21 +109,21 @@ choices are UI state; they do not alter kubeconfig files.
 
 ## Source of truth
 
-- [Mini app default and boundary](https://github.com/rsaryev/localix/blob/main/plugins/devops/.localix-app/app.json)
-- [Provider registry](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/backend/index.ts)
-- [API backend and kubeconfig](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/backend/api-backend.ts)
-- [HTTP and WebSocket transport](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/backend/api-http.ts)
+- [Mini app default and boundary](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/.localix-app/app.json)
+- [Provider registry](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/kubernetes/backend/index.ts)
+- [API backend and kubeconfig](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/kubernetes/backend/api-backend.ts)
+- [HTTP and WebSocket transport](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/kubernetes/backend/api-http.ts)
   ·
-  [plugins/devops/kubernetes/backend/api-websocket.ts](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/backend/api-websocket.ts)
-- [API discovery](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/backend/discovery.ts)
-- [Port-forward lifecycle](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/backend/api-port-forward.ts)
+  [mini-apps/devops/kubernetes/backend/api-websocket.ts](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/kubernetes/backend/api-websocket.ts)
+- [API discovery](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/kubernetes/backend/discovery.ts)
+- [Port-forward lifecycle](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/kubernetes/backend/api-port-forward.ts)
   ·
-  [plugins/devops/kubernetes/ui/model/useForwardCleanup.ts](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/ui/model/useForwardCleanup.ts)
-- [Watch and exec lifecycle](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/backend/api-watch.ts)
+  [mini-apps/devops/kubernetes/ui/model/useForwardCleanup.ts](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/kubernetes/ui/model/useForwardCleanup.ts)
+- [Watch and exec lifecycle](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/kubernetes/backend/api-watch.ts)
   ·
-  [plugins/devops/kubernetes/backend/api-exec.ts](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/backend/api-exec.ts)
-- [Workbench contributions](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/ui/register.tsx)
-- [Context and namespace state](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/ui/model/useKubernetesScope.ts)
-- [Configuration cache and manifest cleanup](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/backend/api-internals.ts)
-- [Manifest apply calls](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/backend/api-manifests.ts)
-- [Manifest editor](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/ui/model/useManifestEditor.ts)
+  [mini-apps/devops/kubernetes/backend/api-exec.ts](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/kubernetes/backend/api-exec.ts)
+- [Workbench contributions](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/kubernetes/ui/register.tsx)
+- [Context and namespace state](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/kubernetes/ui/model/useKubernetesScope.ts)
+- [Configuration cache and manifest cleanup](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/kubernetes/backend/api-internals.ts)
+- [Manifest apply calls](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/kubernetes/backend/api-manifests.ts)
+- [Manifest editor](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/kubernetes/ui/model/useManifestEditor.ts)

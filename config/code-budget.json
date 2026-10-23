@@ -21,6 +21,7 @@
     "**/*.config.mjs",
     "**/*.config.js",
     ".githooks/**",
+    "mini-apps/**",
     "plugins/**"
   ]
 }

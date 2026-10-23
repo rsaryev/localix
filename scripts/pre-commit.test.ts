@@ -100,7 +100,12 @@ const workspaces = [
     scripts: { 'type-check': 'tsc', 'type-check:tests': 'tsc' },
   },
   { path: 'apps/ui', name: 'ui', dependencies: ['api'], scripts: { 'type-check': 'tsc' } },
-  { path: 'plugins/example', name: 'example', dependencies: [], scripts: { 'type-check': 'tsc' } },
+  {
+    path: 'mini-apps/example',
+    name: 'example',
+    dependencies: [],
+    scripts: { 'type-check': 'tsc' },
+  },
 ]
 
 test('checks deleted sources and every transitive consumer of a shared contract', () => {
@@ -113,7 +118,7 @@ test('checks deleted sources and every transitive consumer of a shared contract'
 
 test('includes API consumers for plugin backends and all packages for shared compiler changes', () => {
   expect(
-    planChecks(['plugins/example/backend/index.ts'], workspaces, () => false).typed.map(
+    planChecks(['mini-apps/example/backend/index.ts'], workspaces, () => false).typed.map(
       (workspace) => workspace.name,
     ),
   ).toEqual(['api', 'ui', 'example'])

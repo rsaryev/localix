@@ -32,10 +32,10 @@ const REPO_ROOT = new URL('../', import.meta.url).pathname
 /** Every file that builds a contributed status item. */
 async function statusItemFiles(): Promise<string[]> {
   const paths: string[] = []
-  for (const path of new Bun.Glob('**/*.ts').scanSync({ cwd: `${REPO_ROOT}/plugins` })) {
+  for (const path of new Bun.Glob('**/*.ts').scanSync({ cwd: `${REPO_ROOT}/mini-apps` })) {
     if (path.includes('node_modules') || path.includes('/dist/')) continue
     if (!/(?:^|\/)statusItems?\.ts$/u.test(path)) continue
-    paths.push(`plugins/${path}`)
+    paths.push(`mini-apps/${path}`)
   }
   return paths.sort()
 }

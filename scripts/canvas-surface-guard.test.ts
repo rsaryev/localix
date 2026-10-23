@@ -22,7 +22,7 @@ import { describe, expect, test } from 'bun:test'
  */
 
 const REPO_ROOT = new URL('../', import.meta.url).pathname
-const SOURCE_ROOTS = ['apps/ui/src', 'plugins', 'packages'] as const
+const SOURCE_ROOTS = ['apps/ui/src', 'mini-apps', 'packages'] as const
 /** The primitive that IS the app's board, and so the only place allowed to name the library. */
 const PRIMITIVE_OWNER = 'packages/kit/src/canvas/'
 /** The one package allowed to depend on it: the kit that owns the canvas primitive. */
@@ -74,7 +74,7 @@ function sourceFiles(): string[] {
 
 function manifests(): string[] {
   const paths: string[] = []
-  for (const root of ['plugins', 'packages']) {
+  for (const root of ['mini-apps', 'packages']) {
     for (const path of new Bun.Glob('*/package.json').scanSync({ cwd: `${REPO_ROOT}/${root}` })) {
       paths.push(`${root}/${path}`)
     }

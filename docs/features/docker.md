@@ -93,9 +93,9 @@ platform default endpoint.
 
 ## Source of truth
 
-- [Backend selection](https://github.com/rsaryev/localix/blob/main/plugins/devops/docker/backend/backend-selection.ts)
-- [Endpoint resolution](https://github.com/rsaryev/localix/blob/main/plugins/devops/docker/backend/docker-host.ts)
-- [Engine API client](https://github.com/rsaryev/localix/blob/main/plugins/devops/docker/backend/api-backend.ts)
-- [Engine API version negotiation](https://github.com/rsaryev/localix/blob/main/plugins/devops/docker/backend/api-version.ts)
-- [Docker CLI backend](https://github.com/rsaryev/localix/blob/main/plugins/devops/docker/backend/backend.ts)
-- [UI contributions](https://github.com/rsaryev/localix/blob/main/plugins/devops/docker/ui/register.tsx)
+- [Backend selection](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/docker/backend/backend-selection.ts)
+- [Endpoint resolution](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/docker/backend/docker-host.ts)
+- [Engine API client](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/docker/backend/api-backend.ts)
+- [Engine API version negotiation](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/docker/backend/api-version.ts)
+- [Docker CLI backend](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/docker/backend/backend.ts)
+- [UI contributions](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/docker/ui/register.tsx)

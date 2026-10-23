@@ -22,7 +22,7 @@ import { hasExtensionManifest, readExtensionManifest } from './lib/extension-man
  */
 
 const repoRoot = resolve(import.meta.dir, '..')
-const pluginsDir = join(repoRoot, 'plugins')
+const pluginsDir = join(repoRoot, 'mini-apps')
 
 /** Words that describe the frame rather than the plugin. */
 const CONTAINER_WORDS = ['Workspace', 'Panel', 'View', 'Plugin Panel']
@@ -39,7 +39,7 @@ function manifests(): Manifest[] {
       const dir = join(pluginsDir, entry)
       if (!statSync(dir).isDirectory() || !hasExtensionManifest(dir)) return []
       const parsed = readExtensionManifest(dir) as Manifest
-      return [{ ...parsed, path: `plugins/${entry}` }]
+      return [{ ...parsed, path: `mini-apps/${entry}` }]
     })
     .sort((left, right) => left.name.localeCompare(right.name))
 }
@@ -92,7 +92,7 @@ describe('shipped plugin names', () => {
       for (const match of source.matchAll(/\b(?:title|label):\s*'([^']+)'/gu)) {
         const value = match[1]!
         if (CONTAINER_WORDS.some((word) => value === word || value.endsWith(` ${word}`))) {
-          offenders.push(`plugins/${plugin.name}/ui/register.tsx: ${value}`)
+          offenders.push(`mini-apps/${plugin.name}/ui/register.tsx: ${value}`)
         }
       }
     }

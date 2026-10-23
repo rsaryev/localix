@@ -13,7 +13,7 @@
  *
  * SCOPE IS apps/api ONLY. Bundled plugins deliberately answer their own flat
  * `{ error, code, detail }` contracts, each with a client written for it — see
- * `plugins/<name>/backend/routes.ts`.
+ * `mini-apps/<name>/backend/routes.ts`.
  */
 import { describe, expect, setDefaultTimeout, test } from 'bun:test'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
@@ -86,7 +86,7 @@ describe('no route answers a flat error body', () => {
  */
 describe('no plugin route puts a machine code where the message goes', () => {
   const ROOT = join(import.meta.dir, '..', '..', '..', '..')
-  const PLUGIN_ROOT = join(ROOT, 'plugins')
+  const PLUGIN_ROOT = join(ROOT, 'mini-apps')
 
   /** `c.json({ error: '<snake_case_token>' }` — a bare identifier, not a sentence. */
   const BARE_CODE_BODY = new RegExp(String.raw`\bc\.json\(\s*\{\s*error:\s*'[a-z][a-z0-9_]*'\s*\}`)
@@ -109,7 +109,7 @@ describe('no plugin route puts a machine code where the message goes', () => {
     )
   })
 
-  test('positive control: the sweep really walked plugins/', () => {
+  test('positive control: the sweep really walked mini-apps/', () => {
     const files = sources(PLUGIN_ROOT)
     expect(files.length).toBeGreaterThan(100)
     expect(files.some((f) => f.includes(`${sep}backend${sep}`))).toBe(true)

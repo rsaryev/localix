@@ -44,7 +44,7 @@ describe('the web graph reaches no node builtin', () => {
     // two that reach OUTSIDE apps/ui (plugin UIs, feature contributions) are the ones
     // a rename would silently empty.
     expect(entries.length).toBeGreaterThan(10)
-    expect(entries.some((entry) => entry.startsWith('plugins/'))).toBe(true)
+    expect(entries.some((entry) => entry.startsWith('mini-apps/'))).toBe(true)
     expect(entries.some((entry) => entry.includes('/contrib.'))).toBe(true)
     expect(report(reachesNodeBuiltins(entries))).toEqual([])
   })

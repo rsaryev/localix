@@ -144,17 +144,17 @@ handwriting adapter. These are availability limits, not a release schedule.
 
 - [Workspace context](workspace.md#explicit-and-automatic-context)
 - [Context checkpoints](context-checkpoints.md)
-- [Reader implementation guide](https://github.com/rsaryev/localix/blob/main/plugins/reader/README.md)
+- [Reader implementation guide](https://github.com/rsaryev/localix/blob/main/mini-apps/reader/README.md)
 
 ## Source of truth
 
-- [Format recognition](https://github.com/rsaryev/localix/blob/main/plugins/reader/shared/formats.ts)
-- [Parser limits and path containment](https://github.com/rsaryev/localix/blob/main/plugins/reader/backend/library.ts)
-- [PDF text extraction](https://github.com/rsaryev/localix/blob/main/plugins/reader/backend/pdf.ts)
-- [Shelf and metadata persistence](https://github.com/rsaryev/localix/blob/main/plugins/reader/backend/service.ts)
-- [Browser reading records](https://github.com/rsaryev/localix/blob/main/plugins/reader/ui/readerStorage.ts)
-- [Reading statistics](https://github.com/rsaryev/localix/blob/main/plugins/reader/backend/stats.ts)
-- [Research tool](https://github.com/rsaryev/localix/blob/main/plugins/reader/backend/research-tool.ts)
-- [Resource expansion](https://github.com/rsaryev/localix/blob/main/plugins/reader/backend/resource-provider.ts)
-- [Search policy](https://github.com/rsaryev/localix/blob/main/plugins/reader/shared/search.ts)
-- [Reading interactions](https://github.com/rsaryev/localix/blob/main/plugins/reader/ui/ReaderReadingPane.tsx)
+- [Format recognition](https://github.com/rsaryev/localix/blob/main/mini-apps/reader/shared/formats.ts)
+- [Parser limits and path containment](https://github.com/rsaryev/localix/blob/main/mini-apps/reader/backend/library.ts)
+- [PDF text extraction](https://github.com/rsaryev/localix/blob/main/mini-apps/reader/backend/pdf.ts)
+- [Shelf and metadata persistence](https://github.com/rsaryev/localix/blob/main/mini-apps/reader/backend/service.ts)
+- [Browser reading records](https://github.com/rsaryev/localix/blob/main/mini-apps/reader/ui/readerStorage.ts)
+- [Reading statistics](https://github.com/rsaryev/localix/blob/main/mini-apps/reader/backend/stats.ts)
+- [Research tool](https://github.com/rsaryev/localix/blob/main/mini-apps/reader/backend/research-tool.ts)
+- [Resource expansion](https://github.com/rsaryev/localix/blob/main/mini-apps/reader/backend/resource-provider.ts)
+- [Search policy](https://github.com/rsaryev/localix/blob/main/mini-apps/reader/shared/search.ts)
+- [Reading interactions](https://github.com/rsaryev/localix/blob/main/mini-apps/reader/ui/ReaderReadingPane.tsx)

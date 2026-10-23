@@ -6,17 +6,12 @@ import { dirname, extname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseSync } from 'oxc-parser'
 import { readExtensionManifest } from './lib/extension-manifest.mjs'
-import {
-  BUNDLED_APPS_DIR,
-  BUNDLED_APPS_PREFIX,
-  appOfPath,
-  bundledAppsRoot,
-} from './lib/bundled-roots.mjs'
+import { BUNDLED_DIRS, MINI_APPS_PREFIX, appOfPath, bundledRoots } from './lib/bundled-roots.mjs'
 import { createPluginIdentityGuard, pluginUiNamespaceProblems } from './plugin-identity-guard.mjs'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 /** A workspace package's folder from a repository path: its group and its name. */
-const workspacePathPattern = new RegExp(`^(apps|packages|${BUNDLED_APPS_DIR})/([^/]+)/`, 'u')
+const workspacePathPattern = new RegExp(`^(apps|packages|${BUNDLED_DIRS.join('|')})/([^/]+)/`, 'u')
 const sourceExtensions = new Set(['.cjs', '.js', '.jsx', '.mjs', '.mts', '.ts', '.tsx'])
 const englishTextExtensions = new Set([
   ...sourceExtensions,
@@ -524,7 +519,7 @@ function kitBoundaryProblem(path, specifier, appPackageNames) {
   if (specifier.startsWith('@/')) {
     return `kit imports host internals ${specifier}; the kit sits below the host — take it as a prop or a port`
   }
-  if (specifier.startsWith('@localix-plugin/')) {
+  if (specifier.startsWith('@localix-mini-app/')) {
     return `kit imports plugin package ${specifier}; a plugin builds on the kit, never the reverse`
   }
   const packageName = /^(@localixai\/[^/]+)/u.exec(specifier)?.[1]
@@ -534,7 +529,7 @@ function kitBoundaryProblem(path, specifier, appPackageNames) {
   const target = specifier.startsWith('.')
     ? projectPath(resolve(root, dirname(path), specifier))
     : null
-  if (target?.startsWith('apps/') || target?.startsWith(BUNDLED_APPS_PREFIX)) {
+  if (target?.startsWith('apps/') || target?.startsWith(MINI_APPS_PREFIX)) {
     return `kit crosses into ${target} through a relative import`
   }
   return null
@@ -574,55 +569,52 @@ assert.match(
   /private workspace package/u,
 )
 assert.match(
-  pluginWorkspaceImportProblem('@localix-plugin/sample-extension') ?? '',
+  pluginWorkspaceImportProblem('@localix-mini-app/sample-extension') ?? '',
   /private workspace package/u,
 )
 assert.match(
   pluginSdkLayerProblem(
-    `${BUNDLED_APPS_PREFIX}example/ui/register.tsx`,
+    `${MINI_APPS_PREFIX}example/ui/register.tsx`,
     '@localixai/plugin-sdk/backend',
   ) ?? '',
   /Node-only/u,
 )
 assert.match(
   pluginSdkLayerProblem(
-    `${BUNDLED_APPS_PREFIX}example/backend/index.ts`,
+    `${MINI_APPS_PREFIX}example/backend/index.ts`,
     '@localixai/plugin-sdk/ui/runtime',
   ) ?? '',
   /browser-only/u,
 )
 assert.match(
   pluginSdkLayerProblem(
-    `${BUNDLED_APPS_PREFIX}example-suite/docker/ui/register.tsx`,
+    `${MINI_APPS_PREFIX}example-suite/docker/ui/register.tsx`,
     '@localixai/plugin-sdk/backend',
   ) ?? '',
   /Node-only/u,
 )
 assert.equal(
+  pluginHostBoundaryProblem(`${MINI_APPS_PREFIX}example/ui/register.tsx`, '@localixai/kit/button'),
+  null,
+)
+assert.equal(
   pluginHostBoundaryProblem(
-    `${BUNDLED_APPS_PREFIX}example/ui/register.tsx`,
+    `${MINI_APPS_PREFIX}example-suite/docker/ui/register.tsx`,
     '@localixai/kit/button',
   ),
   null,
 )
 assert.equal(
   pluginHostBoundaryProblem(
-    `${BUNDLED_APPS_PREFIX}example-suite/docker/ui/register.tsx`,
-    '@localixai/kit/button',
-  ),
-  null,
-)
-assert.equal(
-  pluginHostBoundaryProblem(
-    `${BUNDLED_APPS_PREFIX}example/backend/index.test.ts`,
+    `${MINI_APPS_PREFIX}example/backend/index.test.ts`,
     '@localixai/kit/testing',
   ),
   null,
 )
 assert.equal(localWorkspacePackageName('@localixai/kit/button'), null)
 for (const path of [
-  `${BUNDLED_APPS_PREFIX}example/ui/register.tsx`,
-  `${BUNDLED_APPS_PREFIX}example/ui/Panel.test.tsx`,
+  `${MINI_APPS_PREFIX}example/ui/register.tsx`,
+  `${MINI_APPS_PREFIX}example/ui/Panel.test.tsx`,
 ]) {
   assert.match(
     pluginHostBoundaryProblem(path, '@/shared/ui/button') ?? '',
@@ -631,14 +623,14 @@ for (const path of [
 }
 assert.match(
   pluginHostBoundaryProblem(
-    `${BUNDLED_APPS_PREFIX}example/backend/index.ts`,
+    `${MINI_APPS_PREFIX}example/backend/index.ts`,
     '@localixai/kit/button',
   ) ?? '',
   /non-UI plugin/u,
 )
 assert.match(
   pluginHostBoundaryProblem(
-    `${BUNDLED_APPS_PREFIX}example/ui/Box.tsx`,
+    `${MINI_APPS_PREFIX}example/ui/Box.tsx`,
     '@localixai/kit/user-settings',
   ) ?? '',
   /host feature state/u,
@@ -649,10 +641,10 @@ for (const [specifier, reason] of [
   ['@/shared/lib/x', /host internals/u],
   ['../../../apps/ui/src/shared/lib/x', /crosses into apps\/ui\/src\/shared\/lib\/x/u],
   [
-    `../../../${BUNDLED_APPS_PREFIX}example/ui/x`,
-    new RegExp(`crosses into ${BUNDLED_APPS_PREFIX}example/ui/x`, 'u'),
+    `../../../${MINI_APPS_PREFIX}example/ui/x`,
+    new RegExp(`crosses into ${MINI_APPS_PREFIX}example/ui/x`, 'u'),
   ],
-  ['@localix-plugin/example', /plugin package/u],
+  ['@localix-mini-app/example', /plugin package/u],
   ['@localixai/api/tool-names', /app package/u],
 ]) {
   assert.match(
@@ -729,7 +721,7 @@ for (const fixture of [
 }
 
 const workspaceManifests = new Map()
-for (const directory of ['apps', 'packages', BUNDLED_APPS_DIR]) {
+for (const directory of ['apps', 'packages', ...BUNDLED_DIRS]) {
   for (const entry of await readdir(join(root, directory), {
     withFileTypes: true,
   })) {
@@ -761,7 +753,7 @@ const problems = []
 const observedPluginKitEdges = new Set()
 const files = (
   await Promise.all(
-    ['apps', 'packages', BUNDLED_APPS_DIR, 'scripts'].map((directory) =>
+    ['apps', 'packages', ...BUNDLED_DIRS, 'scripts'].map((directory) =>
       sourceFiles(join(root, directory)),
     ),
   )
@@ -778,24 +770,25 @@ const auxiliaryCoreFiles = (
 // Otherwise the host's tsconfig/test runner has to enumerate concrete plugin trees, or
 // the source silently falls outside CI. Keep this structural so newly added plugins are
 // covered without extending an allowlist in core.
-for (const entry of await readdir(bundledAppsRoot(root), { withFileTypes: true })) {
-  if (!entry.isDirectory() || entry.name.startsWith('.')) continue
-  const directory = `${BUNDLED_APPS_PREFIX}${entry.name}`
-  const ownsTypeScript = files.some(
-    (file) => projectPath(file)?.startsWith(`${directory}/`) && /\.(?:ts|tsx)$/u.test(file),
-  )
-  if (!ownsTypeScript) continue
-  const workspace = workspaceManifests.get(directory)
-  if (!workspace) {
-    problems.push(`${directory}: TypeScript plugin has no package.json compile/test owner`)
-    continue
-  }
-  for (const script of ['test', 'type-check']) {
-    if (typeof workspace.scripts[script] !== 'string' || workspace.scripts[script].length === 0) {
-      problems.push(`${directory}: TypeScript plugin package is missing the ${script} script`)
+for (const bundledRoot of bundledRoots(root))
+  for (const entry of await readdir(bundledRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory() || entry.name.startsWith('.')) continue
+    const directory = `${relative(root, bundledRoot)}/${entry.name}`
+    const ownsTypeScript = files.some(
+      (file) => projectPath(file)?.startsWith(`${directory}/`) && /\.(?:ts|tsx)$/u.test(file),
+    )
+    if (!ownsTypeScript) continue
+    const workspace = workspaceManifests.get(directory)
+    if (!workspace) {
+      problems.push(`${directory}: TypeScript plugin has no package.json compile/test owner`)
+      continue
+    }
+    for (const script of ['test', 'type-check']) {
+      if (typeof workspace.scripts[script] !== 'string' || workspace.scripts[script].length === 0) {
+        problems.push(`${directory}: TypeScript plugin package is missing the ${script} script`)
+      }
     }
   }
-}
 
 // Product-controlled text is English-only. This keeps model-facing metadata,
 // UI copy, fixtures, documentation, and vendored runtime text from silently
@@ -804,19 +797,20 @@ const cyrillic = /[\u0400-\u04ff]/u
 const bundledPluginNames = []
 const bundledPluginManifests = []
 const bundledPluginNameByDirectory = new Map()
-for (const entry of await readdir(bundledAppsRoot(root), { withFileTypes: true })) {
-  if (!entry.isDirectory()) continue
-  try {
-    const manifest = readExtensionManifest(join(bundledAppsRoot(root), entry.name))
-    if (typeof manifest.name === 'string') {
-      bundledPluginNames.push(manifest.name)
-      bundledPluginManifests.push(manifest)
-      bundledPluginNameByDirectory.set(entry.name, manifest.name)
+for (const bundledRoot of bundledRoots(root))
+  for (const entry of await readdir(bundledRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue
+    try {
+      const manifest = readExtensionManifest(join(bundledRoot, entry.name))
+      if (typeof manifest.name === 'string') {
+        bundledPluginNames.push(manifest.name)
+        bundledPluginManifests.push(manifest)
+        bundledPluginNameByDirectory.set(entry.name, manifest.name)
+      }
+    } catch {
+      // Manifest validation owns malformed plugin reporting. This guard only needs valid identities.
     }
-  } catch {
-    // Manifest validation owns malformed plugin reporting. This guard only needs valid identities.
   }
-}
 
 // Identity belongs to the plugin that registers it. Build the forbidden catalog from
 // the real bundled register() results instead of a hand-maintained core allowlist. A
@@ -869,7 +863,7 @@ for (const manifest of bundledPluginManifests) {
 }
 for (const file of files) {
   const path = projectPath(file)
-  if (!path?.startsWith(BUNDLED_APPS_PREFIX) || /\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(path)) {
+  if (!path?.startsWith(MINI_APPS_PREFIX) || /\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(path)) {
     continue
   }
   const source = (await readFile(file, 'utf8'))
@@ -909,7 +903,7 @@ const pluginUiContributions = []
 for (const file of files) {
   const path = projectPath(file)
   if (
-    !path?.startsWith(BUNDLED_APPS_PREFIX) ||
+    !path?.startsWith(MINI_APPS_PREFIX) ||
     !path.includes('/ui/') ||
     /\.(?:test|spec)\./u.test(path)
   ) {
@@ -988,12 +982,12 @@ for (const [index, source] of identityPositiveControls.entries()) {
 // quoted form is how a core contract test once kept a list of files inside six bundled plugins,
 // and the relative-only pattern let it through.
 const concretePluginTreePattern = new RegExp(
-  `(?:(?:\\.\\./)+|\\$TURBO_ROOT\\$/|["'\`])${BUNDLED_APPS_PREFIX}(?:${bundledPluginNames.join('|')})/`,
+  `(?:(?:\\.\\./)+|\\$TURBO_ROOT\\$/|["'\`])${MINI_APPS_PREFIX}(?:${bundledPluginNames.join('|')})/`,
   'u',
 )
 for (const control of [
-  `import x from '../../${BUNDLED_APPS_PREFIX}${bundledPluginNames[0]}/ui/x'`,
-  `['${BUNDLED_APPS_PREFIX}${bundledPluginNames[0]}/ui/X.tsx', 1]`,
+  `import x from '../../${MINI_APPS_PREFIX}${bundledPluginNames[0]}/ui/x'`,
+  `['${MINI_APPS_PREFIX}${bundledPluginNames[0]}/ui/X.tsx', 1]`,
 ]) {
   assert(
     concretePluginTreePattern.test(control),
@@ -1053,7 +1047,7 @@ for (const [index, control] of [
 }
 const englishOnlyFiles = (
   await Promise.all(
-    ['apps', 'docs', 'packages', BUNDLED_APPS_DIR, 'scripts', 'vendor'].map((directory) =>
+    ['apps', 'docs', 'packages', ...BUNDLED_DIRS, 'scripts', 'vendor'].map((directory) =>
       englishTextFiles(join(root, directory)),
     ),
   )
@@ -1093,7 +1087,7 @@ for (const file of englishOnlyFiles) {
     ) {
       problems.push(
         `${path}:${index + 1}: core references a concrete bundled plugin tree; ` +
-          `plugins own their compile/test projects and integration belongs under ${BUNDLED_APPS_PREFIX} or scripts/`,
+          `plugins own their compile/test projects and integration belongs under ${MINI_APPS_PREFIX} or scripts/`,
       )
     }
   }
@@ -1178,7 +1172,7 @@ for (const file of files) {
   // built inline in `register()` are invisible here and stay the owning plugin's
   // job to test; a manifest-reading check would be worse than nothing, since
   // manifests carry tool NAMES and no descriptions at all.
-  if (path.startsWith(BUNDLED_APPS_PREFIX) && !testSource) {
+  if (path.startsWith(MINI_APPS_PREFIX) && !testSource) {
     for (const match of source.matchAll(
       /export const (\w*DESCRIPTION\w*)\s*=\s*`((?:[^`\\]|\\.)*)`/gu,
     )) {
@@ -1452,7 +1446,7 @@ for (const file of files) {
       // Tests too: the kit runs its own suite from its own package, where `@/` means nothing.
       problems.push(`${path}: ${kitProblem}`)
     } else if (packageMatch) {
-      if (target?.startsWith('apps/') || target?.startsWith(BUNDLED_APPS_PREFIX)) {
+      if (target?.startsWith('apps/') || target?.startsWith(MINI_APPS_PREFIX)) {
         problems.push(`${path}: package crosses into ${target} through a relative import`)
       }
     }
@@ -1462,7 +1456,7 @@ for (const file of files) {
     // part of the host's compile-time architecture and silently bypass discovery,
     // enablement, and isolation. Tests may import fixtures explicitly; production
     // host code may not.
-    if (coreOrPackageProductionSource && target?.startsWith(BUNDLED_APPS_PREFIX)) {
+    if (coreOrPackageProductionSource && target?.startsWith(MINI_APPS_PREFIX)) {
       problems.push(
         `${path}: host imports concrete plugin source (${target}); compose it through ` +
           'plugin discovery and @localixai/plugin-sdk contracts',
@@ -1500,7 +1494,7 @@ for (const file of files) {
     }
 
     const targetPluginMatch = target ? appOfPath(target) : null
-    if (!pluginMatch && !testSource && specifier.startsWith('@localix-plugin/')) {
+    if (!pluginMatch && !testSource && specifier.startsWith('@localix-mini-app/')) {
       problems.push(
         `${path}: host/package imports concrete plugin package ${specifier}; compose it through ` +
           'plugin discovery and @localixai/plugin-sdk contracts',

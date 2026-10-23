@@ -99,9 +99,9 @@ downloads.
 
 ## Source of truth
 
-- [Workspace resolution](https://github.com/rsaryev/localix/blob/main/plugins/resume/backend/index.ts)
-- [Saved files and size guard](https://github.com/rsaryev/localix/blob/main/plugins/resume/backend/files.ts)
-- [Saved history retention](https://github.com/rsaryev/localix/blob/main/plugins/resume/backend/revisions.ts)
-- [Draft recovery](https://github.com/rsaryev/localix/blob/main/plugins/resume/ui/useResumeDraft.ts)
-- [Local undo grouping](https://github.com/rsaryev/localix/blob/main/plugins/resume/ui/history.ts)
-- [Shared PDF cache](https://github.com/rsaryev/localix/blob/main/plugins/resume/ui/pdf.ts)
+- [Workspace resolution](https://github.com/rsaryev/localix/blob/main/mini-apps/resume/backend/index.ts)
+- [Saved files and size guard](https://github.com/rsaryev/localix/blob/main/mini-apps/resume/backend/files.ts)
+- [Saved history retention](https://github.com/rsaryev/localix/blob/main/mini-apps/resume/backend/revisions.ts)
+- [Draft recovery](https://github.com/rsaryev/localix/blob/main/mini-apps/resume/ui/useResumeDraft.ts)
+- [Local undo grouping](https://github.com/rsaryev/localix/blob/main/mini-apps/resume/ui/history.ts)
+- [Shared PDF cache](https://github.com/rsaryev/localix/blob/main/mini-apps/resume/ui/pdf.ts)

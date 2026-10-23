@@ -1,5 +1,6 @@
 import {
   copyFileSync,
+  existsSync,
   mkdirSync,
   readFileSync,
   readdirSync,
@@ -8,7 +9,7 @@ import {
 } from 'node:fs'
 import { dirname, join, parse, relative } from 'node:path'
 
-import { bundledAppsRoot } from './lib/bundled-roots.mjs'
+import { bundledRoots } from './lib/bundled-roots.mjs'
 import { readExtensionManifest } from './lib/extension-manifest.mjs'
 
 import {
@@ -108,16 +109,16 @@ function runtimeRootManifestPaths(repoRoot, target) {
   )
   if (target === 'landing') return roots
 
-  const plugins = bundledAppsRoot(repoRoot)
-  for (const entry of readdirSync(plugins, { withFileTypes: true })) {
-    if (!entry.isDirectory() || isPrivatePluginDir(plugins, entry.name)) continue
-    const manifestPath = join(plugins, entry.name, 'package.json')
-    try {
-      if (statSync(manifestPath).isFile()) roots.push(manifestPath)
-    } catch {
-      // Plugins without npm dependencies have no package.json.
+  for (const plugins of bundledRoots(repoRoot).filter((root) => existsSync(root)))
+    for (const entry of readdirSync(plugins, { withFileTypes: true })) {
+      if (!entry.isDirectory() || isPrivatePluginDir(plugins, entry.name)) continue
+      const manifestPath = join(plugins, entry.name, 'package.json')
+      try {
+        if (statSync(manifestPath).isFile()) roots.push(manifestPath)
+      } catch {
+        // Plugins without npm dependencies have no package.json.
+      }
     }
-  }
   return roots.sort((left, right) => left.localeCompare(right))
 }
 

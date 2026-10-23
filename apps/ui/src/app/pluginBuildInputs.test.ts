@@ -10,7 +10,7 @@ describe('UI build cache inputs', () => {
       tasks?: { build?: { inputs?: string[] } }
     }
 
-    expect(config.tasks?.build?.inputs).toContain('$TURBO_ROOT$/plugins/**/ui/**')
-    expect(config.tasks?.build?.inputs).toContain('$TURBO_ROOT$/plugins/**/backend/**')
+    expect(config.tasks?.build?.inputs).toContain('$TURBO_ROOT$/mini-apps/**/ui/**')
+    expect(config.tasks?.build?.inputs).toContain('$TURBO_ROOT$/mini-apps/**/backend/**')
   })
 })

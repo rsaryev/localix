@@ -125,7 +125,8 @@ describe('test tiers', () => {
     const missing: string[] = []
     for (const manifest of tracked) {
       const dir = dirname(manifest)
-      if (!manifest.endsWith('package.json') || dir === '.' || dir === 'plugins/template') continue
+      if (!manifest.endsWith('package.json') || dir === '.' || dir === 'mini-apps/template')
+        continue
       if (dir.startsWith('docs/')) continue
       const { scripts = {} } = JSON.parse(readFileSync(join(root, manifest), 'utf8'))
       if (!String(scripts.test ?? '').startsWith('bun test')) continue

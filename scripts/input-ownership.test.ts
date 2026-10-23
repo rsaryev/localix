@@ -32,12 +32,12 @@ const NATIVE_INPUT_OWNERS = new Map<string, number>([
   // The stepped slider primitive is a native range input under its own track and step dots.
   ['packages/kit/src/controls/slider.tsx', 1],
   ['packages/kit/src/controls/switch.tsx', 1],
-  ['plugins/api/ui/ui/ImportDialog.tsx', 1], // hidden file picker behind a Button
-  ['plugins/database/ui/ui/DefaultSqlEditor.tsx', 1],
-  ['plugins/database/ui/ui/sql-console/ExportMenu.tsx', 1],
-  ['plugins/learning/ui/LearningLibrary.tsx', 1],
-  ['plugins/reader/ui/ReaderReadingPane.tsx', 1], // hidden file picker for annotation import
-  ['plugins/trading/ui/ui/IndicatorParamsInline.tsx', 1],
+  ['mini-apps/api/ui/ui/ImportDialog.tsx', 1], // hidden file picker behind a Button
+  ['mini-apps/database/ui/ui/DefaultSqlEditor.tsx', 1],
+  ['mini-apps/database/ui/ui/sql-console/ExportMenu.tsx', 1],
+  ['mini-apps/learning/ui/LearningLibrary.tsx', 1],
+  ['mini-apps/reader/ui/ReaderReadingPane.tsx', 1], // hidden file picker for annotation import
+  ['mini-apps/trading/ui/ui/IndicatorParamsInline.tsx', 1],
 ])
 
 describe('input ownership boundary', () => {
@@ -45,7 +45,7 @@ describe('input ownership boundary', () => {
     const actual = new Map<string, number>()
 
     // The kit is where the primitives live; leaving it out would stop counting the owners.
-    for (const sourceRoot of ['apps/ui/src', 'packages/kit/src', 'plugins']) {
+    for (const sourceRoot of ['apps/ui/src', 'packages/kit/src', 'mini-apps']) {
       for (const path of new Bun.Glob('**/*.tsx').scanSync({
         cwd: `${REPO_ROOT}/${sourceRoot}`,
       })) {

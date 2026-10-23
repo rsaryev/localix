@@ -167,13 +167,14 @@ See [Capabilities](capabilities.md#plugin-tools) for how a plugin rule and a too
 
 ## Source of truth
 
-- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/plugins/kanban/.localix-app/app.json)
+- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/mini-apps/kanban/.localix-app/app.json)
   and
-  [backend registration](https://github.com/rsaryev/localix/blob/main/plugins/kanban/backend/index.ts)
-- [Board operations](https://github.com/rsaryev/localix/blob/main/plugins/kanban/backend/operations.ts)
-  and [workflow rules](https://github.com/rsaryev/localix/blob/main/plugins/kanban/shared/rules.ts)
-- [Per-chat store](https://github.com/rsaryev/localix/blob/main/plugins/kanban/backend/store.ts) and
-  [service](https://github.com/rsaryev/localix/blob/main/plugins/kanban/backend/service.ts)
-- [Agent tool](https://github.com/rsaryev/localix/blob/main/plugins/kanban/backend/tools.ts)
-- [Resource and search providers](https://github.com/rsaryev/localix/blob/main/plugins/kanban/backend/references.ts)
-- [Plugin UI registration](https://github.com/rsaryev/localix/blob/main/plugins/kanban/ui/register.tsx)
+  [backend registration](https://github.com/rsaryev/localix/blob/main/mini-apps/kanban/backend/index.ts)
+- [Board operations](https://github.com/rsaryev/localix/blob/main/mini-apps/kanban/backend/operations.ts)
+  and
+  [workflow rules](https://github.com/rsaryev/localix/blob/main/mini-apps/kanban/shared/rules.ts)
+- [Per-chat store](https://github.com/rsaryev/localix/blob/main/mini-apps/kanban/backend/store.ts)
+  and [service](https://github.com/rsaryev/localix/blob/main/mini-apps/kanban/backend/service.ts)
+- [Agent tool](https://github.com/rsaryev/localix/blob/main/mini-apps/kanban/backend/tools.ts)
+- [Resource and search providers](https://github.com/rsaryev/localix/blob/main/mini-apps/kanban/backend/references.ts)
+- [Plugin UI registration](https://github.com/rsaryev/localix/blob/main/mini-apps/kanban/ui/register.tsx)

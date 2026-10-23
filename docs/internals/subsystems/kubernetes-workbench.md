@@ -45,18 +45,18 @@ DevOps Workspace and Kubernetes detail tabs
 
 ### Module contracts
 
-| Module                                                                                  | Mechanism and invariant                                                                                | Failure when violated                                                           |
-| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| [`backend/index.ts`](../../../plugins/devops/kubernetes/backend/index.ts)               | Returns one backend subsystem, resource/context/search providers, pod-watch frames, and shutdown hooks | Plugin disable leaves live sockets or a contribution without its owning service |
-| [`backend-port.ts`](../../../plugins/devops/kubernetes/backend/backend-port.ts)         | Keeps routes and UI on cluster-neutral Localix shapes                                                  | Generated client models leak across the subsystem boundary                      |
-| [`api-backend.ts`](../../../plugins/devops/kubernetes/backend/api-backend.ts)           | Selects context per config, maps API objects, and implements reads and mutations                       | A call can target the wrong cluster or return transport-specific data           |
-| [`api-http.ts`](../../../plugins/devops/kubernetes/backend/api-http.ts)                 | Applies kubeconfig authentication, CA, client certificate/key, server name, and HTTP proxy             | API requests fail or bypass configured trust material                           |
-| [`api-websocket.ts`](../../../plugins/devops/kubernetes/backend/api-websocket.ts)       | Applies kubeconfig TLS and headers to watch, exec, and forwarding sockets                              | Streaming paths use different trust or authentication from REST                 |
-| [`api-watch.ts`](../../../plugins/devops/kubernetes/backend/api-watch.ts)               | Reference-counts informers and reconnects with capped exponential backoff                              | Dead watches are reported as live or leak after the last subscriber             |
-| [`api-exec.ts`](../../../plugins/devops/kubernetes/backend/api-exec.ts)                 | Keeps credentials out of terminal commands by using a one-use local relay token                        | Reusable relay URLs widen access to a pod shell                                 |
-| [`api-port-forward.ts`](../../../plugins/devops/kubernetes/backend/api-port-forward.ts) | Validates the pod, binds loopback, probes the real tunnel, and tracks owner generation                 | A listening socket is reported ready without a working cluster tunnel           |
-| [`route-guard.ts`](../../../plugins/devops/kubernetes/backend/route-guard.ts)           | Maps validation and Kubernetes failures into one typed error envelope                                  | UI receives raw errors or inconsistent HTTP status codes                        |
-| [`ui/register.tsx`](../../../plugins/devops/kubernetes/ui/register.tsx)                 | Registers transient entity tabs, search scope, glyphs, and URI anchors                                 | Restored tabs can query deleted live objects or search hits cannot open         |
+| Module                                                                                    | Mechanism and invariant                                                                                | Failure when violated                                                           |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| [`backend/index.ts`](../../../mini-apps/devops/kubernetes/backend/index.ts)               | Returns one backend subsystem, resource/context/search providers, pod-watch frames, and shutdown hooks | Plugin disable leaves live sockets or a contribution without its owning service |
+| [`backend-port.ts`](../../../mini-apps/devops/kubernetes/backend/backend-port.ts)         | Keeps routes and UI on cluster-neutral Localix shapes                                                  | Generated client models leak across the subsystem boundary                      |
+| [`api-backend.ts`](../../../mini-apps/devops/kubernetes/backend/api-backend.ts)           | Selects context per config, maps API objects, and implements reads and mutations                       | A call can target the wrong cluster or return transport-specific data           |
+| [`api-http.ts`](../../../mini-apps/devops/kubernetes/backend/api-http.ts)                 | Applies kubeconfig authentication, CA, client certificate/key, server name, and HTTP proxy             | API requests fail or bypass configured trust material                           |
+| [`api-websocket.ts`](../../../mini-apps/devops/kubernetes/backend/api-websocket.ts)       | Applies kubeconfig TLS and headers to watch, exec, and forwarding sockets                              | Streaming paths use different trust or authentication from REST                 |
+| [`api-watch.ts`](../../../mini-apps/devops/kubernetes/backend/api-watch.ts)               | Reference-counts informers and reconnects with capped exponential backoff                              | Dead watches are reported as live or leak after the last subscriber             |
+| [`api-exec.ts`](../../../mini-apps/devops/kubernetes/backend/api-exec.ts)                 | Keeps credentials out of terminal commands by using a one-use local relay token                        | Reusable relay URLs widen access to a pod shell                                 |
+| [`api-port-forward.ts`](../../../mini-apps/devops/kubernetes/backend/api-port-forward.ts) | Validates the pod, binds loopback, probes the real tunnel, and tracks owner generation                 | A listening socket is reported ready without a working cluster tunnel           |
+| [`route-guard.ts`](../../../mini-apps/devops/kubernetes/backend/route-guard.ts)           | Maps validation and Kubernetes failures into one typed error envelope                                  | UI receives raw errors or inconsistent HTTP status codes                        |
+| [`ui/register.tsx`](../../../mini-apps/devops/kubernetes/ui/register.tsx)                 | Registers transient entity tabs, search scope, glyphs, and URI anchors                                 | Restored tabs can query deleted live objects or search hits cannot open         |
 
 ### Mutation contracts
 
@@ -126,17 +126,17 @@ anchors open the DevOps singleton; entity anchors open the matching transient ta
 
 ## Source of truth
 
-- [Plugin boundary](../../../plugins/devops/.localix-app/app.json) ·
-  [plugins/devops/backend/index.ts](../../../plugins/devops/backend/index.ts)
-- [Backend composition](../../../plugins/devops/kubernetes/backend/index.ts) ·
-  [routes.test.ts](../../../plugins/devops/kubernetes/backend/routes.test.ts)
-- [Kubernetes API behavior](../../../plugins/devops/kubernetes/backend/api-backend.ts) ·
-  [kubernetes-client.test.ts](../../../plugins/devops/kubernetes/backend/kubernetes-client.test.ts)
-- [Watch, exec, and forward lifecycle](../../../plugins/devops/kubernetes/backend/api-watch.test.ts)
-  · [api-exec.test.ts](../../../plugins/devops/kubernetes/backend/api-exec.test.ts) ·
-  [api-port-forward.test.ts](../../../plugins/devops/kubernetes/backend/api-port-forward.test.ts)
-- [API discovery](../../../plugins/devops/kubernetes/backend/discovery.ts)
-- [Resource and context references](../../../plugins/devops/kubernetes/backend/resource-provider.ts)
-  · [context-provider.ts](../../../plugins/devops/kubernetes/backend/context-provider.ts)
-- [UI contributions](../../../plugins/devops/kubernetes/ui/register.tsx) ·
-  [ui/register.test.tsx](../../../plugins/devops/kubernetes/ui/register.test.tsx)
+- [Plugin boundary](../../../mini-apps/devops/.localix-app/app.json) ·
+  [mini-apps/devops/backend/index.ts](../../../mini-apps/devops/backend/index.ts)
+- [Backend composition](../../../mini-apps/devops/kubernetes/backend/index.ts) ·
+  [routes.test.ts](../../../mini-apps/devops/kubernetes/backend/routes.test.ts)
+- [Kubernetes API behavior](../../../mini-apps/devops/kubernetes/backend/api-backend.ts) ·
+  [kubernetes-client.test.ts](../../../mini-apps/devops/kubernetes/backend/kubernetes-client.test.ts)
+- [Watch, exec, and forward lifecycle](../../../mini-apps/devops/kubernetes/backend/api-watch.test.ts)
+  · [api-exec.test.ts](../../../mini-apps/devops/kubernetes/backend/api-exec.test.ts) ·
+  [api-port-forward.test.ts](../../../mini-apps/devops/kubernetes/backend/api-port-forward.test.ts)
+- [API discovery](../../../mini-apps/devops/kubernetes/backend/discovery.ts)
+- [Resource and context references](../../../mini-apps/devops/kubernetes/backend/resource-provider.ts)
+  · [context-provider.ts](../../../mini-apps/devops/kubernetes/backend/context-provider.ts)
+- [UI contributions](../../../mini-apps/devops/kubernetes/ui/register.tsx) ·
+  [ui/register.test.tsx](../../../mini-apps/devops/kubernetes/ui/register.test.tsx)

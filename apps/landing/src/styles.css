@@ -13,8 +13,6 @@
    sources explicit so utility classes here are generated. */
 @source "./";
 
-/* The product stylesheet above registers `@source "plugins"` so workbench
-   surfaces keep their arbitrary utilities. The landing renders no plugin UI, so
-   inheriting that glob generated 72KB of dead CSS — 44% of this file. Drop it
-   here; the product build keeps it. */
-@source not "../../../plugins";
+/* The landing renders no mini app UI: a glob over the mini apps once generated 72KB of dead CSS,
+   44% of this file. */
+@source not "../../../mini-apps";

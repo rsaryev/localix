@@ -100,16 +100,16 @@ the workbench does not change kubeconfig's current context.
 
 ## Source of truth
 
-- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/plugins/devops/.localix-app/app.json)
+- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/.localix-app/app.json)
   ·
-  [plugins/devops/backend/index.ts](https://github.com/rsaryev/localix/blob/main/plugins/devops/backend/index.ts)
-- [Workbench registration](https://github.com/rsaryev/localix/blob/main/plugins/devops/ui/register.tsx)
-- [Docker backend selection](https://github.com/rsaryev/localix/blob/main/plugins/devops/docker/backend/index.ts)
+  [mini-apps/devops/backend/index.ts](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/backend/index.ts)
+- [Workbench registration](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/ui/register.tsx)
+- [Docker backend selection](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/docker/backend/index.ts)
   ·
-  [plugins/devops/docker/backend/backend-selection.ts](https://github.com/rsaryev/localix/blob/main/plugins/devops/docker/backend/backend-selection.ts)
-- [Kubernetes backend composition](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/backend/index.ts)
-- [Provider UI contributions](https://github.com/rsaryev/localix/blob/main/plugins/devops/docker/ui/register.tsx)
+  [mini-apps/devops/docker/backend/backend-selection.ts](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/docker/backend/backend-selection.ts)
+- [Kubernetes backend composition](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/kubernetes/backend/index.ts)
+- [Provider UI contributions](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/docker/ui/register.tsx)
   ·
-  [plugins/devops/kubernetes/ui/register.tsx](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/ui/register.tsx)
-- [Docker action outcomes](https://github.com/rsaryev/localix/blob/main/plugins/devops/docker/ui/model/useDockerSidebarActions.ts)
-- [Kubernetes action outcomes](https://github.com/rsaryev/localix/blob/main/plugins/devops/kubernetes/ui/model/useKubernetesSidebarActions.ts)
+  [mini-apps/devops/kubernetes/ui/register.tsx](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/kubernetes/ui/register.tsx)
+- [Docker action outcomes](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/docker/ui/model/useDockerSidebarActions.ts)
+- [Kubernetes action outcomes](https://github.com/rsaryev/localix/blob/main/mini-apps/devops/kubernetes/ui/model/useKubernetesSidebarActions.ts)

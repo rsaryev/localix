@@ -1,14 +1,14 @@
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { captureRoot, verifyDemoRuntime } from './runtime.mjs'
-import * as chess from '../../plugins/chess/shared/game.ts'
-import * as checkers from '../../plugins/checkers/shared/game.ts'
-import * as tic from '../../plugins/tic-tac-toe/shared/game.ts'
-import * as rps from '../../plugins/rock-paper-scissors/shared/game.ts'
+import * as chess from '../../mini-apps/chess/shared/game.ts'
+import * as checkers from '../../mini-apps/checkers/shared/game.ts'
+import * as tic from '../../mini-apps/tic-tac-toe/shared/game.ts'
+import * as rps from '../../mini-apps/rock-paper-scissors/shared/game.ts'
 import { seal } from '../../packages/plugin-sdk/src/backend/sealed.ts'
-import * as battleship from '../../plugins/battleship/shared/game.ts'
-import * as puzzle from '../../plugins/game-2048/shared/game.ts'
-import { placeFleet } from '../../plugins/battleship/shared/rules.ts'
+import * as battleship from '../../mini-apps/battleship/shared/game.ts'
+import * as puzzle from '../../mini-apps/game-2048/shared/game.ts'
+import { placeFleet } from '../../mini-apps/battleship/shared/rules.ts'
 
 /** Legal illustrative positions; no agent tool, provider call or host wake is executed. */
 export async function seedGames() {

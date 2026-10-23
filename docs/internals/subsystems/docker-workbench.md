@@ -135,12 +135,12 @@ SHA-256 directory name used by the Docker context store.
 
 ## Source of truth
 
-- [Provider registration](../../../plugins/devops/docker/backend/index.ts)
-- [Backend port and CLI adapter](../../../plugins/devops/docker/backend/backend.ts)
-- [Backend selection](../../../plugins/devops/docker/backend/backend-selection.ts)
-- [Endpoint resolution](../../../plugins/devops/docker/backend/docker-host.ts)
-- [API transport](../../../plugins/devops/docker/backend/api-transport.ts)
-- [Engine API adapter](../../../plugins/devops/docker/backend/api-backend.ts)
-- [Routes](../../../plugins/devops/docker/backend/routes.ts)
-- [UI registration](../../../plugins/devops/docker/ui/register.tsx)
-- [Inventory model](../../../plugins/devops/docker/ui/model/useDocker.ts)
+- [Provider registration](../../../mini-apps/devops/docker/backend/index.ts)
+- [Backend port and CLI adapter](../../../mini-apps/devops/docker/backend/backend.ts)
+- [Backend selection](../../../mini-apps/devops/docker/backend/backend-selection.ts)
+- [Endpoint resolution](../../../mini-apps/devops/docker/backend/docker-host.ts)
+- [API transport](../../../mini-apps/devops/docker/backend/api-transport.ts)
+- [Engine API adapter](../../../mini-apps/devops/docker/backend/api-backend.ts)
+- [Routes](../../../mini-apps/devops/docker/backend/routes.ts)
+- [UI registration](../../../mini-apps/devops/docker/ui/register.tsx)
+- [Inventory model](../../../mini-apps/devops/docker/ui/model/useDocker.ts)

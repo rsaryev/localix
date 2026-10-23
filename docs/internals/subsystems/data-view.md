@@ -41,8 +41,8 @@ stored row array before slicing the requested page.
 ## Source of truth
 
 - [Data-view package](../../../packages/dataview/src/model.ts)
-- [Table store](../../../plugins/documents/backend/table/store.ts)
-- [Table service](../../../plugins/documents/backend/table/service.ts)
-- [Table routes](../../../plugins/documents/backend/table/routes.ts)
-- [Spreadsheet file tab](../../../plugins/documents/ui/TableFileTab.tsx)
-- [Table tab](../../../plugins/documents/ui/table/TableTab.tsx)
+- [Table store](../../../mini-apps/documents/backend/table/store.ts)
+- [Table service](../../../mini-apps/documents/backend/table/service.ts)
+- [Table routes](../../../mini-apps/documents/backend/table/routes.ts)
+- [Spreadsheet file tab](../../../mini-apps/documents/ui/TableFileTab.tsx)
+- [Table tab](../../../mini-apps/documents/ui/table/TableTab.tsx)

@@ -8,7 +8,7 @@ import { agentInstruction, agentsMd, HOST_JUDGMENT_CONTRACT, LIVE_DATA_CONTRACT 
 import { loadTemplateScaffold } from './template-layout'
 
 const repoRoot = resolve(import.meta.dir, '../../../../../..')
-const templateDir = join(repoRoot, 'plugins', 'template')
+const templateDir = join(repoRoot, 'mini-apps', 'template')
 const kit: PluginKit = {
   dir: repoRoot,
   templateDir,

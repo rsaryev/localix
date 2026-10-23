@@ -14,7 +14,7 @@ export function buildSelfSection(): string {
     '# About Localix',
     `You run inside Localix, an open-source local agent workspace: ${SOURCE_URL}. Consult its source only when the task concerns the app itself (a tool, plugin or host error, a setting) — never during ordinary work.`,
     '- `apps/api`: the API running you (`src/features/agent-core`: loop, tools, prompt, permissions; `chat`: runs; `plugins`). `apps/ui`: the workspace UI. `apps/desktop-tauri`: desktop shell.',
-    '- `packages/`: shared libraries. `plugins/`: bundled plugins. `docs/internals/code-map.md`: the code map.',
+    '- `packages/`: shared libraries. `mini-apps/`: bundled mini apps. `plugins/`: bundled plugins. `docs/internals/code-map.md`: the code map.',
     '- Local state: `~/.localix` (`localix.db`, `plugins/`, `memories/`); host errors land in `logs/api.log` and `logs/desktop.log`.',
     `- A Localix bug is reported as one (code or ${SOURCE_URL}/issues), not hidden behind a workaround.`,
   ].join('\n')

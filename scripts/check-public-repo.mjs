@@ -4,7 +4,7 @@ import { access, readFile, readdir } from 'node:fs/promises'
 import { dirname, join, resolve, sep } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { repoRoot } from './lib/paths.mjs'
-import { BUNDLED_APPS_DIR, BUNDLED_APPS_PREFIX } from './lib/bundled-roots.mjs'
+import { BUNDLED_DIRS } from './lib/bundled-roots.mjs'
 
 const root = repoRoot()
 const requiredFiles = [
@@ -54,7 +54,7 @@ const rootPackage = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'
 assert.equal(rootPackage.private, true, 'The monorepo root must never be publishable to npm')
 
 const workspacePackages = []
-for (const directory of ['apps', 'packages', BUNDLED_APPS_DIR]) {
+for (const directory of ['apps', 'packages', ...BUNDLED_DIRS]) {
   for (const entry of await readdir(join(root, directory), { withFileTypes: true })) {
     if (!entry.isDirectory()) continue
     const packagePath = join(root, directory, entry.name, 'package.json')
@@ -165,7 +165,7 @@ const publicReferenceFiles = repositoryFiles.filter(
     file.startsWith('.github/') ||
     file.startsWith('apps/landing/') ||
     file.startsWith('docs/') ||
-    file.startsWith(BUNDLED_APPS_PREFIX) ||
+    BUNDLED_DIRS.some((dir) => file.startsWith(`${dir}/`)) ||
     file.endsWith('/package.json'),
 )
 for (const file of publicReferenceFiles) {

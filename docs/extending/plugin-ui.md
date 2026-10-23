@@ -52,7 +52,7 @@ The whole text after `create` is the request, lines and lists included. The agen
 `plugin_build` call names the plugin (lower-kebab-case, such as `gpu-monitor`) and gives it a title;
 the host makes the name valid and, when it is taken, uses the next free one (`gpu-monitor-2`), so a
 new plugin never edits one you already have. The copy comes from the
-[System Overview reference template](https://github.com/rsaryev/localix/tree/main/plugins/template)
+[System Overview reference template](https://github.com/rsaryev/localix/tree/main/mini-apps/template)
 in the plugin kit and lives under `~/.localix/plugins/<name>`. The agent is told the plugin's folder
 and nothing else; the Localix application's own files are off limits to it. To change a plugin, ask
 in chat; the agent edits and rebuilds it with `plugin_build`. A build runs plugin code, so only your

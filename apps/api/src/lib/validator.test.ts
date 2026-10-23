@@ -134,7 +134,7 @@ describe('every plugin router reaches the validator through the SDK', () => {
   /** Code only — a rule satisfied by a COMMENT that merely NAMES the helper is not a rule. */
   const codeOf = (file: string) => stripComments(readFileSync(file, 'utf8'))
   const pluginSources = () =>
-    sources(join(ROOT, 'plugins')).filter((f) => !f.includes('/node_modules/'))
+    sources(join(ROOT, 'mini-apps')).filter((f) => !f.includes('/node_modules/'))
 
   /** A raw validator is `@hono/zod-validator` or Hono's own `hono/validator` — either needs a hook. */
   const RAW = /['"](?:@hono\/zod-validator|hono\/validator)['"]/u

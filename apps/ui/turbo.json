@@ -5,16 +5,16 @@
     "build": {
       "inputs": [
         "$TURBO_DEFAULT$",
-        "$TURBO_ROOT$/plugins/**/ui/**",
-        "$TURBO_ROOT$/plugins/**/backend/**"
+        "$TURBO_ROOT$/mini-apps/**/ui/**",
+        "$TURBO_ROOT$/mini-apps/**/backend/**"
       ]
     },
     "type-check": {
       "dependsOn": ["^build", "docs:gen"],
       "inputs": [
         "$TURBO_DEFAULT$",
-        "$TURBO_ROOT$/plugins/**/ui/**",
-        "$TURBO_ROOT$/plugins/**/backend/**"
+        "$TURBO_ROOT$/mini-apps/**/ui/**",
+        "$TURBO_ROOT$/mini-apps/**/backend/**"
       ],
       "outputs": []
     },
@@ -22,8 +22,8 @@
       "dependsOn": ["^build"],
       "inputs": [
         "$TURBO_DEFAULT$",
-        "$TURBO_ROOT$/plugins/**/ui/**",
-        "$TURBO_ROOT$/plugins/**/backend/**",
+        "$TURBO_ROOT$/mini-apps/**/ui/**",
+        "$TURBO_ROOT$/mini-apps/**/backend/**",
         "$TURBO_ROOT$/scripts/test-deadline.ts",
         "$TURBO_ROOT$/scripts/test-globals-guard.ts",
         "$TURBO_ROOT$/scripts/test-shards.mjs",
@@ -37,8 +37,8 @@
       "dependsOn": ["^build", "docs:gen"],
       "inputs": [
         "$TURBO_DEFAULT$",
-        "$TURBO_ROOT$/plugins/**/ui/**",
-        "$TURBO_ROOT$/plugins/**/backend/**"
+        "$TURBO_ROOT$/mini-apps/**/ui/**",
+        "$TURBO_ROOT$/mini-apps/**/backend/**"
       ],
       "outputs": []
     }

@@ -147,11 +147,11 @@ enhancers or one tab strip's kinds. Only a consumer whose own slice moved re-ren
 
 ### Example entrypoints
 
-| Plugin    | Backend composition                                                                                                                                | Native UI composition                                                                                                                              |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| DevOps    | [`plugins/devops/backend/index.ts`](../../../plugins/devops/backend/index.ts) combines Docker and Kubernetes subsystems and tools.                 | [`plugins/devops/ui/register.tsx`](../../../plugins/devops/ui/register.tsx) registers provider contributions and one workbench viewlet.            |
-| Database  | [`plugins/database/backend/index.ts`](../../../plugins/database/backend/index.ts) returns route, resource, search, context, cleanup, and tools.    | [`plugins/database/ui/register.tsx`](../../../plugins/database/ui/register.tsx) registers work items, a viewlet, anchors, icons, and file editors. |
-| Documents | [`plugins/documents/backend/index.ts`](../../../plugins/documents/backend/index.ts) returns document and table subsystems plus typed capabilities. | [`plugins/documents/ui/register.tsx`](../../../plugins/documents/ui/register.tsx) registers document viewers and editors.                          |
+| Plugin    | Backend composition                                                                                                                                    | Native UI composition                                                                                                                                  |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| DevOps    | [`mini-apps/devops/backend/index.ts`](../../../mini-apps/devops/backend/index.ts) combines Docker and Kubernetes subsystems and tools.                 | [`mini-apps/devops/ui/register.tsx`](../../../mini-apps/devops/ui/register.tsx) registers provider contributions and one workbench viewlet.            |
+| Database  | [`mini-apps/database/backend/index.ts`](../../../mini-apps/database/backend/index.ts) returns route, resource, search, context, cleanup, and tools.    | [`mini-apps/database/ui/register.tsx`](../../../mini-apps/database/ui/register.tsx) registers work items, a viewlet, anchors, icons, and file editors. |
+| Documents | [`mini-apps/documents/backend/index.ts`](../../../mini-apps/documents/backend/index.ts) returns document and table subsystems plus typed capabilities. | [`mini-apps/documents/ui/register.tsx`](../../../mini-apps/documents/ui/register.tsx) registers document viewers and editors.                          |
 
 ### Activation states
 

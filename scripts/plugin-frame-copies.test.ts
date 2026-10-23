@@ -78,7 +78,7 @@ describe('the template frame in bundled plugins', () => {
   })
 
   test('every copy of a frame file is the template’s, byte for byte', () => {
-    expect(driftedCopies(join(repoRoot, 'plugins'), template)).toEqual([])
+    expect(driftedCopies(join(repoRoot, 'mini-apps'), template)).toEqual([])
   })
 
   describe('controls', () => {

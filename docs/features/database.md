@@ -299,29 +299,29 @@ Connections saved before pinning existed are pinned on their next successful con
 
 ## Source of truth
 
-- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/plugins/database/.localix-app/app.json)
+- [Mini app manifest](https://github.com/rsaryev/localix/blob/main/mini-apps/database/.localix-app/app.json)
   ·
-  [plugins/database/backend/index.ts](https://github.com/rsaryev/localix/blob/main/plugins/database/backend/index.ts)
-- [Driver catalog and registry](https://github.com/rsaryev/localix/blob/main/plugins/database/shared/driver-catalog.ts)
+  [mini-apps/database/backend/index.ts](https://github.com/rsaryev/localix/blob/main/mini-apps/database/backend/index.ts)
+- [Driver catalog and registry](https://github.com/rsaryev/localix/blob/main/mini-apps/database/shared/driver-catalog.ts)
   ·
-  [plugins/database/backend/drivers/index.ts](https://github.com/rsaryev/localix/blob/main/plugins/database/backend/drivers/index.ts)
-- [Connection lifecycle](https://github.com/rsaryev/localix/blob/main/plugins/database/backend/service.ts)
+  [mini-apps/database/backend/drivers/index.ts](https://github.com/rsaryev/localix/blob/main/mini-apps/database/backend/drivers/index.ts)
+- [Connection lifecycle](https://github.com/rsaryev/localix/blob/main/mini-apps/database/backend/service.ts)
   ·
-  [plugins/database/backend/service/establish.ts](https://github.com/rsaryev/localix/blob/main/plugins/database/backend/service/establish.ts)
-- [Query and read-only enforcement](https://github.com/rsaryev/localix/blob/main/plugins/database/backend/service/run-query.ts)
+  [mini-apps/database/backend/service/establish.ts](https://github.com/rsaryev/localix/blob/main/mini-apps/database/backend/service/establish.ts)
+- [Query and read-only enforcement](https://github.com/rsaryev/localix/blob/main/mini-apps/database/backend/service/run-query.ts)
   ·
-  [plugins/database/backend/service/run-script.ts](https://github.com/rsaryev/localix/blob/main/plugins/database/backend/service/run-script.ts)
+  [mini-apps/database/backend/service/run-script.ts](https://github.com/rsaryev/localix/blob/main/mini-apps/database/backend/service/run-script.ts)
   ·
-  [plugins/database/backend/service/run-validate.ts](https://github.com/rsaryev/localix/blob/main/plugins/database/backend/service/run-validate.ts)
+  [mini-apps/database/backend/service/run-validate.ts](https://github.com/rsaryev/localix/blob/main/mini-apps/database/backend/service/run-validate.ts)
   ·
-  [plugins/database/backend/read-only/server-guard.ts](https://github.com/rsaryev/localix/blob/main/plugins/database/backend/read-only/server-guard.ts)
-- [Engine validation and request budgets](https://github.com/rsaryev/localix/blob/main/plugins/database/backend/service/run-validate.ts)
-- [Validation timeout behavior](https://github.com/rsaryev/localix/blob/main/plugins/database/backend/drivers/validation.ts)
-- [SQL diagnostics and UI limits](https://github.com/rsaryev/localix/blob/main/plugins/database/ui/ui/sqlDiagnostics.ts)
-- [Shared result cap](https://github.com/rsaryev/localix/blob/main/plugins/database/shared/result-cap.ts)
-- [Agent action classification](https://github.com/rsaryev/localix/blob/main/plugins/database/backend/database-tool-schema.ts)
-- [Saved connection storage](https://github.com/rsaryev/localix/blob/main/plugins/database/backend/store.ts)
-- [Connection push and fallback polling](https://github.com/rsaryev/localix/blob/main/plugins/database/ui/model/useDbConnections.ts)
-- [UI registration and connection form](https://github.com/rsaryev/localix/blob/main/plugins/database/ui/register.tsx)
+  [mini-apps/database/backend/read-only/server-guard.ts](https://github.com/rsaryev/localix/blob/main/mini-apps/database/backend/read-only/server-guard.ts)
+- [Engine validation and request budgets](https://github.com/rsaryev/localix/blob/main/mini-apps/database/backend/service/run-validate.ts)
+- [Validation timeout behavior](https://github.com/rsaryev/localix/blob/main/mini-apps/database/backend/drivers/validation.ts)
+- [SQL diagnostics and UI limits](https://github.com/rsaryev/localix/blob/main/mini-apps/database/ui/ui/sqlDiagnostics.ts)
+- [Shared result cap](https://github.com/rsaryev/localix/blob/main/mini-apps/database/shared/result-cap.ts)
+- [Agent action classification](https://github.com/rsaryev/localix/blob/main/mini-apps/database/backend/database-tool-schema.ts)
+- [Saved connection storage](https://github.com/rsaryev/localix/blob/main/mini-apps/database/backend/store.ts)
+- [Connection push and fallback polling](https://github.com/rsaryev/localix/blob/main/mini-apps/database/ui/model/useDbConnections.ts)
+- [UI registration and connection form](https://github.com/rsaryev/localix/blob/main/mini-apps/database/ui/register.tsx)
   ·
-  [plugins/database/ui/ui/connect-form/model.ts](https://github.com/rsaryev/localix/blob/main/plugins/database/ui/ui/connect-form/model.ts)
+  [mini-apps/database/ui/ui/connect-form/model.ts](https://github.com/rsaryev/localix/blob/main/mini-apps/database/ui/ui/connect-form/model.ts)

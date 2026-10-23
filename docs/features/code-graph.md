@@ -132,12 +132,12 @@ answer reports how many calls were linked, went into dependencies, or stayed unr
 
 ## Source of truth
 
-- [Discovery filters and source-file ceiling](https://github.com/rsaryev/localix/blob/main/plugins/code-graph/backend/indexing/discover.ts)
-- [Repository and global ignore configuration](https://github.com/rsaryev/localix/blob/main/plugins/code-graph/backend/indexing/repo-excludes.ts)
-- [Impact and shortest-path traversal](https://github.com/rsaryev/localix/blob/main/plugins/code-graph/backend/graph/traverse.ts)
-- [Tree-sitter loading and the per-language extractors](https://github.com/rsaryev/localix/blob/main/plugins/code-graph/backend/extract/)
-- [Build phases and resolution statistics](https://github.com/rsaryev/localix/blob/main/plugins/code-graph/backend/graph/build.ts)
-- [Name, export, member and field-type lookup](https://github.com/rsaryev/localix/blob/main/plugins/code-graph/backend/graph/scope.ts)
-- [Lifting edges to a level and building portals](https://github.com/rsaryev/localix/blob/main/plugins/code-graph/backend/graph/view.ts)
-- [The refresh job and the extraction cache](https://github.com/rsaryev/localix/blob/main/plugins/code-graph/backend/indexing/project-index.ts)
-- [The agent tools](https://github.com/rsaryev/localix/blob/main/plugins/code-graph/backend/tools.ts)
+- [Discovery filters and source-file ceiling](https://github.com/rsaryev/localix/blob/main/mini-apps/code-graph/backend/indexing/discover.ts)
+- [Repository and global ignore configuration](https://github.com/rsaryev/localix/blob/main/mini-apps/code-graph/backend/indexing/repo-excludes.ts)
+- [Impact and shortest-path traversal](https://github.com/rsaryev/localix/blob/main/mini-apps/code-graph/backend/graph/traverse.ts)
+- [Tree-sitter loading and the per-language extractors](https://github.com/rsaryev/localix/blob/main/mini-apps/code-graph/backend/extract/)
+- [Build phases and resolution statistics](https://github.com/rsaryev/localix/blob/main/mini-apps/code-graph/backend/graph/build.ts)
+- [Name, export, member and field-type lookup](https://github.com/rsaryev/localix/blob/main/mini-apps/code-graph/backend/graph/scope.ts)
+- [Lifting edges to a level and building portals](https://github.com/rsaryev/localix/blob/main/mini-apps/code-graph/backend/graph/view.ts)
+- [The refresh job and the extraction cache](https://github.com/rsaryev/localix/blob/main/mini-apps/code-graph/backend/indexing/project-index.ts)
+- [The agent tools](https://github.com/rsaryev/localix/blob/main/mini-apps/code-graph/backend/tools.ts)

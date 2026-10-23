@@ -17,7 +17,7 @@ const CORE_GLOBS = [
   'packages/kit/src/**/*.tsx',
   'packages/plugin-sdk/src/**/*.ts',
 ]
-const REVERSE_IMPORT = /from\s*['"][^'"]*plugins\/git-workspace(?:\/[^'"]*)?['"]/u
+const REVERSE_IMPORT = /from\s*['"][^'"]*mini-apps\/git-workspace(?:\/[^'"]*)?['"]/u
 const LEGACY_PLUGIN_VOCABULARY =
   /\bworktrees?\b|source-control|git:\/\/|@git:|git-workspace|RESOURCE_SCHEMES\.git/iu
 
@@ -79,7 +79,7 @@ describe('Git Workspace ownership boundary', () => {
       [],
     )
     expect(
-      REVERSE_IMPORT.test(`import { x } from '../../../plugins/git-workspace/backend/x'`),
+      REVERSE_IMPORT.test(`import { x } from '../../../mini-apps/git-workspace/backend/x'`),
     ).toBe(true)
   })
 

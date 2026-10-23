@@ -129,6 +129,7 @@ function firstPartySources(): string[] {
       join(ROOT, 'packages', 'cli', 'bin'),
       join(ROOT, 'packages', 'cli', 'src'),
       join(ROOT, 'packages', 'cli', 'scripts'),
+      join(ROOT, 'mini-apps'),
       join(ROOT, 'plugins'),
     ],
     mustInclude: [
