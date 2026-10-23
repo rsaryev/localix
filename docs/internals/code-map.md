@@ -49,9 +49,9 @@ A [mini app installed as a Mac app](mini-app-mac-apps.md) is a mini app installe
 app: a generated bundle whose executable is a clone of the desktop binary. `app_runner*.rs` is that
 binary's app mode (window, glass, menu, the page served from the host's UI build); `app_bundle*.rs`
 and `app_icon.rs` install, refresh and remove the bundles. The page is the workspace with
-`chrome="app"`, driven by `shared/lib/pluginApp.ts` and `pages/chat/model/useMiniApp.ts`; each app's
-conversations live in a project of its own (`shared/lib/pluginAppProject.ts`). Install actions and
-icons live in `features/plugin-apps/`.
+`chrome="app"`, driven by `shared/lib/standaloneApp.ts` and `pages/chat/model/useMiniApp.ts`; each
+app's conversations live in a project of its own (`shared/lib/standaloneAppProject.ts`). Install
+actions and icons live in `features/standalone-mini-apps/`.
 
 An extension is a [plugin or a mini app](plugins-and-mini-apps.md), never both: a plugin is
 `.claude-plugin/plugin.json` in the Claude Code format, read by `packages/claude-plugin` (no Localix

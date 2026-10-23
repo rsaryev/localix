@@ -66,7 +66,7 @@ The host classifies `snapshot` and plain `detect` as reads. Chart-changing actio
 `detect` with `auto_draw: true`, have effect `view`; permission rules and the conversation's mode
 still apply. None of these calls places an exchange order.
 
-`manage_chart` commands are emitted as replayable `plugin.command` session events. The Trading UI
+`manage_chart` commands are emitted as replayable `mini-app.command` session events. The Trading UI
 accepts commands for its mini app and chart channel, opens or focuses the matching chart when
 required, and applies the command through the chart control bus.
 

@@ -82,5 +82,5 @@ route must reject that absence before accessing its storage.
 - [The guard](https://github.com/rsaryev/localix/blob/main/apps/api/src/lib/validator.test.ts)
 - [Contributed route environment](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/http.ts)
 - [Request scope resolution](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/route-scope.ts)
-- [First-reconcile wait](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/plugin-route-boot-hold.ts)
+- [First-reconcile wait](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/mini-app-route-boot-hold.ts)
 - [Project-scope load budget](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/scope-load.ts)

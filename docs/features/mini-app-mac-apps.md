@@ -93,5 +93,5 @@ mini app is on again.
 
 - [Installing and refreshing app bundles](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/src-tauri/src/app_bundle.rs)
 - [The app runner](https://github.com/rsaryev/localix/blob/main/apps/desktop-tauri/src-tauri/src/app_runner.rs)
-- [Install actions and icons](https://github.com/rsaryev/localix/tree/main/apps/ui/src/features/plugin-apps)
+- [Install actions and icons](https://github.com/rsaryev/localix/tree/main/apps/ui/src/features/standalone-mini-apps)
 - [The app page](https://github.com/rsaryev/localix/blob/main/apps/ui/src/pages/chat/model/useMiniApp.ts)

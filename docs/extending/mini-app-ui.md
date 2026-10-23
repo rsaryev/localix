@@ -6,14 +6,14 @@ of your own, reach the host through its UI kit, and understand how an edit reach
 
 ## Terminology
 
-| Term           | Meaning                                                                            | Boundary                                                     |
-| -------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| UI artifact    | `dist/ui/` in a mini app's folder: an entry, hashed chunks, styles, a manifest.    | Built by the app from the mini app's `ui/` sources.          |
-| Revision       | A hash of every artifact file, carried in the mini app record.                     | Moves when the UI changed, not when the backend or docs did. |
-| UI kit         | `@localixai/kit/<id>`: the host's explicit public component surface.               | Public components; SDK services are separate host ports.     |
-| Shared module  | React, `@localixai/mini-app-sdk` and the kit, taken from the host at runtime.      | Every other dependency is bundled into the artifact.         |
-| Mini app kit   | What the app ships to build mini apps: template, shared-module exports, theme CSS. | `resources/plugin-kit`; no source tree or toolchain needed.  |
-| Frame / domain | The template's fixed shell versus the part a copy replaces.                        | The frame imports no domain module.                          |
+| Term           | Meaning                                                                            | Boundary                                                      |
+| -------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| UI artifact    | `dist/ui/` in a mini app's folder: an entry, hashed chunks, styles, a manifest.    | Built by the app from the mini app's `ui/` sources.           |
+| Revision       | A hash of every artifact file, carried in the mini app record.                     | Moves when the UI changed, not when the backend or docs did.  |
+| UI kit         | `@localixai/kit/<id>`: the host's explicit public component surface.               | Public components; SDK services are separate host ports.      |
+| Shared module  | React, `@localixai/mini-app-sdk` and the kit, taken from the host at runtime.      | Every other dependency is bundled into the artifact.          |
+| Mini app kit   | What the app ships to build mini apps: template, shared-module exports, theme CSS. | `resources/mini-app-kit`; no source tree or toolchain needed. |
+| Frame / domain | The template's fixed shell versus the part a copy replaces.                        | The frame imports no domain module.                           |
 
 ## What you can do
 
@@ -370,15 +370,15 @@ Use `MarkdownRenderer` from `@localixai/kit/markdown` with source as `children`;
 
 - [Shared-module and artifact contract](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui-artifact.ts)
 - [Mini app kit layout](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/authoring/kit-layout.ts)
-  and [its staging](https://github.com/rsaryev/localix/blob/main/scripts/stage-plugin-kit.mjs)
+  and [its staging](https://github.com/rsaryev/localix/blob/main/scripts/stage-mini-app-kit.mjs)
 - [User mini app authoring](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/authoring/service.ts)
 - [UI artifact builder](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/authoring/ui-build.ts)
-  and [its tests](https://github.com/rsaryev/localix/blob/main/scripts/plugin-ui-artifact.test.ts)
+  and [its tests](https://github.com/rsaryev/localix/blob/main/scripts/mini-app-ui-artifact.test.ts)
 - [Template layout and residue check](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/authoring/template-layout.ts)
 - [Style check](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/authoring/style-check.ts)
   and
   [the token rules](https://github.com/rsaryev/localix/blob/main/apps/api/src/contracts/ui-token-rules.ts)
-- [Kit declarations](https://github.com/rsaryev/localix/blob/main/scripts/stage-plugin-kit-declarations.mjs)
+- [Kit declarations](https://github.com/rsaryev/localix/blob/main/scripts/stage-mini-app-kit-declarations.mjs)
 - [Mini app view host](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/inspector/model/miniAppViewHost.ts)
   and
   [the embedded actuator](https://github.com/rsaryev/localix/blob/main/packages/visual-feedback/src/embedded/index.ts)
@@ -386,7 +386,7 @@ Use `MarkdownRenderer` from `@localixai/kit/markdown` with source as `children`;
 - [Workbench runtime](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/contrib/miniAppUiRuntime.ts)
   and
   [host wiring](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/contrib/miniAppUiDiscovery.ts)
-- [Shared-module registry](https://github.com/rsaryev/localix/blob/main/apps/ui/src/app/pluginSharedModules.ts)
+- [Shared-module registry](https://github.com/rsaryev/localix/blob/main/apps/ui/src/app/miniAppSharedModules.ts)
 - [Realtime feed](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui/realtime-feed.ts)
 - [Tool cards](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui/tool-cards.ts),
   [comment actions](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui/comment-actions.ts)

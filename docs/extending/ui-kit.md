@@ -94,7 +94,7 @@ The package is source only. The app's Vite build compiles it with the app, React
 and a mini app's artifact build turns each `@localixai/kit/<id>` import into a load of the host's
 module, so the host, the app and every mini app share one instance of each primitive and of the
 libraries behind them (Radix, cmdk, the flow canvas). The registry of those modules,
-`apps/ui/src/app/pluginSharedModules.ts`, is built from the doors and the lent modules; its test
+`apps/ui/src/app/miniAppSharedModules.ts`, is built from the doors and the lent modules; its test
 refuses an id served by both.
 
 ### The kit owns the design system
@@ -139,15 +139,15 @@ the agent to choose there before writing a control.
 
 ## Configuration
 
-| Where                                    | Owns                                                               |
-| ---------------------------------------- | ------------------------------------------------------------------ |
-| `packages/kit/src/entries/`              | The doors: what `@localixai/kit/<id>` exports.                     |
-| `packages/kit/src/catalog/`              | The catalog and its completeness test.                             |
-| `packages/kit/styles/`                   | Tokens, themes, window material, motion, utilities, accessibility. |
-| `packages/kit/AGENTS.md`                 | The rules for changing the kit.                                    |
-| `apps/ui/src/app/kit/`                   | The modules the host lends, and the recorded debt among them.      |
-| `apps/ui/src/app/pluginSharedModules.ts` | The runtime registry mini apps load the kit from.                  |
-| `scripts/stage-plugin-kit.mjs`           | What an installed app ships to build mini apps, `KIT.md` included. |
+| Where                                     | Owns                                                               |
+| ----------------------------------------- | ------------------------------------------------------------------ |
+| `packages/kit/src/entries/`               | The doors: what `@localixai/kit/<id>` exports.                     |
+| `packages/kit/src/catalog/`               | The catalog and its completeness test.                             |
+| `packages/kit/styles/`                    | Tokens, themes, window material, motion, utilities, accessibility. |
+| `packages/kit/AGENTS.md`                  | The rules for changing the kit.                                    |
+| `apps/ui/src/app/kit/`                    | The modules the host lends, and the recorded debt among them.      |
+| `apps/ui/src/app/miniAppSharedModules.ts` | The runtime registry mini apps load the kit from.                  |
+| `scripts/stage-mini-app-kit.mjs`          | What an installed app ships to build mini apps, `KIT.md` included. |
 
 ## Limits
 
@@ -172,7 +172,7 @@ the agent to choose there before writing a control.
   — the catalog.
 - [`packages/kit/styles/index.css`](https://github.com/rsaryev/localix/blob/main/packages/kit/styles/index.css)
   — the layer order.
-- [`apps/ui/src/app/pluginSharedModules.ts`](https://github.com/rsaryev/localix/blob/main/apps/ui/src/app/pluginSharedModules.ts)
+- [`apps/ui/src/app/miniAppSharedModules.ts`](https://github.com/rsaryev/localix/blob/main/apps/ui/src/app/miniAppSharedModules.ts)
   — the runtime registry.
 
 [visual]: ../internals/visual-system.md

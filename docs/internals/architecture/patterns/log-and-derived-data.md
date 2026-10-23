@@ -55,8 +55,8 @@ open problem.
 
 ## How Localix applies it
 
-- `change_events` is the log, ordered by `seq` and split into streams (`core`, `plugin:<name>`); see
-  `packages/change-feed/src/feed.ts`.
+- `change_events` is the log, ordered by `seq` and split into streams (`core`, `mini-app:<name>`);
+  see `packages/change-feed/src/feed.ts`.
 - The semantic index is a derived store: `apps/api/src/bootstrap/semantic-changes.ts` subscribes it
   to the core stream, and `apps/api/src/features/embeddings/targets.ts` turns notices into index
   work.

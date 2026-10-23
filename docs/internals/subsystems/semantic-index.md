@@ -67,7 +67,7 @@ old one is reconciled in full once at start, which catches what changed while it
 | `capabilities.plugins` | `plugins/semantic.ts`                       | Plugins                    |
 | `capabilities.mcp`     | `mcp/semantic.ts`                           | MCP servers                |
 | `agents`               | `agents/semantic.ts`                        | Agents                     |
-| `plugin:<name>:<…>`    | a mini app's `host.semantic.registerSource` | the source's `label`       |
+| `mini-app:<name>:<…>`  | a mini app's `host.semantic.registerSource` | the source's `label`       |
 
 Capability catalogs are listed whole for the workspace owner (`embeddings/list-source.ts`): global
 items under the scope `global`, each project's own under its id, keyed `<scope>:<name>`. Their
@@ -100,8 +100,7 @@ category in the status bar), a version, and `scan`/`read`. A core kind also gets
 [`bootstrap/semantic-changes.ts`](../../../apps/api/src/bootstrap/semantic-changes.ts), and its
 writers record changes on the change feed; the map does not compile until every kind of the core
 registry has a target or `'ignore'`. A mini app uses `host.semantic`: its collections are namespaced
-`plugin:<name>:<collection>` (the prefix predates the split), and `query` returns matches carrying
-`z` and `gate`.
+`mini-app:<name>:<collection>`, and `query` returns matches carrying `z` and `gate`.
 
 A search provider receives `query.semantic` only when the hybrid strategy is active. Fuse its
 matches with `fuse()` and pass each match's `gate`; without `query.semantic` keep the words-only

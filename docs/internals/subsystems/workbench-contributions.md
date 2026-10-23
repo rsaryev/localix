@@ -139,7 +139,7 @@ enhancers or one tab strip's kinds. Only a consumer whose own slice moved re-ren
 | [`apps/ui/src/shared/contrib/miniAppUiRuntime.ts`](../../../apps/ui/src/shared/contrib/miniAppUiRuntime.ts)                         | Import a revision before removing the running one; one queue per mini app.       | A broken build blanks a mini app, or racing snapshots leave a stale revision registered.    |
 | [`apps/ui/src/shared/contrib/registryChanges.ts`](../../../apps/ui/src/shared/contrib/registryChanges.ts)                           | Every registration is announced, coalesced to one flush per frame.               | A late mini app stays invisible under an open surface, or each mini app re-renders the app. |
 | [`apps/ui/src/shared/contrib/miniAppUiLoads.ts`](../../../apps/ui/src/shared/contrib/miniAppUiLoads.ts)                             | A failed first load stays pending and is retried; the publisher owns settling.   | A transient 503 closes restored tabs, or a failed later request leaves a mini app pending.  |
-| [`apps/ui/src/app/pluginSharedModules.ts`](../../../apps/ui/src/app/pluginSharedModules.ts)                                         | Artifacts get the host's single React, SDK and kit instances.                    | A second React breaks hooks; a second SDK has unbound transport and empty command maps.     |
+| [`apps/ui/src/app/miniAppSharedModules.ts`](../../../apps/ui/src/app/miniAppSharedModules.ts)                                       | Artifacts get the host's single React, SDK and kit instances.                    | A second React breaks hooks; a second SDK has unbound transport and empty command maps.     |
 | [`apps/ui/src/shared/contrib/enabledMiniApps.ts`](../../../apps/ui/src/shared/contrib/enabledMiniApps.ts)                           | One capability snapshot drives mini apps, tools, and views for the active scope. | UI contributions and model-facing tools can disagree about enablement.                      |
 
 ## Configuration
@@ -165,9 +165,10 @@ enhancers or one tab strip's kinds. Only a consumer whose own slice moved re-ren
 ## Limits
 
 Development watches additions and removals in the kit doors and host-lent module directories with
-[`refresh-plugin-shared-modules.ts`](../../../apps/ui/build/refresh-plugin-shared-modules.ts). It
-invalidates the shared-module glob and reloads the host page together, so a rebuilt mini app cannot
-keep using a registry that predates its imports. Ordinary component edits keep Vite's normal HMR.
+[`refresh-mini-app-shared-modules.ts`](../../../apps/ui/build/refresh-mini-app-shared-modules.ts).
+It invalidates the shared-module glob and reloads the host page together, so a rebuilt mini app
+cannot keep using a registry that predates its imports. Ordinary component edits keep Vite's normal
+HMR.
 
 - Native workbench UI runs in the host page, so it follows the native-backend trust rule: a bundled
   mini app ships trusted, and any other mini app's artifact is served only after the user enabled
@@ -210,8 +211,8 @@ keep using a registry that predates its imports. Ordinary component edits keep V
 - [Mini app UI wiring](../../../apps/ui/src/shared/contrib/miniAppUiDiscovery.ts)
 - [Mini app UI runtime](../../../apps/ui/src/shared/contrib/miniAppUiRuntime.ts)
 - [Mini app UI artifact builder](../../../apps/api/src/features/mini-apps/authoring/ui-build.ts)
-- [Mini app kit staging](../../../scripts/stage-plugin-kit.mjs)
-- [Development kit cache](../../../scripts/plugin-kit-cache.mjs) (a kit staged for identical inputs
-  is reused across `bun run dev` launches)
+- [Mini app kit staging](../../../scripts/stage-mini-app-kit.mjs)
+- [Development kit cache](../../../scripts/mini-app-kit-cache.mjs) (a kit staged for identical
+  inputs is reused across `bun run dev` launches)
 - [User mini app authoring](../../../apps/api/src/features/mini-apps/authoring/service.ts)
 - [Workbench registries](../../../apps/ui/src/shared/contrib/uiContrib.ts)

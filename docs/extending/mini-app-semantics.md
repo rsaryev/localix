@@ -10,9 +10,8 @@ routing.
 Register a source with `ctx.host.semantic.registerSource`: a collection name, a `label` (the
 category the status bar lists), a `version`, and `scan`/`read` over your items. The host embeds them
 with EmbeddingGemma 2, which Localix keeps on this computer, and keeps the vectors. Your collections
-are namespaced `plugin:<name>:<collection>`, with your mini app's name (the `plugin:` prefix of
-these ids predates mini apps as a format of their own), so you can neither read nor overwrite
-another's, and each is scored against itself alone.
+are namespaced `mini-app:<name>:<collection>`, with your mini app's name, so you can neither read
+nor overwrite another's, and each is scored against itself alone.
 
 ## Query by meaning
 
@@ -41,8 +40,8 @@ without text.
 (no connection serves a decision model), `deadline`, `cancelled` or `failed`. Always keep your own
 fallback for those. The host picks the model, waits at most `deadlineMs` (3 s by default, 15 s at
 most), records the spend under **Decisions** against `sessionId`, and logs the decision without its
-state, under `plugin:<name>:<purpose>`. It rejects only a malformed `purpose` or a session the user
-does not own. `available(userId)` says whether a decision would be answered now.
+state, under `mini-app:<name>:<purpose>`. It rejects only a malformed `purpose` or a session the
+user does not own. `available(userId)` says whether a decision would be answered now.
 
 `confidentChoice(answer, 0.8)` returns a `choice` answer's pick when it reaches that probability,
 else `null`.
@@ -63,7 +62,7 @@ game, settles the opponent, wakes the agent once per position and plays the mode
 
 ## Follow your own changes
 
-`ctx.host.changes` records thin notices on your stream, `plugin:<name>`: `upserted`, `deleted`, or
+`ctx.host.changes` records thin notices on your stream, `mini-app:<name>`: `upserted`, `deleted`, or
 `resync` for "any of this kind may have changed". `record` never throws.
 `subscribe(consumer, handler)` reads them at a cursor that survives a restart; a handler that throws
 is retried from the same notice.

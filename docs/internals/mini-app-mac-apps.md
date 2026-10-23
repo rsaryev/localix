@@ -2,8 +2,8 @@
 
 A mini app with a screen of its own can be installed as its own macOS app. The user guide is
 [Mini apps as Mac apps](../features/mini-app-mac-apps.md). This page covers how it is built and what
-each part owns. The code still names this a plugin app (`pluginApp.ts`, `features/plugin-apps`,
-`plugin_app_*`); those names predate the split between plugins and mini apps.
+each part owns. The UI calls such an app a standalone app (`standaloneApp.ts`,
+`features/standalone-mini-apps`).
 
 ## The shape
 
@@ -51,7 +51,7 @@ Localix (runtime, mini apps, data; workspaces held back until Localix itself is 
 | Concern                                    | Owner                                                              |
 | ------------------------------------------ | ------------------------------------------------------------------ |
 | Install, refresh, open, remove, quit       | `app_bundle.rs`; Info.plist and host paths in `app_bundle_host.rs` |
-| Mini app name, Finder name, bundle id      | `app_bundle_names.rs` (the manifest's `PLUGIN_NAME_RE`, bounded)   |
+| Mini app name, Finder name, bundle id      | `app_bundle_names.rs` (the manifest's `MINI_APP_NAME_RE`, bounded) |
 | Workspace commands (`plugin_app_*`)        | `app_bundle_commands.rs`, trusted workspaces only                  |
 | `.icns` from the page's PNG renditions     | `app_icon.rs`                                                      |
 | Runner entry, window, host wait            | `app_runner.rs`                                                    |
@@ -98,15 +98,15 @@ Localix (runtime, mini apps, data; workspaces held back until Localix itself is 
   inline fill for the same reason the macOS workspace does.
 - **Conversation.** `useMiniApp` finds the app's project, then opens the conversation recorded in
   view state (`surface`, key `plugin-app:<name>`) while it is still one of the project's, else the
-  project's newest, else a new one (`pluginAppConversation.ts`, read from the hydrated roster). Any
-  conversation of the project the person opens becomes the remembered one; one elsewhere is visited,
-  not adopted. The mini app's main screen (the rail viewlet it contributes) opens once in each.
-  **New chat** in the title row and every other entry run the page's new-chat action, which the app
-  replaces (`replaceNewChat`) with a new conversation in its project.
+  project's newest, else a new one (`standaloneAppConversation.ts`, read from the hydrated roster).
+  Any conversation of the project the person opens becomes the remembered one; one elsewhere is
+  visited, not adopted. The mini app's main screen (the rail viewlet it contributes) opens once in
+  each. **New chat** in the title row and every other entry run the page's new-chat action, which
+  the app replaces (`replaceNewChat`) with a new conversation in its project.
 - **Title row.** `TitlebarContent` with `app` draws the workspace's `UnifiedBreadcrumb` with the
   app's name as its root, not a project switch, and the conversation crumb listing the app's
   project: the app's history. New chat sits at the right of the row.
-- **Mini app turned off.** One standing problem in the Event Center (`pluginAppProblem.ts`,
+- **Mini app turned off.** One standing problem in the Event Center (`standaloneAppProblem.ts`,
   `toast.problems`), keyed to the app and settled when the mini app is back. A `toast.warning` would
   write a new durable row on every launch.
 - **Window messages.** The page posts JSON to `window.webkit.messageHandlers.localixApp`: `theme`
@@ -127,21 +127,22 @@ through the session's own notice, and deleting the project soft-deletes it until
 
 ## Install actions
 
-`features/plugin-apps` owns the installed list (read from the shell, refreshed on focus), the
-actions and the icon. `pluginAppSourceForKind` maps any tab kind to its mini app's main screen, so a
-group's button and every tab's menu name the mini app they act on. Icons are drawn on a 1024 canvas
-with Localix's tile (896 points, radius 196, `#121215` to `#09090b`) and the mini app's glyph in
-`#e7e6e6`, then sent as PNG renditions; the renderer is imported only when an install starts.
+`features/standalone-mini-apps` owns the installed list (read from the shell, refreshed on focus),
+the actions and the icon. `standaloneAppSourceForKind` maps any tab kind to its mini app's main
+screen, so a group's button and every tab's menu name the mini app they act on. Icons are drawn on a
+1024 canvas with Localix's tile (896 points, radius 196, `#121215` to `#09090b`) and the mini app's
+glyph in `#e7e6e6`, then sent as PNG renditions; the renderer is imported only when an install
+starts.
 
 ## Verification
 
-| Question                                    | Evidence                                                                                 |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Endpoint, paths, MIME, CSP, plist, icon     | `cargo test --lib app_` in `apps/desktop-tauri/src-tauri`                                |
-| Start route, dataset, window messages, icon | `bun test apps/ui/src/shared/lib/pluginApp.dom.test.ts apps/ui/src/features/plugin-apps` |
-| New chat in an app                          | `bun test apps/ui/src/pages/chat/model/useNewChatAction.dom.test.tsx`                    |
-| Which conversation an app opens             | `bun test apps/ui/src/pages/chat/model/pluginAppConversation.test.ts`                    |
-| Origin                                      | `bun test apps/api/src/lib/local-origin-guard.test.ts`                                   |
+| Question                                    | Evidence                                                                                              |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Endpoint, paths, MIME, CSP, plist, icon     | `cargo test --lib app_` in `apps/desktop-tauri/src-tauri`                                             |
+| Start route, dataset, window messages, icon | `bun test apps/ui/src/shared/lib/standaloneApp.dom.test.ts apps/ui/src/features/standalone-mini-apps` |
+| New chat in an app                          | `bun test apps/ui/src/pages/chat/model/useNewChatAction.dom.test.tsx`                                 |
+| Which conversation an app opens             | `bun test apps/ui/src/pages/chat/model/standaloneAppConversation.test.ts`                             |
+| Origin                                      | `bun test apps/api/src/lib/local-origin-guard.test.ts`                                                |
 
 The native window, the background launch and the Dock need a feel check on a Mac after a build:
 install a mini app as an app, quit Localix, open the app from the Dock, and confirm Localix starts

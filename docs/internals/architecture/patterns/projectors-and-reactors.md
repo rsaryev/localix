@@ -60,7 +60,7 @@ persisted status.
   what retention still holds.
 - Poison handling: five attempts with backoff, then `changes.consumer_skipped` is logged and the gap
   is left to reconcile. A malformed row is skipped.
-- Mini app backends subscribe through `apps/api/src/features/changes/plugin-host.ts`.
+- Mini app backends subscribe through `apps/api/src/features/changes/mini-app-host.ts`.
 
 Related: [Idempotent consumer](idempotent-consumer.md),
 [The log and derived data](log-and-derived-data.md).
