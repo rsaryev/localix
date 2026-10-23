@@ -44,13 +44,19 @@ import { dialableRuntimeHost } from './runtime-address'
  * The packaged desktop page's origin: `tauri://localhost` on macOS/Linux, `http(s)://tauri.localhost`
  * on Windows. `localix-app://app` is a plugin installed as its own Mac app, which serves the same UI
  * build from Localix.app under its own scheme (`app_runner_scheme.rs`); no web page can claim it.
+ * The Windows names are allowed only on Windows: elsewhere they are ordinary hostnames a resolver or
+ * another local app could answer for, not the packaged page.
  */
-export const PACKAGED_APP_ORIGINS: readonly string[] = [
-  'tauri://localhost',
-  'http://tauri.localhost',
-  'https://tauri.localhost',
-  'localix-app://app',
-]
+export function packagedAppOrigins(platform: NodeJS.Platform): readonly string[] {
+  return platform === 'win32'
+    ? [
+        'tauri://localhost',
+        'http://tauri.localhost',
+        'https://tauri.localhost',
+        'localix-app://app',
+      ]
+    : ['tauri://localhost', 'localix-app://app']
+}
 
 const LOOPBACK_HOSTNAMES: readonly string[] = ['127.0.0.1', 'localhost', '[::1]']
 
@@ -73,6 +79,8 @@ export interface LocalOriginPolicyInput {
   servesUi?: boolean
   /** The configured bind host (`HOST`). A concrete non-loopback address is accepted as a Host name. */
   bindHost?: string
+  /** The platform the packaged page runs on; decides its origin. Defaults to `process.platform`. */
+  platform?: NodeJS.Platform
 }
 
 export interface LocalOriginPolicy {
@@ -129,7 +137,7 @@ function bracketed(host: string): string {
 
 export function createLocalOriginPolicy(input: LocalOriginPolicyInput = {}): LocalOriginPolicy {
   const origins = new Set([
-    ...PACKAGED_APP_ORIGINS,
+    ...packagedAppOrigins(input.platform ?? process.platform),
     ...(input.uiOrigins ?? []).map(normalizeOrigin),
   ])
   const hostnames = new Set(LOOPBACK_HOSTNAMES)

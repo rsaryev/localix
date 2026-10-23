@@ -12,7 +12,7 @@ import {
 } from './local-origin-guard'
 
 const DEV_UI = 'http://localhost:5050'
-const policy = createLocalOriginPolicy({ uiOrigins: [DEV_UI] })
+const policy = createLocalOriginPolicy({ uiOrigins: [DEV_UI], platform: 'darwin' })
 
 const req = (over: Partial<GuardedRequest> = {}): GuardedRequest => ({
   method: 'POST',
@@ -68,15 +68,22 @@ describe('Host (DNS rebinding)', () => {
 
 describe('Origin', () => {
   test('the packaged app, its plugin apps and the configured dev UI may write', () => {
-    for (const origin of [
-      'tauri://localhost',
-      'http://tauri.localhost',
-      'https://tauri.localhost',
-      'localix-app://app',
-      DEV_UI,
-    ]) {
+    for (const origin of ['tauri://localhost', 'localix-app://app', DEV_UI]) {
       expect(verdictCode({ origin })).toBe('ok')
     }
+  })
+
+  test('tauri.localhost is the packaged page only on Windows', () => {
+    const windows = createLocalOriginPolicy({ platform: 'win32' })
+    for (const origin of ['http://tauri.localhost', 'https://tauri.localhost']) {
+      expect(windows.allowsOrigin(origin, '127.0.0.1:5051')).toBe(true)
+      for (const platform of ['darwin', 'linux'] as const) {
+        expect(createLocalOriginPolicy({ platform }).allowsOrigin(origin, '127.0.0.1:5051')).toBe(
+          false,
+        )
+      }
+    }
+    expect(windows.allowsOrigin('tauri://localhost', '127.0.0.1:5051')).toBe(true)
   })
 
   test('a foreign site, another loopback port (a preview server) and an opaque origin may not', () => {
