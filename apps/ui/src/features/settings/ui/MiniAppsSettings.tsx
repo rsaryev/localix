@@ -6,7 +6,8 @@ import { SettingsSection } from './SettingsScaffold'
 import { AttentionRollup } from './AttentionRollup'
 import { CapabilityRegistryBody } from './capabilities/CapabilityRegistryBody'
 import { MiniAppRow } from './capabilities/MiniAppRow'
-import { MiniAppStore } from '@/entities/mini-app-store/ui/MiniAppStore'
+import { Button } from '@localixai/kit/button'
+import { openMiniAppStore } from '@/entities/mini-app-store/model/openMiniAppStore'
 
 interface MiniAppsSettingsProps {
   /** '' = no project; otherwise a project id: which installed mini apps are listed. */
@@ -76,10 +77,12 @@ export function MiniAppsSettings({ scope, agentScope = '', projects }: MiniAppsS
       </SettingsSection>
 
       <SettingsSection
-        title="Catalog"
-        description="Mini apps you can add. Ones from a verified publisher run once installed; an unverified one waits for your yes."
+        title="Store"
+        description="Add mini apps from the catalogs, update them and see who publishes each."
       >
-        <MiniAppStore />
+        <Button size="sm" variant="field" onClick={openMiniAppStore}>
+          Open the store
+        </Button>
       </SettingsSection>
     </div>
   )

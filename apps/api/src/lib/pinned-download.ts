@@ -1,16 +1,22 @@
 /**
- * Download one pinned file: streamed to `<dest>.part`, hashed while it streams, size-capped,
- * resumable, and renamed into place only when the sha256 matches. A file at `dest` is therefore always a
- * complete, verified copy — an interrupted or tampered download never looks installed.
+ * Download one pinned file — a local model's weights, a mini app's archive: streamed to
+ * `<dest>.part`, hashed while it streams, size-capped, resumable, and renamed into place only when
+ * the sha256 matches. A file at `dest` is therefore always a complete, verified copy — an
+ * interrupted or tampered download never looks installed.
  */
 import { once } from 'node:events'
 import { createWriteStream } from 'node:fs'
 import { mkdir, rename, rm, stat } from 'node:fs/promises'
 import path from 'node:path'
-import type { LocalModelFile } from './contracts'
 
 /** What a pinned download needs: where, how big, and what it must hash to. */
-export type PinnedFile = Pick<LocalModelFile, 'name' | 'url' | 'bytes' | 'sha256'>
+export interface PinnedFile {
+  /** What the messages call it. */
+  name: string
+  url: string
+  bytes: number
+  sha256: string
+}
 
 export interface DownloadProgress {
   file: string

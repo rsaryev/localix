@@ -62,10 +62,11 @@ export function createMiniAppRoutes(service: MiniAppRoutesService) {
     // The store: what the catalogs offer, and installs queued here whose progress arrives as
     // `mini-app-installs` pokes the client answers by reading the list again.
     .get('/store', async (c) =>
-      c.json(miniAppStoreResponseSchema.parse({ entries: await service.store.list() }), 200),
+      c.json(miniAppStoreResponseSchema.parse(await service.store.list()), 200),
     )
     .post('/store/install', zValidator('json', installMiniAppRequestSchema), async (c) => {
-      await service.store.install(c.req.valid('json').name)
+      const { name, acceptUnverified } = c.req.valid('json')
+      await service.store.install(name, { userId: c.get('userId'), acceptUnverified })
       return c.body(null, 202)
     })
     .post(

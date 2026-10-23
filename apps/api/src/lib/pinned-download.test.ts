@@ -2,7 +2,7 @@ import { afterAll, describe, expect, test } from 'bun:test'
 import { mkdtemp, readFile, rm, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { DownloadError, downloadPinned } from './download'
+import { DownloadError, downloadPinned } from './pinned-download'
 
 const body = new TextEncoder().encode('pinned weights '.repeat(1000))
 const sha = new Bun.CryptoHasher('sha256').update(body).digest('hex')

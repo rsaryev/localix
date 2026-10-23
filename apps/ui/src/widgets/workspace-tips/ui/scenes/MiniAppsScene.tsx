@@ -1,15 +1,6 @@
-import { useState } from 'react'
 import { BadgeCheck } from 'lucide-react'
 import { MonogramAvatar } from '@localixai/kit/avatar'
-import {
-  Dialog,
-  DialogBody,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@localixai/kit/dialog'
-import { MiniAppStore } from '@/entities/mini-app-store/ui/MiniAppStore'
+import { openMiniAppStore } from '@/entities/mini-app-store/model/openMiniAppStore'
 import { TipPickTrigger } from '../TipPick'
 import './mini-apps-scene.css'
 
@@ -39,21 +30,7 @@ export function MiniAppsScene() {
   )
 }
 
-/** The sentence ends in the catalog itself: the same store the rail's add button opens. */
+/** The sentence ends in the store itself: the same tab the rail's add button opens. */
 export function MiniAppsAction() {
-  const [open, setOpen] = useState(false)
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <TipPickTrigger label="Mini apps" value="the catalog" onClick={() => setOpen(true)} />
-      <DialogContent size="3xl">
-        <DialogHeader>
-          <DialogTitle>Add mini apps</DialogTitle>
-          <DialogDescription>
-            Apps with their own screens and tools, from the catalog.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogBody>{open && <MiniAppStore />}</DialogBody>
-      </DialogContent>
-    </Dialog>
-  )
+  return <TipPickTrigger label="Mini apps" value="the store" onClick={openMiniAppStore} />
 }

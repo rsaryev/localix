@@ -1,5 +1,5 @@
 import { assertOk, cleanQuery, client, unwrap } from './internal'
-import type { MiniAppStoreEntryRecord } from '@localixai/api/client'
+import type { MiniAppStoreResponse } from '@localixai/api/client'
 import type { MiniAppRecord } from './contracts'
 
 /**
@@ -119,13 +119,12 @@ export const miniAppsApi = {
   },
 
   /** What the catalogs offer, what is installed and the installs in flight. */
-  async listMiniAppStore(): Promise<MiniAppStoreEntryRecord[]> {
-    const json = await unwrap(await client.rpc['mini-apps'].store.$get())
-    return json.entries
+  async listMiniAppStore(): Promise<MiniAppStoreResponse> {
+    return unwrap(await client.rpc['mini-apps'].store.$get())
   },
 
   /** Queue an install; its progress arrives as `mini-app-installs` pokes. */
-  async installMiniApp(name: string): Promise<void> {
-    await assertOk(await client.rpc['mini-apps'].store.install.$post({ json: { name } }))
+  async installMiniApp(name: string, opts?: { acceptUnverified?: boolean }): Promise<void> {
+    await assertOk(await client.rpc['mini-apps'].store.install.$post({ json: { name, ...opts } }))
   },
 }

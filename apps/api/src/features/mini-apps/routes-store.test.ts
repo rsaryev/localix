@@ -19,8 +19,9 @@ const entry: MiniAppStoreEntry = {
 function app(installed: string[]) {
   const service = {
     store: {
-      list: async () => [entry],
-      install: async (name: string) => void installed.push(name),
+      list: async () => ({ entries: [entry], problems: [] }),
+      install: async (name: string, opts: { acceptUnverified?: boolean }) =>
+        void installed.push(opts.acceptUnverified ? `${name}!` : name),
     },
   } as unknown as MiniAppRoutesService
   const root = new Hono<AppContext>()
@@ -36,7 +37,7 @@ describe('/rpc/mini-apps/store', () => {
   test('lists what the catalogs offer', async () => {
     const response = await app([]).request('/rpc/mini-apps/store')
     expect(response.status).toBe(200)
-    expect(await response.json()).toEqual({ entries: [entry] })
+    expect(await response.json()).toEqual({ entries: [entry], problems: [] })
   })
 
   test('an install is queued and answered at once; progress arrives as pokes', async () => {
@@ -44,9 +45,9 @@ describe('/rpc/mini-apps/store', () => {
     const response = await app(installed).request('/rpc/mini-apps/store/install', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ name: 'chess' }),
+      body: JSON.stringify({ name: 'chess', acceptUnverified: true }),
     })
     expect(response.status).toBe(202)
-    expect(installed).toEqual(['chess'])
+    expect(installed).toEqual(['chess!'])
   })
 })

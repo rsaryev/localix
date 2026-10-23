@@ -51,6 +51,22 @@ export async function installManagedCopy(
   installDir: string,
   fingerprint: string,
 ): Promise<void> {
+  await installCopy(sourceDir, installDir, {
+    file: MARKER_FILE,
+    contents: { kind: MARKER_KIND, fingerprint },
+  })
+}
+
+/**
+ * Install `sourceDir` at `installDir` the way {@link installManagedCopy} does — a complete temp
+ * copy, one rename, the previous copy retired — with `marker` written beside it: the record of
+ * where the copy came from (a staged first-party app, a catalog's archive).
+ */
+export async function installCopy(
+  sourceDir: string,
+  installDir: string,
+  marker: { file: string; contents: unknown },
+): Promise<void> {
   const parent = join(installDir, '..')
   const tempDir = join(parent, `.sync-${basename(installDir)}-${process.pid}-${randomUUID()}`)
   const retiredDir = join(
@@ -67,10 +83,7 @@ export async function installManagedCopy(
     if (existsSync(stagedUi)) {
       await retainPreviousHashedFiles(join(installDir, MINI_APP_UI_ARTIFACT_DIR), stagedUi)
     }
-    await fs.writeFile(
-      join(tempDir, MARKER_FILE),
-      `${JSON.stringify({ kind: MARKER_KIND, fingerprint }, null, 2)}\n`,
-    )
+    await fs.writeFile(join(tempDir, marker.file), `${JSON.stringify(marker.contents, null, 2)}\n`)
     try {
       await fs.rename(installDir, retiredDir)
       hasRetired = true

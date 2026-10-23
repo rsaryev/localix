@@ -14,9 +14,20 @@ export function useMiniAppStore(enabled = true) {
   const { data, error, isLoading, mutate } = useSWR(enabled ? STORE_KEY : null, () =>
     backendClient.listMiniAppStore(),
   )
-  const install = async (name: string) => {
-    await backendClient.installMiniApp(name)
+  const install = async (name: string, opts?: { acceptUnverified?: boolean }) => {
+    await backendClient.installMiniApp(name, opts)
     await mutate()
   }
-  return { entries: data ?? [], error, loading: isLoading, install }
+  const remove = async (name: string) => {
+    await backendClient.removeMiniApp(name)
+    await mutate()
+  }
+  return {
+    entries: data?.entries ?? [],
+    problems: data?.problems ?? [],
+    error,
+    loading: isLoading,
+    install,
+    remove,
+  }
 }

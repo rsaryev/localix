@@ -196,7 +196,10 @@ export type {
   MiniAppUiDescriptor,
 } from './features/mini-apps/contracts'
 export type { MiniAppViewSpec } from './features/mini-apps/contracts-contributions'
-export type { MiniAppStoreEntryRecord } from './features/mini-apps/contracts-store'
+export type {
+  MiniAppStoreEntryRecord,
+  MiniAppStoreResponse,
+} from './features/mini-apps/contracts-store'
 
 export type {
   AgentRecord,

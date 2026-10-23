@@ -17,7 +17,7 @@ import { chmod, mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'no
 import path from 'node:path'
 import { promisify } from 'node:util'
 import type { LocalModelSpec } from './contracts'
-import { downloadPinned, isDownloaded, type DownloadProgress } from './download'
+import { downloadPinned, isDownloaded, type DownloadProgress } from '../../lib/pinned-download'
 import type { RuntimeBuild } from './runtime'
 
 const execFileAsync = promisify(execFile)

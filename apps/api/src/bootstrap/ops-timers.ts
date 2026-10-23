@@ -225,6 +225,20 @@ export function createOpsTimersPhase({
       })
     setInterval(() => void runCuratorCheck(), 24 * 60 * 60 * 1000).unref?.()
 
+    // Mini apps a catalog installed take its newer versions: a minute after start, then every six
+    // hours. A failed update keeps the version before (`features/mini-apps/store.ts`).
+    const updateMiniApps = () =>
+      miniAppService.store
+        .updateInstalled()
+        .then((queued) => {
+          if (queued.length) logger.info({ event: 'mini_apps.updates_queued', queued })
+        })
+        .catch((error) =>
+          logger.warn({ event: 'mini_apps.update_check_failed', error: errorMessage(error) }),
+        )
+    setTimeout(() => void updateMiniApps(), 60_000).unref?.()
+    setInterval(() => void updateMiniApps(), 6 * 60 * 60 * 1000).unref?.()
+
     // Model lists: hourly, refetched past six hours (`features/catalog/refresh-schedule.ts`).
     const checkModelCatalog = armModelCatalogChecks({ catalogService, signal, logger })
     // Everything above only ARMS a cadence. The first run of each job waits for the idle

@@ -29,7 +29,7 @@ function setup() {
   const store = createMiniAppStore({
     homeDir: home,
     sources: () => [local],
-    announce: async (name) => void changes.push(name),
+    onInstalled: async (name) => void changes.push(name),
   })
   store.subscribe(() => pokes++)
   return { source, home, store, changes, pokes: () => pokes }
@@ -44,7 +44,7 @@ describe('the mini app store', () => {
     await offer(source, 'notes')
     await offer(source, 'scaffold', { private: true })
 
-    const entries = await store.list()
+    const { entries } = await store.list()
     expect(entries.map((entry) => entry.name)).toEqual(['chess', 'notes'])
     expect(entries[0]).toMatchObject({
       displayName: 'Chess',
@@ -67,7 +67,7 @@ describe('the mini app store', () => {
     expect(changes).toEqual(['chess'])
     expect(pokes()).toBeGreaterThan(1)
     expect(await fs.readdir(join(home, '.localix', 'mini-apps'))).toContain('chess')
-    const entries = await store.list()
+    const { entries } = await store.list()
     expect(entries.find((entry) => entry.name === 'chess')).toMatchObject({
       installed: { version: '1.0.0' },
       job: { phase: 'done' },
@@ -82,15 +82,12 @@ describe('the mini app store', () => {
     await store.settled()
     await offer(source, 'chess', { version: '1.1.0' })
 
-    const [chess] = await store.list()
+    const [chess] = (await store.list()).entries
     expect(chess).toMatchObject({ installed: { version: '1.0.0' }, version: '1.1.0', update: true })
   })
 
-  test('an app no source offers fails its job and says why', async () => {
+  test('an app no source offers is refused, saying which', async () => {
     const { store } = setup()
-    await store.install('ghost')
-    await store.settled()
-    expect(store.jobs().get('ghost')).toMatchObject({ phase: 'failed' })
-    expect(store.jobs().get('ghost')?.error).toContain('ghost')
+    await expect(store.install('ghost')).rejects.toThrow(/ghost/)
   })
 })

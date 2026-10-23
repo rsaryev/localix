@@ -1,41 +1,37 @@
-import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
-import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
+import { MINI_APP_API_VERSION } from '@localixai/mini-app-sdk/manifest-primitives'
 
+import { ConflictError, NotFoundError } from '../../lib/domain-errors'
+import { envString } from '../../lib/env'
 import { errorMessage } from '../../lib/errors'
-import { listSubdirs } from '../ext/fs-discovery'
-import { installBundledMiniApp } from './bundled-install'
 import { bundledMiniAppsSyncRoot } from './discovery'
 import { MINI_APPS_SUBDIR } from './paths'
+import { installedBy, installOffer } from './store-install'
+import {
+  createOfferReader,
+  readManifest,
+  type MiniAppPublisher,
+  type MiniAppStoreSource,
+  type Offer,
+} from './store-offers'
+
+export type { MiniAppPublisher, MiniAppStoreSource } from './store-offers'
 
 /**
  * The mini app store: what the catalogs offer, what is installed, and the installs in flight
  * (`docs/internals/plugins-and-mini-apps.md`, "Catalogs and sources"). Nothing is installed until
  * the person chooses it (rule X5). An install is in-memory status — every move of a job tells the
  * subscribers, which poke `mini-app-installs` so the client re-reads the list — and a finished one
- * is announced as the app's `mini-app` notice.
+ * is announced through `onInstalled`.
  */
 
-/** Who publishes an app, and whether Localix vouches for them. */
-export interface MiniAppPublisher {
-  name: string
-  verified: boolean
-}
-
-/**
- * Where offers come from. `local` is a folder of built apps — in development, the checkout's
- * staged `mini-apps/`, so a change is installed without a release.
- */
-export interface MiniAppStoreSource {
-  kind: 'local'
-  root: string
-  publisher: MiniAppPublisher
-}
-
-export type MiniAppJobPhase = 'queued' | 'installing' | 'done' | 'failed'
+export type MiniAppJobPhase = 'queued' | 'downloading' | 'installing' | 'done' | 'failed'
 
 export interface MiniAppJob {
   phase: MiniAppJobPhase
+  /** While downloading: bytes so far, and of how many. */
+  received?: number
+  total?: number
   error?: string
 }
 
@@ -51,102 +47,149 @@ export interface MiniAppStoreEntry {
   installed: { version?: string } | null
   /** The catalog offers a version other than the installed one. */
   update: boolean
+  /** Built for a newer mini app contract than this Localix runs: it cannot be installed. */
+  incompatible?: boolean
   job?: MiniAppJob
 }
 
-interface Offer {
-  manifest: Record<string, unknown>
-  source: MiniAppStoreSource
+export interface MiniAppStoreListing {
+  entries: MiniAppStoreEntry[]
+  /** Sources that could not be read this time, each said in a sentence. */
+  problems: string[]
 }
 
-const text = (value: unknown): string | undefined =>
-  typeof value === 'string' && value.trim() ? value : undefined
-
-async function readManifest(dir: string): Promise<Record<string, unknown> | null> {
-  try {
-    const parsed = JSON.parse(await fs.readFile(join(dir, MINI_APP_MANIFEST_FILE), 'utf8'))
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null
-  } catch {
-    return null
-  }
-}
+const incompatible = (offer: Offer) => (offer.apiVersion ?? 1) > MINI_APP_API_VERSION
 
 export function createMiniAppStore(deps: {
   homeDir: string
   /** Read per call: a development checkout restages while the API runs. */
   sources: () => MiniAppStoreSource[] | Promise<MiniAppStoreSource[]>
-  /** Record the app's `mini-app` notice once it is installed (the owner announces, C1). */
-  announce: (name: string) => Promise<void>
+  /**
+   * An install finished: announce the app (the owner announces, C1) and, for a `fresh` one the
+   * person chose, record their yes to run it.
+   */
+  onInstalled: (name: string, info: { fresh: boolean; userId?: string }) => Promise<void>
+  fetchImpl?: typeof fetch
 }) {
+  const installRoot = join(deps.homeDir, MINI_APPS_SUBDIR)
+  const readOffers = createOfferReader({ sources: deps.sources, fetchImpl: deps.fetchImpl })
   const jobs = new Map<string, MiniAppJob>()
   const listeners = new Set<() => void>()
   let queue: Promise<void> = Promise.resolve()
-  const notify = () => {
-    for (const listener of listeners) listener()
-  }
   const setJob = (name: string, job: MiniAppJob) => {
     jobs.set(name, job)
-    notify()
+    for (const listener of listeners) listener()
   }
+  const busy = (name: string) =>
+    ['queued', 'downloading', 'installing'].includes(jobs.get(name)?.phase ?? '')
 
-  /** Every app the sources offer, first source wins a name. Private (authoring) apps are not offers. */
-  async function offers(): Promise<Map<string, Offer>> {
-    const found = new Map<string, Offer>()
-    for (const source of await deps.sources()) {
-      for (const folder of await listSubdirs(source.root)) {
-        if (folder.startsWith('.')) continue
-        const manifest = await readManifest(join(source.root, folder))
-        const name = text(manifest?.name)
-        if (!manifest || !name || manifest.private === true || found.has(name)) continue
-        found.set(name, { manifest, source })
-      }
-    }
-    return found
-  }
-
-  async function install(name: string): Promise<void> {
-    const offer = (await offers()).get(name)
-    setJob(name, { phase: 'installing' })
+  async function run(offer: Offer, userId: string | undefined): Promise<void> {
+    const fresh = (await installedBy(join(installRoot, offer.name))) === null
+    setJob(
+      offer.name,
+      offer.from === 'catalog'
+        ? { phase: 'downloading', received: 0, total: offer.archive.bytes }
+        : { phase: 'installing' },
+    )
     try {
-      if (!offer) throw new Error(`No catalog offers a mini app named "${name}"`)
-      await installBundledMiniApp(offer.source.root, deps.homeDir, name)
-      await deps.announce(name)
-      setJob(name, { phase: 'done' })
+      await installOffer(offer, deps.homeDir, {
+        fetchImpl: deps.fetchImpl,
+        onProgress: ({ received, total }) =>
+          setJob(offer.name, { phase: 'downloading', received, total }),
+      })
+      setJob(offer.name, { phase: 'installing' })
+      await deps.onInstalled(offer.name, { fresh, ...(userId ? { userId } : {}) })
+      setJob(offer.name, { phase: 'done' })
     } catch (error) {
-      setJob(name, { phase: 'failed', error: errorMessage(error) })
+      setJob(offer.name, { phase: 'failed', error: errorMessage(error) })
     }
+  }
+
+  const enqueue = (offer: Offer, userId?: string) => {
+    setJob(offer.name, { phase: 'queued' })
+    queue = queue.then(() => run(offer, userId))
   }
 
   return {
-    async list(): Promise<MiniAppStoreEntry[]> {
-      const installRoot = join(deps.homeDir, MINI_APPS_SUBDIR)
+    async list(): Promise<MiniAppStoreListing> {
+      const { offers, problems } = await readOffers()
       const entries = await Promise.all(
-        [...(await offers())].map(async ([name, { manifest, source }]) => {
-          const installed = await readManifest(join(installRoot, name))
-          const version = text(manifest.version)
-          const installedVersion = text(installed?.version)
-          const job = jobs.get(name)
+        [...offers.values()].map(async (offer) => {
+          const installed = await readManifest(join(installRoot, offer.name))
+          const installedVersion =
+            typeof installed?.version === 'string' ? installed.version : undefined
+          const job = jobs.get(offer.name)
           return {
-            name,
-            ...(text(manifest.displayName) ? { displayName: text(manifest.displayName) } : {}),
-            description: text(manifest.description) ?? '',
-            ...(text(manifest.category) ? { category: text(manifest.category) } : {}),
-            ...(version ? { version } : {}),
-            publisher: source.publisher,
+            name: offer.name,
+            ...(offer.displayName ? { displayName: offer.displayName } : {}),
+            description: offer.description,
+            ...(offer.category ? { category: offer.category } : {}),
+            ...(offer.version ? { version: offer.version } : {}),
+            publisher: offer.publisher,
             installed: installed ? (installedVersion ? { version: installedVersion } : {}) : null,
-            update: Boolean(installed && version && installedVersion !== version),
+            update: Boolean(installed && offer.version && installedVersion !== offer.version),
+            ...(incompatible(offer) ? { incompatible: true } : {}),
             ...(job ? { job } : {}),
           } satisfies MiniAppStoreEntry
         }),
       )
-      return entries.sort((a, b) => a.name.localeCompare(b.name))
+      return { entries: entries.sort((a, b) => a.name.localeCompare(b.name)), problems }
     },
 
-    /** Queue an install; it runs after the ones before it. Resolves once queued. */
-    async install(name: string): Promise<void> {
-      if (jobs.get(name)?.phase === 'queued' || jobs.get(name)?.phase === 'installing') return
-      setJob(name, { phase: 'queued' })
-      queue = queue.then(() => install(name))
+    /**
+     * Queue an install; it runs after the ones before it and resolves once queued. Refused at
+     * once — before anything is downloaded — for an app no catalog offers, one built for a newer
+     * Localix, a folder of the person's own by that name, or an unverified publisher the person
+     * has not said yes to.
+     */
+    async install(
+      name: string,
+      opts: { userId?: string; acceptUnverified?: boolean } = {},
+    ): Promise<void> {
+      if (busy(name)) return
+      const offer = (await readOffers()).offers.get(name)
+      if (!offer)
+        throw new NotFoundError(
+          'mini_app_not_offered',
+          `No catalog offers a mini app named "${name}"`,
+        )
+      if (incompatible(offer))
+        throw new ConflictError(
+          'mini_app_incompatible',
+          `"${name}" needs a newer Localix (mini app API ${offer.apiVersion}); update Localix first`,
+        )
+      if ((await installedBy(join(installRoot, name))) === 'person')
+        throw new ConflictError(
+          'mini_app_name_taken',
+          `A mini app of yours is already called "${name}"; rename or remove it first`,
+        )
+      if (!offer.publisher.verified && !opts.acceptUnverified)
+        throw new ConflictError(
+          'mini_app_unverified',
+          `"${name}" comes from an unverified publisher (${offer.publisher.name}); confirm to install it`,
+        )
+      enqueue(offer, opts.userId)
+    },
+
+    /**
+     * Install the newer version of every app a catalog put here, re-reading the catalogs first.
+     * A folder the person made, an incompatible version and a running job are left alone; a
+     * failed update keeps the version before. Returns the names queued.
+     */
+    async updateInstalled(): Promise<string[]> {
+      const { offers } = await readOffers({ fresh: true })
+      const queued: string[] = []
+      for (const offer of offers.values()) {
+        if (offer.from !== 'catalog' || incompatible(offer) || busy(offer.name)) continue
+        const dir = join(installRoot, offer.name)
+        // A staged first-party copy an earlier build installed moves to the catalog's on its next
+        // version; a folder the person made is theirs.
+        if (!['catalog', 'staged'].includes((await installedBy(dir)) ?? '')) continue
+        if ((await readManifest(dir))?.version === offer.version) continue
+        enqueue(offer)
+        queued.push(offer.name)
+      }
+      return queued
     },
 
     /** Resolves when every queued install has finished (tests, shutdown). */
@@ -164,13 +207,36 @@ export function createMiniAppStore(deps: {
 
 export type MiniAppStore = ReturnType<typeof createMiniAppStore>
 
+/** The hosted Localix catalog, published with every release (`release.yml`). */
+export const DEFAULT_MINI_APP_CATALOG_URL =
+  'https://github.com/rsaryev/localix/releases/latest/download/mini-app-catalog.json'
+
 /**
- * The sources a host offers by default: the staged first-party apps when there are any — the
- * checkout's `mini-apps/` in development — published by Localix. The hosted catalog joins here.
+ * The sources a host offers by default. In development (the checkout's apps staged) only those,
+ * published by Localix — a change is installed without a release. Otherwise the hosted catalog,
+ * which `LOCALIX_MINI_APP_CATALOG_URL` replaces, and the catalogs in `LOCALIX_MINI_APP_CATALOGS`
+ * (comma-separated URLs or `file://` paths), whose publishers Localix does not vouch for.
  */
 export async function defaultMiniAppStoreSources(): Promise<MiniAppStoreSource[]> {
-  const staged = await bundledMiniAppsSyncRoot()
-  return staged
-    ? [{ kind: 'local', root: staged, publisher: { name: 'Localix', verified: true } }]
-    : []
+  const extra = (envString('LOCALIX_MINI_APP_CATALOGS') ?? '')
+    .split(',')
+    .map((url) => url.trim())
+    .filter(Boolean)
+    .map((url): MiniAppStoreSource => ({ kind: 'catalog', url, vouches: false }))
+  if (envString('LOCALIX_BUNDLED_MINI_APPS_DIR')) {
+    const staged = await bundledMiniAppsSyncRoot()
+    if (staged)
+      return [
+        { kind: 'local', root: staged, publisher: { name: 'Localix', verified: true } },
+        ...extra,
+      ]
+  }
+  return [
+    {
+      kind: 'catalog',
+      url: envString('LOCALIX_MINI_APP_CATALOG_URL') ?? DEFAULT_MINI_APP_CATALOG_URL,
+      vouches: true,
+    },
+    ...extra,
+  ]
 }

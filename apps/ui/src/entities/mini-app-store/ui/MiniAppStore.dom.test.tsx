@@ -39,12 +39,24 @@ const ENTRIES = [
     name: 'weather',
     displayName: 'Weather',
     category: 'utilities',
-    publisher: { name: 'Someone', verified: false },
-    job: { phase: 'installing' },
+    job: { phase: 'downloading', received: 25, total: 100 },
   }),
+  entry({
+    name: 'radio',
+    displayName: 'Radio',
+    category: 'content',
+    publisher: { name: 'Someone', verified: false },
+  }),
+  entry({ name: 'future', displayName: 'Future', incompatible: true }),
 ]
 
-async function render(onInstall: (name: string) => void) {
+interface Calls {
+  install: { name: string; acceptUnverified: boolean }[]
+  remove: string[]
+}
+
+async function render(problems: string[] = []) {
+  const calls: Calls = { install: [], remove: [] }
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { MiniAppStoreView } = await import('./MiniAppStore')
@@ -52,68 +64,110 @@ async function render(onInstall: (name: string) => void) {
   document.body.append(host)
   const root = createRoot(host)
   await act(async () =>
-    root.render(<MiniAppStoreView entries={ENTRIES} loading={false} onInstall={onInstall} />),
+    root.render(
+      <MiniAppStoreView
+        entries={ENTRIES}
+        problems={problems}
+        loading={false}
+        onInstall={(name, opts) =>
+          calls.install.push({ name, acceptUnverified: opts?.acceptUnverified ?? false })
+        }
+        onRemove={(name) => calls.remove.push(name)}
+      />,
+    ),
   )
-  const card = (name: string) => host.querySelector<HTMLElement>(`[data-mini-app="${name}"]`)
+  const row = (name: string) => host.querySelector<HTMLElement>(`[data-mini-app="${name}"]`)
+  const button = (name: string, label: string) =>
+    [...(row(name)?.querySelectorAll('button') ?? [])].find(
+      (candidate) =>
+        candidate.getAttribute('aria-label') === label ||
+        (!candidate.hasAttribute('aria-label') && candidate.textContent === label),
+    )
+  const section = (name: string) =>
+    row(name)?.closest('section')?.querySelector('h2')?.textContent ?? null
   const click = async (element: Element | null | undefined) =>
     act(async () => (element as HTMLElement).click())
   const done = async () => {
     await act(async () => root.unmount())
     host.remove()
   }
-  return { host, card, click, act, done }
+  return { host, row, button, section, click, act, calls, done }
 }
 
 describe('the mini app store', () => {
-  test('each app is a card with its publisher, and the one action its state allows', async () => {
-    const installed: string[] = []
-    const view = await render((name) => installed.push(name))
+  test('apps are grouped by what they need: an update, nothing, or installing', async () => {
+    const view = await render()
     try {
-      expect(view.card('chess')?.textContent).toContain('Chess')
-      expect(view.card('chess')?.textContent).toContain('Localix')
-      expect(view.card('chess')?.querySelector('[aria-label="Verified publisher"]')).not.toBeNull()
-      expect(view.card('weather')?.textContent).toContain('Unverified')
-
-      await view.click(
-        [...(view.card('chess')?.querySelectorAll('button') ?? [])].find(
-          (button) => button.textContent === 'Install',
-        ),
-      )
-      expect(installed).toEqual(['chess'])
-
-      expect(view.card('kanban')?.textContent).toContain('Installed')
-      const update = [...(view.card('trading')?.querySelectorAll('button') ?? [])].find(
-        (button) => button.textContent === 'Update',
-      )
-      await view.click(update)
-      expect(installed).toEqual(['chess', 'trading'])
-
-      const weather = view.card('weather')
-      expect(weather?.textContent).toContain('Installing')
-      expect(weather?.querySelector('[role="progressbar"]')).not.toBeNull()
+      expect(view.section('trading')).toContain('Updates')
+      expect(view.section('kanban')).toContain('Installed')
+      expect(view.section('chess')).toContain('Available')
+      expect(view.row('trading')?.textContent).toContain('1.0.0 → 2.0.0')
+      expect(view.row('weather')?.querySelector('[role="progressbar"]')).not.toBeNull()
+      expect(view.row('weather')?.textContent).toContain('25%')
+      expect(view.row('future')?.textContent).toContain('Needs a newer Localix')
+      expect(view.button('future', 'Install')).toBeUndefined()
     } finally {
       await view.done()
     }
   })
 
-  test('a category narrows the cards, and the search finds by name or words', async () => {
-    const view = await render(() => {})
+  test('install, update and remove each call their action', async () => {
+    const view = await render()
     try {
-      const pill = (label: string) =>
-        [...view.host.querySelectorAll('button')].find((button) => button.textContent === label)
-      await view.click(pill('Games'))
-      expect(view.card('chess')).not.toBeNull()
-      expect(view.card('kanban')).toBeNull()
+      await view.click(view.button('chess', 'Install'))
+      await view.click(view.button('trading', 'Update'))
+      await view.click(view.button('kanban', 'Remove Kanban'))
+      expect(view.calls.install.map(({ name }) => name)).toEqual(['chess', 'trading'])
+      expect(view.calls.remove).toEqual(['kanban'])
+    } finally {
+      await view.done()
+    }
+  })
 
-      await view.click(pill('All'))
+  test('an unverified publisher is named, and installing asks for a yes in the row', async () => {
+    const view = await render()
+    try {
+      expect(view.row('radio')?.textContent).toContain('Unverified')
+      expect(view.row('radio')?.textContent).toContain('Someone')
+      expect(view.row('chess')?.querySelector('[aria-label="Verified publisher"]')).not.toBeNull()
+
+      await view.click(view.button('radio', 'Install'))
+      expect(view.calls.install).toEqual([])
+      expect(view.row('radio')?.textContent).toContain('Install anyway?')
+      await view.click(view.button('radio', 'Install anyway'))
+      expect(view.calls.install).toEqual([{ name: 'radio', acceptUnverified: true }])
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('a category narrows the rows, and the search finds by name or words', async () => {
+    const view = await render()
+    try {
+      const tab = (label: string) =>
+        [...view.host.querySelectorAll('[role="tab"]')].find((node) => node.textContent === label)
+      await view.click(tab('Games'))
+      expect(view.row('chess')).not.toBeNull()
+      expect(view.row('kanban')).toBeNull()
+
+      await view.click(tab('All'))
       const search = view.host.querySelector<HTMLInputElement>('input')!
       await view.act(async () => {
         const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
         setter.call(search, 'trad')
         search.dispatchEvent(new Event('input', { bubbles: true }))
       })
-      expect(view.card('trading')).not.toBeNull()
-      expect(view.card('chess')).toBeNull()
+      expect(view.row('trading')).not.toBeNull()
+      expect(view.row('chess')).toBeNull()
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('a catalog that could not be read is said once, above the apps', async () => {
+    const view = await render(['The mini app catalog at example.test answered 503'])
+    try {
+      expect(view.host.textContent).toContain('answered 503')
     } finally {
       await view.done()
     }

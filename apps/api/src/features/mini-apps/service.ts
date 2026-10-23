@@ -184,12 +184,15 @@ export function createMiniAppService(deps: MiniAppServiceDeps) {
   const store = createMiniAppStore({
     homeDir: deps.homeDir,
     sources: deps.storeSources ?? defaultMiniAppStoreSources,
-    announce: (name) =>
-      recordCoreChanges(deps.db, {
+    onInstalled: async (name, { fresh, userId }) => {
+      // Choosing it in the store is the person's yes to run it; an update keeps their decision.
+      if (fresh && userId) await setEnabled(userId, { name, enabled: true })
+      await recordCoreChanges(deps.db, {
         entity: 'mini-app',
         op: 'upserted',
         ref: { id: name, scope: 'global' },
-      }),
+      })
+    },
   })
 
   return {

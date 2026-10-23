@@ -14,27 +14,33 @@ add yourself waits for your yes before its code runs; one the agent builds for y
 
 ## What you can do
 
-| Outcome                      | How                                                                         | Boundary                                                          |
-| ---------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| See your mini apps           | `/mini-app list`, or Settings → Capabilities → Mini apps                    | The list shows the scope of the current chat's project.           |
-| Add one from the catalog     | The **+** button in the rail, **Catalog** in Settings → Mini apps, or setup | Nothing is installed until you choose it.                         |
-| Update one                   | **Update** on its card in the catalog                                       | Shown when the catalog offers another version than yours.         |
-| Turn one on or off           | `/mini-app enable <name>`, `/mini-app disable <name>`, or the row's switch  | A switch in Settings applies to the agent selected there.         |
-| Change a mini app's settings | **Settings** on its row in Settings → Mini apps                             | Secret settings are kept in the [vault](secrets.md).              |
-| Remove one                   | `/mini-app remove <name>`, or **Remove** on its row                         | Its data folder stays, so a reinstall finds it.                   |
-| Have the agent build one     | `/mini-app create <what it should do>`                                      | See [Build with the agent](../extending/build-with-the-agent.md). |
-| Pick up edits to its files   | `/mini-app reload`                                                          | Rebuilds your own mini apps, then reloads every mini app.         |
-| Open the list from the rail  | **Manage mini apps…** in the rail's tools menu                              | Opens Settings → Mini apps.                                       |
-| Run one as its own Mac app   | **Install _Name_ as App** on its tab; see [Mac apps](mini-app-mac-apps.md)  | macOS only, for a mini app with a screen of its own.              |
+| Outcome                      | How                                                                        | Boundary                                                          |
+| ---------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| See your mini apps           | `/mini-app list`, or Settings → Capabilities → Mini apps                   | The list shows the scope of the current chat's project.           |
+| Add one from the store       | The **+** button in the rail, **Open the store** in Settings, or setup     | Nothing is installed until you choose it.                         |
+| Update one                   | **Update** on its row in the store, or wait for the automatic update       | Shown when the catalog offers another version than yours.         |
+| Turn one on or off           | `/mini-app enable <name>`, `/mini-app disable <name>`, or the row's switch | A switch in Settings applies to the agent selected there.         |
+| Change a mini app's settings | **Settings** on its row in Settings → Mini apps                            | Secret settings are kept in the [vault](secrets.md).              |
+| Remove one                   | `/mini-app remove <name>`, or **Remove** on its row or in the store        | Its data folder stays, so a reinstall finds it.                   |
+| Have the agent build one     | `/mini-app create <what it should do>`                                     | See [Build with the agent](../extending/build-with-the-agent.md). |
+| Pick up edits to its files   | `/mini-app reload`                                                         | Rebuilds your own mini apps, then reloads every mini app.         |
+| Open the list from the rail  | **Manage mini apps…** in the rail's tools menu                             | Opens Settings → Mini apps.                                       |
+| Run one as its own Mac app   | **Install _Name_ as App** on its tab; see [Mac apps](mini-app-mac-apps.md) | macOS only, for a mini app with a screen of its own.              |
 
 Changes made with `/mini-app` take effect on the next turn.
 
 ## How it works
 
-The catalog shows every app as a card: its publisher, a mark when Localix verified that publisher,
-its category and one action — **Install**, **Update**, or where an install is. Search and the
-category pills narrow the cards. The same catalog opens from the rail's **+**, from Settings → Mini
-apps and from setup.
+The store opens in its own tab, from the rail's **+**, from Settings → Mini apps and from setup. It
+lists apps in three groups: **Updates**, **Installed** and **Available**. Each row shows the app,
+what it does and one action: **Install**, **Update**, or how far a download has got. Category tabs
+and the search narrow the list. A check mark means Localix verified the publisher. An app from an
+unverified publisher shows the publisher's name, and its install asks **Install anyway?** first. An
+app built for a newer Localix says so and cannot be installed.
+
+A catalog's app arrives as an archive whose checksum the catalog pins. An archive that does not
+match is discarded, and the version you had keeps running. Apps installed from a catalog take its
+newer versions by themselves, a minute after start and then every six hours.
 
 Each row in Settings → Capabilities → Mini apps shows the app's version, project scope, category and
 what it brings: tools, screens, commands, a guide. A row marked **awaiting your yes** came from
@@ -62,8 +68,10 @@ that opens the app's row in Settings → Mini apps. The entry clears once the ap
 - A mini app's backend is not sandboxed. Turning one on is consent, not isolation.
 - `/mini-app enable` and `/mini-app disable` change whether the app runs; they do not delete it or
   its data.
-- The catalog offers the mini apps that come with this copy of Localix. A hosted catalog, with apps
-  from other publishers and updates that install themselves, is planned and not yet available.
+- In a development checkout the store offers the checkout's own `mini-apps/`. Otherwise it reads the
+  hosted Localix catalog; `LOCALIX_MINI_APP_CATALOG_URL` replaces it, and
+  `LOCALIX_MINI_APP_CATALOGS` adds other catalogs (comma-separated URLs or `file://` paths), whose
+  publishers are always shown as unverified.
 - Earlier versions kept mini apps under `~/.localix/plugins`. Those copies are removed at startup,
   and settings saved under the old names are not carried over.
 
