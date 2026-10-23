@@ -4,6 +4,8 @@
 export interface WsRelay {
   /** Upstream dev-server ws:// URL this browser socket is bridged to. */
   target: string
+  /** The proxy's own origin, sent upstream so the dev server can still judge the handshake. */
+  origin: string
   /** Negotiated subprotocol echoed from the browser (e.g. Vite's `vite-hmr`). */
   protocol?: string
   /** Client socket to the upstream dev server (created on `open`). */
@@ -70,12 +72,14 @@ function closeBackpressuredRelay(ws: Bun.ServerWebSocket<WsRelay>): void {
 export const websocketRelay: Bun.WebSocketHandler<WsRelay> = {
   open(ws) {
     const relay = ws.data
-    const up = relay.protocol
-      ? new WebSocket(
-          relay.target,
-          relay.protocol.split(',').map((p) => p.trim()),
-        )
-      : new WebSocket(relay.target)
+    // Bun's client socket sends no Origin by default, which an upstream reads as a trusted
+    // non-browser client. Name the page origin the handshake came from instead.
+    // (Bun's client takes an options object; the DOM typing in scope only knows protocols.)
+    const options: Bun.WebSocketOptions = {
+      headers: { origin: relay.origin },
+      ...(relay.protocol ? { protocols: relay.protocol.split(',').map((p) => p.trim()) } : {}),
+    }
+    const up = new WebSocket(relay.target, options as unknown as string[])
     up.binaryType = 'arraybuffer'
     relay.upstream = up
     up.addEventListener('open', () => {

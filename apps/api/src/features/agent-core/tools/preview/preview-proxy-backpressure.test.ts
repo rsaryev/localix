@@ -10,7 +10,7 @@ import {
 type Relay = Parameters<typeof sendOrQueuePreviewWsMessage>[0]
 
 function relay(): Relay {
-  return { target: 'ws://localhost', queue: [], queueBytes: 0 }
+  return { target: 'ws://localhost', origin: 'http://localhost', queue: [], queueBytes: 0 }
 }
 
 describe('preview websocket relay backpressure', () => {

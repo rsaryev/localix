@@ -12,7 +12,7 @@
 
 import { injectProbeIntoHtml } from './probe-inject'
 import { createPreviewServerCache } from './preview-server-cache'
-import { rejectForeignHost } from './preview-host-guard'
+import { isOwnLoopbackOrigin, rejectForeignHost } from './preview-host-guard'
 import { websocketRelay, type WsRelay } from './preview-websocket-relay'
 
 export {
@@ -89,10 +89,19 @@ function ensureProxyServer(upstreamOrigin: string): number {
         // HMR / any app WebSocket: upgrade here and bridge to the upstream dev server,
         // so hot-reload survives while the page is loaded through the proxy.
         if (req.headers.get('upgrade')?.toLowerCase() === 'websocket') {
+          // A browser always sends Origin on a handshake. Only a page served by THIS proxy may
+          // open a relay: the upstream socket cannot carry a foreign page's Origin for the
+          // upstream (a Vite HMR server, the Localix API) to judge, so a cross-site handshake
+          // would arrive there looking like a trusted non-browser client.
+          const browserOrigin = req.headers.get('origin')
+          if (browserOrigin !== null && !isOwnLoopbackOrigin(browserOrigin, srv.port!)) {
+            return new Response('Forbidden', { status: 403 })
+          }
           const protocol = req.headers.get('sec-websocket-protocol') ?? undefined
           const upgraded = srv.upgrade(req, {
             data: {
               target: upstreamWsOrigin + reqUrl.pathname + reqUrl.search,
+              origin: browserOrigin ?? `http://localhost:${srv.port}`,
               protocol,
               queue: [],
               queueBytes: 0,

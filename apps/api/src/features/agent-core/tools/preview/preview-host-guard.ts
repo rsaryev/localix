@@ -14,3 +14,23 @@ export function rejectForeignHost(req: Request): Response | undefined {
   if (loopbackOnly.allowsHost(req.headers.get('host') ?? undefined)) return undefined
   return new Response('Forbidden', { status: 403 })
 }
+
+/**
+ * Whether a handshake's `Origin` is the listener's own (`http://<loopback name>:<port>`). The proxy
+ * relays a WebSocket to its upstream, so a foreign page's handshake must stop here: the upstream
+ * cannot judge an Origin the relay does not carry.
+ */
+export function isOwnLoopbackOrigin(origin: string, port: number): boolean {
+  let url: URL
+  try {
+    url = new URL(origin)
+  } catch {
+    return false
+  }
+  return (
+    url.protocol === 'http:' &&
+    url.origin === origin &&
+    Number(url.port) === port &&
+    loopbackOnly.allowsHost(url.host)
+  )
+}
