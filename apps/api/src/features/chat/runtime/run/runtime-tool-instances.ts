@@ -17,6 +17,7 @@ import { TOOL } from '../../../agent-core/tool-names'
 import { agentParticipant } from '../../../../db/participant'
 import { createMemoryTool } from '../../../agent-core/tools/memory/memory'
 import { createSkillTool } from '../../../agent-core/tools/skill'
+import { createMiniAppGuideTool } from '../../../agent-core/tools/mini-app-guide'
 import { skillToolPorts, type SkillCommandPolicyRef } from './skill-tool-ports'
 import { createToolOutputTool } from '../../../agent-core/tools/context-search/context-search'
 import {
@@ -62,7 +63,10 @@ export interface DirectToolInstanceDeps {
 /** The pre-built tool slots of `createRuntimeToolRegistry`, ready to spread into it. */
 export function buildDirectToolInstances(
   deps: DirectToolInstanceDeps,
-): Pick<OptionalToolPorts, 'memory' | 'skill' | 'global_search' | 'tool_output'> {
+): Pick<
+  OptionalToolPorts,
+  'memory' | 'skill' | 'mini_app_guide' | 'global_search' | 'tool_output'
+> {
   const {
     agentProfile,
     disabledTools,
@@ -105,6 +109,10 @@ export function buildDirectToolInstances(
           skillPorts.renderSkill,
         )
       : undefined,
+    mini_app_guide:
+      loadedPlugins.miniAppGuides.length > 0 && isToolDirect(agentProfile, TOOL.mini_app_guide)
+        ? createMiniAppGuideTool(loadedPlugins.miniAppGuides)
+        : undefined,
     global_search: isToolDirect(agentProfile, TOOL.global_search)
       ? createGlobalSearchTool({
           ...(deps.globalSearch ? { port: deps.globalSearch } : {}),

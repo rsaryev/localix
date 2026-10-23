@@ -22,6 +22,10 @@ export function buildPluginsPromptContext(
   deferredToolNames: ReadonlySet<string> = new Set(),
 ): string | undefined {
   const available = new Set(runtimeToolNames)
+  // A mini app's guide is read on demand (`mini_app_guide`); the index only says one exists.
+  const guides = available.has(TOOL.mini_app_guide)
+    ? new Set((loadedPlugins.miniAppGuides ?? []).map((guide) => guide.app))
+    : new Set<string>()
   const summaries = loadedPlugins.loaded.flatMap((plugin) => {
     const parts: string[] = []
     const directTools = plugin.toolNames.filter((name) => available.has(name)).length
@@ -30,8 +34,14 @@ export function buildPluginsPromptContext(
     if (deferred) parts.push(`${countLabel(deferred, 'tool')} to activate`)
     if (plugin.skills.length && available.has(TOOL.skill))
       parts.push(countLabel(plugin.skills.length, 'skill'))
+    if (guides.has(plugin.name)) parts.push('guide')
     return parts.length ? [`- ${plugin.name} — ${parts.join('; ')}`] : []
   })
+  const guideNote = guides.size
+    ? [
+        `A mini app marked "guide" has one: read it with ${TOOL.mini_app_guide} before you first use the app.`,
+      ]
+    : []
 
   // LSP contributions are not tools: their diagnostics arrive inside edit/write results.
   const lspLines = (loadedPlugins.lspServers ?? []).flatMap(({ pluginName, servers }) =>
@@ -51,8 +61,9 @@ export function buildPluginsPromptContext(
   const promptSections = loadedPlugins.promptSections.map(
     (section) => `## ${section.pluginName}: ${section.title}\n${section.content.trim()}`,
   )
-  const blocks = [[...summaries, ...lspLines].join('\n'), promptSections.join('\n\n')].filter(
-    Boolean,
-  )
+  const blocks = [
+    [...summaries, ...lspLines, ...guideNote].join('\n'),
+    promptSections.join('\n\n'),
+  ].filter(Boolean)
   return blocks.length ? blocks.join('\n\n') : undefined
 }

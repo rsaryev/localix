@@ -42,6 +42,7 @@ const maximalRegistryOptions = {
     tool_output: inertTool('tool_output'),
     context_budget: inertTool('context_budget'),
     skill: inertTool('skill'),
+    mini_app_guide: inertTool('mini_app_guide'),
     jobs: inertTool('jobs'),
     browser: {} as never,
     delegate: {} as never,

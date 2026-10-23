@@ -77,6 +77,12 @@ export function buildNamedOptionals(
     })
   }
 
+  if (optional.mini_app_guide) {
+    namedOptionals.push({
+      tool: optional.mini_app_guide,
+    })
+  }
+
   if (optional.jobs) {
     namedOptionals.push({
       tool: optional.jobs,

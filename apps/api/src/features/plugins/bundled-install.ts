@@ -132,7 +132,7 @@ async function syncOnce(sourceRoot: string, homeDir: string): Promise<Set<string
     // No manifest = not a plugin (a deleted one's leftover build output); staging it minted an
     // empty managed copy. A malformed manifest stays: discovery reports it, not this sync.
     const files = await readManifestFiles(join(sourceRoot, entry.name))
-    if (!files.plugin && !files.app && !files.legacy) continue
+    if (!files.miniApp && !files.plugin && !files.app && !files.legacy) continue
     const composed = composeManifest(files, entry.name)
     if (composed.raw?.private === true) continue
     pluginEntries.push(entry)

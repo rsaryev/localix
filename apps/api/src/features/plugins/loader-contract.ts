@@ -104,6 +104,11 @@ export interface LoadedPlugins {
   /** Declarative system-prompt sections from enabled plugins (manifest data, size-capped by schema). */
   promptSections: Array<{ pluginName: string; title: string; content: string }>
   /**
+   * Enabled mini apps' guides (`mini-app.json` `guide`), each contained in its app's folder. The
+   * agent reads one with `mini_app_guide`; the prompt lists the app in one line.
+   */
+  miniAppGuides: Array<{ app: string; file: string }>
+  /**
    * Custom worker ROLES (sub-agents) from enabled plugins — manifest data,
    * namespaced `<plugin>:<name>`: the subagent types `delegate` runs a task as, as Claude Code's
    * Agent tool does (`agent-core/tools/delegate-plugin-agent.ts`).
@@ -172,6 +177,7 @@ export function emptyLoadedPlugins(): LoadedPlugins {
     monitors: [],
     channels: [],
     promptSections: [],
+    miniAppGuides: [],
     agents: [],
     outputStyles: [],
     mainAgent: null,

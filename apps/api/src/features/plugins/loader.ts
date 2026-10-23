@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { registerContextToolClasses } from '@localixai/agent'
+import { resolveWithin } from '@localixai/path-containment'
 
 import { type CapabilitySourceRepository, scalarConfig } from '../capabilities/source-repository'
 import type { AvailabilityReader } from '../capabilities/availability'
@@ -277,6 +278,12 @@ export async function loadEnabledPlugins(opts: {
         title: section.title,
         content: subst(section.content),
       })
+    }
+
+    // ---- A mini app's guide (read on demand by `mini_app_guide`) ----------
+    if (plugin.layout === 'mini-app' && plugin.manifest.guide) {
+      const file = resolveWithin(plugin.dir, plugin.manifest.guide)
+      if (file) result.miniAppGuides.push({ app: plugin.manifest.name, file })
     }
 
     // ---- Custom worker roles (sub-agents — manifest data + CC files) --------

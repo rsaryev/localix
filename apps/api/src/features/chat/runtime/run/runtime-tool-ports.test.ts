@@ -48,7 +48,7 @@ test('plugin_build suggests browser verification only when browser survives the 
       ...CHAT_RUN_PROFILE,
       toolExposure: { [TOOL.browser]: 'direct', [TOOL.plugin_build]: 'direct' },
     },
-    loadedPlugins: { skills: [] },
+    loadedPlugins: { skills: [], miniAppGuides: [] },
     policy: ROOT_CHAT_POLICY,
   } as unknown as Parameters<typeof buildOptionalToolPorts>[1]
   const { optional, ledgerRef } = buildOptionalToolPorts(ctx, params, {} as never)
@@ -91,7 +91,7 @@ test('the skill tool announces its save through the host capability port', async
       defaultCwd: dir,
       disabledTools: [],
       agentProfile: { ...CHAT_RUN_PROFILE, toolExposure: { [TOOL.skill]: 'direct' } },
-      loadedPlugins: { skills: [] },
+      loadedPlugins: { skills: [], miniAppGuides: [] },
       policy: ROOT_CHAT_POLICY,
     } as unknown as Parameters<typeof buildOptionalToolPorts>[1]
     const { optional } = buildOptionalToolPorts(ctx, params, {} as never)
@@ -120,7 +120,7 @@ test('set_topic is offered exactly when the host built its port', () => {
       defaultCwd: '/tmp',
       disabledTools: [],
       agentProfile: CHAT_RUN_PROFILE,
-      loadedPlugins: { skills: [] },
+      loadedPlugins: { skills: [], miniAppGuides: [] },
       setTopic,
       policy: ROOT_CHAT_POLICY,
     } as unknown as Parameters<typeof buildOptionalToolPorts>[1]

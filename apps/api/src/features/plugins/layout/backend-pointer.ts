@@ -1,13 +1,16 @@
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { MANIFEST_FILE } from '@localixai/claude-plugin'
-import { LEGACY_MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
+import {
+  LEGACY_MINI_APP_MANIFEST_FILE,
+  MINI_APP_MANIFEST_FILE,
+} from '@localixai/mini-app-sdk/app-manifest'
 import { LEGACY_MANIFEST_FILE } from './read'
 
 /**
- * Where an extension names its native backend: a mini app's `backend`, or a legacy manifest's
- * `tools`. The build writes this pointer (`authoring/backend-build.ts`); a backend makes a mini
- * app, so a folder with neither manifest gets a mini app manifest named like its plugin.
+ * Where an extension names its native backend: a mini app's `backend` (`mini-app.json`, or the
+ * `.localix-app/app.json` of a decorated plugin), or a legacy manifest's `tools`. The build writes
+ * this pointer (`authoring/backend-build.ts`); a folder with none of them gets a `mini-app.json`.
  */
 export interface BackendPointer {
   path: string
@@ -21,12 +24,14 @@ const exists = (path: string) =>
   )
 
 export async function backendPointer(dir: string): Promise<BackendPointer> {
-  const app = join(dir, LEGACY_MINI_APP_MANIFEST_FILE)
-  if (await exists(app)) return { path: app, field: 'backend' }
+  const miniApp = join(dir, MINI_APP_MANIFEST_FILE)
+  if (await exists(miniApp)) return { path: miniApp, field: 'backend' }
+  const decorated = join(dir, LEGACY_MINI_APP_MANIFEST_FILE)
+  if (await exists(decorated)) return { path: decorated, field: 'backend' }
   const legacy = join(dir, LEGACY_MANIFEST_FILE)
   if (!(await exists(join(dir, MANIFEST_FILE))) && (await exists(legacy)))
     return { path: legacy, field: 'tools' }
-  return { path: app, field: 'backend' }
+  return { path: miniApp, field: 'backend' }
 }
 
 /** The manifest object at the pointer: `{ name }` (from the plugin) when it does not exist yet. */

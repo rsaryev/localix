@@ -130,6 +130,8 @@ export interface OptionalToolPorts {
   global_search?: AgentTool
   tool_output?: AgentTool
   skill?: AgentTool
+  /** Enabled mini apps' guides, read on demand (`tools/mini-app-guide.ts`). */
+  mini_app_guide?: AgentTool
   jobs?: AgentTool
   /** Tasks handed to child sessions, and the line to each child (`tools/delegate.ts`). */
   delegate?: DelegateToolPort

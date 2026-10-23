@@ -55,10 +55,11 @@ chess/
 ```
 
 - `mini-app.json` is the only manifest, validated by `packages/mini-app-sdk/src/manifest/`.
-- `guide.md` is a prompt section the agent reads while the mini app is enabled: which tool does
-  what, and what to tell the person. It is bounded in size and replaces the skills a mini app used
-  to carry.
-- A **command** is declared in `mini-app.json`: its `prompt` (with `$name` for each argument),
+- `guide.md` tells the agent which tool does what and what to tell the person. It is read on demand:
+  the prompt lists each enabled mini app in one line, marked when it has a guide, and the agent
+  reads one with `mini_app_guide` before it first uses the app (as it reads a skill). It replaces
+  the skills a mini app used to carry.
+- A **command** is declared in `mini-app.json`: its `prompt` (with `${name}` for each argument),
   `description`, `args` with chips and pickers, `featured`, and the tools it switches on
   (`activateTools`). It runs as `/<app>:<command>`.
 - A tool's description says what the tool does; `guide.md` says when to use it.
@@ -99,8 +100,9 @@ ship them; a release publishes them.
    }
    ```
 
-2. **Choose.** On first start, and at any time in Settings → Mini apps, the person picks what to
-   install from the catalog.
+2. **Choose.** On first start, from the add button in the mini app rail, and in Settings → Mini
+   apps, the person picks what to install from the catalog. The three places show one catalog
+   component, and its install and update rows reuse the download progress the local models show.
 3. **Install.** One queue downloads each archive with progress (resumable, size-capped, verified
    against the catalog's sha256 before anything is unpacked), unpacks it into a staging folder and
    moves it into place in one rename. A failed or cancelled install leaves the previous build.

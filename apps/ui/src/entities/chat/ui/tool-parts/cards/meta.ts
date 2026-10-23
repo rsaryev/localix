@@ -171,6 +171,14 @@ const CORE_META: Record<ToolName, ToolMeta> = {
     icon: BookOpen,
     stackable: true,
   },
+  mini_app_guide: {
+    label: 'Mini app guide',
+    noun: 'mini app guides',
+    verb: 'Reading the mini app guide',
+    icon: BookOpen,
+    stackable: true,
+    readOnly: true,
+  },
   ask: {
     label: 'Asked',
     noun: 'questions',

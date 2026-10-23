@@ -62,6 +62,7 @@ const KNOWN_FIELDS = new Set([
   'mcpServers',
   'config',
   'promptSections',
+  'guide',
   // `panels` is the pre-unification name for `views`; promoted at parse, warned below.
   'panels',
   'views',

@@ -29,6 +29,10 @@ function loadedFixture(): LoadedPlugins {
       { pluginName: DENIED, title: 'First', content: 'x' },
       { pluginName: KEPT, title: 'Second', content: 'y' },
     ],
+    miniAppGuides: [
+      { app: DENIED, file: `/apps/${DENIED}/guide.md` },
+      { app: KEPT, file: `/apps/${KEPT}/guide.md` },
+    ],
     agents: [
       { pluginName: DENIED, name: 'clerk' },
       { pluginName: KEPT, name: 'analyst' },
@@ -72,6 +76,7 @@ test('a denied plugin contributes nothing to the run', () => {
   expect(narrowed.mcpServers.map((s) => s.id)).toEqual([`plugin:${KEPT}:feed`])
   expect(narrowed.binDirs).toEqual([`/plugins/${KEPT}/bin`])
   expect(narrowed.promptSections.map((s) => s.pluginName)).toEqual([KEPT])
+  expect(narrowed.miniAppGuides.map((g) => g.app)).toEqual([KEPT])
   expect(narrowed.agents.map((a) => a.pluginName)).toEqual([KEPT])
   expect(narrowed.outputStyles.map((s) => s.pluginName)).toEqual([KEPT])
   expect(narrowed.mainAgent).toBeNull()

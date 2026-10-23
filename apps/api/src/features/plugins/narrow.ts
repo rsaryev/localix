@@ -46,6 +46,7 @@ export function narrowLoadedPlugins(
     ),
     binDirs: loaded.binDirs.filter((dir) => !deniedBinDirs.has(dir)),
     promptSections: loaded.promptSections.filter((section) => !denied.has(section.pluginName)),
+    miniAppGuides: loaded.miniAppGuides.filter((guide) => !denied.has(guide.app)),
     agents: loaded.agents.filter((agent) => !denied.has(agent.pluginName)),
     outputStyles: loaded.outputStyles.filter((entry) => !denied.has(entry.pluginName)),
     mainAgent:

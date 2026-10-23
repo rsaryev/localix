@@ -192,6 +192,13 @@ export const BUILTIN_TOOL_CATALOG = {
     category: 'automation',
     exposure: CHAT_DEFAULT,
   },
+  mini_app_guide: {
+    name: 'mini_app_guide',
+    label: 'Mini app guides',
+    description: "Read an enabled mini app's guide before using its tools.",
+    category: 'knowledge',
+    exposure: CHAT_AND_CHILD,
+  },
   plugin_build: {
     name: 'plugin_build',
     label: 'Build plugins',
