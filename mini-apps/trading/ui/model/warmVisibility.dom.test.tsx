@@ -16,7 +16,7 @@ describe('warm-hidden trading auxiliary work', () => {
     const React = await import('react')
     const { createRoot } = await import('react-dom/client')
     const { act, useRef } = React
-    const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
+    const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
     const { useVisibleResizeObserver } = await import('./useVisibleResizeObserver')
 
     const OriginalResizeObserver = globalThis.ResizeObserver
@@ -82,7 +82,7 @@ describe('warm-hidden trading auxiliary work', () => {
     const React = await import('react')
     const { createRoot } = await import('react-dom/client')
     const { act } = React
-    const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
+    const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
     const { useSecondTick } = await import('./useSecondTick')
 
     const originalSetInterval = globalThis.setInterval

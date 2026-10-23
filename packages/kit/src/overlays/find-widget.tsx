@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { cn, CONTROL_FOCUS_WITHIN } from '@localixai/plugin-sdk/ui/classes'
+import { cn, CONTROL_FOCUS_WITHIN } from '@localixai/mini-app-sdk/ui/classes'
 import { FLOATING_SURFACE } from '../layout/workbench-toolbar'
 
 type FindWidgetSurfaceProps = Omit<React.ComponentPropsWithoutRef<'div'>, 'aria-label'> & {

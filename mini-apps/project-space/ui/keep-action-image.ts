@@ -1,4 +1,4 @@
-import { pluginApiFetch, pluginApiUrl } from '@localixai/plugin-sdk/ui/transport'
+import { pluginApiFetch, pluginApiUrl } from '@localixai/mini-app-sdk/ui/transport'
 import { spaceApi } from './api'
 import { localPath, webUrl } from './action-target'
 

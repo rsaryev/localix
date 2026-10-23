@@ -19,7 +19,7 @@
  */
 import type { ReactNode } from 'react'
 import { MESSAGE_REACTIONS as AGENT_REACTIONS } from '@localixai/api/message-reactions'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@localixai/kit/context-menu'
 import { POPOVER_MATERIAL, POPOVER_SURFACE } from '@localixai/kit/popover-surface'

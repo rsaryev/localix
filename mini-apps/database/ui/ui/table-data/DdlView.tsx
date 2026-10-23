@@ -1,8 +1,8 @@
 /** A database object's DDL view: the engine's CREATE (or one reconstructed from live metadata),
  * formatted once and used for reading, copying and opening in a console. */
 import { ArrowUpRight, Check, Copy, FileCode2 } from 'lucide-react'
-import type { PluginProblemLineProps } from '@localixai/plugin-sdk/ui/components'
-import { useCopied } from '@localixai/plugin-sdk/ui/interactions'
+import type { PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
+import { useCopied } from '@localixai/mini-app-sdk/ui/interactions'
 import { Button } from '@localixai/kit/button'
 import { CodeEditor } from '@localixai/kit/code-editor'
 import { Spinner } from '@localixai/kit/spinner'

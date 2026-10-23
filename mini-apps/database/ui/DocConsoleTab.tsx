@@ -1,4 +1,4 @@
-import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
+import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'
 import { useEngineConsole } from './model/useEngineConsole'
 import { useSchema } from './model/useSchema'
 import { DocConsole } from './ui/DocConsole'

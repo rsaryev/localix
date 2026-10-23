@@ -1,4 +1,4 @@
-import { dirName } from '@localixai/plugin-sdk/ui/utilities'
+import { dirName } from '@localixai/mini-app-sdk/ui/utilities'
 
 /**
  * Pure decision logic for the open-editor external-change reconciler. Kept out of

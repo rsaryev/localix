@@ -1,4 +1,7 @@
-import { resourceMessageBindingDraft, type PublishedMessageContext } from '@localixai/plugin-sdk/ui'
+import {
+  resourceMessageBindingDraft,
+  type PublishedMessageContext,
+} from '@localixai/mini-app-sdk/ui'
 import { buildTradeUri } from '../../backend/uri'
 
 /**

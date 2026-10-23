@@ -1,5 +1,5 @@
 import { Search } from 'lucide-react'
-import { defineUiLocation } from '@localixai/plugin-sdk/ui'
+import { defineUiLocation } from '@localixai/mini-app-sdk/ui'
 import { scopeById } from '../model/scopes'
 
 export default defineUiLocation({

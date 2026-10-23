@@ -4,7 +4,7 @@ import {
   CONTROL_FOCUS_VISIBLE,
   CONTROL_INVALID,
   FIELD_SURFACE,
-} from '@localixai/plugin-sdk/ui/classes'
+} from '@localixai/mini-app-sdk/ui/classes'
 
 /**
  * Physical scale shared by listbox-select and searchable-combobox triggers, named after the chrome

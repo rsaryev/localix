@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react'
 import { Checkbox } from '@localixai/kit/checkbox'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { backendClient } from '@/shared/api/client'
 import { toast } from '@/shared/lib/notify'
 

@@ -1,6 +1,6 @@
 import { CircleAlert, Info, TriangleAlert } from 'lucide-react'
 import type { ComponentType } from 'react'
-import type { ProblemSeverity } from '@localixai/plugin-sdk/ui/problems'
+import type { ProblemSeverity } from '@localixai/mini-app-sdk/ui/problems'
 
 /**
  * One glyph and one colour per severity, for the whole app.

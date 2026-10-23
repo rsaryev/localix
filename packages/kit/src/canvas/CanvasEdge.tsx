@@ -9,7 +9,7 @@ import {
   type EdgeProps,
   type Position,
 } from '@xyflow/react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { EdgeCaption } from './EdgeCaption'
 import { edgeCap, type EdgeCap } from './edge-caps'
 import { floatingEnds, type HandleSide } from './edge-geometry'

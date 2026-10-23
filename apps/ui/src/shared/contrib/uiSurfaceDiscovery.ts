@@ -2,7 +2,7 @@ import type {
   UiContextualSurfaceDeclaration,
   UiLocationContribution,
   UiLocationParamSchema,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 
 export type DiscoveredUiSurface =
   | UiLocationContribution<UiLocationParamSchema>

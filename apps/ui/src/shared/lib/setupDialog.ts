@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { saveString } from '@localixai/plugin-sdk/ui/storage'
+import { saveString } from '@localixai/mini-app-sdk/ui/storage'
 
 /**
  * Whether the setup dialog (the workspace tips, `widgets/workspace-tips`) is open. Shared, so the

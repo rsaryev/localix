@@ -1,5 +1,5 @@
 import { EmptyHint } from '@localixai/kit/empty-hint'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { EnvVariable, RequestEdit as RequestDraft } from '../../backend/contracts'
 import { BodyEditor } from './BodyEditor'
 import { PairEditor } from './PairEditor'

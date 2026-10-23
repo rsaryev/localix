@@ -1,7 +1,7 @@
 import { isPathWithin } from '@localixai/path-containment'
 import { Hono } from 'hono'
 import { z } from 'zod'
-import type { HostRouteContext } from '@localixai/plugin-sdk/backend'
+import type { HostRouteContext } from '@localixai/mini-app-sdk/backend'
 import { zValidator } from '../../../lib/validator'
 import { defaultErrorHandler } from '../../../lib/http'
 import { ApiError } from '../../../lib/errors'

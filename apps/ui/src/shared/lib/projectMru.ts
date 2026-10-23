@@ -10,7 +10,7 @@
  */
 
 import { pushMru } from './mru'
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 
 const STORAGE_KEY = 'localix.project.mru'
 export const PROJECT_MRU_CAP = 8

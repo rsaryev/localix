@@ -7,7 +7,7 @@
  * the lexical path — a result opens the same way whichever strategy found it.
  */
 import type { SearchHit, SearchQuery } from '../agent-core/search/provider'
-import type { SemanticQuery } from '@localixai/plugin-sdk/backend'
+import type { SemanticQuery } from '@localixai/mini-app-sdk/backend'
 import { bestFieldScore } from '../agent-core/search/match'
 import {
   ftsOrQuery,

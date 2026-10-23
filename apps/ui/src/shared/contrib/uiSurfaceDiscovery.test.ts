@@ -6,8 +6,8 @@ import type {
   UiLocationContribution,
   UiLocationParamDefinition,
   UiLocationParamSchema,
-} from '@localixai/plugin-sdk/ui'
-import { isContextualUiSurface } from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
+import { isContextualUiSurface } from '@localixai/mini-app-sdk/ui'
 import { registerDiscoveredUiSurfaces } from './uiSurfaceDiscovery'
 import { createUiLocationRegistry } from './uiLocations'
 import { createContextualUiSurfaceRegistry } from './uiSurfaces'

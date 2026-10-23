@@ -92,7 +92,7 @@ async function offendingImports(root: string): Promise<string[]> {
  * option shape, which made the registry's signature depend on a UI. It now lives with the catalog
  * it searches (`features/ui-locations`) and is injected as a ready instance.
  */
-const isUiSdkModule = (spec: string) => /^@localixai\/plugin-sdk\/ui(\/|$)/.test(spec)
+const isUiSdkModule = (spec: string) => /^@localixai\/mini-app-sdk\/ui(\/|$)/.test(spec)
 
 async function uiSdkImports(root: string): Promise<string[]> {
   const sources = await scanSources({
@@ -108,18 +108,18 @@ async function uiSdkImports(root: string): Promise<string[]> {
 }
 
 describe("agent-core must not import the plugin SDK's UI half", () => {
-  test('no import of @localixai/plugin-sdk/ui, type or value', async () => {
+  test('no import of @localixai/mini-app-sdk/ui, type or value', async () => {
     expect(await uiSdkImports(CORE_DIR)).toEqual([])
   })
 
   test('positive control — a type-only import is still an offence here', async () => {
     await assertPositiveControl({
-      subject: 'an import of @localixai/plugin-sdk/ui',
+      subject: 'an import of @localixai/mini-app-sdk/ui',
       file: 'tools/bash/ui-leak.ts',
-      offender: "import type { UiAgentLocationDescriptor } from '@localixai/plugin-sdk/ui'\n",
+      offender: "import type { UiAgentLocationDescriptor } from '@localixai/mini-app-sdk/ui'\n",
       detect: uiSdkImports,
       // The backend and navigation halves are legitimately used; the detector must not fire on them.
-      scaffold: { 'clean.ts': "import { safeFileKey } from '@localixai/plugin-sdk/backend'\n" },
+      scaffold: { 'clean.ts': "import { safeFileKey } from '@localixai/mini-app-sdk/backend'\n" },
     })
   })
 })

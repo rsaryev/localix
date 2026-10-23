@@ -13,7 +13,7 @@
  * every global shortcut with nothing failing. The stack is claimed by the overlay primitives
  * themselves, which is the thing that is actually true.
  */
-import { overlayOnScreen, useFocusStack } from '@localixai/plugin-sdk/ui/focus'
+import { overlayOnScreen, useFocusStack } from '@localixai/mini-app-sdk/ui/focus'
 
 export interface ActionContext {
   inputFocus: boolean

@@ -1,4 +1,4 @@
-import type { ActionContext, ActionTarget } from '@localixai/plugin-sdk/ui'
+import type { ActionContext, ActionTarget } from '@localixai/mini-app-sdk/ui'
 import type { CreateOp } from '../shared/ops/contract'
 import { spaceTypes } from '../shared/types'
 import { IMAGE_EXTENSIONS } from '../shared/types/references'

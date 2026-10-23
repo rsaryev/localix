@@ -1,4 +1,4 @@
-import type { AgentToolExecutionContext, PluginContext } from '@localixai/plugin-sdk/backend'
+import type { AgentToolExecutionContext, PluginContext } from '@localixai/mini-app-sdk/backend'
 
 import {
   AGENT_TARGET_STATUSES,

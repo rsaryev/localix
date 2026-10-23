@@ -5,7 +5,7 @@ import {
   type PluginUiHost,
   type SessionSurfaceProps,
   type WorkItemLike,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 
 import { boardUri, BOARD_KIND, SEARCH_PROVIDER_ID, TASK_KIND, taskUri } from '../shared/resource'

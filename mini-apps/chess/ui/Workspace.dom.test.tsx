@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
-import type { PublishedMessageContext } from '@localixai/plugin-sdk/ui'
-import { bindPluginUiRuntime, type PluginUiRuntime } from '@localixai/plugin-sdk/ui/runtime'
-import { bindPluginUiTransport } from '@localixai/plugin-sdk/ui/transport'
-import { WorkItemSessionProvider } from '@localixai/plugin-sdk/ui/work-item-session'
+import type { PublishedMessageContext } from '@localixai/mini-app-sdk/ui'
+import { bindPluginUiRuntime, type PluginUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
+import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
+import { WorkItemSessionProvider } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { registerDom } from '@localixai/kit/testing'
 
 import { applyMove, newGame, type Game } from '../shared/game'

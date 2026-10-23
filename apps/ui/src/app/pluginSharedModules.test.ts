@@ -16,13 +16,13 @@ describe('plugin shared modules', () => {
   test('the host provides every browser-side SDK entry, and nothing the SDK does not export', () => {
     const pkg = JSON.parse(
       readFileSync(
-        new URL('../../../../packages/plugin-sdk/package.json', import.meta.url),
+        new URL('../../../../packages/mini-app-sdk/package.json', import.meta.url),
         'utf8',
       ),
     ) as { exports: Record<string, unknown> }
     const expected = Object.keys(pkg.exports)
       .filter((subpath) => !NOT_SHARED.has(subpath))
-      .map((subpath) => `@localixai/plugin-sdk/${subpath.slice(2)}`)
+      .map((subpath) => `@localixai/mini-app-sdk/${subpath.slice(2)}`)
       .sort()
     expect(Object.keys(SDK_SHARED_MODULES).sort()).toEqual(expected)
   })

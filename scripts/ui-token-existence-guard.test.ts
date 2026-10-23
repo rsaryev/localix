@@ -21,7 +21,7 @@ const tokens = themeTokensOf(readFileSync(resolve(repoRoot, THEME), 'utf8'))
 const INCLUDE = [
   'apps/ui/src/**/*.{ts,tsx}',
   'packages/kit/src/**/*.{ts,tsx}',
-  'packages/plugin-sdk/src/**/*.{ts,tsx}',
+  'packages/mini-app-sdk/src/**/*.{ts,tsx}',
   'plugins/**/*.tsx',
   'plugins/**/ui/**/*.ts',
   'plugins/**/frontend/**/*.ts',

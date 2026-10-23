@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import type { Problem } from '@localixai/plugin-sdk/ui/problems'
+import type { Problem } from '@localixai/mini-app-sdk/ui/problems'
 import type { DbConnectionInfo } from '../dbClient'
 import { databaseApi } from '../api/databaseApi'
 import { dbProblem } from '../problems'

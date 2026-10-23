@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { capabilityResourceUri } from '@localixai/plugin-sdk/navigation'
+import { capabilityResourceUri } from '@localixai/mini-app-sdk/navigation'
 import type { ContextRef } from '@/shared/api/contracts'
 import { refIcon, refOpenAction } from './refKindPresentation'
 import { Blocks } from 'lucide-react'

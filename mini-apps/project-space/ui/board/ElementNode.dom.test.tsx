@@ -198,7 +198,7 @@ test('tree keys never edit, move or delete the containing card', async () => {
 })
 
 test('the file button opens once per click without also invoking the card open on double-click', async () => {
-  const { pluginWorkspace } = await import('@localixai/plugin-sdk/ui/runtime')
+  const { pluginWorkspace } = await import('@localixai/mini-app-sdk/ui/runtime')
   const { spaceApi } = await import('../api')
   const open = spyOn(pluginWorkspace, 'openFile').mockImplementation(() => {})
   const read = spyOn(spaceApi, 'text').mockResolvedValue({

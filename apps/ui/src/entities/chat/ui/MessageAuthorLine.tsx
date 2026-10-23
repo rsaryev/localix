@@ -1,7 +1,7 @@
 import { MonogramAvatar, monogramInkStyle } from '@localixai/kit/avatar'
 import { agentProfileUri, type AgentIdentity } from '@/shared/contrib/useAgentIdentity'
 import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { navigateUi } from '@/shared/lib/uiNavigation'
 
 const AVATAR_SIZE = 26

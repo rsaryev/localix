@@ -9,7 +9,7 @@ import {
   SEMANTIC_GLOBAL_SCOPE,
   type SemanticSource,
   type SemanticSourceItem,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 
 /** One catalog row, as its owner lists it for a scope. */
 export interface CatalogRow {

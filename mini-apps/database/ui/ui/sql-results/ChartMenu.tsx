@@ -1,6 +1,6 @@
 import { ChartArea, ChartColumn, ChartLine, ChartPie, ChartScatter } from 'lucide-react'
 import { isNumericType, CHART_KINDS, type ChartKind, type TableColumn } from '@localixai/dataview'
-import type { IconComponent, MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { IconComponent, MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { PickMenu } from '../PickMenu'
 import type { useChartState } from './useChartState'
 

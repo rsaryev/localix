@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { AppWindow, PanelsTopLeft } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { DROP_TARGET_TRANSITION } from '@localixai/kit/drop-target'
 import { FLOATING_SURFACE } from '@localixai/kit/workbench-toolbar'
 import { useGridStore } from '@/entities/workspace-grid/model'

@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 import type { Mark as MarkValue } from '../../shared/game'
 import './board.css'

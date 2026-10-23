@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, ArrowUpRight } from 'lucide-react'
 
-import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
-import { SegmentedControl, SegmentedControlItem } from '@localixai/plugin-sdk/ui/segmented-control'
+import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from '@localixai/mini-app-sdk/ui/segmented-control'
 import { Button } from '@localixai/kit/button'
 import { IconButton } from '@localixai/kit/icon-button'
 import { PanelHeader } from '@localixai/kit/panel-header'

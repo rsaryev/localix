@@ -1,4 +1,4 @@
-import type { PluginHelpers } from '@localixai/plugin-sdk/backend'
+import type { PluginHelpers } from '@localixai/mini-app-sdk/backend'
 
 import type {
   ReaderBookStats,

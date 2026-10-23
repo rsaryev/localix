@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 type WorkbenchStatusBarProps = Omit<ComponentProps<'div'>, 'aria-label' | 'role'> & {
   /** Names the status item group without turning updates into a live region. */

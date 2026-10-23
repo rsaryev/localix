@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach } from 'bun:test'
 import { stubFetch, fetchBody } from '../../testing/fetch-stub'
-import type { ManifestOAuthSpec } from '@localixai/plugin-sdk/backend'
+import type { ManifestOAuthSpec } from '@localixai/mini-app-sdk/backend'
 
 import { makePluginOAuth } from './oauth'
 

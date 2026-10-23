@@ -1,6 +1,6 @@
 import { Rows3, Columns2 } from 'lucide-react'
 import { useDiffViewMode, type DiffViewMode } from './diffViewMode'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { FloatingActionGroup } from '@localixai/kit/workbench-toolbar'
 import { IconButton } from '@localixai/kit/icon-button'
 

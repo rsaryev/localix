@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { z } from 'zod'
-import { bindPluginUiTransport } from '@localixai/plugin-sdk/ui/transport'
+import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
 import { registerDom } from '@localixai/kit/testing'
 import type { PolledSnapshot } from './usePolledSnapshot'
 

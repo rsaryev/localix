@@ -6,7 +6,7 @@ import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { workspaceOf } from '@/shared/lib/workspaceOf'
 import { workItemTransferState } from '@/shared/lib/workItemTransferState'
 import { toast } from '@/shared/lib/notify'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import {
   browserTabTransferBus,
   type BrowserTabDrag,

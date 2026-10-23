@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { MANIFEST_FILE } from '@localixai/claude-plugin'
-import { MINI_APP_MANIFEST_FILE } from '@localixai/plugin-sdk/app-manifest'
+import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 import { LEGACY_MANIFEST_FILE } from './read'
 
 /**

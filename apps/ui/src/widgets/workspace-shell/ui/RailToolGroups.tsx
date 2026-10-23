@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { PanelsTopLeft, Gamepad2, Wrench } from 'lucide-react'
-import type { PluginCategory } from '@localixai/plugin-sdk/manifest'
+import type { PluginCategory } from '@localixai/mini-app-sdk/manifest'
 import { groupRailTools } from '../model/railToolGroups'
 import { RailToolMenu } from './RailToolMenu'
 import type { RailEntry } from './shellTypes'

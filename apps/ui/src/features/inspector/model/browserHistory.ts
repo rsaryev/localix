@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 import { dayLabel, localDayStart } from '@/shared/lib/calendarDay'
 import { readableAddress } from './previewAddress'
 

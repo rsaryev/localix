@@ -1,5 +1,5 @@
 import { nodeUri, podUri, workloadUri, type WorkloadKind } from '../../backend/resource-nodes'
-import { encodeResourceSegment } from '@localixai/plugin-sdk/resource-refs'
+import { encodeResourceSegment } from '@localixai/mini-app-sdk/resource-refs'
 
 type K8sPodView = 'logs' | 'describe' | 'events' | 'manifest'
 type K8sWorkloadView = 'describe' | 'events' | 'manifest'

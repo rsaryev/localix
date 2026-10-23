@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { VfCapture } from '@localixai/visual-feedback/protocol'
 import type { MessageAttachment } from '@/shared/api/contracts'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { toast } from '@/shared/lib/notify'
 import { previewPickMode } from '../model/previewSelection'
 import type { VisualFeedbackBridge } from './useVisualFeedback'

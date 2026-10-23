@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
-import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
+import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'
 import { usePublishDocContext } from './usePublishDocContext'
 
 let teardown: () => Promise<void>

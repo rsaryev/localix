@@ -2,9 +2,12 @@ import { useEffect, useState } from 'react'
 import { Container, Gauge, Ship } from 'lucide-react'
 
 import { RefreshAction } from '@localixai/kit/refresh-action'
-import { SegmentedControl, SegmentedControlItem } from '@localixai/plugin-sdk/ui/segmented-control'
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from '@localixai/mini-app-sdk/ui/segmented-control'
 import { WorkbenchToolbar } from '@localixai/kit/workbench-toolbar'
-import { useElementVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useElementVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { DockerSidebarView } from '../docker/ui/DockerSidebar'
 import type { DockerResourceView } from '../docker/ui/model/dockerView'
 import { useDocker } from '../docker/ui/model/useDocker'

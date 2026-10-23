@@ -17,7 +17,7 @@ import {
 import { GLOBAL_SCOPE, resolveOpenScope, tabIdInScope, workspaceScope } from './scope'
 import { emptyEditorState, loadGrid, persistGrid } from './persistence'
 import { isUnavailableContributedKind } from './capabilities'
-import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
+import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 import { workItemTransferState } from '@/shared/lib/workItemTransferState'
 import type { GridStore } from './store-contracts'
 import {

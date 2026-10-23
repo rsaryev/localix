@@ -1,6 +1,6 @@
 import type { SVGProps } from 'react'
 
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { ActivityOrb } from './activity-orb'
 
 export interface SpinnerProps extends Omit<

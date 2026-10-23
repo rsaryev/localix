@@ -2,9 +2,9 @@
  * What this plugin's UI can announce, and what its readers watch.
  *
  * One value both sides import, so a writer and a reader can never disagree about the name. The
- * protocol, the key semantics and the reasoning are in `plugin-sdk/ui/resource-topics`.
+ * protocol, the key semantics and the reasoning are in `mini-app-sdk/ui/resource-topics`.
  */
-import { resourceTopic } from '@localixai/plugin-sdk/ui/resource-topics'
+import { resourceTopic } from '@localixai/mini-app-sdk/ui/resource-topics'
 
 /**
  * The running port-forwards.

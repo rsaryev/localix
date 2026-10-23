@@ -1,4 +1,4 @@
-import type { CommentBatch } from '@localixai/plugin-sdk/ui'
+import type { CommentBatch } from '@localixai/mini-app-sdk/ui'
 
 import type { CreateKanbanTaskRequest } from '../shared/contracts'
 import { boardApi } from './api/board-client'

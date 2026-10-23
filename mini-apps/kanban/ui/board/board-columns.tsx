@@ -1,7 +1,7 @@
 import type { DragEvent, ReactNode } from 'react'
 import { Boxes, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import {
   DROP_TARGET_SLOT,
   DROP_TARGET_SURFACE_ACTIVE,

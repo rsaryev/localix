@@ -1,5 +1,5 @@
-import { elapsed } from '@localixai/plugin-sdk/agent-wait'
-import { opponentName } from '@localixai/plugin-sdk/opponent'
+import { elapsed } from '@localixai/mini-app-sdk/agent-wait'
+import { opponentName } from '@localixai/mini-app-sdk/opponent'
 import { lineName } from '../../shared/describe'
 import { cellName, type Game, type Move, type GameRecord } from '../../shared/game'
 

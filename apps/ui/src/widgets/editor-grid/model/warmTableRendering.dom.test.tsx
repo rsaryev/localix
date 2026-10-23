@@ -17,8 +17,8 @@ describe('warm-hidden table rendering', () => {
     const React = await import('react')
     const { createRoot } = await import('react-dom/client')
     const { act } = React
-    const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
-    const { ChartView } = await import('@localixai/plugin-sdk/ui/charts')
+    const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
+    const { ChartView } = await import('@localixai/mini-app-sdk/ui/charts')
 
     const OriginalResizeObserver = globalThis.ResizeObserver
     let created = 0
@@ -72,7 +72,7 @@ describe('warm-hidden table rendering', () => {
     const React = await import('react')
     const { createRoot } = await import('react-dom/client')
     const { act } = React
-    const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
+    const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
     const { TableGrid } = await import('@/features/inspector/ui/table/TableGrid')
 
     const OriginalResizeObserver = window.ResizeObserver

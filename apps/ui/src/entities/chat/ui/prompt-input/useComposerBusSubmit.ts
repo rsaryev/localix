@@ -3,8 +3,8 @@ import { useEffect } from 'react'
 import type { MessageBinding } from '@/shared/api/contracts'
 import { composerBus, composerInsertMatchesSession } from '@/shared/lib/composerBus'
 import { toast } from '@/shared/lib/notify'
-import type { MessageContextBindingDraft } from '@localixai/plugin-sdk/ui'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import type { MessageContextBindingDraft } from '@localixai/mini-app-sdk/ui'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 import type { useContextRefs } from '../../model/useContextRefs'
 

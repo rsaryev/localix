@@ -13,7 +13,7 @@
  * through the service, which kicks. Failures never drop work: a failed batch stays queued and
  * retries with backoff. Progress (counts, rate, ETA) feeds the status bar.
  */
-import type { SemanticSource } from '@localixai/plugin-sdk/backend'
+import type { SemanticSource } from '@localixai/mini-app-sdk/backend'
 import type { EmbeddingEngine } from './engine'
 import { ingestItems, removeKeys, type IngestStats } from './ingest'
 import type { SemanticStore } from './store'

@@ -1,5 +1,5 @@
 import { basename, relative as relativePath } from 'node:path'
-import type { PluginHostServices } from '@localixai/plugin-sdk/backend'
+import type { PluginHostServices } from '@localixai/mini-app-sdk/backend'
 
 import type { GitRepoProject, ResourceGitService } from './source-control/resource-provider'
 import { createGitBackend } from './source-control/git/backend'

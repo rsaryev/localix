@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
-import { sessionResourceAddress } from '@localixai/plugin-sdk/session-resource'
-import { recordingPluginUiHost } from '@localixai/plugin-sdk/ui/testing'
+import { sessionResourceAddress } from '@localixai/mini-app-sdk/session-resource'
+import { recordingPluginUiHost } from '@localixai/mini-app-sdk/ui/testing'
 
 import { GAME_KIND, gameUri } from '../shared/resource'
 import { registerUi } from './register'

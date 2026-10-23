@@ -27,7 +27,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@localixai/plugin-sdk": "workspace:*",
+    "@localixai/mini-app-sdk": "workspace:*",
     "@types/pdfkit": "^0.17.6",
     "@types/react": "^19.3.0",
     "fflate": "^0.8.3",

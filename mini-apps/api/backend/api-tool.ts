@@ -17,7 +17,11 @@ import {
   targetProblem,
   type ApiOperationInput,
 } from './api-tool-schema'
-import { UNKNOWN_CALL_CLASS, widestCallClass, type CallClass } from '@localixai/plugin-sdk/backend'
+import {
+  UNKNOWN_CALL_CLASS,
+  widestCallClass,
+  type CallClass,
+} from '@localixai/mini-app-sdk/backend'
 import { classifyEnvironmentCall, classifyHttpRequestCall } from './call-class'
 import { COLLECTION_DIR } from './collection/paths'
 import { createHttpRequestTool, type HttpRequestDeps } from './http-request'

@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
-import { atomicWriteFile } from '@localixai/plugin-sdk/backend'
+import { atomicWriteFile } from '@localixai/mini-app-sdk/backend'
 import type { SpaceDocument, SpaceIssue } from '../shared/format/document'
 import { parseSpace } from '../shared/format/parse'
 import { serializeSpace } from '../shared/format/serialize'

@@ -1,5 +1,5 @@
 import { createBoundedCache } from '@localixai/kit/lib'
-import { isBackgroundWork } from '@localixai/plugin-sdk/ui/visibility'
+import { isBackgroundWork } from '@localixai/mini-app-sdk/ui/visibility'
 import { recentUserIntent, type UserIntentContext } from './userIntent'
 import type { NotificationOrigin, TraceAttributeValue } from './types'
 

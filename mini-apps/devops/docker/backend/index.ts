@@ -28,7 +28,7 @@ import {
   DOCKER_EVENTS_UNSUBSCRIBE,
 } from './events-contract'
 import { createDockerLogsHub, createDockerLogsWsFrame } from './logs-follow'
-import type { PluginRegistration, WsFrameContribution } from '@localixai/plugin-sdk/backend'
+import type { PluginRegistration, WsFrameContribution } from '@localixai/mini-app-sdk/backend'
 
 /** The daemon's events are host-wide and carry no user data, so every socket shares one key. */
 export function createDockerEventsWsFrame(hub: DockerEventsHub): WsFrameContribution {

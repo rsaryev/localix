@@ -1,4 +1,4 @@
-import type { DocumentParagraph } from '@localixai/plugin-sdk/document-layout'
+import type { DocumentParagraph } from '@localixai/mini-app-sdk/document-layout'
 /** Small neutral document glyphs; no system-font symbol substitutions. */
 export function drawContactIcon(
   doc: PDFKit.PDFDocument,

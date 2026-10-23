@@ -16,8 +16,8 @@ import {
 import { applyMove, playMoves, type Plan, type Played } from '../shared/play'
 import { askAgent, positionKey, type Seat, type Wake } from './ask-agent'
 import { askDecision } from './ask-decision'
-import { openJsonStore, type DecisionHost } from '@localixai/plugin-sdk/backend'
-import { DECISION_HOLDS_SEAT, defaultOpponent } from '@localixai/plugin-sdk/opponent'
+import { openJsonStore, type DecisionHost } from '@localixai/mini-app-sdk/backend'
+import { DECISION_HOLDS_SEAT, defaultOpponent } from '@localixai/mini-app-sdk/opponent'
 
 /**
  * The most moves one run of the decision model plays — a safety bound, above any real game (2048

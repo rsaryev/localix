@@ -1,4 +1,4 @@
-import { ProblemState, type PluginProblemLineProps } from '@localixai/plugin-sdk/ui/components'
+import { ProblemState, type PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
 import { useDbProblem, type DbProblemOptions } from '../problems'
 
 /**

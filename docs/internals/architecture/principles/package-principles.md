@@ -38,10 +38,10 @@ distance D = |A + I − 1| measures deviation.
 - Keep the workspace package graph acyclic; break a new cycle by a port or a new lower package.
 - Keep the feature graph inside `apps/api/src/features` and `apps/ui/src/features` acyclic for value
   imports.
-- Depend toward stability: `packages/agent` and `packages/plugin-sdk` depend on nothing above them;
-  apps depend on packages, never the reverse.
-- Keep the most depended-on packages (`packages/agent`, `packages/plugin-sdk`) mostly interfaces and
-  types.
+- Depend toward stability: `packages/agent` and `packages/mini-app-sdk` depend on nothing above
+  them; apps depend on packages, never the reverse.
+- Keep the most depended-on packages (`packages/agent`, `packages/mini-app-sdk`) mostly interfaces
+  and types.
 - Declare every workspace import in the importing package's manifest.
 
 ## How Localix applies it today

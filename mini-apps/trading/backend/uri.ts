@@ -1,4 +1,4 @@
-import { localixResourceUri, parseLocalixUri } from '@localixai/plugin-sdk/navigation'
+import { localixResourceUri, parseLocalixUri } from '@localixai/mini-app-sdk/navigation'
 
 /**
  * PURE `localix://resource/trade` URI grammar — the one source of truth for the trading resource tree,

@@ -3,7 +3,7 @@ import { Check, RotateCcw } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
 import { MarkdownRenderer } from '@localixai/kit/markdown'
 import { SectionLabel } from '@localixai/kit/section-label'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { QuizStep, StepAssessment, StepEvidence } from '../../shared/contracts'
 import { quizOptions } from '../../shared/quiz-options'
 

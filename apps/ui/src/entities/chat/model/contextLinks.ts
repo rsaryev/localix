@@ -6,7 +6,7 @@ import {
   type ParsedContextRef,
 } from '@localixai/api/context-refs'
 import type { MessageAttachment } from '@localixai/agent'
-import type { MessageContextBindingDraft } from '@localixai/plugin-sdk/ui'
+import type { MessageContextBindingDraft } from '@localixai/mini-app-sdk/ui'
 import type { MessageContextBinding } from '@/shared/api/contracts'
 
 /**

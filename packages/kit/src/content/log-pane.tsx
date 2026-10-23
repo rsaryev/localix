@@ -1,5 +1,5 @@
 import { forwardRef, type HTMLAttributes } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /**
  * LogPane — the scrollable monospace `<pre>` the workbench center tabs share for

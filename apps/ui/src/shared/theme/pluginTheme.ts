@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
+import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 
 import type { CapabilitySnapshot } from '@/shared/api/contracts'
 import { pluginContribSnapshot, subscribePluginContrib } from '@/shared/contrib/enabledPlugins'

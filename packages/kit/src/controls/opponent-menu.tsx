@@ -1,7 +1,7 @@
 import { ChevronDown, MessageSquare, Zap, type LucideIcon } from 'lucide-react'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
-import { OPPONENTS, type Opponent } from '@localixai/plugin-sdk/opponent'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
+import { OPPONENTS, type Opponent } from '@localixai/mini-app-sdk/opponent'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '../overlays/dropdown-menu'
 import { MenuEntries } from '../overlays/menu-entries'

@@ -1,5 +1,5 @@
-import type { ContextProviderContribution } from '@localixai/plugin-sdk/backend'
-import { createResourceContextProvider } from '@localixai/plugin-sdk/backend'
+import type { ContextProviderContribution } from '@localixai/mini-app-sdk/backend'
+import { createResourceContextProvider } from '@localixai/mini-app-sdk/backend'
 import {
   createKubernetesResourceProvider,
   type ResourceKubernetesService,

@@ -2,7 +2,7 @@ import {
   PUBLISHED_MESSAGE_CONTEXT_MAX_BINDINGS,
   snippetMessageBindingDraft,
   type PublishedMessageContext,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import type { ConsoleContextFacet } from './consoleContext'
 
 /**

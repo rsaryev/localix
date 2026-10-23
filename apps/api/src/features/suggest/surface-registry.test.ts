@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { PluginTextInputCompletionSurface } from '@localixai/plugin-sdk/backend'
+import type { PluginTextInputCompletionSurface } from '@localixai/mini-app-sdk/backend'
 
 import { createTextInputSurfaceRegistry } from './surface-registry'
 

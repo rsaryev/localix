@@ -1,7 +1,10 @@
 import { Gauge, Square } from 'lucide-react'
-import type { MenuEntry, StatusItemState } from '@localixai/plugin-sdk/ui'
-import { pluginWorkspace, runPluginAction, statusMenuList } from '@localixai/plugin-sdk/ui'
-import { createSharedResource, GLOBAL_RESOURCE_KEY } from '@localixai/plugin-sdk/ui/shared-resource'
+import type { MenuEntry, StatusItemState } from '@localixai/mini-app-sdk/ui'
+import { pluginWorkspace, runPluginAction, statusMenuList } from '@localixai/mini-app-sdk/ui'
+import {
+  createSharedResource,
+  GLOBAL_RESOURCE_KEY,
+} from '@localixai/mini-app-sdk/ui/shared-resource'
 
 import type { PortForward } from '../kubernetes/backend/contract-forwards'
 import { kubernetesApi } from '../kubernetes/ui/api/kubernetesApi'

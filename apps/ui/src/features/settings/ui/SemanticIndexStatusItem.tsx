@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Check, Download, Pause } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import {
   DropdownMenu,
   DropdownMenuContent,

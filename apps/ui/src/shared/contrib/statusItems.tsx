@@ -1,5 +1,5 @@
 import { Component, useEffect, useSyncExternalStore, type ReactNode } from 'react'
-import type { StatusItemContribution, StatusItemState } from '@localixai/plugin-sdk/ui'
+import type { StatusItemContribution, StatusItemState } from '@localixai/mini-app-sdk/ui'
 
 import { isPluginContributionEnabled, subscribePluginActivation } from './pluginActivation'
 import {

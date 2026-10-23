@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { GitBranch, Pin } from 'lucide-react'
 
 import { registerDom } from '../testing/dom'

@@ -1,4 +1,4 @@
-import type { DocumentLayout, DocumentParagraph } from '@localixai/plugin-sdk/document-layout'
+import type { DocumentLayout, DocumentParagraph } from '@localixai/mini-app-sdk/document-layout'
 import { NO_STANDARD_FONT, registerDocumentFonts } from './fonts'
 import { drawContactIcon } from './contact-icon'
 import { coveredParagraph } from './font-coverage'

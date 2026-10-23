@@ -1,4 +1,4 @@
-import { formatTimeAgo } from '@localixai/plugin-sdk/ui/utilities'
+import { formatTimeAgo } from '@localixai/mini-app-sdk/ui/utilities'
 
 /**
  * "3d ago"-style relative timestamp for curator facts, with `null` rendered as

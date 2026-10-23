@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { Hono } from 'hono'
-import { ApiError, defaultErrorHandler, isApiError } from '@localixai/plugin-sdk/backend'
+import { ApiError, defaultErrorHandler, isApiError } from '@localixai/mini-app-sdk/backend'
 import {
   ConflictError,
   ForbiddenError,

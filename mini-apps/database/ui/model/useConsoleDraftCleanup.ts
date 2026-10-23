@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { pluginWorkspace } from '@localixai/plugin-sdk/ui/runtime'
+import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import { DB_CONSOLE_KIND } from './openConsole'
 import { draftStoreKey } from './consoleDraft'
 

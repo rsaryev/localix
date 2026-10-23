@@ -2,7 +2,7 @@ import {
   pluginApiFetch,
   pluginApiUrl,
   unwrapPluginResponse,
-} from '@localixai/plugin-sdk/ui/transport'
+} from '@localixai/mini-app-sdk/ui/transport'
 import type { AppliedView, FileText, FolderListing, SpaceView, SteppedView } from '../shared/api'
 import type { CameraReport } from '../shared/camera'
 import type { SpaceOp } from '../shared/ops/contract'

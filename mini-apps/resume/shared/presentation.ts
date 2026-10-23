@@ -1,4 +1,4 @@
-import type { DocumentFont } from '@localixai/plugin-sdk/document-layout'
+import type { DocumentFont } from '@localixai/mini-app-sdk/document-layout'
 import type { ResumeDocument } from './schema'
 import type { TemplateId } from './templates'
 

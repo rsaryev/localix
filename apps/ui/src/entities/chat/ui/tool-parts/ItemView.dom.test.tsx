@@ -30,7 +30,7 @@ async function mount(item: ToolCallItem, isForeign: boolean) {
   const { MemoryRouter } = await import('react-router')
   const { ForeignTranscriptContext } = await import('./foreignTranscriptContext')
   const { ItemView } = await import('./ItemView')
-  const { WorkItemSessionProvider } = await import('@localixai/plugin-sdk/ui/work-item-session')
+  const { WorkItemSessionProvider } = await import('@localixai/mini-app-sdk/ui/work-item-session')
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)

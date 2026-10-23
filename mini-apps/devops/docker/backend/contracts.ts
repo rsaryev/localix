@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { Prerequisite } from '@localixai/plugin-sdk/prerequisite'
+import type { Prerequisite } from '@localixai/mini-app-sdk/prerequisite'
 
 /**
  * Docker workbench contracts — the engine-agnostic shapes the routes + UI share.

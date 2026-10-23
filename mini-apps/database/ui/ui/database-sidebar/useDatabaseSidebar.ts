@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { toast } from '@localixai/plugin-sdk/ui'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { toast } from '@localixai/mini-app-sdk/ui'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import type { DbConnectionConfig, DbConnectionInfo } from '../../dbClient'
 import { openDbConnection, openDbTable, type DbTableOpenMode } from '../../model/openConsole'
 import { openConsoleFor } from '../explorer/connectionMenuEntries'

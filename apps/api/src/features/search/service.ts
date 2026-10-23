@@ -1,5 +1,5 @@
 import type { SearchHit, SearchProviderRegistry, SearchQuery } from '../agent-core/search/provider'
-import type { SemanticQuery } from '@localixai/plugin-sdk/backend'
+import type { SemanticQuery } from '@localixai/mini-app-sdk/backend'
 import type { SearchStrategyNote } from '../embeddings/contracts'
 import type { SearchGroup, SearchRequest, SearchResponse } from './contracts'
 

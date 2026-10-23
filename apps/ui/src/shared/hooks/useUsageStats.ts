@@ -3,7 +3,7 @@ import useSWR from 'swr'
 import type { UsageOverview, UsageLogRow, UsageKeys } from '@/shared/api/contracts'
 import { backendClient } from '@/shared/api/client'
 import { type UsageRange, rangeToFromIso, rangeToBucket } from './usageRange'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 
 export type { UsageRange }
 export { rangeToFromIso }

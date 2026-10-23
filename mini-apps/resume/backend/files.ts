@@ -2,7 +2,7 @@ import { mkdir, readFile, realpath, stat } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { dirname, join } from 'node:path'
 import { isPathWithin } from '@localixai/path-containment'
-import { atomicWriteFile } from '@localixai/plugin-sdk/backend'
+import { atomicWriteFile } from '@localixai/mini-app-sdk/backend'
 import { RESUME_DIR, resumePath } from '../shared/file-contract'
 import { idSchema } from '../shared/schema'
 

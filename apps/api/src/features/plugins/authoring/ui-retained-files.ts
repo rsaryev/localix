@@ -1,7 +1,7 @@
 import { existsSync, promises as fs } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 
-import { PLUGIN_UI_ARTIFACT_MANIFEST } from '@localixai/plugin-sdk/ui-artifact'
+import { PLUGIN_UI_ARTIFACT_MANIFEST } from '@localixai/mini-app-sdk/ui-artifact'
 
 import { isPathBelow } from '../../../lib/path-containment'
 

@@ -5,7 +5,7 @@
  * (sources, change notices, queries) — so a plugin can neither read nor overwrite chat's vectors
  * or another plugin's, and two plugins may both call a collection `cards`.
  */
-import type { SemanticIndexHost, SemanticSource } from '@localixai/plugin-sdk/backend'
+import type { SemanticIndexHost, SemanticSource } from '@localixai/mini-app-sdk/backend'
 import type { SemanticService } from './service'
 
 const COLLECTION_NAME = /^[a-z0-9][a-z0-9._-]{0,63}$/

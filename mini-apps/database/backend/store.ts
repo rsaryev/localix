@@ -7,7 +7,7 @@
  * reconnect on demand.
  *
  * The cache + per-user write-lock + atomic temp-and-rename discipline this store needs is
- * NOT written here: it is `@localixai/plugin-sdk/backend`'s `user-entity-store`, the one owner. This file used
+ * NOT written here: it is `@localixai/mini-app-sdk/backend`'s `user-entity-store`, the one owner. This file used
  * to hold its own copy, and so did the trading workbench — whose header said out loud that it
  * mirrors "the same atomic-write + per-user write-lock + cache discipline, WHICH IS WHAT
  * CLOSED ITS MID-WRITE READ RACE". A copy of a bug FIX, documented as a copy: the race
@@ -15,8 +15,8 @@
  * half-written file) is subtle enough that nobody would re-derive it on the third copy — they
  * would simply re-introduce it. Now there is one copy, and it is tested where it lives.
  */
-import { createUserEntityStore, type UserEntityStore } from '@localixai/plugin-sdk/backend'
-import { safeFileKey } from '@localixai/plugin-sdk/backend'
+import { createUserEntityStore, type UserEntityStore } from '@localixai/mini-app-sdk/backend'
+import { safeFileKey } from '@localixai/mini-app-sdk/backend'
 import type { DbConnectionConfig } from './contracts'
 
 export interface SavedConnection {

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Check, Code2, GitBranch, Plus, Trash2 } from 'lucide-react'
 import { IconButton } from '@localixai/kit/icon-button'
-import { toast } from '@localixai/plugin-sdk/ui'
+import { toast } from '@localixai/mini-app-sdk/ui'
 import { layoutMindmap } from '../../shared/types/mindmap-layout'
 import { readMindmap, writeMindmap } from '../../shared/types/mindmap-text'
 import { mindmapType, type MindmapProps } from '../../shared/types/mindmap'
@@ -13,7 +13,7 @@ import { colorControl } from './controls'
 import { InlineText } from './InlineText'
 import { MindmapParent } from './MindmapParent'
 import { addMindNode, moveMindBranch, removeMindBranch } from '../../shared/types/mindmap-ops'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 function MindmapView({ props, editing, commit, stopEditing }: ElementViewProps<MindmapProps>) {
   const layout = layoutMindmap(props.nodes)

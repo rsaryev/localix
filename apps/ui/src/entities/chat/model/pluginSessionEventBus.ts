@@ -1,4 +1,4 @@
-import type { PluginSessionPhase } from '@localixai/plugin-sdk/ui'
+import type { PluginSessionPhase } from '@localixai/mini-app-sdk/ui'
 
 /**
  * Tiny pub/sub carrying the SAFE session lifecycle phases the chat runtime

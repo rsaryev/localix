@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { PRIVATE_NETWORK_HOSTS, PUBLIC_NETWORK_HOSTS } from '@localixai/plugin-sdk/backend'
+import { PRIVATE_NETWORK_HOSTS, PUBLIC_NETWORK_HOSTS } from '@localixai/mini-app-sdk/backend'
 import { isPrivateAddress, isPrivateIPv6, checkUrlSafety } from './net-safety'
 
 /**

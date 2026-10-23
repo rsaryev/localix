@@ -29,11 +29,11 @@ async function mountReaders() {
   const React = await import('react')
   const { act } = React
   const { createRoot } = await import('react-dom/client')
-  const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
+  const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
   const { useDbConnections } = await import('./useDbConnections')
   const { useSqlFileConnections } = await import('./useSqlFileConnections')
   const { useDatabaseStatusItem } = await import('../statusItem')
-  const { bindPluginUiRuntime } = await import('@localixai/plugin-sdk/ui/runtime')
+  const { bindPluginUiRuntime } = await import('@localixai/mini-app-sdk/ui/runtime')
   type Runtime = Parameters<typeof bindPluginUiRuntime>[0]
   // The titlebar item reads which work item is focused; nothing is, in this harness.
   const workspaceSnapshot = { focusedId: null, items: {} }

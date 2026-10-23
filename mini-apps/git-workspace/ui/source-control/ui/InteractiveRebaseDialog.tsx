@@ -16,7 +16,7 @@ import {
 } from '@localixai/kit/dialog'
 import { Select } from '@localixai/kit/select'
 import { Button } from '@localixai/kit/button'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 interface Row {
   commit: RepoCommit

@@ -81,7 +81,7 @@ changing an active run. Explicitly activated tools have their own lifetime; see
 
 ## Source of truth
 
-- [The SDK contract](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/backend/host-services.ts)
+- [The SDK contract](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/host-services.ts)
 - [The host side](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/plugin-wake.ts)
 - [Delivery outcomes](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/triggers/delivery.ts)
 - [Initial tool activation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/tool-deferral.ts)

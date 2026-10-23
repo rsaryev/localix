@@ -2,8 +2,12 @@
  * K8s resource-tree drill-down — the `listChildren` half of the `localix://resource/k8s` resource
  * provider (see `resource-provider.ts` for the grammar + provider shape).
  */
-import type { ResourceNode } from '@localixai/plugin-sdk/backend'
-import { decodeResourceSegment, linkAction, providerSegments } from '@localixai/plugin-sdk/backend'
+import type { ResourceNode } from '@localixai/mini-app-sdk/backend'
+import {
+  decodeResourceSegment,
+  linkAction,
+  providerSegments,
+} from '@localixai/mini-app-sdk/backend'
 import type { ResourceKubernetesService } from './resource-provider'
 import {
   ctxUri,

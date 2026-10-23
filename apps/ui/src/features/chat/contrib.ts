@@ -1,5 +1,5 @@
-import type { PluginUiHost, UiAnchorContribution } from '@localixai/plugin-sdk/ui'
-import { parseLocalixResourceUri } from '@localixai/plugin-sdk/ui'
+import type { PluginUiHost, UiAnchorContribution } from '@localixai/mini-app-sdk/ui'
+import { parseLocalixResourceUri } from '@localixai/mini-app-sdk/ui'
 import { lazy } from 'react'
 import { ClipboardList } from 'lucide-react'
 import { PLAN_WORK_KIND } from '@/entities/chat/model/plans'

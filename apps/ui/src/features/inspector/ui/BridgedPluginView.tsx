@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { collectHostThemeCss } from '@/shared/lib/hostThemeVars'
 import { StateNotice } from '@localixai/kit/state-notice'
 import { ProblemLine, useProblemReport } from '@/shared/ui/problem-report'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { buildPanelSrcDoc, mintPanelNonce } from './pluginPanelSrcDoc'
 import { usePluginPanelBridge } from './usePluginPanelBridge'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
-import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
+import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'
 import { WorkbenchToolbar, WorkbenchToolbarSection } from '@localixai/kit/workbench-toolbar'
 import { IconButton } from '@localixai/kit/icon-button'
 import { Button } from '@localixai/kit/button'
@@ -23,7 +23,7 @@ import { Button } from '@localixai/kit/button'
  * remount vs. bridged theme streaming, capability-limited `invoke`) is identical.
  *
  * STATIC surface (default): a host appearance flip remounts the iframe
- * with a fresh snapshot. BRIDGED surface (opts in by posting the plugin-sdk `ready`
+ * with a fresh snapshot. BRIDGED surface (opts in by posting the mini-app-sdk `ready`
  * message): theme updates stream over postMessage (no remount, state kept) and
  * the view may `invoke` the per-plugin action table (see pluginPanelActions).
  */

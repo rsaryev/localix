@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@localixai/kit/button'
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
-import { snippetMessageBindingDraft, type PublishMessageContext } from '@localixai/plugin-sdk/ui'
+import { snippetMessageBindingDraft, type PublishMessageContext } from '@localixai/mini-app-sdk/ui'
 import type { Resume } from '../shared/schema'
 import type { RevisionRecord } from '../shared/file-contract'
 import { exportDocument } from '../shared/format'

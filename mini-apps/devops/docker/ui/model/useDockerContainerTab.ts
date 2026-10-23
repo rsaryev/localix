@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { resourceMessageBindingDraft, type PublishMessageContext } from '@localixai/plugin-sdk/ui'
+import { resourceMessageBindingDraft, type PublishMessageContext } from '@localixai/mini-app-sdk/ui'
 import { dockerApi } from '../dockerApi'
 import type { DevOpsIssue } from '../../../ui/DevOpsProblem'
 import { dockerActionIssue } from './useDockerSidebarActions'

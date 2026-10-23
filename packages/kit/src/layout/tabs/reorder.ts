@@ -3,7 +3,7 @@ import {
   setCompactDragImage,
   setElementDragImage,
   WORKSPACE_TAB_DRAG_MIME,
-} from '@localixai/plugin-sdk/ui/message-binding-drag'
+} from '@localixai/mini-app-sdk/ui/message-binding-drag'
 
 export interface TabReorderOptions<T extends string> {
   ids?: readonly T[]

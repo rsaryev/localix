@@ -6,7 +6,7 @@ import type {
   PluginHelpers,
   PluginHostServices,
   WorkspaceScopeHost,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 
 import { BookCache, estimateParsedBytes } from './book-cache'
 import { collectionName } from './presentation-fields'

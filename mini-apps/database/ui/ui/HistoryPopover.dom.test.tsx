@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
-import * as pluginUiSdk from '@localixai/plugin-sdk/ui'
+import * as pluginUiSdk from '@localixai/mini-app-sdk/ui'
 import { registerDom } from '@localixai/kit/testing'
 import type { SqlHistoryEntry } from '../model/sqlHistory'
 import type { SqlHistoryState } from '../model/useSqlHistory'

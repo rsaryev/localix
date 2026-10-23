@@ -1,4 +1,4 @@
-import { postPluginJson, unwrapPluginResponse } from '@localixai/plugin-sdk/ui/transport'
+import { postPluginJson, unwrapPluginResponse } from '@localixai/mini-app-sdk/ui/transport'
 import { resumeLayout } from '../shared/layout'
 import type { ResumeDocument } from '../shared/schema'
 

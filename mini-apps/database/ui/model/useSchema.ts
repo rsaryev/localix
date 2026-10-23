@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useSyncExternalStore } from 'react'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import type { DbSchemas, DbTableSchema } from '../dbClient'
 import type { SqlForeignKey, SqlSchemaModel } from './sqlCompletion'
 import { getCachedTable, getCachedTableError, mergeColumnSources } from './schemaKey'

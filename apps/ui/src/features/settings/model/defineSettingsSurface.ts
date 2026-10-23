@@ -2,8 +2,8 @@ import {
   defineUiLocation,
   type IconComponent,
   type UiLocationContribution,
-} from '@localixai/plugin-sdk/ui'
-import { settingsUiUri } from '@localixai/plugin-sdk/navigation'
+} from '@localixai/mini-app-sdk/ui'
+import { settingsUiUri } from '@localixai/mini-app-sdk/navigation'
 import type { SettingsTabId } from '@/shared/routing/routes'
 
 type StringSettingsTab = Exclude<SettingsTabId, { kind: 'project' }>

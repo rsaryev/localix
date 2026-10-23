@@ -2,8 +2,8 @@ import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import type { PluginUiHost } from '@localixai/plugin-sdk/ui'
-import type { DedicatedViewerType } from '@localixai/plugin-sdk/ui/file-types'
+import type { PluginUiHost } from '@localixai/mini-app-sdk/ui'
+import type { DedicatedViewerType } from '@localixai/mini-app-sdk/ui/file-types'
 import { __resetDocumentsUiRegistration, registerUi } from './register'
 
 /**

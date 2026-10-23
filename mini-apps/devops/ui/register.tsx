@@ -1,8 +1,8 @@
 import { lazy, Suspense } from 'react'
 import { Gauge } from 'lucide-react'
 
-import type { PluginUiHost, WorkItemLike } from '@localixai/plugin-sdk/ui'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import type { PluginUiHost, WorkItemLike } from '@localixai/mini-app-sdk/ui'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
 import type { DockerResourceView } from '../docker/ui/model/dockerView'
 import type { K8sResourceView } from '../kubernetes/ui/model/viewState'

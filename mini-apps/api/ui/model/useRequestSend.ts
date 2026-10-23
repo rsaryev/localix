@@ -5,8 +5,8 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { acknowledgeInline, type PublishMessageContext } from '@localixai/plugin-sdk/ui'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { acknowledgeInline, type PublishMessageContext } from '@localixai/mini-app-sdk/ui'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import type { HistoryEntryInfo, HistorySource, SendResponse } from '../../backend/contracts'
 import { RestApiError, restApi } from '../restApi'
 import { subscribeApiWorkspaceCommands } from './collectionEvents'

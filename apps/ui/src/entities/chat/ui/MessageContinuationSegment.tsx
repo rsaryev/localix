@@ -9,7 +9,7 @@
  * card's own address (the list row registers it), so only the ones after it register here.
  */
 import { isReasoningItem } from '@localixai/agent/agents/items'
-import { localixResourceUri } from '@localixai/plugin-sdk/navigation'
+import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 import { useUiTarget } from '@/shared/hooks/useUiTarget'
 import { useMessageSearchStore } from '@/shared/lib/messageSearchBus'
 import type { Message } from '../model/types'

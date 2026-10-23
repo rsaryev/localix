@@ -1,5 +1,5 @@
 import { Baseline, Check, ChevronDown } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Button } from '@localixai/kit/button'
 import { IconButton } from '@localixai/kit/icon-button'
 import { FloatingActionDivider, FloatingActionGroup } from '@localixai/kit/workbench-toolbar'
@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@localixai/kit/dropdown-menu'
 import { MenuEntries } from '@localixai/kit/menu-entries'
-import type { IconComponent, MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { IconComponent, MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { COLORS, type SpaceColor } from '../../shared/format/schema'
 import type { ElementControl } from '../elements/contract'
 

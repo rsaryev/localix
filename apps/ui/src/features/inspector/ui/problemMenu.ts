@@ -1,6 +1,6 @@
 import { Copy, MapPin } from 'lucide-react'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
-import { copyText } from '@localixai/plugin-sdk/ui/interactions'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
+import { copyText } from '@localixai/mini-app-sdk/ui/interactions'
 import type { LspDiagnostic } from '@/shared/api/contracts'
 
 /**

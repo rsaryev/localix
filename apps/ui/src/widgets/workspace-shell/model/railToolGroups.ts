@@ -1,4 +1,4 @@
-import type { PluginCategory } from '@localixai/plugin-sdk/manifest'
+import type { PluginCategory } from '@localixai/mini-app-sdk/manifest'
 import type { RailEntry } from '../ui/shellTypes'
 
 export type RailToolCategory = 'workspace' | 'tools' | 'games'

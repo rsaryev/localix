@@ -1,12 +1,12 @@
 import { Hono } from 'hono'
-import { documentFontSchema } from '@localixai/plugin-sdk/document-layout'
+import { documentFontSchema } from '@localixai/mini-app-sdk/document-layout'
 import { fontBytes } from './generators/fonts'
 import { validated } from '../validator'
 import {
   defaultErrorHandler,
   jsonError,
   type PluginRouteContext,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import { extractRequestSchema } from './contracts'
 import {
   generateRequestSchema,

@@ -1,4 +1,4 @@
-import { defineContextualUiSurface } from '@localixai/plugin-sdk/ui'
+import { defineContextualUiSurface } from '@localixai/mini-app-sdk/ui'
 
 export default defineContextualUiSurface({
   id: 'context.shared.tab-panel',

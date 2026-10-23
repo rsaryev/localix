@@ -1,9 +1,9 @@
 import type { ComponentProps } from 'react'
 import { SquareTerminal } from 'lucide-react'
 
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { composerBus } from '@/shared/lib/composerBus'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Button } from '@localixai/kit/button'
 
 export type ComposerCommandButtonProps = Omit<

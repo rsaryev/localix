@@ -1,6 +1,6 @@
 import type { SystemSnapshot } from '../../shared/system'
 import { formatBytes } from '../../shared/system'
-import { TrendChart } from '@localixai/plugin-sdk/ui/stats-charts'
+import { TrendChart } from '@localixai/mini-app-sdk/ui/stats-charts'
 
 /**
  * Chart keys are LOCAL clock times, not the snapshot's ISO timestamp. The SDK labels

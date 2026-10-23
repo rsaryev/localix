@@ -1,4 +1,4 @@
-import { settingsEntityUiUri } from '@localixai/plugin-sdk/navigation'
+import { settingsEntityUiUri } from '@localixai/mini-app-sdk/navigation'
 import type { SearchProvider } from '../agent-core/search/provider'
 import { catalogHits } from '../search/catalog-hybrid'
 import { AGENTS_COLLECTION } from './semantic'

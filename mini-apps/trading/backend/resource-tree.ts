@@ -25,7 +25,7 @@ import {
   noticeNode,
   truncationNotice,
   type ResourceNode,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import {
   BOOK_DEPTH,
   CANDLE_BARS,

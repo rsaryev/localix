@@ -13,7 +13,7 @@
  * transcript, and the first version of this left an empty row under every message.
  */
 import { useMemo } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 export interface MessageReaction {
   emoji: string

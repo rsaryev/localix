@@ -12,7 +12,7 @@ import { useSqlEditorModel } from './db-console-tab/useSqlEditorModel'
 import { useSqlCatalog } from './model/sql-diagnostics/useSqlCatalog'
 import { useEngineCheck } from './model/sql-diagnostics/useEngineCheck'
 import { sqlPredictionContextReferences } from './model/sqlPredictionContext'
-import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
+import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'
 
 /**
  * One connection's SQL console as a center editor-grid tab (one tab per

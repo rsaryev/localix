@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { PluginWakeOutcome, PluginWakeRequest } from '@localixai/plugin-sdk/backend'
+import type { PluginWakeOutcome, PluginWakeRequest } from '@localixai/mini-app-sdk/backend'
 import type { LearningCourse } from '../shared/contracts'
 import type { LearningService } from './service'
 

@@ -1,6 +1,6 @@
-import { useStoreChanges } from '@localixai/plugin-sdk/ui/store-resource'
+import { useStoreChanges } from '@localixai/mini-app-sdk/ui/store-resource'
 import { useEffect, useMemo, useState } from 'react'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import type { DbConnectionInfo } from '../dbClient'
 import {
   ensureConnectionsListed,

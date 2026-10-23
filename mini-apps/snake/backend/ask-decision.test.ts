@@ -7,7 +7,7 @@ import type {
   DecisionHost,
   DecisionOptions,
   DecisionOutcome,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 
 import { newGame, STOPPED_REASON, type Game } from '../shared/game'
 import { DECISION_PURPOSE, moveAsk } from './ask-decision'

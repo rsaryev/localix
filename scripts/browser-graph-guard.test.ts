@@ -20,7 +20,7 @@ import { runtimeImports } from './runtime-imports'
  * is never in the UI: it is one VALUE edge into server code, and every module that
  * server module imports comes along. The last one was a single line —
  * `export { TIP_SIGNALS } from './features/capabilities/contracts'` in the api's
- * type-only client barrel — which pulled the chat contracts and the plugin-sdk BACKEND
+ * type-only client barrel — which pulled the chat contracts and the mini-app-sdk BACKEND
  * (`node:dns`, `node:net`, `node:fs/promises`) into the browser graph.
  *
  * So the rule is not "don't import node builtins in the UI" — nobody does that. It is

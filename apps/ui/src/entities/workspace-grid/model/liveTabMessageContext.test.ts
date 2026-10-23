@@ -3,7 +3,7 @@ import {
   resourceMessageBindingDraft,
   snippetMessageBindingDraft,
   type PublishedMessageContext,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import {
   clearLiveTabMessageContext,
   liveTabMessageContextRevision,

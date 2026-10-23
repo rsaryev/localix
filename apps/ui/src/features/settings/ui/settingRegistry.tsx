@@ -1,5 +1,5 @@
-import { cn } from '@localixai/plugin-sdk/ui/classes'
-import type { ProblemConsequence, StatusTone } from '@localixai/plugin-sdk/ui'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import type { ProblemConsequence, StatusTone } from '@localixai/mini-app-sdk/ui'
 import { Fragment, type ReactNode } from 'react'
 import { ActivityOrb } from '@localixai/kit/activity-orb'
 import { StatusDot } from '@localixai/kit/status-dot'

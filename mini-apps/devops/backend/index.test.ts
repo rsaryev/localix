@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { BackendSubsystem } from '@localixai/plugin-sdk/backend'
+import type { BackendSubsystem } from '@localixai/mini-app-sdk/backend'
 
 import { register } from './index'
 

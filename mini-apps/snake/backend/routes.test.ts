@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { PluginRouteScope } from '@localixai/plugin-sdk/backend'
+import type { PluginRouteScope } from '@localixai/mini-app-sdk/backend'
 
 import { gameSchema, replay } from '../shared/game'
 import { createGameService } from './game-service'

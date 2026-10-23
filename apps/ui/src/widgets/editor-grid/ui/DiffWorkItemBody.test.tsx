@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { WorkItemSessionProvider } from '@localixai/plugin-sdk/ui/work-item-session'
+import { WorkItemSessionProvider } from '@localixai/mini-app-sdk/ui/work-item-session'
 import type { WorkItem } from '@/shared/lib/workItem'
 import { DiffWorkItemBody } from './DiffWorkItemBody'
 

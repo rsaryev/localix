@@ -1,7 +1,7 @@
 /** A database object's Data view: the editable result grid over one browsed page, and the one
  * status line that states the row range and pages it. */
 import { ArrowLeft, ArrowRight } from 'lucide-react'
-import { ProblemLine, type PluginProblemLineProps } from '@localixai/plugin-sdk/ui/components'
+import { ProblemLine, type PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
 import { IconButton } from '@localixai/kit/icon-button'
 import { Spinner } from '@localixai/kit/spinner'
 import { WorkbenchStatusBar, WorkbenchStatusItem } from '@localixai/kit/workbench-statusbar'

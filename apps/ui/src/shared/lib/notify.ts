@@ -6,7 +6,7 @@ import type { NotificationAction, NotificationSeverity } from './notifications/t
 import type { NotificationOrigin } from './notifications/types'
 import { clearProblemReport, publishProblemReport } from './notifications/problems'
 import type { PublishProblemsOptions } from './notifications/problems'
-import type { ProblemReport } from '@localixai/plugin-sdk/ui/problems'
+import type { ProblemReport } from '@localixai/mini-app-sdk/ui/problems'
 
 type ToastMessage = string | ReactNode
 type ToastId = string | number

@@ -5,8 +5,8 @@ import { TabStrip, type StripTabItem } from '@localixai/kit/tabs'
 import {
   createMessageBindingDraft,
   setMessageBindingDrag,
-} from '@localixai/plugin-sdk/ui/message-binding-drag'
-import { ProblemLine } from '@localixai/plugin-sdk/ui/components'
+} from '@localixai/mini-app-sdk/ui/message-binding-drag'
+import { ProblemLine } from '@localixai/mini-app-sdk/ui/components'
 import type { SqlConsoleState } from '../../model/useSqlConsole'
 import type { RowEditTarget } from '../../model/rowMutations'
 import { tabToSnippet } from '../../model/resultSnippet'

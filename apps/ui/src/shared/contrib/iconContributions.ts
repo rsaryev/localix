@@ -1,4 +1,4 @@
-import type { FileIconData, IconComponent } from '@localixai/plugin-sdk/ui'
+import type { FileIconData, IconComponent } from '@localixai/mini-app-sdk/ui'
 import { isPluginContributionEnabled } from './pluginActivation'
 
 interface OwnedContribution<T> {

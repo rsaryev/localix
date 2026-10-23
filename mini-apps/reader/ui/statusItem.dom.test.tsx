@@ -1,12 +1,12 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { act } from 'react'
 import { registerDom } from '@localixai/kit/testing'
-import type { StatusItemState } from '@localixai/plugin-sdk/ui'
+import type { StatusItemState } from '@localixai/mini-app-sdk/ui'
 import {
   bindPluginUiRuntime,
   type PluginUiRuntime,
   type PluginWorkItemRequest,
-} from '@localixai/plugin-sdk/ui/runtime'
+} from '@localixai/mini-app-sdk/ui/runtime'
 
 import { useReaderStatusItem } from './statusItem'
 

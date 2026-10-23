@@ -1,4 +1,4 @@
-import type { PublishMessageContext, WorkItemKindContribution } from '@localixai/plugin-sdk/ui'
+import type { PublishMessageContext, WorkItemKindContribution } from '@localixai/mini-app-sdk/ui'
 import { usePluginKind, type WorkItem } from '@/entities/workspace-grid/model'
 import { recordPluginRenderCrash } from '@/shared/contrib/pluginViewErrors'
 import type { ResolvedTheme } from '@/shared/theme/useTheme'

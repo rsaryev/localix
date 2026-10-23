@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { addToGitignore, amend, discard, getCommitDiff, withCoAuthor } from './actions'
 import { fetchRemote, pull, push } from './remote-ops'
 import type { GitResult, GitRunner } from './cli'
-import { ApiError } from '@localixai/plugin-sdk/backend'
+import { ApiError } from '@localixai/mini-app-sdk/backend'
 
 const ok = (stdout = ''): GitResult => ({ ok: true, stdout, stderr: '', code: 0 })
 const fail = (stderr: string): GitResult => ({ ok: false, stdout: '', stderr, code: 1 })

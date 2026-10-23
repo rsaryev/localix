@@ -1,5 +1,5 @@
-import { readMessageBindingDrag, type MessageContextBindingDraft } from '@localixai/plugin-sdk/ui'
-import { pluginFiles } from '@localixai/plugin-sdk/ui/runtime'
+import { readMessageBindingDrag, type MessageContextBindingDraft } from '@localixai/mini-app-sdk/ui'
+import { pluginFiles } from '@localixai/mini-app-sdk/ui/runtime'
 import { linksInText } from '@localixai/kit/context-links'
 import { contentFromText } from '../../shared/content/text'
 import type { SpaceDocument } from '../../shared/format/document'

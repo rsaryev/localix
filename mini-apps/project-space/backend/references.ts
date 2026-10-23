@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { mkdir, readdir, stat } from 'node:fs/promises'
 import { join } from 'node:path'
-import { atomicWriteFile, safeFileKey } from '@localixai/plugin-sdk/backend'
+import { atomicWriteFile, safeFileKey } from '@localixai/mini-app-sdk/backend'
 import type { SpaceDocument } from '../shared/format/document'
 import { resolveReference, spacePaths, toReference } from './paths'
 

@@ -25,14 +25,14 @@ import type {
   ResourceExpansion,
   ResourceNode,
   ResourceRefProvider,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import {
   buildResourceUri,
   decodeResourceSegment,
   noticeNode,
   providerSegments,
-} from '@localixai/plugin-sdk/backend'
-import type { ResourceRefScope } from '@localixai/plugin-sdk/resource-refs'
+} from '@localixai/mini-app-sdk/backend'
+import type { ResourceRefScope } from '@localixai/mini-app-sdk/resource-refs'
 
 import { PROVIDER_ADAPTERS, adapterFor } from './adapters/registry'
 import { MAX_ROSTER_LIMIT } from '../shared/contracts'

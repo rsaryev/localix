@@ -216,7 +216,7 @@ last subscriber leaves. `predicted` and `empty` outcomes are cacheable; transien
 
 ## Source of truth
 
-- [Public provider contracts](../../../packages/plugin-sdk/src/backend/context-fabric.ts)
+- [Public provider contracts](../../../packages/mini-app-sdk/src/backend/context-fabric.ts)
 - [Registration validation](../../../apps/api/src/features/context-fabric/contribution-validate.ts)
   · [registry](../../../apps/api/src/features/context-fabric/registry.ts)
 - [Resolution and packing](../../../apps/api/src/features/context-fabric/manager.ts)

@@ -13,7 +13,7 @@
  *             question the model already thought to ask.
  */
 
-import type { PluginContext, PluginRegistration } from '@localixai/plugin-sdk/backend'
+import type { PluginContext, PluginRegistration } from '@localixai/mini-app-sdk/backend'
 import { createApiTool } from './api-tool'
 import { createRestContextProvider } from './context-provider'
 import { scopedRequestPort, createRestResourceProvider } from './resource-provider'

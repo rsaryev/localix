@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { defineAgentTool } from '@localixai/agent/agents'
-import type { PluginContext } from '@localixai/plugin-sdk/backend'
+import type { PluginContext } from '@localixai/mini-app-sdk/backend'
 import { z } from 'zod'
 import { createManageEnvironmentTool } from './manage-environment'
 import type { EnvironmentService } from './environments/service'

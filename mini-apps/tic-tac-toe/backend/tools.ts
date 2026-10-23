@@ -1,4 +1,4 @@
-import { classifyByAction, type PluginContext } from '@localixai/plugin-sdk/backend'
+import { classifyByAction, type PluginContext } from '@localixai/mini-app-sdk/backend'
 
 import { describeGame, drawBoard, lastMoveLine, recordLine, statusLine } from '../shared/describe'
 import { MoveRefused, owesAgentMove, type Game } from '../shared/game'

@@ -5,10 +5,10 @@
  * the same way whoever moved the course. Every chat's frames count: a course belongs to its chat,
  * and an agent tutoring in a background chat still moves the course open in another window.
  */
-import { pluginCommandBus, type PluginCommandEvent } from '@localixai/plugin-sdk/ui/commands'
-import { useResourceTopic } from '@localixai/plugin-sdk/ui/shared-resource'
-import { useStoreChanges } from '@localixai/plugin-sdk/ui/store-resource'
-import { useVisiblePolling } from '@localixai/plugin-sdk/ui/visibility'
+import { pluginCommandBus, type PluginCommandEvent } from '@localixai/mini-app-sdk/ui/commands'
+import { useResourceTopic } from '@localixai/mini-app-sdk/ui/shared-resource'
+import { useStoreChanges } from '@localixai/mini-app-sdk/ui/store-resource'
+import { useVisiblePolling } from '@localixai/mini-app-sdk/ui/visibility'
 import {
   LEARNING_CHANGES_CHANNEL,
   LEARNING_PLUGIN,

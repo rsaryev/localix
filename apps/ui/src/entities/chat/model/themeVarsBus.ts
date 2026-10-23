@@ -12,7 +12,7 @@
  * `data-theme="dark"` unchanged.
  */
 
-import { HOST_THEME_VARIABLES } from '@localixai/plugin-sdk/ui'
+import { HOST_THEME_VARIABLES } from '@localixai/mini-app-sdk/ui'
 
 /** Host CSS vars forwarded into sandboxed iframes. */
 const HOST_VARS = HOST_THEME_VARIABLES

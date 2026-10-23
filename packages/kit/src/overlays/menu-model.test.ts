@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 
 import { menuLevelNeedsGutter, normalizeMenuEntries } from './menu-model'
 

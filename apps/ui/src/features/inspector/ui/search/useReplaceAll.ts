@@ -10,7 +10,7 @@
 import { useCallback, useRef, useState, type RefObject } from 'react'
 import { toast } from '@/shared/lib/notify'
 import { backendClient } from '@/shared/api/client'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { useActionFeedback, type ActionFeedbackStore } from '@localixai/kit/action-feedback'
 
 /** The search criteria a replacement must use — the same ones the visible hits were found by. */

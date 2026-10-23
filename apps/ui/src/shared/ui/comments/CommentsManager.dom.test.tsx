@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test'
-import type { CommentActionContribution } from '@localixai/plugin-sdk/ui'
+import type { CommentActionContribution } from '@localixai/mini-app-sdk/ui'
 import { registerDom } from '@localixai/kit/testing/dom'
 
 let teardown: () => Promise<void>

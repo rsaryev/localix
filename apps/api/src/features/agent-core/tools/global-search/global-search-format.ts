@@ -7,7 +7,7 @@
  * dropping snippets first and then trailing hits — each step still valid JSON, and what was
  * dropped is counted, never silently cut.
  */
-import { parseLocalixResourceUri } from '@localixai/plugin-sdk/backend'
+import { parseLocalixResourceUri } from '@localixai/mini-app-sdk/backend'
 import type { SearchHit } from '../../search/provider'
 import type { SearchResponse } from '../../../search/contracts'
 

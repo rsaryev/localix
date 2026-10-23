@@ -1,4 +1,4 @@
-import type { PluginContext } from '@localixai/plugin-sdk/backend'
+import type { PluginContext } from '@localixai/mini-app-sdk/backend'
 import { realpath } from 'node:fs/promises'
 
 import type { ReaderSource } from '../shared/contracts'

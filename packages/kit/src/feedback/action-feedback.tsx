@@ -1,6 +1,6 @@
 import { useState, useSyncExternalStore } from 'react'
 import { Check, Info, TriangleAlert } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { TextAction } from '../controls/text-action'
 import {
   ACTION_FEEDBACK_MS,

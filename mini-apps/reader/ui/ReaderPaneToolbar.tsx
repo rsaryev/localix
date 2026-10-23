@@ -10,8 +10,8 @@ import {
   Search,
   X,
 } from 'lucide-react'
-import { resourceMessageBindingDraft } from '@localixai/plugin-sdk/ui'
-import { setMessageBindingDrag } from '@localixai/plugin-sdk/ui/message-binding-drag'
+import { resourceMessageBindingDraft } from '@localixai/mini-app-sdk/ui'
+import { setMessageBindingDrag } from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import { IconButton } from '@localixai/kit/icon-button'
 import { BreadcrumbSelect } from '@localixai/kit/breadcrumb-select'
 import { WorkbenchBreadcrumb } from '@localixai/kit/workbench-breadcrumb'

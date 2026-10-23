@@ -3,7 +3,7 @@ import type { ResponseFormat } from 'hono/types'
 import type { SuccessStatusCode } from 'hono/utils/http-status'
 
 import { LOCALIX_CLIENT_HEADER, LOCALIX_CLIENT_HEADER_VALUE } from '@localixai/api/client-header'
-import { markResponseTrace } from '@localixai/plugin-sdk/ui/transport'
+import { markResponseTrace } from '@localixai/mini-app-sdk/ui/transport'
 import type { App } from './contracts'
 import { getDesktopApiPort } from '@localixai/kit/environment'
 import { armDevApiHealth, runtimeReadyBarrier } from '../lib/runtimeReady'

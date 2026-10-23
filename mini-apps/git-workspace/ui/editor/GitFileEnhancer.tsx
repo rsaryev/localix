@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import type { FileEditorEnhancerProps } from '@localixai/plugin-sdk/ui'
+import type { FileEditorEnhancerProps } from '@localixai/mini-app-sdk/ui'
 import type { InlineBlameLine, InlineBlameSource } from '@localixai/kit/code-editor'
 
 import { sourceControlApi } from '../api'

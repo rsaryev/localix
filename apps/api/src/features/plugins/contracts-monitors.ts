@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { summarizeZodIssues } from '@localixai/plugin-sdk/backend'
+import { summarizeZodIssues } from '@localixai/mini-app-sdk/backend'
 
 import { PLUGIN_NAME_RE } from './contracts-base'
 

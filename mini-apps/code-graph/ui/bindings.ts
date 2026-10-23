@@ -1,4 +1,7 @@
-import { snippetMessageBindingDraft, type PublishedMessageContext } from '@localixai/plugin-sdk/ui'
+import {
+  snippetMessageBindingDraft,
+  type PublishedMessageContext,
+} from '@localixai/mini-app-sdk/ui'
 import { nodeLine } from '../shared/format'
 import type { GraphSnapshot } from '../shared/view'
 import { EDGE_LABEL } from './kinds'

@@ -4,7 +4,7 @@ import type {
   PluginUiHost,
   UiAnchorContribution,
   WorkItemKindContribution,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { registerDockerContributions } from './register'
 
 test('live Docker tabs stay transient and expose native agent context bindings', () => {

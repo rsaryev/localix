@@ -1,6 +1,6 @@
-import { parsePrerequisite, type Prerequisite } from '@localixai/plugin-sdk/prerequisite'
-import type { ProblemRequest } from '@localixai/plugin-sdk/ui/problems'
-import { problemRequestOf } from '@localixai/plugin-sdk/ui/transport'
+import { parsePrerequisite, type Prerequisite } from '@localixai/mini-app-sdk/prerequisite'
+import type { ProblemRequest } from '@localixai/mini-app-sdk/ui/problems'
+import { problemRequestOf } from '@localixai/mini-app-sdk/ui/transport'
 
 interface ApiFailureRecord {
   error?: unknown

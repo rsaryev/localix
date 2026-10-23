@@ -1,7 +1,7 @@
 import { expect, spyOn, test } from 'bun:test'
 import { Hono } from 'hono'
 import { ApiError } from '../../../lib/errors'
-import type { HostRouteContext } from '@localixai/plugin-sdk/backend'
+import type { HostRouteContext } from '@localixai/mini-app-sdk/backend'
 import { AgentSessionsService } from './service'
 import { createOwnedAgentRoutes, type OwnedSessionHost } from './owned-session-routes'
 

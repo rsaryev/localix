@@ -14,7 +14,7 @@ import { createAesCipher, plaintextCipher } from './cipher'
 import { createSecretsStore, migrateLegacySecrets } from './store'
 import { VaultPayloadError } from './store-internals'
 import { createSecretsService } from './service'
-import { hasSecretTokens, resolveSecretTokens } from '@localixai/plugin-sdk/backend'
+import { hasSecretTokens, resolveSecretTokens } from '@localixai/mini-app-sdk/backend'
 
 let keyDir: string
 const databases: Kysely<AppDatabase>[] = []

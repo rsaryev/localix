@@ -27,7 +27,7 @@ describe('usePeekDefinition', () => {
     const React = await import('react')
     const { act } = React
     const { createRoot } = await import('react-dom/client')
-    const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
+    const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
     const { usePeekDefinition } = await import('./usePeekDefinition')
 
     const read = spyOn(backendClient, 'getFileContent').mockRejectedValue(

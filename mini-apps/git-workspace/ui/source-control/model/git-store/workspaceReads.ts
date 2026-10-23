@@ -2,7 +2,7 @@
  * The store's READ side: the polled workspace snapshot, and switching which repo
  * it describes. Writes live in `mutations.ts`; this module never writes git.
  */
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import type { SourceControlApi } from './mutations'
 import { EMPTY_SESSION, pickActiveRepo, type SessionGitState } from './sessionState'
 import { keepFocusedStatus, keepRepos, sameJson } from './snapshotIdentity'

@@ -1,4 +1,4 @@
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 export type LocalixBeamIntensity = 0 | 1 | 2 | 3 | 4 | 5
 

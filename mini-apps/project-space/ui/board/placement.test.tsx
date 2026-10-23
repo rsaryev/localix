@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { bindPluginUiComponents } from '@localixai/plugin-sdk/ui'
+import { bindPluginUiComponents } from '@localixai/mini-app-sdk/ui'
 import { emptySpace } from '../../shared/format/document'
 import { applyOps } from '../../shared/ops/apply'
 import { spaceTypes } from '../../shared/types'

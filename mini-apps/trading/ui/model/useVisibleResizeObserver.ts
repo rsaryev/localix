@@ -1,5 +1,5 @@
 import { useEffect, useRef, type RefObject } from 'react'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 
 /**
  * Observe a keep-alive surface only while its grid work item can paint.

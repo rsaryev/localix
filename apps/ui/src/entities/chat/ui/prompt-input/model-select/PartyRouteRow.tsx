@@ -1,6 +1,6 @@
 import { useId } from 'react'
 import { Check, Users } from 'lucide-react'
-import { cn, CONTROL_FOCUS_WITHIN } from '@localixai/plugin-sdk/ui/classes'
+import { cn, CONTROL_FOCUS_WITHIN } from '@localixai/mini-app-sdk/ui/classes'
 import { SELECTED_ROW } from '@localixai/kit/selected-row'
 
 /**

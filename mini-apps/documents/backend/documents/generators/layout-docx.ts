@@ -2,7 +2,7 @@ import {
   documentFonts,
   type DocumentLayout,
   type DocumentParagraph,
-} from '@localixai/plugin-sdk/document-layout'
+} from '@localixai/mini-app-sdk/document-layout'
 import { fontBytes } from './fonts'
 
 /** Word deliberately remains linear, preserving template typography and canonical reading order. */

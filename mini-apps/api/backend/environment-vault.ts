@@ -4,7 +4,7 @@ import {
   hasSecretTokens,
   resolveSecretTokens,
   type SecretConsumer,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import type { EnvironmentVariable } from './collection/environments'
 import { RestError } from './errors'
 import type { ResolveSecret } from './secrets'

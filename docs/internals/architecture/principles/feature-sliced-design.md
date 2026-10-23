@@ -42,7 +42,8 @@ imports past it expose internals and make refactoring harder.
 several features read; `features/chat` and `features/workspace-grid` keep only their contributions.
 `uiLayers` and `uiLayer` in `scripts/check-architecture.mjs` rank them, and the checker reports "FSD
 <layer> cannot import outward from <layer>" for an upward import. The same script reports a relative
-import from `apps/ui/src` into `apps/api`, and a browser import of `@localixai/plugin-sdk/backend`.
+import from `apps/ui/src` into `apps/api`, and a browser import of
+`@localixai/mini-app-sdk/backend`.
 
 Slices use purpose segments, for example `apps/ui/src/entities/chat/model` and
 `apps/ui/src/entities/chat/ui`. Plugin UI meets the host through the kit, checked by

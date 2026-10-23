@@ -2,7 +2,7 @@ import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { act } from 'react'
 import { registerDom } from '../../testing/dom'
 import { useTabReorder } from './reorder'
-import { setNativeWindowDragImage } from '@localixai/plugin-sdk/ui/message-binding-drag'
+import { setNativeWindowDragImage } from '@localixai/mini-app-sdk/ui/message-binding-drag'
 
 let teardown: () => Promise<void>
 beforeAll(() => {

@@ -1,6 +1,6 @@
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { useHorizontalWheelScroll } from '../../lib/use-horizontal-wheel-scroll'
 import { motionSafeScrollBehavior } from '../../lib/use-reduced-motion'
 import { Chip } from '../../feedback/chip'

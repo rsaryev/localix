@@ -6,7 +6,7 @@ import { IconButton } from '@localixai/kit/icon-button'
 import { Input } from '@localixai/kit/input'
 import { formatBytes } from '../../shared/system'
 import { SYSTEM_MARK_NOTE_MAX, systemMarksSchema, type SystemMark } from '../../shared/system-marks'
-import { ProblemLine } from '@localixai/plugin-sdk/ui/components'
+import { ProblemLine } from '@localixai/mini-app-sdk/ui/components'
 import { useStoreSnapshot } from '../useStoreSnapshot'
 import { useSystemProblem } from './useSystemProblem'
 

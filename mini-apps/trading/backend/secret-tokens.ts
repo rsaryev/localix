@@ -2,7 +2,7 @@
  * `${secret:KEY}` resolution for exchange credentials.
  *
  * The token grammar + substitution are NOT reimplemented here: the pure leaf
- * `@localixai/plugin-sdk/backend` (`hasSecretTokens` / `resolveSecretTokens`) is the one
+ * `@localixai/mini-app-sdk/backend` (`hasSecretTokens` / `resolveSecretTokens`) is the one
  * source of truth for the whole app, and the database workbench reuses it the same way. Only
  * the *shape* of what gets interpolated is plugin-specific — for trading that is each field
  * of the credential map, rather than a connection URL.
@@ -10,7 +10,7 @@
  * The vault itself is never imported: a resolver arrives through the generic plugin host seam
  * (`ctx.host.resolveSecret`) and is threaded in by the service.
  */
-import { hasSecretTokens, resolveSecretTokens } from '@localixai/plugin-sdk/backend'
+import { hasSecretTokens, resolveSecretTokens } from '@localixai/mini-app-sdk/backend'
 import type { CredentialField, TradingConnectionConfig, TradingCredentials } from './contracts'
 import { CREDENTIAL_FIELDS } from './contracts'
 import { TradingError } from './errors'

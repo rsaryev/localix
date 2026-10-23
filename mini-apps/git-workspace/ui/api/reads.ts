@@ -8,7 +8,7 @@
  * to compute from two different snapshots of one tree. The four per-part readers
  * had no caller left and are gone, so nothing can drift back to them.
  */
-import { cleanPluginQuery, unwrapPluginResponse } from '@localixai/plugin-sdk/ui'
+import { cleanPluginQuery, unwrapPluginResponse } from '@localixai/mini-app-sdk/ui'
 import type {
   BlameLine,
   CommitNote,

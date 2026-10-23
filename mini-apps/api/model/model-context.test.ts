@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { hasSecretShape } from '@localixai/plugin-sdk/secret-shapes'
+import { hasSecretShape } from '@localixai/mini-app-sdk/secret-shapes'
 import { formatBodyForModel, redactModelSecrets } from './model-context'
 
 describe('formatBodyForModel', () => {

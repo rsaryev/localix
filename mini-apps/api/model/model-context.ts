@@ -8,7 +8,7 @@
  * This stays readable to a model, avoids false positives, and never weakens the host policy.
  */
 
-import { redactSecrets } from '@localixai/plugin-sdk/secret-shapes'
+import { redactSecrets } from '@localixai/mini-app-sdk/secret-shapes'
 
 const REDACTED = '[redacted]'
 

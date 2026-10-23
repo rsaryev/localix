@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { clampConsoleTail } from './consoleTail'
 import { LinkedText, RawCopyButton } from './ToolIO'
 import { SUGAR_HIGH_THEME } from '@/shared/ui/code-block/sugarHighTheme'

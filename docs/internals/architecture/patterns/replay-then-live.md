@@ -57,7 +57,7 @@ state plus a new cookie, so resuming is a pull from the last cookie.
   the cursor is placed; `settle` resolves when a consumer has caught up (tests, shutdown).
 - On the client, `apps/ui/src/shared/api/eventSocket.ts` reconnects the event socket and resyncs the
   sessions a surface watches; `apps/ui/src/shared/api/resourceSyncTransport.ts` calls `connected()`
-  in `packages/plugin-sdk/src/ui/resource-sync.ts`, which invalidates every registered resource.
+  in `packages/mini-app-sdk/src/ui/resource-sync.ts`, which invalidates every registered resource.
   This is a reconcile on reconnect rather than a replay.
 - An explicit caught-up marker for clients reading the change feed is planned.
 

@@ -7,7 +7,7 @@ import {
   Trash2,
   Unplug,
 } from 'lucide-react'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { DATABASE_DRIVER_CATALOG } from '../../../shared/driver-catalog'
 import type { DbConnectionInfo } from '../../dbClient'
 import { connectionDisplayName } from '../../model/connectionDisplayName'

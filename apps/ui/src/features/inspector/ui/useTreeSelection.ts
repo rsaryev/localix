@@ -1,7 +1,7 @@
 import { type Dispatch, type RefObject, type SetStateAction, useCallback } from 'react'
 import { backendClient } from '@/shared/api/client'
 import { toast } from '@/shared/lib/notify'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { openFileInGrid } from '@/shared/lib/recentFiles'
 import { basenameOf, distinctParents, dirname, type VisibleRow } from './fileTreePaths'
 import type { FileTreeGuards } from './useDirectoryLoader'

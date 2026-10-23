@@ -19,7 +19,7 @@
  * (same array identity, so an unfiltered render allocates nothing).
  */
 
-import { positionalMatch } from '@localixai/plugin-sdk/ui/utilities'
+import { positionalMatch } from '@localixai/mini-app-sdk/ui/utilities'
 
 /** The least a row needs to be filterable. Both branch shapes satisfy it. */
 export interface FilterableBranch {

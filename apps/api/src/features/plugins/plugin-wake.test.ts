@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { PluginWakeRequest } from '@localixai/plugin-sdk/backend'
+import type { PluginWakeRequest } from '@localixai/mini-app-sdk/backend'
 
 import type { WakeRequest } from '../chat/contracts'
 import type { WakeOutcome } from '../triggers/delivery'

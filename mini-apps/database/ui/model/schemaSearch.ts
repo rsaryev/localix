@@ -1,5 +1,5 @@
 import type { DbSchemas, DbSchemaItem } from '../dbClient'
-import { scoreSearchFields } from '@localixai/plugin-sdk/ui/utilities'
+import { scoreSearchFields } from '@localixai/mini-app-sdk/ui/utilities'
 import { getCachedTable } from './schemaKey'
 
 /**

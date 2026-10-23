@@ -6,9 +6,9 @@ import {
   useSessionRepoRoots,
   useSourceControlStore,
 } from '../source-control/model/store'
-import type { FileTreeDecorationIndex } from '@localixai/plugin-sdk/ui'
-import { toast } from '@localixai/plugin-sdk/ui'
-import { relativePath } from '@localixai/plugin-sdk/ui/utilities'
+import type { FileTreeDecorationIndex } from '@localixai/mini-app-sdk/ui'
+import { toast } from '@localixai/mini-app-sdk/ui'
+import { relativePath } from '@localixai/mini-app-sdk/ui/utilities'
 import { statusMeta } from '../source-control/ui/statusMeta'
 import { gitFailed } from '../source-control/model/gitFailure'
 

@@ -5,7 +5,7 @@ import { runRule } from '../testing/run-rule.ts'
 const RULE = 'no-ground-token-on-control'
 const IN_PRIMITIVES = 'packages/kit/src/controls/'
 const IN_HOST_COMPOSITES = 'apps/ui/src/shared/ui/'
-const IN_SDK = 'packages/plugin-sdk/src/ui/'
+const IN_SDK = 'packages/mini-app-sdk/src/ui/'
 
 describe(RULE, () => {
   test('reports a raised ground painted on a chip', async () => {

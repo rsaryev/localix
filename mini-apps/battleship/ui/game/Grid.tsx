@@ -1,5 +1,5 @@
 import { useRef, type CSSProperties, type KeyboardEvent } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 import { SIZE, cellName, colOf, rowOf } from '../../shared/rules'
 import type { CellState } from './cells'

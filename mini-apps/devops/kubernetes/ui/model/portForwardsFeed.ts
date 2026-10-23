@@ -1,5 +1,5 @@
-import { createRealtimeFeed, useRealtimeFeed } from '@localixai/plugin-sdk/ui/realtime-feed'
-import { runAsBackgroundWork, useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { createRealtimeFeed, useRealtimeFeed } from '@localixai/mini-app-sdk/ui/realtime-feed'
+import { runAsBackgroundWork, useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import {
   PORT_FORWARDS_FRAME_TAG,
   PORT_FORWARDS_SUBSCRIBE,

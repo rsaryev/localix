@@ -8,7 +8,7 @@
  */
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { atomicWriteFile } from '@localixai/plugin-sdk/backend'
+import { atomicWriteFile } from '@localixai/mini-app-sdk/backend'
 
 export interface RecentDocument {
   /** Extraction-cache id (`<hash>.json`) — the `localix://resource/doc/<id>` tail. */

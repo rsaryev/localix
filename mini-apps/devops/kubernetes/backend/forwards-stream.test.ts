@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { createServer } from 'node:net'
-import { createWsFrameConnection, createWsFrameRegistry } from '@localixai/plugin-sdk/backend'
+import { createWsFrameConnection, createWsFrameRegistry } from '@localixai/mini-app-sdk/backend'
 
 import { ApiPortForwardRegistry } from './api-port-forward'
 import type { PortForward } from './contracts'

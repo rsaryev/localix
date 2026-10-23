@@ -12,7 +12,10 @@ import {
 import type { ComponentType } from 'react'
 import type { ViewKind } from '@localixai/dataview'
 import type { OpenTargetView } from '../docClient'
-import { SegmentedControl, SegmentedControlItem } from '@localixai/plugin-sdk/ui/segmented-control'
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from '@localixai/mini-app-sdk/ui/segmented-control'
 import { Button } from '@localixai/kit/button'
 import { SearchInput } from '@localixai/kit/search-input'
 import { WorkbenchToolbar } from '@localixai/kit/workbench-toolbar'

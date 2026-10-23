@@ -3,7 +3,7 @@ import type { ProviderEntry } from '@localixai/agent/catalog'
 import { Button } from '@localixai/kit/button'
 import { Input } from '@localixai/kit/input'
 import { SectionLabel } from '@localixai/kit/section-label'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { toast } from '@/shared/lib/notify'
 
 type Setting = NonNullable<ProviderEntry['settings']>[number]

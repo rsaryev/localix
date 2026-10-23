@@ -29,10 +29,10 @@ project or switch the current one.
 ## Styled document generation
 
 The [Resumes workbench](resumes.md) uses a bounded `DocumentLayout` contract from
-`@localixai/plugin-sdk/document-layout` to pass A4 typography, safe links, headers, rules, columns,
-and portraits into Documents. `/rpc/documents/render` returns a PDF without storing a media item;
-`/rpc/documents/generate` accepts the same layout for PDF or DOCX. Existing Markdown generation
-remains available.
+`@localixai/mini-app-sdk/document-layout` to pass A4 typography, safe links, headers, rules,
+columns, and portraits into Documents. `/rpc/documents/render` returns a PDF without storing a media
+item; `/rpc/documents/generate` accepts the same layout for PDF or DOCX. Existing Markdown
+generation remains available.
 
 Fonts are embedded in PDF, with character coverage checked before rendering. DOCX embeds the
 selected regular font and retains a linear reading order; its pagination depends on the Word

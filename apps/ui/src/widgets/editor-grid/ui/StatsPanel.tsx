@@ -1,7 +1,10 @@
 import { lazy, Suspense, useState } from 'react'
 import { useTabPanelIds } from '@localixai/kit/tabs'
 import { LoadingHint } from '@localixai/kit/empty-hint'
-import { WorkItemVisibilityProvider, useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import {
+  WorkItemVisibilityProvider,
+  useWorkItemVisible,
+} from '@localixai/mini-app-sdk/ui/visibility'
 import { DataSourceTabs, type DataSource } from '@/shared/ui/DataSourceTabs'
 
 const LocalixStats = lazy(() =>

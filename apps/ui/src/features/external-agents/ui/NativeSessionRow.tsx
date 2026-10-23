@@ -11,7 +11,7 @@ import { externalAgentsApi } from '../api'
 import { useChatStore } from '@/entities/chat/model/store'
 import { openOwnedExternalSession } from '../model/createSession'
 import { toast } from '@/shared/lib/notify'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 export function NativeSessionRow({
   session,

@@ -1,4 +1,4 @@
-import { CONTEXT_UNAVAILABLE_KIND } from '@localixai/plugin-sdk/backend'
+import { CONTEXT_UNAVAILABLE_KIND } from '@localixai/mini-app-sdk/backend'
 
 import type { ResourceProviderRegistry } from '../agent-core/resource-refs/provider'
 import type { ContextContribution, ContextResolver } from './contracts'

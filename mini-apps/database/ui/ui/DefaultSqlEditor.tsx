@@ -2,7 +2,7 @@ import { useId, useMemo, useRef, useState } from 'react'
 
 import { CODE_VIEWER_HIGHLIGHT } from '@localixai/kit/code-block'
 import { Popover, PopoverAnchor, PopoverContent } from '@localixai/kit/popover'
-import { cn, CONTROL_FOCUS_WITHIN } from '@localixai/plugin-sdk/ui/classes'
+import { cn, CONTROL_FOCUS_WITHIN } from '@localixai/mini-app-sdk/ui/classes'
 import type { DbDialect } from '../dbClient'
 import { defaultSqlCompletions, validateDefaultSqlExpression } from '../model/defaultSql'
 

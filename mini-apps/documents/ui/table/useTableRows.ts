@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { acknowledgeInline } from '@localixai/plugin-sdk/ui'
+import { acknowledgeInline } from '@localixai/mini-app-sdk/ui'
 import type { SortSpec, TableRow } from '@localixai/dataview'
 import { tableApi } from '../api/tableApi'
 import { documentFailure } from '../failure'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 
 const PAGE = 500
 

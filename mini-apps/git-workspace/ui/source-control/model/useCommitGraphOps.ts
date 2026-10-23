@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
-import { toast } from '@localixai/plugin-sdk/ui'
+import { toast } from '@localixai/mini-app-sdk/ui'
 import type { BisectTerm, RepoCommit, ResetMode } from '../../../backend/source-control/contracts'
-import { PluginApiError } from '@localixai/plugin-sdk/ui'
+import { PluginApiError } from '@localixai/mini-app-sdk/ui'
 import { useSourceControlStore } from './store'
 import { gitFailed } from './gitFailure'
 

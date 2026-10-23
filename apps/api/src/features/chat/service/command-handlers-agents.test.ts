@@ -4,7 +4,7 @@ import { handleAgentsControlCommand } from './command-handlers-agents'
 import type { CommandHandlerContext } from './command-handlers-context'
 import type { AgentSummary } from '../../agents/contracts'
 import type { MessageMutationResponse } from '../contracts'
-import { localixUiUri } from '@localixai/plugin-sdk/navigation'
+import { localixUiUri } from '@localixai/mini-app-sdk/navigation'
 
 const agent: AgentSummary = {
   record: {

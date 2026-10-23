@@ -8,7 +8,7 @@ import {
   withIndicatorParam,
 } from '../../backend/indicator-spec'
 import type { IndicatorSpec } from '../model/indicators'
-import { cn, CONTROL_FOCUS_VISIBLE } from '@localixai/plugin-sdk/ui/classes'
+import { cn, CONTROL_FOCUS_VISIBLE } from '@localixai/mini-app-sdk/ui/classes'
 
 /**
  * An indicator's parameters, edited where they are read: the legend row itself. `EMA 20` is the

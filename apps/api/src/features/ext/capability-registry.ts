@@ -1,4 +1,4 @@
-import type { Capabilities, CapabilityKey, CapabilityShapes } from '@localixai/plugin-sdk/backend'
+import type { Capabilities, CapabilityKey, CapabilityShapes } from '@localixai/mini-app-sdk/backend'
 
 /**
  * Registry of plugin-contributed SDK capabilities.

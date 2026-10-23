@@ -276,7 +276,7 @@ exits any other way, or is lost to an API restart, wakes nobody.
 - [Command Markdown discovery](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/discovery-cc-files.ts)
 - [Manifest command precedence](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/manifest-load.ts)
 - [Dynamic option execution](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/arg-options.ts)
-- [Native hook contracts](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/backend/hooks.ts)
+- [Native hook contracts](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/hooks.ts)
 - [Native hook dispatch](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/hooks.ts)
 - [Native tool-hook composition and limits](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/hooks-tools.ts)
 - [Native message hooks and bindings](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/hooks-messages.ts)

@@ -27,7 +27,7 @@ export function resolveToolCwd(cwd: string | undefined, defaultCwd?: string): st
  * command-injection risk, so the implementation lives once in the plugin SDK (shared with plugin
  * backends and the browser) and this module only re-exports it for the server side.
  */
-export { shellQuote } from '@localixai/plugin-sdk/backend'
+export { shellQuote } from '@localixai/mini-app-sdk/backend'
 
 export interface ExecutionEnvironmentConfig {
   kind: BackendKind

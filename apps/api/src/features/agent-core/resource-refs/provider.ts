@@ -1,5 +1,5 @@
 /**
- * The resource-ref provider registry now lives in `@localixai/plugin-sdk/backend`
+ * The resource-ref provider registry now lives in `@localixai/mini-app-sdk/backend`
  * so plugins consume it from the SDK instead of deep-importing this host path.
  * This file re-exports it to keep the host's existing internal import path working.
  */
@@ -12,7 +12,7 @@ export {
   parseResourceUri,
   providerSegments,
   truncationNotice,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 export type {
   ResourceBrowseGroup,
   ResourceBrowseResult,
@@ -21,4 +21,4 @@ export type {
   ResourceNodeAction,
   ResourceProviderRegistry,
   ResourceRefProvider,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'

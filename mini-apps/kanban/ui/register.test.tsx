@@ -5,8 +5,8 @@ import type {
   ToolCardContribution,
   UiAnchorContribution,
   WorkItemKindContribution,
-} from '@localixai/plugin-sdk/ui'
-import { recordingPluginUiHost } from '@localixai/plugin-sdk/ui/testing'
+} from '@localixai/mini-app-sdk/ui'
+import { recordingPluginUiHost } from '@localixai/mini-app-sdk/ui/testing'
 
 import {
   BOARD_KIND,

@@ -5,9 +5,9 @@ import {
   type ChartKind,
   type TableColumn,
 } from '@localixai/dataview'
-import { toast } from '@localixai/plugin-sdk/ui'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
-import { downloadChartPng } from '@localixai/plugin-sdk/ui/chart-export'
+import { toast } from '@localixai/mini-app-sdk/ui'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
+import { downloadChartPng } from '@localixai/mini-app-sdk/ui/chart-export'
 
 /** Grid ↔ chart view state for the current result (chart is read-only; editing stays in
  *  grid), plus axis overrides ('' = auto; ignored when they don't match the columns). */

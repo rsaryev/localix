@@ -49,8 +49,9 @@ test records why the earlier mutual imports went stale.
 
 Plugins are separate contexts. `scripts/check-architecture.mjs` reports "plugin ... imports sibling
 plugin", "host imports concrete plugin source" and "plugin imports workspace internals", so a plugin
-and the host meet only through `packages/plugin-sdk`. Browser and server share a rule through narrow
-export-map leaves in `apps/api/package.json`, enforced by `scripts/browser-graph-guard.test.ts`.
+and the host meet only through `packages/mini-app-sdk`. Browser and server share a rule through
+narrow export-map leaves in `apps/api/package.json`, enforced by
+`scripts/browser-graph-guard.test.ts`.
 
 ## Known gaps
 

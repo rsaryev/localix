@@ -1,7 +1,7 @@
 import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { defaultRangeExtractor, useVirtualizer, type Range } from '@tanstack/react-virtual'
 import type { RepoFileChange } from '../../../../backend/source-control/contracts'
-import { toggleInSet } from '@localixai/plugin-sdk/ui/utilities'
+import { toggleInSet } from '@localixai/mini-app-sdk/ui/utilities'
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@localixai/kit/context-menu'
 import type { ChangeActions } from '../../model/changeActions'
 import { scopeChangeActions } from './scopeChangeActions'

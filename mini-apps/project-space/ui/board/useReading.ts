@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { CanvasEdgeType } from '@localixai/kit/canvas'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { SpaceDocument } from '../../shared/format/document'
 import { linksOf } from '../../shared/graph/links'
 import { neighbourhood, reach, type Reading, type ReachDirection } from '../../shared/graph/reach'

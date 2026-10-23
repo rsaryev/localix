@@ -7,7 +7,7 @@
  * the cloud metadata service, and an automatic redirect makes that invisible to us.
  */
 
-import { checkUrlSafety, readBodyCapped, type HostResolver } from '@localixai/plugin-sdk/backend'
+import { checkUrlSafety, readBodyCapped, type HostResolver } from '@localixai/mini-app-sdk/backend'
 import { finalHeaders } from './auth'
 import { decodingPlan } from './charset'
 import { type Cookie, collectCookies } from './cookie-jar'

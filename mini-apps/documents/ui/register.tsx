@@ -9,8 +9,8 @@ import {
   PPTX_CONTENT_TYPE,
   XLSX_CONTENT_TYPE,
   fileExtension,
-} from '@localixai/plugin-sdk/ui/file-types'
-import type { FileEditorProps, PluginUiHost } from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui/file-types'
+import type { FileEditorProps, PluginUiHost } from '@localixai/mini-app-sdk/ui'
 
 import { useDocumentsStatusItem } from './statusItem'
 

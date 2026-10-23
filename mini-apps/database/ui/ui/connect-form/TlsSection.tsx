@@ -2,7 +2,7 @@
 import { ChevronRight } from 'lucide-react'
 import { Checkbox } from '@localixai/kit/checkbox'
 import { Textarea } from '@localixai/kit/textarea'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { ConnectFormState } from './useConnectForm'
 
 export function TlsSection({ f, fid }: { f: ConnectFormState; fid: string }) {

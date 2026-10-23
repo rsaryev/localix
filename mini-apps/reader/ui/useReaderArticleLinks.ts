@@ -3,9 +3,9 @@ import type {
   MouseEvent as ReactMouseEvent,
   RefObject,
 } from 'react'
-import { toast } from '@localixai/plugin-sdk/ui'
-import { pluginExternal } from '@localixai/plugin-sdk/ui/runtime'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { toast } from '@localixai/mini-app-sdk/ui'
+import { pluginExternal } from '@localixai/mini-app-sdk/ui/runtime'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 import { readerLinkGesture, readerLinkTarget } from '../shared/link'
 import type { ReaderNavigationLocation } from './model'

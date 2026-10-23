@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { portraitSchema } from '@localixai/plugin-sdk/document-layout'
+import { portraitSchema } from '@localixai/mini-app-sdk/document-layout'
 import { presentationSchema, sectionTypes, type SectionType } from './schema'
 
 const scalar = z.union([z.string(), z.number()]).transform(String)

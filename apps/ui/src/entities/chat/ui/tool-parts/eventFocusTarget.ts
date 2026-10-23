@@ -1,8 +1,8 @@
 import type { AgentItem } from '@localixai/agent/agents'
 import type { EventFocusRequest } from '@/shared/lib/eventFocusBus'
 import { useEventFocusStore } from '@/shared/lib/eventFocusBus'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 
 const TOOL_RESOURCE_KINDS = new Set(['tool', 'interaction'])
 

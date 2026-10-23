@@ -1,5 +1,5 @@
 import type { ClientJournalOp } from '@localixai/api/notification-contracts'
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 
 /**
  * THE DELIVERY BUFFER for ops this client has made and the server has not acknowledged.

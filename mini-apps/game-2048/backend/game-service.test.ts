@@ -2,7 +2,7 @@ import { afterEach, expect, test } from 'bun:test'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { PluginWakeRequest } from '@localixai/plugin-sdk/backend'
+import type { PluginWakeRequest } from '@localixai/mini-app-sdk/backend'
 
 import { createGameService } from './game-service'
 

@@ -26,8 +26,8 @@ import {
   AutocompleteList,
   AutocompleteOption,
 } from '@localixai/kit/autocomplete'
-import { ResultCountStatus } from '@localixai/plugin-sdk/ui/result-count-status'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { ResultCountStatus } from '@localixai/mini-app-sdk/ui/result-count-status'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { EditorCompletionItem } from '@localixai/kit/code-editor'
 import type { Pair } from '../../backend/request-spec'
 import type { EnvVariable } from '../../backend/contracts'

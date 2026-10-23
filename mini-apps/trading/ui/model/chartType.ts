@@ -14,8 +14,8 @@ import {
 } from 'lightweight-charts'
 import type { Candle } from '../../backend/contracts'
 import { CHART_TYPES, type ChartTypeToken } from '../../backend/chart-command'
-import { loadJSON, loadString, saveJSON } from '@localixai/plugin-sdk/ui/storage'
-import type { StorageReader, StorageWriter } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, loadString, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
+import type { StorageReader, StorageWriter } from '@localixai/mini-app-sdk/ui/storage'
 
 /**
  * How the price series is DRAWN — candles (default), line, area, or OHLC bars. Pure state +

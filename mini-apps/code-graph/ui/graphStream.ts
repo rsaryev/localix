@@ -2,7 +2,7 @@ import {
   createRealtimeFeed,
   useRealtimeFeed,
   type RealtimeFeedFollower,
-} from '@localixai/plugin-sdk/ui/realtime-feed'
+} from '@localixai/mini-app-sdk/ui/realtime-feed'
 import type { AgentView } from '../shared/view'
 import {
   GRAPH_FRAME_TAG,

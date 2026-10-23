@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { runAsBackgroundWork } from '@localixai/plugin-sdk/ui/visibility'
+import { runAsBackgroundWork } from '@localixai/mini-app-sdk/ui/visibility'
 import type { NodeUsage, PodUsage } from '../../backend/contracts'
 import { kubernetesApi } from '../api/kubernetesApi'
 import { indexNodeUsage, indexPodUsage, usagePollDelay } from './usage'

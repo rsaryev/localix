@@ -11,7 +11,7 @@ import { clearLiveTabMessageContext, publishLiveTabMessageContext } from './live
 import { insertSplit, makeLeaf } from './tree'
 import type { WorkItem } from '@/shared/lib/workItem'
 import type { ScopeActiveTab } from './warm'
-import { resourceMessageBindingDraft } from '@localixai/plugin-sdk/ui'
+import { resourceMessageBindingDraft } from '@localixai/mini-app-sdk/ui'
 
 const file = (id: string, path: string, scope = 'A'): WorkItem => ({
   kind: 'file',

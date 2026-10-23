@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from 'react'
 import { BookOpen, MessageSquareText, PenLine, Search, Trash2, X } from 'lucide-react'
-import { SegmentedRadioGroup } from '@localixai/plugin-sdk/ui'
+import { SegmentedRadioGroup } from '@localixai/mini-app-sdk/ui'
 
 import { Button } from '@localixai/kit/button'
 import { IconButton } from '@localixai/kit/icon-button'

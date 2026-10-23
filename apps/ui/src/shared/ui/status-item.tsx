@@ -1,6 +1,6 @@
 import type { ComponentProps, ReactNode } from 'react'
-import type { StatusItemState } from '@localixai/plugin-sdk/ui'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import type { StatusItemState } from '@localixai/mini-app-sdk/ui'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 import { ComposerChip, COMPOSER_CHIP } from '@localixai/kit/composer-chip'
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@localixai/kit/context-menu'

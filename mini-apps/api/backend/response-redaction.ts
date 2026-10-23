@@ -1,6 +1,6 @@
 /** Redact credentials an upstream server reflects back in its response. */
 
-import { hasSecretTokens } from '@localixai/plugin-sdk/backend'
+import { hasSecretTokens } from '@localixai/mini-app-sdk/backend'
 import type { ResponseCookie } from './contracts'
 import { credentialHeaders, credentialQueryPairs, credentialUrlParams } from './request-credentials'
 import type { Pair, RequestSpec } from './request-spec'

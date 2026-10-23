@@ -1,4 +1,4 @@
-import type { IconComponent } from '@localixai/plugin-sdk/ui'
+import type { IconComponent } from '@localixai/mini-app-sdk/ui'
 import { MonogramAvatar } from './monogram-avatar'
 
 /**

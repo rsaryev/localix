@@ -4,7 +4,7 @@ import {
   resourceMessageBindingDraft,
   type PluginUiHost,
   type PublishMessageContext,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { SYSTEM_URI } from '../shared/system'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 

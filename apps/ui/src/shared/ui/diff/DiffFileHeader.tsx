@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { ChevronRight } from 'lucide-react'
-import { baseName, dirName } from '@localixai/plugin-sdk/ui/utilities'
+import { baseName, dirName } from '@localixai/mini-app-sdk/ui/utilities'
 import { ActionTooltip } from '@localixai/kit/tooltip'
 import { Button } from '@localixai/kit/button'
 import type { DocFile } from './document/diffDocument'

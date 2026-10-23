@@ -2,7 +2,7 @@
 import { AlertCircle, Check, Plug, ShieldCheck, X } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
 import { Spinner } from '@localixai/kit/spinner'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { ConnectFormState } from './useConnectForm'
 
 export function FormFooter({

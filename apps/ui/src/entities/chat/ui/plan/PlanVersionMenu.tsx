@@ -14,9 +14,9 @@
  * out-shout the title, so the menu that already names the version carries "Open" and "Copy path".
  */
 import { ChevronDown, Copy, FileText } from 'lucide-react'
-import { copyText } from '@localixai/plugin-sdk/ui/interactions'
+import { copyText } from '@localixai/mini-app-sdk/ui/interactions'
 import type { SessionPlan } from '@localixai/api/client'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import {
   DropdownMenu,
   DropdownMenuContent,

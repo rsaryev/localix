@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { bindPluginUiTestDoubles } from '@localixai/plugin-sdk/ui/testing'
+import { bindPluginUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
 import type { DockerResourceDetail } from '../model/dockerResourceDetail'
 import type { DockerResourceDetailModel } from '../model/useDockerResourceDetail'
 import { DockerResourceContent } from './DockerResourceContent'

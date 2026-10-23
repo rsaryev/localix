@@ -13,7 +13,7 @@
  * deliberately not a parameter here — there is no way to reintroduce it without changing
  * this signature.
  */
-import type { MessageContextBindingDraft } from '@localixai/plugin-sdk/ui'
+import type { MessageContextBindingDraft } from '@localixai/mini-app-sdk/ui'
 import { refFromContextBinding } from '../../model/sendRefs'
 import type { AutoRefInput } from '../../model/useContextRefs'
 

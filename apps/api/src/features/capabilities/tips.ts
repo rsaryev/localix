@@ -1,4 +1,4 @@
-import { pluginLabel } from '@localixai/plugin-sdk/manifest'
+import { pluginLabel } from '@localixai/mini-app-sdk/manifest'
 import type { ComposerTip } from './contracts'
 import type { CapabilitySnapshot } from '../../contracts/capability-snapshot'
 import type { SlashCommandSpec } from '../chat/slash-command-catalog'

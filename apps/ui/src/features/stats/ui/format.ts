@@ -9,7 +9,7 @@ export {
   formatTokens,
   formatUsd,
   shortKey,
-} from '@localixai/plugin-sdk/ui/utilities'
+} from '@localixai/mini-app-sdk/ui/utilities'
 
 export function kindLabel(key: string): string {
   return USAGE_KIND_LABELS[key as UsageKindKey] ?? key

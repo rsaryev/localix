@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { PluginUiHost } from '@localixai/plugin-sdk/ui'
+import type { PluginUiHost } from '@localixai/mini-app-sdk/ui'
 
 import { createPluginUiRuntime, type PluginUiArtifact } from './pluginUiRuntime'
 

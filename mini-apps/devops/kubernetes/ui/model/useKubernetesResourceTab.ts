@@ -3,7 +3,7 @@ import {
   enqueueMicrotask,
   resourceMessageBindingDraft,
   type PublishMessageContext,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import type { KubeDeployment, KubeEvent, KubePod, KubeResourceKind } from '../../backend/contracts'
 import { kubernetesApi } from '../api/kubernetesApi'
 import { KubeApiError } from '../api/transport'

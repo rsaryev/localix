@@ -1,11 +1,11 @@
 import * as React from 'react'
 import { Command as CommandPrimitive, useCommandState } from 'cmdk'
 
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './dialog'
 import { InputGroup, InputGroupAddon } from '../controls/input-group'
 import { MENU_SEPARATOR } from './popover-surface'
-import { ResultCountStatus } from '@localixai/plugin-sdk/ui/result-count-status'
+import { ResultCountStatus } from '@localixai/mini-app-sdk/ui/result-count-status'
 import { Check, Search, type LucideIcon } from 'lucide-react'
 
 const CommandLabelContext = React.createContext<string | undefined>(undefined)

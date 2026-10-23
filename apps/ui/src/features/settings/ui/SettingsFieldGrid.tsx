@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /**
  * Paired kit Fields share label, help, control and error tracks. A wrapping description or

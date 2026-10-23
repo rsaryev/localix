@@ -1,4 +1,4 @@
-import type { PluginHostServices } from '@localixai/plugin-sdk/backend'
+import type { PluginHostServices } from '@localixai/mini-app-sdk/backend'
 import type { PluginHostRefs } from './plugin-host-refs'
 
 /**

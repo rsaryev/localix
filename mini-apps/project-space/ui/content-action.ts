@@ -1,5 +1,5 @@
-import type { ActionContext } from '@localixai/plugin-sdk/ui'
-import { pluginWorkspace } from '@localixai/plugin-sdk/ui/runtime'
+import type { ActionContext } from '@localixai/mini-app-sdk/ui'
+import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import { SPACE_KIND, SPACE_TITLE } from '../shared/resource'
 import { spaceApi } from './api'
 import { canAddToSpace, contentOperation } from './action-target'

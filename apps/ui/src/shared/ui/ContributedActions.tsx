@@ -6,9 +6,9 @@ import {
   type ActionContext,
   type ActionContribution,
   type ActionTarget,
-} from '@localixai/plugin-sdk/ui'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+} from '@localixai/mini-app-sdk/ui'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { IconButton } from '@localixai/kit/icon-button'
 import { actionMatches, contributedActions, useContributedActions } from '@/shared/contrib/actions'
 

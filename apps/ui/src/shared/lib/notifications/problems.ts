@@ -9,7 +9,7 @@ import {
   type ProblemRecovery,
   type ProblemReport,
   type ProblemSubject,
-} from '@localixai/plugin-sdk/ui/problems'
+} from '@localixai/mini-app-sdk/ui/problems'
 
 import { recordClientFact } from './clientFacts'
 import { boundedKeyPart } from './inboxMapping'

@@ -1,6 +1,6 @@
-import { mediaTypesFor } from '@localixai/plugin-sdk/backend'
+import { mediaTypesFor } from '@localixai/mini-app-sdk/backend'
 
-// The extension → media-type vocabulary is shared (`@localixai/plugin-sdk` media-types); what is
+// The extension → media-type vocabulary is shared (`@localixai/mini-app-sdk` media-types); what is
 // this module's own is WHICH formats the file viewer serves as raw bytes.
 
 /** Binary image extensions the file viewer can render inline (base64). SVG is text, handled separately. */

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Braces, Check, FilePlus2, Keyboard, Lock, Plus } from 'lucide-react'
-import { pluginWorkspace } from '@localixai/plugin-sdk/ui/runtime'
-import { FIELD_SURFACE, cn } from '@localixai/plugin-sdk/ui/classes'
+import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
+import { FIELD_SURFACE, cn } from '@localixai/mini-app-sdk/ui/classes'
 import {
   Command,
   CommandEmpty,

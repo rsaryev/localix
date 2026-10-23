@@ -1,4 +1,4 @@
-import { shellQuote } from '@localixai/plugin-sdk/backend'
+import { shellQuote } from '@localixai/mini-app-sdk/backend'
 /**
  * Gemini CLI adapter — `gemini_cli_chat_recording_jsonl`.
  *

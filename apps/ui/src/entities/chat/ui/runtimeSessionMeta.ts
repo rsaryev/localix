@@ -3,7 +3,7 @@
 import { Bot, Cpu } from 'lucide-react'
 
 import type { UiSession } from '@/shared/api/contracts'
-import type { SessionActivity } from '@localixai/plugin-sdk/ui/session-activity'
+import type { SessionActivity } from '@localixai/mini-app-sdk/ui/session-activity'
 import type { WorkStatusTone } from '@localixai/kit/status-dot'
 
 export function titleFor(session: UiSession): string {

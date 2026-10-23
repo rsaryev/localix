@@ -49,7 +49,7 @@ GlobalSearchPalette or GlobalSearchTab
 
 | Module                                                                                                  | Mechanism and invariant                                                                                                                         | Failure when violated                                                            |
 | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| [`search-provider.ts`](../../../packages/plugin-sdk/src/backend/search-provider.ts)                     | Rejects duplicate ids, selects eager or named providers, stamps domains, caps hits, and reports provider failure or timeout as a domain problem | One provider can stall or mislabel the complete result set                       |
+| [`search-provider.ts`](../../../packages/mini-app-sdk/src/backend/search-provider.ts)                   | Rejects duplicate ids, selects eager or named providers, stamps domains, caps hits, and reports provider failure or timeout as a domain problem | One provider can stall or mislabel the complete result set                       |
 | [`boot/search.ts`](../../../apps/api/src/boot/search.ts)                                                | Registers core providers in display order and attaches the live plugin backend registry                                                         | Group order changes or plugin enable/disable stops matching availability         |
 | [`service.ts`](../../../apps/api/src/features/search/service.ts)                                        | Owns cross-provider sorting, grouped previews, totals, and single-domain pagination                                                             | Endpoint consumers can disagree about result shape or page boundaries            |
 | [`contracts.ts`](../../../apps/api/src/features/search/contracts.ts)                                    | Requires non-empty text and caps the requested limit at 100                                                                                     | Unbounded or empty searches reach every selected provider                        |
@@ -162,8 +162,8 @@ composition changes.
 
 ## Source of truth
 
-- [Registry and timeout](../../../packages/plugin-sdk/src/backend/search-provider.ts) ·
-  [search-provider.test.ts](../../../packages/plugin-sdk/src/backend/search-provider.test.ts)
+- [Registry and timeout](../../../packages/mini-app-sdk/src/backend/search-provider.ts) ·
+  [search-provider.test.ts](../../../packages/mini-app-sdk/src/backend/search-provider.test.ts)
 - [Service grouping and paging](../../../apps/api/src/features/search/service.ts) ·
   [service.test.ts](../../../apps/api/src/features/search/service.test.ts)
 - [Core composition](../../../apps/api/src/boot/search.ts)

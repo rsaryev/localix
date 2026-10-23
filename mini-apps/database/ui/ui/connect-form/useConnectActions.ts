@@ -1,6 +1,6 @@
 /** Test/submit/trust-cert actions + their busy/error/test-outcome state. */
 import { useCallback, useRef, useState } from 'react'
-import { acknowledgeInline } from '@localixai/plugin-sdk/ui'
+import { acknowledgeInline } from '@localixai/mini-app-sdk/ui'
 import type { DbConnectionConfig, DbConnectionInfo } from '../../dbClient'
 import { databaseApi } from '../../api/databaseApi'
 import { errCode, vaultSecrets, type ConnectFormEdit, type TlsAdvanced } from './model'

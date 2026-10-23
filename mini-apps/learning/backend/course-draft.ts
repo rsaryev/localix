@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, readFile, realpath, rename, rm, stat } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { z } from 'zod'
-import { atomicWriteFile } from '@localixai/plugin-sdk/backend'
+import { atomicWriteFile } from '@localixai/mini-app-sdk/backend'
 import { isPathWithin } from '@localixai/path-containment'
 import { loadCourseBundle } from './course-bundle'
 

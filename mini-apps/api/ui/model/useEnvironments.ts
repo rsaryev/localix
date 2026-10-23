@@ -10,12 +10,12 @@
  */
 
 import { useCallback, useRef, useState } from 'react'
-import { useFileResourceSync } from '@localixai/plugin-sdk/ui/file-resource-sync'
+import { useFileResourceSync } from '@localixai/mini-app-sdk/ui/file-resource-sync'
 import type { EnvironmentCreate, EnvironmentEdit, EnvironmentInfo } from '../../backend/contracts'
 import { restApi } from '../restApi'
-import { useResourceTopic } from '@localixai/plugin-sdk/ui/shared-resource'
+import { useResourceTopic } from '@localixai/mini-app-sdk/ui/shared-resource'
 import { API_ENVIRONMENTS } from './topics'
-import { toast } from '@localixai/plugin-sdk/ui'
+import { toast } from '@localixai/mini-app-sdk/ui'
 
 const POLL_MS = 15_000
 

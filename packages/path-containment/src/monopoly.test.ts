@@ -123,7 +123,7 @@ function firstPartySources(): string[] {
       join(ROOT, 'apps', 'api', 'src'),
       join(ROOT, 'apps', 'ui', 'src'),
       join(ROOT, 'packages', 'agent', 'src'),
-      join(ROOT, 'packages', 'plugin-sdk', 'src'),
+      join(ROOT, 'packages', 'mini-app-sdk', 'src'),
       join(ROOT, 'packages', 'visual-feedback', 'src'),
       join(ROOT, 'packages', 'dataview', 'src'),
       join(ROOT, 'packages', 'cli', 'bin'),
@@ -135,7 +135,7 @@ function firstPartySources(): string[] {
     mustInclude: [
       join('packages', 'agent', 'src', 'index.ts'),
       join('apps', 'ui', 'src', 'features', 'inspector', 'ui', 'fileTreePaths.ts'),
-      join('packages', 'plugin-sdk', 'src', 'ui', 'utilities.ts'),
+      join('packages', 'mini-app-sdk', 'src', 'ui', 'utilities.ts'),
     ],
     minFiles: 300,
   }).filter((f) => !f.includes(owner))

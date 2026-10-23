@@ -7,8 +7,8 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { acknowledgeInline } from '@localixai/plugin-sdk/ui'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { acknowledgeInline } from '@localixai/mini-app-sdk/ui'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import type { RequestInfo, ResolvedPreview } from '../../backend/contracts'
 import { restApi } from '../restApi'
 

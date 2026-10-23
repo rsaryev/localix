@@ -1,5 +1,5 @@
 import { Plus, X } from 'lucide-react'
-import { ProblemLine, ProblemState } from '@localixai/plugin-sdk/ui/components'
+import { ProblemLine, ProblemState } from '@localixai/mini-app-sdk/ui/components'
 import { ConfirmDialog } from '@localixai/kit/confirm-dialog'
 import { IconButton } from '@localixai/kit/icon-button'
 import { LoadingHint } from '@localixai/kit/empty-hint'

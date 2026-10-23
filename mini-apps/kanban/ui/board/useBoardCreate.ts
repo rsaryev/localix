@@ -1,6 +1,6 @@
 import { useCallback, useState, type Dispatch, type SetStateAction } from 'react'
-import { toast } from '@localixai/plugin-sdk/ui'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { toast } from '@localixai/mini-app-sdk/ui'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 import { boardApi } from '../api/board-client'
 import { acceptTask } from '../model/boardStore'

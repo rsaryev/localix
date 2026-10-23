@@ -3,7 +3,7 @@ import {
   type UiAnchorContribution,
   type UiAnchorNode,
   type UiAnchorOpenResult,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { isPluginContributionEnabled } from './pluginActivation'
 
 export interface UiAnchorRegistry {

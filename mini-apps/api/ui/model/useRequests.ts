@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useState } from 'react'
-import { useFileResourceSync } from '@localixai/plugin-sdk/ui/file-resource-sync'
+import { useFileResourceSync } from '@localixai/mini-app-sdk/ui/file-resource-sync'
 import type { RequestInfo } from '../../backend/contracts'
 import { restApi } from '../restApi'
 import { subscribeApiWorkspaceCommands } from './collectionEvents'

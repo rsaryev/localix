@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
+import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 import type { UiSession } from '@/shared/api/contracts'
 import { useExternalHistory } from '@/features/external-agents/model/useExternalHistory'
 import { nativeHistoryRows } from '@/features/external-agents/model/unifiedHistory'

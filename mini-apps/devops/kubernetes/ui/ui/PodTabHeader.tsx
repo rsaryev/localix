@@ -8,7 +8,10 @@ import {
 } from '@localixai/kit/dropdown-menu'
 import { MenuEntries } from '@localixai/kit/menu-entries'
 import { RefreshAction } from '@localixai/kit/refresh-action'
-import { SegmentedControl, SegmentedControlItem } from '@localixai/plugin-sdk/ui/segmented-control'
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from '@localixai/mini-app-sdk/ui/segmented-control'
 import { StatusDot } from '@localixai/kit/status-dot'
 import { podDotClass } from '../model/groupPods'
 import { containerUsageLines, formatUsagePair } from '../model/usage'

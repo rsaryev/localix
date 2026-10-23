@@ -2,7 +2,7 @@ import { describe, expect, spyOn, test } from 'bun:test'
 import {
   defineContextualUiSurface,
   type UiContextualSurfaceDeclaration,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { registerUiLocation, unregisterUiLocation } from './uiLocations'
 import {
   createContextualUiSurfaceRegistry,

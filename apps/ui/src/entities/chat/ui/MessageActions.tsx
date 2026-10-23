@@ -15,9 +15,9 @@ import {
   MoreHorizontal,
 } from 'lucide-react'
 import { ConfirmDialog } from '@localixai/kit/confirm-dialog'
-import { useCopied } from '@localixai/plugin-sdk/ui/interactions'
+import { useCopied } from '@localixai/mini-app-sdk/ui/interactions'
 import type { AgentItem } from '@localixai/agent/agents'
-import type { MessageContextBindingDraft } from '@localixai/plugin-sdk/ui'
+import type { MessageContextBindingDraft } from '@localixai/mini-app-sdk/ui'
 import { MessageSources } from './MessageSources'
 import { linkDragProps } from './linkDrag'
 import { speechAvailable, useReadAloud } from './useReadAloud'

@@ -13,7 +13,7 @@
 // is a static, committed file that no runtime registry can amend.
 //
 // So the projection happens here: each bundled plugin declares its formats in its own
-// mini app manifest (`fileAssociations`, see `@localixai/plugin-sdk/manifest`), core keeps
+// mini app manifest (`fileAssociations`, see `@localixai/mini-app-sdk/manifest`), core keeps
 // its editor list in CORE_FILE_ASSOCIATIONS below, and this module merges the two into
 // exactly the array tauri.conf.json must contain. `--write` applies it; `--check` (and
 // the sibling test) fails when the committed config and the manifests disagree — which

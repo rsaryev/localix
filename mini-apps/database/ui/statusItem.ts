@@ -1,18 +1,18 @@
 import { useEffect } from 'react'
 import { Database, Plug, Unplug } from 'lucide-react'
-import type { MenuEntry, StatusItemState } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry, StatusItemState } from '@localixai/mini-app-sdk/ui'
 import {
   pluginWorkspace,
   runPluginAction,
   statusMenuList,
   tonedIcon,
-} from '@localixai/plugin-sdk/ui'
-import { usePluginWorkspace } from '@localixai/plugin-sdk/ui/runtime-hooks'
+} from '@localixai/mini-app-sdk/ui'
+import { usePluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 
 import type { DbConnectionInfo } from './dbClient'
 import { databaseApi } from './api/databaseApi'
 import { connectionDisplayName } from './model/connectionDisplayName'
-import { useStoreChanges } from '@localixai/plugin-sdk/ui/store-resource'
+import { useStoreChanges } from '@localixai/mini-app-sdk/ui/store-resource'
 import { refreshConnections } from './model/connectionsStore'
 import { ensureConnectionsListed, useConnectionsSnapshot } from './model/connectionsStore'
 import { openDbConnection } from './model/openConsole'

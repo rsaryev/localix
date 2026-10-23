@@ -6,7 +6,7 @@ import type {
   FormatTextSource,
 } from '@/shared/ui/code-editor/CodeEditor'
 import type { MonacoEditorExtension } from '@/shared/ui/code-editor/monaco/extensions'
-import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
+import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'
 import type { NextEditContextSource } from './useFileLsp'
 
 export interface FileTabProps {

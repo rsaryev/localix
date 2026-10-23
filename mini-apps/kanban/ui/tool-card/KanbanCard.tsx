@@ -10,7 +10,7 @@ import {
   UserRound,
   type LucideIcon,
 } from 'lucide-react'
-import type { ToolCardContribution } from '@localixai/plugin-sdk/ui'
+import type { ToolCardContribution } from '@localixai/mini-app-sdk/ui'
 import { StatusDot } from '@localixai/kit/status-dot'
 import {
   ErrorRow,

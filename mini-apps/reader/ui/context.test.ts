@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { resourceMessageBindingDraft, snippetMessageBindingDraft } from '@localixai/plugin-sdk/ui'
+import { resourceMessageBindingDraft, snippetMessageBindingDraft } from '@localixai/mini-app-sdk/ui'
 import { mergeReaderPublishedContexts } from './context'
 
 describe('parallel reader context', () => {

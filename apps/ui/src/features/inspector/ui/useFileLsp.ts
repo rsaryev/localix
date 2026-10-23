@@ -13,7 +13,7 @@ import { isModelRoutingTaskEnabled } from '@localixai/api/model-task-catalog'
 import type { CompletionReference } from '@localixai/api/client'
 import { completionWorkingSet } from '@/shared/api/completionWorkingSet'
 import { getFileEditHistory } from '../model/editorActivity'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 
 /** An editor host's own anchors (a SQL statement's tables) — the shape every surface sends. */
 export type NextEditContextSource = (request: NextEditRequest) => CompletionReference[]

@@ -4,7 +4,7 @@ import { LocalixMark } from '@/shared/ui/LocalixMark'
 import type { ReactNode } from 'react'
 import type { UiSession } from '@/shared/api/contracts'
 import { StatusDot } from '@localixai/kit/status-dot'
-import { formatRelativeTime } from '@localixai/plugin-sdk/ui/utilities'
+import { formatRelativeTime } from '@localixai/mini-app-sdk/ui/utilities'
 
 import { attentionBySession } from '../model/attention/select'
 import { useAttentionStore } from '../model/attention/store'

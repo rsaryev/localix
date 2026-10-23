@@ -1,7 +1,7 @@
 import { mkdtemp, rm, writeFile, chmod } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { ApiError, shellQuote } from '@localixai/plugin-sdk/backend'
+import { ApiError, shellQuote } from '@localixai/mini-app-sdk/backend'
 import type { RebaseAction } from '../contracts'
 import { firstLine, type GitRunner } from './cli'
 import { withCoAuthor } from './actions'

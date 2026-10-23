@@ -5,7 +5,7 @@ import {
   localixUriNamespace,
   type PluginUiHost,
   type WorkItemLike,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { isDatabaseFilePath } from '../shared/database-file'
 import { connectionTextClass } from './model/connectionColor'
 import { useDatabaseStatusItem } from './statusItem'

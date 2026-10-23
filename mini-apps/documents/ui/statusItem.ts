@@ -1,8 +1,8 @@
 import { FileSpreadsheet, FileText, Presentation } from 'lucide-react'
-import type { IconComponent, StatusItemState } from '@localixai/plugin-sdk/ui'
-import { pluginWorkspace, statusMenuList } from '@localixai/plugin-sdk/ui'
-import { fileExtension } from '@localixai/plugin-sdk/ui/file-types'
-import { usePluginWorkspace } from '@localixai/plugin-sdk/ui/runtime-hooks'
+import type { IconComponent, StatusItemState } from '@localixai/mini-app-sdk/ui'
+import { pluginWorkspace, statusMenuList } from '@localixai/mini-app-sdk/ui'
+import { fileExtension } from '@localixai/mini-app-sdk/ui/file-types'
+import { usePluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 
 /**
  * The formats this plugin OWNS a viewer for, and the glyph each reads as.

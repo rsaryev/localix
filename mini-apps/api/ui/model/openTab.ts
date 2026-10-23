@@ -7,7 +7,7 @@
  * request opens as two tabs and neither focuses the other — so the formula has one owner.
  */
 
-import { pluginWorkspace } from '@localixai/plugin-sdk/ui/runtime'
+import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 
 export const REQUEST_WORK_KIND = 'api:request'
 

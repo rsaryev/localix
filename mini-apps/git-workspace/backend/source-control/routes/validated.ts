@@ -8,6 +8,6 @@
  *
  * Shared by the three route modules so they answer a bad body identically.
  */
-import { routeValidator } from '@localixai/plugin-sdk/backend'
+import { routeValidator } from '@localixai/mini-app-sdk/backend'
 
 export const validated = routeValidator({ envelope: 'nested', code: 'validation_error' })

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { buildPathTree, folderPaths, type PathTreeNode } from '@localixai/plugin-sdk/ui/path-tree'
+import { buildPathTree, folderPaths, type PathTreeNode } from '@localixai/mini-app-sdk/ui/path-tree'
 
 const items = (...paths: string[]) => paths.map((path) => ({ path, value: path }))
 

@@ -16,7 +16,7 @@
  * onto these the same way the filter does, so a card at +2 and the "High" filter row agree.
  */
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react'
-import { tonedIcon, type IconComponent, type StatusTone } from '@localixai/plugin-sdk/ui'
+import { tonedIcon, type IconComponent, type StatusTone } from '@localixai/mini-app-sdk/ui'
 
 /** The three bands a -2..2 priority is filtered and drawn by. */
 export type PriorityBucket = 'high' | 'normal' | 'low'

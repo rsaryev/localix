@@ -1,4 +1,4 @@
-import { parseLocalixUri } from '@localixai/plugin-sdk/navigation'
+import { parseLocalixUri } from '@localixai/mini-app-sdk/navigation'
 
 /** Only the profile surface may be opened from a transcript's agent link. */
 export function isAgentProfileHref(href: string): boolean {

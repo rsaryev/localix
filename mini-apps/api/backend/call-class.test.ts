@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, test } from 'bun:test'
-import type { CallClass } from '@localixai/plugin-sdk/backend'
+import type { CallClass } from '@localixai/mini-app-sdk/backend'
 import { classifyApiClientCall } from './api-tool'
 import { classifyEnvironmentCall, classifyHttpRequestCall } from './call-class'
 

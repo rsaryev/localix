@@ -1,5 +1,5 @@
-import { localixResourceUri } from '@localixai/plugin-sdk/navigation'
-import { parseLocalixResourceUri } from '@localixai/plugin-sdk/ui'
+import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
+import { parseLocalixResourceUri } from '@localixai/mini-app-sdk/ui'
 
 export const vaultItemResourceUri = (key: string): string =>
   localixResourceUri('vault', ['items', key])

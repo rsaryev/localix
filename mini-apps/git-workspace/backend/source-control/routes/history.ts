@@ -9,7 +9,7 @@
  * rather than a plain failure.
  */
 import { Hono } from 'hono'
-import type { PluginRouteContext as AppContext } from '@localixai/plugin-sdk/backend'
+import type { PluginRouteContext as AppContext } from '@localixai/mini-app-sdk/backend'
 import type { SourceControlService } from '../service'
 import {
   bisectMarkSchema,

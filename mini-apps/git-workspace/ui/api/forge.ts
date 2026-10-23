@@ -5,7 +5,7 @@
  * system — it can be absent (no `gh`, not authenticated) without the git side
  * being any less available.
  */
-import { cleanPluginQuery, unwrapPluginResponse } from '@localixai/plugin-sdk/ui'
+import { cleanPluginQuery, unwrapPluginResponse } from '@localixai/mini-app-sdk/ui'
 import type { ForgePullRequest, ForgeStatus } from '../../backend/source-control/forge/contracts'
 import { client } from './client'
 

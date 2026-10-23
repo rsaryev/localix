@@ -7,7 +7,7 @@ import type {
   DecisionHost,
   DecisionOptions,
   DecisionOutcome,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 
 import { applyShot, newGame, type Game } from '../shared/game'
 import { SIZE, cellName, placeFleet, shipAt } from '../shared/rules'

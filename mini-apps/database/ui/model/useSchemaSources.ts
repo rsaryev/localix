@@ -1,5 +1,5 @@
 import { useCallback, useRef, useSyncExternalStore } from 'react'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import type { SchemaSnapshot } from './schemaEntry'
 import { getCachedTable, getCachedTableError } from './schemaKey'
 import { schemaStore } from './schemaStore'

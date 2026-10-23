@@ -2,7 +2,7 @@
  *  UPDATE/INSERT/DELETE statements from staged grid changes and applies them as ONE
  *  atomic server-side batch; CSV import loads generated INSERTs into the editor. */
 import { useState } from 'react'
-import { acknowledgeInline } from '@localixai/plugin-sdk/ui'
+import { acknowledgeInline } from '@localixai/mini-app-sdk/ui'
 import type { TableRow } from '@localixai/dataview'
 import { adaptedCellValue, type AdaptedResult } from '../../model/resultAdapter'
 import { databaseApi } from '../../api/databaseApi'

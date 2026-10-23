@@ -20,7 +20,7 @@ import { attributeName, literalText } from '../jsx.ts'
 import type { Node, Rule, RuleContext } from '../types.ts'
 
 // The kit is where the primitives live; out of scope, the scale would stop holding in them.
-const SCOPES = ['/apps/ui/src/', '/packages/kit/src/', '/packages/plugin-sdk/src/', '/plugins/']
+const SCOPES = ['/apps/ui/src/', '/packages/kit/src/', '/packages/mini-app-sdk/src/', '/plugins/']
 
 /** Bare `rounded` as a whole class token, optionally behind variants (`md:rounded`). */
 const BARE_ROUNDED = /(?:^|\s)(?:[\w-]+:)*rounded(?=\s|$)/u

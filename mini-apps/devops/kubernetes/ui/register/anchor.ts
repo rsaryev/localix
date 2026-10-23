@@ -3,7 +3,7 @@
  * workspace area) a Kubernetes resource reference opens. Tab ids come from
  * `watchPace` so a reference and a row open the SAME tab.
  */
-import { parseLocalixResourceUri } from '@localixai/plugin-sdk/ui'
+import { parseLocalixResourceUri } from '@localixai/mini-app-sdk/ui'
 import { podTabWorkItemId, resourceTabWorkItemId } from '../model/watchPace'
 import { saveDevOpsArea } from '../../../ui/model/devopsView'
 

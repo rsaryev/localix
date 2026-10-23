@@ -8,7 +8,7 @@
  * without relearning them. Families are kept to multilingual retrieval models — conversations
  * here are not only in English.
  */
-import type { SemanticTask } from '@localixai/plugin-sdk/backend'
+import type { SemanticTask } from '@localixai/mini-app-sdk/backend'
 
 export interface EmbeddingFamily {
   key: string

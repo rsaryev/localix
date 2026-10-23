@@ -1,4 +1,4 @@
-import { fileExtension } from '@localixai/plugin-sdk/ui/file-types'
+import { fileExtension } from '@localixai/mini-app-sdk/ui/file-types'
 
 import { BUILTIN_EDITOR_CHOICE } from '@/shared/contrib/fileEditorChoice'
 

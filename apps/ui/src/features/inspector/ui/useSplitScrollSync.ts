@@ -6,7 +6,7 @@ import {
   publishScrollPercent,
   scrollPercent,
 } from '@localixai/kit/scroll-sync'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 
 /**
  * Markdown split view: the editor and the rendered preview side by side, scroll-synced.

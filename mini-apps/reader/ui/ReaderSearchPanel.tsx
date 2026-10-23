@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { acknowledgeInline, type MenuEntry } from '@localixai/plugin-sdk/ui'
+import { acknowledgeInline, type MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react'
 
 import { IconButton } from '@localixai/kit/icon-button'
@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@localixai/kit/dropdown-menu'
 import { MenuEntries } from '@localixai/kit/menu-entries'
-import { ProblemLine } from '@localixai/plugin-sdk/ui/components'
+import { ProblemLine } from '@localixai/mini-app-sdk/ui/components'
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
 import { SearchInput } from '@localixai/kit/search-input'
 

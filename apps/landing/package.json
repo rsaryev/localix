@@ -23,7 +23,7 @@
   "dependencies": {
     "@localixai/kit": "workspace:*",
     "@localixai/markdown": "workspace:*",
-    "@localixai/plugin-sdk": "workspace:*",
+    "@localixai/mini-app-sdk": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "lucide-react": "^1.61.0",
     "react": "^19.3.1",

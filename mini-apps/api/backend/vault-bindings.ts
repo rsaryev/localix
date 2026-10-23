@@ -17,8 +17,8 @@
  * stale entry, and `bind` is an upsert keyed by consumer+field, so a re-save repairs one.
  */
 
-import { hasSecretTokens } from '@localixai/plugin-sdk/backend'
-import type { SecretConsumer } from '@localixai/plugin-sdk/backend'
+import { hasSecretTokens } from '@localixai/mini-app-sdk/backend'
+import type { SecretConsumer } from '@localixai/mini-app-sdk/backend'
 import type { RequestAuth } from './request-spec'
 import { authSecret, secretConsumerFor } from './secrets'
 

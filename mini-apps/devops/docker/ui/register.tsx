@@ -1,8 +1,8 @@
 import { Container, ScrollText, Gauge, Cpu, Layers, HardDrive, Network } from 'lucide-react'
 import fileTypeDocker from '@iconify-icons/vscode-icons/file-type-docker'
 
-import { resourceMessageBindingDraft, type PluginUiHost } from '@localixai/plugin-sdk/ui'
-import { localixResourceUri } from '@localixai/plugin-sdk/navigation'
+import { resourceMessageBindingDraft, type PluginUiHost } from '@localixai/mini-app-sdk/ui'
+import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 import { detectManifestKind } from './model/dockerManifestCommands'
 import { resolveDockerAnchor } from './register/anchor'
 import { DockerContainerBody, DockerManifestTab, DockerResourceBody } from './register/bodies'

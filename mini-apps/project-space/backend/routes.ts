@@ -1,6 +1,6 @@
 import { Hono, type Context } from 'hono'
 import { z } from 'zod'
-import { jsonBody, jsonError, type PluginRouteContext } from '@localixai/plugin-sdk/backend'
+import { jsonBody, jsonError, type PluginRouteContext } from '@localixai/mini-app-sdk/backend'
 import { spaceOpsSchema } from '../shared/ops/contract'
 import { cameraHub } from './camera-hub'
 import { mayRead, resolveReference } from './paths'

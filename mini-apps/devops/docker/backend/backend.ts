@@ -12,7 +12,7 @@ import type {
 import { DOCKER_ACTION_TIMEOUT_MS, DOCKER_REQUEST_TIMEOUT_MS } from './api-transport'
 import { DockerError, mapDockerError } from './errors'
 import { detectInstalledEngine, type InstalledEngine } from './installed-engine'
-import { readProcessOutputWithTimeout, toolEnv } from '@localixai/plugin-sdk/backend'
+import { readProcessOutputWithTimeout, toolEnv } from '@localixai/mini-app-sdk/backend'
 import {
   parseComposeProjectPaths,
   parseContainers,

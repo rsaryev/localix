@@ -1,5 +1,5 @@
 import { expect, spyOn, test } from 'bun:test'
-import type { TerminalRead } from '@localixai/plugin-sdk/backend'
+import type { TerminalRead } from '@localixai/mini-app-sdk/backend'
 import { AgentSessionsService } from './service'
 import type { ProviderAdapter, SourceRef } from './adapters/types'
 

@@ -14,8 +14,8 @@ import {
   type ResourceExpansion,
   type ResourceNode,
   type ResourceRefProvider,
-} from '@localixai/plugin-sdk/backend'
-import { renderDocumentForModel } from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
+import { renderDocumentForModel } from '@localixai/mini-app-sdk/backend'
 import { toDocExtractResult } from './extract-port'
 import type { DocumentStore } from './documents/store'
 import type { RecentsIndex } from './recents'

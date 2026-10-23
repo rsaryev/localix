@@ -1,4 +1,4 @@
-import type { ResourceRefProvider } from '@localixai/plugin-sdk/backend'
+import type { ResourceRefProvider } from '@localixai/mini-app-sdk/backend'
 
 import type { ContextProviderContribution } from '../context-fabric/contracts'
 import { createResourceContextProvider } from '../context-fabric/resource-context-provider'

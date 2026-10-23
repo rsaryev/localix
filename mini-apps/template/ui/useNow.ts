@@ -1,1 +1,1 @@
-export { useNow } from '@localixai/plugin-sdk/ui/now'
+export { useNow } from '@localixai/mini-app-sdk/ui/now'

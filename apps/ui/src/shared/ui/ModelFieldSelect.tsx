@@ -5,7 +5,7 @@ import { Sparkles } from 'lucide-react'
 import { backendClient } from '@/shared/api/client'
 import { useModelsCatalog, type CatalogModel } from '@/shared/hooks/useModelsCatalog'
 import { Combobox, type ComboboxOption, type ComboboxProps } from '@localixai/kit/combobox'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /**
  * Provider+model picker for configuration fields. It reads the same catalog as

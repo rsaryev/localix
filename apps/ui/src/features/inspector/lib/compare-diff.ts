@@ -1,5 +1,5 @@
 import { createTwoFilesPatch } from 'diff'
-import { baseName } from '@localixai/plugin-sdk/ui/utilities'
+import { baseName } from '@localixai/mini-app-sdk/ui/utilities'
 
 /**
  * Build a unified diff (parseable by `DiffView`) between two ARBITRARY files —

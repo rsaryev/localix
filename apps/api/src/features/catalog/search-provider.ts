@@ -5,7 +5,7 @@
  */
 import type { SearchHit, SearchProvider } from '../agent-core/search/provider'
 import { bestFieldScore } from '../agent-core/search/match'
-import { localixResourceUri, settingsUiUri } from '@localixai/plugin-sdk/navigation'
+import { localixResourceUri, settingsUiUri } from '@localixai/mini-app-sdk/navigation'
 
 export interface ModelSearchRow {
   id: string

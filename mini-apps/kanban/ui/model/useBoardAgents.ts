@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 import { boardApi, type BoardAgent } from '../api/board-client'
 

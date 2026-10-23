@@ -46,7 +46,7 @@ import type {
   PodLogs,
   ResourceDescribe,
 } from './contracts'
-import type { ResourceRefProvider } from '@localixai/plugin-sdk/backend'
+import type { ResourceRefProvider } from '@localixai/mini-app-sdk/backend'
 import { failureNotice, PROVIDER } from './resource-nodes'
 import { listResourceChildren } from './resource-list'
 import { expandResource } from './resource-expand'

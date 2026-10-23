@@ -1,7 +1,7 @@
 import type { ReactNode, RefObject } from 'react'
 import { Clock, Eraser, Gauge, Ruler, Sparkles } from 'lucide-react'
 
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { ChartDrawing } from '../../backend/chart-drawing'
 import { isDetectDrawingId } from '../model/chartDrawings'
 import type { ChartType } from '../model/chartType'

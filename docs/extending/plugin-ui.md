@@ -11,7 +11,7 @@ reach the host through its UI kit, and understand how an edit reaches the screen
 | UI artifact    | `dist/ui/` in a plugin's folder: an entry, hashed chunks, styles, a manifest.    | Built by the app from the plugin's `ui/` sources.            |
 | Revision       | A hash of every artifact file, carried in the plugin record.                     | Moves when the UI changed, not when the backend or docs did. |
 | UI kit         | `@localixai/kit/<id>`: the host's explicit public component surface.             | Public components; SDK services are separate host ports.     |
-| Shared module  | React, `@localixai/plugin-sdk` and the kit, taken from the host at runtime.      | Every other dependency is bundled into the artifact.         |
+| Shared module  | React, `@localixai/mini-app-sdk` and the kit, taken from the host at runtime.    | Every other dependency is bundled into the artifact.         |
 | Plugin kit     | What the app ships to build plugins: template, shared-module exports, theme CSS. | `resources/plugin-kit`; no source tree or toolchain needed.  |
 | Frame / domain | The template's fixed shell versus the part a copy replaces.                      | The frame imports no domain module.                          |
 
@@ -25,7 +25,7 @@ reach the host through its UI kit, and understand how an edit reaches the screen
 | Use a host control             | Import it from `@localixai/kit/<id>`                           | Typed by its real props; an `@/…` import fails the build.            |
 | Draw a graph or a board        | `Canvas` from `@localixai/kit/canvas`                          | The host's camera and edge; never bundle `@xyflow/react`.            |
 | Take any app link              | `readMessageBindingDrag`, `linksInText` (`kit/context-links`)  | A drop or a pasted `@session:…`/`localix://…` is the same link.      |
-| Show an app link               | `ContextBindingPreview` from `@localixai/plugin-sdk/ui`        | The host draws it: a file, a session, a message, a tool call's card. |
+| Show an app link               | `ContextBindingPreview` from `@localixai/mini-app-sdk/ui`      | The host draws it: a file, a session, a message, a tool call's card. |
 | Act on the plugin's state      | `send()` from the frame's `ui/usePolledSnapshot.ts`            | The route answers with the new state.                                |
 | Hear what the agent wrote      | `useStoreSnapshot` + `createStoreFeed` (frame)                 | A nudge per store write in one scope; re-read via the route.         |
 | Follow a live stream           | `createRealtimeFeed`, `useRealtimeFeed` (`ui/realtime-feed`)   | One subscription per key; resubscribes after a reconnect.            |
@@ -38,7 +38,7 @@ reach the host through its UI kit, and understand how an edit reaches the screen
 | Use icons                      | Import from `lucide-react`                                     | Bundled per icon from the plugin kit.                                |
 | See an edit in the running app | Rebuild; the plugin is swapped in place                        | An open tab re-renders; the app is never reloaded.                   |
 
-Open HTTP and HTTPS links with `pluginExternal.open(url)` from `@localixai/plugin-sdk/ui/runtime`.
+Open HTTP and HTTPS links with `pluginExternal.open(url)` from `@localixai/mini-app-sdk/ui/runtime`.
 They open in the active conversation's Browser by default. Pass `true` as the second argument for
 flows that require the system browser, such as OAuth: `pluginExternal.open(authorizationUrl, true)`.
 Mail and phone links use the system handler. When no conversation workspace is ready, web links also
@@ -121,9 +121,9 @@ and "click Pods in DevOps" need no guessing.
 1. The app builds a user plugin itself, from the plugin kit it ships: the backend into
    `dist/backend/index-<hash>.mjs` (a new file per build; the mini app's `backend` is pointed at it,
    so a running module is never replaced under the app) with `hono`, `zod` and
-   `@localixai/plugin-sdk/backend` taken from the kit, the UI into `dist/ui/`, and the tests run on
-   the Bun binary the app ships. First-party plugins are built the same way at staging, except that
-   a release leaves their UI source maps out; a user plugin's artifact keeps its maps.
+   `@localixai/mini-app-sdk/backend` taken from the kit, the UI into `dist/ui/`, and the tests run
+   on the Bun binary the app ships. First-party plugins are built the same way at staging, except
+   that a release leaves their UI source maps out; a user plugin's artifact keeps its maps.
 2. The API reads the artifact manifest into the plugin record's `ui` field and serves the files
    under `/rpc/plugins/<name>/ui/`, confined to `dist/ui/`. A plugin that did not ship with the app
    is served only once the user enabled it — native UI follows the same consent as a native backend.
@@ -197,8 +197,8 @@ reconnect it re-reads once, because a nudge sent while the socket was down is lo
 
 For any other live data, the backend registers a `wsFrames` entry (a subscribe and an unsubscribe
 command, a one-letter frame tag other than `s`, `r` and `n`, and `start(params, send, { userId })`).
-The view follows it with `createRealtimeFeed` from `@localixai/plugin-sdk/ui/realtime-feed`, created
-once at module level:
+The view follows it with `createRealtimeFeed` from `@localixai/mini-app-sdk/ui/realtime-feed`,
+created once at module level:
 
 ```ts
 export const boardFeed = createRealtimeFeed<string, BoardEvent>({
@@ -332,7 +332,7 @@ keep the focused one.
 | `ui/register.tsx`              | Plugin sources                            | The artifact entry; a plugin without it ships no UI.     |
 | `backend/index.ts`             | Plugin sources                            | The backend source the app builds.                       |
 | `backend`                      | `.localix-app/app.json`                   | Written by the build: the backend build that runs.       |
-| Shared-module rule             | `@localixai/plugin-sdk/ui-artifact`       | Which specifiers come from the host.                     |
+| Shared-module rule             | `@localixai/mini-app-sdk/ui-artifact`     | Which specifiers come from the host.                     |
 | Plugin CSS and utility classes | Imported `.css` and Tailwind classes      | Built into the artifact's stylesheets on the host theme. |
 | Script and style sources       | `tauri.conf.json` content security policy | Allows the local API origin for artifacts.               |
 
@@ -341,9 +341,9 @@ keep the focused one.
 Use `MarkdownRenderer` from `@localixai/kit/markdown` with source as `children`; see
 [Shared Markdown](markdown.md) for renderer options and boundaries.
 
-- A user plugin's backend may import only `hono`, `zod`, `@localixai/plugin-sdk/backend`, `node:*`,
-  `bun:*` and its own files; its UI only the shared modules, `zod`, `lucide-react` and its own
-  files.
+- A user plugin's backend may import only `hono`, `zod`, `@localixai/mini-app-sdk/backend`,
+  `node:*`, `bun:*` and its own files; its UI only the shared modules, `zod`, `lucide-react` and its
+  own files.
 - A user plugin's tests run with `bun:test`; rendering tests need the host's DOM harness, which only
   first-party plugins have.
 - A kit type from a package the kit does not ship (Radix, cmdk, Monaco, the flow library behind
@@ -368,7 +368,7 @@ Use `MarkdownRenderer` from `@localixai/kit/markdown` with source as `children`;
 
 ## Source of truth
 
-- [Shared-module and artifact contract](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/ui-artifact.ts)
+- [Shared-module and artifact contract](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui-artifact.ts)
 - [Plugin kit layout](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/authoring/kit-layout.ts)
   and [its staging](https://github.com/rsaryev/localix/blob/main/scripts/stage-plugin-kit.mjs)
 - [User plugin authoring](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/authoring/service.ts)
@@ -387,11 +387,11 @@ Use `MarkdownRenderer` from `@localixai/kit/markdown` with source as `children`;
   and
   [host wiring](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/contrib/pluginUiDiscovery.ts)
 - [Shared-module registry](https://github.com/rsaryev/localix/blob/main/apps/ui/src/app/pluginSharedModules.ts)
-- [Realtime feed](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/ui/realtime-feed.ts)
-- [Tool cards](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/ui/tool-cards.ts),
-  [comment actions](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/ui/comment-actions.ts)
+- [Realtime feed](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui/realtime-feed.ts)
+- [Tool cards](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui/tool-cards.ts),
+  [comment actions](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui/comment-actions.ts)
   and
-  [session surfaces](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/ui/contrib.ts)
+  [session surfaces](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui/contrib.ts)
 - [UI kit](https://github.com/rsaryev/localix/tree/main/apps/ui/src/app/kit)
 
 - [Tab scopes](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/workspace-grid/model/scope.ts)

@@ -4,7 +4,7 @@
  */
 import type { RepoBranch, RepoStatus } from '../contracts'
 import type { ScopeDiff } from '../git/scope-diff'
-import { buildResourceUri, providerSegments } from '@localixai/plugin-sdk/backend'
+import { buildResourceUri, providerSegments } from '@localixai/mini-app-sdk/backend'
 
 /** Provider-owned URI scheme. Core dispatches resource schemes as open strings. */
 export const SCHEME = 'git'

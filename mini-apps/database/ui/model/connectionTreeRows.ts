@@ -1,5 +1,5 @@
 import { DATABASE_DRIVER_CATALOG } from '../../shared/driver-catalog'
-import type { PluginProblemLineProps } from '@localixai/plugin-sdk/ui/components'
+import type { PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
 import type { DbConnectionInfo } from '../dbClient'
 import type { SchemaItemMatch } from './schemaSearch'
 import {

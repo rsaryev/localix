@@ -1,6 +1,6 @@
 import type { Hono, Schema } from 'hono'
 import { z } from 'zod'
-import type { PluginRouteContext } from '@localixai/plugin-sdk/backend'
+import type { PluginRouteContext } from '@localixai/mini-app-sdk/backend'
 import type { EnvironmentInfo } from './contracts'
 import type { RestRouteScope } from './route-scope'
 import type { SavedEnvironment } from './environments/store'

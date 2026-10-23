@@ -1,7 +1,10 @@
 import { useMemo, useRef, useState } from 'react'
 import { Leaf, Table2, Braces, type LucideIcon } from 'lucide-react'
 import { CodeEditor, type CompletionSource, type EditorHandle } from '@localixai/kit/code-editor'
-import { SegmentedControl, SegmentedControlItem } from '@localixai/plugin-sdk/ui/segmented-control'
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from '@localixai/mini-app-sdk/ui/segmented-control'
 import { SqlResultsView } from './SqlResultsView'
 import { JsonTree } from '@localixai/kit/json-tree'
 import { rowsToDocuments } from '../model/rowsToDocuments'

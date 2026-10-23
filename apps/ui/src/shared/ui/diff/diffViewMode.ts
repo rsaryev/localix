@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
+import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 
 /** Unified (single-column) vs split (side-by-side) diff rendering. */
 export type DiffViewMode = 'unified' | 'split'

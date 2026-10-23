@@ -9,7 +9,7 @@
  * moves with the workbench. In one file, a completion change was reviewed against payloads it
  * never touches.
  *
- * `runtime-payloads.ts` re-exports all of this, so `@localixai/plugin-sdk/ui/runtime` is unchanged.
+ * `runtime-payloads.ts` re-exports all of this, so `@localixai/mini-app-sdk/ui/runtime` is unchanged.
  */
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { pluginWorkspace } from '@localixai/plugin-sdk/ui/runtime'
+import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import { kubernetesApi } from '../api/kubernetesApi'
 
 const POD_TAB_PREFIX = 'devops:kubernetes-pod:'

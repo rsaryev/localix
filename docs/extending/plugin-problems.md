@@ -22,11 +22,11 @@ Center rather than the surface headline.
 
 Put the code in `Problem.code` and the failed call in `Problem.request`; the Event Center traces
 exactly that request. An API error built with `problemRequestOf(response)` from
-`@localixai/plugin-sdk/ui/transport` carries it, and `pluginFailureFacts(error)` spreads code,
+`@localixai/mini-app-sdk/ui/transport` carries it, and `pluginFailureFacts(error)` spreads code,
 detail, request and prerequisite into a problem.
 
 When the failure is an external program that is missing or stopped, say so as a `Prerequisite`
-(`@localixai/plugin-sdk/prerequisite`) instead of a sentence with a Retry under it:
+(`@localixai/mini-app-sdk/prerequisite`) instead of a sentence with a Retry under it:
 
 | State        | Headline                   | Primary action | What it does                              |
 | ------------ | -------------------------- | -------------- | ----------------------------------------- |
@@ -40,7 +40,7 @@ On the backend, classify with `isMissingExecutable(err)` (it reads Bun's
 `Executable not found in $PATH`, Node's `spawn x ENOENT` and the error's `code`), pass
 `{ prerequisite }` to your `defineTypedError` class, and serialize `toErrorInfo(err).prerequisite`
 with the error body. Spawn host tools with `env: toolEnv()` and look them up with
-`resolveExecutable(name)` from `@localixai/plugin-sdk/backend`.
+`resolveExecutable(name)` from `@localixai/mini-app-sdk/backend`.
 
 In the UI, `prerequisiteProblem(prerequisite, { code, detail, request })` builds the problem and
 `usePrerequisiteRecovery(prerequisite)` the action; mark it `primary` and `ProblemState` draws it as
@@ -83,12 +83,12 @@ a hint but has no primary recovery action. The recovery helper already marks its
 
 ## Source of truth
 
-- [Prerequisite](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/prerequisite.ts)
+- [Prerequisite](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/prerequisite.ts)
   and
-  [its recovery](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/ui/prerequisite-recovery.ts)
-- [Host executables](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/backend/executables.ts)
-- [Typed errors](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/backend/typed-error.ts)
-- [Problem report hook](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/ui/use-problem-report.ts)
+  [its recovery](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui/prerequisite-recovery.ts)
+- [Host executables](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/executables.ts)
+- [Typed errors](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/typed-error.ts)
+- [Problem report hook](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui/use-problem-report.ts)
 - [Terminal recovery input](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/lib/terminalBus.ts)
 - [Problem state](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/ui/problem-report/ProblemState.tsx)
   and

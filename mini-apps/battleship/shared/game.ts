@@ -1,5 +1,5 @@
-import { agentWaitSchema, type AgentWait } from '@localixai/plugin-sdk/agent-wait'
-import { OPPONENTS, opponentSchema, type Opponent } from '@localixai/plugin-sdk/opponent'
+import { agentWaitSchema, type AgentWait } from '@localixai/mini-app-sdk/agent-wait'
+import { OPPONENTS, opponentSchema, type Opponent } from '@localixai/mini-app-sdk/opponent'
 import { z } from 'zod'
 
 import {
@@ -29,7 +29,7 @@ export type Player = (typeof PLAYERS)[number]
 export const opponentOf = (player: Player): Player => (player === 'you' ? 'agent' : 'you')
 
 /**
- * Who fires from the agent's side at this table (`@localixai/plugin-sdk/opponent`): the agent in
+ * Who fires from the agent's side at this table (`@localixai/mini-app-sdk/opponent`): the agent in
  * the chat, or the host's decision model. The side is the same either way — a shot from it is the
  * `agent` player's — only who aims it differs.
  */

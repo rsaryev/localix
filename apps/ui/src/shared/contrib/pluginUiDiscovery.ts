@@ -8,7 +8,7 @@ import {
   PLUGIN_UI_PRELOADED_MODULES,
   PLUGIN_UI_SHARED_GLOBAL,
   type PluginUiSharedModules,
-} from '@localixai/plugin-sdk/ui-artifact'
+} from '@localixai/mini-app-sdk/ui-artifact'
 import {
   createPluginUiRuntime,
   type PluginUiArtifact,

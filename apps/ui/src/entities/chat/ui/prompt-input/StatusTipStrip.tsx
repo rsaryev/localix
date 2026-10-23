@@ -6,7 +6,7 @@ import { Button } from '@localixai/kit/button'
 import { subscribeUiCommands, uiCommandRevision } from '@/shared/contrib/uiCommands'
 import { subscribeUiLocations, uiLocationRevision } from '@/shared/contrib/uiLocations'
 import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import {
   navigateUiAction,
   viewUiNavigationAction,

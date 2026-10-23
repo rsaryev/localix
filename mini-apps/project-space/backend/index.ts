@@ -2,7 +2,7 @@ import type {
   PluginContext,
   PluginRegistration,
   WorkspaceScopeHost,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import { ROUTE_PATH } from '../shared/resource'
 import { createSpaceRoutes } from './routes'
 import { createSpaceTools } from './tools'

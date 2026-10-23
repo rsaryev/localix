@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { act, type ReactNode } from 'react'
-import { WorkItemSessionProvider } from '@localixai/plugin-sdk/ui/work-item-session'
+import { WorkItemSessionProvider } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { codeSnippet, type CodeSnippet } from '@/shared/lib/codeSnippetBus'
 import { terminal } from '@/shared/lib/terminalBus'
 import { registerDom } from '@localixai/kit/testing/dom'

@@ -11,7 +11,7 @@ contract package, the engine, the API host, or the plugin SDK.
 | Contract package | The workspace-private `@localixai/agent` package.                     | Defines ports and pure helpers; it performs no provider I/O. |
 | Engine           | An implementation of `AgentRuntime` and related ports.                | The production engine is workspace-private.                  |
 | Host             | Application code that supplies policy, storage, tools, and streaming. | The API is the production composition root.                  |
-| Plugin SDK       | The supported `@localixai/plugin-sdk` authoring contract.             | Plugin authors should not import application internals.      |
+| Plugin SDK       | The supported `@localixai/mini-app-sdk` authoring contract.           | Plugin authors should not import application internals.      |
 
 ## What you can do
 
@@ -22,18 +22,18 @@ contract package, the engine, the API host, or the plugin SDK.
 | Share model and provider metadata | Use the catalog DTOs and lookup helpers.                       | Application code does not receive provider SDK model objects.       |
 | Apply context policy              | Implement `RuntimeContextPolicy.transform()`.                  | Transcript persistence and recovery remain host responsibilities.   |
 | Bridge tools into an engine       | Pass model-visible schemas and local dispatch implementations. | Permissions and plugin lifecycle wrappers run in the host.          |
-| Extend Localix from a plugin      | Compile against `@localixai/plugin-sdk/backend` or `/ui`.      | `@localixai/agent` is not a supported external SDK.                 |
+| Extend Localix from a plugin      | Compile against `@localixai/mini-app-sdk/backend` or `/ui`.    | `@localixai/agent` is not a supported external SDK.                 |
 
 ## How it works
 
 The dependency direction is one-way:
 
-| Layer                   | Owns                                                                           | Must not own                                   |
-| ----------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------- |
-| `@localixai/agent`      | Messages, events, tools, catalogs, context policy, usage, and ports            | Provider clients, database access, or UI state |
-| `@localixai/engine*`    | The agent loop, model access, sign-in, the catalog, and the script sandbox     | Domain persistence, permissions, or product UI |
-| API composition root    | Runtime construction, credentials, tools, policy, persistence, and publication | Provider wire values outside the engine        |
-| `@localixai/plugin-sdk` | Plugin context, manifest, backend, navigation, and UI contracts                | Direct access to host-internal modules         |
+| Layer                     | Owns                                                                           | Must not own                                   |
+| ------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------- |
+| `@localixai/agent`        | Messages, events, tools, catalogs, context policy, usage, and ports            | Provider clients, database access, or UI state |
+| `@localixai/engine*`      | The agent loop, model access, sign-in, the catalog, and the script sandbox     | Domain persistence, permissions, or product UI |
+| API composition root      | Runtime construction, credentials, tools, policy, persistence, and publication | Provider wire values outside the engine        |
+| `@localixai/mini-app-sdk` | Plugin context, manifest, backend, navigation, and UI contracts                | Direct access to host-internal modules         |
 
 `AgentRuntime.run()` returns an async event stream and a separate result promise. The engine's loop
 validates the tool registry, applies host callbacks around tool calls, and emits the Localix event
@@ -103,4 +103,4 @@ The package also exports narrower `types`, `chat`, and `chat-cache` subpaths. It
 - [Engine composition](../../packages/engine/src/engine.ts)
 - [Engine package exports](../../packages/engine/package.json)
 - [API composition root](../../apps/api/src/bootstrap/agent-engine.ts)
-- [Plugin SDK exports](../../packages/plugin-sdk/package.json)
+- [Plugin SDK exports](../../packages/mini-app-sdk/package.json)

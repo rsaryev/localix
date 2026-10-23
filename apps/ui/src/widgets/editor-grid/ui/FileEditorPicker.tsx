@@ -7,8 +7,8 @@ import {
   rememberedFileEditor,
   rememberFileEditor,
 } from '@/shared/contrib/fileEditorChoice'
-import { baseName } from '@localixai/plugin-sdk/ui/utilities'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { baseName } from '@localixai/mini-app-sdk/ui/utilities'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Button } from '@localixai/kit/button'
 import { Checkbox } from '@localixai/kit/checkbox'
 import { DIVIDED_LIST } from '@localixai/kit/divided-list'

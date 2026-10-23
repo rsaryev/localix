@@ -1,6 +1,6 @@
 import type { DragEvent } from 'react'
-import type { MessageContextBindingDraft } from '@localixai/plugin-sdk/ui'
-import { setMessageBindingDrag } from '@localixai/plugin-sdk/ui/message-binding-drag'
+import type { MessageContextBindingDraft } from '@localixai/mini-app-sdk/ui'
+import { setMessageBindingDrag } from '@localixai/mini-app-sdk/ui/message-binding-drag'
 
 /**
  * Makes anything the chat SHOWS as a link draggable as that link — a sent pill, a composer chip,

@@ -1,6 +1,6 @@
 import type { KubeEvent } from '../../backend/contracts'
 import { EmptyHint } from '@localixai/kit/empty-hint'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { formatResourceAge } from '../../../ui/model/resourceAge'
 
 /**

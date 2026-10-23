@@ -9,7 +9,7 @@
  * Agent submenu, and the spacing was this file's own. `monogramIcon` is the one agent glyph.
  */
 import { UserPlus } from 'lucide-react'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { IconButton } from '@localixai/kit/icon-button'
 import { monogramIcon } from '@localixai/kit/avatar'
 import {

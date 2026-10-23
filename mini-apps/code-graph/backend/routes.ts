@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { jsonBody, jsonError, type PluginRouteContext } from '@localixai/plugin-sdk/backend'
+import { jsonBody, jsonError, type PluginRouteContext } from '@localixai/mini-app-sdk/backend'
 import { clearAgentView, reportGraphView } from './agent-view'
 import { graphCameraReportSchema } from '../shared/camera'
 import { projectIndex } from './indexing/projects'

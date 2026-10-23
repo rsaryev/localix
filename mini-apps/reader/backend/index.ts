@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 
-import { createStoreChangeFeed } from '@localixai/plugin-sdk/backend'
-import type { PluginContext, PluginRegistration } from '@localixai/plugin-sdk/backend'
+import { createStoreChangeFeed } from '@localixai/mini-app-sdk/backend'
+import type { PluginContext, PluginRegistration } from '@localixai/mini-app-sdk/backend'
 
 import { createReaderContextProvider } from './context-provider'
 import { createReaderResourceProvider } from './resource-provider'

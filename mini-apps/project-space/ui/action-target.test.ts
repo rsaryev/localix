@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import type { ActionContext, ActionTarget } from '@localixai/plugin-sdk/ui'
+import type { ActionContext, ActionTarget } from '@localixai/mini-app-sdk/ui'
 import { canAddToSpace, contentOperation } from './action-target'
 import { spaceTypes } from '../shared/types'
 import { applyOps } from '../shared/ops/apply'

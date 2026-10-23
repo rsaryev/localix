@@ -51,7 +51,7 @@ export const PLUGIN_UI_KIT_PREFIX = '@localixai/kit/'
  * declines is not neutral (the plugin UI builder says why).
  */
 export const PLUGIN_UI_SHARED_MODULE =
-  /^(?:react(?:\/jsx-(?:dev-)?runtime)?|react-dom(?:\/client)?|@localixai\/kit\/(?!testing).+|@localixai\/plugin-sdk\/(?!backend(?:\/|$)).+)$/u
+  /^(?:react(?:\/jsx-(?:dev-)?runtime)?|react-dom(?:\/client)?|@localixai\/kit\/(?!testing).+|@localixai\/mini-app-sdk\/(?!backend(?:\/|$)).+)$/u
 
 /** Whether an artifact must take `specifier` from the host instead of bundling it. */
 export function isPluginUiSharedModule(specifier: string): boolean {

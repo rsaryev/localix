@@ -4,7 +4,7 @@ import { backendClient } from '@/shared/api/client'
 import { toast } from '@/shared/lib/notify'
 import type { ImplementationMode, SessionPlan } from '@localixai/api/client'
 import { DEFAULT_PERMISSION_MODE, type PermissionMode } from '@localixai/api/permission-modes'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 import { findSessionInState } from './findSession'
 import { latestPresentedPlan, usePlanList, usePlanOwnerId, usePlansLoaded } from './plans'

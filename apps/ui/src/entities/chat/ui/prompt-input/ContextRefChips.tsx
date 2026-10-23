@@ -28,7 +28,7 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from '@localixai/kit/popover'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Button } from '@localixai/kit/button'
 import { IconButton } from '@localixai/kit/icon-button'
 import { Chip } from '@localixai/kit/chip'

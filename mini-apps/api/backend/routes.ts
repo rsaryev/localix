@@ -10,8 +10,8 @@
 
 import { Hono } from 'hono'
 import { z } from 'zod'
-import type { PluginRouteContext, PluginRouteScope } from '@localixai/plugin-sdk/backend'
-import { defaultErrorHandler } from '@localixai/plugin-sdk/backend'
+import type { PluginRouteContext, PluginRouteScope } from '@localixai/mini-app-sdk/backend'
+import { defaultErrorHandler } from '@localixai/mini-app-sdk/backend'
 import type { SendResponse } from './contracts'
 import { statusFor } from './errors'
 import { HTTP_METHODS, isHttpUrl, type RequestSpec } from './request-spec'

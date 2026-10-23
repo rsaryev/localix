@@ -1,6 +1,6 @@
 import { Boxes } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { StatusDot } from '@localixai/kit/status-dot'
 import type { KubePod } from '../../backend/contracts'
 import { ResourceDragRow } from '../../../ui/ResourceDragRow'

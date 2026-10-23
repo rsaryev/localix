@@ -23,7 +23,7 @@
  * any one of the four. `features/ext/` is already the host-side home for exactly this
  * shape of primitive (`enable.ts`, `catalog.ts`, `install-tree.ts`, `fs-discovery.ts`).
  *
- * IT ALSO HAS ITS OWN ENTRYPOINT (`@localixai/plugin-sdk/typed-error`), for the same reason
+ * IT ALSO HAS ITS OWN ENTRYPOINT (`@localixai/mini-app-sdk/typed-error`), for the same reason
  * `resource-refs` does: this file has ZERO imports and is pure data plumbing, but the
  * `./backend` barrel it sits behind re-exports `net-safety`, which reaches for `node:dns`.
  * A domain `errors.ts` is exactly the kind of module a UI ends up sharing — the URI/link
@@ -55,7 +55,7 @@ export interface TypedErrorInfo<Code extends string> {
   detail?: string
   /**
    * Set when the failure IS an absent or stopped dependency, so the UI offers Install / Start
-   * instead of a Retry that cannot help. See `@localixai/plugin-sdk/prerequisite`.
+   * instead of a Retry that cannot help. See `@localixai/mini-app-sdk/prerequisite`.
    */
   prerequisite?: Prerequisite
 }

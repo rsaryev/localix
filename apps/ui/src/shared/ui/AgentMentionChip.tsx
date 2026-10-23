@@ -4,7 +4,7 @@
 import { MENTION_CHIP } from './mention-chip'
 import { MonogramAvatar } from '@localixai/kit/avatar'
 import { agentProfileUri, useAgentHandleIdentity } from '@/shared/contrib/useAgentIdentity'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
 import { navigateUi } from '@/shared/lib/uiNavigation'
 

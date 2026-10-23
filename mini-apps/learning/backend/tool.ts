@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
-import { classifyByAction, type PluginContext } from '@localixai/plugin-sdk/backend'
+import { classifyByAction, type PluginContext } from '@localixai/mini-app-sdk/backend'
 import { learningCourseUri, learningLessonUri, learningStepUri } from '../shared/resource-uri'
 import { lessons, lessonScore } from '../shared/progression'
 import { formatCourseBundleError, loadCourseBundle } from './course-bundle'

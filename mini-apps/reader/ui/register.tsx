@@ -6,9 +6,9 @@ import {
   type PluginUiHost,
   type PublishMessageContext,
   type WorkItemLike,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { LoadingHint } from '@localixai/kit/empty-hint'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { isReaderReadable } from '../shared/formats'
 import { parseReaderUri, readerBookUri, readerRootUri } from '../shared/resource-uri'
 import { useReaderStatusItem } from './statusItem'

@@ -1,6 +1,6 @@
 import type { SeriesMarker, Time, UTCTimestamp } from 'lightweight-charts'
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
-import type { StorageReader } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
+import type { StorageReader } from '@localixai/mini-app-sdk/ui/storage'
 import {
   parseChartDrawingSpec,
   type ChartDrawMode,

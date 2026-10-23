@@ -1,6 +1,6 @@
 import { useId, useMemo, useRef, useState } from 'react'
 import { TerminalSquare } from 'lucide-react'
-import { ResultCountStatus } from '@localixai/plugin-sdk/ui/result-count-status'
+import { ResultCountStatus } from '@localixai/mini-app-sdk/ui/result-count-status'
 import {
   Autocomplete,
   AutocompleteAnchor,

@@ -1,7 +1,7 @@
 // Pure helpers for detecting file references in rendered markdown, kept free of
 // heavy imports (react-markdown / katex) so the matching rules stay unit-testable.
 
-import { parseLocalixUri } from '@localixai/plugin-sdk/navigation'
+import { parseLocalixUri } from '@localixai/mini-app-sdk/navigation'
 
 // Bare filenames worth linking even without a directory (common config/source
 // files). Excludes ambiguous member-access like `array.map` / `item.input`.

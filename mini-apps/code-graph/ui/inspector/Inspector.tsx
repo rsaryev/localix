@@ -1,5 +1,5 @@
 import { ExternalLink, FolderOpen, Repeat2, X } from 'lucide-react'
-import { pluginWorkspace } from '@localixai/plugin-sdk/ui/runtime'
+import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import { Button } from '@localixai/kit/button'
 import { IconButton } from '@localixai/kit/icon-button'
 import { TextAction } from '@localixai/kit/text-action'

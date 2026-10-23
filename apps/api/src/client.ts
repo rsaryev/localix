@@ -249,7 +249,7 @@ export type { CapabilitySnapshot, CapabilityToolSurface } from './contracts/capa
 // `TIP_SIGNALS` is a VALUE the browser needs, so it does NOT belong here: this barrel
 // is type-only on purpose, and one value re-export from it drags the module it lives in
 // — and everything that module imports — into the web bundle. Exporting the tip
-// vocabulary from here pulled `features/chat/contracts` and the plugin-sdk BACKEND into
+// vocabulary from here pulled `features/chat/contracts` and the mini-app-sdk BACKEND into
 // the browser graph, where `node:dns` and `node:path` are externalized and blow up at
 // runtime. It is served from the `@localixai/api/tip-contracts` leaf instead.
 export type { PublishRegistrationPolicy } from './features/agents/registration-policy'

@@ -4,7 +4,7 @@ import type {
   PluginUiHost,
   UiAnchorContribution,
   WorkItemKindContribution,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { registerKubernetesContributions } from './register'
 
 test('live Kubernetes tabs stay transient and expose native agent context bindings', () => {

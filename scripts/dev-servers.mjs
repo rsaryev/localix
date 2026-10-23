@@ -316,7 +316,7 @@ export async function runDevServers(args = process.argv.slice(2)) {
     }
 
     // The API imports runtime entrypoints from compiled workspace packages (for example,
-    // @localixai/plugin-sdk/backend). The preparation pass above seeds those outputs on a fresh
+    // @localixai/mini-app-sdk/backend). The preparation pass above seeds those outputs on a fresh
     // checkout; --only prevents this independent API supervisor from rebuilding them again.
     const api = spawn('bun', commands.api, {
       cwd: repo,

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { ApiError } from '@localixai/plugin-sdk/backend'
+import { ApiError } from '@localixai/mini-app-sdk/backend'
 import type { GitResult, GitRunner } from './cli'
 import { getFileHunks } from './hunks'
 import { getFileDiffLines, stageLines } from './line-staging'

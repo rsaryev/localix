@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@localixai/kit/button'
 import { ActivitySignal } from '@localixai/kit/activity-orb'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { shellCommandApi, type ShellCommandStatusDto } from '@/shared/api/shell-command-client'
 import { inlineFailure } from '@/shared/lib/notifications/inlineReport'
 import { SettingsRow } from './SettingsScaffold'

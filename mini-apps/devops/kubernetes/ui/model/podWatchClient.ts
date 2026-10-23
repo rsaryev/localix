@@ -3,7 +3,7 @@
 // Frames arrive on the `w` frame tag (the plugin's `WsFrameContribution`); subscribe/unsubscribe
 // ride the `devops:k8s.watch.subscribe`/`devops:k8s.watch.unsubscribe` WS commands. All sends are
 // best-effort — a failed subscribe just leaves the poll fallback in charge.
-import { createRealtimeFeed } from '@localixai/plugin-sdk/ui/realtime-feed'
+import { createRealtimeFeed } from '@localixai/mini-app-sdk/ui/realtime-feed'
 import type {
   KubePod,
   KubeWatchAction,

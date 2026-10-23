@@ -19,7 +19,7 @@
  * written).
  */
 import { readFile, writeFile } from 'node:fs/promises'
-import { ApiError } from '@localixai/plugin-sdk/backend'
+import { ApiError } from '@localixai/mini-app-sdk/backend'
 import { confineToDir } from '../support/path-containment'
 import type { RepoFileHunk } from '../contracts'
 import type { GitRunner } from './cli'

@@ -116,7 +116,7 @@ Add `.localix-app/app.json` and a backend to the same folder:
 ```ts
 import { appendFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { PluginContext } from '@localixai/plugin-sdk/backend'
+import type { PluginContext } from '@localixai/mini-app-sdk/backend'
 
 export function register({ z, defineTool, dataDir }: PluginContext) {
   return {
@@ -169,7 +169,7 @@ Plugins to install, configure, validate, and enable one; after copying a directo
 | `channels`   | Starts long-running messaging bridges.                                                    | Channels come from native code, not a manifest field.                |
 | `memory`     | Adds one external memory provider.                                                        | The first enabled provider wins; output and waits are capped.        |
 
-Import SDK contracts with `import type` from `@localixai/plugin-sdk/backend`; runtime values (`z`,
+Import SDK contracts with `import type` from `@localixai/mini-app-sdk/backend`; runtime values (`z`,
 `defineTool`, config, helpers, paths, logging, UI intents, OAuth) come from `ctx`; `hono`, `zod` and
 the SDK are the host's instances. The host calls `register(ctx)` more than once and reuses the
 module: keep what a person creates under `ctx.dataDir`
@@ -177,7 +177,7 @@ module: keep what a person creates under `ctx.dataDir`
 service at module scope. `execute` takes the call id, then input.
 
 [Hooks and commands](../features/hooks-and-commands.md) owns hook timing and command behavior;
-[the SDK](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/) owns the types.
+[the SDK](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/) owns the types.
 
 ### Results a tool reports
 
@@ -206,11 +206,11 @@ the person that `localix://` link, and the person opens it.
 An app that records who acted, or streams someone's own data, must not read that identity from model
 or client input. The host binds it; the [Kanban board](../features/task-board.md) uses all three:
 
-| Seam                                                                                                                                                         | Answer                                                                                            | Boundary                                                        |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| [`ctx.agents.list(userId, sessionId)`](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/backend/context.ts)                              | The enabled agents of the session's scope, its project's included: `{ id, handle, description? }` | Read-only; rejects a session the user does not own. Store `id`. |
-| [`context.session.speaker`](https://github.com/rsaryev/localix/blob/main/packages/agent/src/agents/types.ts) in `execute`                                    | `{ agentId, handle }` of the agent whose turn it is                                               | Absent when the run has no addressable speaker.                 |
-| [`start(params, send, { userId })`](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/backend/ws-frame-registry.ts) on a `wsFrames` entry | The host-supplied Localix user ID of the socket                                                   | Tags `s`, `r` and `n` are core's; registration rejects them.    |
+| Seam                                                                                                                                                           | Answer                                                                                            | Boundary                                                        |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| [`ctx.agents.list(userId, sessionId)`](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/context.ts)                              | The enabled agents of the session's scope, its project's included: `{ id, handle, description? }` | Read-only; rejects a session the user does not own. Store `id`. |
+| [`context.session.speaker`](https://github.com/rsaryev/localix/blob/main/packages/agent/src/agents/types.ts) in `execute`                                      | `{ agentId, handle }` of the agent whose turn it is                                               | Absent when the run has no addressable speaker.                 |
+| [`start(params, send, { userId })`](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/ws-frame-registry.ts) on a `wsFrames` entry | The host-supplied Localix user ID of the socket                                                   | Tags `s`, `r` and `n` are core's; registration rejects them.    |
 
 ### Watching files
 
@@ -241,11 +241,11 @@ callers resolve it. A plugin `monitors` entry is a watch the user installed, not
 
 ### UI paths
 
-| UI path             | Authoring form                                                     | Availability                        |
-| ------------------- | ------------------------------------------------------------------ | ----------------------------------- |
-| Sandboxed view      | A mini app `views` entry pointing to an HTML file                  | Installed and bundled mini apps     |
-| Native workbench UI | `ui/register.tsx`, built into an artifact ([guide](plugin-ui.md))  | Bundled, or enabled by the user     |
-| Keyboard ownership  | `@localixai/plugin-sdk/ui/focus` claims the keyboard for a surface | Host and extensions share one stack |
+| UI path             | Authoring form                                                       | Availability                        |
+| ------------------- | -------------------------------------------------------------------- | ----------------------------------- |
+| Sandboxed view      | A mini app `views` entry pointing to an HTML file                    | Installed and bundled mini apps     |
+| Native workbench UI | `ui/register.tsx`, built into an artifact ([guide](plugin-ui.md))    | Bundled, or enabled by the user     |
+| Keyboard ownership  | `@localixai/mini-app-sdk/ui/focus` claims the keyboard for a surface | Host and extensions share one stack |
 
 A sandboxed view uses `acquireLocalixApi()` for theme events, its owning chat, scratch state,
 context publication, and same-app backend actions. See
@@ -264,7 +264,8 @@ form. [Claude Code plugins](claude-code-plugins.md) lists what Localix runs and 
 
 ### Mini app manifest
 
-`.localix-app/app.json` (schema `miniAppManifestSchema` from `@localixai/plugin-sdk/app-manifest`):
+`.localix-app/app.json` (schema `miniAppManifestSchema` from
+`@localixai/mini-app-sdk/app-manifest`):
 
 | Field              | Shape                                                    | Effect and boundary                                                                               |
 | ------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
@@ -379,13 +380,13 @@ trusted API process. Fifteen workbenches complement the four [games](../features
 
 ## Source of truth
 
-- [Mini app manifest schema](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/manifest/app.ts)
+- [Mini app manifest schema](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/manifest/app.ts)
 - [Claude Code plugin format](https://github.com/rsaryev/localix/tree/main/packages/claude-plugin/src)
 - [Composing the two manifests](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/layout/compose.ts)
 - [Runtime manifest schema](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/contracts.ts)
 - [Discovery and exact-scope rules](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/discovery.ts)
 - [Enable policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/enable.ts)
 - [Runtime loader](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/loader.ts)
-- [Backend context](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/backend/context.ts)
+- [Backend context](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/context.ts)
   and
-  [host services](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/backend/host-services.ts)
+  [host services](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/host-services.ts)

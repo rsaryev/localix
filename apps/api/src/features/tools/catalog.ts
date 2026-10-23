@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import type { AgentToolCategory } from '@localixai/agent/agents'
 import { BUILTIN_TOOL_CATALOG, isProtocolTool } from '../agent-core/tool-names'
-import { pluginLabel } from '@localixai/plugin-sdk/manifest'
+import { pluginLabel } from '@localixai/mini-app-sdk/manifest'
 
 export const CATEGORY_LABELS = {
   core: 'Core',

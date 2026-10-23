@@ -15,7 +15,7 @@ const CORE_GLOBS = [
   // The primitives the host shares moved into the kit; it is core, so the boundary holds there.
   'packages/kit/src/**/*.ts',
   'packages/kit/src/**/*.tsx',
-  'packages/plugin-sdk/src/**/*.ts',
+  'packages/mini-app-sdk/src/**/*.ts',
 ]
 const REVERSE_IMPORT = /from\s*['"][^'"]*mini-apps\/git-workspace(?:\/[^'"]*)?['"]/u
 const LEGACY_PLUGIN_VOCABULARY =

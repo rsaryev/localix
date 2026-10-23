@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { composerBus, type ComposerInsert, type ComposerRetract } from '@/shared/lib/composerBus'
-import { useComments } from '@localixai/plugin-sdk/ui/comments'
+import { useComments } from '@localixai/mini-app-sdk/ui/comments'
 import { useReviewComments, type ReviewComments } from './useReviewComments'
 
 /**

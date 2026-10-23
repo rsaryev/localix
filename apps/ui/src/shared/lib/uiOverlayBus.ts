@@ -1,4 +1,4 @@
-import type { UiAnchorOverlayParam } from '@localixai/plugin-sdk/ui'
+import type { UiAnchorOverlayParam } from '@localixai/mini-app-sdk/ui'
 
 export interface UiOverlayRequest {
   id: string

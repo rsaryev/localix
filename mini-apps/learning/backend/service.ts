@@ -2,7 +2,7 @@ import { mkdir, readdir } from 'node:fs/promises'
 import type { Dirent } from 'node:fs'
 import path from 'node:path'
 
-import { encodeResourceSegment } from '@localixai/plugin-sdk/backend'
+import { encodeResourceSegment } from '@localixai/mini-app-sdk/backend'
 
 import type {
   CourseSummary,

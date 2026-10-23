@@ -15,9 +15,9 @@ import {
   DropdownMenuTrigger,
 } from '@localixai/kit/dropdown-menu'
 import { MenuEntries } from '@localixai/kit/menu-entries'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { toast } from '@/shared/lib/notify'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { applyServerSession } from '@/entities/chat/model/sessionSync'
 
 /** A chat can have a linked CLI; opening its pane never changes the chat or the draft. */

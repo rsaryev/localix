@@ -4,7 +4,7 @@ import {
   type ResourceRefProvider,
   type SearchHit,
   type SearchProvider,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 
 import type { KanbanTask } from '../shared/contracts'
 import { parseKanbanUri, SEARCH_PROVIDER_ID, taskUri } from '../shared/resource'

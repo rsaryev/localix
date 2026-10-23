@@ -4,7 +4,7 @@ import { backendClient } from '@/shared/api/client'
 import { useRoutedNavigation } from '@/shared/hooks/useRoutedNavigation'
 import { useChatStore } from './store'
 import { toast } from '@/shared/lib/notify'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 /** Normalize a working-dir path for comparison (slashes + trailing slash). */
 function normalizeDir(dir: string): string {

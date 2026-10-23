@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
 import { createSecretsSearchProvider } from './search-provider'
-import { searchHitsOf } from '@localixai/plugin-sdk/backend'
+import { searchHitsOf } from '@localixai/mini-app-sdk/backend'
 
 describe('Vault search provider', () => {
   test('mints distinct value-free deep links to the Vault workspace', async () => {

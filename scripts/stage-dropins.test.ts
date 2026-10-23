@@ -34,7 +34,7 @@ describe('host-provided modules in a staged backend', () => {
     expect(() =>
       assertHostModulesImportedByPluginCode(
         'p',
-        metafile('node_modules/@localixai/plugin-sdk/dist/backend/index.js', 'hono'),
+        metafile('node_modules/@localixai/mini-app-sdk/dist/backend/index.js', 'hono'),
       ),
     ).not.toThrow()
   })

@@ -5,7 +5,7 @@
  * Split from `kubernetesApi.ts` so that file is only the call surface, and so a
  * transport concern (a header, an error shape, the base path) has one home.
  */
-import { pluginApiFetch } from '@localixai/plugin-sdk/ui/transport'
+import { pluginApiFetch } from '@localixai/mini-app-sdk/ui/transport'
 
 import type { KubeErrorCode } from '../../backend/errors'
 import { DevOpsApiError, readApiResponse } from '../../../ui/apiFailure'

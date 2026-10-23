@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'bun:test'
-import type { ProblemReport } from '@localixai/plugin-sdk/ui/problems'
+import type { ProblemReport } from '@localixai/mini-app-sdk/ui/problems'
 
 import { retainActionableEvents } from './actionability'
 import { problemHandoffText } from './agentHandoff'

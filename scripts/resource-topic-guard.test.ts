@@ -11,7 +11,7 @@ import { describe, expect, test } from 'bun:test'
  * a titlebar glyph went on naming an environment the user had switched away from, and a database
  * they had disconnected. A mechanism each plugin re-derives is a mechanism some plugins get wrong.
  *
- * `plugin-sdk/ui/resource-topics` is that mechanism now: `resourceTopic(name)` is imported by both
+ * `mini-app-sdk/ui/resource-topics` is that mechanism now: `resourceTopic(name)` is imported by both
  * sides, a writer calls `.invalidate()`, and `createSharedResource(load, { topic })` follows it by
  * construction. This guard is what stops the sixth copy.
  *
@@ -57,7 +57,7 @@ function detect(source: string): string | null {
   const announces = HAND_ROLLED_ANNOUNCE.test(source)
   const subscribes = HAND_ROLLED_SUBSCRIBE.test(source)
   if (!announces || !subscribes) return null
-  return 'declares its own announce/subscribe pair — use `resourceTopic()` from plugin-sdk/ui/resource-topics'
+  return 'declares its own announce/subscribe pair — use `resourceTopic()` from mini-app-sdk/ui/resource-topics'
 }
 
 describe('the resource invalidation protocol has one implementation', () => {
@@ -101,7 +101,7 @@ describe('the resource invalidation protocol has one implementation', () => {
     expect(
       detect(
         [
-          "import { resourceTopic } from '@localixai/plugin-sdk/ui/resource-topics'",
+          "import { resourceTopic } from '@localixai/mini-app-sdk/ui/resource-topics'",
           "export const ACME_COURSES = resourceTopic('acme:courses')",
         ].join('\n'),
       ),

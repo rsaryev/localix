@@ -1,4 +1,4 @@
-import type { SessionSurfaceContribution } from '@localixai/plugin-sdk/ui'
+import type { SessionSurfaceContribution } from '@localixai/mini-app-sdk/ui'
 import { usePluginRegistrySlice } from './usePluginRegistrySlice'
 
 const contributions: SessionSurfaceContribution[] = []

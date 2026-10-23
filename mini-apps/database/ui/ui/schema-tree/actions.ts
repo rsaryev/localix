@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo, useRef } from 'react'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import type { ColumnTreeRow, SchemaTreeRow, StatusTreeRow } from '../../model/schemaTreeRows'
 
 /**

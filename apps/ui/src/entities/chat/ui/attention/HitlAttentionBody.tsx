@@ -12,7 +12,7 @@ import { ArrowUpRight } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
 import { DialogContent, DialogHeader, DialogTitle } from '@localixai/kit/dialog'
 import { LoadingHint } from '@localixai/kit/empty-hint'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 import { fromHitlRequest } from '@/entities/chat/model/hitlInteraction'
 import { ApiError, backendClient } from '@/shared/api/client'

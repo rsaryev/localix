@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react'
-import { acknowledgeInline } from '@localixai/plugin-sdk/ui'
+import { acknowledgeInline } from '@localixai/mini-app-sdk/ui'
 import type { RequestInfo } from '../../backend/contracts'
 import { restApi } from '../restApi'
 

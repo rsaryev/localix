@@ -7,8 +7,8 @@
  * drag-links straight into chat.
  */
 import { buildTradeUri } from './uri'
-import type { SearchHit, SearchProvider } from '@localixai/plugin-sdk/backend'
-import { bestFieldScore } from '@localixai/plugin-sdk/backend'
+import type { SearchHit, SearchProvider } from '@localixai/mini-app-sdk/backend'
+import { bestFieldScore } from '@localixai/mini-app-sdk/backend'
 
 export interface TradingSearchConnection {
   id: string

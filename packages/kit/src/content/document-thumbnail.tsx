@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /** First-page thumbnail of actual document content, scaled from a fixed A4 reading width. */
 export function DocumentThumbnail({

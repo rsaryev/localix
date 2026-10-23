@@ -23,7 +23,7 @@ describe('warm-hidden core viewers', () => {
     const { act } = React
     const { MessageReplayTab } = await import('@/features/inspector/ui/MessageReplayTab')
     const { useMessageFocusStore } = await import('@/shared/lib/messageFocusBus')
-    const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
+    const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
 
     useMessageFocusStore.getState().setActive(false)
     function Surface({ visible }: { visible: boolean }) {
@@ -53,7 +53,7 @@ describe('warm-hidden core viewers', () => {
     const { act } = React
     const { BridgedPluginView } = await import('@/features/inspector/ui/BridgedPluginView')
     const { MediaFileTab } = await import('@/features/inspector/ui/MediaFileTab')
-    const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
+    const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
 
     const mediaFetch = spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response('hello', { headers: { 'content-type': 'text/plain' } }),
@@ -109,7 +109,7 @@ describe('warm-hidden core viewers', () => {
     const { shellCommandApi } = await import('@/shared/api/shell-command-client')
     const { SettingsPanel } = await import('@/features/settings/ui/SettingsPanel')
     const { useModelsCatalog } = await import('@/shared/hooks/useModelsCatalog')
-    const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
+    const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
 
     const catalog = spyOn(backendClient, 'getCatalog').mockResolvedValue({
       models: [],

@@ -12,8 +12,8 @@
  */
 import { Copy, History, Link2, MessagesSquare, Pencil, Pin, PinOff, Undo2 } from 'lucide-react'
 
-import type { MessageContextBindingDraft } from '@localixai/plugin-sdk/ui'
-import { useCopied } from '@localixai/plugin-sdk/ui/interactions'
+import type { MessageContextBindingDraft } from '@localixai/mini-app-sdk/ui'
+import { useCopied } from '@localixai/mini-app-sdk/ui/interactions'
 
 import { ContextMenuItem, ContextMenuSeparator } from '@localixai/kit/context-menu'
 

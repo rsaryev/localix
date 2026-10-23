@@ -1,6 +1,6 @@
-import { toast } from '@localixai/plugin-sdk/ui'
-import { pluginErrorDetail } from '@localixai/plugin-sdk/ui'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { toast } from '@localixai/mini-app-sdk/ui'
+import { pluginErrorDetail } from '@localixai/mini-app-sdk/ui'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 /**
  * How this plugin reports a failed git operation.

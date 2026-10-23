@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Candle } from '../../backend/contracts'
-import { useVisiblePolling } from '@localixai/plugin-sdk/ui/visibility'
+import { useVisiblePolling } from '@localixai/mini-app-sdk/ui/visibility'
 import { TradingApiError, tradingApi } from '../api/tradingApi'
 import { upsertCandles } from './candleSeries'
 import { backfillRequest } from './backfill'

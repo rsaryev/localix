@@ -1,5 +1,5 @@
 import { forwardRef, type ComponentProps, type ComponentPropsWithoutRef } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { FLOATING_SURFACE } from '../overlays/popover-surface'
 
 const TOOLBAR_DENSITY = {

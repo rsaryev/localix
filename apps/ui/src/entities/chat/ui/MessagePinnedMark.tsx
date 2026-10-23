@@ -6,7 +6,7 @@
  * live in the message's context menu.
  */
 import { Pin } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 export function MessagePinnedMark({ align = 'start' }: { align?: 'start' | 'end' }) {
   return (

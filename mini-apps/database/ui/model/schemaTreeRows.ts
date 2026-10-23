@@ -1,4 +1,4 @@
-import type { PluginProblemLineProps } from '@localixai/plugin-sdk/ui/components'
+import type { PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
 import type { DbColumn, DbConnectionInfo, DbIndex, DbSchemaItem } from '../dbClient'
 import type { SchemaItemMatch, SchemaMatchReason } from './schemaSearch'
 import type { SchemaState } from './useSchema'

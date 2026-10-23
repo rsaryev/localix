@@ -2,8 +2,8 @@
  * URI activation for `localix://resource/docker/…`: which tab (or which workspace
  * area) a Docker resource reference opens.
  */
-import { parseLocalixResourceUri } from '@localixai/plugin-sdk/ui'
-import { localixResourceUri } from '@localixai/plugin-sdk/navigation'
+import { parseLocalixResourceUri } from '@localixai/mini-app-sdk/ui'
+import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 import { DOCKER_CATEGORIES, DOCKER_ENTITY_PREFIXES } from '../../backend/contracts'
 import { saveDevOpsArea } from '../../../ui/model/devopsView'
 

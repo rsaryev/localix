@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { defineAgentTool } from '@localixai/agent/agents'
-import type { PluginContext } from '@localixai/plugin-sdk/backend'
+import type { PluginContext } from '@localixai/mini-app-sdk/backend'
 import path from 'node:path'
 import { z } from 'zod'
 

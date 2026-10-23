@@ -1,4 +1,4 @@
-import type { Prerequisite } from '@localixai/plugin-sdk/prerequisite'
+import type { Prerequisite } from '@localixai/mini-app-sdk/prerequisite'
 
 /**
  * The thing to START when a LOCAL cluster does not answer, and the thing to INSTALL when the

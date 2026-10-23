@@ -1,7 +1,7 @@
 import { useDeferredValue, useRef, useState } from 'react'
 import { Button } from '@localixai/kit/button'
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { ExternalHistoryList } from './ExternalHistoryList'
 import { toast } from '@/shared/lib/notify'
 import { useExternalHistory } from '../model/useExternalHistory'

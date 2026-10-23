@@ -1,4 +1,4 @@
-import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
+import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 
 export type DockerContainerPanel = 'logs' | 'stats' | 'top'
 export type DockerContainerSection = 'logs' | 'stats' | 'processes'

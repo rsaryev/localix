@@ -1,4 +1,4 @@
-import { pluginCommandBus, type PluginCommandEvent } from '@localixai/plugin-sdk/ui/commands'
+import { pluginCommandBus, type PluginCommandEvent } from '@localixai/mini-app-sdk/ui/commands'
 import {
   API_WORKSPACE_CHANNEL,
   API_PLUGIN,

@@ -23,7 +23,7 @@ import { backendClient } from '@/shared/api/client'
 import type { PlanDraftInfo } from '@/shared/api/plans-client'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { toast } from '@/shared/lib/notify'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 import { findSessionInState } from './findSession'
 import { useChatStore } from './store'

@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState, type DragEvent, type RefObject } from '
 import {
   createMessageBindingDraft,
   setMessageBindingDrag,
-} from '@localixai/plugin-sdk/ui/message-binding-drag'
+} from '@localixai/mini-app-sdk/ui/message-binding-drag'
 
 import type { KanbanMove, KanbanStatus, KanbanTask } from '../../shared/contracts'
 import { taskUri } from '../../shared/resource'

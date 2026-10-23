@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { DecisionAsk, DecisionOutcome } from '@localixai/plugin-sdk/backend'
+import type { DecisionAsk, DecisionOutcome } from '@localixai/mini-app-sdk/backend'
 
 import type {
   PreviewCommand,

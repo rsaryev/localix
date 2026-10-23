@@ -1,6 +1,6 @@
 import { backendClient } from '@/shared/api/client'
 import { ApiError } from '@/shared/api/failure'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { toast } from '@/shared/lib/notify'
 import { useChatStore } from './store'
 import { findSessionInState } from './findSession'

@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { z } from 'zod'
-import { bindPluginUiRuntime, type PluginUiRuntime } from '@localixai/plugin-sdk/ui/runtime'
-import { bindPluginUiTransport } from '@localixai/plugin-sdk/ui/transport'
+import { bindPluginUiRuntime, type PluginUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
+import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
 import { registerDom } from '@localixai/kit/testing'
 import { STORE_FRAME_TAG } from '../shared/store-feed'
 

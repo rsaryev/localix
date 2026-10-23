@@ -1,4 +1,4 @@
-import { manifestAuthorSchema } from '@localixai/plugin-sdk/app-manifest'
+import { manifestAuthorSchema } from '@localixai/mini-app-sdk/app-manifest'
 import { z } from 'zod'
 
 import type { PluginValidation } from './contracts'

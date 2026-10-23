@@ -1,11 +1,11 @@
 /** A saved connection's row in the connections tree: dialect tint, name (or its inline rename),
  *  badges, status, and the hover actions — which share the row's single tab stop. */
 import { Database, SquareTerminal } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import {
   createMessageBindingDraft,
   setMessageBindingDrag,
-} from '@localixai/plugin-sdk/ui/message-binding-drag'
+} from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import { IconButton } from '@localixai/kit/icon-button'
 import { Input } from '@localixai/kit/input'
 import { StatusDot } from '@localixai/kit/status-dot'

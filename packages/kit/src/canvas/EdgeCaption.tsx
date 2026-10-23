@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState, type PointerEvent, type RefObject } from 'react'
 import { EdgeLabelRenderer, useReactFlow } from '@xyflow/react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { LABEL_GAP, labelAnchor, nearestT, type LabelAnchor, type PathProbe } from './edge-label'
 
 /**

@@ -1,6 +1,6 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import type { Virtualizer } from '@tanstack/react-virtual'
-import { localixResourceUri } from '@localixai/plugin-sdk/navigation'
+import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 import type { Message } from '../model/types'
 import type { MessageDisplayRow } from '../model/messageGroups'
 import { useChatStore } from '../model/store'

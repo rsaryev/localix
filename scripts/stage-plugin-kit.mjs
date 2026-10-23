@@ -41,7 +41,7 @@ import {
   TAILWIND_UTILITIES,
   TEMPLATE_SCAFFOLD_FILE,
 } from '@localixai/api/plugin-kit-layout'
-import { PLUGIN_UI_KIT_PREFIX } from '@localixai/plugin-sdk/ui-artifact'
+import { PLUGIN_UI_KIT_PREFIX } from '@localixai/mini-app-sdk/ui-artifact'
 
 import { stageHostStylesheets } from './stage-plugin-kit-styles.mjs'
 import { stagePluginKitTypes } from './stage-plugin-kit-types.mjs'
@@ -78,7 +78,7 @@ export const PLUGIN_KIT_INPUTS = [
   'packages/kit/styles',
   // Modules the host lends re-export host composites.
   'apps/ui/src/shared/ui',
-  'packages/plugin-sdk/dist',
+  'packages/mini-app-sdk/dist',
   // Declarations the SDK's own declarations import (`stage-plugin-kit-types.mjs`).
   'packages/agent/dist',
   'packages/dataview/dist',
@@ -306,7 +306,7 @@ export async function stagePluginKit({ repoRoot, outKit, log = () => {} }) {
     repoRoot,
     outKit,
     uiSharedExports: shared,
-    sdkDir: join(repoRoot, 'packages', 'plugin-sdk'),
+    sdkDir: join(repoRoot, 'packages', 'mini-app-sdk'),
     kitDirs: KIT_MODULE_DIRS.map((dir) => join(repoRoot, dir)),
   })
   const manifest = {

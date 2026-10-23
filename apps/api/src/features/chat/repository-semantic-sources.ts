@@ -11,7 +11,7 @@
  * not return was deleted.
  */
 import { sql, type Kysely, type RawBuilder } from 'kysely'
-import type { SemanticSource, SemanticSourceItem } from '@localixai/plugin-sdk/backend'
+import type { SemanticSource, SemanticSourceItem } from '@localixai/mini-app-sdk/backend'
 import type { AppDatabase } from '../../db/types'
 import type { CoreRefs } from '../changes/core-entities'
 import type { SemanticTargets } from '../embeddings/targets'

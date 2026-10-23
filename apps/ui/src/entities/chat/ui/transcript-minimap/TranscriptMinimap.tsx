@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { FLOATING_SURFACE } from '@localixai/kit/workbench-toolbar'
 import { MINIMAP_MIN_MESSAGES, type MinimapTick } from './minimapModel'
 import { tickOpacity, tickWidth, windowStart, WINDOW_SIZE } from './minimapWave'

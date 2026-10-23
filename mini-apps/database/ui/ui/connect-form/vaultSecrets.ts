@@ -1,5 +1,5 @@
 import type { DbConnectionConfig } from '../../dbClient'
-import { pluginSecrets } from '@localixai/plugin-sdk/ui/runtime'
+import { pluginSecrets } from '@localixai/mini-app-sdk/ui/runtime'
 import {
   deriveSecretKey,
   deriveSecretKeyFromHost,

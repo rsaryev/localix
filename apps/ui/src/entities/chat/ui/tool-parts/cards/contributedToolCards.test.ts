@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test'
-import type { ToolCardContribution } from '@localixai/plugin-sdk/ui'
+import type { ToolCardContribution } from '@localixai/mini-app-sdk/ui'
 
 import { setEnabledPluginNames } from '@/shared/contrib/pluginActivation'
 import { registerToolCard, removeToolCardsOf, toolCardFor } from '@/shared/contrib/toolCards'

@@ -5,7 +5,7 @@ import type {
   RailViewletContribution,
   UiAnchorContribution,
   WorkItemKindContribution,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { registerUi } from './contrib'
 
 test('registers the core Vault as a global restorable workspace and URI anchor', () => {

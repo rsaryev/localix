@@ -12,7 +12,7 @@
  * its ~400 MB to the system. A crash is reported once and the next request restarts it; three
  * failed starts in a row park the engine in `error` until `reset()` (Settings "Try again").
  */
-import type { SemanticTask } from '@localixai/plugin-sdk/backend'
+import type { SemanticTask } from '@localixai/mini-app-sdk/backend'
 import { createBoundedCache } from '../../lib/bounded-cache'
 import { modelFingerprint, type EmbeddingModelSpec } from './models'
 import { isFiniteVector, truncateNormalize } from './vectors'

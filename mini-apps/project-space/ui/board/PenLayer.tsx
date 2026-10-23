@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import { ViewportPortal, useCanvasCamera } from '@localixai/kit/canvas'
 import { FLOATING_SURFACE } from '@localixai/kit/workbench-toolbar'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { SpaceDocument } from '../../shared/format/document'
 import { newId, takenIn } from '../../shared/format/ids'
 import type { SpaceOp } from '../../shared/ops/contract'

@@ -1,5 +1,5 @@
 import { Plug, Wrench } from 'lucide-react'
-import type { ToolCardContribution } from '@localixai/plugin-sdk/ui'
+import type { ToolCardContribution } from '@localixai/mini-app-sdk/ui'
 import { toolCardFor } from '@/shared/contrib/toolCards'
 import type { ToolMeta } from './meta'
 

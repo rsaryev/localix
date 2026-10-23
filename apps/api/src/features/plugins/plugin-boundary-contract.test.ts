@@ -9,7 +9,7 @@ setDefaultTimeout(30_000)
 /**
  * THE PLUGIN → HOST BOUNDARY.
  *
- * A bundled plugin is supposed to compile against `@localixai/plugin-sdk` and nothing else of
+ * A bundled plugin is supposed to compile against `@localixai/mini-app-sdk` and nothing else of
  * ours — the SDK is the seam, and the host implements it. But because the plugins live in this
  * repo and are bundled by the host's own bundler, a plugin CAN reach straight into
  * `apps/api/src` by relative path (`../../../apps/api/src/...`), bypassing the SDK entirely.
@@ -21,7 +21,7 @@ setDefaultTimeout(30_000)
  * `PluginContext` services instead of relative imports.
  *
  * This is a hard-zero invariant. Host-owned behavior is injected through PluginContext;
- * portable contracts and utilities belong to @localixai/plugin-sdk.
+ * portable contracts and utilities belong to @localixai/mini-app-sdk.
  *
  * Same source-reading idiom, and same kit, as `ext/safe-file-key-contract.test.ts` and
  * `lib/env-contract.test.ts`: it reads comment-stripped source, proves it is not void, and
@@ -41,7 +41,7 @@ const PLUGIN_GLOBS = [
 /**
  * A deep import (or re-export) of the host tree by relative path: two-or-more `../` segments
  * ending inside `apps/api/src`, `apps/ui/src` or `packages/kit/src`. This is EXACTLY the
- * seam-bypass — an `@localixai/plugin-sdk` or `@localixai/kit/<id>` import has no `../` and never
+ * seam-bypass — an `@localixai/mini-app-sdk` or `@localixai/kit/<id>` import has no `../` and never
  * matches. The kit is listed because its primitives came out of `apps/ui/src`: a relative path
  * into it skips the door the host serves at runtime and bundles a second copy of the primitive
  * into the plugin's artifact, which is the same bypass under a new address.
@@ -80,7 +80,7 @@ describe('plugin → host boundary contract', () => {
       offenders.length === 0
         ? ''
         : 'A plugin reaches into host internals. Move portable contracts/utilities to ' +
-            '@localixai/plugin-sdk or inject host-owned behavior through PluginContext:\n  ' +
+            '@localixai/mini-app-sdk or inject host-owned behavior through PluginContext:\n  ' +
             offenders.join('\n  '),
     ).toEqual([])
   })

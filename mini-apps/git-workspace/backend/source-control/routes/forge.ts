@@ -7,7 +7,7 @@
  * terms, and nothing here touches `SourceControlService`.
  */
 import { Hono } from 'hono'
-import type { PluginRouteContext as AppContext } from '@localixai/plugin-sdk/backend'
+import type { PluginRouteContext as AppContext } from '@localixai/mini-app-sdk/backend'
 import type { ForgeService } from '../forge/service'
 import { prDiffQuerySchema, sessionQuerySchema } from '../requests'
 import { validated } from './validated'

@@ -8,7 +8,7 @@ import {
   createWsFrameConnection,
   type HostRouteContext,
   type PluginContext,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import { createPluginBackendHost } from '../apps/api/src/features/plugins/backend-host'
 import { createSubsystemRegistry } from '../apps/api/src/features/ext/subsystem-contrib'
 import { createCapabilityRegistry } from '../apps/api/src/features/ext/capability-registry'

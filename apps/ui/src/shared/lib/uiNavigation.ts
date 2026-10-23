@@ -1,5 +1,5 @@
-import type { UiAnchorOpenResult, UiNavigationAction } from '@localixai/plugin-sdk/ui'
-import { parseLocalixUri } from '@localixai/plugin-sdk/navigation'
+import type { UiAnchorOpenResult, UiNavigationAction } from '@localixai/mini-app-sdk/ui'
+import { parseLocalixUri } from '@localixai/mini-app-sdk/navigation'
 import { resolveUiAnchor } from '@/shared/contrib/uiAnchors'
 import { hasUiCommand, uiCommandEffect } from '@/shared/contrib/uiCommands'
 import { isRegisteredUiLocationUri, resolveUiLocation } from '@/shared/contrib/uiLocations'

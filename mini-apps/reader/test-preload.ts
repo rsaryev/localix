@@ -7,5 +7,5 @@ export {}
 // this plugin is not maintaining its own idea of what a problem line looks like. Bound ONCE, at
 // preload: a suite that pulls in the real host runtime rebinds afterwards and must win, or its own
 // surfaces (the data grid, the editor tab) would be replaced by these stubs.
-const { bindPluginUiTestDoubles } = await import('@localixai/plugin-sdk/ui/testing')
+const { bindPluginUiTestDoubles } = await import('@localixai/mini-app-sdk/ui/testing')
 bindPluginUiTestDoubles()

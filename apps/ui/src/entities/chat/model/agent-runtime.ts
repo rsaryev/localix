@@ -15,7 +15,7 @@ import { useChatStore } from './store'
 import { findSessionInState } from './findSession'
 import { patchSessionById } from './sessionListHelpers'
 import { recoverInactiveHitlSession } from './hitlInteraction'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { applyServerSession } from './sessionSync'
 
 // The data plane (one realtime subscription for every session) lives in chatEventStream.ts.

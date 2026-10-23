@@ -9,13 +9,13 @@
  * the fact that a reader's subject is a file, which the centre can name and open.
  */
 
-import type { PluginProblemLineProps } from '@localixai/plugin-sdk/ui/components'
-import { useProblemReport } from '@localixai/plugin-sdk/ui'
+import type { PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
+import { useProblemReport } from '@localixai/mini-app-sdk/ui'
 import type {
   ProblemConsequence,
   ProblemRecovery,
   ProblemSubject,
-} from '@localixai/plugin-sdk/ui/problems'
+} from '@localixai/mini-app-sdk/ui/problems'
 
 /** Namespace for this plugin's rows in the Event Center. */
 export const READER_PROBLEM_SCOPE = 'reader'

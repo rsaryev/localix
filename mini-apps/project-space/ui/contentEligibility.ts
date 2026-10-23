@@ -1,4 +1,4 @@
-import type { ActionContext } from '@localixai/plugin-sdk/ui'
+import type { ActionContext } from '@localixai/mini-app-sdk/ui'
 import { canAddToSpace } from './action-target'
 import { knownFragmentId, prepareFragmentId } from './fragmentIdentity'
 import { savedSpaceView, watchSpaceUpdates } from './spaceUpdates'

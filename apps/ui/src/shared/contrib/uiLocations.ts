@@ -5,12 +5,12 @@ import type {
   UiLocationDescriptor,
   UiLocationExposure,
   UiLocationParamSchema,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import {
   buildUiLocationUri as buildSerializedUiLocationUri,
   parseUiLocationArgs,
   UI_AGENT_LOCATION_CATALOG_VERSION,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { isPluginContributionEnabled, subscribePluginActivation } from './pluginActivation'
 import { registerResourceRefIcons } from './iconContributions'
 import { checkContribution } from './uiLocationValidation'

@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
-import { resourceMessageBindingDraft, type PublishMessageContext } from '@localixai/plugin-sdk/ui'
-import { localixResourceUri } from '@localixai/plugin-sdk/navigation'
+import { resourceMessageBindingDraft, type PublishMessageContext } from '@localixai/mini-app-sdk/ui'
+import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 
 /**
  * Publish a file tab's extracted `localix://resource/doc` identity as its message context, or

@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { Bell } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 import { subscribeNotificationCenter } from '@/shared/lib/notificationCenterBus'
 import { eventSignalKey, highestUnreadSeverity } from '@/shared/lib/notifications/signal'

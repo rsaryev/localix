@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { isRowSelectClick, ROW_CLICK_MAX_TRAVEL_PX } from '@localixai/plugin-sdk/ui/utilities'
+import { isRowSelectClick, ROW_CLICK_MAX_TRAVEL_PX } from '@localixai/mini-app-sdk/ui/utilities'
 
 describe('isRowSelectClick', () => {
   it('treats a still press→release as a click', () => {

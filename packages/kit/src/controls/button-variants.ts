@@ -1,5 +1,5 @@
 import { cva, type VariantProps } from 'class-variance-authority'
-import { CONTROL_FOCUS_VISIBLE, CONTROL_INVALID } from '@localixai/plugin-sdk/ui/classes'
+import { CONTROL_FOCUS_VISIBLE, CONTROL_INVALID } from '@localixai/mini-app-sdk/ui/classes'
 
 export const buttonVariants = cva(
   // Focus comes from the SDK recipe rather than a fourth hand-written spelling. The string here

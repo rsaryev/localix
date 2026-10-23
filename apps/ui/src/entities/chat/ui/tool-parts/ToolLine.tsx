@@ -6,11 +6,11 @@ import {
   createMessageBindingDraft,
   messageBindingToken,
   setMessageBindingDrag,
-} from '@localixai/plugin-sdk/ui/message-binding-drag'
-import { formatDuration } from '@localixai/plugin-sdk/ui/utilities'
+} from '@localixai/mini-app-sdk/ui/message-binding-drag'
+import { formatDuration } from '@localixai/mini-app-sdk/ui/utilities'
 import { useToolDuration } from './toolTimingStore'
 import { useToolCallDragRef } from './toolCallDragContext'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { useToolGate, gateLabel } from './toolGateContext'
 import { autoOpenTransition } from './autoOpen'
 import { RegisteredToolActions } from './toolActionsContext'

@@ -7,7 +7,7 @@
  */
 
 import type { ChartSnapshotResult } from '../../backend/chart-snapshot'
-import type { StorageReader } from '@localixai/plugin-sdk/ui/storage'
+import type { StorageReader } from '@localixai/mini-app-sdk/ui/storage'
 import { loadDrawings } from './chartDrawings'
 import { chartStateStore } from './chartStateStore'
 import { loadChartType } from './chartType'

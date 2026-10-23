@@ -20,7 +20,7 @@ import {
   type CoreWorkItemKind,
   type WorkItemKind,
 } from '@/entities/workspace-grid/model'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /** Per-kind tab icon for the grid tab strip. Kept out of registry.tsx so that
  *  file only exports a component (React Fast Refresh stays enabled there). */

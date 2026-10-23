@@ -1,4 +1,4 @@
-import { classifyByAction, type PluginContext } from '@localixai/plugin-sdk/backend'
+import { classifyByAction, type PluginContext } from '@localixai/mini-app-sdk/backend'
 
 import { describeGame, drawBoard, endLine } from '../shared/describe'
 import {

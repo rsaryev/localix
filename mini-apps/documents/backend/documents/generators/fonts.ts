@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises'
-import type { DocumentFont } from '@localixai/plugin-sdk/document-layout'
+import type { DocumentFont } from '@localixai/mini-app-sdk/document-layout'
 import InterRegular from '../../../assets/fonts/Inter-Regular.ttf' with { type: 'file' }
 import InterBold from '../../../assets/fonts/Inter-Bold.ttf' with { type: 'file' }
 import InterItalic from '../../../assets/fonts/Inter-Italic.ttf' with { type: 'file' }

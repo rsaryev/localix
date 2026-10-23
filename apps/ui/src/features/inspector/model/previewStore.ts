@@ -14,7 +14,7 @@
 import { create } from 'zustand'
 import { workspaceOf } from '@/shared/lib/workspaceOf'
 import { workspaceStorageKey } from '@/shared/lib/workspaceWindow'
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 import { previewHostKey, usePreviewHosts } from './previewHosts'
 import { useBrowserHistory } from './browserHistory'
 import { BROWSER_HISTORY_URL } from './browserUrl'

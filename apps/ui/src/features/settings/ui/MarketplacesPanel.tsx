@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { backendClient } from '@/shared/api/client'
 import { acknowledgeInline, inlineFailure } from '@/shared/lib/notifications/inlineReport'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { shouldSurfaceStartupFailure, startStartupRetry } from '@/shared/lib/startupRetry'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { Button } from '@localixai/kit/button'

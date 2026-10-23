@@ -32,7 +32,7 @@ describe('the vault decides what is referenceable', () => {
 
   test('it reads the host vault capability rather than a core client or plugin route', async () => {
     const code = await source()
-    expect(code).toContain("from '@localixai/plugin-sdk/ui/runtime'")
+    expect(code).toContain("from '@localixai/mini-app-sdk/ui/runtime'")
     // No host module at all: the plugin reaches the host only through the SDK and the kit.
     expect(code).not.toMatch(/from ['"]@\//u)
   })

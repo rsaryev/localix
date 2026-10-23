@@ -1,6 +1,6 @@
 import { memo, useCallback, useMemo } from 'react'
-import { copyText } from '@localixai/plugin-sdk/ui/interactions'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { copyText } from '@localixai/mini-app-sdk/ui/interactions'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { TabPanel, TabStrip, useTabPanelIds, type StripTabItem } from '@localixai/kit/tabs'
 import { useChatStore } from '@/entities/chat/model/store'
 import { problemBadge } from '@/features/inspector/model/problemsCount'

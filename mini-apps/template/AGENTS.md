@@ -29,7 +29,7 @@ House rules the copies inherit from here:
 - Changes are pushed, not polled. State the agent's tool also writes (through `openJsonStore`) is
   read with `useStoreSnapshot` and the backend's `createStoreFeed`, so the view hears the write. Any
   other live data is a `wsFrames` entry the view follows with `createRealtimeFeed` /
-  `useRealtimeFeed` (`@localixai/plugin-sdk/ui/realtime-feed`); workspace files with
+  `useRealtimeFeed` (`@localixai/mini-app-sdk/ui/realtime-feed`); workspace files with
   `usePluginWorkspaceChanges`; a backend watching files uses `ctx.watchPath`, never `node:fs.watch`.
   A healthy store or realtime feed has no periodic read; fallback polling runs only while the signal
   is unavailable. Gauges with no write behind them — CPU, memory — use their own cadence.

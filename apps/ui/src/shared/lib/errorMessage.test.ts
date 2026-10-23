@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 describe('errorMessage', () => {
   it('returns the Error message when given an Error', () => {

@@ -1,7 +1,7 @@
 import { useMemo, useRef } from 'react'
 import type { DbDialect } from '../dbClient'
 import { CodeEditor, type CompletionSource, type NextEditSource } from '@localixai/kit/code-editor'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { SqlConsoleState } from '../model/useSqlConsole'
 import type { SqlHistoryState } from '../model/useSqlHistory'
 import { usePaneResize } from '@localixai/kit/pane-resize'

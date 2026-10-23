@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from 'react'
-import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
+import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 import { useDesktopUpdate } from '@/shared/hooks/useDesktopUpdate'
 import { useSetupOpen } from '@/shared/lib/setupDialog'
 import { restartToUpdate } from '../../model/restartToUpdate'

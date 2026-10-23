@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "21.0.4",
-    "@localixai/plugin-sdk": "workspace:*",
+    "@localixai/mini-app-sdk": "workspace:*",
     "@types/react": "^19.3.0",
     "radix-ui": "1.8.1",
     "react-dom": "^19.3.1",

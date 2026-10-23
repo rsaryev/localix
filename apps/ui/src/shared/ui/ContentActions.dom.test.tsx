@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
-import { ActionSurfaceProvider, type ActionContext } from '@localixai/plugin-sdk/ui'
-import { WorkItemSessionProvider } from '@localixai/plugin-sdk/ui/work-item-session'
-import { bindPluginUiTestDoubles } from '@localixai/plugin-sdk/ui/testing'
+import { ActionSurfaceProvider, type ActionContext } from '@localixai/mini-app-sdk/ui'
+import { WorkItemSessionProvider } from '@localixai/mini-app-sdk/ui/work-item-session'
+import { bindPluginUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
 import { registerAction, removeActionsOf } from '@/shared/contrib/actions'
 import { setEnabledPluginNames } from '@/shared/contrib/pluginActivation'
 

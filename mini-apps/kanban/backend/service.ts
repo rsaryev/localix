@@ -1,5 +1,5 @@
 import { HUMAN_ASSIGNEE_ID } from '../shared/rules'
-import type { PluginAgentDirectory } from '@localixai/plugin-sdk/backend'
+import type { PluginAgentDirectory } from '@localixai/mini-app-sdk/backend'
 import type { z } from 'zod'
 
 import {

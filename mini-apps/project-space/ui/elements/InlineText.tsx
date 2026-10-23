@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { isPrimaryModifier } from '@localixai/kit/keybindings'
 import { Textarea } from '@localixai/kit/textarea'
 import { continueList, toggleMark, type TextEdit } from '../../shared/content/rich-edit'

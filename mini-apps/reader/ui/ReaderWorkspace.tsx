@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { PublishedMessageContext, PublishMessageContext } from '@localixai/plugin-sdk/ui'
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import type { PublishedMessageContext, PublishMessageContext } from '@localixai/mini-app-sdk/ui'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 
 import type { ReaderSource } from '../shared/contracts'
 import { mergeReaderPublishedContexts, type ReaderPaneId } from './context'

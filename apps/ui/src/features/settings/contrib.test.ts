@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'bun:test'
-import type { PluginUiHost, UiAnchorContribution, UiAnchorNode } from '@localixai/plugin-sdk/ui'
+import type { PluginUiHost, UiAnchorContribution, UiAnchorNode } from '@localixai/mini-app-sdk/ui'
 import type { PluginRecord } from '@/shared/api/contracts'
 import { __resetPluginContrib, refetchPluginContrib } from '@/shared/contrib/enabledPlugins'
 import { registerUi } from './contrib'

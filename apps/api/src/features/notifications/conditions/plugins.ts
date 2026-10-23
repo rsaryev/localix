@@ -1,6 +1,6 @@
-import type { PluginProblem } from '@localixai/plugin-sdk/backend'
+import type { PluginProblem } from '@localixai/mini-app-sdk/backend'
 
-import { settingsEntityAnchor } from '@localixai/plugin-sdk/navigation'
+import { settingsEntityAnchor } from '@localixai/mini-app-sdk/navigation'
 
 import { errorMessage } from '../../../lib/errors'
 import { recoveryAction } from '../recovery'

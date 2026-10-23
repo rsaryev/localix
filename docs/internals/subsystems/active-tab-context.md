@@ -142,7 +142,7 @@ These are code constants, not user settings.
 
 ## Source of truth
 
-- [Plugin publication types and normalization](../../../packages/plugin-sdk/src/ui/contrib.ts)
+- [Plugin publication types and normalization](../../../packages/mini-app-sdk/src/ui/contrib.ts)
 - [Static/live binding merge](../../../apps/ui/src/entities/workspace-grid/model/tabMessageBinding.ts)
 - [Live registry](../../../apps/ui/src/entities/workspace-grid/model/liveTabMessageContext.ts)
 - [Candidate ranking](../../../apps/ui/src/entities/workspace-grid/model/activeTabLink.ts)

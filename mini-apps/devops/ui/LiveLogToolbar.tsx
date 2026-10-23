@@ -1,6 +1,6 @@
 import { useMemo, type Dispatch, type ReactNode, type SetStateAction } from 'react'
-import { useProblemReport } from '@localixai/plugin-sdk/ui'
-import type { ProblemReport } from '@localixai/plugin-sdk/ui/problems'
+import { useProblemReport } from '@localixai/mini-app-sdk/ui'
+import type { ProblemReport } from '@localixai/mini-app-sdk/ui/problems'
 import { Check, Copy, Download, MoreHorizontal, TriangleAlert, WrapText } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
 import {

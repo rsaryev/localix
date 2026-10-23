@@ -7,8 +7,8 @@ import {
   MINI_APP_MANIFEST_FILE,
   miniAppManifestSchema,
   type MiniAppManifest,
-} from '@localixai/plugin-sdk/app-manifest'
-import { summarizeZodIssues } from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/app-manifest'
+import { summarizeZodIssues } from '@localixai/mini-app-sdk/backend'
 import { fromClaudePlugin } from './claude-code'
 
 /**

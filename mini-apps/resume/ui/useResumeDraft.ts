@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { z } from 'zod'
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 import { resumeSchema, type Resume, type ResumeDocument } from '../shared/schema'
 import { draftSchema } from '../shared/draft-schema'
 import { editHistory, redoHistory, startHistory, undoHistory, type EditHistory } from './history'

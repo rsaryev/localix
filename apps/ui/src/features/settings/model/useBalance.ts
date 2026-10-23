@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
+import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 import { BALANCE_STOPS, DEFAULT_BALANCE } from './recommendRanking'
 
 const KEY = 'localix.localModels.balance'

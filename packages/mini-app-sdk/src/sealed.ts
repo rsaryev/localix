@@ -10,7 +10,7 @@ import { z } from 'zod'
  * server never sends the value early; the digest only proves afterwards that nothing was swapped.
  *
  * This module is isomorphic (WebCrypto only), so a view can verify what the backend revealed. The
- * backend creates records with `seal` from `@localixai/plugin-sdk/backend`.
+ * backend creates records with `seal` from `@localixai/mini-app-sdk/backend`.
  */
 
 /** Hex SHA-256 of `${salt}:${value}`. */

@@ -30,7 +30,7 @@ afterAll(async () => {
 async function renderIn(sessionId: string | null, element: React.ReactElement) {
   const React = await import('react')
   const { createRoot } = await import('react-dom/client')
-  const { WorkItemSessionProvider } = await import('@localixai/plugin-sdk/ui/work-item-session')
+  const { WorkItemSessionProvider } = await import('@localixai/mini-app-sdk/ui/work-item-session')
   const { useChatStore } = await import('../../../model/store')
   useChatStore.setState({ activeSessionId: 'chat-a' })
   const host = document.createElement('div')

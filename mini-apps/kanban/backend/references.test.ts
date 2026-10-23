@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { searchHitsOf } from '@localixai/plugin-sdk/backend'
+import { searchHitsOf } from '@localixai/mini-app-sdk/backend'
 
 import { boardUri, taskUri } from '../shared/resource'
 import { createBoardResourceProvider, createBoardSearchProvider } from './references'

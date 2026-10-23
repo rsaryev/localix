@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
-import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
+import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 import { useFeaturedCommand } from '@/shared/contrib/useFeaturedCommand'
 import { useIslandEnabled } from '@/shared/lib/islandSetting'
 // Shared scene styles first: each scene's own stylesheet overrides `.wt-pane` after it.

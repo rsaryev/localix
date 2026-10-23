@@ -8,7 +8,11 @@
  * a name.
  */
 
-import { bestFieldScore, type SearchHit, type SearchProvider } from '@localixai/plugin-sdk/backend'
+import {
+  bestFieldScore,
+  type SearchHit,
+  type SearchProvider,
+} from '@localixai/mini-app-sdk/backend'
 import type { ResourceRequestPort } from './resource-provider'
 import { redactSpec } from './store'
 import { buildRequestUri } from './uri'

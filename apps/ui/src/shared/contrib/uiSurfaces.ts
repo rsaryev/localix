@@ -2,7 +2,7 @@ import type {
   UiContextualSurfaceDeclaration,
   UiSurfaceCatalogSnapshot,
   UiSurfaceKind,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { listUiLocations, uiLocationRevision } from './uiLocations'
 
 const UI_SURFACE_KINDS = new Set<UiSurfaceKind>([

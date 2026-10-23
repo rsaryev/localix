@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 
-import { PLUGIN_CATEGORIES } from '@localixai/plugin-sdk/manifest'
+import { PLUGIN_CATEGORIES } from '@localixai/mini-app-sdk/manifest'
 import { assertNotVoid } from '../../lib/source-lint'
 import { discoverBundledPlugins } from './discovery'
 

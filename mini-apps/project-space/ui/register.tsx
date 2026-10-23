@@ -6,7 +6,7 @@ import {
   type PluginUiHost,
   type PublishMessageContext,
   type UiAnchorWorkItem,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import {
   BOARD_FILE,

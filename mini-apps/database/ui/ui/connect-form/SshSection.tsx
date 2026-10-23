@@ -4,7 +4,10 @@ import { Button } from '@localixai/kit/button'
 import { Checkbox } from '@localixai/kit/checkbox'
 import { Input } from '@localixai/kit/input'
 import { Textarea } from '@localixai/kit/textarea'
-import { SegmentedControl, SegmentedControlItem } from '@localixai/plugin-sdk/ui/segmented-control'
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from '@localixai/mini-app-sdk/ui/segmented-control'
 import type { ConnectFormState } from './useConnectForm'
 
 export function SshSection({ f, fid }: { f: ConnectFormState; fid: string }) {

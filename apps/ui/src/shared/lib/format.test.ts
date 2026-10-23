@@ -6,7 +6,7 @@ import {
   formatElapsed,
   formatRelativeTime,
   formatTimeAgo,
-} from '@localixai/plugin-sdk/ui/utilities'
+} from '@localixai/mini-app-sdk/ui/utilities'
 
 describe('formatUsd', () => {
   test('zero is a bare $0', () => {

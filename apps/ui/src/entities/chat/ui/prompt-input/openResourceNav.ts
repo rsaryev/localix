@@ -1,5 +1,5 @@
 import type { ResourceNode } from '@/shared/api/contracts'
-import { localixUri, parseLocalixUri } from '@localixai/plugin-sdk/navigation'
+import { localixUri, parseLocalixUri } from '@localixai/mini-app-sdk/navigation'
 
 export interface ResourceBreadcrumb {
   uri: string | null

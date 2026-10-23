@@ -1,5 +1,5 @@
 import { ProgressBar } from '@localixai/kit/progress-bar'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { SemanticStatus } from '@/shared/api/semanticApi'
 
 type Collection = SemanticStatus['index']['collections'][number]

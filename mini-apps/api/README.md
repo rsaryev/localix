@@ -163,5 +163,5 @@ receive its abort signal. The timeout is not a deadline for the complete operati
 - [Environment rendering](./backend/render-spec.ts)
 - [Response masking](./backend/response-redaction.ts)
 - [Collection synchronization](ui/model/useRequests.ts)
-- [Shared file-watcher lifecycle](../../packages/plugin-sdk/src/ui/file-resource-sync.ts)
+- [Shared file-watcher lifecycle](../../packages/mini-app-sdk/src/ui/file-resource-sync.ts)
 - [Workspace registration](./ui/register.tsx)

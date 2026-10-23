@@ -1,4 +1,4 @@
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { isDesktop } from '@localixai/kit/environment'
 import { toast } from './notify'
 import { tauriInvoke } from './tauri'

@@ -1,7 +1,7 @@
 import type { FileContentResponse } from '@/shared/api/contracts'
 import { onFilesReloaded } from '@/shared/lib/fileReloadBus'
 import { onFsChange } from '@/shared/lib/fsChangeBus'
-import { dirName } from '@localixai/plugin-sdk/ui/utilities'
+import { dirName } from '@localixai/mini-app-sdk/ui/utilities'
 import { createBoundedCache } from '@localixai/kit/lib'
 
 /** Recently-used clean text snapshots retained after an editor body is evicted. */

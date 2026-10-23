@@ -5,7 +5,7 @@
  * argv array (no shell, no interpolation), so a branch name can never smuggle a
  * flag.
  */
-import { ApiError } from '@localixai/plugin-sdk/backend'
+import { ApiError } from '@localixai/mini-app-sdk/backend'
 import type { ForgeBackend } from './ports'
 import type { ForgePullRequest } from './contracts'
 import { parsePullRequests } from './parse'

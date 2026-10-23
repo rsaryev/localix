@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { bindPluginUiTransport } from '@localixai/plugin-sdk/ui/transport'
+import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
 import { keepActionImage } from './keep-action-image'
 
 test('generated media and inline images are kept as files; remote URLs and project paths remain references', async () => {

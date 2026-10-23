@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { usePluginWorkspaceChanges } from '@localixai/plugin-sdk/ui/runtime-hooks'
-import { useVisiblePolling, useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { usePluginWorkspaceChanges } from '@localixai/mini-app-sdk/ui/runtime-hooks'
+import { useVisiblePolling, useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { repoPresence } from './repoPresence'
 import { useSourceControlStore } from './store'
 

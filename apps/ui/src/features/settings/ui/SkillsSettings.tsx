@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Project, SkillInput, SkillRecord } from '@/shared/api/contracts'
 import { toast } from '@/shared/lib/notify'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { useSkills } from '../model/useSkills'
 import { Button } from '@localixai/kit/button'
 import { SettingProblems } from './settingRegistry'

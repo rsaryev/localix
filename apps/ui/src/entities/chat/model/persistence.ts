@@ -3,7 +3,7 @@ import { workspaceStorageKey } from '@/shared/lib/workspaceWindow'
 // swallows storage failures (private-mode/quota/disabled) and degrades to a
 // null read or a no-op write so the store never throws on a flaky storage.
 
-import { loadJSON, loadString, saveJSON, saveString } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, loadString, saveJSON, saveString } from '@localixai/mini-app-sdk/ui/storage'
 
 /**
  * NO SERVER-OWNED IDENTIFIER IS KEPT HERE.

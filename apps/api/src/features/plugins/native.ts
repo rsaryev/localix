@@ -22,15 +22,15 @@ export { makeContext } from './native-context'
  * enable toggle is the security boundary; there is no isolation beyond it by design.
  *
  * The plugin-facing CONTRACT (PluginContext + hook/channel types) is OWNED by
- * `@localixai/plugin-sdk` — this module implements it and re-exports the types so
+ * `@localixai/mini-app-sdk` — this module implements it and re-exports the types so
  * the historical `./native` import surface stays stable.
  */
-import type { PluginContext, PluginHostServices } from '@localixai/plugin-sdk/backend'
+import type { PluginContext, PluginHostServices } from '@localixai/mini-app-sdk/backend'
 export type {
   PluginContext,
   PluginHostServices,
   PluginProblem,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 
 export { type PluginProblemSink } from './problem-reporter'
 

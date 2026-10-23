@@ -2,8 +2,11 @@
  * read-only grid otherwise), Indexes and Relations, switched by a segmented control. */
 import { useState } from 'react'
 import { KeyRound, Lock } from 'lucide-react'
-import type { PluginProblemLineProps } from '@localixai/plugin-sdk/ui/components'
-import { SegmentedControl, SegmentedControlItem } from '@localixai/plugin-sdk/ui/segmented-control'
+import type { PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from '@localixai/mini-app-sdk/ui/segmented-control'
 import { Spinner } from '@localixai/kit/spinner'
 import { WorkbenchToolbar } from '@localixai/kit/workbench-toolbar'
 import type { DbConnectionInfo, DbTableSchema } from '../../dbClient'

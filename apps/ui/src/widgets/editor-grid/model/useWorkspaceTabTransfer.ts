@@ -5,7 +5,7 @@ import { useGridStore, makeLeaf, GLOBAL_SCOPE, roleForKind } from '@/entities/wo
 import { workspaceOf } from '@/shared/lib/workspaceOf'
 import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { toast } from '@/shared/lib/notify'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { workItemTransferState } from '@/shared/lib/workItemTransferState'
 import { browserEngine } from '@/features/inspector/model/browserUrl'
 import {

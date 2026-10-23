@@ -7,7 +7,7 @@
  * Every session's frames count, not only the active chat's: connections and schemas belong to the
  * machine, so an agent working in a background chat still moves what the workbench shows.
  */
-import { pluginCommandBus } from '@localixai/plugin-sdk/ui/commands'
+import { pluginCommandBus } from '@localixai/mini-app-sdk/ui/commands'
 import {
   DATABASE_CHANGES_CHANNEL,
   DATABASE_PLUGIN,

@@ -1,5 +1,5 @@
 import { GitBranch } from 'lucide-react'
-import { formatTimeAgo } from '@localixai/plugin-sdk/ui/utilities'
+import { formatTimeAgo } from '@localixai/mini-app-sdk/ui/utilities'
 
 export interface CommitProvenance {
   model?: string

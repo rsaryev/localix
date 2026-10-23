@@ -4,7 +4,7 @@ import { SquareArrowOutUpRight } from 'lucide-react'
 import { MonogramAvatar } from '@localixai/kit/avatar'
 import { IconButton } from '@localixai/kit/icon-button'
 import { Switch } from '@localixai/kit/switch'
-import { settingsEntityUiUri } from '@localixai/plugin-sdk/navigation'
+import { settingsEntityUiUri } from '@localixai/mini-app-sdk/navigation'
 import { agentPolicy } from '@localixai/api/agent-policy'
 import { SettingRegistryMeta, SettingRegistryRow } from '../settingRegistry'
 

@@ -1,5 +1,5 @@
 import { type Dispatch, type SetStateAction, useCallback } from 'react'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { toast } from '@/shared/lib/notify'
 import { useLatestRef } from '@/shared/lib/useLatestRef'
 

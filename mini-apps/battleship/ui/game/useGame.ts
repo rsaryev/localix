@@ -1,4 +1,4 @@
-import { useTableGame } from '@localixai/plugin-sdk/ui/game-table'
+import { useTableGame } from '@localixai/mini-app-sdk/ui/game-table'
 
 import { owesAgentShot, playerViewSchema, type Opponent, type Player } from '../../shared/game'
 import { ROUTE_PATH } from '../../shared/resource'

@@ -1,5 +1,5 @@
 // The environment every git spawn gets: no inherited repository, no interactive prompt.
-import { toolEnv } from '@localixai/plugin-sdk/backend'
+import { toolEnv } from '@localixai/mini-app-sdk/backend'
 
 /**
  * Never let git block on an interactive prompt. Without this a missing

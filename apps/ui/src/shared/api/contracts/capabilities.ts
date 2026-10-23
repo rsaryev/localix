@@ -161,7 +161,7 @@ export type { ToolGcReport }
  * Structurally typed (`type?: string`) on purpose: it is a UI PRESENTATION rule,
  * not a wire type. It also still answers true for an explicit `type: 'model'`,
  * which the wire cannot currently deliver — `PLUGIN_CONFIG_TYPES` (owned by
- * `@localixai/plugin-sdk/manifest`) has no `'model'` member, so the backend's enum
+ * `@localixai/mini-app-sdk/manifest`) has no `'model'` member, so the backend's enum
  * would reject it. The check is kept as forward-compat; adding `'model'` for real is
  * an owner-side change.
  */

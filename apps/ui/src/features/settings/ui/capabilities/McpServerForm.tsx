@@ -3,7 +3,10 @@ import type { useMcpServerForm } from '../../model/useMcpServerForm'
 import { Field } from '@localixai/kit/field'
 import { Input } from '@localixai/kit/input'
 import { Textarea } from '@localixai/kit/textarea'
-import { SegmentedControl, SegmentedControlItem } from '@localixai/plugin-sdk/ui/segmented-control'
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from '@localixai/mini-app-sdk/ui/segmented-control'
 import { SettingsRecordEditor } from '../SettingsRecordEditor'
 import { McpServerFields } from './McpServerFields'
 

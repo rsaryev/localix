@@ -1,5 +1,5 @@
 import type { Recovery } from '@localixai/agent/agents'
-import { localixUiUri, settingsUiUri } from '@localixai/plugin-sdk/navigation'
+import { localixUiUri, settingsUiUri } from '@localixai/mini-app-sdk/navigation'
 
 import type { InboxAction } from './contracts'
 
@@ -21,7 +21,7 @@ import type { InboxAction } from './contracts'
  *   sign-in:<connectionId>   a connection whose credential was refused or expired
  *   restart:<subject>        a process the person can restart from its settings row
  *
- * Destinations are built with the SDK's navigation helpers (`@localixai/plugin-sdk/navigation`),
+ * Destinations are built with the SDK's navigation helpers (`@localixai/mini-app-sdk/navigation`),
  * the same ones every tip and `/open` result uses, so a renamed tab breaks here only if it breaks
  * everywhere. Browser-safe: the UI imports this leaf (`@localixai/api/recovery`).
  */

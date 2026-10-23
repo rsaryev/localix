@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { PluginProblemLineProps } from '@localixai/plugin-sdk/ui/components'
-import type { Problem } from '@localixai/plugin-sdk/ui/problems'
+import type { PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
+import type { Problem } from '@localixai/mini-app-sdk/ui/problems'
 import type { DbConnectionInfo } from '../../dbClient'
 import { connectionDisplayName } from '../../model/connectionDisplayName'
 import type { SchemaReader } from '../../model/schemaTreeRows'

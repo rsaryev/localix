@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { DecisionRequest } from '@localixai/agent/runtime'
-import type { DecisionAsk } from '@localixai/plugin-sdk/backend'
+import type { DecisionAsk } from '@localixai/mini-app-sdk/backend'
 import type { ResolvedDecider } from './models'
 import { createDecisionService, type DecisionRecord } from './service'
 

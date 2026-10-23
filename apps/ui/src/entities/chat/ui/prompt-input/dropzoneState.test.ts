@@ -4,7 +4,7 @@ import {
   MESSAGE_BINDING_KIND_MIME_PREFIX,
   MESSAGE_BINDING_MIME,
   WORKSPACE_TAB_DRAG_MIME,
-} from '@localixai/plugin-sdk/ui/message-binding-drag'
+} from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import { acceptedDragKind, createDragDepth } from './dropzoneState'
 
 const callDrag = [MESSAGE_BINDING_MIME, `${MESSAGE_BINDING_KIND_MIME_PREFIX}call`, 'text/plain']

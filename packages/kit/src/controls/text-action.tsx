@@ -1,5 +1,5 @@
 import { forwardRef, type ComponentPropsWithoutRef, type ReactNode } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { ActionTooltip } from '../overlays/action-tooltip'
 
 type TextActionProps = Omit<ComponentPropsWithoutRef<'button'>, 'title'> & {

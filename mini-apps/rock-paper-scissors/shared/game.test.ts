@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { seal } from '@localixai/plugin-sdk/backend'
+import { seal } from '@localixai/mini-app-sdk/backend'
 
 import { describeForAgent, describeForChat } from './describe'
 import {

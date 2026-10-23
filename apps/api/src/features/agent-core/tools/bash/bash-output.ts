@@ -3,7 +3,7 @@ import { join } from 'node:path'
 
 import { truncateTail } from '@localixai/agent'
 import { localixHome } from '../../../../lib/env'
-import { safeFileKey } from '@localixai/plugin-sdk/backend'
+import { safeFileKey } from '@localixai/mini-app-sdk/backend'
 import { truncationMarker } from '../tool-output'
 import { applyOutputFilters, sanitizeModelOutput } from './output-filters'
 

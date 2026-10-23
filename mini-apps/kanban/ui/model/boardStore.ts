@@ -1,5 +1,5 @@
-import { enqueueMicrotask } from '@localixai/plugin-sdk/ui'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { enqueueMicrotask } from '@localixai/mini-app-sdk/ui'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 import type { BoardEvent, KanbanTask } from '../../shared/contracts'
 import { boardApi } from '../api/board-client'

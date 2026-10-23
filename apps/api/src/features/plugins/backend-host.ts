@@ -34,7 +34,7 @@ import type { Env, Schema } from 'hono'
 import { createDebouncer } from '../../lib/debounce'
 import type { BackendSubsystem } from '../ext/subsystem-contrib'
 import type { SearchProviderRegistry } from '../agent-core/search/provider'
-import type { PluginRouteScope } from '@localixai/plugin-sdk/backend'
+import type { PluginRouteScope } from '@localixai/mini-app-sdk/backend'
 import { createPluginUiActionTable } from './backend-host-ui-actions'
 
 import type { PluginBackendHostDeps, PluginBackendHost } from './backend-host-contracts'

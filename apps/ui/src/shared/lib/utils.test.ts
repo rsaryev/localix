@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { clamp, cn } from '@localixai/plugin-sdk/ui/classes'
-import { formatFileSize } from '@localixai/plugin-sdk/ui/utilities'
+import { clamp, cn } from '@localixai/mini-app-sdk/ui/classes'
+import { formatFileSize } from '@localixai/mini-app-sdk/ui/utilities'
 
 describe('formatFileSize', () => {
   test('bytes under 1KB', () => {

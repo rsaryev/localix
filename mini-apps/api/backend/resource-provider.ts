@@ -18,7 +18,7 @@ import type {
   ResourceNode,
   ResourceRefProvider,
   ResourceRefScope,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import { redactSpec } from './store'
 import { describeRequest } from './request-summary'
 import type { CollectionRequest, CollectionStore } from './collection/store'

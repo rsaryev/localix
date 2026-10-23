@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 import type {
   FileTreeDecorationContribution,
   FileTreeDecorationIndex,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 
 const EMPTY: FileTreeDecorationIndex = {
   decorationFor: () => undefined,

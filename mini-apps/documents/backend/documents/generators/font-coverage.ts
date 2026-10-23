@@ -2,7 +2,7 @@ import type {
   DocumentFont,
   DocumentParagraph,
   DocumentRun,
-} from '@localixai/plugin-sdk/document-layout'
+} from '@localixai/mini-app-sdk/document-layout'
 import { fontBytes } from './fonts'
 interface CoverageFont {
   hasGlyphForCodePoint(code: number): boolean

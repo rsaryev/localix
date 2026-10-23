@@ -1,6 +1,6 @@
 import { useRef, type CSSProperties, type KeyboardEvent } from 'react'
 import { Button } from '@localixai/kit/button'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 import { placeName, type Game, type Mark as MarkValue } from '../../shared/game'
 import { MARK_TONE, Mark } from './Mark'

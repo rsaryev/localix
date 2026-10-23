@@ -1,5 +1,5 @@
 import type { VaultAuditEntry } from '@localixai/api/client'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { DIVIDED_LIST } from '@localixai/kit/divided-list'
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
 

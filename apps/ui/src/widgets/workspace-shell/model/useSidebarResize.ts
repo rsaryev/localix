@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { startResizeSession } from '@localixai/kit/pane-resize'
-import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
+import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 
 const SIDEBAR_MIN = 220
 const SIDEBAR_MAX = 440

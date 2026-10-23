@@ -3,7 +3,7 @@ import type { ParsedContextRef } from '@localixai/api/context-refs'
 import {
   promptHasToken,
   type MessageBindingDragPayload,
-} from '@localixai/plugin-sdk/ui/message-binding-drag'
+} from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import { composerBus, composerInsertMatchesSession } from '@/shared/lib/composerBus'
 import { contextRefsMissingFromComposerText, refFromContextBinding } from '../../model/sendRefs'
 import type { MessageBinding } from '@/shared/api/contracts'

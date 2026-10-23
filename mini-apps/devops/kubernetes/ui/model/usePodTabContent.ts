@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { KubeEvent, KubePod } from '../../backend/contracts'
-import { useVisiblePolling } from '@localixai/plugin-sdk/ui/visibility'
+import { useVisiblePolling } from '@localixai/mini-app-sdk/ui/visibility'
 import { kubernetesApi } from '../api/kubernetesApi'
 import { KubeApiError } from '../api/transport'
 import { ALL_CONTAINERS, logRequestFor } from './podContainers'

@@ -129,7 +129,7 @@ describe('only this module may import the raw validator', () => {
  */
 describe('every plugin router reaches the validator through the SDK', () => {
   const ROOT = join(import.meta.dir, '..', '..', '..', '..')
-  const SDK_OWNER = join(ROOT, 'packages/plugin-sdk/src/backend/route-validator.ts')
+  const SDK_OWNER = join(ROOT, 'packages/mini-app-sdk/src/backend/route-validator.ts')
 
   /** Code only — a rule satisfied by a COMMENT that merely NAMES the helper is not a rule. */
   const codeOf = (file: string) => stripComments(readFileSync(file, 'utf8'))

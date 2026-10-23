@@ -1,5 +1,5 @@
 import type { Kysely, Transaction } from 'kysely'
-import { SEMANTIC_GLOBAL_SCOPE } from '@localixai/plugin-sdk/backend'
+import { SEMANTIC_GLOBAL_SCOPE } from '@localixai/mini-app-sdk/backend'
 
 import type { AppDatabase } from '../../db'
 import { recordCoreChanges } from '../changes/core-entities'

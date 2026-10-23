@@ -4,7 +4,7 @@ import { modelKindOf, type CatalogModel, type CatalogProvider } from '@localixai
 
 import { backendClient } from '@/shared/api/client'
 import { useRevalidateOnResources } from '@/shared/api/resourceGeneration'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 
 export type { CatalogModel }
 

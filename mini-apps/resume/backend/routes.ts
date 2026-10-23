@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { jsonBody, type PluginRouteContext } from '@localixai/plugin-sdk/backend'
+import { jsonBody, type PluginRouteContext } from '@localixai/mini-app-sdk/backend'
 import { documentSchema, idSchema, resumeSummary } from '../shared/schema'
 import { operationsSchema } from '../shared/operations'
 import { exportDocument } from '../shared/format'

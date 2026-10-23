@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /** What the mark is about: the theme's accent, something that cannot be undone, or neither. */
 export type DialogHeroTone = 'accent' | 'danger' | 'neutral'

@@ -14,7 +14,7 @@
 import {
   normalizePublishedMessageContext,
   type PublishMessageContext,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 
 export interface PanelActionContext {
   pluginName: string

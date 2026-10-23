@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { CheckCircle2, CircleAlert, HelpCircle, Info, Search, TriangleAlert } from 'lucide-react'
-import { tonedIcon } from '@localixai/plugin-sdk/ui'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { tonedIcon } from '@localixai/mini-app-sdk/ui'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type {
   EventCategoryFilter,
   EventFilters,

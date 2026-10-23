@@ -1,6 +1,9 @@
 import { KeyRound } from 'lucide-react'
 import { WorkbenchToolbar } from '@localixai/kit/workbench-toolbar'
-import { SegmentedControl, SegmentedControlItem } from '@localixai/plugin-sdk/ui/segmented-control'
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from '@localixai/mini-app-sdk/ui/segmented-control'
 import type { EnvVariable } from '../../backend/contracts'
 import { PairEditor } from './PairEditor'
 

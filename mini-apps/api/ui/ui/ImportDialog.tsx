@@ -6,7 +6,7 @@
 
 import { useRef, useState } from 'react'
 import { FileUp } from 'lucide-react'
-import { acknowledgeInline } from '@localixai/plugin-sdk/ui'
+import { acknowledgeInline } from '@localixai/mini-app-sdk/ui'
 import { Button } from '@localixai/kit/button'
 import { Input } from '@localixai/kit/input'
 import { Textarea } from '@localixai/kit/textarea'

@@ -25,7 +25,7 @@
 import { attributeName, literalText } from '../jsx.ts'
 import type { Node, Rule, RuleContext } from '../types.ts'
 
-const SCOPES = ['/packages/kit/src/', '/apps/ui/src/shared/ui/', '/packages/plugin-sdk/src/ui/']
+const SCOPES = ['/packages/kit/src/', '/apps/ui/src/shared/ui/', '/packages/mini-app-sdk/src/ui/']
 
 /** A control-sized element, by the classes it carries alongside the fill. */
 const CONTROL_SHAPE =

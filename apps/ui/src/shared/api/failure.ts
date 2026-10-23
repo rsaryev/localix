@@ -1,4 +1,4 @@
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 /**
  * What a failed call MEANS, separated from how it travelled.

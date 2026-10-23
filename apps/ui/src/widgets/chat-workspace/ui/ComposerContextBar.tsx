@@ -10,7 +10,7 @@ import { useAddProjectFolder } from '@/entities/chat/model/useAddProjectFolder'
 import { useRoutedNavigation } from '@/shared/hooks/useRoutedNavigation'
 import { scopedNewConversation } from '@/entities/chat/model/conversationStartStrategy'
 import { toast } from '@/shared/lib/notify'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 /**
  * Context bar above the composer input: a left-aligned, sideways-scrolling row of compact pill-chips — the

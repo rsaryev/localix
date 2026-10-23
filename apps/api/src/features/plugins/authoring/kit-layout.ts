@@ -70,15 +70,15 @@ export const PLUGIN_UI_PREBUILT_MODULES: readonly string[] = ['zod']
 export const PLUGIN_BACKEND_HOST_MODULES = [
   'hono',
   'zod',
-  '@localixai/plugin-sdk/backend',
-  '@localixai/plugin-sdk/navigation',
-  '@localixai/plugin-sdk/resource-refs',
-  '@localixai/plugin-sdk/session-resource',
-  '@localixai/plugin-sdk/typed-error',
-  '@localixai/plugin-sdk/prerequisite',
-  '@localixai/plugin-sdk/rich-text',
-  '@localixai/plugin-sdk/document-layout',
-  '@localixai/plugin-sdk/store-changes',
+  '@localixai/mini-app-sdk/backend',
+  '@localixai/mini-app-sdk/navigation',
+  '@localixai/mini-app-sdk/resource-refs',
+  '@localixai/mini-app-sdk/session-resource',
+  '@localixai/mini-app-sdk/typed-error',
+  '@localixai/mini-app-sdk/prerequisite',
+  '@localixai/mini-app-sdk/rich-text',
+  '@localixai/mini-app-sdk/document-layout',
+  '@localixai/mini-app-sdk/store-changes',
 ] as const
 
 export type PluginBackendHostModule = (typeof PLUGIN_BACKEND_HOST_MODULES)[number]
@@ -92,10 +92,10 @@ export type PluginBackendHostModule = (typeof PLUGIN_BACKEND_HOST_MODULES)[numbe
 export const PLUGIN_BACKEND_SHARED_MODULES: readonly string[] = [
   'hono',
   'zod',
-  '@localixai/plugin-sdk/backend',
-  '@localixai/plugin-sdk/rich-text',
-  '@localixai/plugin-sdk/document-layout',
-  '@localixai/plugin-sdk/store-changes',
+  '@localixai/mini-app-sdk/backend',
+  '@localixai/mini-app-sdk/rich-text',
+  '@localixai/mini-app-sdk/document-layout',
+  '@localixai/mini-app-sdk/store-changes',
 ]
 
 /**
@@ -104,7 +104,7 @@ export const PLUGIN_BACKEND_SHARED_MODULES: readonly string[] = [
  * Rendering tests need the host's DOM harness, which only the in-repo plugins have.
  */
 export const PLUGIN_TEST_EXTRA_MODULES: readonly string[] = [
-  '@localixai/plugin-sdk/ui',
+  '@localixai/mini-app-sdk/ui',
   'react',
   'react/jsx-runtime',
 ]

@@ -1,5 +1,5 @@
 import { CheckCircle2 } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { EffectiveConfigReport } from '@localixai/api/client'
 import { DIVIDED_LIST } from '@localixai/kit/divided-list'
 import { DiagnosticIcon, FACT_GROUP_LABEL, InlineFacts } from './DiagnosticsFacts'

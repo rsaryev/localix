@@ -7,7 +7,7 @@ import {
   type RefObject,
   type SetStateAction,
 } from 'react'
-import { saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 
 import type { ReaderChapter, ReaderDocument } from '../shared/contracts'
 import {

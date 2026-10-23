@@ -1,5 +1,5 @@
-import { snippetMessageBindingDraft } from '@localixai/plugin-sdk/ui'
-import { baseName } from '@localixai/plugin-sdk/ui/utilities'
+import { snippetMessageBindingDraft } from '@localixai/mini-app-sdk/ui'
+import { baseName } from '@localixai/mini-app-sdk/ui/utilities'
 import { formatDiagnosticSource, type EditorDiagnostic } from '@/shared/ui/code-editor/types'
 
 /**

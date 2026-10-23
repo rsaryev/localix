@@ -2,7 +2,7 @@ import type {
   PluginUiHost,
   RailSectionContribution,
   RailViewletContribution,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { railSectionRegistry, railViewletRegistry, workItemKindRegistry } from './uiContrib'
 import { registerSearchDomain, removeSearchDomainsOf } from './searchDomains'
 import { registerResourceRefIcons, registerVscFileIcon, removeIconsOf } from './iconContributions'

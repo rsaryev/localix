@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
-import { STATUS_ITEM_PLACEMENTS } from '@localixai/plugin-sdk/ui'
+import { STATUS_ITEM_PLACEMENTS } from '@localixai/mini-app-sdk/ui'
 
 const REPO_ROOT = resolve(import.meta.dir, '..')
 const PLUGINS_ROOT = join(REPO_ROOT, 'mini-apps')

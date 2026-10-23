@@ -1,4 +1,4 @@
-import { clamp, cn } from '@localixai/plugin-sdk/ui/classes'
+import { clamp, cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /**
  * Pure geometry for a circular progress ring. Returns the stroke-dasharray

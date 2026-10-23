@@ -26,7 +26,7 @@ record before changing it.
 | `apps/landing`           | Documentation site and generated navigation.                                                | It is not part of the desktop runtime.                                  |
 | `packages/agent`         | Provider-neutral agent types, tools, messages, and runtime interfaces.                      | It cannot import Localix API features or the engine.                    |
 | `packages/engine*`       | The engine behind the runtime port: loop, model access, script sandbox.                     | Production API imports are limited to the bootstrap composition root.   |
-| `packages/plugin-sdk`    | The mini app manifest (`/app-manifest`) and host contribution contracts.                    | A contribution exists only when its extension is installed and enabled. |
+| `packages/mini-app-sdk`  | The mini app manifest (`/app-manifest`) and host contribution contracts.                    | A contribution exists only when its extension is installed and enabled. |
 | `packages/claude-plugin` | The Claude Code plugin format: `plugin.json` and `hooks.json` schemas, name and path rules. | It knows no Localix concept; `features/plugins/layout` composes it.     |
 | `packages/cli`           | The `localix` launcher: it hands a path to the running desktop app.                         | It opens a deep link; it never starts a runtime or renders a session.   |
 | `plugins`                | Bundled tool, provider, hook, workbench, and UI contributions.                              | Each manifest declares its own capabilities and default state.          |
@@ -83,7 +83,7 @@ UI registry; enabled plugins can contribute additional pane types through the pl
 `@localixai/api/client` is a TYPE-ONLY barrel. Types erase, so importing one costs the web bundle
 nothing; a VALUE import loads the module it lives in and everything that module imports. Because the
 barrel re-exports from the API's own contracts, one value export there can reach the chat contracts,
-the plugin-sdk backend, and through them `node:path` / `node:dns`. Vite does not fail on that — it
+the mini-app-sdk backend, and through them `node:path` / `node:dns`. Vite does not fail on that — it
 externalizes the builtin and hands the browser a stub that throws on first use
 (`Module "node:dns" has been externalized for browser compatibility`).
 
@@ -156,7 +156,7 @@ Plugin enablement changes which tools, providers, hooks, and workbench panes the
 - [Terminal stream pane](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/terminal/ui/TerminalPane.tsx)
 - [Work-item registry](https://github.com/rsaryev/localix/blob/main/apps/ui/src/widgets/editor-grid/ui/registry.tsx)
 - [Runtime interfaces](https://github.com/rsaryev/localix/blob/main/packages/agent/src/runtime/index.ts)
-- [Plugin manifest contracts](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/manifest/index.ts)
+- [Plugin manifest contracts](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/manifest/index.ts)
 - [Architecture checker](https://github.com/rsaryev/localix/blob/main/scripts/check-architecture.mjs)
 - [Browser-graph guard](https://github.com/rsaryev/localix/blob/main/scripts/browser-graph-guard.test.ts)
 - [API export map (the leaves)](https://github.com/rsaryev/localix/blob/main/apps/api/package.json)

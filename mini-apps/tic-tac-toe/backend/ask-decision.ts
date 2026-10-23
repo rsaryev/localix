@@ -2,7 +2,7 @@ import {
   askDecisionForTurn,
   type DecisionAsk,
   type DecisionHost,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 
 import { LINES, freeCells, placeName, type AgentWait, type Game, type Mark } from '../shared/game'
 import type { Seat } from './ask-agent'

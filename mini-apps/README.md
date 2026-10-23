@@ -143,14 +143,14 @@ Choose the matching plugin path and available package script. Hook-only plugins 
 script. Build required workspace dependencies before raw package checks; see
 [Contributing](../CONTRIBUTING.md). CI owns the complete test, type, and repository gates.
 
-The [plugin SDK](../packages/plugin-sdk/README.md) owns typed host contracts. The
+The [plugin SDK](../packages/mini-app-sdk/README.md) owns typed host contracts. The
 [public authoring guide](../docs/extending/plugins.md) owns user-facing examples and should be
 updated whenever plugin behavior changes.
 
 ## Source of truth
 
-- [Manifest contract](../packages/plugin-sdk/src/manifest/index.ts)
+- [Manifest contract](../packages/mini-app-sdk/src/manifest/index.ts)
 - [Installed artifact trust](../apps/api/src/features/ext/trust.ts)
 - [Dependency planning and advisory version checks](../apps/api/src/features/plugins/dependencies.ts)
 - [Developer plugin watcher](../scripts/dev-plugin-watch.mjs)
-- [Plugin SDK entry points](../packages/plugin-sdk/README.md)
+- [Plugin SDK entry points](../packages/mini-app-sdk/README.md)

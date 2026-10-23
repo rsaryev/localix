@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
-import { pluginRealtime } from '@localixai/plugin-sdk/ui/runtime'
+import { pluginRealtime } from '@localixai/mini-app-sdk/ui/runtime'
 import { learningApi, LearningApiError } from '../api/learningApi'
 import type { LearningCourse } from '../../shared/contracts'
 import { useLearningCourse } from './useLearningCourse'

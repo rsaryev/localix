@@ -91,7 +91,7 @@ describe('Autocomplete popup foundation', () => {
     const { act } = React
     const { createRoot } = await import('react-dom/client')
     const { Input } = await import('./input')
-    const { ResultCountStatus } = await import('@localixai/plugin-sdk/ui/result-count-status')
+    const { ResultCountStatus } = await import('@localixai/mini-app-sdk/ui/result-count-status')
     const {
       Autocomplete,
       AutocompleteAnchor,

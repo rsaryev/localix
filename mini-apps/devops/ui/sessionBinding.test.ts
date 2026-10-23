@@ -12,9 +12,9 @@ import {
   bindPluginUiRuntime,
   type PluginUiRuntime,
   type PluginWorkItemRequest,
-} from '@localixai/plugin-sdk/ui/runtime'
-import { recordingPluginUiHost } from '@localixai/plugin-sdk/ui/testing'
-import type { WorkItemKindContribution } from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui/runtime'
+import { recordingPluginUiHost } from '@localixai/mini-app-sdk/ui/testing'
+import type { WorkItemKindContribution } from '@localixai/mini-app-sdk/ui'
 
 import { openDockerContainerTab, openDockerResourceTab } from '../docker/ui/model/openTab'
 import { execIntoContainer } from '../docker/ui/model/execCommand'

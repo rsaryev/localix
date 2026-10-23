@@ -15,7 +15,7 @@
 // kind + value a `localix://resource/chat` node maps to.
 
 import { refToken } from '@localixai/api/context-refs'
-import { parseLocalixResourceUri } from '@localixai/plugin-sdk/ui'
+import { parseLocalixResourceUri } from '@localixai/mini-app-sdk/ui'
 
 /** True for a resource URI owned by the chat-nav provider. */
 export function isChatResourceUri(uri: string): boolean {

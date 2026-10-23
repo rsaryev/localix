@@ -1,4 +1,4 @@
-import type { UiNavigationAction } from '@localixai/plugin-sdk/ui'
+import type { UiNavigationAction } from '@localixai/mini-app-sdk/ui'
 
 import type { KanbanTask } from './contracts'
 

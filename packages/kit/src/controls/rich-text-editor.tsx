@@ -8,7 +8,7 @@ import {
   FIELD_SURFACE,
   CONTROL_FOCUS_VISIBLE,
   CONTROL_INVALID,
-} from '@localixai/plugin-sdk/ui/classes'
+} from '@localixai/mini-app-sdk/ui/classes'
 import {
   richTextDocument,
   richTextSchema,
@@ -16,7 +16,7 @@ import {
   isRichTextHref,
   type RichTextDocument,
   type RichTextValue,
-} from '@localixai/plugin-sdk/rich-text'
+} from '@localixai/mini-app-sdk/rich-text'
 import { useFieldControlProps } from './field'
 import { RichTextToolbar } from './rich-text-toolbar'
 

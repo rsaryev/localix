@@ -1,5 +1,5 @@
 import useSWR from 'swr'
-import { useWorkItemVisible, useVisiblePolling } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible, useVisiblePolling } from '@localixai/mini-app-sdk/ui/visibility'
 import { externalAgentsApi } from '../api'
 import { useInstalledAgents } from './useInstalledAgents'
 import { useHistoryStream } from './useHistoryStream'

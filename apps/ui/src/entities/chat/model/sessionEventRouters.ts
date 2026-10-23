@@ -7,8 +7,8 @@ import { useChatStore } from './store'
 import { backendClient } from '@/shared/api/client'
 import { openPolicy } from '@/shared/lib/workspaceOf'
 
-import { forwardableSessionPhase } from '@localixai/plugin-sdk/ui'
-import { pluginCommandBus } from '@localixai/plugin-sdk/ui/commands'
+import { forwardableSessionPhase } from '@localixai/mini-app-sdk/ui'
+import { pluginCommandBus } from '@localixai/mini-app-sdk/ui/commands'
 import { pluginSessionEventBus } from './pluginSessionEventBus'
 
 /**

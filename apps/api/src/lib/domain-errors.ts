@@ -1,4 +1,4 @@
-import { ApiError } from '@localixai/plugin-sdk/backend'
+import { ApiError } from '@localixai/mini-app-sdk/backend'
 
 /**
  * Domain errors: what a service, repository or runtime module throws when a request cannot be

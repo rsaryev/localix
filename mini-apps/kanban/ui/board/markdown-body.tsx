@@ -1,4 +1,4 @@
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { MarkdownRenderer } from '@localixai/kit/markdown'
 
 /** Compact task text rendered as Markdown. */

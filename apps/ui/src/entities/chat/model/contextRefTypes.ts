@@ -1,6 +1,6 @@
 import type { ContextRefExpansion, MessageContextBinding } from '@/shared/api/contracts'
 import type { ExpansionBudget, ParsedContextRef } from '@localixai/api/context-refs'
-import type { MessageContextBindingDraft } from '@localixai/plugin-sdk/ui'
+import type { MessageContextBindingDraft } from '@localixai/mini-app-sdk/ui'
 import type { inlineCompletionReferences } from './sendRefs'
 
 export interface ContextRefChip {

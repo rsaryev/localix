@@ -46,8 +46,8 @@ The full catalog has about a hundred modules; these are the jobs that are most o
 | A pick in chrome (a mode, an agent)      | `menu-entries` rows with `selected` in a `dropdown-menu`                       |
 | Who plays a game's other side            | `opponent-menu`: `OpponentMenu`, the chat agent or a decision model            |
 | A game's status row and what stopped it  | `game-status`: `GameControlRow`, `GameStatus`, `GameProblem` over the board    |
-| Switching what a pane shows (2–4 views)  | `@localixai/plugin-sdk/ui/segmented-control`                                   |
-| A status tone on a menu row's icon       | `tonedIcon` from `@localixai/plugin-sdk/ui`                                    |
+| Switching what a pane shows (2–4 views)  | `@localixai/mini-app-sdk/ui/segmented-control`                                 |
+| A status tone on a menu row's icon       | `tonedIcon` from `@localixai/mini-app-sdk/ui`                                  |
 | An agent or person in a menu row         | `monogramIcon` from `@localixai/kit/avatar`                                    |
 | An on/off setting / a filter chip        | `switch` / `toggle-pill`; `checkbox` inside forms                              |
 | A pane header, toolbar, status row       | `panel-header`, `workbench-toolbar`, `workbench-statusbar`                     |
@@ -55,7 +55,7 @@ The full catalog has about a hundred modules; these are the jobs that are most o
 | A long navigation path                   | `workbench-breadcrumb` with `scrollable` and `scrollToEndKey`                  |
 | A navigable row, a tree                  | `workbench-list-row` with `tree-navigation`                                    |
 | Metadata that gives way to row actions   | `WorkbenchListRowActions` with `visibility="hover"` and `fallback`             |
-| A table of records                       | `TableGrid` from `@localixai/plugin-sdk/ui/components`                         |
+| A table of records                       | `TableGrid` from `@localixai/mini-app-sdk/ui/components`                       |
 | Nothing to show yet / a failure          | `empty-hint` (one line), `state-notice` (centred, with actions)                |
 | Progress, a live dot, a count badge      | `progress-bar`, `pulsing-dot`, `chip`                                          |
 | "Copied", "Nothing to undo" at a control | `action-feedback` (transient, never the journal)                               |
@@ -67,7 +67,7 @@ The full catalog has about a hundred modules; these are the jobs that are most o
 | A pick that should not close the menu    | `menu-entries` rows with `keepOpen` (a submenu `hint` shows it)                |
 | An inline action beside a menu choice    | `menu-entries` rows with `trailingAction` (independent, stays open)            |
 | A resizable split                        | `pane-resize` with `WorkbenchSash` from `button`                               |
-| A chart                                  | `@localixai/plugin-sdk/ui/charts`                                              |
+| A chart                                  | `@localixai/mini-app-sdk/ui/charts`                                            |
 | A graph or a board                       | `canvas`                                                                       |
 
 ## How it works

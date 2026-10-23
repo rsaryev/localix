@@ -1,6 +1,6 @@
 import { memo, type MouseEvent } from 'react'
 import { Lock, Plus } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { IconButton } from '@localixai/kit/icon-button'
 import { FLOATING_SURFACE } from '@localixai/kit/workbench-toolbar'
 import { Handle, HIDDEN_HANDLE, NodeResizer, Position, type NodeProps } from '@localixai/kit/canvas'

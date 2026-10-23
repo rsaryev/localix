@@ -7,7 +7,7 @@
  */
 import type { Kysely } from 'kysely'
 import { z } from 'zod'
-import type { ChangeFeedHost, PluginChange } from '@localixai/plugin-sdk/backend'
+import type { ChangeFeedHost, PluginChange } from '@localixai/mini-app-sdk/backend'
 import {
   createChangeFeed,
   recordChanges,

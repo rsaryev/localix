@@ -8,5 +8,5 @@ export {
   isPrivateIPv4,
   isPrivateIPv6,
   readBodyCapped,
-} from '@localixai/plugin-sdk/backend'
-export type { HostResolver, HttpFetch } from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
+export type { HostResolver, HttpFetch } from '@localixai/mini-app-sdk/backend'

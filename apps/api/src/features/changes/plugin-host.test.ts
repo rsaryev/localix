@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { CoreDeletion, PluginChange } from '@localixai/plugin-sdk/backend'
+import type { CoreDeletion, PluginChange } from '@localixai/mini-app-sdk/backend'
 import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createCoreChangeFeed, recordCoreChanges } from './core-entities'

@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 import type { Ticker } from '../../backend/contracts'
-import { useVisiblePolling } from '@localixai/plugin-sdk/ui/visibility'
+import { useVisiblePolling } from '@localixai/mini-app-sdk/ui/visibility'
 import { TradingApiError, tradingApi } from '../api/tradingApi'
 import { useTradingStream } from './useTradingStream'
 import { tickerPollPlan } from './tickerPoll'

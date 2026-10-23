@@ -1,5 +1,5 @@
 import type { UiSession } from '@/shared/api/contracts'
-import { buildSessionChain } from '@localixai/plugin-sdk/ui/session-tree'
+import { buildSessionChain } from '@localixai/mini-app-sdk/ui/session-tree'
 
 /**
  * The UNIFIED top-navigation breadcrumb model — one hierarchy chain replacing the

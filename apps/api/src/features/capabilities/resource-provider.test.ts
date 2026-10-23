@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import {
   capabilityResourceUri,
   type CapabilityResourceKind,
-} from '@localixai/plugin-sdk/navigation'
+} from '@localixai/mini-app-sdk/navigation'
 import { createCapabilityResourceProvider } from './resource-provider'
 
 describe('capability resource provider', () => {

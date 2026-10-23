@@ -1,5 +1,5 @@
 import type { MiddlewareHandler } from 'hono'
-import type { HostRouteContext } from '@localixai/plugin-sdk/backend'
+import type { HostRouteContext } from '@localixai/mini-app-sdk/backend'
 import type { Logger } from './logger'
 import { requestQueryKeys, resolveRequestUserId } from './request-identity'
 import { assignRequestId, logCompletedRequest, stampRequestId } from './request-id'

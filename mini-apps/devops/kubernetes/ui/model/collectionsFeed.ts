@@ -1,5 +1,5 @@
-import { createRealtimeFeed, useRealtimeFeed } from '@localixai/plugin-sdk/ui/realtime-feed'
-import { runAsBackgroundWork } from '@localixai/plugin-sdk/ui/visibility'
+import { createRealtimeFeed, useRealtimeFeed } from '@localixai/mini-app-sdk/ui/realtime-feed'
+import { runAsBackgroundWork } from '@localixai/mini-app-sdk/ui/visibility'
 import {
   COLLECTIONS_FRAME_TAG,
   COLLECTIONS_SUBSCRIBE,

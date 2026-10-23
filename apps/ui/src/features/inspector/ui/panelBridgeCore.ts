@@ -8,13 +8,13 @@ import {
   themeMessage,
   type PluginBridgeThemePayload,
   type PluginSessionPhase,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 
 import type { PanelActionContext, PanelActionTable } from '@/shared/contrib/pluginPanelActions'
 
 /**
  * Framework-free HOST side of the plugin-panel bridge (protocol:
- * plugin-sdk/ui/bridge). One instance per mounted panel iframe. The React hook
+ * mini-app-sdk/ui/bridge). One instance per mounted panel iframe. The React hook
  * (usePluginPanelBridge) owns lifecycles and DOM listeners; this core owns the
  * protocol so it is testable with fake windows:
  *

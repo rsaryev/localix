@@ -5,7 +5,7 @@
  * That is the intended convention — but a backend module is written by someone thinking about a
  * server, and one import is all it takes:
  *
- *   ui/register.tsx  →  backend/uri.ts  →  @localixai/plugin-sdk/backend  →  createUserEntityStore
+ *   ui/register.tsx  →  backend/uri.ts  →  @localixai/mini-app-sdk/backend  →  createUserEntityStore
  *                                                                        →  node:fs/promises
  *
  * Vite externalizes `node:` modules for the browser, so that import threw the moment it was
@@ -21,7 +21,7 @@
  *
  * THE RULE IS THE TRANSITIVE CLOSURE, not a ban on imports. An earlier version required a
  * browser-loaded backend module to import NOTHING, which is a proxy for the real danger and one
- * that misprices a safe leaf: `@localixai/plugin-sdk/navigation` is a pure parser the URI grammar
+ * that misprices a safe leaf: `@localixai/mini-app-sdk/navigation` is a pure parser the URI grammar
  * legitimately shares with trading's. So this walks the graph the bundler would walk and fails on
  * what actually breaks — a `node:` builtin, or a module it cannot prove is safe.
  *
@@ -128,9 +128,9 @@ async function resolveSpecifier(spec: string, fromFile: string): Promise<string 
   if (spec.startsWith('.')) {
     const base = path.resolve(path.dirname(fromFile), spec)
     candidates.push(`${base}.ts`, `${base}.tsx`, path.join(base, 'index.ts'), `${base}.js`)
-  } else if (spec.startsWith('@localixai/plugin-sdk')) {
-    const sub = spec.slice('@localixai/plugin-sdk'.length).replace(/^\//, '') || 'index'
-    const base = path.join(REPO, 'packages/plugin-sdk/src', sub)
+  } else if (spec.startsWith('@localixai/mini-app-sdk')) {
+    const sub = spec.slice('@localixai/mini-app-sdk'.length).replace(/^\//, '') || 'index'
+    const base = path.join(REPO, 'packages/mini-app-sdk/src', sub)
     candidates.push(`${base}.ts`, path.join(base, 'index.ts'))
   } else {
     return packageEntry(spec)
@@ -211,7 +211,7 @@ describe('nothing a browser-loaded backend module reaches may touch node', () =>
     // otherwise the walk stopped at depth 1 and the depth claim above is theatre.
     const { visited } = await reachOf(await backendModulesTheBrowserLoads())
     const opened = [...visited].map((f) => path.relative(REPO, f))
-    expect(opened).toContain('packages/plugin-sdk/src/navigation.ts')
+    expect(opened).toContain('packages/mini-app-sdk/src/navigation.ts')
   })
 
   test('package resolution prefers the browser build without pulling backend-only code into UI', async () => {
@@ -230,10 +230,10 @@ describe('nothing a browser-loaded backend module reaches may touch node', () =>
   })
 
   test('the detector fires on the real shape — a barrel it cannot follow', async () => {
-    // The planted bug: the exact import that caused the outage. `@localixai/plugin-sdk/backend`
+    // The planted bug: the exact import that caused the outage. `@localixai/mini-app-sdk/backend`
     // resolves to source here, so the walk follows it and finds `node:` underneath.
     const { offenders } = await reachOf([
-      path.join(REPO, 'packages/plugin-sdk/src/backend/index.ts'),
+      path.join(REPO, 'packages/mini-app-sdk/src/backend/index.ts'),
     ])
     expect(offenders.some((o) => o.includes('node:'))).toBe(true)
   })

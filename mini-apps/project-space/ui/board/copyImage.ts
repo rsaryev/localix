@@ -1,5 +1,5 @@
-import { runPluginAction, toast } from '@localixai/plugin-sdk/ui'
-import { pluginFiles } from '@localixai/plugin-sdk/ui/runtime'
+import { runPluginAction, toast } from '@localixai/mini-app-sdk/ui'
+import { pluginFiles } from '@localixai/mini-app-sdk/ui/runtime'
 import { captureBoard } from '@localixai/kit/canvas'
 import { platformCapabilities } from '@localixai/kit/platform'
 import type { SpaceDocument, SpaceElement } from '../../shared/format/document'

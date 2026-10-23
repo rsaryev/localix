@@ -62,15 +62,15 @@ hint that the resolver may replace with another live connection of the same prov
 
 ## Shape of the system
 
-| Layer               | Contents                                                                                | May depend on                       |
-| ------------------- | --------------------------------------------------------------------------------------- | ----------------------------------- |
-| Contracts and core  | `packages/agent`, `packages/engine-loop`, `packages/claude-plugin`, pure domain modules | Other core packages, zod            |
-| Adapters (packages) | `packages/engine-models`, `packages/engine-scripts`, `packages/engine`                  | Core packages, their own SDKs       |
-| Shared libraries    | `packages/kit`, `packages/plugin-sdk`, `packages/markdown`, other libraries             | Lower libraries; never `apps/*`     |
-| API features        | `apps/api/src/features/*`: routes → service → domain → repository                       | Ports of other features, packages   |
-| API composition     | `apps/api/src/bootstrap/`: builds adapters, wires ports and consumers                   | Everything in the API               |
-| UI                  | `apps/ui/src`: shared → features → widgets → pages → app                                | Lower layers only                   |
-| Plugins             | `plugins/*`: backend, tools and UI through `plugin-sdk`                                 | `plugin-sdk`, `agent`, a few others |
+| Layer               | Contents                                                                                | May depend on                         |
+| ------------------- | --------------------------------------------------------------------------------------- | ------------------------------------- |
+| Contracts and core  | `packages/agent`, `packages/engine-loop`, `packages/claude-plugin`, pure domain modules | Other core packages, zod              |
+| Adapters (packages) | `packages/engine-models`, `packages/engine-scripts`, `packages/engine`                  | Core packages, their own SDKs         |
+| Shared libraries    | `packages/kit`, `packages/mini-app-sdk`, `packages/markdown`, other libraries           | Lower libraries; never `apps/*`       |
+| API features        | `apps/api/src/features/*`: routes → service → domain → repository                       | Ports of other features, packages     |
+| API composition     | `apps/api/src/bootstrap/`: builds adapters, wires ports and consumers                   | Everything in the API                 |
+| UI                  | `apps/ui/src`: shared → features → widgets → pages → app                                | Lower layers only                     |
+| Plugins             | `plugins/*`: backend, tools and UI through `mini-app-sdk`                               | `mini-app-sdk`, `agent`, a few others |
 
 Inside an API feature, a route translates HTTP to a service call, the service applies domain rules
 through ports, and only the repository touches Kysely. Errors are domain errors in the core; routes
@@ -78,12 +78,12 @@ map them to HTTP.
 
 ## Where the building blocks live
 
-| Building block          | Home                                                                                     | Contents                                                                                                                                |
-| ----------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Change feed engine      | `@localixai/change-feed` (`packages/change-feed/src/index.ts`)                           | Notices, registry types, recording, projector and reactor consumers, reconcile, dead letters, consumer health, rebuild, and a test kit. |
-| Route readiness         | `@localixai/agent/catalog` (`packages/agent/src/catalog/route-readiness.ts`)             | Whether a stored model route can run now, and on which connection; shared by the server and the UI.                                     |
-| Client resource sync    | `@localixai/plugin-sdk/ui/resource-sync` (`packages/plugin-sdk/src/ui/resource-sync.ts`) | The scheduler every read model uses; after a reconnect whose frames were replayed it re-reads only what the outage cut off.             |
-| Core registry and relay | `apps/api/src/features/changes/core-entities.ts`, `apps/api/src/features/realtime/`      | The core entity kinds; the relay from notices to client topics is planned there.                                                        |
+| Building block          | Home                                                                                         | Contents                                                                                                                                |
+| ----------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Change feed engine      | `@localixai/change-feed` (`packages/change-feed/src/index.ts`)                               | Notices, registry types, recording, projector and reactor consumers, reconcile, dead letters, consumer health, rebuild, and a test kit. |
+| Route readiness         | `@localixai/agent/catalog` (`packages/agent/src/catalog/route-readiness.ts`)                 | Whether a stored model route can run now, and on which connection; shared by the server and the UI.                                     |
+| Client resource sync    | `@localixai/mini-app-sdk/ui/resource-sync` (`packages/mini-app-sdk/src/ui/resource-sync.ts`) | The scheduler every read model uses; after a reconnect whose frames were replayed it re-reads only what the outage cut off.             |
+| Core registry and relay | `apps/api/src/features/changes/core-entities.ts`, `apps/api/src/features/realtime/`          | The core entity kinds; the relay from notices to client topics is planned there.                                                        |
 
 Route readiness and resource sync were planned as packages of their own. Each already had a shared
 home that both the API and the UI import, so a new package would only have moved or copied code.
@@ -207,5 +207,5 @@ Checks that hold today and back these rules:
 - [Change feed engine](../../../packages/change-feed/src/feed.ts)
 - [Consumer loop](../../../packages/change-feed/src/consumer.ts)
 - [Core entity registry](../../../apps/api/src/features/changes/core-entities.ts)
-- [Client resource sync](../../../packages/plugin-sdk/src/ui/resource-sync.ts)
+- [Client resource sync](../../../packages/mini-app-sdk/src/ui/resource-sync.ts)
 - [Architecture checks](../../../scripts/check-architecture.mjs)

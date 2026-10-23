@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { buildDiffDocument, type DiffDocument, type DiffLineInput } from '@localixai/kit/diff'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import type {
   FileDiffLines,
   LineStageMode,

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { CODE_VIEWER_HIGHLIGHT } from '@localixai/kit/code-block'
 import { isPrimaryModifier } from '@localixai/kit/keybindings'
 

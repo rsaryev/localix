@@ -83,7 +83,7 @@ import {
   getPreviewProbeJs,
   getNativeBrowserProbeJs,
 } from './features/agent-core/tools/preview/preview-probe'
-import type { HostRouteContext } from '@localixai/plugin-sdk/backend'
+import type { HostRouteContext } from '@localixai/mini-app-sdk/backend'
 import { createUiLocationCatalogRoutes } from './features/ui-locations/routes'
 import type { UiLocationCatalogService } from './features/ui-locations/service'
 

@@ -4,7 +4,7 @@
  * capabilities are not registered by this entry point.
  */
 import type { AgentTool } from '@localixai/agent/agents'
-import type { PluginContext, PluginRegistration } from '@localixai/plugin-sdk/backend'
+import type { PluginContext, PluginRegistration } from '@localixai/mini-app-sdk/backend'
 import { bindStoreSecret, getTradingService } from './singleton'
 import { createTradingRoutes } from './routes'
 import { createTradingResourceProvider } from './resource-provider'

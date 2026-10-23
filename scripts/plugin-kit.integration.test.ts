@@ -17,7 +17,7 @@ import {
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 
-import ts from '@localixai/plugin-kit-compiler'
+import ts from '@localixai/mini-app-kit-compiler'
 
 import { checkUserPlugin } from '../apps/api/src/features/plugins/authoring/check'
 import { loadPluginKit, type PluginKit } from '../apps/api/src/features/plugins/authoring/kit'
@@ -510,7 +510,7 @@ describe('a scaffolded user plugin', () => {
     writeFileSync(
       join(dir, 'ui', 'Wrong.tsx'),
       [
-        "import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'",
+        "import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'",
         "export const wrong = (publish: PublishMessageContext) => publish({ strategy: 'replace', text: 'x' })",
       ].join('\n'),
     )
@@ -529,7 +529,7 @@ describe('a scaffolded user plugin', () => {
     writeFileSync(
       join(dir, 'backend', 'wrong-tool.ts'),
       [
-        "import type { PluginContext } from '@localixai/plugin-sdk/backend'",
+        "import type { PluginContext } from '@localixai/mini-app-sdk/backend'",
         'export const wrong = (ctx: PluginContext) =>',
         '  ctx.defineTool({',
         "    name: 'wrong_tool',",

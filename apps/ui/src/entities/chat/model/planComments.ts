@@ -14,7 +14,7 @@ import type { CommentView, SessionPlan } from '@localixai/api/client'
 import { backendClient } from '@/shared/api/client'
 import { planCommentScope } from '@/shared/api/plans-client'
 import { toast } from '@/shared/lib/notify'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 import { commentQuote, decideCarryOver } from './planCommentCarry'
 

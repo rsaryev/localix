@@ -1,4 +1,4 @@
-import { formatFileSize } from '@localixai/plugin-sdk/ui/utilities'
+import { formatFileSize } from '@localixai/mini-app-sdk/ui/utilities'
 import { mediaSrc } from '@/shared/lib/mediaSrc'
 import type { MessageAttachment } from '@/shared/api/contracts'
 import type { PendingAttachment } from '@/shared/lib/attachment-policy'

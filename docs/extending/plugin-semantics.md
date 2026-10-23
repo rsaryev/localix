@@ -47,13 +47,14 @@ does not own. `available(userId)` says whether a decision would be answered now.
 else `null`.
 
 A game whose other side can be the decision model keeps the choice with its table
-(`@localixai/plugin-sdk/opponent`), asks for a turn with `askDecisionForTurn` (one `choice` question
-over the legal moves; a miss comes back as the reason the board shows), and offers the choice with
-`OpponentMenu` from `@localixai/kit/opponent-menu`. Show the miss with `GameProblem` from
-`@localixai/kit/game-status`, over the board, with Ask again and the other opponent as its actions.
+(`@localixai/mini-app-sdk/opponent`), asks for a turn with `askDecisionForTurn` (one `choice`
+question over the legal moves; a miss comes back as the reason the board shows), and offers the
+choice with `OpponentMenu` from `@localixai/kit/opponent-menu`. Show the miss with `GameProblem`
+from `@localixai/kit/game-status`, over the board, with Ask again and the other opponent as its
+actions.
 
 The bundled games are the examples. Ask after the person's request has answered, with
-`decisionTurns` from `@localixai/plugin-sdk/backend`: the route records the model as thinking and
+`decisionTurns` from `@localixai/mini-app-sdk/backend`: the route records the model as thinking and
 returns the person's move at once, and the model's move lands through the store feed.
 `createTurnTable`, from the same entry point, does all of this for a game with one board per chat:
 give it the rules (who owes a turn, the position's key, how a decision is played) and it keeps the
@@ -128,6 +129,6 @@ await host?.changes?.followCoreDeletions('unassign', async (deletion) => {
 ## Availability
 
 All three exist on the boot-time backend load, like `watchPath`. Types:
-[`semantic.ts`](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/backend/semantic.ts),
-[`decision.ts`](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/backend/decision.ts),
-[`changes.ts`](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/backend/changes.ts).
+[`semantic.ts`](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/semantic.ts),
+[`decision.ts`](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/decision.ts),
+[`changes.ts`](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/changes.ts).

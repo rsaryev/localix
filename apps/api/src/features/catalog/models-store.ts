@@ -1,6 +1,6 @@
 import { readFile, rm } from 'node:fs/promises'
 import { join } from 'node:path'
-import { atomicWriteFile } from '@localixai/plugin-sdk/backend'
+import { atomicWriteFile } from '@localixai/mini-app-sdk/backend'
 import type { EngineCatalogStore } from '@localixai/agent/runtime'
 
 import { localixHome } from '../../lib/env'

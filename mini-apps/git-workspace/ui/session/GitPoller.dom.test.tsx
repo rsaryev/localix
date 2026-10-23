@@ -6,7 +6,7 @@ import {
   type PluginUiRuntime,
   type PluginSession,
   type PluginWorkspaceWatchHandlers,
-} from '@localixai/plugin-sdk/ui/runtime'
+} from '@localixai/mini-app-sdk/ui/runtime'
 import { useSourceControlStore } from '../source-control/model/store'
 import { CHANGE_WINDOW_MS } from '../source-control/model/useGitPoller'
 import { GitPoller } from './GitPoller'

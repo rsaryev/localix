@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BookMarked, NotebookPen } from 'lucide-react'
-import { createMessageBindingDraft, runPluginAction, toast } from '@localixai/plugin-sdk/ui'
-import { pluginFiles, pluginNavigation } from '@localixai/plugin-sdk/ui/runtime'
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { createMessageBindingDraft, runPluginAction, toast } from '@localixai/mini-app-sdk/ui'
+import { pluginFiles, pluginNavigation } from '@localixai/mini-app-sdk/ui/runtime'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 
 import { Button } from '@localixai/kit/button'
 import { ConfirmDialog } from '@localixai/kit/confirm-dialog'

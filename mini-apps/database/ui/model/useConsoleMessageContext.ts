@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
-import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
-import { snippetMessageBindingDraft } from '@localixai/plugin-sdk/ui'
+import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'
+import { snippetMessageBindingDraft } from '@localixai/mini-app-sdk/ui'
 import type { ResultTab } from './resultTabs'
 import { activeResultFacet, draftFacet, outputFacet } from './consoleContext'
 

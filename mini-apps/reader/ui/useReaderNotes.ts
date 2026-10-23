@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
-import { resourceMessageBindingDraft, snippetMessageBindingDraft } from '@localixai/plugin-sdk/ui'
-import { pluginComposer } from '@localixai/plugin-sdk/ui/runtime'
+import { resourceMessageBindingDraft, snippetMessageBindingDraft } from '@localixai/mini-app-sdk/ui'
+import { pluginComposer } from '@localixai/mini-app-sdk/ui/runtime'
 
 import type { ReaderChapter, ReaderDocument, ReaderSource } from '../shared/contracts'
 import { readerChapterUri } from '../shared/resource-uri'

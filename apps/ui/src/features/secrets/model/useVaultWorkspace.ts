@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { SecretMeta } from '@localixai/api/client'
-import type { Problem } from '@localixai/plugin-sdk/ui/problems'
+import type { Problem } from '@localixai/mini-app-sdk/ui/problems'
 import { secretsApi } from '@/shared/api/secretsApi'
 import { useResourceRevision } from '@/shared/api/useResourceRevision'
-import { createMessageBindingDraft } from '@localixai/plugin-sdk/ui/message-binding-drag'
+import { createMessageBindingDraft } from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { registerUiTarget } from '@/shared/lib/uiTargetRegistry'
 import { useProblemReport } from '@/shared/ui/problem-report'

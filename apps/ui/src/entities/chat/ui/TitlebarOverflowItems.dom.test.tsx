@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
-import type { StatusItemContribution } from '@localixai/plugin-sdk/ui'
+import type { StatusItemContribution } from '@localixai/mini-app-sdk/ui'
 import { registerDom } from '@localixai/kit/testing/dom'
 
 let teardown: () => Promise<void>

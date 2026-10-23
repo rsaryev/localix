@@ -4,7 +4,7 @@ import type {
   UiLocationDescriptor,
   UiLocationParamSchema,
   UiLocationPresentation,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 
 type NormalizedArgs = Record<string, string | string[] | boolean | number>
 export type ErasedLocation = Omit<UiLocationContribution, 'present' | 'resolve'> & {

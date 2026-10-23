@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { resolveExecutable } from '@localixai/plugin-sdk/backend'
+import { resolveExecutable } from '@localixai/mini-app-sdk/backend'
 
 /**
  * Is a container engine INSTALLED here, even though the `docker` CLI could not be run?

@@ -1,5 +1,5 @@
 import { invokeUi, type UiNavigationHost } from '@/shared/lib/uiNavigation'
-import { parseLocalixUri } from '@localixai/plugin-sdk/navigation'
+import { parseLocalixUri } from '@localixai/mini-app-sdk/navigation'
 
 /**
  * Registry-first UI-anchor activation. Search and `/open` share this entry point;

@@ -1,4 +1,4 @@
-import type { MessageBindingDraft } from '@localixai/plugin-sdk/ui'
+import type { MessageBindingDraft } from '@localixai/mini-app-sdk/ui'
 import type { MessageBinding } from '@/shared/api/contracts'
 
 /**

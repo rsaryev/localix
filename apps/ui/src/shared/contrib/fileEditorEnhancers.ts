@@ -1,4 +1,4 @@
-import type { FileEditorEnhancerContribution } from '@localixai/plugin-sdk/ui'
+import type { FileEditorEnhancerContribution } from '@localixai/mini-app-sdk/ui'
 
 const enhancers: FileEditorEnhancerContribution[] = []
 

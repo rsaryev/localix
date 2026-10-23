@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
-import { pluginRealtime } from '@localixai/plugin-sdk/ui/runtime'
+import { pluginRealtime } from '@localixai/mini-app-sdk/ui/runtime'
 import type { DbConnectionInfo } from '../dbClient'
 import { parseDatabaseChange } from '../../shared/database-changes'
 
@@ -36,7 +36,7 @@ const connection = (id: string): DbConnectionInfo => ({
 let seq = 0
 /** What the stream router does with the tool's `emitCommand`, from a chat that is NOT on screen. */
 async function frameFromBackgroundChat(payload: unknown) {
-  const { pluginCommandBus } = await import('@localixai/plugin-sdk/ui/commands')
+  const { pluginCommandBus } = await import('@localixai/mini-app-sdk/ui/commands')
   const { initDatabaseChanges } = await import('./databaseChanges')
   initDatabaseChanges()
   seq += 1

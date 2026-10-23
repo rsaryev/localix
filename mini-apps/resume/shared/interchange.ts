@@ -1,5 +1,5 @@
 import { parse, stringify } from 'yaml'
-import { richTextToMarkdown } from '@localixai/plugin-sdk/rich-text'
+import { richTextToMarkdown } from '@localixai/mini-app-sdk/rich-text'
 import {
   documentSchema,
   emptyDocument,

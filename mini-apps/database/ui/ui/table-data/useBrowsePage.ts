@@ -10,8 +10,8 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { filterRows, type SortSpec } from '@localixai/dataview'
-import { acknowledgeInline, type PublishMessageContext } from '@localixai/plugin-sdk/ui'
-import { resourceKeyAffected } from '@localixai/plugin-sdk/ui/resource-topics'
+import { acknowledgeInline, type PublishMessageContext } from '@localixai/mini-app-sdk/ui'
+import { resourceKeyAffected } from '@localixai/mini-app-sdk/ui/resource-topics'
 import { databaseApi, DbApiError } from '../../api/databaseApi'
 import type { DbConnectionInfo } from '../../dbClient'
 import { adaptResult, type AdaptedResult } from '../../model/resultAdapter'

@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { FileDown } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { getFileDropActive, subscribeFileDropActive } from '@/shared/lib/fileDropActive'
 import { isDesktop } from '@localixai/kit/environment'
 import { DROP_TARGET_HINT } from '@localixai/kit/drop-target'

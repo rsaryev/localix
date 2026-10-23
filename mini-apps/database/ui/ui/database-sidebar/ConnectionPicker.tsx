@@ -1,10 +1,10 @@
 import { GripVertical, MoreHorizontal, Pencil, SlidersHorizontal, Trash2 } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { ActivityOrb } from '@localixai/kit/activity-orb'
 import {
   createMessageBindingDraft,
   setMessageBindingDrag,
-} from '@localixai/plugin-sdk/ui/message-binding-drag'
+} from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import { Combobox, type ComboboxOption } from '@localixai/kit/combobox'
 import {
   DropdownMenu,

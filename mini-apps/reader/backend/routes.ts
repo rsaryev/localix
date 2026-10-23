@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { routeValidator, type PluginRouteContext } from '@localixai/plugin-sdk/backend'
+import { routeValidator, type PluginRouteContext } from '@localixai/mini-app-sdk/backend'
 import type { z } from 'zod'
 
 import type { ReaderService } from './service'

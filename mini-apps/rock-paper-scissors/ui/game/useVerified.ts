@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { verifySealed, type SealedView } from '@localixai/plugin-sdk/sealed'
+import { verifySealed, type SealedView } from '@localixai/mini-app-sdk/sealed'
 
 /**
  * Whether a revealed commitment reproduces the digest shown before the reveal — checked here, in

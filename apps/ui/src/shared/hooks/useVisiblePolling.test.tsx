@@ -35,7 +35,7 @@ describe('useVisiblePolling in-flight guard (identity, not boolean)', () => {
     const React = await import('react')
     const { createRoot } = await import('react-dom/client')
     const { act } = React
-    const { useVisiblePolling } = await import('@localixai/plugin-sdk/ui/visibility')
+    const { useVisiblePolling } = await import('@localixai/mini-app-sdk/ui/visibility')
 
     const started: Array<ReturnType<typeof deferred>> = []
     const onTick = () => {
@@ -96,7 +96,7 @@ describe('useVisiblePolling in-flight guard (identity, not boolean)', () => {
     const React = await import('react')
     const { createRoot } = await import('react-dom/client')
     const { act } = React
-    const { useVisiblePolling } = await import('@localixai/plugin-sdk/ui/visibility')
+    const { useVisiblePolling } = await import('@localixai/mini-app-sdk/ui/visibility')
 
     let calls = 0
     function Poller() {
@@ -132,8 +132,8 @@ describe('useVisiblePolling work-item visibility', () => {
     const React = await import('react')
     const { createRoot } = await import('react-dom/client')
     const { act } = React
-    const { useVisiblePolling } = await import('@localixai/plugin-sdk/ui/visibility')
-    const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
+    const { useVisiblePolling } = await import('@localixai/mini-app-sdk/ui/visibility')
+    const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
 
     let calls = 0
     function Poller() {

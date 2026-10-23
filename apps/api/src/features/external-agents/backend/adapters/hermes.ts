@@ -1,4 +1,4 @@
-import { shellQuote } from '@localixai/plugin-sdk/backend'
+import { shellQuote } from '@localixai/mini-app-sdk/backend'
 /**
  * Hermes adapter — `hermes_sqlite`, `~/.hermes/state.db`.
  *

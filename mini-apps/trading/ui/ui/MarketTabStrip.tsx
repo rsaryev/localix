@@ -7,7 +7,7 @@
  * takes its accent and seam from the sidebar tokens.
  */
 import { TabStrip } from '@localixai/kit/tabs'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { MarketPickerTab } from '../model/marketPicker'
 
 export function MarketTabStrip({

@@ -1,7 +1,7 @@
 import { Children, type ReactNode } from 'react'
 import { FileText, FileType2, X } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { formatFileSize } from '@localixai/plugin-sdk/ui/utilities'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { formatFileSize } from '@localixai/mini-app-sdk/ui/utilities'
 
 /**
  * The small round remove badge shared by image + generic chips. Exported so

@@ -2,7 +2,7 @@ import { BarChart3, Filter, Rows2, Rows3, SquareKanban, X } from 'lucide-react'
 import {
   SegmentedRadioGroup,
   type SegmentedRadioOption,
-} from '@localixai/plugin-sdk/ui/segmented-control'
+} from '@localixai/mini-app-sdk/ui/segmented-control'
 import { Button } from '@localixai/kit/button'
 import { Chip } from '@localixai/kit/chip'
 import {

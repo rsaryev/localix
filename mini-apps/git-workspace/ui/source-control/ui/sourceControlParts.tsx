@@ -1,5 +1,5 @@
 import type { ComponentPropsWithRef, ReactNode } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Spinner } from '@localixai/kit/spinner'
 import { Button } from '@localixai/kit/button'
 

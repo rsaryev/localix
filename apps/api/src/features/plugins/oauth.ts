@@ -7,11 +7,11 @@ import {
   pollDeviceCode,
   type OAuthCredential,
   type PluginOAuth,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 
 /**
  * Host implementation of `ctx.oauth` — the {@link PluginOAuth} contract is OWNED
- * by `@localixai/plugin-sdk` (plugins compile against it); this module provides
+ * by `@localixai/mini-app-sdk` (plugins compile against it); this module provides
  * the generic PKCE engine exposed to plugin code so a Spotify/Google/GitHub tool
  * never copy-pastes the verifier/challenge/loopback dance. Pure-data specs
  * (`ManifestOAuthSpec`) drive the flow.
@@ -20,7 +20,7 @@ import {
  * `ctx.helpers.readJson/writeJson`) — the host doesn't take custody of
  * third-party credentials beyond the declared `config` secrets.
  */
-export type { PluginOAuth } from '@localixai/plugin-sdk/backend'
+export type { PluginOAuth } from '@localixai/mini-app-sdk/backend'
 
 const LOGIN_TIMEOUT_MS = 5 * 60 * 1000
 

@@ -8,7 +8,7 @@
  * `model/git-store/mutations.ts`, pinned by its test), which is what tells the
  * commit graph (which fetches its own log) that its data is stale.
  */
-import { unwrapPluginResponse } from '@localixai/plugin-sdk/ui'
+import { unwrapPluginResponse } from '@localixai/mini-app-sdk/ui'
 import type {
   BisectTerm,
   RebaseTodoEntry,

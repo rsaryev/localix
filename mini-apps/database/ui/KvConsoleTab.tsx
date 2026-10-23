@@ -1,4 +1,4 @@
-import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
+import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'
 import { databaseApi } from './api/databaseApi'
 import { parseRedisType, readCommandForType, redisTouchesKeyspace } from './model/kvRead'
 import { schemaStore } from './model/schemaStore'

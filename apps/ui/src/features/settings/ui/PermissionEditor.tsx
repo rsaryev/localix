@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { CapabilityRule } from '@/shared/api/contracts'
 import { Button } from '@localixai/kit/button'
 import { IconButton } from '@localixai/kit/icon-button'

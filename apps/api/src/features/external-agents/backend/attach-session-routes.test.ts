@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { Hono } from 'hono'
-import type { HostRouteContext } from '@localixai/plugin-sdk/backend'
+import type { HostRouteContext } from '@localixai/mini-app-sdk/backend'
 import { createAttachAgentRoutes, type AttachSessionHost } from './attach-session-routes'
 
 function fixture(cwd: string | undefined = '/work/project/child') {

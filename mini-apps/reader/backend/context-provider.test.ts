@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { ContextResolver } from '@localixai/plugin-sdk/backend'
+import type { ContextResolver } from '@localixai/mini-app-sdk/backend'
 
 import { readerChapterUri } from '../shared/resource-uri'
 import { createReaderContextProvider } from './context-provider'

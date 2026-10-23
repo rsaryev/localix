@@ -1,4 +1,4 @@
-import { pluginCommandBus, type PluginCommandEvent } from '@localixai/plugin-sdk/ui/commands'
+import { pluginCommandBus, type PluginCommandEvent } from '@localixai/mini-app-sdk/ui/commands'
 import {
   TRADING_CHART_CHANNEL,
   TRADING_PLUGIN,

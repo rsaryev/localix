@@ -18,7 +18,7 @@
 // pools ONE venue websocket per connection (a tab's channels share liveness) and status is
 // only advisory (a spurious `down` just resumes an always-correct REST poll; `live` is also
 // proven by data arrival).
-import { createRealtimeFeed } from '@localixai/plugin-sdk/ui/realtime-feed'
+import { createRealtimeFeed } from '@localixai/mini-app-sdk/ui/realtime-feed'
 import type { StreamChannel, StreamPayload } from '../../backend/backend'
 import type { StreamStatus, TradingStreamFrame } from '../../backend/stream'
 

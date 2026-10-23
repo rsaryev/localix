@@ -19,7 +19,7 @@
 // Every argument is POSIX SINGLE-quoted, which takes everything literally: a `${secret:KEY}` is
 // neither expanded by the shell nor mangled in the text (a backslash-escaping quoter would render it
 // `\$\{secret:KEY\}`, breaking the copy and the "keep the reference legible" contract).
-import { shellQuote as shQuote } from '@localixai/plugin-sdk/backend'
+import { shellQuote as shQuote } from '@localixai/mini-app-sdk/backend'
 import { redactSpec } from '../store'
 import {
   activePairs,

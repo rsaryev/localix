@@ -7,7 +7,7 @@
  * no longer re-reads the workspace after a click: deleting a branch used to mean
  * a write plus a full four-endpoint refresh queued behind the current poll.
  */
-import { unwrapPluginResponse } from '@localixai/plugin-sdk/ui'
+import { unwrapPluginResponse } from '@localixai/mini-app-sdk/ui'
 import type { SourceControlMutation } from '../../backend/source-control/contracts'
 import { client } from './client'
 

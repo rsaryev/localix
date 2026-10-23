@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react'
-import type { MenuActionEntry, MenuEntry, MenuSubmenuEntry } from '@localixai/plugin-sdk/ui'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import type { MenuActionEntry, MenuEntry, MenuSubmenuEntry } from '@localixai/mini-app-sdk/ui'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { MENU_FAMILIES as FAMILIES, type MenuFamilyName } from './menu-families'
 import { MenuRowLabel, MenuTrailingCheck } from './menu-row-parts'
 import { MENU_SHORTCUT } from './popover-surface'

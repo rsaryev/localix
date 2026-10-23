@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { TriangleAlert, RotateCcw, X } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { chordFromEvent, type Chord } from '@/shared/lib/keybindings'
 import { KeyChip } from './KeyChip'
 import { Button } from '@localixai/kit/button'

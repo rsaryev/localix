@@ -17,8 +17,8 @@
 // that to a stub which throws on first property access. The whole DevOps plugin then failed to
 // register its UI with "Module node:dns has been externalized for browser compatibility", and
 // because the failure is caught per-plugin it surfaced only as a missing workspace.
-import { defineTypedError, type TypedDomainError } from '@localixai/plugin-sdk/typed-error'
-import { isMissingExecutable } from '@localixai/plugin-sdk/prerequisite'
+import { defineTypedError, type TypedDomainError } from '@localixai/mini-app-sdk/typed-error'
+import { isMissingExecutable } from '@localixai/mini-app-sdk/prerequisite'
 import { credentialHelperPrerequisite } from './local-cluster'
 
 export type KubeErrorCode =

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { DecisionAsk } from '@localixai/plugin-sdk/backend'
+import type { DecisionAsk } from '@localixai/mini-app-sdk/backend'
 import { createPluginDecisionHost } from './plugin-host'
 import type { DecisionCallOptions, DecisionService } from './service'
 

@@ -5,7 +5,7 @@ import { formatBytes } from '../../shared/system'
 import { Button } from '@localixai/kit/button'
 import { SearchInput } from '@localixai/kit/search-input'
 import { WorkbenchFilterBar } from '@localixai/kit/workbench-filter-bar'
-import { ProblemLine } from '@localixai/plugin-sdk/ui/components'
+import { ProblemLine } from '@localixai/mini-app-sdk/ui/components'
 import { useSystemProblem } from './useSystemProblem'
 import { usePolledSnapshot } from '../usePolledSnapshot'
 import {

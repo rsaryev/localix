@@ -3,7 +3,7 @@ import {
   buildUiLocationUri,
   normalizeUiAgentLocationCatalogSnapshot,
   type UiLocationContribution,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 
 import { setEnabledPluginNames } from './pluginActivation'
 import { createUiLocationRegistry, type UiLocationRegistry } from './uiLocations'

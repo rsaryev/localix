@@ -6,7 +6,7 @@ import type { PluginChannel } from './channel-contracts'
 import type { PluginHooks, MemoryProvider } from './hook-contracts'
 import type { PluginContext } from './native'
 import type { BackendSubsystem } from '../ext/subsystem-contrib'
-import type { PluginRegistration } from '@localixai/plugin-sdk/backend'
+import type { PluginRegistration } from '@localixai/mini-app-sdk/backend'
 
 /**
  * Structural shaping of whatever a native plugin's `register()` (or default/tools

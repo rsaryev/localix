@@ -8,7 +8,7 @@ import { create } from 'zustand'
 import { toast } from '@/shared/lib/notify'
 import { backendClient } from '@/shared/api/client'
 import { inspector } from '@/shared/lib/inspectorBus'
-import { baseName, errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { baseName, errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { buildCompareDiff, compareDiffPath } from '../lib/compare-diff'
 

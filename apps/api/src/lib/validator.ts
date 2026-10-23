@@ -1,7 +1,7 @@
 import { zValidator as honoZodValidator } from '@hono/zod-validator'
 import type { ValidationTargets } from 'hono'
 import type { ZodType } from 'zod'
-import { summarizeZodIssues } from '@localixai/plugin-sdk/backend'
+import { summarizeZodIssues } from '@localixai/mini-app-sdk/backend'
 import { jsonError } from './http'
 
 /**

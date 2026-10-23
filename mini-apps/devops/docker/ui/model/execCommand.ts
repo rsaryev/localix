@@ -1,5 +1,5 @@
 import { spawnInTerminal } from './terminalSpawn'
-import { shellQuote } from '@localixai/plugin-sdk/ui/utilities'
+import { shellQuote } from '@localixai/mini-app-sdk/ui/utilities'
 
 /**
  * Build the shell command that opens an interactive session inside a container.

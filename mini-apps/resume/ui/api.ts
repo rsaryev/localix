@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { pluginApiFetch, unwrapPluginResponse } from '@localixai/plugin-sdk/ui/transport'
+import { pluginApiFetch, unwrapPluginResponse } from '@localixai/mini-app-sdk/ui/transport'
 import { resumeSchema, resumeSummarySchema, type ResumeDocument } from '../shared/schema'
 import { revisionRecordSchema } from '../shared/file-contract'
 import type { ResumeOperation } from '../shared/operations'

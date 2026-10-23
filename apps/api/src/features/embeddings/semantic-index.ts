@@ -12,7 +12,7 @@ import type {
   SemanticSimilarOptions,
   SemanticTask,
   SemanticVectors,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import type { SemanticStore } from './store'
 import type { VectorCache } from './vector-cache'
 

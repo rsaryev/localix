@@ -1,4 +1,4 @@
-import type { PluginRouteScope } from '@localixai/plugin-sdk/backend'
+import type { PluginRouteScope } from '@localixai/mini-app-sdk/backend'
 import type { CollectionStore } from './collection/store'
 import type { EnvironmentService } from './environments/service'
 

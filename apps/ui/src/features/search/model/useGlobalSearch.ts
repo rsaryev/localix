@@ -2,10 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SearchGroup } from '@localixai/api/client'
 import { searchApi, SearchApiError } from '../api/searchApi'
 import { ALL_SCOPE, parseScope, scopeById, scopeToDomains, type ScopeDef } from './scopes'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { SearchRequestCoordinator, type SearchRequestTicket } from './searchRequestCoordinator'
-import type { Problem } from '@localixai/plugin-sdk/ui/problems'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import type { Problem } from '@localixai/mini-app-sdk/ui/problems'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { toast } from '@/shared/lib/notify'
 
 /**

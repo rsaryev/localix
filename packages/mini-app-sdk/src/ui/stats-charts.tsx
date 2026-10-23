@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { formatBucketLabel, shortKey } from './utilities'
 
 /**

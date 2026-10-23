@@ -57,7 +57,7 @@
     "screenshots:coverage": "bun scripts/screenshots/workbench-coverage.mjs"
   },
   "devDependencies": {
-    "@localixai/plugin-kit-compiler": "workspace:*",
+    "@localixai/mini-app-kit-compiler": "workspace:*",
     "@playwright/test": "1.64.1",
     "@types/node": "26.6.5",
     "hono": "^4.13.13",

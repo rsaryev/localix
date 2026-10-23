@@ -10,8 +10,8 @@
  * encourage exactly that. Auth is the one place we promise to keep secret.
  */
 
-import { hasSecretTokens, resolveSecretTokens } from '@localixai/plugin-sdk/backend'
-import type { SecretConsumer } from '@localixai/plugin-sdk/backend'
+import { hasSecretTokens, resolveSecretTokens } from '@localixai/mini-app-sdk/backend'
+import type { SecretConsumer } from '@localixai/mini-app-sdk/backend'
 import type { RequestAuth } from './request-spec'
 
 /**

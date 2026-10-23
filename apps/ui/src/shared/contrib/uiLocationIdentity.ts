@@ -2,7 +2,7 @@ import {
   localixUiUri,
   parseLocalixUri,
   type LocalixUiPrimitive,
-} from '@localixai/plugin-sdk/navigation'
+} from '@localixai/mini-app-sdk/navigation'
 
 /**
  * Build a registry id from plugin-supplied identity that is valid by construction.

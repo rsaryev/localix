@@ -131,11 +131,11 @@ enhancers or one tab strip's kinds. Only a consumer whose own slice moved re-ren
 
 | Module                                                                                                                          | Invariant                                                                      | Failure when violated                                                                    |
 | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| [`packages/plugin-sdk/src/backend/subsystem.ts`](../../../packages/plugin-sdk/src/backend/subsystem.ts)                         | `BackendSubsystem` is the only plugin-to-core backend contribution shape.      | Adding a parallel composition path makes enable, disable, and shutdown behavior diverge. |
+| [`packages/mini-app-sdk/src/backend/subsystem.ts`](../../../packages/mini-app-sdk/src/backend/subsystem.ts)                     | `BackendSubsystem` is the only plugin-to-core backend contribution shape.      | Adding a parallel composition path makes enable, disable, and shutdown behavior diverge. |
 | [`apps/api/src/features/plugins/backend-host.ts`](../../../apps/api/src/features/plugins/backend-host.ts)                       | Wire providers before routes; stop activity before unwiring.                   | A route can serve without dependencies, or live plugin work can outlast disable.         |
 | [`apps/api/src/features/plugins/backend-host-ui-actions.ts`](../../../apps/api/src/features/plugins/backend-host-ui-actions.ts) | A UI action resolves in its exact (plugin, project) scope, to one own handler. | A project override answers with the global handler, or a hung handler holds the request. |
 | [`apps/api/src/features/ext/capability-registry.ts`](../../../apps/api/src/features/ext/capability-registry.ts)                 | Capability ownership is first-wins and source-checked on removal.              | A disabled loser can otherwise remove or replace the active provider.                    |
-| [`packages/plugin-sdk/src/backend/ws-frame-registry.ts`](../../../packages/plugin-sdk/src/backend/ws-frame-registry.ts)         | Command pairs are unique and connection streams are reference-counted.         | Subscribe routing becomes ambiguous or one consumer stops another's stream.              |
+| [`packages/mini-app-sdk/src/backend/ws-frame-registry.ts`](../../../packages/mini-app-sdk/src/backend/ws-frame-registry.ts)     | Command pairs are unique and connection streams are reference-counted.         | Subscribe routing becomes ambiguous or one consumer stops another's stream.              |
 | [`apps/ui/src/shared/contrib/host.ts`](../../../apps/ui/src/shared/contrib/host.ts)                                             | Plugins receive one façade and host-stamped ownership.                         | Plugin code can couple to private registries or impersonate another owner.               |
 | [`apps/ui/src/shared/contrib/pluginUiRuntime.ts`](../../../apps/ui/src/shared/contrib/pluginUiRuntime.ts)                       | Import a revision before removing the running one; one queue per plugin.       | A broken build blanks a plugin, or racing snapshots leave a stale revision registered.   |
 | [`apps/ui/src/shared/contrib/registryChanges.ts`](../../../apps/ui/src/shared/contrib/registryChanges.ts)                       | Every registration is announced, coalesced to one flush per frame.             | A late plugin stays invisible under an open surface, or each plugin re-renders the app.  |
@@ -199,15 +199,15 @@ keep using a registry that predates its imports. Ordinary component edits keep V
 
 ## Source of truth
 
-- [Plugin registration contract](../../../packages/plugin-sdk/src/backend/registration.ts)
-- [Backend subsystem contract](../../../packages/plugin-sdk/src/backend/subsystem.ts)
-- [Host context and service ports](../../../packages/plugin-sdk/src/backend/context.ts)
+- [Plugin registration contract](../../../packages/mini-app-sdk/src/backend/registration.ts)
+- [Backend subsystem contract](../../../packages/mini-app-sdk/src/backend/subsystem.ts)
+- [Host context and service ports](../../../packages/mini-app-sdk/src/backend/context.ts)
 - [Backend reconciler](../../../apps/api/src/features/plugins/backend-host.ts)
 - [Plugin backend loading](../../../apps/api/src/features/plugins/loader.ts)
 - [Channel-only loading](../../../apps/api/src/features/plugins/loader-channels.ts)
 - [Manifest-only loading](../../../apps/api/src/features/plugins/loader-declarative.ts)
 - [Plugin-host composition](../../../apps/api/src/bootstrap/plugin-hosts.ts)
-- [Plugin UI host contract](../../../packages/plugin-sdk/src/ui/host.ts)
+- [Plugin UI host contract](../../../packages/mini-app-sdk/src/ui/host.ts)
 - [UI host adapter](../../../apps/ui/src/shared/contrib/host.ts)
 - [Plugin UI wiring](../../../apps/ui/src/shared/contrib/pluginUiDiscovery.ts)
 - [Plugin UI runtime](../../../apps/ui/src/shared/contrib/pluginUiRuntime.ts)

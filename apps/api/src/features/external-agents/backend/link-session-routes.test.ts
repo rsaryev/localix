@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { Hono } from 'hono'
-import type { HostRouteContext } from '@localixai/plugin-sdk/backend'
+import type { HostRouteContext } from '@localixai/mini-app-sdk/backend'
 import type { SessionDetail } from '../../chat/contracts'
 import { ApiError } from '../../../lib/errors'
 import { createLinkAgentRoutes } from './link-session-routes'

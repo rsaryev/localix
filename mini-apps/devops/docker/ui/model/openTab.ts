@@ -1,5 +1,5 @@
-import { pluginWorkspace } from '@localixai/plugin-sdk/ui/runtime'
-import { localixResourceUri } from '@localixai/plugin-sdk/navigation'
+import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
+import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 import type { DockerImage, DockerNetwork, DockerVolume } from '../../backend/contracts'
 
 /**

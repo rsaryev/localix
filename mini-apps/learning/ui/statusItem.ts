@@ -1,8 +1,8 @@
 import { GraduationCap } from 'lucide-react'
-import type { StatusItemState } from '@localixai/plugin-sdk/ui'
-import { statusMenuList } from '@localixai/plugin-sdk/ui'
-import { createSharedResource } from '@localixai/plugin-sdk/ui/shared-resource'
-import { usePluginWorkspace } from '@localixai/plugin-sdk/ui/runtime-hooks'
+import type { StatusItemState } from '@localixai/mini-app-sdk/ui'
+import { statusMenuList } from '@localixai/mini-app-sdk/ui'
+import { createSharedResource } from '@localixai/mini-app-sdk/ui/shared-resource'
+import { usePluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 
 import type { CourseSummary } from '../shared/contracts'
 import { learningApi } from './api/learningApi'

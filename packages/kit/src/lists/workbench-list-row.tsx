@@ -1,5 +1,5 @@
 import { forwardRef, type ComponentPropsWithoutRef, type ReactNode } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 type WorkbenchListRowProps = ComponentPropsWithoutRef<'div'> & {
   /** Dense rows are 28px; compact sidebar rows 32px; default rows may carry descriptions. */

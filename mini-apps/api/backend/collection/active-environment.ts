@@ -17,7 +17,7 @@
 
 import { mkdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { atomicWriteFile, safeFileKey } from '@localixai/plugin-sdk/backend'
+import { atomicWriteFile, safeFileKey } from '@localixai/mini-app-sdk/backend'
 
 /** One JSON object: `{ "<collection root>": "<environment name>" }`. */
 type ActiveMap = Record<string, string>

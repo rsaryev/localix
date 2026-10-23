@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChevronsUpDown } from 'lucide-react'
 import type { FundingRate, Market, OpenInterest, PrecisionMode } from '../../backend/contracts'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import {
   formatCompactVolume,
   formatCountdown,
@@ -17,7 +17,7 @@ import {
   type MarketSummary,
 } from '../model/quoteSummary'
 import { askAgent, buildCarryStatPrefill } from '../model/askAgent'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { marketInactiveBadge } from '../model/marketBadges'
 import { MarketPicker } from './MarketPicker'
 import { useSecondTick } from '../model/useSecondTick'

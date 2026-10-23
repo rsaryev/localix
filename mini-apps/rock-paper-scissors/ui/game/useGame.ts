@@ -1,4 +1,4 @@
-import { useTableGame } from '@localixai/plugin-sdk/ui/game-table'
+import { useTableGame } from '@localixai/mini-app-sdk/ui/game-table'
 
 import {
   playerViewSchema,

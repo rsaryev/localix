@@ -1,4 +1,4 @@
-import { createRealtimeFeed } from '@localixai/plugin-sdk/ui/realtime-feed'
+import { createRealtimeFeed } from '@localixai/mini-app-sdk/ui/realtime-feed'
 
 import type { BoardEvent } from '../../shared/contracts'
 import { BOARD_FRAME_TAG, BOARD_SUBSCRIBE, BOARD_UNSUBSCRIBE } from '../../shared/resource'

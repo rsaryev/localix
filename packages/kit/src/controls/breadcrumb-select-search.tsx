@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { Search } from 'lucide-react'
 
-import { cn, FIELD_SURFACE } from '@localixai/plugin-sdk/ui/classes'
+import { cn, FIELD_SURFACE } from '@localixai/mini-app-sdk/ui/classes'
 
 const ENABLED_ITEM = '[role="menuitem"]:not([data-disabled])'
 

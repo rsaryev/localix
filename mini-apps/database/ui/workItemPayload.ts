@@ -1,4 +1,4 @@
-import type { WorkItemLike } from '@localixai/plugin-sdk/ui'
+import type { WorkItemLike } from '@localixai/mini-app-sdk/ui'
 import type { ConnectionColor, DbDialect } from './dbClient'
 import type { DbTableOpenMode } from './model/openConsole'
 

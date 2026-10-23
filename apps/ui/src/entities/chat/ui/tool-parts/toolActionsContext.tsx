@@ -3,7 +3,7 @@ import { Pause, Play, RotateCcw, Square, Wrench } from 'lucide-react'
 import { toast } from '@/shared/lib/notify'
 import type { ToolActionDescriptor } from '@localixai/agent/agents'
 import { ApiError, backendClient } from '@/shared/api/client'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { ToolActionIconButton } from './ToolActionIconButton'
 import { activeEventResource } from '@/shared/lib/notifications/context'
 

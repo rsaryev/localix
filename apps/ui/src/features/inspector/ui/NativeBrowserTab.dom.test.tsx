@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, expect, test } from 'bun:test'
 import { act, type ReactNode } from 'react'
-import { useFocusStack } from '@localixai/plugin-sdk/ui/focus'
+import { useFocusStack } from '@localixai/mini-app-sdk/ui/focus'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { useBrowserHistory } from '../model/browserHistory'
 import { CAPTURE_BUDGET_MS } from '../model/nativePageLayer'

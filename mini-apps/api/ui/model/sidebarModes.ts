@@ -1,7 +1,7 @@
 /** The navigator's filter, sort and group vocabulary, and the menu that picks between them. */
 
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
-import { loadJSON } from '@localixai/plugin-sdk/ui/storage'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
+import { loadJSON } from '@localixai/mini-app-sdk/ui/storage'
 import type { RequestInfo } from '../../backend/contracts'
 import type { GroupMode, SortMode } from './sortRequests'
 

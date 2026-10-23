@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Button } from '@localixai/kit/button'
 import { Select } from '@localixai/kit/select'
 import { SectionLabel } from '@localixai/kit/section-label'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { SETTINGS_SECTIONS } from '../model/settingsNavigation'
 
 export interface SettingsNavigationItem {

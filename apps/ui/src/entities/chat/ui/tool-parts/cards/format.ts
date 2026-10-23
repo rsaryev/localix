@@ -3,7 +3,7 @@
 // Re-export the canonical, tested SDK path helper so the tool
 // cards have a single source of truth for "last path segment" rather than a
 // near-duplicate local copy.
-export { baseName } from '@localixai/plugin-sdk/ui/utilities'
+export { baseName } from '@localixai/mini-app-sdk/ui/utilities'
 
 /** Human bytes: 532 B / 4.2 KB / 1.3 MB. */
 export function formatBytes(bytes: number): string {

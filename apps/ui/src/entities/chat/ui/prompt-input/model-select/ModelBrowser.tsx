@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useDeferredValue, type ReactNode } from 'react'
 import { Command } from '@localixai/kit/command'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { sortProvidersByPopularity, type ProviderEntry } from '@localixai/agent/catalog'
 import type { ApiKeyConnectionOptions } from '../useConnections'
 import { useModelsCatalog } from '@/shared/hooks/useModelsCatalog'

@@ -1,7 +1,7 @@
 import { Fragment, memo, type ReactNode } from 'react'
 import { Copy, Trash2 } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { copyText } from '@localixai/plugin-sdk/ui/interactions'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { copyText } from '@localixai/mini-app-sdk/ui/interactions'
 import {
   ContextMenu,
   ContextMenuContent,

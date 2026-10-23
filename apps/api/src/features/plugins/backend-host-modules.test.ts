@@ -26,7 +26,7 @@ async function buildExternalBackend(): Promise<string> {
     [
       "import { Hono } from 'hono'",
       "import { z, ZodObject } from 'zod'",
-      "import * as sdk from '@localixai/plugin-sdk/backend'",
+      "import * as sdk from '@localixai/mini-app-sdk/backend'",
       'const body = z.object({ name: z.string() })',
       "const app = new Hono().post('/greet', async (c) => c.json({ hi: body.parse(await c.req.json()).name }))",
       'export const shared = { Hono, ZodObject, sdk, app, schema: body }',
@@ -56,7 +56,7 @@ describe('host-provided backend modules', () => {
     expect(shared.schema).toBeInstanceOf(ZodObject)
     // The namespace object is Bun's own wrapper; what must be shared are its members.
     expect((shared.sdk as { ApiError: unknown }).ApiError).toBe(
-      hostModule('@localixai/plugin-sdk/backend').ApiError,
+      hostModule('@localixai/mini-app-sdk/backend').ApiError,
     )
     const response = await shared.app.request('/greet', {
       method: 'POST',

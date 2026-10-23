@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Group, Lock, LockOpen, X } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { IconButton } from '@localixai/kit/icon-button'
 import { PanelHeader } from '@localixai/kit/panel-header'
 import { POPOVER_SURFACE } from '@localixai/kit/popover-surface'

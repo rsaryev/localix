@@ -20,7 +20,7 @@ export interface ReadOutput {
  * runs that pollute the model's context with no useful signal, so we return a notice instead of
  * the bytes.
  */
-export { hasBinarySignature as looksBinary } from '@localixai/plugin-sdk/backend'
+export { hasBinarySignature as looksBinary } from '@localixai/mini-app-sdk/backend'
 
 /**
  * Back up `index` to the nearest UTF-8 character boundary (a byte that is NOT a

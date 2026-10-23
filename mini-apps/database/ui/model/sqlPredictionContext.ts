@@ -1,6 +1,6 @@
 import type { DbSchemas } from '../dbClient'
 import type { NextEditRequest } from '@localixai/kit/code-editor'
-import type { PluginCompletionReference } from '@localixai/plugin-sdk/ui'
+import type { PluginCompletionReference } from '@localixai/mini-app-sdk/ui'
 import { extractSqlTableReferences } from '../../shared/sql-context'
 import { offsetAt } from './sqlCompletion'
 import { statementAt } from '../../shared/sql-statements'

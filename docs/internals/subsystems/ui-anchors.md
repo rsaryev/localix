@@ -73,8 +73,8 @@ button; it never becomes a chat message or a model-blocking interaction.
 
 | Module                                                                                                                | Invariant                                                                              | Failure when violated                                                                                          |
 | --------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| [`packages/plugin-sdk/src/navigation.ts`](../../../packages/plugin-sdk/src/navigation.ts)                             | One strict parser and builder own Localix URI grammar.                                 | Alternate spellings can address different targets or bypass registry ownership.                                |
-| [`packages/plugin-sdk/src/ui/locations.ts`](../../../packages/plugin-sdk/src/ui/locations.ts)                         | Construction and resolution share one bounded query schema.                            | Unknown, duplicate, missing, malformed, or oversized arguments fail closed.                                    |
+| [`packages/mini-app-sdk/src/navigation.ts`](../../../packages/mini-app-sdk/src/navigation.ts)                         | One strict parser and builder own Localix URI grammar.                                 | Alternate spellings can address different targets or bypass registry ownership.                                |
+| [`packages/mini-app-sdk/src/ui/locations.ts`](../../../packages/mini-app-sdk/src/ui/locations.ts)                     | Construction and resolution share one bounded query schema.                            | Unknown, duplicate, missing, malformed, or oversized arguments fail closed.                                    |
 | [`apps/ui/src/shared/contrib/uiLocations.ts`](../../../apps/ui/src/shared/contrib/uiLocations.ts)                     | Location id and base URI are first-owner-wins; batches commit atomically.              | One rejected batch restores every prior entry and logs why the catalogue stayed unchanged.                     |
 | [`apps/ui/src/shared/contrib/uiAnchors.ts`](../../../apps/ui/src/shared/contrib/uiAnchors.ts)                         | One enabled contribution owns each anchor namespace.                                   | A duplicate owner is rejected instead of shadowing the current resolver.                                       |
 | [`apps/ui/src/shared/contrib/uiSurfaceDiscovery.ts`](../../../apps/ui/src/shared/contrib/uiSurfaceDiscovery.ts)       | Every discovered module default-exports one valid, uniquely identified declaration.    | Discovery throws during startup or tests rather than dropping a surface.                                       |
@@ -133,9 +133,9 @@ button; it never becomes a chat message or a model-blocking interaction.
 
 ## Source of truth
 
-- [Resource identity](../../../packages/plugin-sdk/src/resource.ts)
-- [Anchor and navigation output contracts](../../../packages/plugin-sdk/src/ui/anchors.ts)
-- [Location schemas and catalogue codec](../../../packages/plugin-sdk/src/ui/locations.ts)
+- [Resource identity](../../../packages/mini-app-sdk/src/resource.ts)
+- [Anchor and navigation output contracts](../../../packages/mini-app-sdk/src/ui/anchors.ts)
+- [Location schemas and catalogue codec](../../../packages/mini-app-sdk/src/ui/locations.ts)
 - [Location registry](../../../apps/ui/src/shared/contrib/uiLocations.ts)
 - [Navigation resolver and activator](../../../apps/ui/src/shared/lib/uiNavigation.ts)
 - [Catalogue synchronization](../../../apps/ui/src/shared/contrib/uiLocationCatalogSync.ts)

@@ -4,7 +4,7 @@
  * surface git's own message on failure (as a 409) so the UI can show exactly why
  * an operation was refused (nothing to save, no such stash, a conflict on apply).
  */
-import { ApiError } from '@localixai/plugin-sdk/backend'
+import { ApiError } from '@localixai/mini-app-sdk/backend'
 import type { FileDiff, RepoStash } from '../contracts'
 import { firstLine, type GitRunner } from './cli'
 import { EMPTY_READ, readDiff, toFileDiff } from './diff-read'

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import type { Problem } from '@localixai/plugin-sdk/ui/problems'
+import type { Problem } from '@localixai/mini-app-sdk/ui/problems'
 import type { DbConnectionInfo } from '../../dbClient'
 import { closeDbConnectionWorkItems } from '../../model/openConsole'
 import { schemaStore } from '../../model/schemaStore'

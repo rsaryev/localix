@@ -16,7 +16,7 @@ describe('warm-hidden DevOps viewer', () => {
     const React = await import('react')
     const { createRoot } = await import('react-dom/client')
     const { act } = React
-    const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
+    const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
     const { LiveLogViewer } = await import('./LiveLogViewer')
 
     const originalResizeObserver = window.ResizeObserver

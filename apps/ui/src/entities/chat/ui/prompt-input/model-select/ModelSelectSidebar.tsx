@@ -6,7 +6,7 @@ import { PanelHeader } from '@localixai/kit/panel-header'
 import { SearchInput } from '@localixai/kit/search-input'
 import { SectionLabel } from '@localixai/kit/section-label'
 import { WorkbenchToolbar } from '@localixai/kit/workbench-toolbar'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { ProviderEntry } from '@localixai/agent/catalog'
 import type { ProviderConnection } from '@/shared/api/contracts'
 import {

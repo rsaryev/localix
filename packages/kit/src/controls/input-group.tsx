@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 
-import { cn, FIELD_SURFACE } from '@localixai/plugin-sdk/ui/classes'
+import { cn, FIELD_SURFACE } from '@localixai/mini-app-sdk/ui/classes'
 import { Button } from './button'
 import { Input } from './input'
 

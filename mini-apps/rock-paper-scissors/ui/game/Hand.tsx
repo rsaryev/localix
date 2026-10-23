@@ -1,6 +1,6 @@
 import { CircleAlert, Lock, ShieldCheck, ShieldX } from 'lucide-react'
 import { ActivityOrb } from '@localixai/kit/activity-orb'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 import { shortDigest } from '../../shared/describe'
 import type { Move } from '../../shared/game'

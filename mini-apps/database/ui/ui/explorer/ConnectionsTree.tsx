@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { ChevronsDownUp, Plus, Search } from 'lucide-react'
-import { ProblemLine, ProblemState } from '@localixai/plugin-sdk/ui/components'
+import { ProblemLine, ProblemState } from '@localixai/mini-app-sdk/ui/components'
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
 import { IconButton } from '@localixai/kit/icon-button'
 import { PanelHeader } from '@localixai/kit/panel-header'

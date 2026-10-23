@@ -3,7 +3,7 @@ import {
   type SearchHit,
   type SearchProvider,
   type SearchQuery,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 
 import { readerBookUri, readerChapterUri } from '../shared/resource-uri'
 import type { ReaderService } from './service'

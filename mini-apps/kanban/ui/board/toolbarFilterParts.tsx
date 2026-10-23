@@ -17,7 +17,7 @@
  * clears them all (search keeps its own field and its own clear).
  */
 import { X } from 'lucide-react'
-import type { IconComponent, MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { IconComponent, MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { monogramIcon } from '@localixai/kit/avatar'
 import { StatusDot } from '@localixai/kit/status-dot'
 

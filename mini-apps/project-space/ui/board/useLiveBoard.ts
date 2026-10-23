@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { useCanvasCamera, type CanvasEdgeType, type NodeChange } from '@localixai/kit/canvas'
 import type { SpaceView } from '../../shared/api'
 import type { Box } from '../../shared/ops/geometry'

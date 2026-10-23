@@ -1,4 +1,4 @@
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 
 /**
  * The explorer's "More options" menu — view toggles for the tree itself.

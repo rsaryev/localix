@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { useHorizontalWheelScroll } from '../../lib/use-horizontal-wheel-scroll'
 import { DROP_TARGET_INDICATOR_BEFORE_VERTICAL } from '../../lists/drop-target'
 import { useTabOverflow } from './overflow'

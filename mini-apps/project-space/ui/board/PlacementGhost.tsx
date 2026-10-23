@@ -1,6 +1,6 @@
 import { memo, useEffect, useMemo, useState, type RefObject } from 'react'
 import { useCanvasCamera, ViewportPortal } from '@localixai/kit/canvas'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { FLOATING_SURFACE } from '@localixai/kit/workbench-toolbar'
 import { ELEMENT_CARD } from '../elements/surface'
 import { placementOf } from './placement'

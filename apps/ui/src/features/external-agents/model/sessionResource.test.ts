@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { localixResourceUri } from '@localixai/plugin-sdk/navigation'
+import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 import { linkKeyOf } from '@localixai/api/external-agent-identity'
 import {
   externalSessionUri,

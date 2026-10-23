@@ -1,5 +1,5 @@
-import { loadJSON, loadString, saveJSON } from '@localixai/plugin-sdk/ui/storage'
-import type { StorageReader, StorageWriter } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, loadString, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
+import type { StorageReader, StorageWriter } from '@localixai/mini-app-sdk/ui/storage'
 import { normalizeIndicatorId } from '../../backend/indicator-spec'
 import { isHexColor } from '../../backend/chart-drawing'
 

@@ -1,9 +1,9 @@
-import { localixResourceUri } from '@localixai/plugin-sdk/navigation'
+import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 import { describe, expect, test } from 'bun:test'
 
 import { createGitContextProvider } from './context-provider'
 import type { ResourceGitService } from './resource-provider'
-import type { ContextResolver } from '@localixai/plugin-sdk/backend'
+import type { ContextResolver } from '@localixai/mini-app-sdk/backend'
 
 let reads = 0
 const service: ResourceGitService = {

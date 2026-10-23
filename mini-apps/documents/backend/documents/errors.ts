@@ -6,13 +6,13 @@
  * about mammoth vs officeparser vs SheetJS.
  *
  * The class + `toErrorInfo` skeleton is NOT re-hand-rolled here: it is the shared
- * `@localixai/plugin-sdk/backend` factory, which the four workbench subsystems share too.
+ * `@localixai/mini-app-sdk/backend` factory, which the four workbench subsystems share too.
  * What stays is the only part with domain content in it — the code vocabulary, the
  * friendly sentences, the HTTP status map, and `mapDocumentError`.
  */
 
-import { errorMessage } from '@localixai/plugin-sdk/backend'
-import { defineTypedError } from '@localixai/plugin-sdk/backend'
+import { errorMessage } from '@localixai/mini-app-sdk/backend'
+import { defineTypedError } from '@localixai/mini-app-sdk/backend'
 
 export type DocumentErrorCode =
   | 'unsupported_format'

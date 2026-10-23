@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { findLast } from '@localixai/plugin-sdk/ui/utilities'
+import { findLast } from '@localixai/mini-app-sdk/ui/utilities'
 
 describe('findLast', () => {
   test('returns the last matching item', () => {

@@ -2,8 +2,8 @@ import { OS_FAMILY } from '@localixai/kit/environment'
 import {
   MESSAGE_BINDING_MIME,
   readMessageBindingDrag,
-} from '@localixai/plugin-sdk/ui/message-binding-drag'
-import { shellQuote } from '@localixai/plugin-sdk/ui/utilities'
+} from '@localixai/mini-app-sdk/ui/message-binding-drag'
+import { shellQuote } from '@localixai/mini-app-sdk/ui/utilities'
 
 // A path is left VERBATIM when it has no shell-significant characters, so a clean
 // path bracketed-pastes exactly as typed; anything with spaces or metacharacters

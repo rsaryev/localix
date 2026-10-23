@@ -1,4 +1,4 @@
-import { createMessageBindingDraft } from '@localixai/plugin-sdk/ui'
+import { createMessageBindingDraft } from '@localixai/mini-app-sdk/ui'
 
 import { composerBus } from '@/shared/lib/composerBus'
 import { pageOpenChatOrNotify } from '@/shared/lib/pageOpenChat'

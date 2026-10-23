@@ -10,7 +10,7 @@
  */
 import type * as k8s from '@kubernetes/client-node'
 import { stringify } from 'yaml'
-import { toolPath } from '@localixai/plugin-sdk/backend'
+import { toolPath } from '@localixai/mini-app-sdk/backend'
 import { createBunApiClient, createBunObjectApi, kubernetesFetch } from './api-http'
 import { type ClusterResources, type FetchClusterJson, getClusterResources } from './api-discovery'
 import { ALL_NAMESPACES, type KubeManifestKind } from './contracts'

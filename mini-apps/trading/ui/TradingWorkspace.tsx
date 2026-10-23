@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import { CandlestickChart, Gauge } from 'lucide-react'
 
-import { SegmentedControl, SegmentedControlItem } from '@localixai/plugin-sdk/ui/segmented-control'
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from '@localixai/mini-app-sdk/ui/segmented-control'
 import { WorkbenchToolbar } from '@localixai/kit/workbench-toolbar'
 import { PublicMarketsSidebar } from './ui/PublicMarketsSidebar'
 import { TradingOverview } from './TradingOverview'

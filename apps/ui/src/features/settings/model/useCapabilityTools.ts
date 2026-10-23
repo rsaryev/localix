@@ -3,7 +3,7 @@ import type { CapabilitySnapshot, ToolSurfaceDenial } from '@/shared/api/contrac
 import { applyCapabilityRules } from '@/shared/contrib/capabilityCache'
 import { availabilityChange } from '@/shared/contrib/capabilityRules'
 import { useCapabilitySnapshot } from '@/shared/contrib/useCapabilitySnapshot'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { useCapabilityRegistry } from '@/shared/contrib/useCapabilityRegistry'
 
 /** One catalog tool, with the scope's answer about it and the reason behind that answer. */

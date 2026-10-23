@@ -10,7 +10,7 @@ import type {
   AutomaticContextProvider,
   AutomaticContextRequest,
   ContextResolver,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import {
   certifyAutomaticContribution,
   certifyResolverContribution,

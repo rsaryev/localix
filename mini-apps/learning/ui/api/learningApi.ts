@@ -1,4 +1,4 @@
-import { pluginApiFetch, postPluginJson as postJson } from '@localixai/plugin-sdk/ui/transport'
+import { pluginApiFetch, postPluginJson as postJson } from '@localixai/mini-app-sdk/ui/transport'
 
 import { LEARNING_COURSES } from '../model/topics'
 

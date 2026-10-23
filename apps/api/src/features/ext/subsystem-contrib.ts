@@ -1,6 +1,6 @@
-import type { BackendSubsystem } from '@localixai/plugin-sdk/backend'
+import type { BackendSubsystem } from '@localixai/mini-app-sdk/backend'
 
-export type { BackendSubsystem } from '@localixai/plugin-sdk/backend'
+export type { BackendSubsystem } from '@localixai/mini-app-sdk/backend'
 
 /**
  * An open registry for extension-owned backend subsystems. Instead of core hardcoding each subsystem's

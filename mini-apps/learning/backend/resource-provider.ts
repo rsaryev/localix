@@ -2,7 +2,7 @@ import type {
   ResourceExpansion,
   ResourceNode,
   ResourceRefProvider,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 
 import type { LearningCourse, LessonStep } from '../shared/contracts'
 import { stepStage as stage, stepTitle } from '../shared/progression'

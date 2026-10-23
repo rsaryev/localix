@@ -15,7 +15,7 @@ const V8_STACK = [
   'Error',
   '    at callerStack (http://localhost:1420/src/shared/contrib/pluginToast.ts?t=1727000000:41:61)',
   '    at sourceOf (http://localhost:1420/src/shared/contrib/pluginToast.ts:48:48)',
-  '    at Object.error (http://localhost:1420/node_modules/.vite/deps/@localixai_plugin-sdk_ui.js?v=9f1c2e:1203:31)',
+  '    at Object.error (http://localhost:1420/node_modules/.vite/deps/@localixai_mini-app-sdk_ui.js?v=9f1c2e:1203:31)',
   `    at onSelect (${API}/rpc/plugins/acme/ui/chunks/ConnectionMenu-3f9a1b.js:88:13)`,
   '    at HTMLUnknownElement.callCallback2 (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=9f1c2e:3674:22)',
 ].join('\n')

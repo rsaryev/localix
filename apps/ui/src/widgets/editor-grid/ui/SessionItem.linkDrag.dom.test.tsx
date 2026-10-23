@@ -4,7 +4,7 @@ import { registerDom } from '@localixai/kit/testing/dom'
 import {
   readMessageBindingDrag,
   clearMessageBindingDragAvailability,
-} from '@localixai/plugin-sdk/ui/message-binding-drag'
+} from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import { WorkspaceTabTransferTargets } from './WorkspaceTabTransferTargets'
 import type { UiSession } from '@/shared/api/ui-session'
 import { SessionItem } from '@/entities/chat/ui/SessionItem'

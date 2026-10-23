@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /** Decorative loading geometry. The containing region owns its status and busy state. */
 export function Skeleton({ className, ...props }: ComponentProps<'div'>) {

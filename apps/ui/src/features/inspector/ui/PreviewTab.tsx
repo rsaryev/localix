@@ -6,10 +6,10 @@ import { PreviewBlockedOverlay } from './PreviewOverlays'
 import { BrowserToolbar } from './BrowserToolbar'
 import { usePreviewCommandRelay } from './usePreviewCommandRelay'
 import { usePreviewViewport } from './usePreviewViewport'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { PREVIEW_VIEWPORT_FILL } from '../model/previewViewportPresets'
 import { usePreviewEndpoint } from './usePreviewEndpoint'
-import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
+import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 
 const INTRO_SEEN_KEY = 'vf.preview.introSeen'
 

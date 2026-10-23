@@ -1,6 +1,6 @@
 import { useEffect, useState, type Dispatch, type RefObject, type SetStateAction } from 'react'
-import { acknowledgeInline } from '@localixai/plugin-sdk/ui'
-import { loadJSON } from '@localixai/plugin-sdk/ui/storage'
+import { acknowledgeInline } from '@localixai/mini-app-sdk/ui'
+import { loadJSON } from '@localixai/mini-app-sdk/ui/storage'
 
 import type { ReaderChapter, ReaderDocument, ReaderSource } from '../shared/contracts'
 import { readerUnsupportedReason } from '../shared/formats'

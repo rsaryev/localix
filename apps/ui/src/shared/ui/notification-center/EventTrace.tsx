@@ -1,5 +1,5 @@
 import { ArrowUpRight } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { EventTraceStep, NotificationOrigin } from '@/shared/lib/notifications/types'
 import { EventTimestamp, TRACE_PHASE_CLASS } from './eventPresentation'
 

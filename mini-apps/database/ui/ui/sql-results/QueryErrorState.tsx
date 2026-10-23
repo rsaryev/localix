@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Ban } from 'lucide-react'
-import { ProblemState } from '@localixai/plugin-sdk/ui/components'
+import { ProblemState } from '@localixai/mini-app-sdk/ui/components'
 import type { DbErrorCode } from '../../dbClient'
 import { useDbProblem } from '../../problems'
 

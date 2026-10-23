@@ -2,7 +2,7 @@ import { afterEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import {
   UI_AGENT_LOCATION_CATALOG_VERSION,
   type UiAgentLocationCatalogSnapshot,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import {
   createUiLocationCatalogSync,
   readyWorkbenchToolSurface,

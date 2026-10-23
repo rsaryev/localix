@@ -3,7 +3,7 @@ import { Check } from 'lucide-react'
 
 import { DropdownMenuItem } from '../overlays/dropdown-menu'
 import { SELECTED_ROW } from '../lists/selected-row'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { BreadcrumbSelectItem } from './breadcrumb-select'
 
 /**

@@ -1,5 +1,5 @@
 /**
- * The one reader of `@localixai/plugin-sdk`'s export map.
+ * The one reader of `@localixai/mini-app-sdk`'s export map.
  *
  * ~11 bundled plugins and every plugin-facing surface in `apps/ui` compile against that map, and it
  * is ~32 subpaths of HAND-WRITTEN JSON pointing into a `dist` nobody reviews. The build is a bare
@@ -12,7 +12,7 @@
  *
  * Neither shows up in `tsc --noEmit`, which reads `src` and never opens the manifest.
  *
- * Both guards that read this — `plugin-sdk-exports-guard.test.ts` and `plugin-sdk-bytes-guard.test.ts`
+ * Both guards that read this — `mini-app-sdk-exports-guard.test.ts` and `mini-app-sdk-bytes-guard.test.ts`
  * — measure the BUILT output, so the honest question is what to do when `dist` is absent. They
  * BUILD it (see `ensureDistBuilt`) rather than skipping: a skipped guard is a guard that reports
  * clean, and on a fresh clone — the one place where a broken export map is most likely and least
@@ -23,7 +23,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
 export const repoRoot = resolve(import.meta.dir, '..')
-export const sdkRoot = join(repoRoot, 'packages/plugin-sdk')
+export const sdkRoot = join(repoRoot, 'packages/mini-app-sdk')
 export const sdkManifestPath = join(sdkRoot, 'package.json')
 
 /** The raw `exports` object, exactly as written — validating it is the point, so nothing is coerced. */
@@ -34,7 +34,7 @@ export function readExportMap(): ExportMap {
   const map = manifest.exports
   if (map === null || typeof map !== 'object' || Array.isArray(map)) {
     throw new Error(
-      `packages/plugin-sdk/package.json has no \`exports\` object. Every guard over the SDK's public ` +
+      `packages/mini-app-sdk/package.json has no \`exports\` object. Every guard over the SDK's public ` +
         'surface reads it; without one there is no public surface to check.',
     )
   }
@@ -189,7 +189,7 @@ export function ensureDistBuilt(): 'present' | 'rebuilt' {
   })
   if (built.exitCode !== 0) {
     throw new Error(
-      `\`bun run --cwd packages/plugin-sdk build\` failed, so there is no dist to check the export ` +
+      `\`bun run --cwd packages/mini-app-sdk build\` failed, so there is no dist to check the export ` +
         `map against:\n${built.stdout.toString()}\n${built.stderr.toString()}`,
     )
   }

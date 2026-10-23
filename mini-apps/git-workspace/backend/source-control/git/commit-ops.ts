@@ -6,7 +6,7 @@
  * explain the working tree now holds conflict markers to resolve. Mirrors the
  * style of `actions.ts` — the backend adapter binds a runner and delegates here.
  */
-import { ApiError } from '@localixai/plugin-sdk/backend'
+import { ApiError } from '@localixai/mini-app-sdk/backend'
 import type { ResetMode } from '../contracts'
 import { firstLine, type GitRunner } from './cli'
 

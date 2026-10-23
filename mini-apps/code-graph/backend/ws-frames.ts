@@ -1,4 +1,4 @@
-import type { WorkspaceScopeHost, WsFrameContribution } from '@localixai/plugin-sdk/backend'
+import type { WorkspaceScopeHost, WsFrameContribution } from '@localixai/mini-app-sdk/backend'
 import {
   GRAPH_FRAME_TAG,
   GRAPH_SUBSCRIBE,

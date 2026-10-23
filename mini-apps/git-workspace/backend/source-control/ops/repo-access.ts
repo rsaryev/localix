@@ -4,7 +4,7 @@
  * degrading-read or serialized-write shape it needs. The operation groups
  * (`reads.ts`, `tree-writes.ts`, `ref-writes.ts`) take this as their one dep.
  */
-import { ApiError } from '@localixai/plugin-sdk/backend'
+import { ApiError } from '@localixai/mini-app-sdk/backend'
 import { createWriteSerializer, retryOnLockContention } from '../support/write-serial'
 import type {
   SourceControlBranches,

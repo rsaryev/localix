@@ -18,7 +18,7 @@
  * supplies their own key. That is the thing plaintext environments cannot do.
  */
 
-import { hasSecretTokens } from '@localixai/plugin-sdk/backend'
+import { hasSecretTokens } from '@localixai/mini-app-sdk/backend'
 import {
   credentialHeaders,
   credentialQueryPairs,

@@ -1,4 +1,4 @@
-import { agentWaitSchema, type AgentWait } from '@localixai/plugin-sdk/agent-wait'
+import { agentWaitSchema, type AgentWait } from '@localixai/mini-app-sdk/agent-wait'
 import { z } from 'zod'
 
 /**

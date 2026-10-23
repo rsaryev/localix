@@ -3,7 +3,7 @@ import { backendClient } from '@/shared/api/client'
 import { useDebouncedQuery } from '@/shared/hooks/useDebouncedQuery'
 import type { LspDocumentSymbol } from '@/shared/api/contracts'
 import type { EditorHandle } from '@/shared/ui/code-editor/CodeEditor'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 
 export interface SymbolBreadcrumb {
   /** The chain of symbols whose full span contains the cursor, outermost→innermost. */

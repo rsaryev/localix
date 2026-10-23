@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
-import { loadJSON } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON } from '@localixai/mini-app-sdk/ui/storage'
 
-import { ProblemState } from '@localixai/plugin-sdk/ui/components'
+import { ProblemState } from '@localixai/mini-app-sdk/ui/components'
 
 import type { ReaderBookSummary, ReaderSource } from '../shared/contracts'
 import { ReaderApiError } from './api'

@@ -1,6 +1,6 @@
 import * as React from 'react'
 
-import { cn, CONTROL_FOCUS_VISIBLE, CONTROL_INVALID } from '@localixai/plugin-sdk/ui/classes'
+import { cn, CONTROL_FOCUS_VISIBLE, CONTROL_INVALID } from '@localixai/mini-app-sdk/ui/classes'
 import { useFieldControlProps } from './field'
 
 type SwitchSize = 'sm' | 'md'

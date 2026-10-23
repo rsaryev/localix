@@ -9,8 +9,8 @@ import {
 } from 'react'
 import { startResizeSession } from './resize-session'
 import { ChevronRight } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 import { SectionLabel } from './section-label'
 import { WorkbenchSash } from '../controls/button'
 

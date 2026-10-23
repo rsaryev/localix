@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { Tooltip as TooltipPrimitive } from 'radix-ui'
 
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { OVERLAY_SLIDE, TOOLTIP_ENTER_EXIT } from './overlay-motion'
 import { FLOATING_SURFACE } from './popover-surface'
 

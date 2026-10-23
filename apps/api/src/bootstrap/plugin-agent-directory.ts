@@ -1,4 +1,4 @@
-import type { PluginAgentDirectory } from '@localixai/plugin-sdk/backend'
+import type { PluginAgentDirectory } from '@localixai/mini-app-sdk/backend'
 
 import { createPluginAgentDirectory } from '../features/plugins/agent-directory'
 import type { PluginHostRefs } from './plugin-host-refs'

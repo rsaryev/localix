@@ -1,5 +1,5 @@
 import { Plug, Database } from 'lucide-react'
-import type { Problem } from '@localixai/plugin-sdk/ui/problems'
+import type { Problem } from '@localixai/mini-app-sdk/ui/problems'
 import { StateNotice } from '@localixai/kit/state-notice'
 import type { DbConnectionInfo } from '../../dbClient'
 import type { DbTableOpenMode } from '../../model/openConsole'

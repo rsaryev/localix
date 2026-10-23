@@ -1,5 +1,5 @@
 import { describe, expect, it, spyOn } from 'bun:test'
-import { pluginWorkspace, toast as pluginToast } from '@localixai/plugin-sdk/ui'
+import { pluginWorkspace, toast as pluginToast } from '@localixai/mini-app-sdk/ui'
 import { toast as hostToast } from '@/shared/lib/notify'
 import './pluginRuntime'
 

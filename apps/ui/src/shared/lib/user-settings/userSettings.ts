@@ -1,4 +1,4 @@
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 import { isModelRoutingTaskKey } from '@localixai/api/model-task-catalog'
 import type { UiSettings, AgentSettings } from '@/shared/api/contracts'
 

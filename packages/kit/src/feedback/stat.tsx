@@ -1,4 +1,4 @@
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /**
  * Shared stat-dashboard primitives, reused by the Usage page and plugin stats

@@ -93,4 +93,4 @@ strip over the page.
 - [Browser toolbar](../../apps/ui/src/features/inspector/ui/BrowserToolbar.tsx)
 - [Browser tab strip](../../apps/ui/src/features/inspector/ui/BrowserTabStrip.tsx)
 - [Browser bridge readiness](../../apps/ui/src/features/inspector/ui/nativeProbe.ts)
-- [Overlay focus claims](../../packages/plugin-sdk/src/ui/focus/useOverlayFocus.ts)
+- [Overlay focus claims](../../packages/mini-app-sdk/src/ui/focus/useOverlayFocus.ts)

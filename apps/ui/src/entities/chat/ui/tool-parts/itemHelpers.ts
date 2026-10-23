@@ -8,7 +8,7 @@ import {
   isAlwaysStandaloneToolName,
   itemActionVerb as coreItemActionVerb,
 } from '@localixai/api/item-format'
-import { isUiNavigationOutput } from '@localixai/plugin-sdk/ui'
+import { isUiNavigationOutput } from '@localixai/mini-app-sdk/ui'
 import { toolDisplayLabel, toolMeta } from './cards/meta'
 import { baseName, truncate, strField } from './cards/format'
 import { countPatchChanges } from './cards/liveCode'

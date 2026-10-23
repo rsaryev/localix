@@ -7,7 +7,7 @@ import type {
   DockerNetwork,
   DockerVolume,
 } from '../../backend/contracts'
-import { useVisiblePolling } from '@localixai/plugin-sdk/ui/visibility'
+import { useVisiblePolling } from '@localixai/mini-app-sdk/ui/visibility'
 import { DockerApiError, dockerApi } from '../dockerApi'
 import { stableList } from '../../../ui/model/stableList'
 import {

@@ -1,4 +1,4 @@
-import type { PluginContext, PluginRegistration } from '@localixai/plugin-sdk/backend'
+import type { PluginContext, PluginRegistration } from '@localixai/mini-app-sdk/backend'
 import { formatSystemSnapshot } from '../shared/system'
 import { formatProcessSnapshot } from '../shared/processes'
 import { formatSystemMarks, SYSTEM_MARK_NOTE_MAX } from '../shared/system-marks'

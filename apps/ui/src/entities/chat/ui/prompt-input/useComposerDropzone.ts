@@ -6,7 +6,7 @@ import { desktopDroppedEntries } from '@/shared/lib/fileDropRouter'
 import {
   readMessageBindingDrag,
   type MessageBindingDragPayload,
-} from '@localixai/plugin-sdk/ui/message-binding-drag'
+} from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import { acceptedDragKind, createDragDepth } from './dropzoneState'
 
 /** No `dragover` for this long means the drag ended where the window could not hear it. */

@@ -5,7 +5,7 @@ import {
   MESSAGE_BINDING_KIND_MIME_PREFIX,
   messageBindingDragKind,
   readMessageBindingDrag,
-} from '@localixai/plugin-sdk/ui/message-binding-drag'
+} from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import { setDevOpsResourceDrag } from './resourceDrag'
 
 function fakeDataTransfer(): DataTransfer {

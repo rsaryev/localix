@@ -1,4 +1,4 @@
-import type { StatusTone } from '@localixai/plugin-sdk/ui'
+import type { StatusTone } from '@localixai/mini-app-sdk/ui'
 
 /**
  * The ways a tone is painted in the workbench chrome, in one place.

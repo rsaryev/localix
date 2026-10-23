@@ -1,6 +1,6 @@
 import { chordToTokens } from './chord'
 import { useCommandChord } from './chord-store'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Kbd } from './kbd'
 
 /**

@@ -1,5 +1,5 @@
 import { afterAll, expect, test } from 'bun:test'
-import type { PluginUiHost } from '@localixai/plugin-sdk/ui'
+import type { PluginUiHost } from '@localixai/mini-app-sdk/ui'
 
 import { contentTypeForPath } from '@/shared/lib/contentTypeRouting'
 import { fileEditorEnhancersFor } from './fileEditorEnhancers'

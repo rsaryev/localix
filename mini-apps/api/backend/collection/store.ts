@@ -25,7 +25,7 @@
 import { mkdir, readFile, rename, rm, rmdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { isAtOrUnder } from '@localixai/path-containment/ancestry'
-import { atomicWriteFile } from '@localixai/plugin-sdk/backend'
+import { atomicWriteFile } from '@localixai/mini-app-sdk/backend'
 import type { RequestSpec } from '../request-spec'
 import { buildRequestFile, gitSafetyProblem, parseRequestFile } from '../git-sync/format'
 import { ENVIRONMENTS_DIR } from './environments'

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { useLatestRef } from '@/shared/lib/useLatestRef'
 import { sendChatMessage } from '@/entities/chat/model/sendChatMessage'
 import { getThemeVars, themeVarsBus } from '@/entities/chat/model/themeVarsBus'
@@ -8,7 +8,7 @@ import { pluginSessionEventBus } from '@/entities/chat/model/pluginSessionEventB
 import { createPanelActions } from '@/shared/contrib/pluginPanelActions'
 import { createPanelBridgeHost } from './panelBridgeCore'
 import { readPluginViewState, writePluginViewState } from './pluginViewState'
-import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
+import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'
 import { backendClient } from '@/shared/api/client'
 
 /**

@@ -1,4 +1,4 @@
-import { pluginFiles } from '@localixai/plugin-sdk/ui/runtime'
+import { pluginFiles } from '@localixai/mini-app-sdk/ui/runtime'
 
 // Trigger a download of in-memory text (CSV/JSON/SQL exports). Thin wrapper over the
 // shared desktop-aware save path: WKWebView (the Tauri desktop shell) ignores the

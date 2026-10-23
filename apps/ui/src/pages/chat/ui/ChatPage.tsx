@@ -7,7 +7,7 @@ import {
   Suspense,
   lazy,
 } from 'react'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { useLocation } from 'react-router'
 import { useShallow } from 'zustand/react/shallow'
 
@@ -71,7 +71,7 @@ import {
   subscribeRuntimeStatus,
   type RuntimeStatus,
 } from '@/shared/lib/runtimeReady'
-import { capabilityResourceUri } from '@localixai/plugin-sdk/navigation'
+import { capabilityResourceUri } from '@localixai/mini-app-sdk/navigation'
 import { WorkspaceConnectionStatus } from './WorkspaceConnectionStatus'
 import { SurfaceErrorBoundary } from '@/shared/ui/SurfaceErrorBoundary'
 

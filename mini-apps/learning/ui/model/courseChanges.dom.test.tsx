@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
-import { pluginRealtime } from '@localixai/plugin-sdk/ui/runtime'
+import { pluginRealtime } from '@localixai/mini-app-sdk/ui/runtime'
 import { COURSE_BACKSTOP_MS, applyCourseChange, useCourseChanges } from './courseChanges'
 
 let teardown: () => Promise<void>

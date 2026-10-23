@@ -13,7 +13,7 @@
 import type { SettleReason } from '@localixai/api/notification-contracts'
 import { backendClient } from '@/shared/api/client'
 import { ApiError } from '@/shared/api/failure'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import type { NotificationAction, NotificationEntry, NotificationSeverity } from './types'
 
 /** The run a failure row was recorded for — carried by the row, so it survives a reload. */

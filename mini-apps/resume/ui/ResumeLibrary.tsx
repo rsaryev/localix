@@ -7,7 +7,7 @@ import { StateNotice } from '@localixai/kit/state-notice'
 import { WorkbenchToolbar, WorkbenchToolbarSection } from '@localixai/kit/workbench-toolbar'
 import { ResumeRow } from './ResumeRow'
 import { LibraryDialog } from './LibraryDialog'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import type { downloadResume } from './export'
 import type { ResumeSummary } from '../shared/schema'
 

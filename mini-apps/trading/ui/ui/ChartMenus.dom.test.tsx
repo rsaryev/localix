@@ -110,7 +110,7 @@ describe('chart type menu', () => {
 describe('analyze menu', () => {
   async function analyze(sessionId: string | null) {
     const { ChartAnalysisMenu } = await import('./ChartAnalysisMenu')
-    const { WorkItemSessionProvider } = await import('@localixai/plugin-sdk/ui/work-item-session')
+    const { WorkItemSessionProvider } = await import('@localixai/mini-app-sdk/ui/work-item-session')
     const applied: string[][] = []
     const view = await mount(async () => (
       <WorkItemSessionProvider sessionId={sessionId}>

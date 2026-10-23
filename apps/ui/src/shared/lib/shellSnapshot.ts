@@ -30,7 +30,7 @@
  * a mismatch is simply ignored.
  */
 
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 
 const SHELL_SNAPSHOT_KEY = 'localix_shell_snapshot'
 

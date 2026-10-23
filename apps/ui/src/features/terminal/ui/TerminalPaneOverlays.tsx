@@ -6,7 +6,7 @@
  * passing those and keeping the markup here leaves `TerminalPane` as the socket + xterm
  * lifecycle it is.
  */
-import { copyText } from '@localixai/plugin-sdk/ui/interactions'
+import { copyText } from '@localixai/mini-app-sdk/ui/interactions'
 
 import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import type { TerminalLinkItem } from '../model/terminalLinks'

@@ -3,7 +3,7 @@ import { isAtOrUnder } from '@localixai/path-containment/ancestry'
 import type { RepoDiffLine, SourceControlStatus } from '../../backend/source-control/contracts'
 import { sourceControlApi } from '../api'
 import { useSourceControlStore } from '../source-control/model/store'
-import { pluginFiles } from '@localixai/plugin-sdk/ui'
+import { pluginFiles } from '@localixai/mini-app-sdk/ui'
 import {
   computeWordDiffMarks,
   mergeDirtyChanges,
@@ -12,7 +12,7 @@ import {
   type DirtyDiffFeed,
   type EditorHunk,
 } from '@localixai/kit/code-editor'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 
 /**
  * Quick-diff feed (gutter change ranges + word-level marks) for the open file,

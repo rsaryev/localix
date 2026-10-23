@@ -22,8 +22,8 @@ import {
   type PluginUiHost,
   type PublishMessageContext,
   type WorkItemLike,
-} from '@localixai/plugin-sdk/ui'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+} from '@localixai/mini-app-sdk/ui'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
 import { buildRequestUri, parseRestUri } from '../backend/uri'
 import { REQUEST_WORK_KIND } from './model/openTab'

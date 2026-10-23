@@ -3,7 +3,7 @@ import { backendClient } from '@/shared/api/client'
 import { useFileConnectionRecovery } from './useFileConnectionRecovery'
 import { readyStateFor, type FileLoadState } from './fileLoadState'
 export type { FileLoadState } from './fileLoadState'
-import { baseName } from '@localixai/plugin-sdk/ui/utilities'
+import { baseName } from '@localixai/mini-app-sdk/ui/utilities'
 import { AUTO_SAVE_DELAY_MS, shouldAutoSave, useAutoSave } from '@/shared/ui/code-editor/autoSave'
 import {
   clearFileDraft,
@@ -11,9 +11,9 @@ import {
   getFileDraftSnapshot,
   setFileDraft,
 } from '../model/fileDrafts'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { useProblemReport } from '@/shared/ui/problem-report'
-import type { Problem } from '@localixai/plugin-sdk/ui/problems'
+import type { Problem } from '@localixai/mini-app-sdk/ui/problems'
 import type { FileContentResponse } from '@/shared/api/contracts'
 import { ensureFileContentCacheInvalidation, fileContentCache } from '../model/fileContentCache'
 import { externalLineChanges } from '@/shared/ui/code-editor/externalChanges'

@@ -137,7 +137,7 @@ describe('warm-hidden preview interactions', () => {
     const React = await import('react')
     const { createRoot } = await import('react-dom/client')
     const { act, useEffect } = React
-    const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
+    const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
     const { useSplitScrollSync } = await import('@/features/inspector/ui/useSplitScrollSync')
 
     const OriginalMutationObserver = globalThis.MutationObserver

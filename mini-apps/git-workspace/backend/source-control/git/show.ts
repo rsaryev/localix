@@ -15,7 +15,7 @@
  * complete leading files with `truncated`. The `path` carries the hash (the diff
  * tab's identity), mirroring how the per-file diff uses the file path.
  */
-import { ApiError } from '@localixai/plugin-sdk/backend'
+import { ApiError } from '@localixai/mini-app-sdk/backend'
 import type { FileDiff, RangeDiff } from '../contracts'
 import { firstLine, type GitRunner } from './cli'
 import { EMPTY_READ, readDiff, toFileDiff } from './diff-read'

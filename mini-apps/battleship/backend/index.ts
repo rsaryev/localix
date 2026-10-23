@@ -1,9 +1,9 @@
-import type { PluginContext, PluginRegistration } from '@localixai/plugin-sdk/backend'
+import type { PluginContext, PluginRegistration } from '@localixai/mini-app-sdk/backend'
 
 import { ROUTE_PATH } from '../shared/resource'
 import { createGameService } from './game-service'
 import { createGameRoutes } from './routes'
-import { createJsonStoreFeed } from '@localixai/plugin-sdk/backend'
+import { createJsonStoreFeed } from '@localixai/mini-app-sdk/backend'
 import { createGameTools } from './tools'
 
 /**

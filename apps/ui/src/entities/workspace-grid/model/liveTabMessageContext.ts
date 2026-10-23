@@ -3,7 +3,7 @@ import {
   PUBLISHED_MESSAGE_CONTEXT_MAX_BINDINGS,
   type MessageContextBindingDraft,
   type PublishedMessageContext,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 
 /**
  * Central, framework-neutral registry for live context published by mounted tab bodies.

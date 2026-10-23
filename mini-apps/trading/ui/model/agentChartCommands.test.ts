@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import '@localixai/kit/testing/host-runtime'
 import { registerInspectorHandler } from '@localixai/kit/testing'
-import type { PluginCommandEvent } from '@localixai/plugin-sdk/ui/commands'
+import type { PluginCommandEvent } from '@localixai/mini-app-sdk/ui/commands'
 import type { ChartCommandPayload } from '../../backend/chart-command'
 import { chartControlBus, type ChartControlCommand } from './chartControlBus'
 import { chartStateStore } from './chartStateStore'

@@ -12,7 +12,7 @@ import {
   CommandItem,
 } from '@localixai/kit/command'
 import { CommandHints } from '@/shared/ui/command-hints'
-import { baseName } from '@localixai/plugin-sdk/ui/utilities'
+import { baseName } from '@localixai/mini-app-sdk/ui/utilities'
 import { useActiveFilePath } from '../model/fileNav'
 import { openFileInGrid } from '@/shared/lib/recentFiles'
 import { symbolKindMeta } from '../model/symbolKindMeta'

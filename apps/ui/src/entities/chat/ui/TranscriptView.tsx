@@ -4,7 +4,7 @@ import { ArrowDown } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import type { Message } from '@/shared/api/contracts'
-import { WorkItemSessionProvider } from '@localixai/plugin-sdk/ui/work-item-session'
+import { WorkItemSessionProvider } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { ForeignTranscriptContext } from './tool-parts/foreignTranscriptContext'
 
 const LazyMessageList = lazy(async () => {

@@ -1,6 +1,6 @@
 import { createContext, useContext, useId, type ReactNode } from 'react'
 import { DIVIDED_LIST } from '@localixai/kit/divided-list'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /**
  * The one container a settings group lives in: a hairline outline and a quiet foreground veil, so the

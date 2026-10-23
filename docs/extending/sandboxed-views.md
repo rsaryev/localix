@@ -43,7 +43,7 @@ Return the handler under the backend's `uiActions` from `register()`. There is n
 This example assumes the plugin is named `sample`:
 
 ```ts
-import type { PluginRegistration } from '@localixai/plugin-sdk/backend'
+import type { PluginRegistration } from '@localixai/mini-app-sdk/backend'
 
 export function register(): PluginRegistration {
   return {

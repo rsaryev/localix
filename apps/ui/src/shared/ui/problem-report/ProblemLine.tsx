@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import {
   problemConsequenceLabel,
   problemReportTitle,
   worstProblemSeverity,
   type ProblemRecovery,
   type ProblemReport,
-} from '@localixai/plugin-sdk/ui/problems'
+} from '@localixai/mini-app-sdk/ui/problems'
 
 import { openNotificationCenter } from '@/shared/lib/notificationCenterBus'
 import { PROBLEM_SEVERITY } from './severity'

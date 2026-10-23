@@ -11,7 +11,10 @@
  * cannot be reintroduced as a condition without changing the signature this file pins.
  */
 import { describe, expect, test } from 'bun:test'
-import type { MessageBindingTargetKind, MessageContextBindingDraft } from '@localixai/plugin-sdk/ui'
+import type {
+  MessageBindingTargetKind,
+  MessageContextBindingDraft,
+} from '@localixai/mini-app-sdk/ui'
 import {
   ambientAutoRefs,
   ambientLinkDismissalKey,

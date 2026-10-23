@@ -1,4 +1,4 @@
-import { localixUri, parseLocalixUri } from '@localixai/plugin-sdk/navigation'
+import { localixUri, parseLocalixUri } from '@localixai/mini-app-sdk/navigation'
 
 /**
  * The board's addresses: its route, its work items, its live stream and its URIs. Values both

@@ -1,4 +1,4 @@
-import { KILL_ESCALATION_MS, toolEnv } from '@localixai/plugin-sdk/backend'
+import { KILL_ESCALATION_MS, toolEnv } from '@localixai/mini-app-sdk/backend'
 import type { DockerEventsFrame, DockerEventsStatus, DockerEventType } from './events-contract'
 
 /**

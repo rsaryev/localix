@@ -7,7 +7,7 @@ import type {
   PluginContext,
   PluginRouteScope,
   PluginWakeRequest,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 
 import { gameSchema } from '../shared/game'
 import { parseSquares, squareAt } from '../shared/notation'

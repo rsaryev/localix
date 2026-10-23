@@ -1,5 +1,5 @@
 import { isTextItem } from '@localixai/agent/agents/items'
-import type { PluginTranscriptMessage } from '@localixai/plugin-sdk/ui/runtime'
+import type { PluginTranscriptMessage } from '@localixai/mini-app-sdk/ui/runtime'
 import type { TranscriptTurn } from './types'
 
 export type ExternalTranscriptMessage = PluginTranscriptMessage

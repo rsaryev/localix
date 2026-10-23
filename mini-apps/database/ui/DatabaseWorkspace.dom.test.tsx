@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import '@localixai/kit/testing/host-runtime'
-import { pluginRealtime } from '@localixai/plugin-sdk/ui/runtime'
+import { pluginRealtime } from '@localixai/mini-app-sdk/ui/runtime'
 import {
   registerDom,
   registerInspectorHandler,

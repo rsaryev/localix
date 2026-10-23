@@ -18,4 +18,4 @@ export const RAW_BODY_PARSE = /\b[A-Za-z_$][\w$]*\.req\s*\.\s*json\s*\(/gu
 
 /** What a plugin route does instead. */
 export const RAW_BODY_PARSE_FIX =
-  "read the body with jsonBody(schema) from '@localixai/plugin-sdk/backend' and c.req.valid('json')"
+  "read the body with jsonBody(schema) from '@localixai/mini-app-sdk/backend' and c.req.valid('json')"

@@ -1,7 +1,7 @@
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDown, ArrowRight } from 'lucide-react'
 
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { Button } from '@localixai/kit/button'
 import {
   Canvas,
@@ -12,7 +12,7 @@ import {
 } from '@localixai/kit/canvas'
 import { RefreshAction } from '@localixai/kit/refresh-action'
 import { SearchInput } from '@localixai/kit/search-input'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { WorkbenchStatusBar, WorkbenchStatusItem } from '@localixai/kit/workbench-statusbar'
 import type { DbConnectionInfo } from '../dbClient'
 import { nodeIdentity, type LayoutDirection } from '../model/diagramLayout'

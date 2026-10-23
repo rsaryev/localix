@@ -1,4 +1,4 @@
-import type { CallClass, PluginContext } from '@localixai/plugin-sdk/backend'
+import type { CallClass, PluginContext } from '@localixai/mini-app-sdk/backend'
 import { NODE_KINDS } from '../shared/model'
 import { nodeLine } from '../shared/format'
 import { ROOT_DIR_ID } from '../shared/ids'

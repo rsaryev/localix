@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useChordHint } from '@/shared/lib/keybindings'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { IconButton, type IconButtonProps } from '@localixai/kit/icon-button'
 import { railBtn, railBtnActive } from '@localixai/kit/rail-button'
 

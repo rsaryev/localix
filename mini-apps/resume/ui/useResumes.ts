@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { useEffect, useRef, useState } from 'react'
-import { useFileResourceSync } from '@localixai/plugin-sdk/ui/file-resource-sync'
+import { useFileResourceSync } from '@localixai/mini-app-sdk/ui/file-resource-sync'
 import {
   documentSchema,
   resumeSummary,

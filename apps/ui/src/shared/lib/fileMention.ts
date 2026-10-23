@@ -10,7 +10,7 @@
 // unit-testable and can be shared by the composer (features/chat) and the
 // markdown renderer (shared/ui) without crossing layers.
 import { REF_RESERVED_WORDS, isAtomicRefToken } from '@localixai/api/context-refs'
-import { baseName } from '@localixai/plugin-sdk/ui/utilities'
+import { baseName } from '@localixai/mini-app-sdk/ui/utilities'
 
 /** Reserved context-ref keywords that are NOT link-only mentions (they expand).
  *  Derived from the shared ref-kind registry — a new kind is reserved for free.

@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import { readFileSync, rmSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { fixtureDist, measure, type Measured, measureSubpaths } from './plugin-sdk-bytes'
+import { fixtureDist, measure, type Measured, measureSubpaths } from './mini-app-sdk-bytes'
 
 /**
- * A byte budget on every public subpath of `@localixai/plugin-sdk`.
+ * A byte budget on every public subpath of `@localixai/mini-app-sdk`.
  *
  * ~50k lines of plugin UI import this SDK, and its cost is invisible from the inside: the build is a
  * plain `tsc`, so nothing reports what a subpath weighs, and the `./ui` barrel re-exports 166 names
@@ -16,8 +16,8 @@ import { fixtureDist, measure, type Measured, measureSubpaths } from './plugin-s
  *      one `sideEffects: false` dropped from the manifest, and that single import starts dragging
  *      the whole barrel into every plugin bundle. Nothing else in this repo would notice.
  *
- * The measurement is a real bundle (see `plugin-sdk-bytes.ts`) and the numbers are pinned in
- * `plugin-sdk-bytes-baseline.json`, in the same ratchet shape as `source-size-guard.test.ts`: a pin
+ * The measurement is a real bundle (see `mini-app-sdk-bytes.ts`) and the numbers are pinned in
+ * `mini-app-sdk-bytes-baseline.json`, in the same ratchet shape as `source-size-guard.test.ts`: a pin
  * may fall, may drift 10%, and may not rise without a reviewed edit.
  *
  * For each re-export-only barrel the probe runs twice — the whole namespace, then a single named
@@ -30,10 +30,10 @@ import { fixtureDist, measure, type Measured, measureSubpaths } from './plugin-s
  * a measurement that started reading nothing would read far BELOW every pin, which is the
  * ratchet-down failure below.
  *
- * Regenerate after a deliberate change:  bun scripts/plugin-sdk-bytes-guard.test.ts --regen
+ * Regenerate after a deliberate change:  bun scripts/mini-app-sdk-bytes-guard.test.ts --regen
  */
 
-const BASELINE_PATH = resolve(import.meta.dir, 'plugin-sdk-bytes-baseline.json')
+const BASELINE_PATH = resolve(import.meta.dir, 'mini-app-sdk-bytes-baseline.json')
 
 /** A subpath past this is not born, whatever the baseline says. Raising it is a review decision. */
 const MAX_SUBPATH_BYTES = 64 * 1024
@@ -71,7 +71,7 @@ if (process.argv.includes('--regen')) {
   const total = measured.reduce((sum, entry) => sum + entry.bytes, 0)
   console.log(`pinned ${measured.length} subpaths (${total} bytes of first-party output)`)
 } else {
-  describe('plugin-sdk subpath byte budgets', () => {
+  describe('mini-app-sdk subpath byte budgets', () => {
     test('every subpath is pinned to a budget', () => {
       const unpinned = measured
         .filter(({ subpath }) => pinOf(subpath) === undefined)
@@ -79,7 +79,7 @@ if (process.argv.includes('--regen')) {
           ({ subpath, bytes }) =>
             `${subpath} is published but has no budget (measured ${bytes} bytes). Publishing a ` +
             'subpath is a deliberate act, so record what it costs: ' +
-            'bun scripts/plugin-sdk-bytes-guard.test.ts --regen',
+            'bun scripts/mini-app-sdk-bytes-guard.test.ts --regen',
         )
       expect(unpinned).toEqual([])
     })
@@ -124,14 +124,14 @@ if (process.argv.includes('--regen')) {
           .map(
             ({ subpath, bytes }) =>
               `${subpath} now costs ${bytes} bytes against a budget of ${pinOf(subpath)?.bytes} — ` +
-              'take the win: bun scripts/plugin-sdk-bytes-guard.test.ts --regen',
+              'take the win: bun scripts/mini-app-sdk-bytes-guard.test.ts --regen',
           ),
         ...Object.keys(baseline)
           .filter((subpath) => !measured.some((entry) => entry.subpath === subpath))
           .map(
             (subpath) =>
               `${subpath} is budgeted but no longer published — drop the pin: ` +
-              'bun scripts/plugin-sdk-bytes-guard.test.ts --regen',
+              'bun scripts/mini-app-sdk-bytes-guard.test.ts --regen',
           ),
       ]
       expect(stale).toEqual([])
@@ -152,7 +152,7 @@ if (process.argv.includes('--regen')) {
             `${subpath}: importing { ${shake?.export} } alone costs ${shake?.bytes} of the barrel's ` +
             `${bytes} bytes — over ${SHAKEABLE_FRACTION * 100}%, so it is no longer being shaken ` +
             'out. Look for a new top-level side effect in the modules it re-exports, or a lost ' +
-            '`sideEffects: false` in packages/plugin-sdk/package.json.',
+            '`sideEffects: false` in packages/mini-app-sdk/package.json.',
         )
       expect(dragged).toEqual([])
     })

@@ -15,7 +15,7 @@
  */
 
 import { Layers, Settings2 } from 'lucide-react'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { IconButton } from '@localixai/kit/icon-button'
 import {
   DropdownMenu,
@@ -23,7 +23,7 @@ import {
   DropdownMenuTrigger,
 } from '@localixai/kit/dropdown-menu'
 import { MenuEntries } from '@localixai/kit/menu-entries'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { EnvironmentInfo } from '../../backend/contracts'
 import { environmentEntries } from '../model/environmentEntries'
 

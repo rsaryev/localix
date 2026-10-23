@@ -1,7 +1,11 @@
 import { lazy, Suspense } from 'react'
 
-import type { FileEditorProps, PublishMessageContext, WorkItemLike } from '@localixai/plugin-sdk/ui'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import type {
+  FileEditorProps,
+  PublishMessageContext,
+  WorkItemLike,
+} from '@localixai/mini-app-sdk/ui'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
 import { DIALECT_KIND } from './model/dialects'
 import { normalizeDatabaseArea } from './model/databaseView'

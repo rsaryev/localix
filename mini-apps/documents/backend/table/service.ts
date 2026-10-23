@@ -16,7 +16,7 @@ import {
   type TableColumn,
   type TableRow,
 } from '@localixai/dataview'
-import { resolveExecutable } from '@localixai/plugin-sdk/backend'
+import { resolveExecutable } from '@localixai/mini-app-sdk/backend'
 import { createXlsxTableExporter } from './xlsx-export'
 import type { OpenTargetView, TableMeta, TableRowsResponse } from './contracts'
 import type { TableStore } from './store'

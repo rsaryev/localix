@@ -1,4 +1,4 @@
-import { askAgentForTurn, type Seat, type Wake } from '@localixai/plugin-sdk/backend'
+import { askAgentForTurn, type Seat, type Wake } from '@localixai/mini-app-sdk/backend'
 
 import { describeGame } from '../shared/describe'
 import { MAX_MOVES, type AgentWait, type Game } from '../shared/game'

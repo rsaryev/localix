@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { richTextToText } from '@localixai/plugin-sdk/rich-text'
+import { richTextToText } from '@localixai/mini-app-sdk/rich-text'
 import {
   emptyDocument,
   idSchema,

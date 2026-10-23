@@ -1,6 +1,6 @@
 import { RotateCcw } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { PICKER_ROW_LEADING, pickerRow } from './pickerRow'
 
 /** "Use the fallback" entry heading a workload's model list. */

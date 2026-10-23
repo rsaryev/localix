@@ -1,5 +1,5 @@
-import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { SegmentedRadioGroup } from '@localixai/plugin-sdk/ui/segmented-control'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { SegmentedRadioGroup } from '@localixai/mini-app-sdk/ui/segmented-control'
 import type { PendingConfirmInteraction } from '@/shared/api/contracts'
 
 /** One breadth the host offered — read off the wire shape rather than restated here. */

@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
 import '@localixai/kit/testing/host-runtime'
 import { registerDom } from '@localixai/kit/testing'
-import { pluginRealtime } from '@localixai/plugin-sdk/ui/runtime'
-import type { PublishMessageContext, WorkItemLike } from '@localixai/plugin-sdk/ui'
+import { pluginRealtime } from '@localixai/mini-app-sdk/ui/runtime'
+import type { PublishMessageContext, WorkItemLike } from '@localixai/mini-app-sdk/ui'
 
 let teardown: () => Promise<void>
 let restoreEditor: () => void
@@ -78,7 +78,7 @@ describe('DbConsoleBody', () => {
   ])('a %s console mounts %s', async (dialect, module, noun) => {
     const { act } = await import('react')
     const { createRoot } = await import('react-dom/client')
-    const { WorkItemSessionProvider } = await import('@localixai/plugin-sdk/ui/work-item-session')
+    const { WorkItemSessionProvider } = await import('@localixai/mini-app-sdk/ui/work-item-session')
     const { DbConsoleBody } = await import('./workItemBodies')
     const host = document.createElement('div')
     document.body.append(host)

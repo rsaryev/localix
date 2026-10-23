@@ -7,7 +7,10 @@ import { Field } from '@localixai/kit/field'
 import { Input } from '@localixai/kit/input'
 import { Select } from '@localixai/kit/select'
 import { Switch } from '@localixai/kit/switch'
-import { SegmentedControl, SegmentedControlItem } from '@localixai/plugin-sdk/ui/segmented-control'
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from '@localixai/mini-app-sdk/ui/segmented-control'
 import { EnvEditor } from '../mcpFormParts'
 
 /**

@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { jsonBody, jsonError, type PluginRouteContext } from '@localixai/plugin-sdk/backend'
+import { jsonBody, jsonError, type PluginRouteContext } from '@localixai/mini-app-sdk/backend'
 import { systemMarkInputSchema } from '../shared/system-marks'
 import type { SystemReader } from './system'
 import type { ProcessService } from './processes'

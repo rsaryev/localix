@@ -3,9 +3,9 @@ import {
   resourceMessageBindingDraft,
   snippetMessageBindingDraft,
   toast,
-} from '@localixai/plugin-sdk/ui'
-import { pluginComposer, pluginFiles } from '@localixai/plugin-sdk/ui/runtime'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+} from '@localixai/mini-app-sdk/ui'
+import { pluginComposer, pluginFiles } from '@localixai/mini-app-sdk/ui/runtime'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 import type { ReaderChapter, ReaderDocument, ReaderSource } from '../shared/contracts'
 import { readerChapterUri } from '../shared/resource-uri'

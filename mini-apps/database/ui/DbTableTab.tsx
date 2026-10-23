@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react'
-import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
+import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'
 import type { ConnectionColor, DbConnectionInfo, DbDialect } from './dbClient'
 import { dbConsoleBus } from './model/dbConsoleBus'
 import { openDbConsole, type DbTableOpenMode } from './model/openConsole'

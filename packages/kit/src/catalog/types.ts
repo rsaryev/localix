@@ -26,7 +26,7 @@ export type KitCategory =
 /**
  * Who serves the module. `kit`: a door of this package (`src/entries/<id>.ts`). `host`: a module
  * the app lends under the same namespace because it is bound to a host feature
- * (`apps/ui/src/app/kit/<id>.ts`). `sdk`: a UI module of `@localixai/plugin-sdk` that belongs in
+ * (`apps/ui/src/app/kit/<id>.ts`). `sdk`: a UI module of `@localixai/mini-app-sdk` that belongs in
  * the same choice — the segmented control, the charts, the class recipes.
  */
 export type KitProvider = 'kit' | 'host' | 'sdk'

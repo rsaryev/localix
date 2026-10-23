@@ -21,7 +21,7 @@
 // carries, so the agent is told props that exist.
 import { readdirSync } from 'node:fs'
 import { basename, join } from 'node:path'
-import ts from '@localixai/plugin-kit-compiler'
+import ts from '@localixai/mini-app-kit-compiler'
 
 const NODE_FLAGS =
   ts.NodeBuilderFlags.NoTruncation |

@@ -57,7 +57,7 @@ describe('ComposerCommandButton', () => {
     const React = await import('react')
     const { act } = React
     const { createRoot } = await import('react-dom/client')
-    const { WorkItemSessionProvider } = await import('@localixai/plugin-sdk/ui/work-item-session')
+    const { WorkItemSessionProvider } = await import('@localixai/mini-app-sdk/ui/work-item-session')
     const requests: ComposerInsert[] = []
     const unsubscribe = composerBus.subscribe((request) => {
       requests.push(request)

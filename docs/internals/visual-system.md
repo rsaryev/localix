@@ -272,7 +272,7 @@ adds one rule of its own: a native button, input, select or textarea where the k
 | `packages/oxlint-rules/src/rules/`             | The per-node rules, each with its reasoning in the file header.                                         |
 | `scripts/pane-ground-guard.test.ts`            | The whole-tree invariant and the allowlist of outermost painters.                                       |
 | `apps/ui/src/shared/ui/`                       | The primitives that define geometry, focus and material for consumers.                                  |
-| `packages/plugin-sdk/src/ui/`                  | The same primitives as a plugin sees them.                                                              |
+| `packages/mini-app-sdk/src/ui/`                | The same primitives as a plugin sees them.                                                              |
 
 ## Limits
 

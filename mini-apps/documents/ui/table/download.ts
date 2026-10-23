@@ -1,4 +1,4 @@
-import { pluginFiles } from '@localixai/plugin-sdk/ui/runtime'
+import { pluginFiles } from '@localixai/mini-app-sdk/ui/runtime'
 import { tableApi } from '../api/tableApi'
 
 function safeName(title: string | undefined, fallback: string): string {

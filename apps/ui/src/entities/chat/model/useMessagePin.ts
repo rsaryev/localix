@@ -8,7 +8,7 @@ import { useCallback } from 'react'
 
 import { backendClient } from '@/shared/api/client'
 import { toast } from '@/shared/lib/notify'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 export function useMessagePin(sessionId: string | null, messageId: string, pinned: boolean) {
   return useCallback(() => {

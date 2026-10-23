@@ -1,4 +1,4 @@
-import type { WsFrameContribution } from '@localixai/plugin-sdk/backend'
+import type { WsFrameContribution } from '@localixai/mini-app-sdk/backend'
 import { createLogFollowHub, type LogFollowHub, type LogSource } from '../../backend/log-follow'
 import {
   KUBE_LOGS_SUBSCRIBE,

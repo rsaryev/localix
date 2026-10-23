@@ -1,5 +1,5 @@
 import { Link2, Terminal } from 'lucide-react'
-import type { PluginTranscriptAction } from '@localixai/plugin-sdk/ui/runtime'
+import type { PluginTranscriptAction } from '@localixai/mini-app-sdk/ui/runtime'
 import { MAX_TRANSCRIPT_EVENTS } from '@localixai/api/external-agent-contracts'
 import type { RosterRow } from '@localixai/api/external-agent-contracts'
 import { externalAgentsApi } from '../api'

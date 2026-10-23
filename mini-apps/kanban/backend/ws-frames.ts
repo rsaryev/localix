@@ -1,4 +1,4 @@
-import type { WsFrameContribution } from '@localixai/plugin-sdk/backend'
+import type { WsFrameContribution } from '@localixai/mini-app-sdk/backend'
 
 import { BOARD_FRAME_TAG, BOARD_SUBSCRIBE, BOARD_UNSUBSCRIBE } from '../shared/resource'
 import type { BoardService } from './service'

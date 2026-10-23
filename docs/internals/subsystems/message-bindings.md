@@ -78,7 +78,7 @@ These are enforced contracts, not user settings.
 | Model-bearing binding content per send |       25 MiB | UTF-8 bytes of asset bodies, contribution bodies, and invocation instructions       |
 | Plugin-added assistant bindings        |            8 | [Assistant hook runner](../../../apps/api/src/features/plugins/hooks-messages.ts)   |
 | Plugin-added payload per binding       |        8 MiB | Malformed or oversized hook output is dropped                                       |
-| Live plugin facets per mounted tab     |            5 | [Plugin UI contribution contract](../../../packages/plugin-sdk/src/ui/contrib.ts)   |
+| Live plugin facets per mounted tab     |            5 | [Plugin UI contribution contract](../../../packages/mini-app-sdk/src/ui/contrib.ts) |
 | Live plugin snippet content            | 40,000 chars | Truncated by the plugin UI factory and untrusted-publication normalizer             |
 
 The 25 MiB request guard counts content, not the serialized metadata envelope. A `path` binding
@@ -120,6 +120,6 @@ counts toward the 20-binding limit but contributes zero content bytes to this gu
 - [Edit and regeneration behavior](../../../apps/api/src/features/chat/service/branching-ops.ts)
 - [Slash invocation persistence](../../../apps/api/src/features/chat/service/run-macro.ts)
 - [Composer merge](../../../apps/ui/src/entities/chat/model/sendRefs.ts)
-- [Drag transport](../../../packages/plugin-sdk/src/ui/message-binding-drag.ts)
+- [Drag transport](../../../packages/mini-app-sdk/src/ui/message-binding-drag.ts)
 - [Plugin assistant validation](../../../apps/api/src/features/plugins/hooks-messages.ts)
 - [Storage and search](../../../apps/api/migrations/20260601T000000_init_schema.ts)

@@ -1,4 +1,4 @@
-import type { PluginContext } from '@localixai/plugin-sdk/backend'
+import type { PluginContext } from '@localixai/mini-app-sdk/backend'
 
 import { createCommitCompletionSurface } from './inline-completion'
 import { createGitContextProvider } from './source-control/context-provider'

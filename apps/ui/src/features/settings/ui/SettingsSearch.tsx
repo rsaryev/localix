@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { SearchInput } from '@localixai/kit/search-input'
-import { ResultCountStatus } from '@localixai/plugin-sdk/ui/result-count-status'
+import { ResultCountStatus } from '@localixai/mini-app-sdk/ui/result-count-status'
 import {
   Autocomplete,
   AutocompleteAnchor,

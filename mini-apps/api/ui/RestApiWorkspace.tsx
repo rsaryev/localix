@@ -27,7 +27,7 @@ import {
   snippetMessageBindingDraft,
   type PublishedMessageContext,
   type PublishMessageContext,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { WorkbenchSash } from '@localixai/kit/button'
 import { EmptyHint } from '@localixai/kit/empty-hint'
 import { usePaneResize } from '@localixai/kit/pane-resize'

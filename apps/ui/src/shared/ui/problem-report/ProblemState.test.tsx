@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
-import type { ProblemReport } from '@localixai/plugin-sdk/ui/problems'
+import type { ProblemReport } from '@localixai/mini-app-sdk/ui/problems'
 
 import { ProblemState } from './ProblemState'
 

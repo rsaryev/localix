@@ -1,5 +1,5 @@
-import { elapsed } from '@localixai/plugin-sdk/agent-wait'
-import { opponentName } from '@localixai/plugin-sdk/opponent'
+import { elapsed } from '@localixai/mini-app-sdk/agent-wait'
+import { opponentName } from '@localixai/mini-app-sdk/opponent'
 import { turnOf, type Game, type GameEnding, type Move, type GameRecord } from '../../shared/game'
 import { other, type Side } from '../../shared/position'
 

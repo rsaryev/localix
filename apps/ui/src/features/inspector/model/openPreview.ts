@@ -1,5 +1,5 @@
 import { backendClient } from '@/shared/api/client'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { toast } from '@/shared/lib/notify'
 import { revealPreview } from './revealPreview'
 

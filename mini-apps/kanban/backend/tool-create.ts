@@ -1,4 +1,4 @@
-import type { PluginContext } from '@localixai/plugin-sdk/backend'
+import type { PluginContext } from '@localixai/mini-app-sdk/backend'
 
 import type { KanbanTask } from '../shared/contracts'
 import { BoardRefusal } from '../shared/errors'

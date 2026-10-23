@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { UI_AGENT_LOCATION_CATALOG_VERSION } from '@localixai/plugin-sdk/ui'
+import { UI_AGENT_LOCATION_CATALOG_VERSION } from '@localixai/mini-app-sdk/ui'
 import { createUiLocationCatalogService } from './service'
 
 const terminal = {

@@ -1,6 +1,6 @@
 import { Boxes, Layers, Server, Network, CalendarClock } from 'lucide-react'
 
-import { resourceMessageBindingDraft, type PluginUiHost } from '@localixai/plugin-sdk/ui'
+import { resourceMessageBindingDraft, type PluginUiHost } from '@localixai/mini-app-sdk/ui'
 import { buildK8sNodeUri, buildK8sPodUri, buildK8sWorkloadUri } from './model/resourceLink'
 import { resolveKubernetesAnchor } from './register/anchor'
 import { KubernetesPodBody, KubernetesResourceBody } from './register/bodies'

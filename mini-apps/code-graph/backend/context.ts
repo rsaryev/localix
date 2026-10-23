@@ -2,7 +2,7 @@ import {
   createResourceContextProvider,
   type PluginHostServices,
   type ResourceRefProvider,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import { location } from '../shared/format'
 import { nodeOfUri, nodeUri } from '../shared/resource'
 import { describeDetail, statusLine } from './describe'

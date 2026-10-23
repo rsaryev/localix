@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 
 import { ALL_NAMESPACES } from '../../backend/contracts'
 import {

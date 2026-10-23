@@ -13,11 +13,11 @@ import {
   Plus,
   Table2,
 } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import {
   createMessageBindingDraft,
   setMessageBindingDrag,
-} from '@localixai/plugin-sdk/ui/message-binding-drag'
+} from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import { IconButton } from '@localixai/kit/icon-button'
 import { dbResourceUri } from '../../model/dbResourceUri'
 import { formatApproxCount } from '../../model/formatApproxCount'

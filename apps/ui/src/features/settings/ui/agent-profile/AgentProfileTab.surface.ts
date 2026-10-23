@@ -1,5 +1,5 @@
 import { Bot } from 'lucide-react'
-import { defineUiLocation } from '@localixai/plugin-sdk/ui'
+import { defineUiLocation } from '@localixai/mini-app-sdk/ui'
 import { pluginContribSnapshot } from '@/shared/contrib/enabledPlugins'
 import { resolveAuthorIdentity } from '@/shared/contrib/useAgentIdentity'
 import {

@@ -1,5 +1,8 @@
 import { Boxes } from 'lucide-react'
-import { SegmentedControl, SegmentedControlItem } from '@localixai/plugin-sdk/ui/segmented-control'
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from '@localixai/mini-app-sdk/ui/segmented-control'
 import { Button } from '@localixai/kit/button'
 import { Checkbox } from '@localixai/kit/checkbox'
 import {

@@ -6,7 +6,7 @@ import {
   worstProblemSeverity,
   type ProblemRecovery,
   type ProblemReport,
-} from '@localixai/plugin-sdk/ui/problems'
+} from '@localixai/mini-app-sdk/ui/problems'
 
 import { ProblemLinks } from './ProblemLine'
 import { PROBLEM_SEVERITY } from './severity'

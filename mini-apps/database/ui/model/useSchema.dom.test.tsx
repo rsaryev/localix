@@ -18,7 +18,7 @@ describe('useSchema work-item visibility', () => {
     const React = await import('react')
     const { act } = React
     const { createRoot } = await import('react-dom/client')
-    const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
+    const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
     const { databaseApi } = await import('../api/databaseApi')
     const { useSchema } = await import('./useSchema')
 

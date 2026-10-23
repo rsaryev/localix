@@ -1,5 +1,5 @@
 import { lazy, type ComponentType } from 'react'
-import type { PluginFileTabProps, PluginUiComponents } from '@localixai/plugin-sdk/ui/components'
+import type { PluginFileTabProps, PluginUiComponents } from '@localixai/mini-app-sdk/ui/components'
 
 /**
  * The host components lent to plugins, and how they load.

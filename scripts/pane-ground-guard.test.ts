@@ -66,7 +66,7 @@ function ternaryBranches(text: string): string[] {
 }
 
 /** The kit is where the primitives live; a root left out here is a tree the guard never reads. */
-const ROOTS = ['apps/ui/src', 'packages/kit/src', 'packages/plugin-sdk/src', 'plugins']
+const ROOTS = ['apps/ui/src', 'packages/kit/src', 'packages/mini-app-sdk/src', 'plugins']
 
 /**
  * The OUTERMOST painters — the handful of elements that legitimately own the ground, plus the

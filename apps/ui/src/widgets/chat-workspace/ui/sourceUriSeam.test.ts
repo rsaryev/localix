@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { parseLocalixUri } from '@localixai/plugin-sdk/navigation'
+import { parseLocalixUri } from '@localixai/mini-app-sdk/navigation'
 
 import fileSurface from '@/features/inspector/ui/FileTab.surface'
 import chatSurface from './ChatSurface.surface'

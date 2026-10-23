@@ -9,7 +9,7 @@
 import { afterEach, expect, test } from 'bun:test'
 import '@localixai/kit/testing/host-runtime'
 import { renderToStaticMarkup } from 'react-dom/server'
-import type { StatusItemState } from '@localixai/plugin-sdk/ui'
+import type { StatusItemState } from '@localixai/mini-app-sdk/ui'
 
 import { chartStateStore } from './model/chartStateStore'
 import { useTradingStatusItem } from './statusItem'

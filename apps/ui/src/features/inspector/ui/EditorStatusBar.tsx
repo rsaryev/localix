@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import type { EditorCursorStatus } from '@/shared/ui/code-editor/CodeEditor'
 import { SUPPORTED_LANGUAGE_IDS } from '@/shared/ui/code-editor/language'
 import { detectIndentation } from '@/shared/lib/detectIndentation'

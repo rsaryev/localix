@@ -3,7 +3,7 @@ import {
   useComments,
   useScopeComments,
   type CommentAnchor,
-} from '@localixai/plugin-sdk/ui/comments'
+} from '@localixai/mini-app-sdk/ui/comments'
 import { composerBus } from '@/shared/lib/composerBus'
 import type { MessageAttachment } from '@/shared/api/contracts'
 import { reviewCommentBinding, reviewCommentToken } from '@/shared/lib/reviewCommentBinding'

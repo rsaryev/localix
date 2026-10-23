@@ -5,8 +5,8 @@
  */
 import { lazy } from 'react'
 
-import type { PublishMessageContext, WorkItemLike } from '@localixai/plugin-sdk/ui'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import type { PublishMessageContext, WorkItemLike } from '@localixai/mini-app-sdk/ui'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { EmptyHint } from '@localixai/kit/empty-hint'
 import type { KubeNode, KubePod, KubeResourceKind } from '../../backend/contracts'
 

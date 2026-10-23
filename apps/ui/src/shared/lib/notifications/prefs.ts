@@ -5,7 +5,7 @@ import {
   type NotificationPreferences,
   type TerminalNotificationMethod,
 } from '@localixai/notifications'
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 
 const LS_KEY = 'localix_notification_prefs_v1'
 

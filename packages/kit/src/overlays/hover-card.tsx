@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { createPortal } from 'react-dom'
 import { HoverCard as HoverCardPrimitive } from 'radix-ui'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { OVERLAY_ENTER_EXIT, OVERLAY_SLIDE } from './overlay-motion'
 import { POPOVER_SURFACE } from './popover-surface'
 

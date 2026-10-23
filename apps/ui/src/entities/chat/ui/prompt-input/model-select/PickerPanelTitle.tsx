@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { SectionLabel } from '@localixai/kit/section-label'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /**
  * A main-panel header title that yields to the narrow layout's navigation.

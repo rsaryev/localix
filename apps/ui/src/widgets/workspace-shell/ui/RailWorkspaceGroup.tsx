@@ -1,6 +1,6 @@
 import { Ellipsis } from 'lucide-react'
-import type { PluginCategory } from '@localixai/plugin-sdk/manifest'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import type { PluginCategory } from '@localixai/mini-app-sdk/manifest'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { DROP_TARGET_INSET_ACTIVE, DROP_TARGET_TRANSITION } from '@localixai/kit/drop-target'
 import type { UseRailDnd } from '../model/useRailDnd'
 import type { PinnedRailArea } from '../model/railLayout'

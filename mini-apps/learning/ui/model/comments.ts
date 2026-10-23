@@ -1,4 +1,4 @@
-import type { Comment } from '@localixai/plugin-sdk/ui/comments'
+import type { Comment } from '@localixai/mini-app-sdk/ui/comments'
 
 export function commentsText(title: string, comments: Comment[]): string {
   return [

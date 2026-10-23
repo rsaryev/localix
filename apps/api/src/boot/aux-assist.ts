@@ -10,7 +10,7 @@
  */
 import type { Kysely } from 'kysely'
 import type { LanguageModelFactory } from '@localixai/agent/runtime'
-import type { PluginTextInputCompletionSurface } from '@localixai/plugin-sdk/backend'
+import type { PluginTextInputCompletionSurface } from '@localixai/mini-app-sdk/backend'
 import type { AppDatabase } from '../db/types'
 import { createAuxProviderHelpers } from '../features/chat/service/aux-provider'
 import { createEditPredictionEngine } from '../features/edit-prediction/engine'

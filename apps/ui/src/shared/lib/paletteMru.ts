@@ -9,7 +9,7 @@
  * The ordering primitive `promoteMru` is pure + unit-tested; the singleton wraps
  * it with a small localStorage-backed store so history survives reloads.
  */
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 
 const STORAGE_KEY = 'localix.palette.mru'
 export const PALETTE_MRU_CAP = 6

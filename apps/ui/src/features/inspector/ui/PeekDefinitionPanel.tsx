@@ -6,7 +6,7 @@ import { IconButton } from '@localixai/kit/icon-button'
 import { TextAction } from '@localixai/kit/text-action'
 import { WorkbenchToolbar, WorkbenchToolbarSection } from '@localixai/kit/workbench-toolbar'
 import { ActivitySignal } from '@localixai/kit/activity-orb'
-import { baseName } from '@localixai/plugin-sdk/ui/utilities'
+import { baseName } from '@localixai/mini-app-sdk/ui/utilities'
 import { ProblemLine } from '@/shared/ui/problem-report'
 import type { PeekDefinitionView, PeekTarget } from './usePeekDefinition'
 

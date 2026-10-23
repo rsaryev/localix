@@ -1,5 +1,5 @@
 import { Puzzle, Settings, SlidersHorizontal, Wrench } from 'lucide-react'
-import type { PluginUiHost, UiAnchorNode } from '@localixai/plugin-sdk/ui'
+import type { PluginUiHost, UiAnchorNode } from '@localixai/mini-app-sdk/ui'
 import { SETTINGS_INDEX } from '@/shared/lib/settings-index/settingsIndex'
 import {
   settingsTargetUri,
@@ -9,7 +9,7 @@ import {
 import { SETTINGS_STRING_TABS } from '@/shared/routing/routes'
 import { pluginContribSnapshot } from '@/shared/contrib/enabledPlugins'
 import { listUiLocations } from '@/shared/contrib/uiLocations'
-import { pluginLabel } from '@localixai/plugin-sdk/manifest-label'
+import { pluginLabel } from '@localixai/mini-app-sdk/manifest-label'
 
 function settingsChildren(parentUri: string | null): UiAnchorNode[] {
   if (parentUri === null) {

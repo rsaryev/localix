@@ -1,5 +1,5 @@
 import { GripVertical } from 'lucide-react'
-import { cn, CONTROL_FOCUS_VISIBLE } from '@localixai/plugin-sdk/ui/classes'
+import { cn, CONTROL_FOCUS_VISIBLE } from '@localixai/mini-app-sdk/ui/classes'
 import type { ReorderHandleProps } from './useListReorder'
 
 /**

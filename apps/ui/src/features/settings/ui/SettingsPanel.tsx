@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ModelsSettings } from './ModelsSettings'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { SettingsSearch } from './SettingsSearch'
 import { PreferencesSettings } from './PreferencesSettings'
 import { EditorSettings } from './EditorSettings'

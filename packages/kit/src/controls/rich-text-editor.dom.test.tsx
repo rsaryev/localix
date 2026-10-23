@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { registerDom } from '../testing/dom'
-import type { RichTextDocument } from '@localixai/plugin-sdk/rich-text'
+import type { RichTextDocument } from '@localixai/mini-app-sdk/rich-text'
 import type { Editor } from '@tiptap/react'
 
 let teardown: () => Promise<void>

@@ -1,6 +1,6 @@
 import { ChevronRight, CircleAlert, ListTree } from 'lucide-react'
 import { Spinner } from '@localixai/kit/spinner'
-import { formatDuration } from '@localixai/plugin-sdk/ui/utilities'
+import { formatDuration } from '@localixai/mini-app-sdk/ui/utilities'
 import { COLLAPSIBLE_MOTION } from '@localixai/kit/collapsible-motion'
 import { DiffStat } from './ToolIO'
 

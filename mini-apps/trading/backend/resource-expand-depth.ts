@@ -6,7 +6,7 @@ import type { Candle, PublicTrade } from './contracts'
 import { orderBookSpread } from './slippage'
 import { candleSummary, trendLine } from './candle-lines'
 import { sizeColumn } from './size-unit'
-import type { ResourceExpansion } from '@localixai/plugin-sdk/backend'
+import type { ResourceExpansion } from '@localixai/mini-app-sdk/backend'
 import {
   BOOK_DEPTH,
   CANDLE_BARS,

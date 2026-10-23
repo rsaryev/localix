@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { EmptyHint } from '@localixai/kit/empty-hint'
 import { PanelHeader } from '@localixai/kit/panel-header'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { ProviderEntry } from '@localixai/agent/catalog'
 import type { ApiKeyConnectionOptions } from '../useConnections'
 import type { ProviderConnection } from '@/shared/api/contracts'

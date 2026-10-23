@@ -1,12 +1,12 @@
-import { agentWaitSchema, type AgentWait } from '@localixai/plugin-sdk/agent-wait'
-import { OPPONENTS, opponentSchema, type Opponent } from '@localixai/plugin-sdk/opponent'
+import { agentWaitSchema, type AgentWait } from '@localixai/mini-app-sdk/agent-wait'
+import { OPPONENTS, opponentSchema, type Opponent } from '@localixai/mini-app-sdk/opponent'
 import {
   revealSealed,
   sealedSchema,
   sealedView,
   sealedViewSchema,
   type Sealed,
-} from '@localixai/plugin-sdk/sealed'
+} from '@localixai/mini-app-sdk/sealed'
 import { z } from 'zod'
 
 /**
@@ -33,7 +33,7 @@ export type Player = (typeof PLAYERS)[number]
 export { agentWaitSchema, type AgentWait }
 
 /**
- * Who fills the `agent` seat at this table (`@localixai/plugin-sdk/opponent`): the agent in the
+ * Who fills the `agent` seat at this table (`@localixai/mini-app-sdk/opponent`): the agent in the
  * chat, or the host's decision model. The seat — its sealed move, its side of the score — is the
  * same either way; only who chooses differs.
  */

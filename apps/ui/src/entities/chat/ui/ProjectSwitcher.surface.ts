@@ -1,5 +1,5 @@
 import { FolderSync } from 'lucide-react'
-import { defineUiLocation } from '@localixai/plugin-sdk/ui'
+import { defineUiLocation } from '@localixai/mini-app-sdk/ui'
 
 export const PROJECT_SWITCHER_OVERLAY_ID = 'project-switcher'
 

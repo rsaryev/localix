@@ -30,7 +30,7 @@ import { useMemo, useState } from 'react'
 import { Check, ChevronDown, Shuffle, Users } from 'lucide-react'
 import type { ImplementationMode } from '@localixai/api/client'
 import { PERMISSION_MODE_COPY } from '@localixai/api/permission-modes'
-import type { IconComponent, MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { IconComponent, MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { monogramIcon } from '@localixai/kit/avatar'
 import { Button } from '@localixai/kit/button'
 import {

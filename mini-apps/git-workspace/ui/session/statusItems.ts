@@ -1,8 +1,8 @@
 import { ArrowDown, ArrowUp, ClipboardCopy, GitBranch, RefreshCw } from 'lucide-react'
-import type { StatusItemState, MenuEntry } from '@localixai/plugin-sdk/ui'
-import { pluginWorkspace, runPluginAction, statusMenuList } from '@localixai/plugin-sdk/ui'
-import { usePluginWorkspace } from '@localixai/plugin-sdk/ui/runtime-hooks'
-import { copyText } from '@localixai/plugin-sdk/ui/interactions'
+import type { StatusItemState, MenuEntry } from '@localixai/mini-app-sdk/ui'
+import { pluginWorkspace, runPluginAction, statusMenuList } from '@localixai/mini-app-sdk/ui'
+import { usePluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime-hooks'
+import { copyText } from '@localixai/mini-app-sdk/ui/interactions'
 
 import { useSessionGitField, useSourceControlStore } from '../source-control/model/store'
 import { useBranchSwitcher } from '../source-control/ui/useBranchSwitcher'

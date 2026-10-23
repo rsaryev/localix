@@ -27,7 +27,7 @@ describe('plugin external wiring', () => {
     // scope. Without this import `currentRuntime()` throws instead of routing.
     await import('./pluginRuntime')
     const { configurePlatformCapabilities } = await import('@/shared/lib/platformCapabilities')
-    const { pluginExternal } = await import('@localixai/plugin-sdk/ui/runtime')
+    const { pluginExternal } = await import('@localixai/mini-app-sdk/ui/runtime')
 
     const opened: Array<{ url: string; systemBrowser?: boolean }> = []
     const restore = configurePlatformCapabilities({
@@ -48,7 +48,7 @@ describe('plugin external wiring', () => {
   test('a plugin cannot smuggle a non-browser scheme through the port', async () => {
     await import('./pluginRuntime')
     const { configurePlatformCapabilities } = await import('@/shared/lib/platformCapabilities')
-    const { pluginExternal } = await import('@localixai/plugin-sdk/ui/runtime')
+    const { pluginExternal } = await import('@localixai/mini-app-sdk/ui/runtime')
 
     const opened: string[] = []
     const restore = configurePlatformCapabilities({

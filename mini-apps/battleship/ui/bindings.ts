@@ -1,4 +1,7 @@
-import { snippetMessageBindingDraft, type PublishedMessageContext } from '@localixai/plugin-sdk/ui'
+import {
+  snippetMessageBindingDraft,
+  type PublishedMessageContext,
+} from '@localixai/mini-app-sdk/ui'
 
 import { describeForChat } from '../shared/describe'
 import type { PlayerView } from '../shared/game'

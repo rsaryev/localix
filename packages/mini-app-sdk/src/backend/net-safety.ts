@@ -8,7 +8,7 @@
  *
  * This module is part of the backend plugin contract so every model-supplied URL
  * crosses the same policy implementation. Hosts may re-export it for compatibility;
- * plugins must import it from `@localixai/plugin-sdk/backend`, never through host internals.
+ * plugins must import it from `@localixai/mini-app-sdk/backend`, never through host internals.
  */
 
 import { promises as dns } from 'node:dns'

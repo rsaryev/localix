@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import type { ActionContext, ActionContribution } from '@localixai/plugin-sdk/ui'
+import type { ActionContext, ActionContribution } from '@localixai/mini-app-sdk/ui'
 import { isPluginContributionEnabled, subscribePluginActivation } from './pluginActivation'
 
 // Late plugin loading and activation must update already rendered content. First owner wins,

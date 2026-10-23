@@ -7,7 +7,7 @@
 // the inspector editor and the Settings toggle read it without a cross-slice dep.
 
 import { useSyncExternalStore } from 'react'
-import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
+import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 
 const STORAGE_KEY = 'localix.editor.autoSave'
 

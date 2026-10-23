@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import type { UiLocationContribution } from '@localixai/plugin-sdk/ui'
-import { settingsUiUri } from '@localixai/plugin-sdk/navigation'
+import type { UiLocationContribution } from '@localixai/mini-app-sdk/ui'
+import { settingsUiUri } from '@localixai/mini-app-sdk/navigation'
 import { SETTINGS_STRING_TABS } from '@/shared/routing/routes'
 import { createUiLocationRegistry } from '@/shared/contrib/uiLocations'
 import root from '../ui/SettingsPanel.surface'

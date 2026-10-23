@@ -10,16 +10,16 @@ import {
   ContextMenuItem,
   ContextMenuSeparator,
 } from '@localixai/kit/context-menu'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { indentGuideStyle } from '@localixai/kit/tree-navigation'
-import { baseName } from '@localixai/plugin-sdk/ui/utilities'
+import { baseName } from '@localixai/mini-app-sdk/ui/utilities'
 import {
   useCompareSelection,
   compareTwoFiles,
   compareFileWithClipboard,
 } from '../model/compareSelection'
 import type { SelectMods, TreeClipboard } from './useFileTree'
-import type { FileTreeDecorationIndex } from '@localixai/plugin-sdk/ui'
+import type { FileTreeDecorationIndex } from '@localixai/mini-app-sdk/ui'
 import type { useTreeDnd } from './useTreeDnd'
 import { treeRowKeyDown, type TreeRowOps, type TreeRowTarget } from './treeRowOps'
 import { TreeRowOpsItems } from './TreeRowOpsItems'

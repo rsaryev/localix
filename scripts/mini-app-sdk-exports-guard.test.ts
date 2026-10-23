@@ -10,10 +10,10 @@ import {
   readExportMap,
   repoRoot,
   sdkRoot,
-} from './plugin-sdk-exports'
+} from './mini-app-sdk-exports'
 
 /**
- * `@localixai/plugin-sdk`'s export map must be impossible to get wrong.
+ * `@localixai/mini-app-sdk`'s export map must be impossible to get wrong.
  *
  * The map is ~32 hand-written subpaths into `dist`, and the two sides it joins are checked by
  * nothing: `tsc --noEmit` reads `src` and never opens the manifest, and no bundler config anywhere
@@ -34,8 +34,8 @@ import {
 
 const CONSUMER_ROOTS = ['apps/api/src', 'apps/ui/src', 'packages', 'mini-apps']
 
-/** `from '@localixai/plugin-sdk/ui/classes'` — the specifier, never a mention in prose. */
-const SDK_SPECIFIER = /(?:from|import|require)\s*\(?\s*['"]@localixai\/plugin-sdk([^'"]*)['"]/g
+/** `from '@localixai/mini-app-sdk/ui/classes'` — the specifier, never a mention in prose. */
+const SDK_SPECIFIER = /(?:from|import|require)\s*\(?\s*['"]@localixai\/mini-app-sdk([^'"]*)['"]/g
 
 /** A planted defect, and the phrase the detector owes us for it. */
 interface Control {
@@ -106,7 +106,7 @@ const CONTROLS: readonly Control[] = [
 const ORPHAN_SUBPATH = './ui/__export-control-orphan'
 const ORPHAN_BASE = 'ui/__export-control-orphan'
 
-describe('plugin-sdk export map', () => {
+describe('mini-app-sdk export map', () => {
   const dist = ensureDistBuilt()
   const map = readExportMap()
 
@@ -165,7 +165,7 @@ describe('plugin-sdk export map', () => {
   })
 })
 
-describe('plugin-sdk subpaths and their importers agree', () => {
+describe('mini-app-sdk subpaths and their importers agree', () => {
   ensureDistBuilt()
   const map = readExportMap()
   // The anti-void assertion: these witnesses are the two heaviest importers of the SDK, and if the
@@ -177,7 +177,7 @@ describe('plugin-sdk subpaths and their importers agree', () => {
       /mini-apps\/database\/ui\/register\.tsx$/,
     ],
     minFiles: 500,
-    label: 'the first-party consumers of @localixai/plugin-sdk',
+    label: 'the first-party consumers of @localixai/mini-app-sdk',
   }).filter((file) => !file.startsWith(sdkRoot))
 
   const imported = new Map<string, string[]>()
@@ -200,7 +200,7 @@ describe('plugin-sdk subpaths and their importers agree', () => {
       .map(
         ([subpath, importers]) =>
           `"${subpath}" is imported by ${importers.length} file(s) (e.g. ${importers[0]}) but is not ` +
-          'in packages/plugin-sdk/package.json exports — it resolves here only because the host ' +
+          'in packages/mini-app-sdk/package.json exports — it resolves here only because the host ' +
           'bundler falls back to the workspace source, and resolves nowhere once published.',
       )
     expect(unpublished).toEqual([])

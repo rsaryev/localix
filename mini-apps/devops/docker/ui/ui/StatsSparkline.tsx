@@ -1,5 +1,5 @@
 import { seriesScale, sparklinePoints, summarizeSeries } from '../model/statsHistory'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /** The drawing box, in SVG user units. The element scales to its container width. */
 const WIDTH = 240

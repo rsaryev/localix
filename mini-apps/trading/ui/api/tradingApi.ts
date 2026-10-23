@@ -5,7 +5,7 @@
 // PUBLIC MARKET DATA ONLY — the `:id` is an ephemeral `public:<exchange>` source profile and
 // every route is a read. This workbench holds no credentials and has no account or order
 // surface to call.
-import { pluginApiFetch } from '@localixai/plugin-sdk/ui/transport'
+import { pluginApiFetch } from '@localixai/mini-app-sdk/ui/transport'
 import type {
   Candle,
   ExchangeCatalogEntry,

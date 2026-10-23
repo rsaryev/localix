@@ -76,7 +76,7 @@ function fixturePlugin(extra: Record<string, string> = {}): string {
     join(plugin, 'ui', 'Panel.tsx'),
     [
       "import { CodeEditor } from '@localixai/kit/code-editor'",
-      "import { pluginWorkspace } from '@localixai/plugin-sdk/ui/runtime'",
+      "import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'",
       'export const Panel = [CodeEditor, pluginWorkspace]',
     ].join('\n'),
   )

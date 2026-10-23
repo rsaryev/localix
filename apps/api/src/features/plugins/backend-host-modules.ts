@@ -1,15 +1,15 @@
 import { plugin } from 'bun'
 import * as hono from 'hono'
 import * as zod from 'zod'
-import * as sdkBackend from '@localixai/plugin-sdk/backend'
-import * as sdkNavigation from '@localixai/plugin-sdk/navigation'
-import * as sdkResourceRefs from '@localixai/plugin-sdk/resource-refs'
-import * as sdkSessionResource from '@localixai/plugin-sdk/session-resource'
-import * as sdkTypedError from '@localixai/plugin-sdk/typed-error'
-import * as sdkPrerequisite from '@localixai/plugin-sdk/prerequisite'
-import * as sdkRichText from '@localixai/plugin-sdk/rich-text'
-import * as storeChanges from '@localixai/plugin-sdk/store-changes'
-import * as sdkDocumentLayout from '@localixai/plugin-sdk/document-layout'
+import * as sdkBackend from '@localixai/mini-app-sdk/backend'
+import * as sdkNavigation from '@localixai/mini-app-sdk/navigation'
+import * as sdkResourceRefs from '@localixai/mini-app-sdk/resource-refs'
+import * as sdkSessionResource from '@localixai/mini-app-sdk/session-resource'
+import * as sdkTypedError from '@localixai/mini-app-sdk/typed-error'
+import * as sdkPrerequisite from '@localixai/mini-app-sdk/prerequisite'
+import * as sdkRichText from '@localixai/mini-app-sdk/rich-text'
+import * as storeChanges from '@localixai/mini-app-sdk/store-changes'
+import * as sdkDocumentLayout from '@localixai/mini-app-sdk/document-layout'
 
 import type { PluginBackendHostModule } from './authoring/kit-layout'
 
@@ -26,15 +26,15 @@ import type { PluginBackendHostModule } from './authoring/kit-layout'
 const HOST_MODULES: Record<PluginBackendHostModule, Record<string, unknown>> = {
   hono,
   zod,
-  '@localixai/plugin-sdk/backend': sdkBackend,
-  '@localixai/plugin-sdk/navigation': sdkNavigation,
-  '@localixai/plugin-sdk/resource-refs': sdkResourceRefs,
-  '@localixai/plugin-sdk/session-resource': sdkSessionResource,
-  '@localixai/plugin-sdk/typed-error': sdkTypedError,
-  '@localixai/plugin-sdk/prerequisite': sdkPrerequisite,
-  '@localixai/plugin-sdk/rich-text': sdkRichText,
-  '@localixai/plugin-sdk/store-changes': storeChanges,
-  '@localixai/plugin-sdk/document-layout': sdkDocumentLayout,
+  '@localixai/mini-app-sdk/backend': sdkBackend,
+  '@localixai/mini-app-sdk/navigation': sdkNavigation,
+  '@localixai/mini-app-sdk/resource-refs': sdkResourceRefs,
+  '@localixai/mini-app-sdk/session-resource': sdkSessionResource,
+  '@localixai/mini-app-sdk/typed-error': sdkTypedError,
+  '@localixai/mini-app-sdk/prerequisite': sdkPrerequisite,
+  '@localixai/mini-app-sdk/rich-text': sdkRichText,
+  '@localixai/mini-app-sdk/store-changes': storeChanges,
+  '@localixai/mini-app-sdk/document-layout': sdkDocumentLayout,
 }
 
 let installed = false

@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { Boxes, Link2, Paperclip, UserRound } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { isPrimaryModifier } from '@localixai/kit/keybindings'
 import { ProgressBar } from '@localixai/kit/progress-bar'
 import { StatusDot } from '@localixai/kit/status-dot'

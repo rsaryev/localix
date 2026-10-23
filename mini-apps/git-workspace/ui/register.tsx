@@ -1,16 +1,16 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { GitBranch } from 'lucide-react'
 
-import { localixResourceUri } from '@localixai/plugin-sdk/navigation'
+import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 import {
   parseLocalixResourceUri,
   resourceMessageBindingDraft,
   type WorkItemLike,
   type PluginUiHost,
   type PublishMessageContext,
-} from '@localixai/plugin-sdk/ui'
-import { usePluginSessions } from '@localixai/plugin-sdk/ui/runtime-hooks'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+} from '@localixai/mini-app-sdk/ui'
+import { usePluginSessions } from '@localixai/mini-app-sdk/ui/runtime-hooks'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import type { LineStageMode } from '../backend/source-control/contracts'
 import { DiffStagingView } from './source-control/ui/DiffStagingView'

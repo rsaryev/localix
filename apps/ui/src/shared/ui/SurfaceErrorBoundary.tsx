@@ -1,5 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
-import type { ProblemReport } from '@localixai/plugin-sdk/ui/problems'
+import type { ProblemReport } from '@localixai/mini-app-sdk/ui/problems'
 import { captureApplicationFailure } from '@/shared/lib/notifications/applicationFailures'
 import { ProblemState } from '@/shared/ui/problem-report'
 

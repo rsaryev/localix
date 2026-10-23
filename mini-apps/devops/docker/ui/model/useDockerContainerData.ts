@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useVisiblePolling } from '@localixai/plugin-sdk/ui/visibility'
+import { useVisiblePolling } from '@localixai/mini-app-sdk/ui/visibility'
 import type { ContainerStats, ContainerTop, DockerContainer } from '../../backend/contracts'
 import { DockerApiError, dockerApi } from '../dockerApi'
 import type { DevOpsIssue } from '../../../ui/DevOpsProblem'

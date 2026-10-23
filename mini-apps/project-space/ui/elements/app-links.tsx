@@ -5,8 +5,8 @@ import {
   localixUriNamespace,
   setMessageBindingDrag,
   type MessageContextBindingDraft,
-} from '@localixai/plugin-sdk/ui'
-import { pluginNavigation } from '@localixai/plugin-sdk/ui/runtime'
+} from '@localixai/mini-app-sdk/ui'
+import { pluginNavigation } from '@localixai/mini-app-sdk/ui/runtime'
 import { useZoomBelow } from '@localixai/kit/canvas'
 import { linksInText } from '@localixai/kit/context-links'
 import { IconButton } from '@localixai/kit/icon-button'

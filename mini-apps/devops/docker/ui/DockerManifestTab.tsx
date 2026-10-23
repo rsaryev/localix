@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Play, Hammer, ArrowUpCircle, ArrowDownCircle, ListTree, ScrollText } from 'lucide-react'
-import { FileTab } from '@localixai/plugin-sdk/ui/components'
+import { FileTab } from '@localixai/mini-app-sdk/ui/components'
 import { Button } from '@localixai/kit/button'
 import { Input } from '@localixai/kit/input'
 import {

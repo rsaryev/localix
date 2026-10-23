@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { Columns3, KeyRound, Link2 } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Handle, Position, type Node, type NodeProps } from '@localixai/kit/canvas'
 import type { DbTableSchema } from '../dbClient'
 import { NODE_HEADER_HEIGHT, NODE_WIDTH, ROW_HEIGHT } from '../model/diagramLayout'

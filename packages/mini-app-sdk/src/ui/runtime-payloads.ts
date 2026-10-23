@@ -6,7 +6,7 @@
  * implement, while an accessor is mechanical forwarding. Keeping them in one file meant every
  * contract review also scrolled past four hundred lines of one-line delegations.
  *
- * `runtime.ts` re-exports all of this, so `@localixai/plugin-sdk/ui/runtime` is unchanged. The
+ * `runtime.ts` re-exports all of this, so `@localixai/mini-app-sdk/ui/runtime` is unchanged. The
  * completion payloads live one file further out, in `runtime-completion-payloads.ts`, and are
  * re-exported here for the same reason.
  */

@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
-import type { StatusItemContribution, StatusItemState } from '@localixai/plugin-sdk/ui'
+import type { StatusItemContribution, StatusItemState } from '@localixai/mini-app-sdk/ui'
 import { Database, GitBranch, LayoutGrid, Users } from 'lucide-react'
 
 import { registerDom } from '@localixai/kit/testing/dom'

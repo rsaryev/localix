@@ -1,7 +1,7 @@
 import { FileDiff, FolderGit2, Minus, Plus } from 'lucide-react'
 import type { RepoFileChange, RepoWithStatus } from '../../../backend/source-control/contracts'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
-import { copyText } from '@localixai/plugin-sdk/ui/interactions'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
+import { copyText } from '@localixai/mini-app-sdk/ui/interactions'
 
 /** Stage/unstage handlers, already scoped to the repo whose header opened the menu. */
 export interface RepoGroupMenuOps {

@@ -1,5 +1,5 @@
 {
-  "name": "@localixai/plugin-kit-compiler",
+  "name": "@localixai/mini-app-kit-compiler",
   "version": "0.1.0",
   "private": true,
   "description": "The JavaScript TypeScript compiler the plugin kit stages and describes itself with, kept out of the workspace's `tsc`.",

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@localixai/kit/context-menu'
 import { MenuEntries } from '@localixai/kit/menu-entries'
 import { CODE_VIEWER_HIGHLIGHT } from '@/shared/ui/code-block/sugarHighTheme'

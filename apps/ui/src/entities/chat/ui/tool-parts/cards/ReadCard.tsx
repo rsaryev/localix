@@ -1,7 +1,7 @@
 import { FileText, Image as ImageIcon, PanelRight } from 'lucide-react'
 import type { ToolCallItem } from '@localixai/agent/agents'
 import { inspector } from '@/shared/lib/inspectorBus'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { CodePreview } from '@/shared/ui/code-block/CodePreview'
 import { languageFromPath } from '@/shared/ui/code-editor/language'
 import { ToolLine } from '../ToolLine'

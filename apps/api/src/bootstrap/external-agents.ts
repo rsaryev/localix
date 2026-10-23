@@ -1,5 +1,5 @@
 import { dirname, join } from 'node:path'
-import { createResourceContextProvider } from '@localixai/plugin-sdk/backend'
+import { createResourceContextProvider } from '@localixai/mini-app-sdk/backend'
 import { AgentSessionsService } from '../features/external-agents/backend/service'
 import { createExternalAgentResourceProvider } from '../features/external-agents/backend/resource-provider'
 import { createHistoryWsFrames } from '../features/external-agents/backend/history-frames'

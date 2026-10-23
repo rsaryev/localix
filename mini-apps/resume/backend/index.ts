@@ -2,7 +2,7 @@ import type {
   PluginContext,
   PluginRegistration,
   WorkspaceScopeHost,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import { createResumeService } from './service'
 import { createResumeRoutes } from './routes'
 import { createResumeResourceProvider, createResumeContextProvider } from './context'

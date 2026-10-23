@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { shellQuote, type HostRouteContext } from '@localixai/plugin-sdk/backend'
+import { shellQuote, type HostRouteContext } from '@localixai/mini-app-sdk/backend'
 import { zValidator } from '../../../lib/validator'
 import { defaultErrorHandler } from '../../../lib/http'
 import { ApiError } from '../../../lib/errors'

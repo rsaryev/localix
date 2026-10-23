@@ -28,8 +28,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@localixai/kit/dropdown-menu'
-import { pluginSecrets } from '@localixai/plugin-sdk/ui/runtime'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { pluginSecrets } from '@localixai/mini-app-sdk/ui/runtime'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /** A value that is a pointer rather than a secret — shown as such, and safe to display. */
 function isReference(value: string): boolean {

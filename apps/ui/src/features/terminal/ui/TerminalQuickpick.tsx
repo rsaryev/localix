@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { EmptyHint } from '@localixai/kit/empty-hint'
 import { Input } from '@localixai/kit/input'
-import { ResultCountStatus } from '@localixai/plugin-sdk/ui/result-count-status'
+import { ResultCountStatus } from '@localixai/mini-app-sdk/ui/result-count-status'
 import {
   PaneDialog,
   PaneDialogContent,

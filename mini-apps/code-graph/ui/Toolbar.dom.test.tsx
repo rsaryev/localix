@@ -4,7 +4,7 @@ import {
   DEFAULT_KEY_POLICY,
   offerKeyToFocusedSurface,
   useFocusStack,
-} from '@localixai/plugin-sdk/ui/focus'
+} from '@localixai/mini-app-sdk/ui/focus'
 import { EDGE_KINDS } from '../shared/model'
 import type { GraphSnapshot } from '../shared/view'
 import type { GraphState } from './useGraph'

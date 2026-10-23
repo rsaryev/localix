@@ -6,7 +6,7 @@
  * Items are keyed `<scope>:<name>` in the index (`global`, or a project id) and by name in the
  * list a provider reads, which already merges the global ones with the project's.
  */
-import { SEMANTIC_GLOBAL_SCOPE } from '@localixai/plugin-sdk/backend'
+import { SEMANTIC_GLOBAL_SCOPE } from '@localixai/mini-app-sdk/backend'
 import { bestFieldScore } from '../agent-core/search/match'
 import { catalogNameOf } from '../embeddings/list-source'
 import type { SearchHit, SearchQuery } from '../agent-core/search/provider'

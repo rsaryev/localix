@@ -1,5 +1,5 @@
 import { resolve } from 'node:path'
-import type { PluginContext } from '@localixai/plugin-sdk/backend'
+import type { PluginContext } from '@localixai/mini-app-sdk/backend'
 import { describeSpace } from '../shared/agent/describe'
 import { buildOpSchemas, type SpaceOp } from '../shared/ops/contract'
 import { SPACE_TOOLS, spaceUri } from '../shared/resource'

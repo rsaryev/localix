@@ -1,5 +1,5 @@
 import { EyeOff, Pilcrow, Ruler } from 'lucide-react'
-import type { MenuSubmenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuSubmenuEntry } from '@localixai/mini-app-sdk/ui'
 
 import { choiceSubmenu, type ReaderMenuChoice } from './choiceSubmenu'
 import type { ReaderFocusMode } from './model'

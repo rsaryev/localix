@@ -8,7 +8,7 @@
  * so that one is kept; anything else is classified and its raw text goes where raw text belongs.
  */
 
-import { PluginApiError } from '@localixai/plugin-sdk/ui/transport'
+import { PluginApiError } from '@localixai/mini-app-sdk/ui/transport'
 
 export function documentFailure(
   error: unknown,

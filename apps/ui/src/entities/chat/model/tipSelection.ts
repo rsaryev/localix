@@ -1,4 +1,4 @@
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 import type { ComposerTip, ComposerTipGate, TipSignal } from '@/shared/api/tips'
 
 /**

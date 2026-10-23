@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { richTextToText } from '@localixai/plugin-sdk/rich-text'
+import { richTextToText } from '@localixai/mini-app-sdk/rich-text'
 import { emptyEntry, documentSchema } from './schema'
 import { createSampleDocument } from './sample'
 import { resumeLayout } from './layout'

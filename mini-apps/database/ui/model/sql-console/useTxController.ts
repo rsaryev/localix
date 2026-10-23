@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from 'react'
-import { acknowledgeInline, enqueueMicrotask } from '@localixai/plugin-sdk/ui'
+import { acknowledgeInline, enqueueMicrotask } from '@localixai/mini-app-sdk/ui'
 import type { DbErrorCode } from '../../dbClient'
 import { DbApiError } from '../../api/databaseApi'
 import { transactionStore } from './transactionStore'

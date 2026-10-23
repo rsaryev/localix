@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import type { UiAnchorContribution } from '@localixai/plugin-sdk/ui'
-import { localixResourceUri } from '@localixai/plugin-sdk/navigation'
+import type { UiAnchorContribution } from '@localixai/mini-app-sdk/ui'
+import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 import { createUiAnchorRegistry } from './uiAnchors'
 
 const contribution = (id: string, namespace: string): UiAnchorContribution => ({

@@ -6,7 +6,7 @@ import type {
   VaultAuditEntry,
   VaultVersionMeta,
 } from '@localixai/api/client'
-import type { Problem } from '@localixai/plugin-sdk/ui/problems'
+import type { Problem } from '@localixai/mini-app-sdk/ui/problems'
 import { secretsApi } from '@/shared/api/secretsApi'
 import { useResourceRevision } from '@/shared/api/useResourceRevision'
 import type { VaultSection } from './vaultSections'

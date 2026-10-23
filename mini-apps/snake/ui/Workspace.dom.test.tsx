@@ -1,8 +1,8 @@
-import { offerKeyToFocusedSurface } from '@localixai/plugin-sdk/ui/focus'
+import { offerKeyToFocusedSurface } from '@localixai/mini-app-sdk/ui/focus'
 import { afterAll, beforeAll, expect, test } from 'bun:test'
-import { bindPluginUiRuntime, type PluginUiRuntime } from '@localixai/plugin-sdk/ui/runtime'
-import { bindPluginUiTransport } from '@localixai/plugin-sdk/ui/transport'
-import { WorkItemSessionProvider } from '@localixai/plugin-sdk/ui/work-item-session'
+import { bindPluginUiRuntime, type PluginUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
+import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
+import { WorkItemSessionProvider } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { registerDom } from '@localixai/kit/testing'
 
 import { newGame, replay, type Direction, type Game, type Mode } from '../shared/game'

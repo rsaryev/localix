@@ -1,4 +1,4 @@
-import type { PluginUiHost } from '@localixai/plugin-sdk/ui'
+import type { PluginUiHost } from '@localixai/mini-app-sdk/ui'
 
 /**
  * ONE coalesced signal for "a host registry changed" — a plugin registered or removed a

@@ -2,7 +2,7 @@ import { useState, type MutableRefObject } from 'react'
 import { Kbd } from '@localixai/kit/kbd'
 import { WandSparkles } from 'lucide-react'
 import { FLOATING_SURFACE } from '@localixai/kit/workbench-toolbar'
-import { baseName } from '@localixai/plugin-sdk/ui/utilities'
+import { baseName } from '@localixai/mini-app-sdk/ui/utilities'
 import type { FileHistoryEnhancement } from '@/shared/ui/code-editor/fileEnhancement'
 import {
   CodeEditor,

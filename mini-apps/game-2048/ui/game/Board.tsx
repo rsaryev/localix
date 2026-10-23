@@ -1,4 +1,4 @@
-import { useFocusEntry } from '@localixai/plugin-sdk/ui/focus'
+import { useFocusEntry } from '@localixai/mini-app-sdk/ui/focus'
 import { useId, useMemo, useRef, type CSSProperties, type PointerEvent } from 'react'
 
 import { CELLS, legalDirections, SIZE, type Direction, type Game } from '../../shared/game'

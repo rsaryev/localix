@@ -2,4 +2,4 @@ export {
   usePolledSnapshot,
   type PolledSnapshot,
   type SendOptions,
-} from '@localixai/plugin-sdk/ui/route-snapshot'
+} from '@localixai/mini-app-sdk/ui/route-snapshot'

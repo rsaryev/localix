@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { DecisionAsk, DecisionOptions, DecisionOutcome } from '@localixai/plugin-sdk/backend'
+import type { DecisionAsk, DecisionOptions, DecisionOutcome } from '@localixai/mini-app-sdk/backend'
 import { createFloorAdvisor, type FloorDecisionRecord, type FloorStrategy } from './floor-advisor'
 import type { FloorQuestion } from './floor-advice'
 import { decisionFloorStrategy } from './floor-decision'

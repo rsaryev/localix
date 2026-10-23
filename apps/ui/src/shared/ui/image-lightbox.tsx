@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogTitle } from '@localixai/kit/dialog'
 import { MediaOverlayButton, mediaOverlayPillClasses } from '@localixai/kit/media-overlay-button'
 import { copyImageToClipboard } from '@/shared/lib/copyImage'
 import { toast } from '@/shared/lib/notify'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { COPIED_FEEDBACK_LONG_MS } from '@/shared/lib/timings'
 import { useCopiedFlag } from '@/shared/hooks/useCopiedFlag'
 

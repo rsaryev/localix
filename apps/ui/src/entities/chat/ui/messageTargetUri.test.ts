@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { localixResourceUri } from '@localixai/plugin-sdk/navigation'
+import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 
 import { eventFocusMessageId, messageTargetUri, visibleEventFocusRequest } from './messageTargetUri'
 import type { Message } from '../model/types'

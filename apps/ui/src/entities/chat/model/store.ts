@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { toast } from '@/shared/lib/notify'
 import { makeOptimisticPair } from './optimisticPair'
 
@@ -33,7 +33,7 @@ import {
 import {
   applySessionActivity,
   retainSessionActivity,
-} from '@localixai/plugin-sdk/ui/session-activity'
+} from '@localixai/mini-app-sdk/ui/session-activity'
 
 // Single source lives in sessionActionsSlice (a session-lifecycle concern, used
 // there on session open); re-exported here so consumers keep importing it from

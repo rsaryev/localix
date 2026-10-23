@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import type { Project } from '@/shared/api/contracts'
 import { PROJECT_ICON, projectPresentation } from '@/shared/ui/projectPresentation'
 import { HeaderPickMenu } from './HeaderPickMenu'

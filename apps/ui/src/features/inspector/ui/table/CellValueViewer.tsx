@@ -1,4 +1,4 @@
-import { copyText } from '@localixai/plugin-sdk/ui/interactions'
+import { copyText } from '@localixai/mini-app-sdk/ui/interactions'
 import { Copy, Check } from 'lucide-react'
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@localixai/kit/dialog'
 import { Button } from '@localixai/kit/button'

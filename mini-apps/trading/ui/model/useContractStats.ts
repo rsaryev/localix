@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { FundingRate, OpenInterest } from '../../backend/contracts'
-import { useVisiblePolling } from '@localixai/plugin-sdk/ui/visibility'
+import { useVisiblePolling } from '@localixai/mini-app-sdk/ui/visibility'
 import { tradingApi } from '../api/tradingApi'
 
 export interface ContractStats {

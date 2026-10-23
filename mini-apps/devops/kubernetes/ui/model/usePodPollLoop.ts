@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { runAsBackgroundWork } from '@localixai/plugin-sdk/ui/visibility'
+import { runAsBackgroundWork } from '@localixai/mini-app-sdk/ui/visibility'
 import type { KubePod } from '../../backend/contracts'
 import { pollIntervalFor, SLOW_POLL_MS } from './watchPace'
 

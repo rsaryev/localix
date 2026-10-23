@@ -14,7 +14,7 @@
 import { readdir, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { shellQuote } from '@localixai/plugin-sdk/backend'
+import { shellQuote } from '@localixai/mini-app-sdk/backend'
 import type {
   AdapterEnv,
   ProviderAdapter,

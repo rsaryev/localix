@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import type { IconComponent } from '@localixai/plugin-sdk/ui'
+import type { IconComponent } from '@localixai/mini-app-sdk/ui'
 import type { SpaceDocument, SpaceElement } from '../../shared/format/document'
 import type { SpaceOp } from '../../shared/ops/contract'
 

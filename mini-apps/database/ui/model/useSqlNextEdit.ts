@@ -1,9 +1,9 @@
 import { useCallback } from 'react'
 import type { NextEditRequest, NextEditSource, EditorSuggestion } from '@localixai/kit/code-editor'
-import { pluginEditor } from '@localixai/plugin-sdk/ui/runtime'
-import { usePluginEditPredictionEnabled } from '@localixai/plugin-sdk/ui/runtime-hooks'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
-import type { PluginCompletionReference } from '@localixai/plugin-sdk/ui'
+import { pluginEditor } from '@localixai/mini-app-sdk/ui/runtime'
+import { usePluginEditPredictionEnabled } from '@localixai/mini-app-sdk/ui/runtime-hooks'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
+import type { PluginCompletionReference } from '@localixai/mini-app-sdk/ui'
 
 /**
  * AI edit prediction for the SQL console — the SAME unified edit-prediction

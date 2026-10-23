@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Boxes } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { DIVIDED_LIST } from '@localixai/kit/divided-list'
 import { ProgressBar } from '@localixai/kit/progress-bar'
 import { StatCard, StatSection } from '@localixai/kit/stat'

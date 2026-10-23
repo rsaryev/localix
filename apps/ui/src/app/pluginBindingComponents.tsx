@@ -6,7 +6,7 @@ import {
   contextBindingPreviewKind,
   type PluginContextBindingIconProps,
   type PluginContextBindingPreviewProps,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 
 import { conversationPreview } from './binding-previews/LinkPreviews'
 import { refIcon } from '@/entities/chat/ui/refKindPresentation'

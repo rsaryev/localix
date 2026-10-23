@@ -34,7 +34,7 @@ import {
   COLLECTIONS_UNSUBSCRIBE,
 } from './collections-contract'
 import { createKubeLogsHub, createKubeLogsWsFrame } from './logs-follow'
-import type { PluginRegistration, WsFrameContribution } from '@localixai/plugin-sdk/backend'
+import type { PluginRegistration, WsFrameContribution } from '@localixai/mini-app-sdk/backend'
 
 /**
  * The forward registry's changes as a stream. Forwards are host-wide (every tab reads the one

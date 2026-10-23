@@ -3,4 +3,4 @@ export {
   createBoundedCache,
   type BoundedCache,
   type BoundedCacheOptions,
-} from '@localixai/plugin-sdk/bounded-cache'
+} from '@localixai/mini-app-sdk/bounded-cache'

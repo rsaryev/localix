@@ -108,7 +108,7 @@
     "packages/cli": {
       "entry": ["bin/localix.mjs", "src/main.ts", "src/**/*.test.ts", "scripts/**/*.mjs"]
     },
-    "packages/plugin-sdk": {
+    "packages/mini-app-sdk": {
       "entry": ["src/backend/index.ts", "src/ui/index.ts", "src/manifest/index.ts"]
     }
   },

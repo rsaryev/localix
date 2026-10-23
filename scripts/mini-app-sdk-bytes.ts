@@ -1,9 +1,9 @@
 /**
- * How a subpath of `@localixai/plugin-sdk` is weighed.
+ * How a subpath of `@localixai/mini-app-sdk` is weighed.
  *
  * Not a file size: a probe that IMPORTS the subpath is bundled with `Bun.build` and the output is
  * measured, because the number worth guarding is what a consumer pays — the subpath plus everything
- * it drags in, minus everything a bundler can shake out. `plugin-sdk-bytes-guard.test.ts` holds the
+ * it drags in, minus everything a bundler can shake out. `mini-app-sdk-bytes-guard.test.ts` holds the
  * policy; this holds the measurement, so the rules stay readable next to each other.
  *
  * Two decisions are baked in here, and both are the difference between a number and a noise:
@@ -22,7 +22,7 @@
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { ensureDistBuilt, readExportMap, sdkManifestPath, sdkRoot } from './plugin-sdk-exports'
+import { ensureDistBuilt, readExportMap, sdkManifestPath, sdkRoot } from './mini-app-sdk-exports'
 
 const externalizeDependencies: Bun.BunPlugin = {
   name: 'externalize-dependencies',
@@ -37,7 +37,7 @@ export function fixtureDist(): string {
     name: string
     sideEffects: boolean
   }
-  const fixture = mkdtempSync(join(tmpdir(), 'plugin-sdk-bytes-'))
+  const fixture = mkdtempSync(join(tmpdir(), 'mini-app-sdk-bytes-'))
   cpSync(join(sdkRoot, 'dist'), join(fixture, 'dist'), { recursive: true })
   writeFileSync(
     join(fixture, 'package.json'),

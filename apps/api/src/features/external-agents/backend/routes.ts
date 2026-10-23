@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { zValidator } from '../../../lib/validator'
 import { jsonError } from '../../../lib/http'
-import type { HostRouteContext } from '@localixai/plugin-sdk/backend'
+import type { HostRouteContext } from '@localixai/mini-app-sdk/backend'
 import type { AgentSessionsService } from './service'
 import { toTranscriptTurns } from './transcript/to-agent-items'
 import {

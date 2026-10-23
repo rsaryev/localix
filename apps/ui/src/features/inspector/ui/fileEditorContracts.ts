@@ -1,5 +1,5 @@
 import type { Dispatch, RefObject, SetStateAction } from 'react'
-import type { Problem } from '@localixai/plugin-sdk/ui/problems'
+import type { Problem } from '@localixai/mini-app-sdk/ui/problems'
 import type { PendingFileSave } from './fileSaveTask'
 
 /** The file diverged on disk while the editor held unsaved edits — captured so the

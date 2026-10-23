@@ -10,7 +10,7 @@ import {
   WorkbenchListRowLeading,
 } from '@localixai/kit/workbench-list-row'
 import { Button } from '@localixai/kit/button'
-import { formatRelativeTime } from '@localixai/plugin-sdk/ui/utilities'
+import { formatRelativeTime } from '@localixai/mini-app-sdk/ui/utilities'
 import type { RosterRow } from '@localixai/api/external-agent-contracts'
 import { externalHistoryRows, type HistoryGroup } from '../model/historyRows'
 import type { SessionGroupingMode } from '@/entities/chat/model/sessionGrouping'

@@ -115,11 +115,11 @@ export class SessionIndex {
    *
    * The earlier shape was one file per provider, named by sanitizing the provider id into a path
    * segment. That is a filesystem key, and deriving one here re-spelled a rule the repo owns in
-   * exactly one place (`@localixai/plugin-sdk/backend`'s `safeFileKey`) — the fifth near-copy of a
+   * exactly one place (`@localixai/mini-app-sdk/backend`'s `safeFileKey`) — the fifth near-copy of a
    * security primitive, which `safe-file-key-contract.test.ts` exists to reject. It was also
    * subtly WRONG as a copy: it permitted `.`, which the owner does not.
    *
-   * The owner is not reachable from here — it is not exported by `@localixai/plugin-sdk`, and a
+   * The owner is not reachable from here — it is not exported by `@localixai/mini-app-sdk`, and a
    * plugin importing `apps/api/src/**` is rejected by `check:architecture`. So rather than keep a
    * near-copy or widen the host, the derivation is DELETED: no untrusted-ish value ever becomes a
    * path segment, because the provider id now lives in the JSON document instead of in its name.

@@ -1,8 +1,8 @@
 import { useId, useRef } from 'react'
-import { useFocusEntry } from '@localixai/plugin-sdk/ui/focus'
+import { useFocusEntry } from '@localixai/mini-app-sdk/ui/focus'
 import { matchesChord } from '@localixai/kit/keybindings'
 import { ArrowLeft, ArrowRight, ListFilter, PanelRight } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Button } from '@localixai/kit/button'
 import {
   DropdownMenu,

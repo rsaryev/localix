@@ -8,7 +8,7 @@ import {
   PLUGIN_UI_SHARED_GLOBAL,
   PLUGIN_UI_SHARED_MODULE,
   type PluginUiArtifactManifest,
-} from '@localixai/plugin-sdk/ui-artifact'
+} from '@localixai/mini-app-sdk/ui-artifact'
 
 import { isPathWithin } from '../../../lib/path-containment'
 import { formatBuildLogs } from './build-logs'

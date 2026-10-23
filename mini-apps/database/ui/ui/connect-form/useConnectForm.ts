@@ -1,6 +1,6 @@
 /** All connect/edit-form state. One config assembler keeps React and driver libraries apart. */
 import { useMemo, useState } from 'react'
-import { acknowledgeInline } from '@localixai/plugin-sdk/ui'
+import { acknowledgeInline } from '@localixai/mini-app-sdk/ui'
 import type {
   ConnectionColor,
   DbConnectionConfig,

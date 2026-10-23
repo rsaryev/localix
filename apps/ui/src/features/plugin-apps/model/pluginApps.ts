@@ -1,6 +1,6 @@
 import { useEffect, useSyncExternalStore } from 'react'
 import { IS_MAC, isDesktop } from '@localixai/kit/environment'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { tauriInvoke } from '@/shared/lib/tauri'
 import { toast } from '@/shared/lib/notify'
 import { ensurePluginAppProject } from '@/shared/lib/pluginAppProject'

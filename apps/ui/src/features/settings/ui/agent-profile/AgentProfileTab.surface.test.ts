@@ -4,7 +4,7 @@ import { createUiLocationRegistry } from '@/shared/contrib/uiLocations'
 import { agentProfileUri } from '@/shared/contrib/useAgentIdentity'
 import { agentProfileTabId } from '../../model/agentProfileTab'
 import { newAgentTabId } from '../../model/agentProfileTab'
-import { localixUiUri } from '@localixai/plugin-sdk/navigation'
+import { localixUiUri } from '@localixai/mini-app-sdk/navigation'
 
 /**
  * The click and the destination, checked END TO END through the real registry.

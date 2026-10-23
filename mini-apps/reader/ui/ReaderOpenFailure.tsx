@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
-import { createMessageBindingDraft, runPluginAction, toast } from '@localixai/plugin-sdk/ui'
-import { ProblemState } from '@localixai/plugin-sdk/ui/components'
-import { pluginNavigation } from '@localixai/plugin-sdk/ui/runtime'
+import { createMessageBindingDraft, runPluginAction, toast } from '@localixai/mini-app-sdk/ui'
+import { ProblemState } from '@localixai/mini-app-sdk/ui/components'
+import { pluginNavigation } from '@localixai/mini-app-sdk/ui/runtime'
 
 import type { ReaderSource } from '../shared/contracts'
 import { readerFileName, readerUnsupportedReason } from '../shared/formats'

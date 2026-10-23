@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { bindPluginUiTestDoubles } from '@localixai/plugin-sdk/ui/testing'
+import { bindPluginUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { ContainerStats, ContainerTop } from '../../backend/contracts'
 import { StatsPanel, TopPanel } from './ContainerPanels'

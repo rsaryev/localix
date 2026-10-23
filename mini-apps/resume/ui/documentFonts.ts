@@ -1,5 +1,5 @@
-import { pluginApiUrl } from '@localixai/plugin-sdk/ui/transport'
-import type { DocumentFont } from '@localixai/plugin-sdk/document-layout'
+import { pluginApiUrl } from '@localixai/mini-app-sdk/ui/transport'
+import type { DocumentFont } from '@localixai/mini-app-sdk/document-layout'
 const loaded = new Map<DocumentFont, Promise<void>>()
 export function ensureDocumentFont(font: DocumentFont): Promise<void> {
   if (typeof FontFace === 'undefined') return Promise.resolve()

@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { acknowledgeInline } from '@localixai/plugin-sdk/ui'
+import { acknowledgeInline } from '@localixai/mini-app-sdk/ui'
 import type { RequestEdit, RequestInfo } from '../../backend/contracts'
 import type { Pair, RequestSpec } from '../../backend/request-spec'
 import { restApi } from '../restApi'

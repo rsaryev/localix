@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import type { CapabilitySnapshot } from '@/shared/api/contracts'
 import { useCapabilitySnapshot } from '@/shared/contrib/useCapabilitySnapshot'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { inlineFailure } from '@/shared/lib/notifications/inlineReport'
 
 /**

@@ -9,7 +9,7 @@
  * with the grammar — similarity sees what a reply is about, not whether it reports or hands work
  * on, and measured no better than the address rules there.
  */
-import type { SemanticVectors } from '@localixai/plugin-sdk/backend'
+import type { SemanticVectors } from '@localixai/mini-app-sdk/backend'
 import { describeMember, floorTranscript, type FloorReading } from './floor-advice'
 import type { FloorStrategy } from './floor-advisor'
 

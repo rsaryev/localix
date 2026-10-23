@@ -1,7 +1,7 @@
 import { CandlestickChart, Copy, Star, StarOff } from 'lucide-react'
 import type { Market } from '../../backend/contracts'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
-import { copyText } from '@localixai/plugin-sdk/ui/interactions'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
+import { copyText } from '@localixai/mini-app-sdk/ui/interactions'
 
 /**
  * A market row's context menu.

@@ -13,7 +13,7 @@
  * ONE definition point.
  */
 import { z } from 'zod'
-import type { Prerequisite } from '@localixai/plugin-sdk/prerequisite'
+import type { Prerequisite } from '@localixai/mini-app-sdk/prerequisite'
 import type { RepoBranch, RepoRemoteBranch, RepoCommit, RepoStash } from './history-contracts'
 
 export type {

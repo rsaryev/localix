@@ -3,7 +3,7 @@ import {
   pluginApiFetch,
   postPluginJson,
   unwrapPluginResponse,
-} from '@localixai/plugin-sdk/ui/transport'
+} from '@localixai/mini-app-sdk/ui/transport'
 import { parseResumeFile } from '../shared/interchange'
 import { importSourceText } from '../shared/source-import'
 import type { ResumeDocument } from '../shared/schema'

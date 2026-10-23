@@ -3,7 +3,7 @@
 // read-only Table tab, a database result, …). SQL-specific "copy row as INSERT" lives in the
 // owning contribution and is fed to the grid through the generic `extraRowCopy` prop.
 import { formatCell, type TableRow } from '@localixai/dataview'
-import type { TableCopyColumn } from '@localixai/plugin-sdk/ui/table'
+import type { TableCopyColumn } from '@localixai/mini-app-sdk/ui/table'
 
 /** The minimal column shape the copy builders need — the grid's column satisfies it. */
 export type CopyColumn = TableCopyColumn

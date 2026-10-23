@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { recordingPluginUiHost } from '@localixai/plugin-sdk/ui/testing'
+import { recordingPluginUiHost } from '@localixai/mini-app-sdk/ui/testing'
 import { registerUi } from './register'
 
 test('registers a restorable workspace and overflow launcher once per host', () => {

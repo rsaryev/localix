@@ -20,7 +20,7 @@ import { PERMISSION_MODE_COPY } from '@localixai/api/permission-modes'
 import { backendClient } from '@/shared/api/client'
 import type { PlanAnswer, PlanWakeStatus } from '@/shared/api/plans-client'
 import { toast } from '@/shared/lib/notify'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 import { loadPlanComments, reportPlanCommentsLoad } from './planComments'
 import { applyPlanList } from './plans'

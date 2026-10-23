@@ -1,4 +1,7 @@
-import { snippetMessageBindingDraft, type PublishedMessageContext } from '@localixai/plugin-sdk/ui'
+import {
+  snippetMessageBindingDraft,
+  type PublishedMessageContext,
+} from '@localixai/mini-app-sdk/ui'
 import { formatSystemSnapshot, type SystemSnapshot } from '../../shared/system'
 import { formatProcessSnapshot, type ProcessSnapshot } from '../../shared/processes'
 

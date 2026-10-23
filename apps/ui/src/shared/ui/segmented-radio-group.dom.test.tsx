@@ -18,7 +18,7 @@ describe('SegmentedRadioGroup DOM runtime', () => {
     const React = await import('react')
     const { act, useState } = React
     const { createRoot } = await import('react-dom/client')
-    const { SegmentedRadioGroup } = await import('@localixai/plugin-sdk/ui/segmented-control')
+    const { SegmentedRadioGroup } = await import('@localixai/mini-app-sdk/ui/segmented-control')
     const onValueChange = mock((_value: string) => {})
     const host = document.createElement('div')
     document.body.append(host)

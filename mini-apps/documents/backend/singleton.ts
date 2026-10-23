@@ -10,7 +10,7 @@
  * service.
  */
 import path from 'node:path'
-import type { PluginHostServices } from '@localixai/plugin-sdk/backend'
+import type { PluginHostServices } from '@localixai/mini-app-sdk/backend'
 import { createDocumentsService, type DocumentsService } from './documents/service'
 import { createDocumentStore, type DocumentStore } from './documents/store'
 import { createTableService, type TableService } from './table/service'

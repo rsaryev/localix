@@ -5,7 +5,7 @@
  * was, and its spend lands in the ledger's `decision` row against the session it named — a session
  * the user must own: the host checks it first, so a plugin cannot bill a chat it was not given.
  */
-import type { DecisionHost } from '@localixai/plugin-sdk/backend'
+import type { DecisionHost } from '@localixai/mini-app-sdk/backend'
 import type { DecisionService } from './service'
 
 const PURPOSE = /^[a-z0-9][a-z0-9._-]{0,63}$/

@@ -2,7 +2,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { localixHome } from '../../lib/env'
 import { createKeyedSerializer } from '../../lib/keyed-serializer'
-import { safeFileKey } from '@localixai/plugin-sdk/backend'
+import { safeFileKey } from '@localixai/mini-app-sdk/backend'
 
 /**
  * File-backed markdown memory store under `~/.localix/memories`. One file per
@@ -52,7 +52,7 @@ export function memoriesBaseDir(): string {
  * Scope: '' = global; 'session:<id>' = session; anything else = project id.
  *
  * Every segment below is a raw, untrusted id — `userId` is the unauthenticated `x-user-id`
- * request header (`app.ts`) — so each goes through `@localixai/plugin-sdk/backend`, the ONE owner of
+ * request header (`app.ts`) — so each goes through `@localixai/mini-app-sdk/backend`, the ONE owner of
  * "untrusted key → filename". This used to hand-roll its own `safeFileSlug`, whose charset
  * admitted `.`: a `userId` of `..` survived it and made this very `path.join` collapse one
  * level OUT of `users/` and onto the DEFAULT user's `MEMORY.md`, and a `userId` of `.` landed

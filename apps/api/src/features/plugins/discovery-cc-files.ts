@@ -1,6 +1,6 @@
 import { basename } from 'node:path'
 
-import { summarizeZodIssues } from '@localixai/plugin-sdk/backend'
+import { summarizeZodIssues } from '@localixai/mini-app-sdk/backend'
 
 import { mapCcToolList } from '../ext/cc-tool-names'
 import { coerceFrontmatterBool, trimmedFrontmatterField } from '../ext/frontmatter'

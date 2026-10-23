@@ -4,8 +4,8 @@ import * as React from 'react'
 import { createPortal } from 'react-dom'
 import { Popover as PopoverPrimitive } from 'radix-ui'
 
-import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { useOverlayFocus } from '@localixai/plugin-sdk/ui/focus'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { useOverlayFocus } from '@localixai/mini-app-sdk/ui/focus'
 import { OVERLAY_ENTER_EXIT, OVERLAY_SLIDE } from './overlay-motion'
 import { POPOVER_ACTION, POPOVER_SURFACE, POPOVER_SURFACE_OVER_FOREIGN } from './popover-surface'
 

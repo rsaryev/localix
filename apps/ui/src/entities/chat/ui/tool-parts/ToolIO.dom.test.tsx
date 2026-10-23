@@ -18,7 +18,7 @@ describe('tool I/O actions', () => {
     const { act } = await import('react')
     const { createRoot } = await import('react-dom/client')
     const { registerInspectorHandler } = await import('@/shared/lib/inspectorBus')
-    const { WorkItemSessionProvider } = await import('@localixai/plugin-sdk/ui/work-item-session')
+    const { WorkItemSessionProvider } = await import('@localixai/mini-app-sdk/ui/work-item-session')
     const { OutputBlock } = await import('./ToolIO')
     const requests: unknown[] = []
     const unregister = registerInspectorHandler((request) => requests.push(request))
@@ -52,7 +52,7 @@ describe('tool I/O actions', () => {
     const { act } = React
     const { createRoot } = await import('react-dom/client')
     const { registerInspectorHandler } = await import('@/shared/lib/inspectorBus')
-    const { WorkItemSessionProvider } = await import('@localixai/plugin-sdk/ui/work-item-session')
+    const { WorkItemSessionProvider } = await import('@localixai/mini-app-sdk/ui/work-item-session')
     const { useChatStore } = await import('../../model/store')
     const { FileLink, LinkedText } = await import('./ToolIO')
     const calls: Array<{ kind: string; sessionId?: string; path?: string; line?: number }> = []

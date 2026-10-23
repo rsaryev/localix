@@ -2,4 +2,4 @@
 export {
   createJsonStoreFeed as createStoreFeed,
   STORE_FEED_WINDOW_MS,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'

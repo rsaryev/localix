@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from '@/shared/lib/notify'
 import type { UiSession } from '@/shared/api/contracts'
 import { backendClient } from '@/shared/api/client'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import {
   downloadTextFile,
   exportFileName,

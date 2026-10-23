@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { isPrimaryModifier } from '@localixai/kit/keybindings'
-import { useFocusStack, DEFAULT_KEY_POLICY } from '@localixai/plugin-sdk/ui/focus'
+import { useFocusStack, DEFAULT_KEY_POLICY } from '@localixai/mini-app-sdk/ui/focus'
 import { CMD } from '@/shared/lib/keybindings/catalog'
 import { useKeybindingsStore } from '@/shared/lib/keybindings/store'
 import { clearActionHandlers, registerActionHandler } from '@/shared/lib/actions/registry'

@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { bindPluginUiComponents } from '@localixai/plugin-sdk/ui'
-import { problemReportTitle } from '@localixai/plugin-sdk/ui/problems'
-import type { PluginProblemLineProps } from '@localixai/plugin-sdk/ui/components'
+import { bindPluginUiComponents } from '@localixai/mini-app-sdk/ui'
+import { problemReportTitle } from '@localixai/mini-app-sdk/ui/problems'
+import type { PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
 import { registerDom } from '@localixai/kit/testing'
 
 let teardown: () => Promise<void>

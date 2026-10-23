@@ -1,4 +1,4 @@
-import type { PluginRouteScope } from '@localixai/plugin-sdk/backend'
+import type { PluginRouteScope } from '@localixai/mini-app-sdk/backend'
 
 /**
  * WHERE a plugin route call is happening, resolved per request from its `?sessionId=` and

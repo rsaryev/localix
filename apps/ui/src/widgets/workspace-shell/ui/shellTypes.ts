@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { PluginCategory } from '@localixai/plugin-sdk/manifest'
+import type { PluginCategory } from '@localixai/mini-app-sdk/manifest'
 import type { RailArea } from '../model/railLayout'
 
 /** A section that slides open in the sidebar panel (history, files, etc.) */

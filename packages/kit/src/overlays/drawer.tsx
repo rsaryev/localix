@@ -1,8 +1,8 @@
 import * as React from 'react'
 import { Drawer as DrawerPrimitive } from 'vaul'
 
-import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { useOverlayFocus } from '@localixai/plugin-sdk/ui/focus'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { useOverlayFocus } from '@localixai/mini-app-sdk/ui/focus'
 import { modalBody, modalDescription, modalShell, modalSurface, modalTitle } from './modal-surface'
 import { POPOVER_MATERIAL } from './popover-surface'
 import {

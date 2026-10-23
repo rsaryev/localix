@@ -1,7 +1,7 @@
 import { forwardRef, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { Copy, Highlighter, PenLine, X } from 'lucide-react'
 
-import type { IconComponent } from '@localixai/plugin-sdk/ui'
+import type { IconComponent } from '@localixai/mini-app-sdk/ui'
 import { IconButton } from '@localixai/kit/icon-button'
 import {
   DropdownMenu,

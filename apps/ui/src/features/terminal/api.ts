@@ -1,6 +1,6 @@
 import { WS_BASE_URL } from '@/shared/api/client'
 import { client, unwrap } from '@/shared/api/internal'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { toast } from '@/shared/lib/notify'
 import type { CreateTerminalRequest, TerminalInfo } from '@localixai/api/client'
 

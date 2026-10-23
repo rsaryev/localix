@@ -1,6 +1,6 @@
 import type { Context, Env, Input } from 'hono'
 import type { KubeErrorResponse } from './contracts'
-import { routeValidator } from '@localixai/plugin-sdk/backend'
+import { routeValidator } from '@localixai/mini-app-sdk/backend'
 import { createKubeConfig } from './api-internals'
 import { KubeError, mapKubeError, toErrorInfo } from './errors'
 import { localClusterPrerequisite } from './local-cluster'

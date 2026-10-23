@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { useComments } from '@localixai/plugin-sdk/ui/comments'
+import { useComments } from '@localixai/mini-app-sdk/ui/comments'
 import {
   forgetReviewComments,
   reviewCommentBinding,

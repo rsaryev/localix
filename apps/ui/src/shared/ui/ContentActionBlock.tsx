@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import type { Element } from 'hast'
-import type { ActionTarget } from '@localixai/plugin-sdk/ui'
+import type { ActionTarget } from '@localixai/mini-app-sdk/ui'
 import { FLOATING_SURFACE } from '@localixai/kit/workbench-toolbar'
 import { ContributedActions } from './ContributedActions'
 

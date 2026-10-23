@@ -1,4 +1,4 @@
-import { settingsEntityAnchor } from '@localixai/plugin-sdk/navigation'
+import { settingsEntityAnchor } from '@localixai/mini-app-sdk/navigation'
 
 import { recoveryAction } from '../recovery'
 import { createConditions, type ConditionJournal } from './condition'

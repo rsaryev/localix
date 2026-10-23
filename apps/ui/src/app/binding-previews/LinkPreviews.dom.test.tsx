@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
-import type { MessageContextBindingDraft } from '@localixai/plugin-sdk/ui'
-import { createMessageBindingDraft } from '@localixai/plugin-sdk/ui/message-binding-drag'
+import type { MessageContextBindingDraft } from '@localixai/mini-app-sdk/ui'
+import { createMessageBindingDraft } from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import type { UiSession } from '@/shared/api/contracts'
 import { registerDom } from '@localixai/kit/testing/dom'
 

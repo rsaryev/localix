@@ -1,7 +1,7 @@
 import {
   createResourceContextProvider,
   type ResourceRefProvider,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import { RESUME_ROOT, parseResumeUri, resumeUri } from '../shared/resource-uri'
 import { exportDocument, sectionText } from '../shared/format'
 import type { ResumeService } from './service'

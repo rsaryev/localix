@@ -1,4 +1,4 @@
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { SELECTED_ROW } from '@localixai/kit/selected-row'
 
 /**

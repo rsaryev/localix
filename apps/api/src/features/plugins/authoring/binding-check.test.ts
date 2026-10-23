@@ -20,7 +20,7 @@ function plugin(files: Record<string, string>): string {
   return dir
 }
 
-const REGISTER = `import { resourceMessageBindingDraft } from '@localixai/plugin-sdk/ui'
+const REGISTER = `import { resourceMessageBindingDraft } from '@localixai/mini-app-sdk/ui'
 export function registerUi(host) {
   host.workItems.register({
     toMessageBinding: () => resourceMessageBindingDraft({ uri: TIMER_URI, label: 'Timer' }),

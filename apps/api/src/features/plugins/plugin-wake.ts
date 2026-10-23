@@ -18,7 +18,7 @@
  * outcome instead of a throw, and the host stamping the source, plus the tools the turn answers
  * with.
  */
-import type { PluginWakeOutcome, PluginWakeRequest } from '@localixai/plugin-sdk/backend'
+import type { PluginWakeOutcome, PluginWakeRequest } from '@localixai/mini-app-sdk/backend'
 
 import type { WakeRequest } from '../chat/contracts'
 import type { WakeOutcome } from '../triggers/delivery'

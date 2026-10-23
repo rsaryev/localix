@@ -19,8 +19,8 @@
  */
 import type { AgentTool } from '@localixai/agent/agents'
 import { join } from 'node:path'
-import { createStoreChangeFeed, safeFileKey } from '@localixai/plugin-sdk/backend'
-import type { PluginContext, PluginRegistration } from '@localixai/plugin-sdk/backend'
+import { createStoreChangeFeed, safeFileKey } from '@localixai/mini-app-sdk/backend'
+import type { PluginContext, PluginRegistration } from '@localixai/mini-app-sdk/backend'
 import {
   currentDatabaseService,
   releaseDatabaseService,

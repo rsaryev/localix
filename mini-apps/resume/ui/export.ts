@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import { pluginFiles } from '@localixai/plugin-sdk/ui/runtime'
-import { postPluginJson, unwrapPluginResponse } from '@localixai/plugin-sdk/ui/transport'
+import { pluginFiles } from '@localixai/mini-app-sdk/ui/runtime'
+import { postPluginJson, unwrapPluginResponse } from '@localixai/mini-app-sdk/ui/transport'
 import { exportDocument, type ExportFormat } from '../shared/format'
 import type { Resume } from '../shared/schema'
 import { resumeLayout } from '../shared/layout'

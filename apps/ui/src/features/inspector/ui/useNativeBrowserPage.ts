@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from 'react'
-import { overlayOnScreen, useFocusStack } from '@localixai/plugin-sdk/ui/focus'
+import { overlayOnScreen, useFocusStack } from '@localixai/mini-app-sdk/ui/focus'
 import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { useLatestRef } from '@/shared/lib/useLatestRef'
 import { workbenchGesture } from '@/shared/lib/workbenchGesture'

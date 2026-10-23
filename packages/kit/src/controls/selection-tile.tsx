@@ -1,5 +1,5 @@
 import { forwardRef, type ComponentPropsWithoutRef } from 'react'
-import { cn, CONTROL_FOCUS_VISIBLE } from '@localixai/plugin-sdk/ui/classes'
+import { cn, CONTROL_FOCUS_VISIBLE } from '@localixai/mini-app-sdk/ui/classes'
 
 /** A visual option whose preview matters to the choice; ordinary short choices use a menu. */
 export const SelectionTile = forwardRef<

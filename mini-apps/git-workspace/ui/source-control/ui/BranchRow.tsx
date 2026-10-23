@@ -9,7 +9,7 @@ import {
   Pencil,
   Trash2,
 } from 'lucide-react'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@localixai/kit/context-menu'
 import { MenuEntries } from '@localixai/kit/menu-entries'
 import { Input } from '@localixai/kit/input'

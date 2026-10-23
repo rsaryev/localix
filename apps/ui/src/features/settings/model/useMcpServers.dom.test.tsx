@@ -21,7 +21,7 @@ describe('MCP runtime availability mutations', () => {
     const { createRoot } = await import('react-dom/client')
     const { act } = React
     const { backendClient } = await import('@/shared/api/client')
-    const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
+    const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
     const { useMcpServers } = await import('./useMcpServers')
     const { waitForRuntimeCapabilities } =
       await import('@/shared/contrib/runtimeCapabilityReadiness')

@@ -1,6 +1,6 @@
 import path from 'node:path'
 
-import type { ConfirmGrantOption } from '@localixai/plugin-sdk/backend'
+import type { ConfirmGrantOption } from '@localixai/mini-app-sdk/backend'
 import { describeGrantRule, type GrantOption } from '../../../agent-core/permission-grant-scope'
 
 /**

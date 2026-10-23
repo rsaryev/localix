@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { SemanticSource, SemanticSourceItem } from '@localixai/plugin-sdk/backend'
+import type { SemanticSource, SemanticSourceItem } from '@localixai/mini-app-sdk/backend'
 import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createIndexer } from './indexer'

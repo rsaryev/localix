@@ -4,11 +4,11 @@ import {
   resourceMessageBindingDraft,
   useProblemReport,
   type PublishMessageContext,
-} from '@localixai/plugin-sdk/ui'
-import { pluginComposer } from '@localixai/plugin-sdk/ui/runtime'
-import { useComments, useScopeComments } from '@localixai/plugin-sdk/ui/comments'
-import { ProblemLine } from '@localixai/plugin-sdk/ui/components'
-import type { ProblemReport } from '@localixai/plugin-sdk/ui/problems'
+} from '@localixai/mini-app-sdk/ui'
+import { pluginComposer } from '@localixai/mini-app-sdk/ui/runtime'
+import { useComments, useScopeComments } from '@localixai/mini-app-sdk/ui/comments'
+import { ProblemLine } from '@localixai/mini-app-sdk/ui/components'
+import type { ProblemReport } from '@localixai/mini-app-sdk/ui/problems'
 import { Button } from '@localixai/kit/button'
 import { BreadcrumbSelect, type BreadcrumbSelectItem } from '@localixai/kit/breadcrumb-select'
 import {

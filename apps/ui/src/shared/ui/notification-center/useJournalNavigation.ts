@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { useRoutedNavigation } from '@/shared/hooks/useRoutedNavigation'
 import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
 import { navigateUi } from '@/shared/lib/uiNavigation'

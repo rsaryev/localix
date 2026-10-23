@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { enqueueMicrotask } from '@localixai/plugin-sdk/ui'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { enqueueMicrotask } from '@localixai/mini-app-sdk/ui'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 
 /**
  * A one-second wall clock that stops with its keep-alive work item.

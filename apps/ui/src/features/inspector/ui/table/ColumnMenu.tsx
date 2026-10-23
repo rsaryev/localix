@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { MoreHorizontal } from 'lucide-react'
-import type { PluginTableGridProps } from '@localixai/plugin-sdk/ui'
+import type { PluginTableGridProps } from '@localixai/mini-app-sdk/ui'
 import { IconButton } from '@localixai/kit/icon-button'
 import {
   DropdownMenu,

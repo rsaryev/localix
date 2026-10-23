@@ -1,6 +1,6 @@
 import type { Context } from 'hono'
 import { HTTPException } from 'hono/http-exception'
-import { defaultErrorHandler, isApiError, jsonError } from '@localixai/plugin-sdk/backend'
+import { defaultErrorHandler, isApiError, jsonError } from '@localixai/mini-app-sdk/backend'
 import type { Logger } from './logger'
 import { requestIdOf } from './request-id'
 

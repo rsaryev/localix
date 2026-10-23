@@ -12,7 +12,7 @@ import type {
   SemanticCandidate,
   SemanticTask,
   SemanticVectors,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import type { SearchStrategyNote } from './contracts'
 import type { EmbeddingEngine } from './engine'
 

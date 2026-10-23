@@ -7,8 +7,8 @@ import type {
   PluginContext,
   PluginRouteScope,
   PluginWakeRequest,
-} from '@localixai/plugin-sdk/backend'
-import { verifySealed } from '@localixai/plugin-sdk/sealed'
+} from '@localixai/mini-app-sdk/backend'
+import { verifySealed } from '@localixai/mini-app-sdk/sealed'
 
 import { playerViewSchema } from '../shared/game'
 import { gameUri } from '../shared/resource'

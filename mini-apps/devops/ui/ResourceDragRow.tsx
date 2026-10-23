@@ -1,7 +1,7 @@
 import { useRef, type HTMLAttributes, type ReactNode } from 'react'
 
-import { isRowSelectClick, type PointerPoint } from '@localixai/plugin-sdk/ui/utilities'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { isRowSelectClick, type PointerPoint } from '@localixai/mini-app-sdk/ui/utilities'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { setDevOpsResourceDrag } from './resourceDrag'
 
 /**

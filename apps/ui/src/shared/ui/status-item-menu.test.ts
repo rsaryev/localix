@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { MenuEntry, StatusItemState } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry, StatusItemState } from '@localixai/mini-app-sdk/ui'
 
 import { isMenuAction } from '@localixai/kit/menu-entries'
 import { statusItemMenuEntries } from './status-item-menu'

@@ -6,7 +6,7 @@
  * the extraction itself, so a 300-page PDF or a twelve-sheet workbook is read where it matters
  * instead of paged through from the top.
  */
-import type { DocExtractParams } from '@localixai/plugin-sdk/backend'
+import type { DocExtractParams } from '@localixai/mini-app-sdk/backend'
 import type { DocumentTextExtractor } from './document-ports'
 import { MAX_OUTPUT_BYTES } from './read-output'
 import { renderLineRange } from './read-render'

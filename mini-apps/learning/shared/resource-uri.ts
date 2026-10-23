@@ -1,4 +1,4 @@
-import { localixResourceUri, parseLocalixUri } from '@localixai/plugin-sdk/navigation'
+import { localixResourceUri, parseLocalixUri } from '@localixai/mini-app-sdk/navigation'
 
 export const LEARNING_RESOURCE_PROVIDER = 'learning'
 

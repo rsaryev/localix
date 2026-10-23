@@ -4,7 +4,7 @@ import type {
   MenuHeaderEntry,
   MenuSeparatorEntry,
   MenuSubmenuEntry,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 
 /**
  * The pure half of a described menu: what its rows MEAN, before anything renders them.

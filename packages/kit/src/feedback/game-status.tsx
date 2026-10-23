@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { CircleAlert } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 import { POPOVER_SURFACE } from '../overlays/popover-surface'
 

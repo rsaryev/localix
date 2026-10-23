@@ -3,7 +3,7 @@
 // SELECTION record (`localix.k8s.selection`, owned by `useKubernetes.ts`) so the
 // two concerns persist independently. The normalize/read helpers are pure and
 // unit-tested (`kubernetesView.test.ts`).
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 import { normalizeResourceSort, type ResourceSort } from '../../../ui/model/resourceSort'
 
 const K8S_VIEW_KEY = 'localix.k8s.view'

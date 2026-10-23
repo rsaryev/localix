@@ -1,8 +1,8 @@
 import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react'
 import { X } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { IconButton } from '@localixai/kit/icon-button'
-import { useFocusEntry } from '@localixai/plugin-sdk/ui/focus'
+import { useFocusEntry } from '@localixai/mini-app-sdk/ui/focus'
 import { isTypingTarget } from '@/shared/lib/keybindings/typingTarget'
 import { useCountdownMs } from '@/shared/hooks/useCountdown'
 

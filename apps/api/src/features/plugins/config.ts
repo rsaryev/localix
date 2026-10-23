@@ -1,9 +1,9 @@
 import type { PluginManifest } from './contracts'
 
-// The value shape is OWNED by `@localixai/plugin-sdk` (part of PluginContext);
+// The value shape is OWNED by `@localixai/mini-app-sdk` (part of PluginContext);
 // re-exported so the historical import surface stays unchanged.
-export type { PluginConfigValues } from '@localixai/plugin-sdk/backend'
-import type { PluginConfigValues } from '@localixai/plugin-sdk/backend'
+export type { PluginConfigValues } from '@localixai/mini-app-sdk/backend'
+import type { PluginConfigValues } from '@localixai/mini-app-sdk/backend'
 
 /**
  * Resolve a plugin's effective config: declared defaults overlaid with the user's

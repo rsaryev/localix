@@ -27,7 +27,7 @@ import { attributeName, literalText } from '../jsx.ts'
 import type { Node, Rule, RuleContext } from '../types.ts'
 
 // The kit is where the primitives live; out of scope, the rule would skip the code it was cut for.
-const SCOPES = ['/apps/ui/src/', '/packages/kit/src/', '/packages/plugin-sdk/src/', '/plugins/']
+const SCOPES = ['/apps/ui/src/', '/packages/kit/src/', '/packages/mini-app-sdk/src/', '/plugins/']
 
 /**
  * The primitives that DEFINE the focus contract. They are allowed to spell it out because every
@@ -41,8 +41,8 @@ const SCOPES = ['/apps/ui/src/', '/packages/kit/src/', '/packages/plugin-sdk/src
  * cannot be checked; a path can.
  */
 export const CONTRACT_OWNERS = [
-  'packages/plugin-sdk/src/ui/classes.ts',
-  'packages/plugin-sdk/src/ui/segmented-control.tsx',
+  'packages/mini-app-sdk/src/ui/classes.ts',
+  'packages/mini-app-sdk/src/ui/segmented-control.tsx',
   'packages/kit/src/controls/button-variants.ts',
   'packages/kit/src/controls/input-group.tsx',
 ]

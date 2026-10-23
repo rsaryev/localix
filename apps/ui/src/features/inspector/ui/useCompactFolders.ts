@@ -1,5 +1,5 @@
 import { useCallback, useSyncExternalStore } from 'react'
-import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
+import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 
 // "Compact folders" folds a run of single-directory-child folders into one
 // breadcrumb row. It is

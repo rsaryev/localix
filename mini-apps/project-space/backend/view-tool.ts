@@ -1,4 +1,4 @@
-import type { PluginContext } from '@localixai/plugin-sdk/backend'
+import type { PluginContext } from '@localixai/mini-app-sdk/backend'
 import { describeSpace } from '../shared/agent/describe'
 import { CAMERA_ZOOM, FRAME_ZOOM_CAP, visibleRect, type CameraReport } from '../shared/camera'
 import { cameraMove, elementsIn } from '../shared/camera-target'

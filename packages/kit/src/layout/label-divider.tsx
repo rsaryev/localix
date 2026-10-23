@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /**
  * A rule with a label in its middle — "Today" above a day's messages, "or" between two ways to

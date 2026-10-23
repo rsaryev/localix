@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { acknowledgeInline } from '@localixai/plugin-sdk/ui'
+import { acknowledgeInline } from '@localixai/mini-app-sdk/ui'
 import { BookOpen, FolderPlus, Pencil, RotateCcw, Trash2 } from 'lucide-react'
 
 import { Button } from '@localixai/kit/button'

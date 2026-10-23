@@ -1,5 +1,8 @@
 import { LoadingHint } from '@localixai/kit/empty-hint'
-import { SegmentedControl, SegmentedControlItem } from '@localixai/plugin-sdk/ui/segmented-control'
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from '@localixai/mini-app-sdk/ui/segmented-control'
 import { WorkbenchToolbar } from '@localixai/kit/workbench-toolbar'
 import { LiveLogViewer } from '../../../ui/LiveLogViewer'
 import type { DockerContainerPanel } from '../model/containerPanel'

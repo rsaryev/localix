@@ -1,4 +1,4 @@
-import { documentFonts, documentFontIds } from '@localixai/plugin-sdk/document-layout'
+import { documentFonts, documentFontIds } from '@localixai/mini-app-sdk/document-layout'
 import { Button } from '@localixai/kit/button'
 import { Field } from '@localixai/kit/field'
 import { Input } from '@localixai/kit/input'

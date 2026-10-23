@@ -13,9 +13,9 @@
  */
 
 import { useMemo, type ReactNode } from 'react'
-import { useProblemReport } from '@localixai/plugin-sdk/ui'
-import { ProblemLine, ProblemState } from '@localixai/plugin-sdk/ui/components'
-import type { ProblemConsequence, ProblemReport } from '@localixai/plugin-sdk/ui/problems'
+import { useProblemReport } from '@localixai/mini-app-sdk/ui'
+import { ProblemLine, ProblemState } from '@localixai/mini-app-sdk/ui/components'
+import type { ProblemConsequence, ProblemReport } from '@localixai/mini-app-sdk/ui/problems'
 
 /** Namespace for this plugin's rows in the Event Center. */
 const SCOPE = 'api'

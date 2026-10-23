@@ -12,7 +12,7 @@
  * `redactAuth` covers the window where one is still in memory and heading for a model or a client.
  */
 
-import { hasSecretTokens } from '@localixai/plugin-sdk/backend'
+import { hasSecretTokens } from '@localixai/mini-app-sdk/backend'
 import {
   credentialHeaders,
   credentialQueryPairs,

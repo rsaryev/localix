@@ -1,4 +1,4 @@
-import { pluginWorkspace } from '@localixai/plugin-sdk/ui'
+import { pluginWorkspace } from '@localixai/mini-app-sdk/ui'
 
 import { GIT_WORKSPACE_KIND } from './workItemKinds'
 

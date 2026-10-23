@@ -15,7 +15,7 @@
  */
 
 import { pushMru } from '@/shared/lib/mru'
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 
 export interface RecentModel {
   connectionId: string

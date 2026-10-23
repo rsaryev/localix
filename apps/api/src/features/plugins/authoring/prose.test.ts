@@ -36,7 +36,7 @@ describe('the authoring guidance teaches push before polling', () => {
       'wsFrames',
       'createRealtimeFeed',
       'useRealtimeFeed',
-      '@localixai/plugin-sdk/ui/realtime-feed',
+      '@localixai/mini-app-sdk/ui/realtime-feed',
       'usePluginWorkspaceChanges',
       'ctx.watchPath',
       'node:fs.watch',
@@ -75,7 +75,7 @@ describe('the authoring guidance teaches push before polling', () => {
 
   test('every module and export the guidance names exists', () => {
     const sdk = JSON.parse(
-      readFileSync(join(repoRoot, 'packages', 'plugin-sdk', 'package.json'), 'utf8'),
+      readFileSync(join(repoRoot, 'packages', 'mini-app-sdk', 'package.json'), 'utf8'),
     ) as { exports: Record<string, unknown> }
     expect(Object.keys(sdk.exports)).toEqual(
       expect.arrayContaining(['./ui/realtime-feed', './ui/runtime-hooks']),

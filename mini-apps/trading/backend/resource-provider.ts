@@ -23,7 +23,7 @@
  * model-facing text.
  */
 import { parseTradeUri } from './uri'
-import type { ResourceExpansion, ResourceRefProvider } from '@localixai/plugin-sdk/backend'
+import type { ResourceExpansion, ResourceRefProvider } from '@localixai/mini-app-sdk/backend'
 import { PROVIDER, connInfo, type ResourceTradingService } from './resource-shared'
 import { connectionNodes, marketLeafNodes, marketNodes, marketsLevelNodes } from './resource-tree'
 import {

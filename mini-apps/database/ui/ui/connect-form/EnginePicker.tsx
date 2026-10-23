@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react'
 import { ArrowRight, File, Search, Server } from 'lucide-react'
 import { SearchInput } from '@localixai/kit/search-input'
-import { cn, FIELD_SURFACE } from '@localixai/plugin-sdk/ui/classes'
+import { cn, FIELD_SURFACE } from '@localixai/mini-app-sdk/ui/classes'
 import { Select } from '@localixai/kit/select'
 import { DATABASE_DRIVERS, type DatabaseCategory } from '../../../shared/driver-catalog'
 import { DIALECTS, DIALECT_LABEL, DIALECT_META } from '../../model/dialects'

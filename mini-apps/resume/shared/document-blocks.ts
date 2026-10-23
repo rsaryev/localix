@@ -1,5 +1,5 @@
 import type { ResumeDocument, ResumeEntry, ResumeSection } from './schema'
-import { richTextToText } from '@localixai/plugin-sdk/rich-text'
+import { richTextToText } from '@localixai/mini-app-sdk/rich-text'
 
 export type DocumentBlock =
   | { kind: 'header'; id: string; header: ResumeDocument['header'] }

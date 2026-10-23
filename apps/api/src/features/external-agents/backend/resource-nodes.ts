@@ -1,11 +1,11 @@
-import type { ResourceNode } from '@localixai/plugin-sdk/backend'
+import type { ResourceNode } from '@localixai/mini-app-sdk/backend'
 import {
   buildResourceUri,
   linkAction,
   plural,
   truncationNotice,
-} from '@localixai/plugin-sdk/backend'
-import { RESOURCE_BROWSE_LIMIT } from '@localixai/plugin-sdk/resource-refs'
+} from '@localixai/mini-app-sdk/backend'
+import { RESOURCE_BROWSE_LIMIT } from '@localixai/mini-app-sdk/resource-refs'
 import { EXTERNAL_AGENT_RESOURCE_PROVIDER } from '../shared/resource-provider-id'
 import type { RosterRow } from '../shared/contracts'
 

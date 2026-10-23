@@ -1,6 +1,6 @@
-import { toast } from '@localixai/plugin-sdk/ui'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
-import { pluginTerminal } from '@localixai/plugin-sdk/ui/runtime'
+import { toast } from '@localixai/mini-app-sdk/ui'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
+import { pluginTerminal } from '@localixai/mini-app-sdk/ui/runtime'
 
 /**
  * Spawn a shell command in the workspace terminal and adopt it as a terminal tab.

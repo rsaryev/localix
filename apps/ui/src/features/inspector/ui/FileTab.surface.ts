@@ -1,5 +1,5 @@
 import { FileText } from 'lucide-react'
-import { defineUiLocation } from '@localixai/plugin-sdk/ui'
+import { defineUiLocation } from '@localixai/mini-app-sdk/ui'
 
 function fileName(path: string): string {
   return path.split('/').findLast(Boolean) ?? path

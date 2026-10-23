@@ -1,6 +1,6 @@
 import { useMemo, type CSSProperties } from 'react'
 import type { ResolvedTheme } from '../theme/useTheme'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 interface WindLine {
   id: number

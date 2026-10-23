@@ -1,6 +1,6 @@
 import { useDeferredValue, useMemo, useState } from 'react'
-import { pluginFiles } from '@localixai/plugin-sdk/ui/runtime'
-import { useCopied } from '@localixai/plugin-sdk/ui/interactions'
+import { pluginFiles } from '@localixai/mini-app-sdk/ui/runtime'
+import { useCopied } from '@localixai/mini-app-sdk/ui/interactions'
 import { ALL_LOG_SEVERITIES, filterLogLines, parseLogLines, type LogSeverity } from './logLines'
 import { logDownloadFilename, toggleLogSeverity as updateLogSeverities } from './logViewer'
 

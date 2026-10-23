@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Trash2, Star } from 'lucide-react'
 import { ActionFeedback, useActionFeedback } from '@localixai/kit/action-feedback'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { formatRelativeTime } from '@localixai/plugin-sdk/ui/utilities'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { formatRelativeTime } from '@localixai/mini-app-sdk/ui/utilities'
 import { Button } from '@localixai/kit/button'
 import { IconButton } from '@localixai/kit/icon-button'
 import {

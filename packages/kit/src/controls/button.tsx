@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { Slot } from 'radix-ui'
 
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { buttonVariants, type ButtonVariants } from './button-variants'
 import { LocalixBorderBeam, RECOMMENDED_BEAM_INTENSITY } from '../feedback/localix-border-beam'
 

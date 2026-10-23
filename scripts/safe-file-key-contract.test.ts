@@ -53,7 +53,7 @@ import {
  * THIS CONTRACT STAYS HERE, in apps/api, because its precondition is the HOST's: it reads
  * `app.ts` to prove `userId` is still self-asserted, and that file is not the SDK's to see.
  */
-const OWNER = 'packages/plugin-sdk/src/backend/safe-file-key.ts'
+const OWNER = 'packages/mini-app-sdk/src/backend/safe-file-key.ts'
 
 /**
  * Every entry here is a BLESSING, not a deferral: a CORE file that matches a claim but is genuinely a
@@ -266,7 +266,7 @@ describe('safe-file-key contract', () => {
       offenders,
       offenders.length === 0
         ? ''
-        : `Import { safeFileKey } from @localixai/plugin-sdk/backend — or, if this is genuinely NOT a filesystem key (a wire id, a CSS escape, a display name), declare a reviewed exemption beside the owner WITH A REASON:\n  ${offenders.join('\n  ')}`,
+        : `Import { safeFileKey } from @localixai/mini-app-sdk/backend — or, if this is genuinely NOT a filesystem key (a wire id, a CSS escape, a display name), declare a reviewed exemption beside the owner WITH A REASON:\n  ${offenders.join('\n  ')}`,
     ).toEqual([])
   })
 
@@ -332,11 +332,11 @@ describe('safe-file-key contract', () => {
         'to the SAME file. With real users behind it, that is a cross-user credential leak.',
         '',
         'Before shipping auth, make the key injective (append a hash/encoding of the RAW id) in the',
-        'ONE owner — packages/plugin-sdk/src/backend/safe-file-key.ts — and migrate the files already on disk under the',
+        'ONE owner — packages/mini-app-sdk/src/backend/safe-file-key.ts — and migrate the files already on disk under the',
         'old names. Every store keyed by this rule:',
         '  - apps/api/src/features/secrets/store.ts            (CREDENTIALS)',
         '  - apps/api/src/features/mcp/oauth/store.ts          (CREDENTIALS)',
-        '  - packages/plugin-sdk/src/backend/user-entity-store.ts (the shared per-user store primitive)',
+        '  - packages/mini-app-sdk/src/backend/user-entity-store.ts (the shared per-user store primitive)',
         '  - apps/api/src/features/memory/file-store.ts',
         '  - plugin-owned stores built on the shared per-user store primitive',
         '',

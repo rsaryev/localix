@@ -16,13 +16,13 @@ and the user or other agents guess, uses the same three parts.
 
 ## What you can do
 
-| Task                                         | Mechanism                                                     | Boundary                                                                                    |
-| -------------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Let the agent commit without the user seeing | `presentation: { sealed: { input: ['move'] } }` on the tool   | Top-level input keys only. The chat shows `[sealed]` in their place.                        |
-| Withhold a tool's whole result               | `presentation: { sealed: { result: true } }`                  | Also withholds details, so an offered view link is lost. Prefer results that never name it. |
-| Commit to a value                            | `seal(value, owner, at)` from `@localixai/plugin-sdk/backend` | Values are strings. A fresh 16-byte salt each time.                                         |
-| Show another audience the commitment         | `sealedView(sealed)` from `@localixai/plugin-sdk/sealed`      | The digest only, until `revealSealed(sealed, at)`.                                          |
-| Let the user check the reveal                | `verifySealed(view)` in the browser                           | WebCrypto; false for an unrevealed or tampered view.                                        |
+| Task                                         | Mechanism                                                       | Boundary                                                                                    |
+| -------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Let the agent commit without the user seeing | `presentation: { sealed: { input: ['move'] } }` on the tool     | Top-level input keys only. The chat shows `[sealed]` in their place.                        |
+| Withhold a tool's whole result               | `presentation: { sealed: { result: true } }`                    | Also withholds details, so an offered view link is lost. Prefer results that never name it. |
+| Commit to a value                            | `seal(value, owner, at)` from `@localixai/mini-app-sdk/backend` | Values are strings. A fresh 16-byte salt each time.                                         |
+| Show another audience the commitment         | `sealedView(sealed)` from `@localixai/mini-app-sdk/sealed`      | The digest only, until `revealSealed(sealed, at)`.                                          |
+| Let the user check the reveal                | `verifySealed(view)` in the browser                             | WebCrypto; false for an unrevealed or tampered view.                                        |
 
 ## How it works
 
@@ -57,5 +57,5 @@ apart through the tool context's `session.speaker.agentId` and pass it to `seal`
 
 - [Sealing in the item funnel](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/sealed-items.ts)
 - [Tool presentation contract](https://github.com/rsaryev/localix/blob/main/packages/agent/src/agents/tool-definition.ts)
-- [Commitments and views](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/sealed.ts)
+- [Commitments and views](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/sealed.ts)
 - [Rock Paper Scissors rules and per-seat view](https://github.com/rsaryev/localix/blob/main/mini-apps/rock-paper-scissors/shared/game.ts)

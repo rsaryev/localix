@@ -7,7 +7,7 @@ import type { MarketTypeToken } from './uri'
 import { feesLine } from './fees'
 import { connectionRules } from './connection-rules'
 import { MARKET_TYPE_ORDER, rankMarkets } from './market-rank'
-import type { ResourceExpansion } from '@localixai/plugin-sdk/backend'
+import type { ResourceExpansion } from '@localixai/mini-app-sdk/backend'
 import {
   MARKET_TYPE_LABELS,
   MAX_MARKETS,

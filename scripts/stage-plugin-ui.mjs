@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url'
 
 import { PLUGIN_KIT_DIR_NAME } from '@localixai/api/plugin-kit-layout'
 import { pluginUiEntry } from '@localixai/api/plugin-ui-build'
-import { PLUGIN_UI_ARTIFACT_DIR } from '@localixai/plugin-sdk/ui-artifact'
+import { PLUGIN_UI_ARTIFACT_DIR } from '@localixai/mini-app-sdk/ui-artifact'
 
 import { miniAppsRoot } from './lib/bundled-roots.mjs'
 

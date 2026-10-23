@@ -5,7 +5,7 @@
  * is enforced.
  */
 
-import type { UserEntityStore } from '@localixai/plugin-sdk/backend'
+import type { UserEntityStore } from '@localixai/mini-app-sdk/backend'
 import { normalizeEnvironmentName } from '../../collection/environments'
 import { activePairs } from '../../request-spec'
 import type { EnvironmentService } from '../service'

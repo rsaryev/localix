@@ -94,4 +94,4 @@ See the [plugin guide](../../docs/extending/plugins.md) for the full Localix con
 - [System readings](backend/system.ts)
 - [Process collectors](backend/processes.ts)
 - [System sampling and history limits](ui/system/useSystem.ts)
-- [Shared store synchronization](../../packages/plugin-sdk/src/ui/store-snapshot.ts)
+- [Shared store synchronization](../../packages/mini-app-sdk/src/ui/store-snapshot.ts)

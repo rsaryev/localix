@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { createTurnTable, seal, type TurnTableHosts } from '@localixai/plugin-sdk/backend'
+import { createTurnTable, seal, type TurnTableHosts } from '@localixai/mini-app-sdk/backend'
 
 import {
   applyMove,

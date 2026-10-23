@@ -255,7 +255,7 @@ describe('bundled plugin tools that write class their calls', () => {
             ...offenders.map((name) => `  ${name}`),
             '',
             'Every call is then `external`: Plan mode refuses its reads with its writes. Declare',
-            '`classify` — `classifyByAction({...})` from `@localixai/plugin-sdk/backend`.',
+            '`classify` — `classifyByAction({...})` from `@localixai/mini-app-sdk/backend`.',
             '',
           ].join('\n'),
     ).toEqual([])

@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
-import { WorkItemSessionProvider } from '@localixai/plugin-sdk/ui/work-item-session'
+import { WorkItemSessionProvider } from '@localixai/mini-app-sdk/ui/work-item-session'
 
 let teardown: () => Promise<void>
 beforeAll(() => {

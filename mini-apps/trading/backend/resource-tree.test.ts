@@ -16,7 +16,7 @@ import { describe, expect, test } from 'bun:test'
 import { connectionNodes, marketNodes, marketsLevelNodes } from './resource-tree'
 import { MAX_MARKETS, type ResourceTradingService } from './resource-shared'
 import type { Market } from './contracts'
-import type { ResourceNode } from '@localixai/plugin-sdk/backend'
+import type { ResourceNode } from '@localixai/mini-app-sdk/backend'
 
 /** The composer `@`-menu's real selectable set (`atRefSuggestions` / `useAtRefAutocomplete`). */
 const selectable = (nodes: ResourceNode[]) => nodes.filter((n) => !n.notice)

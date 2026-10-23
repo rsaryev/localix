@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { bindPluginUiRuntime, type PluginUiRuntime } from '@localixai/plugin-sdk/ui/runtime'
-import { isBackgroundWork } from '@localixai/plugin-sdk/ui/visibility'
+import { bindPluginUiRuntime, type PluginUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
+import { isBackgroundWork } from '@localixai/mini-app-sdk/ui/visibility'
 
 import { PORT_FORWARDS, portForwardsFeed, portForwardsFollower } from './portForwardsFeed'
 

@@ -3,11 +3,11 @@ import type { SetStateAction } from 'react'
 
 import { VAULT_ITEM_TYPE_DEFINITIONS, VAULT_ITEM_TYPES } from '@localixai/api/vault-item-types'
 import type { SecretMeta, VaultVersionMeta } from '@localixai/api/client'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import {
   setMessageBindingDrag,
   type MessageBindingDragPayload,
-} from '@localixai/plugin-sdk/ui/message-binding-drag'
+} from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import { Button } from '@localixai/kit/button'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { SearchInput } from '@localixai/kit/search-input'

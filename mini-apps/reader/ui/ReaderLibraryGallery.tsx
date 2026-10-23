@@ -1,7 +1,7 @@
 import { useRef, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { BookOpen, Ellipsis, Folder, ListChecks, Pencil, Trash2 } from 'lucide-react'
-import { resourceMessageBindingDraft, type MenuEntry } from '@localixai/plugin-sdk/ui'
-import { setMessageBindingDrag } from '@localixai/plugin-sdk/ui/message-binding-drag'
+import { resourceMessageBindingDraft, type MenuEntry } from '@localixai/mini-app-sdk/ui'
+import { setMessageBindingDrag } from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import { Checkbox } from '@localixai/kit/checkbox'
 import {
   DropdownMenu,

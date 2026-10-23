@@ -1,4 +1,4 @@
-import { summarizeZodIssues } from '@localixai/plugin-sdk/backend'
+import { summarizeZodIssues } from '@localixai/mini-app-sdk/backend'
 
 import { pluginManifestSchema, type PluginManifest } from './contracts'
 import type { ZodError } from 'zod'

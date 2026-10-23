@@ -8,7 +8,7 @@
  * meaning with words. The indexer keeps every registered source's collection current (from the
  * change feed). Downloads and the model server belong to `features/local-models`.
  */
-import type { SemanticSource } from '@localixai/plugin-sdk/backend'
+import type { SemanticSource } from '@localixai/mini-app-sdk/backend'
 import type { LocalModelsService } from '../local-models/service'
 import type { SemanticStatus, SearchStrategyNote } from './contracts'
 import { createEmbeddingEngine, type EmbeddingBackend, type EmbeddingEngine } from './engine'

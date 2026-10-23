@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
 
 import { MANIFEST_FILE } from '@localixai/claude-plugin'
-import { MINI_APP_MANIFEST_FILE } from '@localixai/plugin-sdk/app-manifest'
+import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 
 import { loadManifest } from './discovery'

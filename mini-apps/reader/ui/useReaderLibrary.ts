@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react'
-import { acknowledgeInline } from '@localixai/plugin-sdk/ui'
-import { useStoreChanges } from '@localixai/plugin-sdk/ui/store-resource'
-import { useVisiblePolling } from '@localixai/plugin-sdk/ui/visibility'
+import { acknowledgeInline } from '@localixai/mini-app-sdk/ui'
+import { useStoreChanges } from '@localixai/mini-app-sdk/ui/store-resource'
+import { useVisiblePolling } from '@localixai/mini-app-sdk/ui/visibility'
 
 import type {
   ReaderBookSummary,

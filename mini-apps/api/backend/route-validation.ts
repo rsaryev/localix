@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { routeValidator } from '@localixai/plugin-sdk/backend'
+import { routeValidator } from '@localixai/mini-app-sdk/backend'
 import type { RestErrorResponse } from './contracts'
 
 /**

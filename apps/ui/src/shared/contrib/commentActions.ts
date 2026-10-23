@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import type { CommentActionContribution } from '@localixai/plugin-sdk/ui'
+import type { CommentActionContribution } from '@localixai/mini-app-sdk/ui'
 
 import { isPluginContributionEnabled, subscribePluginActivation } from './pluginActivation'
 

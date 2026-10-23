@@ -3,10 +3,10 @@ import type {
   AutomaticContextRequest,
   ContextContribution,
   ContextProviderContribution,
-} from '@localixai/plugin-sdk/backend'
-import { createResourceContextProvider } from '@localixai/plugin-sdk/backend'
-import { fnv1aHex } from '@localixai/plugin-sdk/backend'
-import { providerSegments } from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
+import { createResourceContextProvider } from '@localixai/mini-app-sdk/backend'
+import { fnv1aHex } from '@localixai/mini-app-sdk/backend'
+import { providerSegments } from '@localixai/mini-app-sdk/backend'
 import { DATABASE_RESOURCE_PROVIDER } from './resource-provider-id'
 import { createDatabaseResourceProvider, type ResourceDbService } from './resource-provider'
 import { extractSqlTableRefs } from '../shared/sql-context'

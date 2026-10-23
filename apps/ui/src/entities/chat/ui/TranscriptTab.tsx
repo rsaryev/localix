@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Import as ImportIcon } from 'lucide-react'
-import type { PluginTranscriptAction } from '@localixai/plugin-sdk/ui/runtime'
+import type { PluginTranscriptAction } from '@localixai/mini-app-sdk/ui/runtime'
 import { useAutoScroll } from '@/shared/hooks/useAutoScroll'
 import { useRoutedNavigation } from '@/shared/hooks/useRoutedNavigation'
 import { toast } from '@/shared/lib/notify'
@@ -9,7 +9,7 @@ import { EmptyHint } from '@localixai/kit/empty-hint'
 import { Spinner } from '@localixai/kit/spinner'
 import { readTranscript } from '../model/openTranscript'
 import { TranscriptView } from './TranscriptView'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 /**
  * The `transcript` work item — a conversation someone opened for reading.

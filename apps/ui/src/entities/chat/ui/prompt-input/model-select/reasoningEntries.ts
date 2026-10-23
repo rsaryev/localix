@@ -1,4 +1,4 @@
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import type { ReasoningEffort } from '../../../model/reasoning'
 import { clampModelReasoning, modelReasoningOptions } from '../../../model/modelReasoning'
 

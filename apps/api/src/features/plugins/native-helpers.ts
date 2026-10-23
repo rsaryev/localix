@@ -1,6 +1,6 @@
 import { promises as fsp } from 'node:fs'
 
-import type { PluginHelpers } from '@localixai/plugin-sdk/backend'
+import type { PluginHelpers } from '@localixai/mini-app-sdk/backend'
 
 import { atomicWriteFile } from '../agent-core/tools/file/file-io'
 import { decodeEntities, htmlToText, stripToText } from '../agent-core/tools/web/html-text'
@@ -8,7 +8,7 @@ import { extractReadable } from '../agent-core/tools/web/readable-extract'
 
 /**
  * Host implementation of `ctx.helpers` — the {@link PluginHelpers} contract is
- * OWNED by `@localixai/plugin-sdk` (plugins compile against it); this module
+ * OWNED by `@localixai/mini-app-sdk` (plugins compile against it); this module
  * provides the runtime. The type is re-exported so the historical import surface
  * (native.ts) stays unchanged.
  *
@@ -16,7 +16,7 @@ import { extractReadable } from '../agent-core/tools/web/readable-extract'
  * contents are whatever happens to be on disk, not the fallback's type. Pass a
  * type guard to get `T` back soundly (see the SDK contract docs).
  */
-export type { PluginHelpers } from '@localixai/plugin-sdk/backend'
+export type { PluginHelpers } from '@localixai/mini-app-sdk/backend'
 
 /**
  * Implements the two {@link PluginHelpers.readJson} overloads.

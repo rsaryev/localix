@@ -2,7 +2,7 @@
 // effects, so existing callers (`inspector.openFile(...)`, agent reveals, the file
 // tree, plugin work items, …) drive the grid unchanged once it replaces the inspector docks.
 import type { InspectorRequest } from '@/shared/lib/inspectorBus'
-import { baseName } from '@localixai/plugin-sdk/ui/utilities'
+import { baseName } from '@localixai/mini-app-sdk/ui/utilities'
 import { tabIdInScope, workspaceScope, type WorkItem } from '@/entities/workspace-grid/model'
 
 /** Which chats a prefix close reaches (see `workItemIdMatchesPrefix`). */

@@ -26,7 +26,7 @@ import {
 import { sessionEventHandlersFor } from '@/shared/contrib/sessionEvents'
 import { sessionPreviews } from '@/shared/lib/sessionPreviews'
 import { resourceSync } from '@/shared/api/resourceSync'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { applyServerSession } from './sessionSync'
 
 /**

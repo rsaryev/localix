@@ -25,7 +25,7 @@
  * own `resolveSecretTokens` and resolves each token to an env-var REFERENCE instead of a
  * value. A change to the grammar therefore cannot leave this module reading the old one.
  */
-import { hasSecretTokens, resolveSecretTokens } from '@localixai/plugin-sdk/backend'
+import { hasSecretTokens, resolveSecretTokens } from '@localixai/mini-app-sdk/backend'
 
 /** Env-var prefix for an injected vault value. Namespaced so it cannot shadow a real var. */
 export const SECRET_ENV_PREFIX = 'LOCALIX_SECRET_'

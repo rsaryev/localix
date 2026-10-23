@@ -1,6 +1,6 @@
 import { Workflow } from 'lucide-react'
-import { toast } from '@localixai/plugin-sdk/ui'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { toast } from '@localixai/mini-app-sdk/ui'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { SpaceColor } from '../../shared/format/schema'
 import { layoutSequence, SEQUENCE } from '../../shared/types/sequence-layout'
 import {

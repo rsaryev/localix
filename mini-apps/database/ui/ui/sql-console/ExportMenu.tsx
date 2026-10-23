@@ -2,7 +2,7 @@
  *  CSV import picker (editable tables only). */
 import { useRef } from 'react'
 import { ChevronDown, Download } from 'lucide-react'
-import { copyText } from '@localixai/plugin-sdk/ui/interactions'
+import { copyText } from '@localixai/mini-app-sdk/ui/interactions'
 import {
   DropdownMenu,
   DropdownMenuTrigger,

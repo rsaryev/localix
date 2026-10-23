@@ -2,7 +2,7 @@ import {
   resourceMessageBindingDraft,
   type MessageContextBindingDraft,
   type WorkItemLike,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 
 import { buildTradeUri } from '../../backend/uri'
 import { marketMessageBindingDraft } from './marketDrag'

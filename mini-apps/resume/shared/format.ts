@@ -1,5 +1,5 @@
 import { documentBlocks, entryMetadata } from './document-blocks'
-import { richTextToText, richTextToMarkdown } from '@localixai/plugin-sdk/rich-text'
+import { richTextToText, richTextToMarkdown } from '@localixai/mini-app-sdk/rich-text'
 import type { ResumeDocument, ResumeEntry, ResumeSection } from './schema'
 import { exportInterchange, exportYaml } from './interchange'
 

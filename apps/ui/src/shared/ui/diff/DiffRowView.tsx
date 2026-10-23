@@ -1,5 +1,5 @@
 import { memo, type ReactNode } from 'react'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { DiffCode } from './DiffCode'
 import { HunkHeaderLabel } from './HunkHeaderLabel'

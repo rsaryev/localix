@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from 'react'
 
-import { currentKeyPolicy, offerKeyToFocusedSurface } from '@localixai/plugin-sdk/ui/focus'
+import { currentKeyPolicy, offerKeyToFocusedSurface } from '@localixai/mini-app-sdk/ui/focus'
 import { CMD, SHORTCUT_CATALOG } from '@/shared/lib/keybindings/catalog'
 import { matchesChord } from '@localixai/kit/keybindings'
 import { useKeybindingsStore } from '@/shared/lib/keybindings/store'

@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { createTypeaheadBuffer } from '../lib/typeahead'
 import { Popover, PopoverAnchor, PopoverContent } from './popover'
 import { MENU_CONTENT, MENU_DANGER_ITEM, MENU_ITEM, MENU_SEPARATOR } from './popover-surface'

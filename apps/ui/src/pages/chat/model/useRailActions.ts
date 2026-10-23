@@ -22,8 +22,8 @@ import type { PluginViewSpec } from '@/shared/api/contracts'
 import type { RailAction, RailArea } from '@/widgets/workspace-shell'
 import type { useSystemToggle } from '@/shared/hooks/useSystemToggle'
 import { isPluginRailViewlet } from './railViewletProvenance'
-import { capabilityResourceUri } from '@localixai/plugin-sdk/navigation'
-import type { PluginCategory } from '@localixai/plugin-sdk/manifest'
+import { capabilityResourceUri } from '@localixai/mini-app-sdk/navigation'
+import type { PluginCategory } from '@localixai/mini-app-sdk/manifest'
 
 interface ViewletDef {
   toolCategory?: PluginCategory

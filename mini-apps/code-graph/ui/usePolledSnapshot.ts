@@ -1,1 +1,1 @@
-export { usePolledSnapshot } from '@localixai/plugin-sdk/ui/route-snapshot'
+export { usePolledSnapshot } from '@localixai/mini-app-sdk/ui/route-snapshot'

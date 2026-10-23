@@ -1,4 +1,4 @@
-import { classifyByAction, type PluginContext } from '@localixai/plugin-sdk/backend'
+import { classifyByAction, type PluginContext } from '@localixai/mini-app-sdk/backend'
 import { z } from 'zod'
 import { resolve } from 'node:path'
 import { templateIds } from '../shared/templates'

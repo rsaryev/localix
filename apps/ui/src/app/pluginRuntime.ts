@@ -1,4 +1,4 @@
-import type { PluginWorkspaceSnapshot } from '@localixai/plugin-sdk/ui'
+import type { PluginWorkspaceSnapshot } from '@localixai/mini-app-sdk/ui'
 import { createPluginFilesRuntime } from './pluginRuntimeFiles'
 import { pluginUiComponents } from './pluginUiComponents'
 import { terminal as terminalBus } from '@/shared/lib/terminalBus'
@@ -7,7 +7,7 @@ import {
   bindPluginUiRuntime,
   bindPluginUiToast,
   bindPluginUiTransport,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 
 import { backendClient } from '@/shared/api/client'
 import { completionWorkingSet } from '@/shared/api/completionWorkingSet'

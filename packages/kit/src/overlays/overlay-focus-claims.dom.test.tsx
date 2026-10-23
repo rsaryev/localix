@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, expect, test } from 'bun:test'
 import { act, createRef, type ReactNode } from 'react'
-import { useFocusStack, type FocusKind } from '@localixai/plugin-sdk/ui/focus'
+import { useFocusStack, type FocusKind } from '@localixai/mini-app-sdk/ui/focus'
 import { registerDom } from '../testing/dom'
 
 let teardown: () => Promise<void>

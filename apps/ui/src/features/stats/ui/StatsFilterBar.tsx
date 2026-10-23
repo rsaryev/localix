@@ -14,7 +14,7 @@
  * discard the other three.
  */
 import { ActiveFilterChips } from '@/shared/ui/ActiveFilterChips'
-import { Segmented } from '@localixai/plugin-sdk/ui/segmented-control'
+import { Segmented } from '@localixai/mini-app-sdk/ui/segmented-control'
 import type { UsageFilters, UsageGroupBy, UsageRange } from '@/shared/hooks/useUsageStats'
 import { FilterMenu, type FilterFacet } from '@/shared/ui/FilterMenu'
 

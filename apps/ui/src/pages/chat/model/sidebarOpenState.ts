@@ -1,4 +1,4 @@
-import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
+import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 
 type StorageReader = Parameters<typeof loadString>[1]
 type StorageWriter = Parameters<typeof saveString>[2]

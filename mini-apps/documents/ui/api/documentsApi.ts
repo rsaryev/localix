@@ -1,7 +1,7 @@
 import {
   postPluginJson as postJson,
   unwrapPluginResponse,
-} from '@localixai/plugin-sdk/ui/transport'
+} from '@localixai/mini-app-sdk/ui/transport'
 import type { DocumentFormat, ExtractOptions, ExtractResponse } from '../docClient'
 
 /** Point the extractor at bytes via an absolute file `path` OR a stored `mediaId`. */

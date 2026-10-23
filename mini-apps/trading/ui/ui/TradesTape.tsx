@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 import type { Market, PrecisionMode, PublicTrade } from '../../backend/contracts'
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { useTradingStream } from '../model/useTradingStream'
 import { reconcileTrades } from '../model/streamReconcile'
 import { formatPrice, formatSize } from '../model/formatQuote'
 import { tradeTimeLabel } from '../model/timeLabels'
 import { sizeColumn, sizeUnit } from '../../backend/size-unit'
 import { askAgent, buildTapePrintPrefill } from '../model/askAgent'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { tradeFlow } from '../model/tradeFlow'
 
 /**

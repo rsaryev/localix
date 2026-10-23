@@ -14,7 +14,7 @@ import {
   fileExtension,
   type DedicatedViewerType,
   type FileViewerKind,
-} from '@localixai/plugin-sdk/ui/file-types'
+} from '@localixai/mini-app-sdk/ui/file-types'
 import { isPluginContributionEnabled } from '@/shared/contrib/pluginActivation'
 
 export {
@@ -25,8 +25,8 @@ export {
   PPTX_CONTENT_TYPE,
   XLSX_CONTENT_TYPE,
   fileExtension,
-} from '@localixai/plugin-sdk/ui/file-types'
-export type { DedicatedViewerType, FileViewerKind } from '@localixai/plugin-sdk/ui/file-types'
+} from '@localixai/mini-app-sdk/ui/file-types'
+export type { DedicatedViewerType, FileViewerKind } from '@localixai/mini-app-sdk/ui/file-types'
 
 // extension (no dot, lowercased) → registered format
 type RegisteredViewerType = DedicatedViewerType & { pluginName?: string }

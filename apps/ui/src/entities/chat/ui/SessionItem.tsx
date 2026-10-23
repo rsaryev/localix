@@ -7,8 +7,8 @@ import {
   createMessageBindingDraft,
   setMessageBindingDrag,
   setElementDragImage,
-} from '@localixai/plugin-sdk/ui/message-binding-drag'
-import { isRowSelectClick, type PointerPoint } from '@localixai/plugin-sdk/ui/utilities'
+} from '@localixai/mini-app-sdk/ui/message-binding-drag'
+import { isRowSelectClick, type PointerPoint } from '@localixai/mini-app-sdk/ui/utilities'
 import { SessionItemActions } from './SessionItemActions'
 import { useSessionRowActions } from './useSessionRowActions'
 import {
@@ -21,7 +21,7 @@ import { Spinner } from '@localixai/kit/spinner'
 import { sessionMenuEntries } from './sessionMenuEntries'
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@localixai/kit/context-menu'
 import { MenuEntries } from '@localixai/kit/menu-entries'
-import { CONTROL_FOCUS_VISIBLE } from '@localixai/plugin-sdk/ui/classes'
+import { CONTROL_FOCUS_VISIBLE } from '@localixai/mini-app-sdk/ui/classes'
 import { TreeGuide } from './SessionTreeGuide'
 
 // Tree indentation (px). Base matches the row's normal left padding; the step

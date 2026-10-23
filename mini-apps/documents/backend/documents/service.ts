@@ -21,7 +21,7 @@ import type {
   ExtractedTextDocument,
 } from './contracts'
 import type { DocumentGenerator, GenerateInput, GeneratedDocument } from './generate-contracts'
-import { errorMessage } from '@localixai/plugin-sdk/backend'
+import { errorMessage } from '@localixai/mini-app-sdk/backend'
 import { DocumentError } from './errors'
 import { converterForFormat, detectFormat } from './registry'
 import { createDocumentGenerator } from './generators/generator'

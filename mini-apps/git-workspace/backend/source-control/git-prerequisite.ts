@@ -1,5 +1,5 @@
-import { resolveExecutable } from '@localixai/plugin-sdk/backend'
-import type { Prerequisite } from '@localixai/plugin-sdk/prerequisite'
+import { resolveExecutable } from '@localixai/mini-app-sdk/backend'
+import type { Prerequisite } from '@localixai/mini-app-sdk/prerequisite'
 
 /**
  * Git itself, as the prerequisite a "not a repository" answer may really be.

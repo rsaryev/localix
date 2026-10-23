@@ -22,7 +22,7 @@
 import { existsSync } from 'node:fs'
 import { readFile, readdir } from 'node:fs/promises'
 import { join } from 'node:path'
-import { ApiError } from '@localixai/plugin-sdk/backend'
+import { ApiError } from '@localixai/mini-app-sdk/backend'
 import type { BisectState, BisectTerm, RepoCommit } from '../contracts'
 import { firstLine, type GitRunner } from './cli'
 import { gitPathResolver, type GitPathResolver } from './git-paths'

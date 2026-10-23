@@ -1,7 +1,7 @@
 import {
   createResourceContextProvider,
   type ResourceRefProvider,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import { SYSTEM_URI, formatSystemSnapshot } from '../shared/system'
 import type { SystemReader } from './system'
 import { formatProcessSnapshot } from '../shared/processes'

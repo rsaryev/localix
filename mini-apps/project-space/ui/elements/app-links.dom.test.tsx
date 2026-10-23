@@ -5,7 +5,7 @@ import {
   MESSAGE_BINDING_MIME,
   readMessageBindingDrag,
   type MessageContextBindingDraft,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { CanvasProvider } from '@localixai/kit/canvas'
 import { registerDom } from '@localixai/kit/testing'
 import type { RefProps } from '../../shared/types/app-links'

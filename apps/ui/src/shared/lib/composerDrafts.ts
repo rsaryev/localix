@@ -12,7 +12,7 @@
  * in memory only rather than filling the store. A deleted session's draft is dropped with it
  * (`forget`). Empty text drops the key, so `get` of a never-typed session returns ''.
  */
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 import { createPendingWrite } from './quitFlush'
 
 const STORAGE_KEY = 'localix_composer_drafts_v1'

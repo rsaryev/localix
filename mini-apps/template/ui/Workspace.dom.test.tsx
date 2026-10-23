@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
-import type { PublishedMessageContext } from '@localixai/plugin-sdk/ui'
-import { bindPluginUiTransport } from '@localixai/plugin-sdk/ui/transport'
+import type { PublishedMessageContext } from '@localixai/mini-app-sdk/ui'
+import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
 import { registerDom } from '@localixai/kit/testing'
-import { bindPluginUiTestDoubles } from '@localixai/plugin-sdk/ui/testing'
+import { bindPluginUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
 
 let teardown: () => Promise<void>
 let unbindDoubles: () => void

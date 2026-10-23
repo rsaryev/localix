@@ -8,7 +8,7 @@
  * request is a 404 the sidebar can quietly reconcile.
  */
 
-import { defineTypedError } from '@localixai/plugin-sdk/backend'
+import { defineTypedError } from '@localixai/mini-app-sdk/backend'
 import type { RestErrorCode } from './contracts'
 import { SendError } from './send-errors'
 

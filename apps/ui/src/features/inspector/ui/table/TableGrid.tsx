@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { copyText } from '@localixai/plugin-sdk/ui/interactions'
+import { copyText } from '@localixai/mini-app-sdk/ui/interactions'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { X } from 'lucide-react'
 import { EmptyHint } from '@localixai/kit/empty-hint'
 import type { TableRow } from '@localixai/dataview'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import {
   ContextMenu,
   ContextMenuContent,

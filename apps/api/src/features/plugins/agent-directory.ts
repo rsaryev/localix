@@ -1,4 +1,4 @@
-import type { PluginAgentDirectory, PluginAgentSummary } from '@localixai/plugin-sdk/backend'
+import type { PluginAgentDirectory, PluginAgentSummary } from '@localixai/mini-app-sdk/backend'
 import { HUMAN_HANDLE } from '@localixai/agent/agents'
 
 import { USER_PARTICIPANT } from '../../db/participant'

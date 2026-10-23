@@ -16,7 +16,7 @@ import type { ComponentProps } from 'react'
 import { Play, Square } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
 import { Spinner } from '@localixai/kit/spinner'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 type ButtonProps = ComponentProps<typeof Button>
 

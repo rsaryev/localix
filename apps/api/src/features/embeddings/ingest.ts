@@ -7,7 +7,7 @@
  * are removed. Embedding goes in small batches (`BATCH_INPUTS` chunks) so a person's query
  * never waits behind a long one.
  */
-import type { SemanticSourceItem } from '@localixai/plugin-sdk/backend'
+import type { SemanticSourceItem } from '@localixai/mini-app-sdk/backend'
 import { chunkText } from './chunking'
 import type { EmbeddingEngine } from './engine'
 import type { SemanticStore } from './store'

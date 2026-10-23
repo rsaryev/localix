@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Mail, Phone, MapPin, Link } from 'lucide-react'
-import type { DocumentParagraph } from '@localixai/plugin-sdk/document-layout'
+import type { DocumentParagraph } from '@localixai/mini-app-sdk/document-layout'
 import type { ResumeDocument } from '../shared/schema'
 import { resumeLayout } from '../shared/layout'
 import { ensureDocumentFont } from './documentFonts'

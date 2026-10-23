@@ -2,7 +2,7 @@ import type {
   IconComponent,
   SearchDomainContribution,
   SearchDomainScope,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { isPluginContributionEnabled } from './pluginActivation'
 
 /**
@@ -12,7 +12,7 @@ import { isPluginContributionEnabled } from './pluginActivation'
  * `contrib.{ts,tsx}` (discovered generically — see `shared/contrib/discover.ts`),
  * so CORE search names no individual subsystem.
  *
- * The contribution CONTRACTS are OWNED by `@localixai/plugin-sdk/ui`; this module
+ * The contribution CONTRACTS are OWNED by `@localixai/mini-app-sdk/ui`; this module
  * implements the registry and re-exports the types so internal import sites stay
  * unchanged.
  *
@@ -21,7 +21,7 @@ import { isPluginContributionEnabled } from './pluginActivation'
  * owns only the two genuinely subsystem-specific bits — the result glyphs and the
  * hit → open-work-item mapping.
  */
-export type { SearchDomainContribution, SearchDomainScope } from '@localixai/plugin-sdk/ui'
+export type { SearchDomainContribution, SearchDomainScope } from '@localixai/mini-app-sdk/ui'
 
 const registry = new Map<string, SearchDomainContribution>()
 

@@ -1,4 +1,4 @@
-import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
+import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'
 import type { DbDialect } from '../dbClient'
 import { useConsoleMessageContext } from './useConsoleMessageContext'
 import { useDbConsoleCommands } from './useDbConsoleCommands'

@@ -6,7 +6,7 @@
  */
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import { toolEnv } from '@localixai/plugin-sdk/backend'
+import { toolEnv } from '@localixai/mini-app-sdk/backend'
 
 const execFilePromise = promisify(execFile)
 

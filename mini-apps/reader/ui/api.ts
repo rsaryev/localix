@@ -1,4 +1,4 @@
-import { pluginApiFetch } from '@localixai/plugin-sdk/ui'
+import { pluginApiFetch } from '@localixai/mini-app-sdk/ui'
 
 import type {
   ReaderBookMetadataPatch,

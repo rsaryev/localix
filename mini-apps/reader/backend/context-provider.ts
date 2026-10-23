@@ -2,7 +2,7 @@ import {
   createResourceContextProvider,
   type ContextProviderContribution,
   type ResourceRefProvider,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 
 export function createReaderContextProvider(
   resourceProvider: ResourceRefProvider,

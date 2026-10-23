@@ -14,8 +14,8 @@
     "@localixai/api": "workspace:*",
     "@localixai/change-feed": "workspace:*",
     "@localixai/kit": "workspace:*",
-    "@localixai/plugin-kit-compiler": "workspace:*",
-    "@localixai/plugin-sdk": "workspace:*",
+    "@localixai/mini-app-kit-compiler": "workspace:*",
+    "@localixai/mini-app-sdk": "workspace:*",
     "@localixai/source-lint": "workspace:*",
     "@localixai/testing": "workspace:*"
   }

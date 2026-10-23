@@ -34,7 +34,7 @@ import {
   openedTranscriptBottomOffset,
 } from './messageListScroll'
 import { chatMeasurementsForWidth, getChatScrollSnapshot } from '@/shared/hooks/chatScrollState'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { SurfaceErrorBoundary } from '@/shared/ui/SurfaceErrorBoundary'
 import { deriveWakeProvenance, wakeSourceLabel } from '@localixai/api/wake-provenance'
 

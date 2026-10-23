@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
-import { pluginRealtime } from '@localixai/plugin-sdk/ui/runtime'
+import { pluginRealtime } from '@localixai/mini-app-sdk/ui/runtime'
 import type { DbConnectionInfo } from '../dbClient'
 import type { SqlFileConnectionsState } from './useSqlFileConnections'
 
@@ -49,7 +49,7 @@ describe('useSqlFileConnections list ownership', () => {
     const React = await import('react')
     const { act } = React
     const { createRoot } = await import('react-dom/client')
-    const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
+    const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
     const { databaseApi } = await import('../api/databaseApi')
     const { useSqlFileConnections } = await import('./useSqlFileConnections')
 

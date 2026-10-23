@@ -1,5 +1,5 @@
 import { useId, useMemo, type ComponentProps } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /** Stable DOM relationship ids for any tab implementation built on these primitives. */
 export function useTabPanelIds(scope = 'tabs') {

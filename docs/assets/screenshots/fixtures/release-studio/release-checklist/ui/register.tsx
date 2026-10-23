@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ListChecks } from 'lucide-react'
-import type { PluginUiHost } from '@localixai/plugin-sdk/ui'
+import type { PluginUiHost } from '@localixai/mini-app-sdk/ui'
 import { Checkbox } from '@localixai/kit/checkbox'
 import { ProgressBar } from '@localixai/kit/progress-bar'
 

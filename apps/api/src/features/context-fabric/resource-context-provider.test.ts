@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { parseResourceUri } from '@localixai/plugin-sdk/backend'
+import { parseResourceUri } from '@localixai/mini-app-sdk/backend'
 
 import type { ContextReference, ContextResolver } from './contracts'
 import {

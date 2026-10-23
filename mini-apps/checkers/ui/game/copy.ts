@@ -1,5 +1,5 @@
-import { elapsed } from '@localixai/plugin-sdk/agent-wait'
-import { opponentName } from '@localixai/plugin-sdk/opponent'
+import { elapsed } from '@localixai/mini-app-sdk/agent-wait'
+import { opponentName } from '@localixai/mini-app-sdk/opponent'
 import { QUIET_DRAW_PLIES, type Game, type Move, type GameRecord } from '../../shared/game'
 import { moveName } from '../../shared/notation'
 import { other, type Side } from '../../shared/rules'

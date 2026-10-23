@@ -1,5 +1,5 @@
 import useSWR from 'swr'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { localModelsApi, type InstallJob, type LocalModelKind } from '@/shared/api/localModelsApi'
 import { semanticApi } from '@/shared/api/semanticApi'
 import { useRevalidateOnResources } from '@/shared/api/resourceGeneration'

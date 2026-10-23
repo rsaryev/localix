@@ -1,4 +1,4 @@
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { CMD } from '@/shared/lib/keybindings'
 import { REVEAL_IN_OS_LABEL } from '@localixai/kit/environment'
 

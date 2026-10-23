@@ -1,8 +1,8 @@
-import { buildResourceUri, type ResourceRefProvider } from '@localixai/plugin-sdk/backend'
+import { buildResourceUri, type ResourceRefProvider } from '@localixai/mini-app-sdk/backend'
 import {
   capabilitySettingsUiUri,
   parseCapabilityResourceUri,
-} from '@localixai/plugin-sdk/navigation'
+} from '@localixai/mini-app-sdk/navigation'
 import { RESOURCE_PROVIDERS } from '../agent-core/resource-refs/providers'
 
 const PROVIDER = RESOURCE_PROVIDERS.capability

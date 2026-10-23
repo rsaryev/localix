@@ -1,5 +1,5 @@
 import type { ComponentType, ReactNode } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /**
  * The app's ONE minimal pattern for empty/error/state notices: centered,

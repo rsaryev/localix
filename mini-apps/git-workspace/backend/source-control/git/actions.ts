@@ -6,7 +6,7 @@
  */
 import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { ApiError } from '@localixai/plugin-sdk/backend'
+import { ApiError } from '@localixai/mini-app-sdk/backend'
 import { firstLine, type GitRunner } from './cli'
 import { getWorkingDiff } from './working-diff'
 import { captureRepresentativeTrackedDiff } from './diff-capture'

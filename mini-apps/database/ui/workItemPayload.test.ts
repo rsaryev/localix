@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { WorkItemLike } from '@localixai/plugin-sdk/ui'
+import type { WorkItemLike } from '@localixai/mini-app-sdk/ui'
 import { readConsoleItem, readTableItem } from './workItemPayload'
 
 const consoleItem = (id: string, dialect: string): WorkItemLike => ({

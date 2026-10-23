@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { runAsBackgroundWork } from '@localixai/plugin-sdk/ui/visibility'
+import { runAsBackgroundWork } from '@localixai/mini-app-sdk/ui/visibility'
 import type { KubernetesState } from './kubernetesState'
 import {
   canAutoRetryKubernetes,

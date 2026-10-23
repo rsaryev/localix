@@ -1,5 +1,5 @@
 import type { AgentTool, AgentToolResult } from '@localixai/agent/agents'
-import { isUiNavigationAction } from '@localixai/plugin-sdk/ui'
+import { isUiNavigationAction } from '@localixai/mini-app-sdk/ui'
 
 import { isPlainObject } from './mcp'
 

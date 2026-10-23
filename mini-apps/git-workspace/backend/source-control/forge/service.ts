@@ -4,7 +4,7 @@
  * and delegates to the forge backend. Availability failures are reported as flags
  * by `getStatus`, never thrown — the UI stays quiet when gh is absent/unauthed.
  */
-import { ApiError } from '@localixai/plugin-sdk/backend'
+import { ApiError } from '@localixai/mini-app-sdk/backend'
 import type { ResolveCwd } from '../ports'
 import type { ForgeBackend } from './ports'
 import type { ForgePullRequest, ForgeStatus } from './contracts'

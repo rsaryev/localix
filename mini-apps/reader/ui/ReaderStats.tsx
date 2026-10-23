@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { acknowledgeInline } from '@localixai/plugin-sdk/ui'
+import { acknowledgeInline } from '@localixai/mini-app-sdk/ui'
 
 import { Button } from '@localixai/kit/button'
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'

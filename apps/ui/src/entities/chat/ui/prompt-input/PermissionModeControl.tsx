@@ -1,7 +1,7 @@
 /** Conversation permission mode, shown as its own pill above the input. */
 import type { ImplementationMode, SessionPlan } from '@localixai/api/client'
 import { ChevronDown } from 'lucide-react'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import {
   DropdownMenu,
   DropdownMenuContent,

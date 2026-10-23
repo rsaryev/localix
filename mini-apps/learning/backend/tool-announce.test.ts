@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { z } from 'zod'
-import type { PluginContext } from '@localixai/plugin-sdk/backend'
+import type { PluginContext } from '@localixai/mini-app-sdk/backend'
 import type { LearningCourse } from '../shared/contracts'
 import { LEARNING_CHANGES_CHANNEL, LEARNING_PLUGIN } from '../shared/course-changes'
 import type { LearningService } from './service'

@@ -3,7 +3,7 @@ import { promises as fs } from 'node:fs'
 import { basename, join } from 'node:path'
 
 import { MANIFEST_FILE } from '@localixai/claude-plugin'
-import { MINI_APP_MANIFEST_FILE } from '@localixai/plugin-sdk/app-manifest'
+import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 import { TEMPLATE_SCAFFOLD_FILE } from './kit-layout'
 import type { PluginKit } from './kit'
 import { writePluginKitCatalog } from './kit-catalog'

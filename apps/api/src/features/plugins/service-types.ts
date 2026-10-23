@@ -25,7 +25,7 @@ import type {
   SetPluginEnabledRequest,
   InvokePluginUiActionRequest,
 } from './contracts'
-import type { PluginUiActionContext } from '@localixai/plugin-sdk/backend'
+import type { PluginUiActionContext } from '@localixai/mini-app-sdk/backend'
 import type { PluginThemeSpec } from './contracts-themes'
 
 export interface PluginServiceDeps {

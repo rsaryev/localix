@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
-import { toast } from '@localixai/plugin-sdk/ui'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { toast } from '@localixai/mini-app-sdk/ui'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 import type { KanbanMove, KanbanStatus, KanbanTask } from '../../shared/contracts'
 import { canTransition } from '../../shared/rules'

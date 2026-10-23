@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import {
   createMessageBindingDraft,
   setMessageBindingDrag,
-} from '@localixai/plugin-sdk/ui/message-binding-drag'
+} from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import { canMoveInto, distinctParents } from './fileTreePaths'
 
 /**

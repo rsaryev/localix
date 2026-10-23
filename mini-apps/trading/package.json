@@ -19,7 +19,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@localixai/plugin-sdk": "workspace:*",
+    "@localixai/mini-app-sdk": "workspace:*",
     "@localixai/source-lint": "workspace:*",
     "@localixai/testing": "workspace:*",
     "@types/react": "^19.3.0",

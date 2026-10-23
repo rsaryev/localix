@@ -9,7 +9,7 @@
  * edge — a disabled Storage, a quota-exceeded write, or corrupt JSON degrade to
  * "no saved state" rather than throwing into the bridge dispatch.
  */
-import { loadJSON, saveString } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveString } from '@localixai/mini-app-sdk/ui/storage'
 
 const PREFIX = 'lx.pluginView:'
 /** Reject oversized blobs so a view can't wedge the shared localStorage quota. */

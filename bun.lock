@@ -5,7 +5,7 @@
     "": {
       "name": "localix",
       "devDependencies": {
-        "@localixai/plugin-kit-compiler": "workspace:*",
+        "@localixai/mini-app-kit-compiler": "workspace:*",
         "@playwright/test": "1.64.1",
         "@types/node": "26.6.5",
         "hono": "^4.13.13",
@@ -34,10 +34,10 @@
         "@localixai/claude-plugin": "workspace:*",
         "@localixai/engine": "workspace:*",
         "@localixai/markdown": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "@localixai/notifications": "workspace:*",
         "@localixai/os-open": "workspace:*",
         "@localixai/path-containment": "workspace:*",
-        "@localixai/plugin-sdk": "workspace:*",
         "@localixai/search": "workspace:*",
         "@localixai/visual-feedback": "workspace:*",
         "@modelcontextprotocol/sdk": "^1.32.1",
@@ -86,7 +86,7 @@
       "dependencies": {
         "@localixai/kit": "workspace:*",
         "@localixai/markdown": "workspace:*",
-        "@localixai/plugin-sdk": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "@tailwindcss/vite": "^4.3.3",
         "lucide-react": "^1.61.0",
         "react": "^19.3.1",
@@ -121,9 +121,9 @@
         "@localixai/dataview": "workspace:*",
         "@localixai/kit": "workspace:*",
         "@localixai/markdown": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "@localixai/notifications": "workspace:*",
         "@localixai/path-containment": "workspace:*",
-        "@localixai/plugin-sdk": "workspace:*",
         "@localixai/search": "workspace:*",
         "@localixai/visual-feedback": "workspace:*",
         "@tailwindcss/vite": "^4.3.3",
@@ -181,7 +181,7 @@
       },
       "devDependencies": {
         "@localixai/agent": "workspace:*",
-        "@localixai/plugin-sdk": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "@types/bun": "1.4.3",
         "@types/react": "^19.3.0",
         "@types/shell-quote": "^1.7.5",
@@ -202,7 +202,7 @@
         "zod": "^4.4.3",
       },
       "devDependencies": {
-        "@localixai/plugin-sdk": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "@types/react": "^19.3.0",
         "react-dom": "^19.3.1",
       },
@@ -217,7 +217,7 @@
         "zod": "^4.4.3",
       },
       "devDependencies": {
-        "@localixai/plugin-sdk": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "@types/react": "^19.3.0",
         "react-dom": "^19.3.1",
       },
@@ -233,7 +233,7 @@
         "zod": "^4.4.3",
       },
       "devDependencies": {
-        "@localixai/plugin-sdk": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "@types/react": "^19.3.0",
         "react-dom": "^19.3.1",
       },
@@ -252,7 +252,7 @@
         "zod": "^4.4.3",
       },
       "devDependencies": {
-        "@localixai/plugin-sdk": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "@types/dagre": "^0.7.53",
         "@types/react": "^19.3.0",
         "react-dom": "^19.3.1",
@@ -281,7 +281,7 @@
         "zod": "^4.4.3",
       },
       "devDependencies": {
-        "@localixai/plugin-sdk": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "@types/dagre": "^0.7.53",
         "@types/json-bigint": "^1.0.4",
         "@types/mssql": "^12.3.0",
@@ -308,7 +308,7 @@
       },
       "devDependencies": {
         "@happy-dom/global-registrator": "21.0.4",
-        "@localixai/plugin-sdk": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "@types/react": "^19.3.0",
         "radix-ui": "1.8.1",
         "react-dom": "^19.3.1",
@@ -335,7 +335,7 @@
         "zod": "^4.4.3",
       },
       "devDependencies": {
-        "@localixai/plugin-sdk": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "@types/pdfkit": "^0.17.6",
         "@types/react": "^19.3.0",
         "fflate": "^0.8.3",
@@ -353,7 +353,7 @@
         "zod": "^4.4.3",
       },
       "devDependencies": {
-        "@localixai/plugin-sdk": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "@types/react": "^19.3.0",
         "react-dom": "^19.3.1",
       },
@@ -362,8 +362,8 @@
       "name": "@localix-mini-app/git-workspace",
       "version": "0.1.0",
       "dependencies": {
+        "@localixai/mini-app-sdk": "workspace:*",
         "@localixai/path-containment": "workspace:*",
-        "@localixai/plugin-sdk": "workspace:*",
         "@tanstack/react-virtual": "^3.14.21",
         "hono": "^4.12.8",
         "lucide-react": "^1.61.0",
@@ -387,7 +387,7 @@
         "zod": "^4.4.3",
       },
       "devDependencies": {
-        "@localixai/plugin-sdk": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "@types/react": "^19.3.0",
         "react-dom": "^19.3.1",
         "react-router": "^8.5.0",
@@ -405,7 +405,7 @@
         "zod": "^4.4.3",
       },
       "devDependencies": {
-        "@localixai/plugin-sdk": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "@types/react": "^19.3.0",
         "react-dom": "^19.3.1",
         "vite": "^8.3.5",
@@ -424,7 +424,7 @@
         "zod": "^4.4.3",
       },
       "devDependencies": {
-        "@localixai/plugin-sdk": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "@types/dagre": "^0.7.53",
         "@types/react": "^19.3.0",
         "react-dom": "^19.3.1",
@@ -450,7 +450,7 @@
         "zod": "^4.4.3",
       },
       "devDependencies": {
-        "@localixai/plugin-sdk": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "@types/react": "^19.3.0",
         "react-dom": "^19.3.1",
         "vite": "^8.3.5",
@@ -460,8 +460,8 @@
       "name": "@localix-mini-app/resume",
       "version": "0.1.0",
       "dependencies": {
+        "@localixai/mini-app-sdk": "workspace:*",
         "@localixai/path-containment": "workspace:*",
-        "@localixai/plugin-sdk": "workspace:*",
         "hono": "^4.12.30",
         "lucide-react": "^1.61.0",
         "react": "^19.3.1",
@@ -485,7 +485,7 @@
         "zod": "^4.4.3",
       },
       "devDependencies": {
-        "@localixai/plugin-sdk": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "@types/react": "^19.3.0",
         "react-dom": "^19.3.1",
       },
@@ -500,7 +500,7 @@
         "zod": "^4.4.3",
       },
       "devDependencies": {
-        "@localixai/plugin-sdk": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "@types/react": "^19.3.0",
         "react-dom": "^19.3.1",
       },
@@ -509,7 +509,7 @@
       "name": "@localix-mini-app/template",
       "version": "0.1.0",
       "dependencies": {
-        "@localixai/plugin-sdk": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "hono": "^4.12.30",
         "lucide-react": "^1.61.0",
         "react": "^19.3.1",
@@ -537,7 +537,7 @@
         "zod": "^4.4.3",
       },
       "devDependencies": {
-        "@localixai/plugin-sdk": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "@types/react": "^19.3.0",
         "react-dom": "^19.3.1",
       },
@@ -555,7 +555,7 @@
         "zod": "^4.4.3",
       },
       "devDependencies": {
-        "@localixai/plugin-sdk": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "@localixai/source-lint": "workspace:*",
         "@localixai/testing": "workspace:*",
         "@types/react": "^19.3.0",
@@ -702,7 +702,7 @@
       "name": "@localixai/kit",
       "version": "0.1.0",
       "dependencies": {
-        "@localixai/plugin-sdk": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "@tiptap/core": "3.32.0",
         "@tiptap/pm": "3.32.0",
         "@tiptap/react": "3.32.0",
@@ -737,7 +737,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@localixai/kit": "workspace:*",
-        "@localixai/plugin-sdk": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "hast-util-from-html-isomorphic": "^2.0.0",
         "highlight.js": "^11.12.0",
         "katex": "^0.19.0",
@@ -765,6 +765,40 @@
       "peerDependencies": {
         "react": "^19.3.1",
         "react-dom": "^19.3.1",
+      },
+    },
+    "packages/mini-app-kit-compiler": {
+      "name": "@localixai/mini-app-kit-compiler",
+      "version": "0.1.0",
+      "dependencies": {
+        "typescript": "6.0.3",
+      },
+    },
+    "packages/mini-app-sdk": {
+      "name": "@localixai/mini-app-sdk",
+      "version": "0.1.0",
+      "dependencies": {
+        "@localixai/agent": "workspace:*",
+        "@localixai/dataview": "workspace:*",
+        "@localixai/path-containment": "workspace:*",
+        "@localixai/search": "workspace:*",
+        "@localixai/visual-feedback": "workspace:*",
+        "clsx": "^2.1.1",
+        "hono": "^4.12.30",
+        "tailwind-merge": "^3.7.0",
+        "zod": "^4.4.3",
+        "zustand": "^5.0.16",
+      },
+      "devDependencies": {
+        "@types/bun": "1.4.3",
+        "@types/react": "^19.3.0",
+        "@types/react-dom": "^19.3.0",
+        "react-dom": "^19.3.1",
+        "shx": "^0.4.0",
+        "typescript": "^7.0.2",
+      },
+      "peerDependencies": {
+        "react": "^19.3.1",
       },
     },
     "packages/notifications": {
@@ -801,40 +835,6 @@
         "@types/bun": "1.4.3",
         "shx": "^0.4.0",
         "typescript": "^7.0.2",
-      },
-    },
-    "packages/plugin-kit-compiler": {
-      "name": "@localixai/plugin-kit-compiler",
-      "version": "0.1.0",
-      "dependencies": {
-        "typescript": "6.0.3",
-      },
-    },
-    "packages/plugin-sdk": {
-      "name": "@localixai/plugin-sdk",
-      "version": "0.1.0",
-      "dependencies": {
-        "@localixai/agent": "workspace:*",
-        "@localixai/dataview": "workspace:*",
-        "@localixai/path-containment": "workspace:*",
-        "@localixai/search": "workspace:*",
-        "@localixai/visual-feedback": "workspace:*",
-        "clsx": "^2.1.1",
-        "hono": "^4.12.30",
-        "tailwind-merge": "^3.7.0",
-        "zod": "^4.4.3",
-        "zustand": "^5.0.16",
-      },
-      "devDependencies": {
-        "@types/bun": "1.4.3",
-        "@types/react": "^19.3.0",
-        "@types/react-dom": "^19.3.0",
-        "react-dom": "^19.3.1",
-        "shx": "^0.4.0",
-        "typescript": "^7.0.2",
-      },
-      "peerDependencies": {
-        "react": "^19.3.1",
       },
     },
     "packages/search": {
@@ -887,8 +887,8 @@
         "@localixai/api": "workspace:*",
         "@localixai/change-feed": "workspace:*",
         "@localixai/kit": "workspace:*",
-        "@localixai/plugin-kit-compiler": "workspace:*",
-        "@localixai/plugin-sdk": "workspace:*",
+        "@localixai/mini-app-kit-compiler": "workspace:*",
+        "@localixai/mini-app-sdk": "workspace:*",
         "@localixai/source-lint": "workspace:*",
         "@localixai/testing": "workspace:*",
       },
@@ -1229,6 +1229,10 @@
 
     "@localixai/markdown": ["@localixai/markdown@workspace:packages/markdown"],
 
+    "@localixai/mini-app-kit-compiler": ["@localixai/mini-app-kit-compiler@workspace:packages/mini-app-kit-compiler"],
+
+    "@localixai/mini-app-sdk": ["@localixai/mini-app-sdk@workspace:packages/mini-app-sdk"],
+
     "@localixai/notifications": ["@localixai/notifications@workspace:packages/notifications"],
 
     "@localixai/os-open": ["@localixai/os-open@workspace:packages/os-open"],
@@ -1236,10 +1240,6 @@
     "@localixai/oxlint-rules": ["@localixai/oxlint-rules@workspace:packages/oxlint-rules"],
 
     "@localixai/path-containment": ["@localixai/path-containment@workspace:packages/path-containment"],
-
-    "@localixai/plugin-kit-compiler": ["@localixai/plugin-kit-compiler@workspace:packages/plugin-kit-compiler"],
-
-    "@localixai/plugin-sdk": ["@localixai/plugin-sdk@workspace:packages/plugin-sdk"],
 
     "@localixai/scripts": ["@localixai/scripts@workspace:scripts"],
 
@@ -3827,7 +3827,7 @@
 
     "@kubernetes/client-node/jsonpath-plus": ["jsonpath-plus@10.4.0", "", { "dependencies": { "@jsep-plugin/assignment": "^1.3.0", "@jsep-plugin/regex": "^1.0.4", "jsep": "^1.4.0" }, "bin": { "jsonpath": "bin/jsonpath-cli.js", "jsonpath-plus": "bin/jsonpath-cli.js" } }, "sha512-T92WWatJXmhBbKsgH/0hl+jxjdXrifi5IKeMY02DWggRxX0UElcbVzPlmgLTbvsPeW1PasQ6xE2Q75stkhGbsA=="],
 
-    "@localixai/plugin-kit-compiler/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
+    "@localixai/mini-app-kit-compiler/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
 
     "@noble/curves/@noble/hashes": ["@noble/hashes@2.2.0", "", {}, "sha512-IYqDGiTXab6FniAgnSdZwgWbomxpy9FtYvLKs7wCUs2a8RkITG+DFGO1DM9cr+E3/RgADRpFjrKVaJ1z6sjtEg=="],
 

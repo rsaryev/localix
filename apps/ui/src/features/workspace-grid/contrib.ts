@@ -1,5 +1,5 @@
 import { SquareStack } from 'lucide-react'
-import type { PluginUiHost, UiAnchorNode } from '@localixai/plugin-sdk/ui'
+import type { PluginUiHost, UiAnchorNode } from '@localixai/mini-app-sdk/ui'
 import { listUiLocations } from '@/shared/contrib/uiLocations'
 
 const ROOT = 'localix://ui/page/catalog'

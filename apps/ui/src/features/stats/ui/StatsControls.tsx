@@ -1,4 +1,4 @@
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { EmptyHint } from '@localixai/kit/empty-hint'
 import { TextAction } from '@localixai/kit/text-action'
 import type { UsageStatRow } from '@/shared/api/contracts'

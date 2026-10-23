@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import type { UiNavigationAction } from '@localixai/plugin-sdk/ui'
+import type { UiNavigationAction } from '@localixai/mini-app-sdk/ui'
 import { setUiCommands } from '@/shared/contrib/uiCommands'
 import { registerUiLocation, unregisterUiLocation } from '@/shared/contrib/uiLocations'
 import { viewUiNavigationAction } from './uiNavigation'

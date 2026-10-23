@@ -1,5 +1,5 @@
 import { ChevronDown } from 'lucide-react'
-import type { IconComponent, MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { IconComponent, MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { Button } from '@localixai/kit/button'
 import {
   DropdownMenu,

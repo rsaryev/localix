@@ -1,7 +1,7 @@
 import type { MutableRefObject } from 'react'
 import { ArrowUpRight, Filter, Maximize2 } from 'lucide-react'
 import { formatCell, resolveAlign, type TableColumn, type TableRow } from '@localixai/dataview'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { CellEditor } from './CellEditor'
 import type { CellView } from './CellValueViewer'
 import { CELL_ACTION, cellTitle, justify } from './tableGridModel'

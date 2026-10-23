@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { AlertTriangle, PlugZap } from 'lucide-react'
 
 import type { SecretBinding, SecretMeta } from '@localixai/api/client'
-import type { Problem } from '@localixai/plugin-sdk/ui/problems'
+import type { Problem } from '@localixai/mini-app-sdk/ui/problems'
 import { Button } from '@localixai/kit/button'
 import {
   Dialog,

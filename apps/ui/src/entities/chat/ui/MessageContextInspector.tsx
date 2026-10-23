@@ -12,8 +12,8 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from '@localixai/kit/popover'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { useCopied } from '@localixai/plugin-sdk/ui/interactions'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { useCopied } from '@localixai/mini-app-sdk/ui/interactions'
 import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
 import { navigateUi } from '@/shared/lib/uiNavigation'
 import { linkFromRef } from '../model/contextLinks'

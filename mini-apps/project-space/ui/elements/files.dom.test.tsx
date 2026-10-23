@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { act } from 'react'
-import { bindPluginUiTransport } from '@localixai/plugin-sdk/ui/transport'
+import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
 import { CanvasProvider } from '@localixai/kit/canvas'
 import { registerDom } from '@localixai/kit/testing'
 import { viewOf } from './index'

@@ -1,4 +1,4 @@
-import { inertLine } from '@localixai/plugin-sdk/ui/utilities'
+import { inertLine } from '@localixai/mini-app-sdk/ui/utilities'
 
 // Console/tool output is tail-relevant (errors and results land at the end) and
 // the viewer pins to the bottom, so when output is pathologically large we render

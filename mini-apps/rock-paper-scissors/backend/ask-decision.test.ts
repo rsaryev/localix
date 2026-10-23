@@ -7,8 +7,8 @@ import type {
   DecisionHost,
   DecisionOptions,
   DecisionOutcome,
-} from '@localixai/plugin-sdk/backend'
-import { verifySealed } from '@localixai/plugin-sdk/sealed'
+} from '@localixai/mini-app-sdk/backend'
+import { verifySealed } from '@localixai/mini-app-sdk/sealed'
 
 import { viewFor } from '../shared/game'
 import { DECISION_PURPOSE } from './ask-decision'

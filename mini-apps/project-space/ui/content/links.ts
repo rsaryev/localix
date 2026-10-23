@@ -1,4 +1,4 @@
-import type { MessageContextBindingDraft } from '@localixai/plugin-sdk/ui'
+import type { MessageContextBindingDraft } from '@localixai/mini-app-sdk/ui'
 import type { RefProps } from '../../shared/types/app-links'
 
 /**

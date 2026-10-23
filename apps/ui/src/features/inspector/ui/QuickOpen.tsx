@@ -14,7 +14,7 @@ import {
   CommandItem,
 } from '@localixai/kit/command'
 import { CommandHints } from '@/shared/ui/command-hints'
-import { baseName, dirName } from '@localixai/plugin-sdk/ui/utilities'
+import { baseName, dirName } from '@localixai/mini-app-sdk/ui/utilities'
 import type { FileSearchEntry } from '@/shared/api/contracts'
 import { openFileInGrid, useRecentFiles } from '@/shared/lib/recentFiles'
 import { loadFileEditor } from '../model/fileEditorLoader'

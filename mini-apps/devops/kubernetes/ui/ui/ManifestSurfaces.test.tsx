@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
-import { bindPluginUiTestDoubles } from '@localixai/plugin-sdk/ui/testing'
+import { bindPluginUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { initialManifestEditorState } from '../model/manifestEditor'
 import type { ManifestEditorModel } from '../model/useManifestEditor'

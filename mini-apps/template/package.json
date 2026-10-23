@@ -6,7 +6,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "prepare:sdk": "bunx turbo build --filter=@localixai/plugin-sdk --output-logs=errors-only",
+    "prepare:sdk": "bunx turbo build --filter=@localixai/mini-app-sdk --output-logs=errors-only",
     "dev": "bun run prepare:sdk && bun preview/serve.ts",
     "build": "bun run prepare:sdk && bun run type-check && vite build && bun build backend/index.ts --target=bun --outfile=dist/backend/index.js",
     "preview": "bun preview/serve.ts --preview",
@@ -15,7 +15,7 @@
     "test": "bun test ui backend shared"
   },
   "dependencies": {
-    "@localixai/plugin-sdk": "workspace:*",
+    "@localixai/mini-app-sdk": "workspace:*",
     "hono": "^4.12.30",
     "lucide-react": "^1.61.0",
     "react": "^19.3.1",

@@ -3,7 +3,7 @@ import {
   resourceMessageBindingDraft,
   snippetMessageBindingDraft,
   type PublishMessageContext,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 
 import type { ReaderChapter, ReaderDocument } from '../shared/contracts'
 import type { ReaderPreferences } from './model'

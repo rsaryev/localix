@@ -1,5 +1,5 @@
 import { ChevronDown, ListFilter, X } from 'lucide-react'
-import type { IconComponent, MenuEntry, MenuSubmenuEntry } from '@localixai/plugin-sdk/ui'
+import type { IconComponent, MenuEntry, MenuSubmenuEntry } from '@localixai/mini-app-sdk/ui'
 import { Button } from '@localixai/kit/button'
 import {
   DropdownMenu,

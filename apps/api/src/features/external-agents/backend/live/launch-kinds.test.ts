@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { detectLaunchCwd, detectLaunchKind } from './launch-kinds'
-import { shellQuote } from '@localixai/plugin-sdk/backend'
+import { shellQuote } from '@localixai/mini-app-sdk/backend'
 
 /**
  * The declaration a delegated launch leads with, written the way `owned-session-routes.ts` writes

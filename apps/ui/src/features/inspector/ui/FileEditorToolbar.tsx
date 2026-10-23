@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
 import { Check, Code, Columns2, Copy, Eye, Globe, MoreHorizontal, Save } from 'lucide-react'
-import { useCopied } from '@localixai/plugin-sdk/ui/interactions'
+import { useCopied } from '@localixai/mini-app-sdk/ui/interactions'
 import { formatChordText } from '@/shared/lib/keybindings'
 import { CommentsManager } from '@/shared/ui/comments/CommentsManager'
-import type { CommentActionContribution } from '@localixai/plugin-sdk/ui'
-import type { Comment } from '@localixai/plugin-sdk/ui/comments'
+import type { CommentActionContribution } from '@localixai/mini-app-sdk/ui'
+import type { Comment } from '@localixai/mini-app-sdk/ui/comments'
 import { IconButton } from '@localixai/kit/icon-button'
 import {
   DropdownMenu,

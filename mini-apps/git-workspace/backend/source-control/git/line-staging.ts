@@ -17,7 +17,7 @@
  * the `-- <path>` pathspec and the built patch's paths are both root-relative.
  */
 import { createHash } from 'node:crypto'
-import { ApiError } from '@localixai/plugin-sdk/backend'
+import { ApiError } from '@localixai/mini-app-sdk/backend'
 import type { FileDiffLines, LineStageMode } from '../contracts'
 import { firstLine, runGitWithInput, type GitRunner } from './cli'
 import { readDiff } from './diff-read'

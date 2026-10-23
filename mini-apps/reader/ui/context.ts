@@ -1,7 +1,7 @@
 import {
   PUBLISHED_MESSAGE_CONTEXT_MAX_BINDINGS,
   type PublishedMessageContext,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 
 export type ReaderPaneId = 'primary' | 'secondary'
 

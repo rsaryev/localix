@@ -1,7 +1,7 @@
-import { useStoreChanges } from '@localixai/plugin-sdk/ui/store-resource'
+import { useStoreChanges } from '@localixai/mini-app-sdk/ui/store-resource'
 import { useEffect, useMemo } from 'react'
-import { useVisiblePolling, useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
-import type { Problem } from '@localixai/plugin-sdk/ui/problems'
+import { useVisiblePolling, useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
+import type { Problem } from '@localixai/mini-app-sdk/ui/problems'
 import type { DbConnectionInfo, UpdateConfigRequest } from '../dbClient'
 import {
   disconnectConnection,

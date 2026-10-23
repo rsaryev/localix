@@ -5,8 +5,8 @@ import {
   bindPluginUiRuntime,
   type PluginOpenFileRequest,
   type PluginUiRuntime,
-} from '@localixai/plugin-sdk/ui/runtime'
-import { WorkItemSessionProvider } from '@localixai/plugin-sdk/ui/work-item-session'
+} from '@localixai/mini-app-sdk/ui/runtime'
+import { WorkItemSessionProvider } from '@localixai/mini-app-sdk/ui/work-item-session'
 
 import type { KanbanArtifact } from '../../shared/contracts'
 import { ArtifactList } from './artifacts'

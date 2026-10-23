@@ -1,5 +1,5 @@
-import { snippetMessageBindingDraft } from '@localixai/plugin-sdk/ui'
-import { useComments } from '@localixai/plugin-sdk/ui/comments'
+import { snippetMessageBindingDraft } from '@localixai/mini-app-sdk/ui'
+import { useComments } from '@localixai/mini-app-sdk/ui/comments'
 import type { MessageAttachment } from '@/shared/api/contracts'
 
 /** Every review binding is a snippet, and its token IS its comment's id. */

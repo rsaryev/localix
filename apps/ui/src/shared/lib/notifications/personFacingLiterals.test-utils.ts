@@ -104,7 +104,7 @@ export function personFacingLiterals(source: string, ui = true): PersonFacingLit
 const ROOTS = [
   resolve(import.meta.dir, '../../..'),
   resolve(import.meta.dir, '../../../../../../plugins'),
-  resolve(import.meta.dir, '../../../../../../packages/plugin-sdk/src'),
+  resolve(import.meta.dir, '../../../../../../packages/mini-app-sdk/src'),
 ]
 
 /** A plugin's backend and shared code speak to its UI and the agent, not to a person directly. */

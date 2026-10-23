@@ -1,4 +1,4 @@
-import type { PluginProblem } from '@localixai/plugin-sdk/backend'
+import type { PluginProblem } from '@localixai/mini-app-sdk/backend'
 
 import { recordPluginProblem } from '../notifications/conditions/plugins'
 

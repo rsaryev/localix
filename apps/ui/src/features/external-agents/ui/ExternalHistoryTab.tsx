@@ -1,4 +1,4 @@
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import type { WorkItem } from '@/shared/lib/workItem'
 import ExternalHistorySidebar from './ExternalHistorySidebar'
 

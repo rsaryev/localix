@@ -1,4 +1,4 @@
-import type { StatusItemContribution, StatusItemState } from '@localixai/plugin-sdk/ui'
+import type { StatusItemContribution, StatusItemState } from '@localixai/mini-app-sdk/ui'
 
 import { StatusItemBoundary, useStatusItemState } from '@/shared/contrib/statusItems'
 import { Chip } from '@localixai/kit/chip'

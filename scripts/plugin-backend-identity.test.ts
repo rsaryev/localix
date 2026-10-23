@@ -6,7 +6,7 @@ import { discoverBundledPlugins } from '../apps/api/src/features/plugins/discove
 import { pluginBackendIdentityProblems } from '../apps/api/src/features/plugins/backend-host-plan'
 import { inspectPluginTools } from '../apps/api/src/features/plugins/native'
 import { resolvePluginConfig } from '../apps/api/src/features/plugins/config'
-import type { PluginHostServices } from '@localixai/plugin-sdk/backend'
+import type { PluginHostServices } from '@localixai/mini-app-sdk/backend'
 
 /**
  * A host that says yes to everything, so a plugin gets as far as declaring its contributions.

@@ -1,5 +1,5 @@
 import { useCallback, useSyncExternalStore } from 'react'
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 
 // Board card density — a persistent per-user preference (like the column-collapse
 // and editor Outline toggles). `compact` tightens the loose top-level cards to the

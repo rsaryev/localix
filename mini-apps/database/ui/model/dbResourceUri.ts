@@ -1,4 +1,4 @@
-import { localixResourceUri } from '@localixai/plugin-sdk/navigation'
+import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 
 /** Resource URI for a database entity, matching the database provider grammar
  *  (`localix://resource/db/<connId>/_/<schema>/<table>[/<column>]`; `_` = reserved db segment).

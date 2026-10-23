@@ -1,5 +1,5 @@
-import type { SessionSurfaceProps } from '@localixai/plugin-sdk/ui'
-import { usePluginSessions } from '@localixai/plugin-sdk/ui/runtime-hooks'
+import type { SessionSurfaceProps } from '@localixai/mini-app-sdk/ui'
+import { usePluginSessions } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 import { useGitPoller } from '../source-control/model/useGitPoller'
 
 /**

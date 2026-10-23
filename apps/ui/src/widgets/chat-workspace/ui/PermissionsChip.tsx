@@ -15,7 +15,7 @@ import { Spinner } from '@localixai/kit/spinner'
 import { Button } from '@localixai/kit/button'
 import { IconButton } from '@localixai/kit/icon-button'
 import { backendClient } from '@/shared/api/client'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { ComposerChip } from '@localixai/kit/composer-chip'
 
 /**

@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import type { CatalogModel } from '@localixai/agent/catalog'
-import { useInfiniteScroll } from '@localixai/plugin-sdk/ui/visibility'
+import { useInfiniteScroll } from '@localixai/mini-app-sdk/ui/visibility'
 import { availableModelFilters, filterModels, type ModelFilter } from './filterModels'
 
 export const MODEL_PAGE_SIZE = 50

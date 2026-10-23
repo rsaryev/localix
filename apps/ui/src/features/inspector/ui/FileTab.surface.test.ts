@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { isValidUiLocationParamSchema } from '@localixai/plugin-sdk/ui'
+import { isValidUiLocationParamSchema } from '@localixai/mini-app-sdk/ui'
 import fileOpen from './FileTab.surface'
 
 describe('file.open — the agent can point at an exact span', () => {

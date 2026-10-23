@@ -3,8 +3,8 @@
 import * as React from 'react'
 import { DropdownMenu as DropdownMenuPrimitive } from 'radix-ui'
 import { Check } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { useOverlayFocus } from '@localixai/plugin-sdk/ui/focus'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { useOverlayFocus } from '@localixai/mini-app-sdk/ui/focus'
 import { OVERLAY_ENTER_EXIT, OVERLAY_SLIDE } from './overlay-motion'
 import { createMenuRows } from './menu-rows'
 import {

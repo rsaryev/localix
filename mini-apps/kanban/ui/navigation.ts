@@ -1,5 +1,5 @@
-import type { UiAnchorWorkItem } from '@localixai/plugin-sdk/ui'
-import { pluginWorkspace } from '@localixai/plugin-sdk/ui/runtime'
+import type { UiAnchorWorkItem } from '@localixai/mini-app-sdk/ui'
+import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 
 import { BOARD_KIND, parseKanbanUri, TASK_KIND } from '../shared/resource'
 

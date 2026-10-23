@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { PassThrough, Writable } from 'node:stream'
-import { shellQuote } from '@localixai/plugin-sdk/backend'
+import { shellQuote } from '@localixai/mini-app-sdk/backend'
 import { createKubeConfig } from './api-internals'
 import { createBunApiClient } from './api-http'
 import { createBunWebSocketHandler } from './api-websocket'

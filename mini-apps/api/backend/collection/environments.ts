@@ -26,7 +26,7 @@ import { constants } from 'node:fs'
 import { copyFile, mkdir, readdir, readFile, rm, stat } from 'node:fs/promises'
 import type { Dirent } from 'node:fs'
 import path from 'node:path'
-import { atomicWriteFile } from '@localixai/plugin-sdk/backend'
+import { atomicWriteFile } from '@localixai/mini-app-sdk/backend'
 import { resolveWithin } from '@localixai/path-containment'
 import type { Pair } from '../request-spec'
 

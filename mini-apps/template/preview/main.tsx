@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Workspace } from '../ui/Workspace'
-import { bindPluginUiTransport } from '@localixai/plugin-sdk/ui/transport'
+import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
 // Only the standalone shell initializes the host theme; inside Localix the host owns it.
 import { useTheme as usePreviewTheme } from '@localixai/kit/theme'
 import './style.css'

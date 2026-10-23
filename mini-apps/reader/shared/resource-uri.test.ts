@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { resourceNav } from '@localixai/plugin-sdk/backend'
+import { resourceNav } from '@localixai/mini-app-sdk/backend'
 
 import { parseReaderUri, readerBookUri, readerChapterUri, readerRootUri } from './resource-uri'
 

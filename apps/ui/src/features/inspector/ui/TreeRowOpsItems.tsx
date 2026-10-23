@@ -1,7 +1,7 @@
 import { ContextMenuItem, ContextMenuSeparator } from '@localixai/kit/context-menu'
 import { ChordHint } from '@localixai/kit/chord-hint'
 import { CMD } from '@/shared/lib/keybindings'
-import { relativePath } from '@localixai/plugin-sdk/ui/utilities'
+import { relativePath } from '@localixai/mini-app-sdk/ui/utilities'
 import { REVEAL_IN_OS_LABEL } from '@localixai/kit/environment'
 import type { TreeRowOps, TreeRowTarget } from './treeRowOps'
 

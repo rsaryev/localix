@@ -42,7 +42,7 @@ small number of ports rather than one per use case.
 
 Primary ports: the API exposes typed Hono routes consumed by `apps/ui/src/shared/api/client.ts`;
 `scripts/api-contract-guard.test.ts` keeps the UI on that typed client. Plugins drive the host
-through contracts in `packages/plugin-sdk/src/manifest/index.ts`.
+through contracts in `packages/mini-app-sdk/src/manifest/index.ts`.
 
 Secondary ports: `AgentRuntime` in `packages/agent/src/runtime/index.ts` and `ModelSession` in
 `packages/agent/src/runtime/model-session.ts`. The engine is one adapter, created by `createEngine`

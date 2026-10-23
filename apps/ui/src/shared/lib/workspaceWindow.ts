@@ -1,7 +1,7 @@
 // Synchronous context injected before any store imports. Workspace layout and navigation
 // are private to each native window; settings, server data and composer history stay shared.
 import { tauriInvoke } from './tauri'
-import { saveString } from '@localixai/plugin-sdk/ui/storage'
+import { saveString } from '@localixai/mini-app-sdk/ui/storage'
 
 export function workspaceStorageKey(key: string): string {
   const id = typeof window === 'undefined' ? undefined : window.__LOCALIX_WORKSPACE?.id

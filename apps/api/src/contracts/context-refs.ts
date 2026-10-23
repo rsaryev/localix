@@ -288,4 +288,4 @@ export {
   resourceParentPartial,
   type ResourceBrowseResult,
   type ResourceNavTarget,
-} from '@localixai/plugin-sdk/resource-refs'
+} from '@localixai/mini-app-sdk/resource-refs'

@@ -1,6 +1,6 @@
 import { resolve as resolvePath } from 'node:path'
 
-import { CONTEXT_UNAVAILABLE_KIND } from '@localixai/plugin-sdk/backend'
+import { CONTEXT_UNAVAILABLE_KIND } from '@localixai/mini-app-sdk/backend'
 
 import { formatRefExpansionBlock } from '../../contracts/context-refs'
 import { refKindSpec } from '../../contracts/context-ref-kinds'

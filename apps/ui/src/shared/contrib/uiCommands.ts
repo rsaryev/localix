@@ -1,5 +1,5 @@
-import type { UiAnchorOverlayParam, UiLocationEffect } from '@localixai/plugin-sdk/ui'
-import { localixUiUri } from '@localixai/plugin-sdk/navigation'
+import type { UiAnchorOverlayParam, UiLocationEffect } from '@localixai/mini-app-sdk/ui'
+import { localixUiUri } from '@localixai/mini-app-sdk/navigation'
 
 export type UiCommandParams = Readonly<Record<string, UiAnchorOverlayParam>>
 

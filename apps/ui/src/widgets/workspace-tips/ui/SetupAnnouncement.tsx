@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { loadString } from '@localixai/plugin-sdk/ui/storage'
+import { loadString } from '@localixai/mini-app-sdk/ui/storage'
 import { openSetup, SETUP_DONE_KEY, useSetupOpen } from '@/shared/lib/setupDialog'
 
 // The dialog, the carousel and every scene's stylesheet load only when setup opens, so the

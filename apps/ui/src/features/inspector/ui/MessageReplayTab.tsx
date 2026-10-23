@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp, CornerUpLeft, History, Library, Pin, PinOff } f
 import { isToolBackedItem } from '@localixai/agent/agents/items'
 import type { AgentItem, AgentSource } from '@localixai/agent/agents'
 import { useChatStore } from '@/entities/chat/model/store'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { findSessionInState } from '@/entities/chat/model/findSession'
 import { answerSourcesOfMessage } from '@/entities/chat/model/sessionSources'
 import { SourceRow } from '@/entities/chat/ui/sources/SourceRow'
@@ -15,10 +15,10 @@ import { WorkbenchToolbar, WorkbenchToolbarSection } from '@localixai/kit/workbe
 import { useMessageFocusStore } from '@/shared/lib/messageFocusBus'
 import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
 import { motionSafeScrollBehavior } from '@localixai/kit/environment'
-import { formatElapsed } from '@localixai/plugin-sdk/ui/utilities'
+import { formatElapsed } from '@localixai/mini-app-sdk/ui/utilities'
 import { computeReplayNav } from '../model/replayNav'
 import { MessageTurnCost, turnCostIcon } from './MessageTurnCost'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 
 /**
  * Activity work item — mirrors the tool outputs (bash, file diffs, reads, …)

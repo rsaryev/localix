@@ -1,10 +1,10 @@
 import { useCallback, useState } from 'react'
-import { acknowledgeInline } from '@localixai/plugin-sdk/ui'
+import { acknowledgeInline } from '@localixai/mini-app-sdk/ui'
 import type { Market, PrecisionMode } from '../../backend/contracts'
-import { ProblemLine } from '@localixai/plugin-sdk/ui/components'
+import { ProblemLine } from '@localixai/mini-app-sdk/ui/components'
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { useVisiblePolling } from '@localixai/plugin-sdk/ui/visibility'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { useVisiblePolling } from '@localixai/mini-app-sdk/ui/visibility'
 import { TradingApiError, tradingApi } from '../api/tradingApi'
 import { useTradingProblem } from '../problems'
 import { useTradingStream } from '../model/useTradingStream'
@@ -12,7 +12,7 @@ import { buildOrderBook, type OrderBookView } from '../model/orderBookRows'
 import { formatPrice, formatSize } from '../model/formatQuote'
 import { sizeColumn, sizeUnit } from '../../backend/size-unit'
 import { askAgent, buildBookLevelPrefill } from '../model/askAgent'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 
 const VISIBLE_DEPTH = 14
 

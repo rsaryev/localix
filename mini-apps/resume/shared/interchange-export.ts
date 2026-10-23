@@ -1,4 +1,4 @@
-import { richTextToText } from '@localixai/plugin-sdk/rich-text'
+import { richTextToText } from '@localixai/mini-app-sdk/rich-text'
 import type { ResumeDocument } from './schema'
 import { interchangeKeys } from './interchange-contract'
 

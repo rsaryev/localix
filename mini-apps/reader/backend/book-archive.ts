@@ -1,6 +1,6 @@
 import { posix } from 'node:path'
 import { isAtOrUnder } from '@localixai/path-containment'
-import { mediaTypeForPath } from '@localixai/plugin-sdk/backend'
+import { mediaTypeForPath } from '@localixai/mini-app-sdk/backend'
 import { strFromU8, unzipSync } from 'fflate'
 import type { Document as XmlDocument } from '@xmldom/xmldom'
 

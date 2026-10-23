@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 
-import { recordingPluginUiHost } from '@localixai/plugin-sdk/ui/testing'
+import { recordingPluginUiHost } from '@localixai/mini-app-sdk/ui/testing'
 import type {
   RailSectionContribution,
   RailViewletContribution,
@@ -8,7 +8,7 @@ import type {
   StatusItemContribution,
   UiAnchorContribution,
   WorkItemKindContribution,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { registerUi } from './register'
 
 /**

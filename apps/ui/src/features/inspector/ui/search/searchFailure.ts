@@ -1,5 +1,5 @@
-import type { Problem, ProblemRecovery } from '@localixai/plugin-sdk/ui/problems'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import type { Problem, ProblemRecovery } from '@localixai/mini-app-sdk/ui/problems'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 import { ApiError } from '@/shared/api/failure'
 import { confirmAndOpenExternal } from '@/shared/lib/externalLink'

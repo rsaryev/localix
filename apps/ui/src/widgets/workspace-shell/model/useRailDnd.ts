@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useState } from 'react'
-import { setCompactDragImage } from '@localixai/plugin-sdk/ui/message-binding-drag'
+import { setCompactDragImage } from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import { computeDropIndex, type PinnedRailArea, type RailArea } from './railLayout'
 import {
   IDLE_DRAG,

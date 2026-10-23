@@ -4,7 +4,7 @@
  * SDK's `widestCallClass`, so a `DELETE` cannot ride behind a `list` (`api-tool.ts`).
  */
 
-import { UNKNOWN_CALL_CLASS, type CallClass } from '@localixai/plugin-sdk/backend'
+import { UNKNOWN_CALL_CLASS, type CallClass } from '@localixai/mini-app-sdk/backend'
 
 const READ_CALL: CallClass = { effect: 'read' }
 const FILES_CALL: CallClass = { effect: 'files' }

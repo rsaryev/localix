@@ -2,9 +2,9 @@
  * PURE `localix://resource/api` URI grammar — the one source of truth for this plugin's resource
  * tree, shared by the resource provider, the search provider, the context provider AND THE UI.
  *
- * The only import is `@localixai/plugin-sdk/navigation`, and that is deliberate: it is a leaf
+ * The only import is `@localixai/mini-app-sdk/navigation`, and that is deliberate: it is a leaf
  * module with no `node:` reach, exactly as trading's `uri.ts` imports it. The BARREL
- * (`@localixai/plugin-sdk/backend`) must never be imported here — it re-exports
+ * (`@localixai/mini-app-sdk/backend`) must never be imported here — it re-exports
  * `createUserEntityStore`, which reaches `node:fs/promises`; `ui/register.tsx` imports this file
  * and is loaded EAGERLY at app boot, so a barrel import throws in the browser and the whole app
  * renders a black screen. Both typechecks pass. `vite build` passes. Only running it fails.
@@ -23,7 +23,7 @@
  * `.`/`..` segment is rejected outright: it can only be a crafted traversal, never a real name.
  */
 
-import { localixResourceUri, parseLocalixUri } from '@localixai/plugin-sdk/navigation'
+import { localixResourceUri, parseLocalixUri } from '@localixai/mini-app-sdk/navigation'
 
 /**
  * The provider segment, spelled here because this file must stay off the backend barrel (see the

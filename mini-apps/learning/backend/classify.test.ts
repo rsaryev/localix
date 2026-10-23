@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import type { CallClass } from '@localixai/plugin-sdk/backend'
+import type { CallClass } from '@localixai/mini-app-sdk/backend'
 import { classifyLearningCourseCall } from './tool'
 
 const rows: Array<[string, unknown, CallClass]> = [

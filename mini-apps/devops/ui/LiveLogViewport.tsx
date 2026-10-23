@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { Pause, Play } from 'lucide-react'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { Button } from '@localixai/kit/button'
 import { LiveLogRow } from './LiveLogRow'
 import { isLogViewportNearBottom, type LogLine } from './model/logLines'

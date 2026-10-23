@@ -1,6 +1,6 @@
 import { GitBranch, Tag } from 'lucide-react'
 import type { RepoRef } from '../../../backend/source-control/contracts'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { CommitLaneRow } from '../model/commitLanes'
 
 /** Pixel width per rail lane. The node dot sits at the lane's horizontal centre. */

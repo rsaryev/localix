@@ -1,11 +1,11 @@
-import { offerKeyToFocusedSurface } from '@localixai/plugin-sdk/ui/focus'
+import { offerKeyToFocusedSurface } from '@localixai/mini-app-sdk/ui/focus'
 import { isPrimaryModifier } from '@localixai/kit/keybindings'
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { bindPluginUiComponents } from '@localixai/plugin-sdk/ui'
-import { problemReportTitle } from '@localixai/plugin-sdk/ui/problems'
-import type { PluginProblemLineProps } from '@localixai/plugin-sdk/ui/components'
+import { bindPluginUiComponents } from '@localixai/mini-app-sdk/ui'
+import { problemReportTitle } from '@localixai/mini-app-sdk/ui/problems'
+import type { PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
 import { registerDom } from '@localixai/kit/testing'
-import { bindPluginUiTransport } from '@localixai/plugin-sdk/ui'
+import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui'
 
 import { readerWorkspaceSelectionKey } from './model'
 

@@ -2,7 +2,7 @@
  * generated dialect script is reviewed in Monaco and only then applied or opened in a console. */
 import { useState } from 'react'
 import { AlertCircle, Eye, Plus, RotateCcw } from 'lucide-react'
-import { ProblemLine } from '@localixai/plugin-sdk/ui/components'
+import { ProblemLine } from '@localixai/mini-app-sdk/ui/components'
 import { Button } from '@localixai/kit/button'
 import { WorkbenchToolbar } from '@localixai/kit/workbench-toolbar'
 import type { DbConnectionInfo, DbTableSchema } from '../dbClient'

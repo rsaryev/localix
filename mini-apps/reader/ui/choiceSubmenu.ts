@@ -1,4 +1,4 @@
-import type { IconComponent, MenuSubmenuEntry } from '@localixai/plugin-sdk/ui'
+import type { IconComponent, MenuSubmenuEntry } from '@localixai/mini-app-sdk/ui'
 
 /** One option of a reader pick, as every menu that offers it draws it. */
 export interface ReaderMenuChoice<T> {

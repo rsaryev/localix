@@ -1,4 +1,4 @@
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { FLOW, nameLines, type LaidEdge, type LaidNode } from '../../shared/types/flow-layout'
 import type { FlowNode } from '../../shared/types/flow-text'
 import { shapePath } from './shape-path'

@@ -16,8 +16,12 @@
  * notices from the same call), and `toErrorInfo` already puts the friendly sentence in
  * `message` with the CLI's raw words in `detail`. That IS the `Problem` shape.
  */
-import type { SearchHit, SearchProvider, SearchProviderResult } from '@localixai/plugin-sdk/backend'
-import { bestFieldScore, buildResourceUri } from '@localixai/plugin-sdk/backend'
+import type {
+  SearchHit,
+  SearchProvider,
+  SearchProviderResult,
+} from '@localixai/mini-app-sdk/backend'
+import { bestFieldScore, buildResourceUri } from '@localixai/mini-app-sdk/backend'
 import { mapDockerError, toErrorInfo } from './errors'
 import { PROVIDER } from './resource-nodes'
 

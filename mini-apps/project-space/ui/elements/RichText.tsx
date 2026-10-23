@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Checkbox } from '@localixai/kit/checkbox'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import {
   parseInline,
   parseRichText,

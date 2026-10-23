@@ -9,7 +9,7 @@ import type {
   DocExtractMetadata,
   DocExtractResult,
   DocumentExtractPort,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import type { DocumentMetadata, ExtractedDocument } from './documents/contracts'
 import type { DocumentsService } from './documents/service'
 

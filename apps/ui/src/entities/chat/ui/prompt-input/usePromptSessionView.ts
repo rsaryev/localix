@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 
 import type { SessionAgentRoute, SessionQueueItem } from '@/shared/api/contracts'
 import { toast } from '@/shared/lib/notify'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 import { findSessionInState } from '../../model/findSession'
 import { persistPinnedSkills } from '../../model/pinnedSkillMutations'

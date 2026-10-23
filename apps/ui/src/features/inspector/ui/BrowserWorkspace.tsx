@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { hostLabel } from '@/shared/lib/url'
-import { snippetMessageBindingDraft } from '@localixai/plugin-sdk/ui'
+import { snippetMessageBindingDraft } from '@localixai/mini-app-sdk/ui'
 import { TOOL } from '@localixai/api/tool-names'
 import { publishLiveTabMessageContext } from '@/entities/workspace-grid/model/liveTabMessageContext'
 import { TabPanel, useTabPanelIds } from '@localixai/kit/tabs'

@@ -1,4 +1,4 @@
-import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
+import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'
 import type { KubeResourceKind } from '../../backend/contracts'
 import { useKubernetesResourceTab } from '../model/useKubernetesResourceTab'
 import { KubernetesResourceContent } from './KubernetesResourceContent'

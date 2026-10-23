@@ -13,7 +13,7 @@ import { createCourseDraft } from './course-draft'
 import { ModuleGenerator, moduleToWarm } from './module-generation'
 import { register } from './index'
 import { z } from 'zod'
-import type { PluginContext, PluginWakeRequest } from '@localixai/plugin-sdk/backend'
+import type { PluginContext, PluginWakeRequest } from '@localixai/mini-app-sdk/backend'
 
 const roots: string[] = []
 

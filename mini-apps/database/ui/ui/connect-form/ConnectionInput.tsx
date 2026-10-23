@@ -3,9 +3,12 @@ import { AlertCircle, Check, Database, File, FolderOpen, Link2 } from 'lucide-re
 import { Button } from '@localixai/kit/button'
 import { Input } from '@localixai/kit/input'
 import { TextAction } from '@localixai/kit/text-action'
-import { pluginFiles } from '@localixai/plugin-sdk/ui/runtime'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { SegmentedControl, SegmentedControlItem } from '@localixai/plugin-sdk/ui/segmented-control'
+import { pluginFiles } from '@localixai/mini-app-sdk/ui/runtime'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from '@localixai/mini-app-sdk/ui/segmented-control'
 import type { ConnectFormState } from './useConnectForm'
 
 function ConnectionField({

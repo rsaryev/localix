@@ -79,7 +79,7 @@ export const LISTS: readonly KitCatalogEntry[] = [
     use: 'Feedback while something is dragged over a surface; the behaviour stays yours.',
   },
   {
-    specifier: '@localixai/plugin-sdk/ui/components',
+    specifier: '@localixai/mini-app-sdk/ui/components',
     category: 'lists',
     provider: 'sdk',
     exports: ['TableGrid', 'FileTab', 'ProblemLine'],

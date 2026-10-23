@@ -1,4 +1,4 @@
-import { isWorkbenchPlugin } from '@localixai/plugin-sdk/manifest-primitives'
+import { isWorkbenchPlugin } from '@localixai/mini-app-sdk/manifest-primitives'
 import { pluginCapabilityLabels, pluginIssueSummary } from '@localixai/api/plugin-presentation'
 import type { PluginRecord, Project } from '@/shared/api/contracts'
 import { projectScopeLabel } from '@/shared/lib/projectScope'
@@ -12,7 +12,7 @@ import {
   SettingRegistryRow,
   type SettingRegistryMetaItem,
 } from '../settingRegistry'
-import { pluginLabel } from '@localixai/plugin-sdk/manifest-label'
+import { pluginLabel } from '@localixai/mini-app-sdk/manifest-label'
 
 /**
  * One installed plugin as a registry row: what it provides, where it came from,

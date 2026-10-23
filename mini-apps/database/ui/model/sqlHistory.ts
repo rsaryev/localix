@@ -1,7 +1,7 @@
 // Per-connection SQL query history, persisted in localStorage. The ordering
 // primitive `promoteHistory` is pure + unit-tested; the load/save wrappers add the
 // storage boundary. Most-recent is index 0; exact duplicates float up, capped.
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 
 export interface SqlHistoryEntry {
   sql: string

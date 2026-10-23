@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { defineAgentTool, type AgentToolResult, type CallClass } from '@localixai/agent/agents'
-import type { ConfigChangeRequest, ConfigChangeResponse } from '@localixai/plugin-sdk/backend'
+import type { ConfigChangeRequest, ConfigChangeResponse } from '@localixai/mini-app-sdk/backend'
 import { TOOL } from '../../tool-names'
 import { errorMessage } from '../../../../lib/errors'
 import {

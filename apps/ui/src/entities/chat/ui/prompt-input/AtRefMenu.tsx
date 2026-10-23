@@ -9,7 +9,10 @@ import { CompletionKeyHint } from './CompletionKeyHint'
 import { CompletionMenu, type CompletionMenuItem } from './CompletionMenu'
 import { ActivitySignal } from '@localixai/kit/activity-orb'
 import { MatchedText } from '@localixai/kit/matched-text'
-import { SegmentedControl, SegmentedControlItem } from '@localixai/plugin-sdk/ui/segmented-control'
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from '@localixai/mini-app-sdk/ui/segmented-control'
 import { fileIcon, folderIcon } from '@/shared/ui/file-icon/fileIcon'
 import { refKindIcon } from '../refKindPresentation'
 import { MonogramAvatar } from '@localixai/kit/avatar'

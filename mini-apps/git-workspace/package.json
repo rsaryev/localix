@@ -11,8 +11,8 @@
     "type-check": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@localixai/mini-app-sdk": "workspace:*",
     "@localixai/path-containment": "workspace:*",
-    "@localixai/plugin-sdk": "workspace:*",
     "@tanstack/react-virtual": "^3.14.21",
     "hono": "^4.12.8",
     "lucide-react": "^1.61.0",

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CandlestickChart, Star } from 'lucide-react'
 import type { Market } from '../../backend/contracts'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { ActivitySignal } from '@localixai/kit/activity-orb'
 import { Kbd } from '@localixai/kit/kbd'
 import { MatchedText } from '@localixai/kit/matched-text'

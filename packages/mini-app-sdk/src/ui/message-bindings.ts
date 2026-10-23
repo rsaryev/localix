@@ -5,7 +5,7 @@
  * Split out of `contrib.ts`, which had grown to hold two unrelated vocabularies: the shapes a
  * plugin REGISTERS with the host (tabs, rail entries, slots) and the shapes it SENDS through the
  * composer. They are edited by different work and read by different readers. `contrib.ts`
- * re-exports everything here, so `@localixai/plugin-sdk/ui` is unchanged.
+ * re-exports everything here, so `@localixai/mini-app-sdk/ui` is unchanged.
  */
 import type { MessageAttachment } from '@localixai/agent'
 import type { AddressableResource } from '../resource'

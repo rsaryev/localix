@@ -6,7 +6,7 @@
 import type { SearchProvider } from '../agent-core/search/provider'
 import { catalogHits } from '../search/catalog-hybrid'
 import { MCP_COLLECTION } from './semantic'
-import { settingsEntityUiUri } from '@localixai/plugin-sdk/navigation'
+import { settingsEntityUiUri } from '@localixai/mini-app-sdk/navigation'
 
 export interface McpSearchRow {
   name: string

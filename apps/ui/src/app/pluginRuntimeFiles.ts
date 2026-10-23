@@ -13,7 +13,7 @@ import { desktopDroppedEntries } from '@/shared/lib/fileDropRouter'
 import { uploadMedia } from '@/shared/api/media-client'
 import { mediaFileBinding } from '@/shared/lib/mediaFileBinding'
 import { backendClient } from '@/shared/api/client'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { isDesktop } from '@localixai/kit/environment'
 import { projectsApi } from '@/shared/api/projects-client'
 import { toast } from '@/shared/lib/notify'
@@ -21,7 +21,7 @@ import {
   createMessageBindingDraft,
   type PluginUiRuntime,
   type PluginWorkspaceWatchHandlers,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { onFsChange } from '@/shared/lib/fsChangeBus'
 import { eventSocket } from '@/shared/api/eventSocket'
 

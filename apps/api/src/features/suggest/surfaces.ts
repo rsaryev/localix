@@ -12,7 +12,7 @@ import type {
   InlineCompletionSurfaceId,
   InlineCompletionSurfacePayloads,
 } from '../inline-completion/contracts'
-import { cleanCompletionSuffix, completionDraftTail } from '@localixai/plugin-sdk/backend'
+import { cleanCompletionSuffix, completionDraftTail } from '@localixai/mini-app-sdk/backend'
 
 /** Opaque at the registry boundary: a spec narrows its own payload, the core never does. */
 type AnyPayload = unknown

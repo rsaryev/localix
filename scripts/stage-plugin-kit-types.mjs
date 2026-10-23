@@ -4,7 +4,7 @@
 // Why: a user plugin was only bundled and run, and bundling erases types. one plugin shipped a
 // timer that published `{ strategy: 'replace', text }` where the SDK takes `{ strategy, bindings }`;
 // every check passed and the tab crashed at render. Meanwhile the LSP told the agent
-// "Cannot find module '@localixai/plugin-sdk/ui'" on every edit, so the agent learned
+// "Cannot find module '@localixai/mini-app-sdk/ui'" on every edit, so the agent learned
 // to ignore diagnostics altogether. So staging copies the DECLARATIONS of every module a plugin may
 // import, plus a pure-JavaScript TypeScript to check them with (the repository's own compiler is a
 // native binary per platform), and records, per importable specifier, the declaration file that
@@ -13,13 +13,13 @@ import { cpSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } 
 import { basename, dirname, join, relative, sep } from 'node:path'
 
 import { PLUGIN_KIT_DIGEST } from '@localixai/api/plugin-kit-layout'
-import { compilerDir } from '@localixai/plugin-kit-compiler'
+import { compilerDir } from '@localixai/mini-app-kit-compiler'
 
 import { declareKitModules, verifyKitDeclarations } from './stage-plugin-kit-declarations.mjs'
 
 const TYPES_DIR = 'types'
 const DECLARATION = /\.d\.[cm]?ts$/u
-/** Workspace packages `@localixai/plugin-sdk`'s declarations import (see the staging loop). */
+/** Workspace packages `@localixai/mini-app-sdk`'s declarations import (see the staging loop). */
 export const SDK_DECLARATION_DEPENDENCIES = [
   '@localixai/agent',
   '@localixai/dataview',
@@ -114,7 +114,7 @@ export function stagePluginKitTypes({ repoRoot, outKit, uiSharedExports, sdkDir,
   const from = join(repoRoot, 'apps', 'ui')
 
   // The SDK: every exported subpath is importable, so each gets its own entry.
-  const sdk = copyDeclarations(sdkDir, out, '@localixai/plugin-sdk')
+  const sdk = copyDeclarations(sdkDir, out, '@localixai/mini-app-sdk')
   // The workspace packages the SDK's own declarations import. Not importable by a plugin, but
   // without them `ctx.defineTool` (typed by `@localixai/agent`) resolves to nothing, and
   // `skipLibCheck` turns nothing into `any` without a word: an installed app type-checked a tool
@@ -129,7 +129,7 @@ export function stagePluginKitTypes({ repoRoot, outKit, uiSharedExports, sdkDir,
     const exported = sdkManifest.exports[subpath]
     const types = typeof exported === 'object' ? exported.types : undefined
     if (types && existsSync(join(sdk, types))) {
-      typePaths[`@localixai/plugin-sdk/${subpath.slice(2)}`] = rel(join(sdk, types))
+      typePaths[`@localixai/mini-app-sdk/${subpath.slice(2)}`] = rel(join(sdk, types))
     }
   }
 

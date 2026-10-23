@@ -19,7 +19,7 @@ describe('warm-hidden core work-item data sources', () => {
     const { createRoot } = await import('react-dom/client')
     const { act } = React
     const { backendClient } = await import('@/shared/api/client')
-    const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
+    const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
     const { usePeekDefinition } = await import('@/features/inspector/ui/usePeekDefinition')
 
     const read = spyOn(backendClient, 'getFileContent').mockImplementation(
@@ -70,7 +70,7 @@ describe('warm-hidden core work-item data sources', () => {
     const { SWRConfig } = await import('swr')
     const { act } = React
     const { backendClient } = await import('@/shared/api/client')
-    const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
+    const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
     const { useUsageKeys, useUsageLogs, useUsageOverview } =
       await import('@/shared/hooks/useUsageStats')
 
@@ -135,7 +135,7 @@ describe('warm-hidden core work-item data sources', () => {
     const { act } = React
     const { searchApi } = await import('@/features/search/api/searchApi')
     const { useGlobalSearch } = await import('@/features/search/model/useGlobalSearch')
-    const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
+    const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
 
     const search = spyOn(searchApi, 'search').mockResolvedValue({
       groups: [],

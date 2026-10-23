@@ -9,7 +9,7 @@ import { mediaSrc } from '@/shared/lib/mediaSrc'
 import { apiFetch } from '@/shared/api/internal'
 import { fileExtension } from '@/shared/lib/contentTypeRouting'
 import { FileImageView } from './FileImageView'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { ProblemLine, useProblemReport } from '@/shared/ui/problem-report'
 
 // Read-only viewer for a file that lives in the media store (a dropped/uploaded

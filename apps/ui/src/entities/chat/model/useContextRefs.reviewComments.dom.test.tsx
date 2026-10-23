@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
-import { useComments } from '@localixai/plugin-sdk/ui/comments'
+import { useComments } from '@localixai/mini-app-sdk/ui/comments'
 import { reviewCommentBinding } from '@/shared/lib/reviewCommentBinding'
 import { refFromContextBinding } from './composerBindingRefs'
 import type { UseContextRefsResult } from './contextRefTypes'

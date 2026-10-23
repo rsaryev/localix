@@ -1,5 +1,5 @@
 import { defaultUrlTransform } from 'react-markdown'
-import { isUiNavigationAction } from '@localixai/plugin-sdk/ui'
+import { isUiNavigationAction } from '@localixai/mini-app-sdk/ui'
 import { fileHrefToReference, type FileHrefReference } from './markdownFileRef'
 import { isAgentProfileHref } from './markdownAgentRef'
 

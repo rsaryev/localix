@@ -1,7 +1,7 @@
 import { GitCompare, FileText } from 'lucide-react'
 import { mutationInputPaths, type FileChangeItem } from '@localixai/agent/agents'
 import { inspector } from '@/shared/lib/inspectorBus'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { ToolLine } from '../ToolLine'
 import { ErrorRow, ToolBody, ToolHeaderAction } from '../ToolIO'
 import { isItemStreaming, hasItemError, itemErrorMessage } from '../itemHelpers'

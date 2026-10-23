@@ -1,5 +1,5 @@
 import { Braces, Check, Copy, Pencil, RefreshCw, Trash2 } from 'lucide-react'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import type { SecretMeta } from '@localixai/api/client'
 
 /**

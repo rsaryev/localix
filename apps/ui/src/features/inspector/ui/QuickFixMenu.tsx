@@ -10,8 +10,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@localixai/kit/dropdown-menu'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { settleLspEdit } from '../model/lspEditResult'
 
 /**

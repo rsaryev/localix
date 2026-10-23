@@ -1,5 +1,5 @@
 import { Search } from 'lucide-react'
-import { defineUiLocation } from '@localixai/plugin-sdk/ui'
+import { defineUiLocation } from '@localixai/mini-app-sdk/ui'
 
 export const MESSAGE_SEARCH_OVERLAY_ID = 'message-search'
 

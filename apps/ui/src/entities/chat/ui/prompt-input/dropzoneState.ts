@@ -4,7 +4,7 @@ import {
   messageBindingDragKind,
   OS_FILES_DRAG_KIND,
   WORKSPACE_TAB_DRAG_MIME,
-} from '@localixai/plugin-sdk/ui/message-binding-drag'
+} from '@localixai/mini-app-sdk/ui/message-binding-drag'
 
 export interface DragAcceptOptions {
   /** The host accepts context-binding drops (files, sessions, tool calls, …). */

@@ -1,6 +1,6 @@
 import { useRef, type ClipboardEvent, type DragEvent, type PointerEvent } from 'react'
-import { runPluginAction } from '@localixai/plugin-sdk/ui'
-import { pluginFiles } from '@localixai/plugin-sdk/ui/runtime'
+import { runPluginAction } from '@localixai/mini-app-sdk/ui'
+import { pluginFiles } from '@localixai/mini-app-sdk/ui/runtime'
 import { useCanvasCamera } from '@localixai/kit/canvas'
 import type { SpaceDocument } from '../../shared/format/document'
 import type { SpaceOp } from '../../shared/ops/contract'

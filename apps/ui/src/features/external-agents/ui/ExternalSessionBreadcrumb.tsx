@@ -1,7 +1,7 @@
 import { ChevronRight } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
 import { WorkbenchBreadcrumb } from '@localixai/kit/workbench-breadcrumb'
-import { localixResourceUri } from '@localixai/plugin-sdk/navigation'
+import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
 import { navigateUi } from '@/shared/lib/uiNavigation'
 import {

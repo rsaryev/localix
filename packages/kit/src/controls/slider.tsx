@@ -1,6 +1,6 @@
 import * as React from 'react'
 
-import { cn, CONTROL_FOCUS_VISIBLE } from '@localixai/plugin-sdk/ui/classes'
+import { cn, CONTROL_FOCUS_VISIBLE } from '@localixai/mini-app-sdk/ui/classes'
 
 type SliderProps = Omit<
   React.ComponentPropsWithoutRef<'input'>,

@@ -60,7 +60,7 @@ describe('warm-hidden Settings data sources', () => {
     const { useMcpServers } = await import('@/features/settings/model/useMcpServers')
     const { usePlugins } = await import('@/features/settings/model/usePlugins')
     const { useSkills } = await import('@/features/settings/model/useSkills')
-    const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
+    const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
 
     // Skills have no list endpoint of their own any more — the catalog is in the
     // document below. What the Skills screen still reads for itself is CURATOR data:
@@ -127,7 +127,7 @@ describe('warm-hidden Settings data sources', () => {
     const { act } = React
     const { backendClient } = await import('@/shared/api/client')
     const { CapabilitiesSettings } = await import('@/features/settings/ui/CapabilitiesSettings')
-    const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
+    const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
 
     // The agent picker reads the installation catalog; the active Tools leaf reads the
     // selected agent's policy. Each scope is read once, and inactive leaves do no work.
@@ -182,7 +182,7 @@ describe('warm-hidden Settings data sources', () => {
     const { DiagnosticsSettings } = await import('@/features/settings/ui/DiagnosticsSettings')
     const { MarketplacesPanel } = await import('@/features/settings/ui/MarketplacesPanel')
     const { PreferencesSettings } = await import('@/features/settings/ui/PreferencesSettings')
-    const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
+    const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
 
     const projects = spyOn(backendClient, 'listProjects').mockResolvedValue([])
     const markets = spyOn(backendClient, 'listMarketplaces').mockResolvedValue([])

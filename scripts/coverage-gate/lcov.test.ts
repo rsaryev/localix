@@ -100,7 +100,7 @@ describe('ownCoverage', () => {
     const report = new Map([
       ['packages/markdown/src/a.ts', new Map([[1, 1]])],
       ['packages/kit/src/button.tsx', new Map([[1, 1]])],
-      ['packages/plugin-sdk/dist/ui.js', new Map([[1, 1]])],
+      ['packages/mini-app-sdk/dist/ui.js', new Map([[1, 1]])],
       ['mini-apps/devops/kubernetes/ui/b.ts', new Map([[1, 1]])],
       ['mini-apps/devops/ui/c.ts', new Map([[1, 1]])],
     ])

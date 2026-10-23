@@ -1,13 +1,13 @@
 import { mkdirSync } from 'node:fs'
 import { z } from 'zod'
 import { defineAgentTool } from '@localixai/agent/agents'
-import { isUiNavigationAction } from '@localixai/plugin-sdk/ui'
+import { isUiNavigationAction } from '@localixai/mini-app-sdk/ui'
 import type {
   PluginContext,
   PluginHostServices,
   PluginUi,
   PluginUiDestination,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import { resolveRuntimeAddress, resolveWebhookUrl } from '../../lib/runtime-address'
 import { makePluginOAuth } from './oauth'
 import { pluginDataDir, pluginStateDir } from '../ext/user-config-substitute'

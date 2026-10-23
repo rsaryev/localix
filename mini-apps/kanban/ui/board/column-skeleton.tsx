@@ -1,4 +1,4 @@
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /** Placeholder card heights, so the skeleton reads as a short list rather than a
  *  grid of identical blocks. Fixed, not random — a skeleton that reshuffles on

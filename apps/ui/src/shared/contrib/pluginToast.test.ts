@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 
-import type { ProblemReport } from '@localixai/plugin-sdk/ui/problems'
+import type { ProblemReport } from '@localixai/mini-app-sdk/ui/problems'
 
 import { setPluginSources } from './pluginAttribution'
 import { createPluginToast, type AttributableToast } from './pluginToast'

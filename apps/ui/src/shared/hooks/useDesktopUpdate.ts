@@ -1,7 +1,7 @@
 import { useEffect, useSyncExternalStore } from 'react'
 
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
-import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
+import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 import { isDesktop } from '@localixai/kit/environment'
 import { tauriInvoke, tauriListen } from '@/shared/lib/tauri'
 

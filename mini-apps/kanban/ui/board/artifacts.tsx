@@ -1,9 +1,9 @@
 import { FileText, Link2, Terminal, StickyNote, type LucideIcon } from 'lucide-react'
-import { pluginTerminal, pluginWorkspace } from '@localixai/plugin-sdk/ui/runtime'
+import { pluginTerminal, pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import { Chip } from '@localixai/kit/chip'
 import { ExternalAnchor } from '@localixai/kit/external-anchor'
 import { TextAction } from '@localixai/kit/text-action'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 
 import type { KanbanArtifact, KanbanArtifactKind } from '../../shared/contracts'
 

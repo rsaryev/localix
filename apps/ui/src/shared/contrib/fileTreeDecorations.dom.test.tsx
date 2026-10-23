@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { useMemo, useState } from 'react'
-import type { FileTreeDecorationIndex } from '@localixai/plugin-sdk/ui'
+import type { FileTreeDecorationIndex } from '@localixai/mini-app-sdk/ui'
 import { registerDom } from '@localixai/kit/testing/dom'
 
 import {

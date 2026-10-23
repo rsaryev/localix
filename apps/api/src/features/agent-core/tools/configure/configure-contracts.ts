@@ -1,5 +1,5 @@
 import type { z } from 'zod'
-import type { ConfigReloadClass } from '@localixai/plugin-sdk/backend'
+import type { ConfigReloadClass } from '@localixai/mini-app-sdk/backend'
 import type { ToolLedger } from '../../tool-ledger'
 
 /**

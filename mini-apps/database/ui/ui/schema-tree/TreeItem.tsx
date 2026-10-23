@@ -2,8 +2,8 @@
  *  non-item rows (status lines and the Indexes label). */
 import type { DragEvent, ReactNode } from 'react'
 import { AlertCircle, ChevronRight } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { ProblemLine } from '@localixai/plugin-sdk/ui/components'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { ProblemLine } from '@localixai/mini-app-sdk/ui/components'
 import { isBranch, type SchemaTreeRow, type StatusTreeRow } from '../../model/schemaTreeRows'
 import type { SchemaTreeActions } from './actions'
 import {

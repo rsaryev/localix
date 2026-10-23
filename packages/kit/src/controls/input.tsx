@@ -5,7 +5,7 @@ import {
   CONTROL_FOCUS_VISIBLE,
   CONTROL_INVALID,
   FIELD_SURFACE,
-} from '@localixai/plugin-sdk/ui/classes'
+} from '@localixai/mini-app-sdk/ui/classes'
 import { useFieldControlProps } from './field'
 
 const Input = React.forwardRef<

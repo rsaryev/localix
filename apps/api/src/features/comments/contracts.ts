@@ -1,7 +1,7 @@
 /**
  * A PERSON'S COMMENT ON SOMETHING, KEPT ON THE SERVER.
  *
- * Review comments lived only in the client's memory (`@localixai/plugin-sdk/ui` comments
+ * Review comments lived only in the client's memory (`@localixai/mini-app-sdk/ui` comments
  * store): a reload, a crash or simply not pressing the one button that carried them lost every
  * one. They are durable rows now, and generic on purpose — the server does not know what a
  * comment points at. It knows two things:

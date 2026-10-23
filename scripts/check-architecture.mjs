@@ -126,7 +126,7 @@ const pluginPublicWorkspacePackages = new Set([
   '@localixai/agent',
   '@localixai/dataview',
   '@localixai/path-containment',
-  '@localixai/plugin-sdk',
+  '@localixai/mini-app-sdk',
 ])
 
 /**
@@ -463,7 +463,7 @@ function localWorkspacePackageName(specifier) {
 function pluginWorkspaceImportProblem(specifier) {
   const packageName = localWorkspacePackageName(specifier)
   if (!packageName || pluginPublicWorkspacePackages.has(packageName)) return null
-  return `plugin imports private workspace package ${specifier}; use @localixai/plugin-sdk or another approved generic building block`
+  return `plugin imports private workspace package ${specifier}; use @localixai/mini-app-sdk or another approved generic building block`
 }
 
 function pluginPathHasArea(path, area) {
@@ -471,12 +471,12 @@ function pluginPathHasArea(path, area) {
 }
 
 function pluginSdkLayerProblem(path, specifier) {
-  if (pluginPathHasArea(path, 'ui') && specifier.startsWith('@localixai/plugin-sdk/backend')) {
+  if (pluginPathHasArea(path, 'ui') && specifier.startsWith('@localixai/mini-app-sdk/backend')) {
     return `plugin UI imports Node-only SDK surface ${specifier}`
   }
   if (
     (pluginPathHasArea(path, 'backend') || pluginPathHasArea(path, 'tools')) &&
-    specifier.startsWith('@localixai/plugin-sdk/ui')
+    specifier.startsWith('@localixai/mini-app-sdk/ui')
   ) {
     return `plugin backend imports browser-only SDK surface ${specifier}`
   }
@@ -562,7 +562,7 @@ assert.deepEqual(fixtureImports, [
   './dynamic',
   '@localixai/required',
 ])
-assert.equal(pluginWorkspaceImportProblem('@localixai/plugin-sdk/backend'), null)
+assert.equal(pluginWorkspaceImportProblem('@localixai/mini-app-sdk/backend'), null)
 assert.equal(pluginWorkspaceImportProblem('@localixai/agent/agents'), null)
 assert.match(
   pluginWorkspaceImportProblem('@localixai/api/client') ?? '',
@@ -575,21 +575,21 @@ assert.match(
 assert.match(
   pluginSdkLayerProblem(
     `${MINI_APPS_PREFIX}example/ui/register.tsx`,
-    '@localixai/plugin-sdk/backend',
+    '@localixai/mini-app-sdk/backend',
   ) ?? '',
   /Node-only/u,
 )
 assert.match(
   pluginSdkLayerProblem(
     `${MINI_APPS_PREFIX}example/backend/index.ts`,
-    '@localixai/plugin-sdk/ui/runtime',
+    '@localixai/mini-app-sdk/ui/runtime',
   ) ?? '',
   /browser-only/u,
 )
 assert.match(
   pluginSdkLayerProblem(
     `${MINI_APPS_PREFIX}example-suite/docker/ui/register.tsx`,
-    '@localixai/plugin-sdk/backend',
+    '@localixai/mini-app-sdk/backend',
   ) ?? '',
   /Node-only/u,
 )
@@ -652,7 +652,7 @@ for (const [specifier, reason] of [
     reason,
   )
 }
-for (const specifier of ['./lib/cn', '../styles/x', '@localixai/plugin-sdk/ui', 'radix-ui']) {
+for (const specifier of ['./lib/cn', '../styles/x', '@localixai/mini-app-sdk/ui', 'radix-ui']) {
   assert.equal(kitBoundaryProblem('packages/kit/src/x.tsx', specifier, fixtureAppPackages), null)
 }
 assert.equal(kitBoundaryProblem('apps/ui/src/x.tsx', '@/shared/lib/x', fixtureAppPackages), null)
@@ -1118,7 +1118,7 @@ for (const file of files) {
     !testSource &&
     (path.startsWith('apps/ui/src/') ||
       path.startsWith('packages/kit/src/') ||
-      path.startsWith('packages/plugin-sdk/src/ui/') ||
+      path.startsWith('packages/mini-app-sdk/src/ui/') ||
       pluginPathHasArea(path, 'ui'))
   const coreOrPackageSource =
     path !== 'scripts/check-architecture.mjs' &&
@@ -1399,7 +1399,7 @@ for (const file of files) {
       path.startsWith('apps/ui/src/') ||
       path.startsWith('packages/kit/src/') ||
       path.startsWith('apps/landing/src/') ||
-      path.startsWith('packages/plugin-sdk/src/ui/') ||
+      path.startsWith('packages/mini-app-sdk/src/ui/') ||
       pluginPathHasArea(path, 'ui')
     if (
       uiProductionSource &&
@@ -1412,10 +1412,14 @@ for (const file of files) {
     ) {
       problems.push(`${path}: direct openExternal import bypasses platformCapabilities`)
     }
-    if (browserUiSource && !pluginMatch && specifier.startsWith('@localixai/plugin-sdk/backend')) {
+    if (
+      browserUiSource &&
+      !pluginMatch &&
+      specifier.startsWith('@localixai/mini-app-sdk/backend')
+    ) {
       problems.push(
         `${path}: browser UI imports the Node-only plugin SDK backend barrel; use ` +
-          '@localixai/plugin-sdk/ui or a narrow browser-safe entrypoint',
+          '@localixai/mini-app-sdk/ui or a narrow browser-safe entrypoint',
       )
     }
     const workspaceMatch = workspacePathPattern.exec(path)
@@ -1459,7 +1463,7 @@ for (const file of files) {
     if (coreOrPackageProductionSource && target?.startsWith(MINI_APPS_PREFIX)) {
       problems.push(
         `${path}: host imports concrete plugin source (${target}); compose it through ` +
-          'plugin discovery and @localixai/plugin-sdk contracts',
+          'plugin discovery and @localixai/mini-app-sdk contracts',
       )
     }
 
@@ -1497,7 +1501,7 @@ for (const file of files) {
     if (!pluginMatch && !testSource && specifier.startsWith('@localix-mini-app/')) {
       problems.push(
         `${path}: host/package imports concrete plugin package ${specifier}; compose it through ` +
-          'plugin discovery and @localixai/plugin-sdk contracts',
+          'plugin discovery and @localixai/mini-app-sdk contracts',
       )
     }
     if (
@@ -1519,7 +1523,7 @@ for (const file of files) {
     ) {
       problems.push(
         `${path}: plugin imports workspace internals (${target}); use an approved public ` +
-          'workspace package, @localixai/plugin-sdk, or inject host-owned behavior through PluginContext',
+          'workspace package, @localixai/mini-app-sdk, or inject host-owned behavior through PluginContext',
       )
     }
     // Tests too: they reach the host through `@localixai/kit/testing`, never `@/`.

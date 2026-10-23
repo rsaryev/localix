@@ -3,7 +3,7 @@ import {
   documentFontIds,
   documentLayoutSchema,
   type DocumentFont,
-} from '@localixai/plugin-sdk/document-layout'
+} from '@localixai/mini-app-sdk/document-layout'
 import { createDocumentGenerator } from './generator'
 import { createPdfConverter } from '../drivers/pdf'
 import { unzipSync, strFromU8 } from 'fflate'

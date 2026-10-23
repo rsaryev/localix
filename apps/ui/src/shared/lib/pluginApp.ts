@@ -1,5 +1,5 @@
-import { PLUGIN_NAME_RE } from '@localixai/plugin-sdk/manifest'
-import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
+import { PLUGIN_NAME_RE } from '@localixai/mini-app-sdk/manifest'
+import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 
 /** A manifest's plugin name, bounded as the shell bounds it (`app_bundle::valid_plugin`). */
 const validPluginName = (name: unknown): name is string =>

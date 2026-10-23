@@ -1,8 +1,8 @@
 import { memo } from 'react'
 import { GitCompareArrows, Sparkles } from 'lucide-react'
 import type { BisectTerm, RepoCommit, ResetMode } from '../../../backend/source-control/contracts'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { copyText } from '@localixai/plugin-sdk/ui/interactions'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { copyText } from '@localixai/mini-app-sdk/ui/interactions'
 import {
   ContextMenu,
   ContextMenuContent,

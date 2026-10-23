@@ -2,7 +2,7 @@ import { Fragment, type ReactNode } from 'react'
 
 import { useActiveRowScroll } from './useActiveRowScroll'
 import { MENU_ROW, SELECTED_ROW } from '@localixai/kit/selected-row'
-import { ResultCountStatus } from '@localixai/plugin-sdk/ui/result-count-status'
+import { ResultCountStatus } from '@localixai/mini-app-sdk/ui/result-count-status'
 import {
   AutocompleteBody,
   AutocompleteHeader,

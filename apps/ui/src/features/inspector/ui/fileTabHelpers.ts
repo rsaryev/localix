@@ -1,6 +1,6 @@
 import type { EditorDiagnostic } from '@/shared/ui/code-editor/CodeEditor'
 import type { EditorDiagnosticTag } from '@/shared/ui/code-editor/types'
-import type { Comment } from '@localixai/plugin-sdk/ui/comments'
+import type { Comment } from '@localixai/mini-app-sdk/ui/comments'
 import type { LspDiagnostic } from '@/shared/api/contracts'
 import { languageFromPath } from '@/shared/ui/diff'
 

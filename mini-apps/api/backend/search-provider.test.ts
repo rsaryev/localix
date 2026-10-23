@@ -1,4 +1,4 @@
-import { searchHitsOf } from '@localixai/plugin-sdk/backend'
+import { searchHitsOf } from '@localixai/mini-app-sdk/backend'
 /**
  * The search provider. Its two contractual promises: hit ids are `localix://resource/api/` URIs (so a result is
  * draggable into chat), and search MUST resolve — a throw here would take down the whole

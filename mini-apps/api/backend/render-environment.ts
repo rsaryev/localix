@@ -4,7 +4,7 @@ import type { EnvironmentService } from './environments/service'
 import { renderSpec, type RenderedSpec } from './render-spec'
 import type { RequestSpec } from './request-spec'
 import { resolvedSecretValues } from './response-redaction'
-import { hasSecretTokens } from '@localixai/plugin-sdk/backend'
+import { hasSecretTokens } from '@localixai/mini-app-sdk/backend'
 
 export interface EnvironmentRender {
   /** Safe for UI, history and model output: vault references remain references. */

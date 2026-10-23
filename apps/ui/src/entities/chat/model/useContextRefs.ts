@@ -27,7 +27,7 @@ import {
   totalExpansionChars,
   type ParsedContextRef,
 } from '@localixai/api/context-refs'
-import type { MessageContextBindingDraft } from '@localixai/plugin-sdk/ui'
+import type { MessageContextBindingDraft } from '@localixai/mini-app-sdk/ui'
 import {
   droppedRefCount,
   includeAutoRefs,

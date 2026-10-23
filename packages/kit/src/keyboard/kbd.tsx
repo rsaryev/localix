@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /**
  * Keycap chip for keyboard-shortcut hints. One source of truth for the

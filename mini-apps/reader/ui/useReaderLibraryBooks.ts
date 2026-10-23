@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import type { ReaderBookSummary, ReaderLibraryResponse } from '../shared/contracts'
-import { useStoreChanges } from '@localixai/plugin-sdk/ui/store-resource'
-import { useVisiblePolling } from '@localixai/plugin-sdk/ui/visibility'
+import { useStoreChanges } from '@localixai/mini-app-sdk/ui/store-resource'
+import { useVisiblePolling } from '@localixai/mini-app-sdk/ui/visibility'
 import { readerApi } from './api'
 
 export type ReaderLibraryLoader = () => Promise<ReaderLibraryResponse>

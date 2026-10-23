@@ -7,7 +7,7 @@ import { toast } from '@/shared/lib/notify'
 import { CMD, useKeybindingMatcher } from '@/shared/lib/keybindings'
 import { promptAfterMentionBackspace } from './mentionBackspace'
 import { returnNextQueuedMessage, type QueueReturnOutcome } from './queue-actions'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 type ComposerKeyHandler = (event: React.KeyboardEvent<HTMLTextAreaElement>) => boolean
 

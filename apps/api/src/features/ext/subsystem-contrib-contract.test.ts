@@ -45,7 +45,7 @@ setDefaultTimeout(30_000)
  */
 
 /** The file that DECLARES what a subsystem may contribute. */
-const CONTRACT = 'packages/plugin-sdk/src/backend/subsystem.ts'
+const CONTRACT = 'packages/mini-app-sdk/src/backend/subsystem.ts'
 
 /**
  * The composition root, in full. The live wiring (route mounts, provider + WS-frame +

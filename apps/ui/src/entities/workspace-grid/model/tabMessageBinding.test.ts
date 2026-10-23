@@ -4,7 +4,7 @@ import { setEnabledPluginNames } from '@/shared/contrib/pluginActivation'
 import { workItemKindRegistry } from '@/shared/contrib/uiContrib'
 import { workItemToMessageBinding, workItemToMessageBindings } from './tabMessageBinding'
 import { clearLiveTabMessageContext, publishLiveTabMessageContext } from './liveTabMessageContext'
-import { resourceMessageBindingDraft, snippetMessageBindingDraft } from '@localixai/plugin-sdk/ui'
+import { resourceMessageBindingDraft, snippetMessageBindingDraft } from '@localixai/mini-app-sdk/ui'
 
 const item = (over: Partial<WorkItem>): WorkItem => ({ kind: 'file', id: 'x', title: 'X', ...over })
 

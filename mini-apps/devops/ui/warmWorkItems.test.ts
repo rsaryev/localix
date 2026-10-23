@@ -17,7 +17,7 @@ describe('warm-hidden DevOps work items', () => {
    *
    * So the assertion follows the EDGE, not a fixed pair of files: everything the UI can reach
    * transitively is held to the browser-safe entrypoints. `check-architecture.mjs` cannot catch
-   * this on its own — it flags `plugin-sdk/backend` per file, and `errors.ts` lives under
+   * this on its own — it flags `mini-app-sdk/backend` per file, and `errors.ts` lives under
    * `backend/`, where that import is entirely legal in isolation.
    */
   test('every browser-reachable module avoids the Node-only SDK barrel', () => {
@@ -33,17 +33,17 @@ describe('warm-hidden DevOps work items', () => {
 
     for (const [name, source] of Object.entries(chain)) {
       expect(source, `${name} is reachable from plugin UI`).not.toContain(
-        "from '@localixai/plugin-sdk/backend'",
+        "from '@localixai/mini-app-sdk/backend'",
       )
     }
 
     expect(chain['kubernetes/ui/model/resourceLink.ts']).toContain(
-      '@localixai/plugin-sdk/resource-refs',
+      '@localixai/mini-app-sdk/resource-refs',
     )
     expect(chain['kubernetes/backend/resource-nodes.ts']).toContain(
-      '@localixai/plugin-sdk/resource-refs',
+      '@localixai/mini-app-sdk/resource-refs',
     )
-    expect(chain['kubernetes/backend/errors.ts']).toContain('@localixai/plugin-sdk/typed-error')
-    expect(chain['docker/backend/errors.ts']).toContain('@localixai/plugin-sdk/typed-error')
+    expect(chain['kubernetes/backend/errors.ts']).toContain('@localixai/mini-app-sdk/typed-error')
+    expect(chain['docker/backend/errors.ts']).toContain('@localixai/mini-app-sdk/typed-error')
   })
 })

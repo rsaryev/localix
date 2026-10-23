@@ -3,7 +3,7 @@
  * open the SSH tunnel (when configured), build + probe the driver. Pure factory —
  * the per-user registry/state lives in `live-registry.ts`.
  */
-import { hasSecretTokens, resolveSecretTokens } from '@localixai/plugin-sdk/backend'
+import { hasSecretTokens, resolveSecretTokens } from '@localixai/mini-app-sdk/backend'
 import { applyServerReadOnly } from '../read-only/server-guard'
 import {
   isFileConnectionConfig,

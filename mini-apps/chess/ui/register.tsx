@@ -1,6 +1,6 @@
 import { lazy } from 'react'
 import { ChessKnight } from 'lucide-react'
-import { sessionGameUi } from '@localixai/plugin-sdk/ui/session-game'
+import { sessionGameUi } from '@localixai/mini-app-sdk/ui/session-game'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 
 import { GAME_KIND, sessionOfGameUri } from '../shared/resource'

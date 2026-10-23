@@ -5,8 +5,8 @@
  */
 import type { DockerCategory, DockerContainer, DockerEntityPrefix, DockerImage } from './contracts'
 import { DOCKER_CATEGORIES, DOCKER_ENTITY_PREFIXES } from './contracts'
-import type { ResourceNode } from '@localixai/plugin-sdk/backend'
-import { buildResourceUri, linkAction } from '@localixai/plugin-sdk/backend'
+import type { ResourceNode } from '@localixai/mini-app-sdk/backend'
+import { buildResourceUri, linkAction } from '@localixai/mini-app-sdk/backend'
 import type { ResourceDockerService } from './resource-provider'
 
 /** The URI provider this plugin owns. */

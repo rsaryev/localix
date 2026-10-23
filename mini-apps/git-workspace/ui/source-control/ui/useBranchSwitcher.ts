@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useState } from 'react'
-import { toast } from '@localixai/plugin-sdk/ui'
+import { toast } from '@localixai/mini-app-sdk/ui'
 import type { ActionFeedbackInput, ActionFeedbackStore } from '@localixai/kit/action-feedback'
 import { useSessionGitField, useSourceControlStore } from '../model/store'
 import { gitFailed } from '../model/gitFailure'
-import { PluginApiError } from '@localixai/plugin-sdk/ui'
+import { PluginApiError } from '@localixai/mini-app-sdk/ui'
 
 /**
  * Every branch command the panel offers, plus the concurrency and refusals they

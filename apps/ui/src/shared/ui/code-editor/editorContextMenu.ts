@@ -1,5 +1,5 @@
 import type * as Monaco from 'monaco-editor'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { toast } from '@/shared/lib/notify'
 import { formatChordText } from '@/shared/lib/keybindings'
 import { OS_FAMILY } from '@localixai/kit/environment'

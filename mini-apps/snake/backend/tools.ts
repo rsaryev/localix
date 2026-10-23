@@ -1,4 +1,4 @@
-import { classifyByAction, type PluginContext, type Seat } from '@localixai/plugin-sdk/backend'
+import { classifyByAction, type PluginContext, type Seat } from '@localixai/mini-app-sdk/backend'
 
 import { describeGame } from '../shared/describe'
 import { MoveRefused } from '../shared/game'

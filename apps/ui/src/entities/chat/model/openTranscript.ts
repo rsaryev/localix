@@ -1,5 +1,5 @@
 import type { Message } from '@/shared/api/contracts'
-import type { PluginTranscriptAction } from '@localixai/plugin-sdk/ui/runtime'
+import type { PluginTranscriptAction } from '@localixai/mini-app-sdk/ui/runtime'
 import { inspector } from '@/shared/lib/inspectorBus'
 
 export interface TranscriptActionDestination {

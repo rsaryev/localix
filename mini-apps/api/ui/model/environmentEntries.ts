@@ -1,6 +1,6 @@
 import { Ban, Layers } from 'lucide-react'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
-import { statusMenuList } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
+import { statusMenuList } from '@localixai/mini-app-sdk/ui'
 
 import type { EnvironmentInfo } from '../../backend/contracts'
 

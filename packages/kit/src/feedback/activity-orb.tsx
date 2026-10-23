@@ -1,5 +1,5 @@
 import { useEffect, useState, type SVGProps } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 export type ActivityOrbState = 'thinking' | 'working'
 

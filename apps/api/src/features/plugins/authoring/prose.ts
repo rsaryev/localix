@@ -45,7 +45,7 @@ function frameList(kit: PluginKit, scaffold: TemplateScaffold): string[] {
  * backstop.
  */
 export const LIVE_DATA_CONTRACT =
-  "- Changes are PUSHED, not polled. State in openJsonStore: read it with ui/useStoreSnapshot.ts, which backend/store-feed.ts nudges. Any other live data: a wsFrames entry in the backend (subscribeCommand, unsubscribeCommand, frameTag — one lowercase letter, not s, r or n — and start(params, send, { userId })), followed in the view with createRealtimeFeed and useRealtimeFeed from @localixai/plugin-sdk/ui/realtime-feed, which share one subscription per key, resubscribe after a reconnect and say whether the stream is live. Files in the chat's workspace: usePluginWorkspaceChanges(sessionId, onChange) from @localixai/plugin-sdk/ui/runtime-hooks. A backend that watches files uses ctx.watchPath(path, recursive, onEvent, onError), never node:fs.watch: Bun's recursive fs.watch on macOS drops part of a burst. Use the SDK file/store read coordinator. Poll only while push coverage is unavailable, or for a named source it cannot cover; a healthy fully covered resource has no timer."
+  "- Changes are PUSHED, not polled. State in openJsonStore: read it with ui/useStoreSnapshot.ts, which backend/store-feed.ts nudges. Any other live data: a wsFrames entry in the backend (subscribeCommand, unsubscribeCommand, frameTag — one lowercase letter, not s, r or n — and start(params, send, { userId })), followed in the view with createRealtimeFeed and useRealtimeFeed from @localixai/mini-app-sdk/ui/realtime-feed, which share one subscription per key, resubscribe after a reconnect and say whether the stream is live. Files in the chat's workspace: usePluginWorkspaceChanges(sessionId, onChange) from @localixai/mini-app-sdk/ui/runtime-hooks. A backend that watches files uses ctx.watchPath(path, recursive, onEvent, onError), never node:fs.watch: Bun's recursive fs.watch on macOS drops part of a burst. Use the SDK file/store read coordinator. Poll only while push coverage is unavailable, or for a named source it cannot cover; a healthy fully covered resource has no timer."
 
 /**
  * What a plugin is FOR, said before how to build one. Told only the template's mechanics, a copy
@@ -65,13 +65,13 @@ export const AGENT_PARTNERSHIP =
  * and holds no key, and keeps its own fallback because either may not answer.
  */
 export const HOST_JUDGMENT_CONTRACT =
-  "- For a small pick the plugin makes itself, often — which column a card belongs in, the nearest of a few options, the same item twice — use the host's models, never one of your own (backend only, like wake). ctx.host.semantic.rank(query, [{ key, text }], { task: 'classification' }) ranks candidates nearest first with the embedding model on this computer: free, and null until the model is ready. ctx.host.decisions.decide(userId, { state, questions: { column: { type: 'choice', instructions, criteria: { todo: 'Not started', done: 'Finished' } } } }, { purpose: 'triage', sessionId }) asks a decision model typed questions ('choice' picks an option key, 'bool' gives a probability) and bills the person's chat; read a pick with confidentChoice(answer, 0.8) from @localixai/plugin-sdk/backend. It answers status 'answered' with answers, or why not (unavailable, deadline, cancelled, failed): keep the plugin's own fallback for every outcome. Understanding what the person sends stays the agent's."
+  "- For a small pick the plugin makes itself, often — which column a card belongs in, the nearest of a few options, the same item twice — use the host's models, never one of your own (backend only, like wake). ctx.host.semantic.rank(query, [{ key, text }], { task: 'classification' }) ranks candidates nearest first with the embedding model on this computer: free, and null until the model is ready. ctx.host.decisions.decide(userId, { state, questions: { column: { type: 'choice', instructions, criteria: { todo: 'Not started', done: 'Finished' } } } }, { purpose: 'triage', sessionId }) asks a decision model typed questions ('choice' picks an option key, 'bool' gives a probability) and bills the person's chat; read a pick with confidentChoice(answer, 0.8) from @localixai/mini-app-sdk/backend. It answers status 'answered' with answers, or why not (unavailable, deadline, cancelled, failed): keep the plugin's own fallback for every outcome. Understanding what the person sends stays the agent's."
 
 /** The frame's shared helpers, named by what they are for. */
 const FRAME_HELPERS = [
   'ui/usePolledSnapshot.ts — read a route while the view is visible, and send(body, { path?, method? }) for every action: the route answers with the NEW state, which replaces the snapshot at once',
   'ui/useStoreSnapshot.ts — the same for state openJsonStore keeps: re-read the moment backend/store-feed.ts (createStoreFeed, registered as wsFrames) nudges the scope, polling only as a slow backstop',
-  'ui/useNow.ts — the SDK clock (@localixai/plugin-sdk/ui/now) for anything that counts; derive the value from a stored timestamp',
+  'ui/useNow.ts — the SDK clock (@localixai/mini-app-sdk/ui/now) for anything that counts; derive the value from a stored timestamp',
   'backend/store.ts — openJsonStore({ dir: ctx.dataDir, file, schema, initial }): durable state, one change at a time, shared by every register(ctx) call',
 ]
 
@@ -131,19 +131,19 @@ ${HOST_JUDGMENT_CONTRACT}
 - Hear changes instead of polling for them. State in \`openJsonStore\` is read with
   \`ui/useStoreSnapshot.ts\`, which \`backend/store-feed.ts\` nudges; any other live data is a
   \`wsFrames\` entry followed with \`createRealtimeFeed\`/\`useRealtimeFeed\`
-  (\`@localixai/plugin-sdk/ui/realtime-feed\`); workspace files with \`usePluginWorkspaceChanges\`. A
+  (\`@localixai/mini-app-sdk/ui/realtime-feed\`); workspace files with \`usePluginWorkspaceChanges\`. A
   backend watches files with \`ctx.watchPath\`, never \`node:fs.watch\` (Bun's recursive watch on
   macOS drops bursts). A poll is only the slow backstop.
 - A tool is \`ctx.defineTool({ …, inputSchema: ctx.z.object({…}), executionMode: 'parallel' |
   'sequential', mutates, classify, async execute(_toolCallId, input) { … } })\`. \`classify\` names
   where each call lands (\`read\`, \`view\`, \`session\`, \`files\`, \`host\`, \`external\`); without it every
   call of a \`mutates\` tool counts as \`external\` and a read-only session refuses even its reads.
-  For an \`action\` enum use \`classifyByAction\` from \`@localixai/plugin-sdk/backend\`; a tool
+  For an \`action\` enum use \`classifyByAction\` from \`@localixai/mini-app-sdk/backend\`; a tool
   without an \`action\` field gets a constant (\`classify: () => ({ effect: 'read' })\`).
 - A \`toMessageBinding\` to a resource URI needs a backend \`resourceProvider\` that expands it;
   without one, drop the binding and publish the visible state with \`publishMessageContext\`.
 - The backend may import ${PLUGIN_BACKEND_SHARED_MODULES.join(', ')}, \`node:*\`, \`bun:*\` and its own files.
-  The UI may import React, \`zod\`, \`lucide-react\`, \`@localixai/plugin-sdk/ui*\` (not \`/ui/testing\`)
+  The UI may import React, \`zod\`, \`lucide-react\`, \`@localixai/mini-app-sdk/ui*\` (not \`/ui/testing\`)
   and the host kit \`@localixai/kit/<id>\`. Nothing else is available.
 - Build every control from the kit and colour with host tokens; \`${PLUGIN_BUILD_TOOL}\` reports a raw
   \`<button>\` or a palette class with its line. \`${PLUGIN_KIT_CATALOG}\` (written by every build, like
@@ -202,18 +202,18 @@ export function agentInstruction(input: {
     ].join('\n'),
     [
       'Contracts — each one a copy has broken before:',
-      "- A tool: ctx.defineTool({ name, label, activeVerb, description, inputSchema: ctx.z.object({ … }), executionMode: 'parallel' for a read or 'sequential' for a change, mutates, classify, permissionPaths: () => [], async execute(_toolCallId, input) { return { content } } }). classify for a tool whose input has an action enum: classifyByAction({ list: { effect: 'read' }, add: { effect: 'session' } }) from @localixai/plugin-sdk/backend; for any other tool a constant, e.g. classify: () => ({ effect: 'read' }) — classifyByAction on an input with no action field answers external for every call, so a read-only session refuses even a read. Give the agent tools that ACT on the domain whenever a user would ask the agent to do it, not only ones that read it.",
+      "- A tool: ctx.defineTool({ name, label, activeVerb, description, inputSchema: ctx.z.object({ … }), executionMode: 'parallel' for a read or 'sequential' for a change, mutates, classify, permissionPaths: () => [], async execute(_toolCallId, input) { return { content } } }). classify for a tool whose input has an action enum: classifyByAction({ list: { effect: 'read' }, add: { effect: 'session' } }) from @localixai/mini-app-sdk/backend; for any other tool a constant, e.g. classify: () => ({ effect: 'read' }) — classifyByAction on an input with no action field answers external for every call, so a read-only session refuses even a read. Give the agent tools that ACT on the domain whenever a user would ask the agent to do it, not only ones that read it.",
       '- What the open tab adds to the person\'s message comes in two halves that must agree. toMessageBinding with resourceMessageBindingDraft({ uri }) in ui/register.tsx needs a backend resourceProvider (with contextProviders) that expands that uri — backend/context.ts is the pattern, so rewrite it rather than delete it; with no provider every message carries "no resource provider". Without a resource, drop toMessageBinding and publish the visible state instead (below).',
       '- State the user creates lives in openJsonStore under ctx.dataDir (a string on the context register(ctx) receives), never only in memory. register(ctx) runs more than once: build what needs ctx inside it, keep the rest at module level.',
       LIVE_DATA_CONTRACT,
       '- Visibility gates polling and nothing else: anything that runs while the pane is hidden — a countdown, a job — is timestamps in the backend, where the tools reach it, and the view derives it with useNow().',
       '- Every action in the view goes through send(), and its route answers with the new state. Never keep a second copy of the state beside the snapshot.',
-      "- A route that takes a body declares it: .post('/path', jsonBody(schema), (c) => … c.req.valid('json') …) with jsonBody from @localixai/plugin-sdk/backend. Never parse the body yourself with the request's json(): it accepts a body of any type, so a page on any origin can post to it.",
-      "- For the agent to act on something that happened in the view (the person moved, a watched value changed), the ROUTE calls ctx.host.wake({ userId: c.env.userId, sessionId: c.env.sessionId, message, tools: [the plugin's own tools that answer], key }); the view sends ?sessionId= from useWorkItemSessionId() (@localixai/plugin-sdk/ui/work-item-session) — the chat the tab belongs to, not the one on screen — and registers its work item with scope: 'session'. ctx.host exists on the backend load only, so hand wake to the routes from register. It answers delivered, missed, refused or failed — decide what the view shows when nobody will answer. Never wake from your own tool: the agent would wake itself.",
+      "- A route that takes a body declares it: .post('/path', jsonBody(schema), (c) => … c.req.valid('json') …) with jsonBody from @localixai/mini-app-sdk/backend. Never parse the body yourself with the request's json(): it accepts a body of any type, so a page on any origin can post to it.",
+      "- For the agent to act on something that happened in the view (the person moved, a watched value changed), the ROUTE calls ctx.host.wake({ userId: c.env.userId, sessionId: c.env.sessionId, message, tools: [the plugin's own tools that answer], key }); the view sends ?sessionId= from useWorkItemSessionId() (@localixai/mini-app-sdk/ui/work-item-session) — the chat the tab belongs to, not the one on screen — and registers its work item with scope: 'session'. ctx.host exists on the backend load only, so hand wake to the routes from register. It answers delivered, missed, refused or failed — decide what the view shows when nobody will answer. Never wake from your own tool: the agent would wake itself.",
       HOST_JUDGMENT_CONTRACT,
       "- State that belongs to ONE chat (a game, a draft for that conversation) lives under ctx.sessionStorage.resolveDataDir(userId, sessionId), which the host deletes with the chat; a route passes c.env.sessionId (absent unless the user owns it — refuse then), a tool the session.id of execute's fifth argument.",
-      '- To tell the person something happened (a timer ran out), call toast from @localixai/plugin-sdk/ui — toast.success(…) or toast.warning(…); a warning also raises a desktop notification.',
-      "- Publish exactly what the user sees as message context and clear it when the surface is inactive: publishMessageContext({ strategy: 'replace', bindings: [snippetMessageBindingDraft({ label, content })] }) from @localixai/plugin-sdk/ui, and publishMessageContext(null) — the host drops any other shape.",
+      '- To tell the person something happened (a timer ran out), call toast from @localixai/mini-app-sdk/ui — toast.success(…) or toast.warning(…); a warning also raises a desktop notification.',
+      "- Publish exactly what the user sees as message context and clear it when the surface is inactive: publishMessageContext({ strategy: 'replace', bindings: [snippetMessageBindingDraft({ label, content })] }) from @localixai/mini-app-sdk/ui, and publishMessageContext(null) — the host drops any other shape.",
     ].join('\n'),
     [
       `Look like Localix: build every control from the kit — never a raw <button>, <input>, <select> or <textarea>; the kit carries the focus ring, the control heights and the tokens. Colour with host tokens — text-text-soft, text-text-faint, border-border, bg-surface-hover, text-status-error|warning|success|info — never a palette class such as text-red-500; radius rounded-md or rounded-lg. No second theme, no pane-sized background, no file over 300 lines. Keep every contributed id prefixed "${name}:" and every tool name unique across plugins.`,
@@ -224,6 +224,6 @@ export function agentInstruction(input: {
       .join('\n'),
     // The catalog already names every kit id by its job; the bare list of ~100 ids repeated it
     // without the job, and only when there is no catalog is the list the agent's sole source.
-    `Imports: the backend may use ${PLUGIN_BACKEND_SHARED_MODULES.join(', ')}, node:*, bun:* and its own files; the UI may use React, zod, lucide-react, @localixai/plugin-sdk/ui* (not /ui/testing) and the host kit \`@localixai/kit/<id>\`${catalog ? ` — the ids ${PLUGIN_KIT_CATALOG} lists` : ` — ids: ${kit.manifest.kitModules.join(', ')}`}. Nothing else resolves. Everything you need is in this folder and this message; do not search the disk for SDK or kit sources.`,
+    `Imports: the backend may use ${PLUGIN_BACKEND_SHARED_MODULES.join(', ')}, node:*, bun:* and its own files; the UI may use React, zod, lucide-react, @localixai/mini-app-sdk/ui* (not /ui/testing) and the host kit \`@localixai/kit/<id>\`${catalog ? ` — the ids ${PLUGIN_KIT_CATALOG} lists` : ` — ids: ${kit.manifest.kitModules.join(', ')}`}. Nothing else resolves. Everything you need is in this folder and this message; do not search the disk for SDK or kit sources.`,
   ].join('\n\n')
 }

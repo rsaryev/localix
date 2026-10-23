@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
-import { acknowledgeInline } from '@localixai/plugin-sdk/ui'
-import { pluginFiles } from '@localixai/plugin-sdk/ui/runtime'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { acknowledgeInline } from '@localixai/mini-app-sdk/ui'
+import { pluginFiles } from '@localixai/mini-app-sdk/ui/runtime'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 import type { KanbanKind, KanbanTask } from '../../shared/contracts'
 import { boardApi } from '../api/board-client'

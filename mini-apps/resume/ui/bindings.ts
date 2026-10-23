@@ -2,7 +2,7 @@ import {
   resourceMessageBindingDraft,
   snippetMessageBindingDraft,
   type PublishedMessageContext,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { resumeUri } from '../shared/resource-uri'
 import { exportDocument, sectionText } from '../shared/format'
 import type { Resume, ResumeDocument } from '../shared/schema'

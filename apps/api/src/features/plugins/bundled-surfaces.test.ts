@@ -3,7 +3,7 @@ import { access } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { isWorkbenchPlugin } from '@localixai/plugin-sdk/manifest'
+import { isWorkbenchPlugin } from '@localixai/mini-app-sdk/manifest'
 import { discoverBundledPlugins } from './discovery'
 import { resolvePluginConfig } from './config'
 import { inspectPluginTools } from './native'

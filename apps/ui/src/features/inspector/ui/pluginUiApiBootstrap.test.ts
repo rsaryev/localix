@@ -4,7 +4,7 @@ import type {
   PluginBridgeEventPayload,
   PluginBridgeMessage,
   PluginUiApi,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 
 import { pluginUiApiBootstrap } from './pluginUiApiBootstrap'
 

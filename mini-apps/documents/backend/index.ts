@@ -19,7 +19,7 @@ import {
   type Capabilities,
   type PluginContext,
   type PluginRegistration,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import { getDocumentsServices, type DocumentsHost } from './singleton'
 import { buildDocumentExtractPort } from './extract-port'
 import { createDocumentsRoutes } from './documents/routes'

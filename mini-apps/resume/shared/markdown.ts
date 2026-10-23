@@ -5,7 +5,7 @@ import {
   type RichMark,
   type RichBlock,
   type RichTextDocument,
-} from '@localixai/plugin-sdk/rich-text'
+} from '@localixai/mini-app-sdk/rich-text'
 
 /** Parse the small interchange dialect. Unsupported HTML and syntax remain literal text. */
 export function markdownBody(source: string): RichTextDocument {

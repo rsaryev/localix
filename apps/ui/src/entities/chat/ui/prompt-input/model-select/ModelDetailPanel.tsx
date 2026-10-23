@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { ExternalLink } from 'lucide-react'
 import type { CatalogModel } from '@localixai/agent/catalog'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Chip } from '@localixai/kit/chip'
 import { SectionLabel } from '@localixai/kit/section-label'
 import { WorkbenchToolbar } from '@localixai/kit/workbench-toolbar'

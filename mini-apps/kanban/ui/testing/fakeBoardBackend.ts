@@ -1,5 +1,5 @@
-import { bindPluginUiRuntime, type PluginUiRuntime } from '@localixai/plugin-sdk/ui/runtime'
-import { bindPluginUiTransport } from '@localixai/plugin-sdk/ui/transport'
+import { bindPluginUiRuntime, type PluginUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
+import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
 
 import type { BoardEvent, KanbanMove, KanbanTask } from '../../shared/contracts'
 import { BOARD_FRAME_TAG, ROUTE_PATH } from '../../shared/resource'

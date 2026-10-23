@@ -7,4 +7,4 @@
  * also rank with, re-exported under the kit's long-standing name: a separate greedy scan here used
  * to light characters the ranker never matched (`mit` lit the first `m` of `commit`).
  */
-export { matchPositions as fuzzyMatchPositions } from '@localixai/plugin-sdk/ui/utilities'
+export { matchPositions as fuzzyMatchPositions } from '@localixai/mini-app-sdk/ui/utilities'

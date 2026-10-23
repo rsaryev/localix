@@ -1,5 +1,5 @@
 import type { KubeNode } from '../../backend/contracts'
-import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
+import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'
 import { useKubernetesNodeTab } from '../model/useKubernetesNodeTab'
 import { KubernetesNodeHeader } from './KubernetesNodeHeader'
 import { KubernetesNodeOverview } from './KubernetesNodeOverview'

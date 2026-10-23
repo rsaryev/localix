@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useId, useMemo, useRef, useState } from 'rea
 import { useNativeEditTarget, isPrimaryModifier } from '@localixai/kit/keybindings'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { WorkbenchStatusBar, WorkbenchStatusItem } from '@localixai/kit/workbench-statusbar'
-import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
+import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'
 import type { ResumeDocument } from '../shared/schema'
 import { useResumes } from './useResumes'
 import { resumeMessageContext } from './bindings'

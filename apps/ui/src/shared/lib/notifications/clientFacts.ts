@@ -4,7 +4,7 @@ import type { DesktopNotifyKind } from '@/shared/lib/desktopNotify'
 import { activeEventOrigin } from './context'
 import { acknowledgeReportedTrace } from './incidentFallback'
 import { useNotificationsStore } from './store'
-import type { ProblemRequest } from '@localixai/plugin-sdk/ui/problems'
+import type { ProblemRequest } from '@localixai/mini-app-sdk/ui/problems'
 import {
   causalTraceSnapshot,
   compactEventTrace,

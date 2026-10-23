@@ -5,7 +5,7 @@
 
 import { stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import type { TerminalRead } from '@localixai/plugin-sdk/backend'
+import type { TerminalRead } from '@localixai/mini-app-sdk/backend'
 import type { AdapterEnv, ProviderAdapter, SourceRef } from './adapters/types'
 import { sessionResume } from './resume-session'
 import { PROVIDER_ADAPTERS, adapterFor } from './adapters/registry'

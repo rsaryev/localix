@@ -1,7 +1,7 @@
 import { BookOpen, Library } from 'lucide-react'
-import type { StatusItemState } from '@localixai/plugin-sdk/ui'
-import { pluginWorkspace, statusMenuList } from '@localixai/plugin-sdk/ui'
-import { usePluginWorkspace } from '@localixai/plugin-sdk/ui/runtime-hooks'
+import type { StatusItemState } from '@localixai/mini-app-sdk/ui'
+import { pluginWorkspace, statusMenuList } from '@localixai/mini-app-sdk/ui'
+import { usePluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 
 const BOOK_KIND = 'reader:book'
 const WORKSPACE_KIND = 'reader:workspace'

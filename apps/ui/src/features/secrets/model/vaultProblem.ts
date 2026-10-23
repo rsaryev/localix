@@ -1,5 +1,5 @@
-import type { Problem } from '@localixai/plugin-sdk/ui/problems'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import type { Problem } from '@localixai/mini-app-sdk/ui/problems'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { errorDetail } from '@/shared/api/internal'
 
 /**

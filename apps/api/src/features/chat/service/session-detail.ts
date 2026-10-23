@@ -21,7 +21,7 @@ import {
   isToolBackedItem,
   type ToolBackedItem,
 } from '@localixai/agent/agents/items'
-import { isUiNavigationOutput } from '@localixai/plugin-sdk/ui'
+import { isUiNavigationOutput } from '@localixai/mini-app-sdk/ui'
 import { isAlwaysStandaloneToolName } from '../item-format'
 import type { MessageToolDetails, PersistedMessage } from '../contracts'
 

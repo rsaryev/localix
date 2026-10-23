@@ -1,5 +1,5 @@
 import { Pencil, Trash2, Undo2 } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { GUTTER_ACTION, deleteActionTitle } from './tableGridModel'
 
 interface TableRowActionsProps {

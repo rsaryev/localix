@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useShallowStable } from './useShallowStable'
-import { acknowledgeInline, runPluginAction } from '@localixai/plugin-sdk/ui'
+import { acknowledgeInline, runPluginAction } from '@localixai/mini-app-sdk/ui'
 import type { DbErrorCode } from '../dbClient'
 import { databaseApi, DbApiError } from '../api/databaseApi'
 import { adaptResult } from './resultAdapter'

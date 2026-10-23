@@ -9,7 +9,7 @@ import {
   WorkbenchListRowMeta,
   WorkbenchListRowTrigger,
 } from '@localixai/kit/workbench-list-row'
-import { useSessionActivity } from '@localixai/plugin-sdk/ui/session-activity'
+import { useSessionActivity } from '@localixai/mini-app-sdk/ui/session-activity'
 import type { UiSession } from '@/shared/api/contracts'
 import { runtimeCountsLabel, sessionTone, statusText, titleFor } from './runtimeSessionMeta'
 import type { FlatNode } from './runtimeSessionTree'

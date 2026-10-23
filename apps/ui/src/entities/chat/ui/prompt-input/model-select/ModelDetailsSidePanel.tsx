@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { ArrowLeft, Info, X } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { CatalogModel } from '@localixai/agent/catalog'
 import { Button } from '@localixai/kit/button'
 import { IconButton } from '@localixai/kit/icon-button'

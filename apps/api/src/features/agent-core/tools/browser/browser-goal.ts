@@ -10,7 +10,7 @@
  * prompt's verification rule asks of every browser action.
  */
 import type { AgentToolResult } from '@localixai/agent/agents'
-import type { DecisionAsk, DecisionOutcome } from '@localixai/plugin-sdk/backend'
+import type { DecisionAsk, DecisionOutcome } from '@localixai/mini-app-sdk/backend'
 
 import type {
   PreviewCommand,

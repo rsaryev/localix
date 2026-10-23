@@ -1,4 +1,4 @@
-import type { PluginTextInputCompletionSurface } from '@localixai/plugin-sdk/backend'
+import type { PluginTextInputCompletionSurface } from '@localixai/mini-app-sdk/backend'
 
 /**
  * Every plugin's text-input completion surfaces, side by side.

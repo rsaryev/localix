@@ -1,4 +1,4 @@
-import { pluginWorkspace } from '@localixai/plugin-sdk/ui/runtime'
+import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 
 import { learningCourseUri } from '../../shared/resource-uri'
 

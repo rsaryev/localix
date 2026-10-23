@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /** Shared sticky chrome; providers own only their responsive column grids and labels. */
 export function ResourceListHeader({

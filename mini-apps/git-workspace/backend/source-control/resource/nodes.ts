@@ -1,6 +1,6 @@
 /** The `@`-menu nodes of one repository: its sections, branches, commits and commit files. */
-import type { ResourceNode } from '@localixai/plugin-sdk/backend'
-import { buildResourceUri, linkAction, truncationNotice } from '@localixai/plugin-sdk/backend'
+import type { ResourceNode } from '@localixai/mini-app-sdk/backend'
+import { buildResourceUri, linkAction, truncationNotice } from '@localixai/mini-app-sdk/backend'
 import type { GitRepoEntry, ResourceGitService } from '../resource-provider'
 import {
   branchDetail,

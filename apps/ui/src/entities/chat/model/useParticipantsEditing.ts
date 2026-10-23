@@ -12,7 +12,7 @@
  */
 import { useCallback } from 'react'
 import { toast } from '@/shared/lib/notify'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 import { backendClient } from '@/shared/api/client'
 import type { SessionAgentRoute } from '@/shared/api/contracts'

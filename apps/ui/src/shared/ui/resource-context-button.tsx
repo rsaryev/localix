@@ -1,11 +1,11 @@
 import { Link2 } from 'lucide-react'
 import type { DragEvent, MouseEvent } from 'react'
-import { resourceMessageBindingDraft } from '@localixai/plugin-sdk/ui'
+import { resourceMessageBindingDraft } from '@localixai/mini-app-sdk/ui'
 
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { composerBus } from '@/shared/lib/composerBus'
-import { setMessageBindingDrag } from '@localixai/plugin-sdk/ui/message-binding-drag'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { setMessageBindingDrag } from '@localixai/mini-app-sdk/ui/message-binding-drag'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Button } from '@localixai/kit/button'
 import { IconButton } from '@localixai/kit/icon-button'
 

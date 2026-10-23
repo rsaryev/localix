@@ -3,7 +3,7 @@ import { act } from 'react'
 import { backendClient } from '@/shared/api/client'
 import type { LspDocumentSymbol } from '@/shared/api/contracts'
 import { registerDom } from '@localixai/kit/testing/dom'
-import { WorkItemVisibilityProvider } from '@localixai/plugin-sdk/ui/visibility'
+import { WorkItemVisibilityProvider } from '@localixai/mini-app-sdk/ui/visibility'
 import { useSymbolBreadcrumb } from './useSymbolBreadcrumb'
 
 let teardown: () => Promise<void>

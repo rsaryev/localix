@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { SemanticTask } from '@localixai/plugin-sdk/backend'
+import type { SemanticTask } from '@localixai/mini-app-sdk/backend'
 import { createSemanticVectors } from './semantic-vectors'
 
 const TOPICS = ['photos', 'contract', 'tiles']

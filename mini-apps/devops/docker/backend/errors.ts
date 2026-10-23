@@ -17,9 +17,9 @@ import {
   // from here as a TYPE today, so the barrel was erased at build time and nothing detonated —
   // but that is one non-type import away from the same failure, and the two providers should
   // not differ on a rule this sharp.
-} from '@localixai/plugin-sdk/typed-error'
+} from '@localixai/mini-app-sdk/typed-error'
 
-import { isMissingExecutable, type Prerequisite } from '@localixai/plugin-sdk/prerequisite'
+import { isMissingExecutable, type Prerequisite } from '@localixai/mini-app-sdk/prerequisite'
 
 import { DockerTransportError } from './api-transport'
 

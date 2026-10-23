@@ -17,7 +17,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { KeyRound, Save } from 'lucide-react'
-import { acknowledgeInline } from '@localixai/plugin-sdk/ui'
+import { acknowledgeInline } from '@localixai/mini-app-sdk/ui'
 import { Button } from '@localixai/kit/button'
 import { Input } from '@localixai/kit/input'
 import { Select } from '@localixai/kit/select'

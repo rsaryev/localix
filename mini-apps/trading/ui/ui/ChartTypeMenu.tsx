@@ -1,7 +1,7 @@
 import { BarChart3, CandlestickChart, LineChart, TrendingUp } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import {
   DropdownMenu,
   DropdownMenuContent,

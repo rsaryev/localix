@@ -1,1 +1,1 @@
-export { cn } from '@localixai/plugin-sdk/ui/classes'
+export { cn } from '@localixai/mini-app-sdk/ui/classes'

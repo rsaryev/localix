@@ -11,7 +11,7 @@ import {
   selectSessionModelId,
 } from './connectionScope'
 import { isDesktop, getDesktopOAuthPort } from '@localixai/kit/environment'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { watchOAuthConnection } from './oauthConnectionWatch'
 import { returnToOAuthModels } from './oauthConnectionReturn'

@@ -1,5 +1,5 @@
 import type { SortSpec, TableColumn, TableRow } from '@localixai/dataview'
-import type { PluginTableGridProps } from '@localixai/plugin-sdk/ui'
+import type { PluginTableGridProps } from '@localixai/mini-app-sdk/ui'
 import type { StagedChanges } from './useRowMutations'
 
 export interface TableGridProps {

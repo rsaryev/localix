@@ -3,7 +3,7 @@
  * ordered by most-recently-committed; switching surfaces git's own error
  * (e.g. a dirty tree blocking checkout) as a 409 so the UI can show it verbatim.
  */
-import { ApiError } from '@localixai/plugin-sdk/backend'
+import { ApiError } from '@localixai/mini-app-sdk/backend'
 import type { RepoBranch, RepoRemoteBranch } from '../contracts'
 import { firstLine, type GitRunner } from './cli'
 

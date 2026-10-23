@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { createWsFrameConnection, createWsFrameRegistry } from '@localixai/plugin-sdk/backend'
+import { createWsFrameConnection, createWsFrameRegistry } from '@localixai/mini-app-sdk/backend'
 
 import { createDockerLogsHub, createDockerLogsWsFrame } from '../docker/backend/logs-follow'
 import { createKubeLogsHub } from '../kubernetes/backend/logs-follow'

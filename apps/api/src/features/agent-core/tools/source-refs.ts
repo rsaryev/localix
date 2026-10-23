@@ -1,7 +1,7 @@
 import { agentSourceId, type AgentSource } from '@localixai/agent/agents'
-import { fileUiUri } from '@localixai/plugin-sdk/navigation'
+import { fileUiUri } from '@localixai/mini-app-sdk/navigation'
 
-export { fileOpenMarkdownLink, fileUiUri } from '@localixai/plugin-sdk/navigation'
+export { fileOpenMarkdownLink, fileUiUri } from '@localixai/mini-app-sdk/navigation'
 
 /**
  * Builders for the provenance a built-in tool publishes on its result.

@@ -2,7 +2,7 @@ import {
   askDecisionForTurn,
   type DecisionAsk,
   type DecisionHost,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 
 import { shotsBy, viewFor, type AgentWait, type Game } from '../shared/game'
 import { suggestedCells, targetGrid } from '../shared/describe'

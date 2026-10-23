@@ -28,7 +28,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@localixai/plugin-sdk": "workspace:*",
+    "@localixai/mini-app-sdk": "workspace:*",
     "@types/dagre": "^0.7.53",
     "@types/json-bigint": "^1.0.4",
     "@types/mssql": "^12.3.0",

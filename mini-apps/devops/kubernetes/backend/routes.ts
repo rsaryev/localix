@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
-import { summarizeZodIssues } from '@localixai/plugin-sdk/backend'
-import type { PluginRouteContext } from '@localixai/plugin-sdk/backend'
+import { summarizeZodIssues } from '@localixai/mini-app-sdk/backend'
+import type { PluginRouteContext } from '@localixai/mini-app-sdk/backend'
 import {
   applyManifestSchema,
   contextQuerySchema,

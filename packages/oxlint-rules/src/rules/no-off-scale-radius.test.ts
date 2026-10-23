@@ -47,7 +47,7 @@ describe(RULE, () => {
       'apps/ui/src/features/demo/Row.tsx',
       'apps/ui/src/shared/ui/status-item.tsx',
       'plugins/acme/ui/Cell.tsx',
-      'packages/plugin-sdk/src/ui/widget.tsx',
+      'packages/mini-app-sdk/src/ui/widget.tsx',
     ]) {
       const findings = await runRule(RULE, `export const a = <div className="rounded p-0.5" />`, {
         filename,

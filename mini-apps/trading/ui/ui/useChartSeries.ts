@@ -4,7 +4,7 @@
  */
 import { useEffect } from 'react'
 import { ColorType, PriceScaleMode, createSeriesMarkers } from 'lightweight-charts'
-import { saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 import { seriesMarkersOf } from '../model/chartDrawings'
 import {
   addMainSeries,

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { backendClient } from '@/shared/api/client'
 import { eventSocket } from '@/shared/api/eventSocket'
-import type { Problem } from '@localixai/plugin-sdk/ui/problems'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import type { Problem } from '@localixai/mini-app-sdk/ui/problems'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { useProblemReport, type OwnedProblemReport } from '@/shared/ui/problem-report'
 import { usePreviewStore } from '../model/previewStore'
 

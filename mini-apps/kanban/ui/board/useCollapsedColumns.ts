@@ -1,5 +1,5 @@
 import { useCallback, useSyncExternalStore } from 'react'
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 
 import type { KanbanStatus } from '../../shared/contracts'
 

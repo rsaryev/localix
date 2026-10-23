@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react'
 import { ArrowLeft, Folder } from 'lucide-react'
 import { useShallow } from 'zustand/react/shallow'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 import { useChatStore } from '@/entities/chat/model/store'
 import { useActiveSessionSummary, useSessionRoster } from '@/entities/chat/model/useSessionRoster'

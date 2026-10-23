@@ -4,7 +4,7 @@
  * is a request called `list` in a folder called `users`. The navigator was still drawing a flat
  * list of full names, which is the one view that makes a collection unreadable as it grows.
  *
- * The tree itself is `@localixai/plugin-sdk/ui/path-tree` — the same builder Source Control's changed-file
+ * The tree itself is `@localixai/mini-app-sdk/ui/path-tree` — the same builder Source Control's changed-file
  * tree uses, so folders sort first and a single-child chain compacts to `a/b` in both panels.
  * What lives here is only what a REQUEST row needs that a file row does not.
  *
@@ -17,7 +17,7 @@
 import { useState } from 'react'
 import { ChevronRight, FilePlus2, FolderPlus, MoreVertical, Trash2 } from 'lucide-react'
 
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { DROP_TARGET_INSET_ACTIVE } from '@localixai/kit/drop-target'
 import { IconButton } from '@localixai/kit/icon-button'
 import { WorkbenchListRowTrigger } from '@localixai/kit/workbench-list-row'
@@ -28,10 +28,10 @@ import {
   DropdownMenuTrigger,
 } from '@localixai/kit/dropdown-menu'
 import { MenuEntries } from '@localixai/kit/menu-entries'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { REQUEST_MOVE_MIME, moveTarget, readMovedRequest } from '../model/moveRequest'
-import { buildPathTree, type PathTreeNode } from '@localixai/plugin-sdk/ui/path-tree'
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { buildPathTree, type PathTreeNode } from '@localixai/mini-app-sdk/ui/path-tree'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 import type { RequestInfo } from '../../backend/contracts'
 
 const COLLAPSED_KEY = 'api.collapsed-folders'

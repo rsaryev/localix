@@ -65,8 +65,9 @@ describe('ToolLine as a drag source', () => {
     const { createRoot } = await import('react-dom/client')
     const { ToolLine } = await import('./ToolLine')
     const { ToolCallDragContext } = await import('./toolCallDragContext')
-    const { WorkItemSessionProvider } = await import('@localixai/plugin-sdk/ui/work-item-session')
-    const { readMessageBindingDrag } = await import('@localixai/plugin-sdk/ui/message-binding-drag')
+    const { WorkItemSessionProvider } = await import('@localixai/mini-app-sdk/ui/work-item-session')
+    const { readMessageBindingDrag } =
+      await import('@localixai/mini-app-sdk/ui/message-binding-drag')
     const host = document.createElement('div')
     document.body.append(host)
     const root = createRoot(host)

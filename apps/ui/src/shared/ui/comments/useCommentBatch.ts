@@ -1,11 +1,11 @@
 import { useCallback, useState } from 'react'
-import type { CommentActionContribution } from '@localixai/plugin-sdk/ui'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import type { CommentActionContribution } from '@localixai/mini-app-sdk/ui'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { toast } from '@/shared/lib/notify'
 
 import type { MessageAttachment } from '@/shared/api/contracts'
 import { composerBus } from '@/shared/lib/composerBus'
-import { useComments, type Comment } from '@localixai/plugin-sdk/ui/comments'
+import { useComments, type Comment } from '@localixai/mini-app-sdk/ui/comments'
 
 /**
  * What a review-comment batch becomes — built once from the accumulated comments and read by

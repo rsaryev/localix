@@ -2,7 +2,7 @@ import { Check, Copy, History, MoreHorizontal, ShieldCheck, X } from 'lucide-rea
 
 import { VAULT_ITEM_TYPE_DEFINITIONS } from '@localixai/api/vault-item-types'
 import type { SecretMeta, VaultItemSource, VaultVersionMeta } from '@localixai/api/client'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { ActivitySignal } from '@localixai/kit/activity-orb'
 import {
   DropdownMenu,

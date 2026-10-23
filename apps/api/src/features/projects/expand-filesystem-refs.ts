@@ -1,7 +1,7 @@
 /** Read-only file and folder expansion with the existing confinement and content limits. */
 import path from 'node:path'
 import { readFile, readdir, stat } from 'node:fs/promises'
-import { hasBinarySignature } from '@localixai/plugin-sdk/backend'
+import { hasBinarySignature } from '@localixai/mini-app-sdk/backend'
 import { resolveWithin } from '../../lib/path-containment'
 import type { ContextRef, ContextRefExpansion } from './contracts'
 import { fail, succeed } from './ref-expansion-result'

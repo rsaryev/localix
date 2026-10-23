@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { documentLayoutSchema, type DocumentLayout } from '@localixai/plugin-sdk/document-layout'
+import { documentLayoutSchema, type DocumentLayout } from '@localixai/mini-app-sdk/document-layout'
 
 /**
  * Agnostic document-GENERATION contracts (the reverse of extraction). The generator

@@ -25,14 +25,14 @@ import {
   DropdownMenuTrigger,
 } from '@localixai/kit/dropdown-menu'
 import { MenuEntries } from '@localixai/kit/menu-entries'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
-import { copyText } from '@localixai/plugin-sdk/ui/interactions'
-import { toast } from '@localixai/plugin-sdk/ui'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
+import { copyText } from '@localixai/mini-app-sdk/ui/interactions'
+import { toast } from '@localixai/mini-app-sdk/ui'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import {
   createMessageBindingDraft,
   setMessageBindingDrag,
-} from '@localixai/plugin-sdk/ui/message-binding-drag'
+} from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import type { RequestInfo } from '../../backend/contracts'
 import { buildRequestUri } from '../../backend/uri'
 import { REQUEST_MOVE_MIME } from '../model/moveRequest'

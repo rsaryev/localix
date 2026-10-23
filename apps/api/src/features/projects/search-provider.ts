@@ -6,7 +6,7 @@
  */
 import type { SearchHit, SearchProvider } from '../agent-core/search/provider'
 import { bestFieldScore } from '../agent-core/search/match'
-import { localixResourceUri } from '@localixai/plugin-sdk/navigation'
+import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 
 /** One project as the provider reads it. */
 export interface ProjectSearchRow {

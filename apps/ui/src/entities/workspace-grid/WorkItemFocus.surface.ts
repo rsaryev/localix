@@ -1,5 +1,5 @@
 import { PanelsTopLeft } from 'lucide-react'
-import { defineUiLocation } from '@localixai/plugin-sdk/ui'
+import { defineUiLocation } from '@localixai/mini-app-sdk/ui'
 import { resolveExistingWorkItemFocus, useGridStore } from './model'
 
 /**

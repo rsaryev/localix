@@ -21,7 +21,7 @@
  */
 import { Fragment, type ComponentType, type ReactNode } from 'react'
 
-import type { FileEditorEnhancerContribution } from '@localixai/plugin-sdk/ui'
+import type { FileEditorEnhancerContribution } from '@localixai/mini-app-sdk/ui'
 import { SurfaceErrorBoundary } from '@/shared/ui/SurfaceErrorBoundary'
 import { fileEditorEnhancersFor } from './fileEditorEnhancers'
 import { usePluginRegistrySlice } from './usePluginRegistrySlice'

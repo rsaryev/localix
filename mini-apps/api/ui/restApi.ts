@@ -8,7 +8,7 @@
  * browser-set identity would be a self-asserted one.
  */
 
-import { pluginApiFetch } from '@localixai/plugin-sdk/ui/transport'
+import { pluginApiFetch } from '@localixai/mini-app-sdk/ui/transport'
 import type {
   HistoryEntryInfo,
   HistoryResponse,

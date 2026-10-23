@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { Boxes, Check } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { SectionLabel } from '@localixai/kit/section-label'
 import { StatusDot } from '@localixai/kit/status-dot'
 

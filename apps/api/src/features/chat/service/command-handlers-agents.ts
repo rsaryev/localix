@@ -1,6 +1,6 @@
 import { NotFoundError } from '../../../lib/domain-errors'
 import { agentAuthoredBlueprintSchema, agentHandleSchema } from '@localixai/agent/agents'
-import { localixUiUri } from '@localixai/plugin-sdk/navigation'
+import { localixUiUri } from '@localixai/mini-app-sdk/navigation'
 import { errorMessage } from '../../../lib/errors'
 import { agentRecordInputSchema, type AgentSummary } from '../../agents/contracts'
 import { agentPolicy, canJoinConversation } from '../../agents/policy'

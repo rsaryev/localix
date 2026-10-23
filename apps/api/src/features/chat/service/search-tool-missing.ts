@@ -1,5 +1,5 @@
 import { UnavailableError } from '../../../lib/domain-errors'
-import { isMissingExecutable } from '@localixai/plugin-sdk/prerequisite'
+import { isMissingExecutable } from '@localixai/mini-app-sdk/prerequisite'
 
 import type { ApiError } from '../../../lib/errors'
 

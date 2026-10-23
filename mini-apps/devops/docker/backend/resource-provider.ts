@@ -45,8 +45,8 @@ import type {
   ResourceExpansion,
   ResourceNode,
   ResourceRefProvider,
-} from '@localixai/plugin-sdk/backend'
-import { buildResourceUri, noticeNode, providerSegments } from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
+import { buildResourceUri, noticeNode, providerSegments } from '@localixai/mini-app-sdk/backend'
 import { mapDockerError } from './errors'
 import {
   categoryChildren,

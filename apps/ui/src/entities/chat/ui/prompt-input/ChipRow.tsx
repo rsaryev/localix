@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useHorizontalWheelScroll } from '@localixai/kit/lib'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /** How far the fade reaches into the row from an edge that has more chips behind it. */
 const FADE = '1.5rem'

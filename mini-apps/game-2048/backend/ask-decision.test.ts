@@ -8,7 +8,7 @@ import type {
   DecisionOptions,
   DecisionOutcome,
   PluginRouteScope,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 
 import { gameSchema, newGame, STOPPED_REASON, type Game } from '../shared/game'
 import { DECISION_PURPOSE, moveAsk } from './ask-decision'

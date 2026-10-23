@@ -107,7 +107,7 @@ export const CONTROLS: readonly KitCatalogEntry[] = [
     provider: 'kit',
     exports: ['OpponentMenu', 'OPPONENT_CHOICES'],
     summary: 'Who plays the other side of a game: the chat agent or a decision model.',
-    use: "A game's control row, beside New game. The table keeps the choice (`@localixai/plugin-sdk/opponent`); the backend answers a `decision` turn with `askDecisionForTurn`.",
+    use: "A game's control row, beside New game. The table keeps the choice (`@localixai/mini-app-sdk/opponent`); the backend answers a `decision` turn with `askDecisionForTurn`.",
     not: 'Any other choice is Select or MenuEntries in a menu.',
   },
   {
@@ -204,7 +204,7 @@ export const CONTROLS: readonly KitCatalogEntry[] = [
     use: 'Lightbox corners and thumbnail actions, where the backdrop is not app chrome.',
   },
   {
-    specifier: '@localixai/plugin-sdk/ui/segmented-control',
+    specifier: '@localixai/mini-app-sdk/ui/segmented-control',
     category: 'controls',
     provider: 'sdk',
     exports: ['SegmentedRadioGroup', 'Segmented', 'SegmentedControl', 'SegmentedControlItem'],

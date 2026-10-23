@@ -24,7 +24,7 @@ import { inspector } from '@/shared/lib/inspectorBus'
 import { CMD, useChordHint } from '@/shared/lib/keybindings'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@localixai/kit/tooltip'
 import { NotificationCenterLauncher } from '@/shared/ui/notification-center/NotificationCenterLauncher'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { chromeAction, chromeActionActive } from '@localixai/kit/chrome-action'
 import { fitStatusStrip } from '@localixai/kit/workbench-statusbar'
 

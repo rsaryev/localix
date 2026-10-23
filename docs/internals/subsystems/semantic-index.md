@@ -95,7 +95,7 @@ English.
 
 ## Adding a semantic source
 
-Register a `SemanticSource` (`@localixai/plugin-sdk/backend`): a collection name, a `label` (its
+Register a `SemanticSource` (`@localixai/mini-app-sdk/backend`): a collection name, a `label` (its
 category in the status bar), a version, and `scan`/`read`. A core kind also gets a target in
 [`bootstrap/semantic-changes.ts`](../../../apps/api/src/bootstrap/semantic-changes.ts), and its
 writers record changes on the change feed; the map does not compile until every kind of the core

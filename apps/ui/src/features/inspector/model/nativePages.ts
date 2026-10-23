@@ -1,4 +1,4 @@
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { toast } from '@/shared/lib/notify'
 import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { nativePageRendererLease } from '@/shared/lib/nativePageRendererLease'

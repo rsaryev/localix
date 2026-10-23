@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { richTextSchema, richTextToText } from '@localixai/plugin-sdk/rich-text'
+import { richTextSchema, richTextToText } from '@localixai/mini-app-sdk/rich-text'
 import { sectionDefinitions } from './sections'
-import { documentFontSchema, portraitSchema } from '@localixai/plugin-sdk/document-layout'
+import { documentFontSchema, portraitSchema } from '@localixai/mini-app-sdk/document-layout'
 
 export const sectionTypes = [
   'summary',

@@ -8,8 +8,8 @@ import {
   type ParsedContextRef,
 } from '@localixai/api/context-refs'
 import type { MessageContextBinding } from '@/shared/api/contracts'
-import type { MessageContextBindingDraft } from '@localixai/plugin-sdk/ui'
-import { promptHasToken } from '@localixai/plugin-sdk/ui/message-binding-drag'
+import type { MessageContextBindingDraft } from '@localixai/mini-app-sdk/ui'
+import { promptHasToken } from '@localixai/mini-app-sdk/ui/message-binding-drag'
 
 /**
  * Parse ONE ready-made link token (`@file:src/a.ts`, `@resource:localix://resource/<provider>/…`,

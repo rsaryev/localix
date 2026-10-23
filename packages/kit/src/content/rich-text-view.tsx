@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import {
   isRichTextHref,
   type RichBlock,
   type RichInline,
   type RichTextValue,
-} from '@localixai/plugin-sdk/rich-text'
+} from '@localixai/mini-app-sdk/rich-text'
 
 function inline(part: RichInline, index: number): ReactNode {
   if (part.type === 'hardBreak') return <br key={index} />

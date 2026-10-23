@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { useComments, type Comment } from '@localixai/plugin-sdk/ui/comments'
+import { useComments, type Comment } from '@localixai/mini-app-sdk/ui/comments'
 import { useReviewComments } from '@/shared/ui/comments/useReviewComments'
 import { AnchoredCommentCard } from '@/shared/ui/comments/AnchoredCommentCard'
 import { useCommentDraft } from '@/shared/ui/comments/useCommentDraft'

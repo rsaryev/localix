@@ -11,5 +11,5 @@ export { ProblemState, type ProblemStateProps } from './ProblemState'
 export {
   useProblemReport,
   type OwnedProblemReport,
-} from '@localixai/plugin-sdk/ui/use-problem-report'
+} from '@localixai/mini-app-sdk/ui/use-problem-report'
 export { PROBLEM_SEVERITY, type SeverityPresentation } from './severity'

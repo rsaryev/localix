@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ComponentProps } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { POPOVER_SURFACE, POPOVER_SURFACE_OVER_FOREIGN } from '@localixai/kit/popover-surface'
 import { CommentDraftCard } from './CommentDraftCard'
 

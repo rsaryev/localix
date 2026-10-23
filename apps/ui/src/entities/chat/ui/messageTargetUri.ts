@@ -5,7 +5,7 @@
  * mounting a virtualizer — each of them is a place where a wrong answer either throws inside
  * render or lets a hidden transcript swallow a jump meant for the visible one.
  */
-import { localixResourceUri } from '@localixai/plugin-sdk/navigation'
+import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 import type { EventFocusRequest } from '@/shared/lib/eventFocusBus'
 import type { Message } from '../model/types'
 

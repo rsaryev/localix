@@ -11,13 +11,13 @@
  * on a pane the person has closed is not recovery.
  */
 
-import type { PluginProblemLineProps } from '@localixai/plugin-sdk/ui/components'
-import { useProblemReport } from '@localixai/plugin-sdk/ui'
+import type { PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
+import { useProblemReport } from '@localixai/mini-app-sdk/ui'
 import type {
   Problem,
   ProblemConsequence,
   ProblemRecovery,
-} from '@localixai/plugin-sdk/ui/problems'
+} from '@localixai/mini-app-sdk/ui/problems'
 import { DbApiError } from './api/databaseApi'
 
 /** Namespace for this plugin's rows in the Event Center. */

@@ -7,7 +7,7 @@
  * deleted and the new one upserted together). A plugin storing the stable id must not unassign a
  * renamed agent, so an agent deletion is passed on only when no later notice brought its id back.
  */
-import type { CoreDeletion } from '@localixai/plugin-sdk/backend'
+import type { CoreDeletion } from '@localixai/mini-app-sdk/backend'
 import type { ConsumerHandlers } from '@localixai/change-feed'
 import type { CoreCascades, CoreChangeFeed, CoreRefs } from './core-entities'
 

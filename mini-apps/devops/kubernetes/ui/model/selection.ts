@@ -1,5 +1,5 @@
 import { ALL_NAMESPACES, type KubeContext, type KubeNamespace } from '../../backend/contracts'
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 
 /**
  * Persisted context+namespace selection (survives reload + rail switch).

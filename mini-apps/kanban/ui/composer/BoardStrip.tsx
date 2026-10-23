@@ -1,6 +1,6 @@
 import { memo, useMemo } from 'react'
 import { CheckCircle2, SquareKanban } from 'lucide-react'
-import type { SessionSurfaceProps } from '@localixai/plugin-sdk/ui'
+import type { SessionSurfaceProps } from '@localixai/mini-app-sdk/ui'
 import { CollapsibleStrip } from '@localixai/kit/collapsible-strip'
 import { IconButton } from '@localixai/kit/icon-button'
 import { StatusDot } from '@localixai/kit/status-dot'

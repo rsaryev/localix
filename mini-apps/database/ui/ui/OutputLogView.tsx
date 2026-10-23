@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Trash2 } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { CodePreview } from '@localixai/kit/code-block'
 import { EmptyHint } from '@localixai/kit/empty-hint'
 import { IconButton } from '@localixai/kit/icon-button'

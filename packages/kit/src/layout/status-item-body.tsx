@@ -1,5 +1,5 @@
-import type { StatusItemState, StatusMetric } from '@localixai/plugin-sdk/ui'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import type { StatusItemState, StatusMetric } from '@localixai/mini-app-sdk/ui'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 import { Chip } from '../feedback/chip'
 import { Spinner } from '../feedback/spinner'

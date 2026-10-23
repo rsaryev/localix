@@ -1,7 +1,7 @@
 import { hc } from 'hono/client'
 // The SDK transport, not the host's API internals: a plugin owns its own client and must not
 // reach into `shared/api` for the base URL, the envelope reader or the query cleaner.
-import { pluginApiUrl } from '@localixai/plugin-sdk/ui'
+import { pluginApiUrl } from '@localixai/mini-app-sdk/ui'
 import type { SourceControlRoutes } from '../../backend/source-control/routes'
 
 /**

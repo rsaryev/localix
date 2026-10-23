@@ -1,4 +1,4 @@
-import type { WorkItemSlotContribution } from '@localixai/plugin-sdk/ui'
+import type { WorkItemSlotContribution } from '@localixai/mini-app-sdk/ui'
 import { usePluginRegistrySlice } from './usePluginRegistrySlice'
 
 const slots: WorkItemSlotContribution[] = []

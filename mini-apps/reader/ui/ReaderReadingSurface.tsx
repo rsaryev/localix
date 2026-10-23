@@ -1,5 +1,5 @@
 import type { CSSProperties, RefObject } from 'react'
-import { pluginClipboard } from '@localixai/plugin-sdk/ui/runtime'
+import { pluginClipboard } from '@localixai/mini-app-sdk/ui/runtime'
 
 import type { ReaderChapter } from '../shared/contracts'
 import type { ReaderPreferences } from './model'

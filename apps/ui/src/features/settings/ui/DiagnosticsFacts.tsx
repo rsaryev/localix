@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
-import type { StatusTone } from '@localixai/plugin-sdk/ui'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import type { StatusTone } from '@localixai/mini-app-sdk/ui'
 import type { ConfigDiagnosticSeverity } from '@localixai/api/client'
 import { PROBLEM_SEVERITY } from '@/shared/ui/problem-report'
 import { StatusDot } from '@localixai/kit/status-dot'

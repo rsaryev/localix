@@ -17,7 +17,7 @@ import type { ResumePoint } from '@localixai/api/client'
 import { backendClient } from '@/shared/api/client'
 import type { UiSession } from '@/shared/api/contracts'
 import { toast } from '@/shared/lib/notify'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 import { findSessionInState } from './findSession'
 import { useChatStore } from './store'

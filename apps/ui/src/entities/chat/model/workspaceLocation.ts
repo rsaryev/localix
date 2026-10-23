@@ -22,8 +22,8 @@ import { workspaceStorageKey } from '@/shared/lib/workspaceWindow'
  * localStorage get/parse/catch + set/catch boilerplate.
  */
 
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
-import type { StorageReader, StorageWriter } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
+import type { StorageReader, StorageWriter } from '@localixai/mini-app-sdk/ui/storage'
 import { isSectionId, type SectionId } from '@/shared/routing/routes'
 
 const STORAGE_KEY = workspaceStorageKey('localix_workspace_location')

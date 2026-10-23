@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { toggleInSet } from '@localixai/plugin-sdk/ui/utilities'
+import { toggleInSet } from '@localixai/mini-app-sdk/ui/utilities'
 
 import type { KanbanStatus, KanbanTask } from '../../shared/contracts'
 import type { OriginFilter } from './types'

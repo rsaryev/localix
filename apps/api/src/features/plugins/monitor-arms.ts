@@ -11,7 +11,7 @@
  * Keyed `<plugin>:<monitor>`, the same key the host runs a monitor under. In memory: an arm lasts
  * the process, exactly as the monitor it points does.
  */
-import type { PluginMonitorArmRequest, PluginMonitorsHost } from '@localixai/plugin-sdk/backend'
+import type { PluginMonitorArmRequest, PluginMonitorsHost } from '@localixai/mini-app-sdk/backend'
 
 import type { PluginMonitorHost } from './monitor-host'
 

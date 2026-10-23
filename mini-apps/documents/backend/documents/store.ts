@@ -12,7 +12,7 @@
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
-import { atomicWriteFile } from '@localixai/plugin-sdk/backend'
+import { atomicWriteFile } from '@localixai/mini-app-sdk/backend'
 import type { ExtractedDocument } from './contracts'
 
 /** Valid cache id: `<64-hex>.json`. Guards the serve route against traversal. */

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 import type { SecretBinding, SecretMeta } from '@localixai/api/client'
-import type { Problem } from '@localixai/plugin-sdk/ui/problems'
+import type { Problem } from '@localixai/mini-app-sdk/ui/problems'
 import { ApiError } from '@/shared/api/internal'
 import { secretsApi } from '@/shared/api/secretsApi'
 import { vaultFailure } from './vaultProblem'

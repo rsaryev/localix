@@ -3,9 +3,9 @@ import { PanelRightClose, PanelRightOpen } from 'lucide-react'
 import type { ExchangeInfo, Market, PrecisionMode } from '../backend/contracts'
 import { useTheme } from '@localixai/kit/theme'
 import { EmptyHint } from '@localixai/kit/empty-hint'
-import { ProblemLine } from '@localixai/plugin-sdk/ui/components'
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
-import { useElementVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { ProblemLine } from '@localixai/mini-app-sdk/ui/components'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
+import { useElementVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { TradingApiError, tradingApi } from './api/tradingApi'
 import { useTradingProblem, type TradingFailure } from './problems'
 import { useOhlcv } from './model/useOhlcv'
@@ -26,7 +26,7 @@ import {
   pickTimeframe,
   saveTimeframe,
 } from './model/timeframePref'
-import { acknowledgeInline, type PublishMessageContext } from '@localixai/plugin-sdk/ui'
+import { acknowledgeInline, type PublishMessageContext } from '@localixai/mini-app-sdk/ui'
 import { chartMessageContext } from './model/chartMessageContext'
 import { DEFAULT_TIMEFRAME } from '../backend/timeframes'
 

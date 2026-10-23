@@ -1,10 +1,10 @@
 import { Pin } from 'lucide-react'
 import type { CuratorSkillRecord, Project, SkillSummary } from '@/shared/api/contracts'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Button } from '@localixai/kit/button'
 import { IconButton } from '@localixai/kit/icon-button'
 import { Switch } from '@localixai/kit/switch'
-import { settingsEntityUiUri } from '@localixai/plugin-sdk/navigation'
+import { settingsEntityUiUri } from '@localixai/mini-app-sdk/navigation'
 import { SettingProblems, SettingRegistryMeta, SettingRegistryRow } from '../settingRegistry'
 import { relativeTime } from './skillCuratorTime'
 

@@ -92,7 +92,7 @@ export const FOUNDATION: readonly KitCatalogEntry[] = [
     use: 'Only where a plugin must follow a user preference the host owns.',
   },
   {
-    specifier: '@localixai/plugin-sdk/ui/classes',
+    specifier: '@localixai/mini-app-sdk/ui/classes',
     category: 'recipes',
     provider: 'sdk',
     exports: [

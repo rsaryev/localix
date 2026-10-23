@@ -56,7 +56,7 @@ affect logs, heaps and load without breaking semantics.
 - The semantic index handlers in `apps/api/src/features/embeddings/targets.ts` re-embed or remove by
   key, which is safe to repeat.
 - Tests for retry and redelivery live in `packages/change-feed/src/feed.test.ts`.
-- On the client, `packages/plugin-sdk/src/ui/resource-sync.ts` coalesces invalidations and drops a
+- On the client, `packages/mini-app-sdk/src/ui/resource-sync.ts` coalesces invalidations and drops a
   read result that a newer invalidation has superseded.
 
 Related: [Transactional outbox](transactional-outbox.md),

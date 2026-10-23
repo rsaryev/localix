@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import type { StatusItemState } from '@localixai/plugin-sdk/ui'
+import type { StatusItemState } from '@localixai/mini-app-sdk/ui'
 import { registerDom } from '@localixai/kit/testing/dom'
 
 import { setEnabledPluginNames } from './pluginActivation'

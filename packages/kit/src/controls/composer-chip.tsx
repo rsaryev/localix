@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 type ComposerChipProps = React.ComponentPropsWithoutRef<'button'> & {
   tone?: 'default' | 'strong' | 'danger'

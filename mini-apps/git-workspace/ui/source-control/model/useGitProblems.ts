@@ -1,10 +1,10 @@
 import { useMemo } from 'react'
-import { useProblemReport, type OwnedProblemReport } from '@localixai/plugin-sdk/ui'
+import { useProblemReport, type OwnedProblemReport } from '@localixai/mini-app-sdk/ui'
 import {
   prerequisiteProblem,
   usePrerequisiteRecovery,
-} from '@localixai/plugin-sdk/ui/prerequisite-recovery'
-import type { ProblemReport } from '@localixai/plugin-sdk/ui/problems'
+} from '@localixai/mini-app-sdk/ui/prerequisite-recovery'
+import type { ProblemReport } from '@localixai/mini-app-sdk/ui/problems'
 
 import type { SourceControlStatus } from '../../../backend/source-control/contracts'
 import { gitReadProblem } from './gitFailure'

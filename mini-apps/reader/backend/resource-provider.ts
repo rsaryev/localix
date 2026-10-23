@@ -3,7 +3,7 @@ import type {
   ResourceNode,
   ResourceRefProvider,
   ResourceRefScope,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import { isAbsolute } from 'node:path'
 
 import { READER_PROVIDER } from '../shared/contracts'

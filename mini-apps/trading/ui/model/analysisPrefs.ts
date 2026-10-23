@@ -1,5 +1,5 @@
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
-import type { StorageReader, StorageWriter } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
+import type { StorageReader, StorageWriter } from '@localixai/mini-app-sdk/ui/storage'
 import type { AnalysisBias, AnalysisRisk, AnalysisStrategy, AnalysisStyle } from './askAgent'
 
 /**

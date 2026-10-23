@@ -7,7 +7,7 @@
 
 import { afterAll, afterEach, describe, expect, test } from 'bun:test'
 import { Hono } from 'hono'
-import type { PluginRouteContext, PluginRouteScope } from '@localixai/plugin-sdk/backend'
+import type { PluginRouteContext, PluginRouteScope } from '@localixai/mini-app-sdk/backend'
 import { createRestRoutes } from './routes'
 import { createMemoryCollection } from './collection/testing/memory'
 import type { EnvironmentService } from './environments/service'

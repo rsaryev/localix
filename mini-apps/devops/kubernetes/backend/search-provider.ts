@@ -22,8 +22,8 @@ import type {
   SearchHit,
   SearchProvider,
   SearchProviderResult,
-} from '@localixai/plugin-sdk/backend'
-import { bestFieldScore } from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
+import { bestFieldScore } from '@localixai/mini-app-sdk/backend'
 import { KubeError, mapKubeError, toErrorInfo } from './errors'
 import { podUri } from './resource-nodes'
 

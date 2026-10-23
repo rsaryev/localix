@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { Blocks } from 'lucide-react'
-import type { PluginUiHost, StatusItemState } from '@localixai/plugin-sdk/ui'
+import type { PluginUiHost, StatusItemState } from '@localixai/mini-app-sdk/ui'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { useModSession } from './model/useModSession'
 

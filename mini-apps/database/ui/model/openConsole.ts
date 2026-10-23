@@ -2,7 +2,7 @@
 // database workbench owns its `db-console` WorkItemKind, the per-connection tab-id formula,
 // and the payload shape here — core just opens/closes what it's told (see inspectorBus
 // `openWorkItem` / `closeWorkItems`), so nothing db-specific lives in the shared bus.
-import { pluginWorkspace } from '@localixai/plugin-sdk/ui/runtime'
+import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import type { ConnectionColor, DbConnectionInfo, DbDialect } from '../dbClient'
 import { DATABASE_DRIVER_CATALOG } from '../../shared/driver-catalog'
 import { connectionDisplayName } from './connectionDisplayName'

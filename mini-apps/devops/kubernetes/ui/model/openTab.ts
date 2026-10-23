@@ -1,5 +1,5 @@
 import type { KubeNode, KubePod, KubeResourceKind } from '../../backend/contracts'
-import { pluginWorkspace } from '@localixai/plugin-sdk/ui/runtime'
+import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import { podTabWorkItemId, resourceTabWorkItemId } from './watchPace'
 
 /*

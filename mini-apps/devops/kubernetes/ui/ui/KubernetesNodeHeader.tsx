@@ -1,7 +1,10 @@
 import { Server } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { RefreshAction } from '@localixai/kit/refresh-action'
-import { SegmentedControl, SegmentedControlItem } from '@localixai/plugin-sdk/ui/segmented-control'
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from '@localixai/mini-app-sdk/ui/segmented-control'
 import type { KubernetesNodeTabModel, KubernetesNodeView } from '../model/useKubernetesNodeTab'
 
 const VIEWS: readonly { value: KubernetesNodeView; label: string }[] = [

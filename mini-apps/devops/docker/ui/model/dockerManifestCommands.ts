@@ -5,7 +5,7 @@
  * with embedded single quotes escaped, so a manifest path with spaces is safe.
  */
 
-import { shellQuote } from '@localixai/plugin-sdk/ui/utilities'
+import { shellQuote } from '@localixai/mini-app-sdk/ui/utilities'
 
 /** Which kind of Docker manifest a file path is (or null for a plain file). */
 export type DockerManifestKind = 'dockerfile' | 'compose'
@@ -13,7 +13,7 @@ export type DockerManifestKind = 'dockerfile' | 'compose'
 /** The compose sub-commands the Run bar exposes. */
 export type ComposeAction = 'up' | 'down' | 'ps' | 'logs' | 'build'
 
-/** Single-quote a shell argument — the shared primitive, see `@localixai/plugin-sdk/ui/utilities`. */
+/** Single-quote a shell argument — the shared primitive, see `@localixai/mini-app-sdk/ui/utilities`. */
 const shq = shellQuote
 
 /** The basename of a path (handles both `/` and `\\` separators). */

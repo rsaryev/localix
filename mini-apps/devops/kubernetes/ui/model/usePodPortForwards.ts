@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { PortForward } from '../../backend/contracts'
-import { useVisiblePolling } from '@localixai/plugin-sdk/ui/visibility'
+import { useVisiblePolling } from '@localixai/mini-app-sdk/ui/visibility'
 import { kubernetesApi } from '../api/kubernetesApi'
 import { usePortForwardsFeed } from './portForwardsFeed'
 

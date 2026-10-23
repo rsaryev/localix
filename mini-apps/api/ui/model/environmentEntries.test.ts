@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from 'bun:test'
-import type { MenuActionEntry, MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuActionEntry, MenuEntry } from '@localixai/mini-app-sdk/ui'
 
 import type { EnvironmentInfo } from '../../backend/contracts'
 import { environmentEntries } from './environmentEntries'

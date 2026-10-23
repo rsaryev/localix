@@ -1,6 +1,6 @@
 import { Database } from 'lucide-react'
-import { ProblemLine, type PluginProblemLineProps } from '@localixai/plugin-sdk/ui/components'
-import type { Problem } from '@localixai/plugin-sdk/ui/problems'
+import { ProblemLine, type PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
+import type { Problem } from '@localixai/mini-app-sdk/ui/problems'
 import { ActivitySignal } from '@localixai/kit/activity-orb'
 import { StateNotice } from '@localixai/kit/state-notice'
 import type { DbConnectionInfo } from '../dbClient'

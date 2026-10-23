@@ -1,6 +1,6 @@
 import type { KeyboardEvent } from 'react'
 import { X } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { IconButton } from '../../controls/icon-button'
 import { ChordHint } from '../../keyboard/chord-hint'
 import { Chip } from '../../feedback/chip'

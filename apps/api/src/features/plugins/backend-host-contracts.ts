@@ -6,7 +6,7 @@ import type { ResourceProviderRegistry } from '../agent-core/resource-refs/provi
 import type { SearchProviderRegistry } from '../agent-core/search/provider'
 import type { ContextProviderRegistry } from '../context-fabric/registry'
 import type { TextInputSurfaceRegistry } from '../suggest/surface-registry'
-import type { PluginRouteScope } from '@localixai/plugin-sdk/backend'
+import type { PluginRouteScope } from '@localixai/mini-app-sdk/backend'
 import type { PluginConditions } from '../notifications/conditions/plugins'
 import type { PluginUiActionCall } from './backend-host-ui-actions'
 

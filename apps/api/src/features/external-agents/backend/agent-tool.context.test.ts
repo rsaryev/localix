@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { createResourceContextProvider } from '@localixai/plugin-sdk/backend'
+import { createResourceContextProvider } from '@localixai/mini-app-sdk/backend'
 import {
   createExternalAgentResourceProvider,
   type ExternalAgentResourceService,

@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import { createTradingPublicContextProvider } from './context-provider'
 import type { ResourceTradingService } from './resource-provider'
-import type { ContextResolver } from '@localixai/plugin-sdk/backend'
+import type { ContextResolver } from '@localixai/mini-app-sdk/backend'
 
 const service = {
   list: async () => [],

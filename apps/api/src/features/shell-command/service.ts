@@ -12,7 +12,7 @@
 import { ConflictError } from '../../lib/domain-errors'
 import { chmod, mkdir, readFile, rm, stat } from 'node:fs/promises'
 
-import { atomicWriteFile } from '@localixai/plugin-sdk/backend'
+import { atomicWriteFile } from '@localixai/mini-app-sdk/backend'
 
 import { isDirOnPath, planShellCommand, type ShellCommandPlanInput } from './plan'
 

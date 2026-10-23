@@ -2,7 +2,7 @@ import type {
   WorkspaceScopeHost,
   WsFrameContribution,
   WsFrameStreamContext,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import type { CameraFrame } from '../shared/camera'
 import {
   CAMERA_SUBSCRIBE,

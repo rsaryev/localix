@@ -1,6 +1,6 @@
 import { createElement } from 'react'
 import { ClipboardList, ShieldCheck, ShieldOff, Zap, type LucideIcon } from 'lucide-react'
-import type { IconComponent } from '@localixai/plugin-sdk/ui'
+import type { IconComponent } from '@localixai/mini-app-sdk/ui'
 import type { PermissionMode } from '@localixai/api/permission-modes'
 
 /**

@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
-import { defaultErrorHandler } from '@localixai/plugin-sdk/backend'
-import type { PluginRouteContext as AppContext } from '@localixai/plugin-sdk/backend'
+import { defaultErrorHandler } from '@localixai/mini-app-sdk/backend'
+import type { PluginRouteContext as AppContext } from '@localixai/mini-app-sdk/backend'
 import type { SourceControlService } from './service'
 import type { ForgeService } from './forge/service'
 import { toWorkspaceWire } from './workspace-wire'

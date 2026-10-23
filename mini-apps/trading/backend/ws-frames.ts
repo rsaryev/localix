@@ -12,7 +12,7 @@
  *  - the {@link TradingStreamRegistry} refcounts per PROCESS across sockets (several tabs
  *    watching the same market share ONE ccxt.pro loop + client).
  */
-import type { WsFrameContribution } from '@localixai/plugin-sdk/backend'
+import type { WsFrameContribution } from '@localixai/mini-app-sdk/backend'
 import type { StreamChannel, StreamParams } from './backend'
 import { type TradingStreamRegistry, streamKeyOf } from './stream'
 

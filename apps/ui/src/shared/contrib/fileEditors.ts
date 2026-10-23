@@ -1,4 +1,4 @@
-import type { FileEditorContribution } from '@localixai/plugin-sdk/ui'
+import type { FileEditorContribution } from '@localixai/mini-app-sdk/ui'
 import { isPluginContributionEnabled } from './pluginActivation'
 
 /**
@@ -14,10 +14,10 @@ import { isPluginContributionEnabled } from './pluginActivation'
  * than one, shows an "Open with" chooser. Core picks no winner itself: only a single
  * contribution that declares `preferred` (the bundled PDF viewer) opens without asking.
  *
- * The contribution CONTRACT is OWNED by `@localixai/plugin-sdk/ui`; re-exported so
+ * The contribution CONTRACT is OWNED by `@localixai/mini-app-sdk/ui`; re-exported so
  * internal import sites stay unchanged.
  */
-export type { FileEditorContribution, FileEditorProps } from '@localixai/plugin-sdk/ui'
+export type { FileEditorContribution, FileEditorProps } from '@localixai/mini-app-sdk/ui'
 
 const editors: FileEditorContribution[] = []
 

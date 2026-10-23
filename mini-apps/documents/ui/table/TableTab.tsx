@@ -3,7 +3,7 @@ import {
   snippetMessageBindingDraft,
   toast,
   type PublishMessageContext,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import {
   createDefaultExporterRegistry,
   defaultChartSpec,
@@ -16,14 +16,14 @@ import { tableApi } from '../api/tableApi'
 import type { OpenTargetView, TableMeta } from '../docClient'
 import { useTableRows } from './useTableRows'
 import { useDocumentProblem } from '../problems'
-import { TableGrid } from '@localixai/plugin-sdk/ui/components'
+import { TableGrid } from '@localixai/mini-app-sdk/ui/components'
 import { TableToolbar, type ExporterChoice } from './TableToolbar'
-import { ChartView } from '@localixai/plugin-sdk/ui/charts'
-import { downloadChartPng, downloadChartSvg } from '@localixai/plugin-sdk/ui/chart-export'
+import { ChartView } from '@localixai/mini-app-sdk/ui/charts'
+import { downloadChartPng, downloadChartSvg } from '@localixai/mini-app-sdk/ui/chart-export'
 import { downloadTable } from './download'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { LoadingHint } from '@localixai/kit/empty-hint'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 
 /** Pull more rows for charts up to this cap — charts plot a representative
  * sample without eagerly loading a 100k-row table. The grid stays fully lazy. */

@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { ArrowUpRight, ChevronRight } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { HiddenHandles, type Node, type NodeProps } from '@localixai/kit/canvas'
 import type { GraphNodeData, NodeEmphasis } from '../model/flow'
 import { GROUP } from '../model/layout'

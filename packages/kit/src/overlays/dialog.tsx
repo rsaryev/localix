@@ -1,8 +1,8 @@
 import * as React from 'react'
 import { Dialog as DialogPrimitive } from 'radix-ui'
 
-import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { useOverlayFocus } from '@localixai/plugin-sdk/ui/focus'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { useOverlayFocus } from '@localixai/mini-app-sdk/ui/focus'
 import { Button } from '../controls/button'
 import { IconButton } from '../controls/icon-button'
 import { modalDescription, modalBody, modalShell, modalSurface, modalTitle } from './modal-surface'

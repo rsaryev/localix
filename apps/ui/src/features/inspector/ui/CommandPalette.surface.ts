@@ -1,5 +1,5 @@
 import { SquareTerminal } from 'lucide-react'
-import { defineUiLocation } from '@localixai/plugin-sdk/ui'
+import { defineUiLocation } from '@localixai/mini-app-sdk/ui'
 
 export const COMMAND_PALETTE_OVERLAY_ID = 'command-palette'
 

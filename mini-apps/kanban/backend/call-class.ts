@@ -8,7 +8,7 @@
  * class here fails `tsc`, and an action outside the enum answers `external`.
  */
 
-import { classifyByAction, type CallClass } from '@localixai/plugin-sdk/backend'
+import { classifyByAction, type CallClass } from '@localixai/mini-app-sdk/backend'
 import type { KanbanAction } from '../shared/tool'
 
 const SESSION: CallClass = { effect: 'session' }

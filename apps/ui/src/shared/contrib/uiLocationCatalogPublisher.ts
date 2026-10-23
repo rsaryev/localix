@@ -1,4 +1,4 @@
-import type { UiAgentLocationCatalogSnapshot } from '@localixai/plugin-sdk/ui'
+import type { UiAgentLocationCatalogSnapshot } from '@localixai/mini-app-sdk/ui'
 import { backoffMs } from '@localixai/api/backoff'
 import { ApiError } from '@/shared/api/internal'
 

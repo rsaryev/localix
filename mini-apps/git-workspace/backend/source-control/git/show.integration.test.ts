@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { getCommitFileDiff, getCommitFiles, getCommitShow, getRangeDiff } from './show'
 import { gitRunner, runGit, type GitRunner } from './cli'
-import { ApiError } from '@localixai/plugin-sdk/backend'
+import { ApiError } from '@localixai/mini-app-sdk/backend'
 
 /**
  * getCommitShow against a real throwaway repo with ≥2 commits — exercises the

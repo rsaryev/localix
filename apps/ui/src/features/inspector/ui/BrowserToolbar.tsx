@@ -9,7 +9,7 @@ import {
   Laptop,
   RotateCw,
 } from 'lucide-react'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { IconButton } from '@localixai/kit/icon-button'
 import { ActionTooltip } from '@localixai/kit/tooltip'
 import { WorkbenchToolbar, WorkbenchToolbarSection } from '@localixai/kit/workbench-toolbar'
@@ -19,7 +19,7 @@ import {
   DropdownMenuContent,
 } from '@localixai/kit/dropdown-menu'
 import { MenuEntries } from '@localixai/kit/menu-entries'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { PreviewAddressBar } from './PreviewAddressBar'
 import { PREVIEW_PORT_PRESETS, presetUrl } from '../model/previewPortPresets'

@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import { ArrowDownRight, ArrowLeftRight, ArrowUpLeft, Waypoints } from 'lucide-react'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { Button } from '@localixai/kit/button'
 import {
   DropdownMenu,

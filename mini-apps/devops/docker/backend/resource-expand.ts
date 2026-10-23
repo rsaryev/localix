@@ -4,7 +4,7 @@
  * `resource-provider.ts`; the node builders in `resource-nodes.ts`.
  */
 import type { DockerContainer, DockerEntityPrefix } from './contracts'
-import type { ResourceExpansion } from '@localixai/plugin-sdk/backend'
+import type { ResourceExpansion } from '@localixai/mini-app-sdk/backend'
 import { imageLabel, isLive, LOG_TAIL } from './resource-nodes'
 import type { ResourceDockerService } from './resource-provider'
 

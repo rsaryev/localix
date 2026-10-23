@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowUpRight, Copy, Check, TriangleAlert } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
-import { copyText } from '@localixai/plugin-sdk/ui/interactions'
-import { acknowledgeInline } from '@localixai/plugin-sdk/ui'
-import { ProblemLine } from '@localixai/plugin-sdk/ui/components'
+import { copyText } from '@localixai/mini-app-sdk/ui/interactions'
+import { acknowledgeInline } from '@localixai/mini-app-sdk/ui'
+import { ProblemLine } from '@localixai/mini-app-sdk/ui/components'
 import {
   Dialog,
   DialogBody,

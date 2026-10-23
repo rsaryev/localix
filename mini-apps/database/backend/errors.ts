@@ -20,7 +20,7 @@
  * an EMPTY `message` instead of falling back to the friendly sentence.
  */
 
-import { defineTypedError, type TypedDomainError } from '@localixai/plugin-sdk/backend'
+import { defineTypedError, type TypedDomainError } from '@localixai/mini-app-sdk/backend'
 
 export type DbErrorCode =
   | 'timeout'

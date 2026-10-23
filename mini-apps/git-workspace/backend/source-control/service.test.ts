@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { ApiError } from '@localixai/plugin-sdk/backend'
+import { ApiError } from '@localixai/mini-app-sdk/backend'
 import { createSourceControlService } from './service'
 import type { SourceControlBackend } from './ports'
 import type { RepoBranch, RepoStatus, RepoWithStatus } from './contracts'

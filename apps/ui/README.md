@@ -29,7 +29,8 @@ The package manifest defines no JavaScript exports. These are its runtime and ex
 ## Limits
 
 - The build is an application artifact, not an importable UI SDK. Cross-package UI extensions use
-  `@localixai/plugin-sdk/ui` and the contribution registries instead of importing this source tree.
+  `@localixai/mini-app-sdk/ui` and the contribution registries instead of importing this source
+  tree.
 - The workbench requires a compatible API runtime. In development, Vite requires
   `VITE_API_BASE_URL`; the repository supervisor also supplies the direct WebSocket address because
   Vite's Bun-hosted proxy handles HTTP but not WebSocket upgrades.

@@ -1,4 +1,4 @@
-import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
+import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'
 import { useDockerContainerTab } from './model/useDockerContainerTab'
 import { DockerContainerContent } from './ui/DockerContainerContent'
 import { DockerContainerHeader } from './ui/DockerContainerHeader'

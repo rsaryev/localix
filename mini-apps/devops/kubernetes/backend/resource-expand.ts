@@ -3,8 +3,8 @@
  * `expand` half of the resource provider; see `resource-provider.ts` for the
  * grammar + provider shape).
  */
-import type { ResourceExpansion } from '@localixai/plugin-sdk/backend'
-import { decodeResourceSegment, providerSegments } from '@localixai/plugin-sdk/backend'
+import type { ResourceExpansion } from '@localixai/mini-app-sdk/backend'
+import { decodeResourceSegment, providerSegments } from '@localixai/mini-app-sdk/backend'
 import type { ResourceKubernetesService } from './resource-provider'
 import { isWorkloadKind, LOG_TAIL, PROVIDER } from './resource-nodes'
 

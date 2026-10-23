@@ -12,8 +12,8 @@ import { ActivityOrb } from '@localixai/kit/activity-orb'
 import { Button } from '@localixai/kit/button'
 import { GameProblem, GameStatus } from '@localixai/kit/game-status'
 import { IconButton } from '@localixai/kit/icon-button'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { OTHER_OPPONENT } from '@localixai/plugin-sdk/opponent'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { OTHER_OPPONENT } from '@localixai/mini-app-sdk/opponent'
 
 import { agentPlays, stopped, type Game, type Opponent } from '../../shared/game'
 import {

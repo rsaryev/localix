@@ -4,7 +4,7 @@ import {
   PLUGIN_UI_SHARED_GLOBAL,
   isPluginUiSharedModule,
   type PluginUiSharedModules,
-} from '@localixai/plugin-sdk/ui-artifact'
+} from '@localixai/mini-app-sdk/ui-artifact'
 
 /**
  * The host's side of the shared-module contract: the ONE instance of React, of the plugin SDK
@@ -32,77 +32,87 @@ const CORE: Record<string, Loader> = {
 
 /** Every browser-side SDK entry (`pluginSharedModules.test.ts` pins this to the package exports). */
 export const SDK_SHARED_MODULES: Record<string, Loader> = {
-  '@localixai/plugin-sdk/manifest-label': () => import('@localixai/plugin-sdk/manifest-label'),
-  '@localixai/plugin-sdk/manifest-primitives': () =>
-    import('@localixai/plugin-sdk/manifest-primitives'),
-  '@localixai/plugin-sdk/ui': () => import('@localixai/plugin-sdk/ui'),
-  '@localixai/plugin-sdk/ui/chart-export': () => import('@localixai/plugin-sdk/ui/chart-export'),
-  '@localixai/plugin-sdk/ui/charts': () => import('@localixai/plugin-sdk/ui/charts'),
-  '@localixai/plugin-sdk/ui/classes': () => import('@localixai/plugin-sdk/ui/classes'),
-  '@localixai/plugin-sdk/ui/commands': () => import('@localixai/plugin-sdk/ui/commands'),
-  '@localixai/plugin-sdk/ui/comments': () => import('@localixai/plugin-sdk/ui/comments'),
-  '@localixai/plugin-sdk/ui/components': () => import('@localixai/plugin-sdk/ui/components'),
-  '@localixai/plugin-sdk/ui/file-types': () => import('@localixai/plugin-sdk/ui/file-types'),
-  '@localixai/plugin-sdk/ui/focus': () => import('@localixai/plugin-sdk/ui/focus'),
-  '@localixai/plugin-sdk/ui/interactions': () => import('@localixai/plugin-sdk/ui/interactions'),
-  '@localixai/plugin-sdk/ui/message-binding-drag': () =>
-    import('@localixai/plugin-sdk/ui/message-binding-drag'),
-  '@localixai/plugin-sdk/ui/path-tree': () => import('@localixai/plugin-sdk/ui/path-tree'),
-  '@localixai/plugin-sdk/ui/problems': () => import('@localixai/plugin-sdk/ui/problems'),
-  '@localixai/plugin-sdk/ui/store-resource': () =>
-    import('@localixai/plugin-sdk/ui/store-resource'),
-  '@localixai/plugin-sdk/ui/route-snapshot': () =>
-    import('@localixai/plugin-sdk/ui/route-snapshot'),
-  '@localixai/plugin-sdk/ui/store-snapshot': () =>
-    import('@localixai/plugin-sdk/ui/store-snapshot'),
-  '@localixai/plugin-sdk/ui/now': () => import('@localixai/plugin-sdk/ui/now'),
-  '@localixai/plugin-sdk/ui/game-table': () => import('@localixai/plugin-sdk/ui/game-table'),
-  '@localixai/plugin-sdk/ui/session-game': () => import('@localixai/plugin-sdk/ui/session-game'),
-  '@localixai/plugin-sdk/ui/resource-sync': () => import('@localixai/plugin-sdk/ui/resource-sync'),
-  '@localixai/plugin-sdk/ui/file-resource-sync': () =>
-    import('@localixai/plugin-sdk/ui/file-resource-sync'),
-  '@localixai/plugin-sdk/ui/realtime-feed': () => import('@localixai/plugin-sdk/ui/realtime-feed'),
-  '@localixai/plugin-sdk/ui/resource-topics': () =>
-    import('@localixai/plugin-sdk/ui/resource-topics'),
-  '@localixai/plugin-sdk/ui/result-count-status': () =>
-    import('@localixai/plugin-sdk/ui/result-count-status'),
-  '@localixai/plugin-sdk/ui/runtime': () => import('@localixai/plugin-sdk/ui/runtime'),
-  '@localixai/plugin-sdk/ui/runtime-hooks': () => import('@localixai/plugin-sdk/ui/runtime-hooks'),
-  '@localixai/plugin-sdk/ui/segmented-control': () =>
-    import('@localixai/plugin-sdk/ui/segmented-control'),
-  '@localixai/plugin-sdk/ui/session-activity': () =>
-    import('@localixai/plugin-sdk/ui/session-activity'),
-  '@localixai/plugin-sdk/ui/session-tree': () => import('@localixai/plugin-sdk/ui/session-tree'),
-  '@localixai/plugin-sdk/ui/shared-resource': () =>
-    import('@localixai/plugin-sdk/ui/shared-resource'),
-  '@localixai/plugin-sdk/ui/stats-charts': () => import('@localixai/plugin-sdk/ui/stats-charts'),
-  '@localixai/plugin-sdk/ui/storage': () => import('@localixai/plugin-sdk/ui/storage'),
-  '@localixai/plugin-sdk/ui/table': () => import('@localixai/plugin-sdk/ui/table'),
-  '@localixai/plugin-sdk/ui/transport': () => import('@localixai/plugin-sdk/ui/transport'),
-  '@localixai/plugin-sdk/ui/use-problem-report': () =>
-    import('@localixai/plugin-sdk/ui/use-problem-report'),
-  '@localixai/plugin-sdk/ui/utilities': () => import('@localixai/plugin-sdk/ui/utilities'),
-  '@localixai/plugin-sdk/ui/visibility': () => import('@localixai/plugin-sdk/ui/visibility'),
+  '@localixai/mini-app-sdk/manifest-label': () => import('@localixai/mini-app-sdk/manifest-label'),
+  '@localixai/mini-app-sdk/manifest-primitives': () =>
+    import('@localixai/mini-app-sdk/manifest-primitives'),
+  '@localixai/mini-app-sdk/ui': () => import('@localixai/mini-app-sdk/ui'),
+  '@localixai/mini-app-sdk/ui/chart-export': () =>
+    import('@localixai/mini-app-sdk/ui/chart-export'),
+  '@localixai/mini-app-sdk/ui/charts': () => import('@localixai/mini-app-sdk/ui/charts'),
+  '@localixai/mini-app-sdk/ui/classes': () => import('@localixai/mini-app-sdk/ui/classes'),
+  '@localixai/mini-app-sdk/ui/commands': () => import('@localixai/mini-app-sdk/ui/commands'),
+  '@localixai/mini-app-sdk/ui/comments': () => import('@localixai/mini-app-sdk/ui/comments'),
+  '@localixai/mini-app-sdk/ui/components': () => import('@localixai/mini-app-sdk/ui/components'),
+  '@localixai/mini-app-sdk/ui/file-types': () => import('@localixai/mini-app-sdk/ui/file-types'),
+  '@localixai/mini-app-sdk/ui/focus': () => import('@localixai/mini-app-sdk/ui/focus'),
+  '@localixai/mini-app-sdk/ui/interactions': () =>
+    import('@localixai/mini-app-sdk/ui/interactions'),
+  '@localixai/mini-app-sdk/ui/message-binding-drag': () =>
+    import('@localixai/mini-app-sdk/ui/message-binding-drag'),
+  '@localixai/mini-app-sdk/ui/path-tree': () => import('@localixai/mini-app-sdk/ui/path-tree'),
+  '@localixai/mini-app-sdk/ui/problems': () => import('@localixai/mini-app-sdk/ui/problems'),
+  '@localixai/mini-app-sdk/ui/store-resource': () =>
+    import('@localixai/mini-app-sdk/ui/store-resource'),
+  '@localixai/mini-app-sdk/ui/route-snapshot': () =>
+    import('@localixai/mini-app-sdk/ui/route-snapshot'),
+  '@localixai/mini-app-sdk/ui/store-snapshot': () =>
+    import('@localixai/mini-app-sdk/ui/store-snapshot'),
+  '@localixai/mini-app-sdk/ui/now': () => import('@localixai/mini-app-sdk/ui/now'),
+  '@localixai/mini-app-sdk/ui/game-table': () => import('@localixai/mini-app-sdk/ui/game-table'),
+  '@localixai/mini-app-sdk/ui/session-game': () =>
+    import('@localixai/mini-app-sdk/ui/session-game'),
+  '@localixai/mini-app-sdk/ui/resource-sync': () =>
+    import('@localixai/mini-app-sdk/ui/resource-sync'),
+  '@localixai/mini-app-sdk/ui/file-resource-sync': () =>
+    import('@localixai/mini-app-sdk/ui/file-resource-sync'),
+  '@localixai/mini-app-sdk/ui/realtime-feed': () =>
+    import('@localixai/mini-app-sdk/ui/realtime-feed'),
+  '@localixai/mini-app-sdk/ui/resource-topics': () =>
+    import('@localixai/mini-app-sdk/ui/resource-topics'),
+  '@localixai/mini-app-sdk/ui/result-count-status': () =>
+    import('@localixai/mini-app-sdk/ui/result-count-status'),
+  '@localixai/mini-app-sdk/ui/runtime': () => import('@localixai/mini-app-sdk/ui/runtime'),
+  '@localixai/mini-app-sdk/ui/runtime-hooks': () =>
+    import('@localixai/mini-app-sdk/ui/runtime-hooks'),
+  '@localixai/mini-app-sdk/ui/segmented-control': () =>
+    import('@localixai/mini-app-sdk/ui/segmented-control'),
+  '@localixai/mini-app-sdk/ui/session-activity': () =>
+    import('@localixai/mini-app-sdk/ui/session-activity'),
+  '@localixai/mini-app-sdk/ui/session-tree': () =>
+    import('@localixai/mini-app-sdk/ui/session-tree'),
+  '@localixai/mini-app-sdk/ui/shared-resource': () =>
+    import('@localixai/mini-app-sdk/ui/shared-resource'),
+  '@localixai/mini-app-sdk/ui/stats-charts': () =>
+    import('@localixai/mini-app-sdk/ui/stats-charts'),
+  '@localixai/mini-app-sdk/ui/storage': () => import('@localixai/mini-app-sdk/ui/storage'),
+  '@localixai/mini-app-sdk/ui/table': () => import('@localixai/mini-app-sdk/ui/table'),
+  '@localixai/mini-app-sdk/ui/transport': () => import('@localixai/mini-app-sdk/ui/transport'),
+  '@localixai/mini-app-sdk/ui/use-problem-report': () =>
+    import('@localixai/mini-app-sdk/ui/use-problem-report'),
+  '@localixai/mini-app-sdk/ui/utilities': () => import('@localixai/mini-app-sdk/ui/utilities'),
+  '@localixai/mini-app-sdk/ui/visibility': () => import('@localixai/mini-app-sdk/ui/visibility'),
   // The host's own instance: its provider and a plugin's `useWorkItemSessionId` must share one
   // React context, or every plugin tab would read no session at all.
-  '@localixai/plugin-sdk/ui/work-item-session': () =>
-    import('@localixai/plugin-sdk/ui/work-item-session'),
-  '@localixai/plugin-sdk/rich-text': () => import('@localixai/plugin-sdk/rich-text'),
-  '@localixai/plugin-sdk/store-changes': () => import('@localixai/plugin-sdk/store-changes'),
-  '@localixai/plugin-sdk/document-layout': () => import('@localixai/plugin-sdk/document-layout'),
-  '@localixai/plugin-sdk/agent-wait': () => import('@localixai/plugin-sdk/agent-wait'),
-  '@localixai/plugin-sdk/opponent': () => import('@localixai/plugin-sdk/opponent'),
-  '@localixai/plugin-sdk/sealed': () => import('@localixai/plugin-sdk/sealed'),
-  '@localixai/plugin-sdk/bounded-cache': () => import('@localixai/plugin-sdk/bounded-cache'),
-  '@localixai/plugin-sdk/secret-shapes': () => import('@localixai/plugin-sdk/secret-shapes'),
-  '@localixai/plugin-sdk/navigation': () => import('@localixai/plugin-sdk/navigation'),
-  '@localixai/plugin-sdk/session-resource': () => import('@localixai/plugin-sdk/session-resource'),
-  '@localixai/plugin-sdk/resource-refs': () => import('@localixai/plugin-sdk/resource-refs'),
-  '@localixai/plugin-sdk/typed-error': () => import('@localixai/plugin-sdk/typed-error'),
-  '@localixai/plugin-sdk/prerequisite': () => import('@localixai/plugin-sdk/prerequisite'),
+  '@localixai/mini-app-sdk/ui/work-item-session': () =>
+    import('@localixai/mini-app-sdk/ui/work-item-session'),
+  '@localixai/mini-app-sdk/rich-text': () => import('@localixai/mini-app-sdk/rich-text'),
+  '@localixai/mini-app-sdk/store-changes': () => import('@localixai/mini-app-sdk/store-changes'),
+  '@localixai/mini-app-sdk/document-layout': () =>
+    import('@localixai/mini-app-sdk/document-layout'),
+  '@localixai/mini-app-sdk/agent-wait': () => import('@localixai/mini-app-sdk/agent-wait'),
+  '@localixai/mini-app-sdk/opponent': () => import('@localixai/mini-app-sdk/opponent'),
+  '@localixai/mini-app-sdk/sealed': () => import('@localixai/mini-app-sdk/sealed'),
+  '@localixai/mini-app-sdk/bounded-cache': () => import('@localixai/mini-app-sdk/bounded-cache'),
+  '@localixai/mini-app-sdk/secret-shapes': () => import('@localixai/mini-app-sdk/secret-shapes'),
+  '@localixai/mini-app-sdk/navigation': () => import('@localixai/mini-app-sdk/navigation'),
+  '@localixai/mini-app-sdk/session-resource': () =>
+    import('@localixai/mini-app-sdk/session-resource'),
+  '@localixai/mini-app-sdk/resource-refs': () => import('@localixai/mini-app-sdk/resource-refs'),
+  '@localixai/mini-app-sdk/typed-error': () => import('@localixai/mini-app-sdk/typed-error'),
+  '@localixai/mini-app-sdk/prerequisite': () => import('@localixai/mini-app-sdk/prerequisite'),
   // Shared, not bundled: it reads the host's work-item session context and runtime.
-  '@localixai/plugin-sdk/ui/prerequisite-recovery': () =>
-    import('@localixai/plugin-sdk/ui/prerequisite-recovery'),
+  '@localixai/mini-app-sdk/ui/prerequisite-recovery': () =>
+    import('@localixai/mini-app-sdk/ui/prerequisite-recovery'),
 }
 
 /**

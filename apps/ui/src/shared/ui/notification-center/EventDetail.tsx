@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowUpRight, Check, Copy, LoaderCircle } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { formatEventForClipboard } from '@/shared/lib/notifications/eventCenter'
 import { compactEventTrace } from '@/shared/lib/notifications/trace'
 import type {

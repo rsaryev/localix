@@ -9,9 +9,9 @@ import {
   TrendingDown,
   TrendingUp,
 } from 'lucide-react'
-import { tonedIcon, type IconComponent, type MenuEntry } from '@localixai/plugin-sdk/ui'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { tonedIcon, type IconComponent, type MenuEntry } from '@localixai/mini-app-sdk/ui'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import {
   DropdownMenu,
   DropdownMenuContent,

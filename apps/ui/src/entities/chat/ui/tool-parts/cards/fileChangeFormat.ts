@@ -1,6 +1,6 @@
 import type { FileChange } from '@localixai/agent/agents'
 import type { AgentItemStatus } from '@localixai/agent/agents'
-import { findLast } from '@localixai/plugin-sdk/ui/utilities'
+import { findLast } from '@localixai/mini-app-sdk/ui/utilities'
 import { countEditChanges, countLines, countPatchChanges } from './liveCode'
 import { statusLabel } from '../itemHelpers'
 

@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
-import { bindPluginUiTestDoubles } from '@localixai/plugin-sdk/ui/testing'
+import { bindPluginUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
 import { tradingApi } from './api/tradingApi'
 
 let teardown: () => Promise<void>

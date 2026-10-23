@@ -10,7 +10,7 @@ import { ArrowUpRight, AtSign } from 'lucide-react'
 import { MonogramAvatar } from '@localixai/kit/avatar'
 import { Button } from '@localixai/kit/button'
 import { DialogBody, DialogContent, DialogHeader, DialogTitle } from '@localixai/kit/dialog'
-import { formatRelativeTime } from '@localixai/plugin-sdk/ui/utilities'
+import { formatRelativeTime } from '@localixai/mini-app-sdk/ui/utilities'
 
 import type { AttentionBodyProps } from './types'
 

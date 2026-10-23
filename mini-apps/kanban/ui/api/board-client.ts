@@ -2,7 +2,7 @@ import {
   assertPluginResponse,
   pluginApiFetch,
   unwrapPluginResponse,
-} from '@localixai/plugin-sdk/ui/transport'
+} from '@localixai/mini-app-sdk/ui/transport'
 
 import type {
   CreateKanbanTaskRequest,

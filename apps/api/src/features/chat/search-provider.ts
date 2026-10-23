@@ -12,7 +12,7 @@
 import type { SearchHit, SearchProvider } from '../agent-core/search/provider'
 import { bestFieldScore } from '../agent-core/search/match'
 import { RESOURCE_PROVIDERS } from '../agent-core/resource-refs/providers'
-import { localixResourceUri, localixUiUri } from '@localixai/plugin-sdk/navigation'
+import { localixResourceUri, localixUiUri } from '@localixai/mini-app-sdk/navigation'
 import type { MessageSearchReads } from './repository-message-search'
 import { hybridMessageHits, hybridSessionHits } from './search-provider-hybrid'
 

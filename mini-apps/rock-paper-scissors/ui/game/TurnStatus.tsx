@@ -1,7 +1,7 @@
 import { RefreshCw } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
 import { GameProblem, GameStatus } from '@localixai/kit/game-status'
-import { OTHER_OPPONENT } from '@localixai/plugin-sdk/opponent'
+import { OTHER_OPPONENT } from '@localixai/mini-app-sdk/opponent'
 
 import { viewOwesAgentMove, type Opponent, type PlayerView } from '../../shared/game'
 import { announcement, elapsed, headline, opponentName } from './copy'

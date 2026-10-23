@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Button } from '@localixai/kit/button'
 import {
   DropdownMenu,

@@ -9,7 +9,7 @@ import {
   FileDiff,
 } from 'lucide-react'
 import type { RepoFileChange, RepoWithStatus } from '../../../backend/source-control/contracts'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Chip } from '@localixai/kit/chip'
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@localixai/kit/context-menu'
 import { MenuEntries } from '@localixai/kit/menu-entries'

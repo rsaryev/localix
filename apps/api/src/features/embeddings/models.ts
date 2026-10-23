@@ -6,7 +6,7 @@
  * The fingerprint stored beside every vector derives from the model and these fields, so a model
  * changed in code re-embeds rather than mixing two vector spaces in one collection.
  */
-import type { SemanticTask } from '@localixai/plugin-sdk/backend'
+import type { SemanticTask } from '@localixai/mini-app-sdk/backend'
 import type { LocalModelSpec } from '../local-models/contracts'
 import { EMBEDDINGGEMMA_2_MODEL } from '../local-models/pinned'
 import { familyOf, MATRYOSHKA_INDEX_DIMENSIONS, type EmbeddingFamily } from './families'

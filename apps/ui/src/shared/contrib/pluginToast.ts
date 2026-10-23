@@ -4,8 +4,8 @@ import {
   type PluginToast,
   type PluginToastId,
   type PluginToastOptions,
-} from '@localixai/plugin-sdk/ui'
-import type { ProblemReport } from '@localixai/plugin-sdk/ui/problems'
+} from '@localixai/mini-app-sdk/ui'
+import type { ProblemReport } from '@localixai/mini-app-sdk/ui/problems'
 
 import { attributePluginCaller, pluginLabel } from './pluginAttribution'
 

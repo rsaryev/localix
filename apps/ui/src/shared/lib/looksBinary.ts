@@ -1,4 +1,4 @@
-import { hasBinarySignature } from '@localixai/plugin-sdk/ui/file-types'
+import { hasBinarySignature } from '@localixai/mini-app-sdk/ui/file-types'
 
 /**
  * Heuristic for "this UTF-8 string is actually decoded binary". The backend reads

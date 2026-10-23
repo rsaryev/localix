@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
-import { pluginClipboard } from '@localixai/plugin-sdk/ui/runtime'
+import { pluginClipboard } from '@localixai/mini-app-sdk/ui/runtime'
 import type { CodeCard } from '../../shared/lens'
 
 let teardown: () => Promise<void>

@@ -43,7 +43,7 @@ describe('a user plugin route reads its body through a validator', () => {
   test('jsonBody, a response helper, a comment and a test are not offenders', async () => {
     const dir = plugin({
       'backend/routes.ts': [
-        "import { jsonBody } from '@localixai/plugin-sdk/backend'",
+        "import { jsonBody } from '@localixai/mini-app-sdk/backend'",
         '// Never c.req.json() here: see jsonBody.',
         "export const move = [jsonBody(schema), (c) => c.json(c.req.valid('json'))]",
       ].join('\n'),

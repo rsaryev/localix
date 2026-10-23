@@ -3,7 +3,10 @@ import { KeyRound, Plus, RefreshCw, ScrollText, ShieldCheck } from 'lucide-react
 import { useVaultWorkspace } from '../model/useVaultWorkspace'
 import { Button } from '@localixai/kit/button'
 import { IconButton } from '@localixai/kit/icon-button'
-import { SegmentedControl, SegmentedControlItem } from '@localixai/plugin-sdk/ui/segmented-control'
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from '@localixai/mini-app-sdk/ui/segmented-control'
 import { ProblemLine } from '@/shared/ui/problem-report'
 import { Spinner } from '@localixai/kit/spinner'
 import { WorkbenchToolbar, WorkbenchToolbarSection } from '@localixai/kit/workbench-toolbar'

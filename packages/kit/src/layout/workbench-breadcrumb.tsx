@@ -1,5 +1,5 @@
 import { useEffect, type ComponentProps } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { useHorizontalWheelScroll } from '../lib/use-horizontal-wheel-scroll'
 
 type WorkbenchBreadcrumbProps = Omit<ComponentProps<'nav'>, 'aria-label'> & {

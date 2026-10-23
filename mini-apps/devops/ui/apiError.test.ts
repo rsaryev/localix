@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { bindPluginUiTransport } from '@localixai/plugin-sdk/ui/transport'
+import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
 
 import { DockerApiError, dockerApi } from '../docker/ui/dockerApi'
 import { KubeApiError } from '../kubernetes/ui/api/transport'

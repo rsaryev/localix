@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { mkdir, mkdtemp, readFile, realpath, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { PluginHelpers } from '@localixai/plugin-sdk/backend'
+import type { PluginHelpers } from '@localixai/mini-app-sdk/backend'
 
 import { ReaderService } from './service'
 

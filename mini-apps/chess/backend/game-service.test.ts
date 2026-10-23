@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { PluginWakeOutcome, PluginWakeRequest } from '@localixai/plugin-sdk/backend'
+import type { PluginWakeOutcome, PluginWakeRequest } from '@localixai/mini-app-sdk/backend'
 
 import { ANSWER_TOOLS } from './ask-agent'
 import { createGameService } from './game-service'

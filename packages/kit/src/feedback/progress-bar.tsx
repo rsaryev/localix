@@ -1,4 +1,4 @@
-import { clamp, cn } from '@localixai/plugin-sdk/ui/classes'
+import { clamp, cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /**
  * Slim progress/completion bar — a rounded track with a filled portion. Used for

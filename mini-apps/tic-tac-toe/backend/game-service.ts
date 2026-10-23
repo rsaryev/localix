@@ -11,7 +11,7 @@ import {
 } from '../shared/game'
 import { ANSWER_TOOLS, askForMove, positionKey, type Seat } from './ask-agent'
 import { askDecision } from './ask-decision'
-import { createTurnTable, type TurnTableHosts } from '@localixai/plugin-sdk/backend'
+import { createTurnTable, type TurnTableHosts } from '@localixai/mini-app-sdk/backend'
 
 /**
  * THE GAME AT EACH CHAT'S TABLE, and every way it changes.

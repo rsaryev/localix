@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { z } from 'zod'
-import type { CallClass, PluginContext } from '@localixai/plugin-sdk/backend'
+import type { CallClass, PluginContext } from '@localixai/mini-app-sdk/backend'
 import { createGraphTools } from './tools'
 
 const ctx = {

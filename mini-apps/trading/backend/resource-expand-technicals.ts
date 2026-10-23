@@ -11,7 +11,7 @@
  * (SMA/EMA 200).
  */
 import type { Candle } from './contracts'
-import type { ResourceExpansion } from '@localixai/plugin-sdk/backend'
+import type { ResourceExpansion } from '@localixai/mini-app-sdk/backend'
 import { failureSentence, findMarket, type ResourceTradingService } from './resource-shared'
 import { computeTechnicalRatings, renderTechnicalRatingsText } from '../ui/model/technicalRatings'
 import { classifyRegime, trendFit } from './analysis/pattern-detect'

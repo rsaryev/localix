@@ -12,8 +12,8 @@
  * request, never the means to make one.
  */
 
-import type { ContextProviderContribution } from '@localixai/plugin-sdk/backend'
-import { createResourceContextProvider } from '@localixai/plugin-sdk/backend'
+import type { ContextProviderContribution } from '@localixai/mini-app-sdk/backend'
+import { createResourceContextProvider } from '@localixai/mini-app-sdk/backend'
 import { createRestResourceProvider, type ResourceRequestPort } from './resource-provider'
 
 export function createRestContextProvider(port: ResourceRequestPort): ContextProviderContribution {

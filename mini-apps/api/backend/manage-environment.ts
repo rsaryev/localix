@@ -4,7 +4,7 @@
  */
 
 import type { AgentTool } from '@localixai/agent/agents'
-import type { PluginContext } from '@localixai/plugin-sdk/backend'
+import type { PluginContext } from '@localixai/mini-app-sdk/backend'
 import path from 'node:path'
 import { classifyEnvironmentCall } from './call-class'
 import { collectionRootFor } from './collection/for-scope'

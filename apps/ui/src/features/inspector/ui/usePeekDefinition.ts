@@ -14,8 +14,8 @@
 import { useEffect, useState } from 'react'
 
 import { backendClient } from '@/shared/api/client'
-import { baseName, errorMessage } from '@localixai/plugin-sdk/ui/utilities'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { baseName, errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { useProblemReport, type OwnedProblemReport } from '@/shared/ui/problem-report'
 
 export interface PeekTarget {

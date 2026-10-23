@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, it, expect } from 'bun:test'
-import type { SearchDomainContribution } from '@localixai/plugin-sdk/ui'
+import type { SearchDomainContribution } from '@localixai/mini-app-sdk/ui'
 import { registerSearchDomain, unregisterSearchDomain } from '@/shared/contrib/searchDomains'
 import { parseScope, scopeToDomains, scopeById, ALL_SCOPE } from './scopes'
 

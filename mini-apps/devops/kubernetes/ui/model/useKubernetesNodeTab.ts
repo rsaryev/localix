@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { resourceMessageBindingDraft, type PublishMessageContext } from '@localixai/plugin-sdk/ui'
+import { resourceMessageBindingDraft, type PublishMessageContext } from '@localixai/mini-app-sdk/ui'
 import { ALL_NAMESPACES, type KubeNode, type KubePod } from '../../backend/contracts'
 import { kubernetesApi } from '../api/kubernetesApi'
 import { KubeApiError } from '../api/transport'

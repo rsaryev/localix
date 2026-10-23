@@ -1,5 +1,5 @@
-import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
-import { parseLocalixResourceUri } from '@localixai/plugin-sdk/ui'
+import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
+import { parseLocalixResourceUri } from '@localixai/mini-app-sdk/ui'
 
 export const DATABASE_AREA_KEY = 'localix.database.area'
 export const DATABASE_CONNECTION_KEY = 'localix.database.connection'

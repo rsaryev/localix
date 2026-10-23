@@ -1,6 +1,6 @@
 import type { ViteHotContext } from 'vite/types/hot.d.ts'
-import type { PluginUiHost } from '@localixai/plugin-sdk/ui'
-import { isContextualUiSurface } from '@localixai/plugin-sdk/ui'
+import type { PluginUiHost } from '@localixai/mini-app-sdk/ui'
+import { isContextualUiSurface } from '@localixai/mini-app-sdk/ui'
 import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { pluginUiHost } from './host'
 import { registerContextualUiSurface } from './uiSurfaces'

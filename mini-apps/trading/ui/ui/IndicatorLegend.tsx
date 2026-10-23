@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Eye, EyeOff, X } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { IndicatorSpec } from '../model/indicators'
 import type { IndicatorPrefRecord, IndicatorRange } from '../model/indicatorPrefs'
 import { formatCompactVolume } from '../model/formatQuote'

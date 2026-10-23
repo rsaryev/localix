@@ -1,7 +1,10 @@
 import { Layers, Network as NetworkIcon, Scaling } from 'lucide-react'
 import { Button } from '@localixai/kit/button'
 import { RefreshAction } from '@localixai/kit/refresh-action'
-import { SegmentedControl, SegmentedControlItem } from '@localixai/plugin-sdk/ui/segmented-control'
+import {
+  SegmentedControl,
+  SegmentedControlItem,
+} from '@localixai/mini-app-sdk/ui/segmented-control'
 import type { KubeResourceKind } from '../../backend/contracts'
 import type {
   KubernetesResourceTabModel,

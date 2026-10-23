@@ -1,5 +1,5 @@
 import { Bell } from 'lucide-react'
-import { defineUiLocation } from '@localixai/plugin-sdk/ui'
+import { defineUiLocation } from '@localixai/mini-app-sdk/ui'
 
 export const NOTIFICATION_CENTER_OVERLAY_ID = 'notification-center'
 

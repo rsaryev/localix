@@ -3,7 +3,7 @@ import {
   type DecisionAsk,
   type DecisionHost,
   type Seat,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 
 import { drawBoard } from '../shared/describe'
 import {

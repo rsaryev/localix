@@ -12,7 +12,7 @@
  * the order is otherwise stable. A generous cap guards storage. Stale entries
  * (connection removed / model gone) are filtered out at render time by the caller.
  */
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 
 export interface FavoriteModel {
   connectionId: string

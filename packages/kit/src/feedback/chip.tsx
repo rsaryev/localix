@@ -1,6 +1,6 @@
 import type { ComponentPropsWithRef } from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /**
  * Small pill badge for counts / short labels (e.g. "3 questions", a filter

@@ -17,7 +17,7 @@ export function exceedsDragByteCap(serialized: string): boolean {
 
 /**
  * Limits below mirror `normalizePublishedMessageContext`
- * (packages/plugin-sdk/src/ui/contrib.ts) — the same binding shape arriving over a
+ * (packages/mini-app-sdk/src/ui/contrib.ts) — the same binding shape arriving over a
  * different transport, so the two must not drift. That helper cannot be called
  * from here: it accepts only the two plugin-publishable target kinds (`resource`,
  * `snippet`), deliberately, so a sandboxed iframe cannot impersonate a host

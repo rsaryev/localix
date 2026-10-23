@@ -1,5 +1,5 @@
 import { Star } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 interface FavoriteStarProps {
   favorited: boolean

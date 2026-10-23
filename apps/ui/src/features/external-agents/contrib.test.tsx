@@ -4,7 +4,7 @@ import type {
   WorkItemKindContribution,
   UiAnchorContribution,
   SessionSurfaceContribution,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { registerUi } from './contrib'
 import { externalSessionUri } from './model/sessionResource'
 

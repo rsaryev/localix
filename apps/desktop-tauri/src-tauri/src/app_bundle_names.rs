@@ -1,6 +1,6 @@
 //! What a plugin app is called on disk and to macOS: its plugin name, Finder name and bundle id.
 
-/// Plugin names as manifests allow them (`PLUGIN_NAME_RE` in `plugin-sdk`: letters, digits, `-`
+/// Plugin names as manifests allow them (`PLUGIN_NAME_RE` in `mini-app-sdk`: letters, digits, `-`
 /// and `_`, not leading with a separator), bounded; nothing else reaches a path or a bundle id.
 pub(crate) fn valid_plugin(name: &str) -> bool {
     (1..=64).contains(&name.len())

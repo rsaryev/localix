@@ -6,7 +6,7 @@ import {
   defaultErrorHandler,
   jsonError,
   type PluginRouteContext,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import { exportQuerySchema, ingestBodySchema, openBodySchema, rowsQuerySchema } from './contracts'
 import type { TableService } from './service'
 

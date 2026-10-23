@@ -11,7 +11,7 @@ import { SETTINGS_INDEX } from '@/shared/lib/settings-index/settingsIndex'
 import { settingsTargetUri } from '@/shared/lib/settingsAnchors'
 import { ALL_SCOPE, type ScopeDef } from './scopes'
 import { uiCommandUri, type UiCommandEntry } from '@/shared/contrib/uiCommands'
-import type { UiLocationDescriptor } from '@localixai/plugin-sdk/ui'
+import type { UiLocationDescriptor } from '@localixai/mini-app-sdk/ui'
 import { scoreSearchFields } from '@localixai/search'
 import { buildUiLocationUri, listUiLocations } from '@/shared/contrib/uiLocations'
 

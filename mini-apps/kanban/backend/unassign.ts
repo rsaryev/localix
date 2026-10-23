@@ -1,4 +1,4 @@
-import type { ChangeFeedHost, CoreDeletion } from '@localixai/plugin-sdk/backend'
+import type { ChangeFeedHost, CoreDeletion } from '@localixai/mini-app-sdk/backend'
 
 import type { BoardEvent, KanbanBoard } from '../shared/contracts'
 import { openBoardStore } from './store'

@@ -2,7 +2,7 @@ import { memo, useCallback, useContext, useEffect, useMemo, useState } from 'rea
 import { Spinner } from '@localixai/kit/spinner'
 import type { AgentItem, ToolBackedItem } from '@localixai/agent/agents'
 import { getMessageToolDetails } from '@/shared/api/tool-details-client'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { COLLAPSIBLE_MOTION } from '@localixai/kit/collapsible-motion'
 import { ToolChainBody } from './ToolChainBody'
 import type { Message } from '../../model/types'
@@ -17,7 +17,7 @@ import { ToolChainHeader, type ChainAggregate } from './ToolChainHeader'
 import { DurationsContext } from './toolTimingStore'
 import { useToolEventFocus } from './eventFocusTarget'
 import { ProblemLine, useProblemReport } from '@/shared/ui/problem-report'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { useToolCardsVersion } from '@/shared/contrib/toolCards'
 
 interface ToolChainProps {

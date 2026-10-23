@@ -1,4 +1,4 @@
-import type { PluginContext } from '@localixai/plugin-sdk/backend'
+import type { PluginContext } from '@localixai/mini-app-sdk/backend'
 import { graphCameraSchema } from '../shared/camera'
 import { graphUri } from '../shared/resource'
 import { nodeLine } from '../shared/format'

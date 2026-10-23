@@ -3,7 +3,7 @@ import { isAtOrUnder } from '@localixai/path-containment/ancestry'
 import { externalAgentsApi } from '../api'
 import { useInstalledAgents } from './useInstalledAgents'
 import { useHistoryStream } from './useHistoryStream'
-import { useVisiblePolling } from '@localixai/plugin-sdk/ui/visibility'
+import { useVisiblePolling } from '@localixai/mini-app-sdk/ui/visibility'
 
 const PAGE_SIZE = 200
 

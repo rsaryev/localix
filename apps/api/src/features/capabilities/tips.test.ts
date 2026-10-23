@@ -6,7 +6,7 @@ import { tipKeywordPattern } from './tips-keywords'
 import { TIP_SIGNALS } from './tip-contracts'
 import type { CapabilitySnapshot } from '../../contracts/capability-snapshot'
 import type { PluginRecord } from '../plugins/contracts'
-import { parseLocalixUri } from '@localixai/plugin-sdk/navigation'
+import { parseLocalixUri } from '@localixai/mini-app-sdk/navigation'
 import { BUILTIN_TOOL_CATALOG } from '../agent-core/tool-names'
 
 const tipsOf = (snapshot: Parameters<typeof composerTips>[0]) =>

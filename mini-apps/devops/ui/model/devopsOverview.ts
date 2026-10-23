@@ -8,7 +8,7 @@ import {
   prerequisiteHint,
   prerequisiteTitle,
   type Prerequisite,
-} from '@localixai/plugin-sdk/prerequisite'
+} from '@localixai/mini-app-sdk/prerequisite'
 
 interface DockerOverviewSource {
   containers: readonly DockerContainer[]

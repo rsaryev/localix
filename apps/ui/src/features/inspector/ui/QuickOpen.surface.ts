@@ -1,5 +1,5 @@
 import { FileSearch } from 'lucide-react'
-import { defineUiLocation } from '@localixai/plugin-sdk/ui'
+import { defineUiLocation } from '@localixai/mini-app-sdk/ui'
 
 export const QUICK_OPEN_OVERLAY_ID = 'quick-open'
 

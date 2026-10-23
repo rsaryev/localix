@@ -1,6 +1,6 @@
-import { workspacePathsTouch } from '@localixai/plugin-sdk/ui/file-resource-sync'
-import { createRealtimeFeed } from '@localixai/plugin-sdk/ui/realtime-feed'
-import { pluginFiles } from '@localixai/plugin-sdk/ui/runtime'
+import { workspacePathsTouch } from '@localixai/mini-app-sdk/ui/file-resource-sync'
+import { createRealtimeFeed } from '@localixai/mini-app-sdk/ui/realtime-feed'
+import { pluginFiles } from '@localixai/mini-app-sdk/ui/runtime'
 import type { CameraFrame } from '../shared/camera'
 import {
   BOARD_DIR,

@@ -13,7 +13,7 @@ import { fileContentCache } from '../model/fileContentCache'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { setSaveCleanupPrefs } from '@/shared/ui/code-editor/saveCleanup'
 import { useFileEditor, type FormatOnSaveRunner } from './useFileEditor'
-import { WorkItemVisibilityProvider } from '@localixai/plugin-sdk/ui/visibility'
+import { WorkItemVisibilityProvider } from '@localixai/mini-app-sdk/ui/visibility'
 
 let teardown: () => Promise<void>
 beforeAll(() => {

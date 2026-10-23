@@ -8,7 +8,7 @@
  * sidebar picker and the request tab at once — which is why every verb here announces.
  */
 
-import { pluginApiFetch } from '@localixai/plugin-sdk/ui/transport'
+import { pluginApiFetch } from '@localixai/mini-app-sdk/ui/transport'
 import type {
   EnvironmentCreate,
   EnvironmentEdit,

@@ -11,9 +11,9 @@
  * branches and pass `failure: null` while things work.
  */
 import { useMemo } from 'react'
-import { useProblemReport } from '@localixai/plugin-sdk/ui'
-import type { PluginProblemLineProps } from '@localixai/plugin-sdk/ui/components'
-import type { ProblemConsequence, ProblemReport } from '@localixai/plugin-sdk/ui/problems'
+import { useProblemReport } from '@localixai/mini-app-sdk/ui'
+import type { PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
+import type { ProblemConsequence, ProblemReport } from '@localixai/mini-app-sdk/ui/problems'
 
 export function useSystemProblem({
   subject,

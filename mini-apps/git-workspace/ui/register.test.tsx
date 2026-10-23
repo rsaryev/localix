@@ -1,12 +1,12 @@
-import { localixResourceUri } from '@localixai/plugin-sdk/navigation'
+import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 import { expect, test } from 'bun:test'
-import { recordingPluginUiHost } from '@localixai/plugin-sdk/ui/testing'
+import { recordingPluginUiHost } from '@localixai/mini-app-sdk/ui/testing'
 import type {
   RailViewletContribution,
   StatusItemContribution,
   UiAnchorContribution,
   WorkItemKindContribution,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { registerUi } from './register'
 
 test('registers a native auxiliary Git Workspace with a resource anchor', () => {

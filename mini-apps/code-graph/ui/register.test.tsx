@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { recordingPluginUiHost } from '@localixai/plugin-sdk/ui/testing'
+import { recordingPluginUiHost } from '@localixai/mini-app-sdk/ui/testing'
 import { GRAPH_KIND, GRAPH_URI, graphUri, nodeUri } from '../shared/resource'
 import { registerUi } from './register'
 

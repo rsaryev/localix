@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Check, Eye, LockKeyhole } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Button } from '@localixai/kit/button'
 import { CodeBlock } from '@localixai/kit/code-block'
 import { MarkdownRenderer } from '@localixai/kit/markdown'

@@ -1,7 +1,7 @@
 import type { SetStateAction } from 'react'
 import { Check, X } from 'lucide-react'
 import type { TableColumn } from '@localixai/dataview'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Input } from '@localixai/kit/input'
 import { GRID_TEMPLATE_VAR } from './useColumnLayout'
 import { GUTTER_ACTION, ROW_H } from './tableGridModel'

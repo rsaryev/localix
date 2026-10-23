@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import { quoteShellPath, formatDroppedPaths, isPathDrop } from './terminalPathDrop'
-import { MESSAGE_BINDING_MIME } from '@localixai/plugin-sdk/ui/message-binding-drag'
+import { MESSAGE_BINDING_MIME } from '@localixai/mini-app-sdk/ui/message-binding-drag'
 
 describe('quoteShellPath', () => {
   it('leaves clean paths verbatim', () => {

@@ -1,4 +1,4 @@
-import { richTextToText } from '@localixai/plugin-sdk/rich-text'
+import { richTextToText } from '@localixai/mini-app-sdk/rich-text'
 import type { Resume } from '../shared/schema'
 import { sectionDefinitions } from '../shared/sections'
 import { templates } from '../shared/templates'

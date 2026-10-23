@@ -5,12 +5,12 @@ handler calls `preventDefault()` when it handles the key, or `stopPropagation()`
 stay local. The host then dispatches unclaimed commands.
 
 For commands spanning a native plugin pane, use `useFocusEntry` from
-`@localixai/plugin-sdk/ui/focus` with a unique instance ID, the pane's live DOM `scope`, and its
+`@localixai/mini-app-sdk/ui/focus` with a unique instance ID, the pane's live DOM `scope`, and its
 visibility flag. A mounted pane receives only events whose DOM path includes its scope.
 
 ```tsx
 import { useId, useRef, type ReactNode } from 'react'
-import { useFocusEntry } from '@localixai/plugin-sdk/ui/focus'
+import { useFocusEntry } from '@localixai/mini-app-sdk/ui/focus'
 import { matchesChord } from '@localixai/kit/keybindings'
 
 export function PluginPane({
@@ -83,7 +83,7 @@ See [Keyboard shortcuts](../features/keyboard-shortcuts.md) for user-facing focu
 
 ## Source of truth
 
-- [Hook lifetime and current values](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/ui/focus/useFocusEntry.ts)
-- [Scope routing and modal barriers](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/ui/focus/store.ts)
-- [Default key policies](https://github.com/rsaryev/localix/blob/main/packages/plugin-sdk/src/ui/focus/types.ts)
+- [Hook lifetime and current values](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui/focus/useFocusEntry.ts)
+- [Scope routing and modal barriers](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui/focus/store.ts)
+- [Default key policies](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui/focus/types.ts)
 - [Exact chord matching](https://github.com/rsaryev/localix/blob/main/packages/kit/src/keyboard/chord.ts)

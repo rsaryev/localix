@@ -1,5 +1,5 @@
-import { agentWaitSchema, type AgentWait } from '@localixai/plugin-sdk/agent-wait'
-import { OPPONENTS, opponentSchema, type Opponent } from '@localixai/plugin-sdk/opponent'
+import { agentWaitSchema, type AgentWait } from '@localixai/mini-app-sdk/agent-wait'
+import { OPPONENTS, opponentSchema, type Opponent } from '@localixai/mini-app-sdk/opponent'
 import { z } from 'zod'
 
 /**
@@ -19,7 +19,7 @@ export type Mode = (typeof modes)[number]
 
 /**
  * Who plays when the board is not the person's (`mode: 'agent'`), from
- * `@localixai/plugin-sdk/opponent`: the agent in the chat, woken and moving with its tool, or the
+ * `@localixai/mini-app-sdk/opponent`: the agent in the chat, woken and moving with its tool, or the
  * host's decision model, which the board asks itself one move at a time. Null until the board
  * settles it (the decision model when one can answer, else the agent).
  */

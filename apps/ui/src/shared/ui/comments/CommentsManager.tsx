@@ -1,6 +1,6 @@
 import { Send, X, MessageSquare } from 'lucide-react'
 import { highlightScript } from '@/shared/ui/code-block/highlightCode'
-import type { CommentActionContribution } from '@localixai/plugin-sdk/ui'
+import type { CommentActionContribution } from '@localixai/mini-app-sdk/ui'
 import { useCommentActions } from '@/shared/contrib/commentActions'
 import {
   Popover,
@@ -14,8 +14,8 @@ import { ActionPill } from '@localixai/kit/action-pill'
 import { Button } from '@localixai/kit/button'
 import { IconButton } from '@localixai/kit/icon-button'
 import { CODE_VIEWER_HIGHLIGHT } from '@/shared/ui/code-block/sugarHighTheme'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { groupComments, type Comment } from '@localixai/plugin-sdk/ui/comments'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { groupComments, type Comment } from '@localixai/mini-app-sdk/ui/comments'
 
 export interface CommentsManagerProps {
   /** Scope-filtered comments (e.g. the active session's). */

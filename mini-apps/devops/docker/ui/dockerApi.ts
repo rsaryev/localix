@@ -1,7 +1,7 @@
 // REST client for the Docker workbench backend (`/rpc/docker`). A missing daemon
 // comes back as a typed `{ code: 'engine_unavailable' }` with a 503 — we surface
 // that so the sidebar can render an empty state instead of an error toast.
-import { pluginApiFetch } from '@localixai/plugin-sdk/ui/transport'
+import { pluginApiFetch } from '@localixai/mini-app-sdk/ui/transport'
 import type {
   ComposeAvailableResponse,
   ContainerLogs,

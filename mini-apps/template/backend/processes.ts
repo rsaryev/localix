@@ -1,6 +1,6 @@
 import * as os from 'node:os'
 import { basename } from 'node:path'
-import { readProcessOutputWithTimeout } from '@localixai/plugin-sdk/backend'
+import { readProcessOutputWithTimeout } from '@localixai/mini-app-sdk/backend'
 import type { ProcessRow, ProcessSnapshot } from '../shared/processes'
 
 interface RawProcess {

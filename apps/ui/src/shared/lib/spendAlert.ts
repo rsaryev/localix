@@ -11,7 +11,7 @@
 
 import { useSyncExternalStore } from 'react'
 import { createBoundedCache } from '@localixai/kit/lib'
-import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
+import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 
 const STORAGE_KEY = 'localix.chat.spendAlertUsd'
 

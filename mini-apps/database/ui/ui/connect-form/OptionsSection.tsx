@@ -2,7 +2,7 @@
  *  (read-only guard-rail + connection color). */
 import { Ban, ChevronRight, Lock } from 'lucide-react'
 import { Checkbox } from '@localixai/kit/checkbox'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { DATABASE_DRIVER_CATALOG } from '../../../shared/driver-catalog'
 import {
   CONNECTION_COLORS,

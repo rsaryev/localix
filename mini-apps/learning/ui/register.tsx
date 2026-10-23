@@ -1,9 +1,9 @@
 import { lazy, Suspense } from 'react'
 import { BookOpen, GraduationCap, Layers3 } from 'lucide-react'
 
-import type { PluginUiHost, PublishMessageContext, WorkItemLike } from '@localixai/plugin-sdk/ui'
+import type { PluginUiHost, PublishMessageContext, WorkItemLike } from '@localixai/mini-app-sdk/ui'
 import { LoadingHint } from '@localixai/kit/empty-hint'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { parseLearningResourceUri } from '../shared/resource-uri'
 import { learningCourseTabId } from './model/openCourse'
 import { initCourseChanges } from './model/courseChanges'

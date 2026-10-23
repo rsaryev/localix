@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
+import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 import { RAIL_LAYOUT_RESET_EVENT } from './railLayout'
 import {
   RAIL_RECENTS_STORAGE_KEY,

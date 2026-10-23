@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useState, type RefObject } from 'react'
-import { useFocusEntry } from '@localixai/plugin-sdk/ui/focus'
+import { useFocusEntry } from '@localixai/mini-app-sdk/ui/focus'
 
 import { toggleKey, toggleShelfSelection } from './libraryPaneModel'
 

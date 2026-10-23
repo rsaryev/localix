@@ -1,5 +1,5 @@
 /** Bounded hook notices and plugin problem pointers in the transcript. */
-import { settingsEntityAnchor } from '@localixai/plugin-sdk/navigation'
+import { settingsEntityAnchor } from '@localixai/mini-app-sdk/navigation'
 import { pluginLabel } from '@/shared/contrib/pluginAttribution'
 import type { StreamEventOf, StreamReducers } from './types'
 import { noticePosition } from './notice-position'

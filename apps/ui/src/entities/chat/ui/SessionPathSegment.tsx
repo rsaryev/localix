@@ -4,7 +4,7 @@ import { Check, ChevronDown, GitFork, Plus } from 'lucide-react'
 import type { UiSession } from '@/shared/api/contracts'
 import { Popover, PopoverContent, PopoverTrigger } from '@localixai/kit/popover'
 import { SectionLabel } from '@localixai/kit/section-label'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { sessionTitle } from './sessionTitle'
 
 interface SessionPathSegmentProps {

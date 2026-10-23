@@ -4,7 +4,7 @@ import {
   resourceMessageBindingDraft,
   type PluginUiHost,
   type PublishMessageContext,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { GRAPH_KIND, GRAPH_URI, nodeOfUri, sessionOfGraphUri } from '../shared/resource'
 

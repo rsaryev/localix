@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Crosshair, Eye } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Button } from '@localixai/kit/button'
 import { FLOATING_SURFACE } from '@localixai/kit/workbench-toolbar'
 import { formatChordText } from '@localixai/kit/keybindings'

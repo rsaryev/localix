@@ -41,8 +41,8 @@
  */
 import type { FileDiff, RepoBranch, RepoCommit, RepoStatus } from './contracts'
 import type { ScopeDiff } from './git/scope-diff'
-import type { ResourceRefProvider } from '@localixai/plugin-sdk/backend'
-import { buildResourceUri, linkAction } from '@localixai/plugin-sdk/backend'
+import type { ResourceRefProvider } from '@localixai/mini-app-sdk/backend'
+import { buildResourceUri, linkAction } from '@localixai/mini-app-sdk/backend'
 import { decodedSegments, repoRootSegments, SCHEME } from './resource/uris'
 import { resolveTarget } from './resource/target'
 import {

@@ -1,6 +1,6 @@
 /**
  * Shared primitives for the plugin wire contracts — OWNED by
- * `@localixai/plugin-sdk` (`/manifest`), re-exported here so the per-concern
+ * `@localixai/mini-app-sdk` (`/manifest`), re-exported here so the per-concern
  * contract modules (config / contributions / commands / agents) keep their
  * historical import path without forming a cycle through the manifest barrel.
  */
@@ -13,4 +13,4 @@ export {
   isWorkbenchPlugin,
   normalizePluginSurfaces,
   pluginManifestCoreSchema,
-} from '@localixai/plugin-sdk/manifest'
+} from '@localixai/mini-app-sdk/manifest'

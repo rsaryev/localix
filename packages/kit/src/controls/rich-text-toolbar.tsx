@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useEditorState, type Editor } from '@tiptap/react'
 import { Bold, Italic, Link, List, ListOrdered, Unlink } from 'lucide-react'
-import { isRichTextHref } from '@localixai/plugin-sdk/rich-text'
+import { isRichTextHref } from '@localixai/mini-app-sdk/rich-text'
 import { IconButton } from './icon-button'
 import { Button } from './button'
 import { Input } from './input'

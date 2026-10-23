@@ -1,5 +1,5 @@
 import { useId, type RefObject } from 'react'
-import { useFocusEntry } from '@localixai/plugin-sdk/ui/focus'
+import { useFocusEntry } from '@localixai/mini-app-sdk/ui/focus'
 import { matchesChord } from '@localixai/kit/keybindings'
 
 import type { ReaderPreferences } from './model'

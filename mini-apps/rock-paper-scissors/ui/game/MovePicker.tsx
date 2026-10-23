@@ -1,4 +1,4 @@
-import { cn, CONTROL_FOCUS_VISIBLE } from '@localixai/plugin-sdk/ui/classes'
+import { cn, CONTROL_FOCUS_VISIBLE } from '@localixai/mini-app-sdk/ui/classes'
 
 import { MOVES, type Move } from '../../shared/game'
 import { MOVE_GLYPH, MOVE_LABEL } from './copy'

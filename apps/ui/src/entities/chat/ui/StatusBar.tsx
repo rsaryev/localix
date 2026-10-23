@@ -1,7 +1,7 @@
 import { PlugZap } from 'lucide-react'
 import type { LspServerState } from '@/shared/api/contracts'
 import { useRealtimeConnection } from '@/shared/hooks/useRealtimeConnection'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import {
   WorkbenchStatusBar,
   WorkbenchStatusButton,

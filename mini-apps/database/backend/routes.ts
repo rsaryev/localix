@@ -4,7 +4,7 @@ import {
   defaultErrorHandler,
   routeValidator,
   type PluginRouteContext,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import {
   batchRequestSchema,
   browseRequestSchema,

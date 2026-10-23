@@ -2,7 +2,7 @@ import { afterEach, expect, spyOn, test } from 'bun:test'
 import { pluginUiHostFor, removePluginUiContributions } from './host'
 import { setEnabledPluginNames } from './pluginActivation'
 import { actionMatches, contributedActions } from './actions'
-import type { ActionContext, ActionContribution } from '@localixai/plugin-sdk/ui'
+import type { ActionContext, ActionContribution } from '@localixai/mini-app-sdk/ui'
 
 const owner = 'visual-fixture'
 test('predicates filter typed targets and fail closed without breaking content', () => {

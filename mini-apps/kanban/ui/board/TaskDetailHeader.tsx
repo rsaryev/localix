@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { Boxes, Copy, Paperclip, Trash2, UserRound, X } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Button } from '@localixai/kit/button'
 import { StatusDot } from '@localixai/kit/status-dot'
 import { TextAction } from '@localixai/kit/text-action'

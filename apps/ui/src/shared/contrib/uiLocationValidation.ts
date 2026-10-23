@@ -2,13 +2,13 @@ import type {
   UiLocationContribution,
   UiLocationExposure,
   UiLocationParamSchema,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import {
   isValidUiLocationAgentMetadata,
   isValidUiLocationParamSchema,
   isValidUiMutationBaseUri,
   normalizeUiLocationBaseUri,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 
 const UI_SURFACE_KINDS = new Set([
   'page',

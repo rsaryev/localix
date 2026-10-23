@@ -5,8 +5,8 @@ import {
   pluginApiFetch,
   postPluginJson as postJson,
   problemRequestOf,
-} from '@localixai/plugin-sdk/ui/transport'
-import type { ProblemRequest } from '@localixai/plugin-sdk/ui/problems'
+} from '@localixai/mini-app-sdk/ui/transport'
+import type { ProblemRequest } from '@localixai/mini-app-sdk/ui/problems'
 import type {
   BatchRequest,
   BatchResponse,

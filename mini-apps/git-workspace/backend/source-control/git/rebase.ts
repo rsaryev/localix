@@ -22,7 +22,7 @@
  * leave the rebase in progress so the header banner + Changes tree can drive
  * continue/abort/skip. Any other failure is `git_rebase_failed`.
  */
-import { ApiError } from '@localixai/plugin-sdk/backend'
+import { ApiError } from '@localixai/mini-app-sdk/backend'
 import type { RebaseAction, RebaseTodoEntry } from '../contracts'
 import { firstLine, type GitRunner } from './cli'
 import { withCoAuthor } from './actions'

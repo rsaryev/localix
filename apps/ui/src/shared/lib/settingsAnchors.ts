@@ -3,7 +3,7 @@ import {
   settingsEntityAnchor,
   settingsEntityUiUri,
   settingsUiUri,
-} from '@localixai/plugin-sdk/navigation'
+} from '@localixai/mini-app-sdk/navigation'
 import { SETTINGS_STRING_TABS } from '@/shared/routing/routes'
 
 export interface SettingsAnchorOptions {

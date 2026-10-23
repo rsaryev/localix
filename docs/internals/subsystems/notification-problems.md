@@ -65,8 +65,8 @@ the row would show the wrong cause. A problem NAMES its request:
 
 - The host transport marks every response with the trace id it minted (`markResponseTrace`), and a
   plugin's API error reads it back with `problemRequestOf` (both in
-  `packages/plugin-sdk/src/ui/transport.ts`) into `Problem.request` — method, path, status, trace id
-  and the server's `x-request-id`.
+  `packages/mini-app-sdk/src/ui/transport.ts`) into `Problem.request` — method, path, status, trace
+  id and the server's `x-request-id`.
 - `publishProblemReport` passes those requests as the fact's `causes`; `recordClientFact`
   (`apps/ui/src/shared/lib/notifications/clientFacts.ts`) traces exactly them through
   `causalTraceSnapshot` (`trace.ts`), marks each as `cause`, and files the row where they happened.
@@ -76,9 +76,9 @@ the row would show the wrong cause. A problem NAMES its request:
   code rides in `Problem.code`, never in `field`, which renders as a location.
 - `EventTrace.tsx` shows a failed step's status in the line and labels the named cause.
 - A request a timer started is not the person's action: the SDK poller runs its tick inside
-  `runAsBackgroundWork` (`packages/plugin-sdk/src/ui/visibility.tsx`), and the host credits no click
-  to it (`operationContext.ts`). Before, a poll that landed within two seconds of a click raised
-  anonymous "Could not load the data" rows.
+  `runAsBackgroundWork` (`packages/mini-app-sdk/src/ui/visibility.tsx`), and the host credits no
+  click to it (`operationContext.ts`). Before, a poll that landed within two seconds of a click
+  raised anonymous "Could not load the data" rows.
 
 On the API side every answer carries `x-request-id` (`apps/api/src/lib/request-id.ts`), the access
 log line carries the same id, and a rejected JSON answer logs its own `code`, message and `detail`
@@ -146,5 +146,5 @@ reporter, so reading a plugin's roster never files a problem.
 - [Plugin notification wrapper](../../../apps/ui/src/shared/contrib/pluginToast.ts)
 - [Plugin stack attribution](../../../apps/ui/src/shared/contrib/pluginAttribution.ts)
 - [Server plugin problem reporter](../../../apps/api/src/features/plugins/problem-reporter.ts)
-- [SDK request attribution](../../../packages/plugin-sdk/src/ui/transport.ts)
+- [SDK request attribution](../../../packages/mini-app-sdk/src/ui/transport.ts)
 - [Headline wording guard](../../../apps/ui/src/shared/lib/notifications/wording.test.ts)

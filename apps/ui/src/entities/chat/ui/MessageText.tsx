@@ -1,5 +1,5 @@
 import { MarkdownRenderer } from '@/shared/ui/MarkdownRenderer'
-import { ActionSurfaceProvider } from '@localixai/plugin-sdk/ui'
+import { ActionSurfaceProvider } from '@localixai/mini-app-sdk/ui'
 
 interface MessageTextProps {
   text: string

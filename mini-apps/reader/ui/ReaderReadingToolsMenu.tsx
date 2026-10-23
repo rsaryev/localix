@@ -1,6 +1,6 @@
 import { BookOpen, Ellipsis, ScrollText } from 'lucide-react'
 import type { Ref } from 'react'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 
 import { IconButton } from '@localixai/kit/icon-button'
 import {

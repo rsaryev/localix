@@ -150,12 +150,12 @@ export const FEEDBACK: readonly KitCatalogEntry[] = [
     use: 'Marking a surface as focused by generation or reasoning. Sparingly.',
   },
   {
-    specifier: '@localixai/plugin-sdk/ui/charts',
+    specifier: '@localixai/mini-app-sdk/ui/charts',
     category: 'feedback',
     provider: 'sdk',
     exports: ['ChartView'],
     summary: 'SVG charts (bar, line, area, pie) driven by a dataset spec, on the chart tokens.',
-    use: 'Any chart of data. `@localixai/plugin-sdk/ui/stats-charts` has the compact trend and distribution bars.',
+    use: 'Any chart of data. `@localixai/mini-app-sdk/ui/stats-charts` has the compact trend and distribution bars.',
     not: 'Not a charting dependency of your own, not hex colours — series take `--chart-N`.',
   },
 ]

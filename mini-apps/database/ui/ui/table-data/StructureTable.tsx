@@ -14,7 +14,7 @@
  * width, and the border still rounds.
  */
 import type { ReactNode } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /** Row hover shared by every structure grid row that has no status tint of its own. */
 export const STRUCTURE_ROW_HOVER = 'hover:bg-surface-hover'

@@ -1,5 +1,5 @@
 import { SquareTerminal } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /**
  * Quiet provenance mark for slash commands. The terminal glyph distinguishes

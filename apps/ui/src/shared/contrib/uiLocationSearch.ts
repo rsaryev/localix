@@ -1,4 +1,4 @@
-import type { UiLocationDescriptor } from '@localixai/plugin-sdk/ui'
+import type { UiLocationDescriptor } from '@localixai/mini-app-sdk/ui'
 
 function compareLocationOrder(left: UiLocationDescriptor, right: UiLocationDescriptor): number {
   if (left.title !== right.title) return left.title < right.title ? -1 : 1

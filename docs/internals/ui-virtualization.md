@@ -156,5 +156,5 @@ These values are implementation constants, not Settings controls.
   [row layout](../../apps/ui/src/shared/ui/diff/document/diffRows.ts) ·
   [pinned headers](../../apps/ui/src/shared/ui/diff/document/diffSticky.ts) ·
   [renderer](../../apps/ui/src/shared/ui/diff/VirtualDiff.tsx)
-- [Warm-item visibility](../../packages/plugin-sdk/src/ui/visibility.tsx)
+- [Warm-item visibility](../../packages/mini-app-sdk/src/ui/visibility.tsx)
 - [Dependency versions](../../apps/ui/package.json) · [lockfile](../../bun.lock)

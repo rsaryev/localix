@@ -13,7 +13,7 @@
  * action in one scope are ambiguous rather than first-wins, and a handler that never settles is
  * cut off by a timeout instead of holding the UI's request open.
  */
-import type { PluginUiActionContext } from '@localixai/plugin-sdk/backend'
+import type { PluginUiActionContext } from '@localixai/mini-app-sdk/backend'
 import type { BackendSubsystem } from '../ext/subsystem-contrib'
 
 export class PluginUiActionError extends Error {

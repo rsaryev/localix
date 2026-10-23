@@ -1,7 +1,7 @@
 /** One editable column row of the structure editor: name, type, nullability, default SQL, its
  * diff status, and the stage-removal / undo action. */
 import { KeyRound, Link2, Trash2, Undo2 } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Checkbox } from '@localixai/kit/checkbox'
 import { IconButton } from '@localixai/kit/icon-button'
 import { Input } from '@localixai/kit/input'

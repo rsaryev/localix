@@ -1,4 +1,4 @@
-import { searchHitsOf } from '@localixai/plugin-sdk/backend'
+import { searchHitsOf } from '@localixai/mini-app-sdk/backend'
 import { describe, expect, test } from 'bun:test'
 import {
   createTradingSearchProvider,

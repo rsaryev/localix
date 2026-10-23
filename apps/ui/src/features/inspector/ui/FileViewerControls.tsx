@@ -1,5 +1,5 @@
 import { Check, Code, Copy, Eye } from 'lucide-react'
-import { useCopied } from '@localixai/plugin-sdk/ui/interactions'
+import { useCopied } from '@localixai/mini-app-sdk/ui/interactions'
 import { ActionPill } from '@localixai/kit/action-pill'
 import { COPIED_FEEDBACK_SHORT_MS } from '@/shared/lib/timings'
 

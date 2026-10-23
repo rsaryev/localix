@@ -1,4 +1,4 @@
-import type { Seat, Wake } from '@localixai/plugin-sdk/backend'
+import type { Seat, Wake } from '@localixai/mini-app-sdk/backend'
 
 import { recordLine, sinceLastTurn, suggestedCells, targetGrid } from '../shared/describe'
 import { viewFor, type Game } from '../shared/game'

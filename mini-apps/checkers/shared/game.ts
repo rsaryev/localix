@@ -1,5 +1,5 @@
-import { agentWaitSchema, type AgentWait } from '@localixai/plugin-sdk/agent-wait'
-import { OPPONENTS, opponentSchema, type Opponent } from '@localixai/plugin-sdk/opponent'
+import { agentWaitSchema, type AgentWait } from '@localixai/mini-app-sdk/agent-wait'
+import { OPPONENTS, opponentSchema, type Opponent } from '@localixai/mini-app-sdk/opponent'
 import { z } from 'zod'
 
 import { findPlay, moveName } from './notation'
@@ -20,7 +20,7 @@ export { SIDES, type Side } from './rules'
 export const PLAYERS = ['you', 'agent'] as const
 
 /**
- * Who plays the person's opposite colour at this table (`@localixai/plugin-sdk/opponent`): the
+ * Who plays the person's opposite colour at this table (`@localixai/mini-app-sdk/opponent`): the
  * agent in the chat, or the host's decision model. The seat is the same either way — a move from
  * it is the `agent` player's — only who fills it differs.
  */

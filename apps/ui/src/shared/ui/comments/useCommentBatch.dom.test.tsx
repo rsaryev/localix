@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, expect, spyOn, test } from 'bun:test'
-import type { CommentActionContribution, CommentBatch } from '@localixai/plugin-sdk/ui'
-import { useComments, useScopeComments } from '@localixai/plugin-sdk/ui/comments'
+import type { CommentActionContribution, CommentBatch } from '@localixai/mini-app-sdk/ui'
+import { useComments, useScopeComments } from '@localixai/mini-app-sdk/ui/comments'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { toast } from '@/shared/lib/notify'
 

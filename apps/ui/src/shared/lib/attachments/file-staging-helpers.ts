@@ -2,7 +2,7 @@ import {
   fileExtension,
   mediaTypeForExtension,
   mediaTypeForPath,
-} from '@localixai/plugin-sdk/ui/file-types'
+} from '@localixai/mini-app-sdk/ui/file-types'
 import type { AttachmentGate, PendingAttachment } from '@/shared/lib/attachment-policy'
 import type { MessageAttachment } from '@/shared/api/contracts'
 import { uploadMedia } from '@/shared/api/media-client'

@@ -13,7 +13,7 @@
  * (the person reads it and presses Enter; nothing is launched on their behalf).
  *
  * Zero imports and pure data, so the backend that classifies a failure and the browser that renders
- * it share this one module (`@localixai/plugin-sdk/prerequisite`).
+ * it share this one module (`@localixai/mini-app-sdk/prerequisite`).
  */
 
 export type PrerequisiteState =

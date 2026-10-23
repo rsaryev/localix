@@ -15,7 +15,7 @@ import { workspaceStorageKey } from '@/shared/lib/workspaceWindow'
  * in → store out) and unit tested; the thin wrappers own storage.
  */
 
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 
 const STORAGE_KEY = workspaceStorageKey('localix_editor_view_state')
 /** Cap on remembered files — LRU beyond this so storage never grows unbounded. */

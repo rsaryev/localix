@@ -14,7 +14,7 @@ import { useGridStore, groupOfTab, scopeOf, type WorkItem } from '@/entities/wor
 import { backendClient } from '@/shared/api/client'
 import { workspaceOf } from '@/shared/lib/workspaceOf'
 import { toast } from '@/shared/lib/notify'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { createTerminal } from '../api'
 import { makeTerminalItem, placeTerminal } from './terminalTabPlacement'
 

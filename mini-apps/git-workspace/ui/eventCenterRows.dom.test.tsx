@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, mock, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
-import type { PluginToast, PluginToastOptions } from '@localixai/plugin-sdk/ui'
+import type { PluginToast, PluginToastOptions } from '@localixai/mini-app-sdk/ui'
 import type { useSourceControlStore as SourceControlStore } from './source-control/model/store'
 
 /**
@@ -24,7 +24,7 @@ beforeAll(async () => {
   realStore = (await import('./source-control/model/store')).useSourceControlStore.getState()
   teardown = registerDom()
   ;(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
-  const { bindPluginUiToast } = await import('@localixai/plugin-sdk/ui')
+  const { bindPluginUiToast } = await import('@localixai/mini-app-sdk/ui')
   const method = (kind: string) => (title: string, options?: PluginToastOptions) => {
     rows.push({ kind, title, options })
     return rows.length

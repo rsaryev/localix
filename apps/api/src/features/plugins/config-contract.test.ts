@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { pluginConfigOptionSchema as sdkPluginConfigOptionSchema } from '@localixai/plugin-sdk/manifest'
+import { pluginConfigOptionSchema as sdkPluginConfigOptionSchema } from '@localixai/mini-app-sdk/manifest'
 
 import { scalarConfig } from '../capabilities/source-repository'
 import { setPluginConfigRequestSchema } from './contracts'

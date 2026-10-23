@@ -1,6 +1,6 @@
 import { StatSection } from '@localixai/kit/stat'
-import { DistributionChart, TrendChart } from '@localixai/plugin-sdk/ui/stats-charts'
-import { formatTokens } from '@localixai/plugin-sdk/ui/utilities'
+import { DistributionChart, TrendChart } from '@localixai/mini-app-sdk/ui/stats-charts'
+import { formatTokens } from '@localixai/mini-app-sdk/ui/utilities'
 import type { ExternalAgentStats } from '@localixai/api/external-agent-contracts'
 import {
   externalStatsAxis,

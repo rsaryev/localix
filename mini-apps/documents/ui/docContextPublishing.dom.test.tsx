@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from 'bun:test'
 import '@localixai/kit/testing/host-runtime'
 import { backendClient, registerDom } from '@localixai/kit/testing'
-import type { PublishMessageContext } from '@localixai/plugin-sdk/ui'
+import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'
 
 let teardown: () => Promise<void>
 beforeAll(() => {

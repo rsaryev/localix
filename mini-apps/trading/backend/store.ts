@@ -10,11 +10,11 @@
  * This file's header used to say it mirrored the database workbench's store — "the same
  * atomic-write + per-user write-lock + cache discipline, which is what closed its mid-write
  * read race". It was right, and that was the problem: a copy of a bug FIX, documented as a
- * copy. The discipline now has exactly one owner, `@localixai/plugin-sdk/backend`'s
+ * copy. The discipline now has exactly one owner, `@localixai/mini-app-sdk/backend`'s
  * `user-entity-store`, and both workbenches call it. The race it closes (a reader observing a
  * half-written file) is subtle enough that a third copy would re-introduce it rather than re-derive it.
  */
-import { createUserEntityStore, type UserEntityStore } from '@localixai/plugin-sdk/backend'
+import { createUserEntityStore, type UserEntityStore } from '@localixai/mini-app-sdk/backend'
 import type { TradingConnectionConfig } from './contracts'
 import { safeFileKey } from './store-paths'
 

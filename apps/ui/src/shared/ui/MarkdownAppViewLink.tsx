@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useSyncExternalStore } from 'react'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { subscribeUiLocations, uiLocationRevision } from '@/shared/contrib/uiLocations'
 import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
 import { navigateUi, resolveUiNavigation } from '@/shared/lib/uiNavigation'

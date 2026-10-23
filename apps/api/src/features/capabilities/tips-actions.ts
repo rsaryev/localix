@@ -2,8 +2,8 @@ import {
   capabilitySettingsUiUri,
   localixResourceUri,
   settingsUiUri,
-} from '@localixai/plugin-sdk/navigation'
-import type { CapabilityResourceKind } from '@localixai/plugin-sdk/navigation'
+} from '@localixai/mini-app-sdk/navigation'
+import type { CapabilityResourceKind } from '@localixai/mini-app-sdk/navigation'
 import type { ComposerTipAction } from './contracts'
 
 /**

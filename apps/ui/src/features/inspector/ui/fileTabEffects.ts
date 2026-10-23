@@ -5,7 +5,7 @@
  */
 import { useEffect, useMemo, type RefObject } from 'react'
 import { applyTextEdits, textDigest } from '@localixai/api/lsp-edits'
-import { snippetMessageBindingDraft, type PublishMessageContext } from '@localixai/plugin-sdk/ui'
+import { snippetMessageBindingDraft, type PublishMessageContext } from '@localixai/mini-app-sdk/ui'
 import { useChatStore } from '@/entities/chat/model/store'
 import { useGridStore } from '@/entities/workspace-grid/model'
 import type { EditorDiagnostic, EditorTextSelection } from '@/shared/ui/code-editor/CodeEditor'

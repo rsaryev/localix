@@ -18,7 +18,7 @@ import {
   type DecisionHost,
   type DecisionOptions,
   type DecisionOutcome,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import type { DecisionBackend } from './models'
 
 /** The ledger row a decision's spend lands in: core routing, or any other consumer. */

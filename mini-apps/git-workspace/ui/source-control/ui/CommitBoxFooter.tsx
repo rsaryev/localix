@@ -1,5 +1,5 @@
 import { GitCommitVertical } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /** Subject length past which the hint appears, and past which it turns red (50/72). */
 const SUBJECT_SOFT = 50

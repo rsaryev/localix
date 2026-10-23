@@ -7,7 +7,7 @@ import {
   TextAlignEnd,
   TextAlignStart,
 } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { SpaceColor } from '../../shared/format/schema'
 import type { TextAlign, TextFont, TextValign } from '../../shared/types/text-style'
 import type { ElementControl } from './contract'

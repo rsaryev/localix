@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ExternalLink } from 'lucide-react'
-import { pluginExternal } from '@localixai/plugin-sdk/ui/runtime'
+import { pluginExternal } from '@localixai/mini-app-sdk/ui/runtime'
 import { Button } from '@localixai/kit/button'
 import { Input } from '@localixai/kit/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@localixai/kit/popover'

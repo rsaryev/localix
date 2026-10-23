@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Project } from '@localixai/api/client'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { backendClient } from '@/shared/api/client'
 import { useResourceRevision } from '@/shared/api/useResourceRevision'
 import { reportProjectListFailure, reportProjectListLoaded } from './projectListProblem'

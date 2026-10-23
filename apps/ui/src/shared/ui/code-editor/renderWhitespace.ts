@@ -4,7 +4,7 @@
 // persisted to localStorage so it survives reloads. Pure browser-only module (no
 // `features`/`shared/api`/store import) — belongs in the lowest FSD layer alongside the
 // other editor preferences, mirroring `wordWrap.ts`.
-import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
+import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 
 const STORAGE_KEY = 'localix.editor.renderWhitespace'
 

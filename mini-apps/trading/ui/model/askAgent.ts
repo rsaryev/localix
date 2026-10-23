@@ -15,7 +15,7 @@
  * Pure text-building is kept separate from the bus side effect so it unit-tests directly,
  * exactly like `askAgentAboutResponse.ts`'s split.
  */
-import { pluginComposer } from '@localixai/plugin-sdk/ui/runtime'
+import { pluginComposer } from '@localixai/mini-app-sdk/ui/runtime'
 import { buildTradeUri, type MarketLeaf } from '../../backend/uri'
 
 export interface MarketSurfaceRef {

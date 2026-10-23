@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import type { ToolCardContribution } from '@localixai/plugin-sdk/ui'
+import type { ToolCardContribution } from '@localixai/mini-app-sdk/ui'
 
 import { isPluginContributionEnabled, subscribePluginActivation } from './pluginActivation'
 

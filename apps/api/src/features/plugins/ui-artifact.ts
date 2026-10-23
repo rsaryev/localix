@@ -6,7 +6,7 @@ import {
   PLUGIN_UI_ARTIFACT_DIR,
   PLUGIN_UI_ARTIFACT_MANIFEST,
   isPluginUiArtifactManifest,
-} from '@localixai/plugin-sdk/ui-artifact'
+} from '@localixai/mini-app-sdk/ui-artifact'
 
 import { isPathBelow } from '../../lib/path-containment'
 import type { PluginCatalog } from './catalog'

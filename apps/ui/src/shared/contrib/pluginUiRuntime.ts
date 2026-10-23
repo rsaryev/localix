@@ -1,4 +1,4 @@
-import type { PluginUiHost } from '@localixai/plugin-sdk/ui'
+import type { PluginUiHost } from '@localixai/mini-app-sdk/ui'
 
 /**
  * The lifecycle of plugin UI inside a RUNNING workbench: load, replace and unload one

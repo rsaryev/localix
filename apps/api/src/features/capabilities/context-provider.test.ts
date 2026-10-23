@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import type { MessageContextBinding } from '@localixai/agent'
-import { capabilityResourceUri } from '@localixai/plugin-sdk/navigation'
+import { capabilityResourceUri } from '@localixai/mini-app-sdk/navigation'
 
 import {
   contextBindingsToModelAssets,

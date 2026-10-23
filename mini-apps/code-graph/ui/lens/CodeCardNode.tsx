@@ -1,7 +1,7 @@
 import { memo, useMemo } from 'react'
 import { Check, ChevronRight, Copy, ExternalLink, TriangleAlert } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
-import { useCopied } from '@localixai/plugin-sdk/ui/interactions'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
+import { useCopied } from '@localixai/mini-app-sdk/ui/interactions'
 import {
   Handle,
   HIDDEN_HANDLE,

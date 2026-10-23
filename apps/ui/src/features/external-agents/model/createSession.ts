@@ -1,7 +1,7 @@
 import { externalAgentsApi } from '../api'
 import { terminal as terminalBus } from '@/shared/lib/terminalBus'
 import { toast } from '@/shared/lib/notify'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 export async function openOwnedExternalSession(
   sessionId: string,

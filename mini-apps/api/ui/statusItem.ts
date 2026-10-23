@@ -1,8 +1,8 @@
 import { Globe } from 'lucide-react'
-import type { StatusItemState, MenuEntry } from '@localixai/plugin-sdk/ui'
-import { pluginWorkspace, runPluginAction } from '@localixai/plugin-sdk/ui'
-import { createSharedResource } from '@localixai/plugin-sdk/ui/shared-resource'
-import { usePluginWorkspace } from '@localixai/plugin-sdk/ui/runtime-hooks'
+import type { StatusItemState, MenuEntry } from '@localixai/mini-app-sdk/ui'
+import { pluginWorkspace, runPluginAction } from '@localixai/mini-app-sdk/ui'
+import { createSharedResource } from '@localixai/mini-app-sdk/ui/shared-resource'
+import { usePluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 
 import type { EnvironmentInfo } from '../backend/contracts'
 import { restApi } from './restApi'

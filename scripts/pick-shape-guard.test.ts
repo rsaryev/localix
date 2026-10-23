@@ -39,7 +39,7 @@ const REPO_ROOT = path.resolve(import.meta.dir, '..')
 const INCLUDE = [
   'apps/ui/src/**/*.{ts,tsx}',
   'mini-apps/*/ui/**/*.{ts,tsx}',
-  'packages/plugin-sdk/src/ui/**/*.{ts,tsx}',
+  'packages/mini-app-sdk/src/ui/**/*.{ts,tsx}',
 ]
 
 const skip = (file: string) => /\.test\.|\/testing\//.test(file)

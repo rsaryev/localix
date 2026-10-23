@@ -10,7 +10,7 @@
 import { memo, useMemo, useState } from 'react'
 import type { Candle } from '../../backend/contracts'
 import type { ChartDrawing } from '../../backend/chart-drawing'
-import { loadJSON } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON } from '@localixai/mini-app-sdk/ui/storage'
 import {
   applyIndicatorCommandV2,
   patchIndicatorPref,

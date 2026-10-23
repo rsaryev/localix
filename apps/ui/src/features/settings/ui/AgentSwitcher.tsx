@@ -1,5 +1,5 @@
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { monogramIcon } from '@localixai/kit/avatar'
 import { HeaderPickMenu } from './HeaderPickMenu'
 

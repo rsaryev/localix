@@ -1,5 +1,5 @@
 import type { Element, Root } from 'hast'
-import type { ActionTarget } from '@localixai/plugin-sdk/ui'
+import type { ActionTarget } from '@localixai/mini-app-sdk/ui'
 import { TREE_FENCE_LANGUAGE } from '@localixai/markdown/dialect'
 
 type MarkdownBlock = Extract<ActionTarget, { kind: 'markdown' }>['block']

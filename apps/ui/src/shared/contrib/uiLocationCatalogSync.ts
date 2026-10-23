@@ -1,6 +1,6 @@
 import { client, unwrap } from '@/shared/api/internal'
 import { eventSocket } from '@/shared/api/eventSocket'
-import type { UiAgentLocationCatalogSnapshot } from '@localixai/plugin-sdk/ui'
+import type { UiAgentLocationCatalogSnapshot } from '@localixai/mini-app-sdk/ui'
 import { createBoundedCache } from '@localixai/kit/lib'
 import { createUiLocationCatalogSync } from './uiLocationCatalogPublisher'
 import { subscribeUiLocations, uiAgentLocationCatalogSnapshot } from './uiLocations'

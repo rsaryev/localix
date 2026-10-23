@@ -9,10 +9,10 @@ import {
   RefreshCw,
   TriangleAlert,
 } from 'lucide-react'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
-import { usePrerequisiteRecovery } from '@localixai/plugin-sdk/ui/prerequisite-recovery'
-import type { Prerequisite } from '@localixai/plugin-sdk/prerequisite'
-import { copyText } from '@localixai/plugin-sdk/ui/interactions'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
+import { usePrerequisiteRecovery } from '@localixai/mini-app-sdk/ui/prerequisite-recovery'
+import type { Prerequisite } from '@localixai/mini-app-sdk/prerequisite'
+import { copyText } from '@localixai/mini-app-sdk/ui/interactions'
 import { Chip } from '@localixai/kit/chip'
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@localixai/kit/context-menu'
 import { WorkbenchListRow } from '@localixai/kit/workbench-list-row'
@@ -25,7 +25,7 @@ import type {
 import { CollapsibleSection } from '@localixai/kit/collapsible-section'
 import { StatusDot } from '@localixai/kit/status-dot'
 import { platformCapabilities } from '@localixai/kit/platform'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { BulkAction } from './sourceControlParts'
 
 /** CI rollup → StatusDot tone class + accessible label. `none` renders no dot. */

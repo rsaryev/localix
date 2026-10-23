@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { participantAgentId } from '@localixai/api/participant'
-import { localixUiUri } from '@localixai/plugin-sdk/navigation'
+import { localixUiUri } from '@localixai/mini-app-sdk/navigation'
 import { pluginContribSnapshot } from './enabledPlugins'
 import { usePluginContribVersion } from './usePluginContribVersion'
 

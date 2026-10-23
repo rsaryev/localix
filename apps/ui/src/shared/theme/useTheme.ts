@@ -9,7 +9,7 @@ import { readNativeHeaderTint } from './nativeHeaderTint'
 // Imported before the boot block below runs, so the transparency level is on <html> by the time
 // that block samples --sidebar for the native header.
 import { onWindowTransparencyApplied } from './windowTransparency'
-import { loadString, saveString } from '@localixai/plugin-sdk/ui/storage'
+import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 import {
   applyThemeChangeInstantly,
   canRevealThemeChange,

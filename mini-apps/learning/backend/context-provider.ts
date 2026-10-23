@@ -1,7 +1,7 @@
 import {
   createResourceContextProvider,
   type ContextProviderContribution,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 
 import type { LearningService } from './service'
 import { createLearningResourceProvider } from './resource-provider'

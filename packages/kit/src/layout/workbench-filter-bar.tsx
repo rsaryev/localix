@@ -1,5 +1,5 @@
 import type { ComponentPropsWithoutRef } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 type WorkbenchFilterBarProps = Omit<ComponentPropsWithoutRef<'div'>, 'aria-label'> & {
   'aria-label': string

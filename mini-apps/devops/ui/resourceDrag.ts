@@ -1,6 +1,6 @@
-import { resourceMessageBindingDraft } from '@localixai/plugin-sdk/ui'
+import { resourceMessageBindingDraft } from '@localixai/mini-app-sdk/ui'
 
-import { setMessageBindingDrag } from '@localixai/plugin-sdk/ui/message-binding-drag'
+import { setMessageBindingDrag } from '@localixai/mini-app-sdk/ui/message-binding-drag'
 
 export interface DevOpsResourceLink {
   uri: string

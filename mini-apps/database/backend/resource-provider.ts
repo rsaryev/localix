@@ -49,14 +49,14 @@ import type {
   ResourceExpansion,
   ResourceNode,
   ResourceRefProvider,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import {
   buildResourceUri,
   decodeResourceSegment,
   encodeResourceSegment,
   linkAction,
   providerSegments,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 import { DATABASE_RESOURCE_PROVIDER } from './resource-provider-id'
 import { renderRecentQueriesForContext } from './recent-query-context'
 import { getDatabaseDriverManifest } from '../shared/driver-catalog'

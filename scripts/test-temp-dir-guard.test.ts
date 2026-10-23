@@ -6,7 +6,7 @@ import { join, relative, resolve } from 'node:path'
  * Tests never make scratch folders beside themselves.
  *
  * A test that created its temp dir with `mkdtemp(join(import.meta.dir, …))` put a half-written
- * fixture INSIDE the source tree. Every lint that walks `src` (the plugin-sdk exports guard, the
+ * fixture INSIDE the source tree. Every lint that walks `src` (the mini-app-sdk exports guard, the
  * architecture checks) could list a file there and then fail to read it the moment the test removed
  * it, which turned a pre-push red on a file nobody had touched; a crashed run also left the folder
  * behind for good. Temp dirs come from `@localixai/testing` (`makeTempDir`, `tempDirPerTest`) under

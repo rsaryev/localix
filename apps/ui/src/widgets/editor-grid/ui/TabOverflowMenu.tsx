@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { ActionTooltip } from '@localixai/kit/tooltip'
 import { IconButton } from '@localixai/kit/icon-button'
 import {

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { LogLine, LogSeverity, LogTokenKind } from './model/logLines'
 
 /** Matches the viewport's top inset: rows are shifted down so line 1 clears the toolbar seam. */

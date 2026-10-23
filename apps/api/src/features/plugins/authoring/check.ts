@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 
-import { PLUGIN_UI_ARTIFACT_DIR } from '@localixai/plugin-sdk/ui-artifact'
+import { PLUGIN_UI_ARTIFACT_DIR } from '@localixai/mini-app-sdk/ui-artifact'
 
 import { errorMessage } from '../../../lib/errors'
 import {

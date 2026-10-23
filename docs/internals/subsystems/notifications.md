@@ -55,7 +55,7 @@ how loud it is and how it is worded. A new producer picks its row here before it
 Rules that make the table hold:
 
 - **One tone vocabulary.** `neutral | info | success | warning | error` (`StatusTone` in
-  `packages/plugin-sdk/src/ui/status-items.ts`) is what a transcript notice, a status item, a
+  `packages/mini-app-sdk/src/ui/status-items.ts`) is what a transcript notice, a status item, a
   diagnostics fact and a settings meta line all say. Stored notices written with the old `muted` are
   rewritten by `apps/api/migrations/20261006T000000_system_notice_tone.ts`.
 - **One presentation of a failed run.** `presentErrorInfo`

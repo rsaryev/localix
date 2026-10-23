@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { backendClient } from '@/shared/api/client'
 import type { McpServerRecord, McpProbeResult } from '@/shared/api/contracts'
-import { useWorkItemVisible } from '@localixai/plugin-sdk/ui/visibility'
+import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { inlineFailure } from '@/shared/lib/notifications/inlineReport'
 import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { useCapabilityRegistry } from '@/shared/contrib/useCapabilityRegistry'

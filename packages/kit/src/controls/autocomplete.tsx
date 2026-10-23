@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Popover, PopoverAnchor, PopoverContent } from '../overlays/popover'
 import { MENU_ITEM } from '../overlays/popover-surface'
 

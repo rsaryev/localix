@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNo
 import { MessageSquare, MessageSquarePlus, Pencil, Trash2 } from 'lucide-react'
 
 import { expandSelectionToSentence, findQuoteRange } from '@/shared/lib/text-selection'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Button } from '@localixai/kit/button'
 import { IconButton } from '@localixai/kit/icon-button'
 import { Textarea } from '@localixai/kit/textarea'

@@ -8,7 +8,7 @@
  */
 import { useCallback } from 'react'
 import { copyableMessageText } from '@localixai/agent/agents'
-import { messageBindingDraft } from '@localixai/plugin-sdk/ui/message-binding-drag'
+import { messageBindingDraft } from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import { composerBus } from '@/shared/lib/composerBus'
 import { inspector } from '@/shared/lib/inspectorBus'
 import type { Message } from '../model/types'

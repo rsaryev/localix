@@ -1,5 +1,5 @@
 import { afterAll, afterEach, describe, expect, spyOn, test } from 'bun:test'
-import { pluginWorkspace } from '@localixai/plugin-sdk/ui'
+import { pluginWorkspace } from '@localixai/mini-app-sdk/ui'
 import type { RepoFileChange } from '../../../backend/source-control/contracts'
 import { sourceControlApi } from '../../api'
 import { openChangedFile } from './openChangedFile'

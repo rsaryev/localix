@@ -1,4 +1,4 @@
-import { sessionResourceAddress } from '@localixai/plugin-sdk/session-resource'
+import { sessionResourceAddress } from '@localixai/mini-app-sdk/session-resource'
 
 /** The router's mount path: `/rpc/<plugin name>`, so it is this plugin's own. */
 export const ROUTE_PATH = '/rpc/checkers'

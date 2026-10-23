@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
-import { runAsBackgroundWork } from '@localixai/plugin-sdk/ui/visibility'
+import { runAsBackgroundWork } from '@localixai/mini-app-sdk/ui/visibility'
 import { activeEventOrigin, setActiveEventRoute } from './context'
 import { observeOperationContext, resetOperationContextsForTests } from './operationContext'
 import { recentUserIntent, resetUserIntentForTests, startUserIntentCapture } from './userIntent'

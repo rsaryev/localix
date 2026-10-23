@@ -2,12 +2,12 @@
  * K8s resource-tree URI builders + section-leaf node builders — the pure half of the
  * `localix://resource/k8s` resource provider (see `resource-provider.ts` for the grammar + provider).
  */
-import type { ResourceNode } from '@localixai/plugin-sdk/resource-refs'
+import type { ResourceNode } from '@localixai/mini-app-sdk/resource-refs'
 import {
   buildResourceUri,
   encodeResourceSegment,
   noticeNode,
-} from '@localixai/plugin-sdk/resource-refs'
+} from '@localixai/mini-app-sdk/resource-refs'
 import { mapKubeError } from './errors'
 
 /** The URI provider this plugin owns. */

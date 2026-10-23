@@ -1,4 +1,4 @@
-import type { PluginContext, PluginRegistration } from '@localixai/plugin-sdk/backend'
+import type { PluginContext, PluginRegistration } from '@localixai/mini-app-sdk/backend'
 import { ROUTE_PATH } from '../shared/resource'
 import { createGraphContextProvider, createGraphResourceProvider } from './context'
 import { closeProjects } from './indexing/projects'

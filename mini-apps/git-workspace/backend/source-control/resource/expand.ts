@@ -3,8 +3,8 @@
  * or a repo node's summary, listing, branch-vs-base diff, commit patch, file
  * diff, or working / staged / unstaged diff.
  */
-import type { ResourceExpansion } from '@localixai/plugin-sdk/backend'
-import { plural } from '@localixai/plugin-sdk/backend'
+import type { ResourceExpansion } from '@localixai/mini-app-sdk/backend'
+import { plural } from '@localixai/mini-app-sdk/backend'
 import type { RepoBranch, RepoCommit } from '../contracts'
 import type { ResourceGitService } from '../resource-provider'
 import type { PickerTarget, RepoTarget } from './target'

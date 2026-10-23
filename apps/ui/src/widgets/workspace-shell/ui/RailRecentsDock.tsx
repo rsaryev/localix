@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { History } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { IconButton } from '@localixai/kit/icon-button'
 import { Popover, PopoverContent, PopoverTrigger } from '@localixai/kit/popover'
 import { railBtn, railBtnActive } from '@localixai/kit/rail-button'

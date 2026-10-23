@@ -1,5 +1,5 @@
 import type { EditorTextSelection } from '@/shared/ui/code-editor/CodeEditor'
-import { baseName } from '@localixai/plugin-sdk/ui/utilities'
+import { baseName } from '@localixai/mini-app-sdk/ui/utilities'
 
 export interface FileSelectionContextInput extends EditorTextSelection {
   path: string

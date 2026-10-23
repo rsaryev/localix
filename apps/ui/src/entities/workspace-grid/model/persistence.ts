@@ -3,7 +3,7 @@ import { workspaceStorageKey } from '@/shared/lib/workspaceWindow'
 // restorable WorkItems, and the focus state (serialized grid + per-group inputs +
 // active group). Debounced save; a load
 // sanitizes the tree against the items that actually survived.
-import { loadJSON, saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 import { createPendingWrite } from '@/shared/lib/quitFlush'
 import type { SerializedWorkItem, WorkItem } from '@/shared/lib/workItem'
 import { isRestorableForPersistence, persistedScopeKindOf } from './capabilities'

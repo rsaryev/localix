@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'bun:test'
-import { bindPluginUiRuntime, type PluginUiRuntime } from '@localixai/plugin-sdk/ui/runtime'
+import { bindPluginUiRuntime, type PluginUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
 import { GRAPH_FRAME_TAG, GRAPH_SUBSCRIBE, GRAPH_UNSUBSCRIBE } from '../shared/stream'
 import { graphFeed, graphFollower, type GraphStreamListener } from './graphStream'
 

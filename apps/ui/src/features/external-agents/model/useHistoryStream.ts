@@ -1,4 +1,4 @@
-import { createRealtimeFeed, useRealtimeFeed } from '@localixai/plugin-sdk/ui/realtime-feed'
+import { createRealtimeFeed, useRealtimeFeed } from '@localixai/mini-app-sdk/ui/realtime-feed'
 
 import {
   HISTORY_FRAME_TAG,

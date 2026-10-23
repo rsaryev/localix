@@ -3,12 +3,12 @@ import {
   type DocumentLayout,
   type DocumentParagraph,
   type DocumentRun,
-} from '@localixai/plugin-sdk/document-layout'
+} from '@localixai/mini-app-sdk/document-layout'
 import {
   richTextDocument,
   type RichBlock,
   type RichTextValue,
-} from '@localixai/plugin-sdk/rich-text'
+} from '@localixai/mini-app-sdk/rich-text'
 import { populatedSections, entryMetadata } from './document-blocks'
 import { presentationFor } from './presentation'
 import type { ResumeDocument } from './schema'

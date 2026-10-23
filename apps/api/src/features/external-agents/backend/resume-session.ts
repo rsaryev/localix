@@ -1,4 +1,4 @@
-import { shellQuote } from '@localixai/plugin-sdk/backend'
+import { shellQuote } from '@localixai/mini-app-sdk/backend'
 import type { SessionSummary } from '../shared/contracts'
 import { adapterFor } from './adapters/registry'
 

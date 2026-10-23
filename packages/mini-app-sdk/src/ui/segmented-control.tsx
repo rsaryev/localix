@@ -1,5 +1,5 @@
 import { createContext, useContext, useId, useMemo } from 'react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /** Shared track and selection treatments for action and radio segments. */
 export type SegmentedVariant = 'raised' | 'muted' | 'ghost' | 'outlined'

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { z } from 'zod'
 import { createHumanInLoopController, HumanInLoopDismissedError } from '@localixai/agent/agents'
-import type { ConfigChangeRequest, ConfigChangeResponse } from '@localixai/plugin-sdk/backend'
+import type { ConfigChangeRequest, ConfigChangeResponse } from '@localixai/mini-app-sdk/backend'
 
 import { classifyConfigureCall, createConfigureTool } from './configure'
 import type { ConfigureHost, ProposalCard } from './configure-contracts'

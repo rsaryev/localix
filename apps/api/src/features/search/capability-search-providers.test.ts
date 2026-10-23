@@ -10,7 +10,7 @@ import { createModelsSearchProvider } from '../catalog/search-provider'
 import { createMcpSearchProvider } from '../mcp/search-provider'
 import { createPluginsSearchProvider } from '../plugins/search-provider'
 import { createSkillsSearchProvider } from '../skills-curator/search-provider'
-import { searchHitsOf } from '@localixai/plugin-sdk/backend'
+import { searchHitsOf } from '@localixai/mini-app-sdk/backend'
 
 const scopedQuery: SearchQuery = { text: 'target', projectId: 'project/a' }
 

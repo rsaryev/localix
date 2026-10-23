@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState, type Dispatch, type SetStateAction } from 'react'
-import { saveJSON } from '@localixai/plugin-sdk/ui/storage'
+import { saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 
 import type { ReaderPreferences } from './model'
 import type { ReaderPagePosition } from './pagination'

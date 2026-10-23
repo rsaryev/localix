@@ -1,7 +1,7 @@
 import { copyFile, mkdir, rename, rm } from 'node:fs/promises'
 import { dirname, join, relative } from 'node:path'
 
-import { encodeResourceSegment } from '@localixai/plugin-sdk/backend'
+import { encodeResourceSegment } from '@localixai/mini-app-sdk/backend'
 
 import { loadCourseBundle, type LoadedCourseBundle } from './course-bundle'
 

@@ -52,9 +52,9 @@ development aid.
   invalidates.
 - `apps/ui/src/shared/api/resourceSyncTransport.ts` turns socket events into invalidations and ties
   reads to connection state.
-- `packages/plugin-sdk/src/ui/resource-sync.ts` is the pull side: invalidations are coalesced, reads
-  are serial per adapter, failures retry with backoff, and a generation counter drops superseded
-  results.
+- `packages/mini-app-sdk/src/ui/resource-sync.ts` is the pull side: invalidations are coalesced,
+  reads are serial per adapter, failures retry with backoff, and a generation counter drops
+  superseded results.
 - Making the poke follow the change feed (a realtime consumer of `change_events`) is planned; see
   [the change feed subsystem](../../subsystems/change-feed.md).
 

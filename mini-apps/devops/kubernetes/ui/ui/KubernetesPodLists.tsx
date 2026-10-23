@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 
 import type { KubePod } from '../../backend/contracts'
 import { ALL_NAMESPACES } from '../../backend/contracts'

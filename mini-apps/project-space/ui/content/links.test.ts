@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import {
   createMessageBindingDraft,
   type MessageContextBindingDraft,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { emptySpace } from '../../shared/format/document'
 import { spaceTypes } from '../../shared/types'
 import { dropEffectFor } from '../board/useBoardIO'

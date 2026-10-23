@@ -11,7 +11,7 @@
  *
  * Every pick is an offered key, so model output never becomes a selector, a coordinate or code.
  */
-import type { DecisionAnswer, DecisionAsk } from '@localixai/plugin-sdk/backend'
+import type { DecisionAnswer, DecisionAsk } from '@localixai/mini-app-sdk/backend'
 
 import type { PreviewSnapshotElement } from '../preview/preview-control'
 

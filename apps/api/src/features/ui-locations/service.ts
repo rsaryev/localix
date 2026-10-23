@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import {
   normalizeUiAgentLocationCatalogSnapshot,
   type UiAgentLocationCatalogSnapshot,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 
 import { createBoundedCache, type BoundedCache } from '../../lib/bounded-cache'
 

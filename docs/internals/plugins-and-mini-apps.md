@@ -61,12 +61,12 @@ Only a mini app with a screen (a rail viewlet) can be installed as a Mac app
 
 ## Where the code lives
 
-| Part                       | Home                                                        | Knows about                                  |
-| -------------------------- | ----------------------------------------------------------- | -------------------------------------------- |
-| Claude Code plugin format  | `packages/claude-plugin` (`@localixai/claude-plugin`)       | Claude Code's documented format only; zod.   |
-| Mini app manifest          | `packages/plugin-sdk/src/manifest/app.ts` (`/app-manifest`) | Plugin names; Localix's extension contracts. |
-| Reading a folder           | `apps/api/src/features/plugins/layout/`                     | Both formats; composes one runtime manifest. |
-| Loading, catalog, enabling | `apps/api/src/features/plugins/` (unchanged by the split)   | The composed manifest.                       |
+| Part                       | Home                                                          | Knows about                                  |
+| -------------------------- | ------------------------------------------------------------- | -------------------------------------------- |
+| Claude Code plugin format  | `packages/claude-plugin` (`@localixai/claude-plugin`)         | Claude Code's documented format only; zod.   |
+| Mini app manifest          | `packages/mini-app-sdk/src/manifest/app.ts` (`/app-manifest`) | Plugin names; Localix's extension contracts. |
+| Reading a folder           | `apps/api/src/features/plugins/layout/`                       | Both formats; composes one runtime manifest. |
+| Loading, catalog, enabling | `apps/api/src/features/plugins/` (unchanged by the split)     | The composed manifest.                       |
 
 The loader, catalog, capability rules and UI keep working on one composed manifest per extension.
 `layout/compose.ts` is the one place that maps the two manifests onto it, so a later change that

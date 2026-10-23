@@ -1,5 +1,5 @@
 import { MessagesSquare } from 'lucide-react'
-import { defineUiLocation } from '@localixai/plugin-sdk/ui'
+import { defineUiLocation } from '@localixai/mini-app-sdk/ui'
 
 export const SESSION_SWITCHER_OVERLAY_ID = 'session-switcher'
 

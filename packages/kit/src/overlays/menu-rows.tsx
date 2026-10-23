@@ -3,7 +3,7 @@
 import * as React from 'react'
 import type { DropdownMenu as DropdownMenuPrimitive } from 'radix-ui'
 import { ChevronRight } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { OVERLAY_ENTER_EXIT, OVERLAY_SLIDE } from './overlay-motion'
 import { MenuTrailingCheck } from './menu-row-parts'
 import {

@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { ChevronDown, X } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Spinner } from '@localixai/kit/spinner'
 import { IconButton } from '@localixai/kit/icon-button'
 import { inspector } from '@/shared/lib/inspectorBus'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { refIcon, refDisplayLabel, type RefLabelSources } from '../refKindPresentation'
 import {
   manifestAssetSummary,

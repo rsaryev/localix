@@ -9,9 +9,9 @@ test('an artifact takes React, the kit and the SDK from the host, and bundles ev
     'react-dom',
     'react-dom/client',
     '@localixai/kit/button',
-    '@localixai/plugin-sdk/ui',
-    '@localixai/plugin-sdk/ui/runtime',
-    '@localixai/plugin-sdk/backends',
+    '@localixai/mini-app-sdk/ui',
+    '@localixai/mini-app-sdk/ui/runtime',
+    '@localixai/mini-app-sdk/backends',
   ]) {
     expect(isPluginUiSharedModule(shared)).toBe(true)
   }
@@ -22,9 +22,9 @@ test('an artifact takes React, the kit and the SDK from the host, and bundles ev
     '@localixai/kit/',
     '@localixai/kit/testing',
     '@localixai/kit/testing/dom',
-    '@localixai/plugin-sdk/',
-    '@localixai/plugin-sdk/backend',
-    '@localixai/plugin-sdk/backend/tools',
+    '@localixai/mini-app-sdk/',
+    '@localixai/mini-app-sdk/backend',
+    '@localixai/mini-app-sdk/backend/tools',
     '@localixai/agent/agents/items',
     'lucide-react',
   ]) {

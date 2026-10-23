@@ -2,4 +2,4 @@
 @source '../ui';
 
 @source '../../../apps/ui/src/shared/ui';
-@source '../../../packages/plugin-sdk/src/ui';
+@source '../../../packages/mini-app-sdk/src/ui';

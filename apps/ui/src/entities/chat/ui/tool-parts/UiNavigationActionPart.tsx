@@ -3,14 +3,14 @@ import {
   isUiNavigationAction,
   isUiNavigationSuggestions,
   type UiNavigationAction,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { ArrowUpRight } from 'lucide-react'
 import { useMemo, useSyncExternalStore } from 'react'
 
 import { subscribeUiCommands, uiCommandRevision } from '@/shared/contrib/uiCommands'
 import { subscribeUiLocations, uiLocationRevision } from '@/shared/contrib/uiLocations'
 import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import {
   navigateUiAction,
   viewUiNavigationAction,

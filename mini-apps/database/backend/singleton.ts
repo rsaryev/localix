@@ -17,7 +17,7 @@
  * lack a host simply reuse the already-built service.
  */
 import { join } from 'node:path'
-import { observeMutations, safeFileKey } from '@localixai/plugin-sdk/backend'
+import { observeMutations, safeFileKey } from '@localixai/mini-app-sdk/backend'
 import type { ConnectionStore } from './store'
 import { createDatabaseService, type DatabaseService } from './service'
 import { createConnectionStore } from './store'

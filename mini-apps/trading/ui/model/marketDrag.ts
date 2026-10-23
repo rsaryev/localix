@@ -1,9 +1,9 @@
 import {
   resourceMessageBindingDraft,
   type MessageContextBindingDraft,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 
-import { setMessageBindingDrag } from '@localixai/plugin-sdk/ui/message-binding-drag'
+import { setMessageBindingDrag } from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import { buildTradeUri } from '../../backend/uri'
 
 export function marketResourceUri(connectionId: string, symbol: string): string {

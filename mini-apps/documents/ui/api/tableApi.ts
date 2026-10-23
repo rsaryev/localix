@@ -3,7 +3,7 @@ import {
   pluginApiFetch,
   postPluginJson as postJson,
   unwrapPluginResponse as unwrap,
-} from '@localixai/plugin-sdk/ui/transport'
+} from '@localixai/mini-app-sdk/ui/transport'
 import type { OpenTargetsResponse, TableMeta, TableRowsResponse } from '../docClient'
 
 export interface TableRowsQuery {

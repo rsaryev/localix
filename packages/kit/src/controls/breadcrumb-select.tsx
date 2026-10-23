@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '../overlays/dropdown-menu'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { BreadcrumbSelectRows } from './breadcrumb-select-rows'
 import { BreadcrumbSelectSearch } from './breadcrumb-select-search'
 

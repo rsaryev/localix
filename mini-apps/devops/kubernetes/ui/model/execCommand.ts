@@ -1,4 +1,4 @@
-import { pluginTerminal } from '@localixai/plugin-sdk/ui/runtime'
+import { pluginTerminal } from '@localixai/mini-app-sdk/ui/runtime'
 import { kubernetesApi } from '../api/kubernetesApi'
 
 export interface ExecPodTarget {

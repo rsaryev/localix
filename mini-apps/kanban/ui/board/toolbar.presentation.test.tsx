@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
 
-import type { MenuActionEntry, MenuEntry, MenuSubmenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuActionEntry, MenuEntry, MenuSubmenuEntry } from '@localixai/mini-app-sdk/ui'
 
 import { KanbanCreateRow } from './toolbar-create-row'
 import { KanbanFilterRow } from './toolbar-filter-row'

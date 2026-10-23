@@ -1,4 +1,4 @@
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { avatarHue, avatarSeed } from './avatar-seed'
 
 const TILE = 'oklch(var(--avatar-tile-l) var(--avatar-tile-c) var(--avatar-hue))'

@@ -5,7 +5,7 @@ import { InlineCompletionGhost } from '@localixai/kit/inline-completion-ghost'
 import {
   usePluginEditPredictionEnabled,
   usePluginTextInputCompletion,
-} from '@localixai/plugin-sdk/ui/runtime-hooks'
+} from '@localixai/mini-app-sdk/ui/runtime-hooks'
 import { Button } from '@localixai/kit/button'
 import { useCommitRecall } from '../model/useCommitRecall'
 import { CommitBoxFooter } from './CommitBoxFooter'

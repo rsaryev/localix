@@ -5,7 +5,7 @@ import {
   setMessageBindingDrag,
   messageBindingDragKind,
   WORKSPACE_TAB_DRAG_MIME,
-} from '@localixai/plugin-sdk/ui/message-binding-drag'
+} from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import { acceptedDragKind } from '@/entities/chat/ui/prompt-input/dropzoneState'
 import { workItemKindRegistry } from '@/shared/contrib/uiContrib'
 import { workItemToMessageBinding } from '@/entities/workspace-grid/model'

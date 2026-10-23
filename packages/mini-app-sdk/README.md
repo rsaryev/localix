@@ -1,4 +1,4 @@
-# `@localixai/plugin-sdk`
+# `@localixai/mini-app-sdk`
 
 Workspace contracts and shared helpers for Localix plugins. Bundled plugin code compiles against
 this package; the API and UI hosts implement the capabilities and registries it describes.
@@ -18,17 +18,17 @@ contributions to application registries.
 
 ## Common workspace entry points
 
-| Entry point                                  | Contract                                                                                                                                                                               |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@localixai/plugin-sdk/backend`              | Server-side `PluginContext`, `PluginRegistration`, `BackendSubsystem`, typed UI actions and request scope, tools, hooks, channels, providers, host-service ports, and backend helpers. |
-| `@localixai/plugin-sdk/ui`                   | `PluginUiHost`, workbench and editor contributions, search and UI-location declarations, message-context drafts, notifications, and host API and bridge-protocol types.                |
-| `@localixai/plugin-sdk/ui/focus`             | The shared focus stack: which surface owns the keyboard, what classes of global shortcut it tolerates, and the hooks a surface or overlay uses to claim it while it is on screen.      |
-| `@localixai/plugin-sdk/ui/work-item-session` | The host-provided session context of a tab or transcript; null outside a provider or in a global tab.                                                                                  |
-| `@localixai/plugin-sdk/ui/runtime`           | Bound workspace, composer, terminal, external-link, and other UI host ports; imports do not implement their host behavior.                                                             |
-| `@localixai/plugin-sdk/manifest`             | The host-independent manifest schema, API and naming constants, config and file-association schemas, surface normalization, and installability predicates.                             |
-| `@localixai/plugin-sdk/resource-refs`        | Resource-node, provider, browse, and registry contracts plus resource URI and navigation helpers without importing the full backend barrel.                                            |
-| `@localixai/plugin-sdk/navigation`           | Pure builders and strict parsers for canonical `localix://ui/...` and `localix://resource/...` destinations, including files, settings, and capabilities.                              |
-| `@localixai/plugin-sdk/session-resource`     | The address of a resource that exists once per chat (a game board): its bare URI, one chat's URI, and the session a URI names, built on the navigation grammar.                        |
+| Entry point                                    | Contract                                                                                                                                                                               |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@localixai/mini-app-sdk/backend`              | Server-side `PluginContext`, `PluginRegistration`, `BackendSubsystem`, typed UI actions and request scope, tools, hooks, channels, providers, host-service ports, and backend helpers. |
+| `@localixai/mini-app-sdk/ui`                   | `PluginUiHost`, workbench and editor contributions, search and UI-location declarations, message-context drafts, notifications, and host API and bridge-protocol types.                |
+| `@localixai/mini-app-sdk/ui/focus`             | The shared focus stack: which surface owns the keyboard, what classes of global shortcut it tolerates, and the hooks a surface or overlay uses to claim it while it is on screen.      |
+| `@localixai/mini-app-sdk/ui/work-item-session` | The host-provided session context of a tab or transcript; null outside a provider or in a global tab.                                                                                  |
+| `@localixai/mini-app-sdk/ui/runtime`           | Bound workspace, composer, terminal, external-link, and other UI host ports; imports do not implement their host behavior.                                                             |
+| `@localixai/mini-app-sdk/manifest`             | The host-independent manifest schema, API and naming constants, config and file-association schemas, surface normalization, and installability predicates.                             |
+| `@localixai/mini-app-sdk/resource-refs`        | Resource-node, provider, browse, and registry contracts plus resource URI and navigation helpers without importing the full backend barrel.                                            |
+| `@localixai/mini-app-sdk/navigation`           | Pure builders and strict parsers for canonical `localix://ui/...` and `localix://resource/...` destinations, including files, settings, and capabilities.                              |
+| `@localixai/mini-app-sdk/session-resource`     | The address of a resource that exists once per chat (a game board): its bare URI, one chat's URI, and the session a URI names, built on the navigation grammar.                        |
 
 There is no package-root export. Import the narrow entry point that owns the required contract. The
 table lists common entry points, not every export. [The manifest](package.json) also lists
@@ -36,7 +36,7 @@ transport, interaction, problem-reporting, testing, chart/table, storage, synchr
 prerequisite, typed-error, UI-artifact, rich-text, and document-layout helpers.
 
 For naming rules, categories, config-type names, API-version constants, and surface helpers, use
-`@localixai/plugin-sdk/manifest-primitives`. This entry point has no schema dependencies; the
+`@localixai/mini-app-sdk/manifest-primitives`. This entry point has no schema dependencies; the
 `manifest` entry point retains the same exports for compatibility and owns validation schemas.
 
 ## Synchronization

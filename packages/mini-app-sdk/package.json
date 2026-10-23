@@ -1,5 +1,5 @@
 {
-  "name": "@localixai/plugin-sdk",
+  "name": "@localixai/mini-app-sdk",
   "version": "0.1.0",
   "private": true,
   "description": "Typed contracts for Localix plugin manifests, backend tools, hooks, channels, and UI contributions.",
@@ -17,7 +17,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/rsaryev/localix.git",
-    "directory": "packages/plugin-sdk"
+    "directory": "packages/mini-app-sdk"
   },
   "files": [
     "dist",

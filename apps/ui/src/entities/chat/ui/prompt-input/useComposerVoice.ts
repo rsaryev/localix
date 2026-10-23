@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 
 import { toast } from '@/shared/lib/notify'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 import { useVoiceRecorder } from '../../model/useVoiceRecorder'
 

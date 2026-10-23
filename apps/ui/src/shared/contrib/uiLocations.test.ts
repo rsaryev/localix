@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test'
-import type { UiLocationContribution, UiLocationParamSchema } from '@localixai/plugin-sdk/ui'
+import type { UiLocationContribution, UiLocationParamSchema } from '@localixai/mini-app-sdk/ui'
 import { setEnabledPluginNames } from './pluginActivation'
 import {
   createUiLocationRegistry,

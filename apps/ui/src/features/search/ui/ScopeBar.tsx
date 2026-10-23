@@ -1,4 +1,4 @@
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { SELECTED_ROW } from '@localixai/kit/selected-row'
 import { TogglePill } from '@localixai/kit/toggle-pill'
 import { ALL_SCOPE, allScopes, type ScopeDef } from '../model/scopes'

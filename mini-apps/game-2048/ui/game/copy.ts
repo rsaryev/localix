@@ -1,4 +1,4 @@
-export { elapsed } from '@localixai/plugin-sdk/agent-wait'
+export { elapsed } from '@localixai/mini-app-sdk/agent-wait'
 import { agentPlays, stopped, type Game } from '../../shared/game'
 
 /**

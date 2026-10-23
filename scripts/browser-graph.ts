@@ -9,7 +9,7 @@ export const repoRoot = resolve(import.meta.dir, '..')
 const WORKSPACE_PACKAGES: Record<string, string> = {
   '@localixai/api': 'apps/api',
   '@localixai/agent': 'packages/agent',
-  '@localixai/plugin-sdk': 'packages/plugin-sdk',
+  '@localixai/mini-app-sdk': 'packages/mini-app-sdk',
   '@localixai/notifications': 'packages/notifications',
   '@localixai/search': 'packages/search',
   '@localixai/os-open': 'packages/os-open',

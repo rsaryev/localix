@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
-import { setCompactDragImage } from '@localixai/plugin-sdk/ui/message-binding-drag'
+import { setCompactDragImage } from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import { computeDropIndex } from './dropIndex'
 
 /** Props for the grip. Spread onto the handle button — see `DragHandle`. */

@@ -60,7 +60,7 @@ test('a skill switch writes its agent’s rule, not the default assistant’s', 
   const { createRoot } = await import('react-dom/client')
   const { act } = React
   const { backendClient } = await import('@/shared/api/client')
-  const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
+  const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
   const { __resetCapabilityCache } = await import('@/shared/contrib/capabilityCache')
   const { __resetPluginContrib } = await import('@/shared/contrib/enabledPlugins')
   const { useSkills } = await import('./useSkills')

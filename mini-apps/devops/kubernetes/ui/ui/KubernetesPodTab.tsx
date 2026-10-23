@@ -14,7 +14,7 @@ import { PodTabHeader } from './PodTabHeader'
 import { PodPortForwards } from './PodPortForwards'
 import { PodSummary } from './PodSummary'
 import { PodTabContent } from './PodTabContent'
-import { resourceMessageBindingDraft, type PublishMessageContext } from '@localixai/plugin-sdk/ui'
+import { resourceMessageBindingDraft, type PublishMessageContext } from '@localixai/mini-app-sdk/ui'
 import { buildK8sPodViewUri } from '../model/resourceLink'
 import { ConfirmDialog } from '@localixai/kit/confirm-dialog'
 

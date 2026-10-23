@@ -1,4 +1,4 @@
-import type { WsFrameContribution } from '@localixai/plugin-sdk/backend'
+import type { WsFrameContribution } from '@localixai/mini-app-sdk/backend'
 
 import { HISTORY_FRAME_TAG, HISTORY_SUBSCRIBE, HISTORY_UNSUBSCRIBE } from '../shared/history-stream'
 import type { HistoryWatch } from './live/history-watch'

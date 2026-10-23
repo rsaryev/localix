@@ -17,7 +17,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { parseRecovery, recoveryLabel, recoveryUri } from '@localixai/api/recovery'
-import { useWorkItemSessionId } from '@localixai/plugin-sdk/ui/work-item-session'
+import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
 import { navigateUiAction } from '@/shared/lib/uiNavigation'
 import type { SystemNoticeRecovery } from '@/shared/api/contracts'

@@ -26,7 +26,7 @@ import {
   Wrench,
   type LucideIcon,
 } from 'lucide-react'
-import { localixUriNamespace } from '@localixai/plugin-sdk/ui'
+import { localixUriNamespace } from '@localixai/mini-app-sdk/ui'
 
 import { refLabel, type ContextRefKind, type ParsedContextRef } from '@localixai/api/context-refs'
 import type { ContextRef } from '@/shared/api/contracts'
@@ -40,7 +40,7 @@ import { ringMessage } from './messageRing'
 import {
   capabilitySettingsUiUri,
   parseCapabilityResourceUri,
-} from '@localixai/plugin-sdk/navigation'
+} from '@localixai/mini-app-sdk/navigation'
 
 export const REF_KIND_ICONS: Record<ContextRefKind, LucideIcon> = {
   file: File,

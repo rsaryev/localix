@@ -1,4 +1,4 @@
-import type { SemanticVectors } from '@localixai/plugin-sdk/backend'
+import type { SemanticVectors } from '@localixai/mini-app-sdk/backend'
 import type { ChatFeaturePorts } from '../feature-ports'
 import type { DecisionService } from '../../decisions/service'
 import type { GlobalSearchPort } from '../../agent-core/tools/global-search/global-search'

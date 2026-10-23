@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { Popover, PopoverContent, PopoverTrigger } from '@localixai/kit/popover'
 import { WorkbenchToolbar } from '@localixai/kit/workbench-toolbar'
 import { layoutTimeframes, timeframeLabel, timeframeTitle } from '../model/timeframeBar'

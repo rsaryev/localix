@@ -7,7 +7,7 @@
  * patches the matching repo row, and repaints. Anything that CAN move a branch
  * tip lives in `ref-writes.ts` and answers with the branch list too.
  */
-import { unwrapPluginResponse } from '@localixai/plugin-sdk/ui'
+import { unwrapPluginResponse } from '@localixai/mini-app-sdk/ui'
 import type { SourceControlMutation } from '../../backend/source-control/contracts'
 import { client } from './client'
 

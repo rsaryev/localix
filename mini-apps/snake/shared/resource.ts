@@ -1,4 +1,4 @@
-import { sessionResourceAddress } from '@localixai/plugin-sdk/session-resource'
+import { sessionResourceAddress } from '@localixai/mini-app-sdk/session-resource'
 
 export const ROUTE_PATH = '/rpc/snake'
 const game = sessionResourceAddress('snake', 'game')

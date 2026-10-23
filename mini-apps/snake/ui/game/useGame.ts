@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { useTableGame } from '@localixai/plugin-sdk/ui/game-table'
+import { useTableGame } from '@localixai/mini-app-sdk/ui/game-table'
 
 import { gameSchema, modelPlays, type Direction, type Mode } from '../../shared/game'
 import { ROUTE_PATH } from '../../shared/resource'

@@ -76,10 +76,10 @@ would wake it again on every move.
 | `skills/`                 | How the agent plays and talks about a game.                    |
 
 State is kept with `openJsonStore` and announced by `createJsonStoreFeed`, both from
-`@localixai/plugin-sdk/backend`; the view reads it with `useTableGame` from
-`@localixai/plugin-sdk/ui/game-table`. A store write announces a change over the realtime feed, and
-a visible board re-reads its snapshot. A healthy feed has no periodic read; when unavailable, the
-board polls every 800 ms during agent activity or 4 seconds while idle. Showing the pane or
+`@localixai/mini-app-sdk/backend`; the view reads it with `useTableGame` from
+`@localixai/mini-app-sdk/ui/game-table`. A store write announces a change over the realtime feed,
+and a visible board re-reads its snapshot. A healthy feed has no periodic read; when unavailable,
+the board polls every 800 ms during agent activity or 4 seconds while idle. Showing the pane or
 reconnecting reconciles its state.
 
 See [Wake a session from a plugin](../../docs/extending/plugin-wakes.md) for the contract.
@@ -97,4 +97,4 @@ conversation permission modes still apply.
 - [Game state and transitions](shared/game.ts)
 - [Wake requests](backend/ask-agent.ts)
 - [Visible snapshot and fallback cadence](ui/game/useGame.ts)
-- [Shared store synchronization](../../packages/plugin-sdk/src/ui/store-snapshot.ts)
+- [Shared store synchronization](../../packages/mini-app-sdk/src/ui/store-snapshot.ts)

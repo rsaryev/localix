@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from 'react'
 import { CandlestickChart } from 'lucide-react'
-import type { StatusItemState } from '@localixai/plugin-sdk/ui'
-import { pluginWorkspace, statusMenuList } from '@localixai/plugin-sdk/ui'
-import { usePluginWorkspace } from '@localixai/plugin-sdk/ui/runtime-hooks'
+import type { StatusItemState } from '@localixai/mini-app-sdk/ui'
+import { pluginWorkspace, statusMenuList } from '@localixai/mini-app-sdk/ui'
+import { usePluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 
 import { chartStateStore } from './model/chartStateStore'
 import { formatPrice } from './model/formatQuote'

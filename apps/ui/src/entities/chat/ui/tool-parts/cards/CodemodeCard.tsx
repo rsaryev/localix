@@ -6,7 +6,7 @@
 import { useMemo } from 'react'
 import { SquareCode } from 'lucide-react'
 import type { ToolCallItem } from '@localixai/agent/agents'
-import { formatDuration } from '@localixai/plugin-sdk/ui/utilities'
+import { formatDuration } from '@localixai/mini-app-sdk/ui/utilities'
 
 import { CodePreview } from '@/shared/ui/code-block/CodePreview'
 import { ToolLine } from '../ToolLine'

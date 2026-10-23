@@ -1,6 +1,6 @@
 import { Archive, ArchiveRestore, Copy, FileDiff, Trash2 } from 'lucide-react'
 import type { RepoStash } from '../../../backend/source-control/contracts'
-import type { MenuEntry } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
 import { CollapsibleSection } from '@localixai/kit/collapsible-section'
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@localixai/kit/context-menu'
 import { MenuEntries } from '@localixai/kit/menu-entries'

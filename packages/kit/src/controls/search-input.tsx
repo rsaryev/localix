@@ -1,6 +1,6 @@
 import { Search, X } from 'lucide-react'
 import { useRef, type ComponentProps, type ReactNode } from 'react'
-import { cn, CONTROL_FOCUS_WITHIN } from '@localixai/plugin-sdk/ui/classes'
+import { cn, CONTROL_FOCUS_WITHIN } from '@localixai/mini-app-sdk/ui/classes'
 
 type SearchInputProps = Omit<
   ComponentProps<'input'>,

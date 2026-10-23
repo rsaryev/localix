@@ -3,7 +3,7 @@ import type {
   RailSectionContribution,
   RailViewletContribution,
   WorkItemKindContribution,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { isPluginContributionEnabled } from './pluginActivation'
 
 /**
@@ -14,7 +14,7 @@ import { isPluginContributionEnabled } from './pluginActivation'
  * (discovered generically — see `shared/contrib/discover.ts`), so CORE names no
  * individual subsystem.
  *
- * The contribution CONTRACTS are OWNED by `@localixai/plugin-sdk/ui` (plugins
+ * The contribution CONTRACTS are OWNED by `@localixai/mini-app-sdk/ui` (plugins
  * compile against the SDK); this module implements the registries and re-exports
  * the types so internal `@/shared/contrib/*` import sites stay unchanged.
  *
@@ -25,7 +25,7 @@ export type {
   RailSectionContribution,
   RailViewletContribution,
   WorkItemKindContribution,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 
 interface Registry<T> {
   register(x: T): void

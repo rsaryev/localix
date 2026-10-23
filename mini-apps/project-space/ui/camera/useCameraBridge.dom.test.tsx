@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
-import { pluginRealtime } from '@localixai/plugin-sdk/ui/runtime'
+import { pluginRealtime } from '@localixai/mini-app-sdk/ui/runtime'
 import type { CameraMove, CameraReport } from '../../shared/camera'
 import { CAMERA_SUBSCRIBE } from '../../shared/resource'
 import { spaceApi } from '../api'

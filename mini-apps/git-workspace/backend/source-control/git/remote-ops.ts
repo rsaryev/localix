@@ -9,7 +9,7 @@
  * "no upstream", a non-fast-forward rejection — where the rest of `actions.ts`
  * fails on the index.
  */
-import { ApiError } from '@localixai/plugin-sdk/backend'
+import { ApiError } from '@localixai/mini-app-sdk/backend'
 import { firstLine, type GitRunner } from './cli'
 
 /**

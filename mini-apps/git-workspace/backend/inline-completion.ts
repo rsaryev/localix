@@ -1,5 +1,5 @@
-import type { PluginTextInputCompletionSurface } from '@localixai/plugin-sdk/backend'
-import { cleanCompletionSuffix, completionDraftTail } from '@localixai/plugin-sdk/backend'
+import type { PluginTextInputCompletionSurface } from '@localixai/mini-app-sdk/backend'
+import { cleanCompletionSuffix, completionDraftTail } from '@localixai/mini-app-sdk/backend'
 
 import { renderCommitCompletionContext } from './completion-context'
 import type { createSourceControlService } from './source-control/service'

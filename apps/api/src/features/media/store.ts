@@ -21,7 +21,7 @@ import {
   atomicWriteFile,
   fileExtension,
   mediaTypeForExtension,
-} from '@localixai/plugin-sdk/backend'
+} from '@localixai/mini-app-sdk/backend'
 
 /**
  * Explicit media-type → short extension for types whose subtype isn't a clean,

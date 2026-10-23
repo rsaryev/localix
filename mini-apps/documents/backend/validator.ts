@@ -1,4 +1,4 @@
-import { routeValidator } from '@localixai/plugin-sdk/backend'
+import { routeValidator } from '@localixai/mini-app-sdk/backend'
 
 /**
  * The request validator for both document routers — the SDK's, in its `nested` envelope.

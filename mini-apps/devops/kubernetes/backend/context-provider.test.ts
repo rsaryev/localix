@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 
 import { createKubernetesContextProvider } from './context-provider'
 import type { ResourceKubernetesService } from './resource-provider'
-import type { ContextResolver } from '@localixai/plugin-sdk/backend'
+import type { ContextResolver } from '@localixai/mini-app-sdk/backend'
 
 const service: ResourceKubernetesService = {
   listContexts: async () => ({ contexts: [], current: '' }),

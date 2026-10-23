@@ -11,7 +11,7 @@ import type {
   ChatUsagePayload,
 } from '@localixai/agent'
 import type { AgentItem } from '@localixai/agent/agents'
-import type { StatusTone } from '@localixai/plugin-sdk/ui'
+import type { StatusTone } from '@localixai/mini-app-sdk/ui'
 import type { Recovery } from '@localixai/api/recovery'
 import type { PermissionMode } from '@localixai/api/permission-modes'
 

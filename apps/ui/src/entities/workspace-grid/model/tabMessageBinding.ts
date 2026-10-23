@@ -2,12 +2,12 @@ import type { WorkItem } from '@/shared/lib/workItem'
 import {
   createMessageBindingDraft,
   type MessageBindingDragPayload,
-} from '@localixai/plugin-sdk/ui/message-binding-drag'
+} from '@localixai/mini-app-sdk/ui/message-binding-drag'
 import {
   LIVE_SNIPPET_CONTENT_MAX,
   snippetMessageBindingDraft,
   type WorkItemAgentContext,
-} from '@localixai/plugin-sdk/ui'
+} from '@localixai/mini-app-sdk/ui'
 import { pluginViewTarget } from '@localixai/api/plugin-view-target'
 import { activeWorkItemContribution } from './capabilities'
 import { GLOBAL_SCOPE, scopeOf } from './scope'

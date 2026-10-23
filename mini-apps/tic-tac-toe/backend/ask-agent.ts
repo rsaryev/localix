@@ -1,4 +1,4 @@
-import type { Seat, Wake } from '@localixai/plugin-sdk/backend'
+import type { Seat, Wake } from '@localixai/mini-app-sdk/backend'
 
 import { drawBoard, lastMoveLine, recordLine, threatLine } from '../shared/describe'
 import { freeCells, type Game } from '../shared/game'

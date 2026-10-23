@@ -1,5 +1,5 @@
 import { Settings2 } from 'lucide-react'
-import type { MenuEntry, StatusItemState } from '@localixai/plugin-sdk/ui'
+import type { MenuEntry, StatusItemState } from '@localixai/mini-app-sdk/ui'
 
 import { inspector } from '@/shared/lib/inspectorBus'
 import { navigateSettings } from '@/shared/lib/settingsNavBus'

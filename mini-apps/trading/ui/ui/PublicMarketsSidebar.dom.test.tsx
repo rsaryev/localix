@@ -6,7 +6,7 @@ import {
   MESSAGE_BINDING_MIME,
   composerDropHint,
   readMessageBindingDrag,
-} from '@localixai/plugin-sdk/ui/message-binding-drag'
+} from '@localixai/mini-app-sdk/ui/message-binding-drag'
 
 let teardown: () => Promise<void>
 

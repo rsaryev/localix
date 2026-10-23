@@ -17,7 +17,7 @@ test('agent navigation shares the settings shell and retains an unsaved definiti
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const agentsModule = await import('@/shared/contrib/useAgents')
-  const { WorkItemVisibilityProvider } = await import('@localixai/plugin-sdk/ui/visibility')
+  const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
   const { AgentProfileTab } = await import('./AgentProfileTab')
   const agent = {
     record: {

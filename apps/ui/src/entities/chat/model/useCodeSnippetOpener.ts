@@ -3,7 +3,7 @@ import { codeSnippet } from '@/shared/lib/codeSnippetBus'
 import { inspector } from '@/shared/lib/inspectorBus'
 import { backendClient } from '@/shared/api/client'
 import { toast } from '@/shared/lib/notify'
-import { errorMessage } from '@localixai/plugin-sdk/ui/utilities'
+import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 /** sha256 of the empty string — the base hash for creating a brand-new file in one write
  *  (the server compares against the empty on-disk content of a not-yet-existing path). */

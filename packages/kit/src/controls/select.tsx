@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useState, type ComponentPropsWithoutRef } from 'react'
 import { ChevronDown, type LucideIcon } from 'lucide-react'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import {
   DropdownMenu,
   DropdownMenuContent,

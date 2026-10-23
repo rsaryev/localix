@@ -9,7 +9,7 @@
  * mount a window of them while navigation still sees all of them — the host
  * Explorer's `fileTreeRows` shape, which the kit does not export.
  */
-import { buildPathTree, type PathTreeNode } from '@localixai/plugin-sdk/ui/path-tree'
+import { buildPathTree, type PathTreeNode } from '@localixai/mini-app-sdk/ui/path-tree'
 import type { RepoFileChange } from '../../../../backend/source-control/contracts'
 
 interface RowBase {

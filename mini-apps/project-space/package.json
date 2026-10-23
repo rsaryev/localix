@@ -19,7 +19,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@localixai/plugin-sdk": "workspace:*",
+    "@localixai/mini-app-sdk": "workspace:*",
     "@types/dagre": "^0.7.53",
     "@types/react": "^19.3.0",
     "react-dom": "^19.3.1",

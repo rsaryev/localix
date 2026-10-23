@@ -33,8 +33,8 @@ import {
   DropdownMenuTrigger,
 } from '@localixai/kit/dropdown-menu'
 import { MenuEntries } from '@localixai/kit/menu-entries'
-import { useCopied } from '@localixai/plugin-sdk/ui/interactions'
-import { cn } from '@localixai/plugin-sdk/ui/classes'
+import { useCopied } from '@localixai/mini-app-sdk/ui/interactions'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type {
   HistoryEntryInfo,
   HistorySource,

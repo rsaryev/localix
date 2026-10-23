@@ -9,7 +9,11 @@
  */
 import { register as registerDocker } from '../docker/backend'
 import { register as registerKubernetes } from '../kubernetes/backend'
-import type { AgentTool, BackendSubsystem, PluginRegistration } from '@localixai/plugin-sdk/backend'
+import type {
+  AgentTool,
+  BackendSubsystem,
+  PluginRegistration,
+} from '@localixai/mini-app-sdk/backend'
 
 function backendsOf(registration: PluginRegistration): BackendSubsystem[] {
   if (!registration.backend) return []

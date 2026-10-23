@@ -1,4 +1,4 @@
-import type { ActionTarget } from '@localixai/plugin-sdk/ui'
+import type { ActionTarget } from '@localixai/mini-app-sdk/ui'
 
 /** Content identity excludes transient rendered SVG and dimensions, which change with layout. */
 function identity(target: ActionTarget): string {
