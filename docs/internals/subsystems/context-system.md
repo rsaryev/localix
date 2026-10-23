@@ -55,7 +55,7 @@ Every binding kind resolves through one path. A binding target is read as a Fabr
 the binding's own id (`captureContextBindings`). Core's host-reference resolver serves file, folder,
 snippet, session, project, message, terminal and call targets through the existing expanders. A file
 contribution carries `source.path`, so the user's and project's `contextExclusions` apply to a
-linked file. Plugin resolvers serve their schemes; the generic resource bridge serves any scheme
+linked file. Mini app resolvers serve their schemes; the generic resource bridge serves any scheme
 without one.
 
 A binding that yields no content still reaches the model as an absence note, such as "not included:
@@ -67,13 +67,13 @@ assets on the model-wire copy. The transcript binding keeps the target label, re
 capture time, and contribution provenance. The full persistence, edit, fork, retry, and regenerate
 rules belong to [Message bindings](message-bindings.md).
 
-Open-tab ranking and live plugin state belong to [Active-tab context](active-tab-context.md). That
+Open-tab ranking and live mini app state belong to [Active-tab context](active-tab-context.md). That
 page owns the ambient five-facet limit and manual-over-ambient send order.
 
 ### Persist tool provenance
 
 ```text
-built-in, plugin, or MCP tool result
+built-in, mini app, or MCP tool result
   → coerceToolResult
   → normalizeAgentSources
   → tool_execution_end

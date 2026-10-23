@@ -5,8 +5,8 @@ import {
   skillOverridesRevision,
   type SkillOverrides,
 } from '../../agent-core/skill-overrides'
-import { loadMemoryProviderContext } from '../../plugins/hooks'
-import type { LoadedPlugins } from '../../plugins/loader'
+import { loadMemoryProviderContext } from '../../mini-apps/hooks'
+import type { LoadedMiniApps } from '../../mini-apps/loader-contract'
 import type { SessionRecord } from '../repository'
 import type { PersistedMessage } from '../contracts'
 import type { ParticipantLaneSnapshotRepository } from '../participant-lane-snapshot-repository'
@@ -33,7 +33,8 @@ export async function resolveAgentPromptContext(input: {
   projectInstructions?: string
   allSkills: DiscoveredSkill[]
   skillOverrides: SkillOverrides
-  loadedPlugins: LoadedPlugins
+  /** The memory provider, when a mini app's backend registered one. */
+  loadedMiniApps: LoadedMiniApps
   contextSnapshots: SessionSnapshotCache<FrozenSessionContext>
   laneSnapshots: ParticipantLaneSnapshotRepository
 }) {
@@ -51,7 +52,7 @@ export async function resolveAgentPromptContext(input: {
     projectInstructions,
     allSkills,
     skillOverrides,
-    loadedPlugins,
+    loadedMiniApps,
     contextSnapshots,
     laneSnapshots,
   } = input
@@ -91,10 +92,10 @@ export async function resolveAgentPromptContext(input: {
         // Resolve external memory once per snapshot boundary.
         // External providers do not declare scope filtering. A selected native scope must
         // never be widened by an unscoped provider's recall.
-        if (loadedPlugins.memory && context?.memory?.scope === undefined) {
+        if (loadedMiniApps.memory && context?.memory?.scope === undefined) {
           freshContext.memoryContext =
             (await loadMemoryProviderContext(
-              loadedPlugins.memory,
+              loadedMiniApps.memory,
               {
                 sessionId: session.id,
                 projectId: session.projectId,

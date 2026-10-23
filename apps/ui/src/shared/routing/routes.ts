@@ -32,7 +32,7 @@ export type SectionId = 'files' | 'jobs' | (string & {})
  * description, three counters and a button opening the Vault work item, which the rail
  * already offers under its own name and keywords.
  */
-export const CAPABILITY_TABS = ['tools', 'skills', 'mcp', 'plugins', 'rules'] as const
+export const CAPABILITY_TABS = ['tools', 'skills', 'mcp', 'plugins', 'mini-apps', 'rules'] as const
 export type CapabilityTabId = (typeof CAPABILITY_TABS)[number]
 
 export const SETTINGS_STRING_TABS = [

@@ -63,7 +63,8 @@ async function assemble(
         visibleLedger = ledger
       },
     },
-    loadedPlugins: { tools: [], hooks: [], mcpServers: [] },
+    loadedPlugins: { mcpServers: [] },
+    loadedMiniApps: { tools: [], hooks: [] },
     ccHooks: { active: false },
     defaultCwd: '/tmp',
     disabledTools: [],

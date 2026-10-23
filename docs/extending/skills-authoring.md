@@ -235,7 +235,7 @@ and non-zero-exit behavior. For a forked skill, verify the invoking agent has ev
 ## Related guides
 
 - [Use and manage skills](../features/skills.md)
-- [Build plugins](plugins.md)
+- [Install Claude Code plugins](claude-code-plugins.md)
 - [Hooks and commands](../features/hooks-and-commands.md)
 - [The learning loop](../features/learning-loop.md)
 

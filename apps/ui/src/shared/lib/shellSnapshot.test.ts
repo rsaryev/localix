@@ -27,7 +27,7 @@ function mapStorage(): Storage {
 beforeEach(() => installTestLocalStorage(mapStorage()))
 afterEach(() => removeTestLocalStorage())
 
-const frame = { revision: 7, enabledNames: ['sample-plugin'], plugins: [], views: [], tools: null }
+const frame = { revision: 7, enabledNames: ['sample-plugin'], miniApps: [], views: [], tools: null }
 
 describe('shell snapshot', () => {
   test('the roster written on one launch is the frame the next one paints', () => {

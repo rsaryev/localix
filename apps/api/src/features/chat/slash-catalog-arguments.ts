@@ -16,11 +16,6 @@ export const PLUGIN_ARGS: SlashArgSpec[] = [
     options: [
       { value: 'list', label: 'list', description: 'Show installed plugins' },
       {
-        value: 'create',
-        label: 'create',
-        description: 'Describe a plugin; the agent names, builds and enables it',
-      },
-      {
         value: 'install',
         label: 'install',
         description: '<name>@<marketplace>, git URL, owner/repo, or local path',
@@ -46,7 +41,7 @@ export const PLUGIN_ARGS: SlashArgSpec[] = [
       {
         value: 'reload',
         label: 'reload',
-        description: 'Reload every plugin in place — skills, agents, MCP, commands',
+        description: 'Reload every plugin in place — skills, agents, MCP, commands, hooks',
       },
       {
         value: 'marketplace',
@@ -90,12 +85,6 @@ export const PLUGIN_ARGS: SlashArgSpec[] = [
     placeholder: 'A plugin, --strict, or Enter for all…',
   },
   {
-    name: 'description',
-    type: 'text',
-    when: { arg: 'action', equals: 'create' },
-    placeholder: 'What should the plugin do?',
-  },
-  {
     name: 'source',
     type: 'choice',
     dynamic: true,
@@ -117,5 +106,42 @@ export const PLUGIN_ARGS: SlashArgSpec[] = [
     type: 'text',
     when: { arg: 'msub', equals: 'add' },
     placeholder: '<owner/repo> · git URL · marketplace.json URL · path',
+  },
+]
+
+export const MINI_APP_ARGS: SlashArgSpec[] = [
+  {
+    name: 'action',
+    type: 'choice',
+    placeholder: 'Pick an action…',
+    options: [
+      { value: 'list', label: 'list', description: 'Show installed mini apps' },
+      {
+        value: 'create',
+        label: 'create',
+        description: 'Describe a mini app; the agent names, builds and enables it',
+      },
+      { value: 'enable', label: 'enable', description: 'Turn a mini app on by name' },
+      { value: 'disable', label: 'disable', description: 'Turn a mini app off by name' },
+      { value: 'remove', label: 'remove', description: 'Remove one of your own mini apps' },
+      {
+        value: 'reload',
+        label: 'reload',
+        description: 'Rebuild your own mini apps and reload every mini app in place',
+      },
+    ],
+  },
+  {
+    name: 'app',
+    type: 'choice',
+    dynamic: true,
+    when: { arg: 'action', equals: ['enable', 'disable', 'remove'] },
+    placeholder: 'Pick an installed mini app…',
+  },
+  {
+    name: 'description',
+    type: 'text',
+    when: { arg: 'action', equals: 'create' },
+    placeholder: 'What should the mini app do?',
   },
 ]

@@ -7,17 +7,17 @@ guide when adding tip sources, relevance gates, ranking, timing, or quick action
 
 ### Build the pool on the server
 
-`composerTips` derives the snapshot's `tips` from resolved tools, plugins, skills, and commands. The
-client receives tip text and gates together, so it cannot advertise an extension absent from the
-current catalog.
+`composerTips` derives the snapshot's `tips` from resolved tools, plugins, mini apps, skills, and
+commands. The client receives tip text and gates together, so it cannot advertise an extension
+absent from the current catalog.
 
-| Source                         | Availability rule                                                                                |
-| ------------------------------ | ------------------------------------------------------------------------------------------------ |
-| Curated tips                   | `requiresAnyTool` checks `tools.enabled`; the server removes the gate before publishing the tip. |
-| Installed but inactive plugins | Text and keyword patterns come from the plugin's name and manifest description.                  |
-| Built-in commands              | `TEACHABLE_COMMANDS` selects names; text comes from the shared `SLASH_COMMANDS` catalog.         |
-| Skills and plugin commands     | The pool uses the snapshot's current catalog entries.                                            |
-| Session tips                   | Declared gates name facts the client can resolve from the current session.                       |
+| Source                                       | Availability rule                                                                                |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Curated tips                                 | `requiresAnyTool` checks `tools.enabled`; the server removes the gate before publishing the tip. |
+| Installed but inactive plugins and mini apps | Text and keyword patterns come from the plugin's or mini app's name and manifest description.    |
+| Built-in commands                            | `TEACHABLE_COMMANDS` selects names; text comes from the shared `SLASH_COMMANDS` catalog.         |
+| Skills, plugin and mini app commands         | The pool uses the snapshot's current catalog entries.                                            |
+| Session tips                                 | Declared gates name facts the client can resolve from the current session.                       |
 
 The client authors no product copy. `composerTipsAgnostic.test.ts` guards that boundary.
 

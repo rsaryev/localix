@@ -4,7 +4,7 @@ import { startResourceSyncTransport } from '@/shared/api/resourceSyncTransport'
 import { applyServerProjects } from '@/entities/chat/model/sessionSync'
 import { registerConnectionsSync } from '@/entities/chat/model/connectionsSync'
 import { useSettingsStore } from '@/shared/lib/user-settings/settingsStore'
-import { startPluginContribSync } from '@/shared/contrib/enabledPlugins'
+import { startMiniAppContribSync } from '@/shared/contrib/enabledMiniApps'
 import { invalidateAllCapabilities } from '@/shared/contrib/capabilityCache'
 
 /** App composition owns adapters. Shared transport/scheduler never imports feature stores. */
@@ -38,7 +38,7 @@ export function startWorkspaceResourceSync(): () => void {
     resourceSync.subscribe('capabilities', () => {
       invalidateAllCapabilities()
       stopCapabilities?.()
-      stopCapabilities = startPluginContribSync()
+      stopCapabilities = startMiniAppContribSync()
     }),
     startResourceSyncTransport(),
   ]

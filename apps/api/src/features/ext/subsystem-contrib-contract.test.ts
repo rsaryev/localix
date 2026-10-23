@@ -50,7 +50,7 @@ const CONTRACT = 'packages/mini-app-sdk/src/backend/subsystem.ts'
 /**
  * The composition root, in full. The live wiring (route mounts, provider + WS-frame +
  * capability registration, per-plugin teardown) lives in the plugin backend HOST
- * (features/plugins/backend-host.ts) — bootstrap builds it, `createApp` mounts its
+ * (features/mini-apps/backend-host.ts) — bootstrap builds it, `createApp` mounts its
  * dispatcher middleware, `boot/search.ts` hands it the search registry, and process
  * shutdown in `index.ts` still runs each subsystem's `onShutdown`. The host's exact-scope
  * UI-action table (`backend-host-ui-actions.ts`) is where `uiActions` is read.
@@ -60,8 +60,8 @@ const ROOTS = [
   'apps/api/src/bootstrap.ts',
   'apps/api/src/index.ts',
   'apps/api/src/boot/search.ts',
-  'apps/api/src/features/plugins/backend-host.ts',
-  'apps/api/src/features/plugins/backend-host-ui-actions.ts',
+  'apps/api/src/features/mini-apps/backend-host.ts',
+  'apps/api/src/features/mini-apps/backend-host-ui-actions.ts',
 ] as const
 
 /** Repository root: the public contract lives in the SDK; consumers live in the host. */

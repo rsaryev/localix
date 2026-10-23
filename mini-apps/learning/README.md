@@ -38,7 +38,7 @@ remain outlined. Halfway through a module, or when its last lesson opens, the ne
 preparing automatically through the same host wake port. A durable claim prevents duplicate
 requests; failures retry with a bounded backoff. An open pending lesson refreshes when ready. The
 open course and the library hear each change the agent makes through `learning_course` — a review, a
-move, an activation — as a pushed plugin command (`shared/course-changes.ts`), and re-read that
+move, an activation — as a pushed mini app command (`shared/course-changes.ts`), and re-read that
 chat's courses. A live store feed also invalidates courses after host-side writes. A visible view
 uses a one-minute fallback poll only when that feed is unavailable.
 

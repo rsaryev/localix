@@ -1,8 +1,6 @@
 import { z } from 'zod'
 
-import { summarizeZodIssues } from '@localixai/mini-app-sdk/backend'
-
-import { PLUGIN_NAME_RE } from './contracts-base'
+import { PLUGIN_NAME_RE, schemaIssue } from './contracts-base'
 
 /**
  * Claude Code background `monitors` (experimental) — long-running commands whose
@@ -69,7 +67,7 @@ export function parseMonitors(raw: unknown): { monitors: PluginMonitor[]; errors
   for (const entry of list) {
     const parsed = pluginMonitorSchema.safeParse(entry)
     if (!parsed.success) {
-      errors.push(`invalid monitor: ${summarizeZodIssues(parsed.error).message}`)
+      errors.push(`invalid monitor: ${schemaIssue(parsed.error)}`)
       continue
     }
     if (seen.has(parsed.data.name)) {

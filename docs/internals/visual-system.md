@@ -2,7 +2,7 @@
 
 This page is the contract for how a Localix surface is painted: which token a fill comes from, which
 step a control sits on, and which of those rules a machine checks. Read it before adding a pane, a
-control, or a plugin surface, and when a review asks why a colour was rejected.
+control, or a mini app surface, and when a review asks why a colour was rejected.
 
 ## Terminology
 
@@ -19,7 +19,7 @@ control, or a plugin surface, and when a review asks why a colour was rejected.
 
 | Task                             | Do this                                                                                                   | Boundary                                                                                       |
 | -------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Add a pane (feature or plugin)   | Paint no ground at all — inherit the pane you are mounted into.                                           | Only a standalone full-window route may paint one; add it to the guard's list.                 |
+| Add a pane (feature or mini app) | Paint no ground at all — inherit the pane you are mounted into.                                           | Only a standalone full-window route may paint one; add it to the guard's list.                 |
 | Size a pane's body               | Fill the pane: gutters (`px-4 @2xl:px-6`), no column. Long-form prose uses `--reading-measure`.           | `mx-auto` with a literal `max-w-*` spends a wide pane on two empty gutters.                    |
 | Fill a field or a trigger        | `FIELD_SURFACE` from the SDK's `ui/classes` — radius, hairline and `bg-field-fill`.                       | Not `--input`, which is an opaque grey in the plain dark theme.                                |
 | Mark a control invalid           | `CONTROL_INVALID` from the SDK's `ui/classes`.                                                            | One recipe for every control; a transcribed copy had already lost its dark ring.               |
@@ -78,7 +78,7 @@ file contents, and the available preview modes. Review comments and the unsaved 
 visible in the row. Editor controls reserve their own space so they never cover text or intercept
 code clicks.
 
-Read-only files, image/SVG previews, bridged plugin views, and Git diffs use the same slim toolbar
+Read-only files, image/SVG previews, bridged mini app views, and Git diffs use the same slim toolbar
 measure. Their controls remain outside the scrolling content. Diff layout, hunk navigation, and host
 actions share one toolbar; multi-file headers stay aligned while each file's long code lines scroll
 horizontally. Git changes, branches, and stash rows use the shared dense list-row measure, and their
@@ -257,9 +257,10 @@ last column is what the corresponding check found on its first run.
 | An overlay takes its motion from one recipe                                        | `packages/kit/src/overlays/overlay-motion.test.ts` | 7     |
 
 The token-drift rules have one owner, `apps/api/src/contracts/ui-token-rules.ts`, and two readers:
-the guard above, over the app and the bundled plugins, and the style step of `plugin_build`, over a
-plugin a person builds in `~/.localix/plugins`, where no repository guard can see it. The style step
-adds one rule of its own: a native button, input, select or textarea where the kit has a control.
+the guard above, over the app and the bundled mini apps, and the style step of `mini_app_build`,
+over a mini app a person builds in `~/.localix/mini-apps`, where no repository guard can see it. The
+style step adds one rule of its own: a native button, input, select or textarea where the kit has a
+control.
 
 ## Configuration
 
@@ -272,7 +273,7 @@ adds one rule of its own: a native button, input, select or textarea where the k
 | `packages/oxlint-rules/src/rules/`             | The per-node rules, each with its reasoning in the file header.                                         |
 | `scripts/pane-ground-guard.test.ts`            | The whole-tree invariant and the allowlist of outermost painters.                                       |
 | `apps/ui/src/shared/ui/`                       | The primitives that define geometry, focus and material for consumers.                                  |
-| `packages/mini-app-sdk/src/ui/`                | The same primitives as a plugin sees them.                                                              |
+| `packages/mini-app-sdk/src/ui/`                | The same primitives as a mini app sees them.                                                            |
 
 ## Limits
 
@@ -313,7 +314,7 @@ change behaviour rather than paint:
 
 ## Related guides
 
-- [SDK](sdk.md) — how a plugin reaches these primitives.
+- [SDK](sdk.md) — how a mini app reaches these primitives.
 - [Architecture](architecture.md) — where the UI layers sit.
 
 ## Source of truth

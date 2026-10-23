@@ -13,12 +13,12 @@ features/embeddings      engine → vectors port → reader; engine → ingest/i
         ↑                         ↑
 features/search          hybrid fusion; SearchQuery.semantic per query           (the strategy)
         ↑                         ↑
-providers (chat, plugins)   UI search · agent `global_search` · plugin `host.semantic`
+providers (chat, mini apps) UI search · agent `global_search` · mini app `host.semantic`
 ```
 
 Vectors on demand go through one port, `semanticService.vectors` (`semantic-vectors.ts`): the
-reader's query vectors, group routing's `rank` and a plugin's `host.semantic.embed`/`rank`. Only the
-index's write path (`ingest.ts`) calls the engine itself. The model is named once, in
+reader's query vectors, group routing's `rank` and a mini app's `host.semantic.embed`/`rank`. Only
+the index's write path (`ingest.ts`) calls the engine itself. The model is named once, in
 `embeddings/models.ts`; decision models live beside it in `features/decisions` (`models.ts`).
 
 Each layer names only the one below it. The engine's model access sees local chat models through the
@@ -59,15 +59,15 @@ re-reads the message its run finalizes). `upserted` and `deleted` queue the key 
 chat's messages name it as their `parent`). Semantic search has no off switch: an index left by the
 old one is reconciled in full once at start, which catches what changed while it was off.
 
-| Collection             | Source                                    | Category in the status bar |
-| ---------------------- | ----------------------------------------- | -------------------------- |
-| `chat.messages`        | `chat/repository-semantic-sources.ts`     | Messages                   |
-| `chat.sessions`        | `chat/repository-semantic-sources.ts`     | Chats                      |
-| `capabilities.skills`  | `skills-curator/semantic.ts`              | Skills                     |
-| `capabilities.plugins` | `plugins/semantic.ts`                     | Plugins                    |
-| `capabilities.mcp`     | `mcp/semantic.ts`                         | MCP servers                |
-| `agents`               | `agents/semantic.ts`                      | Agents                     |
-| `plugin:<name>:<…>`    | a plugin's `host.semantic.registerSource` | the source's `label`       |
+| Collection             | Source                                      | Category in the status bar |
+| ---------------------- | ------------------------------------------- | -------------------------- |
+| `chat.messages`        | `chat/repository-semantic-sources.ts`       | Messages                   |
+| `chat.sessions`        | `chat/repository-semantic-sources.ts`       | Chats                      |
+| `capabilities.skills`  | `skills-curator/semantic.ts`                | Skills                     |
+| `capabilities.plugins` | `plugins/semantic.ts`                       | Plugins                    |
+| `capabilities.mcp`     | `mcp/semantic.ts`                           | MCP servers                |
+| `agents`               | `agents/semantic.ts`                        | Agents                     |
+| `plugin:<name>:<…>`    | a mini app's `host.semantic.registerSource` | the source's `label`       |
 
 Capability catalogs are listed whole for the workspace owner (`embeddings/list-source.ts`): global
 items under the scope `global`, each project's own under its id, keyed `<scope>:<name>`. Their
@@ -99,8 +99,9 @@ Register a `SemanticSource` (`@localixai/mini-app-sdk/backend`): a collection na
 category in the status bar), a version, and `scan`/`read`. A core kind also gets a target in
 [`bootstrap/semantic-changes.ts`](../../../apps/api/src/bootstrap/semantic-changes.ts), and its
 writers record changes on the change feed; the map does not compile until every kind of the core
-registry has a target or `'ignore'`. A plugin uses `host.semantic`: its collections are namespaced
-`plugin:<name>:<collection>`, and `query` returns matches carrying `z` and `gate`.
+registry has a target or `'ignore'`. A mini app uses `host.semantic`: its collections are namespaced
+`plugin:<name>:<collection>` (the prefix predates the split), and `query` returns matches carrying
+`z` and `gate`.
 
 A search provider receives `query.semantic` only when the hybrid strategy is active. Fuse its
 matches with `fuse()` and pass each match's `gate`; without `query.semantic` keep the words-only

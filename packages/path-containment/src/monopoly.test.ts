@@ -95,7 +95,7 @@ const EXEMPTIONS: Record<string, string> = {
     'Matches an already-RELATIVE path against a user EXCLUSION PREFIX (a glob-ish pattern, not a root). The real root-containment check in this file goes through the owner.',
   'apps/api/src/features/agent-core/tools/workspace.ts::sep-prefix':
     'A SAFE_SYSTEM_PREFIXES allow-list scan (`/usr`, `/etc`, …) — dirs a token MAY name, with no root to be contained in. Its root-containment check adopted the owner (isPathWithin).',
-  'apps/api/src/features/plugins/backend-host.ts::sep-template':
+  'apps/api/src/features/mini-apps/backend-host.ts::sep-template':
     'Matches an HTTP route path against a mounted URL prefix. Not a filesystem path.',
 
   // ── syntax sniffs: "does this string LOOK like a path/URL?", before anything is resolved ──

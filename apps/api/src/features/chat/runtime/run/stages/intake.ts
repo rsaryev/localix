@@ -54,6 +54,7 @@ export async function intakeRunTurn(
     maxTurns,
     historyMessages: params.historyMessages,
     loadedPlugins: inputs.loadedPlugins,
+    loadedMiniApps: inputs.loadedMiniApps,
     ccHooks,
     mods: inputs.mods,
     ccSessionStartContext: inputs.ccSessionStartContext,
@@ -88,7 +89,7 @@ export async function intakeRunTurn(
       env.state.stoppedRuntimeSessionIds.add(session.id)
       frame.abort.abort()
     },
-    pluginHooksForRun: frame.teardown.pluginHooks,
+    miniAppHooksForRun: frame.teardown.miniAppHooks,
     hookRunOptions: inputs.hookRunOptions,
     ccHooks,
     extraAllowedTools: params.scope.extraAllowedTools,

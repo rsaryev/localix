@@ -1,27 +1,27 @@
 # Diagnose Localix
 
 This guide isolates failures across the desktop shell, local API, session model, project tools, and
-plugin workbenches. Use it to identify the failing boundary before changing credentials or project
+mini app workbenches. Use it to identify the failing boundary before changing credentials or project
 state.
 
 ## What you can do
 
-| Symptom                               | First check                                                             | Owning guide                                                                                |
-| ------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Source build does not open            | Read the first error from `bun run dev`                                 | [Installation](installation.md)                                                             |
-| Session will not run                  | Resolve its provider connection and model in **Settings → Diagnostics** | [Providers and models](../features/providers.md)                                            |
-| A tool is missing or denied           | Inspect the project, effective tool list, and permission summary        | [Capabilities](../features/capabilities.md)                                                 |
-| A workbench is absent                 | Check its project-scoped state in **Settings → Capabilities → Plugins** | [Plugins](../extending/plugins.md)                                                          |
-| A workbench cannot reach a dependency | Test the daemon, cluster, database, or network independently            | [DevOps Workspace](../features/devops.md) and [Database workbench](../features/database.md) |
+| Symptom                               | First check                                                               | Owning guide                                                                                |
+| ------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Source build does not open            | Read the first error from `bun run dev`                                   | [Installation](installation.md)                                                             |
+| Session will not run                  | Resolve its provider connection and model in **Settings → Diagnostics**   | [Providers and models](../features/providers.md)                                            |
+| A tool is missing or denied           | Inspect the project, effective tool list, and permission summary          | [Capabilities](../features/capabilities.md)                                                 |
+| A workbench is absent                 | Check its project-scoped state in **Settings → Capabilities → Mini apps** | [Mini apps](../features/mini-apps.md)                                                       |
+| A workbench cannot reach a dependency | Test the daemon, cluster, database, or network independently              | [DevOps Workspace](../features/devops.md) and [Database workbench](../features/database.md) |
 
 ### Terms used in this guide
 
-| Term                        | Meaning                                                                               |
-| --------------------------- | ------------------------------------------------------------------------------------- |
-| **Desktop shell**           | The native application process that owns the window and packaged API child            |
-| **Local API**               | The backend process that owns sessions, tools, providers, plugins, and project state  |
-| **Effective configuration** | The read-only result of resolving model routes, installed extensions, and agent rules |
-| **Workbench**               | A workspace surface for files, data, or tools; some are supplied by plugins           |
+| Term                        | Meaning                                                                                 |
+| --------------------------- | --------------------------------------------------------------------------------------- |
+| **Desktop shell**           | The native application process that owns the window and packaged API child              |
+| **Local API**               | The backend process that owns sessions, tools, providers, extensions, and project state |
+| **Effective configuration** | The read-only result of resolving model routes, installed extensions, and agent rules   |
+| **Workbench**               | A workspace surface for files, data, or tools; some are supplied by mini apps           |
 
 ## How it works
 
@@ -72,13 +72,14 @@ agent, and a session model report follows its main participant; it is not a comp
 trace. Check the intended agent's **Settings → Capabilities** as well.
 
 Capability rules can narrow tools or require confirmation. The agent's own tool set, project
-settings, plugins, skills, and host dependencies can narrow the surface further. Change the owning
-setting, then ask the agent to retry the action.
+settings, mini apps, plugins, skills, and host dependencies can narrow the surface further. Change
+the owning setting, then ask the agent to retry the action.
 
 ### A workbench is missing or disconnected
 
-Open **Settings → Capabilities → Plugins** in the intended project scope. An inactive plugin
-contributes neither its gated workbench views nor its model-facing tools.
+Open **Settings → Capabilities → Mini apps** in the intended project scope, or run `/mini-app list`
+in a chat of that project. An inactive mini app contributes neither its gated workbench views nor
+its model-facing tools. `/mini-app enable <name>` turns one back on.
 
 For a visible workbench that cannot connect, test its external dependency separately:
 
@@ -115,8 +116,8 @@ that severity and above. `--json` prints normalized timeline entries; it does no
 original line unchanged. `--dir <folder>` reads a different log directory.
 
 The startup report measures from the shell's `setup entered` event to the window, local service,
-first paint, workspace, and plugins. It omits launches without that start event and shows a dash for
-missing milestones. `--last` limits displayed rows (default 15); median, 90th percentile, and
+first paint, workspace, and mini apps. It omits launches without that start event and shows a dash
+for missing milestones. `--last` limits displayed rows (default 15); median, 90th percentile, and
 worst-case summaries still use all retained qualifying launches for each milestone. Startup and
 launch-list reports use their own text format rather than `--json` output.
 
@@ -177,15 +178,16 @@ Report suspected vulnerabilities through the private process in
 
 ## Configuration
 
-| Control                               | Effect                                                                            |
-| ------------------------------------- | --------------------------------------------------------------------------------- |
-| `bun run dev`                         | Starts the desktop development process from the repository root                   |
-| `LOCALIX_DEV_UI_PORT`                 | Overrides the development frontend port; default is `5050`                        |
-| `LOCALIX_DEV_API_PORT`                | Overrides the development API port; default is `5051`                             |
-| **Settings → Diagnostics**            | Resolves models, tools, permissions, and validation messages for a selected scope |
-| **Settings → Capabilities → Plugins** | Shows and changes the plugin state for the selected project scope                 |
-| Model picker                          | Binds a provider connection and model to the current session                      |
-| **Settings → Capabilities**           | Edits the selected agent's tool availability and permission rules                 |
+| Control                                 | Effect                                                                            |
+| --------------------------------------- | --------------------------------------------------------------------------------- |
+| `bun run dev`                           | Starts the desktop development process from the repository root                   |
+| `LOCALIX_DEV_UI_PORT`                   | Overrides the development frontend port; default is `5050`                        |
+| `LOCALIX_DEV_API_PORT`                  | Overrides the development API port; default is `5051`                             |
+| **Settings → Diagnostics**              | Resolves models, tools, permissions, and validation messages for a selected scope |
+| **Settings → Capabilities → Plugins**   | Shows and changes the Claude Code plugin state for the selected project scope     |
+| **Settings → Capabilities → Mini apps** | Shows and changes the mini app state for the selected project scope               |
+| Model picker                            | Binds a provider connection and model to the current session                      |
+| **Settings → Capabilities**             | Edits the selected agent's tool availability and permission rules                 |
 
 ## Limits
 
@@ -200,8 +202,8 @@ Report suspected vulnerabilities through the private process in
   [provider workload boundaries](../features/providers.md#which-model-a-participant-runs-on).
 - A successful structural model selection does not prove that provider authentication, quota, or
   network access will succeed on the next request.
-- Changing an agent's rules or plugin availability does not replay a completed denial. Retry the
-  action after the new configuration resolves.
+- Changing an agent's rules or mini app or plugin availability does not replay a completed denial.
+  Retry the action after the new configuration resolves.
 - Localix cannot repair an unavailable daemon, invalid kubeconfig, database authorization failure,
   provider outage, or blocked network route.
 - Diagnostics and screenshots can still contain project names, paths, prompts, or provider error
@@ -232,3 +234,4 @@ Report suspected vulnerabilities through the private process in
 - [Agent-owned permission policy](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/permission-engine.ts)
 - [Permission decisions](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/permission-gate.ts)
 - [Plugin activation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/enable.ts)
+- [Mini app activation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/catalog.ts)

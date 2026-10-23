@@ -35,9 +35,9 @@ import { createLogger } from '../lib/logger'
 import type { BootstrapServiceRefs } from './chat-service-deps'
 import { createWorkRegistry, type WorkRegistry } from '../features/work/registry'
 import { createWorkRepository } from '../features/work/repository'
-import { installBackendHostModules } from '../features/plugins/backend-host-modules'
-import { observePluginConfigVault } from '../features/plugins/config-vault'
-import { pluginConfigVaultOf } from './plugin-config-vault'
+import { installBackendHostModules } from '../features/mini-apps/backend-host-modules'
+import { observeOptionVault } from '../features/ext/option-vault'
+import { optionVaultPortOf } from './option-vault-port'
 
 export interface BootstrapRuntimeInfo {
   instanceId: string
@@ -93,7 +93,7 @@ export async function createInfraPhase(
   runtimeInfo?: BootstrapRuntimeInfo,
 ): Promise<InfraPhase> {
   // Before anything can import a plugin backend: their shared imports resolve to the host's own
-  // modules from here on (`features/plugins/backend-host-modules.ts`).
+  // modules from here on (`features/mini-apps/backend-host-modules.ts`).
   installBackendHostModules()
   const env = loadEnv(envSource)
   const logger = createLogger(env.LOG_LEVEL, runtimeInfo?.logDestination, {
@@ -202,7 +202,7 @@ export async function createInfraPhase(
   // A plugin's sensitive userConfig values live in the vault; every plugin catalog reads them
   // back through this one registration (`features/plugins/config-vault.ts`).
   // An item it cannot read reads as unset and is reported here, once per item version.
-  observePluginConfigVault(pluginConfigVaultOf(secretsStore, secretExposureShield), (entry) =>
+  observeOptionVault(optionVaultPortOf(secretsStore, secretExposureShield), (entry) =>
     logger.warn(entry),
   )
   // An MCP server that does not connect is a standing Event Center row, not a log line per turn.

@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 import { participantAgentId } from '@localixai/api/participant'
 import { localixUiUri } from '@localixai/mini-app-sdk/navigation'
-import { pluginContribSnapshot } from './enabledPlugins'
-import { usePluginContribVersion } from './usePluginContribVersion'
+import { miniAppContribSnapshot } from './enabledMiniApps'
+import { useMiniAppContribVersion } from './useMiniAppContribVersion'
 
 export interface AgentIdentity {
   agentId?: string
@@ -70,11 +70,11 @@ export function useAgentIdentity(
   from: string | undefined,
   snapshot?: { handle: string },
 ): AgentIdentity | null {
-  const version = usePluginContribVersion()
+  const version = useMiniAppContribVersion()
   return useMemo(() => {
     const agentId = agentAuthorId(from)
     if (!agentId) return null
-    return resolveAuthorIdentity(agentId, snapshot, pluginContribSnapshot().document?.agents ?? [])
+    return resolveAuthorIdentity(agentId, snapshot, miniAppContribSnapshot().document?.agents ?? [])
     // `version` is a dependency, not a value: a capability publish can rename an agent.
   }, [from, snapshot?.handle, version])
 }
@@ -96,17 +96,17 @@ export function resolveAuthorIdentity(
 
 /** Catalog selection by handle is only for navigation, never for a stored author. */
 export function useAgentHandleIdentity(handle: string): AgentIdentity {
-  const version = usePluginContribVersion()
+  const version = useMiniAppContribVersion()
   return useMemo(() => resolveHandleIdentity(handle), [handle, version])
 }
 
 /**
  * The same lookup as {@link useAgentHandleIdentity}, for a LIST of handles resolved in one pass —
  * a hook cannot run once per row of a described menu. The caller re-reads it under
- * `usePluginContribVersion()` so a rename reaches it.
+ * `useMiniAppContribVersion()` so a rename reaches it.
  */
 export function resolveHandleIdentity(handle: string): AgentIdentity {
-  const found = pluginContribSnapshot().document?.agents.find(
+  const found = miniAppContribSnapshot().document?.agents.find(
     (agent) => agent.record.handle === handle,
   )
   return {

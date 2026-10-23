@@ -9,7 +9,7 @@ repeat in other questions; keep them distinct within a question.
 
 Courses always prepare one complete module at a time. Create a coherent outline for the whole route,
 author every lesson in the first module, and leave later modules pending. Do not ask the learner to
-choose progressive versus upfront generation. The plugin can request the next pending module when at
+choose progressive versus upfront generation. The app can request the next pending module when at
 least half of the current module’s lessons are completed (rounded up), or its last lesson opens. A
 pending current module takes priority. A missed or failed tutor wake leaves generation failed rather
 than preparing material; inspect that state and use a reachable tutor to continue.

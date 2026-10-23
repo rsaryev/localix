@@ -15,7 +15,7 @@
 import { createWorkspaceSnapshot } from '@/shared/api/client'
 import type { UiSession } from '@/shared/api/contracts'
 import { uiSessionSummary } from '@/shared/api/session-summary'
-import { restorePluginContribFrame } from '@/shared/contrib/enabledPlugins'
+import { restoreMiniAppContribFrame } from '@/shared/contrib/enabledMiniApps'
 import { readShellSnapshot } from '@/shared/lib/shellSnapshot'
 
 import { loadLastWorkspace } from './persistence'
@@ -34,7 +34,7 @@ export function restoreShellFrame(): boolean {
   const snapshot = readShellSnapshot<UiSession>(projectId)
   if (!snapshot) return false
 
-  if (snapshot.capabilities) restorePluginContribFrame(projectId, snapshot.capabilities)
+  if (snapshot.capabilities) restoreMiniAppContribFrame(projectId, snapshot.capabilities)
   if (snapshot.sessions.length === 0) return snapshot.capabilities !== null
 
   // The scope has to be in place before hydration: the roster is filtered by it, and a

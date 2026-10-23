@@ -103,8 +103,8 @@ These values are code constants, not user settings.
   session spill directory. Existing path attachments can still become path manifests.
 - Only PNG, JPEG, GIF, and WebP use the native image path. PDF, audio, video, SVG, HEIC, BMP, and
   TIFF use file handoff in this subsystem.
-- A binary manifest contains no extracted body. The agent must use a compatible file or plugin tool
-  to inspect that resource.
+- A binary manifest contains no extracted body. The agent must use a compatible file or mini app
+  tool to inspect that resource.
 - Document preview depends on the injected extractor. When extraction returns `null`, the attachment
   falls back to a textual or binary manifest.
 - Spill cleanup is not awaited. A process crash or failed delete can leave files under the session's

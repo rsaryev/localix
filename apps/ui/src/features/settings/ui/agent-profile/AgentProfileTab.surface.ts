@@ -1,6 +1,6 @@
 import { Bot } from 'lucide-react'
 import { defineUiLocation } from '@localixai/mini-app-sdk/ui'
-import { pluginContribSnapshot } from '@/shared/contrib/enabledPlugins'
+import { miniAppContribSnapshot } from '@/shared/contrib/enabledMiniApps'
 import { resolveAuthorIdentity } from '@/shared/contrib/useAgentIdentity'
 import {
   AGENT_PROFILE_WORK_KIND,
@@ -108,7 +108,7 @@ function identityOf(agentId: string, scope?: string) {
   const identity = resolveAuthorIdentity(
     agentId,
     undefined,
-    pluginContribSnapshot().document?.agents ?? [],
+    miniAppContribSnapshot().document?.agents ?? [],
   )
   return scope === undefined ? identity : { ...identity, scope }
 }

@@ -30,7 +30,7 @@ describe('plugin command system output', () => {
           install: async () => ({
             name: 'sample-plugin',
             version: '1.2.3',
-            provides: { hasNativeTools: false },
+            provides: {},
           }),
         },
       } as never,
@@ -170,7 +170,8 @@ describe('plugin command system output', () => {
 
     expect(reply.text()).toContain('Unknown sub-command `disble`')
     expect(reply.text()).toContain('/plugin disable <name>')
-    expect(reply.text()).toContain('/plugin create <what it should do>')
+    // Creating is a mini app's business, not a Claude Code plugin's.
+    expect(reply.text()).not.toContain('create')
   })
 
   test('the dropped aliases are gone — one spelling per action', async () => {
@@ -202,34 +203,19 @@ describe('plugin command system output', () => {
     }
   })
 
-  test('reload rebuilds the user plugins first and reports the ones that failed', async () => {
+  test('reload re-reads the plugins in place and builds nothing', async () => {
     const reply = replyCapture()
     let changed = 0
-    const report = (ok: boolean) => ({
-      ok,
-      steps: [{ title: 'UI build', ok, problems: ok ? [] : ['UI build failed: bad import'] }],
-    })
     await handlePluginsControlCommand(
-      {
-        pluginService: {
-          authoring: {
-            rebuildAll: async () => [
-              { name: 'notes', report: report(true) },
-              { name: 'timer', report: report(false) },
-            ],
-          },
-          onChanged: () => changed++,
-        },
-      } as never,
+      { pluginService: { onChanged: () => changed++ } } as never,
       'user',
       session,
       '/plugin reload',
       reply.directReply,
     )
     expect(changed).toBe(1)
-    expect(reply.text()).toContain('Rebuilt `notes`, `timer`.')
-    expect(reply.text()).toContain('UI build failed: bad import')
-    expect(reply.text()).not.toContain('- UI build: ok')
+    expect(reply.text()).toContain('Plugins reloaded.')
+    expect(reply.text()).not.toContain('Rebuilt')
     expect(reply.text()).not.toMatch(decorativeGlyph)
   })
 

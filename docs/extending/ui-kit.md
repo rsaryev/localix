@@ -1,7 +1,7 @@
 # The UI kit
 
 `@localixai/kit` is the one set of controls, overlays, rows, states, class recipes and design tokens
-that the Localix workbench and every plugin view are built from. Use this page to find the module
+that the Localix workbench and every mini app view are built from. Use this page to find the module
 for a job, learn the shared size and tone vocabulary, and add to the kit without forking it.
 
 ## Terminology
@@ -12,24 +12,24 @@ for a job, learn the shared size and tone vocabulary, and add to the kit without
 | Door           | One public module, `packages/kit/src/entries/<id>.ts`: an explicit re-export list. | Anything not re-exported by a door is private to the kit.        |
 | Lent module    | A module the app serves under the same namespace, `apps/ui/src/app/kit/<id>.ts`.   | Bound to a host feature (the code editor, Markdown, tool cards). |
 | Catalog        | Every module with the job it is for, in `packages/kit/src/catalog/`.               | Tests pin it to the doors and lent modules in both directions.   |
-| `KIT.md`       | The catalog rendered as Markdown, written into a user plugin by every build.       | Generated; an edit is overwritten on the next build.             |
+| `KIT.md`       | The catalog rendered as Markdown, written into a user mini app by every build.     | Generated; an edit is overwritten on the next build.             |
 | Control ladder | The heights `xs` 20, `sm` 24, `md` 28, `lg` 32, `xl` 36 px.                        | A size name means the same height on every primitive.            |
 
 ## What you can do
 
-| Task                                | Do this                                                                       | Boundary                                                          |
-| ----------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Find the module for a job           | Look the job up in the catalog (below, or `KIT.md` in a user plugin's folder) | Build nothing the kit has; the house-style check reports drift.   |
-| Import a primitive in the app       | `import { Button } from '@localixai/kit/button'`                              | Never `@/shared/ui/…` for a primitive: it lives in the kit now.   |
-| Import a primitive in a plugin      | The same specifier; the build takes the module from the running host          | One instance: a plugin never bundles its own copy of the kit.     |
-| Size a control                      | `size="sm"` — a rung name                                                     | Never a height in `className`.                                    |
-| Mark an action destructive          | `tone="danger"` (IconButton), `variant="danger"` (Button)                     | `danger` is for what a click does, never for a state.             |
-| Suggest the next step               | `recommended` on the one `Button` that is the safe, expected next action      | Never on a permission grant, a destructive act, or a busy run.    |
-| Show a state                        | A status tone: `neutral`, `info`, `success`, `warning`, `error`               | `error` is for what went wrong, never for a button.               |
-| Colour anything                     | A token utility (`text-text-soft`, `bg-surface-hover`, `--chart-N`)           | No palette class, no hex; see [Visual system][visual].            |
-| Add a primitive                     | Follow `packages/kit/AGENTS.md`: file, door, catalog entry, test              | A door without a catalog entry fails the kit's tests.             |
-| Use a host feature in a plugin view | A lent module: `@localixai/kit/code-editor`, `markdown`, `diff`, `tool-card`  | Lent modules keep the host feature's behaviour and state.         |
-| Check a view like the build does    | `bun test scripts/ui-token-drift-guard.test.ts` in the repository             | User plugins get the same rules from `plugin_build`'s style step. |
+| Task                                  | Do this                                                                         | Boundary                                                              |
+| ------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Find the module for a job             | Look the job up in the catalog (below, or `KIT.md` in a user mini app's folder) | Build nothing the kit has; the house-style check reports drift.       |
+| Import a primitive in the app         | `import { Button } from '@localixai/kit/button'`                                | Never `@/shared/ui/…` for a primitive: it lives in the kit now.       |
+| Import a primitive in a mini app      | The same specifier; the build takes the module from the running host            | One instance: a mini app never bundles its own copy of the kit.       |
+| Size a control                        | `size="sm"` — a rung name                                                       | Never a height in `className`.                                        |
+| Mark an action destructive            | `tone="danger"` (IconButton), `variant="danger"` (Button)                       | `danger` is for what a click does, never for a state.                 |
+| Suggest the next step                 | `recommended` on the one `Button` that is the safe, expected next action        | Never on a permission grant, a destructive act, or a busy run.        |
+| Show a state                          | A status tone: `neutral`, `info`, `success`, `warning`, `error`                 | `error` is for what went wrong, never for a button.                   |
+| Colour anything                       | A token utility (`text-text-soft`, `bg-surface-hover`, `--chart-N`)             | No palette class, no hex; see [Visual system][visual].                |
+| Add a primitive                       | Follow `packages/kit/AGENTS.md`: file, door, catalog entry, test                | A door without a catalog entry fails the kit's tests.                 |
+| Use a host feature in a mini app view | A lent module: `@localixai/kit/code-editor`, `markdown`, `diff`, `tool-card`    | Lent modules keep the host feature's behaviour and state.             |
+| Check a view like the build does      | `bun test scripts/ui-token-drift-guard.test.ts` in the repository               | User mini apps get the same rules from `mini_app_build`'s style step. |
 
 ### Choose by job
 
@@ -88,11 +88,11 @@ The primitives live in one package rather than inside the app, because a facade 
 make "the kit" a list the app happened to maintain: the app would import internals the facade did
 not list, and nothing would stop a primitive from reading app state. As a package, its boundary is
 checked like any package's — `scripts/check-architecture.mjs` refuses a kit file that imports the
-app — and the app imports the same doors a plugin does. What the app sees is what a plugin gets.
+app — and the app imports the same doors a mini app does. What the app sees is what a mini app gets.
 
 The package is source only. The app's Vite build compiles it with the app, React Compiler included,
-and a plugin's artifact build turns each `@localixai/kit/<id>` import into a load of the host's
-module, so the host, the app and every plugin share one instance of each primitive and of the
+and a mini app's artifact build turns each `@localixai/kit/<id>` import into a load of the host's
+module, so the host, the app and every mini app share one instance of each primitive and of the
 libraries behind them (Radix, cmdk, the flow canvas). The registry of those modules,
 `apps/ui/src/app/pluginSharedModules.ts`, is built from the doors and the lent modules; its test
 refuses an id served by both.
@@ -100,11 +100,11 @@ refuses an id served by both.
 ### The kit owns the design system
 
 The tokens and style layers are in `packages/kit/styles/`, in the cascade order
-`packages/kit/styles/index.css` states. The app's stylesheet imports it with one line, and the
-plugin kit stages it so a plugin's utilities are compiled against the same theme. The rules that
-keep a surface on that system — no palette colour, no literal duration, the radius scale, one focus
+`packages/kit/styles/index.css` states. The app's stylesheet imports it with one line, and the mini
+app kit stages it so a mini app's utilities are compiled against the same theme. The rules that keep
+a surface on that system — no palette colour, no literal duration, the radius scale, one focus
 recipe, no pane-sized ground — are the ones [Visual system][visual] lists; each is a check that
-scans the kit as well as the app and the bundled plugins.
+scans the kit as well as the app and the bundled mini apps.
 
 ### One vocabulary for every primitive
 
@@ -130,12 +130,12 @@ Only the role tells the two kinds apart; pick by what the choice means, never by
 
 ### The catalog is the answer to "which module?"
 
-A list of exports and props does not say which module a job needs. The plugin authoring agent was
+A list of exports and props does not say which module a job needs. The mini app authoring agent was
 once given the props of sixteen controls and nothing else, and it hand-rolled tabs, a checkbox and a
 progress bar the kit already had. The catalog states each module's job and what not to confuse it
-with. The plugin kit renders it into `KIT.md`, every `plugin_build` writes that file into the
-plugin's folder the way it writes `tsconfig.json`, and the `/plugin create` instruction tells the
-agent to choose there before writing a control.
+with. The mini app kit renders it into `KIT.md`, every `mini_app_build` writes that file into the
+mini app's folder the way it writes `tsconfig.json`, and the `/mini-app create` instruction tells
+the agent to choose there before writing a control.
 
 ## Configuration
 
@@ -146,8 +146,8 @@ agent to choose there before writing a control.
 | `packages/kit/styles/`                   | Tokens, themes, window material, motion, utilities, accessibility. |
 | `packages/kit/AGENTS.md`                 | The rules for changing the kit.                                    |
 | `apps/ui/src/app/kit/`                   | The modules the host lends, and the recorded debt among them.      |
-| `apps/ui/src/app/pluginSharedModules.ts` | The runtime registry plugins load the kit from.                    |
-| `scripts/stage-plugin-kit.mjs`           | What an installed app ships to build plugins, `KIT.md` included.   |
+| `apps/ui/src/app/pluginSharedModules.ts` | The runtime registry mini apps load the kit from.                  |
+| `scripts/stage-plugin-kit.mjs`           | What an installed app ships to build mini apps, `KIT.md` included. |
 
 ## Limits
 
@@ -161,7 +161,7 @@ agent to choose there before writing a control.
 
 ## Related guides
 
-- [Build workbench UI](plugin-ui.md) — the artifact, `/plugin create` and `plugin_build`.
+- [Build workbench UI](mini-app-ui.md) — the artifact, `/mini-app create` and `mini_app_build`.
 - [Visual system][visual] — the paint contract and the checks behind it.
 
 ## Source of truth

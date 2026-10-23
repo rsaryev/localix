@@ -71,7 +71,7 @@ async function executeAdmittedRun(
       runtimeState: env.state,
       session: frame.session,
       abort: frame.abort,
-      pluginHooksForRun: frame.teardown.pluginHooks,
+      miniAppHooksForRun: frame.teardown.miniAppHooks,
       runLiveResolverKeys: frame.teardown.liveResolverKeys,
       unsubLsp: frame.teardown.unsubLsp,
       defaultCwd: frame.teardown.defaultCwd,

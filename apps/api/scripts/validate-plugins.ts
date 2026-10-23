@@ -1,8 +1,7 @@
 /**
  * Fast, plain-stdout plugin validator for development — "like a compiler" for plugins.
  *
- *   bun apps/api/scripts/validate-plugins.ts              # every bundled plugin
- *   bun apps/api/scripts/validate-plugins.ts <path...>    # specific plugin dir(s)
+ *   bun apps/api/scripts/validate-plugins.ts <path...>    # the plugin dir(s) to check
  *   bun apps/api/scripts/validate-plugins.ts --strict     # warnings fail too
  *   bun apps/api/scripts/validate-plugins.ts --quiet      # hide clean plugins
  *   (also: `bun run validate:plugins` from apps/api)
@@ -17,7 +16,7 @@
 import { statSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-import { discoverBundledMiniApps, type DiscoveredPlugin } from '../src/features/plugins/discovery'
+import type { DiscoveredPlugin } from '../src/features/plugins/discovery'
 import { loadManifest } from '../src/features/plugins/manifest-load'
 import { validatePluginFull } from '../src/features/plugins/validate'
 
@@ -25,6 +24,12 @@ const args = process.argv.slice(2)
 const strict = args.includes('--strict')
 const quiet = args.includes('--quiet')
 const paths = args.filter((a) => !a.startsWith('--'))
+
+// Localix ships no plugin: there is nothing to check without a path.
+if (paths.length === 0) {
+  console.error('usage: validate-plugins.ts <plugin-dir...> [--strict] [--quiet]')
+  process.exit(2)
+}
 
 // A path that isn't a directory is a typo, not a plugin — loadManifest tolerates a
 // missing manifest (CC parity) and would silently invent one named after the path, so
@@ -42,11 +47,10 @@ for (const p of paths) {
   }
 }
 
-// A path argument is validated as a standalone plugin dir (global scope, not bundled);
-// no args → the whole bundled reference set. Both paths yield ordinary DiscoveredPlugins.
-const plugins: DiscoveredPlugin[] = paths.length
-  ? await Promise.all(paths.map((p) => loadManifest(resolve(p), 'global', '', false)))
-  : await discoverBundledMiniApps()
+// Each path is validated as a standalone plugin dir (global scope).
+const plugins: DiscoveredPlugin[] = await Promise.all(
+  paths.map((p) => loadManifest(resolve(p), 'global', '')),
+)
 
 const color = !process.env.NO_COLOR && process.stdout.isTTY
 const paint = (code: string, s: string) => (color ? `\x1b[${code}m${s}\x1b[0m` : s)

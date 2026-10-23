@@ -2,8 +2,8 @@ import { afterEach, describe, expect, test } from 'bun:test'
 
 import type { ProblemReport } from '@localixai/mini-app-sdk/ui/problems'
 
-import { setPluginSources } from './miniAppAttribution'
-import { createPluginToast, type AttributableToast } from './miniAppToast'
+import { setMiniAppSources } from './miniAppAttribution'
+import { createMiniAppToast, type AttributableToast } from './miniAppToast'
 
 const base = 'http://127.0.0.1:43110/rpc/plugins/acme/ui/'
 const pluginFrame = `onSelect@${base}entry.js?v=r1:12:88`
@@ -36,13 +36,13 @@ function recordingHost(calls: Call[]): AttributableToast {
 
 const report: ProblemReport = { subject: { label: 'orders.sql' }, problems: [{ message: 'x' }] }
 
-afterEach(() => setPluginSources([], new Map()))
+afterEach(() => setMiniAppSources([], new Map()))
 
 describe('the toast the host lends plugins', () => {
   test("labels a plugin's row with its display name and keeps the rest of the options", () => {
-    setPluginSources([{ pluginName: 'acme', base }], new Map([['acme', 'Acme']]))
+    setMiniAppSources([{ pluginName: 'acme', base }], new Map([['acme', 'Acme']]))
     const calls: Call[] = []
-    const toast = createPluginToast(recordingHost(calls), () => `${hostFrame}\n${pluginFrame}`)
+    const toast = createMiniAppToast(recordingHost(calls), () => `${hostFrame}\n${pluginFrame}`)
     toast.error('Could not connect', { description: 'refused' })
     toast('Saved')
     expect(calls).toEqual([
@@ -57,7 +57,7 @@ describe('the toast the host lends plugins', () => {
 
   test('a call nothing can attribute is published exactly as before', () => {
     const calls: Call[] = []
-    const toast = createPluginToast(recordingHost(calls), () => hostFrame)
+    const toast = createMiniAppToast(recordingHost(calls), () => hostFrame)
     const options = { description: 'refused' }
     toast.warning('Slow', options)
     toast.info('Plain')
@@ -67,29 +67,29 @@ describe('the toast the host lends plugins', () => {
 
   // Positive control for the spoofing rule: the name is the host's to give.
   test('a plugin cannot file its row under a name it claims', () => {
-    setPluginSources([{ pluginName: 'acme', base }], new Map([['acme', 'Acme']]))
+    setMiniAppSources([{ pluginName: 'acme', base }], new Map([['acme', 'Acme']]))
     const calls: Call[] = []
     const claimed = { source: 'Git' } as unknown as Parameters<typeof toast.error>[1]
-    let toast = createPluginToast(recordingHost(calls), () => pluginFrame)
+    let toast = createMiniAppToast(recordingHost(calls), () => pluginFrame)
     toast.error('a', claimed)
-    toast = createPluginToast(recordingHost(calls), () => hostFrame)
+    toast = createMiniAppToast(recordingHost(calls), () => hostFrame)
     toast.error('b', claimed)
     expect(calls.map((call) => call.options?.source)).toEqual(['Acme', undefined])
   })
 
   test('a problem report is labelled by attribution, else by its scope', () => {
-    setPluginSources([{ pluginName: 'acme', base }], new Map([['acme', 'Acme']]))
+    setMiniAppSources([{ pluginName: 'acme', base }], new Map([['acme', 'Acme']]))
     const calls: Call[] = []
-    createPluginToast(recordingHost(calls), () => pluginFrame).problems(report, { scope: 'x' })
+    createMiniAppToast(recordingHost(calls), () => pluginFrame).problems(report, { scope: 'x' })
     // From the shared hook's effect: no plugin frame, so the scope (the plugin id) names it.
-    createPluginToast(recordingHost(calls), () => hostFrame).problems(report, { scope: 'acme' })
-    createPluginToast(recordingHost(calls), () => hostFrame).problems(report, { scope: 'notes' })
+    createMiniAppToast(recordingHost(calls), () => hostFrame).problems(report, { scope: 'acme' })
+    createMiniAppToast(recordingHost(calls), () => hostFrame).problems(report, { scope: 'notes' })
     expect(calls.map((call) => call.options?.source)).toEqual(['Acme', 'Acme', 'notes'])
   })
 
   test('settling a subject passes straight through', () => {
     const calls: Call[] = []
-    createPluginToast(recordingHost(calls), () => hostFrame).problemsCleared(report, 'acme')
+    createMiniAppToast(recordingHost(calls), () => hostFrame).problemsCleared(report, 'acme')
     expect(calls).toEqual([{ method: 'problemsCleared' }])
   })
 })

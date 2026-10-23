@@ -12,7 +12,7 @@ Everything goes through one tool, `game_2048`, and its `action`: `move`, `state`
 
 ## When the board is yours
 
-A message from the "game-2048" plugin, not typed by the user, means the user handed you the board.
+A message from the "game-2048" mini app, not typed by the user, means the user handed you the board.
 Play the whole game in this turn: call `game_2048` with action `move`, read the board it returns,
 and call again. Keep going until the game ends. The board shows every move, so do not stop to report
 progress or ask whether to go on.

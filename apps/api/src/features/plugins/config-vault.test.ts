@@ -1,19 +1,18 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 
+import { observeOptionVault, type OptionVaultPort } from '../ext/option-vault'
 import {
   forgetSecretOptions,
   hydrateSecretOptions,
-  observePluginConfigVault,
   pluginOptionKey,
   sealSecretOptions,
-  type PluginConfigVault,
 } from './config-vault'
 
 /** An in-memory vault that counts reads, as the real one audits each. */
 function fakeVault() {
   const items = new Map<string, { value: string; version: number }>()
   let reads = 0
-  const vault: PluginConfigVault = {
+  const vault: OptionVaultPort = {
     async store(userId, key, value) {
       const held = items.get(`${userId}:${key}`)
       items.set(`${userId}:${key}`, { value, version: (held?.version ?? 0) + 1 })
@@ -38,15 +37,15 @@ function fakeVault() {
 
 const declared = { api_url: {}, api_token: { secret: true } }
 
-afterEach(() => observePluginConfigVault(undefined))
+afterEach(() => observeOptionVault(undefined))
 
 describe('plugin config vault', () => {
   test('a sensitive option goes to the vault and the row keeps only a handle', async () => {
     const { vault, items } = fakeVault()
-    observePluginConfigVault(vault)
+    observeOptionVault(vault)
     const patch = await sealSecretOptions({
       userId: 'u1',
-      pluginName: 'lc',
+      owner: 'lc',
       scope: '',
       declared,
       patch: { api_url: 'https://x', api_token: 'CANARY' },
@@ -62,10 +61,10 @@ describe('plugin config vault', () => {
 
   test('a plain-text secret an older build stored is moved on the next save', async () => {
     const { vault } = fakeVault()
-    observePluginConfigVault(vault)
+    observeOptionVault(vault)
     const patch = await sealSecretOptions({
       userId: 'u1',
-      pluginName: 'lc',
+      owner: 'lc',
       scope: 'p1',
       declared,
       patch: { api_url: 'https://y' },
@@ -76,10 +75,10 @@ describe('plugin config vault', () => {
 
   test('an unchanged item is read once; a rotated or deleted one is noticed', async () => {
     const { vault, items, reads } = fakeVault()
-    observePluginConfigVault(vault)
+    observeOptionVault(vault)
     const config = await sealSecretOptions({
       userId: 'u1',
-      pluginName: 'lc',
+      owner: 'lc',
       scope: '',
       declared,
       patch: { api_token: 'ONE' },
@@ -100,7 +99,7 @@ describe('plugin config vault', () => {
 
   test('forgetting a plugin deletes its items in every scope and no other plugin’s', async () => {
     const { vault, items } = fakeVault()
-    observePluginConfigVault(vault)
+    observeOptionVault(vault)
     for (const [name, scope] of [
       ['lc', ''],
       ['lc', 'p1'],
@@ -108,7 +107,7 @@ describe('plugin config vault', () => {
     ] as const)
       await sealSecretOptions({
         userId: 'u1',
-        pluginName: name,
+        owner: name,
         scope,
         declared,
         patch: { api_token: 'X' },
@@ -119,10 +118,10 @@ describe('plugin config vault', () => {
 
   test('a handle naming another plugin’s or option’s item is neither saved nor read', async () => {
     const { vault } = fakeVault()
-    observePluginConfigVault(vault)
+    observeOptionVault(vault)
     await sealSecretOptions({
       userId: 'u1',
-      pluginName: 'a',
+      owner: 'a',
       scope: '',
       declared,
       patch: { api_token: 'CANARY-A' },
@@ -130,7 +129,7 @@ describe('plugin config vault', () => {
     const foreign = `secret:${pluginOptionKey('a', '', 'api_token')}`
     const sealed = await sealSecretOptions({
       userId: 'u1',
-      pluginName: 'b',
+      owner: 'b',
       scope: '',
       declared,
       patch: { api_url: foreign, api_token: foreign },
@@ -151,17 +150,17 @@ describe('plugin config vault', () => {
 
   test('an item the vault cannot read is unset, reported once and not read again', async () => {
     const { vault } = fakeVault()
-    observePluginConfigVault(vault)
+    observeOptionVault(vault)
     const config = await sealSecretOptions({
       userId: 'u1',
-      pluginName: 'lc',
+      owner: 'lc',
       scope: '',
       declared,
       patch: { api_url: 'https://x', api_token: 'X' },
     })
     let reads = 0
     const warnings: unknown[] = []
-    observePluginConfigVault(
+    observeOptionVault(
       {
         ...vault,
         resolve: async () => {
@@ -197,7 +196,7 @@ describe('plugin config vault', () => {
   test('without a vault, options are stored as they are', async () => {
     const patch = { api_token: 'PLAIN' }
     expect(
-      await sealSecretOptions({ userId: 'u1', pluginName: 'lc', scope: '', declared, patch }),
+      await sealSecretOptions({ userId: 'u1', owner: 'lc', scope: '', declared, patch }),
     ).toEqual(patch)
   })
 })

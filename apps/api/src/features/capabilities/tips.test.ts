@@ -6,6 +6,7 @@ import { tipKeywordPattern } from './tips-keywords'
 import { TIP_SIGNALS } from './tip-contracts'
 import type { CapabilitySnapshot } from '../../contracts/capability-snapshot'
 import type { PluginRecord } from '../plugins/contracts'
+import type { MiniAppRecord } from '../mini-apps/contracts'
 import { parseLocalixUri } from '@localixai/mini-app-sdk/navigation'
 import { BUILTIN_TOOL_CATALOG } from '../agent-core/tool-names'
 
@@ -21,23 +22,34 @@ function plugin(over: Partial<PluginRecord> & { name: string; enabled: boolean }
   return {
     version: '1.0.0',
     description: '',
-    surfaces: ['agent'],
     projectId: '',
     scope: 'global',
     dir: `/plugins/${over.name}`,
     source: 'local',
-    bundled: false,
-    provides: {
-      hasNativeTools: false,
-      tools: [],
-      skills: [],
-      mcpServers: [],
-      commands: [],
-    },
+    provides: { skills: [], mcpServers: [], commands: [] },
     config: [],
     validation: { errors: [], warnings: [] },
     ...over,
   } as PluginRecord
+}
+
+function miniApp(over: Partial<MiniAppRecord> & { name: string; enabled: boolean }): MiniAppRecord {
+  return {
+    description: '',
+    surfaces: ['agent'],
+    scope: 'global',
+    projectId: '',
+    dir: `/mini-apps/${over.name}`,
+    bundled: false,
+    hasBackend: false,
+    tools: [],
+    backendSubsystems: [],
+    commands: [],
+    views: [],
+    hasGuide: false,
+    config: [],
+    ...over,
+  }
 }
 
 function snapshot(over: Partial<TipInput> = {}): TipInput {
@@ -45,6 +57,8 @@ function snapshot(over: Partial<TipInput> = {}): TipInput {
     revision: 1,
     scope: { projectId: '', agentId: null },
     plugins: [],
+    miniApps: [],
+    miniAppCommands: [],
     tools: {
       enabled: [],
       disabled: [],
@@ -120,6 +134,28 @@ describe('composerTips — the pool is derived from this scope', () => {
       true,
     )
     expect(new RegExp(tip?.when?.textPattern ?? '$^', 'i').test('rename this variable')).toBe(false)
+  })
+
+  test('an installed-but-off mini app is offered with its own name and its own settings row', () => {
+    const tips = tipsOf(
+      snapshot({
+        miniApps: [
+          miniApp({
+            name: 'chess',
+            displayName: 'Chess',
+            enabled: false,
+            description: 'Play chess against the agent. Legal moves only.',
+          }),
+        ],
+      }),
+    )
+    const tip = tips.find((t) => t.id === 'mini-app:chess')
+    expect(tip?.text).toContain('the "Chess" mini app')
+    expect(tip?.text).not.toMatch(/plugin/iu)
+    expect(tip?.actions?.[0].kind === 'navigate' ? tip.actions[0].uri : '').toContain(
+      'settings/mini-apps/mini-app-chess',
+    )
+    expect(new RegExp(tip?.when?.textPattern ?? '$^', 'i').test('a game of chess?')).toBe(true)
   })
 
   test('an enabled plugin is not advertised as something to enable', () => {

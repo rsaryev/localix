@@ -188,12 +188,12 @@ remain HTTP/HTTPS references; an explicit image link with a recognised image ext
 image, and other web links become link cards. File links retain their path and, for file cards, line
 number. Remote image references still depend on the original URL remaining available.
 
-Actions are plugin contributions through the SDK's optional `actions` registry. The host supplies
-`{ sessionId, surface, target }`; a target identifies code, visualization, Markdown, table, image,
-link or file content. The plugin's synchronous `when(context)` decides visibility and its
-`run(context)` owns persistence and destination navigation. Disabled or unloaded plugins offer no
+Actions are mini app contributions through the mini app SDK's optional `actions` registry. The host
+supplies `{ sessionId, surface, target }`; a target identifies code, visualization, Markdown, table,
+image, link or file content. The mini app's synchronous `when(context)` decides visibility and its
+`run(context)` owns persistence and destination navigation. Disabled or unloaded mini apps offer no
 action. Streaming content is not offered for transfer. The transcript imports no concrete
-destination plugin.
+destination mini app.
 
 ## Limits
 

@@ -6,6 +6,7 @@ import { CORE_CONTEXT_MAX_TOKENS } from '../features/context-fabric/contribution
 import { capabilitiesChanged } from '../features/capabilities/revision'
 import { createMcpService } from '../features/mcp/service'
 import { createPluginService } from '../features/plugins/service'
+import { createMiniAppService } from '../features/mini-apps/service'
 import { createContributionKindRegistry } from '../features/ext/contribution-kinds'
 import { agentContributionSchema } from '../features/agents/contribution'
 import { createAgentsService } from '../features/agents/service'
@@ -26,8 +27,8 @@ import type { createLogger } from '../lib/logger'
 import { userHome, type loadEnv } from '../lib/env'
 import type { createDigestLoaders } from '../boot/digests'
 import type { RegistriesPhase } from './registries'
-import type { MiniAppHostRefs } from './plugin-host-refs'
-import type { createMiniAppBackendHost } from '../features/plugins/backend-host'
+import type { MiniAppHostRefs } from './mini-app-host-refs'
+import type { createMiniAppBackendHost } from '../features/mini-apps/backend-host'
 import { PLUGIN_WARNINGS, warnOnce } from '../lib/warn-once'
 
 export interface DomainServicesPhaseInput
@@ -53,6 +54,7 @@ export interface DomainServicesPhase {
   resolveProjectCwd: (userId: string, projectId: string) => Promise<string | null>
   mcpService: ReturnType<typeof createMcpService>
   pluginService: ReturnType<typeof createPluginService>
+  miniAppService: ReturnType<typeof createMiniAppService>
   agentsService: ReturnType<typeof createAgentsService>
   lspManager: ReturnType<typeof createLspManager>
   skillUsageRepo: ReturnType<typeof createSkillUsageRepository>
@@ -175,11 +177,13 @@ export function createDomainServicesPhase({
     resolveProjectCwd,
     onChanged: announceCapabilityChange,
   })
-  // Late-bound: chatService is created below (it depends on pluginService), but the
-  // plugin arg-options runner needs a session's cwd. Hold a ref, assign it once
-  // chatService exists.
+  // Late-bound: chatService is created below, but a command's arg-options runner needs a
+  // session's cwd. Hold a ref, assign it once chatService exists.
   const contributionKinds = createContributionKindRegistry()
   contributionKinds.register('agent', agentContributionSchema)
+  const resolveSessionCwd = async (userId: string, sessionId: string) =>
+    (await hostRefs.chatServiceForCwd?.resolveSessionCwd(userId, sessionId).catch(() => null)) ??
+    null
   const pluginService = createPluginService({
     db,
     capabilityStores,
@@ -187,24 +191,29 @@ export function createDomainServicesPhase({
     contributionKinds,
     modCommands: () => hostRefs.mods?.commands() ?? [],
     resolveProjectCwd,
-    resolveSessionCwd: async (...args) =>
-      (await hostRefs.chatServiceForCwd?.resolveSessionCwd(...args).catch(() => null)) ?? null,
-    invokeUiAction: (...args) => backendHost.invokeUiAction(...args),
+    resolveSessionCwd,
     logger: { warn: (msg, meta) => warnPluginOnce({ event: 'plugin.warn', msg, meta }) },
-    // A plugin toggle re-converges EVERY live host: long-running channels, the
-    // backend subsystems (routes/providers/WS frames), and monitors — no restart
-    // needed.
+    // A plugin toggle re-converges the plugin hosts (monitors, mods) — no restart needed.
+    // Neither has an asynchronous settle to wait for, so the change is settled at once: bump,
+    // release a toggle waiting to answer, poke the clients.
     onChanged: () => {
-      // Bump BEFORE the hosts converge, so a snapshot served mid-reconcile can never
-      // be stamped with the pre-mutation revision. The poke itself waits for the
-      // backend host to settle (onBackendHostSettled below) — that is the invariant
-      // that keeps a refetching client from observing a half-wired plugin.
       capabilitiesChanged()
-      hostRefs.channelHost!.refresh()
-      backendHost.refresh()
       hostRefs.monitorHost!.refresh()
       hostRefs.mods?.refresh()
+      hostRefs.onCapabilitiesSettled?.()
     },
+  })
+  // Mini apps announce every change on the feed; their hosts are reactors on those notices
+  // (`core-reactors.ts`), so nothing here re-converges them.
+  const miniAppService = createMiniAppService({
+    db,
+    capabilityStores,
+    homeDir: userHome(),
+    contributionKinds,
+    resolveProjectCwd,
+    resolveSessionCwd,
+    invokeUiAction: (...args) => backendHost.invokeUiAction(...args),
+    logger: { warn: (msg, meta) => warnPluginOnce({ event: 'mini-app.warn', msg, meta }) },
   })
   // Managed-Agents registry: file-backed reusable agents + their `agents` ext-state. The
   // invocation registry is the agents service's own dependency and nothing else's, so it is
@@ -215,7 +224,7 @@ export function createDomainServicesPhase({
     capabilityStores,
     resolveProjectCwd,
     invocations,
-    syncBundledContributions: (...args) => pluginService.syncBundledContributions(...args),
+    syncBundledContributions: (...args) => miniAppService.syncBundledContributions(...args),
   })
   hostRefs.listAgents = (...args) => agentsService.listAgents(...args)
   hostRefs.getHuman = (...args) => agentsService.getHuman(...args)
@@ -256,6 +265,7 @@ export function createDomainServicesPhase({
     resolveProjectCwd,
     mcpService,
     pluginService,
+    miniAppService,
     agentsService,
     lspManager,
     skillUsageRepo,

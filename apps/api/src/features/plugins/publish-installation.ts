@@ -72,7 +72,8 @@ export async function publishPluginInstallation(input: {
       const contributions = createContributionStore(transaction, input.contributionKinds, input.now)
       for (const entry of [
         ...dependencySources,
-        { source: saved, contributions: plugin.manifest.contributions ?? [] },
+        // A plugin declares no typed contributions: publishing none clears any an older build kept.
+        { source: saved, contributions: [] },
       ]) {
         const current = await contributions.getCurrent(input.userId, entry.source.id)
         if (!current) throw new Error('Installed contribution source is missing')
@@ -143,7 +144,6 @@ export async function publishPluginInstallation(input: {
           await tree.prepare?.(directory)
           const prepared = await loadManifest(directory, input.scope, input.projectId)
           if (prepared.error) throw new InvalidRequestError('plugin_invalid', prepared.error)
-          input.contributionKinds.normalize(prepared.manifest.contributions ?? [])
         },
       })),
       commit: (directories) =>

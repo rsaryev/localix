@@ -1,7 +1,7 @@
 /**
  * CAPABILITY CLEANUP — a reactor on the core change feed.
  *
- * A plugin or an MCP server is addressed by name everywhere but its own row: every agent's
+ * A plugin, a mini app or an MCP server is addressed by name everywhere but its own row: every agent's
  * switches (`plugin:<name>`, `mcp:<name>`, and an MCP server's per-tool `mcp:<name>/<tool>`), the
  * MCP sign-in tokens, the vault bindings a plugin recorded and the vault items holding its
  * sensitive options. Its removal left all of them, so a same-named newcomer inherited an old
@@ -28,6 +28,8 @@ export interface CapabilityCleanupPorts {
   unbindVaultConsumer(userId: string, type: string, id: string): Promise<number>
   /** Delete the vault items a plugin's sensitive options were stored in (absent: none are). */
   forgetPluginSecrets?(userId: string, name: string): Promise<void>
+  /** The same for a mini app's secret settings (`mini-app-option.<name>`). */
+  forgetMiniAppSecrets?(userId: string, name: string): Promise<void>
 }
 
 export function createCapabilityCleanup(ports: CapabilityCleanupPorts) {
@@ -46,7 +48,7 @@ export function createCapabilityCleanup(ports: CapabilityCleanupPorts) {
     )
 
   /** Drop the name's switches from every agent's list (each write bumps the revision). */
-  async function clearSwitches(kind: 'plugin' | 'mcp', name: string): Promise<void> {
+  async function clearSwitches(kind: 'plugin' | 'mini-app' | 'mcp', name: string): Promise<void> {
     const action = `${ACTION_PREFIX[kind]}${name}`
     const named = (rule: { action: string; resource: string }) =>
       rule.resource === '*' &&
@@ -73,11 +75,22 @@ export function createCapabilityCleanup(ports: CapabilityCleanupPorts) {
     }
   }
 
+  /**
+   * A mini app lives in files, so its owner records `deleted` only once no scope has it: what it
+   * left (its switches, its secret settings, its vault bindings) goes with that notice.
+   */
+  async function miniAppRemoved(name: string): Promise<void> {
+    await clearSwitches('mini-app', name)
+    await ports.forgetMiniAppSecrets?.(userId, name)
+    await ports.unbindVaultConsumer(userId, 'mini-app', name)
+  }
+
   const handlers: ConsumerHandlers<CoreRefs, CoreCascades> = {
     'chat.session': 'ignore',
     'chat.message': 'ignore',
     skill: 'ignore',
     plugin: (change) => (change.op === 'deleted' ? removed('plugin', change.ref.id) : undefined),
+    'mini-app': (change) => (change.op === 'deleted' ? miniAppRemoved(change.ref.id) : undefined),
     mcp: (change) =>
       change.op === 'deleted' ? removed('mcp', change.ref.id, change.ref.serverId) : undefined,
     agent: 'ignore',

@@ -9,14 +9,14 @@ can access both the ciphertext and its key.
 
 ## What you can do
 
-| Task                   | Mechanism                                                                                       | Boundary                                                                               |
-| ---------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Add a credential       | Create a user-managed Vault item with a type, alias, and value.                                 | Creation is create-only; an existing alias returns a conflict.                         |
-| Use a stable reference | User-managed items expose `secret:<alias>`; plugin strings can interpolate `${secret:<alias>}`. | Provider-managed items do not expose a reusable reference.                             |
-| Rotate a value         | Replace the encrypted payload while keeping the item and alias stable.                          | Rotation requires the current version and rejects stale writes.                        |
-| Edit metadata          | Change supported type, backend, or metadata fields.                                             | The service writes a new immutable encrypted version even when the value is unchanged. |
-| Review use             | Open an item to inspect bindings, version metadata, and audit activity.                         | Read routes return metadata, not plaintext values.                                     |
-| Remove an item         | Delete an unbound item, or explicitly force deletion after reviewing bindings.                  | Forced deletion removes the item and all encrypted versions.                           |
+| Task                   | Mechanism                                                                                         | Boundary                                                                               |
+| ---------------------- | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Add a credential       | Create a user-managed Vault item with a type, alias, and value.                                   | Creation is create-only; an existing alias returns a conflict.                         |
+| Use a stable reference | User-managed items expose `secret:<alias>`; mini app strings can interpolate `${secret:<alias>}`. | Provider-managed items do not expose a reusable reference.                             |
+| Rotate a value         | Replace the encrypted payload while keeping the item and alias stable.                            | Rotation requires the current version and rejects stale writes.                        |
+| Edit metadata          | Change supported type, backend, or metadata fields.                                               | The service writes a new immutable encrypted version even when the value is unchanged. |
+| Review use             | Open an item to inspect bindings, version metadata, and audit activity.                           | Read routes return metadata, not plaintext values.                                     |
+| Remove an item         | Delete an unbound item, or explicitly force deletion after reviewing bindings.                    | Forced deletion removes the item and all encrypted versions.                           |
 
 ## Add or rotate an item
 
@@ -68,12 +68,12 @@ depends on the alias.
 
 ### Runtime access
 
-| Consumer                       | Plaintext access                                                         | Control                                                      |
-| ------------------------------ | ------------------------------------------------------------------------ | ------------------------------------------------------------ |
-| Vault workspace                | Accepts a value on create or rotate.                                     | Read responses omit plaintext.                               |
-| Provider or plugin server code | Resolves a reference for the requested operation.                        | The trusted server process briefly holds the resolved value. |
-| Plugin interpolation           | Replaces `${secret:<alias>}` before the supported plugin operation runs. | The plugin implementation receives the resolved value.       |
-| Agent `vault` tool             | Lists, reads metadata, creates, updates metadata, rotates, or deletes.   | Each call is classified, so a scope can `ask` on the writes. |
+| Consumer                         | Plaintext access                                                           | Control                                                      |
+| -------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Vault workspace                  | Accepts a value on create or rotate.                                       | Read responses omit plaintext.                               |
+| Provider or mini app server code | Resolves a reference for the requested operation.                          | The trusted server process briefly holds the resolved value. |
+| Mini app interpolation           | Replaces `${secret:<alias>}` before the supported mini app operation runs. | The mini app's backend receives the resolved value.          |
+| Agent `vault` tool               | Lists, reads metadata, creates, updates metadata, rotates, or deletes.     | Each call is classified, so a scope can `ask` on the writes. |
 
 Agent create and rotate actions collect values through a masked secret prompt. Delete requires
 explicit approval. Those three actions are declined when no human-reachable interactive session is
@@ -88,7 +88,7 @@ trusted consumer.
 
 ### References and agent inputs
 
-Use `secret:service-token` in a consumer that accepts a Vault reference. In a plugin field that
+Use `secret:service-token` in a consumer that accepts a Vault reference. In a mini app field that
 supports interpolation, `${secret:service-token}` substitutes the value inside a larger string.
 These spellings do not make arbitrary tools resolve secrets. Interpolation inserts the literal
 value; it does not URL-encode or shell-escape it. A missing referenced item fails resolution rather
@@ -145,7 +145,9 @@ responsibilities are deliberately narrow:
 | Value           | Store at most 8,192 characters in the primary encrypted field.           |
 
 Item types and sources are typed metadata. They help consumers classify a credential; they do not
-select a different implemented storage backend today.
+select a different implemented storage backend today. The source filter separates **Personal**,
+**Providers**, **Plugins** (a Claude Code plugin's sensitive options), **Mini apps** (a mini app's
+secret settings, shown with source **Mini app**) and **System** items.
 
 ## Limits
 
@@ -153,8 +155,8 @@ select a different implemented storage backend today.
   hardware-backed custody or protect against the same operating-system account.
 - There is no implemented external Vault backend. Schema fields for backend and payload references
   do not make an external service available.
-- Trusted provider and plugin code can receive plaintext after resolution. Install and run that code
-  with the same care as other local code.
+- Trusted provider and mini app code, and the commands of an enabled plugin, can receive plaintext
+  after resolution. Install and run that code with the same care as other local code.
 - The exposure shield is process-local and exact-match based. Values whose trimmed length is below
   12 characters are not registered. Older variants can be evicted, and values resolved outside the
   process are unknown to it.
@@ -168,7 +170,7 @@ select a different implemented storage backend today.
 ## Related guides
 
 - [Providers](providers.md)
-- [Plugins](../extending/plugins.md)
+- [Build a mini app](../extending/mini-apps.md)
 - [Human-in-the-loop controls](hitl.md)
 - [Privacy and local data](../getting-started/privacy.md)
 
@@ -181,5 +183,5 @@ select a different implemented storage backend today.
 - [Vault HTTP routes](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/secrets/routes.ts)
 - [Encryption and authenticated-data format](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/secrets/cipher.ts)
 - [Agent Vault tool and approval boundary](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/secrets/agent-tool.ts)
-- [Plugin secret interpolation](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/secret-interpolate.ts)
+- [Mini app secret interpolation](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/secret-interpolate.ts)
 - [Vault workspace UI](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/secrets/ui/VaultWorkspace.tsx)

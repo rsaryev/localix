@@ -102,9 +102,12 @@ export async function buildAgentCatalog(input: {
         rulesFor(entry.id),
         invocations,
         reviewed.get(entry.id) === entry.revision,
-        Object.hasOwn({ plugin: true, mcp: true, agent: true }, entry.source.kind) &&
+        Object.hasOwn(
+          { plugin: true, 'mini-app': true, mcp: true, agent: true },
+          entry.source.kind,
+        ) &&
           sourceAvailability.effectFor(
-            entry.source.kind as 'plugin' | 'mcp' | 'agent',
+            entry.source.kind as 'plugin' | 'mini-app' | 'mcp' | 'agent',
             entry.source.name,
           ) !== 'deny',
       ),

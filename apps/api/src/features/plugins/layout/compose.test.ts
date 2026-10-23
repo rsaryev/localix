@@ -5,83 +5,6 @@ const plugin = (json: unknown): ManifestFiles['plugin'] => ({
   file: '.claude-plugin/plugin.json',
   json,
 })
-const app = (json: unknown): ManifestFiles['app'] => ({ file: '.localix-app/app.json', json })
-const miniApp = (json: unknown): ManifestFiles['miniApp'] => ({ file: 'mini-app.json', json })
-
-const calories = {
-  name: 'calories',
-  version: '0.1.0',
-  description: 'Logs meals the agent reads from photos.',
-  category: 'utilities',
-  surfaces: ['agent', 'workbench'],
-  backend: './backend/index.ts',
-}
-
-describe('a mini-app.json folder', () => {
-  test('is a mini app on its own: identity, backend, settings, commands and a guide', () => {
-    const composed = composeManifest(
-      {
-        miniApp: miniApp({
-          ...calories,
-          config: { DAILY_GOAL: { type: 'number', default: 2000 } },
-          commands: {
-            log: {
-              description: 'Log a meal',
-              prompt: 'Log this meal: ${meal}',
-              args: [{ name: 'meal', type: 'text' }],
-              featured: true,
-              activateTools: ['calories_log'],
-            },
-          },
-        }),
-      },
-      'calories',
-    )
-    expect(composed.layout).toBe('mini-app')
-    expect(composed.issues).toEqual([])
-    expect(composed.raw).toMatchObject({
-      name: 'calories',
-      version: '0.1.0',
-      description: 'Logs meals the agent reads from photos.',
-      category: 'utilities',
-      tools: './backend/index.ts',
-      guide: './guide.md',
-      config: { DAILY_GOAL: { type: 'number', default: 2000 } },
-      commands: [
-        {
-          name: 'log',
-          description: 'Log a meal',
-          prompt: 'Log this meal: ${meal}',
-          args: [{ name: 'meal', type: 'text' }],
-          featured: true,
-          activateTools: ['calories_log'],
-        },
-      ],
-    })
-  })
-
-  test('loads nothing when the folder also holds a plugin or an older manifest', () => {
-    for (const other of [
-      { plugin: plugin({ name: 'calories' }) },
-      { app: app({ name: 'calories' }) },
-      { legacy: { file: 'plugin.json', json: { name: 'calories' } } },
-    ] satisfies ManifestFiles[]) {
-      const composed = composeManifest({ miniApp: miniApp(calories), ...other }, 'calories')
-      expect(composed.raw).toBeNull()
-      expect(composed.error).toContain('mini-app.json')
-      expect(composed.error).toContain(Object.values(other)[0]!.file)
-    }
-  })
-
-  test('a Claude Code key in mini-app.json is refused by name', () => {
-    const composed = composeManifest(
-      { miniApp: miniApp({ ...calories, skills: './skills' }) },
-      'calories',
-    )
-    expect(composed.raw).toBeNull()
-    expect(composed.error).toContain('skills')
-  })
-})
 
 describe('composeManifest', () => {
   test('a Claude Code plugin loads in place, with Claude Code’s rules made explicit', () => {
@@ -100,7 +23,6 @@ describe('composeManifest', () => {
       },
       'deploy-folder',
     )
-    expect(composed.layout).toBe('plugin')
     expect(composed.raw).toMatchObject({
       name: 'deploy',
       version: '1.0.0',
@@ -109,87 +31,25 @@ describe('composeManifest', () => {
       config: { TOKEN: { type: 'string', title: 'Token', secret: true } },
       monitors: [{ name: 'tail' }],
       origin: { format: 'claude-code' },
+      outputStyles: './styles',
     })
-    expect(composed.raw).toMatchObject({ outputStyles: './styles' })
     expect(composed.issues).toEqual([])
   })
 
-  test('a mini app adds the Localix layer over the plugin in its folder', () => {
-    const composed = composeManifest(
-      {
-        plugin: plugin({ name: 'tiles', version: '0.2.0', description: 'Play tiles' }),
-        app: app({
-          name: 'tiles',
-          version: '9.9.9',
-          displayName: 'Tiles',
-          category: 'games',
-          surfaces: ['agent', 'workbench'],
-          backend: './backend/index.ts',
-          config: { LEVEL: { type: 'number', default: 3 } },
-          commands: { play: { featured: true } },
-        }),
-      },
-      'tiles',
-    )
-    expect(composed.layout).toBe('decorated')
-    expect(composed.raw).toMatchObject({
-      name: 'tiles',
-      // The plugin keeps its version; the mini app speaks for display.
-      version: '0.2.0',
-      displayName: 'Tiles',
-      description: 'Play tiles',
-      category: 'games',
-      tools: './backend/index.ts',
-      config: { LEVEL: { type: 'number', default: 3 } },
-      commandOptions: { play: { featured: true } },
-    })
-  })
-
-  test('a key both layers configure is the plugin’s', () => {
-    const composed = composeManifest(
-      {
-        plugin: plugin({
-          name: 'svc',
-          userConfig: { URL: { type: 'string', title: 'URL', description: 'From the plugin' } },
-        }),
-        app: app({ name: 'svc', config: { URL: { type: 'string', description: 'From the app' } } }),
-      },
-      'svc',
-    )
-    expect(composed.raw?.config).toEqual({
-      URL: { type: 'string', title: 'URL', description: 'From the plugin' },
-    })
-  })
-
-  test('a mini app without a plugin manifest is still one extension, named by the app', () => {
-    const composed = composeManifest({ app: app({ name: 'board', backend: './b.ts' }) }, 'x')
-    expect(composed.raw).toMatchObject({ name: 'board', tools: './b.ts' })
-  })
-
-  test('a mini app and its plugin share one name', () => {
-    const composed = composeManifest(
-      { plugin: plugin({ name: 'a' }), app: app({ name: 'b' }) },
-      'a',
-    )
-    expect(composed.raw).toBeNull()
-    expect(composed.error).toContain('share one name')
-  })
-
-  test('a legacy root plugin.json still loads; next to a new manifest it is ignored', () => {
-    const legacy = { file: 'plugin.json', json: { name: 'old', tools: './tools/index.ts' } }
-    expect(composeManifest({ legacy }, 'old')).toMatchObject({
-      layout: 'legacy',
-      raw: { name: 'old', tools: './tools/index.ts' },
-    })
-    const both = composeManifest({ legacy, plugin: plugin({ name: 'old' }) }, 'old')
+  test('a root plugin.json is not read, as in Claude Code, and says so', () => {
+    const root = { file: 'plugin.json', json: { name: 'old', tools: './tools/index.ts' } }
+    const alone = composeManifest({ root }, 'old')
+    expect(alone.raw).toBeNull()
+    expect(alone.error).toBeUndefined()
+    expect(alone.issues[0]).toMatchObject({ severity: 'warning', path: 'plugin.json' })
+    const both = composeManifest({ root, plugin: plugin({ name: 'old' }) }, 'old')
     expect(both.raw).not.toHaveProperty('tools')
-    expect(both.issues[0]).toMatchObject({ severity: 'warning', path: 'plugin.json' })
   })
 
   test('the plugin.json an earlier Claude Code import wrote is ignored without a warning', () => {
     const composed = composeManifest(
       {
-        legacy: { file: 'plugin.json', json: { name: 'p', origin: { format: 'claude-code' } } },
+        root: { file: 'plugin.json', json: { name: 'p', origin: { format: 'claude-code' } } },
         plugin: plugin({ name: 'p' }),
       },
       'p',
@@ -197,8 +57,17 @@ describe('composeManifest', () => {
     expect(composed.issues).toEqual([])
   })
 
+  test('a folder holding a mini app is never a plugin (rule X2)', () => {
+    const composed = composeManifest(
+      { miniApp: true, plugin: plugin({ name: 'tracker' }) },
+      'tracker',
+    )
+    expect(composed.raw).toBeNull()
+    expect(composed.error).toContain('is a mini app')
+  })
+
   test('without any manifest the folder is a plugin named after itself', () => {
-    expect(composeManifest({}, 'tools')).toEqual({ layout: 'plugin', raw: null, issues: [] })
+    expect(composeManifest({}, 'tools')).toEqual({ raw: null, issues: [] })
   })
 
   test('an unreadable or invalid manifest says which file and why', () => {
@@ -209,7 +78,5 @@ describe('composeManifest', () => {
     expect(unreadable.error).toBe('Invalid x: bad JSON')
     const invalid = composeManifest({ plugin: plugin({ name: 'has space' }) }, 'p')
     expect(invalid.error).toContain('may not contain spaces')
-    const badApp = composeManifest({ app: app({ name: 'x', backend: 3 }) }, 'x')
-    expect(badApp.error).toContain('.localix-app/app.json')
   })
 })

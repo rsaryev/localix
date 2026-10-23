@@ -113,7 +113,7 @@ function snapshot(dir: string): string[] {
 describe('plugins installed in Claude Code', () => {
   test('appear in a chat without a project as Claude Code loads them', async () => {
     fixture()
-    const plugins = await discoverPlugins({ homeDir: home(), includeBundled: false })
+    const plugins = await discoverPlugins({ homeDir: home() })
     const byName = new Map(plugins.map((plugin) => [plugin.manifest.name, plugin]))
     expect([...byName.keys()]).toEqual(['alpha', 'delta', 'lsp', 'plain', 'rel', 'shadow'])
     expect(byName.get('alpha')).toMatchObject({ dir: cache('alpha'), scope: 'global' })
@@ -131,7 +131,6 @@ describe('plugins installed in Claude Code', () => {
       homeDir: home(),
       cwd: project(),
       projectId: 'p1',
-      includeBundled: false,
     })
     const names = plugins.map((plugin) => plugin.manifest.name)
     expect(names).toContain('gamma')
@@ -164,12 +163,11 @@ describe('plugins installed in Claude Code', () => {
       homeDir: home(),
       cwd: project(),
       projectId: 'p1',
-      includeBundled: false,
     })
     expect(snapshot(join(home(), '.claude'))).toEqual(before)
   })
 
-  test('never run Localix native code a root plugin.json names or a tools file holds', async () => {
+  test('read a folder with a root plugin.json as Claude Code does: by its components', async () => {
     // Claude Code ignores a root plugin.json; to it, this folder is a plugin with one skill.
     writeTree(home(), {
       '.claude/plugins/installed_plugins.json': JSON.stringify({
@@ -185,18 +183,16 @@ describe('plugins installed in Claude Code', () => {
       'tools/index.ts': 'export const tools = []\n',
       'skills/native-skill/SKILL.md': skill('native-skill'),
     })
-    const plugins = await discoverPlugins({ homeDir: home(), includeBundled: false })
+    const plugins = await discoverPlugins({ homeDir: home() })
     expect(plugins.map((plugin) => plugin.manifest.name)).toEqual(['native'])
     const [plugin] = plugins
     expect(plugin!.claudeCodeInstall).toBe('native@mkt')
-    expect(plugin!.entrypoints.toolEntries).toEqual([])
-    expect(plugin!.provides.hasNativeTools).toBe(false)
     expect(plugin!.provides.skills).toEqual(['native-skill'])
   })
 
   test('nothing is read when Claude Code has no install record or settings', async () => {
     writeTree(home(), { '.localix/plugins/own/.claude-plugin/plugin.json': manifest('own') })
-    const plugins = await discoverPlugins({ homeDir: home(), includeBundled: false })
+    const plugins = await discoverPlugins({ homeDir: home() })
     expect(plugins.map((plugin) => plugin.manifest.name)).toEqual(['own'])
   })
 })

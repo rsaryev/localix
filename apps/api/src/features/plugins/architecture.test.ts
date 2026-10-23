@@ -7,9 +7,8 @@ import { pluginManifestSchema, type PluginManifest } from './contracts'
 import type { DiscoveredPlugin } from './discovery'
 import type { ResolvedEntrypoints } from './discovery-entrypoints'
 import { normalizeCcToolName } from './discovery'
-import { isAcceptableToolName, isReservedToolName, TOOL_NAME_RE } from './tool-policy'
-import { buildMcpRecords, buildPluginOptionEnv, collectMcpConfigTokens, pluginDataDir } from './mcp'
-import { miniAppConfigOptionSchema } from './contracts-config'
+import { buildMcpRecords, buildPluginOptionEnv, pluginDataDir } from './mcp'
+import { pluginConfigOptionSchema } from './contracts-config'
 import { validatePlugin } from './validate'
 import { pluginTrustClass } from './enable'
 import { trustFallback } from '../ext/trust'
@@ -23,7 +22,6 @@ import { copyPluginTree } from './install-helpers'
  */
 function mkEntrypoints(over: Partial<ResolvedEntrypoints> = {}): ResolvedEntrypoints {
   return {
-    toolEntries: [],
     skillDirs: [],
     mcpServers: {},
     commandFiles: [],
@@ -43,14 +41,11 @@ function mkPlugin(
   const manifest = pluginManifestSchema.parse(manifestInput) as PluginManifest
   return {
     manifest,
-    layout: 'legacy',
     dir: '/tmp/plugin',
     scope: 'global',
     projectId: '',
     entrypoints: mkEntrypoints(),
     provides: {
-      hasNativeTools: false,
-      tools: [],
       skills: [],
       mcpServers: [],
       commands: [],
@@ -61,7 +56,6 @@ function mkPlugin(
     agents: (manifest.agents ?? []).filter(
       (a): a is Exclude<typeof a, string> => typeof a === 'object',
     ),
-    bundled: false,
     ...over,
   }
 }
@@ -92,105 +86,10 @@ describe('normalizeCcToolName (single source of truth for CC→engine mapping)',
   })
 })
 
-describe('tool-policy (reserved names derived from the registry)', () => {
-  it('treats every built-in as reserved — including browser (a tool the old hand-list missed)', () => {
-    expect(isReservedToolName('browser')).toBe(true)
-    expect(isReservedToolName('bash')).toBe(true)
-    expect(isAcceptableToolName('browser')).toBe(false)
-    expect(isReservedToolName('vault')).toBe(true)
-    expect(isAcceptableToolName('vault')).toBe(false)
-  })
-
-  it('accepts a well-formed non-reserved name and rejects malformed ones', () => {
-    expect(isAcceptableToolName('sample_lookup')).toBe(true)
-    expect(isAcceptableToolName('_leading')).toBe(false) // leading underscore
-    expect(isAcceptableToolName('has space')).toBe(false)
-    expect(TOOL_NAME_RE.test('ok123')).toBe(true)
-  })
-})
-
-describe('mcp ${KEY} substitution is gated to declared config keys', () => {
-  it('collectMcpConfigTokens finds tokens nested in objects/arrays', () => {
-    const tokens = collectMcpConfigTokens({
-      s: { env: { A: '${ALPHA}' }, args: ['--k', '${BETA}'] },
-    })
-    expect([...tokens].sort()).toEqual(['ALPHA', 'BETA'])
-  })
-
-  it('collectMcpConfigTokens normalizes ${user_config.KEY} to bare KEY', () => {
-    const tokens = collectMcpConfigTokens({
-      s: { env: { T: '${user_config.token}' } },
-    })
-    expect([...tokens]).toEqual(['token'])
-  })
-
-  it('collectMcpConfigTokens normalizes ${CLAUDE_PLUGIN_OPTION_KEY} to bare key (case-preserved, B3 fix)', () => {
-    // B3 fix: the suffix is no longer lowercased. ${CLAUDE_PLUGIN_OPTION_TOKEN} → 'TOKEN'
-    // so that config declared as TOKEN (uppercase) is correctly matched during substitution.
-    const tokens = collectMcpConfigTokens({
-      s: { env: { T: '${CLAUDE_PLUGIN_OPTION_TOKEN}' } },
-    })
-    expect([...tokens]).toEqual(['TOKEN'])
-  })
-
-  it('reads host env ONLY for a declared key; an undeclared ${KEY} resolves to empty', () => {
-    process.env.PLUGIN_DECLARED = 'from-host-env'
-    process.env.PLUGIN_UNDECLARED = 'LEAKED_SECRET'
-    try {
-      const plugin = mkPlugin(
-        {
-          name: 'mcp-plug',
-          config: { PLUGIN_DECLARED: { type: 'string', secret: true } },
-          mcpServers: {
-            srv: {
-              command: 'run-it',
-              env: { D: '${PLUGIN_DECLARED}', U: '${PLUGIN_UNDECLARED}' },
-            },
-          },
-        },
-        {
-          entrypoints: mkEntrypoints({
-            mcpServers: {
-              srv: {
-                command: 'run-it',
-                env: { D: '${PLUGIN_DECLARED}', U: '${PLUGIN_UNDECLARED}' },
-              },
-            },
-          }),
-        },
-      )
-      const [record] = buildMcpRecords(plugin, {}, 'user-1', '2026-01-01T00:00:00.000Z', '/home/u')
-      const dump = JSON.stringify(record)
-      expect(dump).toContain('from-host-env') // declared key pulled from env
-      expect(dump).not.toContain('LEAKED_SECRET') // undeclared key blanked, never read
-    } finally {
-      delete process.env.PLUGIN_DECLARED
-      delete process.env.PLUGIN_UNDECLARED
-    }
-  })
-})
-
-describe('validatePlugin — apiVersion / required-config / undeclared tokens', () => {
-  it('warns when apiVersion is absent and errors when it exceeds the host', () => {
-    expect(
-      validatePlugin(mkPlugin({ name: 'a' })).warnings.some((w) => /no apiVersion/.test(w)),
-    ).toBe(true)
-    expect(
-      validatePlugin(mkPlugin({ name: 'a', apiVersion: 1 })).warnings.some((w) =>
-        /apiVersion/.test(w),
-      ),
-    ).toBe(false)
-    expect(
-      validatePlugin(mkPlugin({ name: 'a', apiVersion: 999 })).errors.some((e) =>
-        /API v999/.test(e),
-      ),
-    ).toBe(true)
-  })
-
+describe('validatePlugin — required config and built-in path variables', () => {
   it('flags required config that is unset, and clears once provided', () => {
     const plugin = mkPlugin({
       name: 'a',
-      apiVersion: 1,
       config: { KEY: { type: 'string', required: true } },
     })
     expect(
@@ -203,21 +102,6 @@ describe('validatePlugin — apiVersion / required-config / undeclared tokens', 
     ).toBe(false)
   })
 
-  it('warns about an MCP ${KEY} that no config option declares', () => {
-    const mcpServers = { srv: { command: 'x', env: { T: '${MISSING}' } } }
-    const undeclared = mkPlugin(
-      { name: 'a', apiVersion: 1 },
-      { entrypoints: mkEntrypoints({ mcpServers }) },
-    )
-    expect(validatePlugin(undeclared).warnings.some((w) => /\$\{MISSING\}/.test(w))).toBe(true)
-
-    const declared = mkPlugin(
-      { name: 'a', apiVersion: 1, config: { MISSING: { type: 'string' } } },
-      { entrypoints: mkEntrypoints({ mcpServers }) },
-    )
-    expect(validatePlugin(declared).warnings.some((w) => /\$\{MISSING\}/.test(w))).toBe(false)
-  })
-
   it('does NOT warn about built-in path vars (CLAUDE_PLUGIN_ROOT/DATA/PROJECT_DIR) in MCP config', () => {
     const mcpServers = {
       srv: {
@@ -225,10 +109,7 @@ describe('validatePlugin — apiVersion / required-config / undeclared tokens', 
         env: { D: '${CLAUDE_PLUGIN_DATA}', P: '${CLAUDE_PROJECT_DIR}' },
       },
     }
-    const plugin = mkPlugin(
-      { name: 'a', apiVersion: 1 },
-      { entrypoints: mkEntrypoints({ mcpServers }) },
-    )
+    const plugin = mkPlugin({ name: 'a' }, { entrypoints: mkEntrypoints({ mcpServers }) })
     const { warnings } = validatePlugin(plugin)
     expect(warnings.some((w) => w.includes('CLAUDE_PLUGIN_ROOT'))).toBe(false)
     expect(warnings.some((w) => w.includes('CLAUDE_PLUGIN_DATA'))).toBe(false)
@@ -237,53 +118,10 @@ describe('validatePlugin — apiVersion / required-config / undeclared tokens', 
 })
 
 describe('defaultEnabled flag + the trust gate', () => {
-  const native = {
-    hasNativeTools: true,
-    tools: [],
-    skills: [],
-    mcpServers: [],
-    commands: [],
-  }
-
-  /** What the artifact's class means before any rule is written. */
-  const defaultsOn = (plugin: DiscoveredPlugin) =>
-    trustFallback(pluginTrustClass(plugin)) === 'allow'
-
-  it('honors the manifest flag for BUNDLED plugins (both directions)', () => {
-    // command-only bundled runs; the flag can turn it off
-    expect(defaultsOn(mkPlugin({ name: 'a' }, { bundled: true }))).toBe(true)
-    expect(defaultsOn(mkPlugin({ name: 'a', defaultEnabled: false }, { bundled: true }))).toBe(
-      false,
-    )
-    // native bundled asks first; an explicit flag can turn it on (it's shipped = trusted)
-    expect(defaultsOn(mkPlugin({ name: 'a' }, { bundled: true, provides: native }))).toBe(false)
-    expect(
-      defaultsOn(
-        mkPlugin({ name: 'a', defaultEnabled: true }, { bundled: true, provides: native }),
-      ),
-    ).toBe(true)
-  })
-
-  it('NEVER default-enables a non-bundled plugin, even with defaultEnabled: true', () => {
-    const droppedIn = mkPlugin({ name: 'a', defaultEnabled: true }, { bundled: false })
+  it('NEVER default-enables a plugin, even with defaultEnabled: true', () => {
+    const droppedIn = mkPlugin({ name: 'a', defaultEnabled: true })
     expect(pluginTrustClass(droppedIn)).toBe('untrusted')
-    expect(defaultsOn(droppedIn)).toBe(false)
-    expect(
-      validatePlugin(
-        mkPlugin({ name: 'a', apiVersion: 1, defaultEnabled: true }, { bundled: false }),
-      ).warnings.some((w) => /defaultEnabled.*ignored/.test(w)),
-    ).toBe(true)
-  })
-
-  it('a rule always wins over what the class alone would say', () => {
-    // The class answers for an artifact NOBODY has ruled on, and it travels into the rule
-    // lookup as the resource — so a rule about the plugin, or about its whole class, decides
-    // instead. That composition lives in `ext/catalog.ts`; here only the classes.
-    expect(pluginTrustClass(mkPlugin({ name: 'a' }, { bundled: true }))).toBe('bundled')
-    expect(
-      pluginTrustClass(mkPlugin({ name: 'a', defaultEnabled: false }, { bundled: true })),
-    ).toBe('opt-in')
-    expect(pluginTrustClass(mkPlugin({ name: 'a' }, { bundled: false }))).toBe('untrusted')
+    expect(trustFallback(pluginTrustClass(droppedIn))).not.toBe('allow')
   })
 })
 
@@ -292,7 +130,8 @@ describe('install copy', () => {
     const src = await fs.mkdtemp(join(tmpdir(), 'plug-src-'))
     const dest = await fs.mkdtemp(join(tmpdir(), 'plug-dst-'))
     try {
-      await fs.writeFile(join(src, 'plugin.json'), '{"name":"x"}')
+      await fs.mkdir(join(src, '.claude-plugin'), { recursive: true })
+      await fs.writeFile(join(src, '.claude-plugin', 'plugin.json'), '{"name":"x"}')
       await fs.mkdir(join(src, '.git'), { recursive: true })
       await fs.writeFile(join(src, '.git', 'config'), 'secret')
       await fs.mkdir(join(src, 'node_modules', 'dep'), { recursive: true })
@@ -304,7 +143,11 @@ describe('install copy', () => {
       await fs.rm(dest, { recursive: true, force: true }) // cp wants a fresh dest
       await copyPluginTree(src, dest)
 
-      for (const kept of ['plugin.json', 'node_modules/dep/i.js', 'server/dist/index.js'])
+      for (const kept of [
+        '.claude-plugin/plugin.json',
+        'node_modules/dep/i.js',
+        'server/dist/index.js',
+      ])
         expect(await fs.access(join(dest, kept)).then(() => true)).toBe(true)
       expect(await fs.access(join(dest, 'server.pyc')).then(() => true)).toBe(true)
       expect(
@@ -321,11 +164,11 @@ describe('install copy', () => {
 })
 
 // ---------------------------------------------------------------------------
-// C-UC Part A — miniAppConfigOptionSchema accepts new CC-spec fields
+// C-UC Part A — pluginConfigOptionSchema accepts new CC-spec fields
 // ---------------------------------------------------------------------------
-describe('C-UC Part A — miniAppConfigOptionSchema accepts CC-spec fields (title/multiple/min/max)', () => {
+describe('C-UC Part A — pluginConfigOptionSchema accepts CC-spec fields (title/multiple/min/max)', () => {
   it('accepts and carries title, multiple, min, max', () => {
-    const opt = miniAppConfigOptionSchema.parse({
+    const opt = pluginConfigOptionSchema.parse({
       type: 'number',
       description: 'How many results',
       required: false,
@@ -342,7 +185,7 @@ describe('C-UC Part A — miniAppConfigOptionSchema accepts CC-spec fields (titl
   })
 
   it('omits new fields when absent — no spurious defaults', () => {
-    const opt = miniAppConfigOptionSchema.parse({
+    const opt = pluginConfigOptionSchema.parse({
       type: 'string',
       description: 'A key',
     })
@@ -353,8 +196,8 @@ describe('C-UC Part A — miniAppConfigOptionSchema accepts CC-spec fields (titl
   })
 
   it('still carries secret and sensitive=true (B1/B2 non-regression)', () => {
-    // secret is the native form; sensitive is accepted via applyManifestPromotions
-    const opt = miniAppConfigOptionSchema.parse({
+    // secret is the host form; Claude Code's sensitive is mapped to it in layout/claude-code.ts
+    const opt = pluginConfigOptionSchema.parse({
       type: 'string',
       secret: true,
     })
@@ -362,8 +205,8 @@ describe('C-UC Part A — miniAppConfigOptionSchema accepts CC-spec fields (titl
   })
 
   it('still accepts directory and file types (B1 non-regression)', () => {
-    expect(miniAppConfigOptionSchema.parse({ type: 'directory' }).type).toBe('directory')
-    expect(miniAppConfigOptionSchema.parse({ type: 'file' }).type).toBe('file')
+    expect(pluginConfigOptionSchema.parse({ type: 'directory' }).type).toBe('directory')
+    expect(pluginConfigOptionSchema.parse({ type: 'file' }).type).toBe('file')
   })
 })
 

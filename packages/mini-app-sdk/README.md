@@ -7,7 +7,7 @@ This is a private workspace package, not an independently published SDK. Bundled
 source workspace; user plugins use the plugin kit supplied by Localix, including host-shared UI
 modules and generated declarations. Start with
 [Build with the agent](../../docs/extending/build-with-the-agent.md) for user-plugin creation and
-checks, or [Build plugins](../../docs/extending/plugins.md) for registration contracts.
+checks, or [Build plugins](../../docs/extending/mini-apps.md) for registration contracts.
 
 ## Consumers
 
@@ -59,7 +59,7 @@ Use the same source-to-read protocol as core:
   acts on the board's own chat; `sessionGameUi` (`ui/session-game`) registers the board, its
   launcher and its anchor; `opponent` and `agent-wait` carry the opponent's name and wait clock.
 
-See [Plugin synchronization](../../docs/extending/plugin-sync.md). Draft merging stays with the
+See [Plugin synchronization](../../docs/extending/mini-app-sync.md). Draft merging stays with the
 resource owner; a cache must expire before an invalidation can produce an authoritative read.
 
 ## Limits
@@ -94,4 +94,4 @@ resource owner; a cache must expire before an invalidation can produce an author
 - [Per-chat resource address](./src/session-resource.ts)
 - [Runtime ports](./src/ui/runtime.ts)
 - [Tab session context](./src/ui/work-item-session.tsx)
-- [Plugin authoring guide](../../docs/extending/plugins.md)
+- [Plugin authoring guide](../../docs/extending/mini-apps.md)

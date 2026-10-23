@@ -51,7 +51,7 @@ const report: EffectiveConfigReport = {
     },
   ],
   skills: [{ name: 'interface-design', override: 'enabled' }],
-  plugins: [{ name: 'github', enabled: true }],
+  miniApps: [{ name: 'github', enabled: true }],
 }
 
 describe('Diagnostics settings presentation', () => {

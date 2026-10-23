@@ -16,7 +16,6 @@ import {
   resolveEntrySource,
   resolveMarketplaceInstall,
   updateMarketplace,
-  LOCALIX_MARKETPLACE,
   type MarketplaceRegistryDeps,
 } from './marketplace-registry'
 import { stubFetch, fetchUrl } from '../../testing/fetch-stub'
@@ -257,35 +256,18 @@ describe('resolveEntrySource', () => {
 
 describe('marketplace registry (add / list / resolve / remove)', () => {
   let root: string
-  let localixDir: string
   let upstream: string
   let deps: MarketplaceRegistryDeps
 
   beforeEach(async () => {
     const base = await fs.mkdtemp(join(tmpdir(), 'mkt-'))
     root = join(base, 'marketplaces')
-    // Built-in localix catalog with one ./plugin entry.
-    localixDir = join(base, 'bundled')
-    await fs.mkdir(join(localixDir, '.localix-plugin'), { recursive: true })
-    await fs.mkdir(join(localixDir, 'web'), { recursive: true })
-    await fs.writeFile(
-      join(localixDir, 'web', 'plugin.json'),
-      JSON.stringify({ name: 'web', version: '1.0.0', description: 'web tools' }),
-    )
-    await fs.writeFile(
-      join(localixDir, '.localix-plugin', 'marketplace.json'),
-      JSON.stringify({
-        name: 'localix',
-        owner: { name: 'Localix' },
-        plugins: [{ name: 'web', source: './web' }],
-      }),
-    )
     // A fake "upstream" marketplace repo our cloneRepo stub copies from.
     upstream = join(base, 'upstream')
     await fs.mkdir(join(upstream, '.localix-plugin'), { recursive: true })
-    await fs.mkdir(join(upstream, 'plugins', 'cool'), { recursive: true })
+    await fs.mkdir(join(upstream, 'plugins', 'cool', '.claude-plugin'), { recursive: true })
     await fs.writeFile(
-      join(upstream, 'plugins', 'cool', 'plugin.json'),
+      join(upstream, 'plugins', 'cool', '.claude-plugin', 'plugin.json'),
       JSON.stringify({ name: 'cool', version: '1.0.0', description: 'cool' }),
     )
     await fs.writeFile(
@@ -298,7 +280,6 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
     )
     deps = {
       root,
-      localixDir,
       now: () => '2026-01-01T00:00:00.000Z',
       cloneRepo: async (_url, dest) => {
         await fs.cp(upstream, dest, { recursive: true })
@@ -418,21 +399,12 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
     expect(Object.keys(await readKnownMarketplaces(root)).sort()).toEqual(['first', 'second'])
   })
 
-  it('list shows the built-in localix first, then registered ones', async () => {
+  it('list shows the registered marketplaces, and nothing built in', async () => {
+    expect(await listMarketplaces(deps)).toEqual([])
     await addMarketplace({ source: 'github', repo: 'acme/repo' }, deps)
-    const list = await listMarketplaces(deps)
-    expect(list[0]).toEqual({
-      name: LOCALIX_MARKETPLACE,
-      builtin: true,
-      count: 1,
-      plugins: [{ name: 'web' }],
-    })
-    expect(list.find((m) => m.name === 'acme')).toEqual({
-      name: 'acme',
-      builtin: false,
-      count: 1,
-      plugins: [{ name: 'cool' }],
-    })
+    expect(await listMarketplaces(deps)).toEqual([
+      { name: 'acme', count: 1, plugins: [{ name: 'cool' }] },
+    ])
   })
 
   it('listing rows carry typed per-entry relevance + description (round-trip)', async () => {
@@ -459,24 +431,11 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
     expect(resolved.entry.relevance).toEqual(relevance)
   })
 
-  it('resolves plugin@localix against the built-in catalog (priority)', async () => {
-    const resolved = await resolveMarketplaceInstall(
-      { plugin: 'web', marketplace: LOCALIX_MARKETPLACE },
-      deps,
-    )
-    expect(resolved.dir).toBe(join(localixDir, 'web'))
-    expect(resolved.entry.name).toBe('web')
-  })
-
   it('resolves plugin@marketplace from a registered marketplace', async () => {
     await addMarketplace({ source: 'github', repo: 'acme/repo' }, deps)
     const resolved = await resolveMarketplaceInstall({ plugin: 'cool', marketplace: 'acme' }, deps)
     expect(resolved.dir).toBe(join(root, 'acme', 'plugins', 'cool'))
     expect(resolved.entry.name).toBe('cool')
-  })
-
-  it('refuses to override or remove the built-in localix marketplace', () => {
-    expect(removeMarketplace(LOCALIX_MARKETPLACE, deps)).rejects.toThrow()
   })
 
   it('remove deletes a registered marketplace', async () => {
@@ -499,55 +458,38 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
     expect(resolved.entry.name).toBe('cool')
   })
 
-  it('a bare name in the built-in localix catalog resolves there (priority)', async () => {
-    const resolved = await resolveBareInstall('web', deps)
-    expect(resolved.dir).toBe(join(localixDir, 'web'))
-    expect(resolved.entry.name).toBe('web')
-  })
-
   it('errors on a bare name found in no marketplace', () => {
     expect(resolveBareInstall('does-not-exist', deps)).rejects.toThrow('registered marketplace')
   })
 
-  it('resolveMarketplaceInstall exposes entry.defaultEnabled=true when set in the catalog', async () => {
-    // Rewrite the localix catalog with a defaultEnabled:true entry.
+  /** Register acme with its one entry carrying `extra`. */
+  async function addAcmeEntry(extra: Record<string, unknown>): Promise<void> {
     await fs.writeFile(
-      join(localixDir, '.localix-plugin', 'marketplace.json'),
+      join(upstream, '.localix-plugin', 'marketplace.json'),
       JSON.stringify({
-        name: 'localix',
-        owner: { name: 'Localix' },
-        plugins: [{ name: 'web', source: './web', defaultEnabled: true }],
+        name: 'acme',
+        owner: 'acme',
+        plugins: [{ name: 'cool', source: './plugins/cool', ...extra }],
       }),
     )
-    const resolved = await resolveMarketplaceInstall(
-      { plugin: 'web', marketplace: LOCALIX_MARKETPLACE },
-      deps,
-    )
+    await addMarketplace({ source: 'github', repo: 'acme/repo' }, deps)
+  }
+
+  it('resolveMarketplaceInstall exposes entry.defaultEnabled=true when set in the catalog', async () => {
+    await addAcmeEntry({ defaultEnabled: true })
+    const resolved = await resolveMarketplaceInstall({ plugin: 'cool', marketplace: 'acme' }, deps)
     expect(resolved.entry.defaultEnabled).toBe(true)
   })
 
   it('resolveMarketplaceInstall exposes entry.defaultEnabled=false when set in the catalog', async () => {
-    await fs.writeFile(
-      join(localixDir, '.localix-plugin', 'marketplace.json'),
-      JSON.stringify({
-        name: 'localix',
-        owner: { name: 'Localix' },
-        plugins: [{ name: 'web', source: './web', defaultEnabled: false }],
-      }),
-    )
-    const resolved = await resolveMarketplaceInstall(
-      { plugin: 'web', marketplace: LOCALIX_MARKETPLACE },
-      deps,
-    )
+    await addAcmeEntry({ defaultEnabled: false })
+    const resolved = await resolveMarketplaceInstall({ plugin: 'cool', marketplace: 'acme' }, deps)
     expect(resolved.entry.defaultEnabled).toBe(false)
   })
 
   it('resolveMarketplaceInstall returns entry.defaultEnabled=undefined when not set', async () => {
-    // The fixture catalog has no defaultEnabled on the web entry.
-    const resolved = await resolveMarketplaceInstall(
-      { plugin: 'web', marketplace: LOCALIX_MARKETPLACE },
-      deps,
-    )
+    await addAcmeEntry({})
+    const resolved = await resolveMarketplaceInstall({ plugin: 'cool', marketplace: 'acme' }, deps)
     expect(resolved.entry.defaultEnabled).toBeUndefined()
   })
 
@@ -621,9 +563,9 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
         await fs.mkdir(join(pkg, '.localix-plugin'), { recursive: true })
         const plugins = []
         for (const name of pluginNames) {
-          await fs.mkdir(join(pkg, 'plugins', name), { recursive: true })
+          await fs.mkdir(join(pkg, 'plugins', name, '.claude-plugin'), { recursive: true })
           await fs.writeFile(
-            join(pkg, 'plugins', name, 'plugin.json'),
+            join(pkg, 'plugins', name, '.claude-plugin', 'plugin.json'),
             JSON.stringify({ name, version: '1.0.0', description: name }),
           )
           plugins.push({ name, source: `./plugins/${name}` })
@@ -694,9 +636,8 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
       ])
     })
 
-    it('update of an unknown marketplace errors; built-in localix cannot be updated', () => {
+    it('update of an unknown marketplace errors', () => {
       expect(updateMarketplace('nope', deps)).rejects.toThrow('Unknown marketplace')
-      expect(updateMarketplace(LOCALIX_MARKETPLACE, deps)).rejects.toThrow('cannot be updated')
     })
 
     it('add surfaces the npm path typed errors (registry 404 → plugin_npm_fetch_failed)', async () => {

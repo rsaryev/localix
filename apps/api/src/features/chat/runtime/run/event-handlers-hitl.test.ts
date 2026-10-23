@@ -59,7 +59,7 @@ describe('handleHitlRequest', () => {
         hitlTargetSessionId: 'root',
         assistantMessageId: 'assistant-1',
         userId: 'user-1',
-        pluginHooksForRun: [],
+        miniAppHooksForRun: [],
         hookRunOptions: {},
         ccHooks: {
           runNotification: async (notification: {
@@ -119,7 +119,7 @@ describe('handleHitlRequest', () => {
         hitlTargetSessionId: 'root',
         assistantMessageId: 'm1',
         userId: 'owner',
-        pluginHooksForRun: [],
+        miniAppHooksForRun: [],
         hookRunOptions: {},
         ccHooks: { runNotification: async () => {} },
       } as never,
@@ -168,7 +168,7 @@ describe('handleHitlRequest', () => {
         hitlTargetSessionId: 'root',
         assistantMessageId: 'm1',
         userId: 'owner',
-        pluginHooksForRun: [
+        miniAppHooksForRun: [
           { pluginName: 'p1', hooks: { onHitlRequest: (input: unknown) => hooked.push(input) } },
         ],
         hookRunOptions: {},

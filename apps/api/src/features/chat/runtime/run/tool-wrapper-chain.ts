@@ -3,7 +3,7 @@ import type { AgentTool } from '@localixai/agent/agents'
 import { wrapToolsWithStuckRunBreaker } from '../../../agent-core/tools/stuck-run-breaker'
 import { wrapToolsWithTimeoutPromoter } from '../../../agent-core/tools/timeout-promoter'
 import { wrapToolsWithCcHooks } from '../../../cc-hooks'
-import { wrapToolsWithHooks } from '../../../plugins/hooks'
+import { wrapToolsWithHooks } from '../../../mini-apps/hooks'
 import { wrapToolsWithMods, type ModRunScope } from '../../../mods/run-scope'
 import { wrapToolsWithPermissionGate, type ChainGate } from './chain-gate'
 
@@ -22,7 +22,7 @@ import { wrapToolsWithPermissionGate, type ChainGate } from './chain-gate'
  */
 export const TOOL_WRAPPER_CHAIN = [
   { wrapper: 'wrapToolsWithPermissionGate', label: 'permission-gate' },
-  { wrapper: 'wrapToolsWithHooks', label: 'plugin-hooks' },
+  { wrapper: 'wrapToolsWithHooks', label: 'mini-app-hooks' },
   { wrapper: 'wrapToolsWithCcHooks', label: 'cc-hooks' },
   { wrapper: 'wrapToolsWithMods', label: 'mods' },
   { wrapper: 'wrapToolsWithTimeoutPromoter', label: 'timeout-promoter' },
@@ -52,8 +52,8 @@ export const TOOL_WRAPPER_CHAIN = [
 export function applyToolWrapperChain(
   tools: readonly AgentTool[],
   input: {
-    pluginHooks: Parameters<typeof wrapToolsWithHooks>[1]
-    pluginHookOptions: Parameters<typeof wrapToolsWithHooks>[2]
+    miniAppHooks: Parameters<typeof wrapToolsWithHooks>[1]
+    miniAppHookOptions: Parameters<typeof wrapToolsWithHooks>[2]
     ccHooks: Parameters<typeof wrapToolsWithCcHooks>[1]
     logger: Parameters<typeof wrapToolsWithCcHooks>[2]
     /** Claude Code mods enabled for the run; absent where a run has none. */
@@ -90,7 +90,7 @@ export function applyToolWrapperChain(
         }))
       : tools
   const gated = wrapToolsWithPermissionGate(observed, input.gate)
-  const hooked = wrapToolsWithHooks(gated, input.pluginHooks, input.pluginHookOptions)
+  const hooked = wrapToolsWithHooks(gated, input.miniAppHooks, input.miniAppHookOptions)
   const ccHooked = wrapToolsWithCcHooks(hooked, input.ccHooks, input.logger)
   const modded = input.mods ? wrapToolsWithMods(ccHooked, input.mods) : ccHooked
   const promoted = wrapToolsWithTimeoutPromoter(modded, {

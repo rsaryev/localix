@@ -46,9 +46,9 @@ describe('locateManifest', () => {
     expect(await locateManifest(dir, ['missing.json', 'b.json'])).toBe(join(dir, 'b.json'))
   })
 
-  it('plugin candidates: the Claude Code manifest first, then a legacy root plugin.json', async () => {
+  it("a plugin manifest is Claude Code's only: a root plugin.json is not one", async () => {
     await touch('plugin.json')
-    expect(await locateManifest(dir, PLUGIN_MANIFEST_CANDIDATES)).toBe(join(dir, 'plugin.json'))
+    expect(await locateManifest(dir, PLUGIN_MANIFEST_CANDIDATES)).toBeNull()
     await touch(CLAUDE_CODE_PLUGIN_MANIFEST)
     expect(await locateManifest(dir, PLUGIN_MANIFEST_CANDIDATES)).toBe(
       join(dir, CLAUDE_CODE_PLUGIN_MANIFEST),

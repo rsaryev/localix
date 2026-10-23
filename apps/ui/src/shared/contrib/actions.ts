@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import type { ActionContext, ActionContribution } from '@localixai/mini-app-sdk/ui'
-import { isMiniAppContributionEnabled, subscribePluginActivation } from './miniAppActivation'
+import { isMiniAppContributionEnabled, subscribeMiniAppActivation } from './miniAppActivation'
 
 // Late plugin loading and activation must update already rendered content. First owner wins,
 // as with comment actions: a collision must never change where a person's content is sent.
@@ -12,7 +12,7 @@ function announce() {
   snapshot = null
   for (const listener of listeners) listener()
 }
-subscribePluginActivation(announce)
+subscribeMiniAppActivation(announce)
 
 export function registerAction(action: ActionContribution): void {
   if (entries.get(action.id) === action) return

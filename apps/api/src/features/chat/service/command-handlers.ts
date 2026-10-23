@@ -10,6 +10,7 @@ import {
 import { handleModelCommand } from './command-handlers-settings'
 import { handleOutputStyleCommand } from './command-handlers-output-style'
 import { handlePluginsControlCommand } from './command-handlers-plugins'
+import { handleMiniAppsControlCommand } from './command-handlers-mini-apps'
 import { handleAgentsControlCommand } from './command-handlers-agents'
 import type { SessionRecord } from '../repository'
 import type { MessageMutationResponse } from '../contracts'
@@ -109,6 +110,10 @@ export async function handleControlCommand(
 
   if (control === 'plugins') {
     return handlePluginsControlCommand(ctx, userId, session, prompt, directReply)
+  }
+
+  if (control === 'mini-apps') {
+    return handleMiniAppsControlCommand(ctx, userId, session, prompt, directReply)
   }
 
   // Values can cross untyped RPC/plugin/test boundaries; an unknown one fails closed.

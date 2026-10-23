@@ -63,6 +63,7 @@ export function createSessionResidue(ports: SessionResiduePorts) {
     'chat.message': 'ignore',
     skill: 'ignore',
     plugin: 'ignore',
+    'mini-app': 'ignore',
     mcp: 'ignore',
     agent: 'ignore',
     'capability.rule': 'ignore',

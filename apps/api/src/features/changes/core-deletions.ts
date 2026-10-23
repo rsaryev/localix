@@ -38,6 +38,7 @@ export function coreDeletionHandlers(
     'chat.message': 'ignore',
     skill: 'ignore',
     plugin: 'ignore',
+    'mini-app': 'ignore',
     mcp: 'ignore',
     'capability.rule': 'ignore',
     'local.model': 'ignore',

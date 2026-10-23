@@ -117,13 +117,7 @@ export async function loadInPlacePlugin(
   entry: MarketplaceEntry | undefined,
   projectId: string,
 ): Promise<DiscoveredPlugin> {
-  const plugin = await loadManifest(
-    record.dir,
-    'global',
-    projectId,
-    false,
-    withEntry(record.id, entry),
-  )
+  const plugin = await loadManifest(record.dir, 'global', projectId, withEntry(record.id, entry))
   return { ...plugin, inPlaceInstall: record.id }
 }
 

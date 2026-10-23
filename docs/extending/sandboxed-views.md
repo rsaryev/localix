@@ -29,7 +29,7 @@ per-document key that the injected client adds. A page the frame navigates to, o
 `ready()` opts into live theme and safe session-lifecycle messages. Theme variables are applied
 automatically. Without that opt-in, a theme change can remount the static document. File changes,
 file paths, and tool I/O are not lifecycle events;
-[native UI](plugin-ui.md#files-that-change-under-a-chat) has its own file subscription.
+[native UI](mini-app-ui.md#files-that-change-under-a-chat) has its own file subscription.
 
 The built-in actions are `ping`, `sendPrompt`, `getContext`, `getViewState`, `setViewState`,
 `callBackend`, and `publishMessageContext`. An unavailable capability rejects. `sendPrompt` targets
@@ -97,9 +97,9 @@ colors also apply. JavaScript animation should read and subscribe to the iframe'
 
 ## Related guides
 
-- [Mini app authoring](plugins.md)
-- [Native workbench UI](plugin-ui.md)
-- [Route request validation](plugin-routes.md)
+- [Mini app authoring](mini-apps.md)
+- [Native workbench UI](mini-app-ui.md)
+- [Route request validation](mini-app-routes.md)
 
 ## Source of truth
 
@@ -107,5 +107,5 @@ colors also apply. JavaScript animation should read and subscribe to the iframe'
 - [Injected client](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/inspector/ui/miniAppUiApiBootstrap.ts)
 - [Host action table](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/contrib/miniAppPanelActions.ts)
 - [Scratch state](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/inspector/ui/miniAppViewState.ts)
-- [Backend authorization and payload limits](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/service.ts)
-- [Backend handler dispatch](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/backend-host-ui-actions.ts)
+- [Backend authorization and payload limits](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/service-ui.ts)
+- [Backend handler dispatch](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/backend-host-ui-actions.ts)

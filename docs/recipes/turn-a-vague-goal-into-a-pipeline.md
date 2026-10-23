@@ -1,7 +1,7 @@
 # Turn a vague goal into session tasks
 
 Use the chat's Kanban board to make a goal visible and durable without coupling planning to
-execution. The board comes from the bundled Kanban plugin; the
+execution. The board comes from the bundled Kanban mini app; the
 [Kanban guide](../features/task-board.md) owns its statuses and rules.
 
 1. Create an epic and its task cards in the current chat. Add acceptance criteria and only the

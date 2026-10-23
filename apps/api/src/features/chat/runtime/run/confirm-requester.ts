@@ -3,7 +3,7 @@ import type {
   ConfirmToolResponse,
 } from '../../../agent-core/tools/hitl/confirm'
 import type { ConfirmOutcome, RequestConfirmArgs } from '../../../agent-core/permission-engine'
-import { runHitlRequestHooks, runHitlResolvedHooks } from '../../../plugins/hooks'
+import { runHitlRequestHooks, runHitlResolvedHooks } from '../../../mini-apps/hooks'
 import type { RunHookContext } from './run-hook-context'
 import type { CcHookToolRef } from '../../../cc-hooks'
 import { isDangerous } from '../../../agent-core/tools/bash/bash-command-safety'
@@ -127,16 +127,16 @@ export function createConfirmRequester(
       })
       .catch(() => {})
     const fireHitlResolved = (outcome: { response: unknown } | { dismissed: true }) => {
-      if (args.pluginHooksForRun.length === 0) return
+      if (args.miniAppHooksForRun.length === 0) return
       void runHitlResolvedHooks(
-        args.pluginHooksForRun,
+        args.miniAppHooksForRun,
         { sessionId: session.id, requestId, kind: 'confirm', toolName, ...outcome },
         args.hookRunOptions,
       )
     }
-    if (args.pluginHooksForRun.length > 0) {
+    if (args.miniAppHooksForRun.length > 0) {
       void runHitlRequestHooks(
-        args.pluginHooksForRun,
+        args.miniAppHooksForRun,
         {
           sessionId: session.id,
           requestId,

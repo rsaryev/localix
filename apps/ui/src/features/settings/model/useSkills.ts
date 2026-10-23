@@ -4,7 +4,7 @@ import { toast } from '@/shared/lib/notify'
 import { backendClient } from '@/shared/api/client'
 import type { CuratorSkillRecord, SkillRecord, SkillSummary } from '@/shared/api/contracts'
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
-import { usePluginContribVersion } from '@/shared/contrib/usePluginContribVersion'
+import { useMiniAppContribVersion } from '@/shared/contrib/useMiniAppContribVersion'
 import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { trackCapabilityWrite } from '@/shared/contrib/capabilityWrites'
 import { applyCapabilityRules } from '@/shared/contrib/capabilityCache'
@@ -59,7 +59,7 @@ interface SkillMutation {
  * `loadSkill`, one skill at a time.
  */
 export function useSkills(scope: string, agentScope = ''): SkillsData {
-  const pluginContribVersion = usePluginContribVersion()
+  const miniAppContribVersion = useMiniAppContribVersion()
   const workItemVisible = useWorkItemVisible()
   const registry = useCapabilityRegistry(scope, (snapshot) => snapshot.skills)
   const [error, setError] = useState<string | null>(null)
@@ -94,7 +94,7 @@ export function useSkills(scope: string, agentScope = ''): SkillsData {
     return () => {
       cancelled = true
     }
-  }, [scope, refreshKey, pluginContribVersion, workItemVisible])
+  }, [scope, refreshKey, miniAppContribVersion, workItemVisible])
 
   /** Read ONE skill in full — the editor's body, fetched when it is actually opened. */
   const loadSkill = useCallback(

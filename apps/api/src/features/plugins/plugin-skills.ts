@@ -9,7 +9,7 @@ import type { PluginCatalog } from './catalog'
 import { listCommandsFromCatalog, modCommandSpecs } from './commands'
 import { resolvePluginConfig } from './config'
 import type { PluginCommandSpec } from './contracts'
-import { pluginLoadBlockReason } from './loadable'
+import { pluginLoadBlockReason } from './load-block'
 import { makePluginSubstituter } from './loader-runtime-declarations'
 
 /**

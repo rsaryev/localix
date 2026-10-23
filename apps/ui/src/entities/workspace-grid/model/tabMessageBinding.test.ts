@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import type { WorkItem } from '@/shared/lib/workItem'
-import { setEnabledPluginNames } from '@/shared/contrib/miniAppActivation'
+import { setEnabledMiniAppNames } from '@/shared/contrib/miniAppActivation'
 import { workItemKindRegistry } from '@/shared/contrib/uiContrib'
 import { workItemToMessageBinding, workItemToMessageBindings } from './tabMessageBinding'
 import { clearLiveTabMessageContext, publishLiveTabMessageContext } from './liveTabMessageContext'
@@ -116,15 +116,15 @@ describe('workItemToMessageBinding', () => {
       Icon: (() => null) as never,
       agentContext: { nextSteps: ['Inspect it.'] },
     } as never)
-    setEnabledPluginNames(new Set(['fixture-plugin']))
+    setEnabledMiniAppNames(new Set(['fixture-plugin']))
     try {
       const [binding] = workItemToMessageBindings(item({ kind: 'fixture-plugin:view' }))
       expect(binding?.target.attributes?.content).toContain(
-        'the browser tool with url "plugin:fixture-plugin"',
+        'the browser tool with url "mini-app:fixture-plugin"',
       )
     } finally {
       workItemKindRegistry.removeOwner('fixture-plugin')
-      setEnabledPluginNames(null)
+      setEnabledMiniAppNames(null)
     }
   })
 
@@ -141,7 +141,7 @@ describe('workItemToMessageBinding', () => {
         plugin: 'another-plugin',
       }),
     } as never)
-    setEnabledPluginNames(new Set(['fixture-plugin']))
+    setEnabledMiniAppNames(new Set(['fixture-plugin']))
     try {
       const bindings = workItemToMessageBindings(item({ kind: 'fixture-plugin:board' }))
       expect(bindings.length).toBeGreaterThan(1)
@@ -150,7 +150,7 @@ describe('workItemToMessageBinding', () => {
       )
     } finally {
       workItemKindRegistry.removeOwner('fixture-plugin')
-      setEnabledPluginNames(null)
+      setEnabledMiniAppNames(null)
     }
   })
 

@@ -16,6 +16,7 @@ import { createCapabilityCleanup } from '../features/capabilities/cleanup'
 import { mcpOAuthStore } from '../features/mcp/oauth/runtime'
 import type { SecretsStore } from '../features/secrets/store-contracts'
 import { forgetSecretOptions } from '../features/plugins/config-vault'
+import { miniAppOptions } from '../features/mini-apps/config-vault'
 import { createSessionResidue } from '../features/chat/session-residue'
 import { createSubagentRowsChanges } from '../features/chat/service/subagent-rows-changes'
 import type { SubagentRowsLive } from '../features/chat/service/subagent-rows-live'
@@ -50,8 +51,8 @@ export interface CoreReactorDeps {
   providerConditions: Pick<ProviderConditions, 'connectionRemoved' | 'connectionsRemaining'>
   triggerConditions: Pick<TriggerConditions, 'routeStranded'>
   publish(userId: string, resources: RealtimeResource[]): void
-  /** Re-converge the plugin backends (debounced by the host). */
-  refreshPluginBackends(): void
+  /** Re-converge the mini app backends and channels (each host debounces). */
+  refreshMiniAppHosts(): void
   /** The subagent rows the chat service keeps: their inputs' notices redraw them. */
   subagentRows: SubagentRowsLive
 }
@@ -135,6 +136,7 @@ export function notificationsCleanupHandlers(
     'chat.message': 'ignore',
     skill: 'ignore',
     plugin: 'ignore',
+    'mini-app': 'ignore',
     mcp: 'ignore',
     agent: 'ignore',
     project: 'ignore',
@@ -152,19 +154,21 @@ export function notificationsCleanupHandlers(
   }
 }
 
-/** A project's scope moved: its plugin backends load from another folder, or not at all. */
-export function pluginBackendHandlers(
-  refresh: () => void,
-): ConsumerHandlers<CoreRefs, CoreCascades> {
+/**
+ * What the mini app hosts (backends and channels) converge on: a mini app installed, updated or removed, a rule
+ * that switches one on or off, or a project whose folder (so its project mini apps) moved.
+ */
+export function miniAppHostHandlers(refresh: () => void): ConsumerHandlers<CoreRefs, CoreCascades> {
   return {
     'chat.session': 'ignore',
     'chat.message': 'ignore',
     skill: 'ignore',
     plugin: 'ignore',
+    'mini-app': () => refresh(),
     mcp: 'ignore',
     agent: 'ignore',
     project: () => refresh(),
-    'capability.rule': 'ignore',
+    'capability.rule': () => refresh(),
     'local.model': 'ignore',
     'project.settings': 'ignore',
     'user.profile': 'ignore',
@@ -193,6 +197,7 @@ export async function startCoreReactors(deps: CoreReactorDeps): Promise<void> {
     clearMcpSignIn: (...args) => mcpOAuthStore.clear(...args),
     unbindVaultConsumer: (...args) => deps.secretsStore.unbindConsumer(...args),
     forgetPluginSecrets: forgetSecretOptions,
+    forgetMiniAppSecrets: miniAppOptions.forgetSecretOptions,
   })
   await deps.feed.subscribe('capability-cleanup', cleanup.handlers, { kind: 'reactor' })
   const residue = createSessionResidue({
@@ -220,9 +225,9 @@ export async function startCoreReactors(deps: CoreReactorDeps): Promise<void> {
     kind: 'projector',
     reconcile: ledger.reconcile,
   })
-  await deps.feed.subscribe('plugin-backends', pluginBackendHandlers(deps.refreshPluginBackends), {
+  await deps.feed.subscribe('mini-app-hosts', miniAppHostHandlers(deps.refreshMiniAppHosts), {
     kind: 'reactor',
-    reconcile: () => deps.refreshPluginBackends(),
+    reconcile: () => deps.refreshMiniAppHosts(),
   })
   await deps.feed.subscribe(
     'notifications-cleanup',

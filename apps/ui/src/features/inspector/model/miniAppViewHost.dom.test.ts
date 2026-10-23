@@ -20,8 +20,8 @@ describe('plugin view host', () => {
 
   async function withView() {
     const { railViewletRegistry, workItemKindRegistry } = await import('@/shared/contrib/uiContrib')
-    const { setEnabledPluginNames } = await import('@/shared/contrib/miniAppActivation')
-    setEnabledPluginNames(new Set(['focus-timer']))
+    const { setEnabledMiniAppNames } = await import('@/shared/contrib/miniAppActivation')
+    setEnabledMiniAppNames(new Set(['focus-timer']))
     railViewletRegistry.register({
       kind: 'focus-timer:workspace',
       title: 'Focus Timer',
@@ -42,7 +42,7 @@ describe('plugin view host', () => {
     return () => {
       railViewletRegistry.removeOwner('focus-timer')
       workItemKindRegistry.removeOwner('focus-timer')
-      setEnabledPluginNames(null)
+      setEnabledMiniAppNames(null)
     }
   }
 
@@ -59,7 +59,7 @@ describe('plugin view host', () => {
       // Named after the view, not the chat window it sits in (a snapshot once read the app's title).
       expect(reply.result?.snapshot).toMatchObject({
         title: 'Focus Timer',
-        url: 'plugin:focus-timer',
+        url: 'mini-app:focus-timer',
       })
     } finally {
       cleanup()

@@ -1,11 +1,7 @@
-import type { AgentTool } from '@localixai/agent/agents'
-
 import type { PluginHookConfig } from '../cc-hooks'
 import type { McpServerRecord } from '../mcp/repository'
 import type { DiscoveredSkill } from '../agent-core/skill-discovery'
-import type { BackendSubsystem } from '../ext/subsystem-contrib'
 import { normalizeCcToolName } from './discovery'
-import type { MemoryProvider, MiniAppChannel, MiniAppContext, MiniAppHooks } from './native'
 import type { PluginAgent, PluginMonitor } from './contracts'
 import type { PluginOutputStyle } from './output-styles'
 
@@ -46,12 +42,6 @@ export interface LoadedPluginAgent {
   isolation?: 'isolated'
 }
 
-export interface LoadedMiniAppHook {
-  pluginName: string
-  hooks: MiniAppHooks
-  ctx: MiniAppContext
-}
-
 /**
  * One background monitor contributed by an ENABLED plugin — its typed spec plus the
  * roots the monitor host exports to the command's env (`CLAUDE_PLUGIN_ROOT` /
@@ -66,8 +56,6 @@ export interface LoadedPluginMonitor {
 }
 
 export interface LoadedPlugins {
-  /** Native AgentTools to inject via the registry's `extraTools`. */
-  tools: AgentTool[]
   /**
    * Enabled plugins' `bin/` directories (each existing `<pluginDir>/bin`). Prepended
    * to PATH for the agent's bash subprocesses so a plugin's bundled CLIs resolve by
@@ -79,8 +67,6 @@ export interface LoadedPlugins {
   mcpServers: McpServerRecord[]
   /** Bundled skills to fold into the filesystem skill list. */
   skills: DiscoveredSkill[]
-  /** Hooks collected from enabled plugins, each bound to its context. */
-  hooks: LoadedMiniAppHook[]
   /**
    * Declarative Claude Code hook configs (`hooks/hooks.json`) from enabled
    * plugins — raw JSON + plugin root, merged with the settings-file hooks by the
@@ -99,15 +85,6 @@ export interface LoadedPlugins {
    * enabled plugins contribute (the trust gate — see {@link LoadedPluginMonitor}).
    */
   monitors: LoadedPluginMonitor[]
-  /** Long-running platform channels, each bound to its context. Started by the channel host, NOT per turn. */
-  channels: Array<{ pluginName: string; channel: MiniAppChannel; ctx: MiniAppContext }>
-  /** Declarative system-prompt sections from enabled plugins (manifest data, size-capped by schema). */
-  promptSections: Array<{ pluginName: string; title: string; content: string }>
-  /**
-   * Enabled mini apps' guides (`mini-app.json` `guide`), each contained in its app's folder. The
-   * agent reads one with `mini_app_guide`; the prompt lists the app in one line.
-   */
-  miniAppGuides: Array<{ app: string; file: string; pages?: string }>
   /**
    * Custom worker ROLES (sub-agents) from enabled plugins — manifest data,
    * namespaced `<plugin>:<name>`: the subagent types `delegate` runs a task as, as Claude Code's
@@ -125,31 +102,11 @@ export interface LoadedPlugins {
    * Claude Code.
    */
   mainAgent: LoadedPluginAgent | null
-  /** The active external memory provider, or null. At most ONE — first enabled plugin wins. */
-  memory: { pluginName: string; provider: MemoryProvider; ctx: MiniAppContext } | null
-  /**
-   * Process-GLOBAL backend subsystems contributed by enabled plugins' `register()`
-   * (route mount / resource provider / search provider / live WS frames / shutdown).
-   * Collected here but NOT consumed per-run — the plugin backend HOST
-   * ([[loadMiniAppBackends]] → backend-host.ts) reconciles them into the subsystem +
-   * WS-frame registries, at boot and on every hot enable/disable. Empty for a normal
-   * plugin that contributes only tools/hooks/skills. Each entry carries the owning
-   * plugin's name so the host can diff wired-vs-desired per plugin, and the `revision` of the
-   * code it came from (the entry's import identity) so the host re-wires a plugin whose code
-   * changed instead of keeping the first instance it ever wired.
-   */
-  backends: Array<{
-    pluginName: string
-    projectId: string
-    backend: BackendSubsystem
-    revision: string
-  }>
   /** Per-plugin summary for diagnostics / the prompt's plugin section. */
   loaded: Array<{
     name: string
     scope: 'global' | 'project'
     description: string
-    toolNames: string[]
     skills: string[]
     mcpServers: string[]
     /** `<dir>/bin`, when it exists — the one contribution with no name of its own. */
@@ -167,22 +124,15 @@ export interface LoadedPlugins {
  */
 export function emptyLoadedPlugins(): LoadedPlugins {
   return {
-    tools: [],
     binDirs: [],
     mcpServers: [],
     skills: [],
-    hooks: [],
     ccHooks: [],
     lspServers: [],
     monitors: [],
-    channels: [],
-    promptSections: [],
-    miniAppGuides: [],
     agents: [],
     outputStyles: [],
     mainAgent: null,
-    memory: null,
-    backends: [],
     loaded: [],
     awaitingConsent: [],
   }

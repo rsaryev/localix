@@ -4,11 +4,9 @@ import { composerTipSchema } from '../features/capabilities/tip-contracts'
 import { skillSummarySchema } from '../features/chat/contracts/skills'
 import { toolSurfaceSchema } from '../features/effective-config/contracts'
 import { mcpServerSchema } from '../features/mcp/contracts'
-import {
-  pluginCommandSpecSchema,
-  pluginRecordSchema,
-  miniAppViewSpecSchema,
-} from '../features/plugins/contracts'
+import { miniAppCommandSpecSchema, miniAppRecordSchema } from '../features/mini-apps/contracts'
+import { miniAppViewSpecSchema } from '../features/mini-apps/contracts-contributions'
+import { pluginCommandSpecSchema, pluginRecordSchema } from '../features/plugins/contracts'
 import { pluginThemeSpecSchema } from '../features/plugins/contracts-themes'
 import { toolMetaSchema } from '../features/tools/catalog'
 
@@ -43,11 +41,11 @@ export const capabilityToolSurfaceSchema = toolSurfaceSchema.extend({
    * MCP tools this scope would send, grouped by server, with the names the model actually sees.
    *
    * A SIBLING of `catalog`, deliberately not merged into `enabled`. The Tools settings screen owns
-   * builtin + plugin toggles through `disabledTools`; MCP owns its own per-server tool filters.
+   * builtin + mini app toggles through `disabledTools`; MCP owns its own per-server tool filters.
    * Merging the two lists would put a row in the Tools tab whose switch does not live there.
    *
    * It exists because a count taken from `enabled.length` alone is WRONG by exactly this many:
-   * MCP tools are gathered per run, so the surface the model receives is builtins + plugin tools +
+   * MCP tools are gathered per run, so the surface the model receives is builtins + mini app tools +
    * these. Shipping the count without them is the single most common failure of this feature
    * elsewhere: a surface that reports "128 tools" while the picker lists 118.
    *
@@ -85,10 +83,12 @@ export const capabilitySnapshotSchema = z.object({
     projectId: z.string(),
     agentId: z.string().nullable(),
   }),
-  /** Installed plugins — including disabled ones and ones with no UI contribution. */
+  /** Installed Claude Code plugins, including disabled ones. */
   plugins: z.array(pluginRecordSchema),
+  /** Installed mini apps, including disabled ones and ones waiting for the person's yes. */
+  miniApps: z.array(miniAppRecordSchema),
   tools: capabilityToolSurfaceSchema,
-  /** Sandboxed UI views of enabled plugins — each opens as a work-item tab. */
+  /** Sandboxed UI views of enabled mini apps — each opens as a work-item tab. */
   views: z.array(miniAppViewSpecSchema),
   /** Color themes of enabled global plugins, offered in Settings → Preferences → Appearance. */
   themes: z.array(pluginThemeSpecSchema),
@@ -96,6 +96,8 @@ export const capabilitySnapshotSchema = z.object({
   agents: z.array(agentSummarySchema),
   /** Slash commands declared by enabled plugins, flattened + namespaced. */
   commands: z.array(pluginCommandSpecSchema),
+  /** Commands declared in enabled mini apps' `mini-app.json`, run as `/<app>:<command>`. */
+  miniAppCommands: z.array(miniAppCommandSpecSchema),
   /** MCP servers visible to the scope, with their enable state. */
   mcp: z.array(mcpServerSchema),
   /**

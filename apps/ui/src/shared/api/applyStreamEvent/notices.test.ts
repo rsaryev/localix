@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 
-import { setPluginSources } from '@/shared/contrib/miniAppAttribution'
+import { setMiniAppSources } from '@/shared/contrib/miniAppAttribution'
 import type { UiSession } from '../contracts'
 import { noticeReducers } from './notices'
 import type { StreamEventOf } from './types'
@@ -10,28 +10,28 @@ const notice = (event: Omit<StreamEventOf<'hook.notice'>, 'type' | 'sessionId'>)
   noticeReducers['hook.notice'](session, { type: 'hook.notice', sessionId: 'S1', ...event })
     .messages[0]?.systemNotice
 
-afterEach(() => setPluginSources([], new Map()))
+afterEach(() => setMiniAppSources([], new Map()))
 
 describe('a hook notice on the transcript', () => {
   // The defect: `detail ?? Hook: …` let the raw text REPLACE the producer, so the notices worth
-  // reading closely lost which plugin they came from.
-  test("a plugin's notice keeps the plugin's display name beside its raw detail", () => {
-    setPluginSources([], new Map([['webhooks', 'Webhooks']]))
+  // reading closely lost which mini app they came from.
+  test("a mini app's notice keeps the app's display name beside its raw detail", () => {
+    setMiniAppSources([], new Map([['webhooks', 'Webhooks']]))
     expect(
       notice({
         message: 'The webhook endpoint rejected the delivery.',
         hookEvent: 'webhooks · onAssistantMessage',
         detail: 'HTTP 404 Not Found',
-        plugin: { name: 'webhooks', source: 'onAssistantMessage' },
+        miniApp: { name: 'webhooks', source: 'onAssistantMessage' },
       }),
     ).toMatchObject({
       // A pointer, not a second report: the standing condition row owns the problem; the line
-      // marks when it happened, names the plugin, and offers the same settings destination.
+      // marks when it happened, names the app, and offers the same settings destination.
       tone: 'neutral',
       text: 'Webhooks reported a problem',
       detail:
-        'The webhook endpoint rejected the delivery.\nPlugin: Webhooks · onAssistantMessage\nHTTP 404 Not Found',
-      recovery: ['open-settings:plugins/plugin-webhooks'],
+        'The webhook endpoint rejected the delivery.\nMini app: Webhooks · onAssistantMessage\nHTTP 404 Not Found',
+      recovery: ['open-settings:mini-apps/mini-app-webhooks'],
     })
   })
 

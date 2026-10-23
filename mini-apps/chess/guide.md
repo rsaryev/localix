@@ -30,8 +30,8 @@ opponent back on the board.
 
 ## When the board wakes you
 
-A message from the "chess" plugin, not typed by the user, means it is your move. It carries the last
-move, the board, the FEN, the list of legal moves in SAN and the score so far.
+A message from the "chess" mini app, not typed by the user, means it is your move. It carries the
+last move, the board, the FEN, the list of legal moves in SAN and the score so far.
 
 Call `chess` with action `move` and one move from that list, written as listed ("e4", "Nf3",
 "Bxc6+", "O-O", "e8=Q"), and nothing else: while the game goes on, the move ends your turn, because

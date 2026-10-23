@@ -1,14 +1,12 @@
 import { basename } from 'node:path'
 
 import type { DiscoveredPlugin } from './discovery'
-import { MINI_APP_API_VERSION, type PluginValidation } from './contracts'
-import type { MiniAppConfigValues } from './config'
+import type { PluginValidation } from './contracts'
+import type { PluginConfigValues } from './config'
 import { validateCompatibility } from './validate-compat'
 import { validatePluginSkills } from './validate-skill'
 import { validatePluginConfig } from './validate-config'
 import { validatePluginCommands, validatePluginAgents } from './validate-fields'
-import { validateAgentContributions } from './validate-agent-contributions'
-import { checkApiVersion } from '../ext/manifest-validate'
 
 /**
  * Core plugin/skill validation — the single source of truth surfaced as structured
@@ -35,7 +33,7 @@ import { checkApiVersion } from '../ext/manifest-validate'
 export function validatePlugin(
   plugin: DiscoveredPlugin,
   opts?: {
-    config?: MiniAppConfigValues
+    config?: PluginConfigValues
     /**
      * CC `--strict` mode: promote all warnings to errors. Useful in CI to
      * catch misspelled fields or leftover foreign manifest keys before publishing.
@@ -48,13 +46,12 @@ export function validatePlugin(
 
   // Manifest parse / read failure → hard error.
   if (plugin.error) errors.push(plugin.error)
-  errors.push(...validateAgentContributions(plugin))
   for (const diagnostic of plugin.entrypoints.diagnostics ?? []) {
     errors.push(`${diagnostic.message}: ${diagnostic.path}`)
   }
-  // What the plugin and mini-app formats' own rules found (`layout/compose.ts`).
+  // What Claude Code's own rules found (`layout/compose.ts`).
   const components = plugin.entrypoints.components
-  for (const found of [...(plugin.layoutIssues ?? []), ...(components?.issues ?? [])]) {
+  for (const found of [...(plugin.manifestIssues ?? []), ...(components?.issues ?? [])]) {
     ;(found.severity === 'error' ? errors : warnings).push(`${found.message} (${found.path})`)
   }
 
@@ -69,37 +66,11 @@ export function validatePlugin(
   )
     warnings.push(`settings "agent" names "${mainAgent}", which is not one of this plugin's agents`)
 
-  // API version compatibility. Missing → assume current (with a nudge); newer → block.
-  // Authoring nudges (apiVersion/author/license/version) are for plugin AUTHORS; an imported
-  // Claude Code plugin was not written for this host, so its user gets no nudges they can't act on.
-  const imported = plugin.layout === 'plugin' || plugin.manifest.origin !== undefined
-  const nudges = imported ? [] : warnings
-  checkApiVersion('Plugin', MINI_APP_API_VERSION, plugin.manifest.apiVersion, errors, nudges)
-
-  // Warn on missing discoverability metadata: descriptions explain purpose, Settings shows
-  // authors, and explicit versions let users track updates.
+  // Warn on a missing description: it explains what the plugin is for. Author, version and
+  // license nudges are for authors; a Claude Code plugin was not written for this host, so its
+  // user gets none they can't act on.
   if (!plugin.error && !plugin.manifest.description.trim()) {
     warnings.push('Manifest has no description — add one so users know what this plugin does.')
-  }
-  if (!plugin.error && !plugin.manifest.author) {
-    nudges.push('Manifest has no author — add "author" for plugin attribution (shown in Settings).')
-  }
-  // `version` defaults to "0.0.0" if absent; nudge to set an explicit semver string.
-  if (!plugin.error && plugin.rawManifest && !('version' in plugin.rawManifest)) {
-    nudges.push('Manifest has no version — add "version": "1.0.0" to help users track updates.')
-  }
-  if (!plugin.error && plugin.rawManifest && !('license' in plugin.rawManifest)) {
-    nudges.push(
-      'Manifest has no license — add an SPDX identifier and preserve separate upstream notices for adapted work.',
-    )
-  }
-
-  // `defaultEnabled: true` only applies to bundled plugins — installed/dropped-in ones
-  // are always opt-in (the trust gate), so the flag is silently ignored for them.
-  if (plugin.manifest.defaultEnabled === true && !plugin.bundled) {
-    warnings.push(
-      '"defaultEnabled": true is ignored for an installed plugin — enable it manually (the trust gate keeps dropped-in plugins opt-in).',
-    )
   }
 
   // The directory name is the install/dedup key (install copies to <root>/<name>,
@@ -120,63 +91,6 @@ export function validatePlugin(
   const agentValidation = validatePluginAgents(plugin)
   errors.push(...agentValidation.errors)
   warnings.push(...agentValidation.warnings)
-
-  // Views and promptSections are keyed by id/title — duplicates silently
-  // shadow or compound. Errors for load-time entities (views); warnings for
-  // runtime/prompt contributions (promptSections).
-  const dedupeInto = (
-    bucket: string[],
-    kind: string,
-    values: (string | undefined)[],
-    suffix = 'must be unique within a plugin',
-  ): void => {
-    const seen = new Set<string>()
-    for (const v of values) {
-      if (!v) continue
-      if (seen.has(v)) bucket.push(`Duplicate ${kind} "${v}" — ${suffix}.`)
-      seen.add(v)
-    }
-  }
-  dedupeInto(
-    errors,
-    'view',
-    (plugin.manifest.views ?? []).map((v) => v.id),
-  )
-  // Duplicate arg names within a command make it unpredictable.
-  for (const cmd of plugin.commands) {
-    if (cmd.args.length > 1) {
-      dedupeInto(
-        errors,
-        `command "${cmd.name}" arg`,
-        cmd.args.map((a) => a.name),
-      )
-    }
-  }
-  dedupeInto(
-    warnings,
-    'promptSection title',
-    (plugin.manifest.promptSections ?? []).map((s) => s.title),
-    'use distinct titles to avoid redundant system-prompt sections',
-  )
-  // Whitespace-only content passes zod min(1) but contributes nothing to the system prompt.
-  for (const section of plugin.manifest.promptSections ?? []) {
-    if (!section.content.trim()) {
-      warnings.push(
-        `promptSection "${section.title}" has whitespace-only content — it adds nothing to the system prompt.`,
-      )
-    }
-  }
-  // A `promptSection` injects STATIC text into the shared, cacheable system prompt for
-  // every applicable run. It is a compatibility path only: dynamic, per-run or
-  // per-resource context must come through a Context Fabric contribution
-  // (`BackendSubsystem.contextProviders`), which is destination-scoped, budgeted,
-  // policy-filtered and content-diagnosed — never appended verbatim to the global
-  // prompt. Flag (never block) so authors migrate dynamic context off the prompt.
-  if ((plugin.manifest.promptSections ?? []).length > 0) {
-    warnings.push(
-      'promptSections inject STATIC text into the shared system prompt (compatibility path, capped at 3×2000 chars). For dynamic or per-resource context prefer a Context Fabric provider (contextProviders) — it is destination-scoped, budgeted and privacy-filtered.',
-    )
-  }
 
   // MCP server entries should look shaped (a launchable command or a remote url).
   for (const [name, server] of Object.entries(plugin.entrypoints.mcpServers)) {
@@ -215,7 +129,7 @@ export function validatePlugin(
  */
 export async function validatePluginFull(
   plugin: DiscoveredPlugin,
-  opts?: { config?: MiniAppConfigValues; strict?: boolean },
+  opts?: { config?: PluginConfigValues; strict?: boolean },
 ): Promise<PluginValidation> {
   const [manifest, skills] = await Promise.all([
     Promise.resolve(validatePlugin(plugin, { config: opts?.config })),

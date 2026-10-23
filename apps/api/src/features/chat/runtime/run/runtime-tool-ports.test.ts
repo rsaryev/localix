@@ -7,7 +7,7 @@ import path from 'node:path'
 
 import { CHAT_RUN_PROFILE } from '../../../agent-core/run-shape'
 import { TOOL } from '../../../agent-core/tool-names'
-import type { MiniAppAuthoring } from '../../../plugins/authoring/service'
+import type { MiniAppAuthoring } from '../../../mini-apps/authoring/service'
 import type { SessionRecord } from '../../repository'
 import { buildOptionalToolPorts } from './runtime-tool-ports'
 import type { RuntimeToolWiringContext } from './runtime-tools'
@@ -15,7 +15,7 @@ import type { RuntimeToolWiringContext } from './runtime-tools'
 /** A root chat with one agent: the run every case here is about. */
 const ROOT_CHAT_POLICY = runPolicyFixture(sessionFixture())
 
-test('plugin_build suggests browser verification only when browser survives the run policy', async () => {
+test('mini_app_build suggests browser verification only when browser survives the run policy', async () => {
   const authoring = {
     build: async () => ({
       report: { ok: true, published: true, steps: [] },
@@ -25,7 +25,7 @@ test('plugin_build suggests browser verification only when browser survives the 
     deps: {
       db: {},
       ports: { contextStore: {} },
-      pluginAuthoring: authoring,
+      miniAppAuthoring: authoring,
       previewControl: { send: async () => ({}) },
     },
     repo: {},
@@ -46,23 +46,24 @@ test('plugin_build suggests browser verification only when browser survives the 
     disabledTools: [TOOL.browser],
     agentProfile: {
       ...CHAT_RUN_PROFILE,
-      toolExposure: { [TOOL.browser]: 'direct', [TOOL.plugin_build]: 'direct' },
+      toolExposure: { [TOOL.browser]: 'direct', [TOOL.mini_app_build]: 'direct' },
     },
-    loadedPlugins: { skills: [], miniAppGuides: [] },
+    loadedPlugins: { skills: [] },
+    loadedMiniApps: { guides: [] },
     policy: ROOT_CHAT_POLICY,
   } as unknown as Parameters<typeof buildOptionalToolPorts>[1]
   const { optional, ledgerRef } = buildOptionalToolPorts(ctx, params, {} as never)
   expect(optional.browser).toBeDefined()
-  expect(optional.plugin_build).toBeDefined()
+  expect(optional.mini_app_build).toBeDefined()
 
   ledgerRef.current = new Map([
     [TOOL.browser, { state: 'withheld', reason: { layer: 'policy', kind: 'rule', denial: null } }],
   ])
-  const denied = await optional.plugin_build!.run({ name: 'gpu-monitor' })
+  const denied = await optional.mini_app_build!.run({ name: 'gpu-monitor' })
   expect(denied.text).not.toContain('Before you call it done, look at it')
 
   ledgerRef.current = new Map([[TOOL.browser, { state: 'live' }]])
-  const allowed = await optional.plugin_build!.run({ name: 'gpu-monitor' })
+  const allowed = await optional.mini_app_build!.run({ name: 'gpu-monitor' })
   expect(allowed.text).toContain('Before you call it done, look at it')
 })
 
@@ -91,7 +92,8 @@ test('the skill tool announces its save through the host capability port', async
       defaultCwd: dir,
       disabledTools: [],
       agentProfile: { ...CHAT_RUN_PROFILE, toolExposure: { [TOOL.skill]: 'direct' } },
-      loadedPlugins: { skills: [], miniAppGuides: [] },
+      loadedPlugins: { skills: [] },
+      loadedMiniApps: { guides: [] },
       policy: ROOT_CHAT_POLICY,
     } as unknown as Parameters<typeof buildOptionalToolPorts>[1]
     const { optional } = buildOptionalToolPorts(ctx, params, {} as never)
@@ -120,7 +122,8 @@ test('set_topic is offered exactly when the host built its port', () => {
       defaultCwd: '/tmp',
       disabledTools: [],
       agentProfile: CHAT_RUN_PROFILE,
-      loadedPlugins: { skills: [], miniAppGuides: [] },
+      loadedPlugins: { skills: [] },
+      loadedMiniApps: { guides: [] },
       setTopic,
       policy: ROOT_CHAT_POLICY,
     } as unknown as Parameters<typeof buildOptionalToolPorts>[1]

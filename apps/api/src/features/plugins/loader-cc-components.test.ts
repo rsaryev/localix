@@ -30,7 +30,6 @@ async function load() {
       name: 'sec',
       scope: 'global',
       description: '',
-      toolNames: [],
       skills: [],
       mcpServers: [],
     },

@@ -320,7 +320,7 @@ describe('liveItemResolvers lifecycle — through the real run teardown', () => 
         provenance: { kind: 'root' },
       }),
       abort: new AbortController(),
-      pluginHooksForRun: [],
+      miniAppHooksForRun: [],
       runLiveResolverKeys,
       unsubLsp: undefined,
       defaultCwd: undefined,

@@ -1,6 +1,6 @@
 import type { DiscoveredPlugin } from './discovery'
-import type { MiniAppConfigValues } from './config'
-import { collectMcpConfigTokens, mcpShellFieldReferencingOption } from './mcp'
+import type { PluginConfigValues } from './config'
+import { mcpShellFieldReferencingOption } from './mcp'
 import { collectHookUserConfigTokens } from '../cc-hooks/config'
 import { isRequiredConfigMissing } from '../ext/manifest-validate'
 
@@ -18,35 +18,18 @@ const BUILTIN_PLUGIN_VARS = new Set([
 export function validatePluginConfig(
   plugin: DiscoveredPlugin,
   warnings: string[],
-  opts?: { config?: MiniAppConfigValues },
+  opts?: { config?: PluginConfigValues },
 ): void {
-  // `${KEY}` tokens in MCP config that aren't declared in `config` resolve to '' and
-  // can't read host env — flag them so a typo doesn't silently blank a value.
-  // Exception: built-in path vars (BUILTIN_PLUGIN_VARS) are always injected.
-  const declaredKeys = new Set(Object.keys(plugin.manifest.config ?? {}))
-  for (const key of declaredKeys) {
-    // Warn if a config key shadows a built-in plugin path var.
+  // A key Claude Code's option schema accepts is a word (`[A-Za-z_][A-Za-z0-9_]*`); one that
+  // shadows a built-in path variable loses to it.
+  for (const key of Object.keys(plugin.manifest.config ?? {})) {
     if (BUILTIN_PLUGIN_VARS.has(key)) {
       warnings.push(
         `Config key "${key}" shadows the built-in path variable \${${key}} — the built-in value always wins; rename the key to avoid confusion.`,
       )
     }
-    // Config keys used in ${KEY} substitution must be valid word characters.
-    if (!/^\w+$/.test(key)) {
-      warnings.push(
-        `Config key "${key}" contains non-word characters — it can't be referenced as \${${key}} in templates (use letters, digits, and underscores only).`,
-      )
-    }
   }
-  // A Claude Code-format plugin reads undeclared `${VAR}` from the environment, as there.
-  const readsEnvironment = plugin.layout !== 'legacy'
-  for (const token of collectMcpConfigTokens(plugin.entrypoints.mcpServers)) {
-    if (!readsEnvironment && !declaredKeys.has(token) && !BUILTIN_PLUGIN_VARS.has(token)) {
-      warnings.push(
-        `MCP config references "\${${token}}" which isn't declared in "config" (it resolves to empty).`,
-      )
-    }
-  }
+  // An undeclared `${VAR}` in an MCP config reads the environment, as in Claude Code: no warning.
 
   // Options, sensitive ones included, substitute anywhere in an MCP server's config, as in Claude
   // Code — except `headersHelper`, which runs through a shell: such a server does not load.
@@ -72,19 +55,6 @@ export function validatePluginConfig(
       warnings.push(
         `Hook command references sensitive key "\${user_config.${token}}" — sensitive values are never substituted into hook commands (shell strings); the token is left unsubstituted. Read the value from the environment instead.`,
       )
-    }
-  }
-
-  // `${KEY}` tokens in promptSections content that aren't declared in `config` resolve to ''.
-  // Built-in path vars are exempt (substituted by the loader).
-  for (const section of plugin.manifest.promptSections ?? []) {
-    for (const m of section.content.matchAll(/\$\{([\w.]+)\}/g)) {
-      const key = m[1].startsWith('user_config.') ? m[1].slice('user_config.'.length) : m[1]
-      if (!declaredKeys.has(key) && !BUILTIN_PLUGIN_VARS.has(key)) {
-        warnings.push(
-          `promptSection "${section.title}" content references "\${${m[1]}}" which isn't declared in "config" (it resolves to empty).`,
-        )
-      }
     }
   }
 
@@ -114,12 +84,12 @@ export function validatePluginConfig(
       )
     if (looksLikeSecret && !opt.secret) {
       warnings.push(
-        `Config "${key}" looks like a credential but "secret: false" — add "secret: true" to mask the value in Settings.`,
+        `Config "${key}" looks like a credential but is not sensitive — add "sensitive": true to its userConfig option to mask the value in Settings.`,
       )
     }
     if (opt.secret && opt.default !== undefined && opt.default !== '') {
       warnings.push(
-        `Config "${key}" is "secret: true" but also has a non-empty default — the default value will be visible in the manifest, defeating the purpose of marking it secret.`,
+        `Config "${key}" is "sensitive": true but also has a non-empty default — the default value will be visible in the manifest, defeating the purpose of marking it sensitive.`,
       )
     }
     if (opt.default !== undefined) {

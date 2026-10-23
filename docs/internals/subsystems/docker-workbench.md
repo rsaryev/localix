@@ -1,6 +1,6 @@
 # Docker provider internals
 
-The Docker provider supplies container operations inside the bundled DevOps Workspace plugin. Use
+The Docker provider supplies container operations inside the bundled DevOps Workspace mini app. Use
 this page when changing endpoint selection, backend contracts, routes, polling, actions, or Docker
 UI contributions.
 
@@ -8,7 +8,7 @@ UI contributions.
 
 | Term               | Meaning                                                           | Boundary                                                               |
 | ------------------ | ----------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| Docker provider    | The Docker backend and UI slices under the `devops` plugin.       | It has no independent manifest, package, enable switch, or launcher.   |
+| Docker provider    | The Docker backend and UI slices under the `devops` mini app.     | It has no independent manifest, package, enable switch, or launcher.   |
 | Engine backend     | The `ContainerEngineBackend` port used by the service and routes. | Callers do not know whether the Engine API or CLI implements it.       |
 | Engine API backend | Structured HTTP access through a negotiated Docker API version.   | SSH and client-certificate TLS endpoints are not implemented natively. |
 | CLI backend        | A bounded `docker` process adapter implementing the same port.    | The executable must be on the API host's `PATH`.                       |

@@ -52,11 +52,11 @@ previews, and format limits.
 
 ## Configuration
 
-| Control        | What it changes                                          | Boundary                                                          |
-| -------------- | -------------------------------------------------------- | ----------------------------------------------------------------- |
-| Model selector | The connection and model for a participant's route.      | The saved connection must still exist.                            |
-| Participants   | **Add participant** chooses agents for the conversation. | Available tools depend on the answering agent's effective policy. |
-| `/help`        | The built-in command list and command-specific help.     | Plugin and surface-specific commands can add to this catalog.     |
+| Control        | What it changes                                          | Boundary                                                            |
+| -------------- | -------------------------------------------------------- | ------------------------------------------------------------------- |
+| Model selector | The connection and model for a participant's route.      | The saved connection must still exist.                              |
+| Participants   | **Add participant** chooses agents for the conversation. | Available tools depend on the answering agent's effective policy.   |
+| `/help`        | The built-in command list and command-specific help.     | Plugin, mini app and surface-specific commands add to this catalog. |
 
 The [capabilities guide](../features/capabilities.md) owns policy details. The
 [commands guide](../features/hooks-and-commands.md) owns the current slash-command catalog. Use the
@@ -87,5 +87,5 @@ answers.
 - [Project-folder selection](https://github.com/rsaryev/localix/blob/main/apps/ui/src/entities/chat/model/useAddProjectFolder.ts)
 - [Session lifecycle](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/session-lifecycle.ts)
 - [Turn entry and durable queueing](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/turn-entry.ts)
-- [Queue selection and steering](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/wake-queue-selection.ts)
+- [Queue selection and steering](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/wake-queue/selection.ts)
 - [Built-in slash-command catalog](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/slash-catalog.ts)

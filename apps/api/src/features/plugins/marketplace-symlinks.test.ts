@@ -46,7 +46,6 @@ async function fixture() {
   await fs.symlink('../../../outside', join(upstream, 'outside-dir'), 'dir')
   const deps: MarketplaceRegistryDeps = {
     root: join(tempDir(), 'marketplaces'),
-    localixDir: join(tempDir(), 'bundled'),
     now: () => '2026-01-01T00:00:00.000Z',
     cloneRepo: async () => {
       throw new Error('no network in this test')

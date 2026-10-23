@@ -6,6 +6,7 @@ import { ToolsSettings } from '../ToolsSettings'
 import { SkillsSettings } from '../SkillsSettings'
 import { McpSettings } from '../McpSettings'
 import { PluginsSettings } from '../PluginsSettings'
+import { MiniAppsSettings } from '../MiniAppsSettings'
 import { PermissionRulesView } from '../capabilities/PermissionRulesView'
 
 /** The profile's first tab is the record itself; the rest are what it may use. */
@@ -17,6 +18,7 @@ const TAB_LABELS: Record<AgentProfileTabId, string> = {
   skills: 'Skills',
   mcp: 'MCP',
   plugins: 'Plugins',
+  'mini-apps': 'Mini apps',
   rules: 'Permission rules',
 }
 
@@ -70,6 +72,8 @@ export function AgentCapabilityPanel({
       return <McpSettings scope={projectId} agentScope={agentScope} projects={projects} />
     case 'plugins':
       return <PluginsSettings scope={projectId} agentScope={agentScope} projects={projects} />
+    case 'mini-apps':
+      return <MiniAppsSettings scope={projectId} agentScope={agentScope} projects={projects} />
     case 'rules':
       // Keyed on the agent so no staged edit survives a switch from one profile to another.
       return <PermissionRulesView key={agentScope} scope={agentScope} />

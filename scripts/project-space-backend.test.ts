@@ -9,7 +9,7 @@ import {
   type HostRouteContext,
   type MiniAppContext,
 } from '@localixai/mini-app-sdk/backend'
-import { createMiniAppBackendHost } from '../apps/api/src/features/plugins/backend-host'
+import { createMiniAppBackendHost } from '../apps/api/src/features/mini-apps/backend-host'
 import { createSubsystemRegistry } from '../apps/api/src/features/ext/subsystem-contrib'
 import { createCapabilityRegistry } from '../apps/api/src/features/ext/capability-registry'
 import { createWsFrameRegistry } from '../apps/api/src/features/ext/ws-frame-registry'
@@ -23,7 +23,7 @@ import { spaceStore } from '../mini-apps/project-space/backend/space-store'
 
 // Direct route tests cannot detect the host rejecting a whole backend for an invalid WS name.
 // Exercise the real composition seam: the HTTP board and its advertised stream must both wire.
-test('the scoped Project Space backend serves HTTP and live changes through the plugin host', async () => {
+test('the scoped Project Space backend serves HTTP and live changes through the mini app host', async () => {
   const root = mkdtempSync(join(tmpdir(), 'space-host-'))
   const wsFrameRegistry = createWsFrameRegistry()
   const boardUrl = `${ROUTE_PATH}/space?sessionId=s`
@@ -54,7 +54,7 @@ test('the scoped Project Space backend serves HTTP and live changes through the 
         : contribution
           ? [contribution]
           : []
-      return backends.map((backend) => ({ pluginName: manifest.name, backend }))
+      return backends.map((backend) => ({ app: manifest.name, backend }))
     },
     resolveScope: ({ userId }) => ({ userId, sessionId: 's', projectId: 'p', cwd: root }),
   })

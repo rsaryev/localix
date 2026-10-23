@@ -1,9 +1,9 @@
-import { pluginViewTarget } from '@localixai/api/plugin-view-target'
+import { miniAppViewTarget } from '@localixai/api/mini-app-view-target'
 import { platformCapabilities } from '@/shared/lib/platformCapabilities'
 import { isTabOpenedAs, scopeKindOf } from '@/entities/workspace-grid/model'
 import type { PreviewCommand } from '@/shared/api/contracts'
-import { pluginLabel } from '@/shared/contrib/miniAppAttribution'
-import { pluginErrorBuffer, watchPluginErrors } from '@/shared/contrib/miniAppViewErrors'
+import { miniAppLabel } from '@/shared/contrib/miniAppAttribution'
+import { miniAppErrorBuffer, watchMiniAppErrors } from '@/shared/contrib/miniAppViewErrors'
 import { railViewletRegistry, workItemKindRegistry } from '@/shared/contrib/uiContrib'
 import { inspector } from '@/shared/lib/inspectorBus'
 import type { ActuateResult, EmbeddedActuator } from '@localixai/visual-feedback/embedded'
@@ -40,7 +40,7 @@ export function resolvePluginView(plugin: string): PluginView | null {
   if (viewlet) return { kind: viewlet.kind, id: viewlet.kind, title: viewlet.title }
   const kinds = workItemKindRegistry.list().filter((entry) => entry.pluginName === plugin)
   const only = kinds.length === 1 ? kinds[0] : undefined
-  return only ? { kind: only.kind, id: only.kind, title: pluginLabel(plugin) } : null
+  return only ? { kind: only.kind, id: only.kind, title: miniAppLabel(plugin) } : null
 }
 
 /** The refusal a command earns before anything opens, or null when it may run. */
@@ -144,7 +144,7 @@ function asView(
   const snapshot = result.snapshot && {
     ...result.snapshot,
     title: view.title,
-    url: pluginViewTarget(plugin),
+    url: miniAppViewTarget(plugin),
   }
   const whole = result.action === 'screenshot' && !command.ref && !command.selector
   return {
@@ -152,7 +152,7 @@ function asView(
     result: {
       ...result,
       ...(snapshot ? { snapshot } : {}),
-      ...(whole ? { target: `${view.title} (${pluginViewTarget(plugin)})` } : {}),
+      ...(whole ? { target: `${view.title} (${miniAppViewTarget(plugin)})` } : {}),
     },
   }
 }
@@ -175,7 +175,7 @@ function actuatorFor(plugin: string): Promise<EmbeddedActuator> {
     // Loaded on the first look at any plugin view: the actuator and its rasterizer are not
     // something a window that never inspects a plugin should carry.
     actuator = import('@localixai/visual-feedback/embedded').then(({ createEmbeddedActuator }) =>
-      createEmbeddedActuator({ console: pluginErrorBuffer(plugin), backdrop: paneBackdrop }),
+      createEmbeddedActuator({ console: miniAppErrorBuffer(plugin), backdrop: paneBackdrop }),
     )
     actuators.set(plugin, actuator)
   }
@@ -220,7 +220,7 @@ export async function runPluginViewCommand(
   const perChat = scopeKindOf(view.kind) === 'session'
   if (perChat && chat.activeSessionId !== chat.sessionId) return notOnScreen(view)
   const own = perChat ? chat.sessionId : undefined
-  watchPluginErrors()
+  watchMiniAppErrors()
   // Already on screen, it is already rendered: waiting for it to settle would only add latency to
   // every command on an open view.
   const shown = visiblePanel(view.id, own)

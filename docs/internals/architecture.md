@@ -20,7 +20,7 @@ record before changing it.
 
 | Path                     | Owns                                                                                        | Boundary                                                                |
 | ------------------------ | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `apps/api`               | Hono routes, domain services, agent execution, persistence, and plugin hosts.               | Feature code reaches the agent loop through the runtime port.           |
+| `apps/api`               | Hono routes, domain services, agent execution, persistence, and mini app hosts.             | Feature code reaches the agent loop through the runtime port.           |
 | `apps/ui`                | React workspaces, typed panes, settings, and API/event clients.                             | It requests state from the API; it does not own durable domain state.   |
 | `apps/desktop-tauri`     | Native window, release sidecar lifecycle, and desktop capabilities.                         | Development scripts start the API instead of the Rust shell.            |
 | `apps/landing`           | Documentation site and generated navigation.                                                | It is not part of the desktop runtime.                                  |
@@ -30,7 +30,6 @@ record before changing it.
 | `packages/claude-plugin` | The Claude Code plugin format: `plugin.json` and `hooks.json` schemas, name and path rules. | It knows no Localix concept; `features/plugins/layout` composes it.     |
 | `packages/cli`           | The `localix` launcher: it hands a path to the running desktop app.                         | It opens a deep link; it never starts a runtime or renders a session.   |
 | `mini-apps`              | First-party mini apps: tools, providers, hooks, workbenches, and UI contributions.          | Each `mini-app.json` declares its own capabilities.                     |
-| `plugins`                | Bundled plugins in the Claude Code format.                                                  | Read exactly as Claude Code reads them.                                 |
 
 ## How it works
 
@@ -54,15 +53,15 @@ startup retry ladder.
 The first capability snapshot names every enabled mini app's tools. Answering that means running
 each mini app's `register()`, so the answer is kept on disk under `~/.localix/cache` and a launch
 whose mini app code, config and host build are unchanged serves it without importing any backend
-(`apps/api/src/features/plugins/inspection-store.ts`). The UI publishes the enabled set and tools
+(`apps/api/src/features/mini-apps/inspection-store.ts`). The UI publishes the enabled set and tools
 the moment that snapshot lands and registers each mini app's UI as its own artifact loads.
 
 ### API composition
 
 `apps/api/src/bootstrap.ts` is the composition root. Its phases create infrastructure, registries,
-plugin hosts, domain services, the chat service, the trigger engine, the application facade, routes,
-and background timers. Features receive those dependencies rather than constructing storage or the
-agent adapter themselves.
+mini app hosts, domain services, the chat service, the trigger engine, the application facade,
+routes, and background timers. Features receive those dependencies rather than constructing storage
+or the agent adapter themselves.
 
 SQLite stores projects, sessions, messages, task state, provider connections, and other local
 records through Kysely repositories. Production stores media bytes in a filesystem directory next to
@@ -123,8 +122,11 @@ Architecture checks are repository commands, not runtime settings.
 | `bun run --cwd apps/landing docs:gen` | Documentation metadata, links, repository paths, and generated navigation. |
 
 Plugin and mini app enablement changes which tools, providers, hooks, and workbench panes the hosts
-register. [Plugins and mini apps](../extending/plugins.md) owns manifest fields and contribution
-lifecycles.
+register. [Build a mini app](../extending/mini-apps.md) owns the mini app manifest fields and
+contribution lifecycles; [Install Claude Code plugins](../extending/claude-code-plugins.md) owns
+what a plugin runs.
+[Plugins and mini apps](https://github.com/rsaryev/localix/blob/main/docs/internals/plugins-and-mini-apps.md)
+is the contract between the two.
 
 ## Limits
 
@@ -148,7 +150,9 @@ lifecycles.
 - [Environment and configuration](environment.md)
 - [Workspace](../features/workspace.md)
 - [Execution environments](../features/execution-environments.md)
-- [Plugins and mini apps](../extending/plugins.md)
+- [Build a mini app](../extending/mini-apps.md)
+- [Install Claude Code plugins](../extending/claude-code-plugins.md)
+- [Plugins and mini apps](https://github.com/rsaryev/localix/blob/main/docs/internals/plugins-and-mini-apps.md)
 
 ## Source of truth
 

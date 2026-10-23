@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import type { StatusItemState } from '@localixai/mini-app-sdk/ui'
 import { registerDom } from '@localixai/kit/testing/dom'
 
-import { setEnabledPluginNames } from './miniAppActivation'
+import { setEnabledMiniAppNames } from './miniAppActivation'
 import { registerStatusItem, StatusItems, statusItemsFor } from './statusItems'
 
 /** Every fixture owner, so the activation gate lets them through — see the fail-closed test. */
@@ -24,11 +24,11 @@ let teardown: () => Promise<void>
 beforeAll(() => {
   teardown = registerDom()
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
-  setEnabledPluginNames(new Set(FIXTURE_PLUGINS))
+  setEnabledMiniAppNames(new Set(FIXTURE_PLUGINS))
 })
 
 afterAll(async () => {
-  setEnabledPluginNames(null)
+  setEnabledMiniAppNames(null)
   await new Promise((resolve) => setTimeout(resolve, 0))
   await teardown()
 })
@@ -287,15 +287,15 @@ describe('contributed status items', () => {
       placement: 'test.gate',
       useItem: () => item({ label: 'Gated open' }),
     })
-    setEnabledPluginNames(new Set(FIXTURE_PLUGINS.filter((name) => name !== 'gate')))
+    setEnabledMiniAppNames(new Set(FIXTURE_PLUGINS.filter((name) => name !== 'gate')))
     const view = await render(<StatusItems placement="test.gate" sessionId="s1" />)
     try {
       expect(view.html).not.toContain('Gated open')
-      await view.mutate(() => setEnabledPluginNames(new Set(FIXTURE_PLUGINS)))
+      await view.mutate(() => setEnabledMiniAppNames(new Set(FIXTURE_PLUGINS)))
       expect(view.html).toContain('Gated open')
     } finally {
       await view.close()
-      setEnabledPluginNames(new Set(FIXTURE_PLUGINS))
+      setEnabledMiniAppNames(new Set(FIXTURE_PLUGINS))
     }
   })
 

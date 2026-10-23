@@ -83,12 +83,11 @@ describe('parseCommandFile / parseAgentFile with a namespaced override', () => {
   })
 })
 
-describe('CC REPLACE vs localix ADD semantics for manifest commands/agents', () => {
-  let plug: string
+describe('Claude Code REPLACE semantics for manifest commands/agents', () => {
   let ccPlug: string
 
   beforeAll(async () => {
-    plug = join(dir, 'replace-plugin')
+    const plug = join(dir, 'replace-plugin')
     await fs.mkdir(join(plug, 'commands'), { recursive: true })
     await fs.mkdir(join(plug, 'agents'), { recursive: true })
     await fs.mkdir(join(plug, 'extra-cmds'), { recursive: true })
@@ -103,8 +102,9 @@ describe('CC REPLACE vs localix ADD semantics for manifest commands/agents', () 
     await fs.writeFile(join(plug, 'extra-agents', 'alt-agent.md'), agent)
     await fs.writeFile(join(plug, 'skills', 'default-skill', 'SKILL.md'), '# s')
     await fs.writeFile(join(plug, 'more-skills', 'extra-skill', 'SKILL.md'), '# s')
+    await fs.mkdir(join(plug, CLAUDE_CODE_DIR), { recursive: true })
     await fs.writeFile(
-      join(plug, 'plugin.json'),
+      join(plug, CLAUDE_CODE_PLUGIN_MANIFEST),
       JSON.stringify({
         name: 'replace-plugin',
         commands: ['./extra-cmds'],
@@ -112,21 +112,7 @@ describe('CC REPLACE vs localix ADD semantics for manifest commands/agents', () 
         skills: ['./more-skills'],
       }),
     )
-    ccPlug = join(dir, 'replace-plugin-cc')
-    await fs.cp(plug, ccPlug, { recursive: true })
-    await fs.mkdir(join(ccPlug, CLAUDE_CODE_DIR), { recursive: true })
-    await fs.rename(join(ccPlug, 'plugin.json'), join(ccPlug, CLAUDE_CODE_PLUGIN_MANIFEST))
-    // A Claude Code plugin loads in place, with its REPLACE rule.
-  })
-
-  it('localix-origin plugin stays ADDITIVE (default dirs scanned alongside listed paths)', async () => {
-    const plugin = await loadManifest(plug, 'global', '')
-    expect(plugin.provides.commands).toEqual(expect.arrayContaining(['alt-cmd', 'default-cmd']))
-    expect(plugin.provides.agents).toEqual(
-      expect.arrayContaining(['replace-plugin:alt-agent', 'replace-plugin:default-agent']),
-    )
-    expect(plugin.entrypoints.ccReplacedDefaults).toBeUndefined()
-    expect(plugin.manifest.origin).toBeUndefined()
+    ccPlug = plug
   })
 
   it('imported Claude Code plugin keeps REPLACE: listed commands/agents hide the default dirs', async () => {
@@ -148,7 +134,7 @@ describe('CC REPLACE vs localix ADD semantics for manifest commands/agents', () 
     await fs.cp(ccPlug, installed, { recursive: true })
 
     for (let pass = 0; pass < 2; pass++) {
-      const found = await discoverPlugins({ homeDir: home, cwd: null, includeBundled: false })
+      const found = await discoverPlugins({ homeDir: home, cwd: null })
       const plugin = found.find((candidate) => candidate.manifest.name === 'replace-plugin')
       expect(plugin?.manifest.origin?.format).toBe('claude-code')
       expect(plugin?.provides.commands).toEqual(['alt-cmd'])
@@ -156,15 +142,12 @@ describe('CC REPLACE vs localix ADD semantics for manifest commands/agents', () 
     }
   })
 
-  it('skills always ADD for both origins', async () => {
-    const localix = await loadManifest(plug, 'global', '')
+  it('skills always ADD to the default skills dir', async () => {
     const cc = await loadManifest(ccPlug, 'global', '')
-    for (const p of [localix, cc]) {
-      expect(p.provides.skills.sort()).toEqual(['default-skill', 'extra-skill'])
-    }
+    expect(cc.provides.skills.sort()).toEqual(['default-skill', 'extra-skill'])
   })
 
-  it('manifest-less plugins scan the default dirs (origin semantics are identical)', async () => {
+  it('manifest-less plugins scan the default dirs', async () => {
     const bare = join(dir, 'bare-cc-plugin')
     await fs.mkdir(join(bare, 'commands'), { recursive: true })
     await fs.writeFile(join(bare, 'commands', 'only.md'), '---\ndescription: d\n---\nBody.')

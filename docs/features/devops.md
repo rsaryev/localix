@@ -95,7 +95,7 @@ the workbench does not change kubeconfig's current context.
 
 - [Containers](docker.md)
 - [Kubernetes](kubernetes.md)
-- [Mini apps](../extending/plugins.md)
+- [Mini apps](../extending/mini-apps.md)
 - [Workspace](workspace.md)
 
 ## Source of truth

@@ -124,7 +124,7 @@ contracts live in [Docker provider internals](docker-workbench.md) and
 - [DevOps Workspace](../../features/devops.md)
 - [Containers](../../features/docker.md)
 - [Kubernetes](../../features/kubernetes.md)
-- [Mini apps](../../extending/plugins.md)
+- [Mini apps](../../extending/mini-apps.md)
 - [Execution environments](../../features/execution-environments.md)
 
 ## Source of truth

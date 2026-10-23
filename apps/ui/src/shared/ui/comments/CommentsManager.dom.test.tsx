@@ -25,7 +25,7 @@ describe('CommentsManager actions', () => {
     const { CommentsManager } = await import('./CommentsManager')
     const { registerCommentAction, removeCommentActionsOf } =
       await import('@/shared/contrib/commentActions')
-    const { setEnabledPluginNames } = await import('@/shared/contrib/miniAppActivation')
+    const { setEnabledMiniAppNames } = await import('@/shared/contrib/miniAppActivation')
     const onClear = mock(() => {})
     const onSubmit = mock(() => {})
     const onAction = mock((_action: CommentActionContribution) => {})
@@ -41,7 +41,7 @@ describe('CommentsManager actions', () => {
       pluginName: ACTION_OWNER,
       run: async () => {},
     }
-    setEnabledPluginNames(new Set([ACTION_OWNER]))
+    setEnabledMiniAppNames(new Set([ACTION_OWNER]))
     registerCommentAction(action)
 
     try {
@@ -105,7 +105,7 @@ describe('CommentsManager actions', () => {
       await act(async () => root.unmount())
       host.remove()
       removeCommentActionsOf(ACTION_OWNER)
-      setEnabledPluginNames(null)
+      setEnabledMiniAppNames(null)
     }
   })
 })

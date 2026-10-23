@@ -33,20 +33,16 @@ export function narrowLoadedPlugins(
   const owned = loaded.loaded.filter((summary) => denied.has(summary.name))
   if (owned.length === 0) return loaded
 
-  const deniedTools = new Set(owned.flatMap((summary) => summary.toolNames))
   const deniedBinDirs = new Set(owned.flatMap((s) => (s.binDir ? [s.binDir] : [])))
   const deniedMcpIds = owned.map((summary) => mcpIdPrefix(summary.name))
 
   return {
     ...loaded,
-    tools: loaded.tools.filter((tool) => !deniedTools.has(tool.name)),
     skills: loaded.skills.filter((skill) => !(skill.pluginName && denied.has(skill.pluginName))),
     mcpServers: loaded.mcpServers.filter(
       (server) => !deniedMcpIds.some((prefix) => server.id.startsWith(prefix)),
     ),
     binDirs: loaded.binDirs.filter((dir) => !deniedBinDirs.has(dir)),
-    promptSections: loaded.promptSections.filter((section) => !denied.has(section.pluginName)),
-    miniAppGuides: loaded.miniAppGuides.filter((guide) => !denied.has(guide.app)),
     agents: loaded.agents.filter((agent) => !denied.has(agent.pluginName)),
     outputStyles: loaded.outputStyles.filter((entry) => !denied.has(entry.pluginName)),
     mainAgent:

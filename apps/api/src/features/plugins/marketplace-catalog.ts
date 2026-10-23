@@ -8,7 +8,6 @@ import {
   type Marketplace,
   type MarketplaceRelevance,
 } from './marketplace'
-import { bundledMiniAppsRoot } from './discovery'
 import { marketplacesRoot, type MarketplaceSource } from './marketplace-source'
 import {
   locateManifest,
@@ -67,13 +66,6 @@ export async function readMarketplace(dir: string): Promise<Marketplace> {
   return marketplaceSchema.parse(raw)
 }
 
-/** The always-present built-in marketplace backed by our bundled `plugins/` catalog. */
-export const LOCALIX_MARKETPLACE = 'localix'
-
-export function localixMarketplaceDir(deps: MarketplaceRegistryDeps): string {
-  return deps.localixDir ?? bundledMiniAppsRoot()
-}
-
 /** Per-entry summary carried on a marketplace listing row (UI/agent surfaces). */
 export interface MarketplaceListingPlugin {
   name: string
@@ -85,7 +77,6 @@ export interface MarketplaceListingPlugin {
 /** One row in the merged marketplace listing. */
 export interface MarketplaceListing {
   name: string
-  builtin: boolean
   count: number
   plugins: MarketplaceListingPlugin[]
   /** Why this registered marketplace cannot be read (kept listed so the user sees it). */
@@ -100,55 +91,21 @@ function toListingPlugins(market: Marketplace): MarketplaceListingPlugin[] {
   }))
 }
 
-/**
- * List every marketplace: the built-in `localix` catalog FIRST (priority), then each
- * registered one. Names are merged logically (not file-wise) — `localix` always leads.
- */
+/** List every registered marketplace. Localix ships none of its own. */
 export async function listMarketplaces(
   deps: MarketplaceRegistryDeps,
 ): Promise<MarketplaceListing[]> {
-  const out: MarketplaceListing[] = []
-  try {
-    const localix = await readMarketplace(localixMarketplaceDir(deps))
-    out.push({
-      name: LOCALIX_MARKETPLACE,
-      builtin: true,
-      count: localix.plugins.length,
-      plugins: toListingPlugins(localix),
-    })
-  } catch {
-    // bundled catalog missing (shouldn't happen) — skip
-  }
   const known = await readKnownMarketplaces(deps.root ?? marketplacesRoot())
-  const rest = await Promise.all(
-    Object.entries(known).flatMap(([name, rec]) =>
-      name === LOCALIX_MARKETPLACE
-        ? []
-        : [
-            (async (): Promise<MarketplaceListing> => {
-              try {
-                const marketplace = await readMarketplace(rec.installLocation)
-                return {
-                  name,
-                  builtin: false,
-                  count: marketplace.plugins.length,
-                  plugins: toListingPlugins(marketplace),
-                }
-              } catch (err) {
-                return {
-                  name,
-                  builtin: false,
-                  count: 0,
-                  plugins: [],
-                  unsupported: errorMessage(err),
-                }
-              }
-            })(),
-          ],
-    ),
+  return Promise.all(
+    Object.entries(known).map(async ([name, rec]): Promise<MarketplaceListing> => {
+      try {
+        const marketplace = await readMarketplace(rec.installLocation)
+        return { name, count: marketplace.plugins.length, plugins: toListingPlugins(marketplace) }
+      } catch (err) {
+        return { name, count: 0, plugins: [], unsupported: errorMessage(err) }
+      }
+    }),
   )
-  out.push(...rest)
-  return out
 }
 
 /**
@@ -160,10 +117,8 @@ export async function marketplaceDependencyAllowList(
   deps: MarketplaceRegistryDeps,
 ): Promise<string[]> {
   try {
-    const dir =
-      name === LOCALIX_MARKETPLACE
-        ? localixMarketplaceDir(deps)
-        : (await readKnownMarketplaces(deps.root ?? marketplacesRoot()))[name]?.installLocation
+    const dir = (await readKnownMarketplaces(deps.root ?? marketplacesRoot()))[name]
+      ?.installLocation
     if (!dir) return []
     return (await readMarketplace(dir)).allowCrossMarketplaceDependenciesOn ?? []
   } catch {
@@ -172,7 +127,7 @@ export async function marketplaceDependencyAllowList(
 }
 
 /**
- * Find every registered marketplace (built-in `localix` + known) that contains a plugin
+ * Find every registered marketplace that contains a plugin
  * named `name`. Used to resolve a bare `/plugin install <name>` (no `@marketplace`).
  */
 export async function findMarketplacesWithPlugin(
@@ -180,10 +135,9 @@ export async function findMarketplacesWithPlugin(
   deps: MarketplaceRegistryDeps,
 ): Promise<string[]> {
   const root = deps.root ?? marketplacesRoot()
-  const dirs: Array<[string, string]> = [[LOCALIX_MARKETPLACE, localixMarketplaceDir(deps)]]
-  for (const [mName, rec] of Object.entries(await readKnownMarketplaces(root))) {
-    if (mName !== LOCALIX_MARKETPLACE) dirs.push([mName, rec.installLocation])
-  }
+  const dirs: Array<[string, string]> = Object.entries(await readKnownMarketplaces(root)).map(
+    ([mName, rec]) => [mName, rec.installLocation],
+  )
   const probed = await Promise.all(
     dirs.map(async ([mName, dir]) => {
       try {

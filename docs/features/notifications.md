@@ -1,9 +1,9 @@
 # Manage notifications
 
 The Event Center records agent runs, sub-agents and jobs, requests for your input, background
-terminals, and problems the app or a plugin found. Errors and requests for input can also interrupt
-you on supported clients. History is retained by the server until it is cleared or removed by
-retention; not every message the interface shows creates an entry.
+terminals, and problems the app, a mini app or a plugin found. Errors and requests for input can
+also interrupt you on supported clients. History is retained by the server until it is cleared or
+removed by retention; not every message the interface shows creates an entry.
 
 The answer to something you just did — "Copied", "Nothing to undo", "Branch already exists" —
 appears briefly beside the control and is not journaled. A form that already shows its failure does
@@ -32,16 +32,16 @@ history**.
 
 ### What becomes an entry
 
-| Runtime fact                                                                                   | Entry                                                                                           | Interrupts                       |
-| ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------- |
-| Top-level run completed                                                                        | Success                                                                                         | No                               |
-| Top-level run failed                                                                           | Error with applicable recovery                                                                  | Yes                              |
-| Human input required                                                                           | Warning, with **Respond**                                                                       | Yes                              |
-| A board card was assigned to you (`@human`)                                                    | Human input                                                                                     | Yes                              |
-| Sub-agent or job session completed, failed or was stopped                                      | Success, error or information                                                                   | Only a failure                   |
-| Background terminal exited                                                                     | Success for code zero; information for a stop or a stop signal (129, 130, 137, 143); else error | Only an unexpected nonzero exit  |
-| A problem the app or a plugin found (a file that will not validate, a connection that is down) | One standing entry per subject                                                                  | Only when nothing could be shown |
-| An action you took that failed, or that needs a decision from you                              | Error or warning                                                                                | Only an error                    |
+| Runtime fact                                                                                               | Entry                                                                                           | Interrupts                       |
+| ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------------- |
+| Top-level run completed                                                                                    | Success                                                                                         | No                               |
+| Top-level run failed                                                                                       | Error with applicable recovery                                                                  | Yes                              |
+| Human input required                                                                                       | Warning, with **Respond**                                                                       | Yes                              |
+| A board card was assigned to you (`@human`)                                                                | Human input                                                                                     | Yes                              |
+| Sub-agent or job session completed, failed or was stopped                                                  | Success, error or information                                                                   | Only a failure                   |
+| Background terminal exited                                                                                 | Success for code zero; information for a stop or a stop signal (129, 130, 137, 143); else error | Only an unexpected nonzero exit  |
+| A problem the app, a mini app or a plugin found (a file that will not validate, a connection that is down) | One standing entry per subject                                                                  | Only when nothing could be shown |
+| An action you took that failed, or that needs a decision from you                                          | Error or warning                                                                                | Only an error                    |
 
 A logical run reports once after retries and continuations finish. Successful top-level runs report
 when no later turns remain queued; nested chats do not add the same completion entry. **Continue**
@@ -78,18 +78,21 @@ changes, the new report replaces the old one; when it is fixed, the entry shows 
 it comes back, the same entry reopens with a count. A lost connection works the same way: one entry
 per outage source, settled when the connection returns, reopened with ×2, ×3 on the next drop.
 
-### Connections and plugins that stop working
+### Connections, mini apps and plugins that stop working
 
 A provider connection that rate-limits you, runs out of its plan, or refuses its key is one standing
 entry for that connection, whichever chat hit it; the next run that completes on it settles the
-entry. A plugin set that fails to load for a workspace is one entry too, settled by the next load
-that works. A question a participant asked you settles once you write in that conversation.
+entry. A set of mini apps that fails to load for a workspace is one entry too, settled by the next
+load that works; its **Open mini apps** action opens Settings → Capabilities → Mini apps. A plugin
+that fails to load is its own entry, which opens Settings → Capabilities → Plugins. A question a
+participant asked you settles once you write in that conversation.
 
-### Entries from plugins
+### Entries from mini apps
 
-An entry a plugin published is labelled with that plugin's display name and still opens the session
-it happened in. A plugin backend's problem, such as a webhook URL that rejects every delivery, is a
-standing entry per plugin and source.
+An entry a mini app published is labelled with that mini app's display name and still opens the
+session it happened in. A mini app backend's problem, such as a webhook URL that rejects every
+delivery, is a standing entry per mini app and source, and its **Open mini app settings** action
+opens that app's row in Settings → Capabilities → Mini apps.
 
 ### Actions on an entry
 

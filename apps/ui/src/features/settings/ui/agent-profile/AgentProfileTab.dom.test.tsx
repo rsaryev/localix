@@ -64,7 +64,7 @@ test('agent navigation shares the settings shell and retains an unsaved definiti
     expect(host.firstElementChild?.className).toContain('@container/settings')
     const navigation = host.querySelector('nav[aria-label="Agent profile sections"]')!
     expect(navigation.querySelectorAll('[role="group"]')).toHaveLength(2)
-    expect(navigation.querySelectorAll('button')).toHaveLength(6)
+    expect(navigation.querySelectorAll('button')).toHaveLength(7)
     expect(host.querySelector('[aria-label="Agent section"]')).not.toBeNull()
     const prompt = host.querySelector<HTMLTextAreaElement>('#agent-instructions')!
     await act(async () => {

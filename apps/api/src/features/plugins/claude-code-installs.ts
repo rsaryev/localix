@@ -158,11 +158,10 @@ async function marketplaceListing(known: unknown, id: string): Promise<Listing |
  */
 export function withEntry(id: string, entry: MarketplaceEntry | undefined) {
   return (read: ManifestFiles): ManifestFiles => {
-    // Claude Code never reads a root `plugin.json`, so neither its fields nor its `tools`
-    // entrypoint (Localix native code) count for a plugin Claude Code installed.
-    const { legacy: _ignored, ...files } = read
+    // Claude Code never reads a root `plugin.json`, so its fields do not count.
+    const { root: _ignored, ...files } = read
     const plugin = files.plugin
-    if (!plugin && !files.app) {
+    if (!plugin && !files.miniApp) {
       let json: Record<string, unknown> = { name: id.slice(0, id.lastIndexOf('@')) || id }
       try {
         if (entry) json = synthesizeEntryManifest(entry)
@@ -234,7 +233,6 @@ export async function discoverClaudeCodePlugins(opts: {
           install.dir,
           scope,
           opts.projectId,
-          false,
           withEntry(install.id, install.entry),
         ),
       )

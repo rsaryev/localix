@@ -12,7 +12,7 @@ import { createStorageMaintenance } from './bootstrap/storage-maintenance'
 import { createInfraPhase, type BootstrapRuntimeInfo } from './bootstrap/infra'
 import { createRegistriesPhase } from './bootstrap/registries'
 import { createExternalAgentsPhase } from './bootstrap/external-agents'
-import { createPluginHostsPhase } from './bootstrap/plugin-hosts'
+import { createMiniAppHostsPhase } from './bootstrap/mini-app-hosts'
 import { createDomainServicesPhase } from './bootstrap/domain-services'
 import { createEnginesPhase } from './bootstrap/engines'
 import { createAgentFacadePhase } from './bootstrap/agent-facade'
@@ -95,8 +95,8 @@ export async function bootstrap(
     wsFrameRegistry,
     subsystemRegistry,
   })
-  const { backendHost, hostRefs, startBackendHost, pluginConditions, firstReconcile } =
-    createPluginHostsPhase({
+  const { backendHost, hostRefs, startBackendHost, miniAppConditions, firstReconcile } =
+    createMiniAppHostsPhase({
       db,
       env,
       logger,
@@ -123,6 +123,7 @@ export async function bootstrap(
     resolveProjectCwd,
     mcpService,
     pluginService,
+    miniAppService,
     agentsService,
     lspManager,
     skillsCuratorService,
@@ -171,6 +172,7 @@ export async function bootstrap(
     // ONE plugin service for the process. Without this the chat graph built a second,
     // whose `onChanged` bumped the revision but reconciled none of the live hosts.
     pluginService,
+    miniAppService,
     // The `skill` tool's save/delete announces through the same bump + poke as MCP.
     announceCapabilityChange,
     serviceRefs,
@@ -230,6 +232,7 @@ export async function bootstrap(
     resolveProjectCwd,
     mcpService,
     pluginService,
+    miniAppService,
     agentsService,
     skillsCuratorService,
     auxUsageRepo,
@@ -260,6 +263,7 @@ export async function bootstrap(
     toolUsageRepo,
     mcpService,
     pluginService,
+    miniAppService,
     agentsService,
     skillsCuratorService,
     ...appServices,
@@ -275,6 +279,7 @@ export async function bootstrap(
     projectsService,
     skillsCuratorService,
     pluginService,
+    miniAppService,
     chatService,
     maintainStorage: createStorageMaintenance({
       db,
@@ -285,7 +290,7 @@ export async function bootstrap(
     }),
     hostRefs,
     notifications,
-    pluginConditions,
+    miniAppConditions,
   })
   const startPostListen = (signal?: AbortSignal): Promise<void> => {
     // GUI launches (desktop app, .desktop entry) inherit a bare launchd/systemd
@@ -333,7 +338,10 @@ export async function bootstrap(
           Boolean(await bootRepo.getSession(...args).catch(() => true)),
         providerConditions: infra.providerConditions,
         triggerConditions,
-        refreshPluginBackends: () => backendHost.refresh(),
+        refreshMiniAppHosts: () => {
+          backendHost.refresh()
+          channelHost.refresh()
+        },
         subagentRows: chatService.subagentRowsLive,
         publish: (userId, resources) =>
           chatService.streamRegistry.publish(userId, '', { type: 'resources.changed', resources }),

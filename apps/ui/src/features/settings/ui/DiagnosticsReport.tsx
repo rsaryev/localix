@@ -241,17 +241,17 @@ function ExtensionsSection({ report }: { report: EffectiveConfigReport }) {
           </div>
         )}
         <div>
-          <div className={FACT_GROUP_LABEL}>Plugins ({report.plugins.length})</div>
-          {report.plugins.length === 0 ? (
+          <div className={FACT_GROUP_LABEL}>Mini apps ({report.miniApps.length})</div>
+          {report.miniApps.length === 0 ? (
             <p className="text-sm text-text-soft">None in scope.</p>
           ) : (
             <InlineFacts
               className="font-mono"
-              items={report.plugins.map((plugin) => ({
-                key: plugin.name,
-                label: plugin.name,
-                tone: plugin.enabled ? 'success' : 'neutral',
-                dotClass: plugin.enabled ? 'bg-status-success' : 'bg-text-faint opacity-50',
+              items={report.miniApps.map((app) => ({
+                key: app.name,
+                label: app.name,
+                tone: app.enabled ? 'success' : 'neutral',
+                dotClass: app.enabled ? 'bg-status-success' : 'bg-text-faint opacity-50',
               }))}
             />
           )}

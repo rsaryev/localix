@@ -32,22 +32,14 @@ export async function scanDirsCached(
   scope: 'project' | 'global',
   projectId: string,
   opts?: {
-    bundledNames?: ReadonlySet<string>
     /** The directory scan itself; tests stand in for it to change files while it runs. */
     scan?: typeof scanDirs
   },
 ): Promise<DiscoveredPlugin[]> {
-  const { scan = scanDirs, ...scanOpts } = opts ?? {}
+  const scan = opts?.scan ?? scanDirs
   const roots = subdirs.map((sub) => (sub ? join(baseDir, sub) : baseDir))
   const cacheFile = join(baseDir, '.localix', 'cache', SCAN_CACHE_FILE)
-  const bundledNames = [...(scanOpts.bundledNames ?? [])].sort()
-  const scanKey = JSON.stringify({
-    version: SCAN_CACHE_VERSION,
-    roots,
-    scope,
-    projectId,
-    bundledNames,
-  })
+  const scanKey = JSON.stringify({ version: SCAN_CACHE_VERSION, roots, scope, projectId })
   const inFlightKey = JSON.stringify([cacheFile, scanKey])
   // A scan already running may have read the folders before a change this caller must see (a
   // plugin install that just returned): its result is shared only while nothing it read changed.
@@ -81,7 +73,7 @@ export async function scanDirsCached(
             // Fingerprint first: a change during the scan then leaves a mismatch, never a stale
             // list stored under the new files' fingerprint.
             const fingerprint = await buildScanFingerprint(roots)
-            const actual = await scan(baseDir, subdirs, scope, projectId, scanOpts)
+            const actual = await scan(baseDir, subdirs, scope, projectId)
             if (
               JSON.stringify(actual) !== JSON.stringify(cached.plugins) ||
               JSON.stringify(fingerprint) !== JSON.stringify(cached.fingerprint)
@@ -104,7 +96,7 @@ export async function scanDirsCached(
     // never returned after a fingerprint mismatch. The fingerprint is taken BEFORE the scan, so a
     // plugin added while it runs leaves a mismatch and the next call scans again.
     const fingerprint = await buildScanFingerprint(roots)
-    const plugins = await scan(baseDir, subdirs, scope, projectId, scanOpts)
+    const plugins = await scan(baseDir, subdirs, scope, projectId)
     await writeScanCache(baseDir, cacheFile, {
       version: SCAN_CACHE_VERSION,
       scanKey,

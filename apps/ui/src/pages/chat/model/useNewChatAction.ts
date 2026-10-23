@@ -21,7 +21,7 @@ interface NewChatActionOptions {
   createSession: ChatStore['createSession']
   nav: RoutedNavigation
   startNewChatRef: RefObject<() => void>
-  enabledPluginNames: Set<string> | null
+  enabledMiniAppNames: Set<string> | null
   thirdPartyViewsVersion: number
   switchSection: (id: string | null) => void
   openProblems: () => void

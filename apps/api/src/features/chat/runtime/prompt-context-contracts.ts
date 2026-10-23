@@ -11,7 +11,8 @@ import type {
 } from '../../agent-core/skill-discovery'
 import type { discoverContextFiles } from '../../agent-core/context-files'
 import type { TriggeredSkill } from './prompt-skill-triggers'
-import type { loadEnabledPlugins, LoadedPlugins } from '../../plugins/loader'
+import type { LoadedPlugins } from '../../plugins/loader'
+import type { LoadedMiniApps, LoadMiniAppsOptions } from '../../mini-apps/loader'
 import type { AvailabilityReader } from '../../capabilities/availability'
 import type { ParticipantLaneSnapshotRepository } from '../participant-lane-snapshot-repository'
 import type { FrozenSessionContext } from './agent-runner-types'
@@ -24,6 +25,8 @@ export interface PromptContextDeps {
   memoryRepo: ReturnType<typeof createMemoryRepository>
   projectsRepo: ReturnType<typeof createProjectsRepository>
   pluginRepo: CapabilitySourceRepository
+  /** The `mini-app` rows of `capability_source`: each mini app's stored settings. */
+  miniAppRepo: CapabilitySourceRepository
   contextSnapshots: RuntimeState['contextSnapshots']
   laneSnapshots: ParticipantLaneSnapshotRepository
   /**
@@ -34,24 +37,24 @@ export interface PromptContextDeps {
   now: () => string
   logger?: SkillDiscoveryLogger
   /**
-   * Deliver a plugin's user-facing problem onto a session's firehose.
+   * Deliver a mini app's user-facing problem onto a session's firehose.
    *
-   * A pure function of its arguments on purpose: the plugin CONTEXT it ends up on is
+   * A pure function of its arguments on purpose: the mini app CONTEXT it ends up on is
    * cached per scope (`runScopes`) and reused by every child run, so anything this
    * closure captured from one particular run would go stale. It captures nothing.
    */
-  publishPluginProblem?: (input: {
+  publishMiniAppProblem?: (input: {
     userId: string
     sessionId: string
-    pluginName: string
+    app: string
     message: string
     detail?: string
     source?: string
   }) => void
-  /** Per-plugin session storage (`plugins/session-storage.ts`); pure, like `publishPluginProblem`. */
-  pluginSessionStorage?: Parameters<typeof loadEnabledPlugins>[0]['sessionStorageFor']
-  /** The agents a plugin may name (`plugins/agent-directory.ts`); pure, like the storage. */
-  pluginAgentDirectory?: Parameters<typeof loadEnabledPlugins>[0]['agentDirectory']
+  /** Per-app session storage (`mini-apps/session-storage.ts`); pure, like the problem sink. */
+  miniAppSessionStorage?: LoadMiniAppsOptions['sessionStorageFor']
+  /** The agents a mini app may name (`mini-apps/agent-directory.ts`); pure, like the storage. */
+  miniAppAgentDirectory?: LoadMiniAppsOptions['agentDirectory']
 }
 
 export interface PreparedRunContext {
@@ -70,6 +73,7 @@ export interface PreparedRunContext {
   availability: AvailabilityReader
   permissionRules: PermissionRule[]
   loadedPlugins: LoadedPlugins
+  loadedMiniApps: LoadedMiniApps
   contextFiles: Awaited<ReturnType<typeof discoverContextFiles>>
   allSkills: Array<Awaited<ReturnType<typeof discoverFilesystemSkills>>[number]>
   frozenContext: FrozenSessionContext

@@ -7,7 +7,7 @@
  * `jsonBody` from the plugin SDK) forces it.
  *
  * The repository guard (`lib/route-body-contract.test.ts`) applies this to the app and the bundled
- * plugins; `plugin_build` applies it to a user plugin, which lives in `~/.localix/plugins` where no
+ * plugins; `mini_app_build` applies it to a user's mini app, which lives in `~/.localix/mini-apps` where no
  * repository guard looks — and the reference those plugins are copied from once shipped the call.
  * Two copies of the pattern would drift apart the way two copies of any rule do.
  *

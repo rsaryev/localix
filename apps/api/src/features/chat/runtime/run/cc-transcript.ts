@@ -3,7 +3,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 
 import type { CcTranscript } from '../../../cc-hooks'
-import { sessionDataDir } from '../../../plugins/session-storage'
+import { sessionDataDir } from '../../../mini-apps/session-storage'
 import type { ChatRepository, SessionRecord } from '../../repository'
 import { ccTranscriptText } from './cc-transcript-lines'
 

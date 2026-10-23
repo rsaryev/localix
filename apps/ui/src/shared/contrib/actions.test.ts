@@ -1,6 +1,6 @@
 import { afterEach, expect, spyOn, test } from 'bun:test'
 import { miniAppUiHostFor, removeMiniAppUiContributions } from './host'
-import { setEnabledPluginNames } from './miniAppActivation'
+import { setEnabledMiniAppNames } from './miniAppActivation'
 import { actionMatches, contributedActions } from './actions'
 import type { ActionContext, ActionContribution } from '@localixai/mini-app-sdk/ui'
 
@@ -38,7 +38,7 @@ test('predicates filter typed targets and fail closed without breaking content',
 })
 afterEach(() => {
   removeMiniAppUiContributions(owner)
-  setEnabledPluginNames(null)
+  setEnabledMiniAppNames(null)
 })
 
 test('owned actions follow plugin activation and disappear on unload', () => {
@@ -52,12 +52,12 @@ test('owned actions follow plugin activation and disappear on unload', () => {
   }
   host.actions!.register(action)
   expect(contributedActions()).toEqual([])
-  setEnabledPluginNames(new Set([owner]))
+  setEnabledMiniAppNames(new Set([owner]))
   expect(contributedActions()[0]).toMatchObject({ ...action, pluginName: owner })
   expect(contributedActions()).toBe(contributedActions())
-  setEnabledPluginNames(new Set())
+  setEnabledMiniAppNames(new Set())
   expect(contributedActions()).toEqual([])
-  setEnabledPluginNames(new Set([owner]))
+  setEnabledMiniAppNames(new Set([owner]))
   removeMiniAppUiContributions(owner)
   expect(contributedActions()).toEqual([])
 })
@@ -71,7 +71,7 @@ test('ownership cannot be spoofed and a duplicate cannot replace the destination
     when: () => true,
     run: async () => {},
   }
-  setEnabledPluginNames(new Set([owner]))
+  setEnabledMiniAppNames(new Set([owner]))
   expect(() => host.actions!.register({ ...first, id: 'other:save' })).toThrow()
   host.actions!.register(first)
   const warn = spyOn(console, 'warn').mockImplementation(() => {})

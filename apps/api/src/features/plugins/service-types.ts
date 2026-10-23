@@ -8,14 +8,11 @@ import type { RuleChange } from '../capabilities/rule-changes'
 import type { AppDatabase } from '../../db'
 import { configFieldBase } from '../ext/config-fields'
 import type { DiscoveredPlugin } from './discovery'
-import type { MiniAppAuthoring } from './authoring/service'
 import type { MarketplaceListing } from './marketplace-registry'
-import type { ArgOption } from './arg-options'
 import type {
   InstallPluginRequest,
   ListPluginCommandsResponse,
   PluginCommandSpec,
-  MiniAppViewSpec,
   ListPluginsResponse,
   PluginConfigField,
   PluginRecord,
@@ -23,9 +20,7 @@ import type {
   RemovePluginRequest,
   SetPluginConfigRequest,
   SetPluginEnabledRequest,
-  InvokeMiniAppUiActionRequest,
 } from './contracts'
-import type { MiniAppUiActionContext } from '@localixai/mini-app-sdk/backend'
 import type { PluginThemeSpec } from './contracts-themes'
 
 export interface PluginServiceDeps {
@@ -60,69 +55,30 @@ export interface PluginServiceDeps {
     description: string
     argumentHint?: string
   }>
-  invokeUiAction?: (input: {
-    pluginName: string
-    action: string
-    payload: unknown
-    context: MiniAppUiActionContext
-  }) => Promise<unknown>
 }
 
-/**
- * Every plugin-derived contribution of one scope, resolved from ONE catalog build —
- * the plugin half of the capability snapshot. Kept as one method (rather than three
- * calls) because discovery + DB state + the enable rule is the expensive part and it
- * is identical for all three projections.
- */
-export interface MiniAppContributions {
+/** Everything the capability snapshot shows of plugins, resolved from one catalog build. */
+export interface PluginContributions {
   plugins: PluginRecord[]
-  views: MiniAppViewSpec[]
   commands: PluginCommandSpec[]
   /** Color themes of enabled global plugins (`themes.ts`). */
   themes: PluginThemeSpec[]
 }
-
 export interface PluginService {
-  syncBundledContributions(userId: string, projectId: string): Promise<void>
   listPlugins(userId: string, opts?: { projectId?: string | null }): Promise<ListPluginsResponse>
-  listMiniAppContributions(
+  listPluginContributions(
     userId: string,
     opts?: { projectId?: string | null },
-  ): Promise<MiniAppContributions>
+  ): Promise<PluginContributions>
   listPluginCommands(
     userId: string,
     opts?: { projectId?: string | null },
   ): Promise<ListPluginCommandsResponse>
-  /**
-   * Resolve a plugin command arg's DYNAMIC options on demand (the composer's picker),
-   * by running the plugin's declared `optionsScript`. Agnostic; never throws → `[]`.
-   */
-  resolveMiniAppArgOptions(
-    userId: string,
-    input: {
-      plugin: string
-      command: string
-      arg: string
-      query?: string
-      sessionId?: string
-      projectId?: string | null
-    },
-  ): Promise<{ options: ArgOption[] }>
-  listMiniAppViews(
-    userId: string,
-    opts?: { projectId?: string | null },
-  ): Promise<{ views: MiniAppViewSpec[] }>
   /** Every output style the scope offers (`output-style-listing.ts`). */
   listOutputStyles(
     userId: string,
     opts?: { projectId?: string | null },
   ): Promise<{ styles: OutputStyleSummary[] }>
-  getViewHtml(
-    userId: string,
-    input: { pluginName: string; viewId: string; projectId?: string | null },
-  ): Promise<{ html: string }>
-  resolveUiFile(userId: string, input: { pluginName: string; file: string }): Promise<string>
-  invokeUiAction(userId: string, input: InvokeMiniAppUiActionRequest): Promise<{ result: unknown }>
   /**
    * Switch a plugin on or off. Disabling one that another enabled plugin depends on is refused
    * (`plugin_has_dependents`) unless `ignoreDependents`; `refuseNoop` also refuses a switch that
@@ -201,8 +157,6 @@ export interface PluginService {
   removeMarketplace(userId: string, input: { name: string }): Promise<{ uninstalled: string[] }>
   /** Notify all subscribers that plugins changed (mirrors CC's /reload-plugins; exposed as `/plugin reload`). */
   onChanged?(): void
-  /** Creating and building the user's own plugins (`/plugin create`, the `plugin_build` tool). */
-  authoring: MiniAppAuthoring
 }
 
 /** Build the UI's config field list, masking secret values to set/unset. */

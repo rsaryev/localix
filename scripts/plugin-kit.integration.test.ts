@@ -1,4 +1,4 @@
-// The plugin kit end to end, against the REAL repository: staging writes a kit, and the app's own
+// The mini app kit end to end, against the REAL repository: staging writes a kit, and the app's own
 // authoring (scaffold → build → test → load) works from that kit alone — which is what an
 // installed app with no source tree has. Each case names the failure it pins.
 import { afterAll, beforeAll, describe, expect, setDefaultTimeout, test } from 'bun:test'
@@ -19,24 +19,24 @@ import { dirname, join, resolve } from 'node:path'
 
 import ts from '@localixai/mini-app-kit-compiler'
 
-import { checkUserMiniApp } from '../apps/api/src/features/plugins/authoring/check'
-import { loadMiniAppKit, type MiniAppKit } from '../apps/api/src/features/plugins/authoring/kit'
+import { checkUserMiniApp } from '../apps/api/src/features/mini-apps/authoring/check'
+import { loadMiniAppKit, type MiniAppKit } from '../apps/api/src/features/mini-apps/authoring/kit'
 import {
   isUserMiniAppBackendBuild,
   PLUGIN_KIT_DIGEST,
-} from '../apps/api/src/features/plugins/authoring/kit-layout'
+} from '../apps/api/src/features/mini-apps/authoring/kit-layout'
 import {
   buildMiniAppBackend,
   discardMiniAppBackendCandidate,
-} from '../apps/api/src/features/plugins/authoring/backend-build'
+} from '../apps/api/src/features/mini-apps/authoring/backend-build'
 import { importFreshModule } from '../apps/api/src/lib/module-url'
-import { installBackendHostModules } from '../apps/api/src/features/plugins/backend-host-modules'
-import { typecheckMiniApp } from '../apps/api/src/features/plugins/authoring/typecheck'
-import { scaffoldUserMiniApp } from '../apps/api/src/features/plugins/authoring/scaffold'
+import { installBackendHostModules } from '../apps/api/src/features/mini-apps/backend-host-modules'
+import { typecheckMiniApp } from '../apps/api/src/features/mini-apps/authoring/typecheck'
+import { scaffoldUserMiniApp } from '../apps/api/src/features/mini-apps/authoring/scaffold'
 import {
   createMiniAppAuthoring,
   isAuthoredUserMiniApp,
-} from '../apps/api/src/features/plugins/authoring/service'
+} from '../apps/api/src/features/mini-apps/authoring/service'
 import {
   copyDomain,
   fillPlaceholders,
@@ -44,12 +44,12 @@ import {
   frameDomainImports,
   listFiles,
   loadTemplateScaffold,
-} from '../apps/api/src/features/plugins/authoring/template-layout'
+} from '../apps/api/src/features/mini-apps/authoring/template-layout'
 import { findTemplateMiniApp } from './stage-plugin-kit.mjs'
 import { kitCacheRoot } from './plugin-kit-cache.mjs'
 
-const PLUGIN_MANIFEST = '.claude-plugin/plugin.json'
-const APP_MANIFEST = '.localix-app/app.json'
+/** A mini app's one manifest: name, display name and the built backend it runs. */
+const APP_MANIFEST = 'mini-app.json'
 
 const repoRoot = resolve(import.meta.dir, '..')
 const KIT_STAGER = join(import.meta.dir, 'stage-plugin-kit.mjs')
@@ -76,7 +76,7 @@ afterAll(() => rmSync(root, { recursive: true, force: true }))
 
 let copies = 0
 async function freshCopy(name = 'gpu-monitor') {
-  const pluginsRoot = join(root, `plugins-${copies++}`)
+  const pluginsRoot = join(root, `mini-apps-${copies++}`)
   return scaffoldUserMiniApp({ kit, pluginsRoot, name, takenNames: new Set(['reader']) })
 }
 
@@ -103,7 +103,7 @@ describe('the staged kit', () => {
   })
 
   // `skipLibCheck` hides an error INSIDE a declaration file: a generated kit type that named
-  // something it did not declare would silently become `any` in every plugin. So the kit's own
+  // something it did not declare would silently become `any` in every mini app. So the kit's own
   // declarations are checked here, with nothing skipped.
   test('the generated kit declarations are self-contained', () => {
     const kitTypes = join(kit.dir, 'types', 'kit')
@@ -226,12 +226,12 @@ describe('template layout', () => {
   })
 })
 
-// Each case below type-checks, builds and loads a whole scaffolded plugin. With a warm kit cache
+// Each case below type-checks, builds and loads a whole scaffolded mini app. With a warm kit cache
 // that takes well under bun's 5 s default, which is why a laptop never sees it; a cold CI runner
 // spends longer than that on the first check and fails every case after it on the same deadline.
 setDefaultTimeout(120_000)
 
-describe('a scaffolded user plugin', () => {
+describe('a scaffolded user mini app', () => {
   // A built backend leaves hono, zod and the SDK external: the host serves them at runtime, and
   // this test loads the build the way the app does — with the host's modules installed.
   beforeAll(() => installBackendHostModules())
@@ -256,8 +256,6 @@ describe('a scaffolded user plugin', () => {
       ['types', true],
       ['tests', true],
     ])
-    const plugin = JSON.parse(readFileSync(join(created.dir, PLUGIN_MANIFEST), 'utf8'))
-    expect(plugin.name).toBe('gpu-monitor')
     const app = JSON.parse(readFileSync(join(created.dir, APP_MANIFEST), 'utf8'))
     expect(app.name).toBe('gpu-monitor')
     expect(isUserMiniAppBackendBuild(app.backend)).toBe(true)
@@ -291,7 +289,7 @@ describe('a scaffolded user plugin', () => {
     expect(existsSync(join(dir, third!))).toBe(true)
   })
 
-  test('backend build refuses static, dynamic and absolute imports outside the plugin', async () => {
+  test('backend build refuses static, dynamic and absolute imports outside the mini app', async () => {
     for (const source of [
       (_outside: string) => `import { secret } from '../../outside'\nexport const value = secret\n`,
       (_outside: string) => `export const load = () => import('../../outside')\n`,
@@ -304,7 +302,7 @@ describe('a scaffolded user plugin', () => {
       writeFileSync(join(dir, 'backend', 'index.ts'), source(outside))
       const before = readFileSync(join(dir, APP_MANIFEST), 'utf8')
       await expect(buildMiniAppBackend({ kit, pluginDir: dir, publish: false })).rejects.toThrow(
-        'outside the plugin',
+        'outside the mini app',
       )
       expect(readFileSync(join(dir, APP_MANIFEST), 'utf8')).toBe(before)
     }
@@ -354,7 +352,7 @@ describe('a scaffolded user plugin', () => {
 
   test('an unreadable reference manifest is not excused as template residue', async () => {
     const { dir, name } = await freshCopy()
-    writeFileSync(join(dir, PLUGIN_MANIFEST), '{ broken json\n')
+    writeFileSync(join(dir, APP_MANIFEST), '{ broken json\n')
     const report = await checkUserMiniApp({
       kit,
       pluginDir: dir,
@@ -363,10 +361,10 @@ describe('a scaffolded user plugin', () => {
     })
     expect(report.steps[0]?.errored).toBe(true)
     expect(report.published).toBe(false)
-    expect(readFileSync(join(dir, PLUGIN_MANIFEST), 'utf8')).toBe('{ broken json\n')
+    expect(readFileSync(join(dir, APP_MANIFEST), 'utf8')).toBe('{ broken json\n')
   })
 
-  test('generated output and tsconfig cannot follow symlinks outside the plugin', async () => {
+  test('generated output and tsconfig cannot follow symlinks outside the mini app', async () => {
     if (process.platform === 'win32') return // Symlink creation can require elevated privileges.
     const { dir, name } = await freshCopy()
     const outside = join(dirname(dir), `outside-${copies++}`)
@@ -453,13 +451,13 @@ describe('a scaffolded user plugin', () => {
     expect(existsSync(join(pluginsRoot, 'activation-failure'))).toBe(false)
   })
 
-  // Creation never edits what is there: a folder, a discovered plugin, an install from another
-  // source and the template's own name each push the new plugin to the next free name.
-  test('a new plugin takes the first name nothing else holds', async () => {
+  // Creation never edits what is there: a folder, a discovered mini app, an install from another
+  // source and the template's own name each push the new mini app to the next free name.
+  test('a new mini app takes the first name nothing else holds', async () => {
     const pluginsRoot = join(root, `free-${copies++}`)
     let installedSource: string | null = null
     const authoring = createMiniAppAuthoring({
-      discover: async () => [{ manifest: { name: 'reader' } } as never],
+      discover: async () => [{ name: 'reader' } as never],
       pluginsRoot,
       kitDir: () => kit.dir,
       installedSource: async (_userId, name) => (name === 'notes' ? installedSource : null),
@@ -487,7 +485,7 @@ describe('a scaffolded user plugin', () => {
     expect(await authoring.freeName('user', 'gpu-monitor')).toBe('gpu-monitor-2')
     // A display name is written into source; a quote or backtick in it would break the copy.
     const manifest = JSON.parse(
-      readFileSync(join(pluginsRoot, 'gpu-monitor', PLUGIN_MANIFEST), 'utf8'),
+      readFileSync(join(pluginsRoot, 'gpu-monitor', APP_MANIFEST), 'utf8'),
     )
     expect(manifest.displayName).toBe('GPU Monitor x')
     await expect(authoring.freeName('user', 'Bad Name')).rejects.toThrow('lower-kebab-case')
@@ -498,12 +496,13 @@ describe('a scaffolded user plugin', () => {
       await isAuthoredUserMiniApp({
         dir: join(pluginsRoot, 'gpu-monitor'),
         bundled: false,
+        name: 'gpu-monitor',
         manifest: { name: 'gpu-monitor' },
       } as never),
     ).toBe(true)
   })
 
-  // A plugin published `{ strategy, text }` where the SDK takes `{ strategy, bindings }`;
+  // A mini app published `{ strategy, text }` where the SDK takes `{ strategy, bindings }`;
   // every check passed and the tab crashed. The type check names the line.
   test('a type error against the SDK is reported with its file, line and code', async () => {
     const { dir } = await freshCopy()
@@ -520,7 +519,7 @@ describe('a scaffolded user plugin', () => {
     expect(readFileSync(join(dir, 'tsconfig.json'), 'utf8')).toContain(kit.dir)
   })
 
-  // A plugin wrote `executionMode: 'serial'` and `execute(input)`. From a kit inside the checkout
+  // A mini app wrote `executionMode: 'serial'` and `execute(input)`. From a kit inside the checkout
   // the checker caught both; from an installed app's kit it saw `ctx.defineTool` as `any` and
   // passed them, because the declarations the SDK's own declarations import were not in the kit.
   // This kit is staged outside the repository, as an installed app's is.
@@ -585,7 +584,7 @@ describe('a scaffolded user plugin', () => {
     )
   })
 
-  // A timer plugin passed every step with a hand-rolled button in palette colours. The copy's
+  // A timer mini app passed every step with a hand-rolled button in palette colours. The copy's
   // own UI follows the house style (the fresh copy passes the step above); these do not.
   test('the style step names a native control and a palette colour with their lines', async () => {
     const { dir } = await freshCopy()
@@ -659,7 +658,7 @@ describe('a scaffolded user plugin', () => {
     const named = scaffold.domain.filter((path) =>
       new RegExp(scaffold.domainNamedPaths.join('|'), 'iu').test(path),
     )
-    for (const path of named.filter((entry) => !entry.startsWith('skills/'))) {
+    for (const path of named) {
       expect(residue).toContain(`${path} keeps its ${scaffold.domainName} name`)
     }
     expect(residue).toContain(
@@ -667,7 +666,7 @@ describe('a scaffolded user plugin', () => {
     )
   })
 
-  test("source scans skip a plugin's own Git object directory", async () => {
+  test("source scans skip a mini app's own Git object directory", async () => {
     const { dir } = await freshCopy()
     const objects = join(dir, '.git', 'objects')
     mkdirSync(objects, { recursive: true })
@@ -675,20 +674,12 @@ describe('a scaffolded user plugin', () => {
     expect(listFiles(dir).some((file) => file.startsWith('.git/'))).toBe(false)
   })
 
-  test('a skill root without SKILL.md and a plugin without tests are reported', async () => {
+  test('a mini app without tests is reported', async () => {
     const { dir } = await freshCopy()
     for (const path of copyDomain(scaffold, 'gpu-monitor')) {
-      rmSync(join(dir, path.startsWith('skills/') ? 'skills' : path), {
-        recursive: true,
-        force: true,
-      })
+      rmSync(join(dir, path), { recursive: true, force: true })
     }
-    // An empty skills folder claims skills it does not have; no folder ships none.
-    mkdirSync(join(dir, 'skills'))
     const residue = findTemplateResidue(dir, 'gpu-monitor', scaffold)
-    expect(residue).toContain(
-      './skills has no SKILL.md — write one, or delete the folder if you ship none',
-    )
     expect(residue.some((line) => line.startsWith('no test'))).toBe(true)
   })
 

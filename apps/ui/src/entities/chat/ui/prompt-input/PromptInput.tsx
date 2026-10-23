@@ -39,6 +39,7 @@ import { useComposerVoice } from './useComposerVoice'
 import { useMessageBindingDrop } from './useMessageBindingDrop'
 import { useOpenResourceCommand } from './useOpenResourceCommand'
 import { usePluginCommands } from './usePluginCommands'
+import { useMiniAppCommands } from './useMiniAppCommands'
 import { usePromptInputKeyboard } from './usePromptInputKeyboard'
 import { useHistoryKeyDown } from './usePromptHistory'
 import { usePromptSend } from './usePromptSend'
@@ -82,9 +83,10 @@ export function PromptInput(props: PromptInputProps) {
 
   const skillCommands = useSkillCommands(activeSessionId, isFocused)
   const pluginCommands = usePluginCommands(activeSessionId, isFocused)
+  const miniAppCommands = useMiniAppCommands(activeSessionId, isFocused)
   const dynamicCommands = useMemo(
-    () => mergeDynamicSlashCommands(pluginCommands, skillCommands),
-    [skillCommands, pluginCommands],
+    () => mergeDynamicSlashCommands([...pluginCommands, ...miniAppCommands], skillCommands),
+    [skillCommands, pluginCommands, miniAppCommands],
   )
   const sessionView = usePromptSessionView(activeSessionId, serverQueue)
   const { activeProjectId, participants } = sessionView

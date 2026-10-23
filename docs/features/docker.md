@@ -31,8 +31,8 @@ references expand into read-only snapshots you can attach to a message.
 
 ## How it works
 
-On the first backend operation, the plugin resolves the Docker endpoint and negotiates an Engine API
-client using a version from 1.40 through 1.44. A newer daemon can still use this client if it
+On the first backend operation, the mini app resolves the Docker endpoint and negotiates an Engine
+API client using a version from 1.40 through 1.44. A newer daemon can still use this client if it
 accepts a version in that range. The direct client handles inventory, logs, stats, lifecycle
 actions, removal, and prune.
 
@@ -89,7 +89,7 @@ platform default endpoint.
 - [DevOps Workspace](devops.md)
 - [Kubernetes](kubernetes.md)
 - [Execution environments](execution-environments.md)
-- [Plugins](../extending/plugins.md)
+- [Build a mini app](../extending/mini-apps.md)
 
 ## Source of truth
 

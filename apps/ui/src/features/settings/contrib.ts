@@ -7,9 +7,9 @@ import {
   pluginSettingsUri,
 } from '@/shared/lib/settingsAnchors'
 import { SETTINGS_STRING_TABS } from '@/shared/routing/routes'
-import { pluginContribSnapshot } from '@/shared/contrib/enabledPlugins'
+import { miniAppContribSnapshot } from '@/shared/contrib/enabledMiniApps'
 import { listUiLocations } from '@/shared/contrib/uiLocations'
-import { pluginLabel } from '@localixai/mini-app-sdk/manifest-label'
+import { miniAppLabel } from '@localixai/mini-app-sdk/manifest-label'
 
 function settingsChildren(parentUri: string | null): UiAnchorNode[] {
   if (parentUri === null) {
@@ -59,10 +59,10 @@ function settingsChildren(parentUri: string | null): UiAnchorNode[] {
     })
   }
   if (parsed.tab === 'plugins') {
-    for (const plugin of pluginContribSnapshot().plugins) {
+    for (const plugin of miniAppContribSnapshot().document?.plugins ?? []) {
       rows.push({
         uri: pluginSettingsUri(plugin.name, plugin.projectId),
-        label: pluginLabel(plugin),
+        label: miniAppLabel(plugin),
         detail: `${plugin.enabled ? 'Enabled' : 'Disabled'} · ${plugin.name}`,
         hasChildren: false,
         icon: 'plugin',

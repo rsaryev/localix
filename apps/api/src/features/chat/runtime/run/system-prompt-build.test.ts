@@ -11,6 +11,8 @@ import { buildRunSystemPrompt } from './system-prompt-build'
 import { channelNameFromSourceKey } from '../../policy/axes/delivery'
 import { runPolicyFixture } from '../../../../testing/run-policy-fixture'
 import { buildPluginsPromptContext } from './plugins-prompt-context'
+import { buildMiniAppsPromptContext } from './mini-apps-prompt-context'
+import { emptyLoadedMiniApps, type LoadedMiniApps } from '../../../mini-apps/loader-contract'
 import { routedParticipants, sessionFixture } from '../../../../testing/session-fixture'
 
 const session = (
@@ -94,14 +96,13 @@ describe('buildPluginsPromptContext', () => {
     expect(out).toContain('diagnostics via edit/write results, not a tool')
   })
 
-  test('indexes only model-actionable contributions without repeating manifest descriptions', () => {
+  test('indexes a plugin by the skills it offers, without repeating manifest descriptions', () => {
     const loadedPlugins = {
       loaded: [
         {
           name: 'actionable',
           scope: 'global',
-          description: 'A long manifest description already represented by its tool schema.',
-          toolNames: ['plugin_lookup', 'disabled_plugin_tool'],
+          description: 'A long manifest description already represented by its skills.',
           skills: ['review'],
           mcpServers: [],
         },
@@ -109,48 +110,92 @@ describe('buildPluginsPromptContext', () => {
           name: 'ui-only',
           scope: 'global',
           description: 'Theme and command contributions only.',
-          toolNames: [],
           skills: [],
           mcpServers: [],
         },
       ],
-      agents: [{ pluginName: 'actionable' }],
-      promptSections: [
-        { pluginName: 'policy', title: 'Guardrails', content: 'Keep this explicit policy.' },
-      ],
     } as unknown as LoadedPlugins
 
-    const out = buildPluginsPromptContext(loadedPlugins, ['plugin_lookup', 'skill', 'agents'])!
+    const out = buildPluginsPromptContext(loadedPlugins, ['skill', 'agents'])!
 
-    expect(out).toContain('- actionable — 1 direct tool; 1 skill')
-    expect(out).toContain('## policy: Guardrails')
-    expect(out).toContain('Keep this explicit policy.')
+    expect(out).toContain('- actionable — 1 skill')
     expect(out).not.toContain('ui-only')
     expect(out).not.toContain('manifest description')
-    expect(out).not.toContain('disabled_plugin_tool')
+  })
+})
+
+describe('buildMiniAppsPromptContext', () => {
+  test('indexes only the tools on the wire, and the prompt sections apps declare', () => {
+    const loadedMiniApps = {
+      loaded: [
+        {
+          name: 'actionable',
+          scope: 'global',
+          description: 'A long manifest description already represented by its tool schema.',
+          toolNames: ['app_lookup', 'disabled_app_tool'],
+        },
+        { name: 'screens-only', scope: 'global', description: 'Screens only.', toolNames: [] },
+      ],
+      guides: [],
+      promptSections: [
+        { app: 'policy', title: 'Guardrails', content: 'Keep this explicit policy.' },
+      ],
+    } as unknown as LoadedMiniApps
+
+    const out = buildMiniAppsPromptContext(loadedMiniApps, ['app_lookup'])!
+
+    expect(out).toContain('- actionable — 1 direct tool')
+    expect(out).toContain('## policy: Guardrails')
+    expect(out).toContain('Keep this explicit policy.')
+    expect(out).not.toContain('screens-only')
+    expect(out).not.toContain('manifest description')
+    expect(out).not.toContain('disabled_app_tool')
   })
 
-  test('counts a deferred plugin tool as one to activate, never as direct', () => {
-    // Plugin tools wait behind `activate_tools` until the session activates them; this index
+  test('counts a deferred mini app tool as one to activate, never as direct', () => {
+    // Mini app tools wait behind `activate_tools` until the session activates them; this index
     // used to call every one of them direct.
-    const loadedPlugins = {
+    const loadedMiniApps = {
       loaded: [
         {
           name: 'acme',
           scope: 'global',
           description: '',
           toolNames: ['acme_query', 'acme_migrate'],
-          skills: [],
-          mcpServers: [],
         },
       ],
-      agents: [],
+      guides: [],
       promptSections: [],
-    } as unknown as LoadedPlugins
-    const out = buildPluginsPromptContext(loadedPlugins, ['acme_query'], new Set(['acme_migrate']))!
+    } as unknown as LoadedMiniApps
+    const out = buildMiniAppsPromptContext(
+      loadedMiniApps,
+      ['acme_query'],
+      new Set(['acme_migrate']),
+    )!
     expect(out).toContain('- acme — 1 direct tool; 1 tool to activate')
   })
 
+  test('a mini app with a guide says so, and how to read it, while the guide tool is on', () => {
+    const loadedMiniApps = {
+      loaded: [
+        { name: 'tiles', scope: 'global', toolNames: ['tiles'] },
+        { name: 'notes', scope: 'global', toolNames: ['notes'] },
+      ],
+      guides: [{ app: 'tiles', file: '/apps/tiles/guide.md' }],
+      promptSections: [],
+    } as unknown as LoadedMiniApps
+
+    const out = buildMiniAppsPromptContext(loadedMiniApps, ['tiles', 'notes', 'mini_app_guide'])!
+    expect(out).toContain('- tiles — 1 direct tool; guide')
+    expect(out).toContain('- notes — 1 direct tool\n')
+    expect(out).toContain('mini_app_guide')
+    // Without the tool on the wire, a guide is nothing the model can act on.
+    const without = buildMiniAppsPromptContext(loadedMiniApps, ['tiles', 'notes'])!
+    expect(without).not.toContain('guide')
+  })
+})
+
+describe('the run roster', () => {
   test('the roster lists only what deferral left on the wire', () => {
     const registry = {
       tools: [],
@@ -165,26 +210,6 @@ describe('buildPluginsPromptContext', () => {
     expect(onTheWire(registry, undefined)).toBe(registry)
   })
 
-  test('a mini app with a guide says so, and how to read it, while the guide tool is on', () => {
-    const loadedPlugins = {
-      loaded: [
-        { name: 'tiles', scope: 'global', toolNames: ['tiles'], skills: [], mcpServers: [] },
-        { name: 'notes', scope: 'global', toolNames: ['notes'], skills: [], mcpServers: [] },
-      ],
-      miniAppGuides: [{ app: 'tiles', file: '/apps/tiles/guide.md' }],
-      agents: [],
-      promptSections: [],
-    } as unknown as LoadedPlugins
-
-    const out = buildPluginsPromptContext(loadedPlugins, ['tiles', 'notes', 'mini_app_guide'])!
-    expect(out).toContain('- tiles — 1 direct tool; guide')
-    expect(out).toContain('- notes — 1 direct tool\n')
-    expect(out).toContain('mini_app_guide')
-    // Without the tool on the wire, a guide is nothing the model can act on.
-    const without = buildPluginsPromptContext(loadedPlugins, ['tiles', 'notes'])!
-    expect(without).not.toContain('guide')
-  })
-
   test('returns no prompt context for plugins with no model-facing contribution', () => {
     const loadedPlugins = {
       loaded: [
@@ -192,7 +217,6 @@ describe('buildPluginsPromptContext', () => {
           name: 'commands-only',
           scope: 'global',
           description: 'Commands only',
-          toolNames: [],
           skills: ['hidden-without-skill-tool'],
           mcpServers: [],
         },
@@ -230,12 +254,8 @@ describe('buildRunSystemPrompt pinned skills', () => {
         providerId: 'test',
         agentProfile,
         runtimeTools,
-        loadedPlugins: {
-          loaded: [],
-          agents: [],
-          promptSections: [],
-          outputStyles: [],
-        } as unknown as LoadedPlugins,
+        loadedPlugins: { loaded: [], agents: [], outputStyles: [] } as unknown as LoadedPlugins,
+        loadedMiniApps: emptyLoadedMiniApps(),
         frozenContext: {},
         pinnedSkills: [],
         triggeredSkills: [],
@@ -276,12 +296,8 @@ describe('buildRunSystemPrompt pinned skills', () => {
         providerId: 'test',
         agentProfile,
         runtimeTools,
-        loadedPlugins: {
-          loaded: [],
-          agents: [],
-          promptSections: [],
-          outputStyles: [],
-        } as unknown as LoadedPlugins,
+        loadedPlugins: { loaded: [], agents: [], outputStyles: [] } as unknown as LoadedPlugins,
+        loadedMiniApps: emptyLoadedMiniApps(),
         frozenContext: {},
         pinnedSkills: [],
         triggeredSkills: [],
@@ -304,11 +320,7 @@ describe('buildRunSystemPrompt pinned skills', () => {
       policy: { agentProfile: SHAPE.subagent },
     })
     expect(runtimeTools.toolNames).not.toContain('skill')
-    const loadedPlugins = {
-      loaded: [],
-      promptSections: [],
-      agents: [],
-    } as unknown as LoadedPlugins
+    const loadedPlugins = { loaded: [], agents: [] } as unknown as LoadedPlugins
     const agents = routedParticipants()
     const session = {
       id: 'sub',
@@ -329,6 +341,7 @@ describe('buildRunSystemPrompt pinned skills', () => {
       agentProfile: SHAPE.subagent,
       runtimeTools,
       loadedPlugins,
+      loadedMiniApps: emptyLoadedMiniApps(),
       frozenContext: {},
       pinnedSkills: [{ name: 'review', content: 'Always inspect the final diff.' }],
       // Empty, not absent: this case is about a PINNED skill, and a run with nothing triggered

@@ -9,7 +9,7 @@ import { join } from 'node:path'
 
 import type { PermissionMode } from '../../../../contracts/permission-modes'
 import { ccSessionEnvFiles, type CcSessionEnvFiles } from '../../../cc-hooks'
-import { sessionDataDir } from '../../../plugins/session-storage'
+import { sessionDataDir } from '../../../mini-apps/session-storage'
 import type { SessionRecord } from '../../repository'
 
 /**

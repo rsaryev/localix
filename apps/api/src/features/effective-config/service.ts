@@ -16,7 +16,7 @@ import { buildProvenance } from './provenance'
 import { createUnreadInputs } from './unread-inputs'
 import { errorMessage } from '../../lib/errors'
 import type { EffectiveConfigReport } from './contracts'
-import { toolCatalogNames, type ToolCatalogPluginSource } from '../tools/catalog'
+import { toolCatalogNames, type ToolCatalogMiniAppSource } from '../tools/catalog'
 import type { PermissionRule } from '../projects/contracts'
 import type { SkillOverrides } from '../agent-core/skill-overrides'
 
@@ -59,7 +59,7 @@ export interface AgentConfigPorts {
     disabledTools: string[]
   }>
   listSkillNames(userId: string, projectId: string | null): Promise<string[]>
-  listPlugins(userId: string, projectId: string | null): Promise<ToolCatalogPluginSource[]>
+  listMiniApps(userId: string, projectId: string | null): Promise<ToolCatalogMiniAppSource[]>
   defaults?: EffectiveConfigDefaults
 }
 
@@ -192,7 +192,7 @@ export function createAgentConfigurationService(
     await Promise.all(jobs)
 
     // 5. Cross-field validators + consumer resolution + tool surface.
-    const [skillNames, plugins] = await Promise.all([
+    const [skillNames, miniApps] = await Promise.all([
       readOr(
         {
           code: 'skills_unreadable',
@@ -204,15 +204,14 @@ export function createAgentConfigurationService(
       ),
       readOr(
         {
-          code: 'plugins_unreadable',
-          message:
-            'The plugin list could not be read, so the tool surface and plugin rows below are incomplete',
+          code: 'mini_apps_unreadable',
+          message: 'The mini app list could not be read, so the tool surface below is incomplete',
         },
-        ports.listPlugins(userId, projectId),
-        [] as ToolCatalogPluginSource[],
+        ports.listMiniApps(userId, projectId),
+        [] as ToolCatalogMiniAppSource[],
       ),
     ])
-    const knownToolNames = toolCatalogNames(plugins)
+    const knownToolNames = toolCatalogNames(miniApps)
     const capabilities = await readOr(
       {
         code: 'capabilities_unreadable',
@@ -275,7 +274,7 @@ export function createAgentConfigurationService(
       skills: Object.entries(capabilities.skillOverrides).flatMap(([name, override]) =>
         override ? [{ name, override }] : [],
       ),
-      plugins: plugins.map(({ name, enabled }) => ({ name, enabled })),
+      miniApps: miniApps.map(({ name, enabled }) => ({ name, enabled })),
     }
   }
 

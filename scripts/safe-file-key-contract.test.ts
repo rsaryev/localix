@@ -110,7 +110,7 @@ const EXEMPTIONS: Exemptions = {
   },
 
   // ── Builds a filename from a sanitized key, but the rule genuinely differs ──
-  [exemptionKey('apps/api/src/features/plugins/authoring/scaffold.ts', 'fileKey')]: {
+  [exemptionKey('apps/api/src/features/mini-apps/authoring/scaffold.ts', 'fileKey')]: {
     reason:
       '`toMiniAppName` slugs a model-proposed name into the PLUGIN NAME format (lower-kebab, `PLUGIN_NAME_RE`), and that name is the copy\'s folder. The owner\'s "_" would produce a name the format rejects, so the separator is the format\'s, not a choice. Traversal-safe: `[^a-z0-9]+` → "-" admits no `.` and no `/`, and the result is then VALIDATED against `PLUGIN_NAME_RE` with a fixed fallback (`my-plugin`) — reject-don\'t-coerce on top of the slug. Pinned in scaffold-name.test.ts.',
   },

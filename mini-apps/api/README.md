@@ -1,11 +1,11 @@
-# API plugin
+# API mini app
 
-The API plugin adds a REST client that people and agents can use from the Localix workspace. It
+The API mini app adds a REST client that people and agents can use from the Localix workspace. It
 stores named requests as workspace-local JSON, resolves environment variables, imports common API
 formats, and can explicitly export reviewable request files into a repository.
 
-The bundled plugin is enabled by default. Its tools and workspace surface still follow the active
-agent's capability rules; inspect or change them in **Settings → Capabilities → Plugins**.
+The bundled mini app is enabled by default. Its tools and workspace surface still follow the active
+agent's capability rules; inspect or change them in **Settings → Capabilities → Mini apps**.
 
 ## Contributions
 
@@ -45,7 +45,7 @@ project directory; sessions without a project use the host's session workspace.
 
 Requests use the typed `*.request.json` suffix. Valid legacy `*.json` requests migrate on first
 read. Requests and environments are separate files. The active-environment pointer uses a hidden
-`.state/` folder for a service first opened with a session, or the plugin state directory for an
+`.state/` folder for a service first opened with a session, or the mini app state directory for an
 unscoped service; services are cached by collection root. `.localix/` is local data and should
 remain ignored by git.
 
@@ -75,7 +75,7 @@ Import previews first; set `save` only after checking the result.
 | Postman environment   | Imports variables as a saved environment without activating it.              |
 | Insomnia v2–v4        | Imports JSON or YAML request groups, inherited auth, headers, and variables. |
 | HAR 1.2               | Imports recorded HTTP requests.                                              |
-| Localix request files | Reimports the files produced by the plugin's repository export.              |
+| Localix request files | Reimports the files produced by the mini app's repository export.            |
 
 Dynamic variables are a supported subset. Unknown or unsupported values remain visible and are
 reported instead of being replaced with empty text. At send time, `{{name}}` substitution runs once
@@ -124,8 +124,8 @@ whose actual destination you control.
 - Response bodies are bounded by `MAX_BODY_BYTES`; requests use the configured timeout.
 - Redirect cookies exist only for the current send and are not a persistent cookie jar.
 
-The plugin is trusted backend code and can make outbound requests when enabled. Localix permissions
-are an application gate, not an operating-system sandbox.
+The mini app is trusted backend code and can make outbound requests when enabled. Localix
+permissions are an application gate, not an operating-system sandbox.
 
 Returned response text, headers, URLs, cookies, and history mask recognized credential values and
 resolved Secret environment values using literal and URI-encoded matches. Transformed credentials
@@ -147,7 +147,7 @@ receive its abort signal. The timeout is not a deadline for the complete operati
 
 - GraphQL has no dedicated editor; send a normal JSON HTTP request instead.
 - Import compatibility is deliberately narrower than each source application's full model.
-- Environment data and saved request metadata are not encrypted by this plugin.
+- Environment data and saved request metadata are not encrypted by this mini app.
 - Git export is an explicit snapshot, not a synchronization engine.
 
 ## Source of truth

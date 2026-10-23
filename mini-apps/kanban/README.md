@@ -17,8 +17,8 @@ user owns it), the call's own session in the tool.
 Every write is a pure operation from one board value to the next (`backend/operations.ts`): it
 validates and then writes, so a refusal changes nothing. `backend/store.ts` runs them one at a time
 per board and announces the change only after it is on disk. The queue and the listeners live on
-`globalThis`, because the host imports the plugin afresh for every run's tools and the tool's writes
-must still reach the board a person has open.
+`globalThis`, because the host imports the mini app afresh for every run's tools and the tool's
+writes must still reach the board a person has open.
 
 ## The agent's tool
 

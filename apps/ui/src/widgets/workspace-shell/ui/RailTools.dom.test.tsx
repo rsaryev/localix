@@ -28,7 +28,7 @@ test('core and plugin tools share pins, grouping and a catalog; management opens
       isMobile={false}
       statusSessionId={null}
       sidebarOpen={false}
-      capabilitiesManageUri="localix://ui/settings/plugins"
+      miniAppsManageUri="localix://ui/settings/mini-apps"
       onNavigateUi={(uri) => destinations.push(uri)}
       onOpenSidebar={() => {
         sidebarOpens += 1
@@ -137,10 +137,10 @@ test('core and plugin tools share pins, grouping and a catalog; management opens
     await toggle('Pin Vault')
     expect(host.querySelector('[data-rail-recents-trigger]')).toBeNull()
     const manage = [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
-      (item) => item.textContent === 'Manage plugins…',
+      (item) => item.textContent === 'Manage mini apps…',
     )!
     await React.act(async () => manage.click())
-    expect(destinations).toEqual(['localix://ui/settings/plugins'])
+    expect(destinations).toEqual(['localix://ui/settings/mini-apps'])
     expect(sidebarOpens).toBe(0)
   } finally {
     await React.act(async () => root.unmount())

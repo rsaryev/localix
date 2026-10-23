@@ -24,7 +24,7 @@ the position. To play against you again, the user switches the opponent back on 
 
 ## When the board wakes you
 
-A message from the "tic-tac-toe" plugin, not typed by the user, means it is your move. It carries
+A message from the "tic-tac-toe" mini app, not typed by the user, means it is your move. It carries
 the position, the free cells and the score so far.
 
 Call `tic_tac_toe` with action `move` and one free `cell` (1–9, left to right, top to bottom) and

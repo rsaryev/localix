@@ -11,14 +11,14 @@ import { attributeMiniAppCaller } from './miniAppAttribution'
  * — plus the render crash its tab's boundary caught. One small buffer per plugin holds exactly
  * those.
  *
- * The window-wide hooks install on the first look at any plugin view (`watchPluginErrors`), so an
+ * The window-wide hooks install on the first look at any plugin view (`watchMiniAppErrors`), so an
  * app that never inspects a plugin never pays for a stack on each console call. A render crash is
  * recorded regardless: it happens before anyone asks, and it is the error most worth reporting.
  */
 
 const buffers = new Map<string, ConsoleBuffer>()
 
-export function pluginErrorBuffer(plugin: string): ConsoleBuffer {
+export function miniAppErrorBuffer(plugin: string): ConsoleBuffer {
   let buffer = buffers.get(plugin)
   if (!buffer) {
     buffer = createConsoleBuffer(30)
@@ -27,8 +27,8 @@ export function pluginErrorBuffer(plugin: string): ConsoleBuffer {
   return buffer
 }
 
-export function recordPluginRenderCrash(plugin: string, surface: string, error: unknown): void {
-  pluginErrorBuffer(plugin).record('error', `${surface} could not render: ${describe(error)}`)
+export function recordMiniAppRenderCrash(plugin: string, surface: string, error: unknown): void {
+  miniAppErrorBuffer(plugin).record('error', `${surface} could not render: ${describe(error)}`)
 }
 
 function describe(value: unknown): string {
@@ -44,14 +44,14 @@ function describe(value: unknown): string {
 /** Record `text` against the plugin whose code any of `stacks` passes through, if one does. */
 function attribute(level: 'error' | 'warn', text: string, stacks: readonly string[]): void {
   const caller = attributeMiniAppCaller(stacks.join('\n'))
-  if (caller) pluginErrorBuffer(caller.pluginName).record(level, text)
+  if (caller) miniAppErrorBuffer(caller.pluginName).record(level, text)
 }
 
 const stackOf = (value: unknown): string => (value instanceof Error ? (value.stack ?? '') : '')
 
 let watching = false
 
-export function watchPluginErrors(): void {
+export function watchMiniAppErrors(): void {
   if (watching || typeof window === 'undefined') return
   watching = true
   window.addEventListener('error', (event) =>

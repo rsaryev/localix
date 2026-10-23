@@ -37,11 +37,11 @@ function syncViewLocations(specs: readonly MiniAppViewSpec[]): void {
           id,
           uri: `localix://ui/plugin/view/${encodeURIComponent(spec.fullName)}`,
           title: spec.title,
-          description: `Open ${spec.pluginName} plugin view`,
+          description: `Open ${spec.app} plugin view`,
           ...(spec.agentDescription ? { agent: { description: spec.agentDescription } } : {}),
-          keywords: [spec.pluginName, 'plugin'],
+          keywords: [spec.app, 'plugin'],
           group: 'Plugins',
-          pluginName: spec.pluginName,
+          pluginName: spec.app,
           effect: 'read',
           surface: 'plugin',
           exposure: { search: true },
@@ -51,7 +51,7 @@ function syncViewLocations(specs: readonly MiniAppViewSpec[]): void {
             id: `plugin-view:${spec.fullName}`,
             title: spec.title,
             payload: {
-              pluginName: spec.pluginName,
+              pluginName: spec.app,
               projectId: spec.projectId,
               viewId: spec.id,
             },
@@ -69,7 +69,7 @@ function syncViewLocations(specs: readonly MiniAppViewSpec[]): void {
 
 function sameView(left: MiniAppViewSpec, right: MiniAppViewSpec): boolean {
   return (
-    left.pluginName === right.pluginName &&
+    left.app === right.app &&
     left.projectId === right.projectId &&
     left.id === right.id &&
     left.fullName === right.fullName &&
@@ -103,13 +103,13 @@ export function syncThirdPartyViews(specs: MiniAppViewSpec[]): void {
   for (const spec of specs) next.set(spec.fullName, spec)
   if (sameViews(views, next)) return
 
-  const prevPlugins = new Set([...views.values()].map((v) => v.pluginName))
+  const prevPlugins = new Set([...views.values()].map((v) => v.app))
   views.clear()
   for (const [fullName, spec] of next) views.set(fullName, spec)
   syncViewLocations(specs)
 
   // Clear custom actions for plugins that no longer contribute any view.
-  const nextPlugins = new Set([...next.values()].map((v) => v.pluginName))
+  const nextPlugins = new Set([...next.values()].map((v) => v.app))
   for (const plugin of prevPlugins) if (!nextPlugins.has(plugin)) clearPanelActions(plugin)
 
   version += 1

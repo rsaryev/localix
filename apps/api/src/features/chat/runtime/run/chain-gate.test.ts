@@ -85,8 +85,8 @@ async function run({ register, answer = () => true, cc = {}, output }: RunOption
   })
   const tool = bashTool(log, output ?? { content: 'ran' })
   const [wrapped] = applyToolWrapperChain([tool], {
-    pluginHooks: [],
-    pluginHookOptions: { sessionId: 's1', logger },
+    miniAppHooks: [],
+    miniAppHookOptions: { sessionId: 's1', logger },
     ccHooks,
     logger,
     mods: scope,

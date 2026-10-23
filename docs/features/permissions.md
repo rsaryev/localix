@@ -44,15 +44,16 @@ project rule or permission mode lifts it.
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Which directories      | Development: the checkout root (dev staging under `.turbo` included). Packaged: the server bundle's directory, its `resources/` or `server/` container, and the macOS `.app`. |
 | Never a host root      | The filesystem root, the home directory or anything above it, and anything that contains or sits inside `~/.localix`.                                                         |
-| Which paths are judged | File-tool targets, the bash cwd, a plugin tool's declared `permissionPaths`, and every absolute or `..` path token in a shell command, symlinks resolved.                     |
+| Which paths are judged | File-tool targets, the bash cwd, a mini app tool's declared `permissionPaths`, and every absolute or `..` path token in a shell command, symlinks resolved.                   |
 | The one exemption      | A host root that contains the session's own project directory: opening the Localix checkout as a project keeps working on it.                                                 |
 | What the model is told | The path belongs to the Localix application itself; work in `~/.localix` and the project folder, and do not retry.                                                            |
 
 The roots are computed once per process from the server module's own location
 ([`host-roots.ts`](https://github.com/rsaryev/localix/blob/main/apps/api/src/lib/host-roots.ts)),
-the same self-location rule the bundled `plugins/` and `migrations/` roots use. For the same reason
-a tool or plugin host given no cwd starts in `~/.localix/workspace`, never in the API's launch
-directory, which is the host application; a source lint keeps `process.cwd()` out of agent-core.
+the same self-location rule the bundled `mini-apps/` and `migrations/` roots use. For the same
+reason a tool or mini app host given no cwd starts in `~/.localix/workspace`, never in the API's
+launch directory, which is the host application; a source lint keeps `process.cwd()` out of
+agent-core.
 
 ### Rule fields
 
@@ -108,9 +109,10 @@ a skill declares `Bash(git *)`.
 | `npm i*`              | An anchored glob — `*` stands for any run of characters.                             |
 
 "Inside" is the session workspace plus the parts of `~/.localix` agents author — `workspace/`,
-`tmp/`, `plugins/` (the user's own plugins) and `skills/` — for reads and writes alike, in every
-role. The rest of `~/.localix` (the database, the vault, the captured login-shell environment,
-backups) is outside, so touching it asks
+`tmp/`, `mini-apps/` (the person's own mini apps, where `/mini-app create` puts them), `plugins/`
+(installed Claude Code plugins) and `skills/` — for reads and writes alike, in every role. The rest
+of `~/.localix` (the database, the vault, the captured login-shell environment, backups) is outside,
+so touching it asks
 ([`workspace.ts`](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/workspace.ts)).
 
 `outside-workspace`, `dangerous` and `mutates` are named CLASSES: they are computed from the call's
@@ -123,14 +125,14 @@ That list defines their predicates and the capability kinds they apply to.
 
 An artifact's trust class (`bundled`, `opt-in`, `untrusted`) is in the same list and works the same
 way in a rule, but it is a fact about the ARTIFACT rather than the call — so it applies to
-`plugin:`, `mcp:` and `agent:` rules, never to `tool:`.
+`plugin:`, `mini-app:`, `mcp:` and `agent:` rules, never to `tool:`.
 
 For a batch of shell commands, an `ask` or `deny` applies as soon as ONE command matches, while an
 `allow` must cover EVERY command — and a line whose commands cannot be read (command substitution)
 can never establish an allow. Read-confined tools resolve real paths, including symlinks, before
 containment checks; a write or edit through a linked folder that points outside the workspace counts
-as outside it. Plugin tools expose their targets through `permissionPaths`, and any tool can declare
-native resources through `permissionResources`.
+as outside it. Mini app tools expose their targets through `permissionPaths`, and any tool can
+declare native resources through `permissionResources`.
 
 ### The guards a shipped role carries
 
@@ -205,8 +207,8 @@ inspect or revoke current session grants. When no client can receive a confirmat
   the access granted to Localix by the host system.
 - Shell path and danger detection is lexical and intentionally conservative. Indirection inside a
   script or executable can be invisible to the classifier.
-- A path rule can act only on paths extracted for that tool. Plugin tools without `permissionPaths`
-  do not expose their targets to path matching.
+- A path rule can act only on paths extracted for that tool. Mini app tools without
+  `permissionPaths` do not expose their targets to path matching.
 - A tool's mutation classification is code-defined. An incorrect classifier can send a call down the
   wrong policy branch.
 - A session grant is scoped to its requester and program, path, folder, or declared resource, capped
@@ -220,7 +222,7 @@ inspect or revoke current session grants. When no client can receive a confirmat
 - [Capabilities](../features/capabilities.md)
 - [Human-in-the-loop controls](../features/hitl.md)
 - [Tool budget and controls](../features/tool-budget.md)
-- [Plugin tools](../extending/plugins.md)
+- [Mini app tools](../extending/mini-apps.md)
 
 ## Source of truth
 

@@ -1,8 +1,9 @@
 import { composeCapabilities } from './resolve'
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 
+import type { MiniAppContributions, MiniAppRecord } from '../mini-apps/contracts'
 import type { PluginRecord } from '../plugins/contracts'
-import type { MiniAppContributions } from '../plugins/service-types'
+import type { PluginContributions } from '../plugins/service-types'
 import { bumpCapabilityRevision, __resetCapabilityRevision } from './revision'
 import {
   buildCapabilityToolSurface,
@@ -19,7 +20,6 @@ function pluginRecord(over: {
   name: string
   enabled: boolean
   projectId?: string
-  tools?: { name: string; label: string; description: string }[]
   mcpServers?: string[]
 }): PluginRecord {
   return {
@@ -27,34 +27,55 @@ function pluginRecord(over: {
     displayName: over.name,
     version: '1.0.0',
     description: '',
-    layout: 'plugin',
-    surfaces: ['agent'],
     projectId: over.projectId ?? '',
     scope: over.projectId ? 'project' : 'global',
     dir: `/plugins/${over.name}`,
     source: 'local',
     enabled: over.enabled,
-    bundled: false,
-    provides: {
-      hasNativeTools: Boolean(over.tools?.length),
-      tools: over.tools ?? [],
-      skills: [],
-      mcpServers: over.mcpServers ?? [],
-      commands: [],
-    },
+    provides: { skills: [], mcpServers: over.mcpServers ?? [], commands: [] },
     config: [],
     validation: { errors: [], warnings: [] },
   }
 }
 
-function contributions(plugins: PluginRecord[]): MiniAppContributions {
-  return { plugins, views: [], commands: [], themes: [] }
+/** A mini app record with only the fields the snapshot resolver reads. */
+function miniAppRecord(over: {
+  name: string
+  enabled: boolean
+  tools?: { name: string; label: string; description: string }[]
+}): MiniAppRecord {
+  return {
+    name: over.name,
+    description: '',
+    surfaces: ['agent'],
+    scope: 'global',
+    projectId: '',
+    dir: `/mini-apps/${over.name}`,
+    bundled: false,
+    enabled: over.enabled,
+    hasBackend: Boolean(over.tools?.length),
+    tools: over.tools ?? [],
+    backendSubsystems: [],
+    commands: [],
+    views: [],
+    hasGuide: false,
+    config: [],
+  }
+}
+
+function contributions(plugins: PluginRecord[]): PluginContributions {
+  return { plugins, commands: [], themes: [] }
+}
+
+function appContributions(miniApps: MiniAppRecord[]): MiniAppContributions {
+  return { miniApps, views: [], commands: [] }
 }
 
 function makePorts(over: Partial<CapabilitySnapshotPorts> = {}): CapabilitySnapshotPorts {
   return {
     builtinCommands: [],
-    listMiniAppContributions: async () => contributions([]),
+    listPluginContributions: async () => contributions([]),
+    listMiniAppContributions: async () => appContributions([]),
     listAgents: async () => [],
     listMcpServers: async () => [],
     listSkills: async () => [],
@@ -101,7 +122,7 @@ describe('one document carries every catalog', () => {
         listSkills: async () => {
           throw new Error('skills dir unreadable')
         },
-        listMiniAppContributions: async () =>
+        listPluginContributions: async () =>
           contributions([pluginRecord({ name: 'db', enabled: true })]),
       }),
     )
@@ -136,7 +157,7 @@ describe('capability revision', () => {
     // contain it: too low self-corrects on the next poke, too high strands the client.
     const svc = createCapabilitySnapshotService(
       makePorts({
-        listMiniAppContributions: async () => {
+        listPluginContributions: async () => {
           bumpCapabilityRevision()
           return contributions([])
         },
@@ -149,7 +170,7 @@ describe('capability revision', () => {
     let builds = 0
     const svc = createCapabilitySnapshotService(
       makePorts({
-        listMiniAppContributions: async () => {
+        listPluginContributions: async () => {
           builds += 1
           return contributions([])
         },
@@ -167,7 +188,7 @@ describe('capability revision', () => {
     const built: string[] = []
     const svc = createCapabilitySnapshotService(
       makePorts({
-        listMiniAppContributions: async (userId, projectId) => {
+        listPluginContributions: async (userId, projectId) => {
           built.push(`${userId}:${projectId}`)
           return contributions([])
         },
@@ -185,7 +206,7 @@ describe('capability revision', () => {
     let builds = 0
     const svc = createCapabilitySnapshotService(
       makePorts({
-        listMiniAppContributions: async () => {
+        listPluginContributions: async () => {
           builds += 1
           return contributions([])
         },
@@ -209,7 +230,7 @@ describe('capability revision', () => {
     })
     const svc = createCapabilitySnapshotService(
       makePorts({
-        listMiniAppContributions: async () => {
+        listPluginContributions: async () => {
           builds += 1
           await gate
           return contributions([])
@@ -229,7 +250,7 @@ describe('capability revision', () => {
     let builds = 0
     const svc = createCapabilitySnapshotService(
       makePorts({
-        listMiniAppContributions: async () => {
+        listPluginContributions: async () => {
           builds += 1
           if (builds === 1) throw new Error('discovery failed')
           return contributions([])
@@ -256,7 +277,7 @@ describe('capability snapshot scoping', () => {
     }
     const svc = createCapabilitySnapshotService(
       makePorts({
-        listMiniAppContributions: async (_userId, projectId) =>
+        listPluginContributions: async (_userId, projectId) =>
           contributions(byScope[projectId] ?? []),
       }),
     )
@@ -298,11 +319,11 @@ describe('capability snapshot scoping', () => {
   })
 })
 
-describe('disabling a plugin removes its tools', () => {
-  test("a disabled plugin's tools leave `enabled` and appear in `disabled` WITH a reason", () => {
+describe('disabling a mini app removes its tools', () => {
+  test("a disabled mini app's tools leave `enabled` and appear in `disabled` WITH a reason", () => {
     const enabled = buildCapabilityToolSurface({
-      plugins: [
-        pluginRecord({
+      miniApps: [
+        miniAppRecord({
           name: 'sample-channel',
           enabled: true,
           tools: [{ name: 'channel_send', label: 'Send', description: 'Send a message.' }],
@@ -314,8 +335,8 @@ describe('disabling a plugin removes its tools', () => {
     expect(enabled.disabled.map((d) => d.name)).not.toContain('channel_send')
 
     const disabled = buildCapabilityToolSurface({
-      plugins: [
-        pluginRecord({
+      miniApps: [
+        miniAppRecord({
           name: 'sample-channel',
           enabled: false,
           tools: [{ name: 'channel_send', label: 'Send', description: 'Send a message.' }],
@@ -326,7 +347,7 @@ describe('disabling a plugin removes its tools', () => {
     expect(disabled.enabled).not.toContain('channel_send')
     expect(disabled.disabled).toContainEqual({
       name: 'channel_send',
-      reason: 'provided by disabled plugin "sample-channel"',
+      reason: 'provided by disabled mini app "Sample Channel"',
       source: 'capability',
     })
     // Still in the catalog, so a UI can render the row and SAY why it is unavailable
@@ -334,15 +355,15 @@ describe('disabling a plugin removes its tools', () => {
     expect(disabled.catalog.map((t) => t.name)).toContain('channel_send')
   })
 
-  test('an enabled plugin keeps a name a disabled plugin also claims', () => {
+  test('an enabled mini app keeps a name a disabled mini app also claims', () => {
     const surface = buildCapabilityToolSurface({
-      plugins: [
-        pluginRecord({
+      miniApps: [
+        miniAppRecord({
           name: 'stale',
           enabled: false,
           tools: [{ name: 'shared_tool', label: 'Stale', description: 'from the disabled one' }],
         }),
-        pluginRecord({
+        miniAppRecord({
           name: 'live',
           enabled: true,
           tools: [{ name: 'shared_tool', label: 'Live', description: 'from the enabled one' }],
@@ -359,8 +380,8 @@ describe('disabling a plugin removes its tools', () => {
     const svc = createCapabilitySnapshotService(
       makePorts({
         listMiniAppContributions: async () =>
-          contributions([
-            pluginRecord({
+          appContributions([
+            miniAppRecord({
               name: 'sample-documents',
               enabled: false,
               tools: [{ name: 'show_docs', label: 'Docs', description: 'Show documents.' }],
@@ -380,7 +401,7 @@ describe('disabling a plugin removes its tools', () => {
     // is exactly why this would otherwise go unnoticed until someone installs one that does.
     const svc = createCapabilitySnapshotService(
       makePorts({
-        listMiniAppContributions: async () =>
+        listPluginContributions: async () =>
           contributions([
             pluginRecord({ name: 'linear', enabled: true, mcpServers: ['linear-mcp'] }),
             pluginRecord({ name: 'off', enabled: false, mcpServers: ['never-loaded'] }),
@@ -396,7 +417,7 @@ describe('disabling a plugin removes its tools', () => {
   test('does not repeat a name that is already unprobed for another reason', async () => {
     const svc = createCapabilitySnapshotService(
       makePorts({
-        listMiniAppContributions: async () =>
+        listPluginContributions: async () =>
           contributions([pluginRecord({ name: 'p', enabled: true, mcpServers: ['shared'] })]),
         cachedMcpTools: async () => ({ servers: [], unprobed: ['shared'] }),
       }),

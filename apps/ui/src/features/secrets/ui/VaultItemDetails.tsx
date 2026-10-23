@@ -26,6 +26,7 @@ const VAULT_SOURCE_LABEL: Record<VaultItemSource, string> = {
   user: 'Personal',
   provider: 'Provider',
   plugin: 'Plugin',
+  'mini-app': 'Mini app',
   system: 'System',
 }
 

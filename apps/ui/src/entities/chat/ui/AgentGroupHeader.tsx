@@ -6,8 +6,8 @@ import {
   humanizeHandle,
   useAgentHandleIdentity,
 } from '@/shared/contrib/useAgentIdentity'
-import { pluginContribSnapshot } from '@/shared/contrib/enabledPlugins'
-import { usePluginContribVersion } from '@/shared/contrib/usePluginContribVersion'
+import { miniAppContribSnapshot } from '@/shared/contrib/enabledMiniApps'
+import { useMiniAppContribVersion } from '@/shared/contrib/useMiniAppContribVersion'
 import { AvatarStack } from '@localixai/kit/avatar'
 import { useUiNavigation } from '@/shared/hooks/useUiNavigation'
 import { navigateUi } from '@/shared/lib/uiNavigation'
@@ -48,8 +48,8 @@ export function AgentGroupHeader({
   const participants = groupParticipants(handle)
   const isConversation = isConversationGroup(handle)
   const identity = useAgentHandleIdentity(isConversation ? '' : handle)
-  usePluginContribVersion()
-  const agents = pluginContribSnapshot().document?.agents ?? []
+  useMiniAppContribVersion()
+  const agents = miniAppContribSnapshot().document?.agents ?? []
   const participantNames = participants.map(
     (participant) =>
       agents.find((agent) => agent.record.handle === participant)?.record.label?.trim() ||

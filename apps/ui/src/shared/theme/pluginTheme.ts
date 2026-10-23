@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 
 import type { CapabilitySnapshot } from '@/shared/api/contracts'
-import { pluginContribSnapshot, subscribePluginContrib } from '@/shared/contrib/enabledPlugins'
+import { miniAppContribSnapshot, subscribeMiniAppContrib } from '@/shared/contrib/enabledMiniApps'
 
 /**
  * A plugin's color theme (Claude Code `themes/<slug>.json`) laid over the appearance it starts
@@ -115,12 +115,12 @@ export function currentPluginTheme(): PluginThemeSpec | null {
 
 /** The themes the open scope offers: its global and project plugins'. */
 export function scopeThemes(): readonly PluginThemeSpec[] {
-  return pluginContribSnapshot().document?.themes ?? NO_THEMES
+  return miniAppContribSnapshot().document?.themes ?? NO_THEMES
 }
 
 /** {@link scopeThemes} as a hook, following the workbench's scope. */
 export function useScopeThemes(): readonly PluginThemeSpec[] {
-  return useSyncExternalStore(subscribePluginContrib, scopeThemes, () => NO_THEMES)
+  return useSyncExternalStore(subscribeMiniAppContrib, scopeThemes, () => NO_THEMES)
 }
 
 /**
@@ -138,8 +138,8 @@ export function installPluginTheme(): () => void {
     repaint()
   }
   window.addEventListener('storage', onStorage)
-  const stopContrib = subscribePluginContrib(() =>
-    reconcilePluginTheme(pluginContribSnapshot().document?.themes),
+  const stopContrib = subscribeMiniAppContrib(() =>
+    reconcilePluginTheme(miniAppContribSnapshot().document?.themes),
   )
   return () => {
     observer.disconnect()

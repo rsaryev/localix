@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import type { CapabilitySnapshot } from '@/shared/api/contracts'
-import { __resetPluginContrib, refetchPluginContrib } from '@/shared/contrib/enabledPlugins'
+import { __resetMiniAppContrib, refetchMiniAppContrib } from '@/shared/contrib/enabledMiniApps'
 import {
   areMiniAppContributionsPending,
   miniAppContributionActivation,
 } from '@/shared/contrib/miniAppActivation'
-import { __resetPluginUiLoads } from '@/shared/contrib/miniAppUiLoads'
+import { __resetMiniAppUiLoads } from '@/shared/contrib/miniAppUiLoads'
 import { __setRegistryFlushScheduler } from '@/shared/contrib/registryChanges'
 import { isUnavailableContributedKind } from './capabilities'
 
@@ -23,14 +23,14 @@ const snapshot = (plugins: never[]): CapabilitySnapshot =>
 
 beforeEach(() => __setRegistryFlushScheduler(() => () => {}))
 afterEach(() => {
-  __resetPluginContrib()
-  __resetPluginUiLoads()
+  __resetMiniAppContrib()
+  __resetMiniAppUiLoads()
   __setRegistryFlushScheduler(null)
 })
 
 describe('a restored plugin tab over a failed UI import', () => {
   test('is kept, not closed as unavailable', async () => {
-    await refetchPluginContrib(
+    await refetchMiniAppContrib(
       { loadSnapshot: async () => snapshot([withUi('git')]) },
       async (_plugins, settled) => settled?.('git', false),
     )

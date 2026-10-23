@@ -1,11 +1,9 @@
-import { constants, promises as fs } from 'node:fs'
 import { join } from 'node:path'
 
 import { asStringArray } from '../../lib/coerce'
 import { pathExists } from '../ext/fs-discovery'
 
 import type { PluginManifest } from './contracts'
-import type { ExtensionLayout } from './layout/compose'
 import {
   componentSources,
   DEFAULT_LOCATIONS,
@@ -26,8 +24,6 @@ import { resolveCcComponents, type PluginCcComponents } from './discovery-cc-com
 
 /** Absolute paths to every artifact a plugin manifest points at (defaults applied). */
 export interface ResolvedEntrypoints {
-  /** Native JS/TS entrypoints exporting AgentTools (+ optional hooks). */
-  toolEntries: string[]
   /** Skill root dirs — each holds `<name>/SKILL.md`. */
   skillDirs: string[]
   /** MCP server configs keyed by server name (raw, normalized later). */
@@ -75,93 +71,21 @@ export interface ResolvedEntrypoints {
 }
 
 export interface PluginArtifactDiagnostic {
-  kind: 'command' | 'agent' | 'entrypoint'
+  kind: 'command' | 'agent'
   path: string
   message: string
 }
 
 /**
- * Whether a folder may have its native entrypoint found by convention (`tools/index.*`,
- * `tools.*`): only a mini app (`.localix-app/app.json`). Every other folder could be a Claude Code
- * plugin to the person who installed it — a root `plugin.json` is the plugin's own claim, which
- * Claude Code ignores — and Claude Code never imports a file it ships. A legacy root `plugin.json`
- * still runs the entrypoint its `tools` field names.
- */
-export const searchesNativeDefaults = (layout: ExtensionLayout | undefined): boolean =>
-  layout === 'decorated'
-
-/**
- * Resolve a manifest's declared artifacts to absolute paths, applying directory
- * defaults (./tools for a mini app only — see {@link searchesNativeDefaults}, ./skills,
- * ./.mcp.json) when the manifest is silent. Commands are inline manifest objects — no
- * filesystem default. Without `layout` no native default is searched.
+ * Resolve a manifest's declared artifacts to absolute paths, applying Claude Code's directory
+ * defaults (./skills, ./.mcp.json, ./commands, ./agents, hooks/hooks.json…) when the manifest is
+ * silent. A plugin runs no Localix code: there is no native entrypoint to find.
  */
 export async function resolveEntrypoints(
   dir: string,
   manifest: PluginManifest,
-  layout?: ExtensionLayout,
 ): Promise<ResolvedEntrypoints> {
   const diagnostics: PluginArtifactDiagnostic[] = []
-  // ---- Native tool entrypoints --------------------------------------------
-  // Declared entrypoints come only from a mini app's `backend` or a legacy `tools` field.
-  let toolEntries = toAbsList(dir, manifest.tools)
-  if (toolEntries.length === 0 && searchesNativeDefaults(layout)) {
-    // Check default tool entrypoints in parallel, take the first that exists.
-    const candidates = [
-      'tools/index.ts',
-      'tools/index.js',
-      'tools/index.mjs',
-      'tools.ts',
-      'tools.js',
-      'tools.mjs',
-    ]
-    const checks = await Promise.all(
-      candidates.map(async (c) => {
-        const abs = join(dir, c)
-        return (await pathExists(abs)) ? abs : null
-      }),
-    )
-    const found = checks.find((c) => c !== null)
-    if (found) toolEntries = [found]
-  }
-  await Promise.all(
-    toolEntries.map(async (entry) => {
-      try {
-        const stat = await fs.stat(entry)
-        if (!stat.isFile()) {
-          diagnostics.push({
-            kind: 'entrypoint',
-            path: entry,
-            message: 'Native entrypoint is not a regular file',
-          })
-          return
-        }
-        await fs.access(entry, constants.R_OK)
-      } catch (error) {
-        diagnostics.push({
-          kind: 'entrypoint',
-          path: entry,
-          message: `Cannot read native entrypoint: ${error instanceof Error ? error.message : 'unknown filesystem error'}`,
-        })
-      }
-    }),
-  )
-
-  // A mini app holds no Claude Code plugin (rule X2): none of a plugin's default folders or files
-  // mean anything in it. Its commands are inline in mini-app.json and its guide is read on demand.
-  if (layout === 'mini-app') {
-    return {
-      toolEntries,
-      skillDirs: [],
-      mcpServers: {},
-      commandFiles: [],
-      agentFiles: [],
-      hookConfigs: [],
-      lspServers: {},
-      monitors: [],
-      diagnostics,
-    }
-  }
 
   // ---- Skill dirs ----------------------------------------------------------
   // CC path-behavior: `skills` ADDS to the default `./skills` dir (never replaces it).
@@ -277,7 +201,6 @@ export async function resolveEntrypoints(
   const components = await resolveCcComponents(dir, manifest)
 
   return {
-    toolEntries,
     skillDirs,
     mcpServers,
     commandFiles,

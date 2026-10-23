@@ -4,7 +4,10 @@ import { backendClient } from '@/shared/api/client'
 import { scopeThemes } from '@/shared/theme/pluginTheme'
 import { themeChoices } from '@/shared/theme/themeChoice'
 
-import { loadPluginCommandArgOptions } from './pluginCommandArgOptions'
+import {
+  loadMiniAppCommandArgOptions,
+  loadPluginCommandArgOptions,
+} from './pluginCommandArgOptions'
 import { loadAgentCommandArgOptions } from './agentCommandArgOptions'
 import type { SlashCommand } from './SlashCommandMenu'
 import type { SlashArgOption } from './SlashArgSpec'
@@ -38,6 +41,9 @@ export function useSlashArgOptions(
       if (command.id === 'plugin') {
         return loadPluginCommandArgOptions(argName, committed.action, query)
       }
+      if (command.id === 'mini-app') {
+        return loadMiniAppCommandArgOptions(argName, committed.action, query)
+      }
       if (command.id === 'theme') {
         // The open scope's looks, as Settings → Appearance lists them (`/theme`).
         const wanted = query.trim().toLowerCase()
@@ -55,7 +61,7 @@ export function useSlashArgOptions(
       if (!src) return []
       const rows = await backendClient
         .fetchMiniAppCommandArgOptions({
-          plugin: src.plugin,
+          app: src.app,
           command: src.command,
           arg: argName,
           query,

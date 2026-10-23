@@ -94,9 +94,9 @@ describe('prepareBrowserArguments — the lifts reach the dispatch path', () => 
     expect(prepareBrowserArguments(origin)).toBe(origin)
     const opaque = { action: 'snapshot', preview_id: 'preview-7' }
     expect(prepareBrowserArguments(opaque)).toBe(opaque)
-    // `plugin:<name>` parses as a URL too — with an opaque origin, "null". It is a plugin view's
+    // `mini-app:<name>` parses as a URL too — with an opaque origin, "null". It is a mini app view's
     // address, and rewriting it would send every command to no host.
-    const pluginView = { action: 'snapshot', preview_id: 'plugin:focus-timer' }
+    const pluginView = { action: 'snapshot', preview_id: 'mini-app:focus-timer' }
     expect(prepareBrowserArguments(pluginView)).toBe(pluginView)
   })
 

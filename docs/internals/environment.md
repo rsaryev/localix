@@ -45,11 +45,11 @@ child environment values.
 `~/.localix/localix.db`; media and other row-owned blobs use its directory, while vault and MCP
 OAuth key material remain under the machine-level Localix home.
 
-Session-owned plugin data uses `~/.localix/session-data` with the default database. An alternate
+Session-owned mini app data uses `~/.localix/session-data` with the default database. An alternate
 `LOCALIX_DB_FILE` uses `<absolute database filename>.session-data` instead, so databases in the same
 directory still have separate session data. The startup orphan sweep reconciles only that database's
-data root; a test database cannot remove the default database's plugin state.
-[`session-storage.ts`](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/session-storage.ts)
+data root; a test database cannot remove the default database's mini app state.
+[`session-storage.ts`](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/session-storage.ts)
 owns this path selection.
 
 The login-shell resolver captures the user's interactive shell environment for GUI launches.
@@ -128,21 +128,21 @@ can change a running development process without restarting it.
 
 ### Launcher and source-development seams
 
-| Variable                      | Default            | Owner and effect                                                 |
-| ----------------------------- | ------------------ | ---------------------------------------------------------------- |
-| `LOCALIX_RUNTIME_WATCH`       | off                | API daemon development-watch mode.                               |
-| `LOCALIX_RUNTIME_HOST`        | `127.0.0.1`        | Host requested by the daemon launcher.                           |
-| `LOCALIX_DAEMON_LOG`          | derived            | API log-file override; default `logs/api.log` beside the DB.     |
-| `LOCALIX_LAUNCH_ID`           | set by the shell   | Launch id the API stamps on every log line (`bun run logs`).     |
-| `LOCALIX_DESKTOP_PARENT_PID`  | unset              | Stops the desktop runtime after its owner exits or closes stdin. |
-| `LOCALIX_BUNDLED_PLUGINS_DIR` | self-located       | Bundled-plugin staging root used by discovery and packaging.     |
-| `LOCALIX_TRASH_DIR`           | `~/.localix/trash` | Recoverable-delete root; tests override it.                      |
-| `LOCALIX_DEV_API_PORT`        | `5051`             | API port used by `scripts/dev-servers.mjs`.                      |
-| `LOCALIX_DEV_UI_PORT`         | `5050`             | Vite port and preflight port used by source development.         |
-| `LOCALIX_DEV_HOST`            | `127.0.0.1`        | API host used by source development.                             |
-| `VITE_DEV_HOST`               | unset              | Optional Vite bind address, including container access.          |
-| `VITE_API_BASE_URL`           | launcher-set       | Required API proxy target when Vite serves.                      |
-| `VITE_WS_BASE_URL`            | launcher-set       | Direct WebSocket base injected into the UI.                      |
+| Variable                        | Default            | Owner and effect                                                 |
+| ------------------------------- | ------------------ | ---------------------------------------------------------------- |
+| `LOCALIX_RUNTIME_WATCH`         | off                | API daemon development-watch mode.                               |
+| `LOCALIX_RUNTIME_HOST`          | `127.0.0.1`        | Host requested by the daemon launcher.                           |
+| `LOCALIX_DAEMON_LOG`            | derived            | API log-file override; default `logs/api.log` beside the DB.     |
+| `LOCALIX_LAUNCH_ID`             | set by the shell   | Launch id the API stamps on every log line (`bun run logs`).     |
+| `LOCALIX_DESKTOP_PARENT_PID`    | unset              | Stops the desktop runtime after its owner exits or closes stdin. |
+| `LOCALIX_BUNDLED_MINI_APPS_DIR` | self-located       | Bundled mini app staging root used by discovery and packaging.   |
+| `LOCALIX_TRASH_DIR`             | `~/.localix/trash` | Recoverable-delete root; tests override it.                      |
+| `LOCALIX_DEV_API_PORT`          | `5051`             | API port used by `scripts/dev-servers.mjs`.                      |
+| `LOCALIX_DEV_UI_PORT`           | `5050`             | Vite port and preflight port used by source development.         |
+| `LOCALIX_DEV_HOST`              | `127.0.0.1`        | API host used by source development.                             |
+| `VITE_DEV_HOST`                 | unset              | Optional Vite bind address, including container access.          |
+| `VITE_API_BASE_URL`             | launcher-set       | Required API proxy target when Vite serves.                      |
+| `VITE_WS_BASE_URL`              | launcher-set       | Direct WebSocket base injected into the UI.                      |
 
 ### Terminal notification overrides
 
@@ -157,9 +157,9 @@ can change a running development process without restarting it.
 - This page documents runtime and source-development inputs. CI signing, release-manifest, and
   test-only variables remain contracts of their owning scripts.
 - Environment values are process-level inputs. Provider credentials belong in provider connections,
-  plugin secrets in declared secret configuration, and user preferences in Settings.
-- `LOCALIX_BUNDLED_PLUGINS_DIR`, `LOCALIX_TRASH_DIR`, and desktop runtime variables are launcher or
-  test seams, not stable end-user controls.
+  plugin and mini app secrets in declared secret configuration, and user preferences in Settings.
+- `LOCALIX_BUNDLED_MINI_APPS_DIR`, `LOCALIX_TRASH_DIR`, and desktop runtime variables are launcher
+  or test seams, not stable end-user controls.
 - A blank or invalid flag silently uses its fallback. Startup schema errors are the exception:
   invalid boot configuration stops API creation.
 

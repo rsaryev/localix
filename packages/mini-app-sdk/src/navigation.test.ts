@@ -36,6 +36,18 @@ describe('capability resource URIs', () => {
   })
 })
 
+describe('a mini app in Settings', () => {
+  test('a mini app and its screens open the Mini apps tab, never Plugins', () => {
+    const app = capabilityResourceUri({ kind: 'mini-app', id: 'tracker', scope: '' })
+    expect(capabilitySettingsUiUri(parseCapabilityResourceUri(app)!)).toBe(
+      'localix://ui/settings/mini-apps/mini-app-tracker?scope=',
+    )
+    expect(capabilitySettingsUiUri({ kind: 'view', id: 'tracker:board', scope: '' })).toBe(
+      'localix://ui/settings/mini-apps?scope=',
+    )
+  })
+})
+
 describe('canonical Localix URI protocol', () => {
   test('round-trips decoded breadcrumbs and query arguments', () => {
     const uri = localixResourceUri('fixture-db', ['connection/a', 'public schema'], {

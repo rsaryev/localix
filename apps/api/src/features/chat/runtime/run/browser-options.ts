@@ -10,7 +10,7 @@
  *
  * A `plugin:<name>` target is a plugin's workbench view, not a page: nothing is served or
  * proxied for it. The workbench claims every command for it
- * and opens the view itself (`contracts/plugin-view-target.ts`).
+ * and opens the view itself (`contracts/mini-app-view-target.ts`).
  */
 import type { OptionalToolPorts } from '../../../agent-core/tool-registry'
 import { isToolDirect, type RunProfile } from '../../../agent-core/run-shape'
@@ -19,7 +19,10 @@ import {
   openPreviewCore,
   type OpenPreviewCoreResult,
 } from '../../../agent-core/tools/preview/open-preview'
-import { parsePluginViewTarget, pluginViewTarget } from '../../../../contracts/plugin-view-target'
+import {
+  parseMiniAppViewTarget,
+  miniAppViewTarget,
+} from '../../../../contracts/mini-app-view-target'
 import { sessionScratchDir } from '../../../agent-core/tools/workspace'
 import type { SessionRecord } from '../../repository'
 import type { RunnerDeps } from '../agent-runner-types'
@@ -49,7 +52,7 @@ export function buildBrowserOptions(input: {
         timeoutMs: opts?.timeoutMs,
       }),
     openPreview: async (openInput) => {
-      const plugin = parsePluginViewTarget(openInput.url)
+      const plugin = parseMiniAppViewTarget(openInput.url)
       const opened = plugin
         ? openPluginView(plugin)
         : await openPreviewCore(
@@ -92,7 +95,7 @@ export function buildBrowserOptions(input: {
 
 /** A plugin view "opens" by being addressed: the workbench opens the tab on the first command. */
 function openPluginView(plugin: string): OpenPreviewCoreResult {
-  const target = pluginViewTarget(plugin)
+  const target = miniAppViewTarget(plugin)
   return {
     ok: true,
     url: target,
@@ -102,6 +105,6 @@ function openPluginView(plugin: string): OpenPreviewCoreResult {
     frameBlocked: false,
     autoServed: false,
     background: false,
-    content: `The "${plugin}" plugin's view, open in its own workbench tab — not a web page. Drive it with snapshot, take_screenshot and steps (click, type, press, scroll) and read its errors with console; evaluate and viewport are not available on it.`,
+    content: `The "${plugin}" mini app's view, open in its own workbench tab — not a web page. Drive it with snapshot, take_screenshot and steps (click, type, press, scroll) and read its errors with console; evaluate and viewport are not available on it.`,
   }
 }

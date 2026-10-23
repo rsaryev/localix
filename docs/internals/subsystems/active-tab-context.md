@@ -22,7 +22,7 @@ the durable context capture.
 
 | Stage            | Mechanism                                                                                                        | Boundary or failure mode                                                           |
 | ---------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Static mapping   | `workItemToMessageBindings` maps core file, diff, and terminal tabs or calls a plugin work-item contribution     | A tab without a mapping contributes nothing                                        |
+| Static mapping   | `workItemToMessageBindings` maps core file, diff, and terminal tabs or calls a mini app work-item contribution   | A tab without a mapping contributes nothing                                        |
 | Live publication | `publishLiveTabMessageContext` stores normalized `replace` or `append` facets by tab ID                          | Invalid registry input clears it; the sandbox bridge rejects invalid input earlier |
 | Ranking          | `activeTabLinks` ranks current-scope open tabs by on-screen state, focused group, and tab recency                | The first five linkable facets win; one tab can contribute several facets          |
 | Composer preview | `ambientAutoRefs` converts the full binding envelope into dismissible chips when the composer surface is visible | A hidden warm composer derives no ambient refs                                     |
@@ -30,7 +30,7 @@ the durable context capture.
 | Durable capture  | The chat service resolves accepted context bindings and persists their outcomes                                  | This lifecycle belongs to [Message bindings](message-bindings.md)                  |
 
 The invariant is that a tab publishes a structured binding. Core may rank, normalize, budget, and
-capture it, but core does not parse a plugin-owned resource URI.
+capture it, but core does not parse a resource URI a mini app owns.
 
 ## How it works
 
@@ -39,14 +39,14 @@ capture it, but core does not parse a plugin-owned resource URI.
 `tabMessageBinding.ts` is the only static/live merge point. Core file and diff tabs produce file
 bindings, and terminal tabs produce terminal bindings. Registered work-item kinds provide
 `toMessageBinding` or `toMessageBindings`, called with the tab and `{ session }` — the chat a
-session-scoped tab belongs to, or `null` for a global tab — so a plugin never decodes the host's
+session-scoped tab belongs to, or `null` for a global tab — so a mini app never decodes the host's
 opaque `scope` field.
 
 A mounted tab body can publish narrower state through `publishMessageContext`. `replace` discards
 the static mapping for that tab; `append` retains it. The registry deduplicates the resulting target
 envelopes without interpreting their URI schemes.
 
-Bundled components and sandboxed plugin views cross the same runtime normalizer. Live publications
+Bundled components and sandboxed mini app views cross the same runtime normalizer. Live publications
 may contain provider-owned `resource` targets or bounded `snippet` snapshots. They cannot publish a
 host-owned file, terminal, task, or session target.
 
@@ -109,12 +109,12 @@ budget.
 
 These are code constants, not user settings.
 
-| Constant                                 |                        Value | Enforced by                               |
-| ---------------------------------------- | ---------------------------: | ----------------------------------------- |
-| `AUTO_LINK_LIMIT`                        |                     5 facets | `activeTabLink.ts`                        |
-| `PUBLISHED_MESSAGE_CONTEXT_MAX_BINDINGS` | 5 facets per tab publication | Plugin SDK normalizer and live registry   |
-| `LIVE_SNIPPET_CONTENT_MAX`               |            40,000 characters | Plugin SDK snippet factory and normalizer |
-| `MAX_SEND_REFS`                          |              20 context refs | Client ref merge; reserves no asset slots |
+| Constant                                 |                        Value | Enforced by                                 |
+| ---------------------------------------- | ---------------------------: | ------------------------------------------- |
+| `AUTO_LINK_LIMIT`                        |                     5 facets | `activeTabLink.ts`                          |
+| `PUBLISHED_MESSAGE_CONTEXT_MAX_BINDINGS` | 5 facets per tab publication | Mini app SDK normalizer and live registry   |
+| `LIVE_SNIPPET_CONTENT_MAX`               |            40,000 characters | Mini app SDK snippet factory and normalizer |
+| `MAX_SEND_REFS`                          |              20 context refs | Client ref merge; reserves no asset slots   |
 
 ## Limits
 
@@ -138,11 +138,11 @@ These are code constants, not user settings.
 - [Message bindings](message-bindings.md)
 - [Context system](context-system.md)
 - [Context Fabric and Edit Prediction](context-and-edit-prediction-architecture.md)
-- [Plugin authoring](../../extending/plugins.md)
+- [Build a mini app](../../extending/mini-apps.md)
 
 ## Source of truth
 
-- [Plugin publication types and normalization](../../../packages/mini-app-sdk/src/ui/contrib.ts)
+- [Mini app publication types and normalization](../../../packages/mini-app-sdk/src/ui/contrib.ts)
 - [Static/live binding merge](../../../apps/ui/src/entities/workspace-grid/model/tabMessageBinding.ts)
 - [Live registry](../../../apps/ui/src/entities/workspace-grid/model/liveTabMessageContext.ts)
 - [Candidate ranking](../../../apps/ui/src/entities/workspace-grid/model/activeTabLink.ts)

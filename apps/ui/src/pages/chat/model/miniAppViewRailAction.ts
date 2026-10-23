@@ -37,19 +37,19 @@ export function miniAppViewRailAction({
   return {
     id: `view:${view.fullName}`,
     icon: createElement(resolveViewIcon(view.icon), { className: 'size-4.5' }),
-    label: `${view.title} (${view.pluginName} plugin)`,
+    label: `${view.title} (${view.app} plugin)`,
     active: isActive,
     customizable: true,
     defaultArea: 'overflow',
     // Installed third-party view — grouped under "Plugins" in the overflow.
     plugin: true,
-    pluginName: view.pluginName,
+    pluginName: view.app,
     resourceUri: capabilityResourceUri({
       kind: 'view',
       id: view.fullName,
       scope: capabilityScope,
       label: view.title,
-      description: `View contributed by ${view.pluginName}`,
+      description: `View contributed by ${view.app}`,
       enabled: true,
     }),
     onClick: () =>
@@ -65,7 +65,7 @@ export function miniAppViewRailAction({
           id: tabId,
           title: view.title,
           scope: sessionId,
-          payload: { pluginName: view.pluginName, projectId: view.projectId, viewId: view.id },
+          payload: { pluginName: view.app, projectId: view.projectId, viewId: view.id },
         })
       }),
   }

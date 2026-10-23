@@ -4,7 +4,7 @@ import { WorkItemSessionProvider } from '@localixai/mini-app-sdk/ui/work-item-se
 import { ActionSurfaceProvider } from '@localixai/mini-app-sdk/ui'
 import { bindMiniAppUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
 import { registerAction, removeActionsOf } from '@/shared/contrib/actions'
-import { setEnabledPluginNames } from '@/shared/contrib/miniAppActivation'
+import { setEnabledMiniAppNames } from '@/shared/contrib/miniAppActivation'
 import { ContributedActions } from './ContributedActions'
 
 let teardown: () => Promise<void>
@@ -25,7 +25,7 @@ test('plugin eligibility hides and restores a button live; fast clicks run once 
   const pending = new Promise<void>((done) => {
     finish = done
   })
-  setEnabledPluginNames(new Set(['live-action']))
+  setEnabledMiniAppNames(new Set(['live-action']))
   registerAction({
     id: 'live-action:save',
     pluginName: 'live-action',
@@ -86,7 +86,7 @@ test('plugin eligibility hides and restores a button live; fast clicks run once 
     await act(async () => root.unmount())
     host.remove()
     removeActionsOf('live-action')
-    setEnabledPluginNames(null)
+    setEnabledMiniAppNames(null)
     unbind()
   }
 })

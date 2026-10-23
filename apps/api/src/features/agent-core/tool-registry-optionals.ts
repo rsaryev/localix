@@ -2,7 +2,7 @@ import { createBrowserTool } from './tools/browser/browser'
 import { createDelegateTool } from './tools/delegate'
 import { createAgentsTool } from './tools/agents'
 import { createLoopsTool } from './tools/loops'
-import { createMiniAppBuildTool } from './tools/plugin-build'
+import { createMiniAppBuildTool } from './tools/mini-app-build'
 import { createSetTopicTool } from './tools/set-topic'
 import { createConfigureTool } from './tools/configure/configure'
 import { createPlanTool } from './tools/plan/plan'
@@ -41,9 +41,9 @@ export function buildNamedOptionals(
     })
   }
 
-  if (optional.plugin_build) {
+  if (optional.mini_app_build) {
     namedOptionals.push({
-      tool: createMiniAppBuildTool(optional.plugin_build),
+      tool: createMiniAppBuildTool(optional.mini_app_build),
     })
   }
 

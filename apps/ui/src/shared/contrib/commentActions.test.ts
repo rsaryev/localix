@@ -2,7 +2,7 @@ import { afterEach, expect, spyOn, test } from 'bun:test'
 import type { CommentActionContribution } from '@localixai/mini-app-sdk/ui'
 
 import { commentActions, registerCommentAction, removeCommentActionsOf } from './commentActions'
-import { setEnabledPluginNames } from './miniAppActivation'
+import { setEnabledMiniAppNames } from './miniAppActivation'
 
 const Icon = () => null
 
@@ -13,12 +13,12 @@ function action(pluginName: string, id: string): CommentActionContribution {
 afterEach(() => {
   removeCommentActionsOf('zeta-fixture')
   removeCommentActionsOf('alpha-fixture')
-  setEnabledPluginNames(null)
+  setEnabledMiniAppNames(null)
 })
 
 test('the row is ordered by identity, not by load order', () => {
   // MUTATION: return the map in insertion order → red (zeta registered first).
-  setEnabledPluginNames(new Set(['zeta-fixture', 'alpha-fixture']))
+  setEnabledMiniAppNames(new Set(['zeta-fixture', 'alpha-fixture']))
   registerCommentAction(action('zeta-fixture', 'issue'))
   registerCommentAction(action('alpha-fixture', 'task'))
   expect(commentActions().map((entry) => entry.id)).toEqual([
@@ -31,17 +31,17 @@ test('the row is ordered by identity, not by load order', () => {
 
 test('a disabled plugin offers nothing, and re-enabling it brings the action back', () => {
   // MUTATION: drop the activation filter → red.
-  setEnabledPluginNames(new Set())
+  setEnabledMiniAppNames(new Set())
   registerCommentAction(action('alpha-fixture', 'task'))
   expect(commentActions()).toEqual([])
-  setEnabledPluginNames(new Set(['alpha-fixture']))
+  setEnabledMiniAppNames(new Set(['alpha-fixture']))
   expect(commentActions().map((entry) => entry.id)).toEqual(['alpha-fixture:task'])
 })
 
 test('a second owner of an id is refused', () => {
   const warn = spyOn(console, 'warn').mockImplementation(() => {})
   try {
-    setEnabledPluginNames(new Set(['alpha-fixture', 'zeta-fixture']))
+    setEnabledMiniAppNames(new Set(['alpha-fixture', 'zeta-fixture']))
     const first = action('alpha-fixture', 'task')
     registerCommentAction(first)
     registerCommentAction({ ...action('zeta-fixture', 'task'), id: first.id })

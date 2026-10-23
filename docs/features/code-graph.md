@@ -99,13 +99,13 @@ answer reports how many calls were linked, went into dependencies, or stayed unr
 
 ## Configuration
 
-| Setting         | Where                                | Effect                                                        |
-| --------------- | ------------------------------------ | ------------------------------------------------------------- |
-| Ignored files   | `.gitignore`, `info/exclude`, global | Ignored paths are never indexed.                              |
-| Path aliases    | `tsconfig.json` / `jsconfig.json`    | `paths` and a declared `baseUrl` resolve aliased imports.     |
-| Workspace names | `package.json` `name` and `exports`  | Imports of a workspace package resolve to its source files.   |
-| Go modules      | `go.mod`                             | Import paths under the module resolve to project directories. |
-| Cache           | `~/.localix/plugin-data/code-graph/` | One SQLite extraction cache per project; safe to delete.      |
+| Setting         | Where                                   | Effect                                                        |
+| --------------- | --------------------------------------- | ------------------------------------------------------------- |
+| Ignored files   | `.gitignore`, `info/exclude`, global    | Ignored paths are never indexed.                              |
+| Path aliases    | `tsconfig.json` / `jsconfig.json`       | `paths` and a declared `baseUrl` resolve aliased imports.     |
+| Workspace names | `package.json` `name` and `exports`     | Imports of a workspace package resolve to its source files.   |
+| Go modules      | `go.mod`                                | Import paths under the module resolve to project directories. |
+| Cache           | `~/.localix/mini-apps-data/code-graph/` | One SQLite extraction cache per project; safe to delete.      |
 
 ## Limits
 
@@ -126,7 +126,7 @@ answer reports how many calls were linked, went into dependencies, or stayed unr
 
 ## Related guides
 
-- [Plugins](../extending/plugins.md) — how bundled plugins are installed and trusted.
+- [Mini apps](mini-apps.md) — how bundled mini apps are enabled, disabled and trusted.
 - [Language servers](lsp.md) — per-file diagnostics and navigation in the editor.
 - [Source control](source-control.md) — the changes you are about to make.
 

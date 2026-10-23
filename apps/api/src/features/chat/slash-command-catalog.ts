@@ -11,7 +11,7 @@
 // Browser-safe catalog: argument definitions, the arg-spec core and pure edit distance
 // keep consumers independent of server code.
 
-import { LOOP_ARGS, PLUGIN_ARGS } from './slash-catalog-arguments'
+import { LOOP_ARGS, MINI_APP_ARGS, PLUGIN_ARGS } from './slash-catalog-arguments'
 import type { SlashArgSpec } from './slash-args'
 import { AGENTS_ARGS } from './slash-catalog-agents'
 import { MODEL_ARGS } from './slash-catalog-model'
@@ -173,10 +173,18 @@ export const SLASH_COMMANDS: readonly SlashCommandSpec[] = [
   {
     name: 'plugin',
     title: 'Plugin',
-    description: 'Manage plugins and marketplaces',
+    description: 'Manage Claude Code plugins and marketplaces',
     scope: 'server',
     category: 'extensions',
     args: PLUGIN_ARGS,
+  },
+  {
+    name: 'mini-app',
+    title: 'Mini app',
+    description: 'Create, switch on and off, and reload mini apps',
+    scope: 'server',
+    category: 'extensions',
+    args: MINI_APP_ARGS,
   },
 ] as const
 

@@ -1,8 +1,8 @@
 # Desktop package and shell launcher
 
-Localix packages the UI, API, CLI shim, plugins, migrations, and Bun runtime inside one Tauri
-desktop application. Use this page to trace native builds, production startup, and the `localix`
-command installed by the desktop runtime.
+Localix packages the UI, API, CLI shim, bundled mini apps, migrations, and Bun runtime inside one
+Tauri desktop application. Use this page to trace native builds, production startup, and the
+`localix` command installed by the desktop runtime.
 
 ## Terminology
 
@@ -57,7 +57,7 @@ Linux keeps its group shortcuts because Monaco uses Shift+Alt+Up/Down there. The
 | --------------------- | ---------------------------------------------------- | --------------------------------------------------------- |
 | API entry             | `resources/server.js` Bun bundle, minified.          | Whitespace and syntax only: stack traces keep names.      |
 | Database migrations   | Compiled into `server.js`, with Kysely.              | No migrations folder ships beside the bundle.             |
-| Bundled plugins       | Staged plugin tree with TypeScript backends bundled. | Backends minified as the API is; UIs without source maps. |
+| Bundled mini apps     | Staged mini app tree with backends bundled.          | Backends minified as the API is; UIs without source maps. |
 | Third-party notices   | `resources/THIRD_PARTY_NOTICES/`.                    | The one copy: the embedded UI carries none.               |
 | Visual Feedback probe | `resources/visual-feedback-probe.js`.                | The probe still requires a Localix preview connection.    |
 | CLI launcher          | CLI shim plus a direct bundle of the launcher entry. | The shim is not a second native executable.               |
@@ -73,7 +73,7 @@ Afterwards it fails the build unless the public key is inside the built binary.
 ### The Bun runtime
 
 The API is not compiled to a single executable: the app also runs Bun to build and run the person's
-own plugins, so a real Bun ships beside the shell either way. `prepare-sidecar.mjs` copies it to
+own mini apps, so a real Bun ships beside the shell either way. `prepare-sidecar.mjs` copies it to
 `src-tauri/binaries/bun-<target-triple>[.exe]`, the name Tauri's `externalBin: ["binaries/bun"]`
 requires, and `tauri-build` refuses to run cargo without it. The bundler then places it, without the
 triple, next to the main executable: `Contents/MacOS/bun` in the macOS app, `usr/bin/bun` in the
@@ -119,7 +119,7 @@ health probes; quitting or installing an update suppresses recovery.
 
 The API has no request authentication and defaults to loopback; pages the user's browser opens can
 reach loopback. So `apps/api/src/lib/local-origin-guard.ts` runs before CORS and every route,
-including websocket upgrades and plugin routes, and answers 403 to anything it refuses.
+including websocket upgrades and mini app routes, and answers 403 to anything it refuses.
 
 | Check       | Accepted                                                                     | Defeats                                                               |
 | ----------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------- |
@@ -137,7 +137,7 @@ including websocket upgrades and plugin routes, and answers 403 to anything it r
 
 `scripts/dev-servers.mjs` passes the dev origins as `LOCALIX_UI_ORIGINS`. Reads (`GET`, `HEAD`) stay
 open to any origin, because CORS already withholds the response and preview pages load the probe
-script by tag. The UI transport `apiFetch` adds `x-localix-client` to every write, and plugin
+script by tag. The UI transport `apiFetch` adds `x-localix-client` to every write, and mini app
 interfaces use that transport. The header name lives in `apps/api/src/lib/client-header.ts`, which
 both sides import. A non-browser client that sends a write without a body, such as `curl -X POST`,
 must add `x-localix-client: 1`; the documented webhook call sends JSON and needs nothing extra.
@@ -148,14 +148,14 @@ must add `x-localix-client: 1`; the documented webhook call sends JSON and needs
 it, and the frame's own policy can only narrow it, so several sources are wider than the main window
 alone needs.
 
-| Source                                                                  | Why it is allowed                                                                                                                 |
-| ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `script-src 'unsafe-inline' blob:` and the four library CDNs            | Sandboxed plugin panels run inline bootstrap code and load libraries from `PANEL_CDN_HOSTS`; their own CSP blocks network access. |
-| `http://localhost:*`, `http://127.0.0.1:*` in script, style and connect | The Vite dev server, its hot reload socket, and the loopback API.                                                                 |
-| `frame-src http: https:`                                                | Browser workbench pages that open in a local frame instead of a native child WebView.                                             |
-| `img-src https:`                                                        | Remote images in Markdown, chat content and plugin panels.                                                                        |
+| Source                                                                  | Why it is allowed                                                                                                                   |
+| ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `script-src 'unsafe-inline' blob:` and the four library CDNs            | Sandboxed mini app panels run inline bootstrap code and load libraries from `PANEL_CDN_HOSTS`; their own CSP blocks network access. |
+| `http://localhost:*`, `http://127.0.0.1:*` in script, style and connect | The Vite dev server, its hot reload socket, and the loopback API.                                                                   |
+| `frame-src http: https:`                                                | Browser workbench pages that open in a local frame instead of a native child WebView.                                               |
+| `img-src https:`                                                        | Remote images in Markdown, chat content and mini app panels.                                                                        |
 
-Narrowing a CDN host here silently removes it from plugin panels, so
+Narrowing a CDN host here silently removes it from mini app panels, so
 `apps/ui/src/features/inspector/ui/miniAppPanelSrcDoc.ts` documents the list both files must share.
 `object-src 'none'`, `base-uri 'self'` and `form-action 'self'` stay closed.
 

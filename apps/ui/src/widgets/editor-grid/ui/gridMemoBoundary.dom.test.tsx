@@ -116,10 +116,10 @@ describe('editor grid memo boundaries', () => {
     const { act } = React
     const { createRoot } = await import('react-dom/client')
     const { WorkItemBody } = await import('./registry')
-    const { setEnabledPluginNames } = await import('@/shared/contrib/miniAppActivation')
+    const { setEnabledMiniAppNames } = await import('@/shared/contrib/miniAppActivation')
     // Settle plugin activation, so an unknown kind is "unsupported" (a cheap, real
     // body) instead of the "restoring workspace" placeholder.
-    setEnabledPluginNames(new Set())
+    setEnabledMiniAppNames(new Set())
 
     // Counting getter: the body switch reads `item.kind` while rendering.
     let reads = 0
@@ -169,7 +169,7 @@ describe('editor grid memo boundaries', () => {
       )
       expect(host.textContent).toContain('Unsupported: another-unsupported-kind')
     } finally {
-      setEnabledPluginNames(null)
+      setEnabledMiniAppNames(null)
       await act(async () => root.unmount())
       host.remove()
     }

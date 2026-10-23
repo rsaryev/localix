@@ -3,8 +3,8 @@ import { useChatStore } from '@/entities/chat/model/store'
 import { useAttentionStore } from '@/entities/chat/model/attention/store'
 import { railViewletRegistry } from '@/shared/contrib/uiContrib'
 import {
-  pluginActivationVersion,
-  subscribePluginActivation,
+  miniAppActivationVersion,
+  subscribeMiniAppActivation,
 } from '@/shared/contrib/miniAppActivation'
 import { viewStateStore } from '@/shared/lib/view-state/store'
 import { ensurePluginAppProject } from '@/shared/lib/pluginAppProject'
@@ -23,7 +23,7 @@ import { reportPluginAppAvailable, reportPluginAppUnavailable } from './pluginAp
 interface PluginAppOptions {
   hasHydrated: boolean
   /** The enabled plugins once the capability snapshot is known; null before. */
-  enabledPluginNames: ReadonlySet<string> | null
+  enabledMiniAppNames: ReadonlySet<string> | null
   activeSessionId: string | null
   goToSession: (id: string, options?: { project?: string }) => void
   resolvedTheme: ResolvedTheme
@@ -38,7 +38,7 @@ export function useMiniApp(
   app: PluginAppContext | null,
   {
     hasHydrated,
-    enabledPluginNames,
+    enabledMiniAppNames,
     activeSessionId,
     goToSession,
     resolvedTheme,
@@ -85,7 +85,7 @@ export function useMiniApp(
 
   // The plugin's screen is the rail entry it contributes; it registers when its UI has loaded.
   // Each of the app's conversations gets it once; closing it there is the person's choice.
-  const activation = useSyncExternalStore(subscribePluginActivation, pluginActivationVersion)
+  const activation = useSyncExternalStore(subscribeMiniAppActivation, miniAppActivationVersion)
   const opened = useRef(new Set<string>())
   useEffect(() => {
     if (!app || !sessionId || activeSessionId !== sessionId || opened.current.has(sessionId)) return
@@ -98,7 +98,7 @@ export function useMiniApp(
 
   // A plugin turned off or removed in Localix leaves the app with only its chat: one standing
   // problem while that lasts, settled when the plugin is back.
-  const available = app && enabledPluginNames ? enabledPluginNames.has(app.plugin) : null
+  const available = app && enabledMiniAppNames ? enabledMiniAppNames.has(app.plugin) : null
   useEffect(() => {
     if (!app || available === null) return
     if (available) reportPluginAppAvailable(app)

@@ -241,7 +241,7 @@ describe('UiNavigationActionPart', () => {
     const { act } = React
     const { createRoot } = await import('react-dom/client')
     const { MemoryRouter } = await import('react-router')
-    const { setEnabledPluginNames } = await import('@/shared/contrib/miniAppActivation')
+    const { setEnabledMiniAppNames } = await import('@/shared/contrib/miniAppActivation')
     const { registerUiLocation, unregisterUiLocation } =
       await import('@/shared/contrib/uiLocations')
     const { ItemView } = await import('@/entities/chat/ui/tool-parts/ItemView')
@@ -276,7 +276,7 @@ describe('UiNavigationActionPart', () => {
         resolve: () => ({ kind: 'settings', tab: 'plugins' }),
       }),
     ).toBe(true)
-    setEnabledPluginNames(new Set())
+    setEnabledMiniAppNames(new Set())
 
     try {
       await act(async () =>
@@ -296,12 +296,12 @@ describe('UiNavigationActionPart', () => {
       )
       expect(button?.getAttribute('title')).toBeNull()
 
-      await act(async () => setEnabledPluginNames(new Set(['test-ui-action-plugin'])))
+      await act(async () => setEnabledMiniAppNames(new Set(['test-ui-action-plugin'])))
       expect(host.querySelector('button')?.disabled).toBe(false)
       expect(host.querySelector('[data-disabled-tooltip-anchor]')).toBeNull()
     } finally {
       await act(async () => root.unmount())
-      setEnabledPluginNames(null)
+      setEnabledMiniAppNames(null)
       unregisterUiLocation(locationId)
       host.remove()
     }

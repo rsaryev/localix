@@ -3,12 +3,12 @@
 The source of Localix's first-party mini apps. A mini app is Localix's own format, not a Claude Code
 plugin: one `mini-app.json` (identity, category, backend, settings, commands), a `guide.md` the
 agent reads with `mini_app_guide` before it first uses the app, a native backend (`backend/`) and
-screens (`ui/`). It holds no `skills/`, `.claude-plugin/` or hooks. Bundled plugins in the Claude
-Code format live in [`plugins/`](../plugins/). The contract and the migration status:
+screens (`ui/`). It holds no `skills/`, `.claude-plugin/` or hooks, and Localix ships no plugins.
+The contract and the migration status:
 [plugins and mini apps](../docs/internals/plugins-and-mini-apps.md).
 
 Until the catalog ships (phase 4 of that page), the build stages these mini apps and the application
-synchronizes managed copies into `~/.localix/plugins`; discovery reads the installed copy rather
+synchronizes managed copies into `~/.localix/mini-apps`; discovery reads the installed copy rather
 than this source tree.
 
 ## Workbenches
@@ -80,7 +80,7 @@ source before enabling code you do not trust.
 
 ## Contributor workflow
 
-A mini app a user asks for is not one of these: `/plugin create <name> …` in chat forks
+A mini app a user asks for is not one of these: `/mini-app create <what it should do>` in chat forks
 [`template/`](template/) (shipped in the app's kit) into the user's folder, and the app builds,
 tests and reloads it there. Nothing in this repository changes when a user creates one.
 

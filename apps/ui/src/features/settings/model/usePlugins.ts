@@ -3,13 +3,13 @@ import { useCallback } from 'react'
 import { backendClient } from '@/shared/api/client'
 import type { PluginRecord } from '@/shared/api/contracts'
 import { inlineFailure } from '@/shared/lib/notifications/inlineReport'
-import { refetchActivePluginContrib } from '@/shared/contrib/enabledPlugins'
+import { refetchActiveMiniAppContrib } from '@/shared/contrib/enabledMiniApps'
 import { applyCapabilityRules } from '@/shared/contrib/capabilityCache'
 import { availabilityChange } from '@/shared/contrib/capabilityRules'
 import { useCapabilityRegistry } from '@/shared/contrib/useCapabilityRegistry'
 import { useRegistryScope } from '@/shared/contrib/useRegistryScope'
 import { trackCapabilityWrite } from '@/shared/contrib/capabilityWrites'
-import { pluginLabel } from '@localixai/mini-app-sdk/manifest-label'
+import { miniAppLabel } from '@localixai/mini-app-sdk/manifest-label'
 
 export interface PluginsData {
   plugins: PluginRecord[]
@@ -51,7 +51,7 @@ export function usePlugins(scope: string, agentScope = ''): PluginsData {
   }, [registry, setError])
 
   const toggle = async (p: PluginRecord) => {
-    setBusy(p.name, `${p.enabled ? 'Disabling' : 'Enabling'} ${pluginLabel(p)}`)
+    setBusy(p.name, `${p.enabled ? 'Disabling' : 'Enabling'} ${miniAppLabel(p)}`)
     // Optimistic flip so the toggle feels instant.
     registry.overlay((current) =>
       current.map((x) =>
@@ -75,11 +75,11 @@ export function usePlugins(scope: string, agentScope = ''): PluginsData {
   }
 
   const remove = async (p: PluginRecord) => {
-    setBusy(p.name, `Removing ${pluginLabel(p)}`)
+    setBusy(p.name, `Removing ${miniAppLabel(p)}`)
     try {
       await trackCapabilityWrite(p.projectId || null, async () => {
         await backendClient.removePlugin(p.name, { projectId: p.projectId || null })
-        await refetchActivePluginContrib()
+        await refetchActiveMiniAppContrib()
       })
     } catch (e) {
       setError(inlineFailure(e, 'Could not remove this plugin.'))
@@ -90,12 +90,12 @@ export function usePlugins(scope: string, agentScope = ''): PluginsData {
   }
 
   const saveConfig = async (p: PluginRecord, values: Record<string, string | number | boolean>) => {
-    setBusy(p.name, `Saving settings for ${pluginLabel(p)}`)
+    setBusy(p.name, `Saving settings for ${miniAppLabel(p)}`)
     let ok = false
     try {
       await trackCapabilityWrite(p.projectId || null, async () => {
         await backendClient.setPluginConfig(p.name, values, { projectId: p.projectId || null })
-        await refetchActivePluginContrib()
+        await refetchActiveMiniAppContrib()
       })
       ok = true
       registry.refresh()

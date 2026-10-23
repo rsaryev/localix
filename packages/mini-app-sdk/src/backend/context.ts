@@ -176,7 +176,7 @@ export interface MiniAppContext {
   reportProblem?: (problem: MiniAppProblem) => void
   /**
    * The HOST's zod instance. Build tool input schemas with this — a plugin installed
-   * to ~/.localix/plugins has no node_modules, so `import 'zod'` would fail to
+   * to ~/.localix/mini-apps has no node_modules, so `import 'zod'` would fail to
    * resolve AND would be a different module instance than the runtime validates with.
    */
   z: typeof z

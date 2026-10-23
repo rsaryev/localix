@@ -172,7 +172,7 @@ export function RailToolMenu({
             <MenuEntries
               family="dropdown"
               entries={[
-                { id: 'manage', label: 'Manage plugins…', icon: Settings2, onSelect: onManage },
+                { id: 'manage', label: 'Manage mini apps…', icon: Settings2, onSelect: onManage },
               ]}
             />
           </div>

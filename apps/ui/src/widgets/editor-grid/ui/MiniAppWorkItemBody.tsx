@@ -1,6 +1,6 @@
 import type { PublishMessageContext, WorkItemKindContribution } from '@localixai/mini-app-sdk/ui'
 import { useMiniAppKind, type WorkItem } from '@/entities/workspace-grid/model'
-import { recordPluginRenderCrash } from '@/shared/contrib/miniAppViewErrors'
+import { recordMiniAppRenderCrash } from '@/shared/contrib/miniAppViewErrors'
 import type { ResolvedTheme } from '@/shared/theme/useTheme'
 import { SurfaceErrorBoundary } from '@/shared/ui/SurfaceErrorBoundary'
 import { LoadingHint } from '@localixai/kit/empty-hint'
@@ -46,7 +46,7 @@ export function MiniAppWorkItemBody({
         key={`${item.id}#${registrationGeneration(contributed)}`}
         surface={surface}
         onError={(error) =>
-          recordPluginRenderCrash(contributed.pluginName ?? item.kind, surface, error)
+          recordMiniAppRenderCrash(contributed.pluginName ?? item.kind, surface, error)
         }
       >
         <Contributed

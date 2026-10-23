@@ -4,6 +4,8 @@ import type {
   SkillSummary,
   PluginRecord,
   PluginCommandSpec,
+  MiniAppRecord,
+  MiniAppCommandSpec,
   MarketplaceListing,
   AgentRecord,
   AgentRecordInput,
@@ -113,6 +115,8 @@ export type McpImportResult = ImportMcpServersResponse
 export type {
   PluginRecord,
   PluginCommandSpec,
+  MiniAppRecord,
+  MiniAppCommandSpec,
   MarketplaceListing,
   AgentRecord,
   AgentRecordInput,
@@ -215,18 +219,7 @@ export {
 } from '@localixai/api/session-route'
 
 /**
- * A sandboxed UI view declared by an enabled plugin (`GET /rpc/plugins/views`);
- * HTML fetched on open. The ONE plugin UI-surface contract — it always opens as a
- * work-item tab, so there is no mount-point choice to carry here.
+ * A sandboxed UI view declared by an enabled mini app; HTML fetched on open. It always opens as a
+ * work-item tab. Re-exported from the API, never restated.
  */
-export interface MiniAppViewSpec {
-  pluginName: string
-  projectId: string
-  id: string
-  fullName: string
-  title: string
-  /** Explicit manifest opt-in for agent discovery. */
-  agentDescription?: string
-  /** Optional Lucide icon-name hint (host maps it to a glyph, else Puzzle). */
-  icon?: string
-}
+export type { MiniAppViewSpec } from '@localixai/api/client'

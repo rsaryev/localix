@@ -241,8 +241,9 @@ describe('marketplace entry-as-manifest synthesis (Part B)', () => {
   it('a metadata-only entry (no components) still lands on the installed plugin.json', async () => {
     // Regression: the old gate no-opped unless the entry had COMPONENT fields, so a
     // strict entry carrying only a version override never reached the manifest.
+    await fs.mkdir(join(dir, '.claude-plugin'), { recursive: true })
     await fs.writeFile(
-      join(dir, 'plugin.json'),
+      join(dir, '.claude-plugin', 'plugin.json'),
       JSON.stringify({ name: 'p', version: '1.0.0', description: 'own desc' }),
     )
     const entry = {
@@ -252,7 +253,9 @@ describe('marketplace entry-as-manifest synthesis (Part B)', () => {
       description: 'entry desc',
     } as unknown as MarketplaceEntry
     await applyEntryManifestOverrides(dir, entry)
-    const written = JSON.parse(await fs.readFile(join(dir, 'plugin.json'), 'utf8'))
+    const written = JSON.parse(
+      await fs.readFile(join(dir, '.claude-plugin', 'plugin.json'), 'utf8'),
+    )
     expect(written.version).toBe('1.0.0') // plugin.json's version wins
     expect(written.description).toBe('entry desc') // the entry's display field wins
   })
@@ -324,7 +327,9 @@ describe('marketplace entry-as-manifest synthesis (Part B)', () => {
       skills: ['./skills/own', './skills/extra'],
     } as unknown as MarketplaceEntry
     await applyEntryManifestOverrides(dir, entry)
-    const written = JSON.parse(await fs.readFile(join(dir, 'plugin.json'), 'utf8'))
+    const written = JSON.parse(
+      await fs.readFile(join(dir, '.claude-plugin', 'plugin.json'), 'utf8'),
+    )
     expect(written.skills).toEqual(['./skills/own', './skills/extra'])
   })
 

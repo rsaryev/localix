@@ -18,19 +18,19 @@
  */
 
 /** One loaded plugin UI: the directory its artifact is served from, and whose it is. */
-export interface PluginUiSource {
+export interface MiniAppUiSource {
   pluginName: string
   /** Absolute URL of the artifact directory, ending in `/`, without a query. */
   base: string
 }
 
-export interface PluginCaller {
+export interface MiniAppCaller {
   pluginName: string
   /** What a person reads: the plugin's display name, or its name when it declares none. */
   label: string
 }
 
-let sources: readonly PluginUiSource[] = []
+let sources: readonly MiniAppUiSource[] = []
 let labels: ReadonlyMap<string, string> = new Map()
 
 /**
@@ -38,8 +38,8 @@ let labels: ReadonlyMap<string, string> = new Map()
  * directory of each whose UI it loads. Called with every capability snapshot, so a renamed or
  * removed plugin stops being named here as soon as it stops being loaded.
  */
-export function setPluginSources(
-  next: readonly PluginUiSource[],
+export function setMiniAppSources(
+  next: readonly MiniAppUiSource[],
   names: ReadonlyMap<string, string>,
 ): void {
   // Longest first, so a base that happened to prefix another could never claim its frames.
@@ -48,19 +48,19 @@ export function setPluginSources(
 }
 
 /** A plugin's display name, or `name` itself for one the host does not know. */
-export function pluginLabel(name: string): string {
+export function miniAppLabel(name: string): string {
   return labels.get(name) || name
 }
 
 /** The plugin whose code made the call that produced `stack`, or null when none did. */
 export function attributeMiniAppCaller(
   stack: string,
-  known: readonly PluginUiSource[] = sources,
-): PluginCaller | null {
+  known: readonly MiniAppUiSource[] = sources,
+): MiniAppCaller | null {
   if (!known.length) return null
   for (const line of stack.split('\n')) {
     const source = known.find(({ base }) => line.includes(base))
-    if (source) return { pluginName: source.pluginName, label: pluginLabel(source.pluginName) }
+    if (source) return { pluginName: source.pluginName, label: miniAppLabel(source.pluginName) }
   }
   return null
 }

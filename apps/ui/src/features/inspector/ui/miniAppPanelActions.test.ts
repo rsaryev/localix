@@ -79,7 +79,7 @@ describe('createPanelActions', () => {
     const calls: unknown[] = []
     const actions = createPanelActions({
       ...makeDeps('session-7').deps,
-      invokePluginBackend: async (input) => {
+      invokeMiniAppBackend: async (input) => {
         calls.push(input)
         return { ok: true }
       },
@@ -95,7 +95,7 @@ describe('createPanelActions', () => {
     ).toEqual({ ok: true })
     expect(calls).toEqual([
       {
-        pluginName: 'sample-plugin',
+        app: 'sample-plugin',
         projectId: 'project-1',
         viewId: 'demo',
         sessionId: 'session-7',

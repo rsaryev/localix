@@ -31,7 +31,7 @@ const record = (extra: Partial<PluginRecord>) =>
     scope: 'global',
     dir: '/home/.localix/plugins/top',
     enabled: true,
-    provides: { hasNativeTools: false },
+    provides: {},
     ...extra,
   }) as PluginRecord
 

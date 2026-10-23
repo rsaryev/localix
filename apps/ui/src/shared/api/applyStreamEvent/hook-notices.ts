@@ -1,6 +1,6 @@
-/** Bounded hook notices and plugin problem pointers in the transcript. */
+/** Bounded hook notices and mini app problem pointers in the transcript. */
 import { settingsEntityAnchor } from '@localixai/mini-app-sdk/navigation'
-import { pluginLabel } from '@/shared/contrib/miniAppAttribution'
+import { miniAppLabel } from '@/shared/contrib/miniAppAttribution'
 import type { StreamEventOf, StreamReducers } from './types'
 import { noticePosition } from './notice-position'
 
@@ -11,32 +11,32 @@ let hookNoticeCounter = 0
  * Who said it, then the producer's raw text when it had one.
  *
  * The raw text used to REPLACE the producer (`detail ?? Hook: …`), so exactly the notices worth
- * reading closely — a plugin's, with the driver's words attached — were the ones that lost which
- * plugin they came from. A plugin is named by its display name, not the id `hookEvent` carries.
+ * reading closely — a mini app's, with the driver's words attached — were the ones that lost which
+ * app they came from. An app is named by its display name, not the id `hookEvent` carries.
  */
 function noticeDetail(event: StreamEventOf<'hook.notice'>): string {
-  const producer = event.plugin
-    ? `Plugin: ${[pluginLabel(event.plugin.name), event.plugin.source].filter(Boolean).join(' · ')}`
+  const producer = event.miniApp
+    ? `Mini app: ${[miniAppLabel(event.miniApp.name), event.miniApp.source].filter(Boolean).join(' · ')}`
     : `Hook: ${event.hookEvent}`
   return event.detail ? `${producer}\n${event.detail}` : producer
 }
 
 /**
- * A plugin's problem in the transcript is a POINTER, not a second report.
+ * A mini app's problem in the transcript is a POINTER, not a second report.
  *
- * The same `ctx.reportProblem` raises a standing condition (`conditions/plugins.ts`): one row per
- * problem, deduped, settled when it stops, carrying the plugin's settings action. The transcript
+ * The same `ctx.reportProblem` raises a standing condition (`conditions/mini-apps.ts`): one row
+ * per problem, deduped, settled when it stops, carrying the app's settings action. The transcript
  * line used to repeat it as an amber warning in every conversation it fired in, so one problem
  * read as N. What the conversation still needs is WHEN it happened, so the line stays — neutral,
- * naming the plugin, with the problem as its detail and the same settings destination as the row.
+ * naming the app, with the problem as its detail and the same settings destination as the row.
  */
-function miniAppProblemPointer(event: StreamEventOf<'hook.notice'>, pluginName: string) {
+function miniAppProblemPointer(event: StreamEventOf<'hook.notice'>, app: string) {
   return {
     kind: 'hook_notice' as const,
     tone: 'neutral' as const,
-    text: `${pluginLabel(pluginName)} reported a problem`,
+    text: `${miniAppLabel(app)} reported a problem`,
     detail: [event.message, noticeDetail(event)].join('\n'),
-    recovery: [`open-settings:plugins/${settingsEntityAnchor('plugin', pluginName)}` as const],
+    recovery: [`open-settings:mini-apps/${settingsEntityAnchor('mini-app', app)}` as const],
   }
 }
 
@@ -56,8 +56,8 @@ export const hookNoticeReducers: StreamReducers<'hook.notice'> = {
       clientOnly: true as const,
       afterMessageId: anchorMsg?.id ?? null,
       withinMessage: noticePosition(session, anchorMsg),
-      systemNotice: event.plugin
-        ? miniAppProblemPointer(event, event.plugin.name)
+      systemNotice: event.miniApp
+        ? miniAppProblemPointer(event, event.miniApp.name)
         : {
             kind: 'hook_notice' as const,
             tone: 'warning' as const,

@@ -5,7 +5,7 @@
  * (`CC_HOOK_EVENTS`; the few Claude Code events with no Localix equivalent are listed with
  * their reason in `CC_INERT_HOOK_EVENTS`), complementing the in-process native plugin hooks. All five CC handler types are supported —
  * `command`, `http`, `mcp_tool`, `prompt`, and `agent` — each on the events the CC
- * matrix allows. See `docs/extending/plugins.md`.
+ * matrix allows. See `docs/extending/claude-code-plugins.md`.
  */
 export * from './contracts'
 export {

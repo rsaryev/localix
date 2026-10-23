@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 
-import type { MiniAppConfigValues } from '../plugins/config'
+import type { PluginConfigValues } from '../plugins/config'
 import { normalizeTokenKey } from './manifest-substitute'
 
 /**
@@ -50,17 +50,6 @@ export function pluginDataDir(pluginName: string, home: string): string {
   return join(home, '.localix', 'plugin-data', id)
 }
 
-/**
- * `~/.localix/plugin-state/<name>` — the plugin's opaque runtime state (`ctx.stateDir`).
- *
- * Both roots take the home they live in, the same one discovery was given. They read the process
- * home themselves, and every plugin context a test built — about thirty fixture plugins — left a
- * `plugin-state/` and `plugin-data/` directory in the developer's real `~/.localix`.
- */
-export function miniAppStateDir(pluginName: string, home: string): string {
-  return join(home, '.localix', 'plugin-state', pluginName)
-}
-
 export interface McpSubstitutionResult {
   /** The server entry with tokens substituted. */
   value: Record<string, unknown>
@@ -74,7 +63,7 @@ const CREDENTIAL_NAME =
 const REMOTE_FIELDS = new Set(['url', 'headers'])
 
 interface SubstituteCtx {
-  config: MiniAppConfigValues
+  config: PluginConfigValues
   allowedEnvKeys: ReadonlySet<string>
   environment: McpEnvironmentPolicy
   /** The top-level field being substituted (`url`, `args`, …). */
@@ -142,7 +131,7 @@ function walk(value: unknown, ctx: SubstituteCtx): unknown {
 export function substituteMcpServerEntry(
   serverName: string,
   raw: Record<string, unknown>,
-  config: MiniAppConfigValues,
+  config: PluginConfigValues,
   allowedEnvKeys: ReadonlySet<string>,
   environment: McpEnvironmentPolicy = 'declared',
 ): McpSubstitutionResult {
@@ -152,24 +141,6 @@ export function substituteMcpServerEntry(
     out[k] = walk(v, { config, allowedEnvKeys, environment, field: k })
   }
   return { value: out }
-}
-
-/** Collect every `${KEY}` token referenced anywhere in a plugin's MCP config (for validation). */
-export function collectMcpConfigTokens(
-  servers: Record<string, Record<string, unknown>>,
-): Set<string> {
-  const tokens = new Set<string>()
-  const walkTokens = (value: unknown): void => {
-    if (typeof value === 'string') {
-      for (const m of value.matchAll(TOKEN_RE)) tokens.add(normalizeTokenKey(m[1]))
-    } else if (Array.isArray(value)) {
-      for (const v of value) walkTokens(v)
-    } else if (isPlainObject(value)) {
-      for (const v of Object.values(value)) walkTokens(v)
-    }
-  }
-  walkTokens(servers)
-  return tokens
 }
 
 /**
@@ -213,7 +184,7 @@ export function userConfigShellVar(key: string): string {
  */
 export function bindUserConfigInShell(
   text: string,
-  config: MiniAppConfigValues,
+  config: PluginConfigValues,
   isSensitive: (key: string) => boolean,
 ): ShellBindingResult {
   const blocked = new Set<string>()
@@ -242,7 +213,7 @@ export function bindUserConfigInShell(
  */
 export function substituteUserConfigInText(
   text: string,
-  config: MiniAppConfigValues,
+  config: PluginConfigValues,
   isSensitive: (key: string) => boolean,
 ): ShellSubstitutionResult {
   const blocked = new Set<string>()

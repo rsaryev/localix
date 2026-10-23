@@ -157,41 +157,6 @@ export type MiniAppWakeOutcome =
   /** The host failed to take it. */
   | { status: 'failed'; reason: string }
 
-/**
- * Which session one of the plugin's manifest `monitors` reports to.
- *
- * The defect this exists to stop: a manifest monitor runs process-wide, and its every stdout line
- * used to wake EVERY root chat of the user — a CI watcher's line landed in a chat about a recipe,
- * because nothing said which conversation the watcher was for. A line now goes only to the sessions
- * its monitor was armed for, and a line no session armed is delivered to nobody (the host logs it
- * as undelivered). The plugin names the session; the host never picks one.
- */
-export interface MiniAppMonitorArmRequest {
-  /** The session's owner: `c.env.userId` in a route. */
-  userId: string
-  /** The session the monitor's lines wake — for a view, the one open beside it (`c.env.sessionId`). */
-  sessionId: string
-  /** The `name` of one of THIS plugin's manifest monitors. */
-  monitor: string
-}
-
-export type MiniAppMonitorArmOutcome =
-  /** The monitor's lines now wake this session, until it is disarmed or the session goes. */
-  | { status: 'armed' }
-  /** Not this plugin's monitor, not the user's session, or not a user monitors run for. */
-  | { status: 'refused'; reason: string }
-
-/**
- * Arm and disarm the plugin's own manifest monitors for a session. An arm lasts the process: the
- * monitor itself restarts with the process, so a plugin that keeps an arm across restarts stores
- * it and arms again when its backend registers.
- */
-export interface MiniAppMonitorsHost {
-  arm(request: MiniAppMonitorArmRequest): Promise<MiniAppMonitorArmOutcome>
-  /** Stop waking this session. Disarming a session that was not armed is a no-op. */
-  disarm(request: MiniAppMonitorArmRequest): void
-}
-
 export interface MiniAppHostServices {
   /** Resolve a trusted project root for session/project-scoped plugin resources. */
   workspaceScope?: WorkspaceScopeHost
@@ -294,11 +259,6 @@ export interface MiniAppHostServices {
    * Optional: a leaner host omits it, and the plugin carries on without the agent.
    */
   wake?: (request: MiniAppWakeRequest) => Promise<MiniAppWakeOutcome>
-  /**
-   * Point the plugin's manifest `monitors` at a session — see {@link MiniAppMonitorArmRequest}.
-   * Without an arm a monitor still runs, and its lines reach no one.
-   */
-  monitors?: MiniAppMonitorsHost
   /**
    * The host's media store (chat uploads / generated artifacts), by-id only — a
    * plugin can read the bytes behind a media id it was handed (e.g. a dropped

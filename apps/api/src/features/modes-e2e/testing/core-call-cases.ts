@@ -172,7 +172,7 @@ export const CORE_CALL_CASES: readonly CallCase[] = [
     { effect: 'host', irreversible: true },
   ),
 
-  row('plugin_build', 'a build', { name: 'demo' }, EXTERNAL),
+  row('mini_app_build', 'a build', { name: 'demo' }, EXTERNAL),
 
   row('memory', 'get', { action: 'get', key: 'role' }, READ),
   row(

@@ -54,7 +54,7 @@ Colleagues share this conversation: each part belongs to the participant whose r
 - agents
 - delegate
 - loops
-- plugin_build
+- mini_app_build
 - memory
 - global_search
 - context_budget

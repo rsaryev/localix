@@ -1,6 +1,4 @@
 import { describe, it, expect } from 'bun:test'
-import { promises as fs } from 'node:fs'
-import { join } from 'node:path'
 
 import {
   marketplaceEntrySchema,
@@ -9,7 +7,6 @@ import {
   validateMarketplace,
 } from './marketplace'
 import { buildMarketplaceManifest } from './marketplace-build'
-import { discoverBundledMiniApps } from './discovery'
 
 describe('validateMarketplace', () => {
   it('accepts a well-formed catalog', () => {
@@ -226,78 +223,5 @@ describe('buildMarketplaceManifest', () => {
     const { errors, warnings } = validateMarketplace(market)
     expect(errors).toHaveLength(0)
     expect(warnings).toHaveLength(0)
-  })
-})
-
-describe('bundled localix marketplace.json', () => {
-  it('the committed catalog parses and validates clean', async () => {
-    const file = join(import.meta.dir, '../../../../../plugins/.localix-plugin/marketplace.json')
-    const raw = JSON.parse(await fs.readFile(file, 'utf8'))
-    expect(raw.name).toBe('localix')
-    const { errors, warnings } = validateMarketplace(raw)
-    expect(errors).toHaveLength(0)
-    expect(warnings).toHaveLength(0)
-  })
-
-  it('matches the bundled plugin names, sources, and public metadata exactly', async () => {
-    const file = join(import.meta.dir, '../../../../../plugins/.localix-plugin/marketplace.json')
-    const raw = JSON.parse(await fs.readFile(file, 'utf8')) as {
-      plugins: {
-        name: string
-        source: string
-        description?: string
-        version?: string
-        author?: string
-        homepage?: string
-      }[]
-    }
-    // Live bundled discovery — the SAME hermetic source of truth the generator reads.
-    // Must be bundled-only: a full `discoverPlugins` merges the developer's installed
-    // plugins ahead of bundled and dedupes by name, so a same-named local install would shadow the
-    // bundled copy and fail this guard on
-    // that machine only — a false positive that has nothing to do with the committed file.
-    const bundled = (await discoverBundledMiniApps()).filter((p) => !p.error)
-    const manifests = new Map(bundled.map((plugin) => [plugin.manifest.name, plugin.manifest]))
-
-    // LOAD-BEARING, both of them. `bundled` comes from a LIVE discovery: if bundled-root
-    // resolution ever breaks (a dir move, a packaging change), it silently returns [],
-    // every set below is trivially satisfied, and this guard passes while checking
-    // nothing. Same for the empty-catalog case and the source loop underneath it.
-    expect(bundled.length).toBeGreaterThan(0)
-    expect(raw.plugins.length).toBeGreaterThan(0)
-
-    // SET EQUALITY, not a one-directional "nothing missing". The old body only asked
-    // whether every discovered plugin was cataloged; delete any plugin from the tree and
-    // leave its entry in marketplace.json and the catalog would happily advertise a plugin that
-    // does not exist — install it and you get nothing. A stale entry must go red too.
-    expect([...manifests.keys()].sort()).toEqual(raw.plugins.map((p) => p.name).sort())
-
-    for (const entry of raw.plugins) {
-      const manifest = manifests.get(entry.name)
-      expect(manifest).toBeDefined()
-      expect(entry.source).toBe(`./${entry.name}`)
-      expect(entry.description).toBe(manifest?.description)
-      expect(entry.version).toBe(manifest?.version)
-      expect(entry.author).toBe(manifest?.author)
-      expect(entry.homepage).toBe(manifest?.homepage)
-    }
-  })
-
-  it('preserves plugin-catalog-owned metadata', async () => {
-    const catalogDir = join(import.meta.dir, '../../../../../plugins/.localix-plugin')
-    const raw = JSON.parse(await fs.readFile(join(catalogDir, 'marketplace.json'), 'utf8')) as {
-      name: string
-      description?: string
-      owner?: { name: string; email?: string }
-      renames?: Record<string, string | null>
-    }
-    const metadata = JSON.parse(
-      await fs.readFile(join(catalogDir, 'marketplace.metadata.json'), 'utf8'),
-    ) as Omit<typeof raw, 'plugins'>
-
-    expect(raw.name).toBe(metadata.name)
-    expect(raw.description).toEqual(metadata.description)
-    expect(raw.owner).toEqual(metadata.owner)
-    expect(raw.renames).toEqual(metadata.renames)
   })
 })

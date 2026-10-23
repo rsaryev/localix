@@ -34,6 +34,7 @@ export interface CapabilityServicesInput extends Pick<
   | 'resolveProjectCwd'
   | 'mcpService'
   | 'pluginService'
+  | 'miniAppService'
   | 'agentsService'
 > {
   db: Kysely<AppDatabase>
@@ -58,6 +59,7 @@ export function createCapabilityServices({
   resolveProjectCwd,
   mcpService,
   pluginService,
+  miniAppService,
   agentsService,
   describeCommands,
 }: CapabilityServicesInput): CapabilityServices {
@@ -71,12 +73,14 @@ export function createCapabilityServices({
   const capabilityRules = createCapabilityRuleRepository(db)
   const capabilitySnapshotService = createCapabilitySnapshotService({
     builtinCommands: SLASH_COMMANDS,
-    listMiniAppContributions: async (userId, projectId) => {
-      const contributions = await pluginService.listMiniAppContributions(userId, { projectId })
+    listPluginContributions: async (userId, projectId) => {
+      const contributions = await pluginService.listPluginContributions(userId, { projectId })
       return describeCommands
         ? { ...contributions, commands: await describeCommands(contributions.commands) }
         : contributions
     },
+    listMiniAppContributions: (userId, projectId) =>
+      miniAppService.contributions(userId, { projectId }),
     listAgents: (userId, projectId) => agentsService.listAgents(userId, { projectId }),
     listMcpServers: async (userId, projectId) =>
       (await mcpService.listServers(userId, { projectId })).servers,

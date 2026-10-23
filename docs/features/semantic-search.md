@@ -26,9 +26,9 @@ this computer; no text leaves it.
 
 Each user and assistant message is cut into passages of about 1,600 characters and embedded, and
 each conversation title is embedded on its own. The vectors live in the local database. Hidden rows
-(wake prompts, interface notices) are never embedded. Skills, plugins, MCP servers and agents are
-indexed too, each as its own category, so a search for a skill is never crowded by chats. New,
-edited and deleted items reach the index within seconds; deleting a chat removes its messages'
+(wake prompts, interface notices) are never embedded. Skills, plugins, mini apps, MCP servers and
+agents are indexed too, each as its own category, so a search for a skill is never crowded by chats.
+New, edited and deleted items reach the index within seconds; deleting a chat removes its messages'
 vectors at once. The status bar menu lists every category with how much it holds.
 
 A query runs two ways at once:
@@ -60,7 +60,8 @@ and says so.
 
 ## Limits
 
-- Domains other than chats and messages (files, skills, plugins) are matched by words only.
+- Domains other than chats and messages (files, skills, plugins, mini apps) are matched by words
+  only.
 - The model's knowledge sets what counts as related: it will not know that a product name you use
   privately means a particular feature.
 - Index state belongs to this computer. Another device builds its own.

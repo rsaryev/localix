@@ -162,7 +162,8 @@ above, or enable a plugin that contributes an `lspServers` map.
 Plugin servers use stdio and the project root.
 
 For each enabled plugin server, Localix reports two things in the plugin's validation notes
-(Settings → Plugins and `/plugin details`) and in the agent's `# Plugins` prompt section:
+(Settings → Capabilities → Plugins and `/plugin details`) and in the agent's `# Plugins` prompt
+section:
 
 - Extensions a built-in server already handles. The built-in server is kept for those files, and the
   plugin server registers only the remaining extensions.
@@ -239,7 +240,7 @@ through the existing conflict policy, preserving unsaved edits.
 ## Related guides
 
 - [Workspace](workspace.md)
-- [Plugins](../extending/plugins.md)
+- [Install Claude Code plugins](../extending/claude-code-plugins.md)
 - [Capabilities](capabilities.md)
 - [Visual Feedback](visual-feedback.md)
 

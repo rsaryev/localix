@@ -1,30 +1,28 @@
 import { z } from 'zod'
-import { contributionInputSchema } from '../ext/contribution-input'
-import { miniAppManifestCoreSchema } from './contracts-base'
-import {
-  pluginPromptSectionSchema,
-  miniAppViewSchema,
-  PROMPT_SECTIONS_MAX_PER_PLUGIN,
-  VIEWS_MAX_PER_MINI_APP,
-} from './contracts-contributions'
-import { pluginCommandOptionsSchema, pluginCommandSchema } from './contracts-commands'
+import { PLUGIN_NAME_RE } from './contracts-base'
+import { pluginConfigOptionSchema } from './contracts-config'
+import { pluginCommandSchema } from './contracts-commands'
 import { pluginAgentSchema } from './contracts-agents'
 import { pluginMonitorSchema, MONITORS_MAX_PER_PLUGIN } from './contracts-monitors'
 
 const pathOrPaths = z.union([z.string(), z.array(z.string())])
 
 /**
- * `plugin.json` manifest. Unknown top-level keys are stripped (forward-compatible),
- * so a manifest written for a newer plugin host still loads here. Path fields are
- * resolved relative to the plugin directory.
+ * The runtime manifest a plugin loads with: Claude Code's `.claude-plugin/plugin.json` as
+ * `layout/claude-code.ts` maps it (`userConfig` → `config`, `sensitive` → `secret`, …), or the
+ * defaults of a plugin with none. Unknown keys are stripped. Path fields are resolved relative to
+ * the plugin directory. Nothing here is a mini app's (rule X1): a plugin runs no Localix code.
  */
-export const pluginManifestSchema = miniAppManifestCoreSchema.extend({
-  /** Native typed contributions; each kind's payload is validated by the owning subsystem. */
-  contributions: z.array(contributionInputSchema).max(1000).optional(),
+export const pluginManifestSchema = z.object({
+  name: z
+    .string()
+    .regex(PLUGIN_NAME_RE, 'Plugin name must be letters, numbers, dashes or underscores.'),
+  version: z.string().default('0.0.0'),
+  /** The plugin's `userConfig` options, keyed by option name. */
+  config: z.record(z.string(), pluginConfigOptionSchema).optional(),
   /**
-   * Whether this plugin is active before the user makes a choice. Honored only for
-   * BUNDLED plugins (shipped with the app) — a dropped-in/installed plugin is always
-   * opt-in regardless. Absent: code-free plugins default on, native-tool plugins off.
+   * Claude Code's "active before the user makes a choice". Read, never consent: every plugin is
+   * untrusted until a rule says otherwise (`enable.ts`).
    */
   defaultEnabled: z.boolean().optional(),
   description: z.string().default(''),
@@ -61,8 +59,8 @@ export const pluginManifestSchema = miniAppManifestCoreSchema.extend({
   migratedFrom: z.string().optional(),
   /**
    * The plugin is in the Claude Code format, read in place (`layout/claude-code.ts`); absent for a
-   * mini app and a legacy manifest. `source`/`version`/`importedAt` remain on the root
-   * `plugin.json` files earlier versions wrote at install, which are now ignored.
+   * plugin with no manifest. `source`/`version`/`importedAt` remain on the root `plugin.json`
+   * files earlier versions wrote at install, which are now ignored.
    */
   origin: z
     .object({
@@ -80,8 +78,6 @@ export const pluginManifestSchema = miniAppManifestCoreSchema.extend({
   defaultDirs: z
     .object({ commands: z.boolean().optional(), agents: z.boolean().optional() })
     .optional(),
-  /** Native JS/TS entrypoint(s) exporting AgentTools (and optional hooks). Defaults to ./tools if present. */
-  tools: z.union([z.string(), z.array(z.string())]).optional(),
   /** Bundled skill directory/directories holding `<name>/SKILL.md`. Defaults to ./skills if present. */
   skills: z.union([z.string(), z.array(z.string())]).optional(),
   /**
@@ -129,19 +125,6 @@ export const pluginManifestSchema = miniAppManifestCoreSchema.extend({
     ])
     .optional(),
   /**
-   * Declarative system-prompt sections injected while the plugin is enabled.
-   * See {@link pluginPromptSectionSchema}; capped per plugin.
-   */
-  promptSections: z.array(pluginPromptSectionSchema).max(PROMPT_SECTIONS_MAX_PER_PLUGIN).optional(),
-  /** A mini app's guide for the agent (`mini-app.json` `guide`), relative to its folder. */
-  guide: z.string().optional(),
-  /**
-   * Sandboxed UI views the plugin contributes, each opened as a work-item TAB.
-   * The single UI-surface contract — a legacy `panels` array is promoted into
-   * this field before parse. See {@link miniAppViewSchema}; capped per plugin.
-   */
-  views: z.array(miniAppViewSchema).max(VIEWS_MAX_PER_MINI_APP).optional(),
-  /**
    * Custom worker ROLES (sub-agents) the plugin contributes. Either inline
    * objects (see {@link pluginAgentSchema}) OR — for Claude Code compatibility —
    * relative `./*.md` agent file paths (resolved in discovery, frontmatter
@@ -161,12 +144,6 @@ export const pluginManifestSchema = miniAppManifestCoreSchema.extend({
   monitors: z
     .union([z.string(), z.array(pluginMonitorSchema).max(MONITORS_MAX_PER_PLUGIN)])
     .optional(),
-  /**
-   * How Localix offers the plugin's commands, from the mini app (`.localix-app/app.json`
-   * `commands`): argument chips and pickers, `featured`, `activateTools`, keyed by command name.
-   * Applied over the commands the plugin declares; the prompt stays the plugin's.
-   */
-  commandOptions: z.record(z.string(), pluginCommandOptionsSchema).optional(),
   /**
    * Claude Code plugin-to-plugin dependencies: `["helper-lib", { name, version? }]`.
    * `version` is a semver RANGE (checked advisorily — mismatch warns, never blocks).

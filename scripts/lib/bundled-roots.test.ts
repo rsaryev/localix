@@ -111,10 +111,14 @@ describe('bundled roots', () => {
 
   test('a checkout bundles mini apps and plugins in folders of their own', () => {
     expect(miniAppsRoot('/repo')).toBe(join('/repo', MINI_APPS_DIR))
-    expect(bundledRoots('/repo')).toEqual([
-      join('/repo', MINI_APPS_DIR),
-      join('/repo', PLUGINS_DIR),
+    expect(bundledRoots(checkout())).toEqual([
+      join(checkout(), MINI_APPS_DIR),
+      join(checkout(), PLUGINS_DIR),
     ])
+  })
+
+  test('a bundled folder that is not checked out is no root', () => {
+    expect(bundledRoots(join(checkout(), 'nowhere'))).toEqual([])
   })
 
   test('the detector reports a quoted folder and an anchored pattern', () => {

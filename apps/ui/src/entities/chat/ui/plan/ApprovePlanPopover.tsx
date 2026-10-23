@@ -42,7 +42,7 @@ import { MenuEntries } from '@localixai/kit/menu-entries'
 
 import { resolveHandleIdentity } from '@/shared/contrib/useAgentIdentity'
 import { isPrimaryModifier } from '@/shared/lib/keybindings'
-import { usePluginContribVersion } from '@/shared/contrib/usePluginContribVersion'
+import { useMiniAppContribVersion } from '@/shared/contrib/useMiniAppContribVersion'
 import {
   usePlanAddressees,
   type PlanAddressee,
@@ -77,7 +77,7 @@ interface AddresseeRow {
 
 function useAddresseeRows(addressees: readonly PlanAddressee[]): AddresseeRow[] {
   // A dependency, not a value: a capability publish can rename an agent.
-  const version = usePluginContribVersion()
+  const version = useMiniAppContribVersion()
   return useMemo(
     () =>
       addressees.map((row): AddresseeRow => {

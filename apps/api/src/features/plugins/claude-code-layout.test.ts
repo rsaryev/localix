@@ -35,7 +35,7 @@ const md = (front: string, body: string) => `---\n${front}\n---\n\n${body}\n`
 async function writeAndLoad(manifest: Record<string, unknown>) {
   await write(CLAUDE_CODE_PLUGIN_MANIFEST, manifest)
   const plugin = await loadManifest(dir, 'global', '')
-  const notes = (plugin.layoutIssues ?? []).map((found) => `${found.path}: ${found.message}`)
+  const notes = (plugin.manifestIssues ?? []).map((found) => `${found.path}: ${found.message}`)
   return { notes, plugin }
 }
 
@@ -70,7 +70,6 @@ describe('a Claude Code plugin in place', () => {
       license: 'MIT',
       origin: { format: 'claude-code' },
     })
-    expect(plugin.layout).toBe('plugin')
     // Nothing is written beside the plugin.
     await expect(fs.access(join(dir, 'plugin.json'))).rejects.toThrow()
   })

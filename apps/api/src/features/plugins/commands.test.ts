@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test'
-import { UNDECIDED } from '../capabilities/availability'
+import { UNDECIDED, type AvailabilityReader } from '../capabilities/availability'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -11,7 +11,7 @@ import { buildPluginCatalog } from './catalog'
 import { validateSkillFile } from '../agent-core/skill-validate'
 import { validatePlugin } from './validate'
 
-/** A repo with NO state rows — exercises the default-enable path. */
+/** A repo with NO state rows: only the availability decides. */
 const emptyRepo: CapabilitySourceRepository = {
   listForScope: async () => [],
   get: async () => null,
@@ -40,76 +40,48 @@ const emptyRepo: CapabilitySourceRepository = {
   remove: async () => {},
 }
 
+/** Every plugin switched on, as a rule allowing it would. */
+const ALL_ON: AvailabilityReader = { effectFor: () => 'allow' }
+
 let dir: string
 let home: string
-let bundled: string
-const prevEnv = process.env.LOCALIX_BUNDLED_PLUGINS_DIR
+
+/** Write a plugin's `.claude-plugin/plugin.json`. */
+async function writeManifest(pluginDir: string, manifest: Record<string, unknown>) {
+  await fs.mkdir(join(pluginDir, '.claude-plugin'), { recursive: true })
+  await fs.writeFile(join(pluginDir, '.claude-plugin', 'plugin.json'), JSON.stringify(manifest))
+}
 
 beforeAll(async () => {
   dir = await fs.mkdtemp(join(tmpdir(), 'plugin-cmds-'))
   home = await fs.mkdtemp(join(tmpdir(), 'plugin-cmds-home-'))
 
-  // A project plugin that declares an inline rich command with args.
+  // A project plugin that declares a command inline, in Claude Code's `commands` object map.
   const cmd = join(dir, '.localix', 'plugins', 'cmd-plugin')
-  await fs.mkdir(cmd, { recursive: true })
-  await fs.writeFile(
-    join(cmd, 'plugin.json'),
-    JSON.stringify({
-      name: 'cmd-plugin',
-      version: '1.0.0',
-      description: 'declares a command',
-      commands: [
-        {
-          name: 'do',
-          description: 'do a thing',
-          args: [
-            { name: 'mode', type: 'choice', options: [{ value: 'a' }, { value: 'b' }] },
-            { name: 'text', type: 'text' },
-          ],
-          prompt: 'Do ${mode} with ${text}',
-        },
-      ],
-    }),
-  )
+  await writeManifest(cmd, {
+    name: 'cmd-plugin',
+    version: '1.0.0',
+    description: 'declares a command',
+    commands: {
+      do: { description: 'do a thing', argumentHint: '[mode] [text]', content: 'Do $ARGUMENTS' },
+    },
+  })
 
-  // A separate bundled root with a command-only plugin (default-enable candidate).
-  bundled = await fs.mkdtemp(join(tmpdir(), 'plugin-bundled-'))
-  const b = join(bundled, 'builtin-cmd')
-  await fs.mkdir(b, { recursive: true })
+  // A plugin with a skill whose description references ${CLAUDE_PLUGIN_ROOT}.
+  const rooted = join(home, '.localix', 'plugins', 'rooted-plugin')
+  await fs.mkdir(join(rooted, 'skills', 'rooted'), { recursive: true })
   await fs.writeFile(
-    join(b, 'plugin.json'),
-    JSON.stringify({
-      name: 'builtin-cmd',
-      version: '1.0.0',
-      description: 'bundled command-only',
-      commands: [{ name: 'go', description: 'go', prompt: 'Go now' }],
-    }),
-  )
-  // …and it bundles a skill — must load by default (no DB row) so its macro can use it.
-  await fs.mkdir(join(b, 'skills', 'helper'), { recursive: true })
-  await fs.writeFile(
-    join(b, 'skills', 'helper', 'SKILL.md'),
-    '---\nname: helper\ndescription: a bundled helper skill\n---\n\nHelp.',
-  )
-  // A skill whose description references ${CLAUDE_PLUGIN_ROOT} — verifies loader substitution.
-  await fs.mkdir(join(b, 'skills', 'rooted'), { recursive: true })
-  await fs.writeFile(
-    join(b, 'skills', 'rooted', 'SKILL.md'),
+    join(rooted, 'skills', 'rooted', 'SKILL.md'),
     '---\nname: rooted\ndescription: Lives in ${CLAUDE_PLUGIN_ROOT}/skills/rooted\n---\n\nContent at ${CLAUDE_PLUGIN_ROOT}.',
   )
-  process.env.LOCALIX_BUNDLED_PLUGINS_DIR = bundled
 
   // A plugin with SKILL.md at its root (single-skill plugin, no skills/ dir).
   const singleSkill = join(dir, '.localix', 'plugins', 'single-skill-plugin')
-  await fs.mkdir(singleSkill, { recursive: true })
-  await fs.writeFile(
-    join(singleSkill, 'plugin.json'),
-    JSON.stringify({
-      name: 'single-skill-plugin',
-      version: '1.0.0',
-      description: 'root SKILL.md',
-    }),
-  )
+  await writeManifest(singleSkill, {
+    name: 'single-skill-plugin',
+    version: '1.0.0',
+    description: 'root SKILL.md',
+  })
   await fs.writeFile(
     join(singleSkill, 'SKILL.md'),
     '---\nname: root-skill\ndescription: Root skill\n---\n\nI live at the plugin root.',
@@ -118,15 +90,12 @@ beforeAll(async () => {
   // A plugin whose manifest tries to escape its own directory (security).
   const escaper = join(dir, '.localix', 'plugins', 'escaper')
   await fs.mkdir(join(escaper, 'skills', 'safe'), { recursive: true })
-  await fs.writeFile(
-    join(escaper, 'plugin.json'),
-    JSON.stringify({
-      name: 'escaper',
-      version: '1.0.0',
-      description: 'tries to escape',
-      skills: ['../../../evil-skills', './skills'],
-    }),
-  )
+  await writeManifest(escaper, {
+    name: 'escaper',
+    version: '1.0.0',
+    description: 'tries to escape',
+    skills: ['../../../evil-skills', './skills'],
+  })
   await fs.writeFile(
     join(escaper, 'skills', 'safe', 'SKILL.md'),
     '---\nname: safe\ndescription: in-dir skill\n---\n\nok',
@@ -140,38 +109,26 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  if (prevEnv === undefined) delete process.env.LOCALIX_BUNDLED_PLUGINS_DIR
-  else process.env.LOCALIX_BUNDLED_PLUGINS_DIR = prevEnv
   await fs.rm(dir, { recursive: true, force: true })
   await fs.rm(home, { recursive: true, force: true })
-  await fs.rm(bundled, { recursive: true, force: true })
 })
 
-describe('plugin commands + bundled discovery', () => {
-  it('parses inline rich command declarations from the manifest', async () => {
+describe('plugin commands and skills', () => {
+  it('reads a command declared inline in the manifest commands map', async () => {
     const found = await discoverPlugins({ cwd: dir, projectId: 'p1', homeDir: home })
     const p = found.find((x) => x.manifest.name === 'cmd-plugin')
     expect(p).toBeDefined()
     expect(p!.commands).toHaveLength(1)
     const c = p!.commands[0]
     expect(c.name).toBe('do')
-    expect(c.prompt).toContain('${mode}')
-    expect(c.args.map((a) => `${a.name}:${a.type}`)).toEqual(['mode:choice', 'text:text'])
-    expect(c.args[0].options?.map((o) => o.value)).toEqual(['a', 'b'])
+    expect(c.description).toBe('do a thing')
+    expect(c.argumentHint).toBe('[mode] [text]')
+    expect(c.prompt).toBe('Do $ARGUMENTS')
     // and the name shows up in the static provides list
     expect(p!.provides.commands).toContain('do')
   })
 
-  it('discovers a bundled command-only plugin and tags it bundled', async () => {
-    const found = await discoverPlugins({ homeDir: home })
-    const b = found.find((x) => x.manifest.name === 'builtin-cmd')
-    expect(b).toBeDefined()
-    expect(b!.bundled).toBe(true)
-    expect(b!.provides.hasNativeTools).toBe(false) // → default-enabled by the service rule
-    expect(b!.commands[0].name).toBe('go')
-  })
-
-  it('buildPluginCatalog fuses discovery + state + the enable rule in one place', async () => {
+  it('buildPluginCatalog leaves a plugin nobody has ruled on off (untrusted asks first)', async () => {
     const catalog = await buildPluginCatalog({
       availability: UNDECIDED,
       repo: emptyRepo,
@@ -180,33 +137,16 @@ describe('plugin commands + bundled discovery', () => {
       cwd: '/',
       homeDir: home,
     })
-    const entry = catalog.find('builtin-cmd', '')
+    const entry = catalog.find('rooted-plugin', '')
     expect(entry).toBeDefined()
-    expect(entry!.state).toBeUndefined() // no DB row…
-    expect(entry!.enabled).toBe(true) // …yet default-on (bundled, command-only)
-    // `.enabled` is exactly the subset of `.all` that resolved enabled.
-    expect(catalog.enabled.every((e) => e.enabled)).toBe(true)
-    expect(catalog.enabled.some((e) => e.plugin.manifest.name === 'builtin-cmd')).toBe(true)
-  })
-
-  it('loadEnabledPlugins loads a bundled command-only plugin (no DB row) WITH its skills', async () => {
-    // Regression: the loader once required a DB row, so a default-enabled bundled
-    // plugin's bundled skills never loaded even though its command dispatched.
-    const loaded = await loadEnabledPlugins({
-      availability: UNDECIDED,
-      repo: emptyRepo,
-      userId: 'u',
-      projectId: '',
-      cwd: '/',
-      homeDir: home,
-    })
-    expect(loaded.loaded.some((p) => p.name === 'builtin-cmd')).toBe(true)
-    expect(loaded.skills.some((s) => s.name === 'helper')).toBe(true)
+    expect(entry!.state).toBeUndefined()
+    expect(entry!.enabled).toBe(false)
+    expect(catalog.enabled.some((e) => e.plugin.manifest.name === 'rooted-plugin')).toBe(false)
   })
 
   it('loader substitutes ${CLAUDE_PLUGIN_ROOT} in skill description and content', async () => {
     const loaded = await loadEnabledPlugins({
-      availability: UNDECIDED,
+      availability: ALL_ON,
       repo: emptyRepo,
       userId: 'u',
       projectId: '',
@@ -317,7 +257,6 @@ describe('plugin commands + bundled discovery', () => {
     expect(plugin).toBeDefined()
     // The plugin root should be in skillDirs (since it has a SKILL.md there).
     expect(plugin!.entrypoints.skillDirs.some((d) => d.endsWith('single-skill-plugin'))).toBe(true)
-    // When loaded (default-enabled for code-free plugins), the root skill appears.
     const catalog = await buildPluginCatalog({
       availability: UNDECIDED,
       repo: emptyRepo,

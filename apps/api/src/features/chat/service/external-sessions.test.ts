@@ -265,7 +265,7 @@ describe('handleChannelInbound — a named session is binding', () => {
     } as unknown as ExternalSessionsContext
     const send = (sessionId?: string) =>
       handleChannelInbound(ctx, 'user-a', {
-        pluginName: 'test',
+        app: 'test',
         channelName: 'room',
         message: {
           conversationId: 'a',

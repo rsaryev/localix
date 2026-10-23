@@ -28,7 +28,7 @@ import { createPluginsSearchProvider } from '../features/plugins/search-provider
 import { createMcpSearchProvider } from '../features/mcp/search-provider'
 import { createAgentsSearchProvider } from '../features/agents/search-provider'
 import { createModelsSearchProvider } from '../features/catalog/search-provider'
-import type { MiniAppBackendHost } from '../features/plugins/backend-host'
+import type { MiniAppBackendHost } from '../features/mini-apps/backend-host'
 import type { createChatService } from '../features/chat/service'
 import type { createProjectsService } from '../features/projects/service'
 import type { createSecretsService } from '../features/secrets/service'

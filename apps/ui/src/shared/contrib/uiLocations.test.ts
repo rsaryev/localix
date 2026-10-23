@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test'
 import type { UiLocationContribution, UiLocationParamSchema } from '@localixai/mini-app-sdk/ui'
-import { setEnabledPluginNames } from './miniAppActivation'
+import { setEnabledMiniAppNames } from './miniAppActivation'
 import {
   createUiLocationRegistry,
   miniAppLocationId,
@@ -53,7 +53,7 @@ function registerSearchLocation(
   ).toBe(true)
 }
 
-afterEach(() => setEnabledPluginNames(null))
+afterEach(() => setEnabledMiniAppNames(null))
 
 describe('parseUiLocationArgs', () => {
   const schema = {
@@ -473,11 +473,11 @@ describe('UiLocationRegistry', () => {
       notifications += 1
     })
 
-    setEnabledPluginNames(new Set(['ui-location-plugin']))
+    setEnabledMiniAppNames(new Set(['ui-location-plugin']))
     expect(uiLocationRevision()).toBe(startRevision + 1)
     expect(notifications).toBe(1)
 
-    setEnabledPluginNames(new Set())
+    setEnabledMiniAppNames(new Set())
     expect(uiLocationRevision()).toBe(startRevision + 2)
     expect(notifications).toBe(2)
 
@@ -495,13 +495,13 @@ describe('UiLocationRegistry', () => {
       ),
     ).toBe(true)
 
-    setEnabledPluginNames(null)
+    setEnabledMiniAppNames(null)
     expect(registry.list()).toEqual([])
     expect(registry.search('plugin')).toEqual([])
     expect(registry.build('plugin.open')).toBeNull()
     expect(registry.resolve('localix://ui/work-item/plugin.open/open')).toBeNull()
 
-    setEnabledPluginNames(new Set(['ui-location-plugin']))
+    setEnabledMiniAppNames(new Set(['ui-location-plugin']))
     expect(registry.list().map((entry) => entry.id)).toEqual(['plugin.open'])
     expect(registry.search('plugin').map((entry) => entry.id)).toEqual(['plugin.open'])
     expect(registry.build('plugin.open')).toBe('localix://ui/work-item/plugin.open/open')
@@ -509,7 +509,7 @@ describe('UiLocationRegistry', () => {
       'plugin.open',
     )
 
-    setEnabledPluginNames(new Set())
+    setEnabledMiniAppNames(new Set())
     expect(registry.list()).toEqual([])
     expect(registry.build('plugin.open')).toBeNull()
     expect(registry.resolve('localix://ui/work-item/plugin.open/open')).toBeNull()

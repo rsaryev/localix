@@ -4,8 +4,6 @@ import type { SessionRecord } from '../repository'
 import type { MessageMutationResponse } from '../contracts'
 import type { CommandHandlerContext, DirectReply } from './command-handlers'
 import { handleMarketplaceSubcommand } from './command-handlers-plugins-marketplace'
-import { formatMiniAppCheck } from '../../plugins/authoring/check'
-import { handlePluginCreateSubcommand } from './command-handlers-plugins-create'
 import {
   errorCode,
   installReply,
@@ -17,19 +15,12 @@ import { isAbsolute } from 'node:path'
 /** The slice of {@link CommandHandlerContext} the `/plugin` sub-commands need. */
 type PluginsCommandContext = Pick<
   CommandHandlerContext,
-  | 'pluginService'
-  | 'buildSessionPluginCatalog'
-  | 'repo'
-  | 'runner'
-  | 'now'
-  | 'resolveSessionWorkingDir'
-  | 'runMacroCommand'
+  'pluginService' | 'buildSessionPluginCatalog' | 'resolveSessionWorkingDir'
 >
 
 /** Every accepted sub-command, in menu order — the reply to an unrecognized one. */
 const PLUGIN_SUBCOMMAND_USAGE = [
   '/plugin list',
-  '/plugin create <what it should do>',
   '/plugin install <name>@<marketplace> | <name> --marketplace <source> | <git-url> | <owner/repo> | </absolute/path> [--project]',
   '/plugin enable <name>',
   '/plugin disable <name>',
@@ -42,7 +33,7 @@ const PLUGIN_SUBCOMMAND_USAGE = [
 ] as const
 
 /**
- * Handles the `/plugin …` control sub-commands (create, marketplace, install,
+ * Handles the `/plugin …` control sub-commands (marketplace, install,
  * enable/disable, update, remove, details, validate, reload, list). Extracted verbatim
  * from handleControlCommand so the dispatcher stays readable. Returns the direct
  * reply for the chosen sub-command.
@@ -69,33 +60,12 @@ export async function handlePluginsControlCommand(
   // `/plugin reload` — the CC `/reload-plugins` equivalent. The MUTATIONS below need no
   // bump of their own: the service fires its own `onChanged` inside each one. Reload is
   // the exception precisely because nothing was mutated — a plugin directory was edited
-  // on disk, which no service call can observe. The user's own plugins are rebuilt first: an
-  // edit to their sources means nothing until the app builds it.
+  // on disk, which no service call can observe.
   if (sub === 'reload') {
-    let rebuilt: Awaited<ReturnType<typeof pluginService.authoring.rebuildAll>> = []
-    let rebuildError: string | null = null
-    try {
-      rebuilt = await pluginService.authoring.rebuildAll(userId)
-    } catch (err) {
-      rebuildError = errorMessage(err)
-    }
     pluginService.onChanged?.()
-    const failed = rebuilt.filter(({ report }) => !report.ok)
     return directReply(
-      [
-        'Plugins reloaded. Changes to skills, agents, MCP servers, and commands take effect on the next turn.',
-        ...(rebuilt.length
-          ? [`Rebuilt ${rebuilt.map(({ name }) => `\`${name}\``).join(', ')}.`]
-          : []),
-        ...(rebuildError ? [`Your plugins could not be rebuilt: ${rebuildError}`] : []),
-        ...failed.map(({ name, report }) => '```\n' + formatMiniAppCheck(name, report) + '\n```'),
-      ].join('\n\n'),
+      'Plugins reloaded. Changes to skills, agents, hooks, MCP servers, and commands take effect on the next turn.',
     )
-  }
-
-  // `/plugin create <what it should do>` — the agent names and builds a new user plugin.
-  if (sub === 'create') {
-    return handlePluginCreateSubcommand(ctx, userId, session, prompt, directReply)
   }
 
   // `/plugin marketplace add|list|remove …` — Claude Code-style marketplace registry.
@@ -192,10 +162,6 @@ export async function handlePluginsControlCommand(
     const p = plugins.find((pl) => pl.name === name)
     if (!p) return directReply(`No plugin named \`${name}\`.`)
     const chips: string[] = []
-    if (p.provides.tools.length)
-      chips.push(
-        `${p.provides.tools.length} tool(s): ${p.provides.tools.map((tool) => tool.name).join(', ')}`,
-      )
     if (p.provides.skills.length) chips.push(`skills: ${p.provides.skills.join(', ')}`)
     if (p.provides.mcpServers.length) chips.push(`MCP: ${p.provides.mcpServers.join(', ')}`)
     if (p.provides.commands.length) chips.push(`commands: ${p.provides.commands.join(', ')}`)
@@ -206,7 +172,7 @@ export async function handlePluginsControlCommand(
         : `${p.validation.errors.length} error(s), ${p.validation.warnings.length} warning(s)`
     const lines = [
       `**${p.name}**${p.displayName && p.displayName !== p.name ? ` (${p.displayName})` : ''} v${p.version} — ${p.description || '(no description)'}`,
-      `- **Enabled:** ${p.enabled ? 'yes' : 'no'} | **Origin:** ${pluginOriginLabel(p)} | **Source:** ${p.bundled ? 'bundled' : p.source}`,
+      `- **Enabled:** ${p.enabled ? 'yes' : 'no'} | **Origin:** ${pluginOriginLabel(p)} | **Source:** ${p.source}`,
       ...(p.importedFrom === 'claude-code'
         ? [`- **Imported from Claude Code**${p.migratedFrom ? `: ${p.migratedFrom}` : ''}`]
         : p.migratedFrom
@@ -276,7 +242,6 @@ export async function handlePluginsControlCommand(
           ...catalog.all.map(({ plugin: p, enabled }) => {
             const scope = p.scope === 'project' ? 'project' : 'global'
             const bits: string[] = []
-            if (p.provides.hasNativeTools) bits.push('native tools')
             if (p.provides.mcpServers.length) bits.push(`${p.provides.mcpServers.length} mcp`)
             if (p.provides.skills.length) bits.push(`${p.provides.skills.length} skills`)
             if (p.provides.commands.length) bits.push(`${p.provides.commands.length} commands`)

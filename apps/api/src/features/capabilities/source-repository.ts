@@ -5,6 +5,8 @@ import { sql, type Kysely } from 'kysely'
 import type { AppDatabase } from '../../db'
 import type { CapabilityKind } from './resolve'
 import { announceSourceRemoved } from './removal-notice'
+import { recordCoreChanges } from '../changes/core-entities'
+import { SEMANTIC_GLOBAL_SCOPE } from '@localixai/mini-app-sdk/backend'
 
 /**
  * The `capability_source` rows of ONE kind, read and written.
@@ -117,6 +119,30 @@ export function createCapabilitySourceRepository(
 
   const ofKind = () => db.selectFrom('capability_source').selectAll().where('kind', '=', kind)
 
+  /**
+   * A settings write, and for a mini app its `mini-app` notice in the same transaction (C1): the
+   * mini apps feature owns them, and every surface showing one re-reads it on that notice.
+   */
+  const announced = async (
+    projectId: string,
+    name: string,
+    write: (trx: Kysely<AppDatabase>) => Promise<unknown>,
+  ): Promise<void> => {
+    if (kind !== 'mini-app') {
+      await write(db)
+      return
+    }
+    const run = async (trx: Kysely<AppDatabase>) => {
+      await write(trx)
+      await recordCoreChanges(trx, {
+        entity: 'mini-app',
+        op: 'upserted',
+        ref: { id: name, scope: projectId || SEMANTIC_GLOBAL_SCOPE },
+      })
+    }
+    await (db.isTransaction ? run(db) : db.transaction().execute(run))
+  }
+
   const repo: CapabilitySourceRepository = {
     async listForScope(userId, projectId) {
       const scopes = projectId ? [projectId, ''] : ['']
@@ -148,58 +174,62 @@ export function createCapabilitySourceRepository(
       const config = patch.config ? JSON.stringify(patch.config) : undefined
       // Atomic on the natural key — no check-then-write window. On conflict the id and
       // created_at are kept; only the patched fields move.
-      await db
-        .insertInto('capability_source')
-        .values({
-          id: randomUUID(),
-          user_id: userId,
-          kind,
-          project_id: projectId,
-          name,
-          config: config ?? '{}',
-          source: patch.source ?? 'local',
-          created_at: timestamp,
-          updated_at: timestamp,
-        })
-        .onConflict((oc) =>
-          oc.columns(['user_id', 'kind', 'project_id', 'name']).doUpdateSet({
-            ...(config !== undefined ? { config } : {}),
-            ...(patch.source !== undefined ? { source: patch.source } : {}),
+      await announced(projectId, name, (trx) =>
+        trx
+          .insertInto('capability_source')
+          .values({
+            id: randomUUID(),
+            user_id: userId,
+            kind,
+            project_id: projectId,
+            name,
+            config: config ?? '{}',
+            source: patch.source ?? 'local',
+            created_at: timestamp,
             updated_at: timestamp,
-          }),
-        )
-        .execute()
+          })
+          .onConflict((oc) =>
+            oc.columns(['user_id', 'kind', 'project_id', 'name']).doUpdateSet({
+              ...(config !== undefined ? { config } : {}),
+              ...(patch.source !== undefined ? { source: patch.source } : {}),
+              updated_at: timestamp,
+            }),
+          )
+          .execute(),
+      )
       return (await repo.get(userId, projectId, name))!
     },
 
     async patchConfig(userId, projectId, name, values) {
       const timestamp = now()
       const serialized = JSON.stringify(values)
-      await db
-        .insertInto('capability_source')
-        .values({
-          id: randomUUID(),
-          user_id: userId,
-          kind,
-          project_id: projectId,
-          name,
-          config: serialized,
-          source: 'local',
-          created_at: timestamp,
-          updated_at: timestamp,
-        })
-        .onConflict((oc) =>
-          oc.columns(['user_id', 'kind', 'project_id', 'name']).doUpdateSet({
-            // `json_patch` merges server-side. The CASE repairs an invalid blob in place
-            // rather than propagating a parse error out of a settings save.
-            config: sql<string>`json_patch(
+      await announced(projectId, name, (trx) =>
+        trx
+          .insertInto('capability_source')
+          .values({
+            id: randomUUID(),
+            user_id: userId,
+            kind,
+            project_id: projectId,
+            name,
+            config: serialized,
+            source: 'local',
+            created_at: timestamp,
+            updated_at: timestamp,
+          })
+          .onConflict((oc) =>
+            oc.columns(['user_id', 'kind', 'project_id', 'name']).doUpdateSet({
+              // `json_patch` merges server-side. The CASE repairs an invalid blob in place
+              // rather than propagating a parse error out of a settings save.
+              config: sql<string>`json_patch(
               CASE WHEN json_valid(config) THEN config ELSE '{}' END,
               ${serialized}
             )`,
-            updated_at: timestamp,
-          }),
-        )
-        .execute()
+              updated_at: timestamp,
+            }),
+          )
+          .execute(),
+      )
       return (await repo.get(userId, projectId, name))!
     },
 

@@ -97,7 +97,7 @@ const make = (env: unknown, session: SessionRecord, notifications: Notified[] = 
     hitlTargetSessionId: session.parentSessionId ? (session.rootSessionId ?? 'parent') : session.id,
     assistantMessageId: 'm1',
     abortSignal: new AbortController().signal,
-    pluginHooksForRun: [],
+    miniAppHooksForRun: [],
     hookRunOptions: { sessionId: session.id, logger: { warn: () => {} } },
     ccHooks: {
       ...INERT_CC_HOOKS,
@@ -177,7 +177,7 @@ describe('createConfirmRequester', () => {
       hitlTargetSessionId: null,
       assistantMessageId: 'm1',
       abortSignal: new AbortController().signal,
-      pluginHooksForRun: [],
+      miniAppHooksForRun: [],
       hookRunOptions: {} as never,
       ccHooks: { ...INERT_CC_HOOKS, runNotification: async () => {} } as never,
     })
@@ -444,7 +444,7 @@ describe('a confirm card is shielded end to end', () => {
       hitlTargetSessionId: 's',
       assistantMessageId: 'm1',
       abortSignal: new AbortController().signal,
-      pluginHooksForRun: [
+      miniAppHooksForRun: [
         { pluginName: 'p1', hooks: { onHitlRequest: (input: unknown) => h.hooked.push(input) } },
       ] as never,
       hookRunOptions: {} as never,

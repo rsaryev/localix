@@ -16,8 +16,8 @@ afterAll(async () => {
 async function stubCommands(commands: unknown[]) {
   const { backendClient } = await import('@/shared/api/client')
   const { __resetCapabilityCache } = await import('@/shared/contrib/capabilityCache')
-  const { __resetPluginContrib } = await import('@/shared/contrib/enabledPlugins')
-  __resetPluginContrib()
+  const { __resetMiniAppContrib } = await import('@/shared/contrib/enabledMiniApps')
+  __resetMiniAppContrib()
   __resetCapabilityCache()
   spyOn(backendClient, 'fetchCapabilitySnapshot').mockResolvedValue({
     revision: 1,

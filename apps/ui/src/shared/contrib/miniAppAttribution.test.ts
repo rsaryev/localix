@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 
-import { attributeMiniAppCaller, pluginLabel, setPluginSources } from './miniAppAttribution'
+import { attributeMiniAppCaller, miniAppLabel, setMiniAppSources } from './miniAppAttribution'
 
 const API = 'http://127.0.0.1:43110'
 const acme = { pluginName: 'acme', base: `${API}/rpc/plugins/acme/ui/` }
@@ -30,7 +30,7 @@ const JSC_STACK = [
   'dispatchEvent@[native code]',
 ].join('\n')
 
-afterEach(() => setPluginSources([], new Map()))
+afterEach(() => setMiniAppSources([], new Map()))
 
 describe('attributeMiniAppCaller', () => {
   test('names the plugin whose chunk made the call in a V8 stack', () => {
@@ -62,7 +62,7 @@ describe('attributeMiniAppCaller', () => {
   })
 
   test('reads the registered sources and labels the plugin by its display name', () => {
-    setPluginSources(known, new Map([['acme', 'Acme']]))
+    setMiniAppSources(known, new Map([['acme', 'Acme']]))
     expect(attributeMiniAppCaller(V8_STACK)).toEqual({ pluginName: 'acme', label: 'Acme' })
     // No display name declared: the name itself is what a person reads.
     expect(attributeMiniAppCaller(JSC_STACK)).toEqual({
@@ -76,10 +76,10 @@ describe('attributeMiniAppCaller', () => {
   })
 })
 
-describe('pluginLabel', () => {
+describe('miniAppLabel', () => {
   test('falls back to the name for a plugin the host does not know', () => {
-    setPluginSources([], new Map([['webhooks', 'Webhooks']]))
-    expect(pluginLabel('webhooks')).toBe('Webhooks')
-    expect(pluginLabel('unknown')).toBe('unknown')
+    setMiniAppSources([], new Map([['webhooks', 'Webhooks']]))
+    expect(miniAppLabel('webhooks')).toBe('Webhooks')
+    expect(miniAppLabel('unknown')).toBe('unknown')
   })
 })

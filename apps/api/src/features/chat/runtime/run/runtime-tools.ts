@@ -32,6 +32,7 @@ import type { RunPolicy } from '../../policy/run-policy'
 import type { WorkflowEntry } from '../../../agent-core/tools/workflow/workflow'
 import type { ChatModel } from '../../../agent-core/tools/workflow/agent-route'
 import type { SkillCommandPolicyRef } from './skill-tool-ports'
+import type { LoadedMiniApps } from '../../../mini-apps/loader-contract'
 
 export interface RuntimeToolWiringContext {
   deps: RunnerDeps
@@ -73,6 +74,7 @@ export function buildRunToolRegistry(
     toolDenials?: readonly ToolDenial[]
     agentProfile: RunProfile
     loadedPlugins: LoadedPlugins
+    loadedMiniApps: LoadedMiniApps
     toolSurface?: ToolSurface
     /** Whether a decision model answers for this user now: the browser offers `goal` only then. */
     decisionsAvailable?: boolean
@@ -106,7 +108,16 @@ export function buildRunToolRegistry(
   },
 ): RuntimeToolRegistry & { setLedger?: (ledger: ToolLedger) => void } {
   const { deps, work, terminalWaits } = ctx
-  const { userId, session, env, defaultCwd, disabledTools, agentProfile, loadedPlugins } = params
+  const {
+    userId,
+    session,
+    env,
+    defaultCwd,
+    disabledTools,
+    agentProfile,
+    loadedPlugins,
+    loadedMiniApps,
+  } = params
 
   // Register enabled plugins' Claude Code LSP servers (`lspServers`) with the LSP
   // feature, scoped to this project root. Only ENABLED plugins reach loadedPlugins,
@@ -156,11 +167,11 @@ export function buildRunToolRegistry(
       withheldByHost: params.policy.human.withheldTools,
       agentProfile,
       modelInput: params.modelInput,
-      // Native plugin tools (in-process). They flow through the same disabledTools
+      // Mini app backend tools (in-process). They flow through the same disabledTools
       // filtering as built-ins and are available from the first turn. Which SHAPES get
-      // them is each tool's own `exposure` (plugin default: chat only), read by the ledger.
+      // them is each tool's own `exposure` (default: chat only), read by the ledger.
       extraTools: [
-        ...loadedPlugins.tools,
+        ...loadedMiniApps.tools,
         ...(deps.externalAgents ? [deps.externalAgents.toolFor(session.id)] : []),
         ...(deps.vaultToolFor ? [deps.vaultToolFor(userId)] : []),
       ],

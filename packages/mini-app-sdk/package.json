@@ -2,7 +2,7 @@
   "name": "@localixai/mini-app-sdk",
   "version": "0.1.0",
   "private": true,
-  "description": "Typed contracts for Localix plugin manifests, backend tools, hooks, channels, and UI contributions.",
+  "description": "Typed contracts for Localix mini apps: the mini-app.json manifest, backend tools, hooks, channels and screens.",
   "keywords": [
     "agent",
     "localix",

@@ -11,7 +11,7 @@ import {
   parseUiLocationArgs,
   UI_AGENT_LOCATION_CATALOG_VERSION,
 } from '@localixai/mini-app-sdk/ui'
-import { isMiniAppContributionEnabled, subscribePluginActivation } from './miniAppActivation'
+import { isMiniAppContributionEnabled, subscribeMiniAppActivation } from './miniAppActivation'
 import { registerResourceRefIcons } from './iconContributions'
 import { checkContribution } from './uiLocationValidation'
 import { rankUiLocations } from './uiLocationSearch'
@@ -247,7 +247,7 @@ export function createUiLocationRegistry(): UiLocationRegistry {
 const registry = createUiLocationRegistry()
 
 // Availability is part of the live snapshot even though definitions remain registered.
-subscribePluginActivation(() => registry.refresh())
+subscribeMiniAppActivation(() => registry.refresh())
 
 export const registerUiLocation = <const TParams extends UiLocationParamSchema>(
   contribution: UiLocationContribution<TParams>,

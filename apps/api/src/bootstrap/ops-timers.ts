@@ -1,27 +1,32 @@
 import { errorMessage } from '../lib/errors'
 import { resolveDefaultUserId, userHome } from '../lib/env'
-import { createMiniAppChannelHost } from '../features/plugins/channel-host'
-import { createChannelWorkspace } from '../features/plugins/channel-workspace'
+import { createMiniAppChannelHost } from '../features/mini-apps/channel-host'
+import { createChannelWorkspace } from '../features/mini-apps/channel-workspace'
 import { createPluginMonitorHost } from '../features/plugins/monitor-host'
+import {
+  createPluginConditions,
+  observePluginConditions,
+} from '../features/notifications/conditions/plugins'
 import { setSkillInvocationListener } from '../features/agent-core/skill-invocations'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { readAvailability } from '../features/capabilities/availability'
 import { runIdleTasks, type IdleTask, type IdleTaskContext } from '../lib/idle-tasks'
 import type { InfraPhase } from './infra'
 import type { DomainServicesPhase } from './domain-services'
-import type { MiniAppHostRefs } from './plugin-host-refs'
-import type { PluginHostsPhase } from './plugin-hosts'
+import type { MiniAppHostRefs } from './mini-app-host-refs'
+import type { MiniAppHostsPhase } from './mini-app-hosts'
 import type { createChatService } from '../features/chat/service'
 import { createCapabilitySourceRepository } from '../features/capabilities/source-repository'
-import { bundledMiniAppsSyncRoot } from '../features/plugins/discovery'
+import { bundledMiniAppsSyncRoot } from '../features/mini-apps/discovery'
 import {
   bundledStagingFailures,
   invalidateBundledSync,
   syncBundledMiniApps,
-} from '../features/plugins/bundled-install'
-import { watchStagedMiniAppsRoot } from '../features/plugins/bundled-watch'
+} from '../features/mini-apps/bundled-install'
+import { watchStagedMiniAppsRoot } from '../features/mini-apps/bundled-watch'
+import { retireLegacyPluginCopies } from '../features/mini-apps/legacy-plugin-copies'
 import { recoverDelegationReports } from '../features/chat/service/recover-delegation'
-import { sweepOrphanSessionData } from '../features/plugins/session-storage'
+import { sweepOrphanSessionData } from '../features/mini-apps/session-storage'
 import { PLUGIN_WARNINGS, warnOnce } from '../lib/warn-once'
 import type { StorageMaintenance } from './storage-maintenance'
 import { armModelCatalogChecks } from '../features/catalog/refresh-schedule'
@@ -32,11 +37,14 @@ export interface OpsTimersPhaseInput
       InfraPhase,
       'db' | 'env' | 'logger' | 'catalogService' | 'providerConnectionsService' | 'notifications'
     >,
-    Pick<DomainServicesPhase, 'projectsService' | 'skillsCuratorService' | 'pluginService'> {
+    Pick<
+      DomainServicesPhase,
+      'projectsService' | 'skillsCuratorService' | 'pluginService' | 'miniAppService'
+    > {
   chatService: ReturnType<typeof createChatService>
   maintainStorage: StorageMaintenance
   hostRefs: MiniAppHostRefs
-  pluginConditions: PluginHostsPhase['pluginConditions']
+  miniAppConditions: MiniAppHostsPhase['miniAppConditions']
 }
 
 export interface OpsTimersPhase {
@@ -74,13 +82,18 @@ export function createOpsTimersPhase({
   projectsService,
   skillsCuratorService,
   pluginService,
+  miniAppService,
   chatService,
   maintainStorage,
   hostRefs,
   notifications,
-  pluginConditions,
+  miniAppConditions,
 }: OpsTimersPhaseInput): OpsTimersPhase {
   const warnPluginOnce = warnOnce(logger, PLUGIN_WARNINGS)
+  // What is wrong with a Claude Code plugin (its load, its monitors), as Event Center conditions.
+  // The per-run plugin load is built inside the chat runtime, out of reach: observed here.
+  const pluginConditions = createPluginConditions(notifications, env.LOCALIX_DEFAULT_USER_ID)
+  observePluginConditions(pluginConditions)
   // Plugin channels: long-running platform bridges contributed by
   // enabled plugins. Inbound messages run a full agent turn in a persistent
   // chat session; the final reply is returned to the platform by the plugin.
@@ -96,13 +109,13 @@ export function createOpsTimersPhase({
   })
   const channelHost = createMiniAppChannelHost({
     homeDir: userHome(),
-    repo: createCapabilitySourceRepository(db, 'plugin'),
+    repo: createCapabilitySourceRepository(db, 'mini-app'),
     availabilityFor: (userId) => readAvailability(db, { userId, agentId: DEFAULT_AGENT_ID }),
     userId: channelUserId,
-    inbound: ({ pluginName, channelName, message }) =>
-      chatService.handleChannelInbound(channelUserId, { pluginName, channelName, message }),
+    inbound: ({ app, channelName, message }) =>
+      chatService.handleChannelInbound(channelUserId, { app, channelName, message }),
     workspace: channelWorkspace,
-    conditions: pluginConditions,
+    conditions: miniAppConditions,
     logger: {
       info: (msg) => logger.info({ event: 'plugin_channel.info', msg }),
       warn: (msg, meta) => warnPluginOnce({ event: 'plugin_channel.warn', msg, meta }),
@@ -173,15 +186,15 @@ export function createOpsTimersPhase({
     const reportStagingFailures = (root: string) =>
       syncBundledMiniApps(root, userHome())
         .then(() => bundledStagingFailures(root, userHome()))
-        .then((failures) => pluginConditions.stagingFailed(failures))
+        .then((failures) => miniAppConditions.stagingFailed(failures))
         .catch((error) =>
           logger.warn({ event: 'plugins.staging_report_failed', error: errorMessage(error) }),
         )
-    // Bundled plugins re-staged while this process runs (a scaffold, a backend save in the
+    // Bundled mini apps re-staged while this process runs (a scaffold, a backend save in the
     // dev workspace, an app update that lands a new staged root) announce themselves through
-    // the staged root's marker. Forget the sync memo and raise the same change every plugin
-    // toggle raises, so the catalog and the hosts converge without `/plugin reload`. Armed at
-    // once — a re-stage during the idle wait below must not go unseen.
+    // the staged root's marker. Forget the sync memo and record a `mini-app` resync, so the
+    // catalog and the hosts converge without `/mini-app reload`. Armed at once — a re-stage
+    // during the idle wait below must not go unseen.
     const stagedRoot = bundledMiniAppsSyncRoot()
     void stagedRoot.then((root) => {
       if (!root || signal.aborted) return
@@ -189,14 +202,14 @@ export function createOpsTimersPhase({
         root,
         onChange: () => {
           invalidateBundledSync()
-          pluginService.onChanged?.()
-          logger.info({ event: 'plugins.staged_root_changed', root })
+          void miniAppService.resync()
+          logger.info({ event: 'mini_apps.staged_root_changed', root })
           void reportStagingFailures(root)
         },
-        log: (msg) => logger.warn({ event: 'plugins.staged_root_watch', msg }),
+        log: (msg) => logger.warn({ event: 'mini_apps.staged_root_watch', msg }),
       })
       if (watcher) {
-        logger.info({ event: 'plugins.staged_root_watching', root })
+        logger.info({ event: 'mini_apps.staged_root_watching', root })
         signal.addEventListener('abort', () => watcher.close(), { once: true })
       }
     })
@@ -286,11 +299,20 @@ export function createOpsTimersPhase({
    */
   const warmStartupCaches = (): void => {
     const userId = resolveDefaultUserId()
-    // Plain-text secrets an older build stored move to the vault first (`plugins/service-config.ts`).
-    void pluginService
-      .reconcileStoredConfig(userId)
+    // The managed mini app copies earlier builds kept among the plugins go first, then plain-text
+    // secrets an older build stored move to the vault (`plugins/service-config.ts`).
+    void retireLegacyPluginCopies(userHome())
+      .then((removed) => {
+        if (removed.length) logger.info({ event: 'mini_apps.legacy_copies_removed', removed })
+      })
+      .catch(() => {})
+      .then(() => pluginService.reconcileStoredConfig(userId))
       .then(() => pluginService.listPlugins(userId, { projectId: null }))
       .then((result) => logger.debug({ event: 'startup.warm', plugins: result.plugins.length }))
+      .catch(() => {})
+    void miniAppService
+      .list(userId, { projectId: null })
+      .then((result) => logger.debug({ event: 'startup.warm', miniApps: result.miniApps.length }))
       .catch(() => {})
   }
 

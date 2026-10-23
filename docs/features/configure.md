@@ -41,6 +41,7 @@ nobody was looking would be the opposite of the boundary this tool exists to kee
 | Remedy kind                          | Changes                                    | Lands on             |
 | ------------------------------------ | ------------------------------------------ | -------------------- |
 | `tool.enable`                        | One tool's switch.                         | The proposing agent. |
+| `mini-app.enable`                    | A mini app, with its tools.                | The proposing agent. |
 | `plugin.enable`, `mcp.server.enable` | A plugin or an MCP server, with its tools. | The proposing agent. |
 
 Each change names its target and accepts optional `enabled`, defaulting to `true`. Setting it to
@@ -50,8 +51,8 @@ model routing are managed through their owning Settings screens.
 Each remedy delegates to the write path that already owns its data, so an approved change lands
 exactly where the same edit made in Settings would.
 
-Tool-switch rules retain the proposing session and proposal id as rule origin. Plugin and MCP
-switches use their capability write path; their proposal provenance lives in the backend's
+Tool-switch rules retain the proposing session and proposal id as rule origin. Mini app, plugin and
+MCP switches use their capability write path; their proposal provenance lives in the backend's
 `config_proposals` audit rows. This is not a separate audit-history screen in Settings.
 
 ### A proposal lands on the agent that made it

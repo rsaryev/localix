@@ -169,4 +169,4 @@ export type MiniAppManifestCoreInput = z.input<typeof miniAppManifestCoreSchema>
 /** Normalized core manifest after parsing. */
 export type MiniAppManifestCore = z.output<typeof miniAppManifestCoreSchema>
 
-export { humanizePluginId, pluginLabel } from './label'
+export { humanizeMiniAppId, miniAppLabel } from './label'

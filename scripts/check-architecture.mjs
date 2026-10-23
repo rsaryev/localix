@@ -159,6 +159,7 @@ const ENGINE_LAYERS = [
 
 async function sourceFiles(directory, extensions = sourceExtensions) {
   const files = []
+  if (!existsSync(directory)) return files
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     if (entry.isDirectory() && skippedDirectories.has(entry.name)) continue
     const path = join(directory, entry.name)
@@ -172,6 +173,7 @@ async function sourceFiles(directory, extensions = sourceExtensions) {
 
 async function englishTextFiles(directory) {
   const files = []
+  if (!existsSync(directory)) return files
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     if (entry.isDirectory() && skippedDirectories.has(entry.name)) continue
     const path = join(directory, entry.name)
@@ -722,6 +724,7 @@ for (const fixture of [
 
 const workspaceManifests = new Map()
 for (const directory of ['apps', 'packages', ...BUNDLED_DIRS]) {
+  if (!existsSync(join(root, directory))) continue
   for (const entry of await readdir(join(root, directory), {
     withFileTypes: true,
   })) {
@@ -816,42 +819,48 @@ for (const bundledRoot of bundledRoots(root))
 // the real bundled register() results instead of a hand-maintained core allowlist. A
 // newly registered tool/provider/route/stream command therefore enters this guard in
 // the same change even if its author never edits check-architecture.mjs.
-const { discoverBundledMiniApps } = await import('../apps/api/src/features/plugins/discovery.ts')
-const { resolvePluginConfig } = await import('../apps/api/src/features/plugins/config.ts')
-const { inspectMiniAppTools } = await import('../apps/api/src/features/plugins/native.ts')
+const { discoverBundledMiniApps } = await import('../apps/api/src/features/mini-apps/discovery.ts')
+const { resolveMiniAppConfig } = await import('../apps/api/src/features/mini-apps/config.ts')
+const { inspectMiniAppTools } = await import('../apps/api/src/features/mini-apps/native.ts')
 const discoveredPlugins = await discoverBundledMiniApps()
-const nativePlugins = discoveredPlugins.filter((plugin) => plugin.provides.hasNativeTools)
+const nativePlugins = discoveredPlugins.filter((plugin) => plugin.backendEntries.length > 0)
 const nativeInspections = await Promise.all(
   nativePlugins.map(async (plugin) => ({
     plugin,
     // A fixture home: inspection builds a real context, which creates the plugin's roots, and
     // this check runs on every developer's machine.
-    inspection: await inspectMiniAppTools(plugin, resolvePluginConfig(plugin.manifest, undefined), {
-      userId: 'architecture-audit',
-      cwd: plugin.dir,
-      homeDir: join(tmpdir(), 'localix-architecture-audit-home'),
-    }),
+    inspection: await inspectMiniAppTools(
+      plugin,
+      resolveMiniAppConfig(plugin.manifest?.config, undefined),
+      {
+        userId: 'architecture-audit',
+        cwd: plugin.dir,
+        homeDir: join(tmpdir(), 'localix-architecture-audit-home'),
+      },
+    ),
   })),
 )
 for (const { plugin, inspection } of nativeInspections) {
   if (inspection.error) {
-    problems.push(
-      `${plugin.manifest.name}: native identity inspection failed (${inspection.error})`,
-    )
+    problems.push(`${plugin.name}: native identity inspection failed (${inspection.error})`)
   }
 }
 
 const concretePluginToolNames = new Set(
   nativeInspections.flatMap(({ inspection }) => inspection.tools.map((tool) => tool.name)),
 )
-const pluginCommandNames = discoveredPlugins.flatMap((plugin) =>
-  plugin.commands.map((command) =>
-    command.name === plugin.manifest.name
-      ? plugin.manifest.name
-      : `${plugin.manifest.name}:${command.name}`,
+const pluginCommandNames = discoveredPlugins.flatMap((app) =>
+  app.commands.map((command) =>
+    command.name === app.name ? app.name : `${app.name}:${command.name}`,
   ),
 )
-const pluginAgentNames = discoveredPlugins.flatMap((plugin) => plugin.provides.agents ?? [])
+const pluginAgentNames = discoveredPlugins.flatMap((app) =>
+  app.contributions.flatMap((entry) =>
+    entry.kind === 'agent' && typeof entry.value?.definition?.handle === 'string'
+      ? [`${app.name}:${entry.value.definition.handle}`]
+      : [],
+  ),
+)
 // Authoring-only/lazy tools may be declared but not returned by the active register()
 // path. Their plugin-owned declarations still define identities core must not learn.
 for (const manifest of bundledPluginManifests) {
@@ -1646,5 +1655,5 @@ console.log(
     `${wsCommands.length} websocket commands, ${pluginCommandNames.length} slash commands, ` +
     `${pluginAgentNames.length} agents, ` +
     `${channelNames.length} channels, and ` +
-    `${pluginUiContributionIds.size} UI contribution ids from bundled plugins.`,
+    `${pluginUiContributionIds.size} UI contribution ids from bundled mini apps.`,
 )

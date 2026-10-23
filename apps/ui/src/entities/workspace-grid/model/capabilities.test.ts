@@ -13,9 +13,9 @@ import {
 } from './capabilities'
 import type { WorkItem, WorkItemKind } from '@/shared/lib/workItem'
 import { miniAppUiHostFor } from '@/shared/contrib/host'
-import { setEnabledPluginNames } from '@/shared/contrib/miniAppActivation'
+import { setEnabledMiniAppNames } from '@/shared/contrib/miniAppActivation'
 
-afterEach(() => setEnabledPluginNames(null))
+afterEach(() => setEnabledMiniAppNames(null))
 
 const item = (kind: WorkItemKind, ephemeral?: boolean): WorkItem => ({
   kind,
@@ -116,7 +116,7 @@ describe('capsOf', () => {
       }),
     ).toThrow('must be namespaced by owner "pending-render-fixture:"')
 
-    setEnabledPluginNames(null)
+    setEnabledMiniAppNames(null)
     expect(isPendingContributedKind('pending-render-fixture:item')).toBe(true)
     expect(isPendingContributedKind('chat')).toBe(false)
   })
@@ -133,7 +133,7 @@ describe('capsOf', () => {
       }),
     ).toThrow('must be namespaced by owner "core-kind-collision-fixture:"')
 
-    setEnabledPluginNames(new Set(['core-kind-collision-fixture']))
+    setEnabledMiniAppNames(new Set(['core-kind-collision-fixture']))
 
     expect(activeWorkItemContribution('file')).toBeUndefined()
     expect(capsOf('file')).toMatchObject({
@@ -147,7 +147,7 @@ describe('capsOf', () => {
   test('prototype-like unknown kinds do not inherit a core capability contract', () => {
     expect(capsOf('__proto__' as WorkItemKind)).toEqual({})
     expect(isPendingContributedKind('__proto__' as WorkItemKind)).toBe(true)
-    setEnabledPluginNames(new Set())
+    setEnabledMiniAppNames(new Set())
     expect(isPendingContributedKind('__proto__' as WorkItemKind)).toBe(false)
   })
 })

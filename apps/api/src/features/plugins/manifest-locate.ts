@@ -11,11 +11,8 @@ import { pathExists } from '../ext/fs-discovery'
  * their precedence differ, so those stay explicit per caller as constants below.
  */
 
-/**
- * The agent plugin's manifest: Claude Code's `.claude-plugin/plugin.json`, else a legacy root
- * `plugin.json`. A mini app's `.localix-app/app.json` is not one (`layout/read.ts` reads all three).
- */
-export const PLUGIN_MANIFEST_CANDIDATES: readonly string[] = [MANIFEST_FILE, 'plugin.json']
+/** A plugin's manifest: Claude Code's `.claude-plugin/plugin.json`, and nothing else. */
+export const PLUGIN_MANIFEST_CANDIDATES: readonly string[] = [MANIFEST_FILE]
 
 /** The branded marketplace catalog directory and its files. */
 export const MARKETPLACE_DIR = '.localix-plugin'

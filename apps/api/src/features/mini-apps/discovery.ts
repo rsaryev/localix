@@ -10,17 +10,49 @@ import { summarizeZodIssues } from '@localixai/mini-app-sdk/backend'
 import { resolveWithin } from '@localixai/path-containment'
 
 import { listSubdirs, pathExists } from '../ext/fs-discovery'
+import { resolveBundledRoot } from '../../lib/bundled-root'
+import { envString } from '../../lib/env'
+import { syncBundledMiniApps } from './bundled-install'
+import { miniAppHostFieldsSchema, type MiniAppCommand, type MiniAppHostFields } from './contracts'
+
+import { MINI_APPS_SUBDIR } from './paths'
+
+export { MINI_APPS_SUBDIR }
 
 /**
- * Where mini apps live and how one is read. A mini app is Localix's own format and shares
- * nothing with a plugin (docs/internals/plugins-and-mini-apps.md): this module reads
+ * How a mini app is found and read (`paths.ts` says where). A mini app is Localix's own format
+ * and shares nothing with a plugin (docs/internals/plugins-and-mini-apps.md): this module reads
  * `mini-app.json` and nothing of the Claude Code format, and the plugins feature never reads
- * these folders.
- *
- *   ~/.localix/mini-apps/<name>/              the user's, in every project
- *   <project>/.localix/mini-apps/<name>/      a project's, under a name the user's do not hold
+ * these folders. A project's copy appears only under a name the user's own do not hold.
  */
-export const MINI_APPS_SUBDIR = '.localix/mini-apps'
+
+/** Written beside a staged root by the build; a root without it is source, never synchronized. */
+const BUNDLED_STAGING_MARKER = '.localix-staged.json'
+
+/**
+ * Where the mini apps Localix ships come from: the `LOCALIX_BUNDLED_MINI_APPS_DIR` override, else
+ * the staged `mini-apps/` beside the server bundle, else the repository's `mini-apps/` when
+ * running from source (`lib/bundled-root.ts`).
+ */
+export function bundledMiniAppsRoot(): string {
+  return resolveBundledRoot({
+    moduleUrl: import.meta.url,
+    dirName: 'mini-apps',
+    sourceRelative: '../../../../../mini-apps',
+    override: envString('LOCALIX_BUNDLED_MINI_APPS_DIR'),
+  })
+}
+
+/**
+ * The root to synchronize from: one named explicitly (tests, the dev launcher), or a staged one.
+ * The source tree fails this on purpose: its mini apps carry authoring files and workspace
+ * imports and must never be copied into the user's root as they are.
+ */
+export async function bundledMiniAppsSyncRoot(): Promise<string | null> {
+  const root = bundledMiniAppsRoot()
+  if (envString('LOCALIX_BUNDLED_MINI_APPS_DIR')) return root
+  return (await pathExists(join(root, BUNDLED_STAGING_MARKER))) ? root : null
+}
 
 /** What a folder beside `mini-app.json` must not hold: a plugin, or a manifest from before. */
 const NOT_A_MINI_APP = ['.claude-plugin/plugin.json', '.localix-app/app.json', 'plugin.json']
@@ -35,12 +67,20 @@ export interface DiscoveredMiniApp {
   manifest: MiniAppManifest | null
   /** Why it cannot run; set, it contributes nothing. */
   error?: string
+  /** A managed copy of one Localix ships, synchronized into the user's root. */
+  bundled: boolean
   /** The backend entrypoints, absolute and inside the folder. */
   backendEntries: string[]
   /** Its guide, absolute and inside the folder. */
   guide?: string
   /** The folder its guide's pages live in. */
   pages?: string
+  /** Its sandboxed views, prompt sections and contributions, validated by the host. */
+  views: MiniAppHostFields['views']
+  promptSections: MiniAppHostFields['promptSections']
+  contributions: MiniAppHostFields['contributions']
+  /** Its commands, `/<app>:<name>`, with their prompts and argument pickers. */
+  commands: MiniAppCommand[]
 }
 
 export async function loadMiniApp(
@@ -48,7 +88,18 @@ export async function loadMiniApp(
   scope: 'global' | 'project',
   projectId: string,
 ): Promise<DiscoveredMiniApp> {
-  const base = { name: basename(dir), dir, scope, projectId, backendEntries: [] }
+  const base = {
+    name: basename(dir),
+    dir,
+    scope,
+    projectId,
+    backendEntries: [],
+    bundled: false,
+    views: [],
+    promptSections: [],
+    contributions: [],
+    commands: [],
+  }
   const fail = (error: string): DiscoveredMiniApp => ({ ...base, manifest: null, error })
   const beside = (
     await Promise.all(
@@ -66,7 +117,41 @@ export async function loadMiniApp(
   if (!parsed.success)
     return fail(`Invalid ${MINI_APP_MANIFEST_FILE}: ${summarizeZodIssues(parsed.error).message}`)
   const manifest = parsed.data
-  const named = { ...base, name: manifest.name, manifest }
+  const host = miniAppHostFieldsSchema.safeParse({
+    views: manifest.views,
+    promptSections: manifest.promptSections,
+    contributions: manifest.contributions,
+    commandArgs: Object.fromEntries(
+      Object.entries(manifest.commands ?? {}).map(([name, command]) => [name, command.args ?? []]),
+    ),
+  })
+  if (!host.success)
+    return {
+      ...base,
+      name: manifest.name,
+      manifest,
+      error: `Invalid ${MINI_APP_MANIFEST_FILE}: ${summarizeZodIssues(host.error).message}`,
+    }
+  const commands: MiniAppCommand[] = Object.entries(manifest.commands ?? {}).map(
+    ([name, command]) => ({
+      name,
+      description: command.description,
+      prompt: command.prompt,
+      args: host.data.commandArgs[name] ?? [],
+      ...(command.argumentHint ? { argumentHint: command.argumentHint } : {}),
+      ...(command.featured ? { featured: true } : {}),
+      ...(command.activateTools ? { activateTools: command.activateTools } : {}),
+    }),
+  )
+  const named = {
+    ...base,
+    name: manifest.name,
+    manifest,
+    views: host.data.views,
+    promptSections: host.data.promptSections,
+    contributions: host.data.contributions,
+    commands,
+  }
   if (beside)
     return {
       ...named,
@@ -78,8 +163,13 @@ export async function loadMiniApp(
     const contained = resolveWithin(dir, entry)
     return contained ? [contained] : []
   })
-  const guide = resolveWithin(dir, manifest.guide) ?? undefined
-  const pages = resolveWithin(dir, 'guide') ?? undefined
+  // Only files that are there: a guide the prompt marks must be one the agent can read.
+  const guidePath = resolveWithin(dir, manifest.guide)
+  const pagesPath = resolveWithin(dir, 'guide')
+  const [guide, pages] = await Promise.all([
+    guidePath && (await pathExists(guidePath)) ? guidePath : undefined,
+    pagesPath && (await pathExists(pagesPath)) ? pagesPath : undefined,
+  ])
   return {
     ...named,
     backendEntries,
@@ -125,16 +215,36 @@ export async function discoverMiniApps(opts: {
   homeDir: string
   cwd?: string | null
   projectId?: string
+  /** Synchronize the shipped mini apps into the user's root first (default true). */
+  includeBundled?: boolean
 }): Promise<DiscoveredMiniApp[]> {
   const projectId = opts.projectId ?? ''
   const absCwd = opts.cwd && opts.cwd !== '/' ? resolve(opts.cwd) : null
+  const bundledRoot = (opts.includeBundled ?? true) ? await bundledMiniAppsSyncRoot() : null
+  const bundled = bundledRoot
+    ? await syncBundledMiniApps(bundledRoot, opts.homeDir)
+    : new Set<string>()
   const [own, projects] = await Promise.all([
     scanRoot(join(opts.homeDir, MINI_APPS_SUBDIR), 'global', ''),
     projectId && absCwd && absCwd !== opts.homeDir
       ? scanRoot(join(absCwd, MINI_APPS_SUBDIR), 'project', projectId)
       : Promise.resolve([]),
   ])
-  return byPrecedence([own.map((app) => ({ ...app, projectId })), projects])
+  const mine = own.map((app) => ({ ...app, projectId, bundled: bundled.has(app.name) }))
+  return byPrecedence([mine, projects])
+}
+
+/**
+ * The mini apps in the shipped source root, read in place and sorted by name: what the build
+ * stages, for the checks and generators that must see exactly that set whatever the user has.
+ * One marked `private` (the authoring template) is left out.
+ */
+export async function discoverBundledMiniApps(): Promise<DiscoveredMiniApp[]> {
+  const found = await scanRoot(bundledMiniAppsRoot(), 'global', '')
+  return found
+    .filter((app) => app.manifest?.private !== true)
+    .map((app) => ({ ...app, bundled: true }))
+    .sort((a, b) => a.name.localeCompare(b.name))
 }
 
 /** Where a new mini app of this scope is installed. */

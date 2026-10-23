@@ -36,7 +36,7 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
   const now = deps.now ?? (() => new Date().toISOString())
 
   const { ports } = deps
-  const { projectsRepo, pluginService } = ports
+  const { projectsRepo, miniAppService } = ports
   // A seat stores its route explicitly. The wrapper only fills a legacy blank seat once and
   // writes it back; new seats are decided at birth by `routeDefaults.seatRoute`.
   const baseRepo = createChatRepository(deps.db)
@@ -116,7 +116,7 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
       terminalControl: deps.terminalControl,
       previewControl: previewRegistry,
       pluginCommands,
-      pluginAuthoring: pluginService.authoring,
+      miniAppAuthoring: miniAppService.authoring,
       // Read lazily: `deps.monitors` is a forward-holder getter (bootstrap/chat-service-deps),
       // so a snapshot taken here would be the `undefined` from before the service exists.
       get monitors() {

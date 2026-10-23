@@ -1,41 +1,18 @@
 import { z } from 'zod'
-import { miniAppManifestCoreSchema } from './contracts-base'
 import { pluginConfigFieldSchema } from './contracts-config'
 
 /**
- * Wire contracts for the plugin system. A plugin is a filesystem directory with a
- * runtime manifest — composed from a Claude Code `.claude-plugin/plugin.json` and a mini app's
- * `.localix-app/app.json` (`layout/compose.ts`), or read from a legacy root `plugin.json` — that
- * bundles any combination of: native JS tools, skills
- * (SKILL.md), MCP servers, slash-command prompts, and lifecycle hooks. Discovery is
- * filesystem-based (like skills); enable-state and per-plugin config live in the DB
- * (like MCP servers), so dropping a directory in never silently runs code — a plugin
- * is inert until explicitly enabled (the trust gate for in-process native tools).
+ * Wire contracts for plugins: Claude Code plugins, read from `.claude-plugin/plugin.json` and their
+ * component folders (`layout/`). A plugin brings skills, commands, agents, hooks and a hooks module,
+ * MCP and LSP servers, monitors, output styles and themes; it runs no Localix code of its own. Mini
+ * apps have their own contracts (`features/mini-apps/contracts.ts`).
  *
- * These mirror the MCP/skill management shape: scoped CRUD validated at the route
- * boundary, one source of truth shared by the runtime loader and the settings UI.
- *
- * The per-concern schema clusters live in sibling modules and are re-exported here so
- * the manifest barrel stays the single import surface:
- *   - `./contracts-manifest`      — the full runtime manifest schema
- *   - `./contracts-base`          — shared `PLUGIN_NAME_RE` / `MINI_APP_API_VERSION`
- *   - `./contracts-config`        — config-option + config-field schemas
- *   - `./contracts-contributions` — prompt-section / view schemas
- *   - `./contracts-commands`      — slash-command arg/command/spec schemas
- *   - `./contracts-agents`        — custom sub-agent role schema
+ * The per-concern schema clusters live in sibling modules and are re-exported here.
  */
 
-export { PLUGIN_NAME_RE, PLUGIN_QUALIFIED_NAME_RE, MINI_APP_API_VERSION } from './contracts-base'
+export { PLUGIN_NAME_RE, PLUGIN_QUALIFIED_NAME_RE } from './contracts-base'
 
-export type { MiniAppConfigType, MiniAppConfigOption, PluginConfigField } from './contracts-config'
-export {
-  MINI_APP_VIEW_HTML_CAP_BYTES,
-  miniAppViewSpecSchema,
-  miniAppViewHtmlResponseSchema,
-  invokeMiniAppUiActionRequestSchema,
-  invokeMiniAppUiActionResponseSchema,
-} from './contracts-contributions'
-export type { MiniAppViewSpec, InvokeMiniAppUiActionRequest } from './contracts-contributions'
+export type { PluginConfigType, PluginConfigOption, PluginConfigField } from './contracts-config'
 export { pluginCommandSchema, pluginCommandSpecSchema } from './contracts-commands'
 export type {
   MiniAppCommandArg,
@@ -57,23 +34,9 @@ export type PluginValidation = z.infer<typeof pluginValidationSchema>
 
 export { pluginManifestSchema, type PluginManifest } from './contracts-manifest'
 
-/** Model-facing metadata read from an enabled plugin's live AgentTool definitions. */
-export const miniAppToolDescriptorSchema = z.object({
-  name: z.string(),
-  label: z.string(),
-  description: z.string(),
-})
-export type MiniAppToolDescriptor = z.infer<typeof miniAppToolDescriptorSchema>
-
 /** What a plugin contributes, for the settings UI. Static fields are known without
  * loading code; `tools` is only populated once an enabled plugin is loaded. */
 export const pluginProvidesSchema = z.object({
-  /** True when the manifest declares a native-tools entrypoint (in-process JS). */
-  hasNativeTools: z.boolean(),
-  /** Live tool descriptors exposed by the native entrypoint (enabled plugins only). */
-  tools: z.array(miniAppToolDescriptorSchema),
-  /** Backend subsystem ids returned by enabled native entrypoints (routes/resources/context). */
-  backendSubsystems: z.array(z.string()).optional(),
   /** Bundled skill names (known statically from the skills dir). */
   skills: z.array(z.string()),
   /** Bundled MCP server names (known statically from the manifest / .mcp.json). */
@@ -87,22 +50,9 @@ export const pluginProvidesSchema = z.object({
 })
 export type PluginProvides = z.infer<typeof pluginProvidesSchema>
 
-/**
- * A bundled plugin's workbench UI artifact, as URLs the host imports and a revision that moves
- * exactly when the UI changed (see `ui-artifact.ts`).
- */
-export const miniAppUiDescriptorSchema = z.object({
-  entry: z.string(),
-  styles: z.array(z.string()),
-  revision: z.string(),
-})
-export type MiniAppUiDescriptor = z.infer<typeof miniAppUiDescriptorSchema>
-
 /** A fully materialized plugin entry returned to the UI: manifest + state + provides. */
 export const pluginRecordSchema = z.object({
   name: z.string(),
-  /** Primary launcher group; absent in older or third-party manifests. */
-  category: miniAppManifestCoreSchema.shape.category,
   /** Human-readable label (Claude Code `displayName`); falls back to `name`. */
   displayName: z.string().optional(),
   version: z.string(),
@@ -113,16 +63,6 @@ export const pluginRecordSchema = z.object({
   migratedFrom: z.string().optional(),
   /** Set when the plugin is a Claude Code plugin, loaded in place. */
   importedFrom: z.literal('claude-code').optional(),
-  /**
-   * What the folder holds: a `plugin` in the Claude Code format, a `mini-app` with its plugin,
-   * or a `legacy` root `plugin.json` (docs/internals/plugins-and-mini-apps.md).
-   */
-  layout: z.enum(['plugin', 'mini-app', 'decorated', 'legacy']),
-  /**
-   * The surfaces the plugin declares it extends (normalized; `['agent']` when the
-   * manifest says nothing). Consumers group by it — see `isWorkbenchMiniApp`.
-   */
-  surfaces: z.array(z.string()),
   /** '' = global (`~/.localix/plugins`); otherwise the project id this plugin is scoped to. */
   projectId: z.string(),
   scope: z.enum(['global', 'project']),
@@ -144,10 +84,6 @@ export const pluginRecordSchema = z.object({
    * a decision already made.
    */
   awaitingConsent: z.boolean().optional(),
-  /** True for plugins discovered from the repo's bundled `plugins/` root (ship for everyone). */
-  bundled: z.boolean(),
-  /** The built workbench UI a bundled plugin ships; absent when it has none. */
-  ui: miniAppUiDescriptorSchema.optional(),
   provides: pluginProvidesSchema,
   config: z.array(pluginConfigFieldSchema),
   /** Manifest/load error surfaced in the UI (invalid manifest, failed import…). */
@@ -225,7 +161,6 @@ export const marketplaceListingPluginSchema = z.object({
 /** One row in the marketplace listing (built-in `localix` first, then registered). */
 export const marketplaceListingSchema = z.object({
   name: z.string(),
-  builtin: z.boolean(),
   count: z.number(),
   plugins: z.array(marketplaceListingPluginSchema).optional(),
   /** Why a registered marketplace cannot be used (a Claude Code-only catalog), with a hint. */

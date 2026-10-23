@@ -32,7 +32,8 @@
   <url><loc>https://localix.ai/docs/features--agent-companion</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--workspace</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--native-workspace-tabs</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/features--plugin-apps</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/features--mini-apps</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/features--mini-app-mac-apps</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--external-agents</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--settings</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--keyboard-shortcuts</loc><priority>0.7</priority></url>
@@ -70,19 +71,19 @@
   <url><loc>https://localix.ai/docs/features--execution-environments</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--secrets</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/features--webhook</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/extending--plugins</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/extending--mini-apps</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/extending--claude-code-plugins</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/extending--build-with-the-agent</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/extending--plugin-ui</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/extending--mini-app-ui</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/extending--sandboxed-views</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/extending--plugin-sync</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/extending--mini-app-sync</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/extending--keyboard-ownership</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/extending--plugin-problems</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/extending--mini-app-problems</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/extending--ui-kit</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/extending--plugin-wakes</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/extending--plugin-semantics</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/extending--mini-app-wakes</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/extending--mini-app-semantics</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/extending--sealed-moves</loc><priority>0.7</priority></url>
-  <url><loc>https://localix.ai/docs/extending--plugin-routes</loc><priority>0.7</priority></url>
+  <url><loc>https://localix.ai/docs/extending--mini-app-routes</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/extending--skills-authoring</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/extending--markdown</loc><priority>0.7</priority></url>
   <url><loc>https://localix.ai/docs/internals--architecture</loc><priority>0.7</priority></url>

@@ -15,7 +15,7 @@ import type { FixedContextDescription } from '@localixai/agent/agents'
 import type { SessionAgentRoute } from '../../../contracts/read-model'
 import type { SessionRecord } from '../../../repository'
 import type { CcHooksRuntime } from '../../../../cc-hooks'
-import type { LoadedMiniAppHook } from '../../../../plugins/loader'
+import type { LoadedMiniAppHook } from '../../../../mini-apps/loader-contract'
 import type { ContextBudgetFrame } from '../../context-budget'
 import type { TurnEventContext } from '../event-handlers'
 import type { AgentRunRecord } from '../run-record'
@@ -60,7 +60,7 @@ export interface RunFrame {
   readonly teardown: {
     unsubLsp?: () => void
     defaultCwd?: string
-    pluginHooks: readonly LoadedMiniAppHook[]
+    miniAppHooks: readonly LoadedMiniAppHook[]
     ccHooks?: CcHooksRuntime
     readonly liveResolverKeys: Set<string>
   }

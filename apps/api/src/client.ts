@@ -159,7 +159,7 @@ export {
   MINI_APP_SURFACE_WORKBENCH,
   normalizeMiniAppSurfaces,
   isWorkbenchMiniApp,
-} from './features/plugins/contracts-base'
+} from './features/mini-apps/contracts-base'
 export {
   pluginCapabilityLabels,
   pluginIssueSummary,
@@ -171,8 +171,8 @@ export type {
   PluginRecord,
   PluginProvides,
   PluginConfigField,
-  MiniAppConfigOption,
-  MiniAppConfigType,
+  PluginConfigOption,
+  PluginConfigType,
   PluginManifest,
   PluginCommand,
   MiniAppCommandArg,
@@ -186,6 +186,16 @@ export type {
   InstallPluginRequest,
   RemovePluginRequest,
 } from './features/plugins/contracts'
+
+export type {
+  MiniAppRecord,
+  MiniAppConfigField,
+  MiniAppCommandSpec,
+  MiniAppContributions,
+  MiniAppToolDescriptor,
+  MiniAppUiDescriptor,
+} from './features/mini-apps/contracts'
+export type { MiniAppViewSpec } from './features/mini-apps/contracts-contributions'
 
 export type {
   AgentRecord,

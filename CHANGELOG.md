@@ -12,12 +12,12 @@ Changes land on `main`.
   calorie counter that logs a meal from a photo, a dashboard, a game — with its own screen and tools
   the chat agent uses. A mini app can start an agent turn, ask decision models, search its own items
   by meaning, use vault secrets and push live updates to its screen. See
-  [Build a plugin or a mini app](docs/extending/plugins.md#what-you-can-build).
+  [Build a plugin or a mini app](docs/extending/mini-apps.md#what-you-can-build).
 - **Plugin apps** (macOS): install a mini app as its own Mac app from its tab's menu, the app button
   at the right of the tab strip, its rail button or the command palette. The app has its own Dock
   icon, window, menu bar and project, shows the mini app with the agent beside it, keeps its
   conversations as its history, and starts Localix in the background when it is not running. See
-  [Plugin apps](docs/features/plugin-apps.md).
+  [Plugin apps](docs/features/mini-app-mac-apps.md).
 
 - **Mods**: a Claude Code plugin with a hooks module runs it, once per project as in a Claude Code
   session. A mod can guard or rewrite tool calls and model requests, shape the system prompt, read

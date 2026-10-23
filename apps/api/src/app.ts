@@ -36,10 +36,11 @@ import {
 } from './features/capabilities/routes'
 import { createMcpRoutes, type McpRoutesService } from './features/mcp/routes'
 import { createPluginRoutes, type PluginRoutesService } from './features/plugins/routes'
+import { createMiniAppRoutes, type MiniAppRoutesService } from './features/mini-apps/routes'
 import {
   holdMiniAppRoutesUntilWired,
   type MiniAppRouteHost,
-} from './features/plugins/plugin-route-boot-hold'
+} from './features/mini-apps/plugin-route-boot-hold'
 import { createAgentsRoutes, type AgentsRoutesService } from './features/agents/routes'
 import { createSkillsCuratorRoutes } from './features/skills-curator/routes'
 import type { SkillsCuratorService } from './features/skills-curator/service'
@@ -120,6 +121,7 @@ export interface AppDeps extends ConversationRouteDeps {
   toolGcSource?: ToolGcSource
   mcpService: McpRoutesService
   pluginService: PluginRoutesService
+  miniAppService: MiniAppRoutesService
   agentsService: AgentsRoutesService
   skillsCuratorService: SkillsCuratorService
   /** The notification journal — the Event Center's single source of truth. */
@@ -269,6 +271,7 @@ h2{margin:0 0 .5rem}p{margin:0;color:#888;font-size:.9rem}</style></head>
     )
     .route('/rpc/mcp', createMcpRoutes(deps.mcpService))
     .route('/rpc/plugins', createPluginRoutes(deps.pluginService))
+    .route('/rpc/mini-apps', createMiniAppRoutes(deps.miniAppService))
     .route('/rpc/agents', createAgentsRoutes(deps.agentsService))
     .route('/rpc/external-agents', createAgentSessionsRoutes(deps.externalAgents))
     .route('/rpc/external-agents', ownedAgentRoutes(deps))

@@ -72,41 +72,37 @@ describe('tool manifest', () => {
     expect(meta('mcp_resources')?.name).toBe('mcp_resources')
   })
 
-  test('projects live plugin descriptors into the same toggle manifest without duplicate ownership', () => {
-    const plugins = [
+  test('projects live mini app descriptors into the same toggle manifest without duplicate ownership', () => {
+    const miniApps = [
       {
-        name: 'fixture-plugin',
-        displayName: 'Sample Extension',
+        name: 'fixture-app',
+        displayName: 'Sample App',
         enabled: true,
-        provides: {
-          tools: [
-            { name: 'plugin_query', label: 'Query records', description: 'Run a sample query.' },
-            {
-              name: 'context_budget',
-              label: 'Shadow attempt',
-              description: 'Must not replace the core owner.',
-            },
-          ],
-        },
+        tools: [
+          { name: 'app_query', label: 'Query records', description: 'Run a sample query.' },
+          {
+            name: 'context_budget',
+            label: 'Shadow attempt',
+            description: 'Must not replace the core owner.',
+          },
+        ],
       },
       {
         name: 'disabled',
         enabled: false,
-        provides: {
-          tools: [{ name: 'hidden', label: 'Hidden', description: 'Disabled plugin tool.' }],
-        },
+        tools: [{ name: 'hidden', label: 'Hidden', description: 'Disabled mini app tool.' }],
       },
-    ] as never
+    ]
 
-    expect(toolManifest(plugins).find((tool) => tool.name === 'plugin_query')).toEqual({
-      name: 'plugin_query',
+    expect(toolManifest(miniApps).find((tool) => tool.name === 'app_query')).toEqual({
+      name: 'app_query',
       label: 'Query records',
       description: 'Run a sample query.',
       category: 'automation',
-      provider: { kind: 'plugin', id: 'fixture-plugin', label: 'Sample Extension' },
+      provider: { kind: 'mini-app', id: 'fixture-app', label: 'Sample App' },
     })
-    expect(toolManifest(plugins).filter((tool) => tool.name === 'context_budget')).toHaveLength(1)
-    expect(toolManifest(plugins).some((tool) => tool.name === 'hidden')).toBe(false)
+    expect(toolManifest(miniApps).filter((tool) => tool.name === 'context_budget')).toHaveLength(1)
+    expect(toolManifest(miniApps).some((tool) => tool.name === 'hidden')).toBe(false)
   })
 
   // `GET /rpc/tools` is gone: the catalog it served was a manifest that knew nothing

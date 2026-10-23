@@ -1,8 +1,8 @@
 # Checkers
 
 A checkers board (Russian draughts) in the workbench, one per chat, played against the agent in that
-chat. It follows the Tic-Tac-Toe plugin's shape: a move on the board wakes the chat through the
-host's wake contract, and the agent answers with the plugin's own tool.
+chat. It follows the Tic-Tac-Toe mini app's shape: a move on the board wakes the chat through the
+host's wake contract, and the agent answers with the mini app's own tool.
 
 ## How a game goes
 
@@ -47,7 +47,7 @@ Russian draughts on the 32 dark squares of an 8×8 board:
 ## The agent's tool
 
 One tool, `checkers`, groups its operations under `action`. Its schema is deferred until activated
-or brought onto the request by linked game context or a plugin wake.
+or brought onto the request by linked game context or a mini app wake.
 
 | `action`   | Does                                                                 |
 | ---------- | -------------------------------------------------------------------- |
@@ -82,7 +82,7 @@ and a visible board re-reads its snapshot. A healthy feed has no periodic read; 
 the board polls every 800 ms during agent activity or 4 seconds while idle. Showing the pane or
 reconnecting reconciles its state.
 
-See [Wake a session from a plugin](../../docs/extending/plugin-wakes.md) for the contract.
+See [Wake a session from a mini app](../../docs/extending/mini-app-wakes.md) for the contract.
 
 ## Permissions and synchronization
 

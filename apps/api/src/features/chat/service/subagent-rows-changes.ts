@@ -25,6 +25,7 @@ export function createSubagentRowsChanges(live: SubagentRowsLive) {
       return live.changed(change.ref.userId, change.ref.sessionId)
     },
     plugin: () => live.refreshAll(),
+    'mini-app': 'ignore',
     skill: 'ignore',
     mcp: 'ignore',
     agent: 'ignore',

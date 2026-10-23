@@ -5,6 +5,7 @@ import {
   buildMcpInventorySection,
   buildMcpInstructionsSection,
   buildPinnedSkillsSection,
+  buildMiniAppsSection,
   buildPluginsSection,
   buildTriggeredSkillsSection,
 } from './features'
@@ -219,13 +220,19 @@ describe('aggregate extension prompt budgets', () => {
     expect(out.length).toBeLessThan(MCP_INVENTORY_TOTAL_MAX_CHARS + 500)
   })
 
-  test('"# Plugins" tells the truth about deferred tools', () => {
-    // It used to call every plugin tool direct and named under "# Available tools", while
+  test('"# Mini apps" tells the truth about deferred tools', () => {
+    // It used to call every app tool direct and named under "# Available tools", while
     // deferral kept them behind `activate_tools` with no schema on the wire.
-    const deferred = buildPluginsSection('- db — 2 tools to activate', true)!
+    const deferred = buildMiniAppsSection('- db — 2 tools to activate', true)!
     expect(deferred).toContain('`activate_tools`')
-    expect(deferred).not.toMatch(/every plugin tool is direct/i)
-    expect(buildPluginsSection('- db — 1 direct tool', false)).not.toContain('activate_tools')
+    expect(deferred).not.toMatch(/every .* tool is direct/i)
+    expect(buildMiniAppsSection('- db — 1 direct tool', false)).not.toContain('activate_tools')
+  })
+
+  test('"# Plugins" speaks of skills and language servers, never of tools or screens', () => {
+    const section = buildPluginsSection('- review — 1 skill')!
+    expect(section).toStartWith('# Plugins')
+    expect(section).not.toMatch(/mini app|activate_tools|screen/iu)
   })
 
   test('does not add a truncation notice below either aggregate cap', () => {

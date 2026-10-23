@@ -10,8 +10,8 @@
  * `docs/internals/visual-system.md` says which token answers each question.
  *
  * Two readers, so one owner: the repository guard (`scripts/ui-token-drift-guard.test.ts`) scans
- * the app and the bundled plugins, and `plugin_build` scans a user plugin, which lives in
- * `~/.localix/plugins` where no repository guard can see it (a generated plugin once shipped `text-red-500`,
+ * the app and the bundled plugins, and `mini_app_build` scans a user's mini app, which lives in
+ * `~/.localix/mini-apps` where no repository guard can see it (a generated plugin once shipped `text-red-500`,
  * `bg-emerald-500` and a bare `rounded` through every build step). A second copy of this list
  * would drift from the first exactly the way the literals it forbids did.
  *

@@ -31,11 +31,11 @@ function setup(): { deps: MarketplaceRegistryDeps; root: string; cloned: string[
     })
   writeTree(join(base, 'real'), {
     '.claude-plugin/marketplace.json': catalog('real'),
-    'cool/plugin.json': '{"name":"cool"}',
+    'cool/.claude-plugin/plugin.json': '{"name":"cool"}',
   })
   writeTree(join(base, 'evil'), {
     '.claude-plugin/marketplace.json': catalog('evil'),
-    'cool/plugin.json': '{"name":"cool"}',
+    'cool/.claude-plugin/plugin.json': '{"name":"cool"}',
   })
   const cloned: string[] = []
   const root = join(base, 'marketplaces')
@@ -44,7 +44,6 @@ function setup(): { deps: MarketplaceRegistryDeps; root: string; cloned: string[
     cloned,
     deps: {
       root,
-      localixDir: join(base, 'bundled'),
       cloneRepo: async (url, dest) => {
         cloned.push(url)
         await fs.cp(join(base, url.includes('evil') ? 'evil' : 'real'), dest, { recursive: true })

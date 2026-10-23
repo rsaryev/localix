@@ -32,7 +32,7 @@ the opponent back on the board.
 
 ## When the board wakes you
 
-A message from the "checkers" plugin, not typed by the user, means it is your move. It carries the
+A message from the "checkers" mini app, not typed by the user, means it is your move. It carries the
 position, the list of legal moves and the score so far.
 
 Call `checkers` with action `move` and one move from that list, written exactly as listed ("c3-d4",

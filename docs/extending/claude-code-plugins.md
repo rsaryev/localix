@@ -33,16 +33,18 @@ A user-scope plugin has one configuration in every project, as Claude Code's `pl
 to the plugin; the plugin's settings keep only a reference, and the value reaches its hooks, MCP
 servers and `CLAUDE_PLUGIN_OPTION_<KEY>` when they run.
 
-Screens, a backend and agent tools over Localix's APIs are a mini app's, not a plugin's: a mini app
-is its own folder with `mini-app.json`, and a folder is one or the other. See
-[Build a plugin or a mini app](plugins.md).
+Localix ships no plugins and has no marketplace of its own: every plugin comes from a source you
+add. Manage them in Settings → Capabilities → Plugins or with `/plugin`. A plugin runs no Localix
+native code. Screens, a backend and agent tools over Localix's APIs are a mini app's, a separate
+format with its own folder, settings and command; see [Build a mini app](mini-apps.md).
 
 ## How it works
 
 Discovery reads the manifest and component folders with Claude Code's rules. A folder without a
 manifest is a plugin named after the folder when it has a component folder such as `skills/` or
-`commands/`. Settings → Capabilities → Plugins labels it **Claude Code plugin** and skips authoring
-reminders such as a missing license.
+`commands/`. Settings → Capabilities → Plugins lists it and skips authoring reminders such as a
+missing license. A root `plugin.json` is not read, as in Claude Code, and a folder holding a
+`mini-app.json` is a mini app: it loads nothing as a plugin.
 
 | Claude Code rule                                     | In Localix                                                                         |
 | ---------------------------------------------------- | ---------------------------------------------------------------------------------- |
@@ -99,7 +101,9 @@ Versions before this one converted a Claude Code plugin at install and wrote a r
 beside it. That file is now ignored, and the `.claude-plugin/` manifest is read. Plugins installed
 into the Default project's folder (`~/.localix/workspace/.localix/plugins`), which its chats never
 saw, still move to `~/.localix/plugins` once at startup, with their saved state. A plugin of the
-same name already there keeps both copies where they are, and the log says so.
+same name already there keeps both copies where they are, and the log says so. The copies of the
+first-party mini apps that earlier versions kept in `~/.localix/plugins` are removed at startup;
+mini apps now live in `~/.localix/mini-apps`.
 
 ### Marketplaces
 
@@ -126,12 +130,12 @@ and `/plugin update` checks the files again and says the plugin loads in place. 
 `/plugin marketplace remove` forget the record Localix keeps in `~/.localix/plugins/.in-place.json`;
 no command deletes or changes the folder.
 
-| Plugin from a local-folder marketplace                                                                                | Installed as                      |
-| --------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| Claude Code format, user scope                                                                                        | Loads in place from its folder    |
-| Native tools, or a manifest of Localix's (`mini-app.json`, or an older `.localix-app/app.json` or root `plugin.json`) | A copy under `~/.localix/plugins` |
-| Installed with `--project`                                                                                            | A copy in the project             |
-| An entry at the marketplace root that lists its `skills`                                                              | A copy with the listed skills     |
+| Plugin from a local-folder marketplace                   | Installed as                                                      |
+| -------------------------------------------------------- | ----------------------------------------------------------------- |
+| Claude Code format, user scope                           | Loads in place from its folder                                    |
+| Installed with `--project`                               | A copy in the project                                             |
+| An entry at the marketplace root that lists its `skills` | A copy with the listed skills                                     |
+| A folder holding `mini-app.json`                         | Not a plugin: it loads nothing and points to Settings → Mini apps |
 
 A plugin installed as a copy by an earlier version keeps working as one; `/plugin update` turns it
 into an in-place plugin and removes the copy.
@@ -315,7 +319,7 @@ Claude Code's own mods — `diff`, `agents-md`, `sec-default`, `telemetry` — a
 
 ## Related guides
 
-- [Build a plugin or a mini app](plugins.md)
+- [Build a mini app](mini-apps.md)
 - [Hooks and slash commands](../features/hooks-and-commands.md)
 - [Language servers](../features/lsp.md)
 

@@ -21,6 +21,8 @@ function snapshot(tools: Partial<ToolSurface>): CapabilitySnapshot {
     revision: 1,
     scope: { projectId: '', agentId: null },
     plugins: [],
+    miniApps: [],
+    miniAppCommands: [],
     tools: {
       enabled: [],
       disabled: [],
@@ -46,7 +48,7 @@ const meta = (name: string, pluginId?: string) => ({
   label: name,
   description: '',
   category: 'automation' as const,
-  ...(pluginId ? { provider: { kind: 'plugin' as const, id: pluginId, label: pluginId } } : {}),
+  ...(pluginId ? { provider: { kind: 'mini-app' as const, id: pluginId, label: pluginId } } : {}),
 })
 
 const usage = (name: string, over: Partial<ToolUsageRecord> = {}): ToolUsageRecord => ({
@@ -72,7 +74,7 @@ describe('surfacedFromSnapshot', () => {
 
     expect(result).toEqual([
       { name: 'read', source: 'builtin', originId: '' },
-      { name: 'plugin_query', source: 'plugin', originId: 'fixture-plugin' },
+      { name: 'plugin_query', source: 'mini-app', originId: 'fixture-plugin' },
       { name: 'mcp_linear_search', source: 'mcp', originId: 'srv-1' },
     ])
   })
@@ -152,8 +154,8 @@ describe('buildToolGcReport', () => {
       now: NOW,
     })
 
-    expect(report.counts).toMatchObject({ builtin: 1, plugin: 2, mcp: 3, total: 6 })
-    expect(report.counts.builtin + report.counts.plugin + report.counts.mcp).toBe(
+    expect(report.counts).toMatchObject({ builtin: 1, miniApp: 2, mcp: 3, total: 6 })
+    expect(report.counts.builtin + report.counts.miniApp + report.counts.mcp).toBe(
       report.counts.total,
     )
   })

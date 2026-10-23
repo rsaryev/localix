@@ -17,8 +17,8 @@ creating the mini app.
 
 | Capability               | Mechanism                                                                       | Boundary                                                                       |
 | ------------------------ | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Create a mini app        | Run `/plugin create <what it should do>`; the agent calls `plugin_build`.       | The host creates the app only on that tool call, under `~/.localix/plugins`.   |
-| Change one it built      | Ask in the same chat; the agent edits and calls `plugin_build` again.           | Failed verification checks do not publish new artifacts; source edits remain.  |
+| Create a mini app        | Run `/mini-app create <what it should do>`; the agent calls `mini_app_build`.   | The host creates the app only on that tool call, under `~/.localix/mini-apps`. |
+| Change one it built      | Ask in the same chat; the agent edits and calls `mini_app_build` again.         | Failed verification checks do not publish new artifacts; source edits remain.  |
 | Get a native interface   | The agent writes `ui/register.tsx` against the host's own kit.                  | A style check rejects hand-rolled controls and palette colours.                |
 | Give the agent new tools | The mini app's tools register with the agent with no glue code.                 | A tool must declare its effect, or a read-only session refuses even its reads. |
 | Let the app start a turn | A UI action calls `ctx.host.wake`, as the bundled games do.                     | A wake is one short message and only the app's own tools; see the wakes guide. |
@@ -26,24 +26,27 @@ creating the mini app.
 
 ## How it works
 
-`/plugin create` starts an agent turn that requires the `plugin_build` tool. The agent names the
+`/mini-app create` starts an agent turn that requires the `mini_app_build` tool. The agent names the
 mini app, and the host does the rest:
 
-1. It forks the System Overview template into `~/.localix/plugins/<name>` and enables the copy only
-   after the untouched template passes the non-residue checks. Template-domain residue is expected
-   for this initial build. A failed creation removes its copy after activation rollback succeeds; if
-   rollback cannot be confirmed, it leaves the copy and reports that state.
+1. It forks the System Overview template into `~/.localix/mini-apps/<name>` and enables the copy
+   only after the untouched template passes the non-residue checks. Template-domain residue is
+   expected for this initial build. A failed creation removes its copy after activation rollback
+   succeeds; if rollback cannot be confirmed, it leaves the copy and reports that state.
 2. The copy is a mini app: `mini-app.json` holds its name, description, category, settings and
    commands, and `guide.md` tells the agent which tool does what, read with `mini_app_guide` before
    it first uses the app. The agent is instructed to replace the template's domain with yours and
    write the tools, the tests and a guide for the new domain. The build writes the manifest's
    `backend`; the agent leaves it alone.
-3. Each `plugin_build` call checks template residue, style, routes, message context, the backend and
-   UI builds, types and tests, in parallel. Output is published only when every check passes. The
-   workbench swaps the new interface in place, with no restart.
-4. When `browser` is available, the agent is instructed to open `plugin:<name>`, take a screenshot,
-   and exercise the interface. Without it, the agent must report that visual and interaction checks
-   were not run. Passing build checks does not enforce this final inspection.
+3. Each `mini_app_build` call checks template residue, style, routes, message context, the backend
+   and UI builds, types and tests, in parallel. Output is published only when every check passes.
+   The workbench swaps the new interface in place, with no restart.
+4. When `browser` is available, the agent is instructed to open `mini-app:<name>`, take a
+   screenshot, and exercise the interface. Without it, the agent must report that visual and
+   interaction checks were not run. Passing build checks does not enforce this final inspection.
+
+After you edit the files yourself, `/mini-app reload` rebuilds your own mini apps and reloads every
+mini app; a failed build prints its check report.
 
 The tool call's `description` means **create a new mini app**, even if the requested name already
 exists. The host normalizes the name and selects a free suffix, trying up to twenty candidates. Use
@@ -55,7 +58,7 @@ already reads the files and photos you attach, a meal photo can arrive as a call
 counter's own `log_meal` tool with structured items. That workflow needs no separate upload, OCR, or
 model service in the app. The same split serves a deployment dashboard whose tools read your
 cluster, a research board that ranks notes with the embedding model, or a game whose opponent is a
-decision model; [what a mini app can use](plugins.md#what-you-can-build) lists the host's APIs.
+decision model; [what a mini app can use](mini-apps.md#what-you-can-build) lists the host's APIs.
 
 A mini app can also answer back. The bundled chess, checkers, battleship, tic-tac-toe and 2048 mini
 apps call `ctx.host.wake` when you move, so your move starts an agent turn and its reply lands on
@@ -81,14 +84,15 @@ the same board.
 
 ## Related guides
 
-- [Build a plugin or a mini app](plugins.md)
-- [Build workbench UI](plugin-ui.md)
-- [Wake the agent from a mini app](plugin-wakes.md)
+- [Build a mini app](mini-apps.md)
+- [Mini apps](../features/mini-apps.md)
+- [Build workbench UI](mini-app-ui.md)
+- [Wake the agent from a mini app](mini-app-wakes.md)
 - [Annotate a live preview](../features/visual-feedback.md)
 
 ## Source of truth
 
-- [The model-facing tool](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/plugin-build.ts)
-- [The authoring service and its checks](https://github.com/rsaryev/localix/tree/main/apps/api/src/features/plugins/authoring)
-- [The `/plugin create` command](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/command-handlers-plugins-create.ts)
+- [The model-facing tool](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/tools/mini-app-build.ts)
+- [The authoring service and its checks](https://github.com/rsaryev/localix/tree/main/apps/api/src/features/mini-apps/authoring)
+- [The `/mini-app create` command](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/command-handlers-mini-apps-create.ts)
 - [The template every mini app forks](https://github.com/rsaryev/localix/tree/main/mini-apps/template)

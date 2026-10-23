@@ -94,7 +94,7 @@ export type WakeSource =
   /**
    * A PLUGIN ASKED FOR A TURN: something happened in it — a person moved in its view, a
    * condition it watches came true — and the agent answers through the plugin's own tools
-   * (`features/plugins/plugin-wake.ts`). Its own source because "External" named a webhook,
+   * (`features/mini-apps/plugin-wake.ts`). Its own source because "External" named a webhook,
    * and a person playing a game in a plugin tab is not one.
    */
   | 'plugin'

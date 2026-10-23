@@ -39,7 +39,7 @@ const SHELL_SNAPSHOT_KEY = 'localix_shell_snapshot'
  * migrated: the cost of being wrong is a wrong first frame, and the cost of dropping it is
  * one launch that looks like today's.
  */
-const SHELL_SNAPSHOT_SCHEMA = 2
+const SHELL_SNAPSHOT_SCHEMA = 3
 
 /**
  * A cap, not a target. The roster is the one unbounded part of the record, and a user with
@@ -51,7 +51,7 @@ export const SHELL_SNAPSHOT_SESSION_LIMIT = 200
 export interface ShellCapabilitiesFrame {
   revision: number
   enabledNames: string[]
-  plugins: unknown[]
+  miniApps: unknown[]
   views: unknown[]
   tools: unknown
 }

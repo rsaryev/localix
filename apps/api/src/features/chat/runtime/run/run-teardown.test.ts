@@ -55,7 +55,7 @@ function baseArgs(
     runtimeState,
     session,
     abort,
-    pluginHooksForRun: [],
+    miniAppHooksForRun: [],
     runLiveResolverKeys: new Set<string>(),
     unsubLsp: undefined,
     defaultCwd: undefined,

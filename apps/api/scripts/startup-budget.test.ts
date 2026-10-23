@@ -69,17 +69,16 @@ describe('startup budget analysis', () => {
   })
 
   /**
-   * Loading plugins happens off the request path, so the most expensive thing a launch
+   * Loading mini app backends happens off the request path, so the most expensive thing a launch
    * does was invisible to a report about launches. The loader now says what it cost.
    */
-  test('collects plugin loads, so a boot that loads them twice says so', () => {
+  test('collects mini app loads, so a boot that loads them twice says so', () => {
     const load = (time: number, totalMs: number) =>
       line({
-        event: 'plugins.loaded',
+        event: 'mini_apps.loaded',
         time,
-        plugins: 9,
-        catalogMs: 4,
-        nativeMs: totalMs - 4,
+        apps: 9,
+        importMs: totalMs - 4,
         totalMs,
         slowest: [{ name: 'database', ms: 53 }],
       })
@@ -91,7 +90,7 @@ describe('startup budget analysis', () => {
       load(9_000, 90),
     ])
 
-    expect(analysis?.pluginLoads.map((entry) => entry.totalMs)).toEqual([170, 120])
-    expect(analysis?.pluginLoads[0].slowest[0]).toEqual({ name: 'database', ms: 53 })
+    expect(analysis?.miniAppLoads.map((entry) => entry.totalMs)).toEqual([170, 120])
+    expect(analysis?.miniAppLoads[0].slowest[0]).toEqual({ name: 'database', ms: 53 })
   })
 })

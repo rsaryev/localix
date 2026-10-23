@@ -17,7 +17,7 @@ test('plugin actions receive the picture and owning chat, and are also offered i
   const { WorkItemSessionProvider } = await import('@localixai/mini-app-sdk/ui/work-item-session')
   const { bindMiniAppUiTestDoubles } = await import('@localixai/mini-app-sdk/ui/testing')
   const { registerAction, removeActionsOf } = await import('@/shared/contrib/actions')
-  const { setEnabledPluginNames } = await import('@/shared/contrib/miniAppActivation')
+  const { setEnabledMiniAppNames } = await import('@/shared/contrib/miniAppActivation')
   const { MermaidDiagram } = await import('./MermaidDiagram')
   const source = 'pie\ntitle Example\n"A": 10'
   const svg = '<svg viewBox="0 0 500 300"><text>Example</text></svg>'
@@ -27,7 +27,7 @@ test('plugin actions receive the picture and owning chat, and are also offered i
     finish = resolve
   })
   const unbind = bindMiniAppUiTestDoubles()
-  setEnabledPluginNames(new Set(['picture-fixture']))
+  setEnabledMiniAppNames(new Set(['picture-fixture']))
   registerAction({
     id: 'picture-fixture:save',
     pluginName: 'picture-fixture',
@@ -88,7 +88,7 @@ test('plugin actions receive the picture and owning chat, and are also offered i
     await act(async () => root.unmount())
     host.remove()
     removeActionsOf('picture-fixture')
-    setEnabledPluginNames(null)
+    setEnabledMiniAppNames(null)
     unbind()
   }
 })

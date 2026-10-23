@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import os from 'node:os'
 import path from 'node:path'
+
+import { localixHome } from '../../../lib/env'
 import { isInsideWorkspace, outsideHomePathsInCommand, sessionScratchDir } from './workspace'
 
 describe('sessionScratchDir', () => {
@@ -24,6 +26,17 @@ describe('isInsideWorkspace', () => {
     expect(isInsideWorkspace(root, '/Users/me/other/a.ts')).toBe(false)
     expect(isInsideWorkspace(root, '/Users/me/project/../escape.txt')).toBe(false)
     expect(isInsideWorkspace(root, '/etc/passwd')).toBe(false)
+  })
+
+  test('the mini app the agent builds, and its own plugins and skills, are always reachable', () => {
+    const project = '/Users/me/project'
+    for (const dir of ['mini-apps/gpu-monitor/ui/register.tsx', 'plugins/lint/SKILL.md']) {
+      expect(isInsideWorkspace(project, path.join(localixHome(), dir))).toBe(true)
+    }
+    // Its data and the database are not authored by the agent.
+    expect(
+      isInsideWorkspace(project, path.join(localixHome(), 'mini-apps-data/x/state.json')),
+    ).toBe(false)
   })
 
   test('a "/" or empty root means no boundary (always inside)', () => {

@@ -1,7 +1,7 @@
 import { Component, useEffect, useSyncExternalStore, type ReactNode } from 'react'
 import type { StatusItemContribution, StatusItemState } from '@localixai/mini-app-sdk/ui'
 
-import { isMiniAppContributionEnabled, subscribePluginActivation } from './miniAppActivation'
+import { isMiniAppContributionEnabled, subscribeMiniAppActivation } from './miniAppActivation'
 import {
   isStatusItemPresent,
   reportStatusItemPresence,
@@ -30,7 +30,7 @@ function announceStatusItems(): void {
 
 // Enabling or disabling a plugin changes what the gate lets through without touching the registry,
 // so the activation store is the second source this signal has to carry.
-subscribePluginActivation(announceStatusItems)
+subscribeMiniAppActivation(announceStatusItems)
 
 export function registerStatusItem(contribution: StatusItemContribution): void {
   const existing = contributions.get(contribution.id)
@@ -70,7 +70,7 @@ function statusItemsVersion(): number {
 /**
  * The re-read signal every host bar needs: a registration, or a change to which plugins are on.
  *
- * It replaces `usePluginContribVersion()`, which was the wrong store for this. That counter
+ * It replaces `useMiniAppContribVersion()`, which was the wrong store for this. That counter
  * advances only when the capability SET moves, so a relaunch that restores the previous session's
  * plugins — same revision, same names — published its snapshot without ever bumping it, and the
  * titlebar stayed empty for the whole session.

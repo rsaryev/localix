@@ -28,7 +28,7 @@ back on the board.
 
 ## When the board wakes you
 
-A message from the "battleship" plugin, not typed by the user, means it is your shot. It carries
+A message from the "battleship" mini app, not typed by the user, means it is your shot. It carries
 what happened since your last shot, your picture of the user's board (`.` unknown, `o` water, `x`
 hit, `#` sunk) and, when a ship is hit but afloat, the cells beside it worth aiming at.
 

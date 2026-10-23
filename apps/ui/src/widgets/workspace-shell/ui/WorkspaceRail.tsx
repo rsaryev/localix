@@ -36,7 +36,7 @@ interface WorkspaceRailProps {
   /** Dismiss one recent slot. */
   onRemoveRecent?: (id: string) => void
   onResetRail: () => void
-  pluginsPending: boolean
+  miniAppsPending: boolean
   onCapabilitiesClick: () => void
   dnd: UseRailDnd
   /** Fixed destinations that stay with chat navigation at the top. */
@@ -77,7 +77,7 @@ export function WorkspaceRail({
   onMoveWithinBar,
   onRemoveRecent,
   onResetRail,
-  pluginsPending,
+  miniAppsPending,
   onCapabilitiesClick,
   dnd,
   topRailActions,
@@ -204,7 +204,7 @@ export function WorkspaceRail({
         onUnpinTool={onUnpinTool}
         recentEntries={recentEntries}
         seenIds={seenIds}
-        pluginsPending={pluginsPending}
+        miniAppsPending={miniAppsPending}
         onCapabilitiesClick={onCapabilitiesClick}
         onMoveToArea={onMoveToArea}
         onMoveWithinBar={onMoveWithinBar}

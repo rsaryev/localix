@@ -163,7 +163,7 @@ encoded keys.
 - [Skills](skills.md)
 - [Sessions and projects](sessions-and-projects.md)
 - [Context checkpoints](context-checkpoints.md)
-- [Mini apps](../extending/plugins.md)
+- [Mini apps](../extending/mini-apps.md)
 
 ## Source of truth
 
@@ -183,7 +183,7 @@ encoded keys.
   and
   [filesystem discovery](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/agent-core/skill-discovery.ts)
 - [Completion hook invocation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/finalize.ts)
-- [Memory provider lifecycle](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/memory-hooks.ts)
+- [Memory provider lifecycle](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/memory-hooks.ts)
 - [Learning mini app manifest](https://github.com/rsaryev/localix/blob/main/mini-apps/learning/mini-app.json),
   [course service](https://github.com/rsaryev/localix/blob/main/mini-apps/learning/backend/service.ts),
   and

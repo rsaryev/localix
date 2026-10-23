@@ -14,8 +14,8 @@ import { miniAppViewRailAction } from './miniAppViewRailAction'
 import { requestConfirmation } from '@/shared/lib/confirmAction'
 import { railViewletRegistry } from '@/shared/contrib/uiContrib'
 import {
-  pluginActivationVersion,
-  subscribePluginActivation,
+  miniAppActivationVersion,
+  subscribeMiniAppActivation,
 } from '@/shared/contrib/miniAppActivation'
 import { CMD } from '@/shared/lib/keybindings'
 import type { MiniAppViewSpec } from '@/shared/api/contracts'
@@ -131,7 +131,10 @@ export function useRailActions({
   // The registry is a mutable singleton, not React state. Without this explicit
   // activation dependency, React Compiler can retain the empty cold-start list
   // until an unrelated interaction.
-  const activationVersion = useSyncExternalStore(subscribePluginActivation, pluginActivationVersion)
+  const activationVersion = useSyncExternalStore(
+    subscribeMiniAppActivation,
+    miniAppActivationVersion,
+  )
   const contributedViewlets = useMemo(
     () =>
       railViewletRegistry.list().map((v) => ({

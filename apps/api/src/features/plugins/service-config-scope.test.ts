@@ -10,7 +10,7 @@ import { migrateToLatest } from '../../db/migrator'
 import { UNDECIDED } from '../capabilities/availability'
 import { pluginDataDir } from '../ext/user-config-substitute'
 import { buildPluginCatalog } from './catalog'
-import { observePluginConfigVault, type PluginConfigVault } from './config-vault'
+import { observeOptionVault, type OptionVaultPort } from '../ext/option-vault'
 import { createPluginService } from './service'
 
 // Where a plugin's state lives and when it goes: one userConfig per user for a user-scope plugin,
@@ -36,7 +36,7 @@ afterAll(() => {
     else process.env[key] = value
 })
 afterEach(async () => {
-  observePluginConfigVault(undefined)
+  observeOptionVault(undefined)
   if (db) await destroyDatabase(db)
   db = undefined
 })
@@ -106,13 +106,13 @@ describe('a user-scope plugin’s state', () => {
 
   test('a sensitive value goes to the vault and reaches the plugin through the catalog', async () => {
     const held = new Map<string, string>()
-    const vault: PluginConfigVault = {
+    const vault: OptionVaultPort = {
       store: async (_u, key, secret) => void held.set(key, secret),
       resolve: async (_u, key) => held.get(key) ?? null,
       versions: async () => new Map([...held.keys()].map((key) => [key, 1])),
       remove: async (_u, key) => void held.delete(key),
     }
-    observePluginConfigVault(vault)
+    observeOptionVault(vault)
     const { db, service, home } = await setup()
     const saved = await service.setConfig('u1', {
       name: 'cfg',
@@ -138,7 +138,7 @@ describe('a user-scope plugin’s state', () => {
 
   test('a plugin cannot read another plugin’s secret by saving its handle', async () => {
     const held = new Map<string, string>()
-    observePluginConfigVault({
+    observeOptionVault({
       store: async (_u, key, secret) => void held.set(key, secret),
       resolve: async (_u, key) => held.get(key) ?? null,
       versions: async () => new Map([...held.keys()].map((key) => [key, 1])),
@@ -171,7 +171,7 @@ describe('a user-scope plugin’s state', () => {
     // What an older build left: the token in plain text, and a stale per-project copy.
     await repo.patchConfig('u1', '', 'cfg', { api_url: 'https://new', api_token: 'OLD-PLAIN' })
     await repo.patchConfig('u1', 'p1', 'cfg', { api_url: 'https://stale' })
-    observePluginConfigVault({
+    observeOptionVault({
       store: async (_u, key, secret) => void held.set(key, secret),
       resolve: async (_u, key) => held.get(key) ?? null,
       versions: async () => new Map([...held.keys()].map((key) => [key, 1])),
@@ -213,7 +213,7 @@ describe('a user-scope plugin’s state', () => {
       .set({ source: '/old/src' })
       .where('project_id', '=', 'p1')
       .execute()
-    observePluginConfigVault({
+    observeOptionVault({
       store: async (_u, key, secret) => void held.set(key, secret),
       resolve: async (_u, key) => held.get(key) ?? null,
       versions: async () => new Map([...held.keys()].map((key) => [key, 1])),

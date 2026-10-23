@@ -1,6 +1,6 @@
 # Resumes
 
-The bundled Resumes plugin gives you and the agent one editable resume in your project. Open **All
+The bundled Resumes mini app gives you and the agent one editable resume in your project. Open **All
 tools → Resumes** to browse your library, search by name, or create a resume. The library uses
 compact rows with a title, optional target role, edit date, and actions. Saved resumes live in
 project files, so ordinary agent file tools and the editor work on the same content.
@@ -55,8 +55,8 @@ Save your draft before exporting. The editor and library offer:
 | Localix JSON / YAML   | The complete structured resume for backup and reimport. These files include role context.                                                                            |
 | Lanjut JSON           | Version 1 interchange for representable reference fields. Export rejects fields it cannot preserve; use Localix JSON or YAML for a complete backup.                  |
 
-PDF and Word generation use the bundled [Documents plugin](documents.md). PDF fonts are embedded and
-checked for missing characters; supported fallback glyphs preserve Cyrillic even when the chosen
+PDF and Word generation use the bundled [Documents mini app](documents.md). PDF fonts are embedded
+and checked for missing characters; supported fallback glyphs preserve Cyrillic even when the chosen
 font lacks them. Unsupported glyphs produce an error instead of a corrupted export. A template does
 not guarantee acceptance by an applicant tracking system.
 
@@ -93,7 +93,7 @@ downloads.
 ## Related guides
 
 - [Documents](documents.md)
-- [Plugin system](../extending/plugins.md)
+- [Build a mini app](../extending/mini-apps.md)
 - [Workspace](workspace.md)
 - [Sessions and storage](sessions-and-projects.md)
 

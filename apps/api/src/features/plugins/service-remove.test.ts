@@ -27,10 +27,10 @@ const exists = (path: string) =>
   )
 
 async function writePlugin(dir: string, name: string) {
-  await mkdir(dir, { recursive: true })
+  await mkdir(join(dir, '.claude-plugin'), { recursive: true })
   await writeFile(
-    join(dir, 'plugin.json'),
-    JSON.stringify({ name, version: '1.0.0', apiVersion: 1, description: `${name} plugin` }),
+    join(dir, '.claude-plugin', 'plugin.json'),
+    JSON.stringify({ name, version: '1.0.0', description: `${name} plugin` }),
   )
 }
 

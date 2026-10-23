@@ -3,7 +3,7 @@ import type { McpServerRecord } from '../mcp/repository'
 import { scalarConfig } from '../capabilities/source-repository'
 import { buildPluginCatalog } from './catalog'
 import { resolvePluginConfig } from './config'
-import { pluginLoadBlockReason } from './loadable'
+import { pluginLoadBlockReason } from './load-block'
 import type { DeclarativeLoadOptions } from './loader-declarative'
 import { buildMcpRecords } from './mcp'
 

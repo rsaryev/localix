@@ -201,7 +201,14 @@ export function settingsEntityUiUri(tab: string, entity: string, id: string, sco
   })
 }
 
-export type CapabilityResourceKind = 'plugin' | 'skill' | 'tool' | 'agent' | 'mcp' | 'view'
+export type CapabilityResourceKind =
+  | 'plugin'
+  | 'mini-app'
+  | 'skill'
+  | 'tool'
+  | 'agent'
+  | 'mcp'
+  | 'view'
 
 export interface CapabilityResource {
   kind: CapabilityResourceKind
@@ -214,6 +221,7 @@ export interface CapabilityResource {
 
 const CAPABILITY_KINDS = new Set<CapabilityResourceKind>([
   'plugin',
+  'mini-app',
   'skill',
   'tool',
   'agent',
@@ -271,12 +279,14 @@ export function parseCapabilityResourceUri(uri: string): CapabilityResource | nu
 export function capabilitySettingsUiUri(resource: CapabilityResource): string {
   const target = {
     plugin: ['plugins', 'plugin'],
+    'mini-app': ['mini-apps', 'mini-app'],
     skill: ['skills', 'skill'],
     tool: ['tools', 'tool'],
     agent: ['agents', 'agent'],
     mcp: ['mcp', 'mcp'],
   } as const
-  if (resource.kind === 'view') return settingsUiUri('plugins', { scope: resource.scope })
+  // A view is one of a mini app's screens: its settings are the mini app's.
+  if (resource.kind === 'view') return settingsUiUri('mini-apps', { scope: resource.scope })
   const [tab, entity] = target[resource.kind]
   return settingsEntityUiUri(tab, entity, resource.id, resource.scope)
 }

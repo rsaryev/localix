@@ -40,17 +40,17 @@ it created (`overlay.ts`), and an outbox for ops the server has not acknowledged
 Every fact a person is told about belongs to exactly one class, and the class decides where it goes,
 how loud it is and how it is worded. A new producer picks its row here before it picks a title.
 
-| Class                                                            | Channel                                                                                | Severity                                             | Persistence    | Wording                                                     |
-| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------- | -------------- | ----------------------------------------------------------- |
-| Person must act now (approval, plan, mention, refused key)       | Attention registry: inline card, dialog, journal row with a live action, banner, dock  | `warning`                                            | Until answered | Imperative; names who asks                                  |
-| Person should know later (a run or child ended while away)       | Journal; a banner only for an error while unfocused                                    | `success` / `error` / `info` for a stop              | Durable        | Past tense; a failure is "Could not …" with the reason      |
-| System condition (MCP, LSP, plugin, provider, realtime)          | One standing journal row, plus the surface's own problem line and the settings rollup  | `error` = unavailable, `warning` = degraded          | Until fixed    | "Could not connect to …" / "… stopped"; at least one action |
-| Feedback to the person's own action (success, no-op, validation) | Transient feedback at the control                                                      | `info` / `success`                                   | Ephemeral      | Short, no full stop                                         |
-| The person's own action failed                                   | The control's problem line when it has one, else a journal row — never both            | `error`                                              | Durable        | "Could not <verb> <object>", the reason, an action          |
-| Form validation                                                  | Field error with `aria-invalid`                                                        | `error`                                              | View state     | A sentence about the field                                  |
-| Background progress                                              | Composer strips, work strip, status bar                                                | Any tone                                             | Live           | Present progressive                                         |
-| Conversation fact                                                | Transcript notice (and its model binding)                                              | Any tone                                             | Durable        | A full sentence ending in a full stop                       |
-| Agent-facing fact (a refusal, an unanswered card, the breaker)   | The model's text is unchanged; the person reads a separate `personMessage` on the card | A person's decline is `neutral`; policy is `warning` | Durable item   | "You declined bash", "No one answered in 5 minutes"         |
+| Class                                                             | Channel                                                                                | Severity                                             | Persistence    | Wording                                                     |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------- | -------------- | ----------------------------------------------------------- |
+| Person must act now (approval, plan, mention, refused key)        | Attention registry: inline card, dialog, journal row with a live action, banner, dock  | `warning`                                            | Until answered | Imperative; names who asks                                  |
+| Person should know later (a run or child ended while away)        | Journal; a banner only for an error while unfocused                                    | `success` / `error` / `info` for a stop              | Durable        | Past tense; a failure is "Could not …" with the reason      |
+| System condition (MCP, LSP, plugin, mini app, provider, realtime) | One standing journal row, plus the surface's own problem line and the settings rollup  | `error` = unavailable, `warning` = degraded          | Until fixed    | "Could not connect to …" / "… stopped"; at least one action |
+| Feedback to the person's own action (success, no-op, validation)  | Transient feedback at the control                                                      | `info` / `success`                                   | Ephemeral      | Short, no full stop                                         |
+| The person's own action failed                                    | The control's problem line when it has one, else a journal row — never both            | `error`                                              | Durable        | "Could not <verb> <object>", the reason, an action          |
+| Form validation                                                   | Field error with `aria-invalid`                                                        | `error`                                              | View state     | A sentence about the field                                  |
+| Background progress                                               | Composer strips, work strip, status bar                                                | Any tone                                             | Live           | Present progressive                                         |
+| Conversation fact                                                 | Transcript notice (and its model binding)                                              | Any tone                                             | Durable        | A full sentence ending in a full stop                       |
+| Agent-facing fact (a refusal, an unanswered card, the breaker)    | The model's text is unchanged; the person reads a separate `personMessage` on the card | A person's decline is `neutral`; policy is `warning` | Durable item   | "You declined bash", "No one answered in 5 minutes"         |
 
 Rules that make the table hold:
 
@@ -71,7 +71,7 @@ Rules that make the table hold:
   `retry | open-settings:<tab>[/<anchor>] | sign-in:<connection> | restart:<subject>`, resolved to
   `localix://` destinations by `apps/api/src/features/notifications/recovery.ts` (exported as
   `@localixai/api/recovery`). A condition cannot be raised without at least one action:
-  `ConditionRaise.actions` is a non-empty tuple. A plugin's problem in a transcript is a neutral
+  `ConditionRaise.actions` is a non-empty tuple. A mini app's problem in a transcript is a neutral
   pointer to the same settings row its condition carries, not a second warning.
 - **The person's sentence beside the model's.** A gate refusal carries `personMessage`
   (`apps/api/src/features/agent-core/permission-refusal-person.ts`); tool cards render it, and a
@@ -252,7 +252,7 @@ not each intermediate event state.
 ### Conditions and request failures
 
 [Notification problem contracts](notification-problems.md) define condition keys, recovery, request
-attribution, duplicate suppression, wording, and plugin labels. A problem's journal row must
+attribution, duplicate suppression, wording, and mini app labels. A problem's journal row must
 identify the failure it reports and settle when its owning condition clears.
 
 ## Configuration
@@ -293,8 +293,8 @@ is outside the shared `NotificationPreferences` contract.
   because nothing can tell a new row from one this window has not seen yet.
 - Desktop native delivery sends title and body only. Navigation, Retry, and Respond remain in the
   Event Center.
-- Plugin attribution reads the call stack. A publish that runs after an `await` outside
-  `runMiniAppAction`, or from a React effect in the shared `useProblemReport` hook, has no plugin
+- Mini app attribution reads the call stack. A publish that runs after an `await` outside
+  `runMiniAppAction`, or from a React effect in the shared `useProblemReport` hook, has no mini app
   frame on the stack; problem reports then fall back to their `scope`, toasts to no label.
 - Native banners still depend on shell support and operating-system permission. The shared router
   cannot prove that the operating system displayed a selected notification.
@@ -331,5 +331,6 @@ is outside the shared `NotificationPreferences` contract.
 - [Transport incidents](../../../apps/ui/src/shared/lib/notifications/journalIncident.ts)
 - [Server conditions](../../../apps/api/src/features/notifications/conditions/condition.ts)
 - [Plugin conditions](../../../apps/api/src/features/notifications/conditions/plugins.ts)
+- [Mini app conditions](../../../apps/api/src/features/notifications/conditions/mini-apps.ts)
 - [Headline wording guard](../../../apps/ui/src/shared/lib/notifications/wording.test.ts)
 - [Server agent-lifecycle producers](../../../apps/api/src/features/notifications/producers/index.ts)

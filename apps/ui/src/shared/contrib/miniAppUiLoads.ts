@@ -1,4 +1,4 @@
-import type { PluginRecord } from '@/shared/api/contracts'
+import type { MiniAppRecord } from '@/shared/api/contracts'
 import {
   cancelStartupRetry,
   scheduleStartupRetry,
@@ -9,7 +9,7 @@ import {
 
 /**
  * Which enabled plugins' UI is still due in this page, who owns settling it, and the retry of a
- * first load that failed — split out of `enabledPlugins.ts`, which owns the capability snapshot.
+ * first load that failed — split out of `enabledMiniApps.ts`, which owns the capability snapshot.
  *
  * Each rule answers a failure:
  *  - A FAILED import is not a settle. It was counted as one, so once the other plugins loaded,
@@ -24,12 +24,12 @@ import {
  */
 
 /** Told as each plugin's UI work ends; `ok` is whether its wanted revision is now registered. */
-export type PluginUiSettled = (pluginName: string, ok: boolean) => void
+export type MiniAppUiSettled = (pluginName: string, ok: boolean) => void
 
 /** Converge plugin UI on the snapshot's plugin records (the runtime keeps the enabled ones). */
-export type PluginUiDiscovery = (
-  plugins: readonly PluginRecord[],
-  settled?: PluginUiSettled,
+export type MiniAppUiDiscovery = (
+  plugins: readonly MiniAppRecord[],
+  settled?: MiniAppUiSettled,
 ) => Promise<void>
 
 /** Further passes a failed first load gets (100 ms … 5 s apart, ~9.5 s in all) before `failed`. */
@@ -42,7 +42,7 @@ let failed = new Set<string>()
 let owner = 0
 let stopRetry: (() => void) | null = null
 
-export function pluginUiPending(): { loading: ReadonlySet<string>; failed: ReadonlySet<string> } {
+export function miniAppUiPending(): { loading: ReadonlySet<string>; failed: ReadonlySet<string> } {
   return { loading, failed }
 }
 
@@ -50,7 +50,7 @@ export function pluginUiPending(): { loading: ReadonlySet<string>; failed: Reado
  * Take ownership for a publish of `plugins`, before it: the first loads it still owes become
  * `loading`, and any earlier pass — its settles and its retry timer — is disowned.
  */
-export function claimPluginUiLoads(plugins: readonly PluginRecord[]): number {
+export function claimMiniAppUiLoads(plugins: readonly MiniAppRecord[]): number {
   owner += 1
   stopRetry?.()
   stopRetry = null
@@ -67,17 +67,17 @@ export function claimPluginUiLoads(plugins: readonly PluginRecord[]): number {
  * retries on the startup backoff. Resolves when the FIRST pass ends. `changed` hears every
  * transition of the pending sets and is told when nothing is loading any more.
  */
-export async function runPluginUiLoads(
+export async function runMiniAppUiLoads(
   claim: number,
-  plugins: readonly PluginRecord[],
-  discover: PluginUiDiscovery,
+  plugins: readonly MiniAppRecord[],
+  discover: MiniAppUiDiscovery,
   changed: (drained: boolean) => void,
   schedule: StartupRetrySchedule = scheduleStartupRetry,
   cancel: StartupRetryCancel = cancelStartupRetry,
 ): Promise<void> {
   const owns = () => claim === owner
   const failedThisPass = new Set<string>()
-  const settled: PluginUiSettled = (name, ok) => {
+  const settled: MiniAppUiSettled = (name, ok) => {
     if (!owns()) return
     if (!ok) {
       if (loading.has(name)) failedThisPass.add(name)
@@ -116,7 +116,7 @@ export async function runPluginUiLoads(
 }
 
 /** Test seam: forget every load (does not notify). */
-export function __resetPluginUiLoads(): void {
-  claimPluginUiLoads([])
+export function __resetMiniAppUiLoads(): void {
+  claimMiniAppUiLoads([])
   everLoaded.clear()
 }

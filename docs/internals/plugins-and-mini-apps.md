@@ -35,7 +35,7 @@ This page is the contract for the split. The status table at the end says what i
 | Format   | `packages/claude-plugin` (`@localixai/claude-plugin`): Claude Code's documented format.  |
 | Runtime  | `apps/api/src/features/plugins/`: discovery, loading, marketplaces, enable state.        |
 | Disk     | `~/.localix/plugins/<name>/`, `<project>/.localix/plugins/<name>/`, plugin data folders. |
-| Surfaces | `/rpc/plugins`, Settings → Plugins, `/plugin`.                                           |
+| Surfaces | `/rpc/plugins`, Settings → Capabilities → Plugins, `/plugin`.                            |
 | Agent    | Skills, commands and agents, namespaced `/<plugin>:<name>` as in Claude Code.            |
 
 A part Claude Code defines and Localix does not run is reported in the plugin's validation, never
@@ -72,72 +72,108 @@ chess/
 | SDK      | `packages/mini-app-sdk` (`@localixai/mini-app-sdk`): manifest, backend and UI contracts. The host serves its modules. |
 | Runtime  | `apps/api/src/features/mini-apps/`: catalog, install and update, backend host, UI artifacts, views, authoring.        |
 | Disk     | `~/.localix/mini-apps/<name>/` (the installed build) and `~/.localix/mini-apps-data/<name>/` (its state).             |
-| Surfaces | `/rpc/mini-apps`, Settings → Mini apps, `/mini-app`.                                                                  |
+| Surfaces | `/rpc/mini-apps`, Settings → Capabilities → Mini apps, `/mini-app`.                                                   |
 | Agent    | Backend tools, `guide.md`, commands, the `mini_app_build` tool.                                                       |
 
-### Distribution
+### State and events
 
-The source of every first-party mini app stays in `mini-apps/` of this repository. Localix does not
-ship them; a release publishes them.
+Mini apps follow the [architecture](architecture/README.md) like any owned model (P5, P7, P11):
 
-1. **Release.** CI builds each mini app into an archive: the backend bundle, the UI artifact,
-   `mini-app.json`, `guide.md` and the icon. Nothing in it needs a build tool or `node_modules` on
-   the person's machine. Beside the archives it publishes `catalog.json`:
+- `features/mini-apps` is the one owner of the `mini-app` entity, `{ id: <name>, scope }`. Every
+  install, update, removal and settings change records that notice; whether one may run is a
+  `capability.rule` notice (`mini-app:<name>`).
+- The relay turns a `mini-app` notice into the `mini-apps` client resource and moves the capability
+  revision. Every surface (the rail, Settings → Mini apps, the catalog) re-reads the list from the
+  owner; none patches another's state (C6).
+- The backend host, the channel host and the contribution sync are reactors on those notices, each
+  with its own cursor, never a callback from the writer (C5).
+- An install or update in flight is in-memory status: it pokes `mini-app-installs`, and the client
+  pulls the progress rows, as the local models do.
 
-   ```json
-   {
-     "schemaVersion": 1,
-     "apps": [
-       {
-         "name": "chess",
-         "displayName": "Chess",
-         "version": "0.3.0",
-         "apiVersion": 1,
-         "category": "games",
-         "description": "Legal moves and agent-opponent play.",
-         "archive": { "url": "https://…/chess-0.3.0.zip", "bytes": 182340, "sha256": "…" }
-       }
-     ]
-   }
-   ```
+### Package format v1
 
+What a mini app is, fixed so a host can install, update and refuse one without running it:
+
+- **`mini-app.json`** (strict schema): `name` is the identity, `version` (semver) the only version,
+  `apiVersion` the host API it was built against.
+- **The archive** a catalog distributes: `mini-app.json`, `guide.md`, `guide/`, `icon.svg`,
+  `dist/backend/` and `dist/ui/`. Built code only: no source, no `node_modules`, nothing for the
+  person's machine to build.
+- **`.localix-install.json`**, written beside an installed copy: its source, version, sha256 and
+  install time. A folder without it is the person's own mini app, which no catalog updates or
+  removes.
+
+### Catalogs and sources
+
+A catalog is a `catalog.json` index of archives. It lists the first-party mini apps and, later,
+those of other authors; each entry names its publisher and whether it is **verified**:
+
+```json
+{
+  "schemaVersion": 1,
+  "apps": [
+    {
+      "name": "chess",
+      "displayName": "Chess",
+      "version": "0.3.0",
+      "apiVersion": 1,
+      "category": "games",
+      "description": "Legal moves and agent-opponent play.",
+      "publisher": { "name": "Localix", "verified": true },
+      "archive": { "url": "https://…/chess-0.3.0.zip", "bytes": 182340, "sha256": "…" }
+    }
+  ]
+}
+```
+
+| Source                | What it is                                                | Updates                     |
+| --------------------- | --------------------------------------------------------- | --------------------------- |
+| HTTPS catalog         | `catalog.json` and archives; Localix's own is the default | by version, automatically   |
+| Git repository        | a repository whose releases or tree hold the catalog      | by version, automatically   |
+| Local catalog folder  | `catalog.json` and archives on disk                       | by version, automatically   |
+| Local mini app folder | one mini app's source: developer mode                     | rebuilt by the host on save |
+
+Only developer mode builds on the person's machine; every other source ships built archives.
+
+### Releasing, installing, updating
+
+1. **Release.** The author raises `version`; packing (CI for the first-party ones) builds the
+   archive and writes its catalog entry. The same version with other content is refused by its
+   sha256.
 2. **Choose.** On first start, from the add button in the mini app rail, and in Settings → Mini
-   apps, the person picks what to install from the catalog. The three places show one catalog
-   component, and its install and update rows reuse the download progress the local models show.
+   apps, the person picks from the catalog. The three places show one catalog component: a store,
+   not a list — cards with the app's icon, name, description, category, publisher and verified mark,
+   filtered by category, each with Install, Remove or Update. Install and update reuse the download
+   progress the local models show.
 3. **Install.** One queue downloads each archive with progress (resumable, size-capped, verified
-   against the catalog's sha256 before anything is unpacked), unpacks it into a staging folder and
-   moves it into place in one rename. A failed or cancelled install leaves the previous build.
-4. **Update.** The catalog is checked periodically. A newer version with a compatible `apiVersion`
-   is offered with an Update action, or installed on its own when automatic updates are on. An
-   update replaces the build, never the data folder.
-5. **Create.** `mini_app_build` (and `/mini-app create`) forks the template into
-   `~/.localix/mini-apps/<name>/` and builds it with the host's build. A mini app the person made is
-   theirs: the catalog never updates or removes it.
-
-A mini app from the first-party catalog is trusted on install; one from any other source runs its
-backend and screens only after the person enables it.
+   against the catalog's sha256 before anything is unpacked), unpacks it beside the installed copy
+   and swaps it in with one rename. A failed install leaves the previous build.
+4. **Update.** Catalogs refresh on their own. A newer version with a compatible `apiVersion` is
+   installed automatically; an incompatible one says Localix needs updating. The previous build
+   stays until the new one loads, and comes back if it does not. An update never touches the app's
+   data folder.
+5. **Trust.** A verified app runs once installed. An unverified one is marked so in the catalog and
+   in Settings, and its backend and screens run only after the person allows it.
+6. **Create.** `mini_app_build` forks the template into `~/.localix/mini-apps/<name>/` and builds it
+   with the host's build: the person's own app, updated by no catalog.
 
 In development the catalog is built from the checkout, so a change to `mini-apps/` is installed
 without a release.
 
 ## Migration
 
-On the first start of a version with the split, once, and safe to run again:
-
-- The bundled copies earlier versions synchronized into `~/.localix/plugins/` are removed.
-- Each mini app the person made in `~/.localix/plugins/` moves to `~/.localix/mini-apps/`, rewritten
-  to `mini-app.json` and `guide.md`, with its imports moved to `@localixai/mini-app-sdk`. The
-  original is kept under `~/.localix/backups/`.
-- Mini app state moves from `plugin-state/` and `plugin-data/` to `mini-apps-data/`.
-- The first-party mini apps that were enabled are preselected in the picker.
+None: mini apps start clean. Their settings, secrets and data live under new names
+(`mini-app-option.`, `mini-app:` rules, `mini-apps-data/`); what earlier versions kept under the
+plugin names is no longer read. The managed copies earlier versions synchronized into
+`~/.localix/plugins/` are removed on start.
 
 ## Status
 
 | Phase | Change                                                                                               | State |
 | ----- | ---------------------------------------------------------------------------------------------------- | ----- |
 | 0     | This contract; Workflows removed.                                                                    | Done  |
-| 1     | `mini-app.json` and `guide.md`; the bundled mini apps converted; no `.claude-plugin/` in a mini app. |       |
-| 2     | `features/mini-apps` split from `features/plugins`; the composed manifest and legacy layout removed. |       |
-| 3     | Separate storage, records, routes, settings and model-facing names; the start-up migration.          |       |
+| 1     | `mini-app.json` and `guide.md`; the bundled mini apps converted; no `.claude-plugin/` in a mini app. | Done  |
+| 2     | `features/mini-apps` split from `features/plugins`; the composed manifest and legacy layout removed. | Done  |
+| 3     | Separate storage, records, routes, settings and model-facing names; the start-up migration.          | Doing |
 | 4     | Release archives, `catalog.json`, the install and update queue, the picker; nothing bundled.         |       |
 | 5     | Tests, guards, screenshots, docs and copy that assumed bundled mini apps.                            |       |

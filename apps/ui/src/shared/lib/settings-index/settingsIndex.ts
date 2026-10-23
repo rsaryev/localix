@@ -114,8 +114,17 @@ export const SETTINGS_INDEX: SettingsIndexEntry[] = [
     tab: 'plugins',
     tabLabel: 'Capabilities',
     title: 'Plugins',
-    description: 'Drop-in plugins: tools, skills, channels. Enable is the trust gate.',
-    keywords: ['plugin', 'extension', 'marketplace', 'enable'],
+    description: 'Claude Code plugins: skills, commands, agents, hooks, MCP and LSP servers.',
+    keywords: ['plugin', 'claude code', 'marketplace', 'enable'],
+  },
+  {
+    id: 'cap.mini-apps',
+    tab: 'mini-apps',
+    tabLabel: 'Capabilities',
+    title: 'Mini apps',
+    description:
+      'Apps with their own screens and tools: turn them on or off, change their settings.',
+    keywords: ['mini app', 'app', 'screens', 'enable'],
   },
   {
     id: 'cap.rules',

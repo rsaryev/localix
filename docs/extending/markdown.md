@@ -1,10 +1,10 @@
 # Shared Markdown
 
 The workspace and this documentation use `@localixai/markdown`. The package owns the syntax; each
-host chooses its links, images and reading layout. Plugins use the host's
+host chooses its links, images and reading layout. Mini apps use the host's
 [MarkdownRenderer](ui-kit.md) from the UI kit.
 
-## Render Markdown in a plugin
+## Render Markdown in a mini app
 
 Use the renderer served by the running host:
 

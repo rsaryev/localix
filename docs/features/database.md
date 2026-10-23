@@ -295,7 +295,7 @@ Connections saved before pinning existed are pinned on their next successful con
 ## Related guides
 
 - [Secrets](secrets.md)
-- [Mini apps](../extending/plugins.md)
+- [Mini apps](../extending/mini-apps.md)
 - [Workspace](workspace.md)
 
 ## Source of truth

@@ -6,12 +6,12 @@ import { failureSentence } from '@/shared/api/internal'
 import { shouldSurfaceStartupFailure, startStartupRetry } from '@/shared/lib/startupRetry'
 import {
   adoptCapabilitySnapshot,
-  pluginContribSnapshot,
-  pluginCapabilityVersion,
-  pluginContribScope,
-  refetchActivePluginContrib,
-  subscribePluginContrib,
-} from './enabledPlugins'
+  miniAppContribSnapshot,
+  miniAppCapabilityVersion,
+  miniAppContribScope,
+  refetchActiveMiniAppContrib,
+  subscribeMiniAppContrib,
+} from './enabledMiniApps'
 import { trackCapabilityWrite } from './capabilityWrites'
 
 /**
@@ -29,7 +29,7 @@ import { trackCapabilityWrite } from './capabilityWrites'
  *    the project the workbench is showing cost ZERO extra requests;
  *  - any other scope is fetched once and shared by every reader of that scope, with
  *    concurrent readers joining the in-flight request rather than starting their own;
- *  - a capability mutation bumps `pluginCapabilityVersion`, which marks every cached
+ *  - a capability mutation bumps `miniAppCapabilityVersion`, which marks every cached
  *    scope stale, so nothing can serve a document from before a toggle.
  *
  * Entity BODIES are deliberately not here: a skill's content, a panel's or a view's
@@ -91,14 +91,14 @@ function setScope(scope: string, next: Partial<ScopeState>): void {
  * through the singleton; fetching it here too was a second request for the same answer.
  */
 function awaitingActiveDocument(scope: string): boolean {
-  const active = pluginContribScope()
-  if (active === undefined || pluginContribSnapshot().document) return false
+  const active = miniAppContribScope()
+  if (active === undefined || miniAppContribSnapshot().document) return false
   const { projectId, agentId } = parseCapabilityScope(scope)
   return !agentId && (projectId ?? null) === active
 }
 
 function activeDocumentFor(scope: string): CapabilitySnapshot | null {
-  const document = pluginContribSnapshot().document
+  const document = miniAppContribSnapshot().document
   if (!document) return null
   // An agent scope is never the workbench's: the singleton follows the open project, so a
   // document whose `agentId` is set could only match by accident.
@@ -130,7 +130,7 @@ export function peekCapabilities(scope: string, enabled = true): CapabilityCache
  */
 export function ensureCapabilities(scope: string): void {
   if (activeDocumentFor(scope) || awaitingActiveDocument(scope)) return
-  const version = pluginCapabilityVersion()
+  const version = miniAppCapabilityVersion()
   const state = scopes.get(scope)
   // Already current, or already loading for this very version: nothing to start. An
   // invalidation sets `loadedVersion` to -1, so it always falls through to a reload.
@@ -204,7 +204,7 @@ async function sendRuleChanges(
         snapshot: next,
         loading: false,
         error: null,
-        loadedVersion: pluginCapabilityVersion(),
+        loadedVersion: miniAppCapabilityVersion(),
       })
     }
   }
@@ -231,7 +231,7 @@ export function invalidateCapabilities(scope: string): void {
   // stale: duplicating an agent wrote the file, refreshed, and showed the old roster until
   // something unrelated happened to republish. A toggle never hit this because it adopts
   // the document the server hands back.
-  if (activeDocumentFor(scope)) void refetchActivePluginContrib()
+  if (activeDocumentFor(scope)) void refetchActiveMiniAppContrib()
   ensureCapabilities(scope)
   notify()
 }
@@ -251,7 +251,7 @@ function subscribe(listener: () => void): () => void {
   listeners.add(listener)
   // The active scope is served from the workbench singleton, so its publishes are
   // this cache's changes too.
-  const stopContrib = subscribePluginContrib(listener)
+  const stopContrib = subscribeMiniAppContrib(listener)
   return () => {
     listeners.delete(listener)
     stopContrib()
@@ -266,9 +266,9 @@ function subscribe(listener: () => void): () => void {
  */
 export function useCapabilities(scope: string, enabled = true): CapabilityCacheEntry {
   const version = useSyncExternalStore(
-    subscribePluginContrib,
-    pluginCapabilityVersion,
-    pluginCapabilityVersion,
+    subscribeMiniAppContrib,
+    miniAppCapabilityVersion,
+    miniAppCapabilityVersion,
   )
   const invalidation = useSyncExternalStore(
     subscribe,

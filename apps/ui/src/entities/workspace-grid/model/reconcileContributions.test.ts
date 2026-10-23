@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { miniAppUiHostFor } from '@/shared/contrib/host'
-import { setEnabledPluginNames } from '@/shared/contrib/miniAppActivation'
+import { setEnabledMiniAppNames } from '@/shared/contrib/miniAppActivation'
 import { reconcileUnavailableContributedItems, useGridStore } from './store'
 
 const KIND = 'reconcile-plugin:tab'
@@ -16,7 +16,7 @@ miniAppUiHostFor(PLUGIN).workItems.register({
 
 describe('reconcileUnavailableContributedItems', () => {
   beforeEach(() => {
-    setEnabledPluginNames(new Set([PLUGIN]))
+    setEnabledMiniAppNames(new Set([PLUGIN]))
     useGridStore.getState().resetLayout()
     useGridStore.getState().openItem(
       {
@@ -37,12 +37,12 @@ describe('reconcileUnavailableContributedItems', () => {
   })
 
   afterEach(() => {
-    setEnabledPluginNames(null)
+    setEnabledMiniAppNames(null)
     useGridStore.getState().resetLayout()
   })
 
   test('does not erase a tab while plugin activation is still pending', () => {
-    setEnabledPluginNames(null)
+    setEnabledMiniAppNames(null)
     reconcileUnavailableContributedItems()
     expect(useGridStore.getState().items['plugin:tab']).toBeDefined()
   })
@@ -56,24 +56,24 @@ describe('reconcileUnavailableContributedItems', () => {
       )
 
     // A plugin kind in a session takes its chat in its id (`tabIdInScope`).
-    setEnabledPluginNames(null)
+    setEnabledMiniAppNames(null)
     reconcileUnavailableContributedItems()
     expect(useGridStore.getState().items['lazy:tab@s1']).toBeDefined()
 
-    setEnabledPluginNames(new Set())
+    setEnabledMiniAppNames(new Set())
     reconcileUnavailableContributedItems()
     expect(useGridStore.getState().items['lazy:tab@s1']).toBeUndefined()
   })
 
   test('closes confirmed-disabled plugin tabs without touching other tabs', () => {
-    setEnabledPluginNames(new Set())
+    setEnabledMiniAppNames(new Set())
     reconcileUnavailableContributedItems()
     expect(useGridStore.getState().items['plugin:tab']).toBeUndefined()
     expect(useGridStore.getState().items['file:keep.sql']).toBeDefined()
   })
 
   test('does not leave a disabled plugin tab in the reopen history', () => {
-    setEnabledPluginNames(new Set())
+    setEnabledMiniAppNames(new Set())
     reconcileUnavailableContributedItems()
 
     expect(useGridStore.getState().closed.some(({ item }) => item.id === 'plugin:tab')).toBe(false)
@@ -97,7 +97,7 @@ describe('reconcileUnavailableContributedItems', () => {
         { group: 'group-root' },
       )
 
-    setEnabledPluginNames(new Set())
+    setEnabledMiniAppNames(new Set())
     reconcileUnavailableContributedItems()
 
     expect(useGridStore.getState().items['chat:s1']).toBeDefined()

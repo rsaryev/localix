@@ -32,7 +32,7 @@ const ACRONYMS = new Map([
 ])
 
 /** `webhook-notifier` → `Webhook Notifier`, `api` → `API`. */
-export function humanizePluginId(id: string): string {
+export function humanizeMiniAppId(id: string): string {
   return id
     .split(/[-_]+/u)
     .filter((word) => word.length > 0)
@@ -45,10 +45,10 @@ export function humanizePluginId(id: string): string {
 }
 
 /**
- * What to show for a plugin: its own `displayName`, or its id made readable. Never the raw id —
+ * What to show for a mini app: its own `displayName`, or its id made readable. Never the raw id —
  * a kebab identifier in a list of names looks like the app failed to load something.
  */
-export function pluginLabel(plugin: { name: string; displayName?: string | null }): string {
-  const declared = plugin.displayName?.trim()
-  return declared || humanizePluginId(plugin.name)
+export function miniAppLabel(app: { name: string; displayName?: string | null }): string {
+  const declared = app.displayName?.trim()
+  return declared || humanizeMiniAppId(app.name)
 }

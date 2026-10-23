@@ -19,7 +19,7 @@ import { openPageWorkItem } from './openPageWorkItem'
 interface ChatPagePaletteOptions {
   /** The chat the page has open — what a palette command that needs a chat acts on. */
   openSessionId: string | null
-  enabledPluginNames: Set<string> | null
+  enabledMiniAppNames: Set<string> | null
   thirdPartyViewsVersion: number
   switchSection: (id: string | null) => void
   setSidebarOpen: (open: boolean) => void
@@ -42,7 +42,7 @@ interface ChatPagePaletteOptions {
 /** Build and publish every workspace command exposed by the chat shell's palettes. */
 export function useChatPagePalette({
   openSessionId,
-  enabledPluginNames,
+  enabledMiniAppNames,
   thirdPartyViewsVersion,
   switchSection,
   setSidebarOpen,
@@ -64,7 +64,7 @@ export function useChatPagePalette({
   const uiLocationCommands = useUiLocationCommands(openSessionId)
   const contributedViewCommands = useMemo<PaletteCommand[]>(() => {
     // Snapshot identity invalidates the owner-aware registry after a hot toggle.
-    void enabledPluginNames
+    void enabledMiniAppNames
     return railSectionRegistry.list().flatMap((section) =>
       section.paletteLabel
         ? [
@@ -82,12 +82,12 @@ export function useChatPagePalette({
           ]
         : [],
     )
-  }, [enabledPluginNames, setSidebarOpen, switchSection])
+  }, [enabledMiniAppNames, setSidebarOpen, switchSection])
 
   // Palette opens are page commands: a view opens in the chat the page has open.
   const pluginApps = useInstalledPluginApps()
   const contributedViewletCommands = useMemo<PaletteCommand[]>(() => {
-    void enabledPluginNames
+    void enabledMiniAppNames
     return railViewletRegistry.list().flatMap((viewlet) => [
       {
         id: `view.${viewlet.kind}`,
@@ -119,7 +119,7 @@ export function useChatPagePalette({
           }))
         : []),
     ])
-  }, [enabledPluginNames, openSessionId, pluginApps])
+  }, [enabledMiniAppNames, openSessionId, pluginApps])
 
   const thirdPartyViewCommands = useMemo<PaletteCommand[]>(() => {
     // The builder reads the runtime store directly; this version is its invalidation token.

@@ -12,6 +12,7 @@ import type { createMemoryRepository } from '../../memory/repository'
 import type { createUsageRepository } from '../../usage/repository'
 import type { createMcpRepository } from '../../mcp/repository'
 import type { createPluginService } from '../../plugins/service'
+import type { MiniAppService } from '../../mini-apps/service'
 import type { PluginCommand } from '../../plugins/contracts'
 import type { AgentRunner } from '../runtime/agent-runner'
 import type {
@@ -58,6 +59,7 @@ export interface CommandHandlerContext {
   memoryRepo: ReturnType<typeof createMemoryRepository>
   mcpRepo: ReturnType<typeof createMcpRepository>
   pluginService: ReturnType<typeof createPluginService>
+  miniAppService: MiniAppService
   runner: AgentRunner
   now: () => string
   publishSession: (session: SessionRecord) => void

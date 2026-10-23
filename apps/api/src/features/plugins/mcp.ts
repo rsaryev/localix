@@ -2,7 +2,7 @@ import { errorMessage } from '../../lib/errors'
 import type { McpServerRecord } from '../mcp/repository'
 import { normalizeMcpServerEntry } from '../mcp/normalize'
 import type { DiscoveredPlugin } from './discovery'
-import { declaredConfigKeys, type MiniAppConfigValues } from './config'
+import { declaredConfigKeys, type PluginConfigValues } from './config'
 import { pluginDataDir, substituteMcpServerEntry } from '../ext/user-config-substitute'
 
 // Substitution internals + token collectors + `pluginDataDir` live in
@@ -10,7 +10,6 @@ import { pluginDataDir, substituteMcpServerEntry } from '../ext/user-config-subs
 // importers keep working.
 export {
   isPlainObject,
-  collectMcpConfigTokens,
   mcpShellFieldReferencingOption,
   pluginDataDir,
 } from '../ext/user-config-substitute'
@@ -26,7 +25,7 @@ export {
  * The caller merges this map AFTER the manifest-declared `env` block so that an explicit
  * manifest env var for the same name is never clobbered.
  */
-export function buildPluginOptionEnv(config: MiniAppConfigValues): Record<string, string> {
+export function buildPluginOptionEnv(config: PluginConfigValues): Record<string, string> {
   const out: Record<string, string> = {}
   for (const [key, val] of Object.entries(config)) {
     if (val !== undefined && val !== null) {
@@ -39,7 +38,7 @@ export function buildPluginOptionEnv(config: MiniAppConfigValues): Record<string
 /** Build synthesized MCP records for a plugin's bundled servers (config-substituted). */
 export function buildMcpRecords(
   plugin: DiscoveredPlugin,
-  config: MiniAppConfigValues,
+  config: PluginConfigValues,
   userId: string,
   timestamp: string,
   /** The home the plugin's data root lives in (→ `${CLAUDE_PLUGIN_DATA}`), as discovery was given. */
@@ -53,7 +52,7 @@ export function buildMcpRecords(
   const allowedEnvKeys = declaredConfigKeys(plugin.manifest)
   // Inject CC plugin path variables into config so they resolve in MCP entries.
   const dataDir = pluginDataDir(plugin.manifest.name, home)
-  const enrichedConfig: MiniAppConfigValues = {
+  const enrichedConfig: PluginConfigValues = {
     ...config,
     CLAUDE_PLUGIN_ROOT: plugin.dir,
     CLAUDE_PLUGIN_DATA: dataDir,
@@ -79,8 +78,8 @@ export function buildMcpRecords(
         raw,
         enrichedConfig,
         allowedEnvKeys,
-        // A plugin in the Claude Code format expands environment variables as Claude Code does.
-        plugin.layout === 'legacy' ? 'declared' : 'claude-code',
+        // A plugin expands environment variables as Claude Code does.
+        'claude-code',
       )
       // Namespace with the plugin name so tools surface as mcp_<plugin>_<server>_<tool>
       // and never collide with the user's own MCP servers.

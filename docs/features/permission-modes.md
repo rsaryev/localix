@@ -35,8 +35,8 @@ change.
   the conversation's own state — a board card, a game move, a delegated task — stay allowed.
 - **Bypass** removes tool `ask` rules about call classes, such as `outside-workspace` and
   `dangerous`, leaving the other rules to decide. It turns questions about a named tool or command
-  into `allow` at the same position, then appends a denial for catastrophic commands. Plugin, skill,
-  and agent admission rules are left unchanged.
+  into `allow` at the same position, then appends a denial for catastrophic commands. Mini app,
+  plugin, skill and agent admission rules are left unchanged.
 - **Autonomous** does what Bypass does, then refuses every call that waits on a person, and tells
   tools that raise their own cards (secrets, configuration proposals) that nobody will answer.
 

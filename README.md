@@ -45,7 +45,7 @@
   <tr>
     <td valign="top">
       <strong>Mini apps, built by the agent</strong><br>
-      Describe one with <code>/plugin create</code>: a meal log from photos, a dashboard, a game, wired to the agent, models and embeddings.<br>
+      Describe one with <code>/mini-app create</code>: a meal log from photos, a dashboard, a game, wired to the agent, models and embeddings.<br>
       <a href="docs/extending/build-with-the-agent.md">Build a mini app →</a>
     </td>
     <td valign="top">
@@ -63,24 +63,25 @@
     <td colspan="3" valign="top">
       <strong>Mini apps as Mac apps</strong><br>
       Install a mini app as its own app: a Dock icon, a window of its own, and the agent beside it.<br>
-      <a href="docs/features/plugin-apps.md">Plugin apps →</a>
+      <a href="docs/features/mini-app-mac-apps.md">Mini apps as Mac apps →</a>
     </td>
   </tr>
 </table>
 
 ## Plugins and mini apps
 
-An extension has two layers. The **plugin** is the Claude Code format — skills, commands, agents,
-hooks, mods, MCP and LSP servers — and the same folder loads in Claude Code and in Localix. The
-**mini app** is Localix's layer around it: screens, a backend, and agent tools over Localix's own
-APIs.
+Two separate kinds of extension that share nothing. A **plugin** is the Claude Code format — skills,
+commands, agents, hooks, mods, MCP and LSP servers — and the same folder loads in Claude Code and in
+Localix; manage plugins with `/plugin`. A **mini app** is Localix's own format: screens, a backend,
+and agent tools over Localix's own APIs; manage mini apps with `/mini-app` and in Settings →
+Capabilities → Mini apps ([mini apps](docs/features/mini-apps.md)).
 
 - **Claude Code plugins work as they are.** `/plugin install owner/repo` reads
   `.claude-plugin/plugin.json` in place, with Claude Code's rules for commands, skills, hooks and
   MCP servers; what Localix does not run yet is reported, never dropped silently. See
   [Claude Code plugins](docs/extending/claude-code-plugins.md).
-- **Mini apps, built by the agent.** Run `/plugin create <what it should do>`. The agent writes the
-  interface from the app's own components and the tools that go with it; each build is checked —
+- **Mini apps, built by the agent.** Run `/mini-app create <what it should do>`. The agent writes
+  the interface from the app's own components and the tools that go with it; each build is checked —
   style, types, builds and tests — and replaces the working one only when every check passes. See
   [build with the agent](docs/extending/build-with-the-agent.md).
 - **Any app, part of Localix.** A calorie counter needs only a `log_meal` tool and a screen: attach
@@ -92,13 +93,13 @@ APIs.
   [decision model](docs/features/decision-models.md) typed questions (`ctx.host.decisions`), index
   and search its own items by meaning (`ctx.host.semantic`), resolve vault secrets, keep data per
   chat or per project, follow its own changes and push live updates to its screen. See
-  [what you can build](docs/extending/plugins.md#what-you-can-build).
+  [what you can build](docs/extending/mini-apps.md#what-you-can-build).
 - **Its own Mac app.** **Install _App_ as App**, from the app's tab, its rail button or the command
   palette, makes `~/Applications/Localix Apps/<App>.app`: its own Dock icon, menu bar, Cmd+Tab entry
   and window, found by Spotlight and Launchpad. It opens the app's screen in a project of its own,
   with the agent beside it and its conversations as the app's history. Localix stays the host and
   starts in the background if it is not running. macOS only. See
-  [plugin apps](docs/features/plugin-apps.md).
+  [mini apps as Mac apps](docs/features/mini-app-mac-apps.md).
 
 ## On this computer
 

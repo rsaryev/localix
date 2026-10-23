@@ -19,7 +19,7 @@ export const workbenchEvidence = {
   kanban: ['task-board/board', 'features/task-board.md'],
   devops: ['devops/containers', 'features/devops.md'],
   trading: ['trading/market-chart', 'features/trading.md'],
-  template: ['system/overview', 'extending/plugins.md'],
+  template: ['system/overview', 'extending/mini-apps.md'],
   'game-2048': ['games/2048', 'features/game-2048.md'],
   chess: ['games/chess', 'features/games.md'],
   checkers: ['games/checkers', 'features/games.md'],

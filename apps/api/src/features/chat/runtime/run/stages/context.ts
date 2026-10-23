@@ -16,11 +16,11 @@ import { createParticipantLaneSnapshotRepository } from '../../../participant-la
 import { consoleWarnLogger } from '../../plugin-hook-logger'
 import { prepareRunContext } from '../../prompt-context'
 import { capabilitiesInMode } from '../../../../capabilities/permission-mode-policy'
-import { miniAppProblemNotice } from '../../plugin-problem-notice'
-import { resolveMiniAppSessionDataDir } from '../../../../plugins/session-storage'
-import { createMiniAppAgentDirectory } from '../../../../plugins/agent-directory'
-import { runHumanAssignedHooks } from '../../../../plugins/hooks'
-import type { LoadedMiniAppHook } from '../../../../plugins/loader'
+import { miniAppProblemNotice } from '../../mini-app-problem-notice'
+import { resolveMiniAppSessionDataDir } from '../../../../mini-apps/session-storage'
+import { createMiniAppAgentDirectory } from '../../../../mini-apps/agent-directory'
+import { runHumanAssignedHooks } from '../../../../mini-apps/hooks'
+import type { LoadedMiniAppHook } from '../../../../mini-apps/loader-contract'
 import { publishHumanAssignment } from '../human-assignment'
 import { applyPluginMainAgent } from '../plugin-main-agent'
 import { applyPluginSubagent } from '../plugin-subagent'
@@ -43,7 +43,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     deps.resolveHuman?.(user, projectId) ?? Promise.resolve(undefined)
   // Observer hooks (HITL, subagent stop, a card assigned to `@human`) are fire-and-forget: no loop latency. The
   // plugin hooks are bound once loaded below; a card assigned before then fires none.
-  let pluginHooks: readonly LoadedMiniAppHook[] = []
+  let miniAppHooks: readonly LoadedMiniAppHook[] = []
   const hookRunOptions: HookRunOptions = { sessionId: session.id, logger: consoleWarnLogger }
   const [context, humanProfile] = await Promise.all([
     prepareRunContext(
@@ -51,23 +51,24 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
         memoryRepo: env.memoryRepo,
         projectsRepo: env.projectsRepo,
         pluginRepo: env.pluginRepo,
+        miniAppRepo: env.miniAppRepo,
         contextSnapshots: runtimeState.contextSnapshots,
         laneSnapshots: createParticipantLaneSnapshotRepository(deps.db),
         runScopes: runtimeState.runScopes,
         now,
         logger: env.deps.logger,
-        // A plugin hook's user-facing problem rides the same frame a Claude Code hook's
+        // A mini app's user-facing problem rides the same frame a Claude Code hook's
         // non-blocking `systemMessage` does — one inline transcript warning the client renders —
-        // marked as a plugin's, so the client also keeps it as a standing Event Center row.
-        publishPluginProblem: ({ userId: owner, ...problem }) =>
+        // marked as the app's, so the client also keeps it as a standing Event Center row.
+        publishMiniAppProblem: ({ userId: owner, ...problem }) =>
           deps.streamRegistry.publish(owner, problem.sessionId, miniAppProblemNotice(problem)),
         // A tool's session folder, behind the same ownership gate a route's goes through: a
         // session that is gone (or never was the user's) rejects before anything is created. Pure
-        // in its arguments — the plugin context it lands on is shared by every run of the scope.
-        pluginSessionStorage: (pluginName) => ({
+        // in its arguments — the app context it lands on is shared by every run of the scope.
+        miniAppSessionStorage: (app) => ({
           resolveDataDir: (owner, sessionId) =>
             resolveMiniAppSessionDataDir({
-              pluginName,
+              app,
               userId: owner,
               sessionId,
               authorize: async (user, session) => {
@@ -76,9 +77,9 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
               },
             }),
         }),
-        // The agents a plugin tool may name, behind the same ownership gate: the session is read
-        // for the user first, then only the enabled agents of its scope are listed.
-        pluginAgentDirectory: createMiniAppAgentDirectory({
+        // The agents a mini app tool may name, behind the same ownership gate: the session is
+        // read for the user first, then only the enabled agents of its scope are listed.
+        miniAppAgentDirectory: createMiniAppAgentDirectory({
           sessionProject: async (user, session) => {
             const record = await env.repo.getSession(user, session)
             return record ? (record.projectId ?? null) : undefined
@@ -98,7 +99,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
                 streamRegistry: deps.streamRegistry,
                 notifications: deps.notifications,
                 onHumanAssigned: (event) =>
-                  void runHumanAssignedHooks(pluginHooks, event, hookRunOptions),
+                  void runHumanAssignedHooks(miniAppHooks, event, hookRunOptions),
               },
               user,
               { sessionId, messageId: notice.key, from: notice.from ?? '', text: notice.text },
@@ -119,7 +120,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     // Volatile, not frozen: it rides `# Conversation participants`, so an edit reaches the next turn.
     human(userId, session.projectId ?? null),
   ])
-  const { defaultCwd, loadedPlugins } = context
+  const { defaultCwd, loadedPlugins, loadedMiniApps } = context
   // A plugin's default `agent` setting runs the default agent's chat as that plugin agent, on its
   // model unless the person picked one — settled before anything below reads the turn's model.
   // A child delegated as a plugin agent type runs as that agent on every run (`plugin-subagent.ts`).
@@ -131,13 +132,13 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     host: turn.policy.host.kind,
   })
   await adoptPluginAgentModel(frame, turn, main.mainAgent)
-  frame.teardown.pluginHooks = loadedPlugins.hooks
+  frame.teardown.miniAppHooks = loadedMiniApps.hooks
   frame.teardown.defaultCwd = defaultCwd
-  pluginHooks = loadedPlugins.hooks
+  miniAppHooks = loadedMiniApps.hooks
 
-  // Plugin onSessionStart hooks — once per session, best-effort, non-blocking.
+  // Mini app onSessionStart hooks — once per session, best-effort, non-blocking.
   fireSessionStartHooks({
-    hooks: loadedPlugins.hooks,
+    hooks: loadedMiniApps.hooks,
     sessionId: session.id,
     startedSessions: runtimeState.miniAppStartedSessions,
   })

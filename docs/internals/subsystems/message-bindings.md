@@ -2,7 +2,7 @@
 
 Message bindings are the persisted assets, captured context, and invocation metadata attached to a
 chat message. Use this page when changing message transport, capture, replay, editing, model
-history, plugin hooks, or search indexing.
+history, mini app hooks, or search indexing.
 
 ## Terminology
 
@@ -17,14 +17,14 @@ history, plugin hooks, or search indexing.
 
 ## What you can do
 
-| Operation                    | Mechanism                                                                    | Boundary                                                           |
-| ---------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Attach media or text         | Asset variants travel in the message's single `bindings` array               | A `path` binding carries a host path, not inline file bytes        |
-| Link current context         | The chat service resolves context targets before accepting the user turn     | Capture can finish without an admitted contribution                |
-| Invoke a skill or command    | One visible user message carries one model-only invocation instruction       | Editing that message removes every invocation binding              |
-| Preserve replay identity     | The resolved binding array is stored in `agent_messages.payload_json`        | Mutable context is not fetched again during replay or regeneration |
-| Add assistant deliverables   | Native plugin hooks append validated bindings before the final message write | Plugin output is capped and malformed entries are dropped          |
-| Exchange channel attachments | Channel input and output use `MessageAttachment[]`                           | Channel contracts do not carry context or invocation bindings      |
+| Operation                    | Mechanism                                                                | Boundary                                                           |
+| ---------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| Attach media or text         | Asset variants travel in the message's single `bindings` array           | A `path` binding carries a host path, not inline file bytes        |
+| Link current context         | The chat service resolves context targets before accepting the user turn | Capture can finish without an admitted contribution                |
+| Invoke a skill or command    | One visible user message carries one model-only invocation instruction   | Editing that message removes every invocation binding              |
+| Preserve replay identity     | The resolved binding array is stored in `agent_messages.payload_json`    | Mutable context is not fetched again during replay or regeneration |
+| Add assistant deliverables   | Mini app hooks append validated bindings before the final message write  | Mini app output is capped and malformed entries are dropped        |
+| Exchange channel attachments | Channel input and output use `MessageAttachment[]`                       | Channel contracts do not carry context or invocation bindings      |
 
 The [context system](context-system.md) owns Fabric capture, absence notes, admission, and tool
 source provenance. [Active-tab context](active-tab-context.md) owns ambient tab ranking and the
@@ -36,7 +36,7 @@ manual-over-ambient composer merge.
 
 The composer merges uploads, typed references, pinned or dragged targets, and ambient tab targets.
 It sends one `bindings` array with the visible prompt. The chat service adds invocation bindings
-when it resolves a slash command into a skill, plugin command, or workflow.
+when it resolves a slash command into a skill, a plugin command, or a mini app command.
 
 The API validates the complete binding shape, the count, and model-bearing payload bytes.
 `resolveMessageBindings` then processes every context binding before the message is persisted. A
@@ -72,14 +72,14 @@ contributions, and invocation instructions.
 
 These are enforced contracts, not user settings.
 
-| Control                                |        Value | Enforced by                                                                         |
-| -------------------------------------- | -----------: | ----------------------------------------------------------------------------------- |
-| Bindings on one user send              |           20 | [Message request schema](../../../apps/api/src/features/chat/contracts/messages.ts) |
-| Model-bearing binding content per send |       25 MiB | UTF-8 bytes of asset bodies, contribution bodies, and invocation instructions       |
-| Plugin-added assistant bindings        |            8 | [Assistant hook runner](../../../apps/api/src/features/plugins/hooks-messages.ts)   |
-| Plugin-added payload per binding       |        8 MiB | Malformed or oversized hook output is dropped                                       |
-| Live plugin facets per mounted tab     |            5 | [Plugin UI contribution contract](../../../packages/mini-app-sdk/src/ui/contrib.ts) |
-| Live plugin snippet content            | 40,000 chars | Truncated by the plugin UI factory and untrusted-publication normalizer             |
+| Control                                |        Value | Enforced by                                                                           |
+| -------------------------------------- | -----------: | ------------------------------------------------------------------------------------- |
+| Bindings on one user send              |           20 | [Message request schema](../../../apps/api/src/features/chat/contracts/messages.ts)   |
+| Model-bearing binding content per send |       25 MiB | UTF-8 bytes of asset bodies, contribution bodies, and invocation instructions         |
+| Mini app assistant bindings            |            8 | [Assistant hook runner](../../../apps/api/src/features/mini-apps/hooks-messages.ts)   |
+| Mini app payload per binding           |        8 MiB | Malformed or oversized hook output is dropped                                         |
+| Live mini app facets per mounted tab   |            5 | [Mini app UI contribution contract](../../../packages/mini-app-sdk/src/ui/contrib.ts) |
+| Live mini app snippet content          | 40,000 chars | Truncated by the mini app UI factory and untrusted-publication normalizer             |
 
 The 25 MiB request guard counts content, not the serialized metadata envelope. A `path` binding
 counts toward the 20-binding limit but contributes zero content bytes to this guard.
@@ -95,11 +95,11 @@ counts toward the 20-binding limit but contributes zero content bytes to this gu
   unsupported, denied, timed-out, or errored binding useful to the model.
 - Asset storage and model transport differ. Inline media can become a stored `mediaId`, and large
   non-image content can become a spill manifest on the model-wire copy.
-- Assistant plugin hooks can add all parent binding variants, but external channel contracts accept
-  and return assets only.
+- Assistant mini app hooks can add all parent binding variants, but external channel contracts
+  accept and return assets only.
 - Full-text search cannot locate labels, URI attributes, captured contribution text, or hidden
   invocation instructions because only visible message content enters `search_text`.
-- Binding provenance is data, not instruction authority. Captured files, resources, plugin output,
+- Binding provenance is data, not instruction authority. Captured files, resources, mini app output,
   and external content do not override system or user instructions.
 
 ## Related guides
@@ -108,7 +108,7 @@ counts toward the 20-binding limit but contributes zero content bytes to this gu
 - [Active-tab context](active-tab-context.md)
 - [Attachment spill](attachment-spill.md)
 - [Context checkpoints](../../features/context-checkpoints.md)
-- [Plugin authoring](../../extending/plugins.md)
+- [Build a mini app](../../extending/mini-apps.md)
 
 ## Source of truth
 
@@ -121,5 +121,5 @@ counts toward the 20-binding limit but contributes zero content bytes to this gu
 - [Slash invocation persistence](../../../apps/api/src/features/chat/service/run-macro.ts)
 - [Composer merge](../../../apps/ui/src/entities/chat/model/sendRefs.ts)
 - [Drag transport](../../../packages/mini-app-sdk/src/ui/message-binding-drag.ts)
-- [Plugin assistant validation](../../../apps/api/src/features/plugins/hooks-messages.ts)
+- [Mini app assistant validation](../../../apps/api/src/features/mini-apps/hooks-messages.ts)
 - [Storage and search](../../../apps/api/migrations/20260601T000000_init_schema.ts)

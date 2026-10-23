@@ -5,7 +5,7 @@
  * Extracted from event-handlers.ts to keep the per-event dispatcher focused.
  */
 import type { HumanInLoopRequestBase } from '@localixai/agent/agents'
-import { runHitlRequestHooks, runHitlResolvedHooks } from '../../../plugins/hooks'
+import { runHitlRequestHooks, runHitlResolvedHooks } from '../../../mini-apps/hooks'
 import type { EventOf, TurnEventContext } from './event-handlers'
 import { hostPolicy } from '../../policy/session-policy'
 
@@ -64,9 +64,9 @@ export function handleHitlRequest(ctx: TurnEventContext, event: EventOf<'human_i
       ...(shown.expiresAt ? { expiresAt: shown.expiresAt } : {}),
     },
   })
-  if (ctx.pluginHooksForRun.length > 0) {
+  if (ctx.miniAppHooksForRun.length > 0) {
     void runHitlRequestHooks(
-      ctx.pluginHooksForRun,
+      ctx.miniAppHooksForRun,
       {
         sessionId: session.id,
         requestId: shown.id,
@@ -98,9 +98,9 @@ export function handleHitlResponse(
   // Observer-only plugin hook: a pending ask/quiz was answered. A dismissed
   // ask/quiz rejects its tool call without this event (confirm-path dismissals
   // are covered in createConfirmRequester below).
-  if (ctx.pluginHooksForRun.length > 0) {
+  if (ctx.miniAppHooksForRun.length > 0) {
     void runHitlResolvedHooks(
-      ctx.pluginHooksForRun,
+      ctx.miniAppHooksForRun,
       {
         sessionId: ctx.session.id,
         requestId: event.response.requestId,

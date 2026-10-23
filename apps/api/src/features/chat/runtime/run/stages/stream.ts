@@ -207,7 +207,7 @@ export async function streamRun(
     assistantMessageId,
     state,
     acc,
-    pluginHooksForRun: frame.teardown.pluginHooks,
+    miniAppHooksForRun: frame.teardown.miniAppHooks,
     hookRunOptions: inputs.hookRunOptions,
     ccHooks: inputs.ccHooks,
     connection,

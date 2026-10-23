@@ -5,12 +5,12 @@ a structured decision and Confirm before permission-gated work proceeds.
 
 ## What you can do
 
-| Request                     | Mechanism                                                                                      | Availability and boundary                                                                            |
-| --------------------------- | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **Ask**                     | The built-in `ask` tool presents one or more single- or multi-select questions with free text. | Web/desktop and any channel plugin that implements HITL can answer it.                               |
-| **Confirm**                 | The permission gate or a foreground external CLI requests approval.                            | Web/desktop supports one-call and session grants. A channel plugin may support approve or deny only. |
-| **Configuration change**    | The `configure` tool proposes a change to a tool, a plugin or an MCP server.                   | See [Propose configuration changes](configure.md).                                                   |
-| **Cross-session attention** | One dialog raises a request, a plan or a mention from a chat you are not viewing.              | Closing the dialog snoozes it in that window; it does not resolve the request or decide the plan.    |
+| Request                     | Mechanism                                                                                      | Availability and boundary                                                                         |
+| --------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| **Ask**                     | The built-in `ask` tool presents one or more single- or multi-select questions with free text. | Web/desktop and any channel that implements HITL can answer it.                                   |
+| **Confirm**                 | The permission gate or a foreground external CLI requests approval.                            | Web/desktop supports one-call and session grants. A channel may support approve or deny only.     |
+| **Configuration change**    | The `configure` tool proposes a change to a tool, a mini app, a plugin or an MCP server.       | See [Propose configuration changes](configure.md).                                                |
+| **Cross-session attention** | One dialog raises a request, a plan or a mention from a chat you are not viewing.              | Closing the dialog snoozes it in that window; it does not resolve the request or decide the plan. |
 
 Every Ask question offers custom text in web/desktop, and the backend always accepts it. Each
 question needs an `id`: the answer returns to the agent as `<id>: <choice>`. `loading_messages` is
@@ -166,7 +166,7 @@ available for retry; `hitl.resolved` removes the matching request and exposes th
 
 ## Limits
 
-- The external CLI bridge requires a plugin to pass the run context and an adapter to wire the
+- The external CLI bridge requires a mini app to pass the run context and an adapter to wire the
   callback into a CLI that supports permission prompting.
 - If the loopback server cannot start, the CLI run continues without the Localix binding. The
   adapter then owns its non-interactive permission posture.
@@ -174,10 +174,9 @@ available for retry; `hitl.resolved` removes the matching request and exposes th
 - A session grant matches a program, a path, a folder or one resource — never a whole tool, except
   for a call that names nothing at all. Dangerous shell commands and credential paths are the
   enforced exceptions to grant reuse; a policy decision requiring confirmation still asks.
-- A channel plugin may expose only approve and deny, not the session-grant choice available in
-  web/desktop.
-- Plugin HITL lifecycle hooks observe requests and resolutions. They cannot answer, modify, or veto
-  them.
+- A channel may expose only approve and deny, not the session-grant choice available in web/desktop.
+- Mini app HITL lifecycle hooks observe requests and resolutions. They cannot answer, modify, or
+  veto them.
 
 ## Related guides
 

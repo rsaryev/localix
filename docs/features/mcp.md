@@ -169,7 +169,7 @@ OAuth tokens, dynamic client data, and the pending PKCE verifier are AES-256-GCM
 ## Related guides
 
 - [Tool budget](tool-budget.md)
-- [Plugins](../extending/plugins.md)
+- [Install Claude Code plugins](../extending/claude-code-plugins.md)
 - [Permission rules](permissions.md)
 - [Privacy and network behavior](../getting-started/privacy.md)
 

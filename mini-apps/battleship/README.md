@@ -1,8 +1,8 @@
 # Battleship
 
 Battleship in the workbench, one game per chat, played against the agent in that chat. It has the
-Tic-Tac-Toe plugin's shape — a person's shot wakes the chat through the host's wake contract, and
-the agent answers with the plugin's own tool — plus the one thing the other games do not have:
+Tic-Tac-Toe mini app's shape — a person's shot wakes the chat through the host's wake contract, and
+the agent answers with the mini app's own tool — plus the one thing the other games do not have:
 hidden information.
 
 ## How a game goes
@@ -43,7 +43,7 @@ Once a game is over, both fleets are shown to both sides.
 ## The agent's tool
 
 One tool, `battleship`, groups its operations under `action`. Its schema is deferred until activated
-or brought onto the request by linked game context or a plugin wake.
+or brought onto the request by linked game context or a mini app wake.
 
 | `action`   | Does                                                                  |
 | ---------- | --------------------------------------------------------------------- |
@@ -86,7 +86,7 @@ reconnecting reconciles its state.
 The stream frame carries no fleet state; the route projects the player’s view and reveals the
 opponent fleet only when the game ends.
 
-See [Wake a session from a plugin](../../docs/extending/plugin-wakes.md) for the contract.
+See [Wake a session from a mini app](../../docs/extending/mini-app-wakes.md) for the contract.
 
 ## Permissions and synchronization
 

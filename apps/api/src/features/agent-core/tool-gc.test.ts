@@ -261,7 +261,7 @@ describe('tool GC — routing and ordering', () => {
     const report = resolveToolGc({
       surfaced: [
         surfaced('linear_search', { source: 'mcp', originId: 'srv-linear' }),
-        surfaced('plugin_query', { source: 'plugin', originId: 'fixture-plugin' }),
+        surfaced('plugin_query', { source: 'mini-app', originId: 'fixture-plugin' }),
       ],
       usage: [
         used('linear_search', { firstSeenAt: daysAgo(90) }),

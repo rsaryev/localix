@@ -87,7 +87,7 @@ const spawnApi = () =>
     cwd: apiDir,
     env: {
       ...process.env,
-      LOCALIX_BUNDLED_PLUGINS_DIR: stagedPlugins,
+      LOCALIX_BUNDLED_MINI_APPS_DIR: stagedPlugins,
     },
     stdin: 'inherit',
     stdout: 'inherit',

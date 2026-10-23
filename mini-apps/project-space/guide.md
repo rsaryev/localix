@@ -165,8 +165,8 @@ What you focus glows for a moment on the person's screen, and every move is on t
 history (⌥← takes them back), so walk them through a board with it — "here is the checkout flow",
 then `focus` the next frame — instead of describing coordinates. Its answer is the cheap way to
 check what is on screen; take a picture only when how it LOOKS matters: open `browser`
-`{ "action": "open", "url": "plugin:project-space" }`, then `take_screenshot`. There is no `http://`
-address for the board.
+`{ "action": "open", "url": "mini-app:project-space" }`, then `take_screenshot`. There is no
+`http://` address for the board.
 
 ## Map something
 

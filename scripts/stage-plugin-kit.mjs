@@ -71,7 +71,7 @@ export const MINI_APP_KIT_INPUTS = [
   'scripts/stage-plugin-kit.mjs',
   'scripts/stage-plugin-kit-styles.mjs',
   'scripts/stage-plugin-kit-types.mjs',
-  'apps/api/src/features/plugins/authoring/kit-layout.ts',
+  'apps/api/src/features/mini-apps/authoring/kit-layout.ts',
   'apps/ui/src/app',
   // The kit's component declarations are read from its primitives, its tokens from its styles.
   'packages/kit/src',

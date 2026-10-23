@@ -1,10 +1,10 @@
 import { pluginOriginLabel } from '@localixai/api/plugin-presentation'
 import { backendClient } from '@/shared/api/client'
-import { pluginContribSnapshot } from '@/shared/contrib/enabledPlugins'
+import { miniAppContribSnapshot } from '@/shared/contrib/enabledMiniApps'
 import type { SlashArgOption } from './SlashArgSpec'
 
 /**
- * Live option lists for the BUILT-IN `/plugin` command's arguments.
+ * Live option lists for the BUILT-IN `/plugin` and `/mini-app` commands' arguments.
  *
  * Every value these args take already exists somewhere the client can see: the
  * installed set is in the capability snapshot the workbench holds, and each
@@ -29,11 +29,16 @@ function matches(option: SlashArgOption, query: string): boolean {
 /** A cap, not a target: a menu longer than this is scrolled past, not read. */
 const MAX_OPTIONS = 40
 
-function installedPluginOptions(only: 'enabled' | 'disabled' | 'any'): SlashArgOption[] {
-  return pluginContribSnapshot()
-    .plugins.filter(
-      (plugin) => only === 'any' || (plugin.enabled ? 'enabled' : 'disabled') === only,
-    )
+type Only = 'enabled' | 'disabled' | 'any'
+
+/** Offering an enabled one under `enable` offers a no-op; under `disable` only what runs. */
+const onlyFor = (action: string | undefined): Only =>
+  action === 'enable' ? 'disabled' : action === 'disable' ? 'enabled' : 'any'
+
+/** The Claude Code plugins the snapshot holds: never a mini app, which has its own command. */
+function installedPluginOptions(only: Only): SlashArgOption[] {
+  return (miniAppContribSnapshot().document?.plugins ?? [])
+    .filter((plugin) => only === 'any' || (plugin.enabled ? 'enabled' : 'disabled') === only)
     .map((plugin) => ({
       value: plugin.name,
       label: plugin.displayName || plugin.name,
@@ -64,7 +69,7 @@ async function marketplaceOptions(): Promise<SlashArgOption[]> {
     label: market.name,
     description: market.unsupported
       ? 'Unsupported Claude Code marketplace'
-      : `${market.count} plugin${market.count === 1 ? '' : 's'}${market.builtin ? ' · built-in' : ''}`,
+      : `${market.count} plugin${market.count === 1 ? '' : 's'}`,
   }))
 }
 
@@ -88,11 +93,7 @@ async function resolveOptions(
 ): Promise<SlashArgOption[]> {
   switch (argName) {
     case 'plugin':
-      // Offering an already-enabled plugin under `enable` is offering a no-op; the
-      // same list under `disable` buries the handful that are actually running.
-      return installedPluginOptions(
-        action === 'enable' ? 'disabled' : action === 'disable' ? 'enabled' : 'any',
-      )
+      return installedPluginOptions(onlyFor(action))
     case 'target':
       return [
         {
@@ -109,4 +110,27 @@ async function resolveOptions(
     default:
       return []
   }
+}
+
+/** The installed mini apps, for `/mini-app enable|disable|remove`. */
+export async function loadMiniAppCommandArgOptions(
+  argName: string,
+  action: string | undefined,
+  query: string,
+): Promise<SlashArgOption[]> {
+  if (argName !== 'app') return []
+  const only = onlyFor(action)
+  return miniAppContribSnapshot()
+    .miniApps.filter((app) => only === 'any' || (app.enabled ? 'enabled' : 'disabled') === only)
+    .map((app) => ({
+      value: app.name,
+      label: app.displayName || app.name,
+      description: [
+        ...(app.version ? [`v${app.version}`] : []),
+        app.enabled ? 'enabled' : 'disabled',
+        app.scope,
+      ].join(' · '),
+    }))
+    .filter((option) => matches(option, query))
+    .slice(0, MAX_OPTIONS)
 }

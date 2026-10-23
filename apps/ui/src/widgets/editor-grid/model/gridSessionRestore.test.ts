@@ -15,7 +15,7 @@ import {
 } from '@/entities/workspace-grid/model'
 import { workItemKindRegistry } from '@/shared/contrib/uiContrib'
 import { miniAppUiHostFor } from '@/shared/contrib/host'
-import { setEnabledPluginNames } from '@/shared/contrib/miniAppActivation'
+import { setEnabledMiniAppNames } from '@/shared/contrib/miniAppActivation'
 import { syncGridChatSelection } from './useGridChatSync'
 
 const STORAGE_KEY = 'workspace_grid_v2'
@@ -41,12 +41,12 @@ function installStorage(): Map<string, string> {
 describe('a restored session keeps the tab it was serialized with', () => {
   beforeEach(() => {
     __resetGridForTests()
-    setEnabledPluginNames(null)
+    setEnabledMiniAppNames(null)
     installStorage()
   })
   afterEach(() => {
     __resetGridForTests()
-    setEnabledPluginNames(null)
+    setEnabledMiniAppNames(null)
     delete (globalThis as { localStorage?: unknown }).localStorage
   })
 
@@ -95,7 +95,7 @@ describe('a restored session keeps the tab it was serialized with', () => {
         scope: 'session',
       })
     }
-    setEnabledPluginNames(new Set(['sample-space']))
+    setEnabledMiniAppNames(new Set(['sample-space']))
     reconcileUnavailableContributedItems()
 
     // Selecting the restored session must not re-activate its chat over the

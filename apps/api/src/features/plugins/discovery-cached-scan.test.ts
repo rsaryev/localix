@@ -16,8 +16,11 @@ const SUBDIRS = ['.localix/plugins']
 
 function addPlugin(baseDir: string, name: string) {
   const pluginDir = join(baseDir, '.localix', 'plugins', name)
-  mkdirSync(pluginDir, { recursive: true })
-  writeFileSync(join(pluginDir, 'plugin.json'), JSON.stringify({ name, version: '1' }))
+  mkdirSync(join(pluginDir, '.claude-plugin'), { recursive: true })
+  writeFileSync(
+    join(pluginDir, '.claude-plugin', 'plugin.json'),
+    JSON.stringify({ name, version: '1' }),
+  )
 }
 const names = (plugins: { manifest: { name: string } }[]) => plugins.map((p) => p.manifest.name)
 

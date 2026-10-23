@@ -10,7 +10,7 @@ courses always prepare one complete module at a time.
 
 Write a compact outline JSON file, then call `draft` with `outline_path` to generate the complete
 pending hierarchy in one call. Author every lesson in the first module with ordinary file tools;
-leave later modules pending. Long prose belongs in Markdown files. The plugin automatically asks the
+leave later modules pending. Long prose belongs in Markdown files. The app automatically asks the
 tutor to prepare the next module as the learner advances, when that tutor can be reached. A failed
 or missed wake is recorded as a generation failure; inspect the course and prepare the pending
 module through the same authoring flow rather than treating it as ready.

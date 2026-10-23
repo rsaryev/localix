@@ -1,8 +1,8 @@
 # Agent presets
 
-Open an agent profile to edit its **Definition**, tools, skills, plugins, MCP access and ordered
-permission rules. Instructions describe the work; permission rules decide which actions can run.
-Each turn resolves the current definition and policy together.
+Open an agent profile to edit its **Definition**, tools, skills, plugins, mini apps, MCP access and
+ordered permission rules. Instructions describe the work; permission rules decide which actions can
+run. Each turn resolves the current definition and policy together.
 
 Create specialists from a conversation and manage the registry with `/agents`; see
 [Create and manage specialists](agent-management.md).

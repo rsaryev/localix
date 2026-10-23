@@ -18,7 +18,7 @@ import { announceCapabilitiesSettled } from '../features/capabilities/settle'
 import { mcpClientManager } from '../features/mcp/client-manager'
 import { startMcpChannels } from './mcp-channels'
 import type { InfraPhase } from './infra'
-import type { MiniAppHostRefs } from './plugin-host-refs'
+import type { MiniAppHostRefs } from './mini-app-host-refs'
 
 export function bindChatHostRefs({
   hostRefs,
@@ -81,7 +81,7 @@ export function bindChatHostRefs({
   // release any toggle request waiting to answer with a settled snapshot, then tell
   // every firehose client to refetch. Waiters first — the request that started the
   // re-wire should not have to hear about it through the broadcast.
-  hostRefs.onBackendHostSettled = () => {
+  hostRefs.onCapabilitiesSettled = () => {
     announceCapabilitiesSettled()
     hostRefs.publishCapabilityChange?.()
   }

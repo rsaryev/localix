@@ -15,7 +15,7 @@ The findings behind each item, with counts and paths, are in [the audit](audit.m
 | Item                    | Notice kind            | Consumer                                                       | Owner                                                          |
 | ----------------------- | ---------------------- | -------------------------------------------------------------- | -------------------------------------------------------------- |
 | [x] Provider connection | `provider.connection`  | Route repair; provider condition cleanup                       | `apps/api/src/features/provider-connections/`                  |
-| [x] Project             | `project`              | Plugin backend host refresh                                    | `apps/api/src/features/projects/`                              |
+| [x] Project             | `project`              | Mini app backend host refresh                                  | `apps/api/src/features/projects/`                              |
 | [x] Agent               | `agent` by key         | Seat and handle repair                                         | `apps/api/src/features/agents/`                                |
 | [x] MCP server, plugin  | `mcp`, `plugin` by key | Capability cleanup: rules, OAuth tokens, vault bindings        | `apps/api/src/features/mcp/`, `apps/api/src/features/plugins/` |
 | [x] Capability rule     | `capability.rule`      | Relay; semantic index                                          | `apps/api/src/features/capabilities/`                          |
@@ -34,7 +34,7 @@ The findings behind each item, with counts and paths, are in [the audit](audit.m
       is removed.
 - [x] `resolveLiveCatalogModel` (UI and `@localixai/agent/catalog`) is replaced by `routeReadiness`.
 
-- [x] Keyed wakes from triggers, plugins and background jobs go through a durable outbox
+- [x] Keyed wakes from triggers, mini apps and background jobs go through a durable outbox
       (`wake_outbox`): the queue's admission removes the row in its transaction, and a boot
       redelivers what a crash left under the same delivery key. Plan and delegation receipts stay.
 - [x] An agent turn acknowledged before its run record existed is settled at boot
@@ -63,12 +63,12 @@ scheduling, terminal lifecycle and the session event stream.
       model catalog, join routes and linked session previews.
 - [x] The transport tells the scheduler when a reconnect replayed every missed frame.
 
-## Plugins
+## Mini apps
 
-- [x] Plugins can follow core deletions through a read-only subscription.
-- [x] One plugin change mechanism instead of `host.changes` beside the store change feed: kept as
+- [x] Mini apps can follow core deletions through a read-only subscription.
+- [x] One mini app change mechanism instead of `host.changes` beside the store change feed: kept as
       two with distinct jobs (durable backend feed, ephemeral view invalidation), documented in
-      `docs/extending/plugin-sync.md`.
+      `docs/extending/mini-app-sync.md`.
 
 ## Dead code and legacy
 

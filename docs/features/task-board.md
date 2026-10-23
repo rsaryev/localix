@@ -133,12 +133,13 @@ write queue.
 
 ## Configuration
 
-| Control                         | Effect                                                       | Default      |
-| ------------------------------- | ------------------------------------------------------------ | ------------ |
-| The **Kanban board** mini app   | Settings → Capabilities → Plugins, or a `plugin:kanban` rule | On (bundled) |
-| The `kanban` tool for one agent | A `tool:kanban` rule with effect `deny` removes it           | Allowed      |
+| Control                         | Effect                                                                                       | Default      |
+| ------------------------------- | -------------------------------------------------------------------------------------------- | ------------ |
+| The **Kanban board** mini app   | Settings → Capabilities → Mini apps, `/mini-app disable kanban`, or a `mini-app:kanban` rule | On (bundled) |
+| The `kanban` tool for one agent | A `tool:kanban` rule with effect `deny` removes it                                           | Allowed      |
 
-See [Capabilities](capabilities.md#plugin-tools) for how a plugin rule and a tool rule differ.
+See [Capabilities](capabilities.md#mini-app-tools-and-plugins) for how a mini app rule and a tool
+rule differ.
 
 ## Limits
 
@@ -163,7 +164,7 @@ See [Capabilities](capabilities.md#plugin-tools) for how a plugin rule and a too
 - [Delegation](delegation.md)
 - [Conversations](conversations.md)
 - [Capabilities](capabilities.md)
-- [Mini apps](../extending/plugins.md)
+- [Mini apps](../extending/mini-apps.md)
 
 ## Source of truth
 

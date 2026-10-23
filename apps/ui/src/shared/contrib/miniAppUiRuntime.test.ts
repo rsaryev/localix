@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import type { MiniAppUiHost } from '@localixai/mini-app-sdk/ui'
 
-import { createPluginUiRuntime, type PluginUiArtifact } from './miniAppUiRuntime'
+import { createMiniAppUiRuntime, type MiniAppUiArtifact } from './miniAppUiRuntime'
 
 type Modules = Record<string, () => unknown>
 
@@ -13,7 +13,7 @@ function harness(build: (log: string[]) => Modules) {
   const log: string[] = []
   const failures: string[] = []
   const modules = build(log)
-  const runtime = createPluginUiRuntime({
+  const runtime = createMiniAppUiRuntime({
     importEntry: async ({ name, revision }) => {
       const factory = modules[`${name}@${revision}`]
       if (!factory) throw new Error(`no ${name}@${revision}`)
@@ -31,7 +31,7 @@ function harness(build: (log: string[]) => Modules) {
   return { runtime, log, failures }
 }
 
-const artifact = (name: string, revision: string): PluginUiArtifact => ({
+const artifact = (name: string, revision: string): MiniAppUiArtifact => ({
   name,
   entry: `/rpc/plugins/${name}/ui/entry.js`,
   styles: [],

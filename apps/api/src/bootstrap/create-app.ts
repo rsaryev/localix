@@ -5,7 +5,7 @@ import { resolveEffectiveAgentConfig } from '../features/effective-config/effect
 import type { createChatService } from '../features/chat/service'
 import type { BootstrapRuntimeInfo, InfraPhase } from './infra'
 import type { RegistriesPhase } from './registries'
-import type { PluginHostsPhase } from './plugin-hosts'
+import type { MiniAppHostsPhase } from './mini-app-hosts'
 import type { DomainServicesPhase } from './domain-services'
 import type { AppServicesPhase } from './app-services'
 import type { StorageService } from '../features/storage/service'
@@ -29,7 +29,7 @@ export interface CreateAppPhaseInput
       | 'localModels'
     >,
     Pick<RegistriesPhase, 'wsFrameRegistry' | 'resourceRefsRegistry'>,
-    Pick<PluginHostsPhase, 'backendHost' | 'firstReconcile'>,
+    Pick<MiniAppHostsPhase, 'backendHost' | 'firstReconcile'>,
     Pick<
       DomainServicesPhase,
       | 'projectsService'
@@ -37,6 +37,7 @@ export interface CreateAppPhaseInput
       | 'toolUsageRepo'
       | 'mcpService'
       | 'pluginService'
+      | 'miniAppService'
       | 'agentsService'
       | 'skillsCuratorService'
     >,
@@ -75,6 +76,7 @@ export function createAppPhase({
   toolUsageRepo,
   mcpService,
   pluginService,
+  miniAppService,
   agentsService,
   skillsCuratorService,
   systemService,
@@ -163,6 +165,7 @@ export function createAppPhase({
     },
     mcpService,
     pluginService,
+    miniAppService,
     agentsService,
     skillsCuratorService,
     systemService,

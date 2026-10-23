@@ -32,7 +32,7 @@ export const secretKeySchema = z
 
 export const vaultItemTypeSchema = z.enum(VAULT_ITEM_TYPES)
 
-export const vaultItemSourceSchema = z.enum(['user', 'provider', 'plugin', 'system'])
+export const vaultItemSourceSchema = z.enum(['user', 'provider', 'plugin', 'mini-app', 'system'])
 export type VaultItemSource = z.infer<typeof vaultItemSourceSchema>
 
 const editableMetadataSchema = z.object({

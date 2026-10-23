@@ -14,7 +14,11 @@ async function fixture() {
   const source = join(root, 'sample')
   const installRoot = join(root, 'installed')
   const outside = join(root, 'kept')
-  await Promise.all([fs.mkdir(source), fs.mkdir(installRoot), fs.mkdir(outside)])
+  await Promise.all([
+    fs.mkdir(join(source, '.claude-plugin'), { recursive: true }),
+    fs.mkdir(installRoot),
+    fs.mkdir(outside),
+  ])
   await fs.writeFile(join(outside, 'keep.txt'), 'keep')
   return { source, installRoot, outside }
 }
@@ -22,7 +26,7 @@ async function fixture() {
 test('manifest names are validated before deriving or replacing any destination', async () => {
   const { source, installRoot, outside } = await fixture()
   for (const name of ['../kept', '.', '..', outside]) {
-    await fs.writeFile(join(source, 'plugin.json'), JSON.stringify({ name }))
+    await fs.writeFile(join(source, '.claude-plugin', 'plugin.json'), JSON.stringify({ name }))
     await expect(installFromLocal(source, installRoot, true)).rejects.toThrow('Invalid plugin name')
     expect(await fs.readFile(join(outside, 'keep.txt'), 'utf8')).toBe('keep')
     expect(await fs.readdir(installRoot)).toEqual([])
@@ -31,7 +35,10 @@ test('manifest names are validated before deriving or replacing any destination'
 
 test('an invalid name override is rejected rather than silently using another identity', async () => {
   const { source, installRoot } = await fixture()
-  await fs.writeFile(join(source, 'plugin.json'), JSON.stringify({ name: 'sample' }))
+  await fs.writeFile(
+    join(source, '.claude-plugin', 'plugin.json'),
+    JSON.stringify({ name: 'sample' }),
+  )
   await expect(installFromLocal(source, installRoot, true, '../other')).rejects.toThrow(
     'Invalid plugin name override',
   )
@@ -40,7 +47,10 @@ test('an invalid name override is rejected rather than silently using another id
 
 test('local installs publish a complete replacement and preserve conflict behavior', async () => {
   const { source, installRoot } = await fixture()
-  await fs.writeFile(join(source, 'plugin.json'), JSON.stringify({ name: 'sample' }))
+  await fs.writeFile(
+    join(source, '.claude-plugin', 'plugin.json'),
+    JSON.stringify({ name: 'sample' }),
+  )
   const destination = await installFromLocal(source, installRoot)
   await expect(installFromLocal(source, installRoot)).rejects.toMatchObject({
     code: 'plugin_exists',

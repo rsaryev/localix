@@ -2,7 +2,7 @@ import type { Marketplace } from './marketplace'
 
 /**
  * Bundled-catalog generation — builds the Claude Code-compatible marketplace.json we
- * commit for our `plugins/` dir (see apps/api/scripts/generate-bundled-marketplace.ts).
+ * commit for a marketplace directory.
  * Split from `./marketplace` (schema + validation) to keep both modules small; the
  * public surface is re-exported there.
  */

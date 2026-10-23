@@ -18,6 +18,7 @@ const CONTROL_COMMANDS = [
   'skills',
   'mcp',
   'plugins',
+  'mini-apps',
   'loop',
   'agents',
 ] as const
@@ -31,11 +32,14 @@ export type ControlCommand = (typeof CONTROL_COMMANDS)[number]
 export { BUILTIN_COMMAND_NAMES }
 
 /**
- * The two commands whose HANDLER name is not their user-facing name. They are the only
+ * The commands whose HANDLER name is not their user-facing name. They are the only
  * reason {@link CONTROL_COMMAND_BY_WORD} is not the identity over the catalog, and
  * stating them here is what lets the rest be DERIVED rather than re-typed.
  */
-const HANDLER_NAME = new Map<string, ControlCommand>([['plugin', 'plugins']])
+const HANDLER_NAME = new Map<string, ControlCommand>([
+  ['plugin', 'plugins'],
+  ['mini-app', 'mini-apps'],
+])
 
 /**
  * Typed word (`/help`, `/cost`) → the handler that runs it, DERIVED from the catalog.

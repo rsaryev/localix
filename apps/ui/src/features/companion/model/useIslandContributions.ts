@@ -2,23 +2,23 @@ import { useEffect } from 'react'
 import { eventSocket } from '@/shared/api/eventSocket'
 import { resourceSync } from '@/shared/api/resourceSync'
 import {
-  pluginContribSourceFor,
-  preparePluginContribScope,
-  refetchActivePluginContrib,
-  refetchPluginContrib,
-  startPluginContribSync,
-} from '@/shared/contrib/enabledPlugins'
+  miniAppContribSourceFor,
+  prepareMiniAppContribScope,
+  refetchActiveMiniAppContrib,
+  refetchMiniAppContrib,
+  startMiniAppContribSync,
+} from '@/shared/contrib/enabledMiniApps'
 
 /** The shared context bar includes project-scoped contributed pills in this WebView too. */
 export function useIslandContributions(projectId: string | null | undefined) {
   useEffect(() => {
     if (projectId === undefined) return
-    preparePluginContribScope(projectId)
-    const stop = startPluginContribSync(() =>
-      refetchPluginContrib(pluginContribSourceFor(projectId)),
+    prepareMiniAppContribScope(projectId)
+    const stop = startMiniAppContribSync(() =>
+      refetchMiniAppContrib(miniAppContribSourceFor(projectId)),
     )
     const refresh = () => {
-      void refetchActivePluginContrib()
+      void refetchActiveMiniAppContrib()
     }
     const offCapabilities = resourceSync.subscribe('capabilities', refresh)
     const offConnect = eventSocket.onConnected(refresh)

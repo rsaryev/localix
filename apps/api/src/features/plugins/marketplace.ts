@@ -1,4 +1,3 @@
-import { manifestAuthorSchema } from '@localixai/mini-app-sdk/app-manifest'
 import { z } from 'zod'
 
 import type { PluginValidation } from './contracts'
@@ -18,6 +17,17 @@ import type { PluginValidation } from './contracts'
  */
 
 /** A plugin entry's source: a relative `./path` string, or an object `{ source, … }`. */
+
+/** An author or owner: a name, or Claude Code's `{ name, email, url }`. */
+const marketplaceAuthorSchema = z.union([
+  z.string(),
+  z.object({
+    name: z.string().optional(),
+    email: z.string().optional(),
+    url: z.string().optional(),
+  }),
+])
+
 export const marketplaceSourceSchema = z.union([
   z.string(),
   z.object({ source: z.string() }).passthrough(),
@@ -46,7 +56,7 @@ export const marketplaceEntrySchema = z
     source: marketplaceSourceSchema,
     displayName: z.string().optional(),
     description: z.string().optional(),
-    author: manifestAuthorSchema.optional(),
+    author: marketplaceAuthorSchema.optional(),
     category: z.string().optional(),
     tags: z.array(z.string()).optional(),
     version: z.string().optional(),
@@ -80,7 +90,7 @@ export type MarketplaceEntry = z.infer<typeof marketplaceEntrySchema>
 /** A marketplace catalog. Unknown top-level keys (e.g. `$schema`) are stripped. */
 export const marketplaceSchema = z.object({
   name: z.string().min(1, 'Marketplace name cannot be empty'),
-  owner: manifestAuthorSchema.optional(),
+  owner: marketplaceAuthorSchema.optional(),
   description: z.string().optional(),
   plugins: z.array(marketplaceEntrySchema),
   /**
@@ -214,4 +224,4 @@ export function validateMarketplace(raw: unknown): PluginValidation {
 }
 
 // The bundled-catalog generator lives in its own module; re-exported so existing
-// importers (tests, apps/api/scripts/generate-bundled-marketplace.ts) keep this surface.
+// importers (tests) keep this surface.

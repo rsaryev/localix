@@ -64,7 +64,7 @@ runtime.
 | Materialize | Once per turn, before the first request   | Runs the stages below over the stored rows and the frozen view.         |
 | Request     | Before every provider request in the turn | Prunes only near the ceiling; a prune asks the next turn to checkpoint. |
 
-Side effects (plugin prompt rewrites, Claude Code prompt hooks, job and diagnostics snapshots)
+Side effects (mini app prompt rewrites, Claude Code prompt hooks, job and diagnostics snapshots)
 happen once, in the **intake** step. Everything after intake is pure, so a retry re-derives the same
 wire from the same frame without re-firing a hook.
 

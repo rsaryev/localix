@@ -1,6 +1,11 @@
 import { z } from 'zod'
 import type { ProposalCard, Remedy, RemedyContext } from './contracts'
-import { mcpServerEnableRemedy, pluginEnableRemedy, toolEnableRemedy } from './remedies/toggles'
+import {
+  mcpServerEnableRemedy,
+  miniAppEnableRemedy,
+  pluginEnableRemedy,
+  toolEnableRemedy,
+} from './remedies/toggles'
 
 /**
  * Every remedy the agent may propose, in the order the model's schema lists them. The
@@ -16,6 +21,7 @@ import { mcpServerEnableRemedy, pluginEnableRemedy, toolEnableRemedy } from './r
 export const REMEDIES: readonly Remedy[] = [
   toolEnableRemedy,
   pluginEnableRemedy,
+  miniAppEnableRemedy,
   mcpServerEnableRemedy,
 ] as readonly Remedy[]
 

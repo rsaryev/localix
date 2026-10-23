@@ -30,7 +30,7 @@ export interface SlashCommand {
   /** Declarative positional arguments (choice/text) rendered as chips + menus. */
   args?: SlashArgSpec[]
   /** For a plugin command with DYNAMIC args — identity used to fetch their options. */
-  argSource?: { plugin: string; command: string }
+  argSource?: { app: string; command: string }
   /** Shown first, under "Suggested" (a plugin command's manifest `featured`). */
   featured?: boolean
 }

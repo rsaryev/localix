@@ -1,12 +1,6 @@
-import {
-  ConflictError,
-  InvalidRequestError,
-  NotFoundError,
-  UnavailableError,
-} from '../../lib/domain-errors'
-import { jsonValueWithinCap } from './ui-action-json'
+import { InvalidRequestError, NotFoundError } from '../../lib/domain-errors'
 import { promises as fs } from 'node:fs'
-import { pluginLoadBlockReason } from './loadable'
+import { pluginLoadBlockReason } from './load-block'
 import { isAbsolute } from 'node:path'
 import {
   type CapabilitySourceRecord,
@@ -15,7 +9,6 @@ import {
 } from '../capabilities/source-repository'
 
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
-import { errorMessage } from '../../lib/errors'
 import { localixWorkspaceDir } from '../../lib/env'
 import { createContributionKindRegistry } from '../ext/contribution-kinds'
 import { isGitSource } from '../ext/git-source'
@@ -25,12 +18,8 @@ import {
   pluginInstallRoot,
   type DiscoveredPlugin,
 } from './discovery'
-import { miniAppKitDir } from './authoring/kit-root'
-import { createMiniAppAuthoring } from './authoring/service'
 import { cloneRepo, withPluginSource } from './install-helpers'
 import { publishPluginInstallation } from './publish-installation'
-import { syncBundledContributions } from './sync-bundled-contributions'
-import { createKeyedSerializer } from '../../lib/keyed-serializer'
 import { buildPluginCatalog, type PluginCatalog } from './catalog'
 import { createAvailabilityWriter, readAvailability } from '../capabilities/availability'
 import { listCatalogCommandSpecs } from './plugin-skills'
@@ -52,20 +41,13 @@ import {
   prepareDependenciesForInstall,
   type PreparedDependencyInstall,
 } from './dependencies-install'
-import { normalizeMiniAppSurfaces } from './contracts-base'
 import { resolvePluginConfig } from './config'
-import { confineToDir } from '../ext/fs-discovery'
-import { runArgOptionsScript, parseArgOptions } from './arg-options'
 import { isDefaultProject } from '../projects/default-project'
 import { applyEntryManifestOverrides } from './marketplace-entry-manifest'
-import { createMiniAppInspections } from './inspection-snapshots'
-import type { MiniAppToolInspection } from './inspection-store'
 import { pluginTrustClass } from './enable'
 import { validatePluginFull } from './validate'
-import { listViewsFromCatalog, readViewHtml } from './views'
 import { listThemesFromCatalog } from './themes'
-import { readMiniAppUiDescriptor, resolveMiniAppUiFile } from './ui-artifact'
-import type { MiniAppViewSpec, PluginRecord } from './contracts'
+import type { PluginRecord } from './contracts'
 import { toConfigFields, type PluginService, type PluginServiceDeps } from './service-types'
 import { hydrateSecretOption } from './config-vault'
 import { reconcileStoredConfig, savePluginConfig } from './service-config'
@@ -85,7 +67,6 @@ import { inPlaceInstallFor, inPlacePublication } from './install-in-place'
 export type { PluginService, PluginServiceDeps } from './service-types'
 
 export function createPluginService(deps: PluginServiceDeps): PluginService {
-  const serializeContributions = createKeyedSerializer()
   // ONE home for every discovery and install root of this service (see `PluginServiceDeps.homeDir`).
   const home = deps.homeDir
   const discover = (scope: Omit<Parameters<typeof discoverPlugins>[0], 'homeDir'>) =>
@@ -97,9 +78,6 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
   const registryDeps: MarketplaceRegistryDeps = { cloneRepo, now, root: marketplacesRoot(home) }
   // Tool rosters of enabled native plugins, remembered in memory and across restarts
   // (see `inspection-snapshots.ts`); every lifecycle mutation below invalidates them.
-  const inspections = createMiniAppInspections({ homeDir: home, logger: deps.logger })
-  const invalidateInspection = (name?: string, projectId?: string) =>
-    inspections.invalidate(name, projectId)
 
   // The Default project's dir is the PARENT of per-chat sandboxes, never a session cwd, so
   // it has no plugin root of its own: its chats see (and install into) the global root.
@@ -120,43 +98,19 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
 
   /** Materialize one discovered plugin + its state into the UI record. */
   const toRecord = async (
-    userId: string,
     plugin: DiscoveredPlugin,
     state: CapabilitySourceRecord | undefined,
     enabled: boolean,
-    runtimeCwd: string = localixWorkspaceDir(),
     /** Not running only because nobody has said yes yet — see `ext/trust.ts`. */
     awaitingConsent = false,
   ): Promise<PluginRecord> => {
     const resolvedConfig = resolvePluginConfig(plugin.manifest, scalarConfig(state?.config))
-    let tools: MiniAppToolInspection['tools'] = []
-    let backendSubsystems: string[] = []
     let error = plugin.error
-    // Only import (run) a plugin's code when it's enabled — same trust gate the
-    // runtime loader uses. Disabled plugins show declared capabilities only.
-    // Run tool inspection and the canonical full validation in parallel (independent I/O).
-    // `validatePluginFull` is the shared manifest+skills merge (also used by the dev CLI) —
-    // no inline duplication of the merge here.
-    // The third path that RUNS plugin code (it imports the tool module to list tool names), so it
-    // asks the same question as the loader — otherwise Settings would execute a plugin the host has
-    // refused to load.
     const loadBlocked = pluginLoadBlockReason(plugin)
     if (loadBlocked) error = error ? `${error}; ${loadBlocked}` : loadBlocked
-    const [inspected, validation, ui] = await Promise.all([
-      enabled && plugin.provides.hasNativeTools && !loadBlocked
-        ? inspections.inspect(plugin, resolvedConfig, userId, runtimeCwd)
-        : Promise.resolve(null),
-      validatePluginFull(plugin, { config: resolvedConfig }),
-      readMiniAppUiDescriptor(plugin),
-    ])
-    if (inspected) {
-      tools = inspected.tools
-      backendSubsystems = inspected.backendSubsystems
-      if (inspected.error) error = error ? `${error}; ${inspected.error}` : inspected.error
-    }
+    const validation = await validatePluginFull(plugin, { config: resolvedConfig })
     return {
       name: plugin.manifest.name,
-      category: plugin.manifest.category,
       displayName: plugin.manifest.displayName,
       version: plugin.manifest.version,
       description: plugin.manifest.description,
@@ -164,8 +118,6 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       homepage: plugin.manifest.homepage,
       migratedFrom: plugin.manifest.migratedFrom,
       ...(plugin.manifest.origin ? { importedFrom: plugin.manifest.origin.format } : {}),
-      layout: plugin.layout,
-      surfaces: normalizeMiniAppSurfaces(plugin.manifest.surfaces),
       projectId: plugin.projectId,
       scope: plugin.scope,
       dir: plugin.dir,
@@ -173,9 +125,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       source: state?.source ?? 'local',
       enabled,
       ...(awaitingConsent ? { awaitingConsent } : {}),
-      bundled: plugin.bundled,
-      ...(ui ? { ui } : {}),
-      provides: { ...plugin.provides, tools, backendSubsystems },
+      provides: plugin.provides,
       config: toConfigFields(plugin, state),
       error,
       validation,
@@ -225,20 +175,14 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
 
   /**
    * Materialize the UI records of one already-built catalog. Without a selected
-   * project, only global plugins surface. `toRecord` does independent per-plugin I/O
-   * (tool inspection + skill validation), so map it in parallel rather than awaiting
-   * each in turn.
+   * project, only global plugins surface. `toRecord` validates skills per plugin, so map
+   * it in parallel rather than awaiting each in turn.
    */
-  const recordsFromCatalog = (
-    userId: string,
-    catalog: PluginCatalog,
-    projectId: string,
-    runtimeCwd: string,
-  ): Promise<PluginRecord[]> =>
+  const recordsFromCatalog = (catalog: PluginCatalog, projectId: string): Promise<PluginRecord[]> =>
     Promise.all(
       catalog.all.flatMap(({ plugin, state, enabled, awaitingConsent }) =>
         projectId || plugin.scope !== 'project'
-          ? [toRecord(userId, plugin, state, enabled, runtimeCwd, awaitingConsent)]
+          ? [toRecord(plugin, state, enabled, awaitingConsent)]
           : [],
       ),
     )
@@ -276,42 +220,22 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
     })
 
   const service: PluginService = {
-    async syncBundledContributions(userId, projectId) {
-      return serializeContributions(JSON.stringify([userId, projectId]), async () => {
-        const cwd = await cwdFor(userId, projectId)
-        if (projectId && !cwd) return
-        await syncBundledContributions({
-          db: deps.db,
-          stores: deps.capabilityStores,
-          kinds: contributionKinds,
-          userId,
-          projectId,
-          plugins: await discover({ cwd, projectId }),
-          now: deps.now ?? (() => new Date().toISOString()),
-        })
-      })
-    },
     listOutputStyles: (userId, opts) =>
       listScopeOutputStyles({ catalogFor, cwdFor, homeDir: home }, userId, opts?.projectId ?? ''),
     async listPlugins(userId, opts) {
-      const { projectId, runtimeCwd, catalog } = await scopeCatalog(userId, opts?.projectId)
-      return { plugins: await recordsFromCatalog(userId, catalog, projectId, runtimeCwd) }
+      const { projectId, catalog } = await scopeCatalog(userId, opts?.projectId)
+      return { plugins: await recordsFromCatalog(catalog, projectId) }
     },
 
     /**
-     * Every plugin-derived contribution of one scope, from ONE catalog build.
-     *
-     * The capability snapshot needs plugins + views + commands together, and
-     * asking for them through the single-purpose methods above ran discovery,
-     * DB state load, and the enable rule four times over — per snapshot fetch, and a
-     * snapshot fetch happens on every plugin toggle. Same helpers, same fusion path
-     * (`buildPluginCatalog`), one pass.
+     * Everything the capability snapshot shows of plugins, from ONE catalog build: their records,
+     * themes and commands. Asking through the single-purpose methods ran discovery, the DB state and
+     * the enable rule once per projection, on every snapshot fetch.
      */
-    async listMiniAppContributions(userId, opts) {
+    async listPluginContributions(userId, opts) {
       const { projectId, runtimeCwd, catalog } = await scopeCatalog(userId, opts?.projectId)
       return {
-        plugins: await recordsFromCatalog(userId, catalog, projectId, runtimeCwd),
-        views: listViewsFromCatalog(catalog, projectId),
+        plugins: await recordsFromCatalog(catalog, projectId),
         themes: listThemesFromCatalog(catalog),
         commands: await listCatalogCommandSpecs(catalog, {
           projectId,
@@ -320,94 +244,6 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
           modCommands: deps.modCommands?.() ?? [],
           logger: deps.logger,
         }),
-      }
-    },
-
-    /**
-     * Flatten the UI views declared by every ENABLED plugin in scope. HTML is
-     * NOT inlined here — the UI fetches it per view on open (getViewHtml).
-     */
-    async listMiniAppViews(
-      userId: string,
-      opts?: { projectId?: string | null },
-    ): Promise<{ views: MiniAppViewSpec[] }> {
-      const projectId = opts?.projectId ?? ''
-      const catalog = await catalogFor(userId, projectId)
-      return { views: listViewsFromCatalog(catalog, projectId) }
-    },
-
-    /** Read one ENABLED plugin's view HTML (path-confined + size-capped — see views.ts). */
-    async getViewHtml(
-      userId: string,
-      input: { pluginName: string; viewId: string; projectId?: string | null },
-    ): Promise<{ html: string }> {
-      const projectId = input.projectId ?? ''
-      const catalog = await catalogFor(userId, projectId)
-      return readViewHtml(catalog, input)
-    },
-
-    /** Absolute path of one bundled plugin's UI artifact file (confined — see ui-artifact.ts). */
-    async resolveUiFile(userId, input) {
-      return resolveMiniAppUiFile(await catalogFor(userId, ''), input.pluginName, input.file)
-    },
-
-    /**
-     * Same-plugin UI RPC. The browser supplies only an action + payload; this
-     * service re-authorizes the exact discovery scope and binds identity/cwd.
-     */
-    async invokeUiAction(userId, input) {
-      if (!deps.invokeUiAction) {
-        throw new UnavailableError(
-          'plugin_ui_actions_unavailable',
-          'Plugin UI actions are unavailable',
-        )
-      }
-      const projectId = input.projectId ?? ''
-      const catalog = await catalogFor(userId, projectId)
-      const entry = catalog.enabled.find(
-        ({ plugin }) => plugin.manifest.name === input.pluginName && plugin.projectId === projectId,
-      )
-      if (!entry) {
-        throw new NotFoundError(
-          'plugin_not_enabled',
-          `Plugin "${input.pluginName}" is not enabled in this scope`,
-        )
-      }
-
-      const sessionCwd = input.sessionId
-        ? await deps.resolveSessionCwd?.(userId, input.sessionId)
-        : null
-      if (input.sessionId && !sessionCwd) {
-        throw new NotFoundError('session_not_found', 'Session not found')
-      }
-      const projectCwd = projectId ? await cwdFor(userId, projectId) : null
-      const payload = jsonValueWithinCap(input.payload, 'Plugin UI action payload')
-      try {
-        const result = await deps.invokeUiAction({
-          pluginName: input.pluginName,
-          action: input.action,
-          payload,
-          context: {
-            userId,
-            projectId,
-            cwd: sessionCwd ?? projectCwd ?? localixWorkspaceDir(),
-            ...(input.sessionId ? { sessionId: input.sessionId } : {}),
-            viewId: input.viewId,
-          },
-        })
-        return { result: jsonValueWithinCap(result, 'Plugin UI action result') }
-      } catch (err) {
-        const code = (err as { code?: unknown } | null)?.code
-        if (code === 'not_available') {
-          throw new NotFoundError('plugin_ui_action_not_found', errorMessage(err))
-        }
-        if (code === 'ambiguous') {
-          throw new ConflictError('plugin_ui_action_ambiguous', errorMessage(err))
-        }
-        if (code === 'timeout') {
-          throw new UnavailableError('plugin_ui_action_timeout', errorMessage(err))
-        }
-        throw err
       }
     },
 
@@ -427,54 +263,6 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
           modCommands: deps.modCommands?.() ?? [],
           logger: deps.logger,
         }),
-      }
-    },
-
-    /**
-     * Resolve the DYNAMIC options for one plugin-command arg by running the plugin's
-     * declared `optionsScript` in the session cwd. Fully agnostic — the core just runs
-     * the script + parses `ArgOption[]`; it never knows what the values mean. Only for
-     * an ENABLED plugin, with the script path confined to the plugin dir.
-     * Never throws — any failure yields `[]`.
-     */
-    async resolveMiniAppArgOptions(userId, input) {
-      try {
-        const projectId = input.projectId ?? ''
-        const catalog = await catalogFor(userId, projectId)
-        const entry = catalog.enabled.find((e) => e.plugin.manifest.name === input.plugin)
-        if (!entry) return { options: [] }
-        const cmd = entry.plugin.commands.find((c) => c.name === input.command)
-        const arg = cmd?.args.find((a) => a.name === input.arg)
-        if (!arg?.optionsScript) return { options: [] }
-
-        const scriptAbs = confineToDir(entry.plugin.dir, arg.optionsScript)
-        if (!scriptAbs) return { options: [] } // path escaped the plugin dir
-
-        const sessionCwd = input.sessionId
-          ? await deps.resolveSessionCwd?.(userId, input.sessionId)
-          : null
-        const cwd =
-          sessionCwd ??
-          (projectId ? await cwdFor(userId, projectId) : null) ??
-          localixWorkspaceDir()
-
-        const config = resolvePluginConfig(entry.plugin.manifest, scalarConfig(entry.state?.config))
-        const stdout = await runArgOptionsScript({
-          scriptAbsPath: scriptAbs,
-          cwd,
-          request: {
-            query: input.query ?? '',
-            cwd,
-            sessionId: input.sessionId,
-            argName: input.arg,
-            command: input.command,
-            config,
-          },
-        })
-        return { options: parseArgOptions(stdout) }
-      } catch (err) {
-        deps.logger?.warn?.('plugin arg-options failed', { err: errorMessage(err) })
-        return { options: [] }
       }
     },
 
@@ -502,8 +290,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       return plans
     },
 
-    async onPolicyChanged(_userId, scope, names) {
-      for (const name of names) invalidateInspection(name, scope.projectId ?? '')
+    async onPolicyChanged() {
       deps.onChanged?.()
     },
 
@@ -551,14 +338,8 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         userId,
         await repo.get(userId, rowScopeOf(plugin, projectId), input.name),
       )
-      invalidateInspection(plugin.manifest.name, projectId)
       deps.onChanged?.()
-      const record = await toRecord(
-        userId,
-        plugin,
-        state,
-        await verdictFor(userId, plugin, input.agentId),
-      )
+      const record = await toRecord(plugin, state, await verdictFor(userId, plugin, input.agentId))
       if (cascade?.result.warnings.length) {
         record.validation.warnings.push(...cascade.result.warnings)
       }
@@ -568,16 +349,15 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
     async setConfig(userId, input) {
       const projectId = input.projectId ?? ''
       const plugin = await requirePlugin(userId, input.name, projectId)
-      const { state, rowScope } = await savePluginConfig({
+      const { state } = await savePluginConfig({
         repo,
         userId,
         plugin,
         projectId,
         values: input.values,
       })
-      invalidateInspection(plugin.manifest.name, rowScope ? projectId : undefined)
       deps.onChanged?.()
-      return toRecord(userId, plugin, state, await verdictFor(userId, plugin))
+      return toRecord(plugin, state, await verdictFor(userId, plugin))
     },
 
     reconcileStoredConfig: (userId) =>
@@ -587,7 +367,6 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         discover: async (projectId) =>
           discover({ cwd: projectId ? await cwdFor(userId, projectId) : null, projectId }),
         onRewritten: () => {
-          invalidateInspection()
           deps.onChanged?.()
         },
         warn: (message) => deps.logger?.warn(message),
@@ -635,7 +414,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
           : await loadManifest(directory, scope, projectId)
         if (candidate.error) throw new InvalidRequestError('plugin_invalid', candidate.error)
         installNotes.push(
-          ...(candidate.layoutIssues ?? []).map((found) => `${found.path}: ${found.message}`),
+          ...(candidate.manifestIssues ?? []).map((found) => `${found.path}: ${found.message}`),
         )
       }
       if (resolvedMarket) {
@@ -674,14 +453,11 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
             discover: () => discover({ cwd, projectId }),
           }),
       )
-      invalidateInspection(plugin.manifest.name, projectId)
       deps.onChanged?.()
       const record = await toRecord(
-        userId,
         plugin,
         await hydrateSecretOption(userId, state),
         await verdictFor(userId, plugin),
-        cwd ?? localixWorkspaceDir(),
       )
       if (depInstall?.toInstall.length) record.installedDependencies = depInstall.toInstall
       installNotes.push(...warnings)
@@ -704,10 +480,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
               { name, projectId: projectId || null, enabled: false },
               { ignoreDependents: true },
             ),
-          changed: (name, projectId) => {
-            invalidateInspection(name, projectId)
-            deps.onChanged?.()
-          },
+          changed: () => deps.onChanged?.(),
           warn: (message) => deps.logger?.warn?.(message),
         },
         userId,
@@ -727,21 +500,9 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
     // catalog caches clear, and the next run picks up fresh discovery results.
     onChanged: deps.onChanged
       ? () => {
-          invalidateInspection()
           deps.onChanged!()
         }
       : undefined,
-
-    authoring: createMiniAppAuthoring({
-      discover: () => discover({ cwd: null, projectId: '' }),
-      pluginsRoot: pluginInstallRoot('global', null, home),
-      kitDir: deps.miniAppKitDir ?? miniAppKitDir,
-      installedSource: async (userId, name) => (await repo.get(userId, '', name))?.source ?? null,
-      allowed: (userId, plugin) => verdictFor(userId, plugin),
-      enable: (userId, name) => service.setEnabled(userId, { name, enabled: true }),
-      disable: (userId, name) => service.setEnabled(userId, { name, enabled: false }),
-      changed: () => service.onChanged?.(),
-    }),
   }
   return service
 }

@@ -7,7 +7,7 @@ import {
 } from '@localixai/mini-app-sdk/ui'
 import type { ProblemReport } from '@localixai/mini-app-sdk/ui/problems'
 
-import { attributeMiniAppCaller, pluginLabel } from './miniAppAttribution'
+import { attributeMiniAppCaller, miniAppLabel } from './miniAppAttribution'
 
 /**
  * The toast the host lends plugins: its own, with each row named after the plugin that made it.
@@ -43,7 +43,7 @@ export interface AttributableToast extends Publish, Record<Method, Publish> {
 const callerStack = (): string =>
   miniAppNotificationCallSite() ?? new Error('plugin notification call site').stack ?? ''
 
-export function createPluginToast(
+export function createMiniAppToast(
   host: AttributableToast,
   stack: () => string = callerStack,
 ): MiniAppToast {
@@ -73,7 +73,7 @@ export function createPluginToast(
     // A report is usually published from the SDK's shared hook, inside a React effect whose stack
     // holds no plugin frame. Its `scope` is the plugin id by contract, which is the next best name.
     problems: (report: ProblemReport, options: MiniAppProblemsOptions) =>
-      host.problems(report, { ...options, source: sourceOf() ?? pluginLabel(options.scope) }),
+      host.problems(report, { ...options, source: sourceOf() ?? miniAppLabel(options.scope) }),
     problemsCleared: (subject: Pick<ProblemReport, 'subject'>, scope: string) =>
       host.problemsCleared(subject, scope),
     acknowledgeInline: (error?: unknown) => host.acknowledgeInline?.(error),

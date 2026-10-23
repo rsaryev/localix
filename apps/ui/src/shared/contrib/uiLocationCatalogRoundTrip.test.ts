@@ -5,7 +5,7 @@ import {
   type UiLocationContribution,
 } from '@localixai/mini-app-sdk/ui'
 
-import { setEnabledPluginNames } from './miniAppActivation'
+import { setEnabledMiniAppNames } from './miniAppActivation'
 import { createUiLocationRegistry, type UiLocationRegistry } from './uiLocations'
 
 /**
@@ -61,7 +61,7 @@ function snapshotOf(registry: UiLocationRegistry) {
   }
 }
 
-afterEach(() => setEnabledPluginNames(null))
+afterEach(() => setEnabledMiniAppNames(null))
 
 describe('agent catalog round trip', () => {
   test('every published agent location normalizes, builds a URI, and resolves back', () => {

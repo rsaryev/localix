@@ -81,6 +81,9 @@ export const PluginsIcon = () => (
   <S d="M6 2.5a1.5 1.5 0 013 0V4h2.5v2.5H13a1.5 1.5 0 010 3h-1.5V12H9v-1.5a1.5 1.5 0 00-3 0V12H3.5V9.5H5a1.5 1.5 0 000-3H3.5V4H6V2.5z" />
 )
 
+/** Mini apps — four tiles: an app with its own screens. */
+export const MiniAppIcon = () => <S d="M3 3h4v4H3zM9 3h4v4H9zM3 9h4v4H3zM9 9h4v4H9z" />
+
 /** Agent providers — a stacked-boxes metaphor for drop-in executors/LLM backends. */
 export const ProvidersIcon = () => (
   <S d="M8 1.5l5.5 3v7l-5.5 3-5.5-3v-7l5.5-3zM2.5 4.5L8 7.5l5.5-3M8 7.5v7" />

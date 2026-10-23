@@ -1,6 +1,6 @@
 # Snake
 
-This bundled plugin adds a Snake board per chat. The person chooses **I play** or **Model plays**.
+This bundled mini app adds a Snake board per chat. The person chooses **I play** or **Model plays**.
 The person steers with the arrow keys or a swipe; the decision model is asked by the board itself,
 one move at a time. There is no chat-agent player: the agent's `snake` tool only reads the board and
 starts a game.

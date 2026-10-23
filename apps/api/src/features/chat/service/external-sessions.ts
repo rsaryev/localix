@@ -3,7 +3,7 @@ import type { SeatRouteFor } from './session-route-defaults'
 import { assetBindings, type MessageAttachment } from '@localixai/agent'
 import type { ResolveSessionAgent } from './session-agent-selection'
 import { bornParticipants } from './participant-routes'
-import type { ChannelRunEvent } from '../../plugins/native'
+import type { ChannelRunEvent } from '../../mini-apps/native'
 import type { createChatRepository, SessionRecord } from '../repository'
 import type { SessionStreamRegistry } from '../runtime/session-stream-registry'
 import type { RunAgentFn } from './run-agent'
@@ -38,7 +38,7 @@ export interface ExternalTurnResult {
 }
 
 export interface ChannelInboundInput {
-  pluginName: string
+  app: string
   channelName: string
   message: {
     conversationId: string
@@ -239,12 +239,12 @@ export async function handleChannelInbound(
     }
     targetSessionId = pinned.id
   } else {
-    const key = `channel:${input.pluginName}:${input.channelName}:${input.message.conversationId}`
+    const key = `channel:${input.app}:${input.channelName}:${input.message.conversationId}`
     const { session } = await resolveExternalSession(ctx, userId, {
       key,
-      title: input.message.title?.trim() || `${input.pluginName}: ${input.message.conversationId}`,
+      title: input.message.title?.trim() || `${input.app}: ${input.message.conversationId}`,
       projectId: input.message.projectId,
-      noProviderMessage: `No provider connection available for channel "${input.pluginName}:${input.channelName}". Open the workspace and connect a provider first.`,
+      noProviderMessage: `No provider connection available for channel "${input.app}:${input.channelName}". Open the workspace and connect a provider first.`,
     })
     targetSessionId = session.id
   }

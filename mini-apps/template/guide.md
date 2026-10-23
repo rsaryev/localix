@@ -27,7 +27,7 @@ sees. Call `system_overview` for a fresh snapshot or when no pane context is pre
 available and differ, identify their timestamps instead of silently combining them.
 
 Report unavailable fields as unavailable. Do not infer hostnames, usernames, paths, network
-addresses, temperatures, disk state, process command lines, or a diagnosis: this plugin
+addresses, temperatures, disk state, process command lines, or a diagnosis: this mini app
 intentionally does not collect them. Ask before proposing any separate mutating or shell-based
 investigation unless the user's existing request already authorizes it.
 
@@ -37,7 +37,7 @@ Use `system_mark` when the user wants to compare the machine before and after so
 closing an app: it saves a short note with the CPU and memory of that moment, and the mark appears
 in the System Overview view. Mark before and after the change the user names, then compare the two
 samples; say that one sample of CPU is noisy rather than calling a difference a result. Marks are
-durable plugin state, not a read-only observation: up to 50 are retained, with notes limited to 200
+durable app state, not a read-only observation: up to 50 are retained, with notes limited to 200
 characters. They can outlive a pane or conversation.
 
 Mark values use the same one-second snapshot cache. A newly saved mark does not force a new CPU
@@ -49,8 +49,8 @@ the read-only tools remain available.
 Use `system_processes` for a current, CPU-sorted process list. It provides process names, PIDs,
 parent PIDs, CPU, and memory. When the user asks to manage a process, identify it precisely, explain
 the impact, and use native system tools only after the user's intent is clear. Refresh the list
-before acting to reduce the risk of targeting a reused PID, and verify the result afterward. The
-plugin intentionally provides context rather than hardcoded process actions.
+before acting to reduce the risk of targeting a reused PID, and verify the result afterward. The app
+intentionally provides context rather than hardcoded process actions.
 
 The collector retains at most 500 rows; the tool formats the first 100, and pane/resource context
 formats the first 50 before the host's context budget applies. These are partial lists, so an

@@ -21,6 +21,8 @@ import type { PreparedRunContext } from '../prompt-context'
 import type { buildRunToolRegistry } from './runtime-tools'
 import type { SessionRecord } from '../../repository'
 import { buildPluginsPromptContext } from './plugins-prompt-context'
+import { buildMiniAppsPromptContext } from './mini-apps-prompt-context'
+import type { LoadedMiniApps } from '../../../mini-apps/loader-contract'
 import { resolveRunOutputStyle } from './output-style'
 import type { RunPolicy } from '../../policy/run-policy'
 import { activeDescendantSubagents } from './descendant-roster'
@@ -45,9 +47,10 @@ export interface BuildRunSystemPromptOptions {
   providerId: string
   agentProfile: RunProfile
   runtimeTools: ReturnType<typeof buildRunToolRegistry>
-  /** The tools deferral left on the wire — what the roster and "# Plugins" describe. */
+  /** The tools deferral left on the wire — what the roster and "# Mini apps" describe. */
   wireToolNames?: readonly string[]
   loadedPlugins: LoadedPlugins
+  loadedMiniApps: LoadedMiniApps
   frozenContext: FrozenSessionContext
   pinnedSkills: PreparedRunContext['pinnedSkills']
   triggeredSkills: PreparedRunContext['triggeredSkills']
@@ -110,6 +113,7 @@ export async function buildRunSystemPrompt(
     providerId,
     agentProfile,
     loadedPlugins,
+    loadedMiniApps,
     frozenContext,
     pinnedSkills,
     triggeredSkills,
@@ -128,8 +132,9 @@ export async function buildRunSystemPrompt(
   const speaker = sessionAgent(session, speakerRoute.agentId)
 
   const onWire = new Set(runtimeTools.toolNames)
-  const pluginsContext = buildPluginsPromptContext(
-    loadedPlugins,
+  const pluginsContext = buildPluginsPromptContext(loadedPlugins, runtimeTools.toolNames)
+  const miniAppsContext = buildMiniAppsPromptContext(
+    loadedMiniApps,
     runtimeTools.toolNames,
     new Set(options.runtimeTools.toolNames.filter((name) => !onWire.has(name))),
   )
@@ -248,7 +253,9 @@ export async function buildRunSystemPrompt(
     // apply to this turn only, which is why they render in the volatile tail.
     triggeredSkills,
     pluginsContext,
+    miniAppsContext,
     awaitingConsentPlugins: loadedPlugins.awaitingConsent,
+    awaitingConsentMiniApps: loadedMiniApps.awaitingConsent,
     workspaceRoot: defaultCwd,
     workspaceIsGitRepo: isGitCheckout(defaultCwd),
     contextFiles,

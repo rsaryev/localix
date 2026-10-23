@@ -25,8 +25,6 @@ import {
 } from './monitor-host'
 import { defaultSpawn, substituteCommand } from './monitor-stream'
 import { parseMonitors } from './contracts-monitors'
-import { applyManifestPromotions } from './discovery-manifest-recovery'
-import { pluginManifestSchema } from './contracts'
 
 /** In-memory repo (mirrors channel-host.test). */
 function fakeRepo(rows: CapabilitySourceRecord[]): CapabilitySourceRepository {
@@ -117,7 +115,6 @@ async function waitFor(pred: () => boolean, ms = 2000): Promise<void> {
 }
 
 let dir: string
-const prevBundled = process.env.LOCALIX_BUNDLED_PLUGINS_DIR
 
 async function writePlugin(
   name: string,
@@ -125,9 +122,9 @@ async function writePlugin(
   files?: Record<string, string>,
 ) {
   const pdir = join(dir, '.localix', 'plugins', name)
-  await fs.mkdir(pdir, { recursive: true })
+  await fs.mkdir(join(pdir, '.claude-plugin'), { recursive: true })
   await fs.writeFile(
-    join(pdir, 'plugin.json'),
+    join(pdir, '.claude-plugin', 'plugin.json'),
     JSON.stringify({ name, version: '1.0.0', ...manifest }),
   )
   for (const [rel, content] of Object.entries(files ?? {})) {
@@ -138,9 +135,6 @@ async function writePlugin(
 
 beforeAll(async () => {
   dir = await fs.mkdtemp(join(tmpdir(), 'plugin-monitor-'))
-  process.env.LOCALIX_BUNDLED_PLUGINS_DIR = await fs.mkdtemp(
-    join(tmpdir(), 'plugin-monitor-bundled-'),
-  )
   await writePlugin('always-mon', {
     monitors: [{ name: 'watch', command: 'echo hi', description: 'watches', when: 'always' }],
   })
@@ -171,7 +165,10 @@ beforeAll(async () => {
   await writePlugin(
     'hook-mon',
     {
-      config: { TOKEN: { type: 'string', secret: true }, PUBLIC: { type: 'string' } },
+      userConfig: {
+        TOKEN: { type: 'string', title: 'Token', description: 'A token', sensitive: true },
+        PUBLIC: { type: 'string', title: 'Public', description: 'A public value' },
+      },
     },
     {
       'hooks/hooks.json': JSON.stringify({
@@ -181,24 +178,9 @@ beforeAll(async () => {
       }),
     },
   )
-  // Carries BOTH a monitor and a native entrypoint that announces its own import —
-  // the probe behind "the declarative path imports no plugin code".
-  await writePlugin(
-    'probe-mon',
-    {
-      tools: './tools.mjs',
-      monitors: [{ name: 'probe', command: 'echo probe' }],
-    },
-    {
-      'tools.mjs':
-        'globalThis.__localixMonitorProbeImported = true\nexport function register() { return { tools: [] } }\n',
-    },
-  )
 })
 
 afterAll(async () => {
-  if (prevBundled === undefined) delete process.env.LOCALIX_BUNDLED_PLUGINS_DIR
-  else process.env.LOCALIX_BUNDLED_PLUGINS_DIR = prevBundled
   await fs.rm(dir, { recursive: true, force: true })
 })
 
@@ -239,15 +221,20 @@ describe('parseMonitors (schema + validation)', () => {
   })
 })
 
-describe('manifest promotion', () => {
-  it('promotes experimental.monitors to top-level monitors', () => {
-    const raw: Record<string, unknown> = {
-      name: 'p',
+describe('experimental.monitors', () => {
+  it('loads the monitors Claude Code reads under experimental', async () => {
+    await writePlugin('experimental-mon', {
       experimental: { monitors: [{ name: 'm', command: 'echo m' }] },
-    }
-    applyManifestPromotions(raw)
-    const parsed = pluginManifestSchema.parse(raw)
-    expect(Array.isArray(parsed.monitors) && parsed.monitors.map((m) => m.name)).toEqual(['m'])
+    })
+    const loaded = await loadEnabledPlugins({
+      availability: on('experimental-mon'),
+      repo: fakeRepo([state('experimental-mon')]),
+      userId: 'u1',
+      projectId: '',
+      cwd: dir,
+      homeDir: dir,
+    })
+    expect(loaded.monitors.map((m) => m.monitor.name)).toEqual(['m'])
   })
 })
 
@@ -290,13 +277,8 @@ describe('monitor discovery (loader)', () => {
   })
 })
 
-/**
- * A monitor is manifest DATA, so the host that spawns them must not pay the native
- * pipeline to read them. It used to: `startAll` ran the full loader, which imports
- * every enabled plugin's entrypoint and executes its `register()` — at boot, and for
- * a list that across every bundled plugin is empty.
- */
-describe('monitor discovery (declarative — no plugin code imported)', () => {
+/** A monitor is manifest DATA: the host that spawns them reads them without the full loader. */
+describe('monitor discovery (declarative)', () => {
   it('returns the same monitors the full loader does', async () => {
     const repo = fakeRepo([state('always-mon'), state('skill-mon')])
     const scope = {
@@ -327,31 +309,6 @@ describe('monitor discovery (declarative — no plugin code imported)', () => {
         homeDir: dir,
       }),
     ).toEqual([])
-  })
-
-  it('does NOT import the plugin entrypoint — the positive control proves the probe works', async () => {
-    const marker = globalThis as typeof globalThis & { __localixMonitorProbeImported?: boolean }
-    // The dynamic import mutates this property; read afresh across that side-effect boundary.
-    const wasImported = () => marker.__localixMonitorProbeImported
-    delete marker.__localixMonitorProbeImported
-    const scope = {
-      repo: fakeRepo([state('probe-mon')]),
-      availability: on('probe-mon'),
-      userId: 'u1',
-      projectId: '',
-      cwd: dir,
-      homeDir: dir,
-    }
-
-    const declared = await loadEnabledPluginMonitors(scope)
-    expect(declared.map((m) => m.monitor.name)).toEqual(['probe'])
-    expect(marker.__localixMonitorProbeImported).toBeUndefined()
-
-    // Positive control: the full loader DOES import it, so an unset flag above is the
-    // declarative path avoiding the import — not a probe that never fires.
-    await loadEnabledPlugins(scope)
-    expect(wasImported()).toBe(true)
-    delete marker.__localixMonitorProbeImported
   })
 })
 

@@ -1,8 +1,8 @@
 # UI anchors and locations
 
 UI anchors and locations translate canonical Localix URIs into semantic workbench navigation
-targets. Use this page when making a resource, component, plugin view, command, or agent suggestion
-open through the shared navigation path.
+targets. Use this page when making a resource, component, mini app view, command, or agent
+suggestion open through the shared navigation path.
 
 ## Terminology
 
@@ -24,7 +24,7 @@ open through the shared navigation path.
 | Address a component directly | Declare a `UiLocationContribution` with `defineUiLocation`.                               | Registration requires an effect, surface kind, exposure policy, and valid query schema.        |
 | Address a trusted mutation   | Declare `localix://ui/action/<owner>/<name>` with `defineUiMutation`.                     | Resolution requires a user-driven caller to pass `allowWrite`; agent output cannot supply it.  |
 | Catalogue a nested component | Declare it with `defineContextualUiSurface`.                                              | Use this when the component has no safe standalone identity or cannot reconstruct its payload. |
-| Offer UI from an agent tool  | Return `ui.navigate` (`ctx.ui.offer` in a plugin) or bounded `ui.navigate.suggestions`.   | Serialized destinations are read-only; the frontend revalidates availability before opening.   |
+| Offer UI from an agent tool  | Return `ui.navigate` (`ctx.ui.offer` in a mini app) or bounded `ui.navigate.suggestions`. | Serialized destinations are read-only; the frontend revalidates availability before opening.   |
 
 ## How it works
 
@@ -45,18 +45,18 @@ Resolution returns a semantic target. `useUiNavigation` maps that target to rout
 sidebar, Settings, command, model-picker, overlay, file, or work-item behavior. `invokeUi` is the
 shared activation point and requests an optional element reveal after the host opens the target.
 
-### Discovery and plugin activation
+### Discovery and mini app activation
 
 `discoverUi` eagerly imports core `features/*/contrib` modules and `*.surface` declarations once. A
 malformed or colliding discovered surface throws, because silently omitting a static declaration
 would make the source catalogue differ from the running workbench.
 
-Bundled plugin UI follows the API's enabled-plugin snapshot. `discoverEnabledMiniAppUi` imports an
-enabled plugin's `ui/register.tsx` once, and `miniAppUiHostFor` stamps the plugin name on every
-contribution. Registries retain the definition after disable, but lookups and lists filter it out.
-Installed plugin views register from manifest data and can be removed during live reconciliation;
-their HTML runs through the separate iframe bridge described by the
-[plugin guide](../../extending/plugins.md#ui-paths).
+Bundled mini app UI follows the API's enabled mini app snapshot. `discoverEnabledMiniAppUi` imports
+an enabled mini app's `ui/register.tsx` once, and `miniAppUiHostFor` stamps the mini app name on
+every contribution. Registries retain the definition after disable, but lookups and lists filter it
+out. Installed mini app views register from manifest data and can be removed during live
+reconciliation; their HTML runs through the separate iframe bridge described by the
+[mini app guide](../../extending/mini-apps.md#ui-paths).
 
 ### Agent catalogue and serialized output
 
@@ -113,7 +113,7 @@ button; it never becomes a chat message or a model-blocking interaction.
 - `AddressableResource` is identity and presentation only. Resource providers own backend expansion,
   message bindings own chat attachment, and anchors or locations own navigation.
 - The frontend location registry is process-local. A restart rebuilds it from core declarations,
-  enabled bundled plugin code, and the current manifest-derived views.
+  enabled bundled mini app code, and the current manifest-derived views.
 - Backend catalogues are memory-only and globally bounded to 256 retained snapshots. An evicted id
   yields no agent destinations for that run.
 - Runtime-only locations stay out of backend catalogues. The agent has no catalogue-search tool: it
@@ -128,7 +128,7 @@ button; it never becomes a chat message or a model-blocking interaction.
 
 - [Global search](global-search.md)
 - [Workbench contributions](workbench-contributions.md)
-- [Plugin authoring](../../extending/plugins.md)
+- [Build a mini app](../../extending/mini-apps.md)
 - [Workspace](../../features/workspace.md)
 
 ## Source of truth

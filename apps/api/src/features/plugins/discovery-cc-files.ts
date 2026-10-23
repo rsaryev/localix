@@ -1,6 +1,6 @@
 import { basename } from 'node:path'
 
-import { summarizeZodIssues } from '@localixai/mini-app-sdk/backend'
+import { schemaIssue } from './contracts-base'
 
 import { mapCcToolList } from '../ext/cc-tool-names'
 import { coerceFrontmatterBool, trimmedFrontmatterField } from '../ext/frontmatter'
@@ -109,7 +109,7 @@ export async function parseCommandFile(
   diagnostics?.push({
     kind: 'command',
     path: file,
-    message: `Invalid command artifact: ${summarizeZodIssues(parsed.error).message}`,
+    message: `Invalid command artifact: ${schemaIssue(parsed.error)}`,
   })
   return null
 }
@@ -274,7 +274,7 @@ export async function parseAgentFile(
   diagnostics?.push({
     kind: 'agent',
     path: file,
-    message: `Invalid agent artifact: ${summarizeZodIssues(parsed.error).message}`,
+    message: `Invalid agent artifact: ${schemaIssue(parsed.error)}`,
   })
   return null
 }

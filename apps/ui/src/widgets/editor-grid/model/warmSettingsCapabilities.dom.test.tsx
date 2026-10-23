@@ -46,8 +46,8 @@ describe('warm-hidden Settings data sources', () => {
     // surface fetching when it must not.
     mock.restore()
     const { __resetCapabilityCache } = await import('@/shared/contrib/capabilityCache')
-    const { __resetPluginContrib } = await import('@/shared/contrib/enabledPlugins')
-    __resetPluginContrib()
+    const { __resetMiniAppContrib } = await import('@/shared/contrib/enabledMiniApps')
+    __resetMiniAppContrib()
     __resetCapabilityCache()
   })
 

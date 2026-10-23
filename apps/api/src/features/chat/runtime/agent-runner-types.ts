@@ -22,7 +22,7 @@ import type {
 } from '../../agent-core/tools/terminal/terminal-job'
 import type { PreviewControl } from '../../agent-core/tools/preview/preview-control'
 import type { MiniAppCommandControl } from './plugin-command-registry'
-import type { MiniAppAuthoring } from '../../plugins/authoring/service'
+import type { MiniAppAuthoring } from '../../mini-apps/authoring/service'
 import type { MediaStore } from '../../media/store'
 import type { MonitorService } from '../../monitors/service'
 import type { ExitNotices } from './exit-notices'
@@ -91,8 +91,8 @@ export interface RunnerDeps {
   readTerminalJob?: (input: { userId: string; terminalId: string }) => TerminalSnapshot | null
   /** Drives the interactive `terminal` tool (open/screen/keys/type/list/close). */
   terminalControl?: TerminalControl
-  /** Backs the `plugin_build` tool: the host's authoring of the user's own plugins. */
-  pluginAuthoring?: MiniAppAuthoring
+  /** Backs the `mini_app_build` tool: the host's authoring of the user's own plugins. */
+  miniAppAuthoring?: MiniAppAuthoring
   /** Drives the `browser` tool — relays commands to the open preview's probe. */
   previewControl?: PreviewControl
   /** Awaitable plugin→UI command relay — backs `ToolSessionContext.emitCommandWithReply` for tools that read their own UI surface back. */

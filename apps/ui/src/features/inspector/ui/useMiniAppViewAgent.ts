@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { parsePluginViewTarget } from '@localixai/api/plugin-view-target'
+import { parseMiniAppViewTarget } from '@localixai/api/mini-app-view-target'
 import { useChatStore } from '@/entities/chat/model/store'
 import { backendClient } from '@/shared/api/client'
 import { previewControlBus } from '@/shared/lib/previewControlBus'
@@ -18,7 +18,7 @@ export function useMiniAppViewAgent(): void {
     const hostId = crypto.randomUUID()
     const inFlight = new Set<string>()
     return previewControlBus.subscribe((event) => {
-      const plugin = parsePluginViewTarget(event.command.previewId)
+      const plugin = parseMiniAppViewTarget(event.command.previewId)
       if (!plugin || inFlight.has(event.commandId)) return
       inFlight.add(event.commandId)
       const respond = (payload: Record<string, unknown>) =>

@@ -55,11 +55,9 @@ beforeEach(() => {
       owner: { name: 'Me' },
       plugins: [
         { name: 'tool', source: './plugins/tool', version: '1.0.0', description: 'A tool' },
-        { name: 'app', source: './plugins/app' },
       ],
     }),
     'plugins/tool/skills/hi/SKILL.md': skill('TOOL-V1'),
-    'plugins/app/.localix-app/app.json': JSON.stringify({ name: 'app', version: '1.0.0' }),
   })
   writeTree(home, { '.keep': '' })
   service = createPluginService({ db, capabilityStores, homeDir: home })
@@ -135,14 +133,6 @@ describe('a plugin from a local-folder marketplace loads in place', () => {
     expect(await readInPlaceRecords(pluginsRoot())).toEqual({})
     expect(await listed()).toBeUndefined()
     folderIntact()
-  })
-
-  test('a mini app from the same marketplace is still copied', async () => {
-    await service.addMarketplace(user(), { source: folder })
-    const rec = await service.install(user(), { source: 'app@mine' })
-    expect(rec.loadsInPlace).toBeUndefined()
-    expect(rec.dir).toBe(join(pluginsRoot(), 'app'))
-    expect(await readInPlaceRecords(pluginsRoot())).toEqual({})
   })
 
   test('an update turns a copy an older build installed into an in-place plugin', async () => {

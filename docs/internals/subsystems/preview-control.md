@@ -49,29 +49,29 @@ A command names its tab by `preview_id`. Nothing is remembered or reopened: if n
 failure is reported as it is. The tool does not start an external headless browser or inspect an
 arbitrary browser tab.
 
-### Plugin views
+### Mini app views
 
-A plugin's workbench view has no URL, so it is addressed as `plugin:<name>`
-(`apps/api/src/contracts/plugin-view-target.ts`, parsed by both sides). `open` with that target
+A mini app's workbench view has no URL, so it is addressed as `mini-app:<name>`
+(`apps/api/src/contracts/mini-app-view-target.ts`, parsed by both sides). `open` with that target
 serves nothing and returns the target itself as the tab ID. The command then takes the relay above,
-and stage 3 is `useMiniAppViewAgent`, which claims every `plugin:*` command with the same claim
+and stage 3 is `useMiniAppViewAgent`, which claims every `mini-app:*` command with the same claim
 protocol as the other hosts. `apps/ui/src/features/inspector/model/miniAppViewHost.ts` runs it, in
 this order:
 
-| Step | Mechanism                                                                               | Boundary                                                             |
-| ---: | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-|    1 | Refuse `evaluate` (alone or in `steps`) and `viewport`                                  | evaluate would run in the Localix window, not a page                 |
-|    2 | Resolve the plugin's rail viewlet, else its only work-item kind                         | A plugin with no native UI answers `not_found` with the loaded views |
-|    3 | Open the tab through `inspector.openWorkItem` unless it is already visible              | Found by `data-work-item-id` on the tab panel                        |
-|    4 | Wait for a view it just opened to stop changing structure (300 ms quiet, 4 s cap)       | Text and attribute changes do not count, so a ticking view is quiet  |
-|    5 | Run the command with `@localixai/visual-feedback/embedded`, scoped to the panel element | Selectors, refs, Tab order and screenshots stay inside the panel     |
-|    6 | Name the snapshot and the screenshot after the view                                     | Not after the chat window around it                                  |
+| Step | Mechanism                                                                               | Boundary                                                               |
+| ---: | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+|    1 | Refuse `evaluate` (alone or in `steps`) and `viewport`                                  | evaluate would run in the Localix window, not a page                   |
+|    2 | Resolve the mini app's rail viewlet, else its only work-item kind                       | A mini app with no native UI answers `not_found` with the loaded views |
+|    3 | Open the tab through `inspector.openWorkItem` unless it is already visible              | Found by `data-work-item-id` on the tab panel                          |
+|    4 | Wait for a view it just opened to stop changing structure (300 ms quiet, 4 s cap)       | Text and attribute changes do not count, so a ticking view is quiet    |
+|    5 | Run the command with `@localixai/visual-feedback/embedded`, scoped to the panel element | Selectors, refs, Tab order and screenshots stay inside the panel       |
+|    6 | Name the snapshot and the screenshot after the view                                     | Not after the chat window around it                                    |
 
-`console` reads the plugin's own buffer (`apps/ui/src/shared/contrib/miniAppViewErrors.ts`):
-uncaught errors and console calls whose stack runs through the plugin's artifact, and render crashes
-its tab's boundary catches. The screenshot backdrop is `--background-solid`, because under the glass
-theme every pane is translucent. A sandboxed third-party view (an iframe) is outside the panel's
-reach.
+`console` reads the mini app's own buffer (`apps/ui/src/shared/contrib/miniAppViewErrors.ts`):
+uncaught errors and console calls whose stack runs through the mini app's artifact, and render
+crashes its tab's boundary catches. The screenshot backdrop is `--background-solid`, because under
+the glass theme every pane is translucent. A sandboxed third-party view (an iframe) is outside the
+panel's reach.
 
 ### Opening and target discovery
 

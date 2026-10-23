@@ -34,17 +34,16 @@ export interface RepeatedPath {
 }
 
 /**
- * What one plugin load cost, from the loader's own `plugins.loaded` line.
+ * What one mini app load cost, from the loader's own `mini_apps.loaded` line.
  *
- * Requests alone never showed this: importing and `register()`-ing every enabled plugin
- * happens off the request path entirely, so the most expensive thing a launch does was
+ * Requests alone never showed this: importing and `register()`-ing every enabled mini app's
+ * backend happens off the request path entirely, so the most expensive thing a launch does was
  * invisible to a report about launches.
  */
-export interface PluginLoad {
+export interface MiniAppLoad {
   time: number
-  plugins: number
-  catalogMs: number
-  nativeMs: number
+  apps: number
+  importMs: number
   totalMs: number
   slowest: Array<{ name: string; ms: number }>
 }
@@ -61,7 +60,7 @@ export interface BootAnalysis {
   /** Slowest individual calls, worst first. */
   slowest: BootRequest[]
   /** Every plugin load in the window — more than one means the boot loaded them twice. */
-  pluginLoads: PluginLoad[]
+  miniAppLoads: MiniAppLoad[]
 }
 
 interface LogLine {
@@ -71,9 +70,8 @@ interface LogLine {
   path?: string
   queryKeys?: string
   durationMs?: number
-  plugins?: number
-  catalogMs?: number
-  nativeMs?: number
+  apps?: number
+  importMs?: number
   totalMs?: number
   slowest?: Array<{ name: string; ms: number }>
 }
@@ -130,16 +128,15 @@ export function analyzeBoot(lines: readonly string[], windowMs = 5_000): BootAna
     }
   }
 
-  const pluginLoads: PluginLoad[] = []
+  const miniAppLoads: MiniAppLoad[] = []
   for (const entry of parsed) {
-    if (entry.event !== 'plugins.loaded') continue
+    if (entry.event !== 'mini_apps.loaded') continue
     if (typeof entry.time !== 'number' || typeof entry.totalMs !== 'number') continue
     if (entry.time < startedAt || entry.time > startedAt + windowMs) continue
-    pluginLoads.push({
+    miniAppLoads.push({
       time: entry.time,
-      plugins: entry.plugins ?? 0,
-      catalogMs: entry.catalogMs ?? 0,
-      nativeMs: entry.nativeMs ?? 0,
+      apps: entry.apps ?? 0,
+      importMs: entry.importMs ?? 0,
       totalMs: entry.totalMs,
       slowest: entry.slowest ?? [],
     })
@@ -154,7 +151,7 @@ export function analyzeBoot(lines: readonly string[], windowMs = 5_000): BootAna
       .sort((a, b) => b.count - a.count || b.totalMs - a.totalMs),
     writes: requests.filter((request) => request.method !== 'GET'),
     slowest: [...requests].sort((a, b) => b.durationMs - a.durationMs).slice(0, 8),
-    pluginLoads,
+    miniAppLoads,
   }
 }
 
@@ -202,17 +199,17 @@ if (import.meta.main) {
     console.log(`    ${String(request.durationMs).padStart(5)}ms ${request.method} ${request.path}`)
   }
 
-  if (analysis.pluginLoads.length > 0) {
-    const totalMs = analysis.pluginLoads.reduce((sum, load) => sum + load.totalMs, 0)
+  if (analysis.miniAppLoads.length > 0) {
+    const totalMs = analysis.miniAppLoads.reduce((sum, load) => sum + load.totalMs, 0)
     // More than one load per boot is the finding, not a detail: each one re-imports
-    // every enabled plugin and re-runs its `register()`.
+    // every enabled mini app's backend and re-runs its `register()`.
     const repeats =
-      analysis.pluginLoads.length > 1 ? ` across ${analysis.pluginLoads.length} loads` : ''
-    console.log(`  plugins:  ${totalMs}ms${repeats}`)
-    for (const load of analysis.pluginLoads) {
+      analysis.miniAppLoads.length > 1 ? ` across ${analysis.miniAppLoads.length} loads` : ''
+    console.log(`  mini apps:  ${totalMs}ms${repeats}`)
+    for (const load of analysis.miniAppLoads) {
       const worst = load.slowest.map((entry) => `${entry.name} ${entry.ms}ms`).join(', ')
       console.log(
-        `    ${String(load.totalMs).padStart(5)}ms  ${load.plugins} plugins (catalog ${load.catalogMs}ms, native ${load.nativeMs}ms)${worst ? ` — ${worst}` : ''}`,
+        `    ${String(load.totalMs).padStart(5)}ms  ${load.apps} mini apps (import ${load.importMs}ms)${worst ? ` — ${worst}` : ''}`,
       )
     }
   }

@@ -47,6 +47,8 @@ export interface RunEnv {
   projectsRepo: ReturnType<typeof createProjectsRepository>
   mcpRepo: ReturnType<typeof createMcpRepository>
   pluginRepo: CapabilitySourceRepository
+  /** The `mini-app` rows of `capability_source`. */
+  miniAppRepo: CapabilitySourceRepository
   /** Durable run rows: one per adapter invocation, swept on the next boot if it never closed. */
   agentRuns: AgentRunRepository
   state: RuntimeState

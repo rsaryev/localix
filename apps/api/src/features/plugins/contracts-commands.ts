@@ -96,11 +96,6 @@ export const pluginCommandSchema = z.object({
 })
 export type PluginCommand = z.infer<typeof pluginCommandSchema>
 
-/** What a mini app may set on one of its plugin's commands (`commandOptions`). */
-export const pluginCommandOptionsSchema = pluginCommandSchema
-  .pick({ args: true, featured: true, activateTools: true })
-  .partial()
-
 /**
  * UI-facing per-command spec returned by the commands endpoint. The `prompt`
  * template stays server-side (rendered during dispatch); the UI only needs enough

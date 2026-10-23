@@ -50,9 +50,9 @@ Use `export` for native JSON or YAML (complete document), Lanjut version 1 inter
 representable fields), linear Markdown, or plain text. The UI previews and exports the selected
 presentation through Documents using the SDK DocumentLayout contract; Markdown generation does not
 reproduce a resume template. Save UI drafts before PDF or Word export. PDF and DOCX need the
-Documents plugin enabled. Source import accepts text/Markdown and extracted PDF/DOCX/DOC/ODT; review
-unassigned text, and do not claim scanned PDF OCR support. Explain limitations honestly; do not
-claim a template guarantees ATS acceptance or invent a compatibility score.
+Documents mini app enabled. Source import accepts text/Markdown and extracted PDF/DOCX/DOC/ODT;
+review unassigned text, and do not claim scanned PDF OCR support. Explain limitations honestly; do
+not claim a template guarantees ATS acceptance or invent a compatibility score.
 
 The tool's `export` returns serialized content in its result; it does not save an export file or
 create PDF/DOCX. Use an authorized file tool to write returned content when a file is requested, or

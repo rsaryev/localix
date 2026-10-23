@@ -25,7 +25,7 @@ You can also launch a CLI manually in a project terminal:
 
 Only detected executables appear in the agent-link menu and native-history views. The runtime prompt
 gives shell-capable Localix agents the installed CLI names and basic commands; there is no
-external-agent plugin or bundled slash command to enable.
+external-agent mini app, plugin or bundled slash command to enable.
 
 ## Continue an existing session
 

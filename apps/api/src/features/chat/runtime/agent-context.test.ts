@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { agentDefinitionSchema } from '@localixai/agent/agents'
 import { composeCapabilities } from '../../capabilities/resolve'
 import { emptyLoadedPlugins } from '../../plugins/loader-contract'
+import { emptyLoadedMiniApps } from '../../mini-apps/loader-contract'
 import { sessionFixture, routedParticipants } from '../../../testing/session-fixture'
 import { createSessionSnapshotCache } from './session-snapshot'
 import type { FrozenSessionContext } from './frozen-session-context'
@@ -17,10 +18,10 @@ test('per-agent skills and memory selection reach ordinary and delegated turns w
     const reads: string[][] = []
     const snapshots = new Map<string, FrozenSessionContext>()
     const externalMemoryReads: string[] = []
-    const loadedPlugins = {
-      ...emptyLoadedPlugins(),
+    const loadedMiniApps = {
+      ...emptyLoadedMiniApps(),
       memory: {
-        pluginName: 'fixture-memory',
+        app: 'fixture-memory',
         provider: {
           loadContext: async () => {
             externalMemoryReads.push('recall')
@@ -61,7 +62,7 @@ test('per-agent skills and memory selection reach ordinary and delegated turns w
           snapshots.set(JSON.stringify(address), structuredClone(value))
         },
       },
-      runScopes: { resolve: async () => [skills, loadedPlugins, []] },
+      runScopes: { resolve: async () => [skills, emptyLoadedPlugins(), loadedMiniApps, []] },
       now: () => '2026-01-01T00:00:00Z',
     } as unknown as PromptContextDeps
     for (const sessionKind of ['chat', 'subagent'] as const) {

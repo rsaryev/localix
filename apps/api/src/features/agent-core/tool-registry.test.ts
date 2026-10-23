@@ -48,7 +48,7 @@ const maximalRegistryOptions = {
     delegate: {} as never,
     agents: {} as never,
     loops: {} as never,
-    plugin_build: { run: async () => ({ text: '', ok: true }) },
+    mini_app_build: { run: async () => ({ text: '', ok: true }) },
     set_topic: { save: async () => {} },
     skip_answer: createSkipAnswerTool(),
     codemode: {

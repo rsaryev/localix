@@ -12,7 +12,7 @@ selected passages through Localix's native resource, binding, search, and contex
   title/author overrides, bulk assignment/removal, roving spatial keyboard navigation, and a
   searchable book switcher in the breadcrumb with type-first focus, result announcements, and
   Arrow/Enter keyboard selection. Opening the switcher revalidates the shelf with latest-request
-  ownership, so additions, removals, and metadata edits do not require a plugin restart.
+  ownership, so additions, removals, and metadata edits do not require a mini app restart.
 - EPUB spine/navigation parsing; selectable, reflowed PDF text; MOBI/KF8 metadata, TOC, cover, text,
   and bounded images plus resolved `filepos`/Kindle position links; browser/mail/telephone links use
   the desktop host for primary and middle click without duplicate delegated opens; FB2 sections;
@@ -54,9 +54,9 @@ font, radius, and light/dark tokens so it stays visually aligned with the active
 
 ## Persistence and limits
 
-- The backend stores `library.json` and `stats.json` in the plugin data directory. The shelf records
-  source identities, metadata overrides, and collections; it does not copy path-backed books.
-  Removing a shelf entry leaves its source document intact.
+- The backend stores `library.json` and `stats.json` in the mini app data directory. The shelf
+  records source identities, metadata overrides, and collections; it does not copy path-backed
+  books. Removing a shelf entry leaves its source document intact.
 - Preferences, highlights/notes, bookmarks, sorting, and per-book progress use browser
   `localStorage`. They follow that browser storage context; clearing it removes those records.
 - Sources are limited to 64 MiB. EPUB/CBZ archive parsing accepts at most 3,000 entries and 160 MiB

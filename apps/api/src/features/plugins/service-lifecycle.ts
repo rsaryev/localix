@@ -13,7 +13,6 @@ import type { PluginCatalog } from './catalog'
 import { listDependents } from './dependencies'
 import { loadManifest, type DiscoveredPlugin } from './discovery'
 import {
-  LOCALIX_MARKETPLACE,
   marketplacesRoot,
   parseMarketplaceRef,
   readKnownMarketplaces,
@@ -112,7 +111,7 @@ export async function refreshLocalMarketplace(
   deps: MarketplaceRegistryDeps,
 ): Promise<void> {
   const ref = parseMarketplaceRef(source)
-  if (!ref || ref.marketplace === LOCALIX_MARKETPLACE) return
+  if (!ref) return
   const known = await readKnownMarketplaces(deps.root ?? marketplacesRoot())
   const kind = known[ref.marketplace]?.source.source
   if (kind !== 'local' && kind !== 'file') return

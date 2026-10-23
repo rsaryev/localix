@@ -3,7 +3,7 @@
 A map of a chat's project in the workbench — directories, files and symbols joined by imports, calls
 and inheritance — and seven agent tools that query the graph and control its view. User
 documentation is [docs/features/code-graph.md](../../docs/features/code-graph.md); this file is for
-working on the plugin.
+working on the mini app.
 
 ## Layout
 
@@ -21,7 +21,7 @@ working on the plugin.
 | `backend/view-tool.ts` | The visible graph report and camera-control tool.                               |
 | `ui/`                  | The workbench: one level laid out with dagre, drawn on `@localixai/kit/canvas`. |
 
-## Rules this plugin keeps
+## Rules this mini app keeps
 
 - **Extraction never looks at another file.** A file's extraction depends only on its bytes, so it
   is cached by content hash; every cross-file edge is rebuilt from the cache on each build. A change

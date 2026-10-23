@@ -1,7 +1,7 @@
 # 2048
 
-This bundled plugin adds a 2048 board per chat. The person chooses **I play** or **Agent plays** on
-the board. The person moves with the arrow keys or a swipe; the agent moves through `game_2048`,
+This bundled mini app adds a 2048 board per chat. The person chooses **I play** or **Agent plays**
+on the board. The person moves with the arrow keys or a swipe; the agent moves through `game_2048`,
 playing a whole game in the turn the board hands it. Tiles travel from cell to cell, merges and new
 tiles arrive once the slide lands, and a result card rises over the board when the game ends.
 
@@ -32,7 +32,7 @@ and a visible board re-reads its snapshot. A healthy feed has no periodic read; 
 the board polls every 800 ms during agent activity or 4 seconds while idle. Showing the pane or
 reconnecting reconciles its state.
 
-See [Wake a session from a plugin](../../docs/extending/plugin-wakes.md) for the contract.
+See [Wake a session from a mini app](../../docs/extending/mini-app-wakes.md) for the contract.
 
 ## Permissions and synchronization
 

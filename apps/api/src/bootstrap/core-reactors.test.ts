@@ -3,8 +3,9 @@ import { describe, expect, test } from 'bun:test'
 import { createDatabase } from '../db/connection'
 import { migrateToLatest } from '../db/migrator'
 import { createCoreChangeFeed } from '../features/changes/core-entities'
+import { createCapabilitySourceRepository } from '../features/capabilities/source-repository'
 import { createProjectsRepository } from '../features/projects/repository'
-import { notificationsCleanupHandlers, pluginBackendHandlers } from './core-reactors'
+import { notificationsCleanupHandlers, miniAppHostHandlers } from './core-reactors'
 
 async function setup() {
   const db = createDatabase()
@@ -23,13 +24,13 @@ const project = (id: string) => ({
   deletedAt: null,
 })
 
-describe('plugin backends follow projects', () => {
+describe('mini app hosts follow projects', () => {
   test('a project created, moved or deleted refreshes; a settings write does not', async () => {
     const { db, feed } = await setup()
     let refreshes = 0
     await feed.subscribe(
-      'plugin-backends',
-      pluginBackendHandlers(() => refreshes++),
+      'mini-app-hosts',
+      miniAppHostHandlers(() => refreshes++),
       {
         kind: 'reactor',
       },
@@ -43,6 +44,27 @@ describe('plugin backends follow projects', () => {
     await repo.deleteProject('u1', 'p1', '2026-02-02')
     await feed.settle()
     expect(refreshes).toBe(3)
+    await feed.close()
+  })
+})
+
+describe('mini app hosts follow their owner', () => {
+  test('a mini app settings write refreshes; a plugin settings write does not', async () => {
+    const { db, feed } = await setup()
+    let refreshes = 0
+    await feed.subscribe(
+      'mini-app-hosts',
+      miniAppHostHandlers(() => refreshes++),
+      { kind: 'reactor' },
+    )
+    await createCapabilitySourceRepository(db, 'plugin').upsert('u1', '', 'linter', {
+      config: { strict: true },
+    })
+    await createCapabilitySourceRepository(db, 'mini-app').upsert('u1', '', 'chess', {
+      config: { level: 3 },
+    })
+    await feed.settle()
+    expect(refreshes).toBe(1)
     await feed.close()
   })
 })

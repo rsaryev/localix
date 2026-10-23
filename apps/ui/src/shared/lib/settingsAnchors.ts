@@ -29,6 +29,16 @@ export function pluginSettingsUri(pluginName: string, scope = ''): string {
   return settingsEntityUiUri('plugins', 'plugin', pluginName, scope)
 }
 
+/** Stable DOM anchor for one mini app row in Settings → Capabilities → Mini apps. */
+export function miniAppSettingsAnchor(app: string): string {
+  return settingsEntityAnchor('mini-app', app)
+}
+
+/** Canonical cross-UI link to one mini app in an exact capability scope. */
+export function miniAppSettingsUri(app: string, scope = ''): string {
+  return settingsEntityUiUri('mini-apps', 'mini-app', app, scope)
+}
+
 export interface ParsedSettingsAnchor {
   tab: string
   anchor?: string

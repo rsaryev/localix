@@ -25,7 +25,7 @@ import type { MiniAppUiHost } from '@localixai/mini-app-sdk/ui'
 type PluginUiModule = { registerUi?: (host: MiniAppUiHost) => void }
 
 /** One enabled plugin's artifact, from the snapshot. */
-export interface PluginUiArtifact {
+export interface MiniAppUiArtifact {
   name: string
   entry: string
   styles: readonly string[]
@@ -33,20 +33,20 @@ export interface PluginUiArtifact {
 }
 
 /** Told which plugin's UI failed to load, so a broken one is diagnosable. */
-export type PluginUiFailureReporter = (pluginName: string, error: unknown) => void
+export type MiniAppUiFailureReporter = (pluginName: string, error: unknown) => void
 
-export interface PluginUiRuntimeDeps {
+export interface MiniAppUiRuntimeDeps {
   /** Import one artifact entry at one revision. */
-  importEntry: (artifact: PluginUiArtifact) => Promise<unknown>
+  importEntry: (artifact: MiniAppUiArtifact) => Promise<unknown>
   /** Attach an artifact's stylesheets; resolves once they applied, with their removal. */
-  mountStyles: (artifact: PluginUiArtifact) => Promise<() => void>
+  mountStyles: (artifact: MiniAppUiArtifact) => Promise<() => void>
   /** The ownership-stamping registration façade for one plugin. */
   hostFor: (pluginName: string) => MiniAppUiHost
   /** Take back everything `pluginName` registered. */
   remove: (pluginName: string) => void
   /** Registries changed without a capability publish: every surface re-reads. */
   announce: () => void
-  report: PluginUiFailureReporter
+  report: MiniAppUiFailureReporter
 }
 
 export interface MiniAppUiRuntime {
@@ -57,7 +57,7 @@ export interface MiniAppUiRuntime {
    * and a caller that counted it as one closed the plugin's tabs as unavailable.
    */
   reconcile(
-    artifacts: readonly PluginUiArtifact[],
+    artifacts: readonly MiniAppUiArtifact[],
     settled?: (pluginName: string, ok: boolean) => void,
   ): Promise<void>
   /** Name → revision of every plugin whose UI is registered right now. */
@@ -70,7 +70,7 @@ interface Loaded {
   unmountStyles: () => void
 }
 
-export function createPluginUiRuntime(deps: PluginUiRuntimeDeps): MiniAppUiRuntime {
+export function createMiniAppUiRuntime(deps: MiniAppUiRuntimeDeps): MiniAppUiRuntime {
   const loaded = new Map<string, Loaded>()
   /** What the latest reconcile wants per plugin: a revision, or null for "not loaded". */
   const wanted = new Map<string, string | null>()
@@ -89,7 +89,7 @@ export function createPluginUiRuntime(deps: PluginUiRuntimeDeps): MiniAppUiRunti
     module.registerUi?.(deps.hostFor(name))
   }
 
-  async function install(artifact: PluginUiArtifact): Promise<void> {
+  async function install(artifact: MiniAppUiArtifact): Promise<void> {
     let module: PluginUiModule
     let unmountStyles: () => void
     try {

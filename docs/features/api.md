@@ -5,7 +5,7 @@ repository exports, and bounded agent access. Use it when an API workflow should
 addressable inside the Localix workspace.
 
 **Availability:** The bundled `api` mini app is enabled by default and can be disabled in **Settings
-→ Capabilities → Plugins**. Requests to private or local hosts require the app’s **Allow
+→ Capabilities → Mini apps**. Requests to private or local hosts require the app’s **Allow
 private/internal hosts** option; enable it only for services you intend to call. Without it, a host
 whose address cannot be resolved is refused as well.
 
@@ -135,7 +135,7 @@ whose actual destination you control.
 
 - [Vault and secrets](secrets.md)
 - [Workspace and resource links](workspace.md)
-- [Mini apps](../extending/plugins.md)
+- [Mini apps](../extending/mini-apps.md)
 
 ## Source of truth
 

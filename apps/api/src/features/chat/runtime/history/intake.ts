@@ -16,7 +16,7 @@
  * persisted history after a rewrite resurrects the `uiOnly` rows the first step removed —
  * rows that would then reach the model.
  */
-import { runUserMessageHooks } from '../../../plugins/hooks'
+import { runUserMessageHooks } from '../../../mini-apps/hooks'
 import type { PersistedMessage } from '../../contracts'
 import type { SessionRecord } from '../../repository'
 import type { LoadedPlugins } from '../../../plugins/loader'
@@ -33,6 +33,7 @@ import { wrapSystemReminder } from '../system-reminder'
 import type { ChatTurnFrame } from './frame'
 import { currentSystemContextBindings } from '../../system-notice-bindings'
 import { historyAfterBoundary } from '../model-view/view'
+import type { LoadedMiniApps } from '../../../mini-apps/loader-contract'
 
 export interface IntakeArgs {
   deps: RunnerDeps
@@ -42,6 +43,7 @@ export interface IntakeArgs {
   /** Raw, persisted history for this run (last entry = the trigger prompt). */
   historyMessages: PersistedMessage[]
   loadedPlugins: LoadedPlugins
+  loadedMiniApps: LoadedMiniApps
   ccHooks: CcHooksRuntime
   /** Claude Code mods: `prompt.submit` and `turn.start` for this run's prompt. */
   mods?: ModRunScope
@@ -126,7 +128,7 @@ function typedCommandExpansion(message: PersistedMessage): CcPromptExpansion | u
 }
 
 export async function intakeTurn(args: IntakeArgs): Promise<IntakeResult> {
-  const { userId, session, loadedPlugins, ccHooks } = args
+  const { userId, session, loadedMiniApps, ccHooks } = args
 
   // System notices reach the model only through their deduplicated context bindings below.
   // Also exclude legacy model-visible notice rows so upgrading does not duplicate their prose.
@@ -142,12 +144,12 @@ export async function intakeTurn(args: IntakeArgs): Promise<IntakeResult> {
     !promptMessage.payload.isInternal &&
     typeof promptMessage.payload.content === 'string'
 
-  // Plugin onUserMessage hooks rewrite the MODEL-FACING prompt only; the persisted row the
+  // Mini app onUserMessage hooks rewrite the MODEL-FACING prompt only; the persisted row the
   // user sees is never changed. Real user prompts only — never internal continuations.
   let messages = modelHistory
-  if (loadedPlugins.hooks.length > 0 && isRealUserPrompt && promptMessage) {
+  if (loadedMiniApps.hooks.length > 0 && isRealUserPrompt && promptMessage) {
     const rewritten = await runUserMessageHooks(
-      loadedPlugins.hooks,
+      loadedMiniApps.hooks,
       { messageId: promptMessage.id, text: promptMessage.payload.content as string },
       { sessionId: session.id, logger: consoleWarnLogger },
     )

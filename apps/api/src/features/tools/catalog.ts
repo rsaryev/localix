@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import type { AgentToolCategory } from '@localixai/agent/agents'
 import { BUILTIN_TOOL_CATALOG, isProtocolTool } from '../agent-core/tool-names'
-import { pluginLabel } from '@localixai/mini-app-sdk/manifest'
+import { miniAppLabel } from '@localixai/mini-app-sdk/manifest'
 
 export const CATEGORY_LABELS = {
   core: 'Core',
@@ -30,32 +30,30 @@ export const toolMetaSchema = z.object({
   category: z.enum(TOOL_CATEGORIES),
   /** Required by the conversation protocol; it has no off switch. */
   required: z.boolean().optional(),
-  /** Present only for a tool contributed by a plugin. */
-  provider: z.object({ kind: z.literal('plugin'), id: z.string(), label: z.string() }).optional(),
+  /** Present only for a tool contributed by a mini app's backend. */
+  provider: z.object({ kind: z.literal('mini-app'), id: z.string(), label: z.string() }).optional(),
 })
 export type ToolMeta = z.infer<typeof toolMetaSchema>
 
-/** Minimum plugin projection needed to merge its live tool descriptors. */
-export interface ToolCatalogPluginSource {
+/** Minimum mini app projection needed to merge its live tool descriptors. */
+export interface ToolCatalogMiniAppSource {
   name: string
   displayName?: string
   enabled: boolean
-  provides: {
-    tools: readonly {
-      name: string
-      label: string
-      description: string
-    }[]
-  }
+  tools: readonly {
+    name: string
+    label: string
+    description: string
+  }[]
 }
 
 /**
  * One catalog tool plus WHY it cannot be dispatched, decided before any
  * settings policy runs.
  *
- * A tool contributed by a DISABLED plugin used to simply vanish from the catalog,
+ * A tool contributed by a DISABLED mini app used to simply vanish from the catalog,
  * which is why Settings could show a stale "N/M tools enabled" and a user had no way
- * to learn that the tool they were looking for went away with its plugin. Keeping the
+ * to learn that the tool they were looking for went away with its mini app. Keeping the
  * entry and naming the owner turns that silence into an explanation.
  */
 export interface ToolCatalogEntry {
@@ -83,27 +81,27 @@ export function builtinToolManifest(): ToolMeta[] {
 }
 
 /**
- * THE tool catalog for one scope: built-ins plus every plugin-contributed tool,
+ * THE tool catalog for one scope: built-ins plus every tool a mini app backend contributes,
  * each tagged with whether its owner is currently enabled.
  *
- * Enabled plugins are merged FIRST so the runtime's first-owner-wins name rule is
- * unchanged — a disabled plugin can never take a name from an enabled one, whatever
+ * Enabled mini apps are merged FIRST so the runtime's first-owner-wins name rule is
+ * unchanged — a disabled mini app can never take a name from an enabled one, whatever
  * order discovery happened to return them in.
  *
- * Note that a disabled plugin usually reports NO tools: descriptors come from
- * importing the plugin's entrypoint, which the trust gate only does while it is
+ * Note that a disabled mini app usually reports NO tools: descriptors come from
+ * importing the mini app's backend, which the trust gate only does while it is
  * enabled (see `service.toRecord`). So `unavailableReason` fires for the tools we can
- * still name — a plugin whose descriptors were already inspected, or one that
- * declares them in its manifest — and a plugin that was never imported simply
+ * still name — a mini app whose descriptors were already inspected, or one that
+ * declares them in its manifest — and a mini app that was never imported simply
  * contributes nothing, exactly as before.
  */
 export function toolCatalogEntries(
-  plugins: readonly ToolCatalogPluginSource[],
+  miniApps: readonly ToolCatalogMiniAppSource[],
 ): ToolCatalogEntry[] {
   const entries: ToolCatalogEntry[] = builtinToolManifest().map((meta) => ({ meta }))
   const names = new Set(entries.map(({ meta }) => meta.name))
-  const merge = (plugin: ToolCatalogPluginSource) => {
-    for (const descriptor of plugin.provides.tools) {
+  const merge = (app: ToolCatalogMiniAppSource) => {
+    for (const descriptor of app.tools) {
       if (names.has(descriptor.name)) continue
       names.add(descriptor.name)
       entries.push({
@@ -111,31 +109,31 @@ export function toolCatalogEntries(
           ...descriptor,
           category: 'automation',
           provider: {
-            kind: 'plugin',
-            id: plugin.name,
-            label: pluginLabel(plugin),
+            kind: 'mini-app',
+            id: app.name,
+            label: miniAppLabel(app),
           },
         },
-        ...(plugin.enabled
+        ...(app.enabled
           ? {}
           : {
-              unavailableReason: `provided by disabled plugin "${pluginLabel(plugin)}"`,
+              unavailableReason: `provided by disabled mini app "${miniAppLabel(app)}"`,
             }),
       })
     }
   }
-  for (const plugin of plugins) if (plugin.enabled) merge(plugin)
-  for (const plugin of plugins) if (!plugin.enabled) merge(plugin)
+  for (const app of miniApps) if (app.enabled) merge(app)
+  for (const app of miniApps) if (!app.enabled) merge(app)
   return entries
 }
 
-/** Merge core and live plugin descriptors, keeping the runtime's first-owner-wins rule. */
-export function toolManifest(plugins: readonly ToolCatalogPluginSource[]): ToolMeta[] {
-  return toolCatalogEntries(plugins).flatMap((entry) =>
+/** Merge core and live mini app descriptors, keeping the runtime's first-owner-wins rule. */
+export function toolManifest(miniApps: readonly ToolCatalogMiniAppSource[]): ToolMeta[] {
+  return toolCatalogEntries(miniApps).flatMap((entry) =>
     entry.unavailableReason ? [] : [entry.meta],
   )
 }
 
-export function toolCatalogNames(plugins: readonly ToolCatalogPluginSource[]): string[] {
-  return toolManifest(plugins).map(({ name }) => name)
+export function toolCatalogNames(miniApps: readonly ToolCatalogMiniAppSource[]): string[] {
+  return toolManifest(miniApps).map(({ name }) => name)
 }

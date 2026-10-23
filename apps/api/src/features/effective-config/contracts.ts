@@ -116,7 +116,8 @@ export const effectiveConfigReportSchema = z.object({
   tools: toolSurfaceSchema,
   permissions: z.array(permissionSummaryEntrySchema),
   skills: z.array(z.object({ name: z.string(), override: z.string() })),
-  plugins: z.array(z.object({ name: z.string(), enabled: z.boolean() })),
+  /** The mini apps whose backend tools the surface above counts. */
+  miniApps: z.array(z.object({ name: z.string(), enabled: z.boolean() })),
 })
 export type EffectiveConfigReport = z.infer<typeof effectiveConfigReportSchema>
 

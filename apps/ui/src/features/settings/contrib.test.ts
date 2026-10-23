@@ -1,10 +1,10 @@
 import { afterEach, expect, test } from 'bun:test'
 import type { MiniAppUiHost, UiAnchorContribution, UiAnchorNode } from '@localixai/mini-app-sdk/ui'
 import type { PluginRecord } from '@/shared/api/contracts'
-import { __resetPluginContrib, refetchPluginContrib } from '@/shared/contrib/enabledPlugins'
+import { __resetMiniAppContrib, refetchMiniAppContrib } from '@/shared/contrib/enabledMiniApps'
 import { registerUi } from './contrib'
 
-afterEach(__resetPluginContrib)
+afterEach(__resetMiniAppContrib)
 
 test('exposes exact-scope plugin rows to the centralized /open anchor tree', async () => {
   const plugin = {
@@ -13,15 +13,17 @@ test('exposes exact-scope plugin rows to the centralized /open anchor tree', asy
     projectId: 'PRJ-1',
     enabled: true,
   } as PluginRecord
-  await refetchPluginContrib(
+  await refetchMiniAppContrib(
     {
       // ONE loader, not the former panels/plugins/views fan-out: the store now reads a
       // single server-computed snapshot, which is what makes it impossible for the
       // plugin list and the tool list to disagree about which plugins are on.
       loadSnapshot: async () => ({
         revision: 1,
-        scope: { projectId: 'PRJ-1', agentId: null, sessionId: null },
+        scope: { projectId: 'PRJ-1', agentId: null },
         plugins: [plugin],
+        miniApps: [],
+        miniAppCommands: [],
         tools: {
           enabled: [],
           disabled: [],
@@ -31,7 +33,6 @@ test('exposes exact-scope plugin rows to the centralized /open anchor tree', asy
           mcpUnprobedServers: [],
         },
         views: [],
-        panels: [],
         agents: [],
         commands: [],
         mcp: [],

@@ -15,7 +15,7 @@ function makePorts(over: Partial<AgentConfigPorts> = {}): AgentConfigPorts {
     loadSession: async () => null,
     resolveModel: async () => RESOLVED,
     listSkillNames: async () => [],
-    listPlugins: async () => [{ name: 'sample-plugin', enabled: true, provides: { tools: [] } }],
+    listMiniApps: async () => [{ name: 'sample-app', enabled: true, tools: [] }],
     ...over,
   }
 }
@@ -29,7 +29,7 @@ describe('AgentConfigurationService.getEffective', () => {
     expect(report.values.maxTurns).toBe(20)
     expect(report.provenance.maxTurns).toEqual({ scope: 'user' })
     expect(report.revision).toMatch(/^[0-9a-f]{16}$/)
-    expect(report.plugins).toEqual([{ name: 'sample-plugin', enabled: true }])
+    expect(report.miniApps).toEqual([{ name: 'sample-app', enabled: true }])
 
     // Determinism: the same inputs yield the same revision.
     const again = await svc.getEffective({ userId: 'u1' })
@@ -91,27 +91,25 @@ describe('AgentConfigurationService.getEffective', () => {
     expect(report.scope.projectId).toBe('PRJ-3')
   })
 
-  test('recognizes plugin tools from the same scoped plugin inventory', async () => {
+  test('recognizes mini app tools from the same scoped mini app inventory', async () => {
     const svc = createAgentConfigurationService(
       makePorts({
         loadCapabilities: async () => ({
           permissions: [],
           skillOverrides: {},
-          disabledTools: ['plugin_search'],
+          disabledTools: ['app_search'],
         }),
-        listPlugins: async () => [
+        listMiniApps: async () => [
           {
-            name: 'search-plugin',
+            name: 'search-app',
             enabled: true,
-            provides: {
-              tools: [
-                {
-                  name: 'plugin_search',
-                  label: 'Plugin search',
-                  description: 'Search through plugin data.',
-                },
-              ],
-            },
+            tools: [
+              {
+                name: 'app_search',
+                label: 'App search',
+                description: 'Search through the app data.',
+              },
+            ],
           },
         ],
       }),
@@ -121,20 +119,20 @@ describe('AgentConfigurationService.getEffective', () => {
     expect(
       report.diagnostics.some((diagnostic) => diagnostic.code === 'disabled_tool_unknown'),
     ).toBe(false)
-    expect(report.plugins).toEqual([{ name: 'search-plugin', enabled: true }])
+    expect(report.miniApps).toEqual([{ name: 'search-app', enabled: true }])
   })
 
-  test('diagnostics query skills and plugins in the same exact project scope', async () => {
+  test('diagnostics query skills and mini apps in the same exact project scope', async () => {
     const skillScopes: Array<string | null> = []
-    const pluginScopes: Array<string | null> = []
+    const miniAppScopes: Array<string | null> = []
     const svc = createAgentConfigurationService(
       makePorts({
         listSkillNames: async (_userId, projectId) => {
           skillScopes.push(projectId)
           return []
         },
-        listPlugins: async (_userId, projectId) => {
-          pluginScopes.push(projectId)
+        listMiniApps: async (_userId, projectId) => {
+          miniAppScopes.push(projectId)
           return []
         },
       }),
@@ -144,7 +142,7 @@ describe('AgentConfigurationService.getEffective', () => {
     await svc.getEffective({ userId: 'u1' })
 
     expect(skillScopes).toEqual(['PRJ-3', null])
-    expect(pluginScopes).toEqual(['PRJ-3', null])
+    expect(miniAppScopes).toEqual(['PRJ-3', null])
   })
 
   test('a session supplies the project id + authoritative model', async () => {

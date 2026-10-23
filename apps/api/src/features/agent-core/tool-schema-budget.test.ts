@@ -13,7 +13,7 @@ import { richRegistry } from './prompt/testing/prompt-render'
  *
  * The ratchet itself then went blind: it was measured on a harness of name-only stubs
  * (`memory`, `jobs` and the then-core task board at ~33 tokens each) with `vault`, `configure`, `context_budget`
- * and `plugin_build` missing and `bash` built without its PTY fields. It read 6.4k while a real
+ * and `mini_app_build` missing and `bash` built without its PTY fields. It read 6.4k while a real
  * chat paid 10.4k. It now counts the registry a chat host builds, from the real factories
  * (`testing/production-ports.ts`), and the second test below is what keeps it that way.
  */
@@ -33,7 +33,9 @@ import { richRegistry } from './prompt/testing/prompt-render'
 // domain, by meaning too, plus the conversation reads, in one tool (measured total 7,789).
 // `codemode` (1,669): its description declares `read`, `bash`,
 // `edit` and `write` again as the TypeScript a script calls (measured total 9,358).
-const WIRE_BUDGET_TOKENS = 9_400
+// Mini apps split from plugins: `configure` names its own `mini-app.enable` remedy beside
+// `plugin.enable` (+52), since a mini app's tools are switched by the app (measured total 9,449).
+const WIRE_BUDGET_TOKENS = 9_450
 /** No single tool may take more than this — `browser` was 1,900 before its diet. */
 const PER_TOOL_CEILING_TOKENS = 800
 /** `codemode` restates four tools' schemas by design; it answers to the total, not the ceiling. */
@@ -65,7 +67,7 @@ describe('default wire schema budget', () => {
       TOOL.vault,
       TOOL.configure,
       TOOL.context_budget,
-      TOOL.plugin_build,
+      TOOL.mini_app_build,
       TOOL.memory,
       TOOL.jobs,
       TOOL.delegate,

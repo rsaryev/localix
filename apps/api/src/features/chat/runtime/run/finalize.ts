@@ -16,7 +16,7 @@ import type { PersistedMessage, MessageTiming } from '../../contracts'
 import type { LoadedPlugins } from '../../../plugins/loader'
 import type { CcHooksRuntime } from '../../../cc-hooks'
 import type { ModRunScope } from '../../../mods/run-scope'
-import { runAssistantMessageHooks, runMemoryProviderRunEnd } from '../../../plugins/hooks'
+import { runAssistantMessageHooks, runMemoryProviderRunEnd } from '../../../mini-apps/hooks'
 import { finalizeTiming } from './turn-state'
 import { publishSessionTiming, type TurnEventContext } from './event-handlers'
 import type { ResolvedRunModel } from './model-selection'
@@ -29,6 +29,7 @@ import { routeConversationReply } from './conversation-routing'
 import { runTeammateIdle, type TeammateIdleOutcome } from './teammate-idle'
 import { publishedText } from '../spoken-text'
 import { applyDisplayTexts } from './message-display'
+import type { LoadedMiniApps } from '../../../mini-apps/loader-contract'
 export { finalizeFailedRun, rateLimitBackoffMs } from './finalize-failure'
 
 export async function finalizeSuccessfulRun(args: {
@@ -38,6 +39,7 @@ export async function finalizeSuccessfulRun(args: {
   providerEntry: ResolvedRunModel['providerEntry']
   rawModelId: string
   loadedPlugins: LoadedPlugins
+  loadedMiniApps: LoadedMiniApps
   ccHooks: CcHooksRuntime
   /** Claude Code mods: `turn.complete`, whose `{ text }` is a line under the answer. */
   mods?: ModRunScope
@@ -109,9 +111,9 @@ export async function finalizeSuccessfulRun(args: {
   // Plugin onAssistantMessage hooks: the final reply is complete — plugins
   // may replace the persisted text and/or add message bindings.
   // Runs before the final persist so the result lands in ONE write.
-  if (args.loadedPlugins.hooks.length > 0 && state.currentPayload.content) {
+  if (args.loadedMiniApps.hooks.length > 0 && state.currentPayload.content) {
     const hookResult = await runAssistantMessageHooks(
-      args.loadedPlugins.hooks,
+      args.loadedMiniApps.hooks,
       { messageId: assistantMessageId, content: state.currentPayload.content },
       {
         sessionId: session.id,
@@ -150,9 +152,9 @@ export async function finalizeSuccessfulRun(args: {
 
   // External memory provider: fire-and-forget extraction pass with the
   // completed turn (user prompt + final assistant text, post-hook).
-  if (args.loadedPlugins.memory) {
+  if (args.loadedMiniApps.memory) {
     runMemoryProviderRunEnd(
-      args.loadedPlugins.memory,
+      args.loadedMiniApps.memory,
       {
         sessionId: session.id,
         projectId: session.projectId,

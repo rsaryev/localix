@@ -45,8 +45,9 @@ and correcting mistakes with a new retroactive event rather than editing the old
 ## How Localix applies it
 
 - The core registry is `CORE_ENTITIES` in `apps/api/src/features/changes/core-entities.ts`:
-  `chat.session`, `chat.message`, `skill`, `plugin`, `mcp`, `agent`, each with a Zod ref schema.
-- Plugins get their own open registry and stream (`plugin:<name>`) through
+  `chat.session`, `chat.message`, `skill`, `plugin`, `mini-app`, `mcp`, `agent`, each with a Zod ref
+  schema.
+- Mini apps get their own open registry and stream (`plugin:<name>`) through
   `apps/api/src/features/changes/plugin-host.ts`.
 - Owners announce their own kinds: chat writers through
   `apps/api/src/features/chat/session-changes.ts`, capabilities through

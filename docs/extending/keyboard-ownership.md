@@ -4,7 +4,7 @@ Controls and native editors receive a key before workspace shortcuts. A componen
 handler calls `preventDefault()` when it handles the key, or `stopPropagation()` when the event must
 stay local. The host then dispatches unclaimed commands.
 
-For commands spanning a native plugin pane, use `useFocusEntry` from
+For commands spanning a native mini app pane, use `useFocusEntry` from
 `@localixai/mini-app-sdk/ui/focus` with a unique instance ID, the pane's live DOM `scope`, and its
 visibility flag. A mounted pane receives only events whose DOM path includes its scope.
 
@@ -76,7 +76,7 @@ barriers to the surface-handler walk even when their policy is overridden.
 
 A scope getter returning `null` owns no event. Portalled content outside the pane root is outside
 that scope; use the kit's overlay ownership for dialogs and menus rather than assuming the pane
-claim covers them. This hook applies to native DOM plugin panes; sandboxed iframe views have a
+claim covers them. This hook applies to native DOM mini app panes; sandboxed iframe views have a
 separate [host boundary](sandboxed-views.md).
 
 See [Keyboard shortcuts](../features/keyboard-shortcuts.md) for user-facing focus behavior.

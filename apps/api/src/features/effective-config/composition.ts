@@ -1,5 +1,6 @@
 import type { AssembledRunTools } from '../chat/runtime/run/tool-assembly'
 import type { LoadedPlugins } from '../plugins/loader'
+import type { LoadedMiniApps } from '../mini-apps/loader-contract'
 
 /**
  * "What is actually loaded right now, and who contributed it?"
@@ -20,6 +21,7 @@ import type { LoadedPlugins } from '../plugins/loader'
 export type ToolOrigin =
   | { kind: 'core' }
   | { kind: 'plugin' }
+  | { kind: 'mini-app' }
   | { kind: 'mcp'; server: string }
   | { kind: 'mcp-resources' }
 
@@ -38,7 +40,7 @@ export interface PluginCompositionEntry {
   name: string
   scope: 'global' | 'project'
   /** What it contributed, by name — a plugin that loaded and contributed nothing shows empty. */
-  contributes: { tools: string[]; skills: string[]; mcpServers: string[] }
+  contributes: { skills: string[]; mcpServers: string[] }
   /**
    * Why it contributed nothing, when that is the answer. A plugin that failed to load is the
    * single most likely cause of "the model cannot see my tool", so it is reported rather than
@@ -47,8 +49,18 @@ export interface PluginCompositionEntry {
   error?: string
 }
 
+/** One enabled mini app and the tools its backend gave the run. */
+export interface MiniAppCompositionEntry {
+  name: string
+  scope: 'global' | 'project'
+  contributes: { tools: string[] }
+  /** Why it contributed nothing, when that is the answer. */
+  error?: string
+}
+
 export interface CompositionReport {
   plugins: PluginCompositionEntry[]
+  miniApps: MiniAppCompositionEntry[]
   tools: ToolCompositionEntry[]
   /** Wrapper order, innermost-first, as applied — read from the assembly, not restated. */
   wrappers: readonly string[]
@@ -62,6 +74,7 @@ function originOf(name: string, sourceByTool: ReadonlyMap<string, string>): Tool
   const source = sourceByTool.get(name)
   if (source === undefined) return { kind: 'core' }
   if (source === 'plugins') return { kind: 'plugin' }
+  if (source === 'mini-apps') return { kind: 'mini-app' }
   if (source === 'mcp-resources') return { kind: 'mcp-resources' }
   return { kind: 'mcp', server: source }
 }
@@ -76,11 +89,12 @@ export function describeComposition(input: {
     'wireToolNames' | 'deferredToolNames' | 'sourceByTool' | 'mcpInventory'
   >
   loadedPlugins: Pick<LoadedPlugins, 'loaded'>
+  loadedMiniApps: Pick<LoadedMiniApps, 'loaded'>
   /** The labels of the tool wrappers the run applied, outermost last. */
   wrappers: readonly string[]
   policy?: readonly { axis: string; variant: string }[]
 }): CompositionReport {
-  const { assembled, loadedPlugins } = input
+  const { assembled, loadedPlugins, loadedMiniApps } = input
 
   const tools: ToolCompositionEntry[] = [
     ...assembled.wireToolNames.map((name) => ({
@@ -102,12 +116,14 @@ export function describeComposition(input: {
     plugins: loadedPlugins.loaded.map((plugin) => ({
       name: plugin.name,
       scope: plugin.scope,
-      contributes: {
-        tools: plugin.toolNames,
-        skills: plugin.skills,
-        mcpServers: plugin.mcpServers,
-      },
+      contributes: { skills: plugin.skills, mcpServers: plugin.mcpServers },
       ...(plugin.error ? { error: plugin.error } : {}),
+    })),
+    miniApps: loadedMiniApps.loaded.map((app) => ({
+      name: app.name,
+      scope: app.scope,
+      contributes: { tools: app.toolNames },
+      ...(app.error ? { error: app.error } : {}),
     })),
     tools,
     wrappers: [...input.wrappers],

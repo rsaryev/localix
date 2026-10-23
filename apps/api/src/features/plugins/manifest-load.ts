@@ -14,10 +14,9 @@ import {
 import { mapCcTools, parseAgentFile, parseCommandFile } from './discovery-cc-files'
 import type { DiscoveredPlugin } from './discovery-types'
 import { resolveEntrypoints } from './discovery-entrypoints'
-import { parseComposedManifest } from './discovery-manifest-recovery'
+import { parseComposedManifest } from './manifest-parse'
 import { composeManifest, type ManifestFiles } from './layout/compose'
 import { readManifestFiles } from './layout/read'
-import { agentContributionSchema } from '../agents/contribution'
 import { CC_INERT_HOOK_EVENTS, isCcHookEvent, isInertCcHookEvent } from '../cc-hooks/contracts'
 import { isRecord } from '../../lib/record'
 
@@ -74,21 +73,6 @@ function hookIssues(configs: readonly unknown[]): PluginIssue[] {
   ]
 }
 
-/**
- * A mini app's presentation of its plugin's commands (`commandOptions`): pickers, `featured`,
- * `activateTools`. The plugin's prompt is kept; a name the plugin does not declare is ignored.
- */
-function applyCommandOptions(
-  commands: PluginCommand[],
-  options: PluginManifest['commandOptions'],
-): void {
-  if (!options) return
-  for (const command of commands) {
-    const extra = options[command.name]
-    if (extra) Object.assign(command, extra)
-  }
-}
-
 /** Read the skill names inside resolved skill dirs (a subdir is a skill iff it has SKILL.md). */
 async function readSkillNames(skillDirs: string[]): Promise<string[]> {
   const allNames = await Promise.all(
@@ -108,10 +92,10 @@ async function readSkillNames(skillDirs: string[]): Promise<string[]> {
 }
 
 /**
- * Parse one extension directory into a DiscoveredPlugin (never throws). The folder's plugin
- * (`.claude-plugin/plugin.json`), mini app (`.localix-app/app.json`) or legacy root `plugin.json`
- * is composed into one runtime manifest (`layout/compose.ts`); a folder with none is a plugin named
- * after itself (Claude Code parity), as long as it holds a recognized component.
+ * Parse one plugin directory into a DiscoveredPlugin (never throws). Its
+ * `.claude-plugin/plugin.json` is read as Claude Code reads it (`layout/compose.ts`); a folder with
+ * none is a plugin named after itself (Claude Code parity), as long as it holds a recognized
+ * component.
  *
  * `withManifests` lets a caller that reads a folder in place combine what it holds with what
  * Claude Code would combine it with — its marketplace entry (`claude-code-installs.ts`).
@@ -120,15 +104,13 @@ export async function loadManifest(
   dir: string,
   scope: 'global' | 'project',
   projectId: string,
-  bundled = false,
   withManifests?: (files: ManifestFiles) => ManifestFiles,
 ): Promise<DiscoveredPlugin> {
   const files = await readManifestFiles(dir)
   const composed = composeManifest(withManifests ? withManifests(files) : files, basename(dir))
-  // Promote, validate and recover live in parseComposedManifest: a malformed manifest errors, a
-  // missing one does not.
+  // A malformed manifest errors, a missing one does not (`manifest-parse.ts`).
   const parsed = parseComposedManifest(composed, basename(dir))
-  const { manifest, rawManifest, manifestRecovered } = parsed
+  const { manifest, rawManifest } = parsed
   // "`userConfig` options … are strict. An unknown key inside one is an error, and the plugin
   // doesn't load." The option used to be dropped with an issue and the plugin loaded anyway.
   const strictIssue = composed.issues.find(
@@ -137,7 +119,7 @@ export async function loadManifest(
   const promoted = parsed.error ? undefined : strictIssue
   const error = parsed.error ?? (promoted ? `${promoted.message} (${promoted.path})` : undefined)
 
-  const entrypoints = await resolveEntrypoints(dir, manifest, composed.layout)
+  const entrypoints = await resolveEntrypoints(dir, manifest)
   // Parse command and agent files in parallel (independent reads).
   const [parsedCmdFiles, parsedAgentFiles, skillNames] = await Promise.all([
     Promise.all(
@@ -159,7 +141,6 @@ export async function loadManifest(
       seenCommandNames.add(cmd.name)
     }
   }
-  applyCommandOptions(commands, manifest.commandOptions)
   const agents: PluginAgent[] = Array.isArray(manifest.agents)
     ? manifest.agents.filter((a): a is PluginAgent => typeof a === 'object' && a !== null)
     : []
@@ -170,19 +151,8 @@ export async function loadManifest(
       seenAgentNames.add(agent.name)
     }
   }
-  const agentNames = [
-    ...new Set([
-      ...agents.map((agent) => `${manifest.name}:${agent.name}`),
-      ...(manifest.contributions ?? []).flatMap((entry) => {
-        if (entry.kind !== 'agent') return []
-        const parsed = agentContributionSchema.safeParse(entry.value)
-        return parsed.success ? [`${manifest.name}:${parsed.data.definition.handle}`] : []
-      }),
-    ]),
-  ]
+  const agentNames = [...new Set(agents.map((agent) => `${manifest.name}:${agent.name}`))]
   const provides: PluginProvides = {
-    hasNativeTools: entrypoints.toolEntries.length > 0,
-    tools: [], // filled by live inspection for enabled plugins
     skills: skillNames,
     mcpServers: Object.keys(entrypoints.mcpServers),
     commands: commands.map((c) => c.name),
@@ -191,7 +161,7 @@ export async function loadManifest(
       ? { lspServers: Object.keys(entrypoints.lspServers) }
       : {}),
   }
-  const layoutIssues = [
+  const manifestIssues = [
     // A promoted issue is the plugin's error now; listing it twice would count it twice.
     ...composed.issues.filter((found) => found !== promoted),
     // A hooks file that failed to load: the plugin runs without the hooks in it.
@@ -216,10 +186,7 @@ export async function loadManifest(
     provides,
     commands,
     agents,
-    bundled,
     error,
-    layout: composed.layout,
-    ...(layoutIssues.length ? { layoutIssues } : {}),
-    ...(manifestRecovered ? { manifestRecovered: true } : {}),
+    ...(manifestIssues.length ? { manifestIssues } : {}),
   }
 }

@@ -86,6 +86,7 @@ export async function completeRun(
     providerEntry: turn.model.providerEntry,
     rawModelId: turn.model.rawModelId,
     loadedPlugins: inputs.loadedPlugins,
+    loadedMiniApps: inputs.loadedMiniApps,
     ccHooks,
     mods: inputs.mods,
     promptMessage: intake.turnFrame.promptMessage,

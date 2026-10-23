@@ -1,6 +1,6 @@
 import { NotFoundError } from '../../../lib/domain-errors'
 import { readAvailability } from '../../capabilities/availability'
-import { discardSessionData } from '../../plugins/session-storage'
+import { discardSessionData } from '../../mini-apps/session-storage'
 import { resolveDefaultProject } from '../../projects/default-project'
 import type { SessionDetail } from '../contracts'
 import { createModelContextRepository } from '../model-context-repository'

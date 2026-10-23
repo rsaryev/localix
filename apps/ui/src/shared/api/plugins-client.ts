@@ -2,43 +2,10 @@ import { client, unwrap, cleanQuery, assertOk } from './internal'
 import type { MarketplaceListing, PluginRecord } from './contracts'
 
 /**
- * Plugin management: discovery/listing, declared commands/views,
- * enable + config, and install/remove. Spread into `backendClient`.
+ * Claude Code plugin management: output styles, config, install/remove and marketplaces. Mini apps
+ * have their own client (`mini-apps-client.ts`). Spread into `backendClient`.
  */
 export const pluginsApi = {
-  /** Slash commands declared by enabled plugins, flattened + namespaced. */
-
-  /**
-   * Resolve a plugin command arg's DYNAMIC options on demand (its composer picker).
-   * The server runs the plugin's declared options script; failures yield `[]`.
-   */
-  async fetchMiniAppCommandArgOptions(input: {
-    plugin: string
-    command: string
-    arg: string
-    query?: string
-    sessionId?: string
-    projectId?: string | null
-  }): Promise<{ value: string; label: string; description?: string }[]> {
-    const json = await unwrap(
-      await client.rpc.plugins['command-args'].options.$post({
-        json: {
-          plugin: input.plugin,
-          command: input.command,
-          arg: input.arg,
-          ...(input.query ? { query: input.query } : {}),
-          ...(input.sessionId ? { sessionId: input.sessionId } : {}),
-          ...(input.projectId ? { projectId: input.projectId } : {}),
-        },
-      }),
-    )
-    return json.options
-  },
-
-  /** Palette presets declared by enabled plugins. */
-
-  /** Sandboxed UI views declared by enabled plugins — each opens as a work-item tab. */
-
   /**
    * Every output style a scope offers — built-in, the person's, the project's and the enabled
    * plugins' — for the default style in Settings.
@@ -50,45 +17,6 @@ export const pluginsApi = {
       }),
     )
     return json.styles
-  },
-
-  /** One enabled view's sandboxed HTML. */
-  async getMiniAppViewHtml(
-    pluginName: string,
-    viewId: string,
-    opts?: { projectId?: string | null },
-  ): Promise<string> {
-    const json = await unwrap(
-      await client.rpc.plugins.views[':plugin'][':id'].$get({
-        param: { plugin: pluginName, id: viewId },
-        query: cleanQuery({ projectId: opts?.projectId }),
-      }),
-    )
-    return json.html
-  },
-
-  /** Host-brokered call from a sandboxed surface to its owning plugin backend. */
-  async invokeMiniAppUiAction(input: {
-    pluginName: string
-    projectId?: string | null
-    viewId: string
-    sessionId?: string | null
-    action: string
-    payload?: unknown
-  }): Promise<unknown> {
-    const json = await unwrap(
-      await client.rpc.plugins['ui-actions'].invoke.$post({
-        json: {
-          pluginName: input.pluginName,
-          viewId: input.viewId,
-          action: input.action,
-          ...(input.projectId ? { projectId: input.projectId } : {}),
-          ...(input.sessionId ? { sessionId: input.sessionId } : {}),
-          ...(input.payload !== undefined ? { payload: input.payload } : {}),
-        },
-      }),
-    )
-    return json.result
   },
 
   async setPluginConfig(

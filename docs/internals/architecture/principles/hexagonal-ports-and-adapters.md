@@ -35,13 +35,13 @@ small number of ports rather than one per use case.
 - Keep one adapter per technology behind each port; select it in the composition root.
 - Give each optional tool capability its own key in `OptionalToolPorts` and build it in the host.
 - Provide an in-memory or scripted adapter for each secondary port the tests rely on.
-- Keep primary adapters (Hono routes, the WebSocket RPC, plugin entry points) free of domain rules;
-  they translate and delegate.
+- Keep primary adapters (Hono routes, the WebSocket RPC, mini app entry points) free of domain
+  rules; they translate and delegate.
 
 ## How Localix applies it today
 
 Primary ports: the API exposes typed Hono routes consumed by `apps/ui/src/shared/api/client.ts`;
-`scripts/api-contract-guard.test.ts` keeps the UI on that typed client. Plugins drive the host
+`scripts/api-contract-guard.test.ts` keeps the UI on that typed client. Mini apps drive the host
 through contracts in `packages/mini-app-sdk/src/manifest/index.ts`.
 
 Secondary ports: `AgentRuntime` in `packages/agent/src/runtime/index.ts` and `ModelSession` in

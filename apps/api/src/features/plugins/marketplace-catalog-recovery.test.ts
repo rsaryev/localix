@@ -24,7 +24,6 @@ test('an unreadable registered catalog stays listed but contributes no plugins o
     await fs.writeFile(join(root, 'known.json'), JSON.stringify(known))
     const deps: MarketplaceRegistryDeps = {
       root,
-      localixDir: join(root, 'missing-builtin'),
       cloneRepo: async () => {
         throw new Error('Catalog queries must not clone')
       },
@@ -34,7 +33,6 @@ test('an unreadable registered catalog stays listed but contributes no plugins o
     expect(await listMarketplaces(deps)).toEqual([
       {
         name: 'broken',
-        builtin: false,
         count: 0,
         plugins: [],
         unsupported: expect.stringContaining('No .localix-plugin/marketplace.json'),

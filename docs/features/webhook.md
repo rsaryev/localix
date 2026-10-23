@@ -98,14 +98,14 @@ curl --request POST http://127.0.0.1:5051/rpc/webhook/messages \
 - The 65,536 limit counts UTF-16 code units, not encoded request bytes. Attach or summarize large
   logs and diffs instead of sending them as one prompt.
 - A successful queued response confirms admission to the session queue, not completion of the turn.
-- This page covers inbound session messages. Outbound lifecycle notifications are a separate plugin
-  surface.
+- This page covers inbound session messages. Outbound lifecycle notifications are a separate mini
+  app surface.
 
 ## Related guides
 
 - [Organize sessions and projects](sessions-and-projects.md)
 - [Forks](delegation.md)
-- [Create plugins](../extending/plugins.md)
+- [Build a mini app](../extending/mini-apps.md)
 - [Privacy and outbound connections](../getting-started/privacy.md)
 
 ## Source of truth

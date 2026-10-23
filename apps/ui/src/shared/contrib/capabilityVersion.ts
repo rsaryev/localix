@@ -1,5 +1,5 @@
 import type { CapabilitySnapshot } from '@/shared/api/contracts'
-import { sameEnabledNames } from './pluginContribSnapshot'
+import { sameEnabledNames } from './miniAppContribSnapshot'
 
 let capabilityVersion = 0
 /** The last server document published, whatever its scope (the revision is process-wide). */
@@ -27,11 +27,11 @@ export function noteCapabilityDocument(
 }
 
 /**
- * The staleness key of capability DOCUMENTS (`capabilityCache.ts`). `pluginContribVersion` also
+ * The staleness key of capability DOCUMENTS (`capabilityCache.ts`). `miniAppContribVersion` also
  * advances when a plugin's UI settles or reloads, which changes nothing a document carries —
  * keying the cache on it re-read every cached scope once per settled plugin batch at startup.
  */
-export function pluginCapabilityVersion(): number {
+export function miniAppCapabilityVersion(): number {
   return capabilityVersion
 }
 

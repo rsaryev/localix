@@ -10,8 +10,8 @@
  */
 import { useMemo } from 'react'
 import { isMultiParticipant } from '@/shared/api/contracts'
-import { pluginContribSnapshot } from '@/shared/contrib/enabledPlugins'
-import { usePluginContribVersion } from '@/shared/contrib/usePluginContribVersion'
+import { miniAppContribSnapshot } from '@/shared/contrib/enabledMiniApps'
+import { useMiniAppContribVersion } from '@/shared/contrib/useMiniAppContribVersion'
 import { findSessionInState } from '../../model/findSession'
 import { useChatStore } from '../../model/store'
 import type { AgentCandidate } from './atRefAgentRows'
@@ -23,10 +23,10 @@ export function useConversationAgentCandidates(sessionId: string | null): AgentC
       ? agents.map((a) => a.handle).join('\u0000')
       : ''
   })
-  const contribVersion = usePluginContribVersion()
+  const contribVersion = useMiniAppContribVersion()
   return useMemo<AgentCandidate[]>(() => {
     if (!partyKey) return []
-    const registry = pluginContribSnapshot().document?.agents ?? []
+    const registry = miniAppContribSnapshot().document?.agents ?? []
     return partyKey.split('\u0000').map((handle) => ({
       handle,
       name: registry.find((agent) => agent.record.handle === handle)?.record.label?.trim(),

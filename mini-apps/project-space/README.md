@@ -3,7 +3,7 @@
 One spatial board per project: notes, shapes, frames and connectors beside live references to the
 project's files, folders, code, images and documents, edited by the person and the agent. User
 documentation is [docs/features/project-space.md](../../docs/features/project-space.md); this file
-is for working on the plugin.
+is for working on the mini app.
 
 ## Layout
 
@@ -38,7 +38,7 @@ carries hand edits of the board file (`ui/spaceStream.ts`). Ten-second reconcili
 while either signal is not live — an older backend, a dropped socket, an unwatched chat
 (`ui/spaceUpdates.dom.test.ts`).
 
-The optional `ActionContribution.subscribe` seam lets the plugin update action visibility without
+The optional `ActionContribution.subscribe` seam lets the mini app update action visibility without
 teaching the host about boards. Fragment ids are content-derived, so concurrent adds converge and
 deletion allows the same fragment to be added again. `ui/useSpace.dom.test.tsx` and
 `ui/content-action.test.ts` exercise this chain. Backend shutdown releases existing listeners, and a
@@ -72,7 +72,7 @@ notes and labels are read by `shared/content/rich-text.ts` and typed by `rich-ed
 Nothing else changes: the agent's tool descriptions, the tool rail and the drop pipeline read the
 registry.
 
-## Rules this plugin keeps
+## Rules this mini app keeps
 
 - **The file is the truth.** Every change re-reads it and writes it whole, atomically; an unreadable
   file refuses writes instead of being replaced by an empty board.

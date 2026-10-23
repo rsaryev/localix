@@ -3,7 +3,7 @@ import { registerDom } from '@localixai/kit/testing/dom'
 import type { ConfigFormField } from './SettingsConfigForm'
 
 /**
- * `docs/extending/plugins.md` documents `title` as "the human-readable label shown in the
+ * `docs/extending/claude-code-plugins.md` documents `title` as "the human-readable label shown in the
  * Settings UI". That was FALSE: SettingsConfigForm always rendered `{f.key}` and never read
  * `f.title`, so plugin authors wrote titles that went nowhere — the same "advertised, does
  * nothing" class as `multiple`, but here a genuine fix (the value already rides the wire —

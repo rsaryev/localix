@@ -9,7 +9,7 @@ import {
 } from './runtimeViews'
 import type { MiniAppViewSpec } from '@/shared/api/contracts'
 import { listUiLocations, resolveUiLocation } from './uiLocations'
-import { setEnabledPluginNames } from './miniAppActivation'
+import { setEnabledMiniAppNames } from './miniAppActivation'
 
 /**
  * The RUNTIME third-party UI discovery store: fetched-view specs registered as
@@ -17,22 +17,22 @@ import { setEnabledPluginNames } from './miniAppActivation'
  * out of a later sync is GONE — the removal contract phase 2 needs.
  */
 
-const view = (pluginName: string, id: string): MiniAppViewSpec => ({
-  pluginName,
+const view = (app: string, id: string): MiniAppViewSpec => ({
+  app,
   projectId: '',
   id,
-  fullName: `${pluginName}:${id}`,
+  fullName: `${app}:${id}`,
   title: id,
 })
 
 afterEach(() => {
   __resetThirdPartyViews()
-  setEnabledPluginNames(null)
+  setEnabledMiniAppNames(null)
 })
 
 describe('syncThirdPartyViews', () => {
   test('registers every view as a work-item destination — there is no other placement', () => {
-    setEnabledPluginNames(new Set(['mon']))
+    setEnabledMiniAppNames(new Set(['mon']))
     syncThirdPartyViews([view('mon', 'dash'), view('mon', 'panel')])
     expect(listThirdPartyViews().map((v) => v.fullName)).toEqual(['mon:dash', 'mon:panel'])
     for (const [uri, id] of [
@@ -89,7 +89,7 @@ describe('syncThirdPartyViews', () => {
   })
 
   test('requires explicit manifest copy before publishing a third-party view to the agent', () => {
-    setEnabledPluginNames(new Set(['mon']))
+    setEnabledMiniAppNames(new Set(['mon']))
     syncThirdPartyViews([view('mon', 'dash')])
     expect(
       listUiLocations({ exposure: 'agent' }).some(

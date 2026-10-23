@@ -153,10 +153,10 @@ describe('runMacroCommand', () => {
     await h.run('u', 's', session, [], '/x', 'do x', '2026-01-04', {
       extraDisabledTools: ['bash'],
       extraAllowedTools: [],
-      requiredTools: [{ name: 'plugin_build' }],
+      requiredTools: [{ name: 'mini_app_build' }],
     })
     expect(h.runArgs?.scope.extraDisabledTools).toEqual(['bash'])
-    expect(h.runArgs?.scope.requiredTools).toEqual([{ name: 'plugin_build' }])
+    expect(h.runArgs?.scope.requiredTools).toEqual([{ name: 'mini_app_build' }])
     expect(h.runArgs?.scope).not.toHaveProperty('extraAllowedTools') // empty array omitted
   })
 
@@ -184,7 +184,7 @@ describe('runMacroCommand', () => {
     const res = await h.run('u', 's', session, [], '/sample-command', 'review it', '2026-01-06', {
       commandOrigin: { command: '/sample-command', label: 'skill' },
       extraAllowedTools: ['bash'],
-      requiredTools: [{ name: 'plugin_build' }],
+      requiredTools: [{ name: 'mini_app_build' }],
       modelId: 'fast-model',
     })
     expect(res).toMatchObject({ queued: true })
@@ -199,7 +199,7 @@ describe('runMacroCommand', () => {
           origin: { command: '/sample-command', label: 'skill' },
           identity: {
             extraAllowedTools: ['bash'],
-            requiredTools: [{ name: 'plugin_build' }],
+            requiredTools: [{ name: 'mini_app_build' }],
             modelOverride: 'fast-model',
           },
         },

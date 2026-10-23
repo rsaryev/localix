@@ -176,7 +176,7 @@ scope, resource anchors, and chart command listener.
 ## Related guides
 
 - [Research public markets](../../features/trading.md)
-- [Mini apps](../../extending/plugins.md)
+- [Mini apps](../../extending/mini-apps.md)
 - [Workspace](../../features/workspace.md)
 - [Message bindings](message-bindings.md)
 - [Capabilities and permissions](../../features/capabilities.md)

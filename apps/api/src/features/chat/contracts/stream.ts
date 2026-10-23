@@ -238,16 +238,16 @@ export type AgentStreamEvent =
        * Surfaced as an inline system notice in the transcript. Ephemeral (live-only):
        * not persisted, not replayed on reload.
        *
-       * Two producers: a Claude Code hook's `systemMessage`, and a native plugin hook
-       * calling `ctx.reportProblem` — the plugin channel reuses this frame rather than
-       * inventing a second one, because "a hook wants to tell the person something" is
+       * Two producers: a Claude Code hook's `systemMessage`, and a mini app's backend
+       * calling `ctx.reportProblem` — the mini app reuses this frame rather than
+       * inventing a second one, because "something wants to tell the person something" is
        * one fact with one rendering.
        */
       type: 'hook.notice'
       sessionId: string
       /** The warning text to show the user — ONE sentence, never raw engine output. */
       message: string
-      /** What produced it: a hook event (`PreToolUse`), or `<plugin> · <where>`. */
+      /** What produced it: a hook event (`PreToolUse`), or `<mini app> · <where>`. */
       hookEvent: string
       /**
        * The raw text behind {@link message}, when the producer had one. Kept off the
@@ -255,13 +255,13 @@ export type AgentStreamEvent =
        */
       detail?: string
       /**
-       * Set only by the plugin producer: WHICH plugin, and which part of it. A Claude Code
-       * hook's notice is a remark about one turn; a plugin's problem is a standing condition a
+       * Set only by the mini app producer: WHICH app, and which part of it. A Claude Code
+       * hook's notice is a remark about one turn; an app's problem is a standing condition a
        * person has to fix (a mistyped webhook URL rejects every delivery), so the client also
-       * records it in the Event Center under the plugin's name. `hookEvent` is display text
+       * records it in the Event Center under the app's name. `hookEvent` is display text
        * and cannot be parsed back into this, which is why it is a field of its own.
        */
-      plugin?: { name: string; source?: string }
+      miniApp?: { name: string; source?: string }
     }
   | {
       /** Queued-message list changed (enqueued behind a run, removed, or drained). */

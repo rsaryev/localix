@@ -88,7 +88,7 @@ const OS_VARS = new Set([
  * back here and say why.
  */
 const EXEMPTIONS: Exemptions = {
-  [exemptionKey('src/features/plugins/authoring/ui-build.ts', 'NODE_ENV')]: {
+  [exemptionKey('src/features/mini-apps/authoring/ui-build.ts', 'NODE_ENV')]: {
     reason:
       'Not a read: `process.env.NODE_ENV` is the KEY of the plugin UI bundler\'s `define`, which replaces that expression in the browser artifact with "production".',
   },

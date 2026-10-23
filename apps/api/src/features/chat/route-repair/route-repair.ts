@@ -121,6 +121,7 @@ export function createRouteRepair(ports: RouteRepairPorts) {
     'chat.message': 'ignore',
     skill: 'ignore',
     plugin: 'ignore',
+    'mini-app': 'ignore',
     mcp: 'ignore',
     agent: 'ignore',
     project: 'ignore',

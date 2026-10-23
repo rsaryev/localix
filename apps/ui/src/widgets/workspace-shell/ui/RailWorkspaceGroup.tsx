@@ -27,7 +27,7 @@ interface RailWorkspaceGroupProps {
   recentEntries: RailEntry[]
   /** Ids already seen on the bar; anything else plays the entrance animation. */
   seenIds: ReadonlySet<string> | null
-  pluginsPending: boolean
+  miniAppsPending: boolean
   onCapabilitiesClick: () => void
   onMoveToArea: (id: string, area: PinnedRailArea) => void
   onMoveWithinBar: (id: string, area: PinnedRailArea, delta: number) => void
@@ -53,7 +53,7 @@ export function RailWorkspaceGroup({
   onUnpinTool,
   recentEntries,
   seenIds,
-  pluginsPending,
+  miniAppsPending,
   onCapabilitiesClick,
   onMoveToArea,
   onMoveWithinBar,
@@ -181,7 +181,7 @@ export function RailWorkspaceGroup({
             icon={<Ellipsis />}
             label="All tools"
             active={false}
-            pending={pluginsPending}
+            pending={miniAppsPending}
             onManage={onCapabilitiesClick}
           />
         </div>

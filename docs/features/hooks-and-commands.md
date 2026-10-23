@@ -51,7 +51,10 @@ grants do not govern that preprocessing.
 | Context           | client-scoped `/fork`, client-scoped `/open` |
 | Information       | `/help`, `/usage` (`/cost`)                  |
 | Memory and skills | `/memory`, `/skills` (`/skill`)              |
-| Extensions        | `/mcp`, `/plugin`, `/provider`               |
+| Extensions        | `/mcp`, `/plugin`, `/mini-app`, `/provider`  |
+
+`/plugin` manages Claude Code plugins and their marketplaces; `/mini-app` lists, creates, switches
+on and off, removes and reloads mini apps (see [Mini apps](mini-apps.md)).
 
 ### Native mini app hooks
 
@@ -136,20 +139,20 @@ prompt text. API restart or session runtime cleanup clears these markers.
 
 ### Contribution locations
 
-| Contribution             | Accepted source                                                                                                                            |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Plugin slash command     | The default `commands/` tree or `commands` paths in `.claude-plugin/plugin.json`; a legacy root `plugin.json` may also list inline entries |
-| Declarative plugin hooks | Default `hooks/hooks.json`, then `hooks` paths or inline objects in `.claude-plugin/plugin.json`                                           |
-| Run-scoped hooks         | `hooks` frontmatter on the invoked skill or delegated agent                                                                                |
-| Mini app slash command   | An entry under `commands` in `mini-app.json`, which carries its own `prompt`                                                               |
-| Native mini app hooks    | `hooks` returned from the mini app's `register(ctx)` function                                                                              |
+| Contribution             | Accepted source                                                                                     |
+| ------------------------ | --------------------------------------------------------------------------------------------------- |
+| Plugin slash command     | The default `commands/` tree, or `commands` paths or inline entries in `.claude-plugin/plugin.json` |
+| Declarative plugin hooks | Default `hooks/hooks.json`, then `hooks` paths or inline objects in `.claude-plugin/plugin.json`    |
+| Run-scoped hooks         | `hooks` frontmatter on the invoked skill or delegated agent                                         |
+| Mini app slash command   | An entry under `commands` in `mini-app.json`, which carries its own `prompt`                        |
+| Native mini app hooks    | `hooks` returned from the mini app's `register(ctx)` function                                       |
 
 Inline commands win same-name collisions with command Markdown files. Explicit file/path entries win
 over the default directory, and nested paths become colon-separated names. Paths listed in
-`.claude-plugin/plugin.json` replace the default tree, as in Claude Code; a legacy root
-`plugin.json` scans it additively. Markdown commands need a non-empty body in a regular UTF-8 file
-up to 1 MiB. Discovery considers at most 64 declared roots, eight directory levels, and 2,000
-entries per scanned root, and checks canonical paths against the plugin directory.
+`.claude-plugin/plugin.json` replace the default tree, as in Claude Code; a root `plugin.json` is
+not read. Markdown commands need a non-empty body in a regular UTF-8 file up to 1 MiB. Discovery
+considers at most 64 declared roots, eight directory levels, and 2,000 entries per scanned root, and
+checks canonical paths against the plugin directory.
 
 ### Plugin command example and options
 
@@ -271,7 +274,7 @@ exits any other way, or is lost to an API restart, wakes nobody.
 - [Install Claude Code plugins](../extending/claude-code-plugins.md): what a Claude Code plugin runs
   in Localix
 - [Your first session](../getting-started/first-session.md)
-- [Plugins](../extending/plugins.md)
+- [Build a mini app](../extending/mini-apps.md)
 - [Skills](skills.md)
 - [Skill authoring](../extending/skills-authoring.md)
 - [Human-in-the-loop controls](hitl.md)
@@ -286,12 +289,12 @@ exits any other way, or is lost to an API restart, wakes nobody.
 - [Plugin command argument parsing and rendering](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/service/plugin-commands.ts)
 - [Command Markdown discovery](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/discovery-cc-files.ts)
 - [Manifest command precedence](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/manifest-load.ts)
-- [Dynamic option execution](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/arg-options.ts)
+- [Dynamic option execution](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/arg-options.ts)
 - [Native hook contracts](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/backend/hooks.ts)
-- [Native hook dispatch](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/hooks.ts)
-- [Native tool-hook composition and limits](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/hooks-tools.ts)
-- [Native message hooks and bindings](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/hooks-messages.ts)
-- [Native hook wait and isolation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/hook-invoke.ts)
+- [Native hook dispatch](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/hooks.ts)
+- [Native tool-hook composition and limits](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/hooks-tools.ts)
+- [Native message hooks and bindings](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/hooks-messages.ts)
+- [Native hook wait and isolation](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/mini-apps/hook-invoke.ts)
 - [Session-start dispatch](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/chat/runtime/run/session-start-hooks.ts)
 - [Declarative hook contracts](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/cc-hooks/contracts.ts)
 - [Declarative hook registry](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/cc-hooks/config.ts)

@@ -34,8 +34,8 @@ A Bun and Hono API (`apps/api`) owns the agent runtime, tools, permissions, stor
 multiplexed websocket (`/rpc/ws`) that carries every live update. The React workspace (`apps/ui`) is
 a typed Hono RPC client over that API. `apps/desktop-tauri` wraps both as the shipped app, and
 `apps/landing` is the product and documentation site. Everything persisted lives under `~/.localix`
-(`localix.db`, the vault and `plugins/`); `mini-apps/` in the repository is source that is staged
-into that home.
+(`localix.db`, the vault, `plugins/` for Claude Code plugins and `mini-apps/` for mini apps);
+`mini-apps/` in the repository is source that is staged into `~/.localix/mini-apps`.
 
 The desktop [agent island](agent-island.md) uses a separate UI entry and the existing chat and
 attention pipelines. Its native host lives in `companion.rs` (page commands in
@@ -45,27 +45,29 @@ under `features/companion/` and render the shared `PromptInput` (`layout="embedd
 `companion::geometry`. Durable draft and surface state lives in API `features/user/view-state-*` and
 UI `shared/lib/view-state`; `useComposerDraft` is shared by the main composer and island.
 
-A [plugin app](plugin-apps.md) is a plugin installed as its own macOS app: a generated bundle whose
-executable is a clone of the desktop binary. `app_runner*.rs` is that binary's app mode (window,
-glass, menu, the page served from the host's UI build); `app_bundle*.rs` and `app_icon.rs` install,
-refresh and remove the bundles. The page is the workspace with `chrome="app"`, driven by
-`shared/lib/pluginApp.ts` and `pages/chat/model/useMiniApp.ts`; each app's conversations live in a
-project of its own (`shared/lib/pluginAppProject.ts`). Install actions and icons live in
-`features/plugin-apps/`.
+A [mini app installed as a Mac app](mini-app-mac-apps.md) is a mini app installed as its own macOS
+app: a generated bundle whose executable is a clone of the desktop binary. `app_runner*.rs` is that
+binary's app mode (window, glass, menu, the page served from the host's UI build); `app_bundle*.rs`
+and `app_icon.rs` install, refresh and remove the bundles. The page is the workspace with
+`chrome="app"`, driven by `shared/lib/pluginApp.ts` and `pages/chat/model/useMiniApp.ts`; each app's
+conversations live in a project of its own (`shared/lib/pluginAppProject.ts`). Install actions and
+icons live in `features/plugin-apps/`.
 
 An extension is a [plugin or a mini app](plugins-and-mini-apps.md), never both: a plugin is
 `.claude-plugin/plugin.json` in the Claude Code format, read by `packages/claude-plugin` (no Localix
 knowledge); a mini app is `mini-app.json` (`@localixai/mini-app-sdk/app-manifest`) with its
 `guide.md`, which the agent reads with `mini_app_guide` (`agent-core/tools/mini-app-guide.ts`).
-`apps/api/src/features/plugins/layout/` reads a folder's manifests (`read.ts`), composes the one
-runtime manifest the loader uses (`compose.ts`, with `claude-code.ts` for the Claude Code mapping;
-the `.localix-app/app.json` and root `plugin.json` layouts from before the split still load there)
-and finds where the build writes the backend (`backend-pointer.ts`).
+`apps/api/src/features/plugins/layout/` reads a plugin folder's manifest (`read.ts`) and composes
+the one runtime manifest the loader uses (`compose.ts`, with `claude-code.ts` for the Claude Code
+mapping). It reads only `.claude-plugin/plugin.json`: a root `plugin.json` is a validation warning,
+not a manifest, and a folder holding `mini-app.json` is refused as a mini app. Mini apps are found
+and read by `apps/api/src/features/mini-apps/discovery.ts`; `features/mini-apps/backend-pointer.ts`
+finds where the build writes the backend.
 
 ## Boot is phased, and the phases exist because of cycles
 
 `apps/api/src/bootstrap.ts` composes the `bootstrap/*` phases in order: infra, registries,
-plugin-hosts, domain-services, engines, chat-service-deps, agent-facade, app-services, create-app
+mini-app-hosts, domain-services, engines, chat-service-deps, agent-facade, app-services, create-app
 and ops-timers. `serviceRefs` is the forward holder for genuine cycles: a service that needs the
 finished `chatService` (its wake primitive, stream registry or cwd resolution) is built in
 `bootstrap/session-services.ts` and read back lazily.
@@ -78,15 +80,15 @@ finished `chatService` (its wake primitive, stream registry or cwd resolution) i
 the chat runtime: it declares an injected host port, one key of `OptionalToolPorts` named after the
 tool (`optional.loops`, `optional.browser` and so on), and
 `features/chat/runtime/run/runtime-tool-ports.ts` builds it for `runtime-tools.ts`.
-`createRuntimeToolRegistry` takes three bags: `policy` (surface, profile, disabled tools and plugin
-`extraTools`), `core` (the dependencies of the always-on tools) and `optional` (the ports).
+`createRuntimeToolRegistry` takes three bags: `policy` (surface, profile, disabled tools and mini
+app `extraTools`), `core` (the dependencies of the always-on tools) and `optional` (the ports).
 
 ## A tool's path to the model
 
 `agent-core/tool-names.ts` (the `BUILTIN_TOOL_CATALOG`) feeds `run-shape.ts`
 (`resolveRunProfile(agent, sessionKind)` gives `toolExposure`, plus `openToolset` for chat). That
-feeds `createRuntimeToolRegistry` (`tool-registry-core.ts`, `tool-registry-optionals.ts` and plugin
-`extraTools`), and then the filters apply: the client's `toolSurface`, `interactiveOnly` for
+feeds `createRuntimeToolRegistry` (`tool-registry-core.ts`, `tool-registry-optionals.ts` and mini
+app `extraTools`), and then the filters apply: the client's `toolSurface`, `interactiveOnly` for
 non-chat runs, and the effective `disabledTools` (the capability rules of the global, project and
 agent chain). The system prompt ships only the roster of names. Per-tool semantics stay in the
 schema, and prompt sections gate on `hasTool(...)` (`agent-core/prompt/sections/`, ordered by
@@ -110,7 +112,7 @@ person typing. Each producer has its `source`:
 | Mini app backends, plugin monitors, inbound webhooks | `external`   | `chat/contracts/queue.ts` (the `WakeSource` list) |
 
 A `resume` point is registered by a producer such as the approved plan, and the client offers one
-only while nobody works on the conversation. No plugin board wakes a session: the bundled `kanban`
+only while nobody works on the conversation. No mini app board wakes a session: the bundled `kanban`
 mini app records work and never starts a run.
 
 Every wake enters the durable priority queue (`features/chat/runtime/wake-queue.ts`, admission in
@@ -205,16 +207,16 @@ copy. Two copies drifting is why `wake-provenance` exists.
 
 ## Where to touch for a typical change
 
-| Change                  | Path through the code                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A model-facing tool     | `agent-core/tools/<tool>` + catalog entry in `tool-names.ts` + a port keyed by the tool name in `OptionalToolPorts` (`tool-registry.ts`) + its `optional.<name>` branch in `tool-registry-optionals.ts` + the host port in `chat/runtime/run/runtime-tool-ports.ts` + prompt section (`tool-port-shape.test.ts` pins the three in lockstep)                                                                                                                                                  |
-| A stream event          | `chat/contracts/stream.ts` + `session-stream-registry.ts` + publisher + a handler in its family under `ui/shared/api/applyStreamEvent/` (guarded)                                                                                                                                                                                                                                                                                                                                            |
-| Live state in the input | `chat/contracts/read-model.ts` + `service/query-facade.ts` overlay + a strip in `ui/.../prompt-input/` wired into `ComposerHeaderStrips.tsx`                                                                                                                                                                                                                                                                                                                                                 |
-| A new wake producer     | its own `features/<x>` engine + `bootstrap/session-services.ts` (or `engines.ts`) + a `WakeSource` in `chat/contracts/queue.ts` + label in `wake-provenance.ts` + the one delivery `wakes` (`triggers/delivery.ts`) if it cannot await a turn                                                                                                                                                                                                                                                |
-| A new kind of Continue  | a `ResumeProducer` (`features/resume/contracts.ts`: `list` + `take`) registered in `bootstrap/session-services.ts`, and `registry.changed(owner)` when its work changes; the UI needs nothing (`ResumeStrip`) unless the kind has its own row (`RESUME_KINDS_WITH_OWN_ROW`). Never a per-feature Continue button or endpoint                                                                                                                                                                 |
-| A model judgment        | a typed question to `features/decisions` (`DecisionService.decide`, its own `purpose`; `usageKind: 'routing'` only for routing) or texts to `semanticService.vectors` (`embeddings/semantic-vectors.ts`: `rank`, `embed`), the ports search, group routing and plugins share. Models are named only in `decisions/models.ts` and `embeddings/models.ts`. Never resolve a model, keep a deadline or compute a cosine in the consumer; always keep its fallback for an outcome without answers |
-| A mini app capability   | `mini-apps/<name>`: `mini-app.json`, `guide.md` (pages in `guide/`), `backend/index.ts` and `ui/register.tsx` against the `@localixai/mini-app-sdk` contract; remember installed copies run from `~/.localix/plugins`. A Claude Code plugin's parts live in `.claude-plugin/` and its component folders                                                                                                                                                                                      |
-| A schema change         | a new file in `apps/api/migrations/` + `db/types.ts`; no existing migration is ever renamed, edited or deleted, because `bun run dev` has already run it on your database (`migration-ledger.ts` refuses to boot, `migration-freeze.test.ts` refuses in CI); see `apps/api/migrations/README.md`                                                                                                                                                                                             |
+| Change                  | Path through the code                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A model-facing tool     | `agent-core/tools/<tool>` + catalog entry in `tool-names.ts` + a port keyed by the tool name in `OptionalToolPorts` (`tool-registry.ts`) + its `optional.<name>` branch in `tool-registry-optionals.ts` + the host port in `chat/runtime/run/runtime-tool-ports.ts` + prompt section (`tool-port-shape.test.ts` pins the three in lockstep)                                                                                                                                                    |
+| A stream event          | `chat/contracts/stream.ts` + `session-stream-registry.ts` + publisher + a handler in its family under `ui/shared/api/applyStreamEvent/` (guarded)                                                                                                                                                                                                                                                                                                                                              |
+| Live state in the input | `chat/contracts/read-model.ts` + `service/query-facade.ts` overlay + a strip in `ui/.../prompt-input/` wired into `ComposerHeaderStrips.tsx`                                                                                                                                                                                                                                                                                                                                                   |
+| A new wake producer     | its own `features/<x>` engine + `bootstrap/session-services.ts` (or `engines.ts`) + a `WakeSource` in `chat/contracts/queue.ts` + label in `wake-provenance.ts` + the one delivery `wakes` (`triggers/delivery.ts`) if it cannot await a turn                                                                                                                                                                                                                                                  |
+| A new kind of Continue  | a `ResumeProducer` (`features/resume/contracts.ts`: `list` + `take`) registered in `bootstrap/session-services.ts`, and `registry.changed(owner)` when its work changes; the UI needs nothing (`ResumeStrip`) unless the kind has its own row (`RESUME_KINDS_WITH_OWN_ROW`). Never a per-feature Continue button or endpoint                                                                                                                                                                   |
+| A model judgment        | a typed question to `features/decisions` (`DecisionService.decide`, its own `purpose`; `usageKind: 'routing'` only for routing) or texts to `semanticService.vectors` (`embeddings/semantic-vectors.ts`: `rank`, `embed`), the ports search, group routing and mini apps share. Models are named only in `decisions/models.ts` and `embeddings/models.ts`. Never resolve a model, keep a deadline or compute a cosine in the consumer; always keep its fallback for an outcome without answers |
+| A mini app capability   | `mini-apps/<name>`: `mini-app.json`, `guide.md` (pages in `guide/`), `backend/index.ts` and `ui/register.tsx` against the `@localixai/mini-app-sdk` contract; remember installed copies run from `~/.localix/mini-apps/<name>/`. A Claude Code plugin's parts live in `.claude-plugin/` and its component folders                                                                                                                                                                              |
+| A schema change         | a new file in `apps/api/migrations/` + `db/types.ts`; no existing migration is ever renamed, edited or deleted, because `bun run dev` has already run it on your database (`migration-ledger.ts` refuses to boot, `migration-freeze.test.ts` refuses in CI); see `apps/api/migrations/README.md`                                                                                                                                                                                               |
 
 Markdown grammar and portable rendering live in `packages/markdown`; the workspace owns mentions,
 streaming cadence and content actions, while `apps/landing/src/pages/docs` owns documentation links

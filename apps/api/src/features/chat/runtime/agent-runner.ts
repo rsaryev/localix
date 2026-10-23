@@ -55,7 +55,8 @@ export function createAgentRunner(deps: RunnerDeps) {
   // Handed in, not built here: see `RunnerDeps.repo` for the turn that failed when it was.
   const repo = deps.repo
   // Other features' stores, built by the composition root (`bootstrap/chat-feature-ports.ts`).
-  const { usageRepo, memoryRepo, userProfileRepo, projectsRepo, mcpRepo, pluginRepo } = deps.ports
+  const { usageRepo, memoryRepo, userProfileRepo, projectsRepo, mcpRepo, pluginRepo, miniAppRepo } =
+    deps.ports
   const runs = createAgentRunRepository(deps.db)
   const agentRuns: typeof runs = {
     ...runs,
@@ -145,6 +146,7 @@ export function createAgentRunner(deps: RunnerDeps) {
     projectsRepo,
     mcpRepo,
     pluginRepo,
+    miniAppRepo,
     agentRuns,
     state,
     now,

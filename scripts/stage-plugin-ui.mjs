@@ -1,5 +1,5 @@
 // The staging step for a plugin's UI artifact: build it into the staged copy, beside the backend
-// bundle, so the copy that reaches `~/.localix/plugins` carries its UI the same way in development
+// bundle, so the copy that reaches `~/.localix/mini-apps` carries its UI the same way in development
 // and in a release.
 //
 // A failed UI build costs the plugin its UI UPDATE, never the plugin. A backend that fails to

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test'
-import { UNDECIDED } from '../capabilities/availability'
+import type { AvailabilityReader } from '../capabilities/availability'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -39,55 +39,42 @@ const emptyRepo: CapabilitySourceRepository = {
   remove: async () => {},
 }
 
-let bundled: string
+/** Every plugin switched on, as a rule allowing it would. */
+const ALL_ON: AvailabilityReader = { effectFor: () => 'allow' }
+
 let home: string
-const prevEnv = process.env.LOCALIX_BUNDLED_PLUGINS_DIR
+
+/** A plugin with one command in `<home>/.localix/plugins/<name>`. */
+async function writePlugin(name: string): Promise<string> {
+  const pluginDir = join(home, '.localix', 'plugins', name)
+  await fs.mkdir(join(pluginDir, '.claude-plugin'), { recursive: true })
+  await fs.mkdir(join(pluginDir, 'commands'), { recursive: true })
+  await fs.writeFile(
+    join(pluginDir, '.claude-plugin', 'plugin.json'),
+    JSON.stringify({ name, version: '1.0.0', description: name }),
+  )
+  await fs.writeFile(join(pluginDir, 'commands', 'go.md'), '---\ndescription: go\n---\nGo')
+  return pluginDir
+}
 
 beforeAll(async () => {
-  bundled = await fs.mkdtemp(join(tmpdir(), 'plugin-bin-'))
   home = await fs.mkdtemp(join(tmpdir(), 'plugin-bin-home-'))
-
-  // A command-only bundled plugin (default-enabled, no DB row) WITH a bin/ dir.
-  const withBin = join(bundled, 'has-bin')
+  // A plugin WITH a bin/ dir…
+  const withBin = await writePlugin('has-bin')
   await fs.mkdir(join(withBin, 'bin'), { recursive: true })
-  await fs.writeFile(
-    join(withBin, 'plugin.json'),
-    JSON.stringify({
-      name: 'has-bin',
-      version: '1.0.0',
-      description: 'ships a CLI',
-      commands: [{ name: 'go', description: 'go', prompt: 'Go' }],
-    }),
-  )
   await fs.writeFile(join(withBin, 'bin', 'my-cli'), '#!/usr/bin/env node\nconsole.log("hi")\n')
-
-  // A command-only bundled plugin with NO bin/ dir.
-  const noBin = join(bundled, 'no-bin')
-  await fs.mkdir(noBin, { recursive: true })
-  await fs.writeFile(
-    join(noBin, 'plugin.json'),
-    JSON.stringify({
-      name: 'no-bin',
-      version: '1.0.0',
-      description: 'no CLI',
-      commands: [{ name: 'go', description: 'go', prompt: 'Go' }],
-    }),
-  )
-
-  process.env.LOCALIX_BUNDLED_PLUGINS_DIR = bundled
+  // …and one with none.
+  await writePlugin('no-bin')
 })
 
 afterAll(async () => {
-  if (prevEnv === undefined) delete process.env.LOCALIX_BUNDLED_PLUGINS_DIR
-  else process.env.LOCALIX_BUNDLED_PLUGINS_DIR = prevEnv
-  await fs.rm(bundled, { recursive: true, force: true })
   await fs.rm(home, { recursive: true, force: true })
 })
 
 describe('loadEnabledPlugins binDirs', () => {
   it("collects an enabled plugin's existing bin/ dir", async () => {
     const loaded = await loadEnabledPlugins({
-      availability: UNDECIDED,
+      availability: ALL_ON,
       repo: emptyRepo,
       userId: 'u',
       projectId: '',
@@ -99,7 +86,7 @@ describe('loadEnabledPlugins binDirs', () => {
 
   it('does not add a bin dir for a plugin without one', async () => {
     const loaded = await loadEnabledPlugins({
-      availability: UNDECIDED,
+      availability: ALL_ON,
       repo: emptyRepo,
       userId: 'u',
       projectId: '',

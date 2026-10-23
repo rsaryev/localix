@@ -13,7 +13,7 @@ import { PluginsIcon } from './commandIcons'
  * Convert a backend plugin command arg spec into the composer's `SlashArgSpec`.
  * Choice args carry their option list; text args are free-form (always last).
  */
-function mapArgs(args: PluginCommandArgSpec[]): SlashArgSpec[] {
+export function mapArgs(args: PluginCommandArgSpec[]): SlashArgSpec[] {
   const mapped = args.map((arg): SlashArgSpec => {
     if (arg.type === 'choice') {
       return {
@@ -48,8 +48,8 @@ function mapArgs(args: PluginCommandArgSpec[]): SlashArgSpec[] {
 }
 
 /**
- * Fetches slash commands declared by enabled plugins and exposes them as composer
- * commands. They are `kind: 'builtin'` so the picker inserts their namespaced
+ * Fetches slash commands declared by enabled Claude Code plugins and exposes them as composer
+ * commands (a mini app's are `useMiniAppCommands`). They are `kind: 'builtin'` so the picker inserts their namespaced
  * prefix (`/<plugin>:<cmd> `) and the message flows through the normal arg engine
  * + sendMessage path — the backend dispatches them generically.
  */
@@ -75,9 +75,6 @@ export function usePluginCommands(sessionId: string | null, enabled = true): Sla
         prefix: `/${spec.fullName} `,
         args: mapArgs(spec.args),
         ...(spec.featured ? { featured: true } : {}),
-        ...(spec.args.some((a) => a.dynamic)
-          ? { argSource: { plugin: spec.pluginName, command: spec.name } }
-          : {}),
       })),
     [commands],
   )

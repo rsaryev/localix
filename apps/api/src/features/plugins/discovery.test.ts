@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, spyOn } from 'bun:test'
-import { promises as fs } from 'node:fs'
+import { mkdirSync, promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import {
@@ -8,76 +8,22 @@ import {
 } from '@localixai/claude-plugin'
 
 import { resolve } from 'node:path'
-import {
-  discoverPlugins,
-  discoverBundledMiniApps,
-  loadManifest,
-  bundledMiniAppsRoot,
-  bundledSourceRoots,
-  pluginInstallRoot,
-} from './discovery'
+import { discoverPlugins, loadManifest, pluginInstallRoot } from './discovery'
 import { resolveEntrypoints } from './discovery-entrypoints'
 
+/** The path of a plugin's `.claude-plugin/plugin.json`, its folder created. */
+function manifestAt(pluginDir: string): string {
+  mkdirSync(join(pluginDir, CLAUDE_CODE_DIR), { recursive: true })
+  return join(pluginDir, CLAUDE_CODE_PLUGIN_MANIFEST)
+}
+
 describe('plugin path resolvers', () => {
-  it('bundledMiniAppsRoot self-locates a plugins/ root (no env)', () => {
-    // Pure self-location from the module URL — no LOCALIX_BUNDLED_PLUGINS_DIR.
-    const root = bundledMiniAppsRoot()
-    expect(root.length).toBeGreaterThan(0)
-    expect(root.endsWith('plugins')).toBe(true)
-  })
-  it('a checkout reads its bundled mini apps and bundled plugins from folders of their own', () => {
-    const previous = process.env.LOCALIX_BUNDLED_PLUGINS_DIR
-    delete process.env.LOCALIX_BUNDLED_PLUGINS_DIR
-    try {
-      const roots = bundledSourceRoots()
-      expect(roots.map((root) => root.split(/[\\/]/u).pop())).toEqual(['mini-apps', 'plugins'])
-    } finally {
-      if (previous !== undefined) process.env.LOCALIX_BUNDLED_PLUGINS_DIR = previous
-    }
-  })
-
-  it('a named bundled root is the one root, as a packaged app stages both into', async () => {
-    const previous = process.env.LOCALIX_BUNDLED_PLUGINS_DIR
-    const staged = await fs.mkdtemp(join(tmpdir(), 'bundled-staged-'))
-    process.env.LOCALIX_BUNDLED_PLUGINS_DIR = staged
-    try {
-      expect(bundledSourceRoots()).toEqual([staged])
-    } finally {
-      if (previous === undefined) delete process.env.LOCALIX_BUNDLED_PLUGINS_DIR
-      else process.env.LOCALIX_BUNDLED_PLUGINS_DIR = previous
-      await fs.rm(staged, { recursive: true, force: true })
-    }
-  })
-
   it('pluginInstallRoot: project+cwd → cwd, else home', () => {
     expect(pluginInstallRoot('project', '/work', '/home/u')).toBe(
       join(resolve('/work'), '.localix/plugins'),
     )
     expect(pluginInstallRoot('global', null, '/home/u')).toBe(join('/home/u', '.localix/plugins'))
     expect(pluginInstallRoot('project', null, '/home/u')).toBe(join('/home/u', '.localix/plugins'))
-  })
-
-  it('does not copy the unmarked source fallback into a fresh global home', async () => {
-    const previous = process.env.LOCALIX_BUNDLED_PLUGINS_DIR
-    const isolatedHome = await fs.mkdtemp(join(tmpdir(), 'plugins-source-fallback-home-'))
-    delete process.env.LOCALIX_BUNDLED_PLUGINS_DIR
-    try {
-      const sourcePlugins = await discoverBundledMiniApps()
-      expect(sourcePlugins.length).toBeGreaterThan(0)
-
-      const discovered = await discoverPlugins({ cwd: null, homeDir: isolatedHome })
-      expect(discovered).toEqual([])
-      expect(
-        await fs
-          .stat(join(isolatedHome, '.localix', 'plugins'))
-          .then(() => true)
-          .catch(() => false),
-      ).toBe(false)
-    } finally {
-      if (previous === undefined) delete process.env.LOCALIX_BUNDLED_PLUGINS_DIR
-      else process.env.LOCALIX_BUNDLED_PLUGINS_DIR = previous
-      await fs.rm(isolatedHome, { recursive: true, force: true })
-    }
   })
 })
 
@@ -92,26 +38,31 @@ beforeAll(async () => {
   const noProjectOnly = join(home, '.localix', 'plugins', 'no-project-only')
   await fs.mkdir(noProjectOnly, { recursive: true })
   await fs.writeFile(
-    join(noProjectOnly, 'plugin.json'),
+    manifestAt(noProjectOnly),
     JSON.stringify({ name: 'no-project-only', version: '1.0.0' }),
   )
 
   // A full-featured plugin under the project's .localix/plugins.
   const weather = join(dir, '.localix', 'plugins', 'weather')
-  await fs.mkdir(join(weather, 'tools'), { recursive: true })
   await fs.mkdir(join(weather, 'skills', 'forecast'), { recursive: true })
   await fs.writeFile(
-    join(weather, 'plugin.json'),
+    manifestAt(weather),
     JSON.stringify({
       name: 'weather',
       version: '1.2.3',
       description: 'Weather tools',
-      tools: './tools/index.mjs',
-      config: { API_KEY: { type: 'string', secret: true, required: true } },
+      userConfig: {
+        API_KEY: {
+          type: 'string',
+          title: 'API key',
+          description: 'The weather API key',
+          sensitive: true,
+          required: true,
+        },
+      },
       mcpServers: { wx: { command: 'echo hi' } },
     }),
   )
-  await fs.writeFile(join(weather, 'tools', 'index.mjs'), 'export const tools = []\n')
   await fs.writeFile(
     join(weather, 'skills', 'forecast', 'SKILL.md'),
     '---\nname: forecast\ndescription: Forecast the weather\n---\n\nDo the forecast.',
@@ -127,7 +78,7 @@ beforeAll(async () => {
     const artifact = join(dir, '.localix', 'plugins', name)
     await fs.mkdir(artifact, { recursive: true })
     await fs.writeFile(
-      join(artifact, 'plugin.json'),
+      manifestAt(artifact),
       JSON.stringify({ name: manifestName, version: '1.0.0' }),
     )
   }
@@ -142,7 +93,7 @@ beforeAll(async () => {
   const directSkill = join(dir, '.localix', 'plugins', 'direct-skill')
   await fs.mkdir(join(directSkill, 'pack', 'designer'), { recursive: true })
   await fs.writeFile(
-    join(directSkill, 'plugin.json'),
+    manifestAt(directSkill),
     JSON.stringify({
       name: 'direct-skill',
       version: '1.0.0',
@@ -166,7 +117,7 @@ beforeAll(async () => {
   // A plugin with a broken manifest still surfaces (with an error).
   const broken = join(dir, '.localix', 'plugins', 'broken')
   await fs.mkdir(broken, { recursive: true })
-  await fs.writeFile(join(broken, 'plugin.json'), '{ not valid json')
+  await fs.writeFile(manifestAt(broken), '{ not valid json')
 
   // A Claude Code plugin, loaded in place as an install leaves it, components at root.
   const cc = join(dir, '.localix', 'plugins', 'cc-plugin')
@@ -274,13 +225,11 @@ describe('discoverPlugins', () => {
       cwd: dir,
       projectId: 'project-1',
       homeDir: home,
-      includeBundled: false,
     })
     const noProject = await discoverPlugins({
       cwd: null,
       projectId: '',
       homeDir: home,
-      includeBundled: false,
     })
 
     // Opening a project used to hide everything you had installed for yourself, with nothing
@@ -306,7 +255,7 @@ describe('discoverPlugins', () => {
     expect(weather!.scope).toBe('project')
     expect(weather!.projectId).toBe('proj1')
     expect(weather!.manifest.version).toBe('1.2.3')
-    expect(weather!.provides.hasNativeTools).toBe(true)
+    expect(weather!.manifest.config?.API_KEY?.secret).toBe(true)
     expect(weather!.provides.skills).toContain('forecast')
     expect(weather!.provides.mcpServers).toContain('wx')
     expect(weather!.error).toBeUndefined()
@@ -326,7 +275,6 @@ describe('discoverPlugins', () => {
       cwd: dir,
       projectId: 'proj1',
       homeDir: home,
-      includeBundled: false,
     })
 
     expect(found.find((plugin) => plugin.manifest.name === 'sync-staging-artifact')).toBeUndefined()
@@ -559,7 +507,7 @@ describe('foreign skills-dir plugin discovery', () => {
     ] as const) {
       await fs.mkdir(pluginDir, { recursive: true })
       await fs.writeFile(
-        join(pluginDir, 'plugin.json'),
+        manifestAt(pluginDir),
         JSON.stringify({ name, version: '1.0.0', description: 'must be explicitly imported' }),
       )
     }
@@ -578,7 +526,7 @@ describe('foreign skills-dir plugin discovery', () => {
     const skillDir = join(dir, '.localix', 'skills', 'standalone-only')
     await fs.mkdir(skillDir, { recursive: true })
     await fs.writeFile(
-      join(skillDir, 'plugin.json'),
+      manifestAt(skillDir),
       JSON.stringify({
         name: 'standalone-only',
         version: '1.0.0',
@@ -614,7 +562,6 @@ describe('foreign Claude plugin registries are ignored', () => {
     discoverPlugins({
       cwd: null,
       projectId: '',
-      includeBundled: false,
       homeDir: join(ccHome, 'empty-home'),
     })
 
@@ -681,19 +628,7 @@ describe('foreign Claude plugin registries are ignored', () => {
   })
 })
 
-/**
- * BUG B1 REPRO — CC `userConfig`/`config` with `type: "directory"` or `type: "file"`.
- *
- * Before fix: `pluginManifestSchema.safeParse` failed on these types → `plugin.error`
- * set → loader skipped the plugin → tools/MCP/commands silently dropped.
- *
- * After fix (two parts):
- *   Part 1 — `directory`/`file` added to the enum: manifests using these types parse
- *             cleanly with no error. This covers every real CC plugin.
- *   Part 2 — For genuinely unknown types we can't enumerate upfront, graceful recovery
- *             strips the offending config keys and sets a non-fatal warning instead of
- *             a fatal error, so the plugin still loads its tools/MCP/hooks/commands.
- */
+/** Claude Code's `directory` and `file` option types load; an unknown type stops the plugin. */
 describe('B1 — CC directory/file config-option types', () => {
   let b1Dir: string
 
@@ -701,28 +636,29 @@ describe('B1 — CC directory/file config-option types', () => {
     b1Dir = await fs.mkdtemp(join(tmpdir(), 'b1-'))
 
     // Plugin with type:"directory" + type:"file" in userConfig (CC form) + MCP + command.
-    // After Part 1 these types are valid — should load with NO error at all.
+    // Claude Code knows these types: the plugin loads with no error at all.
     const ccDirPlugin = join(b1Dir, '.localix', 'plugins', 'cc-dir-plugin')
     await fs.mkdir(join(ccDirPlugin, 'commands'), { recursive: true })
     await fs.writeFile(
-      join(ccDirPlugin, 'plugin.json'),
+      manifestAt(ccDirPlugin),
       JSON.stringify({
         name: 'cc-dir-plugin',
         version: '1.0.0',
         description: 'CC plugin with directory config type',
-        // CC form: `userConfig` — automatically promoted to `config` by applyManifestPromotions.
         userConfig: {
           PROJECT_DIR: {
             type: 'directory',
+            title: 'Project',
             description: 'Root directory',
             required: false,
           },
           OUTPUT_FILE: {
             type: 'file',
+            title: 'Output',
             description: 'Output path',
             required: false,
           },
-          API_KEY: { type: 'string', secret: true, description: 'API key' },
+          API_KEY: { type: 'string', title: 'API key', sensitive: true, description: 'API key' },
         },
         mcpServers: { my_server: { command: 'echo hello' } },
       }),
@@ -732,41 +668,23 @@ describe('B1 — CC directory/file config-option types', () => {
       '---\ndescription: Run the tool\n---\n\nRun $ARGUMENTS.',
     )
 
-    // Plugin with native `config` using type:"file" + type:"directory".
-    // After Part 1 these parse cleanly.
-    const fileCfgPlugin = join(b1Dir, '.localix', 'plugins', 'file-cfg-plugin')
-    await fs.mkdir(fileCfgPlugin, { recursive: true })
-    await fs.writeFile(
-      join(fileCfgPlugin, 'plugin.json'),
-      JSON.stringify({
-        name: 'file-cfg-plugin',
-        version: '1.0.0',
-        description: 'Plugin with file config type',
-        config: {
-          CERT_FILE: { type: 'file', description: 'TLS cert path' },
-          WORK_DIR: { type: 'directory', description: 'Working directory' },
-          VALID_KEY: { type: 'string', description: 'A valid string key' },
-        },
-        mcpServers: { srv: { command: 'echo ok' } },
-      }),
-    )
-
-    // Plugin with a TRULY unknown config type (not in our enum) + a valid MCP server.
-    // Tests graceful degradation (Part 2): plugin still loads; bad entry stripped; non-fatal warning.
+    // Plugin with a config type Claude Code does not know + a valid MCP server: the option is
+    // strict, so the plugin does not load (as in Claude Code).
     const unknownTypePlugin = join(b1Dir, '.localix', 'plugins', 'unknown-type-plugin')
     await fs.mkdir(join(unknownTypePlugin, 'commands'), { recursive: true })
     await fs.writeFile(
-      join(unknownTypePlugin, 'plugin.json'),
+      manifestAt(unknownTypePlugin),
       JSON.stringify({
         name: 'unknown-type-plugin',
         version: '1.0.0',
         description: 'Plugin with unknown config type',
-        config: {
+        userConfig: {
           FUTURE_FIELD: {
             type: 'color',
+            title: 'Color',
             description: 'Some future config type',
           },
-          VALID_TOKEN: { type: 'string', description: 'A valid string key' },
+          VALID_TOKEN: { type: 'string', title: 'Token', description: 'A valid string key' },
         },
         mcpServers: { fallback_server: { command: 'echo fallback' } },
       }),
@@ -781,7 +699,7 @@ describe('B1 — CC directory/file config-option types', () => {
     await fs.rm(b1Dir, { recursive: true, force: true })
   })
 
-  it('B1 Part1: directory/file config types parse cleanly with no error (the primary fix)', async () => {
+  it('directory/file config types parse cleanly with no error', async () => {
     const found = await discoverPlugins({
       cwd: b1Dir,
       projectId: 'b1proj',
@@ -789,9 +707,8 @@ describe('B1 — CC directory/file config-option types', () => {
     })
     const plugin = found.find((p) => p.manifest.name === 'cc-dir-plugin')
     expect(plugin).toBeDefined()
-    // After Part 1 these are valid enum values — no error at all.
+    // Claude Code option types — no error at all.
     expect(plugin!.error).toBeUndefined()
-    expect(plugin!.manifestRecovered).toBeUndefined()
     // All three config fields are present.
     expect(plugin!.manifest.config?.['PROJECT_DIR']?.type).toBe('directory')
     expect(plugin!.manifest.config?.['OUTPUT_FILE']?.type).toBe('file')
@@ -801,23 +718,7 @@ describe('B1 — CC directory/file config-option types', () => {
     expect(plugin!.provides.commands).toContain('run')
   })
 
-  it('B1 Part1: native config with type:file/directory parses cleanly (no error)', async () => {
-    const found = await discoverPlugins({
-      cwd: b1Dir,
-      projectId: 'b1proj',
-      homeDir: home,
-    })
-    const plugin = found.find((p) => p.manifest.name === 'file-cfg-plugin')
-    expect(plugin).toBeDefined()
-    expect(plugin!.error).toBeUndefined()
-    expect(plugin!.manifestRecovered).toBeUndefined()
-    expect(plugin!.manifest.config?.['CERT_FILE']?.type).toBe('file')
-    expect(plugin!.manifest.config?.['WORK_DIR']?.type).toBe('directory')
-    expect(plugin!.manifest.config?.['VALID_KEY']?.type).toBe('string')
-    expect(plugin!.provides.mcpServers).toContain('srv')
-  })
-
-  it('B1 Part2: truly unknown config type triggers graceful recovery (non-fatal warning, not skip)', async () => {
+  it('an option of a type Claude Code does not know stops the plugin, as in Claude Code', async () => {
     const found = await discoverPlugins({
       cwd: b1Dir,
       projectId: 'b1proj',
@@ -825,52 +726,31 @@ describe('B1 — CC directory/file config-option types', () => {
     })
     const plugin = found.find((p) => p.manifest.name === 'unknown-type-plugin')
     expect(plugin).toBeDefined()
-    // A non-fatal warning is set (not a fatal parse-failure message).
-    expect(plugin!.error).toBeTruthy()
-    expect(plugin!.error).toContain('partially loaded')
-    expect(plugin!.error).toContain('config.FUTURE_FIELD')
-    // manifestRecovered is true → loader must NOT skip the plugin.
-    expect(plugin!.manifestRecovered).toBe(true)
-    // Valid config entry survived; bad one was stripped.
-    expect(plugin!.manifest.config?.['VALID_TOKEN']).toBeDefined()
-    expect(plugin!.manifest.config?.['FUTURE_FIELD']).toBeUndefined()
-    // MCP + command are still present (plugin was NOT skipped).
-    expect(plugin!.provides.mcpServers).toContain('fallback_server')
-    expect(plugin!.provides.commands).toContain('check')
+    // `userConfig` options are strict: the plugin surfaces with an error naming the option.
+    expect(plugin!.error).toContain('FUTURE_FIELD')
   })
 
-  it('B1 Part2: a manifest with BOTH an unknown config type AND an invalid name errors fatally', async () => {
-    // name: "bad name with spaces" fails PLUGIN_NAME_RE — cannot recover.
+  it('an invalid name errors fatally, whatever else the manifest holds', async () => {
     const badDir = join(b1Dir, 'bad-and-config-fail')
     await fs.mkdir(badDir, { recursive: true })
     await fs.writeFile(
-      join(badDir, 'plugin.json'),
+      manifestAt(badDir),
       JSON.stringify({
         name: 'bad name with spaces', // invalid
         version: '1.0.0',
         description: 'test',
-        config: { X: { type: 'color' } }, // unknown type but irrelevant — name is fatal
+        userConfig: { X: { type: 'color', title: 'X', description: 'x' } },
       }),
     )
     const plugin = await loadManifest(badDir, 'global', '')
-    // Fatal error — no recovery because `name` is outside the config block.
     expect(plugin.error).toBeTruthy()
     expect(plugin.error).not.toContain('partially loaded')
-    expect(plugin.manifestRecovered).toBeUndefined()
   })
 })
 
 /**
- * BUG B2 REPRO — CC `userConfig` with `sensitive: true` must map to `secret: true`.
- *
- * Before fix: `sensitive` is an unknown field on `miniAppConfigOptionSchema`; Zod strips it.
- * The parsed option ends up with `secret: false` (the schema default), so
- * `makePluginSubstituter`'s `isSecret` predicate returns false and the value is
- * substituted into model-facing prompt sections, skill content, and agent prompts.
- *
- * After fix: `applyManifestPromotions` sets `secret: true` on any config option that
- * carries `sensitive: true` before Zod parses the manifest. The parsed option therefore
- * has `secret: true`, and `isSecret(key)` correctly excludes it from substitution.
+ * A `sensitive: true` option is a secret: it must never be substituted into model-facing text
+ * (`makePluginSubstituter`'s `isSecret`).
  */
 describe('B2 — CC userConfig sensitive → secret promotion', () => {
   let b2Dir: string
@@ -882,7 +762,7 @@ describe('B2 — CC userConfig sensitive → secret promotion', () => {
     const sensitivePlugin = join(b2Dir, '.localix', 'plugins', 'sensitive-plugin')
     await fs.mkdir(sensitivePlugin, { recursive: true })
     await fs.writeFile(
-      join(sensitivePlugin, 'plugin.json'),
+      manifestAt(sensitivePlugin),
       JSON.stringify({
         name: 'sensitive-plugin',
         version: '1.0.0',
@@ -890,36 +770,11 @@ describe('B2 — CC userConfig sensitive → secret promotion', () => {
         userConfig: {
           API_TOKEN: {
             type: 'string',
+            title: 'API token',
             sensitive: true,
             description: 'Secret API token',
           },
-          PUBLIC_URL: { type: 'string', description: 'Non-sensitive base URL' },
-        },
-      }),
-    )
-
-    // Native `config` with both `secret: true` (native form) and `sensitive: true`
-    // (CC alias) — both must resolve to secret: true; native secret must still work.
-    const nativeMixPlugin = join(b2Dir, '.localix', 'plugins', 'native-mix')
-    await fs.mkdir(nativeMixPlugin, { recursive: true })
-    await fs.writeFile(
-      join(nativeMixPlugin, 'plugin.json'),
-      JSON.stringify({
-        name: 'native-mix',
-        version: '1.0.0',
-        description: 'Native config with both sensitive and secret',
-        config: {
-          NATIVE_SECRET: {
-            type: 'string',
-            secret: true,
-            description: 'Native secret',
-          },
-          CC_SENSITIVE: {
-            type: 'string',
-            sensitive: true,
-            description: 'CC-style secret',
-          },
-          PLAIN: { type: 'string', description: 'Non-sensitive key' },
+          PUBLIC_URL: { type: 'string', title: 'URL', description: 'Non-sensitive base URL' },
         },
       }),
     )
@@ -929,7 +784,7 @@ describe('B2 — CC userConfig sensitive → secret promotion', () => {
     await fs.rm(b2Dir, { recursive: true, force: true })
   })
 
-  it('B2: userConfig sensitive:true is promoted to secret:true on the parsed manifest', async () => {
+  it('B2: userConfig sensitive:true is secret:true on the parsed manifest', async () => {
     const found = await discoverPlugins({
       cwd: b2Dir,
       projectId: 'b2proj',
@@ -943,32 +798,17 @@ describe('B2 — CC userConfig sensitive → secret promotion', () => {
     // Non-sensitive key must NOT be flagged as secret.
     expect(plugin!.manifest.config?.['PUBLIC_URL']?.secret).toBe(false)
   })
-
-  it('B2: native config sensitive:true alias also maps to secret:true; native secret unchanged', async () => {
-    const found = await discoverPlugins({
-      cwd: b2Dir,
-      projectId: 'b2proj',
-      homeDir: home,
-    })
-    const plugin = found.find((p) => p.manifest.name === 'native-mix')
-    expect(plugin).toBeDefined()
-    expect(plugin!.error).toBeUndefined()
-    expect(plugin!.manifest.config?.['NATIVE_SECRET']?.secret).toBe(true)
-    expect(plugin!.manifest.config?.['CC_SENSITIVE']?.secret).toBe(true)
-    expect(plugin!.manifest.config?.['PLAIN']?.secret).toBe(false)
-  })
 })
 
 describe('resolveEntrypoints', () => {
-  it('applies directory defaults (./tools for a decorated plugin, ./skills) when the manifest is silent', async () => {
+  it('applies the ./skills directory default when the manifest is silent', async () => {
     const pluginDir = join(dir, '.localix', 'plugins', 'weather')
     const plugin = await loadManifest(pluginDir, 'project', 'proj1')
-    const eps = await resolveEntrypoints(
-      pluginDir,
-      { name: 'weather', version: '0', description: '' },
-      'decorated',
-    )
-    expect(eps.toolEntries.some((p) => p.endsWith('tools/index.mjs'))).toBe(true)
+    const eps = await resolveEntrypoints(pluginDir, {
+      name: 'weather',
+      version: '0',
+      description: '',
+    })
     expect(eps.skillDirs.some((p) => p.endsWith('/skills'))).toBe(true)
     // The manifest-declared MCP server is resolved through loadManifest.
     expect(Object.keys(plugin.entrypoints.mcpServers)).toContain('wx')
@@ -980,29 +820,23 @@ describe('persistent plugin scan cache', () => {
     const cacheHome = await fs.mkdtemp(join(tmpdir(), 'plugins-scan-concurrent-'))
     const pluginDir = join(cacheHome, '.localix', 'plugins', 'cache-probe')
     await fs.mkdir(pluginDir, { recursive: true })
-    await fs.writeFile(
-      join(pluginDir, 'plugin.json'),
-      JSON.stringify({ name: 'cache-probe', version: '1' }),
-    )
+    await fs.writeFile(manifestAt(pluginDir), JSON.stringify({ name: 'cache-probe', version: '1' }))
     const rename = spyOn(fs, 'rename')
     const cacheFile = join(cacheHome, '.localix', 'cache', 'plugin-scan-cache-v1.json')
     try {
       const concurrent = await Promise.all(
-        Array.from({ length: 8 }, () =>
-          discoverPlugins({ cwd: null, homeDir: cacheHome, includeBundled: false }),
-        ),
+        Array.from({ length: 8 }, () => discoverPlugins({ cwd: null, homeDir: cacheHome })),
       )
       expect(concurrent.every((plugins) => plugins[0]?.manifest.version === '1')).toBe(true)
       expect(rename.mock.calls.filter(([, dest]) => dest === cacheFile)).toHaveLength(1)
 
       await fs.writeFile(
-        join(pluginDir, 'plugin.json'),
+        manifestAt(pluginDir),
         JSON.stringify({ name: 'cache-probe', version: '2', description: 'modified' }),
       )
       const changed = await discoverPlugins({
         cwd: null,
         homeDir: cacheHome,
-        includeBundled: false,
       })
       expect(changed[0]?.manifest.version).toBe('2')
       expect(rename.mock.calls.filter(([, dest]) => dest === cacheFile)).toHaveLength(2)
@@ -1015,7 +849,7 @@ describe('persistent plugin scan cache', () => {
   it('falls back to a full manifest scan when a cached file fingerprint changes', async () => {
     const cacheHome = await fs.mkdtemp(join(tmpdir(), 'plugins-scan-cache-'))
     const pluginDir = join(cacheHome, '.localix', 'plugins', 'cache-probe')
-    const manifestPath = join(pluginDir, 'plugin.json')
+    const manifestPath = manifestAt(pluginDir)
     await fs.mkdir(pluginDir, { recursive: true })
     await fs.writeFile(
       manifestPath,
@@ -1026,7 +860,6 @@ describe('persistent plugin scan cache', () => {
       const first = await discoverPlugins({
         cwd: null,
         homeDir: cacheHome,
-        includeBundled: false,
       })
       expect(first.find((plugin) => plugin.manifest.name === 'cache-probe')?.manifest.version).toBe(
         '1.0.0',
@@ -1046,7 +879,6 @@ describe('persistent plugin scan cache', () => {
       const unchanged = await discoverPlugins({
         cwd: null,
         homeDir: cacheHome,
-        includeBundled: false,
       })
       expect(
         unchanged.find((plugin) => plugin.manifest.name === 'cache-probe')?.manifest.version,
@@ -1066,7 +898,6 @@ describe('persistent plugin scan cache', () => {
       const changed = await discoverPlugins({
         cwd: null,
         homeDir: cacheHome,
-        includeBundled: false,
       })
       expect(
         changed.find((plugin) => plugin.manifest.name === 'cache-probe')?.manifest.version,

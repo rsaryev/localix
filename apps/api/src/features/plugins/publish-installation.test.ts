@@ -19,7 +19,7 @@ afterEach(async () => {
   for (const dispose of cleanup.splice(0).reverse()) await dispose()
 })
 
-async function fixture(nativeDependency = false) {
+async function fixture() {
   const db = createDatabase()
   cleanup.push(() => db.destroy())
   await migrateToLatest(db)
@@ -32,19 +32,15 @@ async function fixture(nativeDependency = false) {
       [join(root, name), '2.0.0'],
       [join(installRoot, name), '1.0.0'],
     ]) {
-      await fs.mkdir(directory!, { recursive: true })
+      await fs.mkdir(join(directory!, '.claude-plugin'), { recursive: true })
       await fs.writeFile(
-        join(directory!, 'plugin.json'),
+        join(directory!, '.claude-plugin', 'plugin.json'),
         JSON.stringify({
           name,
           version,
-          apiVersion: 1,
           ...(name === 'parent' ? { dependencies: ['helper'] } : {}),
-          ...(name === 'helper' && nativeDependency ? { tools: ['./tool.ts'] } : {}),
         }),
       )
-      if (name === 'helper' && nativeDependency)
-        await fs.writeFile(join(directory!, 'tool.ts'), 'export const register = () => {}')
     }
     await sources.upsert('u', '', name, { source: `old-${name}`, config: { retained: true } })
   }
@@ -90,7 +86,8 @@ async function fixture(nativeDependency = false) {
       }),
     )
   const version = async (name: string) =>
-    JSON.parse(await fs.readFile(join(installRoot, name, 'plugin.json'), 'utf8')).version as string
+    JSON.parse(await fs.readFile(join(installRoot, name, '.claude-plugin', 'plugin.json'), 'utf8'))
+      .version as string
   return { db, installRoot, sources, snapshot, before, publish, version }
 }
 
@@ -144,16 +141,6 @@ test('a dependency enable write failure rolls back the complete installation and
   expect(await f.version('parent')).toBe('1.0.0')
   expect(await f.version('helper')).toBe('1.0.0')
   expect((await fs.readdir(f.installRoot)).sort()).toEqual(['helper', 'parent'])
-})
-
-test('native dependency code remains disabled and reports manual consent after a successful commit', async () => {
-  const f = await fixture(true)
-  const result = await f.publish()
-  expect(result.warnings.join(' ')).toContain('helper')
-  const availability = await readAvailability(f.db, { userId: 'u', agentId: DEFAULT_AGENT_ID })
-  expect(availability.effectFor('plugin', 'parent')).toBe('allow')
-  expect(availability.effectFor('plugin', 'helper')).toBe('deny')
-  expect(await f.version('parent')).toBe('2.0.0')
 })
 
 test('updating an enabled parent enables its dependencies without rewriting the parent switch', async () => {

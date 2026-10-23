@@ -36,10 +36,9 @@ export async function inPlaceInstallFor(
   const dir = resolve(resolved.dir)
   if (isPathWithin(resolve(installRoot), dir) || entryPrunesSkills(resolved.entry)) return null
   const files = await readManifestFiles(dir)
-  if (files.miniApp || files.app || files.legacy) return null
+  if (files.miniApp) return null
   const record = { id: `${resolved.entry.name}@${resolved.marketplace}`, dir }
   const load = (projectId: string) => loadInPlacePlugin(record, resolved.entry, projectId)
-  if ((await load('')).provides.hasNativeTools) return null
   return { record, entry: resolved.entry, load }
 }
 

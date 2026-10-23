@@ -2,10 +2,10 @@ import { describe, expect, test } from 'bun:test'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { discoverBundledMiniApps } from '../apps/api/src/features/plugins/discovery'
-import { miniAppBackendIdentityProblems } from '../apps/api/src/features/plugins/backend-host-plan'
-import { inspectMiniAppTools } from '../apps/api/src/features/plugins/native'
-import { resolvePluginConfig } from '../apps/api/src/features/plugins/config'
+import { discoverBundledMiniApps } from '../apps/api/src/features/mini-apps/discovery'
+import { miniAppBackendIdentityProblems } from '../apps/api/src/features/mini-apps/backend-host-plan'
+import { inspectMiniAppTools } from '../apps/api/src/features/mini-apps/native'
+import { resolveMiniAppConfig } from '../apps/api/src/features/mini-apps/config'
 import type { MiniAppHostServices } from '@localixai/mini-app-sdk/backend'
 
 /**
@@ -46,7 +46,7 @@ function permissiveHost(): MiniAppHostServices {
 describe('bundled plugin backend identities', () => {
   test('every registered identity is namespaced by its owning plugin', async () => {
     const bundled = (await discoverBundledMiniApps()).filter(
-      (plugin) => plugin.provides.hasNativeTools,
+      (plugin) => plugin.backendEntries.length > 0,
     )
     // A scan that reaches nothing is a disabled lint: an empty problem list looks exactly like a
     // clean tree. The bundled set is a dozen-plus plugins; a handful means the walk broke.
@@ -58,7 +58,7 @@ describe('bundled plugin backend identities', () => {
     for (const plugin of bundled) {
       const inspection = await inspectMiniAppTools(
         plugin,
-        resolvePluginConfig(plugin.manifest, undefined),
+        resolveMiniAppConfig(plugin.manifest?.config, undefined),
         // A fixture home: a real context creates the plugin's roots.
         {
           userId: 'identity-audit',
@@ -67,11 +67,11 @@ describe('bundled plugin backend identities', () => {
           homeDir: join(tmpdir(), 'localix-identity-audit-home'),
         },
       )
-      if (inspection.backendSubsystems.length > 0) contributors.push(plugin.manifest.name)
+      if (inspection.backendSubsystems.length > 0) contributors.push(plugin.name)
       for (const id of inspection.backendSubsystems) {
         problems.push(
-          ...miniAppBackendIdentityProblems(plugin.manifest.name, { id } as never).map(
-            (problem) => `${plugin.manifest.name}: ${problem}`,
+          ...miniAppBackendIdentityProblems(plugin.name, { id } as never).map(
+            (problem) => `${plugin.name}: ${problem}`,
           ),
         )
       }
@@ -79,18 +79,18 @@ describe('bundled plugin backend identities', () => {
         // The subsystem id here is a stand-in that already satisfies the rule: this pass is asking
         // only about the CONTEXT PROVIDER's name, and the subsystem ids were checked above.
         problems.push(
-          ...miniAppBackendIdentityProblems(plugin.manifest.name, {
-            id: `${plugin.manifest.name}:audit`,
+          ...miniAppBackendIdentityProblems(plugin.name, {
+            id: `${plugin.name}:audit`,
             contextProviders: [{ provider: { id } }],
-          } as never).map((problem) => `${plugin.manifest.name}: ${problem}`),
+          } as never).map((problem) => `${plugin.name}: ${problem}`),
         )
       }
       for (const command of inspection.wsCommands) {
         problems.push(
-          ...miniAppBackendIdentityProblems(plugin.manifest.name, {
-            id: `${plugin.manifest.name}:audit`,
+          ...miniAppBackendIdentityProblems(plugin.name, {
+            id: `${plugin.name}:audit`,
             wsFrames: [{ subscribeCommand: command, unsubscribeCommand: command }],
-          } as never).map((problem) => `${plugin.manifest.name}: ${problem}`),
+          } as never).map((problem) => `${plugin.name}: ${problem}`),
         )
       }
     }

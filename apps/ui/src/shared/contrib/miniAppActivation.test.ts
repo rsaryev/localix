@@ -9,25 +9,25 @@ import { resolveUiAnchor } from './uiAnchors'
 import { resolveUiLocation } from './uiLocations'
 import { railSectionRegistry, railViewletRegistry, workItemKindRegistry } from './uiContrib'
 import {
-  pluginActivationVersion,
+  miniAppActivationVersion,
   miniAppContributionActivation,
-  setEnabledPluginNames,
-  subscribePluginActivation,
+  setEnabledMiniAppNames,
+  subscribeMiniAppActivation,
 } from './miniAppActivation'
 
 const Component = () => null
 const Icon = () => null
 
-afterEach(() => setEnabledPluginNames(null))
+afterEach(() => setEnabledMiniAppNames(null))
 
 describe('bundled plugin UI activation', () => {
   it('notifies rail consumers on each authoritative activation publish', () => {
     const versions: number[] = []
-    const stop = subscribePluginActivation(() => versions.push(pluginActivationVersion()))
+    const stop = subscribeMiniAppActivation(() => versions.push(miniAppActivationVersion()))
     try {
-      const before = pluginActivationVersion()
-      setEnabledPluginNames(new Set(['activation-fixture']))
-      setEnabledPluginNames(new Set(['activation-fixture']))
+      const before = miniAppActivationVersion()
+      setEnabledMiniAppNames(new Set(['activation-fixture']))
+      setEnabledMiniAppNames(new Set(['activation-fixture']))
       expect(versions).toEqual([before + 1, before + 2])
     } finally {
       stop()
@@ -72,7 +72,7 @@ describe('bundled plugin UI activation', () => {
     host.fileIcons.register('activation-fixture.file', { body: '<path/>' })
     host.sessionEvents.register('activation-fixture:updated', handler)
 
-    setEnabledPluginNames(null)
+    setEnabledMiniAppNames(null)
     expect(miniAppContributionActivation('activation-fixture')).toBe('pending')
     expect(workItemKindRegistry.get('activation-fixture:item')).toBeUndefined()
     expect(workItemKindRegistry.getRegistered('activation-fixture:item')?.pluginName).toBe(
@@ -87,7 +87,7 @@ describe('bundled plugin UI activation', () => {
     expect(resourceRefIcon('fixture')).toBeUndefined()
     expect(sessionEventHandlersFor('activation-fixture:updated')).toEqual([])
 
-    setEnabledPluginNames(new Set(['activation-fixture']))
+    setEnabledMiniAppNames(new Set(['activation-fixture']))
     expect(miniAppContributionActivation('activation-fixture')).toBe('enabled')
     expect(workItemKindRegistry.get('activation-fixture:item')?.pluginName).toBe(
       'activation-fixture',
@@ -119,7 +119,7 @@ describe('bundled plugin UI activation', () => {
     expect(resourceRefIcon('fixture')).toBe(Icon)
     expect(sessionEventHandlersFor('activation-fixture:updated')).toEqual([handler])
 
-    setEnabledPluginNames(new Set(['someone-else']))
+    setEnabledMiniAppNames(new Set(['someone-else']))
     expect(miniAppContributionActivation('activation-fixture')).toBe('disabled')
     expect(workItemKindRegistry.get('activation-fixture:item')).toBeUndefined()
     expect(contributedVscFileIcon('activation-fixture.file')).toBeUndefined()

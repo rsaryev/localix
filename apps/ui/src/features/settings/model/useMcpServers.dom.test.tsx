@@ -34,8 +34,8 @@ describe('MCP runtime availability mutations', () => {
       config: {},
     } as unknown as McpServerRecord
     const { __resetCapabilityCache } = await import('@/shared/contrib/capabilityCache')
-    const { __resetPluginContrib } = await import('@/shared/contrib/enabledPlugins')
-    __resetPluginContrib()
+    const { __resetMiniAppContrib } = await import('@/shared/contrib/enabledMiniApps')
+    __resetMiniAppContrib()
     __resetCapabilityCache()
     // The rows arrive in the scope's ONE capability document, not from a list endpoint
     // of their own — the toggle's runtime barrier is what this test pins, and it is

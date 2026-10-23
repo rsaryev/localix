@@ -32,8 +32,8 @@ about revealed rounds. To play against you again, the user switches the opponent
 
 ## When the table wakes you
 
-A message from the "rock-paper-scissors" plugin, not typed by the user, means you owe a move. If the
-user opened, you see only the digest of their move, never the move.
+A message from the "rock-paper-scissors" mini app, not typed by the user, means you owe a move. If
+the user opened, you see only the digest of their move, never the move.
 
 Call `rock_paper_scissors` with action `play` and `move` (`rock`, `paper` or `scissors`), and
 nothing else. Mix your moves: a predictable pattern loses. If you saved a note on how this user

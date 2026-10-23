@@ -26,6 +26,8 @@ export const CORE_REFS = {
   'chat.message': z.object({ id: z.string(), userId: z.string(), sessionId: z.string() }),
   skill: z.object({ name: z.string(), scope }),
   plugin: z.object({ id: z.string(), scope }),
+  // A mini app installed, updated, removed or its settings changed (`id` is its name).
+  'mini-app': z.object({ id: z.string(), scope }),
   // `id` is the server's name (its catalog key); `serverId` its record id, on a deletion.
   mcp: z.object({ id: z.string(), scope, serverId: z.string().optional() }),
   // `id` is the agent's catalog key (its handle); `agentId` its stable id, when the owner knows it.

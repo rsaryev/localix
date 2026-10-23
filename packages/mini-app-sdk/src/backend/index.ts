@@ -19,9 +19,6 @@ export type {
 } from './context'
 export type {
   MiniAppHostServices,
-  MiniAppMonitorArmOutcome,
-  MiniAppMonitorArmRequest,
-  MiniAppMonitorsHost,
   MiniAppWakeOutcome,
   MiniAppWakeRequest,
   SecretConsumer,

@@ -10,11 +10,11 @@ import type { MiniAppViewSpec } from '@/shared/api/contracts'
  * buttons (the enable/disable contract).
  */
 
-const view = (pluginName: string, id: string): MiniAppViewSpec => ({
-  pluginName,
+const view = (app: string, id: string): MiniAppViewSpec => ({
+  app,
   projectId: '',
   id,
-  fullName: `${pluginName}:${id}`,
+  fullName: `${app}:${id}`,
   title: id,
 })
 

@@ -108,7 +108,7 @@ required, and applies the command through the chart control bus.
 
 - [Workspace](workspace.md)
 - [Sessions and projects](sessions-and-projects.md)
-- [Mini apps](../extending/plugins.md)
+- [Mini apps](../extending/mini-apps.md)
 - [Trading subsystem notes](https://github.com/rsaryev/localix/blob/main/docs/internals/subsystems/trading-workbench.md)
 
 ## Source of truth

@@ -1,5 +1,5 @@
 import { useCallback, useRef, useSyncExternalStore } from 'react'
-import { pluginActivationVersion, subscribePluginActivation } from './miniAppActivation'
+import { miniAppActivationVersion, subscribeMiniAppActivation } from './miniAppActivation'
 import { registryChangeVersion, subscribeRegistryChanges } from './registryChanges'
 
 /**
@@ -21,7 +21,7 @@ export function useMiniAppRegistrySlice<T>(key: string, select: () => T): T {
   const selectRef = useRef(select)
   selectRef.current = select
   const getSnapshot = useCallback((): T => {
-    const stamp = `${registryChangeVersion()}:${pluginActivationVersion()}`
+    const stamp = `${registryChangeVersion()}:${miniAppActivationVersion()}`
     const held = cache.current
     if (held?.key === key && held.stamp === stamp) return held.value
     const next = selectRef.current()
@@ -35,7 +35,7 @@ export function useMiniAppRegistrySlice<T>(key: string, select: () => T): T {
 /** Registry flushes and activation broadcasts: the two ways a registry read can change. */
 export function subscribeMiniAppRegistry(listener: () => void): () => void {
   const offRegistry = subscribeRegistryChanges(listener)
-  const offActivation = subscribePluginActivation(listener)
+  const offActivation = subscribeMiniAppActivation(listener)
   return () => {
     offRegistry()
     offActivation()

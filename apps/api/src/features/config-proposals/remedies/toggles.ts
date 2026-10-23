@@ -105,6 +105,44 @@ export const pluginEnableRemedy: Remedy<z.infer<typeof pluginEnableSchema>> = {
   },
 }
 
+const miniAppEnableSchema = z.object({
+  kind: z.literal('mini-app.enable'),
+  name: z.string().min(1),
+  // `.optional()`, never `.default()` (see `pluginEnableSchema`).
+  enabled: z.boolean().optional(),
+})
+
+export const miniAppEnableRemedy: Remedy<z.infer<typeof miniAppEnableSchema>> = {
+  id: 'mini-app.enable',
+  schema: miniAppEnableSchema,
+  async describe(ctx, change) {
+    const on = switchedOn(change)
+    return {
+      key: `mini-app.enable:${change.name}`,
+      remedyId: 'mini-app.enable',
+      title: `${on ? 'Enable' : 'Disable'} the ${change.name} mini app`,
+      detail: `Switches the mini app, its screens and every tool its backend gives ${on ? 'on' : 'off'}.`,
+      diff: [`${change.name} → ${on ? 'on' : 'off'}`],
+      agentId: ctx.agentId,
+      reload: 'next-run',
+    }
+  },
+  async apply(ctx, change) {
+    const on = switchedOn(change)
+    await ctx.ports.capabilities.apply(ctx.userId, {
+      agentId: ctx.agentId,
+      changes: [
+        {
+          action: actionFor('mini-app', change.name),
+          resource: '*',
+          effect: on ? 'allow' : 'deny',
+        },
+      ],
+    })
+    return { summary: `Mini app "${change.name}" is now ${on ? 'enabled' : 'disabled'}.` }
+  },
+}
+
 const mcpServerEnableSchema = z.object({
   kind: z.literal('mcp.server.enable'),
   // The NAME, not the row id: capability rules address every kind by name, and the name is

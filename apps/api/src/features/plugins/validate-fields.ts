@@ -1,6 +1,4 @@
-import { existsSync } from 'node:fs'
 import type { DiscoveredPlugin } from './discovery'
-import { confineToDir } from '../ext/fs-discovery'
 import { BUILTIN_TOOL_NAMES } from '../agent-core/tool-names'
 import { CC_SEMANTIC_GAPS } from '../ext/cc-tool-names'
 import { DECLARABLE_EFFORTS_TEXT, isDeclarableEffort } from '../../db/types'
@@ -11,25 +9,17 @@ export interface FieldValidation {
 }
 
 /**
- * Validate a plugin's inline command declarations. Names must be unique — they're
- * invoked namespaced as `<plugin>:<name>`, so a duplicate silently shadows its
- * twin in the command list and dispatch (mirrors the agent-role uniqueness check).
+ * Validate a plugin's commands (inline map entries and `commands/*.md` files). Names are unique
+ * by construction: discovery keeps the first command of a name (`manifest-load.ts`).
  */
 export function validatePluginCommands(plugin: DiscoveredPlugin): FieldValidation {
   const errors: string[] = []
   const warnings: string[] = []
-  const seenCmdNames = new Set<string>()
   for (const cmd of plugin.commands) {
     if (!cmd.name) {
       errors.push('A declared command is missing a name.')
       continue
     }
-    if (seenCmdNames.has(cmd.name)) {
-      errors.push(
-        `Duplicate command "${cmd.name}" — names must be unique within a plugin (each is invoked as "${plugin.manifest.name}:${cmd.name}").`,
-      )
-    }
-    seenCmdNames.add(cmd.name)
     if (!cmd.prompt || cmd.prompt.trim().length === 0) {
       warnings.push(`Command "${cmd.name}" has an empty prompt template.`)
       continue
@@ -39,140 +29,19 @@ export function validatePluginCommands(plugin: DiscoveredPlugin): FieldValidatio
         `Command "${cmd.name}" has no description — add one so users know what the command does in the composer menu.`,
       )
     }
-    // An argumentHint like "[env] [tag]" with no declared args: the hint shows in the
-    // composer but no structured arg parsing happens (users still get $ARGUMENTS).
-    // Structured args are Localix's (a legacy manifest's inline command); a Claude Code command
-    // takes its argument string whole, and its hint is all it needs.
-    if (plugin.layout === 'legacy' && cmd.argumentHint && cmd.args.length === 0) {
-      warnings.push(
-        `Command "${cmd.name}" has "argumentHint" but no declared "args" — add args for structured argument parsing and validation.`,
-      )
-    }
-    // Cross-check declared args against the placeholders the prompt actually uses —
-    // `${name}`, or Claude Code's `$name` — a declared-but-unreferenced arg is silently
-    // dropped input, and an undeclared placeholder renders empty in the dispatched prompt. A
-    // prompt that takes `$ARGUMENTS` whole consumes every arg.
+    // A `${name}` placeholder no CC `arguments` entry names renders empty in the dispatched
+    // prompt — most likely a typo.
+    const positional = new Set(cmd.arguments ?? [])
     const placeholders = new Set(
       [...cmd.prompt.matchAll(/\$\{([a-zA-Z_][a-zA-Z0-9_-]*)\}/g)].map((match) => match[1]),
     )
-    const bare = new Set(
-      [...cmd.prompt.matchAll(/\$([a-zA-Z_][a-zA-Z0-9_-]*)/g)].map((match) => match[1]),
-    )
-    // With CC `arguments`, or `$ARGUMENTS` taken whole, the declared args only assemble the
-    // argument string the prompt reads by position.
-    const positional = new Set(cmd.arguments ?? [])
-    const byPosition = positional.size > 0 || bare.has('ARGUMENTS')
-    const seenArgNames = new Set<string>()
-    for (const [argIndex, arg] of cmd.args.entries()) {
-      if (seenArgNames.has(arg.name)) {
-        errors.push(`Command "${cmd.name}" declares duplicate arg "${arg.name}".`)
-      }
-      seenArgNames.add(arg.name)
-      if (!byPosition && !placeholders.has(arg.name) && !bare.has(arg.name)) {
-        warnings.push(
-          `Command "${cmd.name}" declares arg "${arg.name}" but its prompt never references \${${arg.name}} or $${arg.name}.`,
-        )
-      }
-      // DYNAMIC options (`optionsScript`): a plugin-relative script that produces the
-      // arg's options on demand. Only on a choice arg, mutually exclusive with static
-      // `options`, and its path must stay inside the plugin dir.
-      if (arg.optionsScript) {
-        if (arg.type !== 'choice') {
-          errors.push(
-            `Command "${cmd.name}" arg "${arg.name}" declares "optionsScript" but is type "${arg.type}" — dynamic options only apply to a "choice" arg.`,
-          )
-        }
-        if (arg.options && arg.options.length > 0) {
-          errors.push(
-            `Command "${cmd.name}" arg "${arg.name}" declares BOTH "optionsScript" and static "options" — use one or the other.`,
-          )
-        }
-        const abs = confineToDir(plugin.dir, arg.optionsScript)
-        if (!abs) {
-          errors.push(
-            `Command "${cmd.name}" arg "${arg.name}" optionsScript "${arg.optionsScript}" escapes the plugin directory.`,
-          )
-        } else if (!existsSync(abs)) {
-          warnings.push(
-            `Command "${cmd.name}" arg "${arg.name}" optionsScript "${arg.optionsScript}" was not found (its picker will be empty until the file exists).`,
-          )
-        }
-      }
-      if (arg.type === 'choice' && arg.placeholder) {
-        warnings.push(
-          `Command "${cmd.name}" arg "${arg.name}" is type "choice" but declares a "placeholder" — placeholder only applies to text args (shown in an input field), not choice args (shown as option buttons).`,
-        )
-      }
-      if (
-        arg.type === 'choice' &&
-        !arg.optionsScript &&
-        (!arg.options || arg.options.length === 0)
-      ) {
-        warnings.push(
-          `Command "${cmd.name}" arg "${arg.name}" is type "choice" but declares no options — users can't select anything.`,
-        )
-      } else if (arg.type === 'choice' && arg.options) {
-        // Duplicate option values make the choice unpredictable — validation silently picks first.
-        const seenVals = new Set<string>()
-        for (const opt of arg.options) {
-          if (!opt.value?.trim()) {
-            warnings.push(
-              `Command "${cmd.name}" arg "${arg.name}" has an option with an empty value — empty values can't be reliably matched.`,
-            )
-          }
-          if (seenVals.has(opt.value)) {
-            warnings.push(
-              `Command "${cmd.name}" arg "${arg.name}" has duplicate option value "${opt.value}".`,
-            )
-          }
-          seenVals.add(opt.value)
-        }
-      }
-      if (arg.when) {
-        const dependencyIndex = cmd.args.findIndex((candidate) => candidate.name === arg.when!.arg)
-        const dependency = dependencyIndex >= 0 ? cmd.args[dependencyIndex] : undefined
-        if (!dependency) {
-          errors.push(
-            `Command "${cmd.name}" arg "${arg.name}" depends on unknown arg "${arg.when.arg}".`,
-          )
-        } else if (dependencyIndex >= argIndex) {
-          errors.push(
-            `Command "${cmd.name}" arg "${arg.name}" depends on "${arg.when.arg}", but conditions must reference an earlier arg.`,
-          )
-        } else if (dependency.type !== 'choice') {
-          errors.push(
-            `Command "${cmd.name}" arg "${arg.name}" depends on text arg "${arg.when.arg}" — conditions require an earlier choice arg.`,
-          )
-        } else if (
-          dependency.options &&
-          dependency.options.length > 0 &&
-          !dependency.options.some((option) => option.value === arg.when!.equals)
-        ) {
-          warnings.push(
-            `Command "${cmd.name}" arg "${arg.name}" condition expects "${arg.when.equals}", which is not an option of "${arg.when.arg}".`,
-          )
-        }
-      }
-    }
-    const declaredArgs = new Set(cmd.args.map((a) => a.name))
     for (const token of placeholders) {
       // SCREAMING_CASE tokens are the config/env convention (${API_KEY}) — prompts
       // legitimately mention them as documentation, so only lowercase-style tokens
       // are treated as likely arg typos.
-      if (!declaredArgs.has(token) && !positional.has(token) && !/^[A-Z][A-Z0-9_]*$/.test(token)) {
+      if (!positional.has(token) && !/^[A-Z][A-Z0-9_]*$/.test(token)) {
         warnings.push(
           `Command "${cmd.name}" prompt references \${${token}} which isn't a declared arg.`,
-        )
-      }
-    }
-    // Optional args should come after required args — otherwise required args after an
-    // optional arg can never be reached by positional token parsing.
-    let seenOptional = false
-    for (const arg of cmd.args) {
-      if (!arg.required) seenOptional = true
-      else if (seenOptional && !arg.when) {
-        warnings.push(
-          `Command "${cmd.name}" arg "${arg.name}" is required but follows an optional arg — required args must come before optional ones.`,
         )
       }
     }

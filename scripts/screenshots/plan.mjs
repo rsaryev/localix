@@ -116,7 +116,7 @@ export const capturePlan = {
     scope: 'platform',
   },
   'system/overview': {
-    guide: 'extending/plugins.md',
+    guide: 'extending/mini-apps.md',
     purpose: 'Real OS metrics with a filtered process list',
     scenario: 'system-overview',
     scope: 'platform',
@@ -262,7 +262,7 @@ export const capturePlan = {
     start: 'project',
   },
   'plugins/workbenches': {
-    guide: 'extending/plugins.md',
+    guide: 'extending/mini-apps.md',
     purpose: 'Available workspace tools and how to open them',
     scenario: 'catalog',
   },

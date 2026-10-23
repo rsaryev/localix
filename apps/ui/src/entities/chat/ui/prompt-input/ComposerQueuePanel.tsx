@@ -9,9 +9,9 @@ import { QueueDockPill } from './QueueDockPill'
 import { clearServerQueue, deleteServerQueueItem, returnServerQueueItem } from './queue-actions'
 import { useChatStore } from '@/entities/chat/model/store'
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
-import { pluginContribSnapshot } from '@/shared/contrib/enabledPlugins'
+import { miniAppContribSnapshot } from '@/shared/contrib/enabledMiniApps'
 import { resolveAuthorIdentity } from '@/shared/contrib/useAgentIdentity'
-import { usePluginContribVersion } from '@/shared/contrib/usePluginContribVersion'
+import { useMiniAppContribVersion } from '@/shared/contrib/useMiniAppContribVersion'
 import { applyServerSession } from '@/entities/chat/model/sessionSync'
 
 interface ComposerQueuePanelProps {
@@ -32,8 +32,8 @@ export const ComposerQueuePanel = memo(function ComposerQueuePanel({
   activeSessionId,
 }: ComposerQueuePanelProps) {
   // A rename publishes a new contribution version; reading it re-resolves the names below.
-  usePluginContribVersion()
-  const agents = pluginContribSnapshot().document?.agents ?? []
+  useMiniAppContribVersion()
+  const agents = miniAppContribSnapshot().document?.agents ?? []
   const queue: QueuePanelItem[] = (serverQueue ?? []).map((q): QueuePanelItem => {
     const agent = q.agentId ? resolveAuthorIdentity(q.agentId, undefined, agents) : undefined
     return {

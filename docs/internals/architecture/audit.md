@@ -79,7 +79,7 @@ Follow-ups driven by the writer instead of a consumer, most valuable first:
 3. Agent delete runs three non-transactional steps and leaves seats, cards and handles
    (`apps/api/src/features/agents/service.ts`).
 4. Project changes never refresh project-scoped plugin backends
-   (`apps/api/src/bootstrap/plugin-hosts.ts`).
+   (`apps/api/src/bootstrap/mini-app-hosts.ts`).
 5. Session delete cleans files after commit; child loops and monitors are reaped only for the root
    (`apps/api/src/features/chat/service/session-deletion.ts`,
    `apps/api/src/features/chat/service/session-facade.ts`).

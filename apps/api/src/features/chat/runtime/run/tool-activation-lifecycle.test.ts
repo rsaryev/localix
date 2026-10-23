@@ -12,6 +12,7 @@ import { assertRunToolRequirements } from './tool-requirements'
 import { createToolOutputTool } from '../../../agent-core/tools/context-search/context-search'
 import type { RunProfile } from '../../../agent-core/run-shape'
 import type { LoadedPlugins } from '../../../plugins/loader'
+import type { LoadedMiniApps } from '../../../mini-apps/loader-contract'
 import type { CcHooksRuntime } from '../../../cc-hooks'
 import type { SessionRecord } from '../../repository'
 import type { RunEnv } from './types'
@@ -42,7 +43,7 @@ const externalTool = (name: string) =>
 
 const coreTool = (name: string) => externalTool(name)
 
-const PLUGIN_TOOLS = [externalTool('plugin_board_edit'), externalTool('plugin_chart_render')]
+const MINI_APP_TOOLS = [externalTool('board_edit'), externalTool('chart_render')]
 const CORE_TOOLS = [coreTool('read'), coreTool('bash')]
 
 function session(activatedTools: string[]): SessionRecord {
@@ -52,7 +53,7 @@ function session(activatedTools: string[]): SessionRecord {
     seq: 1,
     title: 'Board work',
     isPinned: false,
-    // Skips the MCP gather; plugin tools still take the deferral path under test.
+    // Skips the MCP gather; mini app tools still take the deferral path under test.
     createdAt: '2026-08-18T00:00:00.000Z',
     updatedAt: '2026-08-18T00:00:00.000Z',
     lastMessageAt: '2026-08-18T00:00:00.000Z',
@@ -117,16 +118,17 @@ async function assembleTurn(env: RunEnv, record: SessionRecord, surfaceTools?: s
     userId: 'user-a',
     session: record,
     agentProfile: { openToolset: true } as RunProfile,
-    // The registry already CONTAINS plugin natives; `loadedPlugins.tools` is what marks them as
-    // plugin-sourced, and provenance is the whole basis of the deferral split.
+    // The registry already CONTAINS mini app tools; `loadedMiniApps.tools` is what marks them as
+    // mini-app-sourced, and provenance is the whole basis of the deferral split.
     // A NARROW harness, and it says so: the split under test reads `tools` and `toolNames` and
     // nothing else, so the double cast is the honest spelling — a single `as` would claim these
     // two fields are a registry, which they are not.
     runtimeTools: {
-      tools: [...CORE_TOOLS, ...PLUGIN_TOOLS],
-      toolNames: [...CORE_TOOLS, ...PLUGIN_TOOLS].map((tool) => tool.name),
+      tools: [...CORE_TOOLS, ...MINI_APP_TOOLS],
+      toolNames: [...CORE_TOOLS, ...MINI_APP_TOOLS].map((tool) => tool.name),
     } as unknown as ReturnType<typeof buildRunToolRegistry>,
-    loadedPlugins: { tools: PLUGIN_TOOLS, hooks: [], mcpServers: [] } as unknown as LoadedPlugins,
+    loadedPlugins: { mcpServers: [] } as unknown as LoadedPlugins,
+    loadedMiniApps: { tools: MINI_APP_TOOLS, hooks: [] } as unknown as LoadedMiniApps,
     ccHooks: { active: false } as CcHooksRuntime,
     defaultCwd: '/tmp',
     disabledTools: [],
@@ -136,45 +138,45 @@ async function assembleTurn(env: RunEnv, record: SessionRecord, surfaceTools?: s
 
 const names = (tools: readonly AgentTool[]) => tools.map((tool) => tool.name)
 
-describe('tools an open plugin view brings', () => {
+describe('tools an open mini app view brings', () => {
   test('ride the wire for the turn that carries the view, write nothing, and go with it', async () => {
     const { env, writes, read } = store()
 
-    const open = await assembleTurn(env, session(read()), ['plugin_chart_render'])
-    expect(names(open.tools)).toEqual(['read', 'bash', 'plugin_chart_render', 'activate_tools'])
-    expect(open.deferredToolNames).toEqual(['plugin_board_edit'])
+    const open = await assembleTurn(env, session(read()), ['chart_render'])
+    expect(names(open.tools)).toEqual(['read', 'bash', 'chart_render', 'activate_tools'])
+    expect(open.deferredToolNames).toEqual(['board_edit'])
 
     const closed = await assembleTurn(env, session(read()))
     expect(names(closed.tools)).toEqual(['read', 'bash', 'activate_tools'])
     expect(writes).toEqual([])
-    expect(open.tools.at(-1)!.description).not.toContain('- plugin_chart_render ')
-    expect(open.tools.at(-1)!.description).toContain('- plugin_board_edit ')
-    expect(closed.tools.at(-1)!.description).toContain('- plugin_chart_render ')
+    expect(open.tools.at(-1)!.description).not.toContain('- chart_render ')
+    expect(open.tools.at(-1)!.description).toContain('- board_edit ')
+    expect(closed.tools.at(-1)!.description).toContain('- chart_render ')
   })
 
   test('follow what the model activated, so a view opening never reorders the list', async () => {
     const { env } = store()
-    const turn = await assembleTurn(env, session(['plugin_board_edit']), [
-      'plugin_chart_render',
-      'plugin_board_edit',
+    const turn = await assembleTurn(env, session(['board_edit']), [
+      'chart_render',
+      'board_edit',
       'read',
     ])
     // Sticky first in activation order, the view's after it once; a core name adds nothing.
     expect(names(turn.tools)).toEqual([
       'read',
       'bash',
-      'plugin_board_edit',
-      'plugin_chart_render',
+      'board_edit',
+      'chart_render',
       'activate_tools',
     ])
   })
 
   test('are already active to the activator, which keeps them off the session', async () => {
     const { env, writes } = store()
-    const turn = await assembleTurn(env, session([]), ['plugin_chart_render'])
+    const turn = await assembleTurn(env, session([]), ['chart_render'])
     const result = await turn.tools
       .at(-1)!
-      .execute('call-1', { names: ['plugin_chart_render'] }, {} as never)
+      .execute('call-1', { names: ['chart_render'] }, {} as never)
     await Promise.resolve()
     expect(result.content).toContain('Already active in this session')
     expect(writes).toEqual([])
@@ -188,33 +190,33 @@ describe('the activation lifecycle across two turns of one session', () => {
     // ---- Turn 1 -----------------------------------------------------------
     const first = await assembleTurn(env, session(read()))
     expect(names(first.tools)).toEqual(['read', 'bash', 'activate_tools'])
-    // Deferred does not mean unavailable: both plugin tools remain dispatchable.
-    expect(names(first.dispatchTools)).toContain('plugin_board_edit')
-    expect(names(first.preflightTools)).toContain('plugin_board_edit')
+    // Deferred does not mean unavailable: both mini app tools remain dispatchable.
+    expect(names(first.dispatchTools)).toContain('board_edit')
+    expect(names(first.preflightTools)).toContain('board_edit')
     expect(() => validateToolRegistry(first.tools, first.dispatchTools)).not.toThrow()
 
     const activator = first.tools.at(-1)!
-    const result = await activator.execute('call-1', { names: ['plugin_board_edit'] }, {} as never)
+    const result = await activator.execute('call-1', { names: ['board_edit'] }, {} as never)
     expect(result.isError).toBeFalsy()
     // The write is fire-and-forget inside the tool; let it settle.
     await Promise.resolve()
-    expect(writes).toEqual([['plugin_board_edit']])
+    expect(writes).toEqual([['board_edit']])
 
     // ---- Turn 2: a fresh run reading the session back ---------------------
     const second = await assembleTurn(env, session(read()))
-    expect(names(second.tools)).toEqual(['read', 'bash', 'plugin_board_edit', 'activate_tools'])
-    expect(second.deferredToolNames).toEqual(['plugin_chart_render'])
-    expect(second.tools.at(-1)!.description).not.toContain('- plugin_board_edit ')
-    expect(second.tools.at(-1)!.description).toContain('- plugin_chart_render ')
+    expect(names(second.tools)).toEqual(['read', 'bash', 'board_edit', 'activate_tools'])
+    expect(second.deferredToolNames).toEqual(['chart_render'])
+    expect(second.tools.at(-1)!.description).not.toContain('- board_edit ')
+    expect(second.tools.at(-1)!.description).toContain('- chart_render ')
     expect(() => validateToolRegistry(second.tools, second.dispatchTools)).not.toThrow()
   })
 
   test('asking again for a tool the session already carries costs nothing and writes nothing', async () => {
     const { env, writes } = store()
-    const second = await assembleTurn(env, session(['plugin_board_edit']))
+    const second = await assembleTurn(env, session(['board_edit']))
 
     const activator = second.tools.at(-1)!
-    const result = await activator.execute('call-1', { names: ['plugin_board_edit'] }, {} as never)
+    const result = await activator.execute('call-1', { names: ['board_edit'] }, {} as never)
     await Promise.resolve()
 
     expect(result.content).toContain('Already active in this session')
@@ -223,19 +225,19 @@ describe('the activation lifecycle across two turns of one session', () => {
   })
 
   test('a second, different activation adds to the first instead of replacing it', async () => {
-    const { env, read } = store(['plugin_board_edit'])
+    const { env, read } = store(['board_edit'])
     const first = await assembleTurn(env, session(read()))
 
-    await first.tools.at(-1)!.execute('call-1', { names: ['plugin_chart_render'] }, {} as never)
+    await first.tools.at(-1)!.execute('call-1', { names: ['chart_render'] }, {} as never)
     await Promise.resolve()
-    expect(read()).toEqual(['plugin_board_edit', 'plugin_chart_render'])
+    expect(read()).toEqual(['board_edit', 'chart_render'])
 
     const third = await assembleTurn(env, session(read()))
     expect(names(third.tools)).toEqual([
       'read',
       'bash',
-      'plugin_board_edit',
-      'plugin_chart_render',
+      'board_edit',
+      'chart_render',
       // The loader STAYS even with nothing left to activate: dropping it would change the tool list for
       // no gain and cost the prompt cache, and a model with it in its history would call a tool that no
       // longer exists.
@@ -251,14 +253,14 @@ describe('the activation lifecycle across two turns of one session', () => {
     const run = await assembleTurn(env, record)
     const activator = run.tools.at(-1)!
 
-    await activator.execute('call-1', { names: ['plugin_board_edit'] }, {} as never)
-    await activator.execute('call-2', { names: ['plugin_chart_render'] }, {} as never)
+    await activator.execute('call-1', { names: ['board_edit'] }, {} as never)
+    await activator.execute('call-2', { names: ['chart_render'] }, {} as never)
     await Promise.resolve()
 
     // The second merge has to see the first one's result, which is why the in-memory record is updated
     // alongside the write.
-    expect(writes).toEqual([['plugin_board_edit'], ['plugin_board_edit', 'plugin_chart_render']])
-    expect(record.activatedTools).toEqual(['plugin_board_edit', 'plugin_chart_render'])
+    expect(writes).toEqual([['board_edit'], ['board_edit', 'chart_render']])
+    expect(record.activatedTools).toEqual(['board_edit', 'chart_render'])
   })
 
   test("an activation a WAKE made mid-run survives the run's own activation", async () => {
@@ -267,21 +269,21 @@ describe('the activation lifecycle across two turns of one session', () => {
     const { env, read, writeBehind } = store()
     const record = session([])
     const run = await assembleTurn(env, record)
-    writeBehind(['plugin_chart_render'])
+    writeBehind(['chart_render'])
 
-    await run.tools.at(-1)!.execute('call-1', { names: ['plugin_board_edit'] }, {} as never)
+    await run.tools.at(-1)!.execute('call-1', { names: ['board_edit'] }, {} as never)
     await Promise.resolve()
 
-    expect(read()).toEqual(['plugin_chart_render', 'plugin_board_edit'])
-    expect(record.activatedTools).toEqual(['plugin_chart_render', 'plugin_board_edit'])
+    expect(read()).toEqual(['chart_render', 'board_edit'])
+    expect(record.activatedTools).toEqual(['chart_render', 'board_edit'])
   })
 
   test('a remembered name that no longer resolves is skipped, and the rest still ride', async () => {
     const { env } = store()
     // An uninstalled plugin or a disconnected server: the session record outlives both.
-    const run = await assembleTurn(env, session(['plugin_gone', 'plugin_board_edit']))
+    const run = await assembleTurn(env, session(['plugin_gone', 'board_edit']))
 
-    expect(names(run.tools)).toEqual(['read', 'bash', 'plugin_board_edit', 'activate_tools'])
+    expect(names(run.tools)).toEqual(['read', 'bash', 'board_edit', 'activate_tools'])
     expect(() => validateToolRegistry(run.tools, run.dispatchTools)).not.toThrow()
   })
 
@@ -295,17 +297,15 @@ describe('the activation lifecycle across two turns of one session', () => {
     } as unknown as RunEnv
     const run = await assembleTurn(env, session([]))
 
-    const result = await run.tools
-      .at(-1)!
-      .execute('call-1', { names: ['plugin_board_edit'] }, {} as never)
+    const result = await run.tools.at(-1)!.execute('call-1', { names: ['board_edit'] }, {} as never)
     await Promise.resolve()
 
     expect(result.isError).toBeFalsy()
-    expect(result.content).toContain('Activated: plugin_board_edit')
+    expect(result.content).toContain('Activated: board_edit')
   })
 })
 
-test('a withheld plugin_build stub cannot satisfy a macro requirement', async () => {
+test('a withheld mini_app_build stub cannot satisfy a macro requirement', async () => {
   const recovery = createToolOutputTool({} as never, {} as never, 'user-a', 's1')
   const assembled = await assembleRunTools({
     env: store().env,
@@ -320,7 +320,7 @@ test('a withheld plugin_build stub cannot satisfy a macro requirement', async ()
       ledger: new Map([
         [recovery.name, { state: 'live' }],
         [
-          'plugin_build',
+          'mini_app_build',
           {
             state: 'withheld',
             reason: { layer: 'policy', kind: 'rule', denial: null },
@@ -328,17 +328,18 @@ test('a withheld plugin_build stub cannot satisfy a macro requirement', async ()
         ],
       ]),
     } as unknown as ReturnType<typeof buildRunToolRegistry>,
-    loadedPlugins: { tools: [], hooks: [], mcpServers: [] } as unknown as LoadedPlugins,
+    loadedPlugins: { mcpServers: [] } as unknown as LoadedPlugins,
+    loadedMiniApps: { tools: [], hooks: [] } as unknown as LoadedMiniApps,
     ccHooks: { active: false } as CcHooksRuntime,
     defaultCwd: '/tmp',
-    disabledTools: ['plugin_build'],
+    disabledTools: ['mini_app_build'],
     backgroundToolNames: new Set<string>(),
   })
 
-  expect(names(assembled.dispatchTools)).toContain('plugin_build')
-  expect(names(assembled.tools)).not.toContain('plugin_build')
-  expect(names(assembled.preflightTools)).not.toContain('plugin_build')
+  expect(names(assembled.dispatchTools)).toContain('mini_app_build')
+  expect(names(assembled.tools)).not.toContain('mini_app_build')
+  expect(names(assembled.preflightTools)).not.toContain('mini_app_build')
   expect(() =>
-    assertRunToolRequirements(assembled.preflightTools, [], [{ name: 'plugin_build' }]),
-  ).toThrow('Required run tools are unavailable: plugin_build')
+    assertRunToolRequirements(assembled.preflightTools, [], [{ name: 'mini_app_build' }]),
+  ).toThrow('Required run tools are unavailable: mini_app_build')
 })

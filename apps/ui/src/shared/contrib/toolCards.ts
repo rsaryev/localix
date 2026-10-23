@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import type { ToolCardContribution } from '@localixai/mini-app-sdk/ui'
 
-import { isMiniAppContributionEnabled, subscribePluginActivation } from './miniAppActivation'
+import { isMiniAppContributionEnabled, subscribeMiniAppActivation } from './miniAppActivation'
 
 /**
  * How a plugin's own tools read in the transcript, keyed by the tool's name.
@@ -28,7 +28,7 @@ function announceToolCards(): void {
 }
 
 // Enabling or disabling a plugin changes what `toolCardFor` answers without touching the map.
-subscribePluginActivation(announceToolCards)
+subscribeMiniAppActivation(announceToolCards)
 
 export function registerToolCard(contribution: ToolCardContribution): void {
   const existing = contributions.get(contribution.tool)

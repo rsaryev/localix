@@ -11,6 +11,7 @@ import tools from '../ui/ToolsSettings.surface'
 import skills from '../ui/SkillsSettings.surface'
 import mcp from '../ui/McpSettings.surface'
 import plugins from '../ui/PluginsSettings.surface'
+import miniApps from '../ui/MiniAppsSettings.surface'
 import rules from '../ui/PermissionRulesSettings.surface'
 import agents from '../ui/AgentsSettings.surface'
 import project from '../ui/ProjectsSettings.surface'
@@ -29,6 +30,7 @@ const surfaces: UiLocationContribution[] = [
   skills,
   mcp,
   plugins,
+  miniApps,
   rules,
   project,
   models,

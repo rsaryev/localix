@@ -1,8 +1,11 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import type { CapabilitySnapshot, PluginRecord } from '@/shared/api/contracts'
-import { __resetPluginContrib, refetchPluginContrib } from '@/shared/contrib/enabledPlugins'
+import type { CapabilitySnapshot, MiniAppRecord, PluginRecord } from '@/shared/api/contracts'
+import { __resetMiniAppContrib, refetchMiniAppContrib } from '@/shared/contrib/enabledMiniApps'
 import { backendClient } from '@/shared/api/client'
-import { loadPluginCommandArgOptions } from './pluginCommandArgOptions'
+import {
+  loadMiniAppCommandArgOptions,
+  loadPluginCommandArgOptions,
+} from './pluginCommandArgOptions'
 
 /**
  * The `/plugin` composer pickers. Every value here already exists client-side — the
@@ -24,17 +27,23 @@ const EMPTY_TOOLS: CapabilitySnapshot['tools'] = {
   mcpUnprobedServers: [],
 }
 
-async function installed(plugins: PluginRecord[]): Promise<void> {
-  await refetchPluginContrib({
+function app(name: string, over: Partial<MiniAppRecord> = {}): MiniAppRecord {
+  return { name, enabled: true, projectId: '', scope: 'global', ...over } as MiniAppRecord
+}
+
+async function installed(plugins: PluginRecord[], miniApps: MiniAppRecord[] = []): Promise<void> {
+  await refetchMiniAppContrib({
     loadSnapshot: async () => ({
       revision: 1,
-      scope: { projectId: '', agentId: null, sessionId: null },
+      scope: { projectId: '', agentId: null },
       plugins,
+      miniApps,
       tools: EMPTY_TOOLS,
       views: [],
       themes: [],
       agents: [],
       commands: [],
+      miniAppCommands: [],
       mcp: [],
       skills: [],
       tips: [],
@@ -46,11 +55,17 @@ async function installed(plugins: PluginRecord[]): Promise<void> {
 const realListMarketplaces = backendClient.listMarketplaces.bind(backendClient)
 
 afterEach(() => {
-  __resetPluginContrib()
+  __resetMiniAppContrib()
   backendClient.listMarketplaces = realListMarketplaces
 })
 
 describe('loadPluginCommandArgOptions', () => {
+  test('offers Claude Code plugins only, never a mini app', async () => {
+    await installed([plugin('formatter')], [app('chess')])
+    const options = await loadPluginCommandArgOptions('plugin', 'remove', '')
+    expect(options.map((o) => o.value)).toEqual(['formatter'])
+  })
+
   test('enable offers only what is OFF, disable only what is ON', async () => {
     await installed([plugin('running'), plugin('parked', { enabled: false })])
 
@@ -70,11 +85,11 @@ describe('loadPluginCommandArgOptions', () => {
   })
 
   test('the query filters by name, and the description carries state + scope', async () => {
-    await installed([plugin('acme'), plugin('library', { bundled: true })])
+    await installed([plugin('acme'), plugin('library', { projectId: 'p1' })])
 
     const filtered = await loadPluginCommandArgOptions('plugin', 'details', 'lib')
     expect(filtered.map((o) => o.value)).toEqual(['library'])
-    expect(filtered[0].description).toBe('v1.0.0 · enabled · bundled')
+    expect(filtered[0].description).toBe('v1.0.0 · enabled · project')
   })
 
   test('validate offers --strict alongside the plugin names', async () => {
@@ -85,25 +100,20 @@ describe('loadPluginCommandArgOptions', () => {
 
   test('install offers marketplace entries in the exact <name>@<marketplace> form', async () => {
     backendClient.listMarketplaces = async () => [
-      {
-        name: 'localix',
-        builtin: true,
-        count: 1,
-        plugins: [{ name: 'acme', description: 'Acme data' }],
-      },
+      { name: 'tools', count: 1, plugins: [{ name: 'acme', description: 'Acme data' }] },
     ]
     const options = await loadPluginCommandArgOptions('source', 'install', '')
-    expect(options).toEqual([{ value: 'acme@localix', label: 'acme', description: 'Acme data' }])
+    expect(options).toEqual([{ value: 'acme@tools', label: 'acme', description: 'Acme data' }])
   })
 
   test('marketplace remove offers registered marketplaces with their size', async () => {
     backendClient.listMarketplaces = async () => [
-      { name: 'localix', builtin: true, count: 2, plugins: [] },
-      { name: 'acme', builtin: false, count: 1, plugins: [] },
+      { name: 'tools', count: 2, plugins: [] },
+      { name: 'acme', count: 1, plugins: [] },
     ]
     const options = await loadPluginCommandArgOptions('market', 'marketplace', '')
-    expect(options.map((o) => o.value)).toEqual(['localix', 'acme'])
-    expect(options[0].description).toBe('2 plugins · built-in')
+    expect(options.map((o) => o.value)).toEqual(['tools', 'acme'])
+    expect(options[0].description).toBe('2 plugins')
     expect(options[1].description).toBe('1 plugin')
   })
 
@@ -116,5 +126,20 @@ describe('loadPluginCommandArgOptions', () => {
 
   test('an argument with no live source resolves to nothing', async () => {
     expect(await loadPluginCommandArgOptions('msource', 'marketplace', '')).toEqual([])
+  })
+})
+
+describe('loadMiniAppCommandArgOptions', () => {
+  test('enable offers the mini apps that are off, disable those that are on, never a plugin', async () => {
+    await installed([plugin('formatter')], [app('chess'), app('notes', { enabled: false })])
+    expect((await loadMiniAppCommandArgOptions('app', 'enable', '')).map((o) => o.value)).toEqual([
+      'notes',
+    ])
+    expect((await loadMiniAppCommandArgOptions('app', 'disable', '')).map((o) => o.value)).toEqual([
+      'chess',
+    ])
+    expect((await loadMiniAppCommandArgOptions('app', 'remove', 'ch')).map((o) => o.label)).toEqual(
+      ['chess'],
+    )
   })
 })

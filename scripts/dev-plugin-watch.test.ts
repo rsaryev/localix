@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
@@ -64,12 +64,12 @@ test('re-stages the plugin kit once per burst of changes to any of its inputs', 
 // kept the machine at 250–400% CPU for as long as anyone edited.
 test('a content change waits for the inputs to go quiet; a layout change does not', () => {
   const kit = kitHarness()
-  expect(KIT_LAYOUT_INPUTS).toContain('apps/api/src/features/plugins/authoring/kit-layout.ts')
+  expect(KIT_LAYOUT_INPUTS).toContain('apps/api/src/features/mini-apps/authoring/kit-layout.ts')
   expect(KIT_LAYOUT_INPUTS).not.toContain(CONTENT_INPUT)
 
   kit.change(CONTENT_INPUT)
   expect(kit.pending()).toEqual([20_000])
-  kit.change('apps/api/src/features/plugins/authoring/kit-layout.ts')
+  kit.change('apps/api/src/features/mini-apps/authoring/kit-layout.ts')
   expect(kit.pending()).toEqual([1000])
   // A content save during a pending layout re-stage does not postpone it.
   kit.change(CONTENT_INPUT)
@@ -129,14 +129,17 @@ describe('dev plugin watcher', () => {
     expect(pluginNameForChange(null)).toBeNull()
   })
 
-  test('coalesces a burst of changes into one re-stage per plugin', () => {
+  test('coalesces a burst of changes into one re-stage per mini app', () => {
+    // Only a bundled folder that exists is watched: a checkout with its mini apps folder.
+    const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), 'dev-watch-')))
+    mkdirSync(join(repoRoot, 'mini-apps'))
     let onEvents: ((events: { path: string; type: string }[]) => void) | undefined
     const emit = (...files: string[]) =>
-      onEvents?.(files.map((file) => ({ path: join('/repo/plugins', file), type: 'update' })))
+      onEvents?.(files.map((file) => ({ path: join(repoRoot, 'mini-apps', file), type: 'update' })))
     const timers: (() => void)[] = []
     const restaged: string[] = []
     const watcher = watchPluginsForRestage({
-      repoRoot: '/repo',
+      repoRoot,
       outPlugins: '/staged',
       restage: ({ name }) => {
         restaged.push(name)
@@ -152,16 +155,17 @@ describe('dev plugin watcher', () => {
         return timers.length
       }) as never,
     })
-    // A scaffold: forty files land in one plugin, in ONE native batch; a save lands in another.
+    // A scaffold: forty files land in one mini app, in ONE native batch; a save lands in another.
     emit(...Array.from({ length: 40 }, (_, i) => `gpu-monitor/backend/file-${i}.ts`))
     emit('trading/backend/index.ts')
     emit('gpu-monitor/ui/register.tsx', 'gpu-monitor/dist/plugin/register.js')
-    // Only the LAST timer per plugin is live (earlier ones were cleared); firing every
-    // scheduled callback must still yield exactly one re-stage per plugin.
+    // Only the LAST timer per mini app is live (earlier ones were cleared); firing every
+    // scheduled callback must still yield exactly one re-stage per mini app.
     const live = timers.slice(-2)
     for (const fire of live) fire()
     expect(restaged.sort()).toEqual(['gpu-monitor', 'trading'])
     watcher.close()
+    rmSync(repoRoot, { recursive: true, force: true })
   })
 
   // `bun install` is the fix a failed plugin's "Could not resolve" asks for, and it changes nothing

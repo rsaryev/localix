@@ -6,11 +6,15 @@ export const REALTIME_RESOURCES = [
   'profile',
   'view-state',
   'capabilities',
+  // The installed mini apps: their list, settings and what each contributes.
+  'mini-apps',
   'vault',
   'storage',
   'system',
   // In-memory status a service signals as it moves (a download, an index build), not a table.
   'local-models',
+  // Mini app installs and updates in flight, with their progress.
+  'mini-app-installs',
   'semantic',
   // What loaded mods put on screen: their panes and what is drawn in them.
   'mods',

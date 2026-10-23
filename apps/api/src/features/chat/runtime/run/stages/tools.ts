@@ -36,7 +36,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
   const { env, params, userId, session, budget } = frame
   const { deps, repo, state: runtimeState } = env
   const { state } = turn
-  const { defaultCwd, loadedPlugins, ccHooks } = inputs
+  const { defaultCwd, loadedPlugins, loadedMiniApps, ccHooks } = inputs
 
   const agentProfile = resolveExecutionProfile(
     session,
@@ -87,6 +87,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
       toolDenials: inputs.toolDenials,
       agentProfile,
       loadedPlugins,
+      loadedMiniApps,
       toolSurface,
       decisionsAvailable,
       // CC SubagentStart/SubagentStop hooks fire around delegate sub-agent runs.
@@ -153,6 +154,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     agentProfile,
     runtimeTools,
     loadedPlugins,
+    loadedMiniApps,
     ccHooks,
     mods: inputs.mods,
     defaultCwd,
@@ -162,7 +164,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
     modelInput: turn.modelInput,
     disabledTools,
     toolSurface,
-    surfaceTools: surfaceTools(surfacePlugins(params.historyMessages), loadedPlugins.loaded),
+    surfaceTools: surfaceTools(surfacePlugins(params.historyMessages), loadedMiniApps.loaded),
     backgroundToolNames,
     mutatingToolNames,
   })
@@ -173,6 +175,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
       recordComposition(session.id, {
         assembled,
         loadedPlugins,
+        loadedMiniApps,
         wrappers: TOOL_WRAPPER_CHAIN.map((entry) => entry.label),
         policy: policy.trace,
       }),

@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 
-import { humanizePluginId, pluginLabel } from './label'
+import { humanizeMiniAppId, miniAppLabel } from './label'
 
 describe('the name a person reads for a plugin', () => {
   test('a declared name is used verbatim', () => {
-    expect(pluginLabel({ name: 'learning', displayName: 'Learning Studio' })).toBe(
+    expect(miniAppLabel({ name: 'learning', displayName: 'Learning Studio' })).toBe(
       'Learning Studio',
     )
   })
@@ -12,24 +12,24 @@ describe('the name a person reads for a plugin', () => {
   test('a missing name is TRANSLATED from the id, never printed raw', () => {
     // The whole point: `name` is a kebab id by contract, so a bare `||` fallback puts an
     // identifier in a list of names — which reads as a failed load, not as a plugin.
-    expect(pluginLabel({ name: 'webhook-notifier' })).toBe('Webhook Notifier')
-    expect(pluginLabel({ name: 'database' })).toBe('Database')
+    expect(miniAppLabel({ name: 'webhook-notifier' })).toBe('Webhook Notifier')
+    expect(miniAppLabel({ name: 'database' })).toBe('Database')
   })
 
   test('an empty or blank displayName counts as missing, not as an empty name', () => {
-    expect(pluginLabel({ name: 'office', displayName: '' })).toBe('Office')
-    expect(pluginLabel({ name: 'office', displayName: '   ' })).toBe('Office')
-    expect(pluginLabel({ name: 'office', displayName: null })).toBe('Office')
+    expect(miniAppLabel({ name: 'office', displayName: '' })).toBe('Office')
+    expect(miniAppLabel({ name: 'office', displayName: '   ' })).toBe('Office')
+    expect(miniAppLabel({ name: 'office', displayName: null })).toBe('Office')
   })
 
   test('acronyms keep their own casing instead of becoming Title Case words', () => {
-    expect(humanizePluginId('api')).toBe('API')
-    expect(humanizePluginId('devops')).toBe('DevOps')
-    expect(humanizePluginId('mcp-bridge')).toBe('MCP Bridge')
-    expect(humanizePluginId('sql_runner')).toBe('SQL Runner')
+    expect(humanizeMiniAppId('api')).toBe('API')
+    expect(humanizeMiniAppId('devops')).toBe('DevOps')
+    expect(humanizeMiniAppId('mcp-bridge')).toBe('MCP Bridge')
+    expect(humanizeMiniAppId('sql_runner')).toBe('SQL Runner')
   })
 
   test('separators collapse instead of producing empty words', () => {
-    expect(humanizePluginId('a--b__c')).toBe('A B C')
+    expect(humanizeMiniAppId('a--b__c')).toBe('A B C')
   })
 })

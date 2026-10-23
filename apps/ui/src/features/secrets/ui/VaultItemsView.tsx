@@ -37,6 +37,7 @@ const SOURCE_OPTIONS: readonly FilterOption<SourceFilter>[] = [
   { value: 'user', label: 'Personal' },
   { value: 'provider', label: 'Providers' },
   { value: 'plugin', label: 'Plugins' },
+  { value: 'mini-app', label: 'Mini apps' },
   { value: 'system', label: 'System' },
 ]
 

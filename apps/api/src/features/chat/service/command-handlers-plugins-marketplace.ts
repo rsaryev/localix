@@ -100,7 +100,7 @@ export async function handleMarketplaceSubcommand(
       '',
       ...markets.map(
         (m) =>
-          `- \`${m.name}\`${m.builtin ? ' _(built-in)_' : ''} — ${m.unsupported ? `unsupported: ${m.unsupported}` : `${m.count} plugins`}`,
+          `- \`${m.name}\` — ${m.unsupported ? `unsupported: ${m.unsupported}` : `${m.count} plugins`}`,
       ),
       '',
       'Add one: `/plugin marketplace add <owner/repo>`; see its plugins: `/plugin marketplace list <name>`.',

@@ -1,18 +1,18 @@
 # Contributing
 
-Localix contributors use Bun and Turbo to build the desktop, API, UI, packages, and bundled plugins
-from one workspace. This guide gets a checkout running and maps each change to the checks that catch
-regressions.
+Localix contributors use Bun and Turbo to build the desktop, API, UI, packages, and bundled mini
+apps from one workspace. This guide gets a checkout running and maps each change to the checks that
+catch regressions.
 
 ## Terminology
 
-| Term               | Meaning                                                               | Boundary                                                           |
-| ------------------ | --------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Root task          | A script in the repository `package.json` that drives workspace work. | Prefer it when a Turbo task must build dependencies first.         |
-| Focused check      | A test or package command run while iterating on one change.          | It does not replace the required pull-request gates.               |
-| Workspace package  | A Bun workspace under `apps/`, `packages/`, `plugins/`, or `vendor/`. | Bundled plugins are not all represented by Turbo package tasks.    |
-| Generated output   | Build, documentation, test, or desktop staging material.              | Keep ignored output out of review unless its source file is owned. |
-| Vendored workspace | Source retained under `vendor/` and linked by the root install.       | Update it only through its documented upstream-sync process.       |
+| Term               | Meaning                                                                 | Boundary                                                           |
+| ------------------ | ----------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Root task          | A script in the repository `package.json` that drives workspace work.   | Prefer it when a Turbo task must build dependencies first.         |
+| Focused check      | A test or package command run while iterating on one change.            | It does not replace the required pull-request gates.               |
+| Workspace package  | A Bun workspace under `apps/`, `packages/`, `mini-apps/`, or `vendor/`. | Bundled mini apps are not all represented by Turbo package tasks.  |
+| Generated output   | Build, documentation, test, or desktop staging material.                | Keep ignored output out of review unless its source file is owned. |
+| Vendored workspace | Source retained under `vendor/` and linked by the root install.         | Update it only through its documented upstream-sync process.       |
 
 ## What you can do
 
@@ -50,15 +50,16 @@ report missing `@localixai/*` modules that are not source defects.
 | `apps/desktop-tauri/` | Native shell, staged API sidecar, platform bridge, and packaging.           |
 | `apps/landing/`       | Product site and generated documentation renderer.                          |
 | `packages/`           | Shared runtime-neutral libraries, adapters, CLI launcher, and SDK surfaces. |
-| `plugins/`            | Bundled tools, workbenches, skills, hooks, commands, and channels.          |
+| `mini-apps/`          | Bundled mini apps: workbenches, backends, agent tools, guides and commands. |
 | `scripts/`            | Repository checks, staging, release helpers, and development launchers.     |
 | `config/`             | Shared tool configuration.                                                  |
 | `docs/`               | Public guides, contributor references, and canonical product captures.      |
 | `vendor/`             | Checked-in upstream workspaces consumed by the Bun graph.                   |
 
 The [architecture guide](architecture.md) owns import direction and runtime composition. The
-[plugin guide](../extending/plugins.md) owns extension boundaries; do not duplicate those contracts
-inside feature changes.
+[mini app guide](../extending/mini-apps.md) and the
+[plugins and mini apps contract](https://github.com/rsaryev/localix/blob/main/docs/internals/plugins-and-mini-apps.md)
+own extension boundaries; do not duplicate those contracts inside feature changes.
 
 ### Turbo and focused commands
 
@@ -91,8 +92,8 @@ removing a required gate must update the policy and workflow together.
 Use a focused test while editing. Ordinary commits run formatting and lint on staged files through
 `.githooks/pre-commit`, source and test type checks for affected packages and their transitive
 consumers, and changed or co-located tests. Turbo prepares upstream builds for those type checks.
-Shared compiler settings and dependency manifests at the root select all workspaces. Plugin backend
-changes also select the API compile project.
+Shared compiler settings and dependency manifests at the root select all workspaces. Mini app
+backend changes also select the API compile project.
 
 Rust source, dependency, and Tauri configuration changes run formatting and Clippy on the current
 platform when Cargo is available. Missing Clippy or rustfmt blocks a Rust commit once Cargo is
@@ -224,7 +225,7 @@ workspace install creates its links.
 | ---------- | -------------------- | ----------------------------------------------------------------------- |
 | Formatting | `.oxfmtrc.json`      | Two spaces, 100 columns, LF, single-quoted JavaScript, no semicolons.   |
 | Lint       | `.oxlintrc.json`     | Type-aware Oxlint rules plus React, hooks, import, and Unicorn rules.   |
-| Dead code  | `knip.json`          | Runtime-discovered plugin, migration, and package entry points.         |
+| Dead code  | `knip.json`          | Runtime-discovered mini app, migration, and package entry points.       |
 | TypeScript | `tsconfig.base.json` | Strict shared defaults; package projects can narrow targets and inputs. |
 
 Format only files in your change while collaborating in a shared worktree. Run the repository-wide
@@ -246,11 +247,11 @@ format check as a read-only gate before review.
 - Development starts with `bun install --frozen-lockfile`, so a pull that moved `bun.lock` installs
   what it pins before anything builds. A lockfile that no longer matches its `package.json` is
   reported and development continues on what is installed.
-- In development a bundled plugin whose backend does not build is skipped, not fatal. It keeps the
-  copy from its last successful build if there is one, and the Event Center names the plugin and the
-  build error. Fixing the source or running `bun install` re-stages it without a restart. A release
-  build stops on the same error. Changes under `plugins/` are seen by the native file watcher the
-  API's file tree uses, so a scaffold's whole burst of new files re-stages the plugin.
+- In development a bundled mini app whose backend does not build is skipped, not fatal. It keeps the
+  copy from its last successful build if there is one, and the Event Center names the mini app and
+  the build error. Fixing the source or running `bun install` re-stages it without a restart. A
+  release build stops on the same error. Changes under `mini-apps/` are seen by the native file
+  watcher the API's file tree uses, so a scaffold's whole burst of new files re-stages the mini app.
 - Generated desktop resources, sidecar binaries, package `dist` trees, Turbo state, and generated
   landing modules are ignored build products. Change their inputs instead.
 - Release configuration describes a pipeline, not the existence of a public signed artifact. Check
@@ -263,7 +264,7 @@ format check as a read-only gate before review.
 - [Documentation standards](https://github.com/rsaryev/localix/blob/main/docs/internals/doc-standards.md)
 - [Architecture](architecture.md)
 - [Environment contract](environment.md)
-- [Plugin authoring](../extending/plugins.md)
+- [Build a mini app](../extending/mini-apps.md)
 
 ## Source of truth
 

@@ -27,8 +27,8 @@ describe('surfaces follow a plugin that registers after the first paint', () => 
     const { WorkItemBody } = await import('./registry')
     const { miniAppUiHostFor } = await import('@/shared/contrib/host')
     const { workItemKindRegistry } = await import('@/shared/contrib/uiContrib')
-    const { refetchPluginContrib, __resetPluginContrib } =
-      await import('@/shared/contrib/enabledPlugins')
+    const { refetchMiniAppContrib, __resetMiniAppContrib } =
+      await import('@/shared/contrib/enabledMiniApps')
     const { __setRegistryFlushScheduler, flushRegistryChanges } =
       await import('@/shared/contrib/registryChanges')
     __setRegistryFlushScheduler(() => () => {})
@@ -44,7 +44,7 @@ describe('surfaces follow a plugin that registers after the first paint', () => 
     } as never)
     let settle!: (name: string, ok: boolean) => void
     const loaded = { loadSnapshot: async () => snapshotOf(['probe-late', 'slow-late']) }
-    void refetchPluginContrib(loaded as never, (_plugins, settled) => {
+    void refetchMiniAppContrib(loaded as never, (_plugins, settled) => {
       settle = settled!
       return new Promise<void>(() => {})
     })
@@ -81,7 +81,7 @@ describe('surfaces follow a plugin that registers after the first paint', () => 
       host.remove()
       workItemKindRegistry.removeOwner('probe-late')
       workItemKindRegistry.removeOwner('bystander-late')
-      __resetPluginContrib()
+      __resetMiniAppContrib()
       __setRegistryFlushScheduler(null)
     }
 
@@ -89,7 +89,8 @@ describe('surfaces follow a plugin that registers after the first paint', () => 
       return {
         revision: 1,
         scope: { projectId: '', agentId: null },
-        plugins: [...names.map(withUi), { name: 'bystander-late', enabled: true }],
+        plugins: [],
+        miniApps: [...names.map(withUi), { name: 'bystander-late', enabled: true }],
         views: [],
       }
     }

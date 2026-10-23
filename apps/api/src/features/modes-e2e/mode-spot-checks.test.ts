@@ -49,7 +49,7 @@ const ROWS: Row[] = [
   ['delegate', { action: 'close', run: 'sub-1' }, [A, A, A, A]],
   ['loops', { action: 'list' }, [A, A, A, A]],
   ['loops', { action: 'add', prompt: 'p', cadence: '* * * * *' }, [A, D, A, A]],
-  ['plugin_build', { name: 'x' }, [A, D, A, A]],
+  ['mini_app_build', { name: 'x' }, [A, D, A, A]],
   ['memory', { action: 'set', key: 'k', value: 'v', scope: 'session' }, [A, A, A, A]],
   ['memory', { action: 'set', key: 'k', value: 'v' }, [A, D, A, A]],
   ['global_search', { query: 'x' }, [A, A, A, A]],

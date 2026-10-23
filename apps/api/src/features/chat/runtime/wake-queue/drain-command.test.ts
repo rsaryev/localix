@@ -52,7 +52,7 @@ describe('drain — a queued slash command', () => {
         origin: { command: '/sample-command', label: 'skill' },
         identity: {
           extraAllowedTools: ['bash'],
-          requiredTools: [{ name: 'plugin_build' }],
+          requiredTools: [{ name: 'mini_app_build' }],
           modelOverride: 'fast-model',
         },
       },
@@ -68,7 +68,7 @@ describe('drain — a queued slash command', () => {
     expect(userRow.payload.isInternal).toBeUndefined()
     expect(runs[0]!.scope).toMatchObject({
       extraAllowedTools: ['bash'],
-      requiredTools: [{ name: 'plugin_build' }],
+      requiredTools: [{ name: 'mini_app_build' }],
       modelOverride: 'fast-model',
       conversationId: userRow.id,
     })

@@ -3,6 +3,7 @@
 // folder under `mini-apps/` is one mini app (its screens, backend and tools, with the plugin it
 // contains), and each folder under `plugins/` is one plugin with no mini app. A build stages both
 // into one root beside the server bundle, which the API reads at runtime.
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { hasExtensionManifest } from './extension-manifest.mjs'
 
@@ -19,16 +20,19 @@ export const PLUGINS_DIR = 'plugins'
 export const BUNDLED_DIRS = [MINI_APPS_DIR, PLUGINS_DIR]
 
 /** The folder a build stages every bundled extension into, beside `server.js` (`resources/<dir>`). */
-export const STAGED_APPS_DIR = 'plugins'
+export const STAGED_APPS_DIR = 'mini-apps'
 
 /** The absolute folder of a checkout's bundled mini apps. */
 export function miniAppsRoot(repoRoot) {
   return join(repoRoot, MINI_APPS_DIR)
 }
 
-/** The absolute folders of a checkout's bundled extensions, mini apps first. */
+/**
+ * The absolute folders of a checkout's bundled extensions, mini apps first — the ones that exist:
+ * a folder with nothing in it is not checked out (`plugins/` holds no plugin today).
+ */
 export function bundledRoots(repoRoot) {
-  return BUNDLED_DIRS.map((dir) => join(repoRoot, dir))
+  return BUNDLED_DIRS.map((dir) => join(repoRoot, dir)).filter((dir) => existsSync(dir))
 }
 
 /**

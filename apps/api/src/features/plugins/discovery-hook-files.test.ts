@@ -79,7 +79,7 @@ describe('plugin hooks files', () => {
     expect(plugin.error).toBeUndefined()
     const message = plugin.entrypoints.hookErrors?.[0] ?? ''
     expect(message).toStartWith('Failed to load hooks from ')
-    expect(plugin.layoutIssues).toContainEqual({ severity: 'error', path: 'hooks', message })
+    expect(plugin.manifestIssues).toContainEqual({ severity: 'error', path: 'hooks', message })
 
     const result = emptyLoadedPlugins()
     const summary = {

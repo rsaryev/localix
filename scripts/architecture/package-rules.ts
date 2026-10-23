@@ -22,6 +22,8 @@ const CORE_FORBIDDEN: ReadonlyArray<[RegExp, string]> = [
 export function loadManifests(): Source[] {
   const manifests: Source[] = []
   for (const group of ['apps', 'packages', ...BUNDLED_DIRS]) {
+    // A group with nothing in it is not checked out at all (`plugins/` holds no plugin today).
+    if (!existsSync(join(repoRoot, group))) continue
     for (const name of readdirSync(join(repoRoot, group))) {
       const file = `${group}/${name}/package.json`
       const path = join(repoRoot, file)

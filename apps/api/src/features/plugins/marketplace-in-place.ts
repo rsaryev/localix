@@ -5,7 +5,6 @@ import { rmrf } from '../ext/install-tree'
 import { marketplaceNameProblem } from './claude-code-marketplace'
 import type { Marketplace } from './marketplace'
 import {
-  LOCALIX_MARKETPLACE,
   readKnownMarketplaces,
   readMarketplace,
   writeKnownMarketplaces,
@@ -57,10 +56,6 @@ export async function assertRegistrable(
   source: MarketplaceSource,
   root: string,
 ): Promise<void> {
-  if (market.name === LOCALIX_MARKETPLACE)
-    throw new Error(
-      `"${LOCALIX_MARKETPLACE}" is the built-in marketplace and cannot be overridden.`,
-    )
   const refused = marketplaceNameProblem(market.name, source)
   if (refused) throw new Error(refused)
   // A name registered from another source keeps it: re-pointing it would move where the

@@ -21,7 +21,8 @@ individual controls across sections and opens the owning group, including advanc
 | Workspace   | Capabilities → Tools            | Tool availability by category                                                                            | The selected agent’s rules                                                          |
 | Workspace   | Capabilities → Skills           | Create, edit, availability, curator, archive, restore                                                    | Shared skill files; availability belongs to the selected agent                      |
 | Workspace   | Capabilities → MCP              | Add servers, transport, connection status, tool availability                                             | Shared server connections and the selected agent’s rules                            |
-| Workspace   | Capabilities → Plugins          | Install, configuration, availability, marketplaces                                                       | Shared plugin installations and the selected agent’s rules                          |
+| Workspace   | Capabilities → Plugins          | Claude Code plugins: install, configuration, availability, marketplaces                                  | Shared plugin installations and the selected agent’s rules                          |
+| Workspace   | Capabilities → Mini apps        | Installed mini apps: availability, settings, remove                                                      | Shared mini app installations and the selected agent’s rules                        |
 | Workspace   | Capabilities → Permission rules | Ordered rules, argument patterns, allow/ask/deny, apply, restore defaults                                | The selected agent                                                                  |
 | Workspace   | Project                         | Project selector, display name, project instructions, delete                                             | The selected project                                                                |
 | Application | System → Application            | Updates, model list check, terminal command, storage usage, reviewed conversation removal, retention     | This installation and local conversation storage                                    |
@@ -35,6 +36,10 @@ source references for all 17 choices.
 Capabilities initially uses the current conversation's agent when it is available in the picker;
 otherwise it falls back to the default assistant. A manual choice stays selected while that page
 remains mounted. Check the agent name before changing availability or permission rules.
+
+**Plugins** lists Claude Code plugins, the ones `/plugin` manages. **Mini apps** lists Localix's own
+apps with screens, the ones `/mini-app` manages; see [Mini apps](mini-apps.md) and
+[Install Claude Code plugins](../extending/claude-code-plugins.md).
 
 Spend alerts never stop a run. A session with mixed cost sources is summarized as estimated and can
 trigger an alert even when some calls use a subscription. See [cost tracking](cost-tracking.md) for
@@ -57,6 +62,7 @@ the same navigation, section surfaces, field sizes, and spacing as application s
 | Capabilities | Skills                    | Availability, shared skill authoring, archive and restore  | Switches apply immediately; authoring has explicit save actions              |
 | Capabilities | MCP                       | Server and tool availability, shared connection management | Switches apply immediately; server configuration has an explicit save action |
 | Capabilities | Plugins                   | Availability, shared installation and configuration        | Switches apply immediately; configuration has an explicit save action        |
+| Capabilities | Mini apps                 | Availability, shared mini app settings                     | Switches apply immediately; settings have an explicit save action            |
 | Capabilities | Permission rules          | Ordered policy for the agent                               | Apply commits the staged list                                                |
 
 An unsaved definition stays in the form when switching to another section of the same profile and

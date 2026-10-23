@@ -25,6 +25,7 @@ import { markDeferred, type ToolLedger } from '../../../agent-core/tool-ledger'
 import { withheldToolStubs } from '../../../agent-core/tools/withheld-stub'
 import type { buildRunToolRegistry } from './runtime-tools'
 import type { RunEnv } from './types'
+import type { LoadedMiniApps } from '../../../mini-apps/loader-contract'
 
 export interface AssembleRunToolsOptions {
   env: RunEnv
@@ -33,6 +34,7 @@ export interface AssembleRunToolsOptions {
   agentProfile: RunProfile
   runtimeTools: ReturnType<typeof buildRunToolRegistry>
   loadedPlugins: LoadedPlugins
+  loadedMiniApps: LoadedMiniApps
   /** Per-run CC declarative-hook runtime (PreToolUse/PostToolUse tool wrapping). */
   ccHooks: CcHooksRuntime
   /** Claude Code mods: `tool.call` around every tool, and the tools they registered. */
@@ -110,6 +112,7 @@ export async function assembleRunTools(
     agentProfile,
     runtimeTools,
     loadedPlugins,
+    loadedMiniApps,
     ccHooks,
     defaultCwd,
     disabledTools,
@@ -198,8 +201,8 @@ export async function assembleRunTools(
     gate,
     observe: env.deps?.externalAgents?.observe,
     sessionId: session.id,
-    pluginHooks: loadedPlugins.hooks,
-    pluginHookOptions: { sessionId: session.id, logger: consoleWarnLogger },
+    miniAppHooks: loadedMiniApps.hooks,
+    miniAppHookOptions: { sessionId: session.id, logger: consoleWarnLogger },
     ccHooks,
     logger: consoleWarnLogger,
     mods: options.mods,
@@ -225,7 +228,9 @@ export async function assembleRunTools(
   // A closed list NAMED its MCP tools: they ride the wire like its built-ins, no activator.
   for (const [name, server] of Object.entries(mcp.gather?.serverByTool ?? {}))
     if (agentProfile.openToolset && acceptedMcp.has(name)) sourceByTool.set(name, server)
-  for (const tool of [...loadedPlugins.tools, ...claimedMods.tools])
+  for (const tool of loadedMiniApps.tools)
+    if (!sourceByTool.has(tool.name)) sourceByTool.set(tool.name, 'mini-apps')
+  for (const tool of claimedMods.tools)
     if (!sourceByTool.has(tool.name)) sourceByTool.set(tool.name, 'plugins')
   const activatedForSession = session.activatedTools ?? []
   // Claude Code mods' `tool.describe`: a description rewritten, a tool moved behind the

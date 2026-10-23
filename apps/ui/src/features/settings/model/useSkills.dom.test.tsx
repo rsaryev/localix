@@ -62,9 +62,9 @@ test('a skill switch writes its agent’s rule, not the default assistant’s', 
   const { backendClient } = await import('@/shared/api/client')
   const { WorkItemVisibilityProvider } = await import('@localixai/mini-app-sdk/ui/visibility')
   const { __resetCapabilityCache } = await import('@/shared/contrib/capabilityCache')
-  const { __resetPluginContrib } = await import('@/shared/contrib/enabledPlugins')
+  const { __resetMiniAppContrib } = await import('@/shared/contrib/enabledMiniApps')
   const { useSkills } = await import('./useSkills')
-  __resetPluginContrib()
+  __resetMiniAppContrib()
   __resetCapabilityCache()
 
   const skill = {

@@ -13,12 +13,12 @@ import {
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 
-import { loadMiniAppKit, type MiniAppKit } from '../apps/api/src/features/plugins/authoring/kit'
+import { loadMiniAppKit, type MiniAppKit } from '../apps/api/src/features/mini-apps/authoring/kit'
 import {
   buildMiniAppUiArtifact,
   publishMiniAppUiArtifact,
   sharedShim,
-} from '../apps/api/src/features/plugins/authoring/ui-build'
+} from '../apps/api/src/features/mini-apps/authoring/ui-build'
 import { NO_SOURCE_MAPS_FLAG, stageMiniAppUi, takeStagedUiArtifact } from './stage-plugin-ui.mjs'
 import { kitCacheRoot } from './plugin-kit-cache.mjs'
 
@@ -106,7 +106,7 @@ test('relocated media encoding vendor retains its browser exclusions without nod
   expect(code).toContain('video/mp4')
 })
 
-describe('plugin UI artifact', () => {
+describe('mini app UI artifact', () => {
   test('bundles the plugin, takes shared modules from the host, loads the heavy one lazily', async () => {
     const out = join(tempDir(), 'out')
     const manifest = await build(fixtureMiniApp(), out)
@@ -257,7 +257,7 @@ describe('plugin UI artifact', () => {
     await expect(build(plugin)).rejects.toThrow('imports host internals ("@/shared/ui/button")')
   })
 
-  test('refuses static, dynamic and absolute imports outside the plugin', async () => {
+  test('refuses static, dynamic and absolute imports outside the mini app', async () => {
     for (const source of [
       (_outside: string) => `import { secret } from '../../outside'\nexport const value = secret\n`,
       (_outside: string) => `export const load = () => import('../../outside')\n`,
@@ -268,11 +268,11 @@ describe('plugin UI artifact', () => {
       const outside = join(dirname(plugin), 'outside.ts')
       write(outside, 'export const secret = "outside"\n')
       write(join(plugin, 'ui', 'register.tsx'), source(outside))
-      await expect(build(plugin)).rejects.toThrow('outside the plugin')
+      await expect(build(plugin)).rejects.toThrow('outside the mini app')
     }
   })
 
-  test('refuses a tsconfig bare alias that resolves outside the plugin', async () => {
+  test('refuses a tsconfig bare alias that resolves outside the mini app', async () => {
     const plugin = fixtureMiniApp()
     const outside = join(dirname(plugin), 'outside.ts')
     write(outside, 'export const secret = "outside"\n')
@@ -284,7 +284,7 @@ describe('plugin UI artifact', () => {
       join(plugin, 'ui', 'register.tsx'),
       "import { secret } from 'alias'\nexport const value = secret\n",
     )
-    await expect(build(plugin)).rejects.toThrow('outside the plugin')
+    await expect(build(plugin)).rejects.toThrow('outside the mini app')
   })
 
   test('admits a dependency Bun hoisted above the plugin, with its own internal imports', async () => {
@@ -319,7 +319,7 @@ describe('plugin UI artifact', () => {
       join(plugin, 'ui', 'register.tsx'),
       "import { part } from 'hoisted-dep'\nimport { secret } from '../../outside'\nexport const v = [part, secret]\n",
     )
-    await expect(build(plugin)).rejects.toThrow('outside the plugin')
+    await expect(build(plugin)).rejects.toThrow('outside the mini app')
   })
 
   test('refuses an import that escapes through a source symlink', async () => {
@@ -329,7 +329,7 @@ describe('plugin UI artifact', () => {
     write(outside, 'export const secret = "outside"\n')
     symlinkSync(outside, join(plugin, 'ui', 'link.ts'))
     write(join(plugin, 'ui', 'register.tsx'), "export { secret } from './link'\n")
-    await expect(build(plugin)).rejects.toThrow('outside the plugin')
+    await expect(build(plugin)).rejects.toThrow('outside the mini app')
   })
 
   test('a plugin without a UI entry has no artifact', async () => {

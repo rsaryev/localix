@@ -15,7 +15,7 @@ a trusted user, session, workspace, deadline, and byte budget.
 | Context reference    | A binding target (kind, token, URI, attributes) plus minted scope  | It does not authorize the URI                         |
 | Completion reference | The client's name for a reference, tagged `linked` or `ambient`    | The server mints the scope; the client cannot         |
 | Working set          | The ambient references for what is open on screen                  | Attached by the hub, not by a surface                 |
-| Fallback resolver    | A generic resolver consulted after every specific one              | It never shadows a plugin's resolver                  |
+| Fallback resolver    | A generic resolver consulted after every specific one              | It never shadows a mini app's resolver                |
 | Context contribution | Provider output considered for one model task                      | Host admission may drop it                            |
 | Automatic provider   | A provider selected by destination without an explicit reference   | It runs only when registered and enabled by default   |
 | Explicit resolver    | A provider selected by `supports(reference, destination)`          | It runs only for an explicit reference                |
@@ -25,18 +25,18 @@ a trusted user, session, workspace, deadline, and byte budget.
 
 ## What you can do
 
-| Module                   | Mechanism                                                                                       | Boundary or failure mode                                                            |
-| ------------------------ | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Plugin SDK context types | Define references, contributions, providers, destinations, scopes, and sensitivity              | Types do not authorize a URI or filesystem path                                     |
-| Provider registry        | Validates declarations and indexes `provider.id@provider.version`                               | A malformed or colliding plugin registration becomes a content-free diagnostic      |
-| Context manager          | Runs automatic providers or explicit resolvers, then admits and packs output                    | Provider timeout or failure removes that provider's output, not the whole operation |
-| Admission policy         | Rejects secret-shaped content and confines declared filesystem sources with `realpath`          | Opaque URIs without `source.path` are not interpreted as filesystem paths           |
-| Binding capture          | Resolves every message binding through Fabric, keyed by the binding's own id                    | A binding without content is named in the turn with its reason                      |
-| Host-reference resolver  | Serves core kinds (file, snippet, session, message, …) through the existing expanders           | A file contribution carries `source.path`, so workspace exclusions apply            |
-| Completion references    | Mints client-named references and ranks ambient ones below linked ones                          | Shared by edit prediction and every text-input surface                              |
-| Completion context       | Admits raw contributions, ranks them against the typed words, excerpts, then budgets            | A large contribution is excerpted, not dropped before ranking                       |
-| Edit Prediction engine   | Resolves context, builds one strict-JSON prompt, calls the auxiliary model, and validates hunks | Truncated, malformed, stale, reversing, or empty output produces no edit            |
-| Result cache             | Shares identical in-flight predictions and caches successful outcomes in memory                 | Cancellation and provider failures are never cached                                 |
+| Module                     | Mechanism                                                                                       | Boundary or failure mode                                                            |
+| -------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Mini app SDK context types | Define references, contributions, providers, destinations, scopes, and sensitivity              | Types do not authorize a URI or filesystem path                                     |
+| Provider registry          | Validates declarations and indexes `provider.id@provider.version`                               | A malformed or colliding mini app registration becomes a content-free diagnostic    |
+| Context manager            | Runs automatic providers or explicit resolvers, then admits and packs output                    | Provider timeout or failure removes that provider's output, not the whole operation |
+| Admission policy           | Rejects secret-shaped content and confines declared filesystem sources with `realpath`          | Opaque URIs without `source.path` are not interpreted as filesystem paths           |
+| Binding capture            | Resolves every message binding through Fabric, keyed by the binding's own id                    | A binding without content is named in the turn with its reason                      |
+| Host-reference resolver    | Serves core kinds (file, snippet, session, message, …) through the existing expanders           | A file contribution carries `source.path`, so workspace exclusions apply            |
+| Completion references      | Mints client-named references and ranks ambient ones below linked ones                          | Shared by edit prediction and every text-input surface                              |
+| Completion context         | Admits raw contributions, ranks them against the typed words, excerpts, then budgets            | A large contribution is excerpted, not dropped before ranking                       |
+| Edit Prediction engine     | Resolves context, builds one strict-JSON prompt, calls the auxiliary model, and validates hunks | Truncated, malformed, stale, reversing, or empty output produces no edit            |
+| Result cache               | Shares identical in-flight predictions and caches successful outcomes in memory                 | Cancellation and provider failures are never cached                                 |
 
 The load-bearing invariant is that provider output is data. The host verifies identity, declared
 sensitivity, scope, containment, secret shape, quotas, and global budgets before serialization.
@@ -56,11 +56,11 @@ sensitivity surface; they cannot widen either one after registration.
 Only automatic providers with `defaultEnabled: true` run through `collect`. Explicit resolvers run
 only when `resolveExplicit` finds one whose `supports` method accepts the reference and destination.
 The registry lists specific resolvers before any declared `fallback`. Core's generic resource bridge
-is one of these fallbacks. It registers at boot, before plugins load, so first-match order would
-otherwise let it answer every URI a plugin resolver was written for.
+is one of these fallbacks. It registers at boot, before mini apps load, so first-match order would
+otherwise let it answer every URI a mini app resolver was written for.
 
-A plugin declaration may request at most 8,000 tokens. Core's own resolvers may declare up to
-500,000. The host-reference resolver reads whatever the user linked, and a cap sized for plugins
+A mini app declaration may request at most 8,000 tokens. Core's own resolvers may declare up to
+500,000. The host-reference resolver reads whatever the user linked, and a cap sized for mini apps
 would drop every file over about 32 KB.
 
 ### Resolve and admit contributions
@@ -117,8 +117,8 @@ surface grounding (transcript, change set)    → contributions from the surface
 The client working set is `completionWorkingSet()`, which the grid provides at startup from the same
 ranked bindings the composer shows as ambient chips. For an editor it leaves out the editor's own
 tab. The hub folds the working set into its fingerprint and cache keys, so an answer produced beside
-one open file is never reused beside another. Plugin editors receive the working set through the
-host's `miniAppEditor.predictNextEdit`. Plugin text fields receive it through
+one open file is never reused beside another. Mini app editors receive the working set through the
+host's `miniAppEditor.predictNextEdit`. Mini app text fields receive it through
 `useMiniAppTextInputCompletion`.
 
 ### Produce an edit prediction
@@ -156,17 +156,17 @@ last subscriber leaves. `predicted` and `empty` outcomes are cacheable; transien
 
 ### Context Fabric
 
-| Control                             |             Value | Boundary                                            |
-| ----------------------------------- | ----------------: | --------------------------------------------------- |
-| Plugin provider token declaration   |    1–8,000 tokens | Enforced as a four-bytes-per-token output quota     |
-| Core provider token declaration     |  1–500,000 tokens | Core's own resolvers only                           |
-| Plugin provider timeout declaration |        1–5,000 ms | Clipped by the operation deadline                   |
-| Manager result ceiling              | `maxItems`, def 8 | Set by the request; a sent message packs every chip |
-| Explicit resolver concurrency       |                 4 | Result order remains input-stable                   |
-| Chat capture budget                 |             4 MiB | One sent message, every binding                     |
-| Chat capture deadline               |          5,000 ms | Covers the authoritative resolution                 |
-| Completion raw context              |           512 KiB | Material before excerpting, not the prompt budget   |
-| Completion references per call      |                12 | Linked first; the cap trims ambient ones first      |
+| Control                               |             Value | Boundary                                            |
+| ------------------------------------- | ----------------: | --------------------------------------------------- |
+| Mini app provider token declaration   |    1–8,000 tokens | Enforced as a four-bytes-per-token output quota     |
+| Core provider token declaration       |  1–500,000 tokens | Core's own resolvers only                           |
+| Mini app provider timeout declaration |        1–5,000 ms | Clipped by the operation deadline                   |
+| Manager result ceiling                | `maxItems`, def 8 | Set by the request; a sent message packs every chip |
+| Explicit resolver concurrency         |                 4 | Result order remains input-stable                   |
+| Chat capture budget                   |             4 MiB | One sent message, every binding                     |
+| Chat capture deadline                 |          5,000 ms | Covers the authoritative resolution                 |
+| Completion raw context                |           512 KiB | Material before excerpting, not the prompt budget   |
+| Completion references per call        |                12 | Linked first; the cap trims ambient ones first      |
 
 ### Edit Prediction
 
@@ -212,7 +212,7 @@ last subscriber leaves. `predicted` and `empty` outcomes are cacheable; transien
 - [Context system](context-system.md)
 - [Active-tab context](active-tab-context.md)
 - [Message bindings](message-bindings.md)
-- [Plugin authoring](../../extending/plugins.md)
+- [Build a mini app](../../extending/mini-apps.md)
 
 ## Source of truth
 

@@ -23,14 +23,14 @@ describe('an open plugin tab follows a plugin UI swap', () => {
     const { createRoot } = await import('react-dom/client')
     const { WorkItemBody } = await import('./registry')
     const { workItemKindRegistry } = await import('@/shared/contrib/uiContrib')
-    const { announcePluginUiChanged, restorePluginContribFrame, __resetPluginContrib } =
-      await import('@/shared/contrib/enabledPlugins')
+    const { announceMiniAppUiChanged, restoreMiniAppContribFrame, __resetMiniAppContrib } =
+      await import('@/shared/contrib/enabledMiniApps')
     const { flushRegistryChanges } = await import('@/shared/contrib/registryChanges')
 
-    restorePluginContribFrame(null, {
+    restoreMiniAppContribFrame(null, {
       revision: 1,
       enabledNames: ['swap-probe', 'bystander'],
-      plugins: [],
+      miniApps: [],
       views: [],
       tools: null,
     })
@@ -79,7 +79,7 @@ describe('an open plugin tab follows a plugin UI swap', () => {
       register(() => <p>second build</p>)
       // The announcement is coalesced to the next frame; flush it rather than wait for one.
       await act(async () => {
-        announcePluginUiChanged()
+        announceMiniAppUiChanged()
         flushRegistryChanges()
       })
 
@@ -95,7 +95,7 @@ describe('an open plugin tab follows a plugin UI swap', () => {
       host.remove()
       workItemKindRegistry.removeOwner('swap-probe')
       workItemKindRegistry.removeOwner('bystander')
-      __resetPluginContrib()
+      __resetMiniAppContrib()
     }
   })
 })

@@ -1,11 +1,9 @@
-import { capabilityStores } from '../../bootstrap/capability-stores'
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { sql } from 'kysely'
-import { z } from 'zod'
 import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createCapabilitySourceRepository } from '../capabilities/source-repository'
@@ -28,10 +26,6 @@ import {
   type PreparedDependencyInstall,
 } from './dependencies-install'
 import { publishExtensionTrees } from '../ext/publish-trees'
-import { createContributionKindRegistry } from '../ext/contribution-kinds'
-import { createContributionStore } from '../ext/contribution-store'
-import { publishPluginInstallation } from './publish-installation'
-import { withPluginSource } from './install-helpers'
 import { resolveMarketplaceInstall, type MarketplaceRegistryDeps } from './marketplace-registry'
 import { isApiError } from '../../lib/errors'
 import type { DiscoveredPlugin } from './discovery'
@@ -42,27 +36,22 @@ function fakePlugin(
   over: Partial<DiscoveredPlugin> & {
     name: string
     dependencies?: Array<string | { name: string; version?: string }>
-    hasNativeTools?: boolean
   },
 ): DiscoveredPlugin {
-  const { name, dependencies, hasNativeTools, ...rest } = over
+  const { name, dependencies, ...rest } = over
   return {
     manifest: { name, version: '1.0.0', description: '', dependencies } as never,
-    layout: 'legacy',
     dir: `/plugins/${name}`,
     scope: 'global',
     projectId: '',
     entrypoints: {} as never,
     provides: {
-      hasNativeTools: hasNativeTools ?? false,
-      tools: [],
       skills: [],
       mcpServers: [],
       commands: [],
     },
     commands: [],
     agents: [],
-    bundled: false,
     ...rest,
   }
 }
@@ -233,35 +222,16 @@ describe('cascadeEnableDependencies', () => {
     return { result, enabled }
   }
 
-  it('enables installed-but-disabled code-free dependencies', async () => {
+  it('enables installed-but-disabled dependencies', async () => {
     const root = fakePlugin({ name: 'parent', dependencies: ['lib'] })
     const lib = fakePlugin({ name: 'lib' })
     const { result, enabled } = await run(root, [root, lib], new Set(['parent']))
     expect(enabled).toEqual(['lib'])
     expect(result).toMatchObject({
       enabled: ['lib'],
-      manualRequired: [],
       missing: [],
       warnings: [],
     })
-  })
-
-  it('NEVER auto-enables a non-bundled code-bearing dependency — reports it instead', async () => {
-    const root = fakePlugin({ name: 'parent', dependencies: ['native-dep', 'lib'] })
-    const native = fakePlugin({ name: 'native-dep', hasNativeTools: true })
-    const lib = fakePlugin({ name: 'lib' })
-    const { result, enabled } = await run(root, [root, native, lib], new Set(['parent']))
-    expect(enabled).toEqual(['lib'])
-    expect(result.manualRequired).toEqual(['native-dep'])
-    expect(result.warnings.join(' ')).toContain('native-dep')
-    expect(result.warnings.join(' ')).toContain('manually')
-  })
-
-  it('auto-enables a BUNDLED code-bearing dependency (inside the trust boundary)', async () => {
-    const root = fakePlugin({ name: 'parent', dependencies: ['bundled-native'] })
-    const dep = fakePlugin({ name: 'bundled-native', hasNativeTools: true, bundled: true })
-    const { enabled } = await run(root, [root, dep], new Set(['parent']))
-    expect(enabled).toEqual(['bundled-native'])
   })
 
   it('is cycle-safe (a ↔ b) and cascades transitively', async () => {
@@ -350,8 +320,8 @@ describe('prepareDependenciesForInstall', () => {
   }
   const writePlugin = async (marketDir: string, manifest: Record<string, unknown>) => {
     const dir = join(marketDir, manifest.name as string)
-    await fs.mkdir(dir, { recursive: true })
-    await fs.writeFile(join(dir, 'plugin.json'), JSON.stringify(manifest))
+    await fs.mkdir(join(dir, '.claude-plugin'), { recursive: true })
+    await fs.writeFile(join(dir, '.claude-plugin', 'plugin.json'), JSON.stringify(manifest))
   }
   const registerKnown = async (names: string[]) => {
     const known = Object.fromEntries(
@@ -373,7 +343,6 @@ describe('prepareDependenciesForInstall', () => {
         throw new Error('no cloning in this test')
       },
       root,
-      localixDir: join(root, 'no-such-bundled-dir'),
     }
   })
   afterEach(async () => {
@@ -429,7 +398,7 @@ describe('prepareDependenciesForInstall', () => {
 
     const { installed } = await commit(prepared, ops())
     expect(installed).toEqual(['helper'])
-    expect(await fs.exists(join(installRoot, 'helper', 'plugin.json'))).toBe(true)
+    expect(await fs.exists(join(installRoot, 'helper', '.claude-plugin', 'plugin.json'))).toBe(true)
     // The row records provenance only. A freshly installed dependency writes NO
     // availability rule: it is left to the trust gate until the parent's enable cascade
     // reaches it, which is what keeps an install from being consent to run.
@@ -485,7 +454,9 @@ describe('prepareDependenciesForInstall', () => {
     const operation = ops(repository)
     const previous = await repository.upsert('u1', '', 'helper', { source: 'previous-source' })
     repository.upsert = async () => {
-      expect(await fs.exists(join(installRoot, 'helper', 'plugin.json'))).toBe(true)
+      expect(await fs.exists(join(installRoot, 'helper', '.claude-plugin', 'plugin.json'))).toBe(
+        true,
+      )
       throw new Error('state write rejected')
     }
     await expect(commit(prepared, operation)).rejects.toThrow('state write rejected')
@@ -590,72 +561,5 @@ describe('prepareDependenciesForInstall', () => {
     expect(prepared.toInstall).toEqual([])
     expect(prepared.warnings.join(' ')).toContain('"^2.0.0"')
     expect(prepared.warnings.join(' ')).toContain('"1.0.0"')
-  })
-
-  it('parent and dependency contributions share the installation transaction', async () => {
-    const mkt = await writeMarketplace('main', [
-      { name: 'parent', source: './parent' },
-      { name: 'helper', source: './helper' },
-    ])
-    for (const name of ['parent', 'helper']) {
-      await writePlugin(mkt, {
-        name,
-        ...(name === 'parent' ? { dependencies: ['helper'] } : {}),
-        contributions: [{ kind: 'fixture', key: name, value: { label: name } }],
-      })
-    }
-    await registerKnown(['main'])
-    const resolved = await resolveMarketplaceInstall(
-      { plugin: 'parent', marketplace: 'main' },
-      deps,
-    )
-    const dependencies = await prepareDependenciesForInstall(resolved, deps, [])
-    const db = createDatabase()
-    try {
-      await migrateToLatest(db)
-      const contributionKinds = createContributionKindRegistry()
-      contributionKinds.register('fixture', z.strictObject({ label: z.string() }))
-      const sources = createCapabilitySourceRepository(db, 'plugin')
-      const store = createContributionStore(db, contributionKinds)
-      const publish = () =>
-        withPluginSource({ source: resolved.dir, installRoot }, (parent) =>
-          publishPluginInstallation({
-            db,
-            stores: capabilityStores,
-            contributionKinds,
-            userId: 'u1',
-            projectId: '',
-            scope: 'global',
-            installRoot,
-            parent,
-            source: 'parent@main',
-            replace: false,
-            enable: false,
-            now: () => 'test-time',
-            dependencies,
-            prepare: async () => {},
-            discover: async () => [],
-          }),
-        )
-      await sql`CREATE TRIGGER reject_parent_contribution BEFORE INSERT ON extension_contribution
-        WHEN NEW.contribution_key = 'parent' BEGIN SELECT RAISE(ABORT, 'parent contribution rejected'); END`.execute(
-        db,
-      )
-      await expect(publish()).rejects.toThrow('parent contribution rejected')
-      expect(await sources.listForScope('u1', '')).toEqual([])
-      expect(await fs.readdir(installRoot)).toEqual([])
-      await sql`DROP TRIGGER reject_parent_contribution`.execute(db)
-      await publish()
-      for (const name of ['parent', 'helper']) {
-        const source = await sources.get('u1', '', name)
-        expect(source).not.toBeNull()
-        expect(await store.getCurrent('u1', source!.id)).toMatchObject({
-          revision: 1,
-          contributions: [{ kind: 'fixture', key: name, value: { label: name } }],
-        })
-      }
-    } finally {
-      await db.destroy()
-    }
   })
 })

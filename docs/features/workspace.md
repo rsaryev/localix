@@ -20,11 +20,12 @@ restoration, and reserved shortcuts. Browser, Windows, and Linux clients use the
 
 ## What you can do
 
-All available plugin tools, **Usage & Spend**, and **Vault** are pinned to the left navigation rail
-by default. The middle rail combines them into three groups: **Workspace** (development, data and
-content), **Tools** (utilities, Usage & Spend, Vault, and uncategorized plugins), and **Games**. One
-or two pinned tools in a group keep their individual buttons; three or more share a category menu.
-Only pinned tools count toward this grouping. A category highlights when one of its views is active.
+All available mini app tools, **Usage & Spend**, and **Vault** are pinned to the left navigation
+rail by default. The middle rail combines them into three groups: **Workspace** (development, data
+and content), **Tools** (utilities, Usage & Spend, Vault, and uncategorized mini apps), and
+**Games**. One or two pinned tools in a group keep their individual buttons; three or more share a
+category menu. Only pinned tools count toward this grouping. A category highlights when one of its
+views is active.
 
 At launch the workspace reopens the tabs you left, and the selected chat always opens: the one you
 were in, or a new chat.
@@ -47,26 +48,26 @@ a whole goal to a team. Each tip animates the real surface; seven carry the cont
 
 The OpenRouter tip opens the model picker on OpenRouter's **Sign in with OpenRouter**, the same
 sign-in the picker uses. With OpenRouter connected, Localix uses small, inexpensive decision models
-to route group chats, drive the Browser toward a goal, and play games and plugins. Once a connection
-exists, the tip shows **Connected**.
+to route group chats, drive the Browser toward a goal, and play games in mini apps. Once a
+connection exists, the tip shows **Connected**.
 
-The goal tip appears only while an enabled plugin or mini app features a command, and shows that
-command. The agent island tip appears only in the macOS desktop app; its switch turns the island on
-or off at once, like the one in Settings. The dialog remembers the last tip you viewed on this
-device, and its last step, **Start chatting**, closes it onto the chat.
+The goal tip appears only while an enabled mini app features a command, and shows that command. The
+agent island tip appears only in the macOS desktop app; its switch turns the island on or off at
+once, like the one in Settings. The dialog remembers the last tip you viewed on this device, and its
+last step, **Start chatting**, closes it onto the chat.
 
 An editor group with nothing open, such as one whose chat tab you closed, shows the Localix bird.
 
 Open **All tools** (**…**) to browse the complete catalog and toggle the pin beside each tool. Pin
 changes keep the menu open and persist on this device. Right-click an individual button to unpin or
 move it. Pinned tools do not also appear in the recent-tools list; recently opened, unpinned tools
-remain behind the recent-views disclosure button. **Manage plugins…** opens the plugins section in
-Settings.
+remain behind the recent-views disclosure button. **Manage mini apps…** opens Settings →
+Capabilities → Mini apps.
 
 Category menus and All tools open on hover or press; moving into a hover-open menu keeps it open.
 Only one rail menu opens at a time. Pressing a category keeps menus open as you move between
 categories; pressing it again, selecting a tool, clicking outside, or Escape closes the menu. Long
-lists scroll within a bounded panel, with Manage plugins fixed below the catalog.
+lists scroll within a bounded panel, with Manage mini apps fixed below the catalog.
 
 | Outcome                        | Mechanism                                                                                                | Boundary                                                    |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
@@ -79,17 +80,16 @@ lists scroll within a bounded panel, with Manage plugins fixed below the catalog
 | Link eligible open-tab context | Mounted workbench tabs can publish visible, dismissible context candidates                               | Only registered bindings from visible Localix surfaces join |
 | Review the send set            | The composer lists automatic and explicit context with status and estimated size                         | Server expansion at send time remains authoritative         |
 | Use terminal output directly   | Recognized file links open the editor; URLs, command marks, quick fixes, and workflows remain actionable | Parsing and shell integration are capability-dependent      |
-| Open workbench views           | Enabled plugins register file editors and workspace item types                                           | Disabled or unavailable contributions do not render         |
+| Open workbench views           | Enabled mini apps register file editors and workspace item types                                         | Disabled or unavailable contributions do not render         |
 
 ## How it works
 
 The bottom status bar uses a 28 px height and offers separate **Claude Code** and **Codex** buttons.
 The default order is Reset layout, Keep awake, Claude Code, then Codex. Each agent button starts its
-CLI in the current chat's terminal. These are core shortcuts and remain available when the External
-Agents plugin is disabled. Drag either button to reorder it or move it between the status bar and
-rail; its context menu offers placement and unpinning. Open a chat before launching; the login shell
-reports a missing CLI in its terminal. The top bar keeps Terminal, Browser and Event Center; the
-command palette remains available through its shortcut.
+CLI in the current chat's terminal. These are core shortcuts. Drag either button to reorder it or
+move it between the status bar and rail; its context menu offers placement and unpinning. Open a
+chat before launching; the login shell reports a missing CLI in its terminal. The top bar keeps
+Terminal, Browser and Event Center; the command palette remains available through its shortcut.
 
 ### Groups and placement
 
@@ -115,7 +115,7 @@ but is disabled.
 Session tabs are placed in their root conversation's workspace; [Kanban](task-board.md), Browser,
 Problems, Activity and Search are among them. Each open names its session — the chat a tool card, a
 link or a command belongs to — and a tab never takes the session of whichever chat happens to be on
-screen. Only app-level tabs (Settings, Usage, an agent profile, and plugin views registered as
+screen. Only app-level tabs (Settings, Usage, an agent profile, and mini app views registered as
 global) belong to no session and stay available in every chat. A saved layout drops a session tab
 that names no session.
 
@@ -164,7 +164,7 @@ keep-alive lists are bounded; an older surface can remount when you return to it
 
 The grid arranges surfaces; the owning feature controls their behavior. The editor delegates
 language actions to [LSP integration](lsp.md). Preview supplies the browser surface, while
-[Visual Feedback](visual-feedback.md) owns source-mapped selection. Enabled plugins can contribute
+[Visual Feedback](visual-feedback.md) owns source-mapped selection. Enabled mini apps can contribute
 workbench tabs or choose a file editor for matching files.
 
 Terminals are PTY processes managed by the API and streamed into terminal tabs. Every terminal
@@ -216,10 +216,10 @@ own chat working directory. **Show all** opens one domain’s paged results.
 scopes. A failed domain can leave other results available, with a problem shown alongside them.
 Results are bounded previews, so a displayed total is not a count of every possible source match.
 
-Search looks in the current project: its chats and messages, and the skills, plugins, MCP servers
-and agents it has besides the global ones. The project's name at the end of the field opens the
-others and **All projects**; projects, settings and models belong to none and are searched either
-way. The palette and the Search tab use the same project: the chat's, else the active one.
+Search looks in the current project: its chats and messages, and the skills, plugins, mini apps, MCP
+servers and agents it has besides the global ones. The project's name at the end of the field opens
+the others and **All projects**; projects, settings and models belong to none and are searched
+either way. The palette and the Search tab use the same project: the chat's, else the active one.
 
 ### Explicit and automatic context
 
@@ -235,12 +235,12 @@ This capture shows a sidebar conversation hovering over the composer, with no wo
 destinations.
 
 The composer accepts typed references for supported files, folders, diffs, commit history, projects,
-sessions, terminals, tool calls, and plugin-owned resources such as the chat's Kanban cards
+sessions, terminals, tool calls, and mini-app-owned resources such as the chat's Kanban cards
 (`@resource:` → **Board**). Structured-only references cover selected snippets, transcript messages,
-linked conversations, and plugin-owned resources without inserting expanded blocks into the visible
-prompt. File and folder references resolve in the directory the server assigns to the sending
-session, after checking that you own it; browsing `@resource:` with a session you do not own is
-refused.
+linked conversations, and mini-app-owned resources without inserting expanded blocks into the
+visible prompt. File and folder references resolve in the directory the server assigns to the
+sending session, after checking that you own it; browsing `@resource:` with a session you do not own
+is refused.
 
 ![Automatic context from an open source file and terminal, with sources and estimated sizes](../assets/screenshots/context/composer-context--2026-10-09.png)
 
@@ -259,7 +259,7 @@ authoritative.
 
 ### Addressable resource links
 
-Resource URIs remain opaque to the core: the enabled provider or plugin owns expansion and the UI
+Resource URIs remain opaque to the core: the enabled provider or mini app owns expansion and the UI
 destination that opens when the resource is followed. The same link can move through search,
 composer context, agent activity, and workbench tabs without replacing the resource identity with a
 detached text copy.
@@ -307,8 +307,8 @@ primary shortcut.
   kinds marked restorable return after reload.
 - Each group keeps at most 12 file and live-change tabs. Opening more closes the oldest non-active
   capped tabs in that group.
-- A disabled plugin can leave a saved tab pending until plugin activation resolves. Once the plugin
-  is authoritatively unavailable, the grid removes that contributed tab.
+- A disabled mini app can leave a saved tab pending until mini app activation resolves. Once the
+  mini app is authoritatively unavailable, the grid removes that contributed tab.
 - Editor diagnostics, completion, rename, code actions, and formatting require a matching language
   server. The grid itself does not provide those operations.
 - After an agent write, patch, or edit the language server is asked for diagnostics and the tool
@@ -345,7 +345,7 @@ primary shortcut.
 
 - [Your first session](../getting-started/first-session.md)
 - [Sessions and projects](sessions-and-projects.md)
-- [Plugins](../extending/plugins.md)
+- [Build a mini app](../extending/mini-apps.md)
 
 ## Source of truth
 

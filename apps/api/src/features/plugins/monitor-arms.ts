@@ -11,9 +11,6 @@
  * Keyed `<plugin>:<monitor>`, the same key the host runs a monitor under. In memory: an arm lasts
  * the process, exactly as the monitor it points does.
  */
-import type { MiniAppMonitorArmRequest, MiniAppMonitorsHost } from '@localixai/mini-app-sdk/backend'
-
-import type { PluginMonitorHost } from './monitor-host'
 
 export interface MonitorArms {
   arm(key: string, sessionId: string): void
@@ -26,40 +23,6 @@ export interface MonitorArms {
    * reports the silence once rather than per line.
    */
   firstUnaddressed(key: string): boolean
-}
-
-/**
- * The `monitors` host service one plugin receives: its own monitors only, for a session the user
- * owns. The ownership check lives here, before the arm, because the monitor host has no session
- * store — and an unchecked id would let a plugin point a watcher at a chat it was never shown.
- */
-export function bindPluginMonitors(deps: {
-  pluginName: string
-  /** Read per call: the monitor host is built after the plugin hosts. */
-  host: () => Pick<PluginMonitorHost, 'arm' | 'disarm'> | undefined
-  /** The ownership gate: rejects (or resolves null) for a missing, foreign or deleted session. */
-  resolveSessionCwd: (userId: string, sessionId: string) => Promise<string | null | undefined>
-}): MiniAppMonitorsHost {
-  const target = (request: MiniAppMonitorArmRequest) => ({
-    userId: request.userId,
-    sessionId: request.sessionId,
-    pluginName: deps.pluginName,
-    monitorName: request.monitor,
-  })
-  return {
-    async arm(request) {
-      const host = deps.host()
-      if (!host) return { status: 'refused', reason: 'this host runs no plugin monitors' }
-      if (!request.sessionId?.trim())
-        return { status: 'refused', reason: 'an arm names the session the monitor wakes' }
-      const owned = await deps
-        .resolveSessionCwd(request.userId, request.sessionId)
-        .then(Boolean, () => false)
-      if (!owned) return { status: 'refused', reason: 'no such session for this user' }
-      return host.arm(target(request))
-    },
-    disarm: (request) => deps.host()?.disarm(target(request)),
-  }
 }
 
 export function createMonitorArms(): MonitorArms {

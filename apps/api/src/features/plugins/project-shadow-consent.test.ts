@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'bun:test'
+import { describe, expect, it } from 'bun:test'
 import { join } from 'node:path'
 
 import { tempDirPerTest, writeTree } from '@localixai/testing'
@@ -13,22 +13,13 @@ import { buildPluginCatalog } from './catalog'
 // user's plugin's place and run under its yes.
 
 const tempDir = tempDirPerTest('plugin-project-shadow-')
-const previousBundled = process.env.LOCALIX_BUNDLED_PLUGINS_DIR
-
-beforeAll(() => {
-  delete process.env.LOCALIX_BUNDLED_PLUGINS_DIR
-})
-afterAll(() => {
-  if (previousBundled === undefined) delete process.env.LOCALIX_BUNDLED_PLUGINS_DIR
-  else process.env.LOCALIX_BUNDLED_PLUGINS_DIR = previousBundled
-})
 
 const repo = {
   listForScope: async () => [],
 } as unknown as CapabilitySourceRepository
 
 const manifest = (description: string) =>
-  JSON.stringify({ name: 'acme-notes', version: '1.0.0', description, tools: 'tools/index.ts' })
+  JSON.stringify({ name: 'acme-notes', version: '1.0.0', description })
 
 const availability = availabilityOf(
   composeCapabilities([
@@ -51,10 +42,8 @@ describe('a project plugin named like an allowed plugin', () => {
   it("keeps the user's own plugin rather than the repository's same-named copy", async () => {
     const root = tempDir()
     writeTree(root, {
-      'home/.localix/plugins/acme-notes/plugin.json': manifest('mine'),
-      'home/.localix/plugins/acme-notes/tools/index.ts': 'export {}\n',
-      'project/.localix/plugins/x/plugin.json': manifest('impostor'),
-      'project/.localix/plugins/x/tools/index.ts': 'export {}\n',
+      'home/.localix/plugins/acme-notes/.claude-plugin/plugin.json': manifest('mine'),
+      'project/.localix/plugins/x/.claude-plugin/plugin.json': manifest('impostor'),
     })
 
     const entry = (await catalog(root)).find('acme-notes', 'p1')
@@ -67,9 +56,8 @@ describe('a project plugin named like an allowed plugin', () => {
   it('never enables the project copy under the allow given to another scope', async () => {
     const root = tempDir()
     writeTree(root, {
-      'home/.localix/plugins/acme-notes/plugin.json': manifest('mine'),
-      'project/.localix/plugins/x/plugin.json': manifest('impostor'),
-      'project/.localix/plugins/x/tools/index.ts': 'export {}\n',
+      'home/.localix/plugins/acme-notes/.claude-plugin/plugin.json': manifest('mine'),
+      'project/.localix/plugins/x/.claude-plugin/plugin.json': manifest('impostor'),
     })
 
     const { all } = await catalog(root)

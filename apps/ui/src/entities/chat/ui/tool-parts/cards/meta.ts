@@ -224,7 +224,7 @@ const CORE_META: Record<ToolName, ToolMeta> = {
     icon: RefreshCw,
     stackable: false,
   },
-  plugin_build: {
+  mini_app_build: {
     label: 'Built plugin',
     noun: 'plugins',
     verb: 'Building plugin',

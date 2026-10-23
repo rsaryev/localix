@@ -1,4 +1,4 @@
-import { pluginLabel } from '@localixai/mini-app-sdk/manifest'
+import { humanizeMiniAppId } from '@localixai/mini-app-sdk/manifest'
 import type { ComposerTip } from './contracts'
 import type { CapabilitySnapshot } from '../../contracts/capability-snapshot'
 import type { SlashCommandSpec } from '../chat/slash-command-catalog'
@@ -47,32 +47,42 @@ function firstSentence(text: string): string {
   return stop === -1 ? trimmed : trimmed.slice(0, stop)
 }
 
+/** What every installed-but-off row offers: a name, a description and where its switch is. */
+interface InactiveRow {
+  name: string
+  displayName?: string
+  description: string
+  enabled: boolean
+  error?: string
+  projectId: string
+}
+
 /**
- * Installed, not switched on — the one plugin state a tip can actually resolve.
+ * Installed, not switched on — the one state a tip can actually resolve, for a plugin and for a
+ * mini app alike, each on its own settings row.
  *
- * Its trigger comes from the plugin's own name and description (see
- * `tipKeywordPattern`), so the host never decides which plugin is "the browser one".
- * A plugin whose prose yields no keyword still ships as a generic tip: it is worth
- * knowing it is sitting there uninstalled-in-effect.
+ * Its trigger comes from the row's own name and description (see `tipKeywordPattern`), so the
+ * host never decides which one is "the browser one". One whose prose yields no keyword still
+ * ships as a generic tip: it is worth knowing it is sitting there uninstalled-in-effect.
  */
-function inactivePluginTips(plugins: CapabilitySnapshot['plugins']): ComposerTip[] {
-  return plugins
-    .filter((plugin) => !plugin.enabled && !plugin.error)
+function inactiveTips(kind: 'plugin' | 'mini-app', rows: readonly InactiveRow[]): ComposerTip[] {
+  const noun = kind === 'plugin' ? 'plugin' : 'mini app'
+  return rows
+    .filter((row) => !row.enabled && !row.error)
     .slice(0, MAX_PER_SOURCE)
-    .map((plugin) => {
-      const label = pluginLabel(plugin)
-      const summary = firstSentence(plugin.description)
-      const pattern = tipKeywordPattern(`${plugin.name} ${plugin.displayName ?? ''}`, summary)
+    .map((row) => {
+      const label = row.displayName?.trim() || humanizeMiniAppId(row.name)
+      const summary = firstSentence(row.description)
+      const pattern = tipKeywordPattern(`${row.name} ${row.displayName ?? ''}`, summary)
       return {
-        id: `plugin:${plugin.name}`,
+        id: `${kind}:${row.name}`,
         text: clip(
           summary
-            ? `${summary} — the "${label}" plugin does that, and it is installed but off.`
-            : `The "${label}" plugin is installed but off.`,
+            ? `${summary} — the "${label}" ${noun} does that, and it is installed but off.`
+            : `The "${label}" ${noun} is installed but off.`,
         ),
-        // Straight to that plugin's row, not to the list: the tip's whole value is the
-        // one switch it is talking about.
-        actions: [capabilityAction('plugin', plugin.name, plugin.projectId, `Open ${label}`)],
+        // Straight to its own row, not to the list: the tip's whole value is the one switch.
+        actions: [capabilityAction(kind, row.name, row.projectId, `Open ${label}`)],
         ...(pattern ? { when: { textPattern: pattern } } : {}),
       }
     })
@@ -183,7 +193,8 @@ export function composerTips(
     ...curated,
     ...builtinCommandTips(builtinCommands),
     ...onboardingTips(snapshot),
-    ...inactivePluginTips(snapshot.plugins),
+    ...inactiveTips('plugin', snapshot.plugins),
+    ...inactiveTips('mini-app', snapshot.miniApps),
     ...commandTips(snapshot.commands),
     ...skillTips(snapshot.skills),
   ]

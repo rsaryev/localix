@@ -70,7 +70,7 @@ hint that the resolver may replace with another live connection of the same prov
 | API features        | `apps/api/src/features/*`: routes → service → domain → repository                       | Ports of other features, packages     |
 | API composition     | `apps/api/src/bootstrap/`: builds adapters, wires ports and consumers                   | Everything in the API                 |
 | UI                  | `apps/ui/src`: shared → features → widgets → pages → app                                | Lower layers only                     |
-| Plugins             | `plugins/*`: backend, tools and UI through `mini-app-sdk`                               | `mini-app-sdk`, `agent`, a few others |
+| Mini apps           | `mini-apps/*`: backend, tools and UI through `mini-app-sdk`                             | `mini-app-sdk`, `agent`, a few others |
 
 Inside an API feature, a route translates HTTP to a service call, the service applies domain rules
 through ports, and only the repository touches Kysely. Errors are domain errors in the core; routes
@@ -96,7 +96,7 @@ the exceptions in prose.
 
 | Id  | Rule                                                                                        | Check                                |
 | --- | ------------------------------------------------------------------------------------------- | ------------------------------------ |
-| A1  | No package imports `apps/*`, `@/` or a plugin; no cycle between workspace packages.         | Enforced; cycles with a baseline (0) |
+| A1  | No package imports `apps/*`, `@/` or a mini app; no cycle between workspace packages.       | Enforced; cycles with a baseline (0) |
 | A2  | The core imports no React, Hono, Kysely, `bun:sqlite`, `node:*` or provider SDK.            | Enforced with a baseline (0)         |
 | A3  | Provider SDKs and model-catalog packages are imported only in `packages/engine-models`.     | Enforced with a baseline (0)         |
 | A4  | Only `apps/api/src/bootstrap/` constructs another feature's repository or service.          | Enforced with a baseline (0)         |
@@ -135,7 +135,7 @@ keeps these rules:
   the run returns; a slot left at boot with no run record replaces its empty placeholder with a
   notice that offers a retry (`runtime/unstarted-turns.ts`).
 
-A wake a trigger, a plugin or a background job asks for under a delivery key is recorded in
+A wake a trigger, a mini app or a background job asks for under a delivery key is recorded in
 `wake_outbox` before it is sent
 ([`delivery.ts`](../../../apps/api/src/features/triggers/delivery.ts)). The queue's admission
 deletes the row in its own transaction; a boot redelivers what is left under the same key. A
@@ -173,7 +173,7 @@ command and check that the diff only removes entries. Scope notes:
 Checks that hold today and back these rules:
 
 - `kitBoundaryProblem`, `miniAppSdkLayerProblem`, `miniAppHostBoundaryProblem` and
-  `miniAppWorkspaceImportProblem` keep packages and plugins inside their boundaries.
+  `miniAppWorkspaceImportProblem` keep packages and mini apps inside their boundaries.
 - `ENGINE_LAYERS` limits each engine package's workspace imports, and only the composition root may
   import the engine.
 - The UI layer check rejects an import from a higher layer.

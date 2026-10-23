@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { agentDefinitionSchema } from '@localixai/agent/agents'
 import { composeCapabilities } from '../../capabilities/resolve'
 import { emptyLoadedPlugins } from '../../plugins/loader-contract'
+import { emptyLoadedMiniApps } from '../../mini-apps/loader-contract'
 import type { AgentsService } from '../../agents/service-contract'
 import { requireRunAgent } from './run/require-run-agent'
 import { runTurnLimit } from './run/turn-limit'
@@ -47,26 +48,7 @@ test('each turn resolves current native behavior and policy while retaining froz
       contextSnapshots: createSessionSnapshotCache<FrozenSessionContext>(),
       laneSnapshots: snapshotStore(),
       runScopes: {
-        resolve: async () => [
-          [],
-          {
-            tools: [],
-            binDirs: [],
-            mcpServers: [],
-            skills: [],
-            hooks: [],
-            ccHooks: [],
-            lspServers: [],
-            monitors: [],
-            channels: [],
-            promptSections: [],
-            agents: [],
-            memory: null,
-            backends: [],
-            loaded: [],
-          },
-          [],
-        ],
+        resolve: async () => [[], emptyLoadedPlugins(), emptyLoadedMiniApps(), []],
       },
       now: () => '2026-01-01T00:00:00Z',
     } as unknown as PromptContextDeps
@@ -145,10 +127,10 @@ test('each turn resolves current native behavior and policy while retaining froz
  * Every kind used to be projected against a PLACEHOLDER roster — the built-in tool names and
  * an empty skill list — because the rules were composed before discovery had run. So a
  * `skill:` rule was stored, listed as off in Settings, and then applied to nothing; a rule on
- * a plugin's tool was the same. The Settings screen and the turn disagreed, which is the one
+ * a mini app's tool was the same. The Settings screen and the turn disagreed, which is the one
  * failure this subsystem exists to prevent.
  */
-test('a denied skill, plugin tool and plugin are absent from the turn', async () => {
+test('a denied skill, mini app tool, mini app and plugin are absent from the turn', async () => {
   const cwd = await mkdtemp(join(tmpdir(), 'localix-run-rosters-'))
   try {
     const agentId = 'native:project:worker'
@@ -176,9 +158,6 @@ test('a denied skill, plugin tool and plugin are absent from the turn', async ()
           ],
           {
             ...emptyLoadedPlugins(),
-            tools: [{ name: 'first_convert' }, { name: 'second_quote' }],
-            binDirs: [],
-            mcpServers: [],
             skills: [
               {
                 name: 'write-memo',
@@ -199,21 +178,11 @@ test('a denied skill, plugin tool and plugin are absent from the turn', async ()
                 pluginName: 'second-fixture',
               },
             ],
-            hooks: [],
-            ccHooks: [],
-            lspServers: [],
-            monitors: [],
-            channels: [],
-            promptSections: [],
-            agents: [],
-            memory: null,
-            backends: [],
             loaded: [
               {
                 name: 'first-fixture',
                 scope: 'global',
                 description: '',
-                toolNames: ['first_convert'],
                 skills: ['write-memo'],
                 mcpServers: [],
               },
@@ -221,9 +190,21 @@ test('a denied skill, plugin tool and plugin are absent from the turn', async ()
                 name: 'second-fixture',
                 scope: 'global',
                 description: '',
-                toolNames: ['second_quote'],
                 skills: ['read-chart'],
                 mcpServers: [],
+              },
+            ],
+          },
+          {
+            ...emptyLoadedMiniApps(),
+            tools: [{ name: 'first_convert' }, { name: 'second_quote' }, { name: 'third_plot' }],
+            loaded: [
+              { name: 'converter', scope: 'global', description: '', toolNames: ['first_convert'] },
+              {
+                name: 'quotes',
+                scope: 'global',
+                description: '',
+                toolNames: ['second_quote', 'third_plot'],
               },
             ],
           },
@@ -247,6 +228,7 @@ test('a denied skill, plugin tool and plugin are absent from the turn', async ()
           { action: 'skill:file-skill', resource: '*', effect: 'deny' },
           { action: 'tool:second_quote', resource: '*', effect: 'deny' },
           { action: 'plugin:first-fixture', resource: '*', effect: 'deny' },
+          { action: 'mini-app:converter', resource: '*', effect: 'deny' },
         ]),
       },
     })
@@ -264,14 +246,17 @@ test('a denied skill, plugin tool and plugin are absent from the turn', async ()
 
     // The skill rule reaches the roster the prompt is built from.
     expect(context.skillOverrides['file-skill']).toBe('off')
-    // The plugin tool rule reaches the deny-list the registry subtracts with.
+    // The tool rule reaches the deny-list the registry subtracts with.
     expect(context.disabledTools).toContain('second_quote')
-    // The denied PLUGIN takes its whole contribution with it, tool and skill alike…
-    expect(context.loadedPlugins.tools.map((tool) => tool.name)).toEqual(['second_quote'])
+    // The denied MINI APP takes its tools with it; the one nobody ruled on keeps its own.
+    expect(context.loadedMiniApps.tools.map((tool) => tool.name)).toEqual([
+      'second_quote',
+      'third_plot',
+    ])
+    // The denied PLUGIN takes its skills with it; the plugin nobody ruled on keeps its own.
     expect(context.allSkills.map((skill) => skill.name)).toEqual(['file-skill', 'read-chart'])
-    // …while the plugin nobody ruled on keeps its own.
     expect(context.skillOverrides['read-chart']).toBeUndefined()
-    expect(context.disabledTools).not.toContain('first_convert')
+    expect(context.disabledTools).not.toContain('third_plot')
   } finally {
     await rm(cwd, { recursive: true, force: true })
   }

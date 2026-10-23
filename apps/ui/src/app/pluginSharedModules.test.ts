@@ -8,6 +8,7 @@ const NOT_SHARED = new Set([
   './backend',
   './manifest',
   './app-manifest',
+  './legacy-manifest',
   './ui/testing',
   './ui-artifact',
 ])

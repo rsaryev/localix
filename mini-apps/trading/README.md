@@ -1,6 +1,6 @@
-# Trading Workspace plugin
+# Trading Workspace mini app
 
-The Trading Workspace plugin provides public exchange-market research inside Localix. It browses
+The Trading Workspace mini app provides public exchange-market research inside Localix. It browses
 venues and markets, opens live charts with indicators and drawings, shows order-book and public
 trade data, computes technical reads, and exposes public data to agent sessions. The registered
 agent-tool roster currently contains only `public:hyperliquid`; the workbench can browse additional
@@ -40,11 +40,11 @@ its REST driver, exposes no account routes, and registers no order-placement or 
 
 `market_data` declares `mutates: false`. `manage_chart` also supplies a per-call classifier, which
 separates reads from UI changes. Agent rules and conversation modes decide whether a call proceeds
-or asks; exchange orders remain outside this plugin's capabilities.
+or asks; exchange orders remain outside this mini app's capabilities.
 
 ## Default state
 
-The bundled plugin is enabled by default. Disabling it makes its agent tools, backend subsystem,
+The bundled mini app is enabled by default. Disabling it makes its agent tools, backend subsystem,
 resources, search scope, live stream contribution, and workbench surfaces unavailable.
 
 ## Requirements
@@ -54,18 +54,18 @@ resources, search scope, live stream contribution, and workbench surfaces unavai
 | Running Localix API              | Hosts `/rpc/trading`, the public-data service, resources, search, and agent tools |
 | Localix workbench UI             | Required for Trading tabs and all `manage_chart` calls                            |
 | Outbound venue access            | Public REST and WebSocket reads come from the selected exchange                   |
-| Installed workspace dependencies | The plugin dynamically loads its bundled `ccxt` dependency                        |
+| Installed workspace dependencies | The mini app dynamically loads its bundled `ccxt` dependency                      |
 
 No exchange credential, provider connection, API key, wallet key, trading account, or external
 binary is required. Agent sessions still need their normal Localix provider connection to run.
 
 ## Configuration
 
-The manifest defines no plugin configuration keys. Market and chart choices live in the workbench.
+The manifest defines no mini app configuration keys. Market and chart choices live in the workbench.
 
 | Setting                    | Where                              | Behavior                                                                            |
 | -------------------------- | ---------------------------------- | ----------------------------------------------------------------------------------- |
-| Plugin enabled state       | Plugins settings                   | Makes all Trading contributions available; enabled by default                       |
+| Mini app enabled state     | Settings → Mini apps               | Makes all Trading contributions available; enabled by default                       |
 | Data source                | Trading Workspace market browser   | Selects an exchange from the installed catalog; the initial source is `hyperliquid` |
 | Market filter and category | Market browser                     | Filters the live roster by text, favorites, market type, or third-party grouping    |
 | Favorite markets           | Star control in the market browser | Persists a set per public connection in browser local storage                       |
@@ -79,7 +79,7 @@ Public source ids use the `public:<exchange>` form. They are created lazily, are
 ## How data reaches the workspace
 
 The backend loads a venue adapter through `ccxt`, normalizes its public responses, and serves the UI
-through the plugin routes. Ticker, candle, and order-book views prefer public WebSocket streams.
+through the mini app routes. Ticker, candle, and order-book views prefer public WebSocket streams.
 After a stream delivers data, its REST fallback pauses; if the stream is unavailable or goes down,
 the view resumes visibility-gated polling. The public trade tape has no REST fallback.
 
@@ -89,7 +89,7 @@ This target-count bound does not cap each series's total candle count.
 
 ## Limits
 
-- This plugin performs market research only. It has no account, balance, position, private-trade,
+- This mini app performs market research only. It has no account, balance, position, private-trade,
   paper-trading, order, leverage, cancellation, or execution surface in its registered backend.
 - `manage_chart` requires the `workbench-ui` capability. It is unavailable in headless clients,
   including its server-side `detect` action.
@@ -116,14 +116,14 @@ This target-count bound does not cap each series's total candle count.
 
 ## Related guides
 
-- [Plugins](../../docs/extending/plugins.md)
+- [Build a mini app](../../docs/extending/mini-apps.md)
 - [Workspace](../../docs/features/workspace.md)
 - [Capabilities and permissions](../../docs/features/capabilities.md)
 
 ## Source of truth
 
 - [Mini app manifest](mini-app.json) and [agent guide](guide.md)
-- [Plugin dependencies](./package.json)
+- [Mini app dependencies](./package.json)
 - [Backend registration](./backend/index.ts)
 - [Public market service](./backend/service.ts)
 - [Public routes](./backend/routes.ts)

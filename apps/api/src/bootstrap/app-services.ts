@@ -9,7 +9,7 @@ import { createSystemService } from '../features/system/service'
 import type { createChatService } from '../features/chat/service'
 import type { InfraPhase } from './infra'
 import type { RegistriesPhase } from './registries'
-import type { PluginHostsPhase } from './plugin-hosts'
+import type { MiniAppHostsPhase } from './mini-app-hosts'
 import type { DomainServicesPhase } from './domain-services'
 import type { EnginesPhase } from './engines'
 import { sessionRoute } from '../contracts/session-route'
@@ -43,7 +43,7 @@ export interface AppServicesPhaseInput
       | 'agentNotifications'
     >,
     Pick<RegistriesPhase, 'contextManager' | 'textInputSurfaceRegistry'>,
-    Pick<PluginHostsPhase, 'backendHost'>,
+    Pick<MiniAppHostsPhase, 'backendHost'>,
     Pick<
       DomainServicesPhase,
       | 'projectsService'
@@ -51,6 +51,7 @@ export interface AppServicesPhaseInput
       | 'resolveProjectCwd'
       | 'mcpService'
       | 'pluginService'
+      | 'miniAppService'
       | 'agentsService'
       | 'skillsCuratorService'
     >,
@@ -92,6 +93,7 @@ export function createAppServicesPhase({
   resolveProjectCwd,
   mcpService,
   pluginService,
+  miniAppService,
   agentsService,
   skillsCuratorService,
   auxUsageRepo,
@@ -172,6 +174,7 @@ export function createAppServicesPhase({
     resolveProjectCwd,
     mcpService,
     pluginService,
+    miniAppService,
     agentsService,
     // Read when a listing is asked for: the mods host is bound after this phase is composed.
     describeCommands: (commands) => describeCommands(serviceRefs.modsHost, commands),
@@ -252,9 +255,8 @@ export function createAppServicesPhase({
       (await skillsCuratorService.listSkills(userId, { projectId }).catch(() => [])).map(
         (s) => s.name,
       ),
-    listPlugins: async (userId, projectId) =>
-      (await pluginService.listPlugins(userId, { projectId }).catch(() => ({ plugins: [] })))
-        .plugins,
+    listMiniApps: async (userId, projectId) =>
+      (await miniAppService.list(userId, { projectId }).catch(() => ({ miniApps: [] }))).miniApps,
   })
 
   // Global search: ONE registry fanning a text query out across every domain's provider, words and

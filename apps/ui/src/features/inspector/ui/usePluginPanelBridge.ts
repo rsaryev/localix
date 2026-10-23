@@ -78,7 +78,7 @@ export function usePluginPanelBridge({
           readViewState: readPluginViewState,
           writeViewState: writePluginViewState,
           publishMessageContext,
-          invokePluginBackend: (input) => backendClient.invokeMiniAppUiAction(input),
+          invokeMiniAppBackend: (input) => backendClient.invokeMiniAppUiAction(input),
         },
         pluginName,
       ),

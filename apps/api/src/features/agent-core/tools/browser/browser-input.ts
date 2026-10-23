@@ -73,7 +73,7 @@ export const advertisedObject = z.object({
     // INFERRED at execute time instead of hard-rejected (a wasted round-trip). Set it
     // explicitly — inference only covers the single-signal cases.
     .optional(),
-  url: z.string().optional().describe("open: page URL, or plugin:<name> for a plugin's view."),
+  url: z.string().optional().describe("open: page URL, or mini-app:<name> for a mini app's view."),
   file_path: z
     .string()
     .optional()

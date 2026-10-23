@@ -105,7 +105,7 @@ choices are UI state; they do not alter kubeconfig files.
 - [DevOps Workspace](devops.md)
 - [Containers](docker.md)
 - [Workspace](workspace.md)
-- [Mini apps](../extending/plugins.md)
+- [Mini apps](../extending/mini-apps.md)
 
 ## Source of truth
 

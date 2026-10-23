@@ -1,7 +1,7 @@
 import { makeSubstituter } from '../ext/manifest-substitute'
 import { pluginDataDir } from './mcp'
 import type { PluginManifest } from './contracts'
-import type { MiniAppConfigValues } from './config'
+import type { PluginConfigValues } from './config'
 import type { DiscoveredPlugin } from './discovery'
 import { buildLoadedAgent, type LoadedPlugins } from './loader-contract'
 import { pluginOutputStyles } from './output-styles'
@@ -15,7 +15,7 @@ import { pluginOutputStyles } from './output-styles'
 export function makePluginSubstituter(
   pluginDir: string,
   pluginName: string,
-  config: MiniAppConfigValues,
+  config: PluginConfigValues,
   manifest: PluginManifest,
   projectDir: string,
   home: string,
@@ -53,7 +53,7 @@ export function appendPluginRuntimeDeclarations({
   opts,
 }: {
   plugin: DiscoveredPlugin
-  config: MiniAppConfigValues
+  config: PluginConfigValues
   subst: (text: string) => string
   result: LoadedPlugins
   summary: LoadedPlugins['loaded'][number]

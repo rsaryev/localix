@@ -17,6 +17,7 @@ import {
   buildChannelSection,
   buildPinnedSkillsSection,
   buildPluginsSection,
+  buildMiniAppsSection,
   buildSkillsSection,
 } from './sections/features'
 import { buildApprovedPlanSection, buildPlanModeSection } from './sections/plan'
@@ -192,9 +193,15 @@ export const CACHED_SECTIONS: readonly PromptSection[] = [
     id: 'plugins',
     tier: 'stable',
     heading: '# Plugins',
+    render: (f) => (f.params.pluginsContext ? buildPluginsSection(f.params.pluginsContext) : null),
+  },
+  {
+    id: 'mini-apps',
+    tier: 'stable',
+    heading: '# Mini apps',
     render: (f) =>
-      f.params.pluginsContext
-        ? buildPluginsSection(f.params.pluginsContext, f.hasTool(ACTIVATE_TOOLS_TOOL_NAME))
+      f.params.miniAppsContext
+        ? buildMiniAppsSection(f.params.miniAppsContext, f.hasTool(ACTIVATE_TOOLS_TOOL_NAME))
         : null,
   },
   {
@@ -208,6 +215,7 @@ export const CACHED_SECTIONS: readonly PromptSection[] = [
         f.registry.ledger,
         f.registry.toolNames,
         f.params.awaitingConsentPlugins ?? [],
+        f.params.awaitingConsentMiniApps ?? [],
       ),
   },
   {

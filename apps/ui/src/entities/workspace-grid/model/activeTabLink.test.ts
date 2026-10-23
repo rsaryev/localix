@@ -212,9 +212,9 @@ describe('activeTabLinks', () => {
       expect(activeTabLinks(state).map((link) => link.token)).toEqual([
         '@file:src/strategy.ts',
         '@resource:localix://resource/fixture-db/local',
-        '@snippet:Local database — plugin context',
+        '@snippet:Local database — mini app context',
         '@resource:localix://resource/fixture-market/binance/markets/BTC%2FUSDT/candles/1h',
-        '@snippet:BTC/USDT — plugin context',
+        '@snippet:BTC/USDT — mini app context',
       ])
     } finally {
       clearLiveTabMessageContext()
@@ -253,7 +253,7 @@ describe('activeTabLinks', () => {
     expect(link?.tabId).toBe(pluginView.id)
     expect(link?.binding.target.kind).toBe('snippet')
     expect(link?.binding.target.attributes?.content).toContain('none published yet')
-    expect(link?.binding.target.attributes?.content).toContain('Plugin: fixture')
+    expect(link?.binding.target.attributes?.content).toContain('Mini app: fixture')
   })
 })
 

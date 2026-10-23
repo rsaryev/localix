@@ -2,7 +2,7 @@ import { expect, spyOn, test } from 'bun:test'
 
 import { fileEditorById, registerFileEditor } from './fileEditors'
 import { miniAppUiHostFor } from './host'
-import { setEnabledPluginNames } from './miniAppActivation'
+import { setEnabledMiniAppNames } from './miniAppActivation'
 import { registerResourceRefIcons, resourceRefIcon } from './iconContributions'
 import { registerSearchDomain, searchDomains } from './searchDomains'
 import {
@@ -126,7 +126,7 @@ test('a plugin cannot submit unowned global UI identities or shadow shared icon 
       }),
     ).not.toThrow()
 
-    setEnabledPluginNames(new Set([pluginName]))
+    setEnabledMiniAppNames(new Set([pluginName]))
     expect(workItemKindRegistry.get('core-owned-work-item-fixture')?.Component).toBe(CoreComponent)
     expect(railSectionRegistry.get('core-owned-section-fixture')?.Sidebar).toBe(CoreComponent)
     expect(railViewletRegistry.get('core-owned-viewlet-fixture')?.Icon).toBe(CoreIcon)
@@ -142,7 +142,7 @@ test('a plugin cannot submit unowned global UI identities or shadow shared icon 
     const shadowed = warn.mock.calls.filter((call) => String(call[0]).includes('-fixture'))
     expect(shadowed).toHaveLength(1)
   } finally {
-    setEnabledPluginNames(null)
+    setEnabledMiniAppNames(null)
     warn.mockRestore()
   }
 })

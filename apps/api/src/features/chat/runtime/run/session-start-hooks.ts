@@ -6,7 +6,7 @@
  * Layer rule (same as execute-run.ts): runtime/infra; never imports
  * features/chat/service*.
  */
-import type { LoadedMiniAppHook } from '../../../plugins/loader'
+import type { LoadedMiniAppHook } from '../../../mini-apps/loader-contract'
 
 export interface FireSessionStartHooksArgs {
   hooks: readonly LoadedMiniAppHook[]
@@ -22,11 +22,11 @@ export function fireSessionStartHooks({
 }: FireSessionStartHooksArgs): void {
   if (hooks.length === 0 || startedSessions.has(sessionId)) return
   startedSessions.add(sessionId)
-  for (const { pluginName, hooks: pluginHooks, ctx } of hooks) {
-    if (!pluginHooks.onSessionStart) continue
-    Promise.resolve(pluginHooks.onSessionStart(ctx)).catch((err) => {
+  for (const { app, hooks: appHooks, ctx } of hooks) {
+    if (!appHooks.onSessionStart) continue
+    Promise.resolve(appHooks.onSessionStart(ctx)).catch((err) => {
       console.warn(
-        `[plugin:${pluginName}] onSessionStart hook failed`,
+        `[mini-app:${app}] onSessionStart hook failed`,
         err instanceof Error ? err.message : err,
       )
     })

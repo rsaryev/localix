@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { Wrench, BookOpen, Plug, Puzzle, ShieldCheck } from 'lucide-react'
+import { Wrench, BookOpen, LayoutGrid, Plug, Puzzle, ShieldCheck } from 'lucide-react'
 import type { Project } from '@/shared/api/contracts'
 import type { TabItem } from '@localixai/kit/tabs'
 import { CAPABILITY_TABS, type CapabilityTabId } from '@/shared/routing/routes'
@@ -11,6 +11,7 @@ import { ToolsSettings } from './ToolsSettings'
 import { SkillsSettings } from './SkillsSettings'
 import { McpSettings } from './McpSettings'
 import { PluginsSettings } from './PluginsSettings'
+import { MiniAppsSettings } from './MiniAppsSettings'
 import { PermissionRulesView } from './capabilities/PermissionRulesView'
 import { settingsUiUri } from '@localixai/mini-app-sdk/navigation'
 import { useUiTarget } from '@/shared/hooks/useUiTarget'
@@ -38,6 +39,7 @@ const TAB_META: Record<CapabilityTabId, { label: string; icon: LucideIcon }> = {
   skills: { label: 'Skills', icon: BookOpen },
   mcp: { label: 'MCP', icon: Plug },
   plugins: { label: 'Plugins', icon: Puzzle },
+  'mini-apps': { label: 'Mini apps', icon: LayoutGrid },
   // Last, and deliberately a peer of the four rather than a section inside one. The four
   // registries answer "is this on"; this answers everything else a rule can say, for all of
   // them at once — it lived under Tools while governing five kinds.
@@ -109,7 +111,7 @@ export function CapabilitiesSettings({
           switching sub-tabs. */}
       <SettingsPageHeader
         title="Capabilities"
-        description="Everything the agent can do — built-in tools, skills, MCP servers and plugins."
+        description="Everything the agent can do — built-in tools, skills, MCP servers, plugins and mini apps."
         actions={
           // Unconditional, and it picks an AGENT. Every switch on every tab here writes a
           // RULE — `tool:bash`, `skill:deploy`, `plugin:office`, `mcp:github/create_pr` are
@@ -140,6 +142,9 @@ export function CapabilitiesSettings({
         )}
         {activeTab === 'plugins' && (
           <PluginsSettings scope={project} agentScope={agentScope} projects={projects} />
+        )}
+        {activeTab === 'mini-apps' && (
+          <MiniAppsSettings scope={project} agentScope={agentScope} projects={projects} />
         )}
         {/* Keyed on the agent so no staged edit survives a switch from one role to another. */}
         {activeTab === 'rules' && <PermissionRulesView key={agentScope} scope={agentScope} />}

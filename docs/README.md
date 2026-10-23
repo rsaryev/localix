@@ -27,7 +27,7 @@ Read [Privacy](getting-started/privacy.md) to understand data storage and outbou
 | Run models on this computer          | [Local models](features/local-models.md) · [Semantic search](features/semantic-search.md)                                  |
 | Track a larger goal                  | [Kanban](features/task-board.md) · [Session tasks recipe](recipes/turn-a-vague-goal-into-a-pipeline.md)                    |
 | Wait for CI or repeat a prompt       | [Monitors](features/monitors.md) · [Loops](features/loops.md)                                                              |
-| Add a tool or workbench              | [Build with the agent](extending/build-with-the-agent.md) · [Plugin authoring](extending/plugins.md)                       |
+| Add a tool or workbench              | [Build with the agent](extending/build-with-the-agent.md) · [Mini app authoring](extending/mini-apps.md)                   |
 | Change Localix itself                | [Contributing](internals/contributing.md) · [Code map](internals/code-map.md)                                              |
 
 ## Recipes
@@ -70,6 +70,8 @@ Each recipe walks through one task from setup to a visible result.
 | ----------------------------------------------------------------- | ------------------------------------------------------------------ |
 | [Use the workspace](features/workspace.md)                        | Arrange panels and inspect explicit and automatic message context. |
 | [Native workspace tabs](features/native-workspace-tabs.md)        | Manage native windows, tabs, and workspace restoration.            |
+| [Mini apps](features/mini-apps.md)                                | See, switch on, configure and create mini apps with `/mini-app`.   |
+| [Mini apps as Mac apps](features/mini-app-mac-apps.md)            | Install a mini app with a screen as its own macOS app.             |
 | [External agent sessions](features/external-agents.md)            | Link supported external coding-agent sessions.                     |
 | [Settings](features/settings.md)                                  | Find application, project, provider, and capability settings.      |
 | [Keyboard shortcuts](features/keyboard-shortcuts.md)              | Find keyboard actions and their focus boundaries.                  |
@@ -130,22 +132,22 @@ Each recipe walks through one task from setup to a visible result.
 
 ## Extending Localix
 
-| Guide                                                                | Covers                                                              |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| [Build a plugin or a mini app](extending/plugins.md)                 | Write a Claude Code plugin or a mini app, and see the APIs it gets. |
-| [Install Claude Code plugins](extending/claude-code-plugins.md)      | Install a Claude Code plugin as it is and see what runs.            |
-| [Build a mini app with the agent](extending/build-with-the-agent.md) | Describe a mini app and review the agent’s build result.            |
-| [Build workbench UI](extending/plugin-ui.md)                         | Build a workbench interface against the host bridge.                |
-| [Build a sandboxed HTML view](extending/sandboxed-views.md)          | Use the iframe bridge, scoped backend actions, and scratch state.   |
-| [Mini app synchronization](extending/plugin-sync.md)                 | Synchronize mini app resources and live views.                      |
-| [Keyboard ownership](extending/keyboard-ownership.md)                | Keep plugin shortcuts within their focus and ownership boundaries.  |
-| [Report mini app failures](extending/plugin-problems.md)             | Report mini app failures through the host’s problem surfaces.       |
-| [The UI kit](extending/ui-kit.md)                                    | Use shared components, tokens, and supported import paths.          |
-| [Wake a session from a mini app](extending/plugin-wakes.md)          | Wake a session from a mini app event.                               |
-| [Semantic index and change feed](extending/plugin-semantics.md)      | Index a mini app's items by meaning and follow its own changes.     |
-| [Validate mini app route requests](extending/plugin-routes.md)       | Validate mini app HTTP request contracts.                           |
-| [Author a skill](extending/skills-authoring.md)                      | Write SKILL.md procedures and supporting resources.                 |
-| [Shared Markdown](extending/markdown.md)                             | Use the shared Markdown renderer and interactive components.        |
+| Guide                                                                | Covers                                                               |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| [Build a mini app](extending/mini-apps.md)                           | Write a mini app's manifest and backend, and see the APIs it gets.   |
+| [Install Claude Code plugins](extending/claude-code-plugins.md)      | Install a Claude Code plugin as it is and see what runs.             |
+| [Build a mini app with the agent](extending/build-with-the-agent.md) | Describe a mini app and review the agent’s build result.             |
+| [Build workbench UI](extending/mini-app-ui.md)                       | Build a workbench interface against the host bridge.                 |
+| [Build a sandboxed HTML view](extending/sandboxed-views.md)          | Use the iframe bridge, scoped backend actions, and scratch state.    |
+| [Mini app synchronization](extending/mini-app-sync.md)               | Synchronize mini app resources and live views.                       |
+| [Keyboard ownership](extending/keyboard-ownership.md)                | Keep mini app shortcuts within their focus and ownership boundaries. |
+| [Report mini app failures](extending/mini-app-problems.md)           | Report mini app failures through the host’s problem surfaces.        |
+| [The UI kit](extending/ui-kit.md)                                    | Use shared components, tokens, and supported import paths.           |
+| [Wake a session from a mini app](extending/mini-app-wakes.md)        | Wake a session from a mini app event.                                |
+| [Semantic index and change feed](extending/mini-app-semantics.md)    | Index a mini app's items by meaning and follow its own changes.      |
+| [Validate mini app route requests](extending/mini-app-routes.md)     | Validate mini app HTTP request contracts.                            |
+| [Author a skill](extending/skills-authoring.md)                      | Write SKILL.md procedures and supporting resources.                  |
+| [Shared Markdown](extending/markdown.md)                             | Use the shared Markdown renderer and interactive components.         |
 
 ## Contributor references
 

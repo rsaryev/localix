@@ -320,11 +320,11 @@ the layers panel asked. Shift+2 is the exception on purpose: it shows the select
 
 ## Related guides
 
-- [Workbench UI](../extending/plugin-ui.md#a-board) — the board every graph in the app is drawn on
+- [Workbench UI](../extending/mini-app-ui.md#a-board) — the board every graph in the app is drawn on
 - [Code Graph](code-graph.md) — the generated map of the same project
 
 ## Source of truth
 
-- [Plugin](https://github.com/rsaryev/localix/tree/main/mini-apps/project-space)
+- [Mini app](https://github.com/rsaryev/localix/tree/main/mini-apps/project-space)
 - [Board file format](https://github.com/rsaryev/localix/blob/main/mini-apps/project-space/shared/format/schema.ts)
 - [Element type contract](https://github.com/rsaryev/localix/blob/main/mini-apps/project-space/shared/registry/contract.ts)

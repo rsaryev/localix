@@ -10,7 +10,7 @@ import type { OutlineProvider } from './tools/file/outline'
 import type { DelegateToolPort } from './tools/delegate'
 import type { AgentsToolPort } from './tools/agents'
 import type { LoopsToolOptions } from './tools/loops'
-import type { MiniAppBuildToolOptions } from './tools/plugin-build'
+import type { MiniAppBuildToolOptions } from './tools/mini-app-build'
 import type { ConfigureToolOptions } from './tools/configure/configure'
 import type { PlanToolOptions } from './tools/plan/plan'
 import type { BashWaitHost } from './tools/bash/bash-until'
@@ -138,7 +138,7 @@ export interface OptionalToolPorts {
   agents?: AgentsToolPort
   loops?: LoopsToolOptions
   /** The host's plugin authoring: build, test and reload (or create) one user plugin. */
-  plugin_build?: MiniAppBuildToolOptions
+  mini_app_build?: MiniAppBuildToolOptions
   browser?: BrowserToolDeps
   /** The chat's topic boundary, built for the leader or sole participant of a chat. */
   set_topic?: SetTopicPort

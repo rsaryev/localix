@@ -69,7 +69,6 @@ describe('a plugin with more than eight agents', () => {
         name: 'crew',
         scope: 'global',
         description: '',
-        toolNames: [],
         skills: [],
         mcpServers: [],
       },

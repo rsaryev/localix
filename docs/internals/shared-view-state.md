@@ -53,7 +53,7 @@ preference is already synchronized.
 | Main workspace scope, selected chat, URL                                  | Workspace navigation and chat persistence | Keep independent per window; remote creation must not navigate another window |
 | Grid tabs, rail order/width, editor caret/scroll, transcript measurements | Window/device persistence                 | Keep local; geometry and open views differ by screen                          |
 | Unsaved file bodies                                                       | File draft/editor owner                   | Keep separate from chat drafts; require file conflict semantics               |
-| Preview/browser history, plugin view state, folder expansion              | Inspector/plugin owners                   | Keep scoped to the owning view; plugins retain their typed data APIs          |
+| Preview/browser history, mini app view state, folder expansion            | Inspector/mini app owners                 | Keep scoped to the owning view; mini apps retain their typed data APIs        |
 | Prompt history, recent model menu ordering, palette/project MRU           | Local convenience history                 | Does not decide executable routes; review cross-device history separately     |
 | Last workspace tip and tip counters                                       | Local progress caches                     | Candidate for explicit profile fields; not conversation state                 |
 | Notification preferences and spend threshold                              | Local preference modules                  | Remaining candidates for profile migration                                    |

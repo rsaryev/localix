@@ -40,7 +40,7 @@ The model picker lists a local chat model for agents once one is installed.
 
 EmbeddingGemma 2 is built in: Localix downloads it quietly on first start and keeps it — its row
 says **Built in**, and it can be paused but not cancelled or removed. Semantic search, group routing
-and plugins use it from the list of installed models; none of them owns its download.
+and mini apps use it from the list of installed models; none of them owns its download.
 
 Every model is pinned to the Hugging Face commit it was listed at, and each file is checked against
 its published SHA-256 before it counts as installed. An interrupted download is never mistaken for a

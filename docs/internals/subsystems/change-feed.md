@@ -5,7 +5,7 @@ relay that pokes clients, and the reactors that repair or reap what a change lea
 below). Producers depend only on a registry's types; consumers each read at their own cursor.
 
 The engine is the `@localixai/change-feed` package (`packages/change-feed/src/index.ts`): notices,
-recording, consumers and a test kit. The API keeps what is its own: the core registry, the plugin
+recording, consumers and a test kit. The API keeps what is its own: the core registry, the mini app
 streams and the retry policy (`apps/api/src/features/changes/retry.ts`).
 
 ## Notices
@@ -27,23 +27,24 @@ registry, so a kind added to it fails to compile until every consumer gives it a
 
 ## Kinds and consumers
 
-| Kind                  | Owner records it                                            | Consumers                                     |
-| --------------------- | ----------------------------------------------------------- | --------------------------------------------- |
-| `chat.session`        | Chat writers; deletion of a tree, one notice per id         | Semantic index, usage ledger, session residue |
-| `chat.message`        | Inserts; edits, a turn's usage moving, the final flush      | Semantic index, usage ledger                  |
-| `provider.connection` | Every connection or key change, deletion in its transaction | Route repair, notifications cleanup, relay    |
-| `project`             | Created, moved, renamed, deleted, restored                  | Plugin backends, relay                        |
-| `project.settings`    | A settings-only write, in its transaction                   | Relay                                         |
-| `user.profile`        | Interface settings written, in the profile's transaction    | Relay                                         |
-| `user.agent-settings` | Agent settings written, in the profile's transaction        | Relay                                         |
-| `user.view-state`     | An accepted view-state write, by kind and key               | Relay                                         |
-| `secret`              | A vault item created, rotated, edited or removed, by key    | Relay                                         |
-| `system.toggle`       | A host control switched                                     | Relay                                         |
-| `agent`               | Every write by handle, with the stable `agentId`; `resync`  | Semantic index, agent seats, relay            |
-| `plugin`, `mcp`       | Removal from `capability_source`, by name; `resync`         | Semantic index, capability cleanup            |
-| `skill`               | `resync` after a capability bump                            | Semantic index, relay                         |
-| `capability.rule`     | Every rule-list write, by agent, in its transaction         | Relay                                         |
-| `local.model`         | Installed or removed by id; `resync` at boot                | Route repair                                  |
+| Kind                  | Owner records it                                             | Consumers                                     |
+| --------------------- | ------------------------------------------------------------ | --------------------------------------------- |
+| `chat.session`        | Chat writers; deletion of a tree, one notice per id          | Semantic index, usage ledger, session residue |
+| `chat.message`        | Inserts; edits, a turn's usage moving, the final flush       | Semantic index, usage ledger                  |
+| `provider.connection` | Every connection or key change, deletion in its transaction  | Route repair, notifications cleanup, relay    |
+| `project`             | Created, moved, renamed, deleted, restored                   | Mini app hosts, relay                         |
+| `project.settings`    | A settings-only write, in its transaction                    | Relay                                         |
+| `user.profile`        | Interface settings written, in the profile's transaction     | Relay                                         |
+| `user.agent-settings` | Agent settings written, in the profile's transaction         | Relay                                         |
+| `user.view-state`     | An accepted view-state write, by kind and key                | Relay                                         |
+| `secret`              | A vault item created, rotated, edited or removed, by key     | Relay                                         |
+| `system.toggle`       | A host control switched                                      | Relay                                         |
+| `agent`               | Every write by handle, with the stable `agentId`; `resync`   | Semantic index, agent seats, relay            |
+| `plugin`, `mcp`       | Removal from `capability_source`, by name; `resync`          | Semantic index, capability cleanup            |
+| `mini-app`            | Installed, updated, removed or its settings changed, by name | Mini app hosts, capability cleanup, relay     |
+| `skill`               | `resync` after a capability bump                             | Semantic index, relay                         |
+| `capability.rule`     | Every rule-list write, by agent, in its transaction          | Relay                                         |
+| `local.model`         | Installed or removed by id; `resync` at boot                 | Route repair                                  |
 
 The consumers besides the semantic index are wired in `apps/api/src/bootstrap/core-reactors.ts`:
 
@@ -53,11 +54,12 @@ The consumers besides the semantic index are wired in `apps/api/src/bootstrap/co
 - `notifications-cleanup` settles the provider condition rows of a deleted connection.
 - `agent-seats` (`features/chat/agent-seats/`) follows a renamed agent's handle; a deleted agent
   leaves shared rooms and its picks are forgotten.
-- `capability-cleanup` (`features/capabilities/cleanup.ts`) drops a removed plugin's or server's
-  switches, MCP sign-in and vault bindings.
+- `capability-cleanup` (`features/capabilities/cleanup.ts`) drops a removed plugin's, mini app's or
+  server's switches, MCP sign-in and vault bindings.
 - `session-residue` (`features/chat/session-residue.ts`) reaps monitors, loops, inbox rows and the
   scratch directory of every id of a deleted chat tree.
-- `plugin-backends` refreshes the plugin backend host when a project's scope moves.
+- `mini-app-hosts` refreshes the mini app backend and channel hosts when a mini app is installed,
+  updated or removed, when a rule switches one on or off, and when a project's scope moves.
 - `relay` (`features/realtime/relay.ts`) pokes client topics; `usage-ledger`
   (`features/usage/ledger-projector.ts`) derives chat-turn ledger rows from their messages.
 

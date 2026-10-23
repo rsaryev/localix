@@ -4,7 +4,7 @@
  *
  * The defect this stops: the schema budget and the goldens used to be measured on a registry
  * of name-only stubs (`memory`, `jobs` … at ~33 tokens each), with `vault`,
- * `configure`, `context_budget` and `plugin_build` missing and `bash` built without its
+ * `configure`, `context_budget` and `mini_app_build` missing and `bash` built without its
  * terminal fields. The ratchet read 6.4k while a real chat turn paid for every schema it was
  * not counting, so a description could grow past the budget and the test stayed green.
  *
@@ -69,7 +69,7 @@ export function productionOptionalPorts(
     delegate: inert(),
     agents: inert(),
     loops: { userId: 'user-1', sessionId: 'session-1', agentId: 'agent-1' },
-    plugin_build: { run: async () => ({ text: '', ok: true }) },
+    mini_app_build: { run: async () => ({ text: '', ok: true }) },
     browser: inert(),
     set_topic: setTopic,
     skip_answer: createSkipAnswerTool(),

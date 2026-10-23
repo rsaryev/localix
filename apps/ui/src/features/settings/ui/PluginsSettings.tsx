@@ -12,7 +12,7 @@ import { AttentionRollup } from './AttentionRollup'
 import { CapabilityRegistryBody } from './capabilities/CapabilityRegistryBody'
 import { PluginRow } from './capabilities/PluginRow'
 import { trackCapabilityWrite } from '@/shared/contrib/capabilityWrites'
-import { refetchActivePluginContrib } from '@/shared/contrib/enabledPlugins'
+import { refetchActiveMiniAppContrib } from '@/shared/contrib/enabledMiniApps'
 
 interface PluginsSettingsProps {
   /** '' = global; otherwise a project id. Drives both the list and install scope. */
@@ -34,7 +34,7 @@ export function PluginsSettings({ scope, agentScope = '', projects }: PluginsSet
           projectId: scope || null,
           enable,
         })
-        await refetchActivePluginContrib()
+        await refetchActiveMiniAppContrib()
         return plugin
       }),
     refresh,

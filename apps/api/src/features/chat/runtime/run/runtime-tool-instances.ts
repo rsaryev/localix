@@ -32,6 +32,7 @@ import type { SkillOverrides } from '../../../agent-core/skill-overrides'
 import type { MemoryScope } from '../../../agent-core/memory-scope-policy'
 import type { RunnerDeps } from '../agent-runner-types'
 import type { CcHookSessions } from '../cc-hook-sessions'
+import type { LoadedMiniApps } from '../../../mini-apps/loader-contract'
 
 export interface DirectToolInstanceDeps {
   agentProfile: RunProfile
@@ -39,6 +40,7 @@ export interface DirectToolInstanceDeps {
   disabledTools: string[]
   defaultCwd: string
   loadedPlugins: LoadedPlugins
+  loadedMiniApps: LoadedMiniApps
   repo: ChatRepository
   memoryRepo: ReturnType<typeof createMemoryRepository>
   contextStore: ReturnType<typeof createContextStoreRepository>
@@ -72,6 +74,7 @@ export function buildDirectToolInstances(
     disabledTools,
     defaultCwd,
     loadedPlugins,
+    loadedMiniApps,
     repo,
     memoryRepo,
     contextStore,
@@ -110,8 +113,8 @@ export function buildDirectToolInstances(
         )
       : undefined,
     mini_app_guide:
-      loadedPlugins.miniAppGuides.length > 0 && isToolDirect(agentProfile, TOOL.mini_app_guide)
-        ? createMiniAppGuideTool(loadedPlugins.miniAppGuides)
+      loadedMiniApps.guides.length > 0 && isToolDirect(agentProfile, TOOL.mini_app_guide)
+        ? createMiniAppGuideTool(loadedMiniApps.guides)
         : undefined,
     global_search: isToolDirect(agentProfile, TOOL.global_search)
       ? createGlobalSearchTool({

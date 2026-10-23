@@ -8,7 +8,7 @@ import {
   snippetMessageBindingDraft,
   type WorkItemAgentContext,
 } from '@localixai/mini-app-sdk/ui'
-import { pluginViewTarget } from '@localixai/api/plugin-view-target'
+import { miniAppViewTarget } from '@localixai/api/mini-app-view-target'
 import { activeWorkItemContribution } from './capabilities'
 import { GLOBAL_SCOPE, scopeOf } from './scope'
 import { liveTabMessageContext } from './liveTabMessageContext'
@@ -65,11 +65,11 @@ function miniAppAgentContext(item: WorkItem): WorkItemAgentContext | null {
   if (configured) return typeof configured === 'function' ? configured(item) : configured
   if (!contribution && item.kind !== 'plugin-view') return null
   return {
-    description: 'Plugin work item open in the Localix workspace.',
+    description: 'Mini app view open in the Localix workspace.',
     nextSteps: [
       'Inspect the current view and any selected item.',
-      'Ask what outcome the user wants from this plugin.',
-      'Use the plugin controls or its advertised tools when more data is needed.',
+      'Ask what outcome the user wants from this mini app.',
+      'Use the mini app controls or its advertised tools when more data is needed.',
     ],
   }
 }
@@ -88,8 +88,8 @@ function pluginGuidanceBinding(
     item.kind.split(':')[0]
   const steps = (context.nextSteps ?? []).slice(0, 3)
   const content = [
-    `Active plugin work item: ${item.title}`,
-    `Plugin: ${pluginName}`,
+    `Active mini app view: ${item.title}`,
+    `Mini app: ${pluginName}`,
     `Surface: ${item.kind}`,
     context.description ? `Purpose: ${context.description}` : null,
     liveContextAvailable
@@ -97,12 +97,12 @@ function pluginGuidanceBinding(
       : 'Live state: none published yet (the view may be empty, loading, awaiting a selection, or unavailable).',
     context.tools?.length
       ? `Useful agent tools: ${context.tools.join(', ')}`
-      : 'Useful agent tools: none advertised; use the visible plugin controls and generic workspace tools.',
-    // Said HERE, where the person is looking at the view: "take a screenshot of the plugin" and
+      : 'Useful agent tools: none advertised; use the visible mini app controls and generic workspace tools.',
+    // Said HERE, where the person is looking at the view: "take a screenshot of the app" and
     // "click Pods in DevOps" are asked of the tab on screen, and the address is what the agent
     // would otherwise have to guess.
     owner
-      ? `See or use this view yourself: the browser tool with url "${pluginViewTarget(owner)}" — snapshot, take_screenshot, steps (click, type).`
+      ? `See or use this view yourself: the browser tool with url "${miniAppViewTarget(owner)}" — snapshot, take_screenshot, steps (click, type).`
       : null,
     steps.length
       ? `Best next steps:\n${steps.map((step, index) => `${index + 1}. ${step}`).join('\n')}`
@@ -111,7 +111,7 @@ function pluginGuidanceBinding(
     .filter((line): line is string => Boolean(line))
     .join('\n')
   return snippetMessageBindingDraft({
-    label: `${item.title} — plugin context`,
+    label: `${item.title} — mini app context`,
     content,
     language: 'text',
   })

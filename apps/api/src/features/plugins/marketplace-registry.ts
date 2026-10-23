@@ -23,8 +23,6 @@ import {
 } from './marketplace-in-place'
 
 import {
-  LOCALIX_MARKETPLACE,
-  localixMarketplaceDir,
   readKnownMarketplaces,
   writeKnownMarketplaces,
   readMarketplace,
@@ -32,7 +30,6 @@ import {
 } from './marketplace-catalog'
 
 export {
-  LOCALIX_MARKETPLACE,
   readKnownMarketplaces,
   listMarketplaces,
   marketplaceDependencyAllowList,
@@ -79,8 +76,6 @@ export interface MarketplaceRegistryDeps {
   fetchArchive?: (src: { url: string; sha256?: string }, dest: string) => Promise<void>
   /** Marketplaces root override (tests). Defaults to `~/.localix/marketplaces`. */
   root?: string
-  /** Bundled plugins root, the built-in `localix` marketplace dir. Defaults to the bundled plugins root. */
-  localixDir?: string
   /** Timestamp for `lastUpdated` (tests pass a fixed value; `new Date()` is avoided in code paths that resume). */
   now?: () => string
 }
@@ -191,8 +186,6 @@ export async function updateMarketplace(
   name: string,
   deps: MarketplaceRegistryDeps,
 ): Promise<{ name: string; count: number }> {
-  if (name === LOCALIX_MARKETPLACE)
-    throw new Error(`The built-in "${LOCALIX_MARKETPLACE}" marketplace cannot be updated.`)
   const root = deps.root ?? marketplacesRoot()
   const rec = (await readKnownMarketplaces(root))[name]
   if (!rec) throw new Error(`Unknown marketplace "${name}".`)
@@ -201,13 +194,11 @@ export async function updateMarketplace(
   return res
 }
 
-/** Remove a registered marketplace (the built-in `localix` cannot be removed). */
+/** Remove a registered marketplace. */
 async function removeMarketplaceUnlocked(
   name: string,
   deps: MarketplaceRegistryDeps,
 ): Promise<void> {
-  if (name === LOCALIX_MARKETPLACE)
-    throw new Error(`The built-in "${LOCALIX_MARKETPLACE}" marketplace cannot be removed.`)
   const root = deps.root ?? marketplacesRoot()
   const known = await readKnownMarketplaces(root)
   const entry = known[name]
@@ -267,17 +258,14 @@ export async function resolveMarketplaceInstall(
   deps: MarketplaceRegistryDeps,
 ): Promise<ResolvedMarketplaceInstall> {
   const root = deps.root ?? marketplacesRoot()
-  const known = ref.marketplace === LOCALIX_MARKETPLACE ? {} : await readKnownMarketplaces(root)
+  const known = await readKnownMarketplaces(root)
   // A marketplace is addressed by its catalog name, or by the source it was added from.
   const byName = known[ref.marketplace]
   const bySource = byName
     ? undefined
     : Object.entries(known).find(([, rec]) => sourceMatchesRef(rec.source, ref.marketplace))
   if (bySource) ref = { ...ref, marketplace: bySource[0] }
-  const marketplaceDir =
-    ref.marketplace === LOCALIX_MARKETPLACE
-      ? localixMarketplaceDir(deps)
-      : (byName ?? bySource?.[1])?.installLocation
+  const marketplaceDir = (byName ?? bySource?.[1])?.installLocation
   if (!marketplaceDir)
     throw new Error(
       `Unknown marketplace "${ref.marketplace}". Add it first: /plugin marketplace add <owner/repo>`,
@@ -307,7 +295,7 @@ export async function resolveMarketplaceInstall(
   }
   if ('localPath' in resolved) {
     // A hosted catalog brought only its marketplace.json: there is no tree to resolve against.
-    const hosted = ref.marketplace !== LOCALIX_MARKETPLACE && known[ref.marketplace]?.source
+    const hosted = known[ref.marketplace]?.source
     if (hosted && hosted.source === 'url')
       throw new Error(
         `Marketplace "${ref.marketplace}" was added from a URL, so its relative source "${String(entry.source)}" cannot be fetched; the entry needs a github, url or git-subdir source`,
@@ -327,7 +315,7 @@ export async function resolveMarketplaceInstall(
 /**
  * Resolve a bare plugin name (no `@marketplace`) to a local install dir (and the
  * resolved marketplace entry) by searching registered marketplaces. Exactly one match
- * → resolve it; the built-in `localix` wins if it also has the name. Zero → throw
+ * → resolve it. Zero → throw
  * "not found"; many → throw asking for `name@market`.
  */
 export async function resolveBareInstall(
@@ -340,12 +328,7 @@ export async function resolveBareInstall(
       `Plugin "${name}" isn't a local path, a git URL, or in any registered marketplace. Add a marketplace first (/plugin marketplace add <owner/repo>) or pass <name>@<marketplace>.`,
     )
   }
-  // localix takes priority; otherwise a single unambiguous match.
-  const chosen = hits.includes(LOCALIX_MARKETPLACE)
-    ? LOCALIX_MARKETPLACE
-    : hits.length === 1
-      ? hits[0]
-      : null
+  const chosen = hits.length === 1 ? hits[0] : null
   if (!chosen) {
     throw new Error(
       `Plugin "${name}" is in multiple marketplaces (${hits.join(', ')}). Disambiguate: /plugin install ${name}@${hits[0]}`,

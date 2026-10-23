@@ -5,19 +5,19 @@ capability kind, changing a switch, or wiring a new consumer of availability.
 
 ## Terminology
 
-| Term        | Meaning                                                               | Boundary                                                     |
-| ----------- | --------------------------------------------------------------------- | ------------------------------------------------------------ |
-| Kind        | `tool`, `skill`, `plugin`, `mcp`, `agent` — how a capability is named | The prefix of an action; the rule store knows nothing else   |
-| Rule        | `{action, resource, effect}`, ordered, belonging to one agent         | A switch is the case where `resource` is `*`                 |
-| Verdict     | The answer, plus the rule that produced it                            | The LAST matching rule decides; there is nothing to compose  |
-| Trust class | What an artifact IS — bundled, opt-in, untrusted                      | A fact carried into the rule as its resource; not a decision |
-| Source      | An installed plugin, MCP server, or registry agent, with its config   | Availability is not a column on it                           |
+| Term        | Meaning                                                                           | Boundary                                                     |
+| ----------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Kind        | `tool`, `skill`, `plugin`, `mini-app`, `mcp`, `agent` — how a capability is named | The prefix of an action; the rule store knows nothing else   |
+| Rule        | `{action, resource, effect}`, ordered, belonging to one agent                     | A switch is the case where `resource` is `*`                 |
+| Verdict     | The answer, plus the rule that produced it                                        | The LAST matching rule decides; there is nothing to compose  |
+| Trust class | What an artifact IS — bundled, opt-in, untrusted                                  | A fact carried into the rule as its resource; not a decision |
+| Source      | An installed plugin, mini app, MCP server, or registry agent, with its config     | Availability is not a column on it                           |
 
 An agent owns its rules and there is no scope above it. A run resolves the list of the agent whose
 turn it is, in order, and that is the whole policy. Work that happens beside a turn rather than
-inside one — a `/skill` listing, the boot-time plugin load, the effective-configuration report —
-asks the agent that always exists (`DEFAULT_AGENT_ID`, the undeletable `localix`), so nothing ever
-resolves to "nobody".
+inside one — a `/skill` listing, the boot-time plugin and mini app load, the effective-configuration
+report — asks the agent that always exists (`DEFAULT_AGENT_ID`, the undeletable `localix`), so
+nothing ever resolves to "nobody".
 
 ## What you can do
 
@@ -31,15 +31,15 @@ resolves to "nobody".
 | Consume availability in a run | Take `availability` off the prepared run context                              | Never re-read the store: the run resolved its rules once            |
 
 Both routes take `projectId` and `agentId`, and they answer different questions: the project says
-what is LISTED (the plugins, MCP servers and skills installed there), the agent says whose RULES are
-read and written.
+what is LISTED (the plugins, mini apps, MCP servers and skills installed there), the agent says
+whose RULES are read and written.
 
 The snapshot's revision (`apps/api/src/features/capabilities/revision.ts`) starts at the API
 process's boot time in milliseconds and only grows, so it stays monotonic across a restart: a client
 that outlived the old process drops answers older than the one it holds, and a counter restarting at
 0 made it drop every answer of the new one. Every mutation owner bumps it and pokes clients — a
-plugin toggle, an MCP change, and the agent's own `skill` save or delete, which reaches the host
-through an injected port rather than an import.
+plugin or mini app toggle, an MCP change, and the agent's own `skill` save or delete, which reaches
+the host through an injected port rather than an import.
 
 ## How it works
 
@@ -52,17 +52,17 @@ capability_source                     capability_rule
                           |
         effectFor(kind, name, trustClassOf(item))
                           |
-              plugins / MCP / agents / tools / skills
+        plugins / mini apps / MCP / agents / tools / skills
 ```
 
 ### The pair
 
-`capability_source` holds one row per installed plugin, MCP server, or registry agent:
+`capability_source` holds one row per installed plugin, mini app, MCP server, or registry agent:
 `(user_id, kind, project_id, name)` with an opaque `config`. It replaced four tables that were the
 same nine columns spelled three times plus a fourth that differed by two fields it never queried on.
-`config` is the kind's own JSON — a plugin's declared settings, an MCP server's transport and
-connection details — which is what keeps the table agnostic. Columns for those would sit null on
-three kinds out of four.
+`config` is the kind's own JSON — a plugin's or mini app's declared settings, an MCP server's
+transport and connection details — which is what keeps the table agnostic. Columns for those would
+sit null on three kinds out of four.
 
 `capability_rule` holds the decisions. A switch and a permission are the same statement: `tool:bash`
 over resource `*` with effect `deny` turns the tool off; the same action over `git push*` with
@@ -91,9 +91,9 @@ even when the definition belongs to a project; invocation still requires the cor
 `apps/api/src/features/agents/registration-policy.ts` owns the registration review operation;
 `apps/ui/src/features/settings/ui/capabilities/PermissionRulesView.tsx` uses the shared editor and
 `apps/ui/src/features/settings/ui/capabilities/RegistrationPolicyReview.tsx` displays proposals.
-This applies to contributions published in the native registry. Verified bundled manifests are
-reconciled by `apps/api/src/features/plugins/sync-bundled-contributions.ts`; installed third-party
-declarations do not receive automatic publication or authority.
+This applies to contributions published in the native registry. Verified bundled mini app manifests
+are reconciled by `apps/api/src/features/mini-apps/sync-bundled-contributions.ts`; installed
+third-party declarations do not receive automatic publication or authority.
 
 ### One list, and the last match wins
 
@@ -167,28 +167,29 @@ The classes and what silence means:
 
 `ask` rather than `deny` for the last two, because the artifact is on disk only because someone put
 it there: the honest default is a question, not a silent nothing — which is what an unexplained
-"off" had been for every dropped-in plugin. The bundle boundary is absolute: a manifest is written
-by whoever wrote the plugin, so its own `defaultEnabled: true` cannot promote it out of `untrusted`.
+"off" had been for every dropped-in plugin or mini app. The bundle boundary is absolute: a manifest
+is written by whoever wrote the plugin or mini app, so its own `defaultEnabled: true` cannot promote
+it out of `untrusted`.
 
-A plugin waiting on that question is NOT loaded — its code is never imported, which is the point —
+A mini app waiting on that question is NOT loaded — its code is never imported, which is the point —
 so its tools cannot be listed either: a manifest declares entry FILES, not tool names. The prompt
-says the honest thing instead (the plugin is here, nobody has allowed it, its tools are unknown
+says the honest thing instead (the mini app is here, nobody has allowed it, its tools are unknown
 until someone does) and `configure` carries the one click that settles it, through the same HITL
 card every other proposal uses.
 
-### An enabled plugin's tools are inspected once, not once per launch
+### An enabled mini app's tools are inspected once, not once per launch
 
-The snapshot inspects an enabled native plugin by importing its backend and running `register()`.
-`apps/api/src/features/plugins/inspection-store.ts` persists successful inspections in
-`~/.localix/cache/plugin-inspection-cache-v1.json`. Cache identity includes the manifest, config
-digest, entry-file stats, user, working directory, host build, and plugin code fingerprint.
+The snapshot inspects an enabled mini app by importing its backend and running `register()`.
+`apps/api/src/features/mini-apps/inspection-store.ts` persists successful inspections in
+`~/.localix/cache/mini-app-inspection-cache-v1.json`. Cache identity includes the manifest, config
+digest, entry-file stats, user, working directory, host build, and mini app code fingerprint.
 
-Enablement, configuration, installation, removal, and `/plugin reload` invalidate the entry. Failed
-inspections are never cached; an unreadable cache is treated as empty.
+Enablement, configuration, installation, removal, and `/mini-app reload` invalidate the entry.
+Failed inspections are never cached; an unreadable cache is treated as empty.
 
-The client publishes the snapshot's enabled plugins and tool roster together. A plugin UI not yet
-registered is `pending` (`apps/ui/src/shared/contrib/miniAppActivation.ts`), so its restored tabs
-remain open. Failed imports retry on the startup backoff
+The client publishes the snapshot's enabled mini apps and tool roster together. A mini app UI not
+yet registered is `pending` (`apps/ui/src/shared/contrib/miniAppActivation.ts`), so its restored
+tabs remain open. Failed imports retry on the startup backoff
 (`apps/ui/src/shared/contrib/miniAppUiLoads.ts`); exhausted retries become `failed`, while retaining
 the tabs. A later snapshot publish retries the import. A request that fails before publishing cannot
 settle another pass's pending work.
@@ -235,7 +236,7 @@ has rules with NO marker at all is an install that configured it by hand before 
 is recorded as current and nothing is written, because those rows were never ours to replace. A
 version bump only replaces a policy that still matches a known shipped baseline.
 
-Managed bundled plugins publish native agent contributions into each exact registry scope before
+Managed bundled mini apps publish native agent contributions into each exact registry scope before
 agent catalog reads. Their verified policy proposals can seed defaults and bind policy review to the
 registration revision. User-installed lookalikes receive no such grant. An instruction-only update
 can retain a valid policy review; policy changes with custom rules require review. Removed
@@ -275,8 +276,8 @@ output is a picture declares `requiresModelInput: ['image']` and is withheld. `r
 tool — a text-only model needs it for everything else — so its `forModel` variant answers an image
 with its format, size and dimensions in text. A tool with only some model-dependent actions declares
 `forModel` instead and returns its own variant for the run's model — `browser` keeps every action
-but `take_screenshot`. An unknown model is not judged. Both declarations live on the tool, so a
-plugin or MCP tool uses them the same way (`tool-model-layer.test.ts`).
+but `take_screenshot`. An unknown model is not judged. Both declarations live on the tool, so a mini
+app or MCP tool uses them the same way (`tool-model-layer.test.ts`).
 
 A remedy is attached to `policy` reasons only. Shape, authority and model cannot be lifted by a
 click, so they are never proposed to the model — which is also what keeps a sub-agent from being
@@ -285,9 +286,9 @@ told about a tool it can structurally never hold.
 ### One resolve per run
 
 A run resolves its rules once, in `resolveCapabilities` (`capabilities/resolve.ts`), and carries the
-result on the prepared context as `availability`. The plugin loader and the MCP gather read it from
-there. A second read downstream could only produce a different answer, which is the exact failure
-this subsystem exists to prevent: the settings screen and the run disagreeing.
+result on the prepared context as `availability`. The plugin and mini app loaders and the MCP gather
+read it from there. A second read downstream could only produce a different answer, which is the
+exact failure this subsystem exists to prevent: the settings screen and the run disagreeing.
 
 ### Composer tips
 
@@ -317,7 +318,8 @@ availability gates; the client selects and paces eligible tips.
 - [Composer tip contracts](composer-tips.md)
 - [Tools](../../features/tools.md)
 - [MCP](../../features/mcp.md)
-- [Plugins](../../extending/plugins.md)
+- [Mini apps](../../extending/mini-apps.md)
+- [Claude Code plugins](../../extending/claude-code-plugins.md)
 - [Permissions](../../features/permissions.md)
 
 ## Source of truth
@@ -340,6 +342,6 @@ availability gates; the client selects and paces eligible tips.
 - [Applying rule changes](../../../apps/api/src/features/capabilities/rule-changes.ts) ·
   [rule-changes.test.ts](../../../apps/api/src/features/capabilities/rule-changes.test.ts)
 - [Snapshot composition](../../../apps/api/src/features/capabilities/snapshot.ts)
-- [Persisted tool inspection](../../../apps/api/src/features/plugins/inspection-store.ts) ·
-  [inspection-store.test.ts](../../../apps/api/src/features/plugins/inspection-store.test.ts)
+- [Persisted tool inspection](../../../apps/api/src/features/mini-apps/inspection-store.ts) ·
+  [inspection-store.test.ts](../../../apps/api/src/features/mini-apps/inspection-store.test.ts)
 - [Schema](../../../apps/api/migrations/20260601T000000_init_schema.ts)

@@ -40,7 +40,7 @@ export async function savePluginConfig(input: {
   )
   const patch = await sealSecretOptions({
     userId,
-    pluginName: name,
+    owner: name,
     scope: rowScope,
     declared,
     patch: { ...Object.fromEntries(carried), ...configPatchValues(declared, input.values) },

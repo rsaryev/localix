@@ -83,7 +83,7 @@ not each time their tab is shown again.
 
 The panel uses shared workbench toolbars and controls; secondary Git actions live in the header's
 overflow menu. Diff layout and navigation reserve a row above content instead of floating over code.
-Every diff surface — the read-only tab, the live patch and the plugin's staging view — mounts the
+Every diff surface — the read-only tab, the live patch and the mini app's staging view — mounts the
 host's [`VirtualDiff`](../../../apps/ui/src/shared/ui/diff/VirtualDiff.tsx). A patch is parsed once
 into a flat document
 ([`diffDocument.ts`](../../../apps/ui/src/shared/ui/diff/document/diffDocument.ts)), laid out as
@@ -247,7 +247,7 @@ Directory discovery skips hidden directories plus `node_modules`, `dist`, `build
 
 - [Use Source Control](../../features/source-control.md)
 - [Workspace](../../features/workspace.md)
-- [Plugins](../../extending/plugins.md)
+- [Mini apps](../../extending/mini-apps.md)
 
 ## Source of truth
 

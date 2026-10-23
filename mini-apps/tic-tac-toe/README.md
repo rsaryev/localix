@@ -2,7 +2,7 @@
 
 A tic-tac-toe board in the workbench, one per chat, played against the agent in that chat. It uses
 the host's wake contract: a move on the board starts a turn in the owning chat, and the agent
-answers with the plugin's tool.
+answers with the mini app's tool.
 
 ## How a game goes
 
@@ -30,7 +30,7 @@ plays another chat's board.
 ## The agent's tool
 
 One tool, `tic_tac_toe`, groups its operations under `action`. Its schema is deferred until
-activated or brought onto the request by linked game context or a plugin wake.
+activated or brought onto the request by linked game context or a mini app wake.
 
 | `action`   | Does                                                                |
 | ---------- | ------------------------------------------------------------------- |
@@ -64,7 +64,7 @@ and a visible board re-reads its snapshot. A healthy feed has no periodic read; 
 the board polls every 800 ms during agent activity or 4 seconds while idle. Showing the pane or
 reconnecting reconciles its state.
 
-See [Wake a session from a plugin](../../docs/extending/plugin-wakes.md) for the contract.
+See [Wake a session from a mini app](../../docs/extending/mini-app-wakes.md) for the contract.
 
 ## Permissions and synchronization
 

@@ -1,6 +1,6 @@
 # Global search internals
 
-Global search merges ranked hits from core services, enabled plugins, and client-only navigation
+Global search merges ranked hits from core services, enabled mini apps, and client-only navigation
 indexes. Use this reference when adding a search domain, changing result activation, or tuning
 grouping and pagination.
 
@@ -17,19 +17,19 @@ grouping and pagination.
 
 ## What you can do
 
-| Operation                  | Mechanism                                                                              | Boundary                                                           |
-| -------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Open quick search          | Run `mod+shift+f` to open the grouped command-dialog surface                           | The chord is user-remappable through the shared keybinding catalog |
-| Keep a search tab open     | Open the global-search work item from the rail or **Open in Search**                   | One tab per chat; it searches that chat's workspace                |
-| Narrow a query             | Choose a scope or type a recognized prefix such as `f:` or `msg:`                      | Unknown prefixes remain literal query text                         |
-| Page one domain            | Select **Show all** and request 30-hit pages with an opaque offset cursor              | Pagination applies only to one backend domain                      |
-| Open a result              | Resolve its canonical resource or UI URI through `invokeUi`                            | Write commands require a user-selected `commands` hit              |
-| Contribute a plugin domain | Register a backend provider plus matching UI scope, icon, and activation anchor        | The enabled plugin owns its lifecycle and must namespace its id    |
-| Search by meaning          | Always on once its model is here; providers with a collection receive `query.semantic` | Chats and messages today; see [semantic index](semantic-index.md)  |
-| Search from the agent      | `global_search` calls the same service with the run's session and project              | Hits inside the agent's own conversation are left out              |
+| Operation                    | Mechanism                                                                              | Boundary                                                           |
+| ---------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Open quick search            | Run `mod+shift+f` to open the grouped command-dialog surface                           | The chord is user-remappable through the shared keybinding catalog |
+| Keep a search tab open       | Open the global-search work item from the rail or **Open in Search**                   | One tab per chat; it searches that chat's workspace                |
+| Narrow a query               | Choose a scope or type a recognized prefix such as `f:` or `msg:`                      | Unknown prefixes remain literal query text                         |
+| Page one domain              | Select **Show all** and request 30-hit pages with an opaque offset cursor              | Pagination applies only to one backend domain                      |
+| Open a result                | Resolve its canonical resource or UI URI through `invokeUi`                            | Write commands require a user-selected `commands` hit              |
+| Contribute a mini app domain | Register a backend provider plus matching UI scope, icon, and activation anchor        | The enabled mini app owns its lifecycle and must namespace its id  |
+| Search by meaning            | Always on once its model is here; providers with a collection receive `query.semantic` | Chats and messages today; see [semantic index](semantic-index.md)  |
+| Search from the agent        | `global_search` calls the same service with the run's session and project              | Hits inside the agent's own conversation are left out              |
 
 The [UI anchors](ui-anchors.md) page owns activation grammar. The
-[workbench contribution](workbench-contributions.md) page owns plugin registration rules.
+[workbench contribution](workbench-contributions.md) page owns mini app registration rules.
 
 ## How it works
 
@@ -50,10 +50,10 @@ GlobalSearchPalette or GlobalSearchTab
 | Module                                                                                                  | Mechanism and invariant                                                                                                                         | Failure when violated                                                            |
 | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | [`search-provider.ts`](../../../packages/mini-app-sdk/src/backend/search-provider.ts)                   | Rejects duplicate ids, selects eager or named providers, stamps domains, caps hits, and reports provider failure or timeout as a domain problem | One provider can stall or mislabel the complete result set                       |
-| [`boot/search.ts`](../../../apps/api/src/boot/search.ts)                                                | Registers core providers in display order and attaches the live plugin backend registry                                                         | Group order changes or plugin enable/disable stops matching availability         |
+| [`boot/search.ts`](../../../apps/api/src/boot/search.ts)                                                | Registers core providers in display order and attaches the live mini app backend registry                                                       | Group order changes or plugin enable/disable stops matching availability         |
 | [`service.ts`](../../../apps/api/src/features/search/service.ts)                                        | Owns cross-provider sorting, grouped previews, totals, and single-domain pagination                                                             | Endpoint consumers can disagree about result shape or page boundaries            |
 | [`contracts.ts`](../../../apps/api/src/features/search/contracts.ts)                                    | Requires non-empty text and caps the requested limit at 100                                                                                     | Unbounded or empty searches reach every selected provider                        |
-| [`scopes.ts`](../../../apps/ui/src/features/search/model/scopes.ts)                                     | Maps known prefixes to backend or client-only domains and merges plugin scope atoms                                                             | UI filters can request an unregistered provider or hide a live plugin domain     |
+| [`scopes.ts`](../../../apps/ui/src/features/search/model/scopes.ts)                                     | Maps known prefixes to backend or client-only domains and merges mini app scope atoms                                                           | UI filters can request an unregistered provider or hide a live plugin domain     |
 | [`searchClient.ts`](../../../apps/ui/src/features/search/model/searchClient.ts)                         | Searches Settings, registered UI locations, and commands without server state                                                                   | Navigation-only results leak into backend contracts                              |
 | [`searchRequestCoordinator.ts`](../../../apps/ui/src/features/search/model/searchRequestCoordinator.ts) | Aborts superseded fetches and allows one load-more request per current sequence                                                                 | Slow results overwrite a newer query or duplicate a page                         |
 | [`activateSearch.ts`](../../../apps/ui/src/features/search/model/activateSearch.ts)                     | Uses registry-first URI activation and permits write intent only for selected command hits                                                      | Search becomes a second, inconsistent navigation table or widens write authority |
@@ -68,17 +68,17 @@ GlobalSearchPalette or GlobalSearchTab
 | `files`    | File names and ripgrep content lines under the query session's working directory | Eager but returns no hits without `sessionId`                 |
 | `secrets`  | Vault key, label, and type metadata                                              | Eager; secret values are not read                             |
 | `skills`   | Skill name and description                                                       | Eager; uses the supplied project scope                        |
-| `plugins`  | Plugin name, display name, and description                                       | Eager; uses the supplied project scope                        |
+| `plugins`  | Claude Code plugin name, display name, and description                           | Eager; uses the supplied project scope                        |
 | `mcp`      | Saved server name and description                                                | Eager; does not connect to or probe the server                |
 | `agents`   | Reusable-agent name, label, and description                                      | Eager; uses the supplied project scope                        |
 | `models`   | Runtime catalog model id and name                                                | Eager; the composition root caches the catalog for 30 seconds |
 
-Enabled backend plugins register at runtime through `MiniAppBackendHost.setSearchRegistry`. Current
-plugin domains include database connections, saved API requests, Docker resources, Kubernetes pods,
-trading markets, and Kanban cards. Their owning plugins define tier, matching, resource URI, and
-shutdown behavior; global search only enforces the registry contract.
+Enabled mini app backends register at runtime through `MiniAppBackendHost.setSearchRegistry`.
+Current mini app domains include database connections, saved API requests, Docker resources,
+Kubernetes pods, trading markets, and Kanban cards. Their owning mini apps define tier, matching,
+resource URI, and shutdown behavior; global search only enforces the registry contract.
 
-The Kanban plugin's `kanban:tasks` domain
+The Kanban mini app's `kanban:tasks` domain
 ([`references.ts`](../../../mini-apps/kanban/backend/references.ts)) is eager and matches a card's
 title, description and id. It reads only the board of the query's `sessionId` — the chat the search
 tab or palette belongs to — and returns no hits without one, because a board belongs to its chat.
@@ -137,8 +137,8 @@ composition changes.
   clears server results for a blank query instead of sending it.
 - “All” selects eager providers only. Docker, Kubernetes, trading, and other live or expensive
   domains require their explicit scopes.
-- Timeouts and uncaught provider errors are reported as domain problems. A disabled plugin is absent
-  from the registry. An internally swallowed provider error can still look like no matches.
+- Timeouts and uncaught provider errors are reported as domain problems. A disabled mini app is
+  absent from the registry. An internally swallowed provider error can still look like no matches.
 - Project and session ids are interpreted by each provider. The service turns omitted ids into
   `null`; Chats and Messages filter by that project value, so omission is not an unfiltered history
   query. Message matching fetches at most 60 history hits before the project filter; matches beyond

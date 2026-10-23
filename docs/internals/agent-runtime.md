@@ -88,7 +88,7 @@ says that a background job finished and where its output is stored, or that a la
 reports errors. It does not restate a rule that the prompt already gives once. Add behaviour to the
 prompt section that owns it, not to a situational reminder or a tool-result suffix.
 
-Tool calls pass through plugin hooks, Claude Code hooks, the timeout promoter and the stuck-run
+Tool calls pass through mini app hooks, Claude Code hooks, the timeout promoter and the stuck-run
 breaker (`chat/runtime/run/tool-wrapper-chain.ts`). The breaker appends nothing before a limit. It
 ends a run when one call fails the same way four times, when six calls fail with no success between,
 or when one call is issued eight times in a row. A tool that declares `idempotentHint: false` is
@@ -170,22 +170,22 @@ mid-run queue consumption.
 
 ### Tool deferral
 
-Plugin and MCP tool schemas are the half of the tool list that grows without bound, so they are
+Mini app and MCP tool schemas are the half of the tool list that grows without bound, so they are
 deferred: the model sees `activate_tools` with a compact catalog instead, and activates by exact
 name.
 
-| Surface            | Mechanism                                                                                                              | Boundary                                                                                              |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Core toolkit       | Assembled core tools remain on the wire after policy and run-shape filtering.                                          | Run shape can still exclude a tool that the host cannot support, such as human-only UI in automation. |
-| Deferred tools     | `activate_tools` advertises them; the loop appends an activated schema before the next model turn.                     | A deferred implementation stays dispatchable, so deferral is a wire decision only.                    |
-| Session activation | An activated name is remembered on the session and promoted onto the wire at the start of every later run.             | Bounded per session; the oldest activation is released and the model is told which.                   |
-| Surface tools      | A plugin whose tab the person's latest message links, or whose wake the turn answers, brings every tool it registered. | Per turn and never stored; appended after the session's activations, sorted by name.                  |
-| The loader itself  | Stays present while any external tool exists, with an empty-catalog description once all are active.                   | Names resolve through the run's own registry, never through the remembered list.                      |
+| Surface            | Mechanism                                                                                                                | Boundary                                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| Core toolkit       | Assembled core tools remain on the wire after policy and run-shape filtering.                                            | Run shape can still exclude a tool that the host cannot support, such as human-only UI in automation. |
+| Deferred tools     | `activate_tools` advertises them; the loop appends an activated schema before the next model turn.                       | A deferred implementation stays dispatchable, so deferral is a wire decision only.                    |
+| Session activation | An activated name is remembered on the session and promoted onto the wire at the start of every later run.               | Bounded per session; the oldest activation is released and the model is told which.                   |
+| Surface tools      | A mini app whose tab the person's latest message links, or whose wake the turn answers, brings every tool it registered. | Per turn and never stored; appended after the session's activations, sorted by name.                  |
+| The loader itself  | Stays present while any external tool exists, with an empty-catalog description once all are active.                     | Names resolve through the run's own registry, never through the remembered list.                      |
 
 Activation persists on the session rather than being inferred from transcript history. Remembered
 names preserve activation order; a later run promotes only names still available in its authorized
 registry. Context checkpoints can remove an old activation call without removing the remembered
-name. Changes to capabilities, plugin availability, or the activation budget can change the next
+name. Changes to capabilities, mini app availability, or the activation budget can change the next
 run's tool list.
 
 The activator accepts at most eight exact names per call. Unknown names are reported without
@@ -200,17 +200,18 @@ its own roster again. Stable ordering can help prompt-cache reuse; it does not g
 unchanged prefix or a fixed token cost or price for activation.
 
 Surface tools follow the current message context and stay outside the session's remembered
-activation set. The host stamps a plugin tab binding with `MessageContextBinding.plugin` and a
-plugin wake with `plugins`. `apps/api/src/features/chat/runtime/run/surface-tools.ts` reads those
-owners and promotes their registered tools for the relevant turn:
+activation set. The host stamps a mini app tab binding with `MessageContextBinding.plugin` and a
+mini app wake with `plugins` (the field names predate the split).
+`apps/api/src/features/chat/runtime/run/surface-tools.ts` reads those owners and promotes their
+registered tools for the relevant turn:
 
 - **Tabs come from the person's latest message**, not from the row the run answers. A sub-agent's
   report or a job's exit wakes the session with a row that links no tabs. Reading only that row
   would switch the tool list off and on between each report and reply, and every switch is a full
   cache miss. Closing a tab, or removing its chip, takes effect at the person's next message.
-- **A wake's plugin counts for the turn that answers it**, and not after.
-- **Names are resolved on the server**, from what each plugin registered. A tab cannot ask for a
-  tool its plugin does not own, and a renamed tool arrives under its new name.
+- **A wake's mini app counts for the turn that answers it**, and not after.
+- **Names are resolved on the server**, from what each mini app registered. A tab cannot ask for a
+  tool its mini app does not own, and a renamed tool arrives under its new name.
 - **The list is appended and sorted.** Surface tools follow the session's activations, so a tab
   opening or closing changes only the tail of the list. Moving focus between tabs does not reorder
   it. Cache effects depend on the resulting prompt, tool list, and provider behavior.

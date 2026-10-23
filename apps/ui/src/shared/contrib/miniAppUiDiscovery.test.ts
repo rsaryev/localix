@@ -1,17 +1,17 @@
 import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 
-import type { PluginRecord } from '@/shared/api/contracts'
-import { pluginSources, pluginUiArtifacts } from './miniAppUiDiscovery'
+import type { MiniAppRecord } from '@/shared/api/contracts'
+import { miniAppSources, miniAppUiArtifacts } from './miniAppUiDiscovery'
 
-const record = (name: string, enabled: boolean, ui?: PluginRecord['ui']) =>
-  ({ name, enabled, ...(ui ? { ui } : {}) }) as PluginRecord
+const record = (name: string, enabled: boolean, ui?: MiniAppRecord['ui']) =>
+  ({ name, enabled, ...(ui ? { ui } : {}) }) as MiniAppRecord
 
 describe('plugin UI wiring', () => {
   test('the runtime is handed exactly the enabled plugins that ship an artifact', () => {
-    const ui = { entry: '/rpc/plugins/a/ui/entry.js', styles: [], revision: 'r1' }
+    const ui = { entry: '/rpc/mini-apps/a/ui/entry.js', styles: [], revision: 'r1' }
     expect(
-      pluginUiArtifacts([
+      miniAppUiArtifacts([
         record('a', true, ui),
         record('disabled', false, ui),
         record('backend-only', true),
@@ -22,15 +22,15 @@ describe('plugin UI wiring', () => {
   // Attribution matches stack frames against these bases, so each must be the directory the entry
   // is imported from — covering its chunks — and must not carry the revision query they lack.
   test('names each installed plugin and the directory its loaded UI is served from', () => {
-    const ui = { entry: '/rpc/plugins/a/ui/entry.js', styles: [], revision: 'r1' }
-    const { sources, names } = pluginSources([
+    const ui = { entry: '/rpc/mini-apps/a/ui/entry.js', styles: [], revision: 'r1' }
+    const { sources, names } = miniAppSources([
       { ...record('a', true, ui), displayName: 'Alpha' },
       record('backend-only', true),
     ])
     expect(sources).toEqual([
-      { pluginName: 'a', base: new URL('/rpc/plugins/a/ui/', sources[0]!.base).href },
+      { pluginName: 'a', base: new URL('/rpc/mini-apps/a/ui/', sources[0]!.base).href },
     ])
-    expect(sources[0]!.base).toEndWith('/rpc/plugins/a/ui/')
+    expect(sources[0]!.base).toEndWith('/rpc/mini-apps/a/ui/')
     expect([...names]).toEqual([
       ['a', 'Alpha'],
       ['backend-only', 'backend-only'],

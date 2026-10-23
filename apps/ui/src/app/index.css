@@ -3,7 +3,7 @@
 @import 'shadcn/tailwind.css';
 /* No `@source` for plugins: a plugin is not part of this app. Its artifact ships the
    utilities its own sources use, compiled against this file's theme
-   (`apps/api/src/features/plugins/authoring/ui-styles.ts`, fed by the plugin kit staging writes),
+   (`apps/api/src/features/mini-apps/authoring/ui-styles.ts`, fed by the plugin kit staging writes),
    so a plugin edit never touches the host stylesheet. */
 
 /* Self-hosted fonts (Vite bundles the woff2): no render-blocking Google Fonts

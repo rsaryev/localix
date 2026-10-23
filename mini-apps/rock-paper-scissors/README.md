@@ -5,8 +5,8 @@ Each round is two **sealed** moves: whoever opens commits first, and the other s
 digest of that move until it has chosen too. The round then reveals both moves, scores them, and the
 view checks the revealed move against the digest it showed before.
 
-It is the reference plugin for [sealed moves](../../docs/extending/sealed-moves.md): a secret the
-agent commits to that the user may not read until the plugin reveals it.
+It is the reference mini app for [sealed moves](../../docs/extending/sealed-moves.md): a secret the
+agent commits to that the user may not read until the mini app reveals it.
 
 ## How a round goes
 
@@ -31,7 +31,7 @@ Openers alternate from round to round; the agent's `next_round` may name one.
 No result ever names the agent's own unrevealed move: results are shown to the user too. The guide
 tells the agent not to deliberate in writing, because its reasoning and replies are visible. The
 table file in the chat's session storage holds both moves in the clear, like every bundled game's
-state; the plugin does not defend against reading it from disk.
+state; the mini app does not defend against reading it from disk.
 
 ## The agent's tool
 
@@ -57,4 +57,4 @@ for one short line. `state` is classified `read`; the other actions are `session
 | `ui/`                     | The two hands, the move picker, the digest check.                 |
 | `guide.md`                | How the agent plays without giving its move away.                 |
 
-See [Wake a session from a plugin](../../docs/extending/plugin-wakes.md) for the wake contract.
+See [Wake a session from a mini app](../../docs/extending/mini-app-wakes.md) for the wake contract.

@@ -85,7 +85,7 @@ export function createRegistrationPolicyService(db: Kysely<AppDatabase>, stores:
         const switches = current.rules.filter(
           (rule) =>
             rule.resource === '*' &&
-            (rule.action.startsWith('agent:') || rule.action.startsWith('plugin:')),
+            ['agent:', 'plugin:', 'mini-app:'].some((prefix) => rule.action.startsWith(prefix)),
         )
         const effectiveRules = [
           ...reviewed.rules.filter(

@@ -113,8 +113,8 @@ the wake source, so the visible reply is badged **Monitor**.
 ### Credentials
 
 A wait against an authenticated endpoint names a Vault key instead of carrying a token. The command
-holds a `${secret:KEY}` reference — the same grammar plugin configs and saved API requests use — and
-the value reaches the process through its ENVIRONMENT:
+holds a `${secret:KEY}` reference — the same grammar mini app settings and saved API requests use —
+and the value reaches the process through its ENVIRONMENT:
 
 ```text
 stored, shown, gated:  curl -sf -H "Authorization: Bearer ${secret:MSGR_TOKEN}" https://msgr/api
@@ -196,8 +196,8 @@ ends that watch. A wake shows at most 20 event entries and reports how many were
 ## Related guides
 
 - [Forks](delegation.md)
-- [Create plugins](../extending/plugins.md) — a `bin/` executable lets a monitor reach what a plugin
-  already knows how to talk to
+- [Install Claude Code plugins](../extending/claude-code-plugins.md) — a `bin/` executable lets a
+  monitor reach what a plugin already knows how to talk to
 - [Send messages into a session](webhook.md)
 - [Notifications](notifications.md)
 

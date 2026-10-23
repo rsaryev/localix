@@ -199,10 +199,10 @@ export const BUILTIN_TOOL_CATALOG = {
     category: 'knowledge',
     exposure: CHAT_AND_CHILD,
   },
-  plugin_build: {
-    name: 'plugin_build',
-    label: 'Build plugins',
-    description: "Create, build, test and reload the user's own plugins.",
+  mini_app_build: {
+    name: 'mini_app_build',
+    label: 'Build mini apps',
+    description: "Create, build, test and reload the user's own mini apps.",
     category: 'automation',
     exposure: CHAT_DEFAULT,
   },

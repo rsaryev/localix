@@ -18,7 +18,6 @@ import { SettingsSection } from './SettingsScaffold'
 
 interface Marketplace {
   name: string
-  builtin: boolean
   count: number
 }
 
@@ -132,25 +131,20 @@ export function MarketplacesPanel({ onChanged }: { onChanged?: () => void }) {
                       {m.name}
                     </code>
                     <SettingRegistryMeta
-                      items={[
-                        { label: `${m.count} plugin${m.count === 1 ? '' : 's'}` },
-                        ...(m.builtin ? [{ label: 'built-in' }] : []),
-                      ]}
+                      items={[{ label: `${m.count} plugin${m.count === 1 ? '' : 's'}` }]}
                     />
                   </div>
                 }
                 actions={
-                  !m.builtin ? (
-                    <Button
-                      variant="ghost"
-                      size="default"
-                      onClick={() => void remove(m.name)}
-                      disabled={mutation !== null}
-                      className="text-text-soft hover:text-status-error"
-                    >
-                      Remove
-                    </Button>
-                  ) : undefined
+                  <Button
+                    variant="ghost"
+                    size="default"
+                    onClick={() => void remove(m.name)}
+                    disabled={mutation !== null}
+                    className="text-text-soft hover:text-status-error"
+                  >
+                    Remove
+                  </Button>
                 }
               />
             ))}

@@ -1,8 +1,8 @@
 # Know the tool roster
 
 The tool roster is the set of model-facing tools available to a run. Core tools are sent directly;
-plugin and MCP tool schemas are deferred until activated, unless the turn's linked workbench brings
-them onto the request.
+mini app and MCP tool schemas are deferred until activated, unless the turn's linked workbench
+brings them onto the request.
 
 The schema-budget test caps the fully composed core chat registry at an estimated 9,400 tokens, with
 an 800-token ceiling per tool; `codemode` is exempt from the per-tool ceiling because it restates
@@ -12,21 +12,21 @@ roster.
 
 ## What you can do
 
-| Action                        | Mechanism                                                                                                                                        | Availability and boundary                                                                                              |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| Read any file                 | `read` returns text, an image as a picture, PDF/office text (`pages`, `sheet`), notebook cells or a directory listing.                           | Images over 10 MB are refused; a text-only model gets an image's size as text. Documents need the Documents plugin.    |
-| Read several files at once    | `read` with `reads: [{ path, start_line?, end_line? }]`; `search` with `queries: [...]` for several patterns.                                    | One call, answered per file or per query; see [Batch reads and searches](#batch-reads-and-searches).                   |
-| Change several files at once  | One `edit` call carries `edits: [{ path, old_string, new_string }]`; one `write` call carries `files: [{ path, content }]`.                      | Each file applies or fails on its own; see [Change files in one call](#change-files-in-one-call).                      |
-| See the roster of a session   | Inspect the agent's tools in **Settings → Capabilities → Tools**, or ask for `context_budget`.                                                   | Settings shows configured access; `context_budget` estimates the current run's schemas.                                |
-| Remove a tool from later runs | Add a `tool:<name>` rule with effect `deny` for the agent in Settings → Capabilities.                                                            | Applies to the next run; see [Manage the tool budget](tool-budget.md).                                                 |
-| Reach a deferred tool         | The model calls `activate_tools` with the exact name.                                                                                            | The activation is remembered on the session and survives a context checkpoint.                                         |
-| Use an open plugin's tools    | Link the plugin's tab to the message (open tabs link by default), or let it wake the chat.                                                       | Uses the message's linked context; tab/chip changes take effect when you send.                                         |
-| Run a script over tools       | `codemode` runs JavaScript that calls `read`, `bash`, `edit` and `write` as `await tools.<name>(args)`.                                          | Only the script's output and return value reach the model; see [Run a script over tools](#run-a-script-over-tools).    |
-| Learn why a tool is missing   | Ask the agent; it reads the run's ledger through `configure` with `action: "inspect"`.                                                           | Read-only; requires `configure` in the run. Known withheld tools report their reasons.                                 |
-| Wait for something external   | `bash` with `until: <seconds>` polls the command and wakes the session when it exits 0.                                                          | Needs a manageable job (`jobs` present); see [Wait for something](monitors.md).                                        |
-| Plan before building          | The Kanban plugin's `kanban` tool: put the work on the chat's board before starting.                                                             | A deferred plugin tool on a passive board; see the [Kanban guide](task-board.md).                                      |
-| Show you something            | The agent links it in its reply: a file as `localix://ui/work-item/file?path=…&line=…`, a plugin view by the `App view:` link its tool returned. | Nothing opens on its own; you open a link when you choose.                                                             |
-| Create a specialist           | `agents` lists the current registry or creates 1–8 reusable definitions with explicit priorities and inherited saved permissions.                | Root chats only; tag a created handle to invite it and give it the floor. See [Agent management](agent-management.md). |
+| Action                        | Mechanism                                                                                                                                          | Availability and boundary                                                                                              |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Read any file                 | `read` returns text, an image as a picture, PDF/office text (`pages`, `sheet`), notebook cells or a directory listing.                             | Images over 10 MB are refused; a text-only model gets an image's size as text. Documents need the Documents mini app.  |
+| Read several files at once    | `read` with `reads: [{ path, start_line?, end_line? }]`; `search` with `queries: [...]` for several patterns.                                      | One call, answered per file or per query; see [Batch reads and searches](#batch-reads-and-searches).                   |
+| Change several files at once  | One `edit` call carries `edits: [{ path, old_string, new_string }]`; one `write` call carries `files: [{ path, content }]`.                        | Each file applies or fails on its own; see [Change files in one call](#change-files-in-one-call).                      |
+| See the roster of a session   | Inspect the agent's tools in **Settings → Capabilities → Tools**, or ask for `context_budget`.                                                     | Settings shows configured access; `context_budget` estimates the current run's schemas.                                |
+| Remove a tool from later runs | Add a `tool:<name>` rule with effect `deny` for the agent in Settings → Capabilities.                                                              | Applies to the next run; see [Manage the tool budget](tool-budget.md).                                                 |
+| Reach a deferred tool         | The model calls `activate_tools` with the exact name.                                                                                              | The activation is remembered on the session and survives a context checkpoint.                                         |
+| Use an open mini app's tools  | Link the mini app's tab to the message (open tabs link by default), or let it wake the chat.                                                       | Uses the message's linked context; tab/chip changes take effect when you send.                                         |
+| Run a script over tools       | `codemode` runs JavaScript that calls `read`, `bash`, `edit` and `write` as `await tools.<name>(args)`.                                            | Only the script's output and return value reach the model; see [Run a script over tools](#run-a-script-over-tools).    |
+| Learn why a tool is missing   | Ask the agent; it reads the run's ledger through `configure` with `action: "inspect"`.                                                             | Read-only; requires `configure` in the run. Known withheld tools report their reasons.                                 |
+| Wait for something external   | `bash` with `until: <seconds>` polls the command and wakes the session when it exits 0.                                                            | Needs a manageable job (`jobs` present); see [Wait for something](monitors.md).                                        |
+| Plan before building          | The Kanban mini app's `kanban` tool: put the work on the chat's board before starting.                                                             | A deferred mini app tool on a passive board; see the [Kanban guide](task-board.md).                                    |
+| Show you something            | The agent links it in its reply: a file as `localix://ui/work-item/file?path=…&line=…`, a mini app view by the `App view:` link its tool returned. | Nothing opens on its own; you open a link when you choose.                                                             |
+| Create a specialist           | `agents` lists the current registry or creates 1–8 reusable definitions with explicit priorities and inherited saved permissions.                  | Root chats only; tag a created handle to invite it and give it the floor. See [Agent management](agent-management.md). |
 
 For live PTY input and rendered-screen waits, see
 [Interact with a terminal](interactive-terminals.md).
@@ -147,13 +147,14 @@ of three states.
 | Deferred | Dispatchable, but its schema is not sent until `activate_tools` names it. | Named only in the `activate_tools` catalog; activation is remembered.       |
 | Withheld | Not available for execution, with the reason recorded.                    | Known withheld names have dispatch-only error stubs; unknown names may not. |
 
-Core tools that survive run-shape, host, model, and policy gates are sent directly. Plugin and MCP
+Core tools that survive run-shape, host, model, and policy gates are sent directly. Mini app and MCP
 call tools are deferred by provenance because their combined catalog can grow without bound;
 `activate_tools` makes those schemas available when the agent needs them. The prompt's
 `# Available tools` roster lists what is on the wire — the activator included, deferred tools not —
-and `# Plugins` counts each plugin's direct tools and the ones still to activate. The activation
-catalog excludes tools already available in the run, including tools brought by an open plugin view.
-An unknown-name response lists only tools that still need activation.
+and `# Mini apps` lists each enabled mini app and says which of its tools wait behind
+`activate_tools`. The activation catalog excludes tools already available in the run, including
+tools brought by an open mini app view. An unknown-name response lists only tools that still need
+activation.
 
 ### Why a tool is withheld
 
@@ -193,8 +194,8 @@ the system prompt with per-section sizes and every tool's schema size.
 `tool-schema-budget.test.ts` builds the core chat registry from real factories, including `vault`,
 `configure`, `codemode`, and Bash terminal fields. It rejects a total above 9,400 estimated tokens,
 any tool above 800 except `codemode`, missing host-injected tools, and name-only stubs. The separate
-`tool-schema-case.test.ts` checks snake_case field names. Plugin and MCP schemas added during a run
-are outside this core-registry ceiling.
+`tool-schema-case.test.ts` checks snake_case field names. Mini app and MCP schemas added during a
+run are outside this core-registry ceiling.
 
 ## Configuration
 
@@ -209,7 +210,7 @@ are outside this core-registry ceiling.
   on the initial request. Its name appears in the activation catalog; the initial **Available
   tools** prompt roster lists only tools already on the wire.
 - Activation storage is best-effort and only preserves names available to later runs. Changes to
-  permissions or plugin availability can remove a remembered tool. A context checkpoint does not
+  permissions or mini app availability can remove a remembered tool. A context checkpoint does not
   itself remove the remembered names.
 - The default roster figure is an estimate from the JSON Schema; providers tokenize schemas
   differently, and the measured fixed overhead of a request also includes the system prompt and the

@@ -119,7 +119,7 @@ there is no separate assistant history inside Reader.
 
 ## Storage and limits
 
-The shelf, collections, metadata overrides, and reading statistics are saved in the plugin's local
+The shelf, collections, metadata overrides, and reading statistics are saved in the mini app's local
 data directory. Preferences, progress, bookmarks, highlights, and notes use browser storage.
 Clearing that storage removes those reading records; they are not synchronized across browsers or
 devices. Removing a book from the shelf leaves its source file intact.

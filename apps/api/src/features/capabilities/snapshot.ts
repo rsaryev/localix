@@ -7,8 +7,13 @@ import {
 import type { ToolSurfaceDenial } from '../effective-config/contracts'
 import type { McpServer } from '../mcp/contracts'
 import type { SkillCatalogEntry } from '../chat/contracts/skills'
-import type { MiniAppContributions } from '../plugins/service-types'
-import { CATEGORY_LABELS, toolCatalogEntries, type ToolCatalogPluginSource } from '../tools/catalog'
+import type { MiniAppContributions } from '../mini-apps/contracts'
+import type { PluginContributions } from '../plugins/service-types'
+import {
+  CATEGORY_LABELS,
+  toolCatalogEntries,
+  type ToolCatalogMiniAppSource,
+} from '../tools/catalog'
 import { composeCapabilities, type CapabilityKind, type ResolvedCapabilities } from './resolve'
 import { ruleGrammar } from './rule-grammar'
 import { composerTips, type BuiltinCommand } from './tips'
@@ -21,13 +26,14 @@ import type { CapabilitySnapshot, CapabilityToolSurface } from '../../contracts/
  * revision instead of one per endpoint.
  *
  * The expensive fusion (filesystem discovery + DB enable state + the enable rule)
- * is NOT re-implemented here — `listMiniAppContributions` runs `buildPluginCatalog`
- * once and this module projects its result.
+ * is NOT re-implemented here — `listPluginContributions` and `listMiniAppContributions` each
+ * build their owner's catalog once and this module projects the results.
  */
 
 export interface CapabilitySnapshotPorts {
   /** The product's own slash commands (`SLASH_COMMANDS`), taught as tips. */
   builtinCommands: readonly BuiltinCommand[]
+  listPluginContributions(userId: string, projectId: string): Promise<PluginContributions>
   listMiniAppContributions(userId: string, projectId: string): Promise<MiniAppContributions>
   listAgents(userId: string, projectId: string): Promise<AgentSummary[]>
   listMcpServers(userId: string, projectId: string): Promise<McpServer[]>
@@ -98,14 +104,14 @@ export interface CapabilitySnapshotService {
  * copy of a rule the tool registry already owns.
  */
 export function buildCapabilityToolSurface(input: {
-  plugins: readonly ToolCatalogPluginSource[]
+  miniApps: readonly ToolCatalogMiniAppSource[]
   disabledTools: string[]
   mcp?: {
     servers: Array<{ serverId: string; serverName: string; tools: string[] }>
     unprobed: string[]
   }
 }): CapabilityToolSurface {
-  const entries = toolCatalogEntries(input.plugins)
+  const entries = toolCatalogEntries(input.miniApps)
   const structuralDenials: ToolSurfaceDenial[] = entries.flatMap((entry) =>
     entry.unavailableReason
       ? [{ name: entry.meta.name, reason: entry.unavailableReason, source: 'capability' as const }]
@@ -139,7 +145,7 @@ export function createCapabilitySnapshotService(
   // The revision is the mutation-owned invalidation signal. Cache ONLY the complete
   // plugin fusion: effective settings, MCP state, and agent records have
   // independent lifecycles and must still be read for every snapshot.
-  const contributionCache = new Map<string, Promise<MiniAppContributions>>()
+  const contributionCache = new Map<string, Promise<[PluginContributions, MiniAppContributions]>>()
   let cachedRevision: number | null = null
 
   return {
@@ -159,7 +165,10 @@ export function createCapabilitySnapshotService(
       const contributionKey = JSON.stringify([input.userId, projectId, revision])
       let contributionResult = contributionCache.get(contributionKey)
       if (!contributionResult) {
-        contributionResult = ports.listMiniAppContributions(input.userId, projectId)
+        contributionResult = Promise.all([
+          ports.listPluginContributions(input.userId, projectId),
+          ports.listMiniAppContributions(input.userId, projectId),
+        ])
         contributionCache.set(contributionKey, contributionResult)
         // A rejected build is not a contribution result. Remove only this exact
         // promise: a later retry may already have replaced it after another failure.
@@ -170,7 +179,7 @@ export function createCapabilitySnapshotService(
         })
       }
       const [
-        contributions,
+        [pluginContributions, miniAppContributions],
         agents,
         mcp,
         skills,
@@ -231,12 +240,13 @@ export function createCapabilitySnapshotService(
       const snapshot = {
         revision,
         scope: { projectId, agentId },
-        plugins: asScoped('plugin', contributions.plugins),
+        plugins: asScoped('plugin', pluginContributions.plugins),
+        miniApps: asScoped('mini-app', miniAppContributions.miniApps),
         tools: buildCapabilityToolSurface({
-          plugins: contributions.plugins,
+          miniApps: miniAppContributions.miniApps,
           disabledTools: capabilities.denied(
             'tool',
-            toolCatalogEntries(contributions.plugins).map((entry) => entry.meta.name),
+            toolCatalogEntries(miniAppContributions.miniApps).map((entry) => entry.meta.name),
           ),
           mcp: {
             servers: mcpTools?.servers ?? [],
@@ -250,22 +260,23 @@ export function createCapabilitySnapshotService(
             unprobed: [
               ...new Set([
                 ...(mcpTools?.unprobed ?? []),
-                ...contributions.plugins.flatMap((plugin) =>
+                ...pluginContributions.plugins.flatMap((plugin) =>
                   plugin.enabled ? plugin.provides.mcpServers : [],
                 ),
               ]),
             ],
           },
         }),
-        views: contributions.views,
-        themes: contributions.themes,
+        views: miniAppContributions.views,
+        themes: pluginContributions.themes,
         // An agent record's row is keyed by its own name, one level in.
         // An agent record's row is keyed by its own id, one level in.
         agents: agents.map((agent) => {
           const verdict = capabilities.verdict('agent', agent.record.id)
           return verdict.rule ? { ...agent, enabled: verdict.effect === 'allow' } : agent
         }),
-        commands: contributions.commands,
+        commands: pluginContributions.commands,
+        miniAppCommands: miniAppContributions.commands,
         mcp: asScoped('mcp', mcp),
         // A skill's availability is a SCOPE fact, resolved from the same effective
         // settings the run pipeline reads — so a switch in the UI and the skill the

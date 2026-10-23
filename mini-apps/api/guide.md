@@ -69,7 +69,7 @@ than one deployment.
 ## Two results that look like success
 
 - **A GraphQL endpoint answers a FAILED query with `200`** and an `errors` array — the transport
-  succeeded, the query did not. This plugin has no GraphQL support and does NOT warn about it, so
+  succeeded, the query did not. This mini app has no GraphQL support and does NOT warn about it, so
   when you POST a query, read the body for `errors` yourself. Never read the 200 alone as success.
 - **An HTTP error status is still a response.** Inspect its status and body before assigning a
   cause: 4xx can involve authentication, permissions, missing resources, or rate limits; 5xx may

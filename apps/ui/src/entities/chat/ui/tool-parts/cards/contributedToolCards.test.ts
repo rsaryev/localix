@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test'
 import type { ToolCardContribution } from '@localixai/mini-app-sdk/ui'
 
-import { setEnabledPluginNames } from '@/shared/contrib/miniAppActivation'
+import { setEnabledMiniAppNames } from '@/shared/contrib/miniAppActivation'
 import { registerToolCard, removeToolCardsOf, toolCardFor } from '@/shared/contrib/toolCards'
 import { FALLBACK_META, toolDisplayLabel, toolMeta } from './meta'
 import { contributedToolCard, getToolCard, TOOL_CARDS } from './registry'
@@ -25,13 +25,13 @@ function contribution(tool: string, label = 'Board'): ToolCardContribution {
 
 afterEach(() => {
   removeToolCardsOf(OWNER)
-  setEnabledPluginNames(null)
+  setEnabledMiniAppNames(null)
 })
 
 describe('contributed tool presentation', () => {
   test('a plugin tool reads with its own row, the same object every time', () => {
     // MUTATION: drop the contributed lookup from `toolMeta` → the fallback wrench, red.
-    setEnabledPluginNames(new Set([OWNER]))
+    setEnabledMiniAppNames(new Set([OWNER]))
     registerToolCard(contribution('fixture_board'))
     const meta = toolMeta('fixture_board')
     expect(meta).not.toBe(FALLBACK_META)
@@ -45,7 +45,7 @@ describe('contributed tool presentation', () => {
 
   test('a disabled plugin leaves its tool generic', () => {
     // MUTATION: skip the activation gate in `toolCardFor` → red.
-    setEnabledPluginNames(new Set())
+    setEnabledMiniAppNames(new Set())
     registerToolCard(contribution('fixture_board'))
     expect(toolMeta('fixture_board')).toBe(FALLBACK_META)
     expect(toolDisplayLabel('fixture_board')).toBe('fixture_board')
@@ -54,7 +54,7 @@ describe('contributed tool presentation', () => {
 
   test('a plugin cannot restyle or replace a built-in tool', () => {
     // MUTATION: consult the contributed table before the core one → red.
-    setEnabledPluginNames(new Set([OWNER]))
+    setEnabledMiniAppNames(new Set([OWNER]))
     registerToolCard(contribution('read', 'Hijacked'))
     expect(toolMeta('read').label).not.toBe('Hijacked')
     expect(contributedToolCard('read')).toBeUndefined()
@@ -64,7 +64,7 @@ describe('contributed tool presentation', () => {
   test('the first owner of a tool name keeps it, and removal frees it', () => {
     const warn = spyOn(console, 'warn').mockImplementation(() => {})
     try {
-      setEnabledPluginNames(new Set([OWNER]))
+      setEnabledMiniAppNames(new Set([OWNER]))
       const first = contribution('fixture_board', 'First')
       registerToolCard(first)
       registerToolCard(contribution('fixture_board', 'Second'))

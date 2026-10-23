@@ -7,7 +7,7 @@ import { assertPositiveControl, scanSources } from '../apps/api/src/lib/source-l
  * Repo-wide guard for the design TOKENS a class string must come from.
  *
  * The rules are `apps/api/src/contracts/ui-token-rules.ts`, which says why each exists; this
- * applies them to the app AND every bundled plugin, and `plugin_build` applies the same list to
+ * applies them to the app AND every bundled plugin, and `mini_app_build` applies the same list to
  * a plugin a person builds. It reads comment-stripped source (`scanSources`), so prose that
  * explains a removed literal does not trip it, and each rule carries a positive control proving
  * it still fires.

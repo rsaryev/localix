@@ -97,7 +97,7 @@ export async function admitRun(
     steerCtxRef: { current: null },
     budget: {},
     providerAttemptStarted: false,
-    teardown: { pluginHooks: [], liveResolverKeys: new Set<string>() },
+    teardown: { miniAppHooks: [], liveResolverKeys: new Set<string>() },
   }
 
   try {

@@ -9,8 +9,8 @@
 import path from 'node:path'
 import { rm } from 'node:fs/promises'
 
-import type { LoadedMiniAppHook } from '../../../plugins/loader'
-import { runSessionEndHooks } from '../../../plugins/hooks'
+import type { LoadedMiniAppHook } from '../../../mini-apps/loader-contract'
+import { runSessionEndHooks } from '../../../mini-apps/hooks'
 import type { SessionRecord } from '../../repository'
 import { consoleWarnLogger } from '../plugin-hook-logger'
 import type { RuntimeState } from '../agent-runner-state'
@@ -22,7 +22,7 @@ export interface RunTeardownArgs {
   runtimeState: RuntimeState
   session: SessionRecord
   abort: AbortController
-  pluginHooksForRun: readonly LoadedMiniAppHook[]
+  miniAppHooksForRun: readonly LoadedMiniAppHook[]
   runLiveResolverKeys: Set<string>
   unsubLsp: (() => void) | undefined
   /** Session cwd — used to clean up this session's spilled-attachment dir. */
@@ -34,7 +34,7 @@ export function teardownRun({
   runtimeState,
   session,
   abort,
-  pluginHooksForRun,
+  miniAppHooksForRun,
   runLiveResolverKeys,
   unsubLsp,
   defaultCwd,
@@ -44,8 +44,8 @@ export function teardownRun({
 
   // Plugin onSessionEnd hooks — fired once per RUN, best-effort and
   // non-blocking (per-plugin isolation + timeout live in runSessionEndHooks).
-  if (pluginHooksForRun.length > 0) {
-    void runSessionEndHooks(pluginHooksForRun, {
+  if (miniAppHooksForRun.length > 0) {
+    void runSessionEndHooks(miniAppHooksForRun, {
       sessionId: session.id,
       logger: consoleWarnLogger,
     })

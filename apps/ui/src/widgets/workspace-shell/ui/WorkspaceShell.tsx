@@ -45,9 +45,9 @@ interface WorkspaceShellProps {
   /** Action buttons rendered in the rail's top group, after the sections. */
   railActions?: RailAction[]
   /** True while the catalog's enabled-plugin set is still loading. */
-  pluginsPending?: boolean
+  miniAppsPending?: boolean
   miniAppCategories?: ReadonlyMap<string, MiniAppCategory | undefined>
-  capabilitiesManageUri?: string
+  miniAppsManageUri?: string
   onNavigateUi?: (uri: string) => void
   onOpenSidebar: () => void
   onCloseSidebar: () => void
@@ -93,9 +93,9 @@ export function WorkspaceShell({
   activeSectionId,
   onSectionChange,
   railActions = NO_RAIL_ACTIONS,
-  pluginsPending = false,
+  miniAppsPending = false,
   miniAppCategories,
-  capabilitiesManageUri,
+  miniAppsManageUri,
   onNavigateUi,
   onOpenSidebar,
   onCloseSidebar,
@@ -266,9 +266,9 @@ export function WorkspaceShell({
       onMoveWithinBar={railLayout.moveWithin}
       onRemoveRecent={recents.remove}
       onResetRail={resetRail}
-      pluginsPending={pluginsPending}
+      miniAppsPending={miniAppsPending}
       onCapabilitiesClick={() => {
-        if (capabilitiesManageUri) onNavigateUi?.(capabilitiesManageUri)
+        if (miniAppsManageUri) onNavigateUi?.(miniAppsManageUri)
       }}
       dnd={railDnd}
       topRailActions={[...fixedSectionActions, ...topRailActions]}

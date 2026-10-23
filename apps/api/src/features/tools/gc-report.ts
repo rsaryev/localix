@@ -24,7 +24,7 @@ import { phantomToolNames } from './wire-tools'
 
 export interface ToolCounts {
   builtin: number
-  plugin: number
+  miniApp: number
   mcp: number
   /** What a run actually puts on the wire, and the only number a UI may display. */
   total: number
@@ -83,7 +83,7 @@ export function surfacedFromSnapshot(snapshot: CapabilitySnapshot): ToolGcSurfac
     .map((name) => {
       const provider = metaByName.get(name)?.provider
       return provider
-        ? { name, source: 'plugin' as const, originId: provider.id }
+        ? { name, source: 'mini-app' as const, originId: provider.id }
         : { name, source: 'builtin' as const, originId: '' }
     })
   for (const server of snapshot.tools.mcp) {
@@ -117,7 +117,7 @@ export function buildToolGcReport(input: {
   const warn = input.warn && input.warn > 0 ? Math.floor(input.warn) : TOOL_BUDGET_WARN_DEFAULT
   const counts: ToolCounts = {
     builtin: surfaced.filter((tool) => tool.source === 'builtin').length,
-    plugin: surfaced.filter((tool) => tool.source === 'plugin').length,
+    miniApp: surfaced.filter((tool) => tool.source === 'mini-app').length,
     mcp: surfaced.filter((tool) => tool.source === 'mcp').length,
     // Summed from the SAME list the suggestions were judged against. Counting the three groups
     // independently is how a displayed total drifts from what was sent.

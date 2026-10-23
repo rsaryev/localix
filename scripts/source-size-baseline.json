@@ -55,7 +55,7 @@
   "apps/ui/src/pages/chat/model/useChatPagePalette.ts": 404,
   "apps/ui/src/pages/chat/model/useUrlStoreSync.ts": 352,
   "apps/ui/src/pages/chat/ui/ChatPage.tsx": 667,
-  "apps/ui/src/shared/contrib/enabledPlugins.ts": 425,
+  "apps/ui/src/shared/contrib/enabledMiniApps.ts": 425,
   "apps/ui/src/shared/hooks/useAutoScroll.ts": 313,
   "apps/ui/src/shared/ui/MarkdownRendererImpl.tsx": 502,
   "apps/ui/src/shared/ui/code-editor/CodeEditor.tsx": 302,

@@ -38,6 +38,8 @@ export interface BuildAgentSystemPromptParams {
   triggeredSkills?: { name: string; content: string; keyword: string }[]
   /** One compact line per enabled plugin (name + contribution counts). Drives "# Plugins". */
   pluginsContext?: string
+  /** The enabled mini apps' index (`chat/runtime/run/mini-apps-prompt-context.ts`). */
+  miniAppsContext?: string
   /**
    * Plugins installed here that nobody has allowed yet, by name.
    *
@@ -45,6 +47,8 @@ export interface BuildAgentSystemPromptParams {
    * they cannot ride the ledger with the withheld TOOLS and are passed separately.
    */
   awaitingConsentPlugins?: readonly string[]
+  /** Mini apps installed here and not allowed yet (`mini-app.enable`). */
+  awaitingConsentMiniApps?: readonly string[]
   /** Absolute path to the session's working directory (workspace root / sandbox). */
   workspaceRoot?: string
   /** Whether `workspaceRoot` is a git checkout; `false` adds one line that saves a failed `git status`. */

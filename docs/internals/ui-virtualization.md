@@ -3,8 +3,8 @@
 Localix mounts a bounded row window for chat, file trees, tables, the usage requests log, live logs,
 and external-agent rosters. This bounds mounted DOM rows while feature models retain paging,
 selection, navigation, and follow state. Where a window would break a gesture the surface owns — the
-Kanban plugin board's drop index — the board is bounded by a rendered cap with a **Show more** tail
-instead.
+Kanban mini app board's drop index — the board is bounded by a rendered cap with a **Show more**
+tail instead.
 
 **Boundary:** Virtualization changes rendering only. It does not cap retained data or replace server
 paging.
@@ -101,7 +101,7 @@ These values are implementation constants, not Settings controls.
 
 - `LogsTable` uses auto table layout, so column widths are computed from the mounted window rather
   than from every loaded row.
-- Kanban plugin columns are bounded by a cap, not a window. `capColumn` renders the first
+- Kanban mini app columns are bounded by a cap, not a window. `capColumn` renders the first
   `KANBAN_COLUMN_CAP` cards of a column and offers **Show more**; the rest are counted, not mounted.
   The cap exists because `useKanbanDrag` derives a drop index by counting the column's rendered
   `[data-task-card]` nodes and applies it to the logical section list — that mapping holds only

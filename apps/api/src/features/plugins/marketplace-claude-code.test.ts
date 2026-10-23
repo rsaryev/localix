@@ -39,7 +39,6 @@ function registry(upstream?: string) {
   const clones: Array<{ url: string; ref?: string; sparse?: string }> = []
   const deps: MarketplaceRegistryDeps = {
     root: join(dir(), 'registry'),
-    localixDir: join(dir(), 'no-builtin'),
     cloneRepo: async (url, dest, ref, sparse) => {
       clones.push({ url, ...(ref ? { ref } : {}), ...(sparse ? { sparse } : {}) })
       if (!upstream) throw new Error('no upstream')

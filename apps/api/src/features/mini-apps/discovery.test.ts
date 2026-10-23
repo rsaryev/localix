@@ -41,8 +41,9 @@ describe('discoverMiniApps', () => {
       projectId: '',
       backendEntries: [join(dir, 'backend/index.ts')],
       guide: join(dir, 'guide.md'),
-      pages: join(dir, 'guide'),
     })
+    // No `guide/` folder, so no pages to offer.
+    expect(notes!.pages).toBeUndefined()
     expect(notes!.error).toBeUndefined()
     expect(notes!.manifest?.description).toBe('The notes app')
   })

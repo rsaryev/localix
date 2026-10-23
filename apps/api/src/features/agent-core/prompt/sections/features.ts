@@ -73,25 +73,38 @@ export function buildPinnedSkillsSection(
   ].join('\n')
 }
 
-export function buildPluginsSection(
-  pluginsContext: string,
-  /** `activate_tools` is on the wire: some plugin tools wait behind it. */
-  canActivate = false,
-): string | null {
+export function buildPluginsSection(pluginsContext: string): string | null {
   const clean = capAggregatePromptContext(
     pluginsContext,
     PLUGIN_CONTEXT_TOTAL_MAX_CHARS,
     '[Additional plugin context omitted: aggregate prompt budget reached.]',
   )
   if (!clean) return null
-  // This used to say every plugin tool is direct and named under "# Available tools". Plugin
-  // tools are DEFERRED until activated (chat/runtime/run/tool-deferral.ts), so the model was
-  // told it held tools it had no schema for.
   return [
     '# Plugins',
+    'These user-enabled Claude Code plugins add skills you load with the skill tool, and language servers:',
+    clean,
+  ].join('\n')
+}
+
+export function buildMiniAppsSection(
+  miniAppsContext: string,
+  /** `activate_tools` is on the wire: some mini app tools wait behind it. */
+  canActivate = false,
+): string | null {
+  const clean = capAggregatePromptContext(
+    miniAppsContext,
+    PLUGIN_CONTEXT_TOTAL_MAX_CHARS,
+    '[Additional mini app context omitted: aggregate prompt budget reached.]',
+  )
+  if (!clean) return null
+  // Mini app tools are DEFERRED until activated (chat/runtime/run/tool-deferral.ts): telling the
+  // model every one is direct promised tools it had no schema for.
+  return [
+    '# Mini apps',
     canActivate
-      ? 'These user-enabled plugins extend your capabilities. Their direct tools are under "# Available tools"; the rest wait behind `activate_tools` — activate one by exact name when the task matches:'
-      : 'These user-enabled plugins extend your capabilities; their tools are under "# Available tools". Use a plugin when the task matches:',
+      ? 'These user-enabled mini apps are Localix apps with screens the person sees; their tools act on them. Direct tools are under "# Available tools"; the rest wait behind `activate_tools`, activated by exact name when the task matches:'
+      : 'These user-enabled mini apps are Localix apps with screens the person sees; their tools act on them and are under "# Available tools". Use an app when the task matches:',
     clean,
   ].join('\n')
 }

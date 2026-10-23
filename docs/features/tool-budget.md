@@ -18,7 +18,7 @@ no cached tool inventory are named but not counted.
 ### Surface estimate
 
 The backend report uses the capability snapshot service that also supplies the Tools settings page.
-It combines project-level permission filtering, enabled plugin contributions, and cached MCP
+It combines project-level permission filtering, enabled mini app contributions, and cached MCP
 inventories. The report is available through `GET /rpc/tools/gc?projectId=<id>`; omit `projectId`
 for the no-project scope. The UI does not display a separate tool-budget pill or unused-tool
 suggestions. The route accepts `sessionId`, but the current snapshot service does not use it to
@@ -26,12 +26,12 @@ resolve an agent. The report is a project-level estimate; use the agent's Tools 
 `context_budget` reading to inspect that agent's surface.
 
 With no MCP server in scope, the estimator removes the MCP resource tools that cannot be assembled.
-It then counts the remaining built-in and plugin entries, plus the cached MCP tool entries.
+It then counts the remaining built-in and mini app entries, plus the cached MCP tool entries.
 
 | Count source | Included                                         | Boundary                                                  |
 | ------------ | ------------------------------------------------ | --------------------------------------------------------- |
 | Built-in     | Enabled core tool names after policy filtering   | Host-dependent assembly can still remove an optional tool |
-| Plugin       | Tools contributed by enabled plugins             | Disabling the owner removes its tools                     |
+| Mini app     | Tools contributed by enabled mini apps           | Disabling the owner removes its tools                     |
 | MCP          | Post-filter tool names from the connection cache | A server without usable cached metadata is unprobed       |
 
 ### Usage evidence
@@ -62,11 +62,11 @@ or `set_topic`.
 
 ## Configuration
 
-| Control                 | Scope and value                                          | Effect                                                        |
-| ----------------------- | -------------------------------------------------------- | ------------------------------------------------------------- |
-| Built-in or plugin tool | A permission rule in **Settings → Capabilities → Tools** | Stores a `tool:<name>` rule in that agent's list              |
-| MCP tool switch         | **Settings → Capabilities → MCP**; per server            | Updates the server's `enabledTools` or `disabledTools` filter |
-| Warning threshold       | Backend `toolBudgetWarn`; default `48`                   | Rides the report; no surface renders it today                 |
+| Control                   | Scope and value                                          | Effect                                                        |
+| ------------------------- | -------------------------------------------------------- | ------------------------------------------------------------- |
+| Built-in or mini app tool | A permission rule in **Settings → Capabilities → Tools** | Stores a `tool:<name>` rule in that agent's list              |
+| MCP tool switch           | **Settings → Capabilities → MCP**; per server            | Updates the server's `enabledTools` or `disabledTools` filter |
+| Warning threshold         | Backend `toolBudgetWarn`; default `48`                   | Rides the report; no surface renders it today                 |
 
 The Tools page passes the agent whose rules it is showing, so the estimate reflects the rules that
 agent's runs are judged by.
@@ -90,7 +90,7 @@ agent's runs are judged by.
 
 - [MCP](mcp.md)
 - [Context checkpoints](context-checkpoints.md)
-- [Plugins](../extending/plugins.md)
+- [Build a mini app](../extending/mini-apps.md)
 - [Capabilities](capabilities.md)
 
 ## Source of truth

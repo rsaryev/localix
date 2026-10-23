@@ -30,9 +30,8 @@ export function installReply(rec: PluginRecord): string {
       ...(deps.length ? [`Also installed: ${names(deps)}.`] : []),
     ].join(' ')
   }
-  const note = rec.provides.hasNativeTools ? ' — it runs native in-process code' : ''
   return [
-    `${head} and enabled it${note}.`,
+    `${head} and enabled it.`,
     ...(rec.loadsInPlace ? [IN_PLACE] : []),
     ...(deps.length ? [`Also installed and enabled: ${names(deps)}.`] : []),
     'Start a new turn to use it.',

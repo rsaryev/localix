@@ -18,7 +18,7 @@ import { startUiLocationCatalogSync } from './uiLocationCatalogSync'
  * settles.
  */
 const catalogSyncCallSite = readFileSync(
-  new URL('../../pages/chat/model/usePluginContributions.ts', import.meta.url),
+  new URL('../../pages/chat/model/useMiniAppContributions.ts', import.meta.url),
   'utf8',
 )
 
@@ -32,7 +32,7 @@ test('the route publishes the catalog gated on staged discovery, after failing c
   // The call site is the only place that hands the discovery promise to the sync. Without it the
   // behavioural gate below never engages; and the scope must be prepared synchronously first, or
   // project B's first catalog can capture project A's plugin destinations.
-  const prepare = catalogSyncCallSite.indexOf('preparePluginContribScope(routeProjectId)')
+  const prepare = catalogSyncCallSite.indexOf('prepareMiniAppContribScope(routeProjectId)')
   const publish = catalogSyncCallSite.indexOf(
     'startUiLocationCatalogSync(routeProjectId, whenUiSurfacesReady())',
   )

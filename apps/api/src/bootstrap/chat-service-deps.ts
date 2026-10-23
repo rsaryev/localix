@@ -36,6 +36,7 @@ import { createPermissionRulePersister } from '../features/capabilities/availabi
 import { createAgentDirectoryPorts } from './agent-directory-ports'
 import { createTerminalPorts } from './terminal-ports'
 import { createChatFeaturePorts } from './chat-feature-ports'
+import type { MiniAppService } from '../features/mini-apps/service'
 import type { PluginService } from '../features/plugins/service-types'
 import type { ModsHost } from '../features/mods/host'
 
@@ -83,6 +84,8 @@ export interface ChatServicePhaseInput extends Pick<
   uiLocationCatalogService: ChatServiceDeps['uiLocationCatalog']
   /** The host's plugin service; chat shares it rather than building a second. */
   pluginService?: PluginService
+  /** The host's mini app service: its authoring backs `/mini-app` and `mini_app_build`. */
+  miniAppService?: MiniAppService
   agentNotifications: NonNullable<ChatServiceDeps['notifications']>
   logger: ReturnType<typeof createLogger>
   capabilityRegistry: ReturnType<typeof createCapabilityRegistry>
@@ -129,6 +132,7 @@ export function createChatServicePhase({
   scripts,
   agentsService,
   pluginService,
+  miniAppService,
   announceCapabilityChange,
   serviceRefs,
 }: ChatServicePhaseInput): ChatServicePhase {
@@ -160,7 +164,7 @@ export function createChatServicePhase({
       const denied = (await resolveCapabilities(capabilityRules, at)).denied('skill', names)
       return Object.fromEntries(denied.map((name) => [name, 'off' as const]))
     },
-    ports: createChatFeaturePorts(db, { pluginService }),
+    ports: createChatFeaturePorts(db, { pluginService, miniAppService }),
     announceCapabilityChange,
     catalogService,
     uiLocationCatalog: uiLocationCatalogService,

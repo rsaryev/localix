@@ -151,7 +151,7 @@ export async function prepareDependenciesForInstall(
             const source = await repo.upsert(ops.userId, ops.projectId, plugin.manifest.name, {
               source: `${step.name}@${step.marketplace}`,
             })
-            records.push({ source, contributions: plugin.manifest.contributions ?? [] })
+            records.push({ source, contributions: [] })
           }
           return records
         },

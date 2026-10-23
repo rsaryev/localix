@@ -99,7 +99,7 @@ const EXEMPTIONS: Exemptions = {
     reason:
       'Matches an already-RELATIVE path against a user-supplied EXCLUSION PREFIX (`src/secrets`), which is a glob-ish pattern, not a filesystem root — resolving it against a root would change what an empty/odd prefix means. The real root-containment check in this file DOES go through the owner.',
   },
-  [exemptionKey('src/features/plugins/backend-host.ts', 'sep-template')]: {
+  [exemptionKey('src/features/mini-apps/backend-host.ts', 'sep-template')]: {
     reason:
       'Matches an incoming HTTP REQUEST PATH (`c.req.path`) against a plugin backend MOUNT PREFIX to route it to the right sub-app. A URL route, not a filesystem path — there is no root, and nothing on disk to contain.',
   },

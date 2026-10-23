@@ -45,7 +45,7 @@ the agent, not the project. The working directory is a third question, which is 
 the **Default** project share one project and not one folder. Projects receive canonical IDs such as
 `PRJ-1`; sessions receive canonical IDs such as `LOCALIX-1`. Parent links define the session tree,
 and the root session anchors a hierarchy's directory: an explicitly spawned child and a fork work
-beside the chat that spawned them. A chat's [Kanban](task-board.md) board is plugin data of that
+beside the chat that spawned them. A chat's [Kanban](task-board.md) board is mini app data of that
 chat: its cards create no child session, and deleting the chat deletes the board.
 
 The breadcrumb renders the active scope, root session, and descendant path. The session switcher
@@ -213,7 +213,7 @@ persisted per session where applicable.
   directory brings the project and its transcripts back.
 - Deleting a root chat in **Default** attempts to remove its scratch directory. Deleting a child
   does not remove the shared root directory. Chosen project directories are preserved; session-owned
-  plugin data is removed for the deleted tree. Filesystem cleanup is best-effort and may leave
+  mini app data is removed for the deleted tree. Filesystem cleanup is best-effort and may leave
   residual files. Keep important files in a project directory you chose.
 
 ## Related guides

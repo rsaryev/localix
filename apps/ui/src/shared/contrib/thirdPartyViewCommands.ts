@@ -31,10 +31,10 @@ export function buildThirdPartyViewCommands(
     label: `Open ${v.title}`,
     group: 'View',
     effect: 'read',
-    keywords: [v.pluginName, 'plugin'],
+    keywords: [v.app, 'plugin'],
     run: () =>
       openers.openWorkItem({
-        pluginName: v.pluginName,
+        pluginName: v.app,
         projectId: v.projectId,
         viewId: v.id,
         fullName: v.fullName,

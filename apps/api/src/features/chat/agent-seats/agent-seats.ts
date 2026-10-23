@@ -61,6 +61,7 @@ export function createAgentSeats(ports: AgentSeatsPorts) {
     'chat.message': 'ignore',
     skill: 'ignore',
     plugin: 'ignore',
+    'mini-app': 'ignore',
     mcp: 'ignore',
     agent: (change) => (change.op === 'resync' ? reconcile() : changed(change.op, change.ref)),
     project: 'ignore',

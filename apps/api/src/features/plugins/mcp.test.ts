@@ -1,14 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
 import { connectServerConfig } from '../mcp/expand'
-import type { MiniAppConfigValues } from './config'
-import {
-  pluginDataDir,
-  isPlainObject,
-  buildPluginOptionEnv,
-  collectMcpConfigTokens,
-  buildMcpRecords,
-} from './mcp'
+import type { PluginConfigValues } from './config'
+import { pluginDataDir, isPlainObject, buildPluginOptionEnv, buildMcpRecords } from './mcp'
 
 const plugin = (
   mcpServers: Record<string, unknown>,
@@ -125,7 +119,7 @@ describe('buildMcpRecords', () => {
   })
 
   test('a headersHelper that references ${user_config.*} fails the server, configured or not', () => {
-    const configs: MiniAppConfigValues[] = [{ REGION: 'eu' }, {}]
+    const configs: PluginConfigValues[] = [{ REGION: 'eu' }, {}]
     for (const config of configs) {
       const warns: unknown[] = []
       const recs = buildMcpRecords(
@@ -249,7 +243,7 @@ describe('buildPluginOptionEnv', () => {
     })
   })
   test('skips undefined / null but keeps falsy-but-present values', () => {
-    // `MiniAppConfigValues` says a value is string|number|boolean, so this input is
+    // `PluginConfigValues` says a value is string|number|boolean, so this input is
     // unspellable under the type — yet the null-guard in buildPluginOptionEnv is LIVE,
     // not dead: the plugins table's `config` column is parsed JSON that nothing
     // runtime-validates, and `resolvePluginConfig` copies stored entries in verbatim.
@@ -258,29 +252,11 @@ describe('buildPluginOptionEnv', () => {
     // than pretend the type permits it.
     const fromStoredJson = JSON.parse(
       '{"a":null,"b":null,"c":0,"d":false,"e":""}',
-    ) as MiniAppConfigValues
+    ) as PluginConfigValues
     expect(buildPluginOptionEnv(fromStoredJson)).toEqual({
       CLAUDE_PLUGIN_OPTION_c: '0',
       CLAUDE_PLUGIN_OPTION_d: 'false',
       CLAUDE_PLUGIN_OPTION_e: '',
     })
-  })
-})
-
-describe('collectMcpConfigTokens', () => {
-  test('collects ${KEY} tokens from nested strings/arrays and normalizes prefixes', () => {
-    const tokens = collectMcpConfigTokens({
-      srv: {
-        command: 'run',
-        args: ['--key=${CLAUDE_PLUGIN_OPTION_API_KEY}', '${user_config.region}'],
-        env: { TOKEN: '${PLAIN}' },
-      },
-    })
-    // prefixes stripped, casing preserved; plain token kept as-is
-    expect([...tokens].sort()).toEqual(['API_KEY', 'PLAIN', 'region'])
-  })
-
-  test('returns an empty set when there are no tokens', () => {
-    expect(collectMcpConfigTokens({ srv: { command: 'echo', args: ['hi'] } }).size).toBe(0)
   })
 })

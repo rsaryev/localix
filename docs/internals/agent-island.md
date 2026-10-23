@@ -120,18 +120,18 @@ and AppKit; the system material follows reduced transparency.
 
 ## Ownership
 
-| Concern                          | Owner                                                                                                              |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Entry and providers              | `app/main.tsx` picks the entry; `companionEntry.tsx` mounts kit providers without the router, Monaco or plugin UI  |
-| Phases, hover and focus          | `features/companion/model/island.ts`, `useIsland.ts`                                                               |
-| Sizes                            | `features/companion/model/geometry.ts`, `companion::geometry` in Rust                                              |
-| Quick conversation               | `useQuickChat.ts` over `createSession`, `useSendMessage`, `useComposerPrefill` and the chat store's stream reducer |
-| Which conversation is shown      | `islandConversation.ts`: restore the remembered one, or land (`reuseEmptyDraft`) when it or its folder is gone     |
-| Selected conversation and draft  | Backend view state ([shared view state](./shared-view-state.md)), `useComposerDraft`                               |
-| Session summaries and attention  | `useCompanionState.ts`, `roster.ts`; `attention/store.ts` stays authoritative                                      |
-| Request forms                    | `HitlAttentionBody` from `features/chat`                                                                           |
-| Notifications, dock badge, menus | The workspace only; the island reads attention and never writes it                                                 |
-| Native panel, glass, pointer     | `companion_macos.rs`, `companion_material.rs`, `companion_pointer.rs`                                              |
+| Concern                          | Owner                                                                                                               |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Entry and providers              | `app/main.tsx` picks the entry; `companionEntry.tsx` mounts kit providers without the router, Monaco or mini app UI |
+| Phases, hover and focus          | `features/companion/model/island.ts`, `useIsland.ts`                                                                |
+| Sizes                            | `features/companion/model/geometry.ts`, `companion::geometry` in Rust                                               |
+| Quick conversation               | `useQuickChat.ts` over `createSession`, `useSendMessage`, `useComposerPrefill` and the chat store's stream reducer  |
+| Which conversation is shown      | `islandConversation.ts`: restore the remembered one, or land (`reuseEmptyDraft`) when it or its folder is gone      |
+| Selected conversation and draft  | Backend view state ([shared view state](./shared-view-state.md)), `useComposerDraft`                                |
+| Session summaries and attention  | `useCompanionState.ts`, `roster.ts`; `attention/store.ts` stays authoritative                                       |
+| Request forms                    | `HitlAttentionBody` from `features/chat`                                                                            |
+| Notifications, dock badge, menus | The workspace only; the island reads attention and never writes it                                                  |
+| Native panel, glass, pointer     | `companion_macos.rs`, `companion_material.rs`, `companion_pointer.rs`                                               |
 
 The island renders the full shared `PromptInput` and `MessageList`. Only geometry changes:
 attachments, queueing, failure restoration, the transcript projection and the Markdown renderer are

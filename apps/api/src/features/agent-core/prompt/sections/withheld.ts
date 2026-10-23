@@ -28,10 +28,17 @@ export function buildWithheldToolsSection(
    * enough for the model to offer the one click that settles it.
    */
   awaitingConsentPlugins: readonly string[] = [],
+  /** The same, for mini apps: their backends are not imported until they are allowed. */
+  awaitingConsentMiniApps: readonly string[] = [],
 ): string | null {
   if (!ledger || !liveToolNames.includes(TOOL.configure)) return null
   const rows = remediableWithholds(ledger)
-  if (rows.length === 0 && awaitingConsentPlugins.length === 0) return null
+  if (
+    rows.length === 0 &&
+    awaitingConsentPlugins.length === 0 &&
+    awaitingConsentMiniApps.length === 0
+  )
+    return null
   // One line per (reason, remedy) GROUP, not per tool: the per-tool form repeated the same
   // reason and the same remedy template on every line — seven identical clauses for a
   // narrowed roster, in the cached prefix of every request.
@@ -55,6 +62,11 @@ export function buildWithheldToolsSection(
     ...(awaitingConsentPlugins.length > 0
       ? [
           `- ${awaitingConsentPlugins.map((name) => `plugin "${name}"`).join(', ')} — installed here and not allowed yet, so the code is not loaded and its tools are unknown until it is → ${propose('plugin.enable', awaitingConsentPlugins.length === 1 ? awaitingConsentPlugins[0]! : '<plugin>')}`,
+        ]
+      : []),
+    ...(awaitingConsentMiniApps.length > 0
+      ? [
+          `- ${awaitingConsentMiniApps.map((name) => `mini app "${name}"`).join(', ')} — installed here and not allowed yet, so its backend is not loaded and its tools are unknown until it is → ${propose('mini-app.enable', awaitingConsentMiniApps.length === 1 ? awaitingConsentMiniApps[0]! : '<mini app>')}`,
         ]
       : []),
   ].join('\n')

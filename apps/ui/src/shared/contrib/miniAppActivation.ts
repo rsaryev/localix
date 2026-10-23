@@ -5,7 +5,7 @@ import { noteRegistryChange } from './registryChanges'
  * contributions have no owner and remain active; plugin-owned entries fail closed
  * until the API snapshot arrives.
  */
-let enabledPluginNames: Set<string> | null = null
+let enabledMiniAppNames: Set<string> | null = null
 /**
  * Enabled plugins whose UI has not registered in this page yet. The enabled set is published the
  * moment the snapshot lands, before any artifact has registered — so an unknown work-item kind may
@@ -23,12 +23,12 @@ const notifyListeners = () => listeners.forEach((listener) => listener())
 
 export type MiniAppContributionActivation = 'core' | 'pending' | 'enabled' | 'disabled'
 
-export function setEnabledPluginNames(
+export function setEnabledMiniAppNames(
   names: Set<string> | null,
   uiLoading: ReadonlySet<string> = new Set(),
   uiFailed: ReadonlySet<string> = new Set(),
 ): void {
-  enabledPluginNames = names === null ? null : new Set(names)
+  enabledMiniAppNames = names === null ? null : new Set(names)
   uiLoadingMiniApps = new Set(uiLoading)
   uiFailedMiniApps = new Set(uiFailed)
   activationVersion += 1
@@ -50,11 +50,11 @@ export function setMiniAppUiPending(
   noteRegistryChange(notifyListeners)
 }
 
-export function pluginActivationVersion(): number {
+export function miniAppActivationVersion(): number {
   return activationVersion
 }
 
-export function subscribePluginActivation(listener: () => void): () => void {
+export function subscribeMiniAppActivation(listener: () => void): () => void {
   listeners.add(listener)
   return () => listeners.delete(listener)
 }
@@ -65,25 +65,25 @@ export function subscribePluginActivation(listener: () => void): () => void {
  * restored tab, dropping it from the saved layout — waits for this to be false.
  */
 export function areMiniAppContributionsPending(): boolean {
-  return enabledPluginNames === null || uiLoadingMiniApps.size > 0 || uiFailedMiniApps.size > 0
+  return enabledMiniAppNames === null || uiLoadingMiniApps.size > 0 || uiFailedMiniApps.size > 0
 }
 
 /** Whether a first UI load is still being ATTEMPTED — what "Restoring…" may promise. */
 export function areMiniAppUiLoadsInFlight(): boolean {
-  return enabledPluginNames === null || uiLoadingMiniApps.size > 0
+  return enabledMiniAppNames === null || uiLoadingMiniApps.size > 0
 }
 
 /** Tri-state activation is important during cold restore: "not loaded" is not disabled. */
 export function miniAppContributionActivation(pluginName?: string): MiniAppContributionActivation {
   if (pluginName === undefined) return 'core'
   if (
-    enabledPluginNames === null ||
+    enabledMiniAppNames === null ||
     uiLoadingMiniApps.has(pluginName) ||
     uiFailedMiniApps.has(pluginName)
   ) {
     return 'pending'
   }
-  return enabledPluginNames.has(pluginName) ? 'enabled' : 'disabled'
+  return enabledMiniAppNames.has(pluginName) ? 'enabled' : 'disabled'
 }
 
 export function isMiniAppContributionEnabled(pluginName?: string): boolean {

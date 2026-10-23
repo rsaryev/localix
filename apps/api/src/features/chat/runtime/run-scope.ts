@@ -41,6 +41,7 @@ import { capabilityRevision } from '../../capabilities/revision'
 import type { DiscoveredSkill } from '../../agent-core/skill-discovery'
 import type { discoverContextFiles } from '../../agent-core/context-files'
 import type { LoadedPlugins } from '../../plugins/loader'
+import type { LoadedMiniApps } from '../../mini-apps/loader-contract'
 
 /**
  * What one scope's discovery pass produces, in the order `prepareRunContext` destructures
@@ -51,6 +52,7 @@ import type { LoadedPlugins } from '../../plugins/loader'
 export type ScopeDiscovery = [
   fileSkills: DiscoveredSkill[],
   plugins: LoadedPlugins,
+  miniApps: LoadedMiniApps,
   contextFiles: Awaited<ReturnType<typeof discoverContextFiles>>,
 ]
 

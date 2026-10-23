@@ -56,7 +56,7 @@ test('top and bottom rails place their entries, route drags and bound the move m
         onMoveToArea={onMoveToArea}
         onMoveWithinBar={noOp}
         onResetRail={noOp}
-        pluginsPending={false}
+        miniAppsPending={false}
         onCapabilitiesClick={noOp}
         dnd={dnd}
         topRailActions={[]}

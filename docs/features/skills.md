@@ -142,7 +142,7 @@ same name. Curator pins protect automatic passes, but manual archive remains ava
 ## Related guides
 
 - [Author skills](../extending/skills-authoring.md)
-- [Plugins](../extending/plugins.md)
+- [Install Claude Code plugins](../extending/claude-code-plugins.md)
 - [Learning loop](learning-loop.md)
 - [Human-in-the-loop controls](hitl.md)
 - [Capabilities](capabilities.md)

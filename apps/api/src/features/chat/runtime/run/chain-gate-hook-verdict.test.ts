@@ -42,8 +42,8 @@ async function run(command: string, pre: Omit<PreToolUseResult, 'didRewrite'>) {
   const chain = createChainGate(true)
   const [tool] = applyToolWrapperChain([bash], {
     gate: chain,
-    pluginHooks: [],
-    pluginHookOptions: { sessionId: 's1', logger },
+    miniAppHooks: [],
+    miniAppHookOptions: { sessionId: 's1', logger },
     ccHooks,
     logger,
   })

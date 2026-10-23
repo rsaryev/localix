@@ -54,9 +54,9 @@ export async function removePlugin(
   await repo.remove(userId, rowScope, input.name)
   // An older build kept a user-scope plugin's options in a per-project row as well.
   if (rowScope !== projectId) await repo.remove(userId, projectId, input.name)
-  // A bundled plugin is a shared managed artifact projected into every scope, and an in-place
-  // plugin's folder is the person's: neither is deleted. Anything else only inside its root.
-  if (plugin && !plugin.bundled && !plugin.inPlaceInstall) {
+  // An in-place plugin's folder is the person's: it is not deleted. Anything else only inside
+  // its root.
+  if (plugin && !plugin.inPlaceInstall) {
     await removeIfUnderRoot(plugin.dir, pluginInstallRoot(plugin.scope, cwd, home))
   }
   await removeDataIfLastCopy({

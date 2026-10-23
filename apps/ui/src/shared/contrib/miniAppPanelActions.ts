@@ -44,8 +44,8 @@ export interface PanelActionDeps {
   /** Publish context for this sandboxed view's owning editor tab. */
   publishMessageContext?: PublishMessageContext
   /** Broker a call to this view's owning native backend contribution. */
-  invokePluginBackend?(input: {
-    pluginName: string
+  invokeMiniAppBackend?(input: {
+    app: string
     projectId: string
     viewId: string
     sessionId: string | null
@@ -132,9 +132,9 @@ export function createPanelActions(deps: PanelActionDeps, pluginName?: string): 
     if (!/^[a-z][a-z0-9._-]{0,63}$/i.test(action)) {
       throw new Error('callBackend needs a valid non-empty "action"')
     }
-    if (!deps.invokePluginBackend) throw new Error('Plugin backend actions are unavailable')
-    return deps.invokePluginBackend({
-      pluginName: ctx.pluginName,
+    if (!deps.invokeMiniAppBackend) throw new Error('Mini app backend actions are unavailable')
+    return deps.invokeMiniAppBackend({
+      app: ctx.pluginName,
       projectId: ctx.projectId,
       viewId: ctx.panelName,
       sessionId: deps.getSessionId(),

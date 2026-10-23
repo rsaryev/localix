@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { loadGrid, type PersistedGrid } from './persistence'
 import { __resetGridForTests, hydrateGrid, useGridStore } from './store'
 import { workItemKindRegistry } from '@/shared/contrib/uiContrib'
-import { setEnabledPluginNames } from '@/shared/contrib/miniAppActivation'
+import { setEnabledMiniAppNames } from '@/shared/contrib/miniAppActivation'
 import type { WorkItemKind } from '@/shared/lib/workItem'
 
 const KIND = 'db-console' as WorkItemKind
@@ -36,12 +36,12 @@ describe('grid hydration happens after subsystem discovery', () => {
     // Establish the pre-hydration state rather than inherit it: `hydrateGrid` is
     // once-only module state, so whichever test ran first used to decide the rest.
     __resetGridForTests()
-    setEnabledPluginNames(null)
+    setEnabledMiniAppNames(null)
     installStorage().set(STORAGE_KEY, JSON.stringify(BLOB))
   })
   afterEach(() => {
     __resetGridForTests()
-    setEnabledPluginNames(null)
+    setEnabledMiniAppNames(null)
     delete (globalThis as { localStorage?: unknown }).localStorage
   })
 

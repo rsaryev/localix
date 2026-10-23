@@ -79,7 +79,7 @@ export const toMeta = (row: Omit<VaultItemRow, 'field'>): SecretMeta => {
     tags: safeTags(row.tags_json),
     reference:
       row.alias &&
-      (source === 'user' || source === 'plugin') &&
+      (source === 'user' || source === 'plugin' || source === 'mini-app') &&
       secretKeySchema.safeParse(key).success
         ? toSecretHandle(key)
         : null,

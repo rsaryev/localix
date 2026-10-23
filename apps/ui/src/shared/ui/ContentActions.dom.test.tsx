@@ -4,7 +4,7 @@ import { ActionSurfaceProvider, type ActionContext } from '@localixai/mini-app-s
 import { WorkItemSessionProvider } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { bindMiniAppUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
 import { registerAction, removeActionsOf } from '@/shared/contrib/actions'
-import { setEnabledPluginNames } from '@/shared/contrib/miniAppActivation'
+import { setEnabledMiniAppNames } from '@/shared/contrib/miniAppActivation'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -19,7 +19,7 @@ test('answer fragments offer exact source, native targets and owning session; st
   const { default: MarkdownRendererImpl } = await import('./MarkdownRendererImpl')
   const received: ActionContext[] = []
   const unbind = bindMiniAppUiTestDoubles()
-  setEnabledPluginNames(new Set(['fragment-fixture']))
+  setEnabledMiniAppNames(new Set(['fragment-fixture']))
   registerAction({
     id: 'fragment-fixture:save',
     pluginName: 'fragment-fixture',
@@ -131,7 +131,7 @@ test('answer fragments offer exact source, native targets and owning session; st
     await act(async () => root.unmount())
     host.remove()
     removeActionsOf('fragment-fixture')
-    setEnabledPluginNames(null)
+    setEnabledMiniAppNames(null)
     unbind()
   }
 })

@@ -35,7 +35,7 @@ import { isSectionId, resolveNavScope, scopePath } from '@/shared/routing/routes
 import { useSettingsStore } from '@/shared/lib/user-settings/settingsStore'
 import { isModelRoutingTaskEnabled } from '@localixai/api/model-task-catalog'
 import { assertMiniAppOwnedWorkItemInstance } from '@/shared/contrib/uiContrib'
-import { createPluginToast } from '@/shared/contrib/miniAppToast'
+import { createMiniAppToast } from '@/shared/contrib/miniAppToast'
 import { openFileInGrid } from '@/shared/lib/recentFiles'
 import { refFromContextBinding } from '@/entities/chat/model/sendRefs'
 import { refOpenAction } from '@/entities/chat/ui/refKindPresentation'
@@ -46,7 +46,7 @@ import { refOpenAction } from '@/entities/chat/ui/refKindPresentation'
 bindMiniAppUiComponents(pluginUiComponents)
 // Wrapped, not the host's own: every plugin shares this one surface, and the wrapper is what names
 // the calling plugin on each row instead of filing it as "System" (see `miniAppToast.ts`).
-bindMiniAppUiToast(createPluginToast(toast))
+bindMiniAppUiToast(createMiniAppToast(toast))
 bindMiniAppUiTransport({
   request: (path, init) => apiFetch(`${API_BASE_URL}${path}`, init),
   url: (path) => `${API_BASE_URL}${path}`,

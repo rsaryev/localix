@@ -125,6 +125,7 @@ describe('semantic pipeline over chat', () => {
           ...chatSemanticTargets(db),
           skill: 'ignore',
           plugin: 'ignore',
+          'mini-app': 'ignore',
           mcp: 'ignore',
           agent: 'ignore',
           project: 'ignore',

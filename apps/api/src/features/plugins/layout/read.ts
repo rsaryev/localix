@@ -1,20 +1,12 @@
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 import { MANIFEST_FILE } from '@localixai/claude-plugin'
-import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
-import { LEGACY_MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/legacy-manifest'
 import type { ManifestFile, ManifestFiles } from './compose'
 
-/** The root manifest of an extension written before the plugin and mini-app split. */
-export const LEGACY_MANIFEST_FILE = 'plugin.json'
-
-/** Every manifest an extension folder may hold, in the order they are read. */
-export const MANIFEST_FILES = [
-  MINI_APP_MANIFEST_FILE,
-  MANIFEST_FILE,
-  LEGACY_MINI_APP_MANIFEST_FILE,
-  LEGACY_MANIFEST_FILE,
-] as const
+/** A root `plugin.json`: not Claude Code's manifest, which is `.claude-plugin/plugin.json`. */
+export const ROOT_MANIFEST_FILE = 'plugin.json'
+/** A mini app's manifest: a folder holding one is a mini app, never a plugin (rule X2). */
+export const MINI_APP_FILE = 'mini-app.json'
 
 async function readManifest(dir: string, file: string): Promise<ManifestFile | undefined> {
   let text: string
@@ -31,15 +23,14 @@ async function readManifest(dir: string, file: string): Promise<ManifestFile | u
   }
 }
 
-/** Read the manifests in `dir`; a file that is absent is simply not there. */
+/** Read what a plugin folder holds; a file that is absent is simply not there. */
 export async function readManifestFiles(dir: string): Promise<ManifestFiles> {
-  const [miniApp, plugin, app, legacy] = await Promise.all(
-    MANIFEST_FILES.map((file) => readManifest(dir, file)),
+  const [plugin, root, miniApp] = await Promise.all(
+    [MANIFEST_FILE, ROOT_MANIFEST_FILE, MINI_APP_FILE].map((file) => readManifest(dir, file)),
   )
   return {
-    ...(miniApp ? { miniApp } : {}),
     ...(plugin ? { plugin } : {}),
-    ...(app ? { app } : {}),
-    ...(legacy ? { legacy } : {}),
+    ...(root ? { root } : {}),
+    ...(miniApp ? { miniApp: true as const } : {}),
   }
 }

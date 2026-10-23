@@ -3,7 +3,7 @@ import { loadGrid, emptyEditorState, persistGrid, type PersistedGrid } from './p
 import { flushAllBeforeQuit } from '@/shared/lib/quitFlush'
 import { leafIds, findLeaf } from './tree'
 import { miniAppUiHostFor } from '@/shared/contrib/host'
-import { setEnabledPluginNames } from '@/shared/contrib/miniAppActivation'
+import { setEnabledMiniAppNames } from '@/shared/contrib/miniAppActivation'
 import { installTestLocalStorage, removeTestLocalStorage } from '@localixai/kit/testing/dom'
 
 function installStorage(): Map<string, string> {
@@ -22,10 +22,10 @@ describe('loadGrid', () => {
   let store: Map<string, string>
   beforeEach(() => {
     store = installStorage()
-    setEnabledPluginNames(null)
+    setEnabledMiniAppNames(null)
   })
   afterEach(() => {
-    setEnabledPluginNames(null)
+    setEnabledMiniAppNames(null)
     removeTestLocalStorage()
   })
 
@@ -115,7 +115,7 @@ describe('loadGrid', () => {
       maximizedGroup: null,
     })
 
-    setEnabledPluginNames(new Set())
+    setEnabledMiniAppNames(new Set())
     expect(loadGrid()?.items['disabled:tab']).toBeUndefined()
   })
 
@@ -135,7 +135,7 @@ describe('loadGrid', () => {
       maximizedGroup: null,
     })
 
-    setEnabledPluginNames(new Set())
+    setEnabledMiniAppNames(new Set())
     expect(loadGrid()?.items['chat:s1']).toBeDefined()
   })
 

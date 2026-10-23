@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import type { CommentActionContribution } from '@localixai/mini-app-sdk/ui'
 
-import { isMiniAppContributionEnabled, subscribePluginActivation } from './miniAppActivation'
+import { isMiniAppContributionEnabled, subscribeMiniAppActivation } from './miniAppActivation'
 
 /**
  * What else a batch of review comments can become, beside "Send to the agent".
@@ -23,7 +23,7 @@ function announceCommentActions(): void {
   for (const listener of listeners) listener()
 }
 
-subscribePluginActivation(announceCommentActions)
+subscribeMiniAppActivation(announceCommentActions)
 
 export function registerCommentAction(contribution: CommentActionContribution): void {
   const existing = contributions.get(contribution.id)

@@ -16,8 +16,8 @@ import { TOOL_GC_PROTECTED } from './tool-policy-sets'
 /** A tool currently on the wire, with the attribution needed to route an "off" action. */
 export interface ToolGcSurfaced {
   name: string
-  source: 'builtin' | 'plugin' | 'mcp'
-  /** Plugin id or MCP server id; `''` for a builtin. */
+  source: 'builtin' | 'mini-app' | 'mcp'
+  /** Mini app name or MCP server id; `''` for a builtin. */
   originId: string
 }
 

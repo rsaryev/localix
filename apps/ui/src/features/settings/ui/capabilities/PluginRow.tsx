@@ -1,4 +1,3 @@
-import { isWorkbenchMiniApp } from '@localixai/mini-app-sdk/manifest-primitives'
 import { pluginCapabilityLabels, pluginIssueSummary } from '@localixai/api/plugin-presentation'
 import type { PluginRecord, Project } from '@/shared/api/contracts'
 import { projectScopeLabel } from '@/shared/lib/projectScope'
@@ -12,37 +11,11 @@ import {
   SettingRegistryRow,
   type SettingRegistryMetaItem,
 } from '../settingRegistry'
-import { pluginLabel } from '@localixai/mini-app-sdk/manifest-label'
 
 /**
- * One installed plugin as a registry row: what it provides, where it came from,
- * its enable switch, and its config form when expanded.
- *
- * The metadata list is the reason this is its own file. A plugin's chips answer
- * "what does enabling this run?" — in-process native code, workbench surfaces,
- * a migrated third-party bundle — and that vocabulary grows on its own schedule,
- * independent of how the list is loaded or refreshed.
+ * One installed Claude Code plugin as a registry row: what it provides, where it came from, its
+ * enable switch, and its config form when expanded. Mini apps have their own rows.
  */
-/** What the folder holds, in the words of `docs/internals/plugins-and-mini-apps.md`. */
-const LAYOUT_LABELS: Record<PluginRecord['layout'], SettingRegistryMetaItem> = {
-  plugin: {
-    label: 'Claude Code plugin',
-    title: 'A plugin in the Claude Code format: the same folder loads in Claude Code',
-  },
-  'mini-app': {
-    label: 'mini app',
-    title: 'A Localix mini app (mini-app.json): screens, a backend and agent tools',
-  },
-  decorated: {
-    label: 'plugin with .localix-app',
-    title: 'A plugin and a mini app in one folder, written before they were separated',
-  },
-  legacy: {
-    label: 'legacy manifest',
-    title: 'One root plugin.json written before plugins and mini apps were split',
-  },
-}
-
 export function PluginRow({
   plugin,
   projects,
@@ -65,7 +38,7 @@ export function PluginRow({
   onSaveConfig: (values: Record<string, string | number | boolean>) => void
 }) {
   const configurable = plugin.config.length > 0
-  const chips = pluginCapabilityLabels(plugin.provides, plugin.enabled)
+  const chips = pluginCapabilityLabels(plugin.provides)
 
   const projName = projectScopeLabel(projects, plugin.projectId)
   // Static validation from the loader (same data `/plugin list` shows in chat).
@@ -83,37 +56,18 @@ export function PluginRow({
             plugin.awaitingConsent
             ? 'neutral'
             : 'disabled'
+  const label = plugin.displayName?.trim() || plugin.name
   const metadata: SettingRegistryMetaItem[] = [
     { label: `v${plugin.version}` },
     { label: projName },
-    LAYOUT_LABELS[plugin.layout],
-    ...(plugin.migratedFrom
-      ? [{ label: 'migrated', title: `Migrated from ${plugin.migratedFrom}` }]
-      : []),
-    ...(isWorkbenchMiniApp(plugin.surfaces)
-      ? [
-          {
-            label: 'workbench',
-            title: 'Extends the IDE workbench with panels, tabs, or editors',
-          },
-        ]
-      : []),
-    ...(plugin.provides.hasNativeTools
-      ? [
-          {
-            label: 'in-process',
-            tone: 'warning' as const,
-            title: 'Runs in-process JavaScript when enabled',
-          },
-        ]
+    ...(plugin.importedFrom === 'claude-code'
+      ? [{ label: 'from Claude Code', title: 'Installed by Claude Code and read in place' }]
       : []),
     ...(plugin.awaitingConsent
       ? [
           {
             label: 'awaiting your yes',
-            title: plugin.bundled
-              ? 'Ships with Localix but loads code, so it waits for you'
-              : 'Came from outside Localix, so its code has not been loaded',
+            title: 'Installed from outside Localix, so nothing of it runs until you allow it',
           },
         ]
       : []),
@@ -141,11 +95,9 @@ export function PluginRow({
               Configure
             </Button>
           )}
-          {!plugin.bundled && (
-            <Button variant="destructive" size="default" onClick={onRemove} disabled={busy}>
-              Remove
-            </Button>
-          )}
+          <Button variant="destructive" size="default" onClick={onRemove} disabled={busy}>
+            Remove
+          </Button>
         </>
       }
       header={
@@ -153,9 +105,9 @@ export function PluginRow({
           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             <div className="flex min-w-0 max-w-full flex-[1_1_12rem] items-baseline gap-2">
               <span className="min-w-0 truncate text-sm font-semibold text-foreground">
-                {pluginLabel(plugin)}
+                {label}
               </span>
-              {pluginLabel(plugin) !== plugin.name && (
+              {label !== plugin.name && (
                 <code className="min-w-0 truncate text-2xs text-text-faint">{plugin.name}</code>
               )}
             </div>
@@ -174,24 +126,12 @@ export function PluginRow({
     >
       <SettingProblems
         className="mt-2 ml-5"
-        subject={pluginLabel(plugin)}
+        subject={label}
         errors={errors}
         warnings={warnings}
         // Findings about the record: a plugin row never "shows the last valid version".
         consequence="none"
       />
-      {plugin.enabled && plugin.provides.tools.length > 0 && (
-        <p
-          className="mt-2 ml-5 truncate text-xs text-text-faint"
-          title={plugin.provides.tools.map((tool) => tool.name).join(', ')}
-        >
-          Tools:{' '}
-          <span className="font-mono text-text-soft">
-            {plugin.provides.tools.map((tool) => tool.name).join(', ')}
-          </span>
-        </p>
-      )}
-
       {configOpen && plugin.config.length > 0 && (
         <SettingsConfigForm fields={plugin.config} busy={busy} onSave={onSaveConfig} />
       )}

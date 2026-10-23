@@ -54,9 +54,9 @@ import { useUrlStoreSync } from '../model/useUrlStoreSync'
 import { useRailActions } from '../model/useRailActions'
 import { useEditorGridCommands } from '../model/useEditorGridCommands'
 import {
-  usePluginContributions,
+  useMiniAppContributions,
   useMiniAppContributionsSync,
-} from '../model/usePluginContributions'
+} from '../model/useMiniAppContributions'
 import { useNewChatAction } from '../model/useNewChatAction'
 import {
   useChatPageBuses,
@@ -204,11 +204,11 @@ export function ChatPage() {
     routeProjectId === null &&
     !routeSessionId &&
     (routePathname === '/' || routePathname.startsWith('/global'))
-  const { enabledPluginNames, plugins, pluginsPending, thirdPartyViewsV, contribScope } =
-    usePluginContributions({ routeProjectId, onHomeRoute: isHomeRoute })
+  const { enabledMiniAppNames, miniApps, miniAppsPending, thirdPartyViewsV, contribScope } =
+    useMiniAppContributions({ routeProjectId, onHomeRoute: isHomeRoute })
   const miniAppCategories = useMemo(
-    () => new Map(plugins.map((plugin) => [plugin.name, plugin.category])),
-    [plugins],
+    () => new Map(miniApps.map((app) => [app.name, app.category])),
+    [miniApps],
   )
   // Wire the "Open as .sql" action on SQL code blocks in the transcript.
   useCodeSnippetOpener()
@@ -224,7 +224,7 @@ export function ChatPage() {
   const { resolvedTheme } = useTheme()
   const pluginAppChat = useMiniApp(PLUGIN_APP, {
     hasHydrated,
-    enabledPluginNames,
+    enabledMiniAppNames,
     activeSessionId,
     goToSession: nav.goToSession,
     resolvedTheme,
@@ -375,7 +375,7 @@ export function ChatPage() {
     openSessionId: activeSessionId,
     createSession,
     cycleFocusedTab,
-    enabledPluginNames,
+    enabledMiniAppNames,
     focusAdjacentGroup,
     isMobile,
     nav,
@@ -428,7 +428,7 @@ export function ChatPage() {
   // to the shell's RailSection shape; workbench sections default into the "…"
   // overflow, matching the core db entry.
   const contributedRailSections = useMemo(() => {
-    void enabledPluginNames
+    void enabledMiniAppNames
     return railSectionRegistry.list().map((s) => ({
       id: s.id,
       icon: <s.Icon className="size-4.5" />,
@@ -446,7 +446,7 @@ export function ChatPage() {
         enabled: true,
       }),
     }))
-  }, [capabilityScope, enabledPluginNames])
+  }, [capabilityScope, enabledMiniAppNames])
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -501,9 +501,9 @@ export function ChatPage() {
         ) : undefined
       }
       railActions={railActions}
-      pluginsPending={pluginsPending}
+      miniAppsPending={miniAppsPending}
       miniAppCategories={miniAppCategories}
-      capabilitiesManageUri={settingsTargetUri({ tab: 'plugins', scope: capabilityScope })}
+      miniAppsManageUri={settingsTargetUri({ tab: 'mini-apps', scope: capabilityScope })}
       onNavigateUi={(uri) => {
         navigateUi(uri, uiNavigation)
       }}
