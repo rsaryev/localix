@@ -25,16 +25,22 @@ import { buildDocumentExtractPort } from './extract-port'
 import { createDocumentsRoutes } from './documents/routes'
 import { createTableRoutes } from './table/routes'
 import { createDocumentsResourceProvider } from './resource-provider'
+import { readDocumentFontsFrom } from './documents/generators/fonts'
 
 /** The generic host capabilities this mini app reads off the register context —
  *  a structural subset of the host `MiniAppContext` (see the database mini app). */
-interface DocumentsRegisterContext extends Pick<MiniAppContext, 'dataDir' | 'userId'> {
+interface DocumentsRegisterContext extends Pick<
+  MiniAppContext,
+  'dataDir' | 'userId' | 'miniAppDir'
+> {
   host?: DocumentsHost
   /** The session's working directory — relative tool paths resolve against it. */
   cwd?: string
 }
 
 export function register(ctx: DocumentsRegisterContext): MiniAppRegistration {
+  // The generators read their fonts from this app's own folder: the archive carries them once.
+  if (ctx.miniAppDir) readDocumentFontsFrom(ctx.miniAppDir)
   // Boot-time call supplies the real media seam; per-run tool loads reuse the
   // already-built singleton (whose bound seam stays live).
   const media = ctx.host?.media
