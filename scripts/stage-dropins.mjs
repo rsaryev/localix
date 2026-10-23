@@ -34,6 +34,7 @@ import {
   localixManifestFile,
   readExtensionManifest,
 } from './lib/extension-manifest.mjs'
+import { bundledAppsRoot } from './lib/bundled-roots.mjs'
 import {
   discardStagedUiArtifact,
   pluginKitDirOf,
@@ -304,7 +305,7 @@ export function stageDropins({
   runUiBuild = execFileSync,
   uiSourceMaps = true,
 }) {
-  const repoPlugins = join(repoRoot, 'plugins')
+  const repoPlugins = bundledAppsRoot(repoRoot)
   const privatePlugins = privatePluginDirs(repoPlugins)
   /** @type {{ name: string, reason: string }[]} */
   const skipped = []
@@ -350,7 +351,7 @@ export function stageDropins({
  * left as copied.
  */
 function bundleStagedPluginBackend(name, { repoRoot, outPlugins, log, onPluginError }) {
-  const repoPlugins = join(repoRoot, 'plugins')
+  const repoPlugins = bundledAppsRoot(repoRoot)
   // The backend entry lives in the Localix layer: a mini app's `backend`, or a legacy `tools`.
   const manifestPath = localixManifestFile(join(outPlugins, name))
   if (!manifestPath) return null
@@ -432,7 +433,7 @@ export function restagePlugin({
   onPluginError = 'skip',
   runUiBuild = execFileSync,
 }) {
-  const repoPlugins = join(repoRoot, 'plugins')
+  const repoPlugins = bundledAppsRoot(repoRoot)
   const repoPlugin = join(repoPlugins, name)
   const stagedPlugin = join(outPlugins, name)
   // Set the running UI aside first: a UI build that fails mid-edit puts it back.

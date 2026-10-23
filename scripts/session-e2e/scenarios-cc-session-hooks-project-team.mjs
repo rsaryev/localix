@@ -3,6 +3,9 @@ import assert from 'node:assert/strict'
 import { existsSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
+// The host's own name for the task board tool, so the scenario follows it if it moves.
+import { TASK_BOARD_TOOL } from '../../apps/api/src/features/cc-hooks/task-events.ts'
+
 import { runs, script } from './scenario-helpers.mjs'
 import { until, writeTree } from './scenarios-cc-helpers.mjs'
 import { chat, hookPlugin, reads, withProject } from './scenarios-cc-session-hooks-helpers.mjs'
@@ -115,10 +118,10 @@ export const CC_SESSION_HOOK_PROJECT_TEAM_SCENARIOS = [
         )
         .on('TaskCompleted', 'completed', `echo 'TESTS-FAILING' >&2\nexit 2`)
       await p.run(async () => {
-        const board = (args) => ({ tool: 'kanban', args })
+        const board = (args) => ({ tool: TASK_BOARD_TOOL, args })
         const create = (title) => board({ action: 'create', title })
         // The board tool waits behind activation, as a real model finds it.
-        const activate = { tool: 'activate_tools', args: { names: ['kanban'] } }
+        const activate = { tool: 'activate_tools', args: { names: [TASK_BOARD_TOOL] } }
         const steps = [activate, create('BAD-SUBJECT task'), create('[T-1] Good task'), 'Made.']
         const session = await chat(rt, 'Tasks', [`Plan. ${script({ localix: steps })}`])
         // TaskCreated input: "task_id, task_subject"; exit 2: "Claude Code deletes the task and

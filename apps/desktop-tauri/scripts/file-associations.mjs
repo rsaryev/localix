@@ -31,10 +31,11 @@ import {
   hasExtensionManifest,
   readExtensionManifest,
 } from '../../../scripts/lib/extension-manifest.mjs'
+import { BUNDLED_APPS_DIR, bundledAppsRoot } from '../../../scripts/lib/bundled-roots.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url)) // apps/desktop-tauri/scripts
 export const repoRoot = resolve(here, '..', '..', '..')
-export const pluginsDir = join(repoRoot, 'plugins')
+export const pluginsDir = bundledAppsRoot(repoRoot)
 export const tauriConfigPath = resolve(here, '..', 'src-tauri', 'tauri.conf.json')
 
 /**
@@ -293,10 +294,13 @@ export function pluginFileAssociations() {
     const declared = manifest.fileAssociations
     if (declared === undefined) continue
     if (!Array.isArray(declared)) {
-      throw new Error(`plugins/${name}: fileAssociations must be an array`)
+      throw new Error(`${BUNDLED_APPS_DIR}/${name}: fileAssociations must be an array`)
     }
     for (const entry of declared) {
-      out.push({ owner: `plugins/${name}`, association: normalizeAssociation(entry, name) })
+      out.push({
+        owner: `${BUNDLED_APPS_DIR}/${name}`,
+        association: normalizeAssociation(entry, name),
+      })
     }
   }
   return out

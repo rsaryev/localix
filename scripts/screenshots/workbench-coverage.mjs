@@ -3,6 +3,7 @@ import path from 'node:path'
 import { repoRoot } from './runtime.mjs'
 import { capturePlan, retainedShots } from './plan.mjs'
 import { readExtensionManifest } from '../lib/extension-manifest.mjs'
+import { bundledAppsRoot } from '../lib/bundled-roots.mjs'
 
 // A catalog or adjacent chat is not evidence for a different owner's workbench.
 export const workbenchEvidence = {
@@ -32,10 +33,11 @@ export const additionalSurfaceEvidence = {
 }
 
 export async function inspectWorkbenchCoverage() {
-  const pluginDirs = await fs.readdir(path.join(repoRoot, 'plugins'), { withFileTypes: true })
+  const bundledRoot = bundledAppsRoot(repoRoot)
+  const pluginDirs = await fs.readdir(bundledRoot, { withFileTypes: true })
   const owners = []
   for (const dir of pluginDirs.filter((entry) => entry.isDirectory())) {
-    const manifest = readExtensionManifest(path.join(repoRoot, 'plugins', dir.name))
+    const manifest = readExtensionManifest(path.join(bundledRoot, dir.name))
     if (manifest.surfaces?.includes('workbench')) owners.push(dir.name)
   }
   const shots = await fs.readdir(path.join(repoRoot, 'docs/assets/screenshots'), {

@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 // Hooks must work before packages have been built; reuse the owner's source implementation.
 import { isPathBelow } from '../packages/path-containment/src/index.ts'
+import { BUNDLED_APPS_PREFIX } from './lib/bundled-roots.mjs'
 
 const source = /\.[cm]?[jt]sx?$/
 const testFile = /\.(?:dom\.)?test\.[cm]?[jt]sx?$/
@@ -41,7 +42,8 @@ export function planChecks(paths, workspaces, exists = existsSync) {
     }
   }
   // The API includes bundled plugin backends in its compile project.
-  if (paths.some((path) => /^plugins\/.*\/backend\/.*\.[cm]?[jt]sx?$/.test(path))) {
+  const bundledBackend = /^[^/]+\/.*\/backend\/.*\.[cm]?[jt]sx?$/
+  if (paths.some((path) => path.startsWith(BUNDLED_APPS_PREFIX) && bundledBackend.test(path))) {
     for (const workspace of workspaces) {
       if (workspace.path === 'apps/api') selected.add(workspace.name)
     }

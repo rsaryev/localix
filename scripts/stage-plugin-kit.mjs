@@ -24,6 +24,7 @@ import {
 import { basename, dirname, join, relative, resolve, sep } from 'node:path'
 import { parseSync } from 'oxc-parser'
 import { cachedKit, kitInputsDigest, storeKit } from './plugin-kit-cache.mjs'
+import { BUNDLED_APPS_DIR, bundledAppsRoot } from './lib/bundled-roots.mjs'
 
 import {
   PLUGIN_BACKEND_SHARED_MODULES,
@@ -82,12 +83,12 @@ export const PLUGIN_KIT_INPUTS = [
   'packages/agent/dist',
   'packages/dataview/dist',
   'packages/search/dist',
-  'plugins/template',
+  `${BUNDLED_APPS_DIR}/template`,
 ]
 
 /** The plugin that describes itself as the template (it carries a scaffold description). */
 export function findTemplatePlugin(repoRoot) {
-  const plugins = join(repoRoot, 'plugins')
+  const plugins = bundledAppsRoot(repoRoot)
   const found = readdirSync(plugins).filter((name) =>
     existsSync(join(plugins, name, TEMPLATE_SCAFFOLD_FILE)),
   )

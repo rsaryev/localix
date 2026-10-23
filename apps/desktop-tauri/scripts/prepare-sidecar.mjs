@@ -50,6 +50,7 @@ import {
   stagePluginKitBeside,
 } from '../../../scripts/stage-dropins.mjs'
 import { PLUGIN_KIT_INPUTS } from '../../../scripts/stage-plugin-kit.mjs'
+import { BUNDLED_APPS_DIR, STAGED_APPS_DIR } from '../../../scripts/lib/bundled-roots.mjs'
 import { BUILD_STAMP_ENV, resolveBuildStamp } from '../../../scripts/build-stamp.mjs'
 import {
   buildVisualFeedbackProbe,
@@ -121,10 +122,11 @@ const cache = readCache()
 const runtimeKey = fingerprint([
   join(repo, 'apps', 'api'),
   join(repo, 'packages'),
-  join(repo, 'plugins'),
+  join(repo, BUNDLED_APPS_DIR),
   join(desktop, 'scripts'),
   join(repo, 'scripts', 'build-visual-feedback-probe.mjs'),
   join(repo, 'scripts', 'stage-dropins.mjs'),
+  join(repo, 'scripts', 'lib', 'bundled-roots.mjs'),
   join(repo, 'scripts', 'embed-migrations-plugin.mjs'),
   join(desktop, 'scripts', 'sidecar-bun.mjs'),
   join(repo, 'scripts', 'stage-plugin-ui.mjs'),
@@ -154,7 +156,7 @@ const runtimeReady =
   Object.values(SCRIPT_EXTENSION_FILES).every((file) => existsSync(join(resources, file))) &&
   existsSync(join(resources, 'visual-feedback-probe.js')) &&
   existsSync(join(resources, 'visual-feedback-native-probe.js')) &&
-  existsSync(join(resources, 'plugins', STAGED_DROPINS_MARKER)) &&
+  existsSync(join(resources, STAGED_APPS_DIR, STAGED_DROPINS_MARKER)) &&
   existsSync(join(resources, 'plugin-kit', 'kit.json')) &&
   existsSync(join(resources, 'cli', 'server', 'cli.js')) &&
   existsSync(join(resources, 'cli', 'package.json')) &&
@@ -253,10 +255,10 @@ if (!runtimeReady) {
   // without it the packaged app's contributed backends failed to load.
   // The plugin kit first: the plugin UI builds read it, and the installed app needs it to
   // create and build the user's own plugins without a source tree.
-  stagePluginKitBeside({ repoRoot: repo, outPlugins: join(resources, 'plugins') })
+  stagePluginKitBeside({ repoRoot: repo, outPlugins: join(resources, STAGED_APPS_DIR) })
   stageDropins({
     repoRoot: repo,
-    outPlugins: join(resources, 'plugins'),
+    outPlugins: join(resources, STAGED_APPS_DIR),
     log,
     // First-party plugin UIs are not debugged on a user's machine; their maps were 17 MB.
     uiSourceMaps: false,
@@ -354,7 +356,7 @@ if (buildUi) {
       join(repo, 'apps', 'ui'),
       join(repo, 'apps', 'api'),
       join(repo, 'packages'),
-      join(repo, 'plugins'),
+      join(repo, BUNDLED_APPS_DIR),
       join(repo, 'vendor', 'monaco-editor-runtime'),
       join(repo, 'bun.lock'),
       join(repo, 'tsconfig.base.json'),

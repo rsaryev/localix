@@ -25,13 +25,13 @@ const record = (over: Partial<McpServerRecord>): McpServerRecord => ({
 describe('an MCP tool as Claude Code names it', () => {
   test('a plugin server’s tool: mcp__plugin_<plugin>_<server>__<tool>, served by plugin:<p>:<s>', () => {
     const tool = buildToolForServer(
-      record({ id: 'plugin:my-plugin:database.tools', name: 'my-plugin_database.tools' }),
+      record({ id: 'plugin:my-plugin:ledger.tools', name: 'my-plugin_ledger.tools' }),
       client,
       { name: 'run query', inputSchema: { type: 'object' } },
     )
     // "any character outside `A-Z`, `a-z`, `0-9`, `_`, and `-` is replaced with `_`" (mcp.md)
-    expect(tool.aliases).toEqual(['mcp__plugin_my-plugin_database_tools__run_query'])
-    expect(tool.mcpServer).toEqual({ name: 'plugin:my-plugin:database.tools', source: 'plugin' })
+    expect(tool.aliases).toEqual(['mcp__plugin_my-plugin_ledger_tools__run_query'])
+    expect(tool.mcpServer).toEqual({ name: 'plugin:my-plugin:ledger.tools', source: 'plugin' })
   })
 
   test('a server the person added: its own name, from the user or a project scope', () => {

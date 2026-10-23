@@ -178,7 +178,7 @@ function dupCtx(prompt: string, skills: unknown[], replies: string[], runs: stri
     runner: { leadership: () => noLeadership },
     gatherEnabledPluginSkills: async () => skills,
     gatherEnabledPluginCommands: async () => [
-      { plugin: 'dup', pluginDir: tmpdir(), command: { name: 'review', prompt, args: [] } },
+      { plugin: 'dup', pluginDir: tmpdir(), command: { name: 'tidy', prompt, args: [] } },
     ],
     resolveSessionWorkingDir: async () => tmpdir(),
     runMacroCommand: async (...args: unknown[]) => {
@@ -196,11 +196,11 @@ function dupCtx(prompt: string, skills: unknown[], replies: string[], runs: stri
 // skill". The command steps aside; the skill handler, later in the dispatch, runs the skill.
 test('a plugin command steps aside for a same-name skill of its plugin', async () => {
   const runs: string[] = []
-  const skill = { name: 'dup:review', pluginName: 'dup' }
+  const skill = { name: 'dup:tidy', pluginName: 'dup' }
   const ctx = dupCtx('DUP-COMMAND', [skill], [], runs)
-  expect(await handlePluginCommand(ctx, 'u', session.id, session, '/dup:review')).toBeNull()
+  expect(await handlePluginCommand(ctx, 'u', session.id, session, '/dup:tidy')).toBeNull()
   const modelOnly = dupCtx('DUP-COMMAND', [{ ...skill, userInvocable: false }], [], runs)
-  await handlePluginCommand(modelOnly, 'u', session.id, session, '/dup:review')
+  await handlePluginCommand(modelOnly, 'u', session.id, session, '/dup:tidy')
   expect(runs).toEqual(['DUP-COMMAND'])
 })
 
@@ -210,7 +210,7 @@ test('a failing injected command aborts the plugin command before the model is a
   const replies: string[] = []
   const runs: string[] = []
   const ctx = dupCtx('BODY\n!`echo partial; exit 3`', [], replies, runs)
-  await handlePluginCommand(ctx, 'u', session.id, session, '/dup:review')
+  await handlePluginCommand(ctx, 'u', session.id, session, '/dup:tidy')
   expect(runs).toEqual([])
   expect(replies[0]).toContain('Shell command failed for pattern "!`echo partial; exit 3`"')
   expect(replies[0]).toContain('partial')
@@ -221,6 +221,6 @@ test('a failing injected command aborts the plugin command before the model is a
 test('an injected command receives the arguments as shell words', async () => {
   const runs: string[] = []
   const ctx = dupCtx('```!\nprintf "[%s]" $ARGUMENTS\n```', [], [], runs)
-  await handlePluginCommand(ctx, 'u', session.id, session, '/dup:review Polish "the README" $(id)')
+  await handlePluginCommand(ctx, 'u', session.id, session, '/dup:tidy Polish "the README" $(id)')
   expect(runs).toEqual(['[Polish][the README][$(id)]'])
 })

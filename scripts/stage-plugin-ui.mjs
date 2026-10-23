@@ -16,6 +16,8 @@ import { PLUGIN_KIT_DIR_NAME } from '@localixai/api/plugin-kit-layout'
 import { pluginUiEntry } from '@localixai/api/plugin-ui-build'
 import { PLUGIN_UI_ARTIFACT_DIR } from '@localixai/plugin-sdk/ui-artifact'
 
+import { bundledAppsRoot } from './lib/bundled-roots.mjs'
+
 const BUILDER_CLI = fileURLToPath(new URL('./build-plugin-ui.mjs', import.meta.url))
 /** The builder CLI's switch for an artifact without source maps (release staging). */
 export const NO_SOURCE_MAPS_FLAG = '--no-source-maps'
@@ -58,7 +60,7 @@ export function stagePluginUi(
     uiSourceMaps = true,
   },
 ) {
-  const pluginDir = join(repoRoot, 'plugins', name)
+  const pluginDir = join(bundledAppsRoot(repoRoot), name)
   const artifact = join(outPlugins, name, PLUGIN_UI_ARTIFACT_DIR)
   if (!pluginUiEntry(pluginDir) || !existsSync(join(outPlugins, name))) {
     discardStagedUiArtifact(previous)

@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { dirname, relative, resolve } from 'node:path'
 import { runtimeImports } from './runtime-imports'
+import { BUNDLED_APPS_DIR } from './lib/bundled-roots.mjs'
 
 export const repoRoot = resolve(import.meta.dir, '..')
 
@@ -39,7 +40,7 @@ const WEB_ENTRY_GLOBS = [
   'apps/ui/src/app/main.tsx',
   'apps/ui/src/features/*/contrib.{ts,tsx}',
   'apps/ui/src/**/*.surface.{ts,tsx}',
-  'plugins/*/ui/register.{ts,tsx}',
+  `${BUNDLED_APPS_DIR}/*/ui/register.{ts,tsx}`,
 ]
 
 export function webEntries(): string[] {

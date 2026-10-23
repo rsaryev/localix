@@ -30,9 +30,9 @@ export const CC_AGENT_DELEGATION_SCENARIOS = [
           ['name: reviewer', 'description: NAMES-DESC reviews code.'],
           'NAMES-REVIEWER body.',
         ),
-        // components.md: "`name: audit` in `agents/review/security.md` loads as
-        // `my-plugin:review:audit`".
-        'agents/review/security.md': agentFile(
+        // components.md: "`name: audit` in `agents/checks/security.md` loads as
+        // `my-plugin:checks:audit`".
+        'agents/checks/security.md': agentFile(
           ['name: audit', 'description: Audits.'],
           'NAMES-AUDIT body.',
         ),
@@ -43,7 +43,7 @@ export const CC_AGENT_DELEGATION_SCENARIOS = [
       await withPlugins(rt, { 'e2e-ag-names': files }, async () => {
         const steps = [
           delegateStep('e2e-ag-names:reviewer', ['REVIEWER-OK']),
-          delegateStep('e2e-ag-names:review:audit', ['AUDIT-OK']),
+          delegateStep('e2e-ag-names:checks:audit', ['AUDIT-OK']),
           delegateStep('e2e-ag-names:notes', ['NOTES-OK']),
           'All three reported.',
         ]
@@ -55,7 +55,7 @@ export const CC_AGENT_DELEGATION_SCENARIOS = [
         )
         for (const line of [
           '- e2e-ag-names:reviewer: NAMES-DESC reviews code.',
-          '- e2e-ag-names:review:audit: Audits.',
+          '- e2e-ag-names:checks:audit: Audits.',
           '- e2e-ag-names:notes: Takes notes.',
         ])
           assert.ok(listed.includes(line), `the model was offered "${line}"`)

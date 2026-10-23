@@ -17,6 +17,7 @@ import {
   stagePluginKitBesideAsync,
 } from './stage-dropins.mjs'
 import { PLUGIN_KIT_INPUTS } from './stage-plugin-kit.mjs'
+import { BUNDLED_APPS_DIR, bundledAppsRoot } from './lib/bundled-roots.mjs'
 
 /**
  * The kit inputs that decide its LAYOUT: the stagers and the layout contract the API's authoring
@@ -188,7 +189,7 @@ export function watchPluginsForRestage({
   }
   // The REAL path is subscribed and events are made relative to it: FSEvents reports real paths,
   // so a repository reached through a symlink would otherwise relate nothing to `plugins/`.
-  let pluginsDir = join(repoRoot, 'plugins')
+  let pluginsDir = bundledAppsRoot(repoRoot)
   try {
     pluginsDir = realpathSync(pluginsDir)
   } catch {
@@ -221,7 +222,7 @@ export function watchPluginsForRestage({
   for (const dependencyWatcher of dependencyWatchers) {
     dependencyWatcher.on('error', (error) => log(`dependency watcher stopped: ${error.message}`))
   }
-  log(`watching plugins${sep} for plugins to re-stage`)
+  log(`watching ${BUNDLED_APPS_DIR}${sep} for plugins to re-stage`)
   return {
     close: () => {
       for (const timer of pending.values()) clearTimeout(timer)

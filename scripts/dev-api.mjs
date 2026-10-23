@@ -5,11 +5,12 @@ import { kitCacheRoot } from './plugin-kit-cache.mjs'
 import { stageDropins, stagePluginKitBeside } from './stage-dropins.mjs'
 import { watchPluginKitInputs, watchPluginsForRestage } from './dev-plugin-watch.mjs'
 import { repoRoot } from './lib/paths.mjs'
+import { STAGED_APPS_DIR } from './lib/bundled-roots.mjs'
 
 const repo = repoRoot()
 const apiDir = join(repo, 'apps', 'api')
 const devStageRoot = join(repo, '.turbo', 'dev-plugins', String(process.pid))
-const stagedPlugins = join(devStageRoot, 'plugins')
+const stagedPlugins = join(devStageRoot, STAGED_APPS_DIR)
 
 /**
  * Drop staging trees left by dev runs that are no longer alive.

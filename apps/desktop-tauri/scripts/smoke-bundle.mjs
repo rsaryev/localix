@@ -21,6 +21,7 @@ import {
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { STAGED_APPS_DIR } from '../../../scripts/lib/bundled-roots.mjs'
 import {
   DESKTOP_RUNTIME_ARG,
   LOCALIX_RUNTIME_READY_PREFIX,
@@ -187,7 +188,7 @@ export function locateBundle(root, maxDepth = 8) {
           entry.name === 'resources' &&
           !resources &&
           existsSync(join(path, 'server.js')) &&
-          existsSync(join(path, 'plugins'))
+          existsSync(join(path, STAGED_APPS_DIR))
         ) {
           resources = path
         } else visit(path, depth + 1)
@@ -222,7 +223,7 @@ async function main() {
   }
   const bun = found?.bun ?? option(args, '--bun') ?? staging.sidecarPath()
   const resources = found?.resources ?? option(args, '--resources') ?? staging.resourcesDir
-  for (const path of [bun, join(resources, 'server.js'), join(resources, 'plugins')]) {
+  for (const path of [bun, join(resources, 'server.js'), join(resources, STAGED_APPS_DIR)]) {
     if (!existsSync(path)) {
       console.error(`[smoke-bundle] ${path} is missing; run scripts/prepare-sidecar.mjs first`)
       process.exit(2)
