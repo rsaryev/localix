@@ -4,11 +4,11 @@
 // synchronous and a build error prints the bundler's own diagnostics. The builder is the app's own
 // (`@localixai/api/plugin-ui-build`) and reads only the plugin kit, so a first-party plugin is
 // built exactly the way the installed app builds a user plugin. `--no-source-maps` is release
-// staging's: see `buildPluginUiArtifact`.
+// staging's: see `buildMiniAppUiArtifact`.
 import { resolve } from 'node:path'
 
-import { loadPluginKit } from '@localixai/api/plugin-kit'
-import { buildPluginUiArtifact } from '@localixai/api/plugin-ui-build'
+import { loadMiniAppKit } from '@localixai/api/plugin-kit'
+import { buildMiniAppUiArtifact } from '@localixai/api/plugin-ui-build'
 
 import { NO_SOURCE_MAPS_FLAG } from './stage-plugin-ui.mjs'
 
@@ -21,8 +21,8 @@ if (!pluginDir || !outDir || !kitDir) {
   process.exit(2)
 }
 try {
-  const manifest = await buildPluginUiArtifact({
-    kit: await loadPluginKit(resolve(kitDir)),
+  const manifest = await buildMiniAppUiArtifact({
+    kit: await loadMiniAppKit(resolve(kitDir)),
     pluginDir: resolve(pluginDir),
     outDir: resolve(outDir),
     sourceMaps: !args.includes(NO_SOURCE_MAPS_FLAG),

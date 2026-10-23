@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { Hono } from 'hono'
 
 import type { Seat } from './agent-turn'
-import type { PluginRouteContext, PluginRouteScope } from './http'
+import type { MiniAppRouteContext, MiniAppRouteScope } from './http'
 import { seatedAnswer } from './turn-routes'
 
 class MoveRefused extends Error {}
@@ -17,8 +17,8 @@ function call(
     refused: { error: MoveRefused, code: 'move_refused' },
     view: (game: { secret: string; shown: string }) => ({ shown: game.shown }),
   })
-  const app = new Hono<PluginRouteContext>().post('/game', (c) => answer(c, action))
-  const scope: PluginRouteScope = {
+  const app = new Hono<MiniAppRouteContext>().post('/game', (c) => answer(c, action))
+  const scope: MiniAppRouteScope = {
     userId: 'u1',
     ...(sessionId ? { sessionId } : {}),
     projectId: '',

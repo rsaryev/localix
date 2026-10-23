@@ -123,10 +123,10 @@ export type {
  * One declarative argument of a plugin-declared slash command.
  *
  * Derived off `PluginCommandSpec['args']`, NOT aliased to the API's
- * `PluginCommandArg`: those are two deliberately different types. `PluginCommandArg`
+ * `MiniAppCommandArg`: those are two deliberately different types. `MiniAppCommandArg`
  * is the MANIFEST shape and carries `optionsScript` — the plugin-relative script
  * path — which must never reach the client. The UI-facing spec collapses it to a
- * `dynamic` boolean. The API owns both (`pluginCommandArgSpecSchema`); only the
+ * `dynamic` boolean. The API owns both (`miniAppCommandArgSpecSchema`); only the
  * safe one is reachable from here.
  */
 export type PluginCommandArgSpec = PluginCommandSpec['args'][number]
@@ -160,7 +160,7 @@ export type { ToolGcReport }
  *
  * Structurally typed (`type?: string`) on purpose: it is a UI PRESENTATION rule,
  * not a wire type. It also still answers true for an explicit `type: 'model'`,
- * which the wire cannot currently deliver — `PLUGIN_CONFIG_TYPES` (owned by
+ * which the wire cannot currently deliver — `MINI_APP_CONFIG_TYPES` (owned by
  * `@localixai/mini-app-sdk/manifest`) has no `'model'` member, so the backend's enum
  * would reject it. The check is kept as forward-compat; adding `'model'` for real is
  * an owner-side change.
@@ -219,7 +219,7 @@ export {
  * HTML fetched on open. The ONE plugin UI-surface contract — it always opens as a
  * work-item tab, so there is no mount-point choice to carry here.
  */
-export interface PluginViewSpec {
+export interface MiniAppViewSpec {
   pluginName: string
   projectId: string
   id: string

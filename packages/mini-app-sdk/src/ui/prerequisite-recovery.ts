@@ -24,7 +24,7 @@ import {
   type Prerequisite,
 } from '../prerequisite'
 import type { Problem, ProblemRecovery, ProblemRequest } from './problems'
-import { pluginExternal, pluginTerminal } from './runtime'
+import { miniAppExternal, miniAppTerminal } from './runtime'
 import { useWorkItemSessionId } from './work-item-session'
 
 /** The problem a missing/stopped prerequisite IS — headline, what to do, and the engine's words. */
@@ -50,7 +50,7 @@ export function prerequisiteRecovery(
   const id = `prerequisite:${prerequisite.id}:${prerequisite.state}`
   if (prerequisite.state === 'missing') {
     const url = prerequisite.installUrl!
-    return { id, label, primary: true, run: () => pluginExternal.open(url) }
+    return { id, label, primary: true, run: () => miniAppExternal.open(url) }
   }
   const command = prerequisite.command!
   if (sessionId) {
@@ -58,7 +58,7 @@ export function prerequisiteRecovery(
       id,
       label,
       primary: true,
-      run: () => pluginTerminal.paste({ sessionId, command }),
+      run: () => miniAppTerminal.paste({ sessionId, command }),
     }
   }
   return {

@@ -1,4 +1,4 @@
-import type { PluginProblem } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppProblem } from '@localixai/mini-app-sdk/backend'
 
 import { settingsEntityAnchor } from '@localixai/mini-app-sdk/navigation'
 
@@ -46,7 +46,7 @@ export interface PluginConditions {
   /** The enabled set, across every scope: rows about any other plugin are retired. */
   enabled(names: ReadonlySet<string>): Promise<void>
   /** A plugin's `ctx.reportProblem`. */
-  problem(userId: string, pluginName: string, problem: PluginProblem): void
+  problem(userId: string, pluginName: string, problem: MiniAppProblem): void
   /** The per-run load of a scope's plugins as a whole: `error` when it threw. */
   catalogLoaded(userId: string, projectId: string, error?: string): void
   backendProblems(pluginName: string, problems: readonly string[]): void
@@ -255,7 +255,7 @@ export function recordPluginLoad(userId: string, outcome: PluginLoadOutcome): vo
 export function recordPluginProblem(
   userId: string,
   pluginName: string,
-  problem: PluginProblem,
+  problem: MiniAppProblem,
 ): void {
   observer?.problem(userId, pluginName, problem)
 }

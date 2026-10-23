@@ -15,7 +15,7 @@ const SOURCES = ['backend/**/*.ts', 'shared/**/*.ts']
 const isTest = (file: string) => file.endsWith('.test.ts')
 
 /** One `file:line` problem per raw body parse; empty when every route validates its body. */
-export async function checkPluginRoutes(pluginDir: string): Promise<string[]> {
+export async function checkMiniAppRoutes(pluginDir: string): Promise<string[]> {
   const files = await scanSources({ root: pluginDir, include: SOURCES, skip: isTest, minFiles: 0 })
   const problems: string[] = []
   for (const { file, code } of files) {

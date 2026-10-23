@@ -1,5 +1,5 @@
 import type { SortSpec, TableColumn, TableRow } from '@localixai/dataview'
-import type { PluginTableGridProps } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppTableGridProps } from '@localixai/mini-app-sdk/ui'
 import type { StagedChanges } from './useRowMutations'
 
 export interface TableGridProps {
@@ -39,7 +39,7 @@ export interface TableGridProps {
   showRowNumbers?: boolean
   showCellActions?: boolean
   allowNullValues?: boolean
-  columnActions?: PluginTableGridProps['columnActions']
+  columnActions?: MiniAppTableGridProps['columnActions']
   /** Column ids that are part of the table's primary key — get a key glyph in the header. */
   pkColumns?: Set<string>
   /**

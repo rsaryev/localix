@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
-import { pluginRealtime } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppRealtime } from '@localixai/mini-app-sdk/ui/runtime'
 import { COURSE_BACKSTOP_MS, applyCourseChange, useCourseChanges } from './courseChanges'
 
 let teardown: () => Promise<void>
@@ -10,10 +10,10 @@ beforeAll(() => {
   teardown = registerDom()
   // These tests drive invalidation and polling; no host websocket should be opened.
   const realtime = [
-    spyOn(pluginRealtime, 'onFrame').mockReturnValue(() => {}),
-    spyOn(pluginRealtime, 'onReconnect').mockReturnValue(() => {}),
-    spyOn(pluginRealtime, 'onDisconnect').mockReturnValue(() => {}),
-    spyOn(pluginRealtime, 'request').mockResolvedValue(undefined),
+    spyOn(miniAppRealtime, 'onFrame').mockReturnValue(() => {}),
+    spyOn(miniAppRealtime, 'onReconnect').mockReturnValue(() => {}),
+    spyOn(miniAppRealtime, 'onDisconnect').mockReturnValue(() => {}),
+    spyOn(miniAppRealtime, 'request').mockResolvedValue(undefined),
   ]
   restoreRealtime = () => realtime.forEach((method) => method.mockRestore())
   actEnvironment.IS_REACT_ACT_ENVIRONMENT = true

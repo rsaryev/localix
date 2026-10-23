@@ -6,7 +6,7 @@ import type {
   UiAnchorContribution,
   WorkItemKindContribution,
 } from '@localixai/mini-app-sdk/ui'
-import { recordingPluginUiHost } from '@localixai/mini-app-sdk/ui/testing'
+import { recordingMiniAppUiHost } from '@localixai/mini-app-sdk/ui/testing'
 
 import {
   BOARD_KIND,
@@ -22,7 +22,7 @@ import { registerUi } from './register'
 import { fakeBoardBackend, type FakeBoardBackend } from './testing/fakeBoardBackend'
 
 function registered() {
-  const { host, registrations } = recordingPluginUiHost()
+  const { host, registrations } = recordingMiniAppUiHost()
   registerUi(host)
   registerUi(host)
   const kinds = registrations.workItems as WorkItemKindContribution[]

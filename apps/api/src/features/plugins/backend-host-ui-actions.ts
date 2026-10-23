@@ -13,32 +13,32 @@
  * action in one scope are ambiguous rather than first-wins, and a handler that never settles is
  * cut off by a timeout instead of holding the UI's request open.
  */
-import type { PluginUiActionContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppUiActionContext } from '@localixai/mini-app-sdk/backend'
 import type { BackendSubsystem } from '../ext/subsystem-contrib'
 
-export class PluginUiActionError extends Error {
+export class MiniAppUiActionError extends Error {
   constructor(
     readonly code: 'not_available' | 'ambiguous' | 'timeout',
     message: string,
   ) {
     super(message)
-    this.name = 'PluginUiActionError'
+    this.name = 'MiniAppUiActionError'
   }
 }
 
 /** One operation invoked by an enabled plugin's sandboxed UI. */
-export interface PluginUiActionCall {
+export interface MiniAppUiActionCall {
   pluginName: string
   action: string
   payload: unknown
-  context: PluginUiActionContext
+  context: MiniAppUiActionContext
   timeoutMs?: number
 }
 
-export interface PluginUiActionTable {
+export interface MiniAppUiActionTable {
   /** Record `backend` under its exact (plugin, project) scope. */
   add(pluginName: string, projectId: string, backend: BackendSubsystem): void
-  invoke(call: PluginUiActionCall): Promise<unknown>
+  invoke(call: MiniAppUiActionCall): Promise<unknown>
 }
 
 const UI_ACTION_TIMEOUT_MS = 15_000
@@ -47,7 +47,7 @@ const UI_ACTION_TIMEOUT_MS = 15_000
  * A fresh, empty table. The host builds the next one during a reconcile and swaps it in only
  * after the whole pass succeeds, so a failed refresh keeps the last known-good actions.
  */
-export function createPluginUiActionTable(): PluginUiActionTable {
+export function createMiniAppUiActionTable(): MiniAppUiActionTable {
   const scopes = new Map<string, BackendSubsystem[]>()
   const scopeKey = (pluginName: string, projectId: string) => `${pluginName}\x00${projectId}`
 
@@ -69,13 +69,13 @@ export function createPluginUiActionTable(): PluginUiActionTable {
         return handler ? [handler] : []
       })
       if (handlers.length === 0) {
-        throw new PluginUiActionError(
+        throw new MiniAppUiActionError(
           'not_available',
           `Plugin "${call.pluginName}" exposes no UI action "${call.action}"`,
         )
       }
       if (handlers.length > 1) {
-        throw new PluginUiActionError(
+        throw new MiniAppUiActionError(
           'ambiguous',
           `Plugin "${call.pluginName}" exposes UI action "${call.action}" more than once`,
         )
@@ -90,7 +90,7 @@ export function createPluginUiActionTable(): PluginUiActionTable {
             timer = setTimeout(
               () =>
                 reject(
-                  new PluginUiActionError(
+                  new MiniAppUiActionError(
                     'timeout',
                     `Plugin UI action timed out after ${timeoutMs}ms`,
                   ),

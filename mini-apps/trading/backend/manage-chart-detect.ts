@@ -1,5 +1,5 @@
 import type { MarketDataCandle, MarketDataConnection } from './market-data-port'
-import { TRADING_CHART_CHANNEL, TRADING_PLUGIN } from './chart-command'
+import { TRADING_CHART_CHANNEL, TRADING_MINI_APP } from './chart-command'
 import { renderPatternReport } from './analysis/detect-report'
 import { detectPatterns } from './analysis/pattern-detect'
 import { compositeSignal, renderCompositeSignal } from './analysis/composite-signal'
@@ -264,7 +264,7 @@ export async function runChartDetect(
     } else if (payloads.length === 0) {
       lines.push('(nothing drawable found — no drawings were added)')
     } else {
-      for (const p of payloads) session.emitCommand(TRADING_PLUGIN, TRADING_CHART_CHANNEL, p)
+      for (const p of payloads) session.emitCommand(TRADING_MINI_APP, TRADING_CHART_CHANNEL, p)
       lines.push(
         `Drawn on the chart: ${payloads.length} overlay(s), ids ${payloads
           .map((p) => p.drawing!.id!)

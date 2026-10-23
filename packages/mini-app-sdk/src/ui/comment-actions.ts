@@ -1,4 +1,4 @@
-import type { IconComponent, PluginOwnedContribution } from './contrib'
+import type { IconComponent, MiniAppOwnedContribution } from './contrib'
 
 /**
  * Where a batch of review comments can go besides the chat.
@@ -20,7 +20,7 @@ export interface CommentBatch {
   files: readonly string[]
 }
 
-export interface CommentActionContribution extends PluginOwnedContribution {
+export interface CommentActionContribution extends MiniAppOwnedContribution {
   /** `<plugin>:<name>`, like every plugin-chosen identity. */
   id: string
   /** The button's text, e.g. "Task". */

@@ -1,5 +1,5 @@
 import { createConsoleBuffer, type ConsoleBuffer } from '@localixai/visual-feedback/console-buffer'
-import { attributePluginCaller } from './pluginAttribution'
+import { attributeMiniAppCaller } from './miniAppAttribution'
 
 /**
  * What went wrong in ONE plugin's UI, for the agent looking at that plugin's view.
@@ -7,7 +7,7 @@ import { attributePluginCaller } from './pluginAttribution'
  * The browser tool's `console` returns the logs of the page it drives, captured by the page's
  * probe. A plugin's view is not a page: its code runs in the host window beside the whole app, so
  * the window's console is everyone's. What is the PLUGIN's is what its own code raised —
- * attributed the way plugin toasts are, by the artifact URL in the stack (`pluginAttribution.ts`)
+ * attributed the way plugin toasts are, by the artifact URL in the stack (`miniAppAttribution.ts`)
  * — plus the render crash its tab's boundary caught. One small buffer per plugin holds exactly
  * those.
  *
@@ -43,7 +43,7 @@ function describe(value: unknown): string {
 
 /** Record `text` against the plugin whose code any of `stacks` passes through, if one does. */
 function attribute(level: 'error' | 'warn', text: string, stacks: readonly string[]): void {
-  const caller = attributePluginCaller(stacks.join('\n'))
+  const caller = attributeMiniAppCaller(stacks.join('\n'))
   if (caller) pluginErrorBuffer(caller.pluginName).record(level, text)
 }
 

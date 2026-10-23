@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { mkdir, mkdtemp, readFile, realpath, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { PluginHelpers } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppHelpers } from '@localixai/mini-app-sdk/backend'
 
 import { ReaderService } from './service'
 
@@ -23,7 +23,7 @@ const jsonHelpers = {
     await mkdir(join(filePath, '..'), { recursive: true })
     await writeFile(filePath, JSON.stringify(value))
   },
-} as Pick<PluginHelpers, 'readJson' | 'writeJson'>
+} as Pick<MiniAppHelpers, 'readJson' | 'writeJson'>
 
 describe('ReaderService explicit library', () => {
   test('does not discover workspace files until the user opens one', async () => {

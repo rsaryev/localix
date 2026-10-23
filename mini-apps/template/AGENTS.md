@@ -30,9 +30,10 @@ House rules the copies inherit from here:
   read with `useStoreSnapshot` and the backend's `createStoreFeed`, so the view hears the write. Any
   other live data is a `wsFrames` entry the view follows with `createRealtimeFeed` /
   `useRealtimeFeed` (`@localixai/mini-app-sdk/ui/realtime-feed`); workspace files with
-  `usePluginWorkspaceChanges`; a backend watching files uses `ctx.watchPath`, never `node:fs.watch`.
-  A healthy store or realtime feed has no periodic read; fallback polling runs only while the signal
-  is unavailable. Gauges with no write behind them — CPU, memory — use their own cadence.
+  `useMiniAppWorkspaceChanges`; a backend watching files uses `ctx.watchPath`, never
+  `node:fs.watch`. A healthy store or realtime feed has no periodic read; fallback polling runs only
+  while the signal is unavailable. Gauges with no write behind them — CPU, memory — use their own
+  cadence.
 - Build every control from the host kit, `@localixai/kit/<id>`, and colour with host tokens; the
   `plugin_build` style step and `scripts/ui-token-drift-guard.test.ts` apply the same rules. Never
   import `@/…`: the UI is built into its own artifact, and that build refuses host internals.

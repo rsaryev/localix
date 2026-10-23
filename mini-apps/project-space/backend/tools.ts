@@ -1,5 +1,5 @@
 import { resolve } from 'node:path'
-import type { PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import { describeSpace } from '../shared/agent/describe'
 import { buildOpSchemas, type SpaceOp } from '../shared/ops/contract'
 import { SPACE_TOOLS, spaceUri } from '../shared/resource'
@@ -19,7 +19,7 @@ import { SpaceRefusal, spaceStore } from './space-store'
  */
 export type ResolveRoot = (sessionId: string | undefined) => Promise<string>
 
-export function createSpaceTools(ctx: PluginContext, resolveRoot: ResolveRoot) {
+export function createSpaceTools(ctx: MiniAppContext, resolveRoot: ResolveRoot) {
   const z = ctx.z
   const ops = buildOpSchemas(z).ops
   const types = ELEMENT_TYPES.map(

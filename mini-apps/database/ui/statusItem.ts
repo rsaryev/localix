@@ -2,12 +2,12 @@ import { useEffect } from 'react'
 import { Database, Plug, Unplug } from 'lucide-react'
 import type { MenuEntry, StatusItemState } from '@localixai/mini-app-sdk/ui'
 import {
-  pluginWorkspace,
-  runPluginAction,
+  miniAppWorkspace,
+  runMiniAppAction,
   statusMenuList,
   tonedIcon,
 } from '@localixai/mini-app-sdk/ui'
-import { usePluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime-hooks'
+import { useMiniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 
 import type { DbConnectionInfo } from './dbClient'
 import { databaseApi } from './api/databaseApi'
@@ -35,7 +35,7 @@ const OFFLINE_ICON = tonedIcon(Unplug, 'neutral')
  * null) there is nowhere to open it, so there is no control either.
  */
 export function useDatabaseStatusItem(sessionId: string | null): StatusItemState | null {
-  const workspace = usePluginWorkspace()
+  const workspace = useMiniAppWorkspace()
   // The same store the Database tabs and .sql files read, so a connect or rename there is here
   // at once — and the titlebar is not a separate copy of the list with its own request.
   useStoreChanges({ plugin: 'database', sessionId: null }, refreshConnections)
@@ -51,7 +51,7 @@ export function useDatabaseStatusItem(sessionId: string | null): StatusItemState
   const writable = live.filter((connection) => !connection.readonly)
 
   const open = () =>
-    pluginWorkspace.openWorkItem({
+    miniAppWorkspace.openWorkItem({
       workKind: WORKSPACE_KIND,
       id: WORKSPACE_KIND,
       title: 'Database',
@@ -73,7 +73,7 @@ export function useDatabaseStatusItem(sessionId: string | null): StatusItemState
       openDbConnection(sessionId, connection)
       return
     }
-    runPluginAction(
+    runMiniAppAction(
       () =>
         databaseApi
           .reconnect(connection.id)
@@ -83,7 +83,7 @@ export function useDatabaseStatusItem(sessionId: string | null): StatusItemState
   }
 
   const disconnect = (connection: DbConnectionInfo) =>
-    runPluginAction(
+    runMiniAppAction(
       () => databaseApi.disconnect(connection.id),
       `Could not disconnect “${connectionDisplayName(connection)}”`,
     )
@@ -134,7 +134,7 @@ export function useDatabaseStatusItem(sessionId: string | null): StatusItemState
     // Read-only, or nothing connected at all, is the quiet case and reads as one.
     ...(writable.length > 0 ? { tone: 'warning' as const } : {}),
     active,
-    onClick: () => (active && focusedId ? pluginWorkspace.closeWorkItems(focusedId) : open()),
+    onClick: () => (active && focusedId ? miniAppWorkspace.closeWorkItems(focusedId) : open()),
     menu: [
       { id: 'open', label: 'Open Database', icon: Database, onSelect: open },
       { separator: true },

@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { isPluginUiSharedModule } from './ui-artifact'
+import { isMiniAppUiSharedModule } from './ui-artifact'
 
 test('an artifact takes React, the kit and the SDK from the host, and bundles everything else', () => {
   for (const shared of [
@@ -13,7 +13,7 @@ test('an artifact takes React, the kit and the SDK from the host, and bundles ev
     '@localixai/mini-app-sdk/ui/runtime',
     '@localixai/mini-app-sdk/backends',
   ]) {
-    expect(isPluginUiSharedModule(shared)).toBe(true)
+    expect(isMiniAppUiSharedModule(shared)).toBe(true)
   }
   for (const bundled of [
     'react-markdown',
@@ -28,6 +28,6 @@ test('an artifact takes React, the kit and the SDK from the host, and bundles ev
     '@localixai/agent/agents/items',
     'lucide-react',
   ]) {
-    expect(isPluginUiSharedModule(bundled)).toBe(false)
+    expect(isMiniAppUiSharedModule(bundled)).toBe(false)
   }
 })

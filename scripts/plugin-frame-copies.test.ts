@@ -23,10 +23,10 @@ import {
   shipsToCopies,
   templateFrame,
 } from '../apps/api/src/features/plugins/authoring/template-layout'
-import { findTemplatePlugin } from './stage-plugin-kit.mjs'
+import { findTemplateMiniApp } from './stage-plugin-kit.mjs'
 
 const repoRoot = resolve(import.meta.dir, '..')
-const template = findTemplatePlugin(repoRoot)
+const template = findTemplateMiniApp(repoRoot)
 
 /** The names a module exports — how a file at a frame path is told apart from a plugin's own. */
 const exportsOf = (text: string): Set<string> =>

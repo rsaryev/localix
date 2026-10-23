@@ -55,7 +55,7 @@ export async function assertContainedBuildInputs(input: {
   ])
   const inputs = metafile.inputs
 
-  const pluginFiles: string[] = []
+  const miniAppFiles: string[] = []
   const outside = new Set<string>()
   // An edge to walk: the import's recorded path and the directory of the file that made it.
   type Edge = { path: string; from: string }
@@ -88,14 +88,14 @@ export async function assertContainedBuildInputs(input: {
     Object.keys(inputs).map(async (key) => {
       if (virtualInputs?.has(key)) return
       const realFile = await fs.realpath(at(key))
-      if (isPathWithin(pluginRoot, realFile)) pluginFiles.push(key)
+      if (isPathWithin(pluginRoot, realFile)) miniAppFiles.push(key)
       else if (isPathWithin(kitRoot, realFile)) packageEntries.push(...edgesOf(key))
       else outside.add(key)
     }),
   )
 
   await Promise.all(
-    pluginFiles.map(async (key) => {
+    miniAppFiles.map(async (key) => {
       const file = at(key)
       for (const imported of inputs[key]!.imports) {
         const specifier = imported.original ?? imported.path

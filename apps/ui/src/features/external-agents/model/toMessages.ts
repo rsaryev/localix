@@ -1,8 +1,8 @@
 import { isTextItem } from '@localixai/agent/agents/items'
-import type { PluginTranscriptMessage } from '@localixai/mini-app-sdk/ui/runtime'
+import type { MiniAppTranscriptMessage } from '@localixai/mini-app-sdk/ui/runtime'
 import type { TranscriptTurn } from './types'
 
-export type ExternalTranscriptMessage = PluginTranscriptMessage
+export type ExternalTranscriptMessage = MiniAppTranscriptMessage
 
 /**
  * A foreign session's turns, in our own message model.

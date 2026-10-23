@@ -1,6 +1,6 @@
 import type {
-  PluginContext,
-  PluginRegistration,
+  MiniAppContext,
+  MiniAppRegistration,
   WorkspaceScopeHost,
 } from '@localixai/mini-app-sdk/backend'
 import { ROUTE_PATH } from '../shared/resource'
@@ -19,7 +19,7 @@ import { createSpaceWsFrames } from './ws-frames'
  */
 let workspaceScope: WorkspaceScopeHost | undefined
 
-export function register(ctx: PluginContext): PluginRegistration {
+export function register(ctx: MiniAppContext): MiniAppRegistration {
   workspaceScope = ctx.host?.workspaceScope ?? workspaceScope
   const resolveRoot = async (sessionId: string | undefined) =>
     (sessionId

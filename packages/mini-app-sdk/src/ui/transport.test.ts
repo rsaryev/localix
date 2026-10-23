@@ -1,13 +1,13 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 
 import {
-  assertPluginResponse,
-  bindPluginUiTransport,
-  cleanPluginQuery,
-  pluginApiFetch,
-  pluginApiUrl,
-  postPluginJson,
-  unwrapPluginResponse,
+  assertMiniAppResponse,
+  bindMiniAppUiTransport,
+  cleanMiniAppQuery,
+  miniAppApiFetch,
+  miniAppApiUrl,
+  postMiniAppJson,
+  unwrapMiniAppResponse,
 } from './transport'
 
 let unbind: (() => void) | undefined
@@ -16,7 +16,7 @@ afterEach(() => unbind?.())
 describe('plugin UI transport boundary', () => {
   test('delegates validated plugin routes to the host', async () => {
     const calls: Array<{ path: string; init?: RequestInit }> = []
-    unbind = bindPluginUiTransport({
+    unbind = bindMiniAppUiTransport({
       request: async (path, init) => {
         calls.push({ path, init })
         return Response.json({ ok: true })
@@ -24,23 +24,23 @@ describe('plugin UI transport boundary', () => {
       url: (path) => `https://localix.test${path}`,
     })
 
-    await postPluginJson('/rpc/example/items', { id: 7 })
+    await postMiniAppJson('/rpc/example/items', { id: 7 })
 
     expect(calls).toHaveLength(1)
     expect(calls[0]?.path).toBe('/rpc/example/items')
     expect(calls[0]?.init).toMatchObject({ method: 'POST' })
-    expect(pluginApiUrl('/rpc/example/export')).toBe('https://localix.test/rpc/example/export')
+    expect(miniAppApiUrl('/rpc/example/export')).toBe('https://localix.test/rpc/example/export')
   })
 
   test('rejects absolute, protocol-relative, and host-internal routes', () => {
-    unbind = bindPluginUiTransport({
+    unbind = bindMiniAppUiTransport({
       request: async () => new Response(),
       url: (path) => path,
     })
 
-    expect(() => pluginApiFetch('https://example.com/rpc/plugin')).toThrow()
-    expect(() => pluginApiFetch('//example.com/rpc/plugin')).toThrow()
-    expect(() => pluginApiFetch('/internal/admin')).toThrow()
+    expect(() => miniAppApiFetch('https://example.com/rpc/plugin')).toThrow()
+    expect(() => miniAppApiFetch('//example.com/rpc/plugin')).toThrow()
+    expect(() => miniAppApiFetch('/internal/admin')).toThrow()
   })
 
   test('parses the shared error envelope and cleans query values', async () => {
@@ -48,14 +48,14 @@ describe('plugin UI transport boundary', () => {
       { error: { code: 'missing', message: 'Not found', detail: 'no row with id 7' } },
       { status: 404 },
     )
-    const error = await unwrapPluginResponse(response).catch((reason: unknown) => reason)
+    const error = await unwrapMiniAppResponse(response).catch((reason: unknown) => reason)
     expect(error).toMatchObject({
       message: 'Not found',
       status: 404,
       code: 'missing',
       detail: 'no row with id 7',
     })
-    expect(cleanPluginQuery({ page: 2, q: '', optional: undefined })).toEqual({ page: '2' })
+    expect(cleanMiniAppQuery({ page: 2, q: '', optional: undefined })).toEqual({ page: '2' })
   })
 
   // The defect this fixes: routes answering the FLAT body were read as if they had said nothing,
@@ -69,7 +69,7 @@ describe('plugin UI transport boundary', () => {
       },
       { status: 400 },
     )
-    const error = await unwrapPluginResponse(response).catch((reason: unknown) => reason)
+    const error = await unwrapMiniAppResponse(response).catch((reason: unknown) => reason)
     expect(error).toMatchObject({
       message: 'That spreadsheet could not be opened.',
       status: 400,
@@ -81,7 +81,7 @@ describe('plugin UI transport boundary', () => {
   test('an unreadable body still yields a sentence, never a status line', async () => {
     // It used to answer `Request failed with status 502`, which names neither what failed nor what
     // to do, and worded the same failure differently from the host transport one layer up.
-    const error = await assertPluginResponse(new Response('<html>', { status: 502 })).catch(
+    const error = await assertMiniAppResponse(new Response('<html>', { status: 502 })).catch(
       (reason: unknown) => reason,
     )
     expect(error).toMatchObject({ message: 'The server could not complete this.', code: null })

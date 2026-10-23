@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 
-import { checkPluginRoutes } from './route-check'
+import { checkMiniAppRoutes } from './route-check'
 
 const dirs: string[] = []
 afterEach(() => {
@@ -33,7 +33,7 @@ describe('a user plugin route reads its body through a validator', () => {
       ].join('\n'),
     })
 
-    const problems = await checkPluginRoutes(dir)
+    const problems = await checkMiniAppRoutes(dir)
 
     expect(problems).toHaveLength(1)
     expect(problems[0]).toStartWith('backend/routes.ts:3 context.req.json(')
@@ -50,10 +50,10 @@ describe('a user plugin route reads its body through a validator', () => {
       'backend/routes.test.ts': 'const probe = await c.req.json()',
     })
 
-    expect(await checkPluginRoutes(dir)).toEqual([])
+    expect(await checkMiniAppRoutes(dir)).toEqual([])
   })
 
   test('a plugin without a backend has nothing to check', async () => {
-    expect(await checkPluginRoutes(plugin({ 'ui/register.tsx': 'export {}' }))).toEqual([])
+    expect(await checkMiniAppRoutes(plugin({ 'ui/register.tsx': 'export {}' }))).toEqual([])
   })
 })

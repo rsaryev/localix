@@ -1,18 +1,18 @@
 import { parsePrerequisite, type Prerequisite } from '../prerequisite'
 import type { ProblemRequest } from './problems'
 
-export interface PluginUiTransport {
+export interface MiniAppUiTransport {
   /** Execute one request against a validated plugin-owned `/rpc/*` route. */
   request(path: string, init?: RequestInit): Promise<Response>
   /** Resolve a validated route for browser-owned consumers such as links and media elements. */
   url(path: string): string
 }
 
-let transport: PluginUiTransport | null = null
+let transport: MiniAppUiTransport | null = null
 
 /** Bind the host transport before discovering bundled plugin UI modules. */
-/** Bind the host transport; the unbind restores the previous one (see `bindPluginUiRuntime`). */
-export function bindPluginUiTransport(next: PluginUiTransport): () => void {
+/** Bind the host transport; the unbind restores the previous one (see `bindMiniAppUiRuntime`). */
+export function bindMiniAppUiTransport(next: MiniAppUiTransport): () => void {
   const previous = transport
   transport = next
   return () => {
@@ -20,24 +20,24 @@ export function bindPluginUiTransport(next: PluginUiTransport): () => void {
   }
 }
 
-function pluginRoute(path: string): string {
+function miniAppRoute(path: string): string {
   if (!path.startsWith('/rpc/') || path.startsWith('//')) {
     throw new Error(`Plugin UI routes must be relative /rpc/* paths: ${path}`)
   }
   return path
 }
 
-function currentTransport(): PluginUiTransport {
+function currentTransport(): MiniAppUiTransport {
   if (!transport) throw new Error('Plugin UI transport is not bound by the host')
   return transport
 }
 
-export function pluginApiFetch(path: string, init?: RequestInit): Promise<Response> {
-  return currentTransport().request(pluginRoute(path), init)
+export function miniAppApiFetch(path: string, init?: RequestInit): Promise<Response> {
+  return currentTransport().request(miniAppRoute(path), init)
 }
 
-export function pluginApiUrl(path: string): string {
-  return currentTransport().url(pluginRoute(path))
+export function miniAppApiUrl(path: string): string {
+  return currentTransport().url(miniAppRoute(path))
 }
 
 /**
@@ -90,7 +90,7 @@ export function problemRequestOf(response: FetchResponse, method?: string): Prob
  * machine code, and the raw text behind it. `detail` is for the Event Center, never for a surface
  * line — same split as the backend's `toErrorInfo()`.
  */
-export class PluginApiError extends Error {
+export class MiniAppApiError extends Error {
   readonly status: number
   readonly code: string | null
   /** What the engine/driver/parser actually said, when the route sent it. */
@@ -108,7 +108,7 @@ export class PluginApiError extends Error {
     extra: { prerequisite?: Prerequisite; request?: ProblemRequest } = {},
   ) {
     super(message)
-    this.name = 'PluginApiError'
+    this.name = 'MiniAppApiError'
     this.status = status
     this.code = code
     if (detail) this.detail = detail
@@ -181,21 +181,21 @@ function readWireError(body: JsonError | null, status: number): WireError {
   }
 }
 
-async function pluginApiError(response: FetchResponse): Promise<PluginApiError> {
+async function pluginApiError(response: FetchResponse): Promise<MiniAppApiError> {
   const body = (await response.json().catch(() => null)) as JsonError | null
   const wire = readWireError(body, response.status)
-  return new PluginApiError(wire.message, response.status, wire.code, wire.detail, {
+  return new MiniAppApiError(wire.message, response.status, wire.code, wire.detail, {
     prerequisite: wire.prerequisite,
     request: problemRequestOf(response),
   })
 }
 
-export async function unwrapPluginResponse<T>(response: FetchResponse): Promise<T> {
+export async function unwrapMiniAppResponse<T>(response: FetchResponse): Promise<T> {
   if (!response.ok) throw await pluginApiError(response)
   return (await response.json()) as T
 }
 
-export async function assertPluginResponse(response: FetchResponse): Promise<void> {
+export async function assertMiniAppResponse(response: FetchResponse): Promise<void> {
   if (response.ok) return
   throw await pluginApiError(response)
 }
@@ -208,8 +208,8 @@ export async function assertPluginResponse(response: FetchResponse): Promise<voi
  * `error:`/`hint:` survive. Reading `.message` instead would print the classification twice and
  * discard everything past its first line.
  */
-export function pluginErrorDetail(error: unknown): string | undefined {
-  return error instanceof PluginApiError ? error.detail : undefined
+export function miniAppErrorDetail(error: unknown): string | undefined {
+  return error instanceof MiniAppApiError ? error.detail : undefined
 }
 
 /**
@@ -217,7 +217,7 @@ export function pluginErrorDetail(error: unknown): string | undefined {
  * text, the failed call and an absent dependency — so a plugin's problem builder spreads one value
  * instead of reading four fields (and forgetting the one that links the row to its request).
  */
-export function pluginFailureFacts(error: unknown): {
+export function miniAppFailureFacts(error: unknown): {
   code?: string
   detail?: string
   request?: ProblemRequest
@@ -239,15 +239,15 @@ export function pluginFailureFacts(error: unknown): {
   }
 }
 
-export function postPluginJson(path: string, body: unknown): Promise<Response> {
-  return pluginApiFetch(path, {
+export function postMiniAppJson(path: string, body: unknown): Promise<Response> {
+  return miniAppApiFetch(path, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   })
 }
 
-export function cleanPluginQuery(
+export function cleanMiniAppQuery(
   values?: Record<string, string | number | null | undefined>,
 ): Record<string, string> {
   const query: Record<string, string> = {}

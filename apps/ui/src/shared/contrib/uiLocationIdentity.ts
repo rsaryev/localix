@@ -20,7 +20,7 @@ import {
  * collide, which the registry already reports and which costs one destination instead of
  * all of them.
  */
-export function pluginLocationId(prefix: string, fullName: string): string {
+export function miniAppLocationId(prefix: string, fullName: string): string {
   const normalized = fullName
     .toLowerCase()
     .replace(/[^a-z0-9:._-]+/g, '-')

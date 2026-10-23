@@ -3,7 +3,7 @@ import { LayoutDashboard } from 'lucide-react'
 import {
   resourceMessageBindingDraft,
   ActionSurfaceProvider,
-  type PluginUiHost,
+  type MiniAppUiHost,
   type PublishMessageContext,
   type UiAnchorWorkItem,
 } from '@localixai/mini-app-sdk/ui'
@@ -48,14 +48,14 @@ function resolveSpaceAnchor(uri: string): UiAnchorWorkItem | null {
   }
 }
 
-const registeredHosts = new WeakSet<PluginUiHost>()
+const registeredHosts = new WeakSet<MiniAppUiHost>()
 
 /**
  * One board per PROJECT, opened as a tab of a chat (`scope: 'session'`): the chat is how the host
  * knows which project, so two chats of one project open the same board, and a chat of another
  * project opens that project's.
  */
-export function registerUi(host: PluginUiHost): void {
+export function registerUi(host: MiniAppUiHost): void {
   if (registeredHosts.has(host)) return
   registeredHosts.add(host)
   host.actions?.register({

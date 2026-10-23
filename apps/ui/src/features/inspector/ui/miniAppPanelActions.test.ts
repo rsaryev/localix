@@ -4,7 +4,7 @@ import {
   createPanelActions,
   registerPanelAction,
   clearPanelActions,
-} from '@/shared/contrib/pluginPanelActions'
+} from '@/shared/contrib/miniAppPanelActions'
 
 /**
  * The capability-limited action table bridged panels may invoke. `sendPrompt`

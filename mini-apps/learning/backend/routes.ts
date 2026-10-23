@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { routeValidator } from '@localixai/mini-app-sdk/backend'
-import type { PluginRouteContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppRouteContext } from '@localixai/mini-app-sdk/backend'
 
 import {
   MAX_PORTABLE_COURSE_BYTES,
@@ -69,7 +69,7 @@ export function createLearningRoutes(service: LearningService, tutor?: LearningT
     session: string,
     course: Awaited<ReturnType<LearningService['get']>>,
   ) => (course && tutor ? await tutor.warm(userId, session, course.id) : course)
-  return new Hono<PluginRouteContext>()
+  return new Hono<MiniAppRouteContext>()
     .get('/courses', validated('query', sessionQuery), async (c) => {
       try {
         return c.json({ courses: await service.list(c.env.userId, c.req.valid('query').sessionId) })

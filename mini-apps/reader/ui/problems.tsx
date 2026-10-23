@@ -9,7 +9,7 @@
  * the fact that a reader's subject is a file, which the centre can name and open.
  */
 
-import type { PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
+import type { MiniAppProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
 import { useProblemReport } from '@localixai/mini-app-sdk/ui'
 import type {
   ProblemConsequence,
@@ -37,7 +37,7 @@ export function useReaderProblem(
   subject: ProblemSubject,
   message: string | null | undefined,
   options: ReaderProblemOptions = {},
-): PluginProblemLineProps | null {
+): MiniAppProblemLineProps | null {
   const { title, detail, consequence = 'blocked', actions } = options
   const owned = useProblemReport(
     message

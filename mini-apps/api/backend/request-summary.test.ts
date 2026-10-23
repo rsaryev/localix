@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { defineAgentTool } from '@localixai/agent/agents'
-import type { PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import { z } from 'zod'
 import { createHttpRequestTool } from './http-request'
 import { formatImportPreview } from './import-report'
@@ -38,7 +38,7 @@ test.each(auths)('keeps redacted request roster text consistent for %j', async (
       configBoolean: () => false,
     },
     ui: { offer: (details: unknown) => details },
-  } as unknown as PluginContext
+  } as unknown as MiniAppContext
   const tool = createHttpRequestTool({
     ctx,
     store,

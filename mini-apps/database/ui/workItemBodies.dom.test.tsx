@@ -1,13 +1,13 @@
 import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
 import '@localixai/kit/testing/host-runtime'
 import { registerDom } from '@localixai/kit/testing'
-import { pluginRealtime } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppRealtime } from '@localixai/mini-app-sdk/ui/runtime'
 import type { PublishMessageContext, WorkItemLike } from '@localixai/mini-app-sdk/ui'
 
 let teardown: () => Promise<void>
 let restoreEditor: () => void
 let originalFetch: typeof fetch
-const realtimeMethods = { ...pluginRealtime }
+const realtimeMethods = { ...miniAppRealtime }
 
 beforeAll(async () => {
   teardown = registerDom()
@@ -18,7 +18,7 @@ beforeAll(async () => {
   ))
   restoreEditor = () => editor.mockRestore()
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
-  Object.assign(pluginRealtime, {
+  Object.assign(miniAppRealtime, {
     onFrame: () => () => {},
     onReconnect: () => () => {},
     onDisconnect: () => () => {},
@@ -37,7 +37,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   restoreEditor()
-  Object.assign(pluginRealtime, realtimeMethods)
+  Object.assign(miniAppRealtime, realtimeMethods)
   globalThis.fetch = originalFetch
   await teardown()
 })

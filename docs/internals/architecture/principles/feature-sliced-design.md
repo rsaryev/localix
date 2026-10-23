@@ -47,7 +47,7 @@ import from `apps/ui/src` into `apps/api`, and a browser import of
 
 Slices use purpose segments, for example `apps/ui/src/entities/chat/model` and
 `apps/ui/src/entities/chat/ui`. Plugin UI meets the host through the kit, checked by
-`pluginHostBoundaryProblem`.
+`miniAppHostBoundaryProblem`.
 
 ## Known gaps
 

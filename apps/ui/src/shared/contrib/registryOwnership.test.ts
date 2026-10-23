@@ -1,12 +1,12 @@
 import { expect, spyOn, test } from 'bun:test'
 
 import { fileEditorById, registerFileEditor } from './fileEditors'
-import { pluginUiHostFor } from './host'
-import { setEnabledPluginNames } from './pluginActivation'
+import { miniAppUiHostFor } from './host'
+import { setEnabledPluginNames } from './miniAppActivation'
 import { registerResourceRefIcons, resourceRefIcon } from './iconContributions'
 import { registerSearchDomain, searchDomains } from './searchDomains'
 import {
-  assertPluginOwnedWorkItemInstance,
+  assertMiniAppOwnedWorkItemInstance,
   railSectionRegistry,
   railViewletRegistry,
   workItemKindRegistry,
@@ -19,7 +19,7 @@ const PluginIcon = () => null
 
 test('a plugin cannot submit unowned global UI identities or shadow shared icon keys', () => {
   const pluginName = 'registry-collision-fixture'
-  const host = pluginUiHostFor(pluginName)
+  const host = miniAppUiHostFor(pluginName)
   const warn = spyOn(console, 'warn').mockImplementation(() => {})
 
   try {
@@ -110,7 +110,7 @@ test('a plugin cannot submit unowned global UI identities or shadow shared icon 
       Icon: PluginIcon,
     })
     expect(() =>
-      assertPluginOwnedWorkItemInstance({
+      assertMiniAppOwnedWorkItemInstance({
         workKind: 'registry-collision-fixture:owned-kind',
         id: 'foreign-instance',
         title: 'Foreign',
@@ -118,7 +118,7 @@ test('a plugin cannot submit unowned global UI identities or shadow shared icon 
       }),
     ).toThrow('work-item instance "foreign-instance" must be namespaced')
     expect(() =>
-      assertPluginOwnedWorkItemInstance({
+      assertMiniAppOwnedWorkItemInstance({
         workKind: 'registry-collision-fixture:owned-kind',
         id: 'registry-collision-fixture:instance',
         title: 'Owned',

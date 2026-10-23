@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'bun:test'
-import { bindPluginUiRuntime, type PluginUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
+import { bindMiniAppUiRuntime, type MiniAppUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
 
 import {
   HISTORY_FRAME_TAG,
@@ -30,7 +30,7 @@ function fakeRealtime() {
     set.add(handler)
     return () => set.delete(handler)
   }
-  unbind = bindPluginUiRuntime({
+  unbind = bindMiniAppUiRuntime({
     realtime: {
       onFrame: (tag: string, handler: (json: string) => void) => {
         if (tag !== HISTORY_FRAME_TAG) throw new Error(`unexpected tag ${tag}`)
@@ -43,7 +43,7 @@ function fakeRealtime() {
         commands.push(payload.t)
       },
     },
-  } as unknown as PluginUiRuntime)
+  } as unknown as MiniAppUiRuntime)
   return {
     commands,
     frame: (value: unknown) => {

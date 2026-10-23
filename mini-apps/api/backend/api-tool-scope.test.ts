@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { defineAgentTool, type AgentToolExecutionContext } from '@localixai/agent/agents'
-import type { PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import { z } from 'zod'
 
 import { createApiTool } from './api-tool'
@@ -42,7 +42,7 @@ describe('agent saves and workbench reads one session collection', () => {
         errorResult: (message: string) => ({ content: message, isError: true }),
       },
       ui: { offer: (details: unknown) => details },
-    } as unknown as PluginContext
+    } as unknown as MiniAppContext
     const tool = createApiTool({
       ctx,
       store: bootStore,
@@ -120,7 +120,7 @@ describe('agent saves and workbench reads one session collection', () => {
         errorResult: (message: string) => ({ content: message, isError: true }),
       },
       ui: { offer: (details: unknown) => details },
-    } as unknown as PluginContext
+    } as unknown as MiniAppContext
     const tool = createApiTool({
       ctx,
       store: bootStore,

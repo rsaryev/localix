@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'bun:test'
 
-import { resolvePluginRouteScope } from './route-scope'
+import { resolveMiniAppRouteScope } from './route-scope'
 
 const OWNED = new Map([['s-own', '/work/own']])
 
 function resolve(query: string) {
-  return resolvePluginRouteScope({
+  return resolveMiniAppRouteScope({
     userId: 'u1',
     request: new Request(`http://host/rpc/game/state${query}`),
     // The real gate rejects a session the user does not own; this one answers only for OWNED.

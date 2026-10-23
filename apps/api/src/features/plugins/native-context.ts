@@ -3,29 +3,29 @@ import { z } from 'zod'
 import { defineAgentTool } from '@localixai/agent/agents'
 import { isUiNavigationAction } from '@localixai/mini-app-sdk/ui'
 import type {
-  PluginContext,
-  PluginHostServices,
-  PluginUi,
-  PluginUiDestination,
+  MiniAppContext,
+  MiniAppHostServices,
+  MiniAppUi,
+  MiniAppUiDestination,
 } from '@localixai/mini-app-sdk/backend'
 import { resolveRuntimeAddress, resolveWebhookUrl } from '../../lib/runtime-address'
-import { makePluginOAuth } from './oauth'
-import { pluginDataDir, pluginStateDir } from '../ext/user-config-substitute'
-import type { PluginConfigValues } from './config'
+import { makeMiniAppOAuth } from './oauth'
+import { pluginDataDir, miniAppStateDir } from '../ext/user-config-substitute'
+import type { MiniAppConfigValues } from './config'
 import { makeHelpers } from './native-helpers'
-import type { PluginProblemReporter } from './problem-reporter'
+import type { MiniAppProblemReporter } from './problem-reporter'
 
-function invalidPluginUiDestination(destination: PluginUiDestination): never {
+function invalidMiniAppUiDestination(destination: MiniAppUiDestination): never {
   throw new Error(
     `Invalid plugin UI destination "${destination.uri}". Expected a canonical read-only localix://ui/... or localix://resource/... URI with a short label.`,
   )
 }
 
-export function makePluginUi(): PluginUi {
+export function makeMiniAppUi(): MiniAppUi {
   return {
     offer(destination) {
       const action = { type: 'ui.navigate' as const, ...destination }
-      return isUiNavigationAction(action) ? action : invalidPluginUiDestination(destination)
+      return isUiNavigationAction(action) ? action : invalidMiniAppUiDestination(destination)
     },
   }
 }
@@ -35,20 +35,20 @@ export function makePluginUi(): PluginUi {
 export function makeContext(
   pluginName: string,
   pluginDir: string,
-  config: PluginConfigValues,
+  config: MiniAppConfigValues,
   log: (message: string) => void,
   cwd: string,
   userId: string,
   /** The home the plugin's state and data roots live in — the one discovery was given. */
   home: string,
-  host?: PluginHostServices,
-  reportProblem?: PluginProblemReporter,
+  host?: MiniAppHostServices,
+  reportProblem?: MiniAppProblemReporter,
   /** The per-run load's session storage; the boot load already carries it in `host`. */
-  sessionStorage?: PluginContext['sessionStorage'],
+  sessionStorage?: MiniAppContext['sessionStorage'],
   /** The per-run load's agent directory; the boot load already carries it in `host`. */
-  agents?: PluginContext['agents'],
-): PluginContext {
-  const stateDir = pluginStateDir(pluginName, home)
+  agents?: MiniAppContext['agents'],
+): MiniAppContext {
+  const stateDir = miniAppStateDir(pluginName, home)
   const dataDir = pluginDataDir(pluginName, home)
   try {
     mkdirSync(stateDir, { recursive: true })
@@ -90,8 +90,8 @@ export function makeContext(
       : {}),
     ...(host?.watchPath ? { watchPath: host.watchPath } : {}),
     helpers: makeHelpers(),
-    ui: makePluginUi(),
-    oauth: makePluginOAuth(pluginName),
+    ui: makeMiniAppUi(),
+    oauth: makeMiniAppOAuth(pluginName),
     stateDir,
     dataDir,
     // One folder per session on every load: routes (boot, through `host`) and tools (per run)

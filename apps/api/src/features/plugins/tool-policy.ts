@@ -39,11 +39,11 @@ const MCP_TOOL_PREFIX = 'mcp_'
  * request's context budget. This ceiling leaves ample room for detailed what/when/how/caveat
  * guidance while preventing one plugin from crowding out the run.
  */
-export const PLUGIN_TOOL_DESCRIPTION_MAX_CHARS = 4_000
+export const MINI_APP_TOOL_DESCRIPTION_MAX_CHARS = 4_000
 
-export function capPluginToolDescription(description: string): string {
-  if (description.length <= PLUGIN_TOOL_DESCRIPTION_MAX_CHARS) return description
-  return `${description.slice(0, PLUGIN_TOOL_DESCRIPTION_MAX_CHARS - 1)}…`
+export function capMiniAppToolDescription(description: string): string {
+  if (description.length <= MINI_APP_TOOL_DESCRIPTION_MAX_CHARS) return description
+  return `${description.slice(0, MINI_APP_TOOL_DESCRIPTION_MAX_CHARS - 1)}…`
 }
 
 const RESERVED_TOOL_NAMES: ReadonlySet<string> = new Set(CORE_RESERVED_TOOL_NAMES)

@@ -40,7 +40,7 @@ export const realtimeApi = {
 
   // Reply to an awaited `plugin.command` frame after the plugin's UI sink handled
   // it — settles the server-side pending promise (plugin-command-registry).
-  async pluginCommandResult(
+  async miniAppCommandResult(
     commandId: string,
     payload: { ok: boolean; result?: unknown; error?: string },
   ): Promise<void> {

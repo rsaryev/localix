@@ -52,7 +52,7 @@ of thousands of lines.
 | A turn started by the app        | `ctx.host.wake` with a message and the app's own tools                                     | [Wakes](plugin-wakes.md)                                       |
 | Decision models                  | `ctx.host.decisions.decide`: typed `choice` and `bool` questions, spend recorded per chat  | [Semantics](plugin-semantics.md#ask-a-decision-model)          |
 | Embeddings and semantic search   | `ctx.host.semantic`: index its own items, `query` by meaning, `rank` or `embed` texts      | [Semantics](plugin-semantics.md)                               |
-| Suggestions in its own fields    | `textInputCompletionSurfaces` and `usePluginTextInputCompletion`                           | [Workbench UI](plugin-ui.md#what-you-can-do)                   |
+| Suggestions in its own fields    | `textInputCompletionSurfaces` and `useMiniAppTextInputCompletion`                          | [Workbench UI](plugin-ui.md#what-you-can-do)                   |
 | Vault secrets                    | `ctx.host.resolveSecret`, `storeSecret` (a free key only) and `bindSecret`                 | [Vault](../features/secrets.md)                                |
 | Storage per chat and per project | `ctx.dataDir`, `ctx.sessionStorage`, `ctx.host.workspaceScope` and `workspaces`            | [One chat's data](plugin-ui.md#a-tab-that-belongs-to-one-chat) |
 | Change feeds and live push       | `ctx.host.changes`, the store feed, `wsFrames` streams on Localix's one socket             | [Sync](plugin-sync.md)                                         |
@@ -116,9 +116,9 @@ Add `.localix-app/app.json` and a backend to the same folder:
 ```ts
 import { appendFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'
 
-export function register({ z, defineTool, dataDir }: PluginContext) {
+export function register({ z, defineTool, dataDir }: MiniAppContext) {
   return {
     tools: [
       defineTool({

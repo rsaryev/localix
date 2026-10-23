@@ -1,4 +1,4 @@
-import type { PluginContext, PluginRegistration } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext, MiniAppRegistration } from '@localixai/mini-app-sdk/backend'
 
 import { ROUTE_PATH } from '../shared/resource'
 import { createGameService } from './game-service'
@@ -15,7 +15,7 @@ import { createGameTools } from './tools'
  * `wake` and `decisions`. Both loads carry `ctx.sessionStorage`, so the tools and the routes reach the same table:
  * the one in the chat session's own folder, which the host deletes with the chat.
  */
-export function register(ctx: PluginContext): PluginRegistration {
+export function register(ctx: MiniAppContext): MiniAppRegistration {
   const storage = ctx.sessionStorage
   const games = createGameService({
     ...(storage ? { resolveDir: (...args) => storage.resolveDataDir(...args) } : {}),

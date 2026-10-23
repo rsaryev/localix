@@ -1,4 +1,4 @@
-import type { PluginAgentDirectory, PluginAgentSummary } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppAgentDirectory, MiniAppAgentSummary } from '@localixai/mini-app-sdk/backend'
 import { HUMAN_HANDLE } from '@localixai/agent/agents'
 
 import { USER_PARTICIPANT } from '../../db/participant'
@@ -15,7 +15,7 @@ import { USER_PARTICIPANT } from '../../db/participant'
  * Both halves are ports so the same directory serves the boot-time backend (late-bound refs)
  * and each run's tools (the run's repository), with one answer.
  */
-export function createPluginAgentDirectory(ports: {
+export function createMiniAppAgentDirectory(ports: {
   /** The session's project, or `undefined` when the user owns no such session. */
   sessionProject: (userId: string, sessionId: string) => Promise<string | null | undefined>
   listAgents: (
@@ -35,7 +35,7 @@ export function createPluginAgentDirectory(ports: {
     sessionId: string,
     notice: { key: string; from?: string; text: string },
   ) => void
-}): PluginAgentDirectory {
+}): MiniAppAgentDirectory {
   return {
     async notifyHuman(userId, sessionId, notice) {
       if (!ports.notifyHuman) return
@@ -52,7 +52,7 @@ export function createPluginAgentDirectory(ports: {
       ])
       // The person is always nameable, last: a card can wait on them, though no agent runs it.
       // Their id is the stored participant ref, the one a card's owner field keeps.
-      const person: PluginAgentSummary = {
+      const person: MiniAppAgentSummary = {
         id: USER_PARTICIPANT,
         handle: HUMAN_HANDLE,
         kind: 'human',

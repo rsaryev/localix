@@ -2,17 +2,17 @@ import { describe, expect, test } from 'bun:test'
 import { existsSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
-import type { PluginKit } from './kit'
-import type { PluginKitManifest } from './kit-layout'
+import type { MiniAppKit } from './kit'
+import type { MiniAppKitManifest } from './kit-layout'
 import { agentInstruction, agentsMd, HOST_JUDGMENT_CONTRACT, LIVE_DATA_CONTRACT } from './prose'
 import { loadTemplateScaffold } from './template-layout'
 
 const repoRoot = resolve(import.meta.dir, '../../../../../..')
 const templateDir = join(repoRoot, 'mini-apps', 'template')
-const kit: PluginKit = {
+const kit: MiniAppKit = {
   dir: repoRoot,
   templateDir,
-  manifest: { kitModules: [] } as unknown as PluginKitManifest,
+  manifest: { kitModules: [] } as unknown as MiniAppKitManifest,
 }
 const scaffold = loadTemplateScaffold(templateDir)
 const input = { name: 'gpu-monitor', displayName: 'GPU Monitor', kit, scaffold }
@@ -37,7 +37,7 @@ describe('the authoring guidance teaches push before polling', () => {
       'createRealtimeFeed',
       'useRealtimeFeed',
       '@localixai/mini-app-sdk/ui/realtime-feed',
-      'usePluginWorkspaceChanges',
+      'useMiniAppWorkspaceChanges',
       'ctx.watchPath',
       'node:fs.watch',
       'backstop',

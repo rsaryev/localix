@@ -1,5 +1,5 @@
 import type { WorkItemKindContribution } from '@/shared/contrib/uiContrib'
-import { usePluginRegistrySlice } from '@/shared/contrib/usePluginRegistrySlice'
+import { useMiniAppRegistrySlice } from '@/shared/contrib/useMiniAppRegistrySlice'
 import { activeWorkItemContribution, isPendingContributedKind } from './capabilities'
 import type { WorkItemKind } from '@/shared/lib/workItem'
 
@@ -11,19 +11,19 @@ import type { WorkItemKind } from '@/shared/lib/workItem'
  * tab was the only fix a person had. As a registry slice it re-renders exactly when this kind's
  * answer moves: its owner registers, is replaced by a rebuild, or gives up.
  */
-export type PluginKindState = 'loading' | 'ready' | 'unavailable'
+export type MiniAppKindState = 'loading' | 'ready' | 'unavailable'
 
 /** The live registration (identity changes on a rebuild), or the state standing in for one. */
-export type PluginKindSlice = WorkItemKindContribution | Exclude<PluginKindState, 'ready'>
+export type MiniAppKindSlice = WorkItemKindContribution | Exclude<MiniAppKindState, 'ready'>
 
-export function pluginKindSlice(kind: WorkItemKind): PluginKindSlice {
+export function pluginKindSlice(kind: WorkItemKind): MiniAppKindSlice {
   const contributed = activeWorkItemContribution(kind)
   if (contributed) return contributed
   return isPendingContributedKind(kind) ? 'loading' : 'unavailable'
 }
 
-export function usePluginKind(kind: WorkItemKind): PluginKindSlice {
-  return usePluginRegistrySlice(`kind:${kind}`, () => pluginKindSlice(kind))
+export function useMiniAppKind(kind: WorkItemKind): MiniAppKindSlice {
+  return useMiniAppRegistrySlice(`kind:${kind}`, () => pluginKindSlice(kind))
 }
 
 /**
@@ -33,7 +33,7 @@ export function usePluginKind(kind: WorkItemKind): PluginKindSlice {
 export function useWorkItemKindContributions(
   kinds: readonly WorkItemKind[],
 ): ReadonlyArray<WorkItemKindContribution | undefined> {
-  return usePluginRegistrySlice(`kinds:${kinds.join('\u0000')}`, () =>
+  return useMiniAppRegistrySlice(`kinds:${kinds.join('\u0000')}`, () =>
     kinds.map((kind) => activeWorkItemContribution(kind)),
   )
 }

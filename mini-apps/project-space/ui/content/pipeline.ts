@@ -1,5 +1,5 @@
 import { readMessageBindingDrag, type MessageContextBindingDraft } from '@localixai/mini-app-sdk/ui'
-import { pluginFiles } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppFiles } from '@localixai/mini-app-sdk/ui/runtime'
 import { linksInText } from '@localixai/kit/context-links'
 import { contentFromText } from '../../shared/content/text'
 import type { SpaceDocument } from '../../shared/format/document'
@@ -36,7 +36,7 @@ export async function incomingFromDrop(transfer: DataTransfer): Promise<Incoming
 
   const files = [...transfer.files]
   if (files.length) {
-    const paths = await pluginFiles.droppedPaths(files)
+    const paths = await miniAppFiles.droppedPaths(files)
     if (paths) return paths.map((entry) => ({ kind: 'path', ...entry }))
     return files.map((file) => ({ kind: 'file', file }))
   }

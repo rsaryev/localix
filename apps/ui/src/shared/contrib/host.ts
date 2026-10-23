@@ -1,5 +1,5 @@
 import type {
-  PluginUiHost,
+  MiniAppUiHost,
   RailSectionContribution,
   RailViewletContribution,
 } from '@localixai/mini-app-sdk/ui'
@@ -81,12 +81,12 @@ function registerRailViewlet(contribution: RailViewletContribution): void {
 }
 
 /**
- * The singleton {@link PluginUiHost} — the narrow registration façade `discover.ts`
+ * The singleton {@link MiniAppUiHost} — the narrow registration façade `discover.ts`
  * hands to every `registerUi(host)`. One adapter over the open registries, so a
  * plugin registers contributions WITHOUT importing host registry modules; a future
  * external UI loader passes the same object to dynamically-loaded plugins.
  */
-export const pluginUiHost: PluginUiHost = announcing({
+export const miniAppUiHost: MiniAppUiHost = announcing({
   workItems: { register: (c) => workItemKindRegistry.register(c) },
   railSections: { register: registerRailSection },
   railViewlets: { register: registerRailViewlet },
@@ -105,7 +105,7 @@ export const pluginUiHost: PluginUiHost = announcing({
   fileIcons: { register: (name, data) => registerVscFileIcon(name, data) },
   fileEditors: { register: (c) => registerFileEditor(c) },
   fileFormats: { register: (entries) => registerDedicatedViewerTypes(entries) },
-  // The same four seams `pluginUiHostFor` exposes — core contributions register through this
+  // The same four seams `miniAppUiHostFor` exposes — core contributions register through this
   // singleton, so leaving them off here would make the façade narrower than the interface.
   workItemSlots: { register: (c) => registerWorkItemSlot(c) },
   sessionSurfaces: { register: (c) => registerSessionSurface(c) },
@@ -120,7 +120,7 @@ export const pluginUiHost: PluginUiHost = announcing({
   },
 })
 
-function assertPluginOwnedIdentity(pluginName: string, surface: string, identity: string): void {
+function assertMiniAppOwnedIdentity(pluginName: string, surface: string, identity: string): void {
   const namespace = `${pluginName}:`
   if (identity.startsWith(namespace)) return
   throw new Error(
@@ -132,35 +132,35 @@ function assertPluginOwnedIdentity(pluginName: string, surface: string, identity
  * Host façade for one statically discovered bundled plugin. Ownership is stamped by
  * discovery, never trusted from plugin code, and drives live enable/disable gating.
  */
-export function pluginUiHostFor(pluginName: string): PluginUiHost {
+export function miniAppUiHostFor(pluginName: string): MiniAppUiHost {
   return announcing({
     workItems: {
       register: (contribution) => {
-        assertPluginOwnedIdentity(pluginName, 'work-item kind', contribution.kind)
+        assertMiniAppOwnedIdentity(pluginName, 'work-item kind', contribution.kind)
         workItemKindRegistry.register({ ...contribution, pluginName })
       },
     },
     railSections: {
       register: (contribution) => {
-        assertPluginOwnedIdentity(pluginName, 'rail section', contribution.id)
+        assertMiniAppOwnedIdentity(pluginName, 'rail section', contribution.id)
         registerRailSection({ ...contribution, pluginName })
       },
     },
     railViewlets: {
       register: (contribution) => {
-        assertPluginOwnedIdentity(pluginName, 'rail viewlet', contribution.kind)
+        assertMiniAppOwnedIdentity(pluginName, 'rail viewlet', contribution.kind)
         registerRailViewlet({ ...contribution, pluginName })
       },
     },
     search: {
       register: (contribution) => {
-        assertPluginOwnedIdentity(pluginName, 'search domain', contribution.id)
+        assertMiniAppOwnedIdentity(pluginName, 'search domain', contribution.id)
         registerSearchDomain({ ...contribution, pluginName })
       },
     },
     anchors: {
       register: (contribution) => {
-        assertPluginOwnedIdentity(pluginName, 'resource anchor', contribution.id)
+        assertMiniAppOwnedIdentity(pluginName, 'resource anchor', contribution.id)
         const owned = { ...contribution, pluginName }
         const accepted = registerUiAnchor(owned)
         if (accepted && owned.icons) registerResourceRefIcons(owned.icons, pluginName)
@@ -169,7 +169,7 @@ export function pluginUiHostFor(pluginName: string): PluginUiHost {
     },
     locations: {
       register: (contribution) => {
-        assertPluginOwnedIdentity(pluginName, 'UI location', contribution.id)
+        assertMiniAppOwnedIdentity(pluginName, 'UI location', contribution.id)
         return registerUiLocation({ ...contribution, pluginName })
       },
     },
@@ -181,7 +181,7 @@ export function pluginUiHostFor(pluginName: string): PluginUiHost {
     },
     fileEditors: {
       register: (contribution) => {
-        assertPluginOwnedIdentity(pluginName, 'file editor', contribution.id)
+        assertMiniAppOwnedIdentity(pluginName, 'file editor', contribution.id)
         registerFileEditor({ ...contribution, pluginName })
       },
     },
@@ -190,7 +190,7 @@ export function pluginUiHostFor(pluginName: string): PluginUiHost {
     },
     sessionEvents: {
       register: (type, handler) => {
-        assertPluginOwnedIdentity(pluginName, 'session event', type)
+        assertMiniAppOwnedIdentity(pluginName, 'session event', type)
         registerSessionEventHandler(type, handler, pluginName)
       },
     },
@@ -213,13 +213,13 @@ export function pluginUiHostFor(pluginName: string): PluginUiHost {
     },
     fileEditorEnhancers: {
       register: (contribution) => {
-        assertPluginOwnedIdentity(pluginName, 'file editor enhancer', contribution.id)
+        assertMiniAppOwnedIdentity(pluginName, 'file editor enhancer', contribution.id)
         registerFileEditorEnhancer({ ...contribution, pluginName })
       },
     },
     fileTreeDecorations: {
       register: (contribution) => {
-        assertPluginOwnedIdentity(pluginName, 'file tree decoration', contribution.id)
+        assertMiniAppOwnedIdentity(pluginName, 'file tree decoration', contribution.id)
         registerFileTreeDecoration({ ...contribution, pluginName })
       },
     },
@@ -227,7 +227,7 @@ export function pluginUiHostFor(pluginName: string): PluginUiHost {
     // host vocabulary like a slot or a surface, and an unknown one renders nothing.
     statusItems: {
       register: (contribution) => {
-        assertPluginOwnedIdentity(pluginName, 'status item', contribution.id)
+        assertMiniAppOwnedIdentity(pluginName, 'status item', contribution.id)
         registerStatusItem({ ...contribution, pluginName })
       },
     },
@@ -240,13 +240,13 @@ export function pluginUiHostFor(pluginName: string): PluginUiHost {
     },
     commentActions: {
       register: (contribution) => {
-        assertPluginOwnedIdentity(pluginName, 'comment action', contribution.id)
+        assertMiniAppOwnedIdentity(pluginName, 'comment action', contribution.id)
         registerCommentAction({ ...contribution, pluginName })
       },
     },
     actions: {
       register: (contribution) => {
-        assertPluginOwnedIdentity(pluginName, 'action', contribution.id)
+        assertMiniAppOwnedIdentity(pluginName, 'action', contribution.id)
         registerAction({ ...contribution, pluginName })
       },
     },
@@ -254,9 +254,9 @@ export function pluginUiHostFor(pluginName: string): PluginUiHost {
 }
 
 /**
- * Take back everything {@link pluginUiHostFor} let `pluginName` register — the inverse of that
+ * Take back everything {@link miniAppUiHostFor} let `pluginName` register — the inverse of that
  * façade, kept beside it so a new seam cannot be added without its removal
- * (`pluginUiHost.test.ts` registers through every seam and requires this to empty each one).
+ * (`miniAppUiHost.test.ts` registers through every seam and requires this to empty each one).
  *
  * The registries were add-only, so the ONLY way to replace a plugin's UI was to throw the
  * whole page away: an edit to one plugin reloaded the app, mid-turn, while an agent was writing
@@ -264,7 +264,7 @@ export function pluginUiHostFor(pluginName: string): PluginUiHost {
  * plugin is touched. Every registry already stamps entries with their owner, so this can never
  * reach a core entry.
  */
-export function removePluginUiContributions(pluginName: string): void {
+export function removeMiniAppUiContributions(pluginName: string): void {
   workItemKindRegistry.removeOwner(pluginName)
   railSectionRegistry.removeOwner(pluginName)
   railViewletRegistry.removeOwner(pluginName)

@@ -16,7 +16,7 @@ use objc2_web_kit::{
 define_class!(
     #[unsafe(super(NSObject))]
     #[thread_kind = MainThreadOnly]
-    #[name = "LocalixPluginAppPageUi"]
+    #[name = "LocalixMiniAppPageUi"]
     pub(crate) struct PageUi;
 
     unsafe impl NSObjectProtocol for PageUi {}

@@ -4,8 +4,8 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 import { copyText, useCopied } from './interactions'
-import { bindPluginUiToast, type PluginToast } from './notifications'
-import { bindPluginUiRuntime, type PluginUiRuntime } from './runtime'
+import { bindMiniAppUiToast, type MiniAppToast } from './notifications'
+import { bindMiniAppUiRuntime, type MiniAppUiRuntime } from './runtime'
 
 let unbind: (() => void) | undefined
 afterEach(() => {
@@ -19,16 +19,16 @@ function setupClipboard(writeText: (text: string) => Promise<boolean>) {
     calls.push({ level, message })
     return calls.length
   }
-  bindPluginUiToast(
+  bindMiniAppUiToast(
     Object.assign(method('default'), {
       success: method('success'),
       error: method('error'),
       info: method('info'),
       warning: method('warning'),
       message: method('message'),
-    }) as PluginToast,
+    }) as MiniAppToast,
   )
-  const runtime: PluginUiRuntime = {
+  const runtime: MiniAppUiRuntime = {
     workspace: {
       openWorkItem: () => undefined,
       openFile: () => undefined,
@@ -110,7 +110,7 @@ function setupClipboard(writeText: (text: string) => Promise<boolean>) {
     clipboard: { writeText },
     external: { open: () => undefined },
   }
-  unbind = bindPluginUiRuntime(runtime)
+  unbind = bindMiniAppUiRuntime(runtime)
   return calls
 }
 

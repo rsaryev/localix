@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { act } from 'react'
-import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
+import { bindMiniAppUiTransport } from '@localixai/mini-app-sdk/ui/transport'
 import { CanvasProvider } from '@localixai/kit/canvas'
 import { registerDom } from '@localixai/kit/testing'
 import { viewOf } from './index'
@@ -22,7 +22,7 @@ afterAll(async () => {
  */
 test('a file card shows the text the route answers with', async () => {
   const requested: string[] = []
-  const unbind = bindPluginUiTransport({
+  const unbind = bindMiniAppUiTransport({
     url: (path) => path,
     request: async (path) => {
       requested.push(path)

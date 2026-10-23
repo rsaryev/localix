@@ -6,7 +6,7 @@ import {
   setMessageBindingDrag,
   type MessageContextBindingDraft,
 } from '@localixai/mini-app-sdk/ui'
-import { pluginNavigation } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppNavigation } from '@localixai/mini-app-sdk/ui/runtime'
 import { useZoomBelow } from '@localixai/kit/canvas'
 import { linksInText } from '@localixai/kit/context-links'
 import { IconButton } from '@localixai/kit/icon-button'
@@ -134,7 +134,7 @@ const hasPreview = (kind: string) =>
   ['session', 'message', 'call', 'project', 'file'].includes(kind)
 
 const openLink = (props: RefProps, sessionId: string) =>
-  pluginNavigation.openBinding(linkOf(props), sessionId)
+  miniAppNavigation.openBinding(linkOf(props), sessionId)
 
 export const appLinkViews = [
   defineView<RefProps>({

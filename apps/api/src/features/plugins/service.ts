@@ -25,8 +25,8 @@ import {
   pluginInstallRoot,
   type DiscoveredPlugin,
 } from './discovery'
-import { pluginKitDir } from './authoring/kit-root'
-import { createPluginAuthoring } from './authoring/service'
+import { miniAppKitDir } from './authoring/kit-root'
+import { createMiniAppAuthoring } from './authoring/service'
 import { cloneRepo, withPluginSource } from './install-helpers'
 import { publishPluginInstallation } from './publish-installation'
 import { syncBundledContributions } from './sync-bundled-contributions'
@@ -52,20 +52,20 @@ import {
   prepareDependenciesForInstall,
   type PreparedDependencyInstall,
 } from './dependencies-install'
-import { normalizePluginSurfaces } from './contracts-base'
+import { normalizeMiniAppSurfaces } from './contracts-base'
 import { resolvePluginConfig } from './config'
 import { confineToDir } from '../ext/fs-discovery'
 import { runArgOptionsScript, parseArgOptions } from './arg-options'
 import { isDefaultProject } from '../projects/default-project'
 import { applyEntryManifestOverrides } from './marketplace-entry-manifest'
-import { createPluginInspections } from './inspection-snapshots'
-import type { PluginToolInspection } from './inspection-store'
+import { createMiniAppInspections } from './inspection-snapshots'
+import type { MiniAppToolInspection } from './inspection-store'
 import { pluginTrustClass } from './enable'
 import { validatePluginFull } from './validate'
 import { listViewsFromCatalog, readViewHtml } from './views'
 import { listThemesFromCatalog } from './themes'
-import { readPluginUiDescriptor, resolvePluginUiFile } from './ui-artifact'
-import type { PluginViewSpec, PluginRecord } from './contracts'
+import { readMiniAppUiDescriptor, resolveMiniAppUiFile } from './ui-artifact'
+import type { MiniAppViewSpec, PluginRecord } from './contracts'
 import { toConfigFields, type PluginService, type PluginServiceDeps } from './service-types'
 import { hydrateSecretOption } from './config-vault'
 import { reconcileStoredConfig, savePluginConfig } from './service-config'
@@ -97,7 +97,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
   const registryDeps: MarketplaceRegistryDeps = { cloneRepo, now, root: marketplacesRoot(home) }
   // Tool rosters of enabled native plugins, remembered in memory and across restarts
   // (see `inspection-snapshots.ts`); every lifecycle mutation below invalidates them.
-  const inspections = createPluginInspections({ homeDir: home, logger: deps.logger })
+  const inspections = createMiniAppInspections({ homeDir: home, logger: deps.logger })
   const invalidateInspection = (name?: string, projectId?: string) =>
     inspections.invalidate(name, projectId)
 
@@ -129,7 +129,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
     awaitingConsent = false,
   ): Promise<PluginRecord> => {
     const resolvedConfig = resolvePluginConfig(plugin.manifest, scalarConfig(state?.config))
-    let tools: PluginToolInspection['tools'] = []
+    let tools: MiniAppToolInspection['tools'] = []
     let backendSubsystems: string[] = []
     let error = plugin.error
     // Only import (run) a plugin's code when it's enabled — same trust gate the
@@ -147,7 +147,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         ? inspections.inspect(plugin, resolvedConfig, userId, runtimeCwd)
         : Promise.resolve(null),
       validatePluginFull(plugin, { config: resolvedConfig }),
-      readPluginUiDescriptor(plugin),
+      readMiniAppUiDescriptor(plugin),
     ])
     if (inspected) {
       tools = inspected.tools
@@ -165,7 +165,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       migratedFrom: plugin.manifest.migratedFrom,
       ...(plugin.manifest.origin ? { importedFrom: plugin.manifest.origin.format } : {}),
       layout: plugin.layout,
-      surfaces: normalizePluginSurfaces(plugin.manifest.surfaces),
+      surfaces: normalizeMiniAppSurfaces(plugin.manifest.surfaces),
       projectId: plugin.projectId,
       scope: plugin.scope,
       dir: plugin.dir,
@@ -307,7 +307,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
      * snapshot fetch happens on every plugin toggle. Same helpers, same fusion path
      * (`buildPluginCatalog`), one pass.
      */
-    async listPluginContributions(userId, opts) {
+    async listMiniAppContributions(userId, opts) {
       const { projectId, runtimeCwd, catalog } = await scopeCatalog(userId, opts?.projectId)
       return {
         plugins: await recordsFromCatalog(userId, catalog, projectId, runtimeCwd),
@@ -327,10 +327,10 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
      * Flatten the UI views declared by every ENABLED plugin in scope. HTML is
      * NOT inlined here — the UI fetches it per view on open (getViewHtml).
      */
-    async listPluginViews(
+    async listMiniAppViews(
       userId: string,
       opts?: { projectId?: string | null },
-    ): Promise<{ views: PluginViewSpec[] }> {
+    ): Promise<{ views: MiniAppViewSpec[] }> {
       const projectId = opts?.projectId ?? ''
       const catalog = await catalogFor(userId, projectId)
       return { views: listViewsFromCatalog(catalog, projectId) }
@@ -348,7 +348,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
 
     /** Absolute path of one bundled plugin's UI artifact file (confined — see ui-artifact.ts). */
     async resolveUiFile(userId, input) {
-      return resolvePluginUiFile(await catalogFor(userId, ''), input.pluginName, input.file)
+      return resolveMiniAppUiFile(await catalogFor(userId, ''), input.pluginName, input.file)
     },
 
     /**
@@ -437,7 +437,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
      * an ENABLED plugin, with the script path confined to the plugin dir.
      * Never throws — any failure yields `[]`.
      */
-    async resolvePluginArgOptions(userId, input) {
+    async resolveMiniAppArgOptions(userId, input) {
       try {
         const projectId = input.projectId ?? ''
         const catalog = await catalogFor(userId, projectId)
@@ -732,10 +732,10 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         }
       : undefined,
 
-    authoring: createPluginAuthoring({
+    authoring: createMiniAppAuthoring({
       discover: () => discover({ cwd: null, projectId: '' }),
       pluginsRoot: pluginInstallRoot('global', null, home),
-      kitDir: deps.pluginKitDir ?? pluginKitDir,
+      kitDir: deps.miniAppKitDir ?? miniAppKitDir,
       installedSource: async (userId, name) => (await repo.get(userId, '', name))?.source ?? null,
       allowed: (userId, plugin) => verdictFor(userId, plugin),
       enable: (userId, name) => service.setEnabled(userId, { name, enabled: true }),

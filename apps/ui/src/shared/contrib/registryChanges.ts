@@ -1,4 +1,4 @@
-import type { PluginUiHost } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppUiHost } from '@localixai/mini-app-sdk/ui'
 
 /**
  * ONE coalesced signal for "a host registry changed" — a plugin registered or removed a
@@ -15,7 +15,7 @@ import type { PluginUiHost } from '@localixai/mini-app-sdk/ui'
  * NOTIFICATION is deferred to the next frame: every change in the burst — N plugins registering,
  * N settles — produces exactly one flush. The flush runs each queued follow-up once (deduped by
  * identity: the activation broadcast, the capability store's re-announce) and then wakes the
- * registry listeners, which `usePluginRegistrySlice` narrows so only a consumer whose slice
+ * registry listeners, which `useMiniAppRegistrySlice` narrows so only a consumer whose slice
  * actually moved re-renders.
  */
 
@@ -56,7 +56,7 @@ export function noteRegistryChange(followUp?: Flush): void {
  * the interface is announced without anyone remembering to. Missing one is how a plugin that
  * registered after the first paint stayed invisible under an open tab or surface.
  */
-export function announcing(host: PluginUiHost): PluginUiHost {
+export function announcing(host: MiniAppUiHost): MiniAppUiHost {
   type Seam = { register: (...args: never[]) => unknown }
   const seams = Object.entries(host as unknown as Record<string, Seam>).map(([name, seam]) => [
     name,
@@ -70,7 +70,7 @@ export function announcing(host: PluginUiHost): PluginUiHost {
       },
     },
   ])
-  return Object.fromEntries(seams) as PluginUiHost
+  return Object.fromEntries(seams) as MiniAppUiHost
 }
 
 /** Run the pending notification now (the scheduled frame, or a test). */

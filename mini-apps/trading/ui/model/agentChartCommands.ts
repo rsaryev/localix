@@ -1,7 +1,7 @@
-import { pluginCommandBus, type PluginCommandEvent } from '@localixai/mini-app-sdk/ui/commands'
+import { miniAppCommandBus, type MiniAppCommandEvent } from '@localixai/mini-app-sdk/ui/commands'
 import {
   TRADING_CHART_CHANNEL,
-  TRADING_PLUGIN,
+  TRADING_MINI_APP,
   parseChartCommandPayload,
   type ChartCommandPayload,
 } from '../../backend/chart-command'
@@ -13,7 +13,7 @@ import { openTradingChartTab, tradingChartTabId, type OpenChartArgs } from './op
 /**
  * The trading UI's SINK for `manage_chart` tool commands. The backend tool emits ONE payload as a
  * typed `plugin.command` stream frame (`session.emitCommand` → `plugin.command` →
- * `pluginCommandBus`, keyed `trading`/`chart`); this module opens/focuses the market's chart tab
+ * `miniAppCommandBus`, keyed `trading`/`chart`); this module opens/focuses the market's chart tab
  * and forwards the payload's parts onto `chartControlBus` for that tab id, where TradingChartTab
  * (timeframe) and ChartCanvas (indicators / chart type / navigation) subscribe. Route B upgrades
  * over the old `ui.data` path: non-coalescing (two back-to-back commands both land), replayable
@@ -103,7 +103,7 @@ export function planChartCommand(payload: ChartCommandPayload): ChartCommandPlan
  * stream path and must never throw into it), plan, then open/focus the chart in the issuing
  * session before publishing the state changes. Exported for tests.
  */
-export function handleChartCommandEvent(event: PluginCommandEvent): void {
+export function handleChartCommandEvent(event: MiniAppCommandEvent): void {
   const payload = parseChartCommandPayload(event.payload)
   if (!payload) return
   if (payload.action === 'snapshot') {
@@ -130,5 +130,5 @@ let initialized = false
 export function initAgentChartCommands(): void {
   if (initialized) return
   initialized = true
-  pluginCommandBus.register(TRADING_PLUGIN, TRADING_CHART_CHANNEL, handleChartCommandEvent)
+  miniAppCommandBus.register(TRADING_MINI_APP, TRADING_CHART_CHANNEL, handleChartCommandEvent)
 }

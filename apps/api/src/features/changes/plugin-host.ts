@@ -7,7 +7,7 @@
  */
 import type { Kysely } from 'kysely'
 import { z } from 'zod'
-import type { ChangeFeedHost, PluginChange } from '@localixai/mini-app-sdk/backend'
+import type { ChangeFeedHost, MiniAppChange } from '@localixai/mini-app-sdk/backend'
 import {
   createChangeFeed,
   recordChanges,
@@ -35,7 +35,7 @@ const openRegistry: EntityRegistry<RefSchemas, Record<string, never>> = {
 
 type Log = (event: string, detail: Record<string, unknown>) => void
 
-export function createPluginChangeHosts(deps: {
+export function createMiniAppChangeHosts(deps: {
   db: Kysely<AppDatabase>
   /** The core stream a plugin follows deletions on (read-only). */
   core: CoreChangeFeed
@@ -62,12 +62,12 @@ export function createPluginChangeHosts(deps: {
   }
 
   return {
-    forPlugin(pluginName: string): ChangeFeedHost {
+    forMiniApp(pluginName: string): ChangeFeedHost {
       const stream = `plugin:${pluginName}`
-      const valid = (change: PluginChange) => NAME.test(change.entity)
+      const valid = (change: MiniAppChange) => NAME.test(change.entity)
       return {
         record(changes) {
-          const list = (Array.isArray(changes) ? changes : [changes]) as readonly PluginChange[]
+          const list = (Array.isArray(changes) ? changes : [changes]) as readonly MiniAppChange[]
           const kept = list.filter(valid)
           if (kept.length < list.length) {
             deps.log?.('changes.plugin_invalid_entity', { plugin: pluginName })
@@ -78,7 +78,7 @@ export function createPluginChangeHosts(deps: {
           if (!NAME.test(consumer)) throw new Error(`invalid change consumer name "${consumer}"`)
           // One handler answers for every kind the plugin names.
           const handlers = new Proxy({} as ConsumerHandlers<RefSchemas, Record<string, never>>, {
-            get: () => (delivery: PluginChange) => handler(delivery),
+            get: () => (delivery: MiniAppChange) => handler(delivery),
           })
           // A plugin's handler acts on its own data; it is never rebuilt by the host.
           const started = await feedFor(stream).subscribe(consumer, handlers, { kind: 'reactor' })
@@ -105,4 +105,4 @@ export function createPluginChangeHosts(deps: {
   }
 }
 
-export type PluginChangeHosts = ReturnType<typeof createPluginChangeHosts>
+export type MiniAppChangeHosts = ReturnType<typeof createMiniAppChangeHosts>

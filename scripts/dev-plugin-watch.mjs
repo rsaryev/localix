@@ -16,7 +16,7 @@ import {
   restagePlugin,
   stagePluginKitBesideAsync,
 } from './stage-dropins.mjs'
-import { PLUGIN_KIT_INPUTS } from './stage-plugin-kit.mjs'
+import { MINI_APP_KIT_INPUTS } from './stage-plugin-kit.mjs'
 import { BUNDLED_DIRS, bundledRoots } from './lib/bundled-roots.mjs'
 
 /**
@@ -25,12 +25,12 @@ import { BUNDLED_DIRS, bundledRoots } from './lib/bundled-roots.mjs'
  * reads ("unknown layout"), so it re-stages promptly. Every other input only changes the kit's
  * CONTENT (declarations, styles, the template), which nothing needs within the second.
  */
-export const KIT_LAYOUT_INPUTS = PLUGIN_KIT_INPUTS.filter(
+export const KIT_LAYOUT_INPUTS = MINI_APP_KIT_INPUTS.filter(
   (input) => input.startsWith('scripts/') || input.endsWith('/kit-layout.ts'),
 )
 
 /**
- * Re-stage the plugin kit when anything it is made from changes (`PLUGIN_KIT_INPUTS`).
+ * Re-stage the plugin kit when anything it is made from changes (`MINI_APP_KIT_INPUTS`).
  *
  * The first defect: the kit was staged once at boot while `bun --watch` reloads the API on every
  * source edit, so the API's authoring code and the kit it reads drifted apart — `/plugin create`
@@ -45,7 +45,7 @@ export const KIT_LAYOUT_INPUTS = PLUGIN_KIT_INPUTS.filter(
  * content change only once the inputs have been quiet for `quietMs`, a stage never overlaps
  * another (changes during one earn exactly one more), and the stager runs as an async child.
  */
-export function watchPluginKitInputs({
+export function watchMiniAppKitInputs({
   repoRoot,
   outPlugins,
   cacheRoot,
@@ -96,7 +96,7 @@ export function watchPluginKitInputs({
       layout ? layoutDebounceMs : quietMs,
     )
   }
-  const watchers = PLUGIN_KIT_INPUTS.filter((input) => existsSync(join(repoRoot, input))).map(
+  const watchers = MINI_APP_KIT_INPUTS.filter((input) => existsSync(join(repoRoot, input))).map(
     (input) => {
       const path = join(repoRoot, input)
       const layout = KIT_LAYOUT_INPUTS.includes(input)

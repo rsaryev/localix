@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, mock, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
-import type { PluginToast, PluginToastOptions } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppToast, MiniAppToastOptions } from '@localixai/mini-app-sdk/ui'
 import type { useSourceControlStore as SourceControlStore } from './source-control/model/store'
 
 /**
@@ -14,7 +14,7 @@ import type { useSourceControlStore as SourceControlStore } from './source-contr
 interface Row {
   kind: string
   title: string
-  options?: PluginToastOptions
+  options?: MiniAppToastOptions
 }
 const rows: Row[] = []
 
@@ -24,12 +24,12 @@ beforeAll(async () => {
   realStore = (await import('./source-control/model/store')).useSourceControlStore.getState()
   teardown = registerDom()
   ;(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
-  const { bindPluginUiToast } = await import('@localixai/mini-app-sdk/ui')
-  const method = (kind: string) => (title: string, options?: PluginToastOptions) => {
+  const { bindMiniAppUiToast } = await import('@localixai/mini-app-sdk/ui')
+  const method = (kind: string) => (title: string, options?: MiniAppToastOptions) => {
     rows.push({ kind, title, options })
     return rows.length
   }
-  bindPluginUiToast(
+  bindMiniAppUiToast(
     Object.assign(method('message'), {
       success: method('success'),
       error: method('error'),
@@ -38,7 +38,7 @@ beforeAll(async () => {
       message: method('message'),
       problems: () => undefined,
       problemsCleared: () => {},
-    }) as PluginToast,
+    }) as MiniAppToast,
   )
 })
 // Bun runs every test file in one process: a probe left mounted, or a spy left in place, keeps

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ExternalLink } from 'lucide-react'
-import { pluginExternal } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppExternal } from '@localixai/mini-app-sdk/ui/runtime'
 import { Button } from '@localixai/kit/button'
 import { Input } from '@localixai/kit/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@localixai/kit/popover'
@@ -26,7 +26,7 @@ export function WebLink({ url, children }: { url: string; children: string }) {
         onDoubleClick={(event) => event.stopPropagation()}
       >
         <span className="block break-all text-xs text-text-soft">{url}</span>
-        <Button size="sm" className="mt-2" onClick={() => void pluginExternal.open(url)}>
+        <Button size="sm" className="mt-2" onClick={() => void miniAppExternal.open(url)}>
           <ExternalLink className="size-3.5" /> Open website
         </Button>
       </PopoverContent>

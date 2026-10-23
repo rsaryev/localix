@@ -12,19 +12,19 @@ import { register as registerKubernetes } from '../kubernetes/backend'
 import type {
   AgentTool,
   BackendSubsystem,
-  PluginRegistration,
+  MiniAppRegistration,
 } from '@localixai/mini-app-sdk/backend'
 
-function backendsOf(registration: PluginRegistration): BackendSubsystem[] {
+function backendsOf(registration: MiniAppRegistration): BackendSubsystem[] {
   if (!registration.backend) return []
   return Array.isArray(registration.backend) ? registration.backend : [registration.backend]
 }
 
-function toolsOf(registration: PluginRegistration): AgentTool[] {
+function toolsOf(registration: MiniAppRegistration): AgentTool[] {
   return registration.tools ? [...registration.tools] : []
 }
 
-export async function register(): Promise<PluginRegistration> {
+export async function register(): Promise<MiniAppRegistration> {
   const [docker, kubernetes] = await Promise.all([registerDocker(), registerKubernetes()])
 
   return {

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { PluginRouteScope } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppRouteScope } from '@localixai/mini-app-sdk/backend'
 
 import { gameSchema, replay } from '../shared/game'
 import { createGameService } from './game-service'
@@ -29,7 +29,7 @@ function routes(sessionId: string | null = 's1') {
       paceMs: 0,
     }),
   )
-  const scope: PluginRouteScope = {
+  const scope: MiniAppRouteScope = {
     userId: 'u1',
     ...(sessionId ? { sessionId } : {}),
     projectId: '',

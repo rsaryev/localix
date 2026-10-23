@@ -5,18 +5,18 @@
  * the same way whoever moved the course. Every chat's frames count: a course belongs to its chat,
  * and an agent tutoring in a background chat still moves the course open in another window.
  */
-import { pluginCommandBus, type PluginCommandEvent } from '@localixai/mini-app-sdk/ui/commands'
+import { miniAppCommandBus, type MiniAppCommandEvent } from '@localixai/mini-app-sdk/ui/commands'
 import { useResourceTopic } from '@localixai/mini-app-sdk/ui/shared-resource'
 import { useStoreChanges } from '@localixai/mini-app-sdk/ui/store-resource'
 import { useVisiblePolling } from '@localixai/mini-app-sdk/ui/visibility'
 import {
   LEARNING_CHANGES_CHANNEL,
-  LEARNING_PLUGIN,
+  LEARNING_MINI_APP,
   parseCourseChange,
 } from '../../shared/course-changes'
 import { LEARNING_COURSES } from './topics'
 
-export function applyCourseChange(event: Pick<PluginCommandEvent, 'sessionId' | 'payload'>) {
+export function applyCourseChange(event: Pick<MiniAppCommandEvent, 'sessionId' | 'payload'>) {
   if (parseCourseChange(event.payload)) LEARNING_COURSES.invalidate(event.sessionId)
 }
 
@@ -26,7 +26,7 @@ let registered = false
 export function initCourseChanges(): void {
   if (registered) return
   registered = true
-  pluginCommandBus.register(LEARNING_PLUGIN, LEARNING_CHANGES_CHANNEL, applyCourseChange)
+  miniAppCommandBus.register(LEARNING_MINI_APP, LEARNING_CHANGES_CHANNEL, applyCourseChange)
 }
 
 /**

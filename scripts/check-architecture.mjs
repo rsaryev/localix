@@ -460,7 +460,7 @@ function localWorkspacePackageName(specifier) {
   return match?.[1] === HOST_UI_KIT ? null : (match?.[1] ?? null)
 }
 
-function pluginWorkspaceImportProblem(specifier) {
+function miniAppWorkspaceImportProblem(specifier) {
   const packageName = localWorkspacePackageName(specifier)
   if (!packageName || pluginPublicWorkspacePackages.has(packageName)) return null
   return `plugin imports private workspace package ${specifier}; use @localixai/mini-app-sdk or another approved generic building block`
@@ -470,7 +470,7 @@ function pluginPathHasArea(path, area) {
   return appOfPath(path)?.rest.split('/').includes(area) ?? false
 }
 
-function pluginSdkLayerProblem(path, specifier) {
+function miniAppSdkLayerProblem(path, specifier) {
   if (pluginPathHasArea(path, 'ui') && specifier.startsWith('@localixai/mini-app-sdk/backend')) {
     return `plugin UI imports Node-only SDK surface ${specifier}`
   }
@@ -488,7 +488,7 @@ function pluginSdkLayerProblem(path, specifier) {
  * UI artifact build refuses it too. The kit is browser UI: its surfaces, the preview shell and
  * tests. A host-feature kit module is allowed only along a recorded {@link pluginKitDebt} edge.
  */
-function pluginHostBoundaryProblem(path, specifier) {
+function miniAppHostBoundaryProblem(path, specifier) {
   if (!appOfPath(path)) return null
   if (specifier.startsWith('@/')) {
     return `plugin imports host internals ${specifier}; use its ${HOST_UI_KIT} module (packages/kit/src/entries, or apps/ui/src/app/kit when the host lends it)`
@@ -562,50 +562,50 @@ assert.deepEqual(fixtureImports, [
   './dynamic',
   '@localixai/required',
 ])
-assert.equal(pluginWorkspaceImportProblem('@localixai/mini-app-sdk/backend'), null)
-assert.equal(pluginWorkspaceImportProblem('@localixai/agent/agents'), null)
+assert.equal(miniAppWorkspaceImportProblem('@localixai/mini-app-sdk/backend'), null)
+assert.equal(miniAppWorkspaceImportProblem('@localixai/agent/agents'), null)
 assert.match(
-  pluginWorkspaceImportProblem('@localixai/api/client') ?? '',
+  miniAppWorkspaceImportProblem('@localixai/api/client') ?? '',
   /private workspace package/u,
 )
 assert.match(
-  pluginWorkspaceImportProblem('@localix-mini-app/sample-extension') ?? '',
+  miniAppWorkspaceImportProblem('@localix-mini-app/sample-extension') ?? '',
   /private workspace package/u,
 )
 assert.match(
-  pluginSdkLayerProblem(
+  miniAppSdkLayerProblem(
     `${MINI_APPS_PREFIX}example/ui/register.tsx`,
     '@localixai/mini-app-sdk/backend',
   ) ?? '',
   /Node-only/u,
 )
 assert.match(
-  pluginSdkLayerProblem(
+  miniAppSdkLayerProblem(
     `${MINI_APPS_PREFIX}example/backend/index.ts`,
     '@localixai/mini-app-sdk/ui/runtime',
   ) ?? '',
   /browser-only/u,
 )
 assert.match(
-  pluginSdkLayerProblem(
+  miniAppSdkLayerProblem(
     `${MINI_APPS_PREFIX}example-suite/docker/ui/register.tsx`,
     '@localixai/mini-app-sdk/backend',
   ) ?? '',
   /Node-only/u,
 )
 assert.equal(
-  pluginHostBoundaryProblem(`${MINI_APPS_PREFIX}example/ui/register.tsx`, '@localixai/kit/button'),
+  miniAppHostBoundaryProblem(`${MINI_APPS_PREFIX}example/ui/register.tsx`, '@localixai/kit/button'),
   null,
 )
 assert.equal(
-  pluginHostBoundaryProblem(
+  miniAppHostBoundaryProblem(
     `${MINI_APPS_PREFIX}example-suite/docker/ui/register.tsx`,
     '@localixai/kit/button',
   ),
   null,
 )
 assert.equal(
-  pluginHostBoundaryProblem(
+  miniAppHostBoundaryProblem(
     `${MINI_APPS_PREFIX}example/backend/index.test.ts`,
     '@localixai/kit/testing',
   ),
@@ -617,19 +617,19 @@ for (const path of [
   `${MINI_APPS_PREFIX}example/ui/Panel.test.tsx`,
 ]) {
   assert.match(
-    pluginHostBoundaryProblem(path, '@/shared/ui/button') ?? '',
+    miniAppHostBoundaryProblem(path, '@/shared/ui/button') ?? '',
     /imports host internals/u,
   )
 }
 assert.match(
-  pluginHostBoundaryProblem(
+  miniAppHostBoundaryProblem(
     `${MINI_APPS_PREFIX}example/backend/index.ts`,
     '@localixai/kit/button',
   ) ?? '',
   /non-UI plugin/u,
 )
 assert.match(
-  pluginHostBoundaryProblem(
+  miniAppHostBoundaryProblem(
     `${MINI_APPS_PREFIX}example/ui/Box.tsx`,
     '@localixai/kit/user-settings',
   ) ?? '',
@@ -794,7 +794,7 @@ for (const bundledRoot of bundledRoots(root))
 // UI copy, fixtures, documentation, and vendored runtime text from silently
 // introducing a second language surface.
 const cyrillic = /[\u0400-\u04ff]/u
-const bundledPluginNames = []
+const bundledMiniAppNames = []
 const bundledPluginManifests = []
 const bundledPluginNameByDirectory = new Map()
 for (const bundledRoot of bundledRoots(root))
@@ -803,7 +803,7 @@ for (const bundledRoot of bundledRoots(root))
     try {
       const manifest = readExtensionManifest(join(bundledRoot, entry.name))
       if (typeof manifest.name === 'string') {
-        bundledPluginNames.push(manifest.name)
+        bundledMiniAppNames.push(manifest.name)
         bundledPluginManifests.push(manifest)
         bundledPluginNameByDirectory.set(entry.name, manifest.name)
       }
@@ -816,17 +816,17 @@ for (const bundledRoot of bundledRoots(root))
 // the real bundled register() results instead of a hand-maintained core allowlist. A
 // newly registered tool/provider/route/stream command therefore enters this guard in
 // the same change even if its author never edits check-architecture.mjs.
-const { discoverBundledPlugins } = await import('../apps/api/src/features/plugins/discovery.ts')
+const { discoverBundledMiniApps } = await import('../apps/api/src/features/plugins/discovery.ts')
 const { resolvePluginConfig } = await import('../apps/api/src/features/plugins/config.ts')
-const { inspectPluginTools } = await import('../apps/api/src/features/plugins/native.ts')
-const discoveredPlugins = await discoverBundledPlugins()
+const { inspectMiniAppTools } = await import('../apps/api/src/features/plugins/native.ts')
+const discoveredPlugins = await discoverBundledMiniApps()
 const nativePlugins = discoveredPlugins.filter((plugin) => plugin.provides.hasNativeTools)
 const nativeInspections = await Promise.all(
   nativePlugins.map(async (plugin) => ({
     plugin,
     // A fixture home: inspection builds a real context, which creates the plugin's roots, and
     // this check runs on every developer's machine.
-    inspection: await inspectPluginTools(plugin, resolvePluginConfig(plugin.manifest, undefined), {
+    inspection: await inspectMiniAppTools(plugin, resolvePluginConfig(plugin.manifest, undefined), {
       userId: 'architecture-audit',
       cwd: plugin.dir,
       homeDir: join(tmpdir(), 'localix-architecture-audit-home'),
@@ -955,7 +955,7 @@ const pluginIdentityGuard = createPluginIdentityGuard({
   contextProviders,
   wsCommands,
   channelNames,
-  pluginNames: bundledPluginNames,
+  pluginNames: bundledMiniAppNames,
   uiContributionIds: pluginUiContributionIds,
 })
 const identityPositiveControls = [
@@ -969,7 +969,7 @@ const identityPositiveControls = [
   `providerId: '${contextProviders[0]}'`,
   `messageType: '${wsCommands[0]}'`,
   ...(channelNames.length > 0 ? [`channelName: '${channelNames[0]}'`] : []),
-  `pluginName: '${bundledPluginNames[0]}'`,
+  `pluginName: '${bundledMiniAppNames[0]}'`,
   `workKind: '${[...pluginUiContributionIds][0]}'`,
 ]
 for (const [index, source] of identityPositiveControls.entries()) {
@@ -982,12 +982,12 @@ for (const [index, source] of identityPositiveControls.entries()) {
 // quoted form is how a core contract test once kept a list of files inside six bundled plugins,
 // and the relative-only pattern let it through.
 const concretePluginTreePattern = new RegExp(
-  `(?:(?:\\.\\./)+|\\$TURBO_ROOT\\$/|["'\`])${MINI_APPS_PREFIX}(?:${bundledPluginNames.join('|')})/`,
+  `(?:(?:\\.\\./)+|\\$TURBO_ROOT\\$/|["'\`])${MINI_APPS_PREFIX}(?:${bundledMiniAppNames.join('|')})/`,
   'u',
 )
 for (const control of [
-  `import x from '../../${MINI_APPS_PREFIX}${bundledPluginNames[0]}/ui/x'`,
-  `['${MINI_APPS_PREFIX}${bundledPluginNames[0]}/ui/X.tsx', 1]`,
+  `import x from '../../${MINI_APPS_PREFIX}${bundledMiniAppNames[0]}/ui/x'`,
+  `['${MINI_APPS_PREFIX}${bundledMiniAppNames[0]}/ui/X.tsx', 1]`,
 ]) {
   assert(
     concretePluginTreePattern.test(control),
@@ -1165,7 +1165,7 @@ for (const file of files) {
   }
 
   // A plugin tool description over 4 000 characters (the host's
-  // PLUGIN_TOOL_DESCRIPTION_MAX_CHARS) is truncated at load with one server-log
+  // MINI_APP_TOOL_DESCRIPTION_MAX_CHARS) is truncated at load with one server-log
   // line and nothing else. One bundled tool shipped at 6 887, so 2 888 characters —
   // its essential authoring constraints never reached a model. SCOPE: exported
   // `*DESCRIPTION*` template literals only. Descriptions
@@ -1292,7 +1292,7 @@ for (const file of files) {
   // `window.open` is how a link escapes the app WITHOUT the confirmation gate, and
   // inside the desktop shell WKWebView swallows it, so the link silently does
   // nothing. `openExternal.ts` owns the one sanctioned call; everything else asks
-  // through `platformCapabilities().external.open` (plugins: `pluginExternal`).
+  // through `platformCapabilities().external.open` (plugins: `miniAppExternal`).
   if (
     browserProductionSource &&
     path !== 'apps/ui/src/shared/lib/openExternal.ts' &&
@@ -1438,9 +1438,9 @@ for (const file of files) {
       }
     }
     if (pluginMatch && !testSource) {
-      const workspaceProblem = pluginWorkspaceImportProblem(specifier)
+      const workspaceProblem = miniAppWorkspaceImportProblem(specifier)
       if (workspaceProblem) problems.push(`${path}: ${workspaceProblem}`)
-      const sdkLayerProblem = pluginSdkLayerProblem(path, specifier)
+      const sdkLayerProblem = miniAppSdkLayerProblem(path, specifier)
       if (sdkLayerProblem) problems.push(`${path}: ${sdkLayerProblem}`)
     }
 
@@ -1523,12 +1523,12 @@ for (const file of files) {
     ) {
       problems.push(
         `${path}: plugin imports workspace internals (${target}); use an approved public ` +
-          'workspace package, @localixai/mini-app-sdk, or inject host-owned behavior through PluginContext',
+          'workspace package, @localixai/mini-app-sdk, or inject host-owned behavior through MiniAppContext',
       )
     }
     // Tests too: they reach the host through `@localixai/kit/testing`, never `@/`.
     if (pluginMatch) {
-      const hostProblem = pluginHostBoundaryProblem(path, specifier)
+      const hostProblem = miniAppHostBoundaryProblem(path, specifier)
       if (hostProblem) {
         const edge = `${path} -> ${specifier}`
         observedPluginKitEdges.add(edge)

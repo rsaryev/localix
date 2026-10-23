@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import type { StatusItemState } from '@localixai/mini-app-sdk/ui'
 import { registerDom } from '@localixai/kit/testing/dom'
 
-import { setEnabledPluginNames } from './pluginActivation'
+import { setEnabledPluginNames } from './miniAppActivation'
 import { registerStatusItem, StatusItems, statusItemsFor } from './statusItems'
 
 /** Every fixture owner, so the activation gate lets them through — see the fail-closed test. */

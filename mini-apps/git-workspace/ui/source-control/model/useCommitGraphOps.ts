@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { toast } from '@localixai/mini-app-sdk/ui'
 import type { BisectTerm, RepoCommit, ResetMode } from '../../../backend/source-control/contracts'
-import { PluginApiError } from '@localixai/mini-app-sdk/ui'
+import { MiniAppApiError } from '@localixai/mini-app-sdk/ui'
 import { useSourceControlStore } from './store'
 import { gitFailed } from './gitFailure'
 
@@ -44,7 +44,7 @@ export function useCommitGraphOps(sessionId: string, branch: string | null, relo
         // bumps nothing, yet a stopped rebase or cherry-pick has still moved HEAD — re-read it.
         reload()
         if (
-          err instanceof PluginApiError &&
+          err instanceof MiniAppApiError &&
           (err.code === 'git_revert_conflict' ||
             err.code === 'git_cherry_pick_conflict' ||
             err.code === 'git_rebase_conflict')
@@ -54,7 +54,7 @@ export function useCommitGraphOps(sessionId: string, branch: string | null, relo
               'Resolve the conflicts in the Changes tree, stage them, then Continue from the rebase banner — or Abort to back out.',
           })
         } else if (
-          err instanceof PluginApiError &&
+          err instanceof MiniAppApiError &&
           (err.code === 'git_rebase_dirty' || err.code === 'git_rebase_nothing_staged')
         ) {
           // A precondition, not a failure: a transient answer naming what to fix. As a warning row

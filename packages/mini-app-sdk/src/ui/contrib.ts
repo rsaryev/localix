@@ -1,12 +1,12 @@
 export * from './message-bindings'
 import type { MessageContextBindingDraft } from './message-bindings'
 import type { ComponentType, LazyExoticComponent } from 'react'
-import type { PluginCategory } from '../manifest'
+import type { MiniAppCategory } from '../manifest'
 
 /**
  * Workbench UI contribution contracts. The host (`apps/ui`) implements the open
  * registries these describe; a plugin's `ui/register.tsx` receives them through
- * the {@link PluginUiHost} argument and registers its WorkItem kinds, rail
+ * the {@link MiniAppUiHost} argument and registers its WorkItem kinds, rail
  * sections/viewlets, search domain, resource icons, and file editors.
  */
 
@@ -14,7 +14,7 @@ import type { PluginCategory } from '../manifest'
 export type IconComponent = ComponentType<{ className?: string }>
 
 /** Host-assigned owner for a bundled plugin contribution. Plugin code never sets it. */
-export interface PluginOwnedContribution {
+export interface MiniAppOwnedContribution {
   pluginName?: string
 }
 
@@ -59,7 +59,7 @@ export interface WorkItemAgentContext {
   nextSteps?: readonly string[]
 }
 
-export interface WorkItemKindContribution extends PluginOwnedContribution {
+export interface WorkItemKindContribution extends MiniAppOwnedContribution {
   /** The contributed `WorkItemKind` string (a registered subsystem tab kind). */
   kind: string
   /** Grid tab component; may be lazy. Rendered by the editor-grid registry.
@@ -126,7 +126,7 @@ export interface WorkItemKindContribution extends PluginOwnedContribution {
   placement?: 'editor' | 'aux'
 }
 
-export interface RailSectionContribution extends PluginOwnedContribution {
+export interface RailSectionContribution extends MiniAppOwnedContribution {
   /** The rail section id — also this subsystem's `SectionId` in the URL surface. */
   id: string
   title: string
@@ -152,9 +152,9 @@ export interface RailSectionContribution extends PluginOwnedContribution {
  * of the given WorkItemKind. A viewlet may also carry an always-mounted `Mount`
  * (e.g. a client-side data publisher feeding its tab).
  */
-export interface RailViewletContribution extends PluginOwnedContribution {
+export interface RailViewletContribution extends MiniAppOwnedContribution {
   /** Category for a built-in tool in the rail catalog; plugin owners use their manifest category. */
-  toolCategory?: PluginCategory
+  toolCategory?: MiniAppCategory
   /** The GLOBAL singleton `WorkItemKind` this button opens (also its stable tab id). */
   kind: string
   Icon: IconComponent
@@ -181,7 +181,7 @@ export interface RailViewletContribution extends PluginOwnedContribution {
  * physical position in a layout, so two providers cannot both occupy it and a silent race for it
  * would be worse than a documented winner.
  */
-export interface WorkItemSlotContribution extends PluginOwnedContribution {
+export interface WorkItemSlotContribution extends MiniAppOwnedContribution {
   /**
    * The host slot being filled, `<area>.<name>` by convention (`diff.interactive`,
    * `diff.provenance`). The host defines the vocabulary; an unknown slot renders nothing.
@@ -218,7 +218,7 @@ export interface SessionSurfaceProps {
   context?: unknown
 }
 
-export interface SessionSurfaceContribution extends PluginOwnedContribution {
+export interface SessionSurfaceContribution extends MiniAppOwnedContribution {
   /**
    * The shell surface, `<area>.<name>` by convention (`chat.background`, `composer.context`,
    * `composer.header` — a strip above the composer, passed `{ isFocused }` — and

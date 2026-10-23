@@ -2,7 +2,7 @@
  * Process-wide trading-service singleton.
  *
  * `register()` runs MORE THAN ONCE per process: once at boot (route/subsystem contribution
- * via `loadPluginBackends`) and again per agent run (the tool contribution, via the per-run
+ * via `loadMiniAppBackends`) and again per agent run (the tool contribution, via the per-run
  * plugin loader). BOTH must share ONE `TradingService`, because the live-driver registry
  * (open exchange clients, their keep-alive sockets and rate-limiters) lives in memory on the
  * instance — a second instance would re-authenticate on every agent call and leak sockets.

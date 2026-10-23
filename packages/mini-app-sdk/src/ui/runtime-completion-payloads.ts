@@ -18,7 +18,7 @@ import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
  * A plugin editor passes its own anchors (a statement's tables); the host adds what is open on
  * screen and resolves everything server-side, so a plugin never sends content it read itself.
  */
-export interface PluginCompletionReference {
+export interface MiniAppCompletionReference {
   kind: string
   token: string
   label: string
@@ -33,7 +33,7 @@ export interface PluginCompletionReference {
  * host owns the debounce, the one shared model call, caching, stale-reply protection, retries and
  * Tab/Escape — and attaches what the user has open, so the field is grounded without plugin code.
  */
-export interface PluginTextInputCompletionInput<TPayload = unknown> {
+export interface MiniAppTextInputCompletionInput<TPayload = unknown> {
   surface: string
   sessionId: string | null
   value: string
@@ -42,7 +42,7 @@ export interface PluginTextInputCompletionInput<TPayload = unknown> {
   payload: TPayload
   /** Changes whenever the server-side grounding may have changed (a new change set, a new row). */
   contextKey: string
-  /** The route switch — usually `usePluginEditPredictionEnabled()`. */
+  /** The route switch — usually `useMiniAppEditPredictionEnabled()`. */
   enabled: boolean
   /** Field-specific gate: not submitting, no menu open, draft still eligible. */
   active: boolean
@@ -50,7 +50,7 @@ export interface PluginTextInputCompletionInput<TPayload = unknown> {
   caretAtEnd: boolean
 }
 
-export interface PluginTextInputCompletion {
+export interface MiniAppTextInputCompletion {
   /** Append-only ghost text, including any required joining whitespace. */
   suggestion: string
   accept: (unit?: 'all' | 'word' | 'line') => boolean
@@ -62,7 +62,7 @@ export interface PluginTextInputCompletion {
   handleCompositionEnd: () => void
 }
 
-export interface PluginEditPredictionRequest {
+export interface MiniAppEditPredictionRequest {
   file: string
   content: string
   cursorLine: number
@@ -79,18 +79,18 @@ export interface PluginEditPredictionRequest {
     endLine?: number
   }>
   /** The editor's anchors. The host appends the shared working set before sending. */
-  contextReferences?: PluginCompletionReference[]
+  contextReferences?: MiniAppCompletionReference[]
 }
 
-export interface PluginEditPrediction {
+export interface MiniAppEditPrediction {
   startLine: number
   endLine: number
   original: string
   replacement: string
 }
 
-export type PluginEditPredictionResult =
-  | { outcome: 'predicted'; edits: PluginEditPrediction[] }
+export type MiniAppEditPredictionResult =
+  | { outcome: 'predicted'; edits: MiniAppEditPrediction[] }
   | {
       outcome: 'empty' | 'stale_delivery'
       edits: null

@@ -1,4 +1,4 @@
-import type { PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'
 
 import { createCommitCompletionSurface } from './inline-completion'
 import { createGitContextProvider } from './source-control/context-provider'
@@ -12,7 +12,7 @@ import { createSourceControlRoutes } from './source-control/routes'
 import { createSourceControlService } from './source-control/service'
 import { createGitResourceService } from './resource-service'
 
-export async function register(ctx: PluginContext) {
+export async function register(ctx: MiniAppContext) {
   const workspaces = ctx.host?.workspaces
   // Native entrypoints are also invoked by generic tool/channel/monitor
   // inspection, where host services are intentionally absent. This plugin has

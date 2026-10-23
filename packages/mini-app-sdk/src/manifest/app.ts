@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { pluginManifestCoreSchema } from './index'
+import { miniAppManifestCoreSchema } from './index'
 import { PLUGIN_NAME_RE, PLUGIN_QUALIFIED_NAME_RE } from './primitives'
 
 /**
@@ -39,7 +39,7 @@ export const manifestAuthorSchema = z.union([
   }),
 ])
 
-export const miniAppManifestSchema = pluginManifestCoreSchema.extend({
+export const miniAppManifestSchema = miniAppManifestCoreSchema.extend({
   name: z
     .string()
     .regex(PLUGIN_NAME_RE, 'A mini app name must be letters, numbers, dashes or underscores.'),

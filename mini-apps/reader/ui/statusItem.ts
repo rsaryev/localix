@@ -1,7 +1,7 @@
 import { BookOpen, Library } from 'lucide-react'
 import type { StatusItemState } from '@localixai/mini-app-sdk/ui'
-import { pluginWorkspace, statusMenuList } from '@localixai/mini-app-sdk/ui'
-import { usePluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime-hooks'
+import { miniAppWorkspace, statusMenuList } from '@localixai/mini-app-sdk/ui'
+import { useMiniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 
 const BOOK_KIND = 'reader:book'
 const WORKSPACE_KIND = 'reader:workspace'
@@ -25,7 +25,7 @@ const WORKSPACE_KIND = 'reader:workspace'
  * chat's titlebar landed in whichever chat was in front. No session, no item.
  */
 export function useReaderStatusItem(sessionId: string | null): StatusItemState | null {
-  const workspace = usePluginWorkspace()
+  const workspace = useMiniAppWorkspace()
 
   const books = Object.entries(workspace.items)
     .filter(([, item]) => item?.kind === BOOK_KIND)
@@ -38,7 +38,7 @@ export function useReaderStatusItem(sessionId: string | null): StatusItemState |
   const active = focusedId !== null && books.some((book) => book.id === focusedId)
 
   const reveal = (book: (typeof books)[number]) =>
-    pluginWorkspace.openWorkItem({
+    miniAppWorkspace.openWorkItem({
       workKind: BOOK_KIND,
       id: book.id,
       title: book.title,
@@ -46,7 +46,7 @@ export function useReaderStatusItem(sessionId: string | null): StatusItemState |
     })
 
   const openLibrary = () =>
-    pluginWorkspace.openWorkItem({
+    miniAppWorkspace.openWorkItem({
       workKind: WORKSPACE_KIND,
       id: WORKSPACE_KIND,
       title: 'Reader',

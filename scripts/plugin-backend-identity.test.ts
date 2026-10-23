@@ -2,11 +2,11 @@ import { describe, expect, test } from 'bun:test'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { discoverBundledPlugins } from '../apps/api/src/features/plugins/discovery'
-import { pluginBackendIdentityProblems } from '../apps/api/src/features/plugins/backend-host-plan'
-import { inspectPluginTools } from '../apps/api/src/features/plugins/native'
+import { discoverBundledMiniApps } from '../apps/api/src/features/plugins/discovery'
+import { miniAppBackendIdentityProblems } from '../apps/api/src/features/plugins/backend-host-plan'
+import { inspectMiniAppTools } from '../apps/api/src/features/plugins/native'
 import { resolvePluginConfig } from '../apps/api/src/features/plugins/config'
-import type { PluginHostServices } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppHostServices } from '@localixai/mini-app-sdk/backend'
 
 /**
  * A host that says yes to everything, so a plugin gets as far as declaring its contributions.
@@ -20,13 +20,13 @@ import type { PluginHostServices } from '@localixai/mini-app-sdk/backend'
  *
  * It is only ever asked for identities. Nothing here is called.
  */
-function permissiveHost(): PluginHostServices {
+function permissiveHost(): MiniAppHostServices {
   const yes = (): unknown =>
     new Proxy(() => undefined, {
       apply: () => Promise.resolve(null),
       get: (_target, key) => (key === 'then' ? undefined : yes()),
     })
-  return new Proxy({} as PluginHostServices, {
+  return new Proxy({} as MiniAppHostServices, {
     get: (_target, key) => (key === 'then' ? undefined : yes()),
     has: () => true,
   })
@@ -35,7 +35,7 @@ function permissiveHost(): PluginHostServices {
 /**
  * Every identity a bundled plugin's backend registers must be namespaced by its manifest name.
  *
- * The rule already exists — {@link pluginBackendIdentityProblems} is what the backend host applies
+ * The rule already exists — {@link miniAppBackendIdentityProblems} is what the backend host applies
  * at wire time — but its only consequence there is a log line and a subsystem that contributes
  * nothing. A plugin shipped with its bare manifest name as a subsystem id (no colon) and was
  * rejected on every boot for as long as core happened to mount the same routes itself. The day
@@ -45,7 +45,7 @@ function permissiveHost(): PluginHostServices {
  */
 describe('bundled plugin backend identities', () => {
   test('every registered identity is namespaced by its owning plugin', async () => {
-    const bundled = (await discoverBundledPlugins()).filter(
+    const bundled = (await discoverBundledMiniApps()).filter(
       (plugin) => plugin.provides.hasNativeTools,
     )
     // A scan that reaches nothing is a disabled lint: an empty problem list looks exactly like a
@@ -56,7 +56,7 @@ describe('bundled plugin backend identities', () => {
     const problems: string[] = []
     const contributors: string[] = []
     for (const plugin of bundled) {
-      const inspection = await inspectPluginTools(
+      const inspection = await inspectMiniAppTools(
         plugin,
         resolvePluginConfig(plugin.manifest, undefined),
         // A fixture home: a real context creates the plugin's roots.
@@ -70,7 +70,7 @@ describe('bundled plugin backend identities', () => {
       if (inspection.backendSubsystems.length > 0) contributors.push(plugin.manifest.name)
       for (const id of inspection.backendSubsystems) {
         problems.push(
-          ...pluginBackendIdentityProblems(plugin.manifest.name, { id } as never).map(
+          ...miniAppBackendIdentityProblems(plugin.manifest.name, { id } as never).map(
             (problem) => `${plugin.manifest.name}: ${problem}`,
           ),
         )
@@ -79,7 +79,7 @@ describe('bundled plugin backend identities', () => {
         // The subsystem id here is a stand-in that already satisfies the rule: this pass is asking
         // only about the CONTEXT PROVIDER's name, and the subsystem ids were checked above.
         problems.push(
-          ...pluginBackendIdentityProblems(plugin.manifest.name, {
+          ...miniAppBackendIdentityProblems(plugin.manifest.name, {
             id: `${plugin.manifest.name}:audit`,
             contextProviders: [{ provider: { id } }],
           } as never).map((problem) => `${plugin.manifest.name}: ${problem}`),
@@ -87,7 +87,7 @@ describe('bundled plugin backend identities', () => {
       }
       for (const command of inspection.wsCommands) {
         problems.push(
-          ...pluginBackendIdentityProblems(plugin.manifest.name, {
+          ...miniAppBackendIdentityProblems(plugin.manifest.name, {
             id: `${plugin.manifest.name}:audit`,
             wsFrames: [{ subscribeCommand: command, unsubscribeCommand: command }],
           } as never).map((problem) => `${plugin.manifest.name}: ${problem}`),

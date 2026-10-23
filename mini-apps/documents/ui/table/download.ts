@@ -1,4 +1,4 @@
-import { pluginFiles } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppFiles } from '@localixai/mini-app-sdk/ui/runtime'
 import { tableApi } from '../api/tableApi'
 
 function safeName(title: string | undefined, fallback: string): string {
@@ -22,5 +22,5 @@ export async function downloadTable(
   title?: string,
 ): Promise<void> {
   const filename = `${safeName(title, tableId)}.${extension}`
-  await pluginFiles.download(tableApi.exportPath(tableId, formatId), filename)
+  await miniAppFiles.download(tableApi.exportPath(tableId, formatId), filename)
 }

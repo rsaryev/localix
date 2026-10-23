@@ -1,8 +1,8 @@
 import type { ViteHotContext } from 'vite/types/hot.d.ts'
-import type { PluginUiHost } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppUiHost } from '@localixai/mini-app-sdk/ui'
 import { isContextualUiSurface } from '@localixai/mini-app-sdk/ui'
 import { platformCapabilities } from '@/shared/lib/platformCapabilities'
-import { pluginUiHost } from './host'
+import { miniAppUiHost } from './host'
 import { registerContextualUiSurface } from './uiSurfaces'
 import { registerDiscoveredUiSurfaces, type DiscoveredUiSurface } from './uiSurfaceDiscovery'
 
@@ -16,7 +16,7 @@ import { registerDiscoveredUiSurfaces, type DiscoveredUiSurface } from './uiSurf
  * new subsystem is therefore just adding its `contrib` file — core references
  * nothing (no per-subsystem imports or calls live here).
  *
- * Every hook receives the {@link PluginUiHost} registration façade. Core feature
+ * Every hook receives the {@link MiniAppUiHost} registration façade. Core feature
  * contribs may ignore it (they can reach the registries directly); PLUGIN hooks
  * should register through it — that's the SDK contract an externally-loaded UI
  * will get too.
@@ -85,7 +85,7 @@ let surfacesReady: Promise<void> | null = null
 function registerSurface(surface: DiscoveredUiSurface): boolean {
   return isContextualUiSurface(surface)
     ? registerContextualUiSurface(surface)
-    : pluginUiHost.locations.register(surface)
+    : miniAppUiHost.locations.register(surface)
 }
 
 /**
@@ -108,7 +108,7 @@ export function discoverUi(): void {
   if (discovered) return
   discovered = true
   for (const mod of Object.values(contribModules)) {
-    ;(mod as { registerUi?: (host: PluginUiHost) => void }).registerUi?.(pluginUiHost)
+    ;(mod as { registerUi?: (host: MiniAppUiHost) => void }).registerUi?.(miniAppUiHost)
   }
   // Start the staged phase immediately; do not block app composition on it.
   // A surface that fails to register is a silently missing destination, so the

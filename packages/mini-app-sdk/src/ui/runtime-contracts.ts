@@ -8,39 +8,39 @@
 export * from './runtime-payloads'
 import type { MessageBindingDraft, MessageContextBindingDraft } from './contrib'
 import type {
-  PluginComposerInsert,
-  PluginConversationImport,
-  PluginEditPredictionRequest,
-  PluginEditPredictionResult,
-  PluginFileContent,
-  PluginOpenDiffRequest,
-  PluginOpenFileRequest,
-  PluginOpenPreviewRequest,
-  PluginResourceBrowseResult,
-  PluginSecretReference,
-  PluginSession,
-  PluginTextInputCompletion,
-  PluginTextInputCompletionInput,
-  PluginTranscriptInput,
-  PluginWorkItemRequest,
-  PluginWorkspaceSnapshot,
-  PluginWorkspaceWatchHandlers,
+  MiniAppComposerInsert,
+  MiniAppConversationImport,
+  MiniAppEditPredictionRequest,
+  MiniAppEditPredictionResult,
+  MiniAppFileContent,
+  MiniAppOpenDiffRequest,
+  MiniAppOpenFileRequest,
+  MiniAppOpenPreviewRequest,
+  MiniAppResourceBrowseResult,
+  MiniAppSecretReference,
+  MiniAppSession,
+  MiniAppTextInputCompletion,
+  MiniAppTextInputCompletionInput,
+  MiniAppTranscriptInput,
+  MiniAppWorkItemRequest,
+  MiniAppWorkspaceSnapshot,
+  MiniAppWorkspaceWatchHandlers,
 } from './runtime-payloads'
 
-export interface PluginUiRuntime {
+export interface MiniAppUiRuntime {
   workspace: {
-    openWorkItem(request: PluginWorkItemRequest): void
+    openWorkItem(request: MiniAppWorkItemRequest): void
     /** Open a file in the host editor at an exact line/column — the native "jump to source" door. */
-    openFile(request: PluginOpenFileRequest): void
+    openFile(request: MiniAppOpenFileRequest): void
     /** Open a computed patch in the host's diff viewer. */
-    openDiff(request: PluginOpenDiffRequest): void
+    openDiff(request: MiniAppOpenDiffRequest): void
     /**
      * Serve a directory of built files and show its entry in the host's Preview panel.
      *
      * Rejects when the file does not exist inside the directory, so a caller can report the reason
      * instead of opening an empty panel.
      */
-    openPreview(request: PluginOpenPreviewRequest): Promise<void>
+    openPreview(request: MiniAppOpenPreviewRequest): Promise<void>
     /**
      * Close every tab of this plugin's whose id is `prefix` or a `prefix:` child. A session-scoped
      * tab carries its chat in its id, so say which chats the close reaches: `session` closes that
@@ -50,11 +50,11 @@ export interface PluginUiRuntime {
     closeWorkItems(prefix: string, options?: { session?: string; everyChat?: boolean }): void
     focusWorkItem(id: string): void
     openSidebarSection(sectionId: string | null): void
-    getSnapshot(): PluginWorkspaceSnapshot
+    getSnapshot(): MiniAppWorkspaceSnapshot
     subscribe(listener: () => void): () => void
   }
   composer: {
-    insert(request: PluginComposerInsert): void
+    insert(request: MiniAppComposerInsert): void
   }
   // Every terminal belongs to a chat: its PTY runs in that chat's workspace and its tab lives in
   // that chat. `null` used to mean "whichever chat is on screen" — or an unbound shell in $HOME.
@@ -112,19 +112,19 @@ export interface PluginUiRuntime {
       sessionId: string,
       path: string,
       options?: { full?: boolean; knownHash?: string; signal?: AbortSignal },
-    ): Promise<PluginFileContent>
+    ): Promise<MiniAppFileContent>
     /**
      * The raw on-disk change feed of ONE chat's workspace, armed for as long as it is held.
      *
      * A host door rather than a bridge event: the sandboxed iframe tier never receives file paths
      * (`bridge.ts` keeps `fs.changed` off its allow-list), while native workbench UI already runs
-     * with the consent of a native backend. Plugins call {@link pluginFiles.watchWorkspace}, which
+     * with the consent of a native backend. Plugins call {@link miniAppFiles.watchWorkspace}, which
      * coalesces this feed; the host only filters by chat and reports liveness.
      */
-    watchWorkspace(sessionId: string, handlers: PluginWorkspaceWatchHandlers): () => void
+    watchWorkspace(sessionId: string, handlers: MiniAppWorkspaceWatchHandlers): () => void
   }
   secrets: {
-    listReferences(): Promise<PluginSecretReference[]>
+    listReferences(): Promise<MiniAppSecretReference[]>
     set(request: { key: string; value: string }): Promise<void>
   }
   realtime: {
@@ -141,13 +141,13 @@ export interface PluginUiRuntime {
   // on screen. Reading the active one made a background board wake, insert into and open things
   // in another chat.
   sessions: {
-    list(): readonly PluginSession[]
+    list(): readonly MiniAppSession[]
     subscribe(listener: () => void): () => void
     stop(sessionId: string): Promise<void>
     interact(requestId: string, action: string, payload: Record<string, unknown>): Promise<void>
     /** Answers with the created session AND the project it landed in (never project-less). */
-    importConversation(input: PluginConversationImport): Promise<{ id: string; projectId: string }>
-    openTranscript(input: PluginTranscriptInput): void
+    importConversation(input: MiniAppConversationImport): Promise<{ id: string; projectId: string }>
+    openTranscript(input: MiniAppTranscriptInput): void
   }
   navigation: {
     /** `projectId` omitted ⇒ resolve the session's own project from the workspace. */
@@ -162,7 +162,7 @@ export interface PluginUiRuntime {
   }
   resources: {
     /** Browse the host's provider registry without exposing providers or backend clients. */
-    browse(partial: string, sessionId?: string | null): Promise<PluginResourceBrowseResult>
+    browse(partial: string, sessionId?: string | null): Promise<MiniAppResourceBrowseResult>
   }
   projects: {
     resolvePath(path: string): Promise<{ id: string }>
@@ -173,13 +173,13 @@ export interface PluginUiRuntime {
     subscribe(listener: () => void): () => void
     predictNextEdit(
       sessionId: string,
-      request: PluginEditPredictionRequest,
+      request: MiniAppEditPredictionRequest,
       signal?: AbortSignal,
-    ): Promise<PluginEditPredictionResult>
+    ): Promise<MiniAppEditPredictionResult>
   }
   completion: {
     /** A React hook the host provides: ghost-text completion for one plugin text field. */
-    useTextInput(input: PluginTextInputCompletionInput): PluginTextInputCompletion
+    useTextInput(input: MiniAppTextInputCompletionInput): MiniAppTextInputCompletion
   }
   clipboard: {
     writeText(text: string): Promise<boolean>

@@ -18,7 +18,7 @@ beforeAll(() => {
 })
 
 afterAll(async () => {
-  const { setEnabledPluginNames } = await import('@/shared/contrib/pluginActivation')
+  const { setEnabledPluginNames } = await import('@/shared/contrib/miniAppActivation')
   setEnabledPluginNames(null)
   await new Promise((resolve) => setTimeout(resolve, 0))
   await teardown()
@@ -194,7 +194,7 @@ beforeAll(async () => {
   fit = await import('@localixai/kit/workbench-statusbar')
   dropdown = await import('@localixai/kit/dropdown-menu')
   overflowModule = await import('./TitlebarOverflowItems')
-  const { setEnabledPluginNames } = await import('@/shared/contrib/pluginActivation')
+  const { setEnabledPluginNames } = await import('@/shared/contrib/miniAppActivation')
 
   for (const [plugin, state] of SPEAKING) register(plugin, state)
   for (const plugin of SILENT) register(plugin, null)

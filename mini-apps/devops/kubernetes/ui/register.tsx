@@ -1,6 +1,6 @@
 import { Boxes, Layers, Server, Network, CalendarClock } from 'lucide-react'
 
-import { resourceMessageBindingDraft, type PluginUiHost } from '@localixai/mini-app-sdk/ui'
+import { resourceMessageBindingDraft, type MiniAppUiHost } from '@localixai/mini-app-sdk/ui'
 import { buildK8sNodeUri, buildK8sPodUri, buildK8sWorkloadUri } from './model/resourceLink'
 import { resolveKubernetesAnchor } from './register/anchor'
 import { KubernetesPodBody, KubernetesResourceBody } from './register/bodies'
@@ -15,7 +15,7 @@ import { KubernetesPodBody, KubernetesResourceBody } from './register/bodies'
  * The provider intentionally does not own a rail section: the root DevOps plugin
  * composes it with Docker behind the single DevOps Workspace entry.
  */
-export function registerKubernetesContributions(host: PluginUiHost): void {
+export function registerKubernetesContributions(host: MiniAppUiHost): void {
   host.workItems.register({
     kind: 'devops:kubernetes-pod',
     Component: KubernetesPodBody,

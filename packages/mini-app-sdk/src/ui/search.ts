@@ -1,4 +1,4 @@
-import type { IconComponent, PluginOwnedContribution } from './contrib'
+import type { IconComponent, MiniAppOwnedContribution } from './contrib'
 
 /**
  * Search-domain contribution contracts — a subsystem contributes its own search
@@ -26,7 +26,7 @@ export interface SearchDomainScope {
   lazy?: boolean
 }
 
-export interface SearchDomainContribution extends PluginOwnedContribution {
+export interface SearchDomainContribution extends MiniAppOwnedContribution {
   /** Backend search-provider id (matches the scope id). */
   id: string
   /** The scope-picker atom this domain adds (label / prefix / aliases / placeholder). */

@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { summarizeZodIssues } from '@localixai/mini-app-sdk/backend'
-import type { PluginRouteContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppRouteContext } from '@localixai/mini-app-sdk/backend'
 import {
   applyManifestSchema,
   contextQuerySchema,
@@ -33,7 +33,7 @@ import type { KubeErrorResponse } from './contracts'
  * renders as a quiet empty state rather than an error toast.
  */
 export function createKubernetesRoutes(service: KubernetesService) {
-  const app = new Hono<PluginRouteContext>()
+  const app = new Hono<MiniAppRouteContext>()
 
   const routes = app
     .get('/contexts', (c) => guarded(c, () => service.listContexts()))

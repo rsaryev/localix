@@ -3,7 +3,7 @@ import { toast } from '@localixai/mini-app-sdk/ui'
 import type { ActionFeedbackInput, ActionFeedbackStore } from '@localixai/kit/action-feedback'
 import { useSessionGitField, useSourceControlStore } from '../model/store'
 import { gitFailed } from '../model/gitFailure'
-import { PluginApiError } from '@localixai/mini-app-sdk/ui'
+import { MiniAppApiError } from '@localixai/mini-app-sdk/ui'
 
 /**
  * Every branch command the panel offers, plus the concurrency and refusals they
@@ -158,7 +158,7 @@ export function useBranchSwitcher(sessionId: string | null, anchor?: ActionFeedb
       try {
         await deleteBranch(sessionId, name, force)
       } catch (err) {
-        if (!force && err instanceof PluginApiError && err.code === 'git_branch_not_merged') {
+        if (!force && err instanceof MiniAppApiError && err.code === 'git_branch_not_merged') {
           toast.warning(`"${name}" isn't fully merged`, {
             description: 'Deleting it may lose commits that exist only on this branch.',
             action: { label: 'Delete anyway', onClick: () => void runDelete(name, true) },
@@ -204,7 +204,7 @@ export function useBranchSwitcher(sessionId: string | null, anchor?: ActionFeedb
         await mergeBranchOp(sessionId, name, noFastForward)
         feedback.show(`Merged ${name} into ${currentBranch ?? 'HEAD'}`, { tone: 'success' })
       } catch (err) {
-        if (err instanceof PluginApiError && err.code === 'git_merge_conflict') {
+        if (err instanceof MiniAppApiError && err.code === 'git_merge_conflict') {
           toast.warning(`Merging ${name} stopped on conflicts`, {
             description: 'Resolve and stage them in Changes, then commit — or abort the merge.',
             action: {

@@ -6,12 +6,12 @@ import type { ResourceProviderRegistry } from '../agent-core/resource-refs/provi
 import type { SearchProviderRegistry } from '../agent-core/search/provider'
 import type { ContextProviderRegistry } from '../context-fabric/registry'
 import type { TextInputSurfaceRegistry } from '../suggest/surface-registry'
-import type { PluginRouteScope } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppRouteScope } from '@localixai/mini-app-sdk/backend'
 import type { PluginConditions } from '../notifications/conditions/plugins'
-import type { PluginUiActionCall } from './backend-host-ui-actions'
+import type { MiniAppUiActionCall } from './backend-host-ui-actions'
 
-export interface PluginBackendHostDeps {
-  /** Thunk over `loadPluginBackends` — the desired (enabled) set, freshly loaded. */
+export interface MiniAppBackendHostDeps {
+  /** Thunk over `loadMiniAppBackends` — the desired (enabled) set, freshly loaded. */
   loadBackends: () => Promise<
     Array<{
       pluginName: string
@@ -43,7 +43,7 @@ export interface PluginBackendHostDeps {
   resolveScope?: (input: {
     userId: string
     request: Request
-  }) => Promise<PluginRouteScope> | PluginRouteScope
+  }) => Promise<MiniAppRouteScope> | MiniAppRouteScope
   /** Where a rejected backend or a failed reconcile becomes a standing Event Center row. */
   conditions?: Pick<PluginConditions, 'backendProblems' | 'reconciled'>
   logger?: {
@@ -52,7 +52,7 @@ export interface PluginBackendHostDeps {
   }
 }
 
-export interface PluginBackendHost {
+export interface MiniAppBackendHost {
   /** The stable route dispatcher — mount ONCE where the static subsystem
    *  `app.route()` loop used to sit (before the `/rpc` chat catch-all). */
   middleware(): MiddlewareHandler
@@ -64,7 +64,7 @@ export interface PluginBackendHost {
    *  setting it registers the already-wired subsystems' search providers. */
   setSearchRegistry(registry: SearchProviderRegistry): void
   /** Invoke one operation owned by an enabled plugin's sandboxed UI. */
-  invokeUiAction(input: PluginUiActionCall): Promise<unknown>
+  invokeUiAction(input: MiniAppUiActionCall): Promise<unknown>
   /** Currently wired plugin names (diagnostics/tests). */
   wired(): string[]
   /**

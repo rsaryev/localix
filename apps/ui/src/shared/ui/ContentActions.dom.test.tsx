@@ -2,9 +2,9 @@ import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { ActionSurfaceProvider, type ActionContext } from '@localixai/mini-app-sdk/ui'
 import { WorkItemSessionProvider } from '@localixai/mini-app-sdk/ui/work-item-session'
-import { bindPluginUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
+import { bindMiniAppUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
 import { registerAction, removeActionsOf } from '@/shared/contrib/actions'
-import { setEnabledPluginNames } from '@/shared/contrib/pluginActivation'
+import { setEnabledPluginNames } from '@/shared/contrib/miniAppActivation'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -18,7 +18,7 @@ test('answer fragments offer exact source, native targets and owning session; st
   const { createRoot } = await import('react-dom/client')
   const { default: MarkdownRendererImpl } = await import('./MarkdownRendererImpl')
   const received: ActionContext[] = []
-  const unbind = bindPluginUiTestDoubles()
+  const unbind = bindMiniAppUiTestDoubles()
   setEnabledPluginNames(new Set(['fragment-fixture']))
   registerAction({
     id: 'fragment-fixture:save',

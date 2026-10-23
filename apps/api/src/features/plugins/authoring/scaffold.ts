@@ -5,8 +5,8 @@ import { basename, join } from 'node:path'
 import { MANIFEST_FILE } from '@localixai/claude-plugin'
 import { MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
 import { TEMPLATE_SCAFFOLD_FILE } from './kit-layout'
-import type { PluginKit } from './kit'
-import { writePluginKitCatalog } from './kit-catalog'
+import type { MiniAppKit } from './kit'
+import { writeMiniAppKitCatalog } from './kit-catalog'
 import { agentsMd, readme } from './prose'
 import {
   fillPlaceholders,
@@ -43,7 +43,7 @@ const MAX_NAME_LENGTH = 40
  * mechanical, so the host applies it. Nothing usable (all punctuation, another script) falls back
  * to a generic name the free-name search then makes unique.
  */
-export function toPluginName(raw: string): string {
+export function toMiniAppName(raw: string): string {
   const slug = raw
     .normalize('NFKD')
     .replace(/[̀-ͯ]/gu, '')
@@ -55,7 +55,7 @@ export function toPluginName(raw: string): string {
   return PLUGIN_NAME_RE.test(slug) ? slug : 'my-plugin'
 }
 /** A private provenance marker so continuation never edits a different plugin with the same name. */
-export const USER_PLUGIN_AUTHORING_MARKER = '.localix-authoring.json'
+export const USER_MINI_APP_AUTHORING_MARKER = '.localix-authoring.json'
 /** The template's own name: every identity token of the template contains it as a word. */
 const TEMPLATE_NAME = 'template'
 const REWRITE_EXT = /\.(?:[cm]?tsx?|json|html|css|md)$/u
@@ -63,7 +63,7 @@ const REWRITE_EXT = /\.(?:[cm]?tsx?|json|html|css|md)$/u
 export class ScaffoldError extends Error {}
 
 export interface ScaffoldInput {
-  kit: PluginKit
+  kit: MiniAppKit
   /** The user plugins root the copy lands in (`~/.localix/plugins`). */
   pluginsRoot: string
   name: string
@@ -169,7 +169,7 @@ async function patchManifest(
   await fs.writeFile(path, `${JSON.stringify({ ...manifest, ...patch }, null, 2)}\n`)
 }
 
-export async function scaffoldUserPlugin(input: ScaffoldInput): Promise<ScaffoldResult> {
+export async function scaffoldUserMiniApp(input: ScaffoldInput): Promise<ScaffoldResult> {
   // Validate → decide → write.
   validate(input)
   const { kit, pluginsRoot, name } = input
@@ -212,9 +212,9 @@ export async function scaffoldUserPlugin(input: ScaffoldInput): Promise<Scaffold
       readme({ name, displayName, description, scaffold }),
     )
     await fs.writeFile(join(staging, 'AGENTS.md'), agentsMd({ name, displayName, kit, scaffold }))
-    await writePluginKitCatalog(kit, staging)
+    await writeMiniAppKitCatalog(kit, staging)
     await fs.writeFile(
-      join(staging, USER_PLUGIN_AUTHORING_MARKER),
+      join(staging, USER_MINI_APP_AUTHORING_MARKER),
       `${JSON.stringify({ schemaVersion: 1, name, template: scaffold.domainName })}\n`,
     )
     if (await exists(dir)) {

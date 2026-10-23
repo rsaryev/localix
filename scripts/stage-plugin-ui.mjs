@@ -13,8 +13,8 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { PLUGIN_KIT_DIR_NAME } from '@localixai/api/plugin-kit-layout'
-import { pluginUiEntry } from '@localixai/api/plugin-ui-build'
-import { PLUGIN_UI_ARTIFACT_DIR } from '@localixai/mini-app-sdk/ui-artifact'
+import { miniAppUiEntry } from '@localixai/api/plugin-ui-build'
+import { MINI_APP_UI_ARTIFACT_DIR } from '@localixai/mini-app-sdk/ui-artifact'
 
 import { miniAppsRoot } from './lib/bundled-roots.mjs'
 
@@ -23,14 +23,14 @@ const BUILDER_CLI = fileURLToPath(new URL('./build-plugin-ui.mjs', import.meta.u
 export const NO_SOURCE_MAPS_FLAG = '--no-source-maps'
 
 /** The plugin kit staged beside `outPlugins` — where the running app finds it too. */
-export const pluginKitDirOf = (outPlugins) => join(dirname(outPlugins), PLUGIN_KIT_DIR_NAME)
+export const miniAppKitDirOf = (outPlugins) => join(dirname(outPlugins), PLUGIN_KIT_DIR_NAME)
 
 /**
  * Move a staged plugin's current artifact aside before its directory is replaced. The holding
  * directory sits beside the plugins (a `.`-prefixed name discovery and the marker ignore).
  */
 export function takeStagedUiArtifact(stagedPlugin) {
-  const artifact = join(stagedPlugin, PLUGIN_UI_ARTIFACT_DIR)
+  const artifact = join(stagedPlugin, MINI_APP_UI_ARTIFACT_DIR)
   if (!existsSync(artifact)) return null
   const kept = join(mkdtempSync(join(dirname(stagedPlugin), '.ui-previous-')), 'ui')
   renameSync(artifact, kept)
@@ -48,7 +48,7 @@ export function discardStagedUiArtifact(previous) {
  * {@link takeStagedUiArtifact} set aside: put back on failure, discarded otherwise.
  * `uiSourceMaps: false` builds without maps (release staging; development keeps them).
  */
-export function stagePluginUi(
+export function stageMiniAppUi(
   name,
   {
     repoRoot,
@@ -61,8 +61,8 @@ export function stagePluginUi(
   },
 ) {
   const pluginDir = join(miniAppsRoot(repoRoot), name)
-  const artifact = join(outPlugins, name, PLUGIN_UI_ARTIFACT_DIR)
-  if (!pluginUiEntry(pluginDir) || !existsSync(join(outPlugins, name))) {
+  const artifact = join(outPlugins, name, MINI_APP_UI_ARTIFACT_DIR)
+  if (!miniAppUiEntry(pluginDir) || !existsSync(join(outPlugins, name))) {
     discardStagedUiArtifact(previous)
     return null
   }
@@ -71,7 +71,7 @@ export function stagePluginUi(
     // The builder retains the artifact it replaces. Restore it before building so a successful
     // re-stage carries its lazy chunks too; keep the backup for the failure path below.
     if (previous) cpSync(previous, artifact, { recursive: true })
-    const args = [BUILDER_CLI, pluginDir, artifact, pluginKitDirOf(outPlugins)]
+    const args = [BUILDER_CLI, pluginDir, artifact, miniAppKitDirOf(outPlugins)]
     if (!uiSourceMaps) args.push(NO_SOURCE_MAPS_FLAG)
     run('bun', args, {
       cwd: repoRoot,

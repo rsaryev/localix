@@ -14,7 +14,7 @@ const FIXTURE_TIMESTAMP = '2026-01-01T00:00:00.000Z'
  * time, and the breakage was invisible, because `type-check:tests` is not part of `bun run test`.
  * `activatedTools` did exactly that, and nine files sat red until someone ran the other command.
  *
- * The same reasoning as `recordingPluginUiHost` on the UI side: when a contract grows, the thing
+ * The same reasoning as `recordingMiniAppUiHost` on the UI side: when a contract grows, the thing
  * that has to learn about it should be the one file that owns the shape, not every caller.
  *
  * `overrides` is what a test actually says. Pass only the fields the case is about — the id, the

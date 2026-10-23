@@ -1,13 +1,13 @@
 import { z } from 'zod'
-import { PLUGIN_CONFIG_TYPES } from '@localixai/mini-app-sdk/manifest'
+import { MINI_APP_CONFIG_TYPES } from '@localixai/mini-app-sdk/manifest'
 
-export { pluginConfigOptionSchema } from '@localixai/mini-app-sdk/manifest'
-export type { PluginConfigType, PluginConfigOption } from '@localixai/mini-app-sdk/manifest'
+export { miniAppConfigOptionSchema } from '@localixai/mini-app-sdk/manifest'
+export type { MiniAppConfigType, MiniAppConfigOption } from '@localixai/mini-app-sdk/manifest'
 
 /** A declared config field plus its current value, masked for secrets. */
 export const pluginConfigFieldSchema = z.object({
   key: z.string(),
-  type: z.enum(PLUGIN_CONFIG_TYPES),
+  type: z.enum(MINI_APP_CONFIG_TYPES),
   description: z.string(),
   required: z.boolean(),
   secret: z.boolean(),

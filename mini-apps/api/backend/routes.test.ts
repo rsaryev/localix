@@ -7,7 +7,7 @@
 
 import { afterAll, afterEach, describe, expect, test } from 'bun:test'
 import { Hono } from 'hono'
-import type { PluginRouteContext, PluginRouteScope } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppRouteContext, MiniAppRouteScope } from '@localixai/mini-app-sdk/backend'
 import { createRestRoutes } from './routes'
 import { createMemoryCollection } from './collection/testing/memory'
 import type { EnvironmentService } from './environments/service'
@@ -75,7 +75,7 @@ function harness(
   /** The vault WRITER. Absent by default, which is the "no vault bound" half of the contract. */
   storeSecret?: (userId: string, key: string, value: string) => Promise<boolean>,
 ) {
-  const app = new Hono<PluginRouteContext>()
+  const app = new Hono<MiniAppRouteContext>()
   app.route(
     '/rpc/api',
     createRestRoutes({
@@ -91,7 +91,7 @@ function harness(
       userId: callerUserId,
       projectId: '',
       cwd,
-    } satisfies PluginRouteScope)
+    } satisfies MiniAppRouteScope)
   const call = (path: string, init?: RequestInit) => callAs(userId, path, init)
   return { call, callAs }
 }
@@ -112,7 +112,7 @@ describe('GET /requests', () => {
     // contract, which reads that precondition out of `app.ts`.
     const alpha = createMemoryCollection([{ name: 'alpha-only', spec: saved('alpha-only').spec }])
     const beta = createMemoryCollection([{ name: 'beta-only', spec: saved('beta-only').spec }])
-    const app = new Hono<PluginRouteContext>()
+    const app = new Hono<MiniAppRouteContext>()
     app.route(
       '/rpc/api',
       createRestRoutes({
@@ -134,7 +134,7 @@ describe('GET /requests', () => {
   test('two sessions in one project receive different request collections', async () => {
     const alpha = createMemoryCollection([{ name: 'alpha-only', spec: saved('alpha-only').spec }])
     const beta = createMemoryCollection([{ name: 'beta-only', spec: saved('beta-only').spec }])
-    const app = new Hono<PluginRouteContext>()
+    const app = new Hono<MiniAppRouteContext>()
     app.route(
       '/rpc/api',
       createRestRoutes({

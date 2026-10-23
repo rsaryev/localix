@@ -1,11 +1,11 @@
 import { afterAll, beforeAll, describe, expect, mock, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
-import { bindPluginUiRuntime, type PluginUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
+import { bindMiniAppUiRuntime, type MiniAppUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
 
 let teardown: () => Promise<void>
 let unbindRuntime: () => void
 beforeAll(() => {
-  unbindRuntime = bindPluginUiRuntime({
+  unbindRuntime = bindMiniAppUiRuntime({
     editor: {
       subscribe: () => () => {},
       predictionEnabled: () => false,
@@ -22,7 +22,7 @@ beforeAll(() => {
         handleCompositionEnd: () => {},
       }),
     },
-  } as unknown as PluginUiRuntime)
+  } as unknown as MiniAppUiRuntime)
   teardown = registerDom()
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 })

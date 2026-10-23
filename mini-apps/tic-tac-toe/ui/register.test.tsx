@@ -1,12 +1,12 @@
 import { expect, test } from 'bun:test'
 import { sessionResourceAddress } from '@localixai/mini-app-sdk/session-resource'
-import { recordingPluginUiHost } from '@localixai/mini-app-sdk/ui/testing'
+import { recordingMiniAppUiHost } from '@localixai/mini-app-sdk/ui/testing'
 
 import { GAME_KIND, gameUri } from '../shared/resource'
 import { registerUi } from './register'
 
 test('registers one board per chat, its launcher and the anchor its tool opens â€” once per host', () => {
-  const { host, registrations } = recordingPluginUiHost()
+  const { host, registrations } = recordingMiniAppUiHost()
   registerUi(host)
   registerUi(host)
 
@@ -18,13 +18,13 @@ test('registers one board per chat, its launcher and the anchor its tool opens â
   })
   expect(registrations.railViewlets[0]).toMatchObject({ kind: GAME_KIND, title: 'Tic-Tac-Toe' })
 
-  const second = recordingPluginUiHost()
+  const second = recordingMiniAppUiHost()
   registerUi(second.host)
   expect(second.registrations.workItems).toHaveLength(1)
 })
 
 test('a board URI that names its chat opens there; the bare one names no chat', () => {
-  const { host, registrations } = recordingPluginUiHost()
+  const { host, registrations } = recordingMiniAppUiHost()
   registerUi(host)
   const anchor = registrations.anchors[0] as { resolve: (uri: string) => unknown }
 

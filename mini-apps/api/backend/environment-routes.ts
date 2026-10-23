@@ -1,6 +1,6 @@
 import type { Hono, Schema } from 'hono'
 import { z } from 'zod'
-import type { PluginRouteContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppRouteContext } from '@localixai/mini-app-sdk/backend'
 import type { EnvironmentInfo } from './contracts'
 import type { RestRouteScope } from './route-scope'
 import type { SavedEnvironment } from './environments/store'
@@ -50,7 +50,7 @@ function toEnvInfo(e: SavedEnvironment): EnvironmentInfo {
 
 /** Register environment routes on the existing router, preserving its typed request routes. */
 export function registerEnvironmentRoutes<TSchema extends Schema>(
-  app: Hono<PluginRouteContext, TSchema>,
+  app: Hono<MiniAppRouteContext, TSchema>,
   { uid, envs }: EnvironmentRoutesDeps,
 ) {
   return (

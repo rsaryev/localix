@@ -4,9 +4,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { z } from 'zod'
 import type {
-  PluginContext,
-  PluginRouteScope,
-  PluginWakeRequest,
+  MiniAppContext,
+  MiniAppRouteScope,
+  MiniAppWakeRequest,
 } from '@localixai/mini-app-sdk/backend'
 import { verifySealed } from '@localixai/mini-app-sdk/sealed'
 
@@ -37,17 +37,17 @@ const SEAT = { userId: 'u1', sessionId: 's1' }
 
 /** The routes and the agent's tool over the SAME storage, as the host wires them. */
 function table(sessionId: string | null = 's1') {
-  const woke: PluginWakeRequest[] = []
+  const woke: MiniAppWakeRequest[] = []
   const sessionStorage = storage()
   const games = createGameService({
     resolveDir: sessionStorage.resolveDataDir,
-    wake: async (request: PluginWakeRequest) => {
+    wake: async (request: MiniAppWakeRequest) => {
       woke.push(request)
       return { status: 'delivered' as const }
     },
   })
   const app = createGameRoutes(games)
-  const scope: PluginRouteScope = {
+  const scope: MiniAppRouteScope = {
     userId: 'u1',
     ...(sessionId ? { sessionId } : {}),
     projectId: '',
@@ -71,7 +71,7 @@ function table(sessionId: string | null = 's1') {
     sessionStorage,
     defineTool: (tool: unknown) => tool,
     ui: { offer: (destination: unknown) => ({ offer: destination }) },
-  } as unknown as PluginContext
+  } as unknown as MiniAppContext
   const tool = register(ctx).tools!.find((candidate) => candidate.name === 'rock_paper_scissors')!
   const act = (input: object, session: string | null = 's1') =>
     tool.execute(

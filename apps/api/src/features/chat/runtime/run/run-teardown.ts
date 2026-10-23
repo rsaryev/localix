@@ -9,7 +9,7 @@
 import path from 'node:path'
 import { rm } from 'node:fs/promises'
 
-import type { LoadedPluginHook } from '../../../plugins/loader'
+import type { LoadedMiniAppHook } from '../../../plugins/loader'
 import { runSessionEndHooks } from '../../../plugins/hooks'
 import type { SessionRecord } from '../../repository'
 import { consoleWarnLogger } from '../plugin-hook-logger'
@@ -22,7 +22,7 @@ export interface RunTeardownArgs {
   runtimeState: RuntimeState
   session: SessionRecord
   abort: AbortController
-  pluginHooksForRun: readonly LoadedPluginHook[]
+  pluginHooksForRun: readonly LoadedMiniAppHook[]
   runLiveResolverKeys: Set<string>
   unsubLsp: (() => void) | undefined
   /** Session cwd — used to clean up this session's spilled-attachment dir. */

@@ -3,7 +3,7 @@ import { Database, FolderTree, Table2, Eye, Columns3, Network } from 'lucide-rea
 import {
   resourceMessageBindingDraft,
   localixUriNamespace,
-  type PluginUiHost,
+  type MiniAppUiHost,
   type WorkItemLike,
 } from '@localixai/mini-app-sdk/ui'
 import { isDatabaseFilePath } from '../shared/database-file'
@@ -61,7 +61,7 @@ const DATABASE_AGENT_CONTEXT = {
   ],
 }
 
-export function registerUi(host: PluginUiHost): void {
+export function registerUi(host: MiniAppUiHost): void {
   if (registered) return
   registered = true
   // The agent's writes (a connection, a table, rows) reach the workbench without a reload.

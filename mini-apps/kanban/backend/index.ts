@@ -1,4 +1,4 @@
-import type { PluginContext, PluginRegistration } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext, MiniAppRegistration } from '@localixai/mini-app-sdk/backend'
 
 import { ROUTE_PATH } from '../shared/resource'
 import { createBoardResourceProvider, createBoardSearchProvider } from './references'
@@ -17,7 +17,7 @@ import { createBoardWsFrames } from './ws-frames'
  * open view, whichever load made them (`store.ts`). The boot-time backend alone (it has
  * `ctx.host`) follows the core's agent deletions and unassigns that agent's cards (`unassign.ts`).
  */
-export function register(ctx: PluginContext): PluginRegistration {
+export function register(ctx: MiniAppContext): MiniAppRegistration {
   const storage = ctx.sessionStorage
   const boards = createBoardService({
     resolveDir: async (userId, sessionId) => {

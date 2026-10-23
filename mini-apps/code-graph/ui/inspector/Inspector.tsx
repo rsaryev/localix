@@ -1,5 +1,5 @@
 import { ExternalLink, FolderOpen, Repeat2, X } from 'lucide-react'
-import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import { Button } from '@localixai/kit/button'
 import { IconButton } from '@localixai/kit/icon-button'
 import { TextAction } from '@localixai/kit/text-action'
@@ -80,7 +80,7 @@ export function Inspector({
               size="sm"
               variant="field"
               onClick={() =>
-                pluginWorkspace.openFile({
+                miniAppWorkspace.openFile({
                   sessionId,
                   path: `${snapshot.root}/${node.path}`,
                   ...(node.line && node.kind !== 'file' ? { line: node.line } : {}),

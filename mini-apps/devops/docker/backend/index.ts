@@ -5,7 +5,7 @@
  * API when the daemon is directly reachable, the CLI as the compatibility fallback, re-probed so a
  * daemon started after the app is picked up. It is contributed as a `BackendSubsystem`.
  * The boot-time loader
- * (`loadPluginBackends`) mounts the route (`/rpc/docker`), registers the resource
+ * (`loadMiniAppBackends`) mounts the route (`/rpc/docker`), registers the resource
  * (`localix://resource/docker`) + global-search providers, and calls `onShutdown` on shutdown.
  *
  * It contributes NO agent tool. `docker_inspect` wrapped read verbs of a CLI the agent
@@ -28,7 +28,7 @@ import {
   DOCKER_EVENTS_UNSUBSCRIBE,
 } from './events-contract'
 import { createDockerLogsHub, createDockerLogsWsFrame } from './logs-follow'
-import type { PluginRegistration, WsFrameContribution } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppRegistration, WsFrameContribution } from '@localixai/mini-app-sdk/backend'
 
 /** The daemon's events are host-wide and carry no user data, so every socket shares one key. */
 export function createDockerEventsWsFrame(hub: DockerEventsHub): WsFrameContribution {
@@ -44,7 +44,7 @@ export function createDockerEventsWsFrame(hub: DockerEventsHub): WsFrameContribu
   }
 }
 
-export async function register(): Promise<PluginRegistration> {
+export async function register(): Promise<MiniAppRegistration> {
   const service = createDockerService({ backend: createLazyDockerBackend() })
   const events = createDockerEventsHub()
   const logs = createDockerLogsHub()

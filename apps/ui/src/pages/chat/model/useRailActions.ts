@@ -10,23 +10,23 @@ import { inspector } from '@/shared/lib/inspectorBus'
 import { requireOpenChat } from '@/shared/lib/pageOpenChat'
 import { pluginAppActions, useInstalledPluginApps } from '@/features/plugin-apps'
 import { openPageWorkItem } from './openPageWorkItem'
-import { pluginViewRailAction } from './pluginViewRailAction'
+import { miniAppViewRailAction } from './miniAppViewRailAction'
 import { requestConfirmation } from '@/shared/lib/confirmAction'
 import { railViewletRegistry } from '@/shared/contrib/uiContrib'
 import {
   pluginActivationVersion,
   subscribePluginActivation,
-} from '@/shared/contrib/pluginActivation'
+} from '@/shared/contrib/miniAppActivation'
 import { CMD } from '@/shared/lib/keybindings'
-import type { PluginViewSpec } from '@/shared/api/contracts'
+import type { MiniAppViewSpec } from '@/shared/api/contracts'
 import type { RailAction, RailArea } from '@/widgets/workspace-shell'
 import type { useSystemToggle } from '@/shared/hooks/useSystemToggle'
-import { isPluginRailViewlet } from './railViewletProvenance'
+import { isMiniAppRailViewlet } from './railViewletProvenance'
 import { capabilityResourceUri } from '@localixai/mini-app-sdk/navigation'
-import type { PluginCategory } from '@localixai/mini-app-sdk/manifest'
+import type { MiniAppCategory } from '@localixai/mini-app-sdk/manifest'
 
 interface ViewletDef {
-  toolCategory?: PluginCategory
+  toolCategory?: MiniAppCategory
   kind: WorkItemKind
   icon: ComponentType<{ className?: string }>
   label: string
@@ -83,7 +83,7 @@ interface UseRailActionsArgs {
   openSessionId: string | null
   /** Third-party plugin VIEWS — one rail button each, each opening its bridged
    *  iframe as an editor-grid tab of the open chat. */
-  pluginViews: PluginViewSpec[]
+  pluginViews: MiniAppViewSpec[]
   capabilityScope: string
   /** Host "keep awake" toggle state (rail button in the bottom group). */
   keepAwake: ReturnType<typeof useSystemToggle>
@@ -141,9 +141,9 @@ export function useRailActions({
         defaultArea: v.defaultArea,
         chordId: v.chordId,
         // Core feature contribs use the same open registry as bundled plugins.
-        // Ownership is stamped only by pluginUiHostFor(), so provenance—not the
+        // Ownership is stamped only by miniAppUiHostFor(), so provenance—not the
         // fact that an entry was contributed—decides which overflow group owns it.
-        plugin: isPluginRailViewlet(v),
+        plugin: isMiniAppRailViewlet(v),
         toolCategory: v.toolCategory,
         pluginName: v.pluginName,
         resourceUri: v.pluginName
@@ -219,7 +219,7 @@ export function useRailActions({
       },
     ),
     ...pluginViews.map((view) =>
-      pluginViewRailAction({
+      miniAppViewRailAction({
         view,
         focusedActiveId,
         openSessionId,

@@ -1,5 +1,5 @@
 import { createStoreChangeFeed } from '@localixai/mini-app-sdk/backend'
-import type { PluginContext, PluginRegistration } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext, MiniAppRegistration } from '@localixai/mini-app-sdk/backend'
 
 import { createLearningRoutes } from './routes'
 import { LearningService } from './service'
@@ -8,7 +8,7 @@ import { createLearningCourseTool } from './tool'
 import { createLearningContextProvider } from './context-provider'
 import { createLearningResourceProvider } from './resource-provider'
 
-export function register(ctx: PluginContext): PluginRegistration {
+export function register(ctx: MiniAppContext): MiniAppRegistration {
   const storage = ctx.sessionStorage ?? ctx.host?.sessionStorage
   const service = new LearningService(async (userId, sessionId) => {
     if (!storage) throw new Error('Session storage is unavailable')

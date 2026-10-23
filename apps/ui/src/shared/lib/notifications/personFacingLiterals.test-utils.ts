@@ -11,7 +11,7 @@ import { resolve } from 'node:path'
  * sentence can live is added once and policed by every rule.
  *
  * Each literal carries its CLASS, because the classes are punctuated differently:
- * - `headline` — a journal row's title (`toast.*`, `runPluginAction`'s failure);
+ * - `headline` — a journal row's title (`toast.*`, `runMiniAppAction`'s failure);
  * - `inline` — the error line under a control and a `ProblemLine` message;
  * - `body` — a toast's `description`, checked for vocabulary only.
  */
@@ -36,7 +36,7 @@ const DETECTORS: readonly { pattern: RegExp; literalClass: LiteralClass; uiOnly?
     literalClass: 'headline',
   },
   {
-    pattern: re(String.raw`\brunPluginAction\([\s\S]{0,600}?,\s*${Q}\s*,?\s*\)`),
+    pattern: re(String.raw`\brunMiniAppAction\([\s\S]{0,600}?,\s*${Q}\s*,?\s*\)`),
     literalClass: 'headline',
   },
   // A toast's own description only: `description:` elsewhere is a surface or tool description the

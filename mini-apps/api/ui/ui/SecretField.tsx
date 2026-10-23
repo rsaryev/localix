@@ -28,7 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@localixai/kit/dropdown-menu'
-import { pluginSecrets } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppSecrets } from '@localixai/mini-app-sdk/ui/runtime'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /** A value that is a pointer rather than a secret — shown as such, and safe to display. */
@@ -70,7 +70,7 @@ export function SecretField({
   // auth, and a vault read per rendered request pane is a request nobody asked for.
   const load = () => {
     if (choices || failed) return
-    void pluginSecrets
+    void miniAppSecrets
       .listReferences()
       .then((secrets) => {
         setChoices(

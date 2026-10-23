@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
-import { bindPluginUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
+import { bindMiniAppUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
 
 let teardown: () => Promise<void>
 let unbindDoubles: () => void
@@ -10,7 +10,7 @@ beforeAll(() => {
   teardown = registerDom()
   // The workspace renders host surfaces and this suite has no host. Binding the SDK's doubles here
   // rather than inheriting them keeps it from passing only when another suite bound them first.
-  unbindDoubles = bindPluginUiTestDoubles()
+  unbindDoubles = bindMiniAppUiTestDoubles()
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
   originalFetch = globalThis.fetch
   globalThis.fetch = (async (input) => {

@@ -1,5 +1,5 @@
 import { Link2, Terminal } from 'lucide-react'
-import type { PluginTranscriptAction } from '@localixai/mini-app-sdk/ui/runtime'
+import type { MiniAppTranscriptAction } from '@localixai/mini-app-sdk/ui/runtime'
 import { MAX_TRANSCRIPT_EVENTS } from '@localixai/api/external-agent-contracts'
 import type { RosterRow } from '@localixai/api/external-agent-contracts'
 import { externalAgentsApi } from '../api'
@@ -34,7 +34,7 @@ export function externalSessionMessages(slice: Slice): ExternalTranscriptMessage
 export async function prepareExternalTranscript(source: Source, owningSessionId: string | null) {
   const slice = await externalAgentsApi.items(source.key, MAX_TRANSCRIPT_EVENTS, true)
   const id = `external-agent:${source.key}`
-  const actions: PluginTranscriptAction[] = []
+  const actions: MiniAppTranscriptAction[] = []
   const resume = slice.resume
   if (owningSessionId) {
     actions.unshift({

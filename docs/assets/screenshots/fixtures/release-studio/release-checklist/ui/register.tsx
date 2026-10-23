@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ListChecks } from 'lucide-react'
-import type { PluginUiHost } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppUiHost } from '@localixai/mini-app-sdk/ui'
 import { Checkbox } from '@localixai/kit/checkbox'
 import { ProgressBar } from '@localixai/kit/progress-bar'
 
@@ -100,7 +100,7 @@ function ReleaseChecklist() {
   )
 }
 
-export function registerUi(host: PluginUiHost) {
+export function registerUi(host: MiniAppUiHost) {
   host.workItems.register({
     kind: 'release-checklist:workspace',
     Component: ReleaseChecklist,

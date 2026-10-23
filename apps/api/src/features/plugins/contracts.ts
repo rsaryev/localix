@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { pluginManifestCoreSchema } from './contracts-base'
+import { miniAppManifestCoreSchema } from './contracts-base'
 import { pluginConfigFieldSchema } from './contracts-config'
 
 /**
@@ -18,27 +18,27 @@ import { pluginConfigFieldSchema } from './contracts-config'
  * The per-concern schema clusters live in sibling modules and are re-exported here so
  * the manifest barrel stays the single import surface:
  *   - `./contracts-manifest`      — the full runtime manifest schema
- *   - `./contracts-base`          — shared `PLUGIN_NAME_RE` / `PLUGIN_API_VERSION`
+ *   - `./contracts-base`          — shared `PLUGIN_NAME_RE` / `MINI_APP_API_VERSION`
  *   - `./contracts-config`        — config-option + config-field schemas
  *   - `./contracts-contributions` — prompt-section / view schemas
  *   - `./contracts-commands`      — slash-command arg/command/spec schemas
  *   - `./contracts-agents`        — custom sub-agent role schema
  */
 
-export { PLUGIN_NAME_RE, PLUGIN_QUALIFIED_NAME_RE, PLUGIN_API_VERSION } from './contracts-base'
+export { PLUGIN_NAME_RE, PLUGIN_QUALIFIED_NAME_RE, MINI_APP_API_VERSION } from './contracts-base'
 
-export type { PluginConfigType, PluginConfigOption, PluginConfigField } from './contracts-config'
+export type { MiniAppConfigType, MiniAppConfigOption, PluginConfigField } from './contracts-config'
 export {
-  PLUGIN_VIEW_HTML_CAP_BYTES,
-  pluginViewSpecSchema,
-  pluginViewHtmlResponseSchema,
-  invokePluginUiActionRequestSchema,
-  invokePluginUiActionResponseSchema,
+  MINI_APP_VIEW_HTML_CAP_BYTES,
+  miniAppViewSpecSchema,
+  miniAppViewHtmlResponseSchema,
+  invokeMiniAppUiActionRequestSchema,
+  invokeMiniAppUiActionResponseSchema,
 } from './contracts-contributions'
-export type { PluginViewSpec, InvokePluginUiActionRequest } from './contracts-contributions'
+export type { MiniAppViewSpec, InvokeMiniAppUiActionRequest } from './contracts-contributions'
 export { pluginCommandSchema, pluginCommandSpecSchema } from './contracts-commands'
 export type {
-  PluginCommandArg,
+  MiniAppCommandArg,
   PluginCommand,
   PluginCommandSpec,
   ListPluginCommandsResponse,
@@ -58,12 +58,12 @@ export type PluginValidation = z.infer<typeof pluginValidationSchema>
 export { pluginManifestSchema, type PluginManifest } from './contracts-manifest'
 
 /** Model-facing metadata read from an enabled plugin's live AgentTool definitions. */
-export const pluginToolDescriptorSchema = z.object({
+export const miniAppToolDescriptorSchema = z.object({
   name: z.string(),
   label: z.string(),
   description: z.string(),
 })
-export type PluginToolDescriptor = z.infer<typeof pluginToolDescriptorSchema>
+export type MiniAppToolDescriptor = z.infer<typeof miniAppToolDescriptorSchema>
 
 /** What a plugin contributes, for the settings UI. Static fields are known without
  * loading code; `tools` is only populated once an enabled plugin is loaded. */
@@ -71,7 +71,7 @@ export const pluginProvidesSchema = z.object({
   /** True when the manifest declares a native-tools entrypoint (in-process JS). */
   hasNativeTools: z.boolean(),
   /** Live tool descriptors exposed by the native entrypoint (enabled plugins only). */
-  tools: z.array(pluginToolDescriptorSchema),
+  tools: z.array(miniAppToolDescriptorSchema),
   /** Backend subsystem ids returned by enabled native entrypoints (routes/resources/context). */
   backendSubsystems: z.array(z.string()).optional(),
   /** Bundled skill names (known statically from the skills dir). */
@@ -91,18 +91,18 @@ export type PluginProvides = z.infer<typeof pluginProvidesSchema>
  * A bundled plugin's workbench UI artifact, as URLs the host imports and a revision that moves
  * exactly when the UI changed (see `ui-artifact.ts`).
  */
-export const pluginUiDescriptorSchema = z.object({
+export const miniAppUiDescriptorSchema = z.object({
   entry: z.string(),
   styles: z.array(z.string()),
   revision: z.string(),
 })
-export type PluginUiDescriptor = z.infer<typeof pluginUiDescriptorSchema>
+export type MiniAppUiDescriptor = z.infer<typeof miniAppUiDescriptorSchema>
 
 /** A fully materialized plugin entry returned to the UI: manifest + state + provides. */
 export const pluginRecordSchema = z.object({
   name: z.string(),
   /** Primary launcher group; absent in older or third-party manifests. */
-  category: pluginManifestCoreSchema.shape.category,
+  category: miniAppManifestCoreSchema.shape.category,
   /** Human-readable label (Claude Code `displayName`); falls back to `name`. */
   displayName: z.string().optional(),
   version: z.string(),
@@ -120,7 +120,7 @@ export const pluginRecordSchema = z.object({
   layout: z.enum(['plugin', 'mini-app', 'legacy']),
   /**
    * The surfaces the plugin declares it extends (normalized; `['agent']` when the
-   * manifest says nothing). Consumers group by it — see `isWorkbenchPlugin`.
+   * manifest says nothing). Consumers group by it — see `isWorkbenchMiniApp`.
    */
   surfaces: z.array(z.string()),
   /** '' = global (`~/.localix/plugins`); otherwise the project id this plugin is scoped to. */
@@ -147,7 +147,7 @@ export const pluginRecordSchema = z.object({
   /** True for plugins discovered from the repo's bundled `plugins/` root (ship for everyone). */
   bundled: z.boolean(),
   /** The built workbench UI a bundled plugin ships; absent when it has none. */
-  ui: pluginUiDescriptorSchema.optional(),
+  ui: miniAppUiDescriptorSchema.optional(),
   provides: pluginProvidesSchema,
   config: z.array(pluginConfigFieldSchema),
   /** Manifest/load error surfaced in the UI (invalid manifest, failed import…). */

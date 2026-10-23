@@ -1,6 +1,6 @@
 import {
   createResourceContextProvider,
-  type PluginHostServices,
+  type MiniAppHostServices,
   type ResourceRefProvider,
 } from '@localixai/mini-app-sdk/backend'
 import { location } from '../shared/format'
@@ -25,7 +25,7 @@ const EXPAND_BUDGET = 4000
 export function createGraphResourceProvider(
   dataDir: string,
   fallbackRoot: string,
-  host: PluginHostServices | undefined,
+  host: MiniAppHostServices | undefined,
 ): ResourceRefProvider {
   const rootFor = async (userId: string, sessionId?: string) =>
     (sessionId

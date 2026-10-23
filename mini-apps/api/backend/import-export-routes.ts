@@ -1,6 +1,6 @@
 import type { Hono, Schema } from 'hono'
 import { z } from 'zod'
-import type { PluginRouteContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppRouteContext } from '@localixai/mini-app-sdk/backend'
 import type { RestRoutesDeps } from './routes'
 import type { RestRouteScope } from './route-scope'
 import type { ExportFormat, ImportResponse, RequestInfo } from './contracts'
@@ -31,7 +31,7 @@ const importSchema = z.object({
 })
 
 export function registerImportRoute<TSchema extends Schema>(
-  app: Hono<PluginRouteContext, TSchema>,
+  app: Hono<MiniAppRouteContext, TSchema>,
   { uid, collection, envs, deps }: ImportRouteDeps,
 ) {
   return (
@@ -131,7 +131,7 @@ export function registerImportRoute<TSchema extends Schema>(
 }
 
 export function registerRequestExportRoute<TSchema extends Schema>(
-  app: Hono<PluginRouteContext, TSchema>,
+  app: Hono<MiniAppRouteContext, TSchema>,
   { collection }: CollectionRouteDeps,
 ) {
   return (

@@ -22,14 +22,14 @@ pub(crate) struct InstallRequest {
 }
 
 #[tauri::command]
-pub(crate) fn plugin_apps(caller: Webview) -> Result<Vec<InstalledApp>, String> {
+pub(crate) fn mini_app_apps(caller: Webview) -> Result<Vec<InstalledApp>, String> {
     require_workspace(&caller)?;
     Ok(crate::app_bundle::installed())
 }
 
 /// Install (or reinstall) a plugin as its own app. The workspace makes its project, then opens it.
 #[tauri::command]
-pub(crate) async fn plugin_app_install(
+pub(crate) async fn mini_app_install(
     app: AppHandle,
     caller: Webview,
     request: InstallRequest,
@@ -54,13 +54,13 @@ pub(crate) async fn plugin_app_install(
 }
 
 #[tauri::command]
-pub(crate) fn plugin_app_open(caller: Webview, plugin: String) -> Result<(), String> {
+pub(crate) fn mini_app_open(caller: Webview, plugin: String) -> Result<(), String> {
     require_workspace(&caller)?;
     crate::app_bundle::open(&plugin)
 }
 
 #[tauri::command]
-pub(crate) async fn plugin_app_uninstall(caller: Webview, plugin: String) -> Result<(), String> {
+pub(crate) async fn mini_app_uninstall(caller: Webview, plugin: String) -> Result<(), String> {
     require_workspace(&caller)?;
     tauri::async_runtime::spawn_blocking(move || crate::app_bundle::uninstall(&plugin))
         .await

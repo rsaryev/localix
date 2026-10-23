@@ -6,7 +6,7 @@
 import type { Kysely } from 'kysely'
 import type { AppDatabase } from '../db/types'
 import { createCoreChangeFeed } from '../features/changes/core-entities'
-import { createPluginChangeHosts } from '../features/changes/plugin-host'
+import { createMiniAppChangeHosts } from '../features/changes/plugin-host'
 import { setChangeLog } from '@localixai/change-feed'
 import type { createLogger } from '../lib/logger'
 
@@ -19,7 +19,7 @@ export function createChangeFeeds(
   const log = (event: string, detail: Record<string, unknown>) => logger.warn({ event, ...detail })
   setChangeLog(log)
   const core = createCoreChangeFeed(db, log)
-  const plugins = createPluginChangeHosts({ db, core, log })
+  const plugins = createMiniAppChangeHosts({ db, core, log })
   return {
     core,
     plugins,

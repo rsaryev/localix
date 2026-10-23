@@ -1,8 +1,8 @@
 import { useSyncExternalStore } from 'react'
 import { CandlestickChart } from 'lucide-react'
 import type { StatusItemState } from '@localixai/mini-app-sdk/ui'
-import { pluginWorkspace, statusMenuList } from '@localixai/mini-app-sdk/ui'
-import { usePluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime-hooks'
+import { miniAppWorkspace, statusMenuList } from '@localixai/mini-app-sdk/ui'
+import { useMiniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 
 import { chartStateStore } from './model/chartStateStore'
 import { formatPrice } from './model/formatQuote'
@@ -46,7 +46,7 @@ interface WatchedMarket {
  * No chart open, no item: this plugin is silent until you ask it something.
  */
 export function useTradingStatusItem(sessionId: string | null): StatusItemState | null {
-  const workspace = usePluginWorkspace()
+  const workspace = useMiniAppWorkspace()
   useSyncExternalStore(chartStateStore.subscribe, chartStateStore.version, chartStateStore.version)
 
   const charts: WatchedMarket[] = sessionId
@@ -88,7 +88,7 @@ export function useTradingStatusItem(sessionId: string | null): StatusItemState 
     })
 
   const openWorkspace = () =>
-    pluginWorkspace.openWorkItem({
+    miniAppWorkspace.openWorkItem({
       workKind: WORKSPACE_KIND,
       id: WORKSPACE_KIND,
       title: 'Trading',

@@ -11,7 +11,7 @@
  * on a pane the person has closed is not recovery.
  */
 
-import type { PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
+import type { MiniAppProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
 import { useProblemReport } from '@localixai/mini-app-sdk/ui'
 import type {
   Problem,
@@ -68,7 +68,7 @@ export function useDbProblem(
   subject: string,
   problem: string | Problem | null | undefined,
   options: DbProblemOptions = {},
-): PluginProblemLineProps | null {
+): MiniAppProblemLineProps | null {
   const { title, detail, consequence = 'blocked', actions } = options
   const stated = typeof problem === 'string' ? { message: problem } : problem
   const owned = useProblemReport(

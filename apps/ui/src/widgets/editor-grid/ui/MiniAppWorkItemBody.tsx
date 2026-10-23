@@ -1,6 +1,6 @@
 import type { PublishMessageContext, WorkItemKindContribution } from '@localixai/mini-app-sdk/ui'
-import { usePluginKind, type WorkItem } from '@/entities/workspace-grid/model'
-import { recordPluginRenderCrash } from '@/shared/contrib/pluginViewErrors'
+import { useMiniAppKind, type WorkItem } from '@/entities/workspace-grid/model'
+import { recordPluginRenderCrash } from '@/shared/contrib/miniAppViewErrors'
 import type { ResolvedTheme } from '@/shared/theme/useTheme'
 import { SurfaceErrorBoundary } from '@/shared/ui/SurfaceErrorBoundary'
 import { LoadingHint } from '@localixai/kit/empty-hint'
@@ -15,15 +15,15 @@ import { LoadingHint } from '@localixai/kit/empty-hint'
  * replaced: the agent reported the plugin swapped in place while the person was clicking the old
  * code, and a tab that had crashed stayed crashed after the fix.
  *
- * So this component subscribes to its OWN kind's registration (`usePluginKind`) — a first load,
+ * So this component subscribes to its OWN kind's registration (`useMiniAppKind`) — a first load,
  * a rebuild or a give-up re-renders this tab only, never a chat, a terminal or another plugin's
  * tab, and a restored tab no longer waits for the slowest plugin — and keys its error boundary by the
  * REGISTRATION. A new build is a new registration: a crashed tab remounts and shows it. Every other
  * plugin keeps its registration object, so its tab re-renders without remounting and keeps its
  * state through someone else's rebuild. A crash is also written to the plugin's own error buffer,
- * which is what the agent reads when it looks at the view (`pluginViewErrors.ts`).
+ * which is what the agent reads when it looks at the view (`miniAppViewErrors.ts`).
  */
-export function PluginWorkItemBody({
+export function MiniAppWorkItemBody({
   item,
   visible,
   focused,
@@ -36,7 +36,7 @@ export function PluginWorkItemBody({
   resolvedTheme: ResolvedTheme
   publishMessageContext: PublishMessageContext
 }) {
-  const contributed = usePluginKind(item.kind)
+  const contributed = useMiniAppKind(item.kind)
   if (typeof contributed !== 'string') {
     const Contributed = contributed.Component
     const surface = `The ${item.kind} tab`

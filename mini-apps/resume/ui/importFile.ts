@@ -1,8 +1,8 @@
 import { z } from 'zod'
 import {
-  pluginApiFetch,
-  postPluginJson,
-  unwrapPluginResponse,
+  miniAppApiFetch,
+  postMiniAppJson,
+  unwrapMiniAppResponse,
 } from '@localixai/mini-app-sdk/ui/transport'
 import { parseResumeFile } from '../shared/interchange'
 import { importSourceText } from '../shared/source-import'
@@ -19,18 +19,18 @@ export async function importResumeFile(
   else {
     if (!/\.(pdf|docx|doc|odt)$/iu.test(file.name))
       throw new Error('Choose JSON, YAML, PDF, Word, ODT, Markdown or plain text.')
-    const upload = await pluginApiFetch(`/rpc/media?name=${encodeURIComponent(file.name)}`, {
+    const upload = await miniAppApiFetch(`/rpc/media?name=${encodeURIComponent(file.name)}`, {
       method: 'POST',
       headers: { 'Content-Type': file.type || 'application/octet-stream' },
       body: file,
     })
     const media = z
       .object({ id: z.string().regex(/^[a-zA-Z0-9._-]+$/u) })
-      .parse(await unwrapPluginResponse(upload))
-    const response = await postPluginJson('/rpc/documents/extract', { mediaId: media.id })
+      .parse(await unwrapMiniAppResponse(upload))
+    const response = await postMiniAppJson('/rpc/documents/extract', { mediaId: media.id })
     const extracted = z
       .object({ document: z.object({ kind: z.literal('text'), markdown: z.string() }) })
-      .parse(await unwrapPluginResponse(response))
+      .parse(await unwrapMiniAppResponse(response))
     text = extracted.document.markdown
     if (!text.trim())
       throw new Error(

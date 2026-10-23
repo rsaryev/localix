@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { z } from 'zod'
-import type { PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import { register } from './index'
 import { spacePaths } from './paths'
 import { createSpaceTools } from './tools'
@@ -25,7 +25,7 @@ function tools() {
     z,
     defineTool: (definition: unknown) => definition,
     ui: { offer: (destination: object) => ({ type: 'ui.navigate', ...destination }) },
-  } as unknown as PluginContext
+  } as unknown as MiniAppContext
   const registered = register(ctx).tools ?? []
   const call = (name: string, input: object) =>
     registered
@@ -99,7 +99,7 @@ describe('apply writes only the file the permission gate was shown', () => {
       z,
       defineTool: (definition: unknown) => definition,
       ui: { offer: () => undefined },
-    } as unknown as PluginContext
+    } as unknown as MiniAppContext
     const apply = createSpaceTools(ctx, async () => sessionRoot ?? cwd).find(
       (tool) => tool.name === 'space_apply',
     )!

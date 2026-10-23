@@ -1,5 +1,5 @@
 import type { WorkItemSlotContribution } from '@localixai/mini-app-sdk/ui'
-import { usePluginRegistrySlice } from './usePluginRegistrySlice'
+import { useMiniAppRegistrySlice } from './useMiniAppRegistrySlice'
 
 const slots: WorkItemSlotContribution[] = []
 
@@ -23,5 +23,5 @@ export function workItemSlot(slot: string): WorkItemSlotContribution | undefined
  * registered read `workItemSlot` once and stayed a read-only diff for the life of the tab.
  */
 export function useWorkItemSlot(slot: string): WorkItemSlotContribution | undefined {
-  return usePluginRegistrySlice(`slot:${slot}`, () => workItemSlot(slot))
+  return useMiniAppRegistrySlice(`slot:${slot}`, () => workItemSlot(slot))
 }

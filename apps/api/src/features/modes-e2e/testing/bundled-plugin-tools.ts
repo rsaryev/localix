@@ -17,7 +17,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import { resolvePluginConfig } from '../../plugins/config'
-import { discoverBundledPlugins } from '../../plugins/discovery'
+import { discoverBundledMiniApps } from '../../plugins/discovery'
 import { importNativeModule, makeContext } from '../../plugins/native'
 
 export interface LoadedBundledTools {
@@ -27,12 +27,12 @@ export interface LoadedBundledTools {
   dispose(): Promise<void>
 }
 
-export async function loadBundledPluginTools(workspace: string): Promise<LoadedBundledTools> {
+export async function loadBundledMiniAppTools(workspace: string): Promise<LoadedBundledTools> {
   const home = mkdtempSync(join(tmpdir(), 'localix-modes-e2e-home-'))
   const tools: AgentTool[] = []
   const failures: string[] = []
   const shutdowns: Array<() => unknown> = []
-  const plugins = (await discoverBundledPlugins()).filter(
+  const plugins = (await discoverBundledMiniApps()).filter(
     (plugin) => plugin.provides.hasNativeTools,
   )
   for (const plugin of plugins) {

@@ -11,7 +11,7 @@
  * backend emits a {@link DatabaseChange} after a successful write, the UI re-reads exactly that.
  * One value both sides import, so the name and the shape cannot drift apart.
  */
-export const DATABASE_PLUGIN = 'database'
+export const DATABASE_MINI_APP = 'database'
 export const DATABASE_CHANGES_CHANNEL = 'changes'
 
 export type DatabaseChange =

@@ -1,4 +1,4 @@
-import { pluginTerminal } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppTerminal } from '@localixai/mini-app-sdk/ui/runtime'
 import { kubernetesApi } from '../api/kubernetesApi'
 
 export interface ExecPodTarget {
@@ -26,7 +26,7 @@ export async function execIntoPod(target: ExecPodTarget): Promise<void> {
     target.context,
     target.container,
   )
-  await pluginTerminal.spawnCommand({
+  await miniAppTerminal.spawnCommand({
     command,
     sessionId: target.sessionId,
     title: `${target.pod} · Shell`,

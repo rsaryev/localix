@@ -241,7 +241,7 @@ describe('UiNavigationActionPart', () => {
     const { act } = React
     const { createRoot } = await import('react-dom/client')
     const { MemoryRouter } = await import('react-router')
-    const { setEnabledPluginNames } = await import('@/shared/contrib/pluginActivation')
+    const { setEnabledPluginNames } = await import('@/shared/contrib/miniAppActivation')
     const { registerUiLocation, unregisterUiLocation } =
       await import('@/shared/contrib/uiLocations')
     const { ItemView } = await import('@/entities/chat/ui/tool-parts/ItemView')

@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 
-import { runPluginBuild } from './build-port'
-import type { CreatedUserPlugin, PluginAuthoring } from './service'
+import { runMiniAppBuild } from './build-port'
+import type { CreatedUserMiniApp, MiniAppAuthoring } from './service'
 
 function authoringStub(taken: readonly string[]) {
   const calls: { built: string[]; created: { name: string; displayName?: string }[] } = {
@@ -31,13 +31,13 @@ function authoringStub(taken: readonly string[]) {
           ],
         },
         instruction: `Build ${input.name} out.`,
-      } as unknown as CreatedUserPlugin
+      } as unknown as CreatedUserMiniApp
     },
     build: async (name: string) => {
       calls.built.push(name)
       throw new Error('should not build')
     },
-  } as unknown as PluginAuthoring
+  } as unknown as MiniAppAuthoring
   return { authoring, calls }
 }
 
@@ -45,7 +45,7 @@ function authoringStub(taken: readonly string[]) {
 // plugin that picked a name the user already had rebuilt the user's old plugin.
 test('a described taken name creates the next free name and never touches the existing one', async () => {
   const { authoring, calls } = authoringStub(['gpu-monitor'])
-  const result = await runPluginBuild(authoring, 'user', {
+  const result = await runMiniAppBuild(authoring, 'user', {
     name: 'gpu-monitor',
     title: 'GPU Monitor',
     description: 'Show GPU temperatures',
@@ -61,7 +61,7 @@ test('a described taken name creates the next free name and never touches the ex
 
 test('a name that is not lower-kebab is normalized instead of refused', async () => {
   const { authoring, calls } = authoringStub([])
-  const result = await runPluginBuild(authoring, 'user', {
+  const result = await runMiniAppBuild(authoring, 'user', {
     name: 'GPU Monitor',
     description: 'Show GPU temperatures',
   })
@@ -72,7 +72,7 @@ test('a name that is not lower-kebab is normalized instead of refused', async ()
 
 test('a fresh copy reports its residue as a count, not the domain list again', async () => {
   const { authoring } = authoringStub([])
-  const result = await runPluginBuild(authoring, 'user', {
+  const result = await runMiniAppBuild(authoring, 'user', {
     name: 'gpu-monitor',
     description: 'Show GPU temperatures',
   })

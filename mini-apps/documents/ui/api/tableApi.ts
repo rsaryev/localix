@@ -1,8 +1,8 @@
 import {
-  cleanPluginQuery as cleanQuery,
-  pluginApiFetch,
-  postPluginJson as postJson,
-  unwrapPluginResponse as unwrap,
+  cleanMiniAppQuery as cleanQuery,
+  miniAppApiFetch,
+  postMiniAppJson as postJson,
+  unwrapMiniAppResponse as unwrap,
 } from '@localixai/mini-app-sdk/ui/transport'
 import type { OpenTargetsResponse, TableMeta, TableRowsResponse } from '../docClient'
 
@@ -25,7 +25,7 @@ export interface TableRowsQuery {
  */
 export const tableApi = {
   async getMeta(id: string): Promise<TableMeta> {
-    return unwrap<TableMeta>(await pluginApiFetch(`/rpc/table/${encodeURIComponent(id)}`))
+    return unwrap<TableMeta>(await miniAppApiFetch(`/rpc/table/${encodeURIComponent(id)}`))
   },
   async getRows(id: string, query: TableRowsQuery = {}): Promise<TableRowsResponse> {
     const qs = new URLSearchParams(
@@ -39,11 +39,11 @@ export const tableApi = {
       }),
     ).toString()
     return unwrap<TableRowsResponse>(
-      await pluginApiFetch(`/rpc/table/${encodeURIComponent(id)}/rows${qs ? `?${qs}` : ''}`),
+      await miniAppApiFetch(`/rpc/table/${encodeURIComponent(id)}/rows${qs ? `?${qs}` : ''}`),
     )
   },
   async openTargets(): Promise<OpenTargetsResponse> {
-    return unwrap<OpenTargetsResponse>(await pluginApiFetch('/rpc/table/open-targets'))
+    return unwrap<OpenTargetsResponse>(await miniAppApiFetch('/rpc/table/open-targets'))
   },
   /** Ingest a spreadsheet file (csv/xlsx) into a persisted table; returns its meta.
    *  Throws (via unwrap) on a non-tabular file or an unconfigured server. */

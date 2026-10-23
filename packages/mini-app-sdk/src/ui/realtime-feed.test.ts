@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 
 import { createRealtimeFeed, type RealtimeFeedSpec } from './realtime-feed'
-import { bindPluginUiRuntime, type PluginUiRuntime } from './runtime'
+import { bindMiniAppUiRuntime, type MiniAppUiRuntime } from './runtime'
 
 let unbind: (() => void) | undefined
 afterEach(() => {
@@ -21,7 +21,7 @@ function fakeSocket(options: { disconnect?: boolean } = {}) {
     set.add(handler)
     return () => set.delete(handler)
   }
-  unbind = bindPluginUiRuntime({
+  unbind = bindMiniAppUiRuntime({
     realtime: {
       onFrame: (tag: string, handler: (json: string) => void) => {
         if (tag !== 'q') throw new Error(`unexpected tag ${tag}`)
@@ -38,7 +38,7 @@ function fakeSocket(options: { disconnect?: boolean } = {}) {
         return new Promise((resolve) => answers.push((ok) => resolve({ subscribed: ok })))
       },
     },
-  } as unknown as PluginUiRuntime)
+  } as unknown as MiniAppUiRuntime)
   return {
     commands,
     frame: (value: unknown) => frames.forEach((handler) => handler(JSON.stringify(value))),

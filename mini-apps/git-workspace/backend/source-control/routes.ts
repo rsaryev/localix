@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { defaultErrorHandler } from '@localixai/mini-app-sdk/backend'
-import type { PluginRouteContext as AppContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppRouteContext as AppContext } from '@localixai/mini-app-sdk/backend'
 import type { SourceControlService } from './service'
 import type { ForgeService } from './forge/service'
 import { toWorkspaceWire } from './workspace-wire'
@@ -57,7 +57,7 @@ export function createSourceControlRoutes(service: SourceControlService, forge: 
    * handling, never the host's. Every carefully typed git refusal — the whole
    * point of `git_branch_not_merged`, `git_rebase_conflict`, `git_merge_conflict`,
    * `git_push_rejected` — therefore reached the browser as a bare Hono 500 with a
-   * plain-text body. `unwrapPluginResponse` found no envelope in it, so the UI
+   * plain-text body. `unwrapMiniAppResponse` found no envelope in it, so the UI
    * showed its generic fallback, and every `err.code === …` branch that offers the
    * recovery (Delete anyway / Abort / Force push) was unreachable code.
    */

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { PluginRouteScope } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppRouteScope } from '@localixai/mini-app-sdk/backend'
 import { createSpaceRoutes } from './routes'
 import { spacePaths } from './paths'
 
@@ -16,7 +16,7 @@ function project() {
   const root = mkdtempSync(join(tmpdir(), 'project-space-'))
   roots.push(root)
   const app = createSpaceRoutes()
-  const scope: PluginRouteScope = { userId: 'u1', sessionId: 's1', projectId: 'p1', cwd: root }
+  const scope: MiniAppRouteScope = { userId: 'u1', sessionId: 's1', projectId: 'p1', cwd: root }
   const send = async (method: string, path: string, body?: unknown, raw?: BodyInit) => {
     const response = await app.request(
       path,

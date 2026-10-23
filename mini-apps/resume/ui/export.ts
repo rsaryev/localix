@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import { pluginFiles } from '@localixai/mini-app-sdk/ui/runtime'
-import { postPluginJson, unwrapPluginResponse } from '@localixai/mini-app-sdk/ui/transport'
+import { miniAppFiles } from '@localixai/mini-app-sdk/ui/runtime'
+import { postMiniAppJson, unwrapMiniAppResponse } from '@localixai/mini-app-sdk/ui/transport'
 import { exportDocument, type ExportFormat } from '../shared/format'
 import type { Resume } from '../shared/schema'
 import { resumeLayout } from '../shared/layout'
@@ -13,12 +13,12 @@ export async function downloadResume(
 ) {
   const name = resume.document.title.replace(/[^\p{L}\p{N}._-]+/gu, '-').slice(0, 100) || 'resume'
   if (format === 'pdf') {
-    await pluginFiles.saveBlob(`${name}.pdf`, await renderResumePdf(resume.document))
+    await miniAppFiles.saveBlob(`${name}.pdf`, await renderResumePdf(resume.document))
     return
   }
   if (format === 'docx') {
     // Compose with the installed Documents plugin through its public API; no office library copy.
-    const response = await postPluginJson('/rpc/documents/generate', {
+    const response = await postMiniAppJson('/rpc/documents/generate', {
       format,
       content: exportDocument(resume.document, 'markdown'),
       filename: name,
@@ -31,12 +31,12 @@ export async function downloadResume(
           .regex(/^[a-zA-Z0-9._-]+$/)
           .nullable(),
       })
-      .parse(await unwrapPluginResponse<unknown>(response))
+      .parse(await unwrapMiniAppResponse<unknown>(response))
     if (!result.mediaId)
       throw new Error(
         'Documents could not save the generated file. Export Markdown and retry generation.',
       )
-    await pluginFiles.download(
+    await miniAppFiles.download(
       `/rpc/media/${encodeURIComponent(result.mediaId)}`,
       `${name}.${format}`,
     )
@@ -45,7 +45,7 @@ export async function downloadResume(
   const extension = { json: 'json', markdown: 'md', text: 'txt', yaml: 'yaml', lanjut: 'json' }[
     format
   ]
-  await pluginFiles.download(
+  await miniAppFiles.download(
     `/rpc/resume/${resume.id}/export/${format}?${new URLSearchParams({ sessionId })}`,
     `${name}.${extension}`,
   )

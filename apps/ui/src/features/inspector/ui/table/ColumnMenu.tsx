@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { MoreHorizontal } from 'lucide-react'
-import type { PluginTableGridProps } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppTableGridProps } from '@localixai/mini-app-sdk/ui'
 import { IconButton } from '@localixai/kit/icon-button'
 import {
   DropdownMenu,
@@ -22,7 +22,7 @@ export function ColumnMenu({
   title: string
   index: number
   count: number
-  actions: NonNullable<PluginTableGridProps['columnActions']>
+  actions: NonNullable<MiniAppTableGridProps['columnActions']>
   rename: () => void
 }) {
   const renaming = useRef(false)

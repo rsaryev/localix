@@ -2,18 +2,18 @@ import { describe, expect, test } from 'bun:test'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
-import { bindPluginUiComponents, Input, type PluginUiComponents } from './components'
-import { bindPluginUiToast, toast, type PluginToast } from './notifications'
-import { bindPluginUiTestDoubles } from './testing'
+import { bindMiniAppUiComponents, Input, type MiniAppUiComponents } from './components'
+import { bindMiniAppUiToast, toast, type MiniAppToast } from './notifications'
+import { bindMiniAppUiTestDoubles } from './testing'
 
-describe('bindPluginUiTestDoubles', () => {
+describe('bindMiniAppUiTestDoubles', () => {
   // The defect: a suite's doubles outlived it in the combined `bun test plugins` process, so the
   // next plugin's real grid rendered as the stub. Ending the doubles must hand back BOTH the host
   // components and the host toast the suite shadowed.
   test('its unbind restores the components and toast it shadowed', () => {
     const hostInput = () => createElement('span', null, 'host')
     const nothing = () => null
-    const host: PluginUiComponents = {
+    const host: MiniAppUiComponents = {
       FileTab: nothing,
       TableGrid: nothing,
       ContextBindingIcon: nothing,
@@ -23,10 +23,10 @@ describe('bindPluginUiTestDoubles', () => {
       ProblemLine: nothing,
       ProblemState: nothing,
     }
-    const unbindHost = bindPluginUiComponents(host)
+    const unbindHost = bindMiniAppUiComponents(host)
     const shown: string[] = []
     const record = (message: string) => void shown.push(message)
-    const unbindHostToast = bindPluginUiToast(
+    const unbindHostToast = bindMiniAppUiToast(
       Object.assign(record, {
         success: record,
         error: record,
@@ -35,10 +35,10 @@ describe('bindPluginUiTestDoubles', () => {
         message: record,
         problems: () => undefined,
         problemsCleared: () => undefined,
-      }) as unknown as PluginToast,
+      }) as unknown as MiniAppToast,
     )
 
-    const unbindDoubles = bindPluginUiTestDoubles()
+    const unbindDoubles = bindMiniAppUiTestDoubles()
     expect(renderToStaticMarkup(createElement(Input))).toBe('')
     toast.info('swallowed by the double')
 

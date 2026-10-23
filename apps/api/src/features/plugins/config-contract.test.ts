@@ -1,15 +1,15 @@
 import { describe, expect, test } from 'bun:test'
-import { pluginConfigOptionSchema as sdkPluginConfigOptionSchema } from '@localixai/mini-app-sdk/manifest'
+import { miniAppConfigOptionSchema as sdkPluginConfigOptionSchema } from '@localixai/mini-app-sdk/manifest'
 
 import { scalarConfig } from '../capabilities/source-repository'
 import { setPluginConfigRequestSchema } from './contracts'
-import { pluginConfigOptionSchema } from './contracts-config'
-import { resolvePluginConfig, type PluginConfigValues } from './config'
+import { miniAppConfigOptionSchema } from './contracts-config'
+import { resolvePluginConfig, type MiniAppConfigValues } from './config'
 import { buildPluginOptionEnv } from './mcp'
 import type { PluginManifest } from './contracts'
 
 /**
- * `PluginConfigValues = Record<string, string | number | boolean>` — IS THE TYPE HONEST?
+ * `MiniAppConfigValues = Record<string, string | number | boolean>` — IS THE TYPE HONEST?
  *
  * It was filed as a suspected LIE: the theory was that `resolvePluginConfig` copies the
  * `plugins` table's unvalidated parsed-JSON `config` column verbatim, so a stored `null`
@@ -27,7 +27,7 @@ import type { PluginManifest } from './contracts'
  *   2. READ    every reader passes the stored config through `scalarConfig`
  *              (`capabilities/source-repository.ts`), which keeps ONLY primitives. A
  *              `null`, array, or object in the column is DROPPED before it is resolved.
- *   3. DEFAULT `pluginConfigOptionSchema.default` is `z.union([string, number, boolean])
+ *   3. DEFAULT `miniAppConfigOptionSchema.default` is `z.union([string, number, boolean])
  *              .optional()`. A manifest cannot declare a null default either.
  *
  * CONSEQUENCE, and the reason this file exists rather than a code change: the `val !==
@@ -46,10 +46,10 @@ const mkManifest = (config: PluginManifest['config']): PluginManifest =>
   ({ name: 'p', config }) as PluginManifest
 
 test('the host re-exports the SDK-owned declarative config schema without overriding it', () => {
-  expect(pluginConfigOptionSchema).toBe(sdkPluginConfigOptionSchema)
+  expect(miniAppConfigOptionSchema).toBe(sdkPluginConfigOptionSchema)
 })
 
-describe('PluginConfigValues is honest — every path in filters non-primitives', () => {
+describe('MiniAppConfigValues is honest — every path in filters non-primitives', () => {
   test('BARRIER 1 (write): the route schema REJECTS a null / array / object value', () => {
     const ok = setPluginConfigRequestSchema.safeParse({
       name: 'p',
@@ -73,11 +73,11 @@ describe('PluginConfigValues is honest — every path in filters non-primitives'
   })
 
   test('BARRIER 3 (manifest): a config option cannot DECLARE a null default', () => {
-    expect(pluginConfigOptionSchema.safeParse({ type: 'string', default: 'x' }).success).toBe(true)
-    expect(pluginConfigOptionSchema.safeParse({ type: 'string', default: null }).success).toBe(
+    expect(miniAppConfigOptionSchema.safeParse({ type: 'string', default: 'x' }).success).toBe(true)
+    expect(miniAppConfigOptionSchema.safeParse({ type: 'string', default: null }).success).toBe(
       false,
     )
-    expect(pluginConfigOptionSchema.safeParse({ type: 'string', default: ['a'] }).success).toBe(
+    expect(miniAppConfigOptionSchema.safeParse({ type: 'string', default: ['a'] }).success).toBe(
       false,
     )
   })
@@ -97,7 +97,7 @@ describe('PluginConfigValues is honest — every path in filters non-primitives'
       NO_DEFAULT: { type: 'string', description: '', required: false, secret: false },
     })
     const stored = readStored('{"OVERRIDDEN":9,"NIL":null,"LIST":[1]}')
-    const resolved: PluginConfigValues = resolvePluginConfig(manifest, stored)
+    const resolved: MiniAppConfigValues = resolvePluginConfig(manifest, stored)
 
     // The default applies; the stored value WINS over it; NO_DEFAULT stays absent; and the
     // null/array the column carried are simply not there.
@@ -136,7 +136,7 @@ describe('PluginConfigValues is honest — every path in filters non-primitives'
  *
  * The DECLARED contract (docs/extending/plugins.md, `multiple` row) is that the value is a
  * COMMA-SEPARATED STRING which the plugin's own native tool parses. A comma-separated list
- * IS a string, so `PluginConfigValues = Record<string, string|number|boolean>` carries it
+ * IS a string, so `MiniAppConfigValues = Record<string, string|number|boolean>` carries it
  * exactly. `multiple` is a manifest-level hint to the plugin author, not a storage mode.
  *
  * Two things are therefore pinned here, because the next reader will re-file this otherwise:
@@ -149,7 +149,7 @@ describe('PluginConfigValues is honest — every path in filters non-primitives'
  */
 describe('`multiple: true` is a manifest HINT, not a storage mode', () => {
   test('the schema ACCEPTS multiple:true — rejecting it would break Claude Code plugin loading', () => {
-    const opt = pluginConfigOptionSchema.safeParse({ type: 'string', multiple: true })
+    const opt = miniAppConfigOptionSchema.safeParse({ type: 'string', multiple: true })
     expect(opt.success).toBe(true)
     if (opt.success) expect(opt.data.multiple).toBe(true)
   })

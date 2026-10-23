@@ -11,7 +11,7 @@ import type {
 
 import { READ_RESULT_TOOLS } from '@localixai/agent'
 import { loadEnabledPlugins } from './loader'
-import { PLUGIN_TOOL_DESCRIPTION_MAX_CHARS } from './tool-policy'
+import { MINI_APP_TOOL_DESCRIPTION_MAX_CHARS } from './tool-policy'
 
 declare global {
   // eslint-disable-next-line no-var
@@ -166,7 +166,7 @@ beforeAll(async () => {
   await fs.writeFile(
     join(verbose, 'tools', 'index.mjs'),
     `export const tools = [{ name: "verbose_lookup", description: "${'x'.repeat(
-      PLUGIN_TOOL_DESCRIPTION_MAX_CHARS + 500,
+      MINI_APP_TOOL_DESCRIPTION_MAX_CHARS + 500,
     )}", inputSchema: {}, execute: async () => ({ content: "ok" }) }]`,
   )
 
@@ -445,7 +445,7 @@ describe('loadEnabledPlugins', () => {
     })
     const tool = loaded.tools.find((candidate) => candidate.name === 'verbose_lookup')
 
-    expect(tool?.description).toHaveLength(PLUGIN_TOOL_DESCRIPTION_MAX_CHARS)
+    expect(tool?.description).toHaveLength(MINI_APP_TOOL_DESCRIPTION_MAX_CHARS)
     expect(tool?.description).toEndWith('…')
     expect(warnings.some((warning) => warning.includes('description capped'))).toBe(true)
   })

@@ -1,4 +1,4 @@
-import { pluginWorkspace } from '@localixai/mini-app-sdk/ui'
+import { miniAppWorkspace } from '@localixai/mini-app-sdk/ui'
 
 import { GIT_WORKSPACE_KIND } from './workItemKinds'
 
@@ -15,7 +15,7 @@ import { GIT_WORKSPACE_KIND } from './workItemKinds'
  * branch pill showed, staged and committed in another chat's tree after a switch.
  */
 export function openGitWorkspace(sessionId: string): void {
-  pluginWorkspace.openWorkItem({
+  miniAppWorkspace.openWorkItem({
     workKind: GIT_WORKSPACE_KIND,
     id: GIT_WORKSPACE_KIND,
     title: 'Git',

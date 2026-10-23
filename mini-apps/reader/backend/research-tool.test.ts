@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { z } from 'zod'
 
-import type { PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'
 
 import { boundedReaderText, createReaderResearchTool } from './research-tool'
 import { ReaderService } from './service'
@@ -12,8 +12,8 @@ import { ReaderService } from './service'
 function toolFor(service: ReaderService) {
   const context = {
     z,
-    defineTool: ((definition: unknown) => definition) as PluginContext['defineTool'],
-  } as unknown as PluginContext
+    defineTool: ((definition: unknown) => definition) as MiniAppContext['defineTool'],
+  } as unknown as MiniAppContext
   return createReaderResearchTool(context, service)
 }
 

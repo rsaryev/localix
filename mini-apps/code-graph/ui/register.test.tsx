@@ -1,10 +1,10 @@
 import { expect, test } from 'bun:test'
-import { recordingPluginUiHost } from '@localixai/mini-app-sdk/ui/testing'
+import { recordingMiniAppUiHost } from '@localixai/mini-app-sdk/ui/testing'
 import { GRAPH_KIND, GRAPH_URI, graphUri, nodeUri } from '../shared/resource'
 import { registerUi } from './register'
 
 test('registers one map per chat, its launcher and its anchor — once per host', () => {
-  const { host, registrations } = recordingPluginUiHost()
+  const { host, registrations } = recordingMiniAppUiHost()
   registerUi(host)
   registerUi(host)
   expect(registrations.workItems).toHaveLength(1)
@@ -17,7 +17,7 @@ test('registers one map per chat, its launcher and its anchor — once per host'
 })
 
 test('a map URI naming its chat opens there; bare and node URIs leave the chat to the host', () => {
-  const { host, registrations } = recordingPluginUiHost()
+  const { host, registrations } = recordingMiniAppUiHost()
   registerUi(host)
   const anchor = registrations.anchors[0] as { resolve: (uri: string) => unknown }
   expect(anchor.resolve(graphUri('s7'))).toMatchObject({

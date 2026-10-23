@@ -1,7 +1,7 @@
 // REST client for the Docker workbench backend (`/rpc/docker`). A missing daemon
 // comes back as a typed `{ code: 'engine_unavailable' }` with a 503 — we surface
 // that so the sidebar can render an empty state instead of an error toast.
-import { pluginApiFetch } from '@localixai/mini-app-sdk/ui/transport'
+import { miniAppApiFetch } from '@localixai/mini-app-sdk/ui/transport'
 import type {
   ComposeAvailableResponse,
   ContainerLogs,
@@ -32,11 +32,11 @@ const base = '/rpc/docker'
 
 /** GET a route and parse its typed body. */
 const get = async <T>(path: string): Promise<T> =>
-  readOr<T>(await pluginApiFetch(`${base}${path}`), 'GET')
+  readOr<T>(await miniAppApiFetch(`${base}${path}`), 'GET')
 
 /** POST (or another mutating method) to a route and parse its typed body. */
 const send = async <T>(path: string, init: RequestInit = { method: 'POST' }): Promise<T> =>
-  readOr<T>(await pluginApiFetch(`${base}${path}`, init), init.method ?? 'POST')
+  readOr<T>(await miniAppApiFetch(`${base}${path}`, init), init.method ?? 'POST')
 
 const enc = encodeURIComponent
 

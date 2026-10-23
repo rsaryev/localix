@@ -14,7 +14,7 @@
  * reads:
  *
  *  - `nested` (default): {@link jsonError}'s `{ error: { code, message, detail } }`, which the SDK
- *    client (`unwrapPluginResponse`) reads;
+ *    client (`unwrapMiniAppResponse`) reads;
  *  - `flat`: `{ error, code, detail }`, the typed-error body of the workbench plugins whose
  *    clients read `error` as the sentence and branch on `code`;
  *  - `text`: `{ error }` — a bare sentence, for clients that read nothing else.

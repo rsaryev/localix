@@ -6,29 +6,29 @@
 export * from './runtime-contracts'
 import type { MessageBindingDraft, MessageContextBindingDraft } from './contrib'
 import type {
-  PluginComposerInsert,
-  PluginConversationImport,
-  PluginEditPredictionRequest,
-  PluginEditPredictionResult,
-  PluginFileContent,
-  PluginOpenDiffRequest,
-  PluginOpenFileRequest,
-  PluginOpenPreviewRequest,
-  PluginResourceBrowseResult,
-  PluginSecretReference,
-  PluginSession,
-  PluginTextInputCompletion,
-  PluginTextInputCompletionInput,
-  PluginTranscriptInput,
-  PluginWorkItemRequest,
-  PluginWorkspaceChange,
-  PluginWorkspaceSnapshot,
-  PluginUiRuntime,
+  MiniAppComposerInsert,
+  MiniAppConversationImport,
+  MiniAppEditPredictionRequest,
+  MiniAppEditPredictionResult,
+  MiniAppFileContent,
+  MiniAppOpenDiffRequest,
+  MiniAppOpenFileRequest,
+  MiniAppOpenPreviewRequest,
+  MiniAppResourceBrowseResult,
+  MiniAppSecretReference,
+  MiniAppSession,
+  MiniAppTextInputCompletion,
+  MiniAppTextInputCompletionInput,
+  MiniAppTranscriptInput,
+  MiniAppWorkItemRequest,
+  MiniAppWorkspaceChange,
+  MiniAppWorkspaceSnapshot,
+  MiniAppUiRuntime,
 } from './runtime-contracts'
 import { RESERVED_FRAME_TAGS } from '../ws-frame-tags'
 import { createWorkspaceChangeCoalescer } from './workspace-changes'
 
-let runtime: PluginUiRuntime | null = null
+let runtime: MiniAppUiRuntime | null = null
 
 /**
  * Bind the host runtime; the returned unbind RESTORES whatever was bound before.
@@ -39,7 +39,7 @@ let runtime: PluginUiRuntime | null = null
  * scope, so ending it returns to the enclosing one. An unbind of a binding already replaced by a
  * newer one changes nothing.
  */
-export function bindPluginUiRuntime(next: PluginUiRuntime): () => void {
+export function bindMiniAppUiRuntime(next: MiniAppUiRuntime): () => void {
   const previous = runtime
   runtime = next
   return () => {
@@ -47,39 +47,39 @@ export function bindPluginUiRuntime(next: PluginUiRuntime): () => void {
   }
 }
 
-function currentRuntime(): PluginUiRuntime {
+function currentRuntime(): MiniAppUiRuntime {
   if (!runtime) throw new Error('Plugin UI runtime is not bound by the host')
   return runtime
 }
 
-function pluginDownloadPath(path: string): string {
+function miniAppDownloadPath(path: string): string {
   if (!path.startsWith('/rpc/') || path.startsWith('//')) {
     throw new Error(`Plugin downloads must use a relative /rpc/* path: ${path}`)
   }
   return path
 }
 
-export const pluginWorkspace = {
-  openWorkItem: (request: PluginWorkItemRequest): void =>
+export const miniAppWorkspace = {
+  openWorkItem: (request: MiniAppWorkItemRequest): void =>
     currentRuntime().workspace.openWorkItem(request),
-  openFile: (request: PluginOpenFileRequest): void => currentRuntime().workspace.openFile(request),
-  openDiff: (request: PluginOpenDiffRequest): void => currentRuntime().workspace.openDiff(request),
-  openPreview: (request: PluginOpenPreviewRequest): Promise<void> =>
+  openFile: (request: MiniAppOpenFileRequest): void => currentRuntime().workspace.openFile(request),
+  openDiff: (request: MiniAppOpenDiffRequest): void => currentRuntime().workspace.openDiff(request),
+  openPreview: (request: MiniAppOpenPreviewRequest): Promise<void> =>
     currentRuntime().workspace.openPreview(request),
   closeWorkItems: (prefix: string, options?: { session?: string; everyChat?: boolean }): void =>
     currentRuntime().workspace.closeWorkItems(prefix, options),
   focusWorkItem: (id: string): void => currentRuntime().workspace.focusWorkItem(id),
   openSidebarSection: (sectionId: string | null): void =>
     currentRuntime().workspace.openSidebarSection(sectionId),
-  getSnapshot: (): PluginWorkspaceSnapshot => currentRuntime().workspace.getSnapshot(),
+  getSnapshot: (): MiniAppWorkspaceSnapshot => currentRuntime().workspace.getSnapshot(),
   subscribe: (listener: () => void): (() => void) => currentRuntime().workspace.subscribe(listener),
 }
 
-export const pluginComposer = {
-  insert: (request: PluginComposerInsert): void => currentRuntime().composer.insert(request),
+export const miniAppComposer = {
+  insert: (request: MiniAppComposerInsert): void => currentRuntime().composer.insert(request),
 }
 
-export const pluginTerminal = {
+export const miniAppTerminal = {
   openPanel: (sessionId: string): void => currentRuntime().terminal.openPanel(sessionId),
   paste: (request: { sessionId: string; command: string }): void =>
     currentRuntime().terminal.paste(request),
@@ -92,13 +92,13 @@ export const pluginTerminal = {
   }): Promise<{ terminalId: string }> => currentRuntime().terminal.spawnCommand(request),
 }
 
-export const pluginFiles = {
+export const miniAppFiles = {
   announceReloaded: (paths: readonly string[]): void =>
     currentRuntime().files.announceReloaded(paths),
   saveBlob: (filename: string, blob: Blob): Promise<void> =>
     Promise.resolve(currentRuntime().files.saveBlob(filename, blob)),
   download: (path: string, filename: string): Promise<void> =>
-    currentRuntime().files.download(pluginDownloadPath(path), filename),
+    currentRuntime().files.download(miniAppDownloadPath(path), filename),
   pickFiles: (options?: { extensions?: readonly string[] }): Promise<string[]> =>
     currentRuntime().files.pickFiles(options),
   bindingsFromFiles: (files: readonly File[]): Promise<MessageBindingDraft[]> =>
@@ -109,7 +109,7 @@ export const pluginFiles = {
     sessionId: string,
     path: string,
     options?: { full?: boolean; knownHash?: string; signal?: AbortSignal },
-  ): Promise<PluginFileContent> => currentRuntime().files.read(sessionId, path, options),
+  ): Promise<MiniAppFileContent> => currentRuntime().files.read(sessionId, path, options),
   /**
    * Hear about on-disk changes under one chat's workspace — a terminal `git switch`, an editor
    * save, an agent's write — instead of polling for them. Batches are coalesced over `windowMs`
@@ -120,10 +120,10 @@ export const pluginFiles = {
    */
   watchWorkspace: (
     sessionId: string,
-    listener: (change: PluginWorkspaceChange) => void,
+    listener: (change: MiniAppWorkspaceChange) => void,
     options: { windowMs?: number; onLive?: (live: boolean) => void } = {},
   ): (() => void) => {
-    const files: Partial<PluginUiRuntime['files']> | undefined = currentRuntime().files
+    const files: Partial<MiniAppUiRuntime['files']> | undefined = currentRuntime().files
     if (!files?.watchWorkspace) {
       options.onLive?.(false)
       return () => {}
@@ -140,22 +140,23 @@ export const pluginFiles = {
   },
 }
 
-export const pluginSecrets = {
-  listReferences: (): Promise<PluginSecretReference[]> => currentRuntime().secrets.listReferences(),
+export const miniAppSecrets = {
+  listReferences: (): Promise<MiniAppSecretReference[]> =>
+    currentRuntime().secrets.listReferences(),
   set: (request: { key: string; value: string }): Promise<void> =>
     currentRuntime().secrets.set(request),
 }
 
-function pluginFrameTag(tag: string): string {
+function miniAppFrameTag(tag: string): string {
   if (!/^[a-z]$/.test(tag) || RESERVED_FRAME_TAGS.has(tag)) {
     throw new Error(`Plugin realtime frame tag must be one lowercase non-core character: ${tag}`)
   }
   return tag
 }
 
-export const pluginRealtime = {
+export const miniAppRealtime = {
   onFrame: (tag: string, handler: (json: string) => void): (() => void) =>
-    currentRuntime().realtime.onFrame(pluginFrameTag(tag), handler),
+    currentRuntime().realtime.onFrame(miniAppFrameTag(tag), handler),
   onReconnect: (handler: () => void): (() => void) =>
     currentRuntime().realtime.onReconnect(handler),
   onDisconnect: (handler: () => void): (() => void) =>
@@ -166,55 +167,55 @@ export const pluginRealtime = {
   ): Promise<T> => currentRuntime().realtime.request(payload, options) as Promise<T>,
 }
 
-export const pluginSessions = {
-  list: (): readonly PluginSession[] => currentRuntime().sessions.list(),
+export const miniAppSessions = {
+  list: (): readonly MiniAppSession[] => currentRuntime().sessions.list(),
   subscribe: (listener: () => void): (() => void) => currentRuntime().sessions.subscribe(listener),
   stop: (sessionId: string): Promise<void> => currentRuntime().sessions.stop(sessionId),
   interact: (requestId: string, action: string, payload: Record<string, unknown>): Promise<void> =>
     currentRuntime().sessions.interact(requestId, action, payload),
   importConversation: (
-    input: PluginConversationImport,
+    input: MiniAppConversationImport,
   ): Promise<{ id: string; projectId: string }> =>
     currentRuntime().sessions.importConversation(input),
-  openTranscript: (input: PluginTranscriptInput): void =>
+  openTranscript: (input: MiniAppTranscriptInput): void =>
     currentRuntime().sessions.openTranscript(input),
 }
 
-export const pluginNavigation = {
+export const miniAppNavigation = {
   revealSession: (sessionId: string, projectId?: string): void =>
     currentRuntime().navigation.revealSession(sessionId, projectId),
   openBinding: (binding: MessageContextBindingDraft, sessionId: string | null): Promise<boolean> =>
     Promise.resolve(currentRuntime().navigation.openBinding(binding, sessionId)),
 }
 
-export const pluginResources = {
-  browse: (partial: string, sessionId?: string | null): Promise<PluginResourceBrowseResult> =>
+export const miniAppResources = {
+  browse: (partial: string, sessionId?: string | null): Promise<MiniAppResourceBrowseResult> =>
     currentRuntime().resources.browse(partial, sessionId),
 }
 
-export const pluginProjects = {
+export const miniAppProjects = {
   resolvePath: (path: string): Promise<{ id: string }> =>
     currentRuntime().projects.resolvePath(path),
   refresh: (): Promise<void> => currentRuntime().projects.refresh(),
 }
 
-export const pluginEditor = {
+export const miniAppEditor = {
   predictionEnabled: (): boolean => currentRuntime().editor.predictionEnabled(),
   subscribe: (listener: () => void): (() => void) => currentRuntime().editor.subscribe(listener),
   predictNextEdit: (
     sessionId: string,
-    request: PluginEditPredictionRequest,
+    request: MiniAppEditPredictionRequest,
     signal?: AbortSignal,
-  ): Promise<PluginEditPredictionResult> =>
+  ): Promise<MiniAppEditPredictionResult> =>
     currentRuntime().editor.predictNextEdit(sessionId, request, signal),
 }
 
-export const pluginCompletion = {
-  useTextInput: (input: PluginTextInputCompletionInput): PluginTextInputCompletion =>
+export const miniAppCompletion = {
+  useTextInput: (input: MiniAppTextInputCompletionInput): MiniAppTextInputCompletion =>
     currentRuntime().completion.useTextInput(input),
 }
 
-export const pluginClipboard = {
+export const miniAppClipboard = {
   writeText: (text: string): Promise<boolean> => currentRuntime().clipboard.writeText(text),
 }
 
@@ -232,7 +233,7 @@ function safeExternalUrl(value: string): string {
   return url.toString()
 }
 
-export const pluginExternal = {
+export const miniAppExternal = {
   open: (url: string, systemBrowser = false): Promise<void> =>
     Promise.resolve(currentRuntime().external.open(safeExternalUrl(url), systemBrowser)),
 }

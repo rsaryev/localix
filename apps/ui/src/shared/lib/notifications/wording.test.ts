@@ -16,7 +16,7 @@ import {
  *
  * - every failure says what did not happen, actively: "Could not save “a.ts”" — never "Failed to",
  *   "Couldn't", "Unable to" or "Cannot", in any class and in any literal of a UI file;
- * - a journal HEADLINE (`toast.*`, `runPluginAction`) is a headline: no trailing full stop, and no
+ * - a journal HEADLINE (`toast.*`, `runMiniAppAction`) is a headline: no trailing full stop, and no
  *   passive "could not be";
  * - an INLINE line (an error under a control, a `ProblemLine` message) is a sentence and ends like
  *   one: a full stop (or "…", "?"). That is what most of them already did, and what
@@ -99,7 +99,7 @@ describe('how a failure is worded', () => {
       `toast.error("Couldn't rename this conversation")`,
       `toast.error('The update could not be installed')`,
       `toast.error('Could not export', { description: String(error) })`,
-      `runPluginAction(() => api.fetch(), 'Could not fetch.')`,
+      `runMiniAppAction(() => api.fetch(), 'Could not fetch.')`,
       `toast.error('Could not send your answer to the agent')`,
     ].join('\n')
     expect(strip(wordingViolations(fixture))).toEqual([

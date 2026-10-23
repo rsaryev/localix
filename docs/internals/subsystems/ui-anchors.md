@@ -51,8 +51,8 @@ shared activation point and requests an optional element reveal after the host o
 malformed or colliding discovered surface throws, because silently omitting a static declaration
 would make the source catalogue differ from the running workbench.
 
-Bundled plugin UI follows the API's enabled-plugin snapshot. `discoverEnabledPluginUi` imports an
-enabled plugin's `ui/register.tsx` once, and `pluginUiHostFor` stamps the plugin name on every
+Bundled plugin UI follows the API's enabled-plugin snapshot. `discoverEnabledMiniAppUi` imports an
+enabled plugin's `ui/register.tsx` once, and `miniAppUiHostFor` stamps the plugin name on every
 contribution. Registries retain the definition after disable, but lookups and lists filter it out.
 Installed plugin views register from manifest data and can be removed during live reconciliation;
 their HTML runs through the separate iframe bridge described by the

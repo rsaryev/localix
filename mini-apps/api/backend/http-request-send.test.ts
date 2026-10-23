@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { defineAgentTool } from '@localixai/agent/agents'
-import type { PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import { z } from 'zod'
 import { createHttpRequestTool } from './http-request'
 import { createMemoryCollection } from './collection/testing/memory'
@@ -21,7 +21,7 @@ test.each(['store', 'environment', 'vault'] as const)(
         errorResult: (content: string) => ({ content, isError: true }),
       },
       ui: { offer: (details: unknown) => details },
-    } as unknown as PluginContext
+    } as unknown as MiniAppContext
     const environments = {
       activeVars: async () => {
         if (stage === 'environment') throw new Error(message)

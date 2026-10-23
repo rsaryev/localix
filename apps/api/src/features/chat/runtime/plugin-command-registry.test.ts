@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { createPluginCommandRegistry } from './plugin-command-registry'
+import { createMiniAppCommandRegistry } from './plugin-command-registry'
 
 interface Published {
   userId: string
@@ -15,7 +15,7 @@ function fakeRegistry(publishError?: Error) {
       published.push({ userId, sessionId, event })
       if (publishError) throw publishError
     },
-  } as unknown as Parameters<typeof createPluginCommandRegistry>[0]['streamRegistry']
+  } as unknown as Parameters<typeof createMiniAppCommandRegistry>[0]['streamRegistry']
   return { published, streamRegistry }
 }
 
@@ -31,7 +31,7 @@ const sendInput = {
 describe('plugin-command-registry', () => {
   test('send publishes a plugin.command frame and resolve settles the promise', () => {
     const { published, streamRegistry } = fakeRegistry()
-    const reg = createPluginCommandRegistry({ streamRegistry })
+    const reg = createMiniAppCommandRegistry({ streamRegistry })
 
     const pending = reg.send(sendInput)
     expect(published).toHaveLength(1)
@@ -50,7 +50,7 @@ describe('plugin-command-registry', () => {
 
   test('resolve is ownership-gated — a different user cannot settle it', () => {
     const { published, streamRegistry } = fakeRegistry()
-    const reg = createPluginCommandRegistry({ streamRegistry, timeoutMs: 50 })
+    const reg = createMiniAppCommandRegistry({ streamRegistry, timeoutMs: 50 })
 
     const pending = reg.send(sendInput)
     const commandId = published[0]!.event.commandId!
@@ -63,13 +63,13 @@ describe('plugin-command-registry', () => {
 
   test('resolve returns false for an unknown commandId', () => {
     const { streamRegistry } = fakeRegistry()
-    const reg = createPluginCommandRegistry({ streamRegistry })
+    const reg = createMiniAppCommandRegistry({ streamRegistry })
     expect(reg.resolve('plc_missing', { ok: true, result: {} }, 'u1')).toBe(false)
   })
 
   test('publish failure returns a tool-readable failure and releases the correlation id', async () => {
     const { published, streamRegistry } = fakeRegistry(new Error('serialize failed'))
-    const reg = createPluginCommandRegistry({ streamRegistry, timeoutMs: 5_000 })
+    const reg = createMiniAppCommandRegistry({ streamRegistry, timeoutMs: 5_000 })
 
     const outcome = await reg.send(sendInput)
     expect(outcome).toEqual({
@@ -82,7 +82,7 @@ describe('plugin-command-registry', () => {
 
   test('times out to noReply when no client answers', async () => {
     const { streamRegistry } = fakeRegistry()
-    const reg = createPluginCommandRegistry({ streamRegistry, timeoutMs: 20 })
+    const reg = createMiniAppCommandRegistry({ streamRegistry, timeoutMs: 20 })
     const outcome = await reg.send(sendInput)
     expect(outcome.ok).toBe(false)
     if (!outcome.ok) {
@@ -95,7 +95,7 @@ describe('plugin-command-registry', () => {
 
   test('per-call timeout override wins over the registry default', async () => {
     const { streamRegistry } = fakeRegistry()
-    const reg = createPluginCommandRegistry({ streamRegistry, timeoutMs: 5_000 })
+    const reg = createMiniAppCommandRegistry({ streamRegistry, timeoutMs: 5_000 })
     const start = Date.now()
     const outcome = await reg.send({ ...sendInput, timeoutMs: 15 })
     expect(Date.now() - start).toBeLessThan(1_000)
@@ -104,7 +104,7 @@ describe('plugin-command-registry', () => {
 
   test("closeForSession rejects only that session's pending commands", async () => {
     const { published, streamRegistry } = fakeRegistry()
-    const reg = createPluginCommandRegistry({ streamRegistry, timeoutMs: 5_000 })
+    const reg = createMiniAppCommandRegistry({ streamRegistry, timeoutMs: 5_000 })
     const a = reg.send(sendInput)
     const b = reg.send({ ...sendInput, sessionId: 's2', seq: 2 })
 

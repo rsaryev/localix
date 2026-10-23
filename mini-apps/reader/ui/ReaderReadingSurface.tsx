@@ -1,5 +1,5 @@
 import type { CSSProperties, RefObject } from 'react'
-import { pluginClipboard } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppClipboard } from '@localixai/mini-app-sdk/ui/runtime'
 
 import type { ReaderChapter } from '../shared/contracts'
 import type { ReaderPreferences } from './model'
@@ -148,7 +148,7 @@ export function ReaderReadingSurface({
           }
           onAddContext={notes.attachNoteContext}
           onCopy={() => {
-            if (notePopover.preview) void pluginClipboard.writeText(notePopover.preview.text)
+            if (notePopover.preview) void miniAppClipboard.writeText(notePopover.preview.text)
           }}
           onLink={links.activateNoteLink}
         />
@@ -162,7 +162,7 @@ export function ReaderReadingSurface({
           highlightColor={preferences.highlightColor}
           onHighlight={(color) => annotations.createAnnotation(color)}
           onNote={() => annotations.createAnnotation(preferences.highlightColor, true)}
-          onCopy={() => void pluginClipboard.writeText(selection)}
+          onCopy={() => void miniAppClipboard.writeText(selection)}
           onClear={clearSelection}
         />
       )}

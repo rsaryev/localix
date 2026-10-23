@@ -1,5 +1,5 @@
 import { apiVersionTooNew } from '../ext/manifest-validate'
-import { PLUGIN_API_VERSION } from './contracts-base'
+import { MINI_APP_API_VERSION } from './contracts-base'
 import type { DiscoveredPlugin } from './discovery'
 
 /**
@@ -11,7 +11,7 @@ import type { DiscoveredPlugin } from './discovery'
  * its tools/skills/agents/prompt sections contributed. The validator had already written the exact
  * sentence explaining why that could not work; it was decoration.
  *
- * Every path that imports plugin code must ask this — `loadEnabledPlugins`, `loadPluginChannel` and
+ * Every path that imports plugin code must ask this — `loadEnabledPlugins`, `loadMiniAppChannel` and
  * the Settings tool inspection — because a gate honoured at one call site is not a gate.
  *
  * Returns the reason to SHOW the user (the plugin row already renders `error`), or null when the
@@ -23,5 +23,5 @@ export function pluginLoadBlockReason(plugin: DiscoveredPlugin): string | null {
   // A `manifestRecovered` plugin had its error coerced to a non-fatal warning — it loaded a usable
   // manifest and must NOT be blocked (graceful degradation).
   if (plugin.error && !plugin.manifestRecovered) return plugin.error
-  return apiVersionTooNew('Plugin', PLUGIN_API_VERSION, plugin.manifest.apiVersion)
+  return apiVersionTooNew('Plugin', MINI_APP_API_VERSION, plugin.manifest.apiVersion)
 }

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import { DB_CONSOLE_KIND } from './openConsole'
 import { draftStoreKey } from './consoleDraft'
 
@@ -54,9 +54,9 @@ export function clearConnectionConsoleDrafts(connectionId: string, storage: Stor
  */
 export function useConsoleDraftCleanup(): void {
   useEffect(() => {
-    let prev = extraConsoleIds(pluginWorkspace.getSnapshot().items)
-    return pluginWorkspace.subscribe(() => {
-      const next = extraConsoleIds(pluginWorkspace.getSnapshot().items)
+    let prev = extraConsoleIds(miniAppWorkspace.getSnapshot().items)
+    return miniAppWorkspace.subscribe(() => {
+      const next = extraConsoleIds(miniAppWorkspace.getSnapshot().items)
       if (next.size >= prev.size && [...prev].every((id) => next.has(id))) {
         prev = next
         return

@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import type { PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import { z } from 'zod'
 import { createResumeService } from './service'
 import { createResumeTool, toolInputSchema } from './tool'
@@ -23,7 +23,7 @@ test('one agent tool initializes every template into a real workspace file and r
     cwd: root,
     defineTool: (definition: unknown) => definition,
     ui: { offer: (input: unknown) => input },
-  } as unknown as PluginContext
+  } as unknown as MiniAppContext
   const tool = createResumeTool(ctx, createResumeService(root)) as unknown as Definition
   try {
     for (const template of templateIds) {
@@ -65,7 +65,7 @@ function setup(prefix: string) {
       cwd: root,
       defineTool: (definition: unknown) => definition,
       ui: { offer: (input: unknown) => input },
-    } as unknown as PluginContext
+    } as unknown as MiniAppContext
     const tool = createResumeTool(ctx, createResumeService(root)) as unknown as Definition
     const call = async (input: unknown) => {
       const result = await tool.execute('call', input as never)

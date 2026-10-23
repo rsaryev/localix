@@ -4,7 +4,7 @@ import type { SessionRecord } from '../repository'
 import type { MessageMutationResponse } from '../contracts'
 import type { CommandHandlerContext, DirectReply } from './command-handlers'
 import { handleMarketplaceSubcommand } from './command-handlers-plugins-marketplace'
-import { formatPluginCheck } from '../../plugins/authoring/check'
+import { formatMiniAppCheck } from '../../plugins/authoring/check'
 import { handlePluginCreateSubcommand } from './command-handlers-plugins-create'
 import {
   errorCode,
@@ -88,7 +88,7 @@ export async function handlePluginsControlCommand(
           ? [`Rebuilt ${rebuilt.map(({ name }) => `\`${name}\``).join(', ')}.`]
           : []),
         ...(rebuildError ? [`Your plugins could not be rebuilt: ${rebuildError}`] : []),
-        ...failed.map(({ name, report }) => '```\n' + formatPluginCheck(name, report) + '\n```'),
+        ...failed.map(({ name, report }) => '```\n' + formatMiniAppCheck(name, report) + '\n```'),
       ].join('\n\n'),
     )
   }

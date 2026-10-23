@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { bindPluginUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
+import { bindMiniAppUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { ContainerStats, ContainerTop } from '../../backend/contracts'
 import { StatsPanel, TopPanel } from './ContainerPanels'
@@ -28,7 +28,7 @@ const top: ContainerTop = {
 // gives the binding back, so the next plugin's suite meets its own host, not these stubs.
 let unbindDoubles: () => void
 beforeAll(() => {
-  unbindDoubles = bindPluginUiTestDoubles()
+  unbindDoubles = bindMiniAppUiTestDoubles()
 })
 afterAll(() => unbindDoubles())
 

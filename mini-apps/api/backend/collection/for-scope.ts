@@ -5,7 +5,7 @@
  * project changes underneath it, and a captured store would keep reading the first project it ever
  * saw. Both entry points therefore ask for a root every time:
  *
- *   - a ROUTE reads `c.env.cwd`, which the host resolves per request (`PluginRouteScope`);
+ *   - a ROUTE reads `c.env.cwd`, which the host resolves per request (`MiniAppRouteScope`);
  *   - the AGENT TOOL reads `ctx.cwd`, which the per-run plugin load already sets to the session's
  *     working directory.
  *

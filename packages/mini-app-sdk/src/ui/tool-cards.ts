@@ -1,7 +1,7 @@
 import type { ComponentType } from 'react'
 import type { ToolCallItem } from '@localixai/agent/agents'
 
-import type { IconComponent, PluginOwnedContribution } from './contrib'
+import type { IconComponent, MiniAppOwnedContribution } from './contrib'
 
 /**
  * How a plugin's own tool reads in the transcript.
@@ -27,7 +27,7 @@ export interface ToolPresentation {
   readOnly?: boolean
 }
 
-export interface ToolCardContribution extends PluginOwnedContribution {
+export interface ToolCardContribution extends MiniAppOwnedContribution {
   /** The tool's name as the model calls it — one this plugin registered on its backend. */
   tool: string
   presentation: ToolPresentation

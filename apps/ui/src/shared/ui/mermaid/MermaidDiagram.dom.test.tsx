@@ -15,9 +15,9 @@ test('plugin actions receive the picture and owning chat, and are also offered i
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { WorkItemSessionProvider } = await import('@localixai/mini-app-sdk/ui/work-item-session')
-  const { bindPluginUiTestDoubles } = await import('@localixai/mini-app-sdk/ui/testing')
+  const { bindMiniAppUiTestDoubles } = await import('@localixai/mini-app-sdk/ui/testing')
   const { registerAction, removeActionsOf } = await import('@/shared/contrib/actions')
-  const { setEnabledPluginNames } = await import('@/shared/contrib/pluginActivation')
+  const { setEnabledPluginNames } = await import('@/shared/contrib/miniAppActivation')
   const { MermaidDiagram } = await import('./MermaidDiagram')
   const source = 'pie\ntitle Example\n"A": 10'
   const svg = '<svg viewBox="0 0 500 300"><text>Example</text></svg>'
@@ -26,7 +26,7 @@ test('plugin actions receive the picture and owning chat, and are also offered i
   const pending = new Promise<void>((resolve) => {
     finish = resolve
   })
-  const unbind = bindPluginUiTestDoubles()
+  const unbind = bindMiniAppUiTestDoubles()
   setEnabledPluginNames(new Set(['picture-fixture']))
   registerAction({
     id: 'picture-fixture:save',

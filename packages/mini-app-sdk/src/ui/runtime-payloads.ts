@@ -16,7 +16,7 @@ import type { IconComponent, MessageBindingDraft, WorkItemLike } from './contrib
 
 /** Open a file in the host's code editor, optionally at an exact position (like `code -g file:line:col`). */
 /**
- * Open a DIFF in the host's viewer — the door beside {@link PluginOpenFileRequest} for a plugin
+ * Open a DIFF in the host's viewer — the door beside {@link MiniAppOpenFileRequest} for a plugin
  * that computed a patch and wants the workbench's own diff surface to render it.
  *
  * `provenance` and `staging` are deliberately opaque: the plugin obtained them from its own backend
@@ -30,7 +30,7 @@ import type { IconComponent, MessageBindingDraft, WorkItemLike } from './contrib
  * file, diff or preview in another chat's workspace. The host now refuses a session open that
  * names none.
  */
-export interface PluginOpenDiffRequest {
+export interface MiniAppOpenDiffRequest {
   /** The chat whose workspace the diff tab opens in. */
   sessionId: string
   /** Absolute path, or an identity string when `multiFile` is set. */
@@ -55,7 +55,7 @@ export interface PluginOpenDiffRequest {
   staging?: unknown
 }
 
-export interface PluginOpenFileRequest {
+export interface MiniAppOpenFileRequest {
   /** The chat whose workspace the file tab opens in. */
   sessionId: string
   /** Absolute path of the file. */
@@ -82,7 +82,7 @@ export interface PluginOpenFileRequest {
 }
 
 /**
- * Show built HTML in the host's Preview panel — the door beside {@link PluginOpenFileRequest} for a
+ * Show built HTML in the host's Preview panel — the door beside {@link MiniAppOpenFileRequest} for a
  * plugin whose output is a page rather than a document to read.
  *
  * A PATH, and the same one the editor's own "open preview" for an `.html` file passes: the host
@@ -91,7 +91,7 @@ export interface PluginOpenFileRequest {
  * not a directory plus an entry — a plugin does not know what port anything is on, and there is
  * already one way to ask for this.
  */
-export interface PluginOpenPreviewRequest {
+export interface MiniAppOpenPreviewRequest {
   /** Absolute path of the HTML file to open. Its directory is what gets served, unless `root`
    *  names a wider one. */
   path: string
@@ -112,7 +112,7 @@ export interface PluginOpenPreviewRequest {
   root?: string
 }
 
-export interface PluginWorkItemRequest {
+export interface MiniAppWorkItemRequest {
   workKind: string
   id: string
   title: string
@@ -124,7 +124,7 @@ export interface PluginWorkItemRequest {
   replace?: boolean
 }
 
-export interface PluginComposerInsert {
+export interface MiniAppComposerInsert {
   text?: string
   bindings?: MessageBindingDraft[]
   replace?: boolean
@@ -137,7 +137,7 @@ export interface PluginComposerInsert {
 }
 
 /** Read-only workspace state exposed without leaking the host's store implementation. */
-export interface PluginWorkspaceSnapshot {
+export interface MiniAppWorkspaceSnapshot {
   /** Open work items keyed by stable id. */
   items: Readonly<Record<string, WorkItemLike>>
   /**
@@ -150,14 +150,14 @@ export interface PluginWorkspaceSnapshot {
 }
 
 /** Vault metadata safe to expose to plugin UI. Secret values never cross this boundary. */
-export interface PluginSecretReference {
+export interface MiniAppSecretReference {
   key: string
   label: string
   reference: string
 }
 
 /** Stable subset of a host session that plugin surfaces may observe. */
-export interface PluginPendingInteraction {
+export interface MiniAppPendingInteraction {
   kind: string
   request: {
     id: string
@@ -166,7 +166,7 @@ export interface PluginPendingInteraction {
   }
 }
 
-export interface PluginSession {
+export interface MiniAppSession {
   id: string
   title: string
   projectId: string | null
@@ -193,45 +193,45 @@ export interface PluginSession {
     createdAt?: string
     items?: AgentItem[]
   }>
-  pendingInteraction: PluginPendingInteraction | null
+  pendingInteraction: MiniAppPendingInteraction | null
 }
 
-export interface PluginTranscriptMessage {
+export interface MiniAppTranscriptMessage {
   id: string
   role: 'user' | 'assistant'
   content?: string
   items?: AgentItem[]
 }
 
-export interface PluginTranscriptActionDestination {
+export interface MiniAppTranscriptActionDestination {
   sessionId: string
   /** The project the session belongs to — every session has one. */
   projectId: string
 }
 
-export interface PluginTranscriptInput {
+export interface MiniAppTranscriptInput {
   /** The chat the transcript tab opens in — the surface that asked for it. */
   sessionId: string
   id: string
   title: string
-  messages: readonly PluginTranscriptMessage[]
+  messages: readonly MiniAppTranscriptMessage[]
   foreignTools?: boolean
-  action?: PluginTranscriptAction
-  actions?: readonly PluginTranscriptAction[]
+  action?: MiniAppTranscriptAction
+  actions?: readonly MiniAppTranscriptAction[]
 }
 
-export interface PluginTranscriptAction {
+export interface MiniAppTranscriptAction {
   label: string
   pendingLabel: string
   description?: string
   icon?: IconComponent
   errorLabel?: string
-  run(): Promise<PluginTranscriptActionDestination | void>
+  run(): Promise<MiniAppTranscriptActionDestination | void>
 }
 
-export interface PluginConversationImport {
+export interface MiniAppConversationImport {
   title: string
-  messages: readonly PluginTranscriptMessage[]
+  messages: readonly MiniAppTranscriptMessage[]
   projectId?: string | null
 }
 
@@ -243,13 +243,13 @@ export interface PluginConversationImport {
  * changes to list, a watcher that restarted, a reconnect that may have missed some — and means
  * "anything may have changed; re-read what you show".
  */
-export interface PluginWorkspaceChange {
+export interface MiniAppWorkspaceChange {
   sessionId: string
   paths: readonly string[] | null
 }
 
-/** What the host's raw workspace feed calls; {@link PluginWorkspaceChange} is built from it. */
-export interface PluginWorkspaceWatchHandlers {
+/** What the host's raw workspace feed calls; {@link MiniAppWorkspaceChange} is built from it. */
+export interface MiniAppWorkspaceWatchHandlers {
   /** One batch from the host watcher: absolute paths, or `null` for the coarse signal. */
   onChange(paths: readonly string[] | null): void
   /**
@@ -260,7 +260,7 @@ export interface PluginWorkspaceWatchHandlers {
   onLive(live: boolean): void
 }
 
-export interface PluginFileContent {
+export interface MiniAppFileContent {
   path: string
   content: string
   bytes: number
@@ -272,7 +272,7 @@ export interface PluginFileContent {
 }
 
 /** Provider-owned node from the same agnostic hierarchy used by the composer @resource picker. */
-export interface PluginResourceNode {
+export interface MiniAppResourceNode {
   uri: string
   label: string
   detail?: string
@@ -284,10 +284,10 @@ export interface PluginResourceNode {
   actions?: Array<{ id: string; label: string; kind: 'link' }>
 }
 
-export interface PluginResourceBrowseResult {
+export interface MiniAppResourceBrowseResult {
   parent: string | null
-  nodes: PluginResourceNode[]
-  notices: PluginResourceNode[]
+  nodes: MiniAppResourceNode[]
+  notices: MiniAppResourceNode[]
   total: number
   truncated: boolean
 }

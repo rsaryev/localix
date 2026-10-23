@@ -8,7 +8,7 @@
  * browser-set identity would be a self-asserted one.
  */
 
-import { pluginApiFetch } from '@localixai/mini-app-sdk/ui/transport'
+import { miniAppApiFetch } from '@localixai/mini-app-sdk/ui/transport'
 import type {
   HistoryEntryInfo,
   HistoryResponse,
@@ -42,20 +42,20 @@ export const restApi = {
 
   async list(sessionId: string, signal?: AbortSignal): Promise<RequestInfo[]> {
     return (
-      await readOr<RequestsResponse>(await pluginApiFetch(u(sessionId)`/requests`, { signal }))
+      await readOr<RequestsResponse>(await miniAppApiFetch(u(sessionId)`/requests`, { signal }))
     ).requests
   },
 
   async folders(sessionId: string, signal?: AbortSignal): Promise<string[]> {
     return (
-      await readOr<{ folders: string[] }>(await pluginApiFetch(u(sessionId)`/folders`, { signal }))
+      await readOr<{ folders: string[] }>(await miniAppApiFetch(u(sessionId)`/folders`, { signal }))
     ).folders
   },
 
   async createFolder(sessionId: string, name: string): Promise<string> {
     return (
       await readOr<{ folder: string }>(
-        await pluginApiFetch(u(sessionId)`/folders`, {
+        await miniAppApiFetch(u(sessionId)`/folders`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ name }),
@@ -66,19 +66,19 @@ export const restApi = {
 
   async removeFolder(sessionId: string, name: string): Promise<void> {
     await readOr<{ ok: true }>(
-      await pluginApiFetch(u(sessionId)`/folders/${enc(name)}`, { method: 'DELETE' }),
+      await miniAppApiFetch(u(sessionId)`/folders/${enc(name)}`, { method: 'DELETE' }),
     )
   },
 
   /** The request AND what it resolves to under the active environment — see ResolvedPreview. */
   async get(sessionId: string, name: string): Promise<RequestResponse> {
-    return readOr<RequestResponse>(await pluginApiFetch(u(sessionId)`/requests/${enc(name)}`))
+    return readOr<RequestResponse>(await miniAppApiFetch(u(sessionId)`/requests/${enc(name)}`))
   },
 
   /** Mint a new request. A name collision surfaces as `code: 'name_taken'` (409). */
   async create(sessionId: string, input: RequestCreate): Promise<RequestResponse> {
     return readOr<RequestResponse>(
-      await pluginApiFetch(u(sessionId)`/requests`, {
+      await miniAppApiFetch(u(sessionId)`/requests`, {
         method: 'POST',
         // JSON content-type forces the cross-origin preflight CORS then denies — see routes.ts.
         headers: { 'content-type': 'application/json' },
@@ -90,7 +90,7 @@ export const restApi = {
   /** Save the editable fields. `auth` goes through its own route — see `setAuth`. */
   async update(sessionId: string, name: string, edit: RequestEdit): Promise<RequestResponse> {
     return readOr<RequestResponse>(
-      await pluginApiFetch(u(sessionId)`/requests/${enc(name)}`, {
+      await miniAppApiFetch(u(sessionId)`/requests/${enc(name)}`, {
         method: 'PUT',
         // The JSON content-type is what forces a cross-origin preflight, which CORS then denies.
         // Not cosmetic — see the schema comment in routes.ts.
@@ -103,7 +103,7 @@ export const restApi = {
   /** Save the auth block. A secret field left as the mask (`••••••`) keeps the stored value. */
   async setAuth(sessionId: string, name: string, auth: RequestAuth): Promise<RequestResponse> {
     return readOr<RequestResponse>(
-      await pluginApiFetch(u(sessionId)`/requests/${enc(name)}/auth`, {
+      await miniAppApiFetch(u(sessionId)`/requests/${enc(name)}/auth`, {
         method: 'PUT',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ auth }),
@@ -113,7 +113,7 @@ export const restApi = {
 
   async remove(sessionId: string, name: string): Promise<void> {
     await readOr<{ ok: true }>(
-      await pluginApiFetch(u(sessionId)`/requests/${enc(name)}`, { method: 'DELETE' }),
+      await miniAppApiFetch(u(sessionId)`/requests/${enc(name)}`, { method: 'DELETE' }),
     )
   },
 
@@ -121,7 +121,7 @@ export const restApi = {
   async rename(sessionId: string, name: string, to: string): Promise<RequestInfo> {
     return (
       await readOr<{ request: RequestInfo }>(
-        await pluginApiFetch(u(sessionId)`/requests/${enc(name)}/rename`, {
+        await miniAppApiFetch(u(sessionId)`/requests/${enc(name)}/rename`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ to }),
@@ -134,7 +134,7 @@ export const restApi = {
   async duplicate(sessionId: string, name: string): Promise<RequestInfo> {
     return (
       await readOr<{ request: RequestInfo }>(
-        await pluginApiFetch(u(sessionId)`/requests/${enc(name)}/duplicate`, { method: 'POST' }),
+        await miniAppApiFetch(u(sessionId)`/requests/${enc(name)}/duplicate`, { method: 'POST' }),
       )
     ).request
   },
@@ -143,7 +143,7 @@ export const restApi = {
   async history(sessionId: string, name: string): Promise<HistoryEntryInfo[]> {
     return (
       await readOr<HistoryResponse>(
-        await pluginApiFetch(u(sessionId)`/requests/${enc(name)}/history`),
+        await miniAppApiFetch(u(sessionId)`/requests/${enc(name)}/history`),
       )
     ).entries
   },
@@ -151,14 +151,14 @@ export const restApi = {
   /** Clear a request's response history (the in-memory ring for this request only). */
   async clearHistory(sessionId: string, name: string): Promise<void> {
     await readOr<{ ok: true }>(
-      await pluginApiFetch(u(sessionId)`/requests/${enc(name)}/history`, { method: 'DELETE' }),
+      await miniAppApiFetch(u(sessionId)`/requests/${enc(name)}/history`, { method: 'DELETE' }),
     )
   },
 
   /** Send by NAME — the backend signs from the STORED spec, so a credential is never sent here. */
   async send(sessionId: string, name: string, signal?: AbortSignal): Promise<SendResponse> {
     return readOr<SendResponse>(
-      await pluginApiFetch(u(sessionId)`/requests/${enc(name)}/send`, { method: 'POST', signal }),
+      await miniAppApiFetch(u(sessionId)`/requests/${enc(name)}/send`, { method: 'POST', signal }),
     )
   },
 
@@ -174,7 +174,7 @@ export const restApi = {
     },
   ): Promise<ImportResponse> {
     return readOr<ImportResponse>(
-      await pluginApiFetch(u(sessionId)`/import`, {
+      await miniAppApiFetch(u(sessionId)`/import`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(body),
@@ -184,7 +184,7 @@ export const restApi = {
 
   /** The request as a cURL command — `${secret:KEY}` refs kept, literals masked. Plain text. */
   async exportCurl(sessionId: string, name: string): Promise<string> {
-    const res = await pluginApiFetch(u(sessionId)`/requests/${enc(name)}/export?format=curl`)
+    const res = await miniAppApiFetch(u(sessionId)`/requests/${enc(name)}/export?format=curl`)
     if (!res.ok) throw new RestApiError(`Export failed (${res.status})`)
     return res.text()
   },

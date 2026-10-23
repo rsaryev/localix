@@ -11,11 +11,11 @@ import * as sdkRichText from '@localixai/mini-app-sdk/rich-text'
 import * as storeChanges from '@localixai/mini-app-sdk/store-changes'
 import * as sdkDocumentLayout from '@localixai/mini-app-sdk/document-layout'
 
-import type { PluginBackendHostModule } from './authoring/kit-layout'
+import type { MiniAppBackendHostModule } from './authoring/kit-layout'
 
 /**
  * The host's own instance of each module a plugin backend imports as external
- * (`PLUGIN_BACKEND_HOST_MODULES`), served to those imports by a Bun runtime plugin.
+ * (`MINI_APP_BACKEND_HOST_MODULES`), served to those imports by a Bun runtime plugin.
  *
  * Why a runtime plugin and not a file path: resolving the bare import to the host's FILE loads a
  * second instance of it, which is exactly the duplicate this removes (measured: no RSS saved, and
@@ -23,7 +23,7 @@ import type { PluginBackendHostModule } from './authoring/kit-layout'
  * already evaluated, so a plugin's `z` and `Hono` are the host's objects. Keyed by the list's type,
  * so a specifier added there without an instance here does not compile.
  */
-const HOST_MODULES: Record<PluginBackendHostModule, Record<string, unknown>> = {
+const HOST_MODULES: Record<MiniAppBackendHostModule, Record<string, unknown>> = {
   hono,
   zod,
   '@localixai/mini-app-sdk/backend': sdkBackend,
@@ -57,6 +57,6 @@ export function installBackendHostModules(): void {
 }
 
 /** The instance the host serves for a specifier (tests compare identities through it). */
-export function hostModule(specifier: PluginBackendHostModule): Record<string, unknown> {
+export function hostModule(specifier: MiniAppBackendHostModule): Record<string, unknown> {
   return HOST_MODULES[specifier]
 }

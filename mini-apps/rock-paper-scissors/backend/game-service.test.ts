@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { PluginWakeOutcome, PluginWakeRequest } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppWakeOutcome, MiniAppWakeRequest } from '@localixai/mini-app-sdk/backend'
 
 import { ANSWER_TOOLS } from './ask-agent'
 import { createGameService } from './game-service'
@@ -30,8 +30,8 @@ function sessionStorage(live = ['s1', 's2']) {
 
 const S1 = { userId: 'u1', sessionId: 's1' }
 
-function setup(outcome: PluginWakeOutcome = { status: 'delivered' }) {
-  const woke: PluginWakeRequest[] = []
+function setup(outcome: MiniAppWakeOutcome = { status: 'delivered' }) {
+  const woke: MiniAppWakeRequest[] = []
   const storage = sessionStorage()
   let ids = 0
   const games = createGameService({
@@ -87,7 +87,7 @@ describe('when the person opens', () => {
     const { games, woke } = setup({
       status: 'refused',
       reason: 'Chat is busy.',
-    } as PluginWakeOutcome)
+    } as MiniAppWakeOutcome)
     const after = await games.personMove(S1, 'rock')
     await games.remind(S1)
     expect(woke.map((request) => request.key)).toEqual([woke[0]!.key, woke[0]!.key])

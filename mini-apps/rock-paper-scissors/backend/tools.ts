@@ -1,4 +1,4 @@
-import { classifyByAction, type PluginContext } from '@localixai/mini-app-sdk/backend'
+import { classifyByAction, type MiniAppContext } from '@localixai/mini-app-sdk/backend'
 
 import { describeForAgent, recordLine, resultLine, roundLine } from '../shared/describe'
 import { MoveRefused, viewFor, type Game, type Move, type Player } from '../shared/game'
@@ -33,7 +33,7 @@ export const ROUND_OVER_ASK =
 type Result = { content: string; isError?: boolean; terminate?: boolean; details?: unknown }
 
 /** The table a tool call acts on: the chat the call runs in. */
-function seatOf(ctx: PluginContext, context: { session?: { id: string } } | undefined): Seat {
+function seatOf(ctx: MiniAppContext, context: { session?: { id: string } } | undefined): Seat {
   const sessionId = context?.session?.id
   if (!sessionId)
     throw new MoveRefused('Rock Paper Scissors is played in a chat; this call has none.')
@@ -54,7 +54,7 @@ function afterMove(game: Game, answered: boolean): Result {
   }
 }
 
-export function createGameTools(ctx: PluginContext, games: GameService) {
+export function createGameTools(ctx: MiniAppContext, games: GameService) {
   const actions = {
     async play(seat: Seat, move: Move | undefined): Promise<Result> {
       if (!move) throw new MoveRefused('Name your move: `move`, one of rock, paper or scissors.')

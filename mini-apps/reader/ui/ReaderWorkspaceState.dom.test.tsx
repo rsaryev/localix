@@ -1,11 +1,11 @@
 import { offerKeyToFocusedSurface } from '@localixai/mini-app-sdk/ui/focus'
 import { isPrimaryModifier } from '@localixai/kit/keybindings'
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { bindPluginUiComponents } from '@localixai/mini-app-sdk/ui'
+import { bindMiniAppUiComponents } from '@localixai/mini-app-sdk/ui'
 import { problemReportTitle } from '@localixai/mini-app-sdk/ui/problems'
-import type { PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
+import type { MiniAppProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
 import { registerDom } from '@localixai/kit/testing'
-import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui'
+import { bindMiniAppUiTransport } from '@localixai/mini-app-sdk/ui'
 
 import { readerWorkspaceSelectionKey } from './model'
 
@@ -21,7 +21,7 @@ let unbindComponents: (() => void) | undefined
  */
 function bindHostComponents(): () => void {
   const Empty = () => null
-  const Problem = ({ report, actions }: PluginProblemLineProps) => (
+  const Problem = ({ report, actions }: MiniAppProblemLineProps) => (
     <div role="alert">
       <span>{problemReportTitle(report)}</span>
       {/* The ways OUT are the point of this line, and the reader's tests assert on them by
@@ -34,7 +34,7 @@ function bindHostComponents(): () => void {
       <button type="button">Details</button>
     </div>
   )
-  return bindPluginUiComponents({
+  return bindMiniAppUiComponents({
     FileTab: Empty,
     TableGrid: Empty,
     ContextBindingIcon: Empty,
@@ -89,7 +89,7 @@ describe('ReaderWorkspace tab state', () => {
     const storageKey = readerWorkspaceSelectionKey(sessionId)
     localStorage.removeItem(storageKey)
     const requests: string[] = []
-    const unbindTransport = bindPluginUiTransport({
+    const unbindTransport = bindMiniAppUiTransport({
       request: async (path) => {
         requests.push(path)
         if (path.startsWith('/rpc/reader/library')) {
@@ -209,7 +209,7 @@ describe('ReaderWorkspace tab state', () => {
     const storageKey = readerWorkspaceSelectionKey(sessionId)
     localStorage.removeItem(storageKey)
     const requests: string[] = []
-    const unbindTransport = bindPluginUiTransport({
+    const unbindTransport = bindMiniAppUiTransport({
       request: async (path) => {
         requests.push(path)
         if (path.startsWith('/rpc/reader/library')) return json({ books: [], collections: [] })

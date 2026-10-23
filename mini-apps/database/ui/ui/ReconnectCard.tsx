@@ -1,5 +1,5 @@
 import { Database } from 'lucide-react'
-import { ProblemLine, type PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
+import { ProblemLine, type MiniAppProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
 import type { Problem } from '@localixai/mini-app-sdk/ui/problems'
 import { ActivitySignal } from '@localixai/kit/activity-orb'
 import { StateNotice } from '@localixai/kit/state-notice'
@@ -20,7 +20,7 @@ export function useReconnectProblem(
   error: Problem | undefined,
   onRetry: () => void,
   onRemove: () => void,
-): PluginProblemLineProps | null {
+): MiniAppProblemLineProps | null {
   return useDbProblem(connection?.name ?? '', connection && !connecting ? error : null, {
     actions: [
       { id: 'retry', label: 'Retry', run: onRetry },
@@ -48,7 +48,7 @@ export function ReconnectCard({
   /** The failed attempt, when there was one — read here only as "this is not still connecting". */
   error?: Problem
   /** The failed attempt, owned above — see {@link useReconnectProblem}. */
-  problem: PluginProblemLineProps | null
+  problem: MiniAppProblemLineProps | null
 }) {
   return (
     <StateNotice

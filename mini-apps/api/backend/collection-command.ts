@@ -1,4 +1,4 @@
-export const API_PLUGIN = 'api'
+export const API_MINI_APP = 'api'
 export const API_WORKSPACE_CHANNEL = 'workspace'
 
 export interface ApiCollectionChangedCommand {

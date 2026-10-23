@@ -4,7 +4,7 @@ import type {
   RefObject,
 } from 'react'
 import { toast } from '@localixai/mini-app-sdk/ui'
-import { pluginExternal } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppExternal } from '@localixai/mini-app-sdk/ui/runtime'
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 import { readerLinkGesture, readerLinkTarget } from '../shared/link'
@@ -42,7 +42,7 @@ export function useReaderArticleLinks({
 
   const openReaderExternal = (href: string) => {
     void Promise.resolve()
-      .then(() => pluginExternal.open(href))
+      .then(() => miniAppExternal.open(href))
       .catch((cause) => {
         toast.error('Could not open the link', {
           description: errorMessage(cause, '') || undefined,

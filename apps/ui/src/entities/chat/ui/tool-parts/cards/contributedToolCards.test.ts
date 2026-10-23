@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test'
 import type { ToolCardContribution } from '@localixai/mini-app-sdk/ui'
 
-import { setEnabledPluginNames } from '@/shared/contrib/pluginActivation'
+import { setEnabledPluginNames } from '@/shared/contrib/miniAppActivation'
 import { registerToolCard, removeToolCardsOf, toolCardFor } from '@/shared/contrib/toolCards'
 import { FALLBACK_META, toolDisplayLabel, toolMeta } from './meta'
 import { contributedToolCard, getToolCard, TOOL_CARDS } from './registry'

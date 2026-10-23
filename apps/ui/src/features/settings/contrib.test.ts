@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'bun:test'
-import type { PluginUiHost, UiAnchorContribution, UiAnchorNode } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppUiHost, UiAnchorContribution, UiAnchorNode } from '@localixai/mini-app-sdk/ui'
 import type { PluginRecord } from '@/shared/api/contracts'
 import { __resetPluginContrib, refetchPluginContrib } from '@/shared/contrib/enabledPlugins'
 import { registerUi } from './contrib'
@@ -61,7 +61,7 @@ test('exposes exact-scope plugin rows to the centralized /open anchor tree', asy
     fileEditors: noop,
     fileFormats: noop,
     sessionEvents: noop,
-  } as unknown as PluginUiHost)
+  } as unknown as MiniAppUiHost)
 
   const rows = contribution?.listChildren?.('localix://ui/settings/plugins') as UiAnchorNode[]
   expect(rows.find((row) => row.label === 'Sample Workspace')).toMatchObject({

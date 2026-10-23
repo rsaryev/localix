@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { z } from 'zod'
-import { PluginApiError, pluginApiFetch, unwrapPluginResponse } from './transport'
+import { MiniAppApiError, miniAppApiFetch, unwrapMiniAppResponse } from './transport'
 import { useVisiblePolling } from './visibility'
 
 export interface PolledSnapshot<T> {
@@ -115,8 +115,8 @@ export function usePolledSnapshot<T>({
       scope.current.active && scope.current.path === path && scope.current.epoch === epoch
     const ticket = ++tickets.issued
     try {
-      const response = await pluginApiFetch(path, { signal: AbortSignal.timeout(timeoutMs) })
-      const snapshot = schema.parse(await unwrapPluginResponse<unknown>(response))
+      const response = await miniAppApiFetch(path, { signal: AbortSignal.timeout(timeoutMs) })
+      const snapshot = schema.parse(await unwrapMiniAppResponse<unknown>(response))
       if (current() && tickets.sending === 0) show(ticket, snapshot)
     } catch {
       if (!current() || tickets.sending > 0 || ticket < tickets.shown) return
@@ -133,20 +133,20 @@ export function usePolledSnapshot<T>({
       tickets.sending += 1
       setPending((count) => count + 1)
       try {
-        const response = await pluginApiFetch(options.path ?? path, {
+        const response = await miniAppApiFetch(options.path ?? path, {
           method: options.method ?? 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body ?? {}),
           signal: AbortSignal.timeout(timeoutMs),
         })
-        const snapshot = schema.parse(await unwrapPluginResponse<unknown>(response))
+        const snapshot = schema.parse(await unwrapMiniAppResponse<unknown>(response))
         if (current()) show(ticket, snapshot)
         return snapshot
       } catch (error) {
         // The route's own sentence ("That note is too long.") when it answered one; a transport
         // or schema failure is the fixed message, never a stack or a zod dump.
         if (!current() || ticket < tickets.shown) return null
-        const message = error instanceof PluginApiError ? error.message : failureMessage
+        const message = error instanceof MiniAppApiError ? error.message : failureMessage
         setState((current) => ({ ...current, error: message, loading: false }))
         return null
       } finally {

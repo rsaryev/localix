@@ -1,6 +1,6 @@
 import { assetBindings, type MessageBinding } from '@localixai/agent'
 
-import type { LoadedPluginHook } from './loader'
+import type { LoadedMiniAppHook } from './loader'
 import { isPlainObject } from './mcp'
 import { HOOK_TIMEOUT_MS, invokeHook, type HookRunOptions } from './hook-invoke'
 import { ASSISTANT_BINDINGS_MAX, ASSISTANT_BINDING_DATA_CAP_BYTES } from './native'
@@ -16,7 +16,7 @@ import { ASSISTANT_BINDINGS_MAX, ASSISTANT_BINDING_DATA_CAP_BYTES } from './nati
  * unchanged when no enabled plugin declares the hook.
  */
 export async function runUserMessageHooks(
-  hookEntries: readonly LoadedPluginHook[],
+  hookEntries: readonly LoadedMiniAppHook[],
   message: { messageId: string; text: string },
   options: HookRunOptions,
 ): Promise<string> {
@@ -129,7 +129,7 @@ function bindingLabel(binding: MessageBinding): string {
  * dropped + logged). Returns `{}` when no enabled plugin declares the hook.
  */
 export async function runAssistantMessageHooks(
-  hookEntries: readonly LoadedPluginHook[],
+  hookEntries: readonly LoadedMiniAppHook[],
   message: { messageId: string; content: string },
   options: HookRunOptions,
 ): Promise<{ content?: string; bindings?: MessageBinding[] }> {

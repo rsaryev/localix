@@ -12,7 +12,7 @@
  * needs, `resync` says "anything of this kind may have changed — reconcile".
  */
 
-export type PluginChange<Entity extends string = string> =
+export type MiniAppChange<Entity extends string = string> =
   | { entity: Entity; op: 'upserted' | 'deleted'; ref: Record<string, unknown> }
   | { entity: Entity; op: 'resync' }
 
@@ -33,7 +33,7 @@ export interface ChangeFeedHost {
    * Record changes to the plugin's stream. Fire-and-forget: never awaited, never thrown — a
    * notice that cannot be written is logged and left to the consumers' reconcile.
    */
-  record(changes: PluginChange | readonly PluginChange[]): void
+  record(changes: MiniAppChange | readonly MiniAppChange[]): void
   /**
    * Read the plugin's stream as `consumer` (a name stable across restarts: it owns the cursor).
    * A handler that throws is retried with backoff from the same notice. A new consumer starts
@@ -41,7 +41,7 @@ export interface ChangeFeedHost {
    */
   subscribe(
     consumer: string,
-    handler: (change: PluginChange) => Promise<void> | void,
+    handler: (change: MiniAppChange) => Promise<void> | void,
   ): Promise<() => Promise<void>>
   /**
    * Follow the core's deletions, read-only, as `consumer` (stable across restarts: it owns a

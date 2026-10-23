@@ -5,8 +5,8 @@ import type { AvailabilityReader } from '../capabilities/availability'
 import { resolvePluginConfig } from './config'
 import { pluginLoadBlockReason } from './loadable'
 import { makeContext, importNativeModule } from './native'
-import { pluginProblemReporter } from './problem-reporter'
-import type { PluginChannel, PluginContext } from './native'
+import { miniAppProblemReporter } from './problem-reporter'
+import type { MiniAppChannel, MiniAppContext } from './native'
 import { type CapabilitySourceRepository, scalarConfig } from '../capabilities/source-repository'
 
 /**
@@ -23,7 +23,7 @@ import { type CapabilitySourceRepository, scalarConfig } from '../capabilities/s
  * nothing and never fails the load. So does the trust gate — a disabled plugin's code is
  * not imported, and neither is one this host refuses to run.
  */
-export async function loadEnabledPluginChannels(opts: {
+export async function loadEnabledMiniAppChannels(opts: {
   repo: CapabilitySourceRepository
   /** What the scope's rules say; a trust gate decides whatever they do not. */
   availability: AvailabilityReader
@@ -33,7 +33,7 @@ export async function loadEnabledPluginChannels(opts: {
   /** The user's home (see `discoverPlugins`). */
   homeDir: string
   logger?: { warn: (msg: string, meta?: unknown) => void }
-}): Promise<Array<{ pluginName: string; channel: PluginChannel; ctx: PluginContext }>> {
+}): Promise<Array<{ pluginName: string; channel: MiniAppChannel; ctx: MiniAppContext }>> {
   const cwd = opts.cwd ?? localixWorkspaceDir()
   const catalog = await buildPluginCatalog({
     repo: opts.repo,
@@ -44,7 +44,7 @@ export async function loadEnabledPluginChannels(opts: {
     homeDir: opts.homeDir,
   })
 
-  const found: Array<{ pluginName: string; channel: PluginChannel; ctx: PluginContext }> = []
+  const found: Array<{ pluginName: string; channel: MiniAppChannel; ctx: MiniAppContext }> = []
   for (const { plugin, state } of catalog.enabled) {
     if (pluginLoadBlockReason(plugin)) continue
     const config = resolvePluginConfig(plugin.manifest, scalarConfig(state?.config))
@@ -58,7 +58,7 @@ export async function loadEnabledPluginChannels(opts: {
       opts.homeDir,
       undefined,
       // A channel runs code for as long as the process does; it may report a problem too.
-      pluginProblemReporter(opts.userId),
+      miniAppProblemReporter(opts.userId),
     )
     for (const entry of plugin.entrypoints.toolEntries) {
       try {

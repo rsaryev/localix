@@ -18,7 +18,7 @@ import { announceCapabilitiesSettled } from '../features/capabilities/settle'
 import { mcpClientManager } from '../features/mcp/client-manager'
 import { startMcpChannels } from './mcp-channels'
 import type { InfraPhase } from './infra'
-import type { PluginHostRefs } from './plugin-host-refs'
+import type { MiniAppHostRefs } from './plugin-host-refs'
 
 export function bindChatHostRefs({
   hostRefs,
@@ -28,7 +28,7 @@ export function bindChatHostRefs({
   notifications,
   db,
 }: Pick<InfraPhase, 'env' | 'logger' | 'notifications' | 'db'> & {
-  hostRefs: PluginHostRefs
+  hostRefs: MiniAppHostRefs
   chatService: ReturnType<typeof createChatService>
 }) {
   // Fulfill the late-bound cwd resolver the plugin arg-options runner uses.

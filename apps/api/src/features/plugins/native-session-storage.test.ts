@@ -1,14 +1,14 @@
 import { describe, expect, test } from 'bun:test'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { PluginHostServices } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppHostServices } from '@localixai/mini-app-sdk/backend'
 
 import { makeContext } from './native'
 
 const storage = (label: string) => ({
   resolveDataDir: async (userId: string, sessionId: string) => `${label}:${userId}:${sessionId}`,
 })
-const context = (host?: PluginHostServices, perRun?: ReturnType<typeof storage>) =>
+const context = (host?: MiniAppHostServices, perRun?: ReturnType<typeof storage>) =>
   makeContext(
     'sample-plugin',
     '/plugins/sample',
@@ -29,7 +29,7 @@ describe('session storage on the plugin context', () => {
   })
 
   test('the boot load (routes) carries the host’s own, so both resolve through one owner', async () => {
-    const ctx = context({ sessionStorage: storage('boot') } as PluginHostServices)
+    const ctx = context({ sessionStorage: storage('boot') } as MiniAppHostServices)
     expect(await ctx.sessionStorage?.resolveDataDir('u1', 's1')).toBe('boot:u1:s1')
   })
 

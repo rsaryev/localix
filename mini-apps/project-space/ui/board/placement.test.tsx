@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { bindPluginUiComponents } from '@localixai/mini-app-sdk/ui'
+import { bindMiniAppUiComponents } from '@localixai/mini-app-sdk/ui'
 import { emptySpace } from '../../shared/format/document'
 import { applyOps } from '../../shared/ops/apply'
 import { spaceTypes } from '../../shared/types'
@@ -11,7 +11,7 @@ import { placementOf } from './placement'
 
 test('every insertable preview has the props and dimensions of the created element', () => {
   const Empty = () => null
-  const unbind = bindPluginUiComponents({
+  const unbind = bindMiniAppUiComponents({
     FileTab: Empty,
     TableGrid: () => <div>Host table grid</div>,
     ContextBindingIcon: Empty,

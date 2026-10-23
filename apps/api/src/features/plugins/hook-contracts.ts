@@ -19,6 +19,6 @@ export type {
   MemoryLoadContextEvent,
   MemoryProvider,
   MemoryRunEndEvent,
-  PluginHooks,
+  MiniAppHooks,
   SubagentStopEvent,
 } from '@localixai/mini-app-sdk/backend'

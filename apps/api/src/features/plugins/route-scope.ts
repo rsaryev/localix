@@ -1,4 +1,4 @@
-import type { PluginRouteScope } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppRouteScope } from '@localixai/mini-app-sdk/backend'
 
 /**
  * WHERE a plugin route call is happening, resolved per request from its `?sessionId=` and
@@ -16,14 +16,14 @@ import type { PluginRouteScope } from '@localixai/mini-app-sdk/backend'
  * the project's, else the fallback — so a plugin that keeps state in the workspace lands in the
  * directory the terminal and the file tools see.
  */
-export async function resolvePluginRouteScope(input: {
+export async function resolveMiniAppRouteScope(input: {
   userId: string
   request: Request
   /** The ownership gate: rejects (or resolves null) for a missing, foreign or deleted session. */
   resolveSessionCwd: (userId: string, sessionId: string) => Promise<string | null | undefined>
   resolveProjectCwd: (userId: string, projectId: string) => Promise<string | null | undefined>
   fallbackCwd: string
-}): Promise<PluginRouteScope> {
+}): Promise<MiniAppRouteScope> {
   const params = new URL(input.request.url).searchParams
   const requested = params.get('sessionId')?.trim()
   const projectId = params.get('projectId')?.trim() ?? ''

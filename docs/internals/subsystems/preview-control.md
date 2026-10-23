@@ -54,8 +54,8 @@ arbitrary browser tab.
 A plugin's workbench view has no URL, so it is addressed as `plugin:<name>`
 (`apps/api/src/contracts/plugin-view-target.ts`, parsed by both sides). `open` with that target
 serves nothing and returns the target itself as the tab ID. The command then takes the relay above,
-and stage 3 is `usePluginViewAgent`, which claims every `plugin:*` command with the same claim
-protocol as the other hosts. `apps/ui/src/features/inspector/model/pluginViewHost.ts` runs it, in
+and stage 3 is `useMiniAppViewAgent`, which claims every `plugin:*` command with the same claim
+protocol as the other hosts. `apps/ui/src/features/inspector/model/miniAppViewHost.ts` runs it, in
 this order:
 
 | Step | Mechanism                                                                               | Boundary                                                             |
@@ -67,9 +67,9 @@ this order:
 |    5 | Run the command with `@localixai/visual-feedback/embedded`, scoped to the panel element | Selectors, refs, Tab order and screenshots stay inside the panel     |
 |    6 | Name the snapshot and the screenshot after the view                                     | Not after the chat window around it                                  |
 
-`console` reads the plugin's own buffer (`apps/ui/src/shared/contrib/pluginViewErrors.ts`): uncaught
-errors and console calls whose stack runs through the plugin's artifact, and render crashes its
-tab's boundary catches. The screenshot backdrop is `--background-solid`, because under the glass
+`console` reads the plugin's own buffer (`apps/ui/src/shared/contrib/miniAppViewErrors.ts`):
+uncaught errors and console calls whose stack runs through the plugin's artifact, and render crashes
+its tab's boundary catches. The screenshot backdrop is `--background-solid`, because under the glass
 theme every pane is translucent. A sandboxed third-party view (an iframe) is outside the panel's
 reach.
 

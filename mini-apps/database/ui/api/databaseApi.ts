@@ -2,8 +2,8 @@
 // The backend returns query/introspection errors as a flat `{ error: '<engine msg>' }`
 // with a 4xx — we surface that message verbatim so the console can render it.
 import {
-  pluginApiFetch,
-  postPluginJson as postJson,
+  miniAppApiFetch,
+  postMiniAppJson as postJson,
   problemRequestOf,
 } from '@localixai/mini-app-sdk/ui/transport'
 import type { ProblemRequest } from '@localixai/mini-app-sdk/ui/problems'
@@ -61,7 +61,7 @@ async function readOr<T>(res: Response): Promise<T> {
 
 export const databaseApi = {
   async list(): Promise<DbConnectionInfo[]> {
-    const res = await pluginApiFetch('/rpc/database', { method: 'GET' })
+    const res = await miniAppApiFetch('/rpc/database', { method: 'GET' })
     return (await readOr<{ connections: DbConnectionInfo[] }>(res)).connections
   },
 
@@ -109,7 +109,7 @@ export const databaseApi = {
 
   /** Fetch a saved connection's stored config to pre-fill the edit form (tokens as-stored). */
   async getConfig(id: string): Promise<SavedConnectionConfigResponse> {
-    const res = await pluginApiFetch(`/rpc/database/${id}/config`, { method: 'GET' })
+    const res = await miniAppApiFetch(`/rpc/database/${id}/config`, { method: 'GET' })
     return await readOr<SavedConnectionConfigResponse>(res)
   },
 
@@ -134,7 +134,7 @@ export const databaseApi = {
 
   /** Ask the engine to COMPILE each statement of `sql` without running any of it. */
   async validate(id: string, sql: string, signal?: AbortSignal): Promise<ValidateResponse> {
-    const res = await pluginApiFetch(`/rpc/database/${id}/validate`, {
+    const res = await miniAppApiFetch(`/rpc/database/${id}/validate`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ sql }),
@@ -188,19 +188,19 @@ export const databaseApi = {
   },
 
   async schemas(id: string): Promise<DbSchemas> {
-    const res = await pluginApiFetch(`/rpc/database/${id}/schemas`, { method: 'GET' })
+    const res = await miniAppApiFetch(`/rpc/database/${id}/schemas`, { method: 'GET' })
     return (await readOr<{ schemas: DbSchemas }>(res)).schemas
   },
 
   /** One-query column catalog, or null when the engine reads columns table by table. */
   async columnCatalog(id: string): Promise<DbColumnCatalog | null> {
-    const res = await pluginApiFetch(`/rpc/database/${id}/columns`, { method: 'GET' })
+    const res = await miniAppApiFetch(`/rpc/database/${id}/columns`, { method: 'GET' })
     return (await readOr<{ catalog: DbColumnCatalog | null }>(res)).catalog
   },
 
   async tableSchema(id: string, table: string, schema?: string): Promise<DbTableSchema> {
     const qs = schema ? `?schema=${encodeURIComponent(schema)}` : ''
-    const res = await pluginApiFetch(
+    const res = await miniAppApiFetch(
       `/rpc/database/${id}/table/${encodeURIComponent(table)}${qs}`,
       {
         method: 'GET',

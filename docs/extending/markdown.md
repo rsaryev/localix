@@ -11,7 +11,7 @@ Use the renderer served by the running host:
 ```tsx
 import { MarkdownRenderer } from '@localixai/kit/markdown'
 
-export function PluginNotes({ source }: { source: string }) {
+export function MiniAppNotes({ source }: { source: string }) {
   return <MarkdownRenderer>{source}</MarkdownRenderer>
 }
 ```

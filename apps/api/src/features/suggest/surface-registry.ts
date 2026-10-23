@@ -1,4 +1,4 @@
-import type { PluginTextInputCompletionSurface } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppTextInputCompletionSurface } from '@localixai/mini-app-sdk/backend'
 
 /**
  * Every plugin's text-input completion surfaces, side by side.
@@ -15,21 +15,21 @@ export type SurfaceRegistration =
 
 export interface TextInputSurfaceRegistry {
   register(
-    surface: PluginTextInputCompletionSurface,
+    surface: MiniAppTextInputCompletionSurface,
     owner: { plugin: string; source: string },
   ): SurfaceRegistration
   /** Register every surface a subsystem declares; a rejection is warned, never thrown. */
   registerAll(
-    surfaces: readonly PluginTextInputCompletionSurface[] | undefined,
+    surfaces: readonly MiniAppTextInputCompletionSurface[] | undefined,
     owner: { plugin: string; source: string },
     warn?: (msg: string, meta?: unknown) => void,
   ): void
   unregisterBySource(source: string): void
-  get(id: string): PluginTextInputCompletionSurface | undefined
+  get(id: string): MiniAppTextInputCompletionSurface | undefined
 }
 
 export function createTextInputSurfaceRegistry(): TextInputSurfaceRegistry {
-  const entries = new Map<string, { surface: PluginTextInputCompletionSurface; source: string }>()
+  const entries = new Map<string, { surface: MiniAppTextInputCompletionSurface; source: string }>()
   const register: TextInputSurfaceRegistry['register'] = (surface, owner) => {
     if (!surface.id.startsWith(`${owner.plugin}.`) || surface.id.length <= owner.plugin.length + 1)
       return { status: 'rejected', reason: 'namespace' }

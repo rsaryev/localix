@@ -3,17 +3,17 @@ import { parsePluginViewTarget } from '@localixai/api/plugin-view-target'
 import { useChatStore } from '@/entities/chat/model/store'
 import { backendClient } from '@/shared/api/client'
 import { previewControlBus } from '@/shared/lib/previewControlBus'
-import { runPluginViewCommand } from '../model/pluginViewHost'
+import { runPluginViewCommand } from '../model/miniAppViewHost'
 
 /**
  * Answer the agent's `browser` commands for `plugin:<name>` targets from this window's workbench.
  *
  * Same relay contract as every other Browser host (`useNativeBrowserAgent`): claim the command
  * first, so a second window — or a remount — can never run the same click twice, then execute it
- * and reply once. The execution itself is `pluginViewHost.ts`; this hook only owns the claim and
+ * and reply once. The execution itself is `miniAppViewHost.ts`; this hook only owns the claim and
  * the reply.
  */
-export function usePluginViewAgent(): void {
+export function useMiniAppViewAgent(): void {
   useEffect(() => {
     const hostId = crypto.randomUUID()
     const inFlight = new Set<string>()

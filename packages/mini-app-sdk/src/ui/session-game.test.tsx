@@ -4,7 +4,7 @@ import { registerDom } from '@localixai/kit/testing/dom'
 import { sessionResourceAddress } from '../session-resource'
 import type { PublishMessageContext } from './message-bindings'
 import { sessionGameUi } from './session-game'
-import { recordingPluginUiHost } from './testing'
+import { recordingMiniAppUiHost } from './testing'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -34,7 +34,7 @@ const registerUi = sessionGameUi({
 })
 
 test('registers one board per chat, its launcher and the anchor its tool opens â€” once per host', () => {
-  const { host, registrations } = recordingPluginUiHost()
+  const { host, registrations } = recordingMiniAppUiHost()
   registerUi(host)
   registerUi(host)
 
@@ -67,13 +67,13 @@ test('registers one board per chat, its launcher and the anchor its tool opens â
     },
   ])
   // Another host is another registration.
-  const other = recordingPluginUiHost()
+  const other = recordingMiniAppUiHost()
   registerUi(other.host)
   expect(other.registrations.workItems).toHaveLength(1)
 })
 
 test('a board URI that names its chat opens there; the bare one names no chat', () => {
-  const { host, registrations } = recordingPluginUiHost()
+  const { host, registrations } = recordingMiniAppUiHost()
   registerUi(host)
   const anchor = registrations.anchors[0] as { resolve: (uri: string) => unknown }
 
@@ -96,7 +96,7 @@ test('a board URI that names its chat opens there; the bare one names no chat', 
 test('the work item shows the board, active while the tab is visible', async () => {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
-  const { host, registrations } = recordingPluginUiHost()
+  const { host, registrations } = recordingMiniAppUiHost()
   registerUi(host)
   const { Component } = registrations.workItems[0] as {
     Component: (props: { visible: boolean; publishMessageContext: PublishMessageContext }) => null

@@ -1,5 +1,5 @@
 import { afterAll, afterEach, describe, expect, spyOn, test } from 'bun:test'
-import { pluginWorkspace } from '@localixai/mini-app-sdk/ui'
+import { miniAppWorkspace } from '@localixai/mini-app-sdk/ui'
 import type { RepoFileChange } from '../../../backend/source-control/contracts'
 import { sourceControlApi } from '../../api'
 import { openChangedFile } from './openChangedFile'
@@ -14,8 +14,8 @@ const file = (path: string, extra: Partial<RepoFileChange> = {}): RepoFileChange
   ...extra,
 })
 
-const openFile = spyOn(pluginWorkspace, 'openFile').mockImplementation(() => {})
-const openDiff = spyOn(pluginWorkspace, 'openDiff').mockImplementation(() => {})
+const openFile = spyOn(miniAppWorkspace, 'openFile').mockImplementation(() => {})
+const openDiff = spyOn(miniAppWorkspace, 'openDiff').mockImplementation(() => {})
 const loadDiff = spyOn(sourceControlApi, 'getFileDiff').mockResolvedValue({
   path: 'data',
   diff: 'Binary files differ',

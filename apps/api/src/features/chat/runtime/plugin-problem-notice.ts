@@ -1,7 +1,7 @@
 import type { AgentStreamEvent } from '../contracts/stream'
 
 /** A plugin's `ctx.reportProblem`, once the host has bound who reported it and for whom. */
-export interface PluginProblemInput {
+export interface MiniAppProblemInput {
   sessionId: string
   pluginName: string
   message: string
@@ -19,7 +19,7 @@ type HookNotice = Extract<AgentStreamEvent, { type: 'hook.notice' }>
  * remark, nor recover which plugin it was without parsing display text. `plugin` carries both as
  * data: its presence is the discriminator, and its name keys the standing Event Center row.
  */
-export function pluginProblemNotice(problem: PluginProblemInput): HookNotice {
+export function miniAppProblemNotice(problem: MiniAppProblemInput): HookNotice {
   return {
     type: 'hook.notice',
     sessionId: problem.sessionId,

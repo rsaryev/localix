@@ -4,9 +4,9 @@ import { importFreshModule } from '../../lib/module-url'
 import type { AgentTool } from '@localixai/agent/agents'
 
 import type { DiscoveredPlugin } from './discovery'
-import type { PluginConfigValues } from './config'
-import { capPluginToolDescription, isAcceptableToolName } from './tool-policy'
-import type { PluginToolDescriptor } from './contracts'
+import type { MiniAppConfigValues } from './config'
+import { capMiniAppToolDescription, isAcceptableToolName } from './tool-policy'
+import type { MiniAppToolDescriptor } from './contracts'
 import { isPlainObject } from './mcp'
 
 import { makeContext } from './native-context'
@@ -21,18 +21,18 @@ export { makeContext } from './native-context'
  * Native plugins are TRUSTED LOCAL CODE — imported in-process, not sandboxed. The
  * enable toggle is the security boundary; there is no isolation beyond it by design.
  *
- * The plugin-facing CONTRACT (PluginContext + hook/channel types) is OWNED by
+ * The plugin-facing CONTRACT (MiniAppContext + hook/channel types) is OWNED by
  * `@localixai/mini-app-sdk` — this module implements it and re-exports the types so
  * the historical `./native` import surface stays stable.
  */
-import type { PluginContext, PluginHostServices } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext, MiniAppHostServices } from '@localixai/mini-app-sdk/backend'
 export type {
-  PluginContext,
-  PluginHostServices,
-  PluginProblem,
+  MiniAppContext,
+  MiniAppHostServices,
+  MiniAppProblem,
 } from '@localixai/mini-app-sdk/backend'
 
-export { type PluginProblemSink } from './problem-reporter'
+export { type MiniAppProblemSink } from './problem-reporter'
 
 // Lifecycle-hook + memory-provider type contracts live in hook-contracts.ts; the
 // values + types are re-exported here so the historical './native' import surface
@@ -49,13 +49,13 @@ export type {
   HitlRequestEvent,
   HitlResolvedEvent,
   HumanAssignedEvent,
-  PluginHooks,
+  MiniAppHooks,
   MemoryLoadContextEvent,
   MemoryRunEndEvent,
   MemoryProvider,
 } from './hook-contracts'
 
-import type { PluginHooks, MemoryProvider } from './hook-contracts'
+import type { MiniAppHooks, MemoryProvider } from './hook-contracts'
 
 // ---------------------------------------------------------------------------
 // Channels — long-running external conversation bridges.
@@ -69,10 +69,10 @@ export type {
   ChannelInboundResult,
   ChannelWorkspaceApi,
   ChannelContext,
-  PluginChannel,
+  MiniAppChannel,
 } from './channel-contracts'
 
-import type { PluginChannel } from './channel-contracts'
+import type { MiniAppChannel } from './channel-contracts'
 
 // Structural coercion of a native module's register()/default/tools export into
 // the real runtime shapes lives in native-coerce.ts.
@@ -89,11 +89,11 @@ import type { BackendSubsystem } from '../ext/subsystem-contrib'
 /** Dynamic-import a native entrypoint and extract its tools + hooks; failures propagate to the caller. */
 export async function importNativeModule(
   absPath: string,
-  ctx: PluginContext,
+  ctx: MiniAppContext,
 ): Promise<{
   tools: AgentTool[]
-  hooks?: PluginHooks
-  channels: PluginChannel[]
+  hooks?: MiniAppHooks
+  channels: MiniAppChannel[]
   memory?: MemoryProvider
   /** Process-global backend contributions from `register()` (empty unless it returns `backend`). */
   backends: BackendSubsystem[]
@@ -118,7 +118,7 @@ export async function importNativeModule(
     if (isPlainObject(def)) {
       return {
         tools: asToolArray(def.tools),
-        hooks: (def.hooks as PluginHooks | undefined) ?? mod.hooks,
+        hooks: (def.hooks as MiniAppHooks | undefined) ?? mod.hooks,
         channels: asChannelArray(def.channels),
         backends: [],
       }
@@ -134,14 +134,14 @@ export async function importNativeModule(
  * (the trust gate). Returns descriptors that would actually register (reserved/
  * invalid and duplicate names excluded) plus any import error.
  */
-export async function inspectPluginTools(
+export async function inspectMiniAppTools(
   plugin: DiscoveredPlugin,
-  config: PluginConfigValues,
+  config: MiniAppConfigValues,
   /** The scope the inspection runs as; `homeDir` is where the plugin's roots live (see `makeContext`). */
-  runtime: { userId?: string; cwd?: string; host?: PluginHostServices; homeDir: string },
+  runtime: { userId?: string; cwd?: string; host?: MiniAppHostServices; homeDir: string },
   logger?: { warn: (msg: string, meta?: unknown) => void },
 ): Promise<{
-  tools: PluginToolDescriptor[]
+  tools: MiniAppToolDescriptor[]
   backendSubsystems: string[]
   routeMounts: string[]
   resourceProviders: string[]
@@ -151,7 +151,7 @@ export async function inspectPluginTools(
   channels: string[]
   error?: string
 }> {
-  const descriptors = new Map<string, PluginToolDescriptor>()
+  const descriptors = new Map<string, MiniAppToolDescriptor>()
   const backendSubsystems: string[] = []
   const routeMounts: string[] = []
   const resourceProviders: string[] = []
@@ -186,7 +186,7 @@ export async function inspectPluginTools(
         descriptors.set(tool.name, {
           name: tool.name,
           label: tool.label?.trim() || tool.name,
-          description: capPluginToolDescription(tool.description),
+          description: capMiniAppToolDescription(tool.description),
         })
       }
       for (const backend of backends) {

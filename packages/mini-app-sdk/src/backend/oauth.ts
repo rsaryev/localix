@@ -17,7 +17,7 @@ export type { OAuthCredential } from './oauth-types'
  */
 
 /** A login in flight: hand `authorizeUrl` to the user, await `credential`. */
-export interface PluginOAuthLogin {
+export interface MiniAppOAuthLogin {
   /** URL the user opens in a browser to authorize. */
   authorizeUrl: string
   /** Resolves when the loopback callback completes the code exchange; rejects on timeout/cancel/denial. */
@@ -26,7 +26,7 @@ export interface PluginOAuthLogin {
   cancel(): void
 }
 
-export interface PluginOAuth {
+export interface MiniAppOAuth {
   /**
    * Begin a local-loopback PKCE login. The spec must declare
    * `callbackMode: 'local-server'` + `localServer: { host, port, path }` —
@@ -34,7 +34,7 @@ export interface PluginOAuth {
    * exchanges the code server-side. `host` must be a loopback address
    * (`127.0.0.1`, `localhost` or `::1`). Default timeout 5 minutes.
    */
-  beginLogin(spec: ManifestOAuthSpec, opts?: { timeoutMs?: number }): PluginOAuthLogin
+  beginLogin(spec: ManifestOAuthSpec, opts?: { timeoutMs?: number }): MiniAppOAuthLogin
   /** Refresh an access token via the spec's `refresh` config. */
   refresh(spec: ManifestOAuthSpec, refreshToken: string): Promise<OAuthCredential>
   /** RFC 8628 device-code polling helper (for specs/adapters using device flows). */

@@ -149,7 +149,7 @@ export function createPluginIdentityGuard(catalog) {
     if (concreteUi) {
       findings.push(
         `${path}: production core branches on plugin UI contribution "${concreteUi}"; ` +
-          'consume PluginUiHost registry metadata',
+          'consume MiniAppUiHost registry metadata',
       )
     }
     const concreteNamespace = source.match(pluginOwnedNamespacePattern)?.[0]

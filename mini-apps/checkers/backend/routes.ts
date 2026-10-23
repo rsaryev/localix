@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { jsonBody, seatedAnswer, type PluginRouteContext } from '@localixai/mini-app-sdk/backend'
+import { jsonBody, seatedAnswer, type MiniAppRouteContext } from '@localixai/mini-app-sdk/backend'
 
 import { MoveRefused, OPPONENTS, SIDES, type Game } from '../shared/game'
 import type { GameService } from './game-service'
@@ -25,7 +25,7 @@ export function createGameRoutes(games: GameService) {
     refused: { error: MoveRefused, code: 'move_refused' },
   })
 
-  return new Hono<PluginRouteContext>()
+  return new Hono<MiniAppRouteContext>()
     .get('/game', (c) => {
       c.header('Cache-Control', 'no-store')
       return answer(c, (seat) => games.read(seat))

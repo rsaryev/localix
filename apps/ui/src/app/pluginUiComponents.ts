@@ -1,5 +1,8 @@
 import { lazy, type ComponentType } from 'react'
-import type { PluginFileTabProps, PluginUiComponents } from '@localixai/mini-app-sdk/ui/components'
+import type {
+  MiniAppFileTabProps,
+  MiniAppUiComponents,
+} from '@localixai/mini-app-sdk/ui/components'
 
 /**
  * The host components lent to plugins, and how they load.
@@ -44,10 +47,10 @@ export function preloadPluginUiComponents(): Promise<unknown> {
   return Promise.all(Object.values(loaders).map((load) => load()))
 }
 
-export const pluginUiComponents: PluginUiComponents = {
+export const pluginUiComponents: MiniAppUiComponents = {
   // The SDK types editor `extensions` as `unknown[]` so plugins need no Monaco types; the host
   // component takes Monaco's own. Every other lent component matches its contract as-is.
-  FileTab: lazy(loaders.FileTab) as unknown as ComponentType<PluginFileTabProps>,
+  FileTab: lazy(loaders.FileTab) as unknown as ComponentType<MiniAppFileTabProps>,
   TableGrid: lazy(loaders.TableGrid),
   ContextBindingIcon: lazy(loaders.ContextBindingIcon),
   ContextBindingPreview: lazy(loaders.ContextBindingPreview),

@@ -7,7 +7,7 @@ import {
 import type { ToolSurfaceDenial } from '../effective-config/contracts'
 import type { McpServer } from '../mcp/contracts'
 import type { SkillCatalogEntry } from '../chat/contracts/skills'
-import type { PluginContributions } from '../plugins/service-types'
+import type { MiniAppContributions } from '../plugins/service-types'
 import { CATEGORY_LABELS, toolCatalogEntries, type ToolCatalogPluginSource } from '../tools/catalog'
 import { composeCapabilities, type CapabilityKind, type ResolvedCapabilities } from './resolve'
 import { ruleGrammar } from './rule-grammar'
@@ -21,14 +21,14 @@ import type { CapabilitySnapshot, CapabilityToolSurface } from '../../contracts/
  * revision instead of one per endpoint.
  *
  * The expensive fusion (filesystem discovery + DB enable state + the enable rule)
- * is NOT re-implemented here — `listPluginContributions` runs `buildPluginCatalog`
+ * is NOT re-implemented here — `listMiniAppContributions` runs `buildPluginCatalog`
  * once and this module projects its result.
  */
 
 export interface CapabilitySnapshotPorts {
   /** The product's own slash commands (`SLASH_COMMANDS`), taught as tips. */
   builtinCommands: readonly BuiltinCommand[]
-  listPluginContributions(userId: string, projectId: string): Promise<PluginContributions>
+  listMiniAppContributions(userId: string, projectId: string): Promise<MiniAppContributions>
   listAgents(userId: string, projectId: string): Promise<AgentSummary[]>
   listMcpServers(userId: string, projectId: string): Promise<McpServer[]>
   /**
@@ -139,7 +139,7 @@ export function createCapabilitySnapshotService(
   // The revision is the mutation-owned invalidation signal. Cache ONLY the complete
   // plugin fusion: effective settings, MCP state, and agent records have
   // independent lifecycles and must still be read for every snapshot.
-  const contributionCache = new Map<string, Promise<PluginContributions>>()
+  const contributionCache = new Map<string, Promise<MiniAppContributions>>()
   let cachedRevision: number | null = null
 
   return {
@@ -159,7 +159,7 @@ export function createCapabilitySnapshotService(
       const contributionKey = JSON.stringify([input.userId, projectId, revision])
       let contributionResult = contributionCache.get(contributionKey)
       if (!contributionResult) {
-        contributionResult = ports.listPluginContributions(input.userId, projectId)
+        contributionResult = ports.listMiniAppContributions(input.userId, projectId)
         contributionCache.set(contributionKey, contributionResult)
         // A rejected build is not a contribution result. Remove only this exact
         // promise: a later retry may already have replaced it after another failure.

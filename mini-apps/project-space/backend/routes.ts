@@ -1,6 +1,6 @@
 import { Hono, type Context } from 'hono'
 import { z } from 'zod'
-import { jsonBody, jsonError, type PluginRouteContext } from '@localixai/mini-app-sdk/backend'
+import { jsonBody, jsonError, type MiniAppRouteContext } from '@localixai/mini-app-sdk/backend'
 import { spaceOpsSchema } from '../shared/ops/contract'
 import { cameraHub } from './camera-hub'
 import { mayRead, resolveReference } from './paths'
@@ -26,7 +26,7 @@ const reportBody = z.object({
 
 export function createSpaceRoutes({ liveUpdates = false }: { liveUpdates?: boolean } = {}) {
   const answer = async <T>(
-    c: Context<PluginRouteContext>,
+    c: Context<MiniAppRouteContext>,
     action: (root: string) => Promise<T>,
   ) => {
     try {
@@ -49,7 +49,7 @@ export function createSpaceRoutes({ liveUpdates = false }: { liveUpdates?: boole
     ...(await referenceStates(root, snapshot.space)),
   })
   /** The absolute path of a board reference this route may read, or a refusal. */
-  const readable = async (c: Context<PluginRouteContext>) => {
+  const readable = async (c: Context<MiniAppRouteContext>) => {
     const path = c.req.query('path') ?? ''
     const target = resolveReference(c.env.cwd, path)
     const { space } = await spaceStore.read(c.env.cwd)
@@ -63,7 +63,7 @@ export function createSpaceRoutes({ liveUpdates = false }: { liveUpdates?: boole
   }
 
   return (
-    new Hono<PluginRouteContext>()
+    new Hono<MiniAppRouteContext>()
       .get('/space', (c) =>
         answer(c, async (root) => withMissing(root, await spaceStore.read(root))),
       )

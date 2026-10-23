@@ -5,7 +5,7 @@ import type { Context } from 'hono'
 import {
   defaultErrorHandler,
   jsonError,
-  type PluginRouteContext,
+  type MiniAppRouteContext,
 } from '@localixai/mini-app-sdk/backend'
 import { exportQuerySchema, ingestBodySchema, openBodySchema, rowsQuerySchema } from './contracts'
 import type { TableService } from './service'
@@ -57,7 +57,7 @@ function tableNotFound(c: Context) {
 }
 
 export function createTableRoutes(service: TableService) {
-  const app = new Hono<PluginRouteContext>()
+  const app = new Hono<MiniAppRouteContext>()
 
   const routes = app
     // Static routes registered before `/:id` so they aren't captured as an id.

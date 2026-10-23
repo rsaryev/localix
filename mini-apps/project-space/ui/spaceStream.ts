@@ -1,6 +1,6 @@
 import { workspacePathsTouch } from '@localixai/mini-app-sdk/ui/file-resource-sync'
 import { createRealtimeFeed } from '@localixai/mini-app-sdk/ui/realtime-feed'
-import { pluginFiles } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppFiles } from '@localixai/mini-app-sdk/ui/runtime'
 import type { CameraFrame } from '../shared/camera'
 import {
   BOARD_DIR,
@@ -28,7 +28,7 @@ export function watchBoardFile(
   live: (live: boolean) => void,
 ): () => void {
   try {
-    return pluginFiles.watchWorkspace(
+    return miniAppFiles.watchWorkspace(
       sessionId,
       ({ paths }) => {
         if (touchesBoard(paths)) changed()

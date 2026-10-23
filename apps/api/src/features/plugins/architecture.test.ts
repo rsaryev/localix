@@ -9,7 +9,7 @@ import type { ResolvedEntrypoints } from './discovery-entrypoints'
 import { normalizeCcToolName } from './discovery'
 import { isAcceptableToolName, isReservedToolName, TOOL_NAME_RE } from './tool-policy'
 import { buildMcpRecords, buildPluginOptionEnv, collectMcpConfigTokens, pluginDataDir } from './mcp'
-import { pluginConfigOptionSchema } from './contracts-config'
+import { miniAppConfigOptionSchema } from './contracts-config'
 import { validatePlugin } from './validate'
 import { pluginTrustClass } from './enable'
 import { trustFallback } from '../ext/trust'
@@ -321,11 +321,11 @@ describe('install copy', () => {
 })
 
 // ---------------------------------------------------------------------------
-// C-UC Part A — pluginConfigOptionSchema accepts new CC-spec fields
+// C-UC Part A — miniAppConfigOptionSchema accepts new CC-spec fields
 // ---------------------------------------------------------------------------
-describe('C-UC Part A — pluginConfigOptionSchema accepts CC-spec fields (title/multiple/min/max)', () => {
+describe('C-UC Part A — miniAppConfigOptionSchema accepts CC-spec fields (title/multiple/min/max)', () => {
   it('accepts and carries title, multiple, min, max', () => {
-    const opt = pluginConfigOptionSchema.parse({
+    const opt = miniAppConfigOptionSchema.parse({
       type: 'number',
       description: 'How many results',
       required: false,
@@ -342,7 +342,7 @@ describe('C-UC Part A — pluginConfigOptionSchema accepts CC-spec fields (title
   })
 
   it('omits new fields when absent — no spurious defaults', () => {
-    const opt = pluginConfigOptionSchema.parse({
+    const opt = miniAppConfigOptionSchema.parse({
       type: 'string',
       description: 'A key',
     })
@@ -354,7 +354,7 @@ describe('C-UC Part A — pluginConfigOptionSchema accepts CC-spec fields (title
 
   it('still carries secret and sensitive=true (B1/B2 non-regression)', () => {
     // secret is the native form; sensitive is accepted via applyManifestPromotions
-    const opt = pluginConfigOptionSchema.parse({
+    const opt = miniAppConfigOptionSchema.parse({
       type: 'string',
       secret: true,
     })
@@ -362,8 +362,8 @@ describe('C-UC Part A — pluginConfigOptionSchema accepts CC-spec fields (title
   })
 
   it('still accepts directory and file types (B1 non-regression)', () => {
-    expect(pluginConfigOptionSchema.parse({ type: 'directory' }).type).toBe('directory')
-    expect(pluginConfigOptionSchema.parse({ type: 'file' }).type).toBe('file')
+    expect(miniAppConfigOptionSchema.parse({ type: 'directory' }).type).toBe('directory')
+    expect(miniAppConfigOptionSchema.parse({ type: 'file' }).type).toBe('file')
   })
 })
 

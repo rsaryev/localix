@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
-import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
-import { pluginFiles, pluginRealtime } from '@localixai/mini-app-sdk/ui/runtime'
+import { bindMiniAppUiTransport } from '@localixai/mini-app-sdk/ui/transport'
+import { miniAppFiles, miniAppRealtime } from '@localixai/mini-app-sdk/ui/runtime'
 import { emptySpace } from '../shared/format/document'
 import type { SpaceView } from '../shared/api'
 import { spaceApi } from './api'
@@ -43,22 +43,22 @@ test('the board polls only while its stream is not live', async () => {
   let disconnect = () => {}
   let reconnect = () => {}
   let accept = true
-  const requestSpy = spyOn(pluginRealtime, 'request').mockImplementation(
+  const requestSpy = spyOn(miniAppRealtime, 'request').mockImplementation(
     async <T>(payload: Record<string, unknown>): Promise<T> =>
       (String(payload.t).endsWith(':subscribe') && accept ? { subscribed: true } : {}) as T,
   )
-  const frameSpy = spyOn(pluginRealtime, 'onFrame').mockImplementation(() => () => {})
-  const reconnectSpy = spyOn(pluginRealtime, 'onReconnect').mockImplementation((handler) => {
+  const frameSpy = spyOn(miniAppRealtime, 'onFrame').mockImplementation(() => () => {})
+  const reconnectSpy = spyOn(miniAppRealtime, 'onReconnect').mockImplementation((handler) => {
     reconnect = handler
     return () => {}
   })
-  const disconnectSpy = spyOn(pluginRealtime, 'onDisconnect').mockImplementation((handler) => {
+  const disconnectSpy = spyOn(miniAppRealtime, 'onDisconnect').mockImplementation((handler) => {
     disconnect = handler
     return () => {}
   })
   let fileChanged: (paths: string[] | null) => void = () => {}
   let fileLive: (live: boolean) => void = () => {}
-  const filesSpy = spyOn(pluginFiles, 'watchWorkspace').mockImplementation(
+  const filesSpy = spyOn(miniAppFiles, 'watchWorkspace').mockImplementation(
     (_sessionId, listener, options = {}) => {
       fileChanged = (paths) => listener({ sessionId, paths })
       fileLive = (next) => options.onLive?.(next)
@@ -78,7 +78,7 @@ test('the board polls only while its stream is not live', async () => {
     liveUpdates: true,
   }
   let reads = 0
-  const unbind = bindPluginUiTransport({
+  const unbind = bindMiniAppUiTransport({
     url: (path) => path,
     request: async () => {
       reads += 1

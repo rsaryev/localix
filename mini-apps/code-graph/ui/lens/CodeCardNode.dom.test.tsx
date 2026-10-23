@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
-import { pluginClipboard } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppClipboard } from '@localixai/mini-app-sdk/ui/runtime'
 import type { CodeCard } from '../../shared/lens'
 
 let teardown: () => Promise<void>
@@ -40,7 +40,7 @@ test('copies source without the gutter and leaves the code outside canvas drag g
     stale: false,
     truncated: false,
   }
-  const write = spyOn(pluginClipboard, 'writeText').mockResolvedValue(true)
+  const write = spyOn(miniAppClipboard, 'writeText').mockResolvedValue(true)
   const host = document.createElement('div')
   document.body.append(host)
   const root = createRoot(host)

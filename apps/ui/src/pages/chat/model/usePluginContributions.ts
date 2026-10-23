@@ -72,7 +72,7 @@ export function usePluginContributions({
   }
 }
 
-export function usePluginContributionsSync({
+export function useMiniAppContributionsSync({
   hasHydrated,
   routeProjectId,
   thirdPartyViewsV,

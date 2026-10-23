@@ -1,4 +1,4 @@
-import type { PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import { describeSpace } from '../shared/agent/describe'
 import { CAMERA_ZOOM, FRAME_ZOOM_CAP, visibleRect, type CameraReport } from '../shared/camera'
 import { cameraMove, elementsIn } from '../shared/camera-target'
@@ -24,7 +24,7 @@ const LISTED = 40
 
 const percent = (zoom: number) => `${Math.round(zoom * 100)}%`
 
-export function createViewTool(ctx: PluginContext, resolveRoot: ResolveRoot) {
+export function createViewTool(ctx: MiniAppContext, resolveRoot: ResolveRoot) {
   const z = ctx.z
   const box = z.object({
     x: z.number(),

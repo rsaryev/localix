@@ -7,9 +7,9 @@ import {
   listThirdPartyViews,
   __resetThirdPartyViews,
 } from './runtimeViews'
-import type { PluginViewSpec } from '@/shared/api/contracts'
+import type { MiniAppViewSpec } from '@/shared/api/contracts'
 import { listUiLocations, resolveUiLocation } from './uiLocations'
-import { setEnabledPluginNames } from './pluginActivation'
+import { setEnabledPluginNames } from './miniAppActivation'
 
 /**
  * The RUNTIME third-party UI discovery store: fetched-view specs registered as
@@ -17,7 +17,7 @@ import { setEnabledPluginNames } from './pluginActivation'
  * out of a later sync is GONE — the removal contract phase 2 needs.
  */
 
-const view = (pluginName: string, id: string): PluginViewSpec => ({
+const view = (pluginName: string, id: string): MiniAppViewSpec => ({
   pluginName,
   projectId: '',
   id,

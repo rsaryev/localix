@@ -7,7 +7,7 @@ import type { AvailabilityReader } from '../../capabilities/availability'
 import type { CapabilitySourceRepository } from '../../capabilities/source-repository'
 import { loadEnabledPlugins } from '../../plugins/loader'
 import { makeContext } from '../../plugins/native'
-import { pluginProblemReporter } from '../../plugins/problem-reporter'
+import { miniAppProblemReporter } from '../../plugins/problem-reporter'
 import { createPluginConditions, observePluginConditions, recordPluginCatalogLoad } from './plugins'
 import {
   createTestJournal,
@@ -147,7 +147,7 @@ describe('ctx.reportProblem, as bound for a load that runs plugin code', () => {
     const { test, plugins } = await setup()
     observePluginConditions(plugins)
     const drawn: string[] = []
-    const report = pluginProblemReporter(U, (name, problem) =>
+    const report = miniAppProblemReporter(U, (name, problem) =>
       drawn.push(`${name}@${problem.sessionId}`),
     )
     const ctx = makeContext(
@@ -168,7 +168,7 @@ describe('ctx.reportProblem, as bound for a load that runs plugin code', () => {
   })
 
   it('never throws into the plugin, even when a sink does', () => {
-    const report = pluginProblemReporter(U, () => {
+    const report = miniAppProblemReporter(U, () => {
       throw new Error('firehose down')
     })
     expect(() => report('hook', { sessionId: 'S1', message: 'x' })).not.toThrow()

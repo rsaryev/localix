@@ -2,11 +2,11 @@ import type { AgentTool } from '@localixai/agent/agents'
 
 import { isPlainObject } from './mcp'
 import { withAppViewResults } from './native-app-view'
-import type { PluginChannel } from './channel-contracts'
-import type { PluginHooks, MemoryProvider } from './hook-contracts'
-import type { PluginContext } from './native'
+import type { MiniAppChannel } from './channel-contracts'
+import type { MiniAppHooks, MemoryProvider } from './hook-contracts'
+import type { MiniAppContext } from './native'
 import type { BackendSubsystem } from '../ext/subsystem-contrib'
-import type { PluginRegistration } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppRegistration } from '@localixai/mini-app-sdk/backend'
 
 /**
  * Structural shaping of whatever a native plugin's `register()` (or default/tools
@@ -15,15 +15,15 @@ import type { PluginRegistration } from '@localixai/mini-app-sdk/backend'
  */
 
 export interface NativeModuleExports {
-  register?: (ctx: PluginContext) => RegisterResult | Promise<RegisterResult>
+  register?: (ctx: MiniAppContext) => RegisterResult | Promise<RegisterResult>
   tools?: unknown
-  hooks?: PluginHooks
+  hooks?: MiniAppHooks
   default?: unknown
 }
 
-export type RegisterResult = PluginRegistration | undefined
+export type RegisterResult = MiniAppRegistration | undefined
 
-function looksLikeChannel(c: unknown): c is PluginChannel {
+function looksLikeChannel(c: unknown): c is MiniAppChannel {
   return (
     isPlainObject(c) &&
     typeof c.name === 'string' &&
@@ -43,7 +43,7 @@ export function asBackendSubsystemArray(value: unknown): BackendSubsystem[] {
   return []
 }
 
-export function asChannelArray(value: unknown): PluginChannel[] {
+export function asChannelArray(value: unknown): MiniAppChannel[] {
   return Array.isArray(value) ? value.filter(looksLikeChannel) : []
 }
 

@@ -1,4 +1,4 @@
-import { classifyByAction, type PluginContext, type Seat } from '@localixai/mini-app-sdk/backend'
+import { classifyByAction, type MiniAppContext, type Seat } from '@localixai/mini-app-sdk/backend'
 
 import { describeGame } from '../shared/describe'
 import { MoveRefused } from '../shared/game'
@@ -16,7 +16,7 @@ export const classifySnakeCall = classifyByAction({
  * decision model does. `state` reads the board so the agent can talk about it; `new_game` sets up
  * this chat's board and offers it. Every action acts on the board of the chat the call RUNS in.
  */
-export function createGameTools(ctx: PluginContext, games: GameService) {
+export function createGameTools(ctx: MiniAppContext, games: GameService) {
   const seatOf = (context: { session?: { id: string } } | undefined): Seat => {
     const sessionId = context?.session?.id
     if (!sessionId) throw new MoveRefused('Snake is played in a chat; this call has none.')

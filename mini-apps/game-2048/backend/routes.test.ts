@@ -4,9 +4,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { z } from 'zod'
 import type {
-  PluginContext,
-  PluginRouteScope,
-  PluginWakeRequest,
+  MiniAppContext,
+  MiniAppRouteScope,
+  MiniAppWakeRequest,
 } from '@localixai/mini-app-sdk/backend'
 
 import { gameSchema, newGame, type Game } from '../shared/game'
@@ -36,7 +36,7 @@ function storage() {
 
 describe('the view’s routes', () => {
   function routes(sessionId: string | null = 's1') {
-    const woke: PluginWakeRequest[] = []
+    const woke: MiniAppWakeRequest[] = []
     const app = createGameRoutes(
       createGameService({
         resolveDir: storage().resolveDataDir,
@@ -48,7 +48,7 @@ describe('the view’s routes', () => {
       }),
     )
     // The host puts a session here only once it checked the user owns it.
-    const scope: PluginRouteScope = {
+    const scope: MiniAppRouteScope = {
       userId: 'u1',
       ...(sessionId ? { sessionId } : {}),
       projectId: '',
@@ -111,7 +111,7 @@ describe('the agent’s tool', () => {
       sessionStorage,
       defineTool: (definition: unknown) => definition,
       ui: { offer: (destination: unknown) => ({ offer: destination }) },
-    } as unknown as PluginContext
+    } as unknown as MiniAppContext
     const games = createGameService({ resolveDir: sessionStorage.resolveDataDir, random: () => 0 })
     const [game2048] = createGameTools(ctx, games)
     const act = (input: object, session: string | null = 's1') =>

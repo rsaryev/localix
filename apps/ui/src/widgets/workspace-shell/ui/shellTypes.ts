@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react'
-import type { PluginCategory } from '@localixai/mini-app-sdk/manifest'
+import type { MiniAppCategory } from '@localixai/mini-app-sdk/manifest'
 import type { RailArea } from '../model/railLayout'
 
 /** A section that slides open in the sidebar panel (history, files, etc.) */
 export interface RailSection {
   /** Opts a built-in destination into the shared tool catalog without plugin ownership. */
-  toolCategory?: PluginCategory
+  toolCategory?: MiniAppCategory
   id: string
   icon: ReactNode
   label: string
@@ -31,7 +31,7 @@ export interface RailSection {
 export interface RailEntry {
   /** Optional readable name when placed in the horizontal status bar. */
   statusLabel?: string
-  toolCategory?: PluginCategory
+  toolCategory?: MiniAppCategory
   id: string
   icon: ReactNode
   label: string
@@ -58,7 +58,7 @@ export interface RailMenuItem {
 export interface RailAction {
   statusLabel?: string
   /** Opts a built-in destination into the shared tool catalog without plugin ownership. */
-  toolCategory?: PluginCategory
+  toolCategory?: MiniAppCategory
   id: string
   icon: ReactNode
   label: string

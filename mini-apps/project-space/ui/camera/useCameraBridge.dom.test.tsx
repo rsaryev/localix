@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
-import { pluginRealtime } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppRealtime } from '@localixai/mini-app-sdk/ui/runtime'
 import type { CameraMove, CameraReport } from '../../shared/camera'
 import { CAMERA_SUBSCRIBE } from '../../shared/resource'
 import { spaceApi } from '../api'
@@ -22,16 +22,16 @@ beforeEach(() => {
   requests.length = 0
   reports.length = 0
   const spies = [
-    spyOn(pluginRealtime, 'request').mockImplementation(async (payload) => {
+    spyOn(miniAppRealtime, 'request').mockImplementation(async (payload) => {
       requests.push(payload)
       return { subscribed: true } as never
     }),
-    spyOn(pluginRealtime, 'onFrame').mockImplementation((_tag, handler) => {
+    spyOn(miniAppRealtime, 'onFrame').mockImplementation((_tag, handler) => {
       push = handler
       return () => {}
     }),
-    spyOn(pluginRealtime, 'onReconnect').mockImplementation(() => () => {}),
-    spyOn(pluginRealtime, 'onDisconnect').mockImplementation(() => () => {}),
+    spyOn(miniAppRealtime, 'onReconnect').mockImplementation(() => () => {}),
+    spyOn(miniAppRealtime, 'onDisconnect').mockImplementation(() => () => {}),
   ]
   const originalReport = spaceApi.cameraReport
   spaceApi.cameraReport = async (_sessionId, report) => {

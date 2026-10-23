@@ -1,12 +1,12 @@
-import type { PluginWorkspaceSnapshot } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppWorkspaceSnapshot } from '@localixai/mini-app-sdk/ui'
 import { createPluginFilesRuntime } from './pluginRuntimeFiles'
 import { pluginUiComponents } from './pluginUiComponents'
 import { terminal as terminalBus } from '@/shared/lib/terminalBus'
 import {
-  bindPluginUiComponents,
-  bindPluginUiRuntime,
-  bindPluginUiToast,
-  bindPluginUiTransport,
+  bindMiniAppUiComponents,
+  bindMiniAppUiRuntime,
+  bindMiniAppUiToast,
+  bindMiniAppUiTransport,
 } from '@localixai/mini-app-sdk/ui'
 
 import { backendClient } from '@/shared/api/client'
@@ -34,8 +34,8 @@ import { focusedVisibleTabId, useGridStore } from '@/entities/workspace-grid/mod
 import { isSectionId, resolveNavScope, scopePath } from '@/shared/routing/routes'
 import { useSettingsStore } from '@/shared/lib/user-settings/settingsStore'
 import { isModelRoutingTaskEnabled } from '@localixai/api/model-task-catalog'
-import { assertPluginOwnedWorkItemInstance } from '@/shared/contrib/uiContrib'
-import { createPluginToast } from '@/shared/contrib/pluginToast'
+import { assertMiniAppOwnedWorkItemInstance } from '@/shared/contrib/uiContrib'
+import { createPluginToast } from '@/shared/contrib/miniAppToast'
 import { openFileInGrid } from '@/shared/lib/recentFiles'
 import { refFromContextBinding } from '@/entities/chat/model/sendRefs'
 import { refOpenAction } from '@/entities/chat/ui/refKindPresentation'
@@ -43,11 +43,11 @@ import { refOpenAction } from '@/entities/chat/ui/refKindPresentation'
 // Composition root for the public plugin UI SDK. Plugins depend only on SDK
 // capabilities; the application owns the concrete stores, clients, and buses
 // that implement them.
-bindPluginUiComponents(pluginUiComponents)
+bindMiniAppUiComponents(pluginUiComponents)
 // Wrapped, not the host's own: every plugin shares this one surface, and the wrapper is what names
-// the calling plugin on each row instead of filing it as "System" (see `pluginToast.ts`).
-bindPluginUiToast(createPluginToast(toast))
-bindPluginUiTransport({
+// the calling plugin on each row instead of filing it as "System" (see `miniAppToast.ts`).
+bindMiniAppUiToast(createPluginToast(toast))
+bindMiniAppUiTransport({
   request: (path, init) => apiFetch(`${API_BASE_URL}${path}`, init),
   url: (path) => `${API_BASE_URL}${path}`,
 })
@@ -58,15 +58,15 @@ bindPluginUiTransport({
  * `useSyncExternalStore` compares snapshots by reference and re-renders until two consecutive reads
  * match. This built a fresh object literal every call, so the moment anything subscribed through a
  * hook the comparison never settled and React aborted the render — the whole route fell to its
- * error boundary. Nothing subscribed before `usePluginWorkspace` existed, which is why an unstable
+ * error boundary. Nothing subscribed before `useMiniAppWorkspace` existed, which is why an unstable
  * snapshot sat here harmlessly.
  *
  * Rebuilt only when one of its inputs actually changes; `items` is already a stable reference from
  * the store, so the check is two comparisons, not a deep equality. The grid's focused scope is not
  * in it: a plugin acts for the chat it belongs to, never for the one on screen.
  */
-let cachedSnapshot: PluginWorkspaceSnapshot | null = null
-function workspaceSnapshot(): PluginWorkspaceSnapshot {
+let cachedSnapshot: MiniAppWorkspaceSnapshot | null = null
+function workspaceSnapshot(): MiniAppWorkspaceSnapshot {
   const state = useGridStore.getState()
   const focusedId = focusedVisibleTabId(state)
   if (
@@ -79,10 +79,10 @@ function workspaceSnapshot(): PluginWorkspaceSnapshot {
   return cachedSnapshot
 }
 
-bindPluginUiRuntime({
+bindMiniAppUiRuntime({
   workspace: {
     openWorkItem: (request) => {
-      assertPluginOwnedWorkItemInstance(request)
+      assertMiniAppOwnedWorkItemInstance(request)
       inspector.openWorkItem(request)
     },
     // The native "jump to source" door: any plugin can open a file in the code editor at an exact
@@ -103,7 +103,7 @@ bindPluginUiRuntime({
     openDiff: ({ provenance, staging, ...rest }) =>
       inspector.openDiff({
         ...rest,
-        // Opaque across the seam by design (see `PluginOpenDiffRequest`); the host is the side
+        // Opaque across the seam by design (see `MiniAppOpenDiffRequest`); the host is the side
         // that knows which slot renders each, so the narrowing happens here and nowhere else.
         ...(provenance ? { provenance: provenance as DiffProvenanceRequest } : {}),
         ...(staging ? { staging: staging as OpenDiffRequest['staging'] } : {}),

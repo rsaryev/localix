@@ -9,7 +9,7 @@ import {
   validateMarketplace,
 } from './marketplace'
 import { buildMarketplaceManifest } from './marketplace-build'
-import { discoverBundledPlugins } from './discovery'
+import { discoverBundledMiniApps } from './discovery'
 
 describe('validateMarketplace', () => {
   it('accepts a well-formed catalog', () => {
@@ -256,7 +256,7 @@ describe('bundled localix marketplace.json', () => {
     // plugins ahead of bundled and dedupes by name, so a same-named local install would shadow the
     // bundled copy and fail this guard on
     // that machine only — a false positive that has nothing to do with the committed file.
-    const bundled = (await discoverBundledPlugins()).filter((p) => !p.error)
+    const bundled = (await discoverBundledMiniApps()).filter((p) => !p.error)
     const manifests = new Map(bundled.map((plugin) => [plugin.manifest.name, plugin.manifest]))
 
     // LOAD-BEARING, both of them. `bundled` comes from a LIVE discovery: if bundled-root

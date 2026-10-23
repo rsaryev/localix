@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { Hono, type MiddlewareHandler } from 'hono'
 
-import { holdPluginRoutesUntilWired } from './plugin-route-boot-hold'
+import { holdMiniAppRoutesUntilWired } from './plugin-route-boot-hold'
 
 /**
  * A backend host shaped like the real one: a mutable mount table the dispatcher reads per
@@ -35,7 +35,7 @@ function fakeHost() {
 
 function appWith(host: ReturnType<typeof fakeHost>['host'], waitMs?: number) {
   const app = new Hono()
-  app.use('*', holdPluginRoutesUntilWired(host, waitMs))
+  app.use('*', holdMiniAppRoutesUntilWired(host, waitMs))
   app.get('/health', (c) => c.json({ ok: true }))
   return app
 }

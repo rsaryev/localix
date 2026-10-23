@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 
-import { createPluginBackendHost } from './backend-host'
+import { createMiniAppBackendHost } from './backend-host'
 import { createSubsystemRegistry, type BackendSubsystem } from '../ext/subsystem-contrib'
 import { createCapabilityRegistry } from '../ext/capability-registry'
 import { createWsFrameRegistry } from '../ext/ws-frame-registry'
@@ -14,7 +14,7 @@ describe('stopping the plugin backend host (server shutdown)', () => {
     const reconciles: Array<string | undefined> = []
     let loads = 0
     const subsystemRegistry = createSubsystemRegistry()
-    const host = createPluginBackendHost({
+    const host = createMiniAppBackendHost({
       subsystemRegistry,
       capabilityRegistry: createCapabilityRegistry(),
       wsFrameRegistry: createWsFrameRegistry(),

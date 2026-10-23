@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { toast } from './notifications'
-import { pluginClipboard } from './runtime'
+import { miniAppClipboard } from './runtime'
 
 export function useCopied(resetMs = 1500): {
   copied: boolean
@@ -27,7 +27,7 @@ export function useCopied(resetMs = 1500): {
       // control, and it is the same failure shape as a native call that logs its
       // error instead of returning it.
       try {
-        if (!(await pluginClipboard.writeText(text))) {
+        if (!(await miniAppClipboard.writeText(text))) {
           toast.error('Could not copy to the clipboard', {
             description: 'This window is not allowed to write to the clipboard.',
           })
@@ -60,7 +60,7 @@ export function useCopied(resetMs = 1500): {
 export async function copyText(text: string, label: string): Promise<boolean> {
   const failure = `Could not copy ${inSentence(label)}`
   try {
-    if (await pluginClipboard.writeText(text)) return true
+    if (await miniAppClipboard.writeText(text)) return true
     toast.error(failure, {
       description: 'The clipboard is unavailable in this browser context.',
     })

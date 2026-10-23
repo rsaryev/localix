@@ -8,14 +8,14 @@ import type { RuleChange } from '../capabilities/rule-changes'
 import type { AppDatabase } from '../../db'
 import { configFieldBase } from '../ext/config-fields'
 import type { DiscoveredPlugin } from './discovery'
-import type { PluginAuthoring } from './authoring/service'
+import type { MiniAppAuthoring } from './authoring/service'
 import type { MarketplaceListing } from './marketplace-registry'
 import type { ArgOption } from './arg-options'
 import type {
   InstallPluginRequest,
   ListPluginCommandsResponse,
   PluginCommandSpec,
-  PluginViewSpec,
+  MiniAppViewSpec,
   ListPluginsResponse,
   PluginConfigField,
   PluginRecord,
@@ -23,9 +23,9 @@ import type {
   RemovePluginRequest,
   SetPluginConfigRequest,
   SetPluginEnabledRequest,
-  InvokePluginUiActionRequest,
+  InvokeMiniAppUiActionRequest,
 } from './contracts'
-import type { PluginUiActionContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppUiActionContext } from '@localixai/mini-app-sdk/backend'
 import type { PluginThemeSpec } from './contracts-themes'
 
 export interface PluginServiceDeps {
@@ -43,7 +43,7 @@ export interface PluginServiceDeps {
   /** Fired after any mutation (enable/config/install/remove) — e.g. to restart plugin channels. */
   onChanged?: () => void
   /** Where the plugin kit is; defaults to the one shipped beside the staged plugins. */
-  pluginKitDir?: () => string
+  miniAppKitDir?: () => string
   /**
    * The user's home, root of the global `.localix/plugins` (see `discoverPlugins`). Required: Bun
    * reads the home once at process start, so reassigning `process.env.HOME` isolates nothing —
@@ -64,7 +64,7 @@ export interface PluginServiceDeps {
     pluginName: string
     action: string
     payload: unknown
-    context: PluginUiActionContext
+    context: MiniAppUiActionContext
   }) => Promise<unknown>
 }
 
@@ -74,9 +74,9 @@ export interface PluginServiceDeps {
  * calls) because discovery + DB state + the enable rule is the expensive part and it
  * is identical for all three projections.
  */
-export interface PluginContributions {
+export interface MiniAppContributions {
   plugins: PluginRecord[]
-  views: PluginViewSpec[]
+  views: MiniAppViewSpec[]
   commands: PluginCommandSpec[]
   /** Color themes of enabled global plugins (`themes.ts`). */
   themes: PluginThemeSpec[]
@@ -85,10 +85,10 @@ export interface PluginContributions {
 export interface PluginService {
   syncBundledContributions(userId: string, projectId: string): Promise<void>
   listPlugins(userId: string, opts?: { projectId?: string | null }): Promise<ListPluginsResponse>
-  listPluginContributions(
+  listMiniAppContributions(
     userId: string,
     opts?: { projectId?: string | null },
-  ): Promise<PluginContributions>
+  ): Promise<MiniAppContributions>
   listPluginCommands(
     userId: string,
     opts?: { projectId?: string | null },
@@ -97,7 +97,7 @@ export interface PluginService {
    * Resolve a plugin command arg's DYNAMIC options on demand (the composer's picker),
    * by running the plugin's declared `optionsScript`. Agnostic; never throws → `[]`.
    */
-  resolvePluginArgOptions(
+  resolveMiniAppArgOptions(
     userId: string,
     input: {
       plugin: string
@@ -108,10 +108,10 @@ export interface PluginService {
       projectId?: string | null
     },
   ): Promise<{ options: ArgOption[] }>
-  listPluginViews(
+  listMiniAppViews(
     userId: string,
     opts?: { projectId?: string | null },
-  ): Promise<{ views: PluginViewSpec[] }>
+  ): Promise<{ views: MiniAppViewSpec[] }>
   /** Every output style the scope offers (`output-style-listing.ts`). */
   listOutputStyles(
     userId: string,
@@ -122,7 +122,7 @@ export interface PluginService {
     input: { pluginName: string; viewId: string; projectId?: string | null },
   ): Promise<{ html: string }>
   resolveUiFile(userId: string, input: { pluginName: string; file: string }): Promise<string>
-  invokeUiAction(userId: string, input: InvokePluginUiActionRequest): Promise<{ result: unknown }>
+  invokeUiAction(userId: string, input: InvokeMiniAppUiActionRequest): Promise<{ result: unknown }>
   /**
    * Switch a plugin on or off. Disabling one that another enabled plugin depends on is refused
    * (`plugin_has_dependents`) unless `ignoreDependents`; `refuseNoop` also refuses a switch that
@@ -202,7 +202,7 @@ export interface PluginService {
   /** Notify all subscribers that plugins changed (mirrors CC's /reload-plugins; exposed as `/plugin reload`). */
   onChanged?(): void
   /** Creating and building the user's own plugins (`/plugin create`, the `plugin_build` tool). */
-  authoring: PluginAuthoring
+  authoring: MiniAppAuthoring
 }
 
 /** Build the UI's config field list, masking secret values to set/unset. */

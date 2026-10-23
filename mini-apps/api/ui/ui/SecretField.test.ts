@@ -20,7 +20,7 @@ describe('the vault decides what is referenceable', () => {
   test('items with no reference are filtered out', async () => {
     // The host capability owns filtering; plugin UI cannot accidentally widen it by consuming raw
     // vault metadata.
-    expect(await source()).toContain('pluginSecrets')
+    expect(await source()).toContain('miniAppSecrets')
     expect(await source()).toContain('.listReferences()')
     expect(await source()).not.toContain('.list()')
   })

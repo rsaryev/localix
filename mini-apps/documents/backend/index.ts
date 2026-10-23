@@ -17,8 +17,8 @@
 import {
   CAP_DOCUMENT_EXTRACT,
   type Capabilities,
-  type PluginContext,
-  type PluginRegistration,
+  type MiniAppContext,
+  type MiniAppRegistration,
 } from '@localixai/mini-app-sdk/backend'
 import { getDocumentsServices, type DocumentsHost } from './singleton'
 import { buildDocumentExtractPort } from './extract-port'
@@ -27,14 +27,14 @@ import { createTableRoutes } from './table/routes'
 import { createDocumentsResourceProvider } from './resource-provider'
 
 /** The generic host capabilities this plugin reads off the register context —
- *  a structural subset of the host `PluginContext` (see the database plugin). */
-interface DocumentsRegisterContext extends Pick<PluginContext, 'dataDir' | 'userId'> {
+ *  a structural subset of the host `MiniAppContext` (see the database plugin). */
+interface DocumentsRegisterContext extends Pick<MiniAppContext, 'dataDir' | 'userId'> {
   host?: DocumentsHost
   /** The session's working directory — relative tool paths resolve against it. */
   cwd?: string
 }
 
-export function register(ctx: DocumentsRegisterContext): PluginRegistration {
+export function register(ctx: DocumentsRegisterContext): MiniAppRegistration {
   // Boot-time call supplies the real media seam; per-run tool loads reuse the
   // already-built singleton (whose bound seam stays live).
   const media = ctx.host?.media

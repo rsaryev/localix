@@ -7,10 +7,10 @@ import {
   subscribePluginContrib,
 } from './enabledPlugins'
 import {
-  arePluginUiLoadsInFlight,
-  pluginContributionActivation,
+  areMiniAppUiLoadsInFlight,
+  miniAppContributionActivation,
   subscribePluginActivation,
-} from './pluginActivation'
+} from './miniAppActivation'
 import {
   __resetPluginUiLoads,
   claimPluginUiLoads,
@@ -18,7 +18,7 @@ import {
   runPluginUiLoads,
   type PluginUiDiscovery,
   type PluginUiSettled,
-} from './pluginUiLoads'
+} from './miniAppUiLoads'
 import { __setRegistryFlushScheduler, flushRegistryChanges } from './registryChanges'
 
 const withUi = (name: string) =>
@@ -151,8 +151,8 @@ describe('the capability store over the UI loads', () => {
     })
     expect(failed).toBe(false)
     settle('late', true)
-    expect(pluginContributionActivation('late')).toBe('enabled')
-    expect(arePluginUiLoadsInFlight()).toBe(false)
+    expect(miniAppContributionActivation('late')).toBe('enabled')
+    expect(areMiniAppUiLoadsInFlight()).toBe(false)
     void published
   })
 
@@ -176,7 +176,7 @@ describe('the capability store over the UI loads', () => {
     try {
       for (const name of names) settle(name, true)
       // State is current at once; nobody has been woken yet.
-      expect(pluginContributionActivation('e')).toBe('enabled')
+      expect(miniAppContributionActivation('e')).toBe('enabled')
       expect(pluginContribVersion()).toBe(before + 1)
       expect(storeNotified).toBe(0)
       expect(activationNotified).toBe(0)

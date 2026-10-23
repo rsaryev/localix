@@ -1,6 +1,6 @@
 import type { Hono, Schema } from 'hono'
 import { z } from 'zod'
-import type { PluginRouteContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppRouteContext } from '@localixai/mini-app-sdk/backend'
 import type { RestRouteScope } from './route-scope'
 import { validated } from './route-validation'
 import { REQUEST_NOT_FOUND, toInfo } from './request-route-values'
@@ -8,7 +8,7 @@ import { dropHistory, listHistory, renameHistory } from './history'
 
 /** Register request lifecycle and response-history routes in their existing order. */
 export function registerRequestLifecycleRoutes<TSchema extends Schema>(
-  app: Hono<PluginRouteContext, TSchema>,
+  app: Hono<MiniAppRouteContext, TSchema>,
   { uid, sid, collection }: Pick<RestRouteScope, 'uid' | 'sid' | 'collection'>,
 ) {
   return (

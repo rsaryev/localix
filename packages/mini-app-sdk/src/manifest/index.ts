@@ -8,20 +8,20 @@ import { z } from 'zod'
  * primitives so there is exactly one statement of each cross-host rule.
  */
 
-import { PLUGIN_NAME_RE, PLUGIN_CATEGORIES, PLUGIN_CONFIG_TYPES } from './primitives'
+import { PLUGIN_NAME_RE, MINI_APP_CATEGORIES, MINI_APP_CONFIG_TYPES } from './primitives'
 
 export {
   PLUGIN_NAME_RE,
   PLUGIN_QUALIFIED_NAME_RE,
-  PLUGIN_API_VERSION,
-  PLUGIN_SURFACE_AGENT,
-  PLUGIN_SURFACE_WORKBENCH,
-  PLUGIN_CATEGORIES,
-  PLUGIN_CONFIG_TYPES,
-  normalizePluginSurfaces,
-  isWorkbenchPlugin,
+  MINI_APP_API_VERSION,
+  MINI_APP_SURFACE_AGENT,
+  MINI_APP_SURFACE_WORKBENCH,
+  MINI_APP_CATEGORIES,
+  MINI_APP_CONFIG_TYPES,
+  normalizeMiniAppSurfaces,
+  isWorkbenchMiniApp,
 } from './primitives'
-export type { PluginCategory, PluginConfigType } from './primitives'
+export type { MiniAppCategory, MiniAppConfigType } from './primitives'
 
 /**
  * One user-config option declared under `plugin.json.config`. Values remain scalar
@@ -29,8 +29,8 @@ export type { PluginCategory, PluginConfigType } from './primitives'
  * hint, not an array storage mode. `title`, `min`, and `max` are hints too; a host may
  * choose whether to render or enforce them.
  */
-export const pluginConfigOptionSchema = z.object({
-  type: z.enum(PLUGIN_CONFIG_TYPES).default('string'),
+export const miniAppConfigOptionSchema = z.object({
+  type: z.enum(MINI_APP_CONFIG_TYPES).default('string'),
   description: z.string().default(''),
   required: z.boolean().default(false),
   secret: z.boolean().default(false),
@@ -41,9 +41,9 @@ export const pluginConfigOptionSchema = z.object({
   max: z.number().optional(),
 })
 /** Author-written shape before schema defaults are applied. */
-export type PluginConfigOptionInput = z.input<typeof pluginConfigOptionSchema>
+export type MiniAppConfigOptionInput = z.input<typeof miniAppConfigOptionSchema>
 /** Normalized config option after parsing. */
-export type PluginConfigOption = z.output<typeof pluginConfigOptionSchema>
+export type MiniAppConfigOption = z.output<typeof miniAppConfigOptionSchema>
 
 /**
  * ── OS FILE ASSOCIATIONS ───────────────────────────────────────────────────────
@@ -72,8 +72,8 @@ export type PluginConfigOption = z.output<typeof pluginConfigOptionSchema>
  */
 
 /** `CFBundleTypeRole` (macOS): what the app does with the type. */
-export const PLUGIN_FILE_ASSOCIATION_ROLES = ['Editor', 'Viewer', 'Shell', 'None'] as const
-export type PluginFileAssociationRole = (typeof PLUGIN_FILE_ASSOCIATION_ROLES)[number]
+export const MINI_APP_FILE_ASSOCIATION_ROLES = ['Editor', 'Viewer', 'Shell', 'None'] as const
+export type MiniAppFileAssociationRole = (typeof MINI_APP_FILE_ASSOCIATION_ROLES)[number]
 
 /**
  * `LSHandlerRank` (macOS): how hard the app competes to be THE handler.
@@ -81,8 +81,8 @@ export type PluginFileAssociationRole = (typeof PLUGIN_FILE_ASSOCIATION_ROLES)[n
  * a secondary viewer that should not displace the user's current default, `None` =
  * never auto-selected but drops are accepted.
  */
-export const PLUGIN_FILE_ASSOCIATION_RANKS = ['Owner', 'Default', 'Alternate', 'None'] as const
-export type PluginFileAssociationRank = (typeof PLUGIN_FILE_ASSOCIATION_RANKS)[number]
+export const MINI_APP_FILE_ASSOCIATION_RANKS = ['Owner', 'Default', 'Alternate', 'None'] as const
+export type MiniAppFileAssociationRank = (typeof MINI_APP_FILE_ASSOCIATION_RANKS)[number]
 
 /**
  * Extensions are stored WITHOUT the leading dot and lower-cased (`"pdf"`, not
@@ -90,7 +90,7 @@ export type PluginFileAssociationRank = (typeof PLUGIN_FILE_ASSOCIATION_RANKS)[n
  * is deliberately narrow: an extension reaches an installer template and a plist,
  * so anything with a path separator, space, or wildcard is a packaging bug.
  */
-export const PLUGIN_FILE_ASSOCIATION_EXT_RE = /^[a-z0-9][a-z0-9+._-]*$/
+export const MINI_APP_FILE_ASSOCIATION_EXT_RE = /^[a-z0-9][a-z0-9+._-]*$/
 
 /** Lower-case an authored extension and drop a leading dot, as Tauri's parser does. */
 export function normalizeFileAssociationExt(ext: string): string {
@@ -105,7 +105,7 @@ export function normalizeFileAssociationExt(ext: string): string {
  * "PDF Document" reads as a bug, so the manifest makes the label a decision rather
  * than a default.
  */
-export const pluginFileAssociationSchema = z.object({
+export const miniAppFileAssociationSchema = z.object({
   /** Extensions this entry claims, dot-less and lower-cased after parsing. */
   ext: z
     .array(
@@ -114,7 +114,7 @@ export const pluginFileAssociationSchema = z.object({
         .min(1)
         .transform(normalizeFileAssociationExt)
         .refine(
-          (ext) => PLUGIN_FILE_ASSOCIATION_EXT_RE.test(ext),
+          (ext) => MINI_APP_FILE_ASSOCIATION_EXT_RE.test(ext),
           'A file extension must be alphanumeric (dots, dashes, underscores and + allowed).',
         ),
     )
@@ -125,13 +125,13 @@ export const pluginFileAssociationSchema = z.object({
   description: z.string().optional(),
   /** MIME type — Linux `.desktop` `MimeType=`, macOS `UTTypeTagSpecification`. */
   mimeType: z.string().optional(),
-  role: z.enum(PLUGIN_FILE_ASSOCIATION_ROLES).optional(),
-  rank: z.enum(PLUGIN_FILE_ASSOCIATION_RANKS).optional(),
+  role: z.enum(MINI_APP_FILE_ASSOCIATION_ROLES).optional(),
+  rank: z.enum(MINI_APP_FILE_ASSOCIATION_RANKS).optional(),
 })
 /** Author-written association entry, before normalization. */
-export type PluginFileAssociationInput = z.input<typeof pluginFileAssociationSchema>
+export type MiniAppFileAssociationInput = z.input<typeof miniAppFileAssociationSchema>
 /** Normalized association entry (dot-less, lower-cased extensions). */
-export type PluginFileAssociation = z.output<typeof pluginFileAssociationSchema>
+export type MiniAppFileAssociation = z.output<typeof miniAppFileAssociationSchema>
 
 /**
  * Host-independent fields every Localix plugin manifest starts with. The API host
@@ -140,10 +140,10 @@ export type PluginFileAssociation = z.output<typeof pluginFileAssociationSchema>
  * plugin identity, API compatibility, surface declarations, or config options.
  *
  * `surfaces` stays optional and unnormalized here. Parsing preserves the manifest
- * as authored; consumers call {@link normalizePluginSurfaces} when they need the
+ * as authored; consumers call {@link normalizeMiniAppSurfaces} when they need the
  * legacy `['agent']` default and canonical values.
  */
-export const pluginManifestCoreSchema = z.object({
+export const miniAppManifestCoreSchema = z.object({
   name: z
     .string()
     .regex(PLUGIN_NAME_RE, 'Plugin name must be letters, numbers, dashes or underscores.'),
@@ -155,18 +155,18 @@ export const pluginManifestCoreSchema = z.object({
    * no host-owned list of concrete plugin names is required.
    */
   private: z.boolean().optional(),
-  category: z.enum(PLUGIN_CATEGORIES).optional(),
+  category: z.enum(MINI_APP_CATEGORIES).optional(),
   surfaces: z.array(z.string()).optional(),
-  config: z.record(z.string(), pluginConfigOptionSchema).optional(),
+  config: z.record(z.string(), miniAppConfigOptionSchema).optional(),
   /**
    * File families this plugin can open, projected onto the OS's handler registry at
-   * PACKAGE time. See {@link pluginFileAssociationSchema} — bundled plugins only.
+   * PACKAGE time. See {@link miniAppFileAssociationSchema} — bundled plugins only.
    */
-  fileAssociations: z.array(pluginFileAssociationSchema).optional(),
+  fileAssociations: z.array(miniAppFileAssociationSchema).optional(),
 })
 /** Author-written core manifest shape before schema defaults are applied. */
-export type PluginManifestCoreInput = z.input<typeof pluginManifestCoreSchema>
+export type MiniAppManifestCoreInput = z.input<typeof miniAppManifestCoreSchema>
 /** Normalized core manifest after parsing. */
-export type PluginManifestCore = z.output<typeof pluginManifestCoreSchema>
+export type MiniAppManifestCore = z.output<typeof miniAppManifestCoreSchema>
 
 export { humanizePluginId, pluginLabel } from './label'

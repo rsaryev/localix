@@ -37,11 +37,11 @@ import {
 import { bundledFolderOf, bundledRoots } from './lib/bundled-roots.mjs'
 import {
   discardStagedUiArtifact,
-  pluginKitDirOf,
-  stagePluginUi,
+  miniAppKitDirOf,
+  stageMiniAppUi,
   takeStagedUiArtifact,
 } from './stage-plugin-ui.mjs'
-import { PLUGIN_BACKEND_HOST_MODULES } from '@localixai/api/plugin-kit-layout'
+import { MINI_APP_BACKEND_HOST_MODULES } from '@localixai/api/plugin-kit-layout'
 
 const KIT_STAGER = fileURLToPath(new URL('./stage-plugin-kit.mjs', import.meta.url))
 
@@ -54,21 +54,21 @@ const KIT_STAGER = fileURLToPath(new URL('./stage-plugin-kit.mjs', import.meta.u
 /** `--cache=<dir>` when the caller keeps a kit cache (development); packaging stages fresh. */
 const cacheArgs = (cacheRoot) => (cacheRoot ? [`--cache=${cacheRoot}`] : [])
 
-export function stagePluginKitBeside({ repoRoot, outPlugins, cacheRoot, run = execFileSync }) {
-  run('bun', [KIT_STAGER, repoRoot, pluginKitDirOf(outPlugins), ...cacheArgs(cacheRoot)], {
+export function stageMiniAppKitBeside({ repoRoot, outPlugins, cacheRoot, run = execFileSync }) {
+  run('bun', [KIT_STAGER, repoRoot, miniAppKitDirOf(outPlugins), ...cacheArgs(cacheRoot)], {
     cwd: repoRoot,
     stdio: 'inherit',
   })
 }
 
 /**
- * {@link stagePluginKitBeside} without blocking the caller: the dev supervisor re-stages the kit
+ * {@link stageMiniAppKitBeside} without blocking the caller: the dev supervisor re-stages the kit
  * while it also supervises the API, and a synchronous child stalled it for the ~3s a stage takes.
  * Resolves when the stage succeeds, rejects with its exit status otherwise.
  */
 export function stagePluginKitBesideAsync({ repoRoot, outPlugins, cacheRoot, run = spawn }) {
   return new Promise((resolveStage, rejectStage) => {
-    const args = [KIT_STAGER, repoRoot, pluginKitDirOf(outPlugins), ...cacheArgs(cacheRoot)]
+    const args = [KIT_STAGER, repoRoot, miniAppKitDirOf(outPlugins), ...cacheArgs(cacheRoot)]
     const child = run('bun', args, {
       cwd: repoRoot,
       stdio: 'inherit',
@@ -332,10 +332,10 @@ export function stageDropins({
   // (e.g. ssh2's DB SSH tunnel) be emitted beside the bundle.
   const staging = { repoRoot, outPlugins, log, onPluginError }
   for (const name of names) {
-    const failure = bundleStagedPluginBackend(name, staging)
+    const failure = bundleStagedMiniAppBackend(name, staging)
     if (failure) skipped.push(failure)
     // After the backend: a plugin removed for a backend failure has no copy to put a UI into.
-    else stagePluginUi(name, { ...staging, run: runUiBuild, uiSourceMaps })
+    else stageMiniAppUi(name, { ...staging, run: runUiBuild, uiSourceMaps })
   }
   writeStagingMarker(
     outPlugins,
@@ -356,7 +356,7 @@ export function stageDropins({
  * asked for `skip`; throws under `fatal`. A plugin without a bundleable `tools` entry is
  * left as copied.
  */
-function bundleStagedPluginBackend(name, { repoRoot, outPlugins, log, onPluginError }) {
+function bundleStagedMiniAppBackend(name, { repoRoot, outPlugins, log, onPluginError }) {
   // The backend entry lives in the Localix layer: a mini app's `backend`, or a legacy `tools`.
   const manifestPath = localixManifestFile(join(outPlugins, name))
   if (!manifestPath) return null
@@ -392,7 +392,7 @@ function bundleStagedPluginBackend(name, { repoRoot, outPlugins, log, onPluginEr
       ...OPTIONAL_NATIVE_EXTERNALS.flatMap((dependency) => ['--external', dependency]),
       // The host serves these at runtime (`backend-host-modules.ts`); bundling them put a copy
       // of zod, hono and the SDK into every backend.
-      ...PLUGIN_BACKEND_HOST_MODULES.flatMap((specifier) => ['--external', specifier]),
+      ...MINI_APP_BACKEND_HOST_MODULES.flatMap((specifier) => ['--external', specifier]),
     ])
     const metafile = JSON.parse(readFileSync(metadataPath, 'utf8'))
     assertHostModulesImportedByPluginCode(name, metafile)
@@ -453,14 +453,14 @@ export function restagePlugin({
     // The filter reasons about paths RELATIVE TO THE PLUGINS ROOT (`<name>/ui/…`), same as
     // the whole-tree copy, so the ui-authoring-source rule sees the same segments.
     cpSync(repoPlugin, stagedPlugin, { recursive: true, filter: makeCopyFilter(repoPlugins) })
-    failure = bundleStagedPluginBackend(name, {
+    failure = bundleStagedMiniAppBackend(name, {
       repoRoot,
       outPlugins,
       log,
       onPluginError,
     })
     if (!failure) {
-      stagePluginUi(name, {
+      stageMiniAppUi(name, {
         repoRoot,
         outPlugins,
         log,
@@ -490,7 +490,7 @@ export function restagePlugin({
  * copy, which is a decision to make (bundle it under another name), not a silent swap.
  */
 export function assertHostModulesImportedByPluginCode(name, metafile) {
-  const hostModules = new Set(PLUGIN_BACKEND_HOST_MODULES)
+  const hostModules = new Set(MINI_APP_BACKEND_HOST_MODULES)
   const offenders = []
   for (const [input, meta] of Object.entries(metafile.inputs ?? {})) {
     if (!input.includes('node_modules/') || input.includes('node_modules/@localixai/')) continue

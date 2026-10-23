@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { PanelsTopLeft, Gamepad2, Wrench } from 'lucide-react'
-import type { PluginCategory } from '@localixai/mini-app-sdk/manifest'
+import type { MiniAppCategory } from '@localixai/mini-app-sdk/manifest'
 import { groupRailTools } from '../model/railToolGroups'
 import { RailToolMenu } from './RailToolMenu'
 import type { RailEntry } from './shellTypes'
@@ -8,7 +8,7 @@ import type { RailEntry } from './shellTypes'
 interface RailToolGroupsProps {
   /** Only pinned tools in the middle rail zone, including defaults. */
   entries: readonly RailEntry[]
-  categories?: ReadonlyMap<string, PluginCategory | undefined>
+  categories?: ReadonlyMap<string, MiniAppCategory | undefined>
   renderEntry: (entry: RailEntry) => ReactNode
 }
 

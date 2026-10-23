@@ -2,8 +2,8 @@ import { afterEach, describe, expect, test } from 'bun:test'
 
 import type { ProblemReport } from '@localixai/mini-app-sdk/ui/problems'
 
-import { setPluginSources } from './pluginAttribution'
-import { createPluginToast, type AttributableToast } from './pluginToast'
+import { setPluginSources } from './miniAppAttribution'
+import { createPluginToast, type AttributableToast } from './miniAppToast'
 
 const base = 'http://127.0.0.1:43110/rpc/plugins/acme/ui/'
 const pluginFrame = `onSelect@${base}entry.js?v=r1:12:88`

@@ -21,7 +21,7 @@
  *   `export const MessageCard = memo(MessageCardImpl)`; the props belong to the exported name, and
  *   `MessageCardImplProps` would name the wrapper rather than the component.
  * - The name must END with `<Component>Props`, not equal it. The SDK deliberately prefixes its
- *   public contracts — `FileTab` takes `PluginFileTabProps` — so that a plugin importing them gets
+ *   public contracts — `FileTab` takes `MiniAppFileTabProps` — so that a plugin importing them gets
  *   a name that says where it came from. That prefix is the convention working, not breaking.
  *
  * No autofix. Renaming the REFERENCE alone produces a file that no longer compiles, and renaming

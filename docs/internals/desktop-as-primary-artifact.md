@@ -156,7 +156,7 @@ alone needs.
 | `img-src https:`                                                        | Remote images in Markdown, chat content and plugin panels.                                                                        |
 
 Narrowing a CDN host here silently removes it from plugin panels, so
-`apps/ui/src/features/inspector/ui/pluginPanelSrcDoc.ts` documents the list both files must share.
+`apps/ui/src/features/inspector/ui/miniAppPanelSrcDoc.ts` documents the list both files must share.
 `object-src 'none'`, `base-uri 'self'` and `form-action 'self'` stay closed.
 
 ### Runtime lifecycle

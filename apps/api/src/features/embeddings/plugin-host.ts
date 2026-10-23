@@ -10,7 +10,7 @@ import type { SemanticService } from './service'
 
 const COLLECTION_NAME = /^[a-z0-9][a-z0-9._-]{0,63}$/
 
-export function pluginCollection(pluginName: string, collection: string): string {
+export function miniAppCollection(pluginName: string, collection: string): string {
   if (!COLLECTION_NAME.test(collection)) {
     throw new Error(
       `invalid semantic collection name "${collection}" (lowercase letters, digits, . _ -)`,
@@ -19,11 +19,11 @@ export function pluginCollection(pluginName: string, collection: string): string
   return `plugin:${pluginName}:${collection}`
 }
 
-export function createPluginSemanticHost(
+export function createMiniAppSemanticHost(
   service: SemanticService,
   pluginName: string,
 ): SemanticIndexHost {
-  const own = (collection: string) => pluginCollection(pluginName, collection)
+  const own = (collection: string) => miniAppCollection(pluginName, collection)
   // Vectors on demand carry no collection: the same port every core consumer uses.
   const { vectors } = service
   return {

@@ -1,4 +1,4 @@
-import type { PluginUiHost, UiAnchorContribution } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppUiHost, UiAnchorContribution } from '@localixai/mini-app-sdk/ui'
 import { parseLocalixResourceUri } from '@localixai/mini-app-sdk/ui'
 import { lazy } from 'react'
 import { ClipboardList } from 'lucide-react'
@@ -30,7 +30,7 @@ const PlanView = lazy(() =>
   import('@/entities/chat/ui/plan/PlanView').then((module) => ({ default: module.PlanView })),
 )
 
-export function registerUi(host: PluginUiHost): void {
+export function registerUi(host: MiniAppUiHost): void {
   host.anchors.register(chatResourceAnchor)
   // The conversation's plan tab (`model/plans.ts` `openPlanTab`). Session-scoped: it reads one
   // conversation's plans and writes its comments. Restorable — its payload is two ids, and the

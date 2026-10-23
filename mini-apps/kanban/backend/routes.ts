@@ -2,8 +2,8 @@ import { Hono, type Context } from 'hono'
 import {
   jsonBody,
   jsonError,
-  type PluginAgentDirectory,
-  type PluginRouteContext,
+  type MiniAppAgentDirectory,
+  type MiniAppRouteContext,
 } from '@localixai/mini-app-sdk/backend'
 
 import {
@@ -21,9 +21,9 @@ import type { BoardSeat, BoardService } from './service'
  * before any card is read. Every write here is the `user` actor's, which is what makes the
  * board's transition table and the `user` origin mean anything.
  */
-export function createBoardRoutes(boards: BoardService, agents?: PluginAgentDirectory) {
+export function createBoardRoutes(boards: BoardService, agents?: MiniAppAgentDirectory) {
   const answer = async <T>(
-    c: Context<PluginRouteContext>,
+    c: Context<MiniAppRouteContext>,
     action: (seat: BoardSeat) => Promise<T>,
     status: 200 | 201 = 200,
   ) => {
@@ -41,7 +41,7 @@ export function createBoardRoutes(boards: BoardService, agents?: PluginAgentDire
   }
 
   return (
-    new Hono<PluginRouteContext>()
+    new Hono<MiniAppRouteContext>()
       .get('/board', (c) => {
         c.header('Cache-Control', 'no-store')
         return answer(c, (seat) => boards.read(seat))

@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test'
-import type { PluginTextInputCompletionSurface } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppTextInputCompletionSurface } from '@localixai/mini-app-sdk/backend'
 
 import { createTextInputSurfaceRegistry } from './surface-registry'
 
-const surface = (id: string): PluginTextInputCompletionSurface => ({
+const surface = (id: string): MiniAppTextInputCompletionSurface => ({
   id,
   resolveContext: async () => [],
   actionable: () => true,

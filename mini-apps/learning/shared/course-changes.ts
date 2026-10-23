@@ -8,7 +8,7 @@
  * roster frame every chat's stream carries and a reconnect replays. The UI re-reads that chat's
  * courses. One value both sides import, so the names cannot drift apart.
  */
-export const LEARNING_PLUGIN = 'learning'
+export const LEARNING_MINI_APP = 'learning'
 export const LEARNING_CHANGES_CHANNEL = 'courses'
 
 export interface CourseChange {

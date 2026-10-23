@@ -73,7 +73,7 @@ GlobalSearchPalette or GlobalSearchTab
 | `agents`   | Reusable-agent name, label, and description                                      | Eager; uses the supplied project scope                        |
 | `models`   | Runtime catalog model id and name                                                | Eager; the composition root caches the catalog for 30 seconds |
 
-Enabled backend plugins register at runtime through `PluginBackendHost.setSearchRegistry`. Current
+Enabled backend plugins register at runtime through `MiniAppBackendHost.setSearchRegistry`. Current
 plugin domains include database connections, saved API requests, Docker resources, Kubernetes pods,
 trading markets, and Kanban cards. Their owning plugins define tier, matching, resource URI, and
 shutdown behavior; global search only enforces the registry contract.

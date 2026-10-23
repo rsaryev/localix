@@ -274,7 +274,7 @@ function normalizeAssociation(entry, owner) {
 }
 
 /** Bundled plugin dirs, sorted, so aggregation order never depends on readdir order. */
-function bundledPluginNames() {
+function bundledMiniAppNames() {
   return readdirSync(pluginsDir, { withFileTypes: true })
     .filter((e) => e.isDirectory())
     .map((e) => e.name)
@@ -285,9 +285,9 @@ function bundledPluginNames() {
  * Every bundled plugin's declared associations, tagged with its owner. A plugin without
  * the field contributes nothing — which is the common case and must stay free.
  */
-export function pluginFileAssociations() {
+export function miniAppFileAssociations() {
   const out = []
-  for (const name of bundledPluginNames()) {
+  for (const name of bundledMiniAppNames()) {
     // A dir with no manifest is not a plugin; one that does not parse throws with its path.
     if (!hasExtensionManifest(join(pluginsDir, name))) continue
     const manifest = readExtensionManifest(join(pluginsDir, name))
@@ -337,7 +337,7 @@ export function buildFileAssociations() {
       owner: 'core (apps/desktop-tauri)',
       association: normalizeAssociation(association, 'core'),
     })),
-    ...pluginFileAssociations(),
+    ...miniAppFileAssociations(),
   ]
   const claimedBy = new Map()
   const dropped = new Map()

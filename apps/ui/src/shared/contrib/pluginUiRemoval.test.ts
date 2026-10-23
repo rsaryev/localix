@@ -1,13 +1,13 @@
 import { afterAll, expect, test } from 'bun:test'
-import type { PluginUiHost } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppUiHost } from '@localixai/mini-app-sdk/ui'
 
 import { contentTypeForPath } from '@/shared/lib/contentTypeRouting'
 import { fileEditorEnhancersFor } from './fileEditorEnhancers'
 import { fileEditorById } from './fileEditors'
 import { fileTreeDecorationProviderId } from './fileTreeDecorations'
-import { pluginUiHostFor, removePluginUiContributions } from './host'
+import { miniAppUiHostFor, removeMiniAppUiContributions } from './host'
 import { contributedVscFileIcon, resourceRefIcon } from './iconContributions'
-import { setEnabledPluginNames } from './pluginActivation'
+import { setEnabledPluginNames } from './miniAppActivation'
 import { searchDomains } from './searchDomains'
 import { sessionEventHandlersFor } from './sessionEvents'
 import { sessionSurfacesFor } from './sessionSurfaces'
@@ -25,13 +25,13 @@ const None = () => null
 // The shape the host derives for a viewlet destination (`host.ts`), under an id of its own.
 const LOCATION_URI = `localix://ui/work-item/viewlet/${encodeURIComponent('removal-fixture:loc')}`
 
-type Seam = keyof PluginUiHost
+type Seam = keyof MiniAppUiHost
 /**
  * One registration and one "is it there?" per seam of the plugin façade. The completeness check
- * below compares these keys with the façade itself, so a seam added to `pluginUiHostFor` without
- * a removal in `removePluginUiContributions` fails here instead of leaking on the next reload.
+ * below compares these keys with the façade itself, so a seam added to `miniAppUiHostFor` without
+ * a removal in `removeMiniAppUiContributions` fails here instead of leaking on the next reload.
  */
-const SEAMS: Record<Seam, { register: (host: PluginUiHost) => void; present: () => boolean }> = {
+const SEAMS: Record<Seam, { register: (host: MiniAppUiHost) => void; present: () => boolean }> = {
   workItems: {
     register: (host) =>
       host.workItems.register({
@@ -185,12 +185,12 @@ const SEAMS: Record<Seam, { register: (host: PluginUiHost) => void; present: () 
 }
 
 afterAll(() => {
-  removePluginUiContributions(OWNER)
+  removeMiniAppUiContributions(OWNER)
   setEnabledPluginNames(null)
 })
 
 test('every seam a plugin can register through is one the host can take back', () => {
-  const host = pluginUiHostFor(OWNER)
+  const host = miniAppUiHostFor(OWNER)
   expect(Object.keys(SEAMS).sort()).toEqual(Object.keys(host).sort())
   setEnabledPluginNames(new Set([OWNER]))
 
@@ -200,14 +200,14 @@ test('every seam a plugin can register through is one the host can take back', (
     .map(([name]) => name)
   expect(registered).toEqual([])
 
-  removePluginUiContributions(OWNER)
+  removeMiniAppUiContributions(OWNER)
   const leaked = Object.entries(SEAMS)
     .filter(([, seam]) => seam.present())
     .map(([name]) => name)
   expect(leaked).toEqual([])
 
   // Taken back, the same identities are free again: a reload re-registers without collisions.
-  for (const seam of Object.values(SEAMS)) seam.register(pluginUiHostFor(OWNER))
+  for (const seam of Object.values(SEAMS)) seam.register(miniAppUiHostFor(OWNER))
   expect(
     Object.entries(SEAMS)
       .filter(([, seam]) => !seam.present())

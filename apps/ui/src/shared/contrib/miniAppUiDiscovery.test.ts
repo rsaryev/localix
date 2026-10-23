@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 
 import type { PluginRecord } from '@/shared/api/contracts'
-import { pluginSources, pluginUiArtifacts } from './pluginUiDiscovery'
+import { pluginSources, pluginUiArtifacts } from './miniAppUiDiscovery'
 
 const record = (name: string, enabled: boolean, ui?: PluginRecord['ui']) =>
   ({ name, enabled, ...(ui ? { ui } : {}) }) as PluginRecord
@@ -40,7 +40,7 @@ describe('plugin UI wiring', () => {
   // The defect this module used to carry: it owned a glob over the plugins tree and answered any
   // hot update with a page reload. A plugin is loaded by URL now; nothing here may reload.
   test('never reloads the page and never compiles plugins into the host', () => {
-    const source = readFileSync(new URL('./pluginUiDiscovery.ts', import.meta.url), 'utf8')
+    const source = readFileSync(new URL('./miniAppUiDiscovery.ts', import.meta.url), 'utf8')
     expect(source).not.toMatch(/\breload\(|import\.meta\.hot|import\.meta\.glob|plugins\//u)
   })
 })

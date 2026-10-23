@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 
 import {
-  bindPluginUiRuntime,
-  pluginFiles,
-  type PluginUiRuntime,
-  type PluginWorkspaceChange,
-  type PluginWorkspaceWatchHandlers,
+  bindMiniAppUiRuntime,
+  miniAppFiles,
+  type MiniAppUiRuntime,
+  type MiniAppWorkspaceChange,
+  type MiniAppWorkspaceWatchHandlers,
 } from './runtime'
 import { createWorkspaceChangeCoalescer, MAX_COALESCED_PATHS } from './workspace-changes'
 
@@ -35,7 +35,7 @@ function manualTimers() {
 describe('createWorkspaceChangeCoalescer', () => {
   test('folds every batch of one window into a single delivery of distinct paths', () => {
     const clock = manualTimers()
-    const seen: PluginWorkspaceChange[] = []
+    const seen: MiniAppWorkspaceChange[] = []
     const coalescer = createWorkspaceChangeCoalescer('s1', (c) => seen.push(c), 500, clock.timers)
     coalescer.push(['/w/a.ts', '/w'])
     coalescer.push(['/w/b.ts', '/w'])
@@ -52,7 +52,7 @@ describe('createWorkspaceChangeCoalescer', () => {
 
   test('a coarse batch, or too many paths, delivers the coarse form', () => {
     const clock = manualTimers()
-    const seen: PluginWorkspaceChange[] = []
+    const seen: MiniAppWorkspaceChange[] = []
     const coalescer = createWorkspaceChangeCoalescer('s1', (c) => seen.push(c), 500, clock.timers)
     coalescer.push(['/w/a.ts'])
     coalescer.push(null)
@@ -67,7 +67,7 @@ describe('createWorkspaceChangeCoalescer', () => {
 
   test('nothing is delivered after close', () => {
     const clock = manualTimers()
-    const seen: PluginWorkspaceChange[] = []
+    const seen: MiniAppWorkspaceChange[] = []
     const coalescer = createWorkspaceChangeCoalescer('s1', (c) => seen.push(c), 500, clock.timers)
     coalescer.push(['/w/a.ts'])
     coalescer.close()
@@ -78,7 +78,7 @@ describe('createWorkspaceChangeCoalescer', () => {
   })
 })
 
-describe('pluginFiles.watchWorkspace', () => {
+describe('miniAppFiles.watchWorkspace', () => {
   let unbind: (() => void) | undefined
   afterEach(() => {
     unbind?.()
@@ -86,11 +86,11 @@ describe('pluginFiles.watchWorkspace', () => {
   })
 
   test('holds the host feed for one chat, coalesces it, and releases it on unsubscribe', async () => {
-    let handlers = null as PluginWorkspaceWatchHandlers | null
+    let handlers = null as MiniAppWorkspaceWatchHandlers | null
     let held = null as string | null
-    unbind = bindPluginUiRuntime({
+    unbind = bindMiniAppUiRuntime({
       files: {
-        watchWorkspace: (sessionId: string, next: PluginWorkspaceWatchHandlers) => {
+        watchWorkspace: (sessionId: string, next: MiniAppWorkspaceWatchHandlers) => {
           held = sessionId
           handlers = next
           return () => {
@@ -98,10 +98,10 @@ describe('pluginFiles.watchWorkspace', () => {
           }
         },
       },
-    } as unknown as PluginUiRuntime)
-    const seen: PluginWorkspaceChange[] = []
+    } as unknown as MiniAppUiRuntime)
+    const seen: MiniAppWorkspaceChange[] = []
     const live: boolean[] = []
-    const off = pluginFiles.watchWorkspace('s1', (c) => seen.push(c), {
+    const off = miniAppFiles.watchWorkspace('s1', (c) => seen.push(c), {
       windowMs: 5,
       onLive: (value) => live.push(value),
     })
@@ -117,9 +117,9 @@ describe('pluginFiles.watchWorkspace', () => {
   })
 
   test('a host without a watcher answers not-live and never delivers', () => {
-    unbind = bindPluginUiRuntime({ files: {} } as unknown as PluginUiRuntime)
+    unbind = bindMiniAppUiRuntime({ files: {} } as unknown as MiniAppUiRuntime)
     const live: boolean[] = []
-    const off = pluginFiles.watchWorkspace(
+    const off = miniAppFiles.watchWorkspace(
       's1',
       () => {
         throw new Error('no feed, no delivery')

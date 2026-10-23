@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BookOpen, GraduationCap, Layers3 } from 'lucide-react'
 
-import type { PluginUiHost, PublishMessageContext, WorkItemLike } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppUiHost, PublishMessageContext, WorkItemLike } from '@localixai/mini-app-sdk/ui'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { parseLearningResourceUri } from '../shared/resource-uri'
@@ -61,7 +61,7 @@ function LearningLibraryBody({ visible }: { visible: boolean }) {
 
 let registered = false
 
-export function registerUi(host: PluginUiHost): void {
+export function registerUi(host: MiniAppUiHost): void {
   if (registered) return
   registered = true
   initCourseChanges()

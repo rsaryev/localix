@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'bun:test'
 import { stubFetch, fetchBody } from '../../testing/fetch-stub'
 import type { ManifestOAuthSpec } from '@localixai/mini-app-sdk/backend'
 
-import { makePluginOAuth } from './oauth'
+import { makeMiniAppOAuth } from './oauth'
 
 const PORT = 21000 + Math.floor(Math.random() * 2000)
 
@@ -39,7 +39,7 @@ function stubTokenEndpoint(handler: (url: string, init?: RequestInit) => Respons
 
 describe('ctx.oauth', () => {
   it('refuses a callback listener outside loopback', () => {
-    const oauth = makePluginOAuth('spotify')
+    const oauth = makeMiniAppOAuth('spotify')
     for (const host of ['0.0.0.0', '192.168.1.20', '::', 'example.com']) {
       const exposed = { ...spec(PORT), localServer: { host, port: PORT, path: '/callback' } }
       expect(() => oauth.beginLogin(exposed)).toThrow('localServer.host must be a loopback address')
@@ -55,7 +55,7 @@ describe('ctx.oauth', () => {
       return Response.json({ access_token: 'at-1', refresh_token: 'rt-1', expires_in: 3600 })
     })
 
-    const oauth = makePluginOAuth('spotify')
+    const oauth = makeMiniAppOAuth('spotify')
     const login = oauth.beginLogin(spec(port))
     try {
       const u = new URL(login.authorizeUrl)
@@ -87,7 +87,7 @@ describe('ctx.oauth', () => {
 
   it('rejects a callback with a mismatched state (CSRF) and keeps waiting', async () => {
     const port = PORT + 1
-    const oauth = makePluginOAuth('p')
+    const oauth = makeMiniAppOAuth('p')
     const login = oauth.beginLogin(spec(port))
     try {
       const bad = await realFetch(`http://127.0.0.1:${port}/callback?code=abc&state=WRONG`)
@@ -105,7 +105,7 @@ describe('ctx.oauth', () => {
 
   it('rejects when the provider returns error= (user denied)', async () => {
     const port = PORT + 2
-    const oauth = makePluginOAuth('p')
+    const oauth = makeMiniAppOAuth('p')
     const login = oauth.beginLogin(spec(port))
     const state = new URL(login.authorizeUrl).searchParams.get('state')!
     await realFetch(`http://127.0.0.1:${port}/callback?error=access_denied&state=${state}`)
@@ -114,7 +114,7 @@ describe('ctx.oauth', () => {
 
   it('cancel() stops the loopback server and rejects the credential', async () => {
     const port = PORT + 3
-    const oauth = makePluginOAuth('p')
+    const oauth = makeMiniAppOAuth('p')
     const login = oauth.beginLogin(spec(port))
     login.cancel()
     expect(login.credential).rejects.toThrow('cancelled')
@@ -125,7 +125,7 @@ describe('ctx.oauth', () => {
   })
 
   it('beginLogin requires a local-server spec', () => {
-    const oauth = makePluginOAuth('p')
+    const oauth = makeMiniAppOAuth('p')
     const bad = { ...spec(PORT + 4), callbackMode: 'app-redirect' as const, localServer: undefined }
     expect(() => oauth.beginLogin(bad)).toThrow('local-server')
   })
@@ -139,7 +139,7 @@ describe('ctx.oauth', () => {
       }
       return Response.json({ access_token: 'at-2', expires_in: 3600 })
     })
-    const oauth = makePluginOAuth('p')
+    const oauth = makeMiniAppOAuth('p')
     const cred = await oauth.refresh(spec(PORT + 5), 'rt-1')
     expect(cred.accessToken).toBe('at-2')
   })

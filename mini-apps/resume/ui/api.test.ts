@@ -3,7 +3,7 @@ import { Hono } from 'hono'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
+import { bindMiniAppUiTransport } from '@localixai/mini-app-sdk/ui/transport'
 import { createResumeRoutes } from '../backend/routes'
 import { createResumeService } from '../backend/service'
 import { emptyDocument } from '../shared/schema'
@@ -13,7 +13,7 @@ test('opens an empty library and creates a resume through the actual mounted roo
   const dir = await mkdtemp(join(tmpdir(), 'resume-route-'))
   const app = new Hono().route('/rpc/resume', createResumeRoutes(createResumeService))
   const requests: string[] = []
-  const unbind = bindPluginUiTransport({
+  const unbind = bindMiniAppUiTransport({
     url: (path) => path,
     request: async (path, init) => {
       requests.push(`${init?.method ?? 'GET'} ${path}`)

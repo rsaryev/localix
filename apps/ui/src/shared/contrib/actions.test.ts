@@ -1,6 +1,6 @@
 import { afterEach, expect, spyOn, test } from 'bun:test'
-import { pluginUiHostFor, removePluginUiContributions } from './host'
-import { setEnabledPluginNames } from './pluginActivation'
+import { miniAppUiHostFor, removeMiniAppUiContributions } from './host'
+import { setEnabledPluginNames } from './miniAppActivation'
 import { actionMatches, contributedActions } from './actions'
 import type { ActionContext, ActionContribution } from '@localixai/mini-app-sdk/ui'
 
@@ -37,12 +37,12 @@ test('predicates filter typed targets and fail closed without breaking content',
   expect(actionMatches(asyncAction, context)).toBe(false)
 })
 afterEach(() => {
-  removePluginUiContributions(owner)
+  removeMiniAppUiContributions(owner)
   setEnabledPluginNames(null)
 })
 
 test('owned actions follow plugin activation and disappear on unload', () => {
-  const host = pluginUiHostFor(owner)
+  const host = miniAppUiHostFor(owner)
   const action = {
     id: `${owner}:save`,
     label: 'Save',
@@ -58,12 +58,12 @@ test('owned actions follow plugin activation and disappear on unload', () => {
   setEnabledPluginNames(new Set())
   expect(contributedActions()).toEqual([])
   setEnabledPluginNames(new Set([owner]))
-  removePluginUiContributions(owner)
+  removeMiniAppUiContributions(owner)
   expect(contributedActions()).toEqual([])
 })
 
 test('ownership cannot be spoofed and a duplicate cannot replace the destination', () => {
-  const host = pluginUiHostFor(owner)
+  const host = miniAppUiHostFor(owner)
   const first = {
     id: `${owner}:save`,
     label: 'First',

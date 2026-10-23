@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
-import { pluginRealtime } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppRealtime } from '@localixai/mini-app-sdk/ui/runtime'
 import type { DbConnectionInfo } from '../dbClient'
 import { parseDatabaseChange } from '../../shared/database-changes'
 
@@ -10,10 +10,10 @@ beforeAll(() => {
   teardown = registerDom()
   // List and invalidation tests drive their own reads, without a host websocket.
   const realtime = [
-    spyOn(pluginRealtime, 'onFrame').mockReturnValue(() => {}),
-    spyOn(pluginRealtime, 'onReconnect').mockReturnValue(() => {}),
-    spyOn(pluginRealtime, 'onDisconnect').mockReturnValue(() => {}),
-    spyOn(pluginRealtime, 'request').mockResolvedValue(undefined),
+    spyOn(miniAppRealtime, 'onFrame').mockReturnValue(() => {}),
+    spyOn(miniAppRealtime, 'onReconnect').mockReturnValue(() => {}),
+    spyOn(miniAppRealtime, 'onDisconnect').mockReturnValue(() => {}),
+    spyOn(miniAppRealtime, 'request').mockResolvedValue(undefined),
   ]
   restoreRealtime = () => realtime.forEach((method) => method.mockRestore())
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -36,11 +36,11 @@ const connection = (id: string): DbConnectionInfo => ({
 let seq = 0
 /** What the stream router does with the tool's `emitCommand`, from a chat that is NOT on screen. */
 async function frameFromBackgroundChat(payload: unknown) {
-  const { pluginCommandBus } = await import('@localixai/mini-app-sdk/ui/commands')
+  const { miniAppCommandBus } = await import('@localixai/mini-app-sdk/ui/commands')
   const { initDatabaseChanges } = await import('./databaseChanges')
   initDatabaseChanges()
   seq += 1
-  pluginCommandBus.publish(
+  miniAppCommandBus.publish(
     {
       sessionId: 'background',
       plugin: 'database',

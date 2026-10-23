@@ -1,4 +1,4 @@
-import { pluginFiles } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppFiles } from '@localixai/mini-app-sdk/ui/runtime'
 
 // Trigger a download of in-memory text (CSV/JSON/SQL exports). Thin wrapper over the
 // shared desktop-aware save path: WKWebView (the Tauri desktop shell) ignores the
@@ -7,5 +7,5 @@ import { pluginFiles } from '@localixai/mini-app-sdk/ui/runtime'
 // back to the normal web download in the browser.
 export function downloadTextFile(filename: string, mimeType: string, text: string): void {
   const blob = new Blob([text], { type: `${mimeType};charset=utf-8` })
-  void pluginFiles.saveBlob(filename, blob)
+  void miniAppFiles.saveBlob(filename, blob)
 }

@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import {
-  bindPluginUiRuntime,
-  type PluginUiRuntime,
-  type PluginWorkspaceWatchHandlers,
+  bindMiniAppUiRuntime,
+  type MiniAppUiRuntime,
+  type MiniAppWorkspaceWatchHandlers,
 } from './runtime'
 import { useFileResourceSync } from './file-resource-sync'
 
@@ -18,9 +18,9 @@ const tick = (ms = 10) => new Promise((resolve) => setTimeout(resolve, ms))
 test('live file sync has no periodic reads, queues invalidation during reads, and falls back on signal loss', async () => {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
-  let watcher!: PluginWorkspaceWatchHandlers
+  let watcher!: MiniAppWorkspaceWatchHandlers
   let released = 0
-  const unbind = bindPluginUiRuntime({
+  const unbind = bindMiniAppUiRuntime({
     files: {
       watchWorkspace: (_session, handlers) => {
         watcher = handlers
@@ -30,7 +30,7 @@ test('live file sync has no periodic reads, queues invalidation during reads, an
         }
       },
     },
-  } as PluginUiRuntime)
+  } as MiniAppUiRuntime)
   const root = createRoot(document.createElement('div'))
   const pending: Array<(value: number) => void> = []
   const applied: number[] = []

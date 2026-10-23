@@ -8,7 +8,7 @@
  * sidebar picker and the request tab at once — which is why every verb here announces.
  */
 
-import { pluginApiFetch } from '@localixai/mini-app-sdk/ui/transport'
+import { miniAppApiFetch } from '@localixai/mini-app-sdk/ui/transport'
 import type {
   EnvironmentCreate,
   EnvironmentEdit,
@@ -35,7 +35,7 @@ export const environmentApi = {
   async environments(sessionId: string, signal?: AbortSignal): Promise<EnvironmentInfo[]> {
     return (
       await readOr<EnvironmentsResponse>(
-        await pluginApiFetch(u(sessionId)`/environments`, { signal }),
+        await miniAppApiFetch(u(sessionId)`/environments`, { signal }),
       )
     ).environments
   },
@@ -47,8 +47,8 @@ export const environmentApi = {
     // sessionId behind a variable. Simple rule, unfoolable detector.
     await readOr<{ ok: true }>(
       name === ''
-        ? await pluginApiFetch(u(sessionId)`/environments/deactivate`, { method: 'POST' })
-        : await pluginApiFetch(u(sessionId)`/environments/${enc(name)}/use`, { method: 'POST' }),
+        ? await miniAppApiFetch(u(sessionId)`/environments/deactivate`, { method: 'POST' })
+        : await miniAppApiFetch(u(sessionId)`/environments/${enc(name)}/use`, { method: 'POST' }),
     )
     API_ENVIRONMENTS.invalidate()
   },
@@ -58,7 +58,7 @@ export const environmentApi = {
     return environmentsMoved(
       (
         await readOr<{ environment: EnvironmentInfo }>(
-          await pluginApiFetch(u(sessionId)`/environments`, {
+          await miniAppApiFetch(u(sessionId)`/environments`, {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify(input),
@@ -77,7 +77,7 @@ export const environmentApi = {
     return environmentsMoved(
       (
         await readOr<{ environment: EnvironmentInfo }>(
-          await pluginApiFetch(u(sessionId)`/environments/${enc(name)}`, {
+          await miniAppApiFetch(u(sessionId)`/environments/${enc(name)}`, {
             method: 'PUT',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify(edit),
@@ -90,7 +90,7 @@ export const environmentApi = {
   async removeEnvironment(sessionId: string, name: string): Promise<void> {
     environmentsMoved(
       await readOr<{ ok: true }>(
-        await pluginApiFetch(u(sessionId)`/environments/${enc(name)}`, { method: 'DELETE' }),
+        await miniAppApiFetch(u(sessionId)`/environments/${enc(name)}`, { method: 'DELETE' }),
       ),
     )
   },
@@ -99,7 +99,7 @@ export const environmentApi = {
     return environmentsMoved(
       (
         await readOr<{ environment: EnvironmentInfo }>(
-          await pluginApiFetch(u(sessionId)`/environments/${enc(name)}/rename`, {
+          await miniAppApiFetch(u(sessionId)`/environments/${enc(name)}/rename`, {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({ to }),
@@ -113,7 +113,7 @@ export const environmentApi = {
     return environmentsMoved(
       (
         await readOr<{ environment: EnvironmentInfo }>(
-          await pluginApiFetch(u(sessionId)`/environments/${enc(name)}/duplicate`, {
+          await miniAppApiFetch(u(sessionId)`/environments/${enc(name)}/duplicate`, {
             method: 'POST',
           }),
         )

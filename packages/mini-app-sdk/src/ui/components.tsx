@@ -8,20 +8,20 @@ import {
 import type { SortSpec, TableColumn, TableRow } from '@localixai/dataview'
 import type { MessageContextBindingDraft, PublishMessageContext } from './contrib'
 import type { ProblemRecovery, ProblemReport } from './problems'
-import type { PluginCompletionReference } from './runtime-completion-payloads'
+import type { MiniAppCompletionReference } from './runtime-completion-payloads'
 
-export interface PluginEditorPosition {
+export interface MiniAppEditorPosition {
   line: number
   character: number
 }
 
-export interface PluginEditorCompletionItem {
+export interface MiniAppEditorCompletionItem {
   label: string
   detail?: string
   kind?: number
   insertText?: string
   insertTextFormat?: 'plainText' | 'snippet'
-  range?: { start: PluginEditorPosition; end: PluginEditorPosition }
+  range?: { start: MiniAppEditorPosition; end: MiniAppEditorPosition }
   filterText?: string
   sortText?: string
   preselect?: boolean
@@ -30,16 +30,16 @@ export interface PluginEditorCompletionItem {
   documentation?: string
 }
 
-export interface PluginEditorRunContext {
+export interface MiniAppEditorRunContext {
   fullText: string
   selectedText: string
   cursorOffset: number
   formatDocument(): Promise<void>
 }
 
-export type EditorRunContext = PluginEditorRunContext
+export type EditorRunContext = MiniAppEditorRunContext
 
-export interface PluginNextEditRequest {
+export interface MiniAppNextEditRequest {
   content: string
   cursorLine: number
   cursorColumn: number
@@ -48,7 +48,7 @@ export interface PluginNextEditRequest {
   requestId: string
 }
 
-export interface PluginFileTabProps {
+export interface MiniAppFileTabProps {
   itemId?: string
   path: string
   /** The chat whose workspace the file is read from and saved to — the tab's own. The host's
@@ -61,26 +61,26 @@ export interface PluginFileTabProps {
   revealAt?: number
   auxCompletionSource?: (
     text: string,
-    position: PluginEditorPosition,
-  ) => PluginEditorCompletionItem[] | Promise<PluginEditorCompletionItem[]>
+    position: MiniAppEditorPosition,
+  ) => MiniAppEditorCompletionItem[] | Promise<MiniAppEditorCompletionItem[]>
   /** The editor's own anchors for edit prediction; the host adds the shared working set. */
-  nextEditContextSource?: (request: PluginNextEditRequest) => PluginCompletionReference[]
+  nextEditContextSource?: (request: MiniAppNextEditRequest) => MiniAppCompletionReference[]
   bottomPanel?: ReactNode
-  onRun?: (context: PluginEditorRunContext) => void
-  bindRunContext?: (get: () => PluginEditorRunContext) => void
+  onRun?: (context: MiniAppEditorRunContext) => void
+  bindRunContext?: (get: () => MiniAppEditorRunContext) => void
   /** Host-specific editor extensions are opaque and only passed through. */
   extensions?: unknown[]
   formatText?: (text: string) => string | Promise<string>
   publishMessageContext?: PublishMessageContext
 }
 
-export interface PluginStagedTableChanges {
+export interface MiniAppStagedTableChanges {
   updates: { row: TableRow; values: Record<string, string | null> }[]
   inserts: Record<string, string | null>[]
   deletes: TableRow[]
 }
 
-export interface PluginTableGridProps {
+export interface MiniAppTableGridProps {
   columns: TableColumn[]
   rows: TableRow[]
   total: number
@@ -110,20 +110,20 @@ export interface PluginTableGridProps {
   linkColumns?: Set<string>
   onCellLink?: (columnId: string, value: unknown) => void
   onCellFilter?: (columnId: string, value: unknown) => void
-  onCommitChanges?: (changes: PluginStagedTableChanges) => Promise<boolean>
+  onCommitChanges?: (changes: MiniAppStagedTableChanges) => Promise<boolean>
   extraRowCopy?: {
     label: string
     toText(columns: TableColumn[], row: TableRow): string
   }
 }
 
-export interface PluginContextBindingIconProps {
+export interface MiniAppContextBindingIconProps {
   /** Complete canonical binding so resource- and file-aware host presentation stays available. */
   binding: MessageContextBindingDraft
   className?: string
 }
 
-export interface PluginContextBindingPreviewProps {
+export interface MiniAppContextBindingPreviewProps {
   /** Complete canonical binding; the host decides whether and how it can be previewed. */
   binding: MessageContextBindingDraft
   /** The chat whose workspace a path binding is read from — the caller's own; `null` when it
@@ -135,11 +135,11 @@ export interface PluginContextBindingPreviewProps {
 }
 
 /** Field heights on the chrome ladder's names, as the host Input takes them: `md` 28 / `lg` 32 / `xl` 36. */
-export type PluginInputProps = Omit<ComponentPropsWithoutRef<'input'>, 'size'> & {
+export type MiniAppInputProps = Omit<ComponentPropsWithoutRef<'input'>, 'size'> & {
   size?: 'md' | 'lg' | 'xl'
 }
 
-export type PluginTextareaProps = ComponentPropsWithoutRef<'textarea'> & {
+export type MiniAppTextareaProps = ComponentPropsWithoutRef<'textarea'> & {
   size?: 'md' | 'lg' | 'xl'
 }
 
@@ -147,7 +147,7 @@ export type PluginTextareaProps = ComponentPropsWithoutRef<'textarea'> & {
  * A problem, said in one line, with a button into the host's Event Center where the full report
  * lives. The only problem surface a plugin gets — and the only one it needs.
  */
-export interface PluginProblemLineProps {
+export interface MiniAppProblemLineProps {
   report: ProblemReport
   /** Event Center entry to open; the id returned by `toast.problems`. */
   entryId?: string
@@ -163,30 +163,30 @@ export interface PluginProblemLineProps {
  * A problem that IS the pane — centred, with the report's expected next step (`primary` recovery,
  * e.g. Install Docker) as the surface's button and the line's quiet links under it.
  */
-export interface PluginProblemStateProps extends PluginProblemLineProps {
+export interface MiniAppProblemStateProps extends MiniAppProblemLineProps {
   /** The subject's own icon; defaults to the severity glyph. */
   icon?: ComponentType<{ className?: string; strokeWidth?: number; 'aria-hidden'?: boolean }>
 }
 
-export interface PluginUiComponents {
-  FileTab: ComponentType<PluginFileTabProps>
-  TableGrid: ComponentType<PluginTableGridProps>
-  ContextBindingIcon: ComponentType<PluginContextBindingIconProps>
-  ContextBindingPreview: ComponentType<PluginContextBindingPreviewProps>
-  Input: ComponentType<PluginInputProps>
-  Textarea: ComponentType<PluginTextareaProps>
-  ProblemLine: ComponentType<PluginProblemLineProps>
-  ProblemState: ComponentType<PluginProblemStateProps>
+export interface MiniAppUiComponents {
+  FileTab: ComponentType<MiniAppFileTabProps>
+  TableGrid: ComponentType<MiniAppTableGridProps>
+  ContextBindingIcon: ComponentType<MiniAppContextBindingIconProps>
+  ContextBindingPreview: ComponentType<MiniAppContextBindingPreviewProps>
+  Input: ComponentType<MiniAppInputProps>
+  Textarea: ComponentType<MiniAppTextareaProps>
+  ProblemLine: ComponentType<MiniAppProblemLineProps>
+  ProblemState: ComponentType<MiniAppProblemStateProps>
 }
 
-let components: PluginUiComponents | null = null
+let components: MiniAppUiComponents | null = null
 
 /**
  * Bind the host components; the returned unbind RESTORES whatever was bound before — the same scope
- * rule as `bindPluginUiRuntime`, for the same defect: clearing to null let a binding that ended
+ * rule as `bindMiniAppUiRuntime`, for the same defect: clearing to null let a binding that ended
  * erase the one it had shadowed, and every later render met "not bound by the host".
  */
-export function bindPluginUiComponents(next: PluginUiComponents): () => void {
+export function bindMiniAppUiComponents(next: MiniAppUiComponents): () => void {
   const previous = components
   components = next
   return () => {
@@ -194,7 +194,7 @@ export function bindPluginUiComponents(next: PluginUiComponents): () => void {
   }
 }
 
-function component<K extends keyof PluginUiComponents>(key: K): PluginUiComponents[K] {
+function component<K extends keyof MiniAppUiComponents>(key: K): MiniAppUiComponents[K] {
   if (!components) throw new Error('Plugin UI components are not bound by the host')
   return components[key]
 }
@@ -204,17 +204,17 @@ function render<P extends object>(Component: ComponentType<P>, props: P) {
 }
 
 /** Host file-editor surface exposed as an SDK-owned component contract. */
-export function FileTab(props: PluginFileTabProps) {
+export function FileTab(props: MiniAppFileTabProps) {
   return render(component('FileTab'), props)
 }
 
 /** Virtualized data-grid surface exposed without leaking its host implementation. */
-export function TableGrid(props: PluginTableGridProps) {
+export function TableGrid(props: MiniAppTableGridProps) {
   return render(component('TableGrid'), props)
 }
 
 /** The same registry-driven glyph used by the host's context input and message links. */
-export function ContextBindingIcon(props: PluginContextBindingIconProps) {
+export function ContextBindingIcon(props: MiniAppContextBindingIconProps) {
   return render(component('ContextBindingIcon'), props)
 }
 
@@ -223,17 +223,17 @@ export function ContextBindingIcon(props: PluginContextBindingIconProps) {
  * conversation — a session, a message, a tool call (the transcript's own card), a project — as the
  * chat draws it. Kinds with nothing beyond their name render nothing.
  */
-export function ContextBindingPreview(props: PluginContextBindingPreviewProps) {
+export function ContextBindingPreview(props: MiniAppContextBindingPreviewProps) {
   return render(component('ContextBindingPreview'), props)
 }
 
 /** Host form field with the same geometry and states as native Localix surfaces. */
-export function Input(props: PluginInputProps) {
+export function Input(props: MiniAppInputProps) {
   return render(component('Input'), props)
 }
 
 /** Host multiline field; plugins keep content behavior while the host owns presentation. */
-export function Textarea(props: PluginTextareaProps) {
+export function Textarea(props: MiniAppTextareaProps) {
   return render(component('Textarea'), props)
 }
 
@@ -241,7 +241,7 @@ export function Textarea(props: PluginTextareaProps) {
  * The host's problem line. A plugin's failures then look like the host's failures, and reach the
  * same place — which is the whole point of the contract.
  */
-export function ProblemLine(props: PluginProblemLineProps) {
+export function ProblemLine(props: MiniAppProblemLineProps) {
   return render(component('ProblemLine'), props)
 }
 
@@ -249,6 +249,6 @@ export function ProblemLine(props: PluginProblemLineProps) {
  * The host's pane-level problem. Use it when the failure is the only thing the pane can show; a
  * hand-built centred wrapper is how a "centred" error ended up at the top of the DevOps sidebar.
  */
-export function ProblemState(props: PluginProblemStateProps) {
+export function ProblemState(props: MiniAppProblemStateProps) {
   return render(component('ProblemState'), props)
 }

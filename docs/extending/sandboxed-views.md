@@ -43,9 +43,9 @@ Return the handler under the backend's `uiActions` from `register()`. There is n
 This example assumes the plugin is named `sample`:
 
 ```ts
-import type { PluginRegistration } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppRegistration } from '@localixai/mini-app-sdk/backend'
 
-export function register(): PluginRegistration {
+export function register(): MiniAppRegistration {
   return {
     backend: {
       id: 'sample:ui',
@@ -103,9 +103,9 @@ colors also apply. JavaScript animation should read and subscribe to the iframe'
 
 ## Source of truth
 
-- [Document sandbox and CSP](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/inspector/ui/pluginPanelSrcDoc.ts)
-- [Injected client](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/inspector/ui/pluginUiApiBootstrap.ts)
-- [Host action table](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/contrib/pluginPanelActions.ts)
-- [Scratch state](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/inspector/ui/pluginViewState.ts)
+- [Document sandbox and CSP](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/inspector/ui/miniAppPanelSrcDoc.ts)
+- [Injected client](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/inspector/ui/miniAppUiApiBootstrap.ts)
+- [Host action table](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/contrib/miniAppPanelActions.ts)
+- [Scratch state](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/inspector/ui/miniAppViewState.ts)
 - [Backend authorization and payload limits](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/service.ts)
 - [Backend handler dispatch](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/backend-host-ui-actions.ts)

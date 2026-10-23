@@ -1,6 +1,6 @@
 import { toast } from '@localixai/mini-app-sdk/ui'
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
-import { pluginTerminal } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppTerminal } from '@localixai/mini-app-sdk/ui/runtime'
 
 /**
  * Spawn a shell command in the workspace terminal and adopt it as a terminal tab.
@@ -24,7 +24,7 @@ export async function spawnInTerminal(
   title: string,
 ): Promise<void> {
   try {
-    await pluginTerminal.spawnCommand({ command, sessionId, title })
+    await miniAppTerminal.spawnCommand({ command, sessionId, title })
   } catch (cause) {
     toast.error(`Could not open “${title}” in a terminal`, {
       description: errorMessage(cause, '') || undefined,

@@ -1,5 +1,5 @@
 import { DATABASE_DRIVER_CATALOG } from '../../shared/driver-catalog'
-import type { PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
+import type { MiniAppProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
 import type { DbConnectionInfo } from '../dbClient'
 import type { SchemaItemMatch } from './schemaSearch'
 import {
@@ -36,7 +36,7 @@ export interface ConnectionRowsInput {
   problemLine: (
     connectionId: string,
     which: 'reconnect' | 'schema',
-  ) => PluginProblemLineProps | null
+  ) => MiniAppProblemLineProps | null
 }
 
 /**

@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { Pin, Settings2 } from 'lucide-react'
 import type { MenuEntry } from '@localixai/mini-app-sdk/ui'
-import type { PluginCategory } from '@localixai/mini-app-sdk/manifest'
+import type { MiniAppCategory } from '@localixai/mini-app-sdk/manifest'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { IconButton } from '@localixai/kit/icon-button'
 import { MenuEntries } from '@localixai/kit/menu-entries'
@@ -17,7 +17,7 @@ import { useRailToolMenuGroup } from './RailToolMenuGroup'
 
 interface RailToolMenuProps {
   entries: readonly RailEntry[]
-  categories?: ReadonlyMap<string, PluginCategory | undefined>
+  categories?: ReadonlyMap<string, MiniAppCategory | undefined>
   label: string
   icon: ReactNode
   active: boolean

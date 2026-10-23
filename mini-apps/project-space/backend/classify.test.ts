@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { z } from 'zod'
-import type { CallClass, PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { CallClass, MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import { SPACE_TOOLS } from '../shared/resource'
 import { createSpaceTools } from './tools'
 import { createViewTool } from './view-tool'
@@ -11,7 +11,7 @@ const ctx = {
   z,
   defineTool: (definition: unknown) => definition,
   ui: { offer: (destination: object) => ({ type: 'ui.navigate', ...destination }) },
-} as unknown as PluginContext
+} as unknown as MiniAppContext
 const resolveRoot = async () => '/nowhere'
 const tools = [...createSpaceTools(ctx, resolveRoot), createViewTool(ctx, resolveRoot)]
 

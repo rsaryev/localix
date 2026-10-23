@@ -9,7 +9,7 @@ import type { ResolvedTheme } from '@/shared/theme/useTheme'
 import { chatSurface } from '@/shared/ui/chatSurfaceSlot'
 import { fileEditorsFor } from '@/shared/contrib/fileEditors'
 import { ContributedFileBody } from './FileEditorPicker'
-import { PluginWorkItemBody } from './PluginWorkItemBody'
+import { MiniAppWorkItemBody } from './MiniAppWorkItemBody'
 import { nativeFileViewerKind } from './fileEditorSelection'
 import { backendClient } from '@/shared/api/client'
 import { LoadingHint } from '@localixai/kit/empty-hint'
@@ -128,12 +128,12 @@ function WorkItemBodyInner({
   publishMessageContext,
 }: WorkItemBodyProps & { publishMessageContext: PublishMessageContext }) {
   // Plugin-exclusive kinds render through their contributed Component, which a plugin rebuild can
-  // replace under the open tab (see PluginWorkItemBody). A contributed body is not the
+  // replace under the open tab (see MiniAppWorkItemBody). A contributed body is not the
   // application: a plugin that threw during render used to hit the ROOT boundary and replace the
   // whole workspace. Reserved core kinds always take the built-in switch below.
   if (!isCoreWorkItemKind(item.kind))
     return (
-      <PluginWorkItemBody
+      <MiniAppWorkItemBody
         item={item}
         visible={visible}
         focused={focused}
@@ -246,7 +246,7 @@ function WorkItemBodyInner({
           projectId={projectId}
           viewName={viewId}
           title={item.title}
-          fetchHtml={() => backendClient.getPluginViewHtml(pluginName, viewId, { projectId })}
+          fetchHtml={() => backendClient.getMiniAppViewHtml(pluginName, viewId, { projectId })}
           publishMessageContext={publishMessageContext}
         />
       )
@@ -298,7 +298,7 @@ function WorkItemBodyInner({
       )
     case 'message-replay':
       return <MessageReplayTab />
-    // No default: every non-core kind returned through PluginWorkItemBody above, so the switch
+    // No default: every non-core kind returned through MiniAppWorkItemBody above, so the switch
     // covers the core kinds exhaustively, and a core kind added without a case fails the lint's
     // exhaustiveness check instead of rendering "Unsupported".
   }

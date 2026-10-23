@@ -1,9 +1,9 @@
 import type { AgentWait } from '../agent-wait'
 import type { DecisionAsk, DecisionChoiceAnswer, DecisionHost, DecisionOutcome } from './decision'
-import type { PluginWakeOutcome, PluginWakeRequest } from './host-services'
+import type { MiniAppWakeOutcome, MiniAppWakeRequest } from './host-services'
 
 /** `ctx.host.wake` — present on the backend load, where a view's routes live. */
-export type Wake = (request: PluginWakeRequest) => Promise<PluginWakeOutcome>
+export type Wake = (request: MiniAppWakeRequest) => Promise<MiniAppWakeOutcome>
 
 /**
  * Whose table: the host's user and the chat session a board belongs to. In a route both come from

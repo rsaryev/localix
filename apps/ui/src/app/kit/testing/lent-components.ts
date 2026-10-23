@@ -7,4 +7,4 @@
  * Its own entry, not the kit's testing index: the lent components reach the code editor, and every
  * plugin test that imports the index would otherwise type-check the host's whole editor graph.
  */
-export { preloadPluginUiComponents as warmPluginUiComponents } from '@/app/pluginUiComponents'
+export { preloadPluginUiComponents as warmMiniAppUiComponents } from '@/app/pluginUiComponents'

@@ -1,5 +1,5 @@
 import type { MessageBinding } from '@localixai/agent'
-import type { PluginContext } from './context'
+import type { MiniAppContext } from './context'
 
 /**
  * Lifecycle-hook + memory-provider type contracts for native plugins. These are
@@ -172,8 +172,8 @@ export interface HumanAssignedEvent {
  * Hooks are added here ONLY when a host call site actually invokes them — a
  * declared-but-never-called hook is dead contract surface.
  */
-export interface PluginHooks {
-  onSessionStart?: (ctx: PluginContext) => void | Promise<void>
+export interface MiniAppHooks {
+  onSessionStart?: (ctx: MiniAppContext) => void | Promise<void>
   onUserMessage?: (
     event: UserMessageEvent,
   ) => UserMessageHookResult | Promise<UserMessageHookResult>

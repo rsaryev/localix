@@ -1,5 +1,5 @@
 import type { UiAnchorWorkItem } from '@localixai/mini-app-sdk/ui'
-import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 
 import { BOARD_KIND, parseKanbanUri, TASK_KIND } from '../shared/resource'
 
@@ -18,7 +18,7 @@ export const BOARD_TITLE = 'Board'
 export const taskItemId = (taskId: string) => `${TASK_KIND}:${taskId}`
 
 export function openBoard(sessionId: string): void {
-  pluginWorkspace.openWorkItem({
+  miniAppWorkspace.openWorkItem({
     workKind: BOARD_KIND,
     id: BOARD_KIND,
     title: BOARD_TITLE,
@@ -28,7 +28,7 @@ export function openBoard(sessionId: string): void {
 
 /** Open one card on its own. `title` names the tab; the card's id stands in when unknown. */
 export function openTask(sessionId: string, task: { id: string; title?: string }): void {
-  pluginWorkspace.openWorkItem({
+  miniAppWorkspace.openWorkItem({
     workKind: TASK_KIND,
     id: taskItemId(task.id),
     title: task.title || task.id,

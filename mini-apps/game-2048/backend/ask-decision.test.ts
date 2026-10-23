@@ -7,7 +7,7 @@ import type {
   DecisionHost,
   DecisionOptions,
   DecisionOutcome,
-  PluginRouteScope,
+  MiniAppRouteScope,
 } from '@localixai/mini-app-sdk/backend'
 
 import { gameSchema, newGame, STOPPED_REASON, type Game } from '../shared/game'
@@ -248,7 +248,7 @@ describe('who plays the board', () => {
         },
       }),
     )
-    const scope: PluginRouteScope = { userId: 'u1', sessionId: 's1', projectId: '', cwd: '/' }
+    const scope: MiniAppRouteScope = { userId: 'u1', sessionId: 's1', projectId: '', cwd: '/' }
     const post = (body: unknown) =>
       app.request(
         '/game/opponent',

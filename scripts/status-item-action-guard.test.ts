@@ -17,7 +17,7 @@ import { describe, expect, test } from 'bun:test'
  *     not do. That one is a design rule, not a detectable pattern, and it is why every list row in
  *     these items now opens, reveals or switches to the thing it names.
  *
- * This guard is the detectable half. `runPluginAction` from the SDK is the sanctioned shape: it
+ * This guard is the detectable half. `runMiniAppAction` from the SDK is the sanctioned shape: it
  * takes the sentence a person reads and puts the backend's own message underneath it.
  *
  * Scoped to STATUS ITEMS on purpose. An empty catch is often right elsewhere — a best-effort
@@ -68,7 +68,7 @@ function report(offences: readonly Offence[]): string {
   return offences
     .map(
       (offence) =>
-        `${offence.path}:${offence.line} — ${offence.text.trim()}\n    use runPluginAction(run, 'Could not …') so the person is told what did not happen`,
+        `${offence.path}:${offence.line} — ${offence.text.trim()}\n    use runMiniAppAction(run, 'Could not …') so the person is told what did not happen`,
     )
     .join('\n')
 }
@@ -114,10 +114,16 @@ describe('a status item never fails silently', () => {
 
     // …and quiet on the shapes it must not claim.
     expect(
-      scan("runPluginAction(() => restApi.useEnvironment(name), 'Could not switch.')\n", ABANDONED),
+      scan(
+        "runMiniAppAction(() => restApi.useEnvironment(name), 'Could not switch.')\n",
+        ABANDONED,
+      ),
     ).toEqual([])
     expect(
-      scan("runPluginAction(() => restApi.useEnvironment(name), 'Could not switch.')\n", SWALLOWED),
+      scan(
+        "runMiniAppAction(() => restApi.useEnvironment(name), 'Could not switch.')\n",
+        SWALLOWED,
+      ),
     ).toEqual([])
     // A synchronous local call that happens to be discarded is not a lost rejection.
     expect(scan('    void refreshSpaceBoards(sessionId)\n', ABANDONED)).toEqual([])

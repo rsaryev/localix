@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { useCanvasCamera, type Node } from '@localixai/kit/canvas'
 import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { useVisiblePolling, useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
-import { pluginApiFetch } from '@localixai/mini-app-sdk/ui/transport'
+import { miniAppApiFetch } from '@localixai/mini-app-sdk/ui/transport'
 import type { AgentView } from '../shared/view'
 import { ROUTE_PATH } from '../shared/resource'
 import { useGraphStream } from './graphStream'
@@ -77,7 +77,7 @@ export function useAgentCamera({
       })
       .slice(0, 200)
       .map((node) => node.id)
-    await pluginApiFetch(`${ROUTE_PATH}/camera/report?${new URLSearchParams({ sessionId })}`, {
+    await miniAppApiFetch(`${ROUTE_PATH}/camera/report?${new URLSearchParams({ sessionId })}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: AbortSignal.timeout(5000),

@@ -10,7 +10,7 @@
  * options. Each of the three used to re-declare the bundle; they now extend it,
  * so adding a hook runtime is one edit, not three.
  */
-import type { LoadedPluginHook } from '../../../plugins/loader'
+import type { LoadedMiniAppHook } from '../../../plugins/loader'
 import type { CcHooksRuntime } from '../../../cc-hooks'
 import type { SessionRecord } from '../../repository'
 import type { RunEnv } from './types'
@@ -32,7 +32,7 @@ export interface RunHookContext {
   /** The assistant row this run is writing (re-pointed by a mid-run steer split). */
   assistantMessageId: string
   /** Plugin lifecycle hooks loaded for this run. */
-  pluginHooksForRun: readonly LoadedPluginHook[]
+  pluginHooksForRun: readonly LoadedMiniAppHook[]
   hookRunOptions: HookRunOptions
   /** Per-run CC declarative-hooks runtime — fires the observer-only Notification. */
   ccHooks: CcHooksRuntime

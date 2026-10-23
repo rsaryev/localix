@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { KeyRound } from 'lucide-react'
 
-import type { PluginUiHost, UiAnchorNode } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppUiHost, UiAnchorNode } from '@localixai/mini-app-sdk/ui'
 import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 import type { WorkItem } from '@/shared/lib/workItem'
 import { LoadingHint } from '@localixai/kit/empty-hint'
@@ -37,7 +37,7 @@ const vaultChildren = (parentUri: string | null): UiAnchorNode[] => {
 
 let registered = false
 
-export function registerUi(host: PluginUiHost): void {
+export function registerUi(host: MiniAppUiHost): void {
   if (registered) return
   registered = true
 

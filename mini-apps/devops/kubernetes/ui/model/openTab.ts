@@ -1,5 +1,5 @@
 import type { KubeNode, KubePod, KubeResourceKind } from '../../backend/contracts'
-import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import { podTabWorkItemId, resourceTabWorkItemId } from './watchPace'
 
 /*
@@ -12,7 +12,7 @@ import { podTabWorkItemId, resourceTabWorkItemId } from './watchPace'
  * Open (or focus) a pod's details + describe + logs center tab. This feature owns
  * the `kubernetes-pod` WorkItemKind + its tab-id formula (`podTabWorkItemId`, the
  * single source shared with the tab body + close-cleanup), so re-opening focuses
- * the existing tab. Routed through the generic `pluginWorkspace.openWorkItem` seam.
+ * the existing tab. Routed through the generic `miniAppWorkspace.openWorkItem` seam.
  */
 export function openKubernetesPodTab(
   sessionId: string,
@@ -21,7 +21,7 @@ export function openKubernetesPodTab(
   context?: string,
   initialPod?: KubePod,
 ): void {
-  pluginWorkspace.openWorkItem({
+  miniAppWorkspace.openWorkItem({
     workKind: 'devops:kubernetes-pod',
     id: podTabWorkItemId(context, namespace, podName),
     title: podName,
@@ -43,7 +43,7 @@ export function openKubernetesResourceTab(
   namespace: string,
   context?: string,
 ): void {
-  pluginWorkspace.openWorkItem({
+  miniAppWorkspace.openWorkItem({
     workKind: 'devops:kubernetes-resource',
     id: resourceTabWorkItemId(resourceKind, context, namespace, name),
     title: name,
@@ -64,7 +64,7 @@ export function openKubernetesNodeTabByName(
   context?: string,
   initialNode?: KubeNode,
 ): void {
-  pluginWorkspace.openWorkItem({
+  miniAppWorkspace.openWorkItem({
     workKind: 'devops:kubernetes-resource',
     id: `devops:kubernetes-node:${encodeURIComponent(context || 'current')}:${encodeURIComponent(name)}`,
     title: name,

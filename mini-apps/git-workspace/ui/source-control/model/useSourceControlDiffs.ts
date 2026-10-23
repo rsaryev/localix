@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { toast } from '@localixai/mini-app-sdk/ui'
 import type { FileDiff, RepoFileChange } from '../../../backend/source-control/contracts'
-import { pluginWorkspace } from '@localixai/mini-app-sdk/ui'
+import { miniAppWorkspace } from '@localixai/mini-app-sdk/ui'
 import { openChangedFile, toAbsPath } from './openChangedFile'
 import { sourceControlApi } from '../../api'
 import { gitFailed } from './gitFailure'
@@ -43,7 +43,7 @@ async function openMultiFile(spec: MultiFileOpen): Promise<void> {
       return
     }
     const provenance = spec.provenance ? await spec.provenance().catch(() => null) : null
-    pluginWorkspace.openDiff({
+    miniAppWorkspace.openDiff({
       sessionId: spec.sessionId,
       path: spec.path,
       diff: d.diff,
@@ -157,7 +157,7 @@ export function useSourceControlDiffs(sessionId: string | null, rootPath: string
   // The inline "Open File" action, distinct from the row-click diff.
   const openFile = (file: RepoFileChange, repoRoot?: string) => {
     if (!sessionId) return
-    pluginWorkspace.openFile({ sessionId, path: toAbsPath(repoRoot ?? rootPath, file.path) })
+    miniAppWorkspace.openFile({ sessionId, path: toAbsPath(repoRoot ?? rootPath, file.path) })
   }
 
   /** The selected repo-relative path IF the selection belongs to this repo, else null. */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import type { AgentToolExecutionContext, ToolCommandReplyOutcome } from '@localixai/agent/agents'
-import { TRADING_CHART_CHANNEL, TRADING_PLUGIN, parseChartCommandPayload } from './chart-command'
+import { TRADING_CHART_CHANNEL, TRADING_MINI_APP, parseChartCommandPayload } from './chart-command'
 import {
   buildChartCommandPayload,
   manageChartInputSchema,
@@ -199,7 +199,7 @@ describe('manage_chart execute — the emitCommand contract', () => {
     )
     expect(result.isError).toBeUndefined()
     expect(emitted).toHaveLength(1)
-    expect(emitted[0]!.plugin).toBe(TRADING_PLUGIN)
+    expect(emitted[0]!.plugin).toBe(TRADING_MINI_APP)
     expect(emitted[0]!.channel).toBe(TRADING_CHART_CHANNEL)
     expect(emitted[0]!.payload).toEqual({
       action: 'set_timeframe',
@@ -316,7 +316,7 @@ describe('manage_chart snapshot — the awaited read-back', () => {
     expect(result.isError).toBeUndefined()
     expect(awaited).toHaveLength(1)
     expect(awaited[0]).toMatchObject({
-      plugin: TRADING_PLUGIN,
+      plugin: TRADING_MINI_APP,
       channel: TRADING_CHART_CHANNEL,
       payload: {
         action: 'snapshot',

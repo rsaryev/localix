@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { bindPluginUiRuntime, type PluginUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
+import { bindMiniAppUiRuntime, type MiniAppUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
 import { isBackgroundWork } from '@localixai/mini-app-sdk/ui/visibility'
 
 import { PORT_FORWARDS, portForwardsFeed, portForwardsFollower } from './portForwardsFeed'
@@ -8,7 +8,7 @@ function fakeRealtime() {
   const frames = new Set<(json: string) => void>()
   const reconnects = new Set<() => void>()
   const requests: Record<string, unknown>[] = []
-  const unbind = bindPluginUiRuntime({
+  const unbind = bindMiniAppUiRuntime({
     realtime: {
       onFrame: (tag: string, handler: (json: string) => void) => {
         if (tag !== 'f') return () => {}
@@ -25,7 +25,7 @@ function fakeRealtime() {
         return { subscribed: true }
       },
     },
-  } as unknown as PluginUiRuntime)
+  } as unknown as MiniAppUiRuntime)
   return {
     requests,
     push: (frame: unknown) => frames.forEach((handler) => handler(JSON.stringify(frame))),

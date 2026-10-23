@@ -1,5 +1,5 @@
-import { bindPluginUiRuntime, type PluginUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
-import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
+import { bindMiniAppUiRuntime, type MiniAppUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
+import { bindMiniAppUiTransport } from '@localixai/mini-app-sdk/ui/transport'
 
 import type { BoardEvent, KanbanMove, KanbanTask } from '../../shared/contracts'
 import { BOARD_FRAME_TAG, ROUTE_PATH } from '../../shared/resource'
@@ -89,7 +89,7 @@ export function fakeBoardBackend(initial: Record<string, KanbanTask[]> = {}) {
     return reply(tasks[index])
   }
 
-  const unbindTransport = bindPluginUiTransport({
+  const unbindTransport = bindMiniAppUiTransport({
     url: (path) => path,
     request: async (path, init) => {
       const url = new URL(path, 'http://localix.test')
@@ -107,7 +107,7 @@ export function fakeBoardBackend(initial: Record<string, KanbanTask[]> = {}) {
     },
   })
 
-  const unbindRuntime = bindPluginUiRuntime({
+  const unbindRuntime = bindMiniAppUiRuntime({
     workspace: {
       openWorkItem: (request: unknown) => opened.push(request),
       openFile: (request: unknown) => opened.push(request),
@@ -128,7 +128,7 @@ export function fakeBoardBackend(initial: Record<string, KanbanTask[]> = {}) {
         return {}
       },
     },
-  } as unknown as PluginUiRuntime)
+  } as unknown as MiniAppUiRuntime)
 
   return {
     boards,

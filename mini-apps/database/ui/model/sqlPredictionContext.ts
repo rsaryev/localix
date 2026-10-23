@@ -1,6 +1,6 @@
 import type { DbSchemas } from '../dbClient'
 import type { NextEditRequest } from '@localixai/kit/code-editor'
-import type { PluginCompletionReference } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppCompletionReference } from '@localixai/mini-app-sdk/ui'
 import { extractSqlTableReferences } from '../../shared/sql-context'
 import { offsetAt } from './sqlCompletion'
 import { statementAt } from '../../shared/sql-statements'
@@ -28,7 +28,7 @@ function resourceReference(
   uri: string,
   label: string,
   revision?: string,
-): PluginCompletionReference {
+): MiniAppCompletionReference {
   return {
     kind: 'resource',
     token: `@resource:${uri}`,
@@ -53,7 +53,7 @@ export function sqlPredictionContextReferences(input: {
   request: NextEditRequest
   /** Content-free invalidation token (for example the last successful query time). */
   contextRevision?: string
-}): PluginCompletionReference[] {
+}): MiniAppCompletionReference[] {
   if (!input.connectionId) return []
   const root = resourceReference(
     dbConnectionResourceUri(input.connectionId),

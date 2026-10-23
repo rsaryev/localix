@@ -53,7 +53,7 @@ export function pluginLabel(name: string): string {
 }
 
 /** The plugin whose code made the call that produced `stack`, or null when none did. */
-export function attributePluginCaller(
+export function attributeMiniAppCaller(
   stack: string,
   known: readonly PluginUiSource[] = sources,
 ): PluginCaller | null {

@@ -23,7 +23,7 @@ interface NotificationOptions {
   origin?: NotificationOrigin
   /**
    * Who published this, for a row that would otherwise read "System" — a plugin's display name,
-   * set by the host's attribution (`shared/contrib/pluginToast.ts`). A LABEL on the row's origin,
+   * set by the host's attribution (`shared/contrib/miniAppToast.ts`). A LABEL on the row's origin,
    * not an origin of its own: the row still files under the chat it happened in.
    */
   source?: string

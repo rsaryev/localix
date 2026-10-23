@@ -8,7 +8,7 @@ import {
   invokeMessage,
   isInvokePayload,
   isMessageFromWindow,
-  isPluginBridgeMessage,
+  isMiniAppBridgeMessage,
   isSessionEventData,
   readyMessage,
   resultMessage,
@@ -16,24 +16,24 @@ import {
   themeMessage,
 } from './bridge'
 
-describe('isPluginBridgeMessage', () => {
+describe('isMiniAppBridgeMessage', () => {
   test('accepts every constructor-built envelope', () => {
-    expect(isPluginBridgeMessage(readyMessage())).toBe(true)
-    expect(isPluginBridgeMessage(themeMessage({ theme: 'dark', vars: { '--x': '1' } }))).toBe(true)
-    expect(isPluginBridgeMessage(invokeMessage('r1', 'ping', { a: 1 }))).toBe(true)
-    expect(isPluginBridgeMessage(resultMessage('r1', 42))).toBe(true)
-    expect(isPluginBridgeMessage(errorMessage('r1', 'nope'))).toBe(true)
+    expect(isMiniAppBridgeMessage(readyMessage())).toBe(true)
+    expect(isMiniAppBridgeMessage(themeMessage({ theme: 'dark', vars: { '--x': '1' } }))).toBe(true)
+    expect(isMiniAppBridgeMessage(invokeMessage('r1', 'ping', { a: 1 }))).toBe(true)
+    expect(isMiniAppBridgeMessage(resultMessage('r1', 42))).toBe(true)
+    expect(isMiniAppBridgeMessage(errorMessage('r1', 'nope'))).toBe(true)
   })
 
   test('rejects junk, foreign markers, wrong versions, unknown types, bad ids', () => {
-    expect(isPluginBridgeMessage(null)).toBe(false)
-    expect(isPluginBridgeMessage('ready')).toBe(false)
-    expect(isPluginBridgeMessage({ type: 'ready' })).toBe(false)
+    expect(isMiniAppBridgeMessage(null)).toBe(false)
+    expect(isMiniAppBridgeMessage('ready')).toBe(false)
+    expect(isMiniAppBridgeMessage({ type: 'ready' })).toBe(false)
     // A foreign bridge's marker must never be mistaken for ours.
-    expect(isPluginBridgeMessage({ __iwBridge: 'ch', type: 'ready' })).toBe(false)
-    expect(isPluginBridgeMessage({ lx: 'plugin-ui', v: 2, type: 'ready' })).toBe(false)
-    expect(isPluginBridgeMessage({ lx: 'plugin-ui', v: 1, type: 'hijack' })).toBe(false)
-    expect(isPluginBridgeMessage({ lx: 'plugin-ui', v: 1, type: 'invoke', id: 7 })).toBe(false)
+    expect(isMiniAppBridgeMessage({ __iwBridge: 'ch', type: 'ready' })).toBe(false)
+    expect(isMiniAppBridgeMessage({ lx: 'plugin-ui', v: 2, type: 'ready' })).toBe(false)
+    expect(isMiniAppBridgeMessage({ lx: 'plugin-ui', v: 1, type: 'hijack' })).toBe(false)
+    expect(isMiniAppBridgeMessage({ lx: 'plugin-ui', v: 1, type: 'invoke', id: 7 })).toBe(false)
   })
 })
 
@@ -47,7 +47,7 @@ describe('forwarded session events', () => {
   // `fs.changed` stays off on purpose, and the reason is not volume: it carries ABSOLUTE paths of
   // the person's files, and this bridge feeds sandboxed iframes from installed plugins that were
   // promised phase + session id only. Native workbench UI hears file changes through its own door,
-  // `pluginFiles.watchWorkspace` (coalesced, scoped to one chat — `workspace-changes.ts`), which
+  // `miniAppFiles.watchWorkspace` (coalesced, scoped to one chat — `workspace-changes.ts`), which
   // never reaches an iframe.
   test('fs.changed is not a bridge event — file paths never cross into a sandboxed view', () => {
     expect(forwardableSessionPhase('fs.changed')).toBeNull()
@@ -69,7 +69,7 @@ describe('forwarded session events', () => {
 
   test('sessionEventMessage builds a valid, minimal event envelope', () => {
     const msg = sessionEventMessage('sess-1', 'run-completed')
-    expect(isPluginBridgeMessage(msg)).toBe(true)
+    expect(isMiniAppBridgeMessage(msg)).toBe(true)
     expect(msg).toEqual({
       lx: 'plugin-ui',
       v: 1,

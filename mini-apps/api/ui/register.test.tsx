@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { recordingPluginUiHost } from '@localixai/mini-app-sdk/ui/testing'
+import { recordingMiniAppUiHost } from '@localixai/mini-app-sdk/ui/testing'
 import type {
   FileEditorContribution,
   StatusItemContribution,
@@ -20,7 +20,7 @@ import { __resetApiUiRegistration, registerUi, requestNameFromFilePath } from '.
  */
 function register() {
   __resetApiUiRegistration()
-  const { host, registrations } = recordingPluginUiHost()
+  const { host, registrations } = recordingMiniAppUiHost()
   registerUi(host)
   return registrations
 }

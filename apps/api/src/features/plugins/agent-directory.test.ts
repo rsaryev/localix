@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 
-import { createPluginAgentDirectory } from './agent-directory'
+import { createMiniAppAgentDirectory } from './agent-directory'
 
 const AGENTS = [
   { id: 'builtin:frontend', handle: 'frontend', description: 'Builds UI', enabled: true },
@@ -11,7 +11,7 @@ const AGENTS = [
 /** One user owns one session in one project; every other (user, session) is unknown. */
 function directory() {
   const asked: Array<[string, string | null]> = []
-  const agents = createPluginAgentDirectory({
+  const agents = createMiniAppAgentDirectory({
     sessionProject: async (userId, sessionId) =>
       userId === 'owner' && sessionId === 'chat-1' ? 'PRJ-1' : undefined,
     listAgents: async (userId, projectId) => {
@@ -36,7 +36,7 @@ describe('plugin agent directory', () => {
   })
 
   test("lists the person from their record in the session's scope", async () => {
-    const agents = createPluginAgentDirectory({
+    const agents = createMiniAppAgentDirectory({
       sessionProject: async () => 'PRJ-1',
       listAgents: async () => AGENTS,
       human: async (_userId, projectId) =>
@@ -62,7 +62,7 @@ describe('plugin agent directory', () => {
 
   test('a session outside any project reads the global scope, not a refusal', async () => {
     const asked: Array<string | null> = []
-    const agents = createPluginAgentDirectory({
+    const agents = createMiniAppAgentDirectory({
       sessionProject: async () => null,
       listAgents: async (_userId, projectId) => {
         asked.push(projectId)

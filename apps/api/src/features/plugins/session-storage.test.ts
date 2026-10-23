@@ -5,9 +5,9 @@ import { join } from 'node:path'
 
 import {
   discardSessionData,
-  listPluginSessionDataDirs,
-  pluginSessionDataDir,
-  resolvePluginSessionDataDir,
+  listMiniAppSessionDataDirs,
+  miniAppSessionDataDir,
+  resolveMiniAppSessionDataDir,
   sessionDataRoot,
   sweepOrphanSessionData,
 } from './session-storage'
@@ -25,20 +25,20 @@ const allow = async () => undefined
 
 describe('plugin session storage', () => {
   test('keeps each plugin’s data under its own session, outside any sandbox', () => {
-    expect(pluginSessionDataDir('sample-plugin', 'LOCALIX-42')).toEndWith(
+    expect(miniAppSessionDataDir('sample-plugin', 'LOCALIX-42')).toEndWith(
       '/.localix/session-data/LOCALIX-42/sample-plugin',
     )
     // An id can never step outside its own folder.
-    expect(pluginSessionDataDir('sample-plugin', 'a/../b', '/r')).toBe(
+    expect(miniAppSessionDataDir('sample-plugin', 'a/../b', '/r')).toBe(
       '/r/a%2F..%2Fb/sample-plugin',
     )
-    expect(() => pluginSessionDataDir('Bad Name', 's1')).toThrow('Invalid plugin name')
+    expect(() => miniAppSessionDataDir('Bad Name', 's1')).toThrow('Invalid plugin name')
   })
 
   test('authorizes ownership before creating or returning a directory', async () => {
     const root = tempRoot()
     const calls: string[] = []
-    const refused = resolvePluginSessionDataDir({
+    const refused = resolveMiniAppSessionDataDir({
       pluginName: 'sample-plugin',
       userId: 'user-a',
       sessionId: 'foreign',
@@ -56,7 +56,7 @@ describe('plugin session storage', () => {
   test('deleting sessions removes every plugin’s data for exactly those sessions', async () => {
     const root = tempRoot()
     const dir = (plugin: string, session: string) =>
-      resolvePluginSessionDataDir({
+      resolveMiniAppSessionDataDir({
         pluginName: plugin,
         userId: 'u',
         sessionId: session,
@@ -92,7 +92,7 @@ describe('the startup sweep', () => {
     expect(first).not.toBe(sessionDataRoot())
 
     for (const root of [first, second]) {
-      const dir = await resolvePluginSessionDataDir({
+      const dir = await resolveMiniAppSessionDataDir({
         pluginName: 'sample-plugin',
         userId: 'u',
         sessionId: 'same-id',
@@ -109,7 +109,7 @@ describe('the startup sweep', () => {
   async function seeded(...sessions: string[]) {
     const root = tempRoot()
     for (const session of sessions) {
-      const dir = await resolvePluginSessionDataDir({
+      const dir = await resolveMiniAppSessionDataDir({
         pluginName: 'sample-plugin',
         userId: 'u',
         sessionId: session,
@@ -158,31 +158,31 @@ describe('the startup sweep', () => {
   })
 })
 
-describe('listPluginSessionDataDirs', () => {
+describe('listMiniAppSessionDataDirs', () => {
   test("lists only the sessions holding this plugin's folder, creating nothing", async () => {
     const root = tempRoot()
     const allow = async () => {}
     for (const sessionId of ['a/1', 'b'])
-      await resolvePluginSessionDataDir({
+      await resolveMiniAppSessionDataDir({
         pluginName: 'board',
         userId: 'u',
         sessionId,
         authorize: allow,
         root,
       })
-    await resolvePluginSessionDataDir({
+    await resolveMiniAppSessionDataDir({
       pluginName: 'notes',
       userId: 'u',
       sessionId: 'c',
       authorize: allow,
       root,
     })
-    const listed = await listPluginSessionDataDirs('board', root)
+    const listed = await listMiniAppSessionDataDirs('board', root)
     expect(listed.map((entry) => entry.sessionId).sort()).toEqual(['a/1', 'b'])
     expect(listed.find((entry) => entry.sessionId === 'b')?.dir).toBe(
-      pluginSessionDataDir('board', 'b', root),
+      miniAppSessionDataDir('board', 'b', root),
     )
-    expect(existsSync(pluginSessionDataDir('board', 'c', root))).toBe(false)
-    expect(await listPluginSessionDataDirs('board', join(root, 'missing'))).toEqual([])
+    expect(existsSync(miniAppSessionDataDir('board', 'c', root))).toBe(false)
+    expect(await listMiniAppSessionDataDirs('board', join(root, 'missing'))).toEqual([])
   })
 })

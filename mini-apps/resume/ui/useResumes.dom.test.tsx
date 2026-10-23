@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { Hono } from 'hono'
 import { registerDom } from '@localixai/kit/testing'
-import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
+import { bindMiniAppUiTransport } from '@localixai/mini-app-sdk/ui/transport'
 import { createResumeRoutes } from '../backend/routes'
 import { createResumeService } from '../backend/service'
 import { createTemplateDocument } from '../shared/templates'
@@ -30,7 +30,7 @@ test('dirty editor survives remote edits, merges independent fields, saves, and 
   const service = createResumeService(folder)
   const created = await service.create('user', createTemplateDocument('awal', 'CV'))
   const app = new Hono().route('/rpc/resume', createResumeRoutes(createResumeService))
-  const unbind = bindPluginUiTransport({
+  const unbind = bindMiniAppUiTransport({
     url: (path) => path,
     request: async (path, init) =>
       app.request(`http://localhost${path}`, init, {
@@ -106,7 +106,7 @@ test('same-field conflict never silently chooses a writer and local Undo/Redo su
   const service = createResumeService(folder)
   const created = await service.create('user', createTemplateDocument('ketik', 'CV'))
   const app = new Hono().route('/rpc/resume', createResumeRoutes(createResumeService))
-  const unbind = bindPluginUiTransport({
+  const unbind = bindMiniAppUiTransport({
     url: (path) => path,
     request: async (path, init) =>
       app.request(`http://localhost${path}`, init, {

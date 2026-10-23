@@ -1,11 +1,11 @@
 import { workspaceCapabilities } from './plugin-workspace-capabilities'
 import { agentTerminalOf, watchAgentTerminal } from '../features/terminal/agent-scope'
-import type { loadPluginBackends } from '../features/plugins/loader'
-import type { createPluginWakes } from '../features/plugins/plugin-wake'
+import type { loadMiniAppBackends } from '../features/plugins/loader'
+import type { createMiniAppWakes } from '../features/plugins/plugin-wake'
 import { bindPluginMonitors } from '../features/plugins/monitor-arms'
 import {
-  listPluginSessionDataDirs,
-  resolvePluginSessionDataDir,
+  listMiniAppSessionDataDirs,
+  resolveMiniAppSessionDataDir,
 } from '../features/plugins/session-storage'
 import { bootAgentDirectory } from './plugin-agent-directory'
 import { watchPathNative } from '../features/fs-watch/path-watch'
@@ -14,14 +14,14 @@ import type { createSecretsStore } from '../features/secrets/store'
 import type { createSecretExposureShield } from '../features/secrets/exposure-shield'
 import type { createMediaStore } from '../features/media/store'
 import type { BootstrapServiceRefs } from './chat-service-deps'
-import type { PluginHostRefs } from './plugin-host-refs'
-import type { PluginChangeHosts } from '../features/changes/plugin-host'
+import type { MiniAppHostRefs } from './plugin-host-refs'
+import type { MiniAppChangeHosts } from '../features/changes/plugin-host'
 import type { SemanticService } from '../features/embeddings/service'
-import { createPluginSemanticHost } from '../features/embeddings/plugin-host'
+import { createMiniAppSemanticHost } from '../features/embeddings/plugin-host'
 import type { DecisionService } from '../features/decisions/service'
 import { createPluginDecisionHost } from '../features/decisions/plugin-host'
 
-type HostForPlugin = Parameters<typeof loadPluginBackends>[0]['hostForPlugin']
+type HostForMiniApp = Parameters<typeof loadMiniAppBackends>[0]['hostForMiniApp']
 
 /**
  * The host services one plugin's backend receives: generic seams that let a backend resolve named
@@ -32,19 +32,19 @@ type HostForPlugin = Parameters<typeof loadPluginBackends>[0]['hostForPlugin']
  * plugin keeps a bootstrap snapshot of another plugin's audit actor. Its own module because the
  * plugin-hosts phase that wires it grew past the size ratchet with it inline.
  */
-export function createPluginHostServices(deps: {
-  hostRefs: PluginHostRefs
+export function createMiniAppHostServices(deps: {
+  hostRefs: MiniAppHostRefs
   serviceRefs: BootstrapServiceRefs
   secretsStore: ReturnType<typeof createSecretsStore>
   secretExposureShield: ReturnType<typeof createSecretExposureShield>
   mediaStore: ReturnType<typeof createMediaStore>
-  pluginWakes: ReturnType<typeof createPluginWakes>
+  miniAppWakes: ReturnType<typeof createMiniAppWakes>
   semanticService: SemanticService
   decisionService: DecisionService
   /** Each plugin's own change feed (`host.changes`). */
-  changes: PluginChangeHosts
-}): HostForPlugin {
-  const { hostRefs, serviceRefs, secretsStore, secretExposureShield, mediaStore, pluginWakes } =
+  changes: MiniAppChangeHosts
+}): HostForMiniApp {
+  const { hostRefs, serviceRefs, secretsStore, secretExposureShield, mediaStore, miniAppWakes } =
     deps
   return (pluginName) => ({
     ...workspaceCapabilities(hostRefs),
@@ -80,24 +80,24 @@ export function createPluginHostServices(deps: {
     },
     sessionStorage: {
       resolveDataDir: (...args) =>
-        resolvePluginSessionDataDir({
+        resolveMiniAppSessionDataDir({
           pluginName,
           userId: args[0],
           sessionId: args[1],
           authorize: (...authorizeArgs) =>
             hostRefs.chatService!.resolveSessionCwd(...authorizeArgs),
         }),
-      listDataDirs: () => listPluginSessionDataDirs(pluginName),
+      listDataDirs: () => listMiniAppSessionDataDirs(pluginName),
     },
     agents: bootAgentDirectory(hostRefs),
     // Confined to the plugin's own `plugin:<name>:*` collections.
-    semantic: createPluginSemanticHost(deps.semanticService, pluginName),
+    semantic: createMiniAppSemanticHost(deps.semanticService, pluginName),
     // Attributed to the plugin, billed to a session the user owns (the same check as above).
     decisions: createPluginDecisionHost(deps.decisionService, pluginName, (...args) =>
       hostRefs.chatService!.resolveSessionCwd(...args),
     ),
     // The plugin's own stream, `plugin:<name>`, and the core's deletions, read-only.
-    changes: deps.changes.forPlugin(pluginName),
+    changes: deps.changes.forMiniApp(pluginName),
     // The native watcher only the host bundles; a plugin's own `fs.watch` drops bursts on macOS.
     watchPath: watchPathNative,
     files: {
@@ -153,7 +153,7 @@ export function createPluginHostServices(deps: {
       return stored
     },
     // A turn the plugin asks for, answered through its own tools (plugin-wake.ts).
-    wake: pluginWakes.forPlugin(pluginName),
+    wake: miniAppWakes.forMiniApp(pluginName),
     // Which session the plugin's manifest monitors report to — its own monitors, a session the
     // user owns (monitor-arms.ts). Without an arm a monitor's lines reach no one.
     monitors: bindPluginMonitors({

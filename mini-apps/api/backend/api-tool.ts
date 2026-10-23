@@ -28,7 +28,7 @@ import { createHttpRequestTool, type HttpRequestDeps } from './http-request'
 import { createManageEnvironmentTool } from './manage-environment'
 import type { HttpRequestInput } from './http-request-schema'
 import type { ManageEnvironmentInput } from './manage-environment-schema'
-import { API_PLUGIN, API_WORKSPACE_CHANNEL } from './collection-command'
+import { API_MINI_APP, API_WORKSPACE_CHANNEL } from './collection-command'
 
 /** Kept as data so tests can pin the intent routing the model is expected to follow. */
 export const API_TOOL_DESCRIPTION =
@@ -160,7 +160,7 @@ export function createApiTool(deps: HttpRequestDeps): AgentTool {
             : ''
         const emitSendPhase = (phase: 'started' | 'completed' | 'failed') => {
           if (!savedSendName) return
-          executionContext?.session?.emitCommand?.(API_PLUGIN, API_WORKSPACE_CHANNEL, {
+          executionContext?.session?.emitCommand?.(API_MINI_APP, API_WORKSPACE_CHANNEL, {
             type: 'request_send',
             name: savedSendName,
             phase,
@@ -199,7 +199,7 @@ export function createApiTool(deps: HttpRequestDeps): AgentTool {
               action === 'delete' ||
               (action === 'import' && operation.save === true)
         if (changed && !result.isError) {
-          executionContext?.session?.emitCommand?.(API_PLUGIN, API_WORKSPACE_CHANNEL, {
+          executionContext?.session?.emitCommand?.(API_MINI_APP, API_WORKSPACE_CHANNEL, {
             type: 'collection_changed',
             target,
             action,

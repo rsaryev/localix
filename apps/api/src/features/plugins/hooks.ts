@@ -2,7 +2,7 @@
 export { loadMemoryProviderContext, runMemoryProviderRunEnd } from './memory-hooks'
 
 /**
- * Plugin hook execution — the runtime side of the `PluginHooks` contract in
+ * Plugin hook execution — the runtime side of the `MiniAppHooks` contract in
  * [[native]]. The loader collects `{ pluginName, hooks, ctx }` entries from enabled
  * plugins ([[loader]] `LoadedPlugins.hooks`); agent-runner threads them here.
  *

@@ -8,8 +8,8 @@ import { backendClient } from '@/shared/api/client'
 import { openPolicy } from '@/shared/lib/workspaceOf'
 
 import { forwardableSessionPhase } from '@localixai/mini-app-sdk/ui'
-import { pluginCommandBus } from '@localixai/mini-app-sdk/ui/commands'
-import { pluginSessionEventBus } from './pluginSessionEventBus'
+import { miniAppCommandBus } from '@localixai/mini-app-sdk/ui/commands'
+import { miniAppSessionEventBus } from './miniAppSessionEventBus'
 
 /**
  * Typed plugin→UI command (`session.emitCommand` on the backend): dispatch to the
@@ -19,11 +19,11 @@ import { pluginSessionEventBus } from './pluginSessionEventBus'
  * session — so plugin sinks can honor "background sessions must not steal focus"
  * without importing the chat store.
  */
-export function routePluginCommand(
+export function routeMiniAppCommand(
   sessionId: string,
   parsed: Extract<AgentStreamEvent, { type: 'plugin.command' }>,
 ): void {
-  pluginCommandBus.publish(
+  miniAppCommandBus.publish(
     {
       sessionId,
       plugin: parsed.plugin,
@@ -37,7 +37,7 @@ export function routePluginCommand(
     // rides the `plugin-command-result` WS RPC back to settle the server-side
     // pending promise, correlated by this frame's commandId. Fire-and-forget —
     // a lost socket just lets the server time out to its honest noReply.
-    (payload) => void backendClient.pluginCommandResult(parsed.commandId, payload).catch(() => {}),
+    (payload) => void backendClient.miniAppCommandResult(parsed.commandId, payload).catch(() => {}),
   )
 }
 
@@ -49,9 +49,9 @@ export function routePluginCommand(
  * Non-forwardable types are a no-op. Additive: it never consumes the event, so
  * the normal store/toast handling still runs.
  */
-export function routePluginSessionEvent(sessionId: string, type: string): void {
+export function routeMiniAppSessionEvent(sessionId: string, type: string): void {
   const phase = forwardableSessionPhase(type)
-  if (phase) pluginSessionEventBus.publish({ sessionId, phase })
+  if (phase) miniAppSessionEventBus.publish({ sessionId, phase })
 }
 
 /**

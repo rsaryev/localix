@@ -1,7 +1,7 @@
 import { PLUGIN_NAME_RE } from '@localixai/mini-app-sdk/manifest'
 import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 
-/** A manifest's plugin name, bounded as the shell bounds it (`app_bundle::valid_plugin`). */
+/** A manifest's plugin name, bounded as the shell bounds it (`app_bundle::valid_mini_app`). */
 const validPluginName = (name: unknown): name is string =>
   typeof name === 'string' && name.length <= 64 && PLUGIN_NAME_RE.test(name)
 

@@ -25,7 +25,7 @@ describe('surfaces follow a plugin that registers after the first paint', () => 
     const { act } = await import('react')
     const { createRoot } = await import('react-dom/client')
     const { WorkItemBody } = await import('./registry')
-    const { pluginUiHostFor } = await import('@/shared/contrib/host')
+    const { miniAppUiHostFor } = await import('@/shared/contrib/host')
     const { workItemKindRegistry } = await import('@/shared/contrib/uiContrib')
     const { refetchPluginContrib, __resetPluginContrib } =
       await import('@/shared/contrib/enabledPlugins')
@@ -67,7 +67,7 @@ describe('surfaces follow a plugin that registers after the first paint', () => 
       const rendersBefore = bystanderRenders
 
       // The probe's plugin lands while `slow-late` is still loading: no capability publish.
-      pluginUiHostFor('probe-late').workItems.register({
+      miniAppUiHostFor('probe-late').workItems.register({
         kind: 'probe-late:view',
         Component: () => <p>probe registered</p>,
       } as never)
@@ -99,7 +99,7 @@ describe('surfaces follow a plugin that registers after the first paint', () => 
     const { act } = await import('react')
     const { createRoot } = await import('react-dom/client')
     const { SessionSurface } = await import('@/shared/contrib/sessionSurfaces')
-    const { pluginUiHostFor, removePluginUiContributions } = await import('@/shared/contrib/host')
+    const { miniAppUiHostFor, removeMiniAppUiContributions } = await import('@/shared/contrib/host')
     const { __setRegistryFlushScheduler, flushRegistryChanges } =
       await import('@/shared/contrib/registryChanges')
     __setRegistryFlushScheduler(() => () => {})
@@ -112,7 +112,7 @@ describe('surfaces follow a plugin that registers after the first paint', () => 
         root.render(<SessionSurface surface="late.surface.probe" sessionId="s1" />),
       )
       expect(host.textContent).toBe('')
-      pluginUiHostFor('surface-late').sessionSurfaces.register({
+      miniAppUiHostFor('surface-late').sessionSurfaces.register({
         surface: 'late.surface.probe',
         Component: ({ sessionId }: { sessionId: string | null }) => <p>poller for {sessionId}</p>,
       } as never)
@@ -121,7 +121,7 @@ describe('surfaces follow a plugin that registers after the first paint', () => 
     } finally {
       await act(async () => root.unmount())
       host.remove()
-      removePluginUiContributions('surface-late')
+      removeMiniAppUiContributions('surface-late')
       __setRegistryFlushScheduler(null)
     }
   })

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import { resourceMessageBindingDraft, snippetMessageBindingDraft } from '@localixai/mini-app-sdk/ui'
-import { pluginComposer } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppComposer } from '@localixai/mini-app-sdk/ui/runtime'
 
 import type { ReaderChapter, ReaderDocument, ReaderSource } from '../shared/contracts'
 import { readerChapterUri } from '../shared/resource-uri'
@@ -112,7 +112,7 @@ export function useReaderNotes({
 
   const attachNoteContext = () => {
     if (!document || !notePopover?.preview) return
-    pluginComposer.insert({
+    miniAppComposer.insert({
       sessionId,
       bindings: [
         resourceMessageBindingDraft({

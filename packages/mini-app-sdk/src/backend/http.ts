@@ -19,7 +19,7 @@ export type JsonErrorStatus = 400 | 401 | 403 | 404 | 409 | 422 | 500 | 503
  * the session's cwd, else the project's, else the process's — and hands it to the plugin app as
  * its Hono environment.
  */
-export interface PluginRouteScope {
+export interface MiniAppRouteScope {
   /** The resolved host user. */
   userId: string
   /** The chat session the caller named, once the host checked the user owns it. Plugin data may
@@ -44,21 +44,21 @@ export interface PluginRouteScope {
  * it served reported an empty workspace. A contract that types a value it never delivers is worse
  * than no contract: the compiler vouches for the bug.
  */
-export type PluginRouteContext = {
-  Bindings: PluginRouteScope
+export type MiniAppRouteContext = {
+  Bindings: MiniAppRouteScope
 }
 
 /**
  * The HOST app's own Hono environment, where `userId` really is a context variable set by an
  * app-level middleware.
  *
- * Separate from {@link PluginRouteContext} on purpose. One type used to serve both, so a
+ * Separate from {@link MiniAppRouteContext} on purpose. One type used to serve both, so a
  * contributed router typed against it could read `c.get('userId')` — correct in the host's app,
  * `undefined` in every mounted plugin — and the compiler agreed. Keeping them apart is what makes
  * "which app am I mounted in?" a question the types answer.
  */
 export type HostRouteContext = {
-  Bindings: PluginRouteScope
+  Bindings: MiniAppRouteScope
   Variables: {
     userId: string
   }
@@ -70,7 +70,7 @@ export type HostRouteContext = {
  * `message` is the one human sentence; `detail` is the raw engine/CLI text behind it, and is
  * omitted when there is nothing more specific to say. Without the second slot a route that HAD
  * both — every `toErrorInfo()` caller does — had to choose between telling the person what to do
- * and telling an operator what actually happened. The client (`unwrapPluginResponse`) reads both.
+ * and telling an operator what actually happened. The client (`unwrapMiniAppResponse`) reads both.
  */
 export function jsonError(
   context: Context,

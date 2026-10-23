@@ -1,4 +1,4 @@
-import type { PluginHelpers } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppHelpers } from '@localixai/mini-app-sdk/backend'
 
 import type {
   ReaderBookStats,
@@ -35,7 +35,7 @@ interface StoredReaderStats {
 
 interface ReaderStatsPersistence {
   filePath: string
-  helpers: Pick<PluginHelpers, 'readJson' | 'writeJson'>
+  helpers: Pick<MiniAppHelpers, 'readJson' | 'writeJson'>
 }
 
 function isStoredReadingEvent(value: unknown): value is StoredReadingEvent {

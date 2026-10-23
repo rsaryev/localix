@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { tempDirPerTest, writeTree } from '@localixai/testing'
 
 import type { DiscoveredPlugin } from '../discovery'
-import { createPluginAuthoring, UserPluginNotFoundError } from './service'
+import { createMiniAppAuthoring, UserMiniAppNotFoundError } from './service'
 
 // Building a plugin runs its code: Bun.build over its entries and `bun test` over its test files.
 // The authoring markers are files the plugin itself ships, so they cannot say the plugin is the
@@ -38,7 +38,7 @@ function harness(plugins: DiscoveredPlugin[], allowed: ReadonlySet<string>) {
   const root = tempDir()
   const kitReads: string[] = []
   const tested: string[] = []
-  const authoring = createPluginAuthoring({
+  const authoring = createMiniAppAuthoring({
     discover: async () => plugins,
     pluginsRoot: join(root, 'home/.localix/plugins'),
     kitDir: () => {
@@ -52,7 +52,7 @@ function harness(plugins: DiscoveredPlugin[], allowed: ReadonlySet<string>) {
       tested.push(pluginDir)
       return { ok: true, output: '' }
     },
-  } as Parameters<typeof createPluginAuthoring>[0])
+  } as Parameters<typeof createMiniAppAuthoring>[0])
   return { authoring, kitReads, tested }
 }
 
@@ -80,7 +80,7 @@ describe('plugin authoring builds only consented plugins of the user', () => {
     const { authoring, kitReads } = harness([stage(root, 'unconsented', 'home')], new Set())
 
     await expect(authoring.build('u1', 'unconsented')).rejects.toBeInstanceOf(
-      UserPluginNotFoundError,
+      UserMiniAppNotFoundError,
     )
     expect(kitReads).toEqual([])
   })
@@ -93,7 +93,7 @@ describe('plugin authoring builds only consented plugins of the user', () => {
     )
 
     await expect(authoring.build('u1', 'cc-install')).rejects.toBeInstanceOf(
-      UserPluginNotFoundError,
+      UserMiniAppNotFoundError,
     )
     expect(kitReads).toEqual([])
   })

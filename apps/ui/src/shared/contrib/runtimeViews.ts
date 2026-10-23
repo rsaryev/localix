@@ -1,9 +1,9 @@
-import type { PluginViewSpec } from '@/shared/api/contracts'
+import type { MiniAppViewSpec } from '@/shared/api/contracts'
 import { defineUiLocation } from '@localixai/mini-app-sdk/ui'
-import { clearPanelActions } from './pluginPanelActions'
+import { clearPanelActions } from './miniAppPanelActions'
 import {
   batchUiLocationChanges,
-  pluginLocationId,
+  miniAppLocationId,
   registerUiLocation,
   unregisterUiLocation,
 } from './uiLocations'
@@ -21,17 +21,17 @@ import {
  * surfaces re-render via `useSyncExternalStore` when the set changes.
  */
 
-const views = new Map<string, PluginViewSpec>()
+const views = new Map<string, MiniAppViewSpec>()
 const listeners = new Set<() => void>()
 let version = 0
 let locationIds = new Set<string>()
 
-function syncViewLocations(specs: readonly PluginViewSpec[]): void {
+function syncViewLocations(specs: readonly MiniAppViewSpec[]): void {
   const nextIds = new Set<string>()
   const accepted = batchUiLocationChanges(() => {
     for (const id of locationIds) unregisterUiLocation(id)
     for (const spec of specs) {
-      const id = pluginLocationId('plugin-view.open', spec.fullName)
+      const id = miniAppLocationId('plugin-view.open', spec.fullName)
       const registered = registerUiLocation(
         defineUiLocation({
           id,
@@ -67,7 +67,7 @@ function syncViewLocations(specs: readonly PluginViewSpec[]): void {
   locationIds = nextIds
 }
 
-function sameView(left: PluginViewSpec, right: PluginViewSpec): boolean {
+function sameView(left: MiniAppViewSpec, right: MiniAppViewSpec): boolean {
   return (
     left.pluginName === right.pluginName &&
     left.projectId === right.projectId &&
@@ -80,8 +80,8 @@ function sameView(left: PluginViewSpec, right: PluginViewSpec): boolean {
 }
 
 function sameViews(
-  current: ReadonlyMap<string, PluginViewSpec>,
-  next: ReadonlyMap<string, PluginViewSpec>,
+  current: ReadonlyMap<string, MiniAppViewSpec>,
+  next: ReadonlyMap<string, MiniAppViewSpec>,
 ): boolean {
   if (current.size !== next.size) return false
   for (const [fullName, spec] of next) {
@@ -98,8 +98,8 @@ function sameViews(
  * actions are cleared. Bumps the version + notifies subscribers only when the
  * registered set actually changed, so an idempotent re-sync is a no-op render.
  */
-export function syncThirdPartyViews(specs: PluginViewSpec[]): void {
-  const next = new Map<string, PluginViewSpec>()
+export function syncThirdPartyViews(specs: MiniAppViewSpec[]): void {
+  const next = new Map<string, MiniAppViewSpec>()
   for (const spec of specs) next.set(spec.fullName, spec)
   if (sameViews(views, next)) return
 
@@ -129,7 +129,7 @@ export function thirdPartyViewsVersion(): number {
 }
 
 /** Registered plugin views — each opens as an editor-grid tab from a rail button. */
-export function listThirdPartyViews(): PluginViewSpec[] {
+export function listThirdPartyViews(): MiniAppViewSpec[] {
   return [...views.values()]
 }
 

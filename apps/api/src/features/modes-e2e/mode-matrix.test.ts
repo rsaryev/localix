@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { BUILTIN_AGENTS } from '../agents/builtin'
 import { builtinAgentPreset } from '../capabilities/builtin-agent-presets'
 import { PERMISSION_MODES } from '../../contracts/permission-modes'
-import { loadBundledPluginTools, type LoadedBundledTools } from './testing/bundled-plugin-tools'
+import { loadBundledMiniAppTools, type LoadedBundledTools } from './testing/bundled-plugin-tools'
 import { CORE_CALL_CASES, WORKSPACE, type CallCase } from './testing/core-call-cases'
 import { contributedCallCases, matrixMismatches, type PresetUnderTest } from './testing/mode-matrix'
 import { modeSurface, runRegistry } from './testing/run-surface'
@@ -28,7 +28,7 @@ const pluginNames: string[] = []
 const ALL_CASES: CallCase[] = [...CORE_CALL_CASES]
 
 beforeAll(async () => {
-  plugins = await loadBundledPluginTools(WORKSPACE)
+  plugins = await loadBundledMiniAppTools(WORKSPACE)
   pluginNames.push(...plugins.tools.map((tool) => tool.name))
   for (const tool of runRegistry('chat', 'default', [], plugins.tools).tools)
     tools.set(tool.name, tool)

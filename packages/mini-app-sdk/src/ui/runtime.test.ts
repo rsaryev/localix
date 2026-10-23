@@ -1,18 +1,18 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 
 import {
-  bindPluginUiRuntime,
-  pluginComposer,
-  pluginExternal,
-  pluginFiles,
-  pluginNavigation,
-  pluginRealtime,
-  pluginResources,
-  pluginSessions,
-  pluginSecrets,
-  pluginTerminal,
-  pluginWorkspace,
-  type PluginUiRuntime,
+  bindMiniAppUiRuntime,
+  miniAppComposer,
+  miniAppExternal,
+  miniAppFiles,
+  miniAppNavigation,
+  miniAppRealtime,
+  miniAppResources,
+  miniAppSessions,
+  miniAppSecrets,
+  miniAppTerminal,
+  miniAppWorkspace,
+  type MiniAppUiRuntime,
 } from './runtime'
 
 /** What a host with the completion route off would hand back: nothing to show, no key consumed. */
@@ -32,8 +32,8 @@ afterEach(() => {
   unbind = undefined
 })
 
-function bind(overrides: Partial<PluginUiRuntime> = {}) {
-  const runtime: PluginUiRuntime = {
+function bind(overrides: Partial<MiniAppUiRuntime> = {}) {
+  const runtime: MiniAppUiRuntime = {
     workspace: {
       openWorkItem: () => undefined,
       openFile: () => undefined,
@@ -106,7 +106,7 @@ function bind(overrides: Partial<PluginUiRuntime> = {}) {
     external: { open: () => undefined },
     ...overrides,
   }
-  unbind = bindPluginUiRuntime(runtime)
+  unbind = bindMiniAppUiRuntime(runtime)
   return runtime
 }
 
@@ -142,9 +142,9 @@ describe('plugin UI runtime capabilities', () => {
       },
     })
 
-    expect(await pluginFiles.bindingsFromFiles([file])).toEqual([binding])
+    expect(await miniAppFiles.bindingsFromFiles([file])).toEqual([binding])
     // The side-effect-free door: the real paths, nothing opened or uploaded.
-    expect(await pluginFiles.droppedPaths([file])).toEqual([
+    expect(await miniAppFiles.droppedPaths([file])).toEqual([
       { path: '/workspace/notes.md', isDir: false },
     ])
   })
@@ -174,27 +174,27 @@ describe('plugin UI runtime capabilities', () => {
       },
     })
 
-    pluginWorkspace.openWorkItem({
+    miniAppWorkspace.openWorkItem({
       workKind: 'example',
       id: 'item-1',
       title: 'Example',
       scope: 'session-1',
     })
-    pluginComposer.insert({ text: 'Ask about this', sessionId: 'session-1' })
-    pluginTerminal.openJob({ terminalId: 'terminal-1', sessionId: 'session-1' })
+    miniAppComposer.insert({ text: 'Ask about this', sessionId: 'session-1' })
+    miniAppTerminal.openJob({ terminalId: 'terminal-1', sessionId: 'session-1' })
 
     expect(opened).toEqual([['item-1', 'session-1']])
     expect(inserts).toEqual([['Ask about this', 'session-1']])
     expect(terminals).toEqual([['terminal-1', 'session-1']])
     // There is no "active session" to read: a plugin acts for the chat it belongs to.
-    expect('activeId' in pluginSessions).toBe(false)
-    expect('activeScope' in pluginWorkspace.getSnapshot()).toBe(false)
+    expect('activeId' in miniAppSessions).toBe(false)
+    expect('activeScope' in miniAppWorkspace.getSnapshot()).toBe(false)
   })
 
   test('rejects downloads outside plugin RPC routes', () => {
     bind()
-    expect(() => pluginFiles.download('https://example.com/file', 'file.txt')).toThrow()
-    expect(() => pluginFiles.download('/internal/file', 'file.txt')).toThrow()
+    expect(() => miniAppFiles.download('https://example.com/file', 'file.txt')).toThrow()
+    expect(() => miniAppFiles.download('/internal/file', 'file.txt')).toThrow()
   })
 
   test('delegates validated external URLs to the host', async () => {
@@ -206,11 +206,11 @@ describe('plugin UI runtime capabilities', () => {
         },
       },
     })
-    await pluginExternal.open('https://example.com/book?q=reader')
-    await pluginExternal.open('tel:+35799123456')
+    await miniAppExternal.open('https://example.com/book?q=reader')
+    await miniAppExternal.open('tel:+35799123456')
     expect(opened).toEqual(['https://example.com/book?q=reader', 'tel:+35799123456'])
-    expect(() => pluginExternal.open('javascript:alert(1)')).toThrow()
-    expect(() => pluginExternal.open('tel:')).toThrow()
+    expect(() => miniAppExternal.open('javascript:alert(1)')).toThrow()
+    expect(() => miniAppExternal.open('tel:')).toThrow()
   })
 
   test('delegates opaque context bindings to the host navigation registry', async () => {
@@ -226,7 +226,7 @@ describe('plugin UI runtime capabilities', () => {
     })
 
     expect(
-      await pluginNavigation.openBinding(
+      await miniAppNavigation.openBinding(
         {
           kind: 'context',
           source: 'active-tab',
@@ -268,15 +268,15 @@ describe('plugin UI runtime capabilities', () => {
     })
 
     expect(
-      await pluginTerminal.spawnCommand({
+      await miniAppTerminal.spawnCommand({
         command: 'echo ok',
         sessionId: 'session-1',
       }),
     ).toEqual({
       terminalId: 'terminal-2',
     })
-    expect(await pluginSecrets.listReferences()).toHaveLength(1)
-    await pluginSecrets.set({ key: 'TOKEN', value: 'opaque' })
+    expect(await miniAppSecrets.listReferences()).toHaveLength(1)
+    await miniAppSecrets.set({ key: 'TOKEN', value: 'opaque' })
     expect(commands).toEqual(['echo ok'])
     expect(written).toEqual(['TOKEN'])
   })
@@ -299,7 +299,7 @@ describe('plugin UI runtime capabilities', () => {
         }),
       },
     })
-    const result = await pluginResources.browse('query', 'session-1')
+    const result = await miniAppResources.browse('query', 'session-1')
     expect(result.nodes[0]?.uri).toBe('localix://resource/example/query')
   })
 
@@ -317,29 +317,29 @@ describe('plugin UI runtime capabilities', () => {
       },
     })
 
-    pluginRealtime.onFrame('m', () => undefined)()
+    miniAppRealtime.onFrame('m', () => undefined)()
     expect(tags).toEqual(['m'])
-    expect(() => pluginRealtime.onFrame('s', () => undefined)).toThrow()
+    expect(() => miniAppRealtime.onFrame('s', () => undefined)).toThrow()
     // `n` is the notification journal; the browser guard used to forget it.
-    expect(() => pluginRealtime.onFrame('n', () => undefined)).toThrow()
-    expect(() => pluginRealtime.onFrame('wide', () => undefined)).toThrow()
+    expect(() => miniAppRealtime.onFrame('n', () => undefined)).toThrow()
+    expect(() => miniAppRealtime.onFrame('wide', () => undefined)).toThrow()
   })
 
   test('ending a binding restores the one it shadowed instead of leaving nothing bound', () => {
     const focused: string[] = []
     const host = bind({
       workspace: {
-        ...({} as PluginUiRuntime['workspace']),
+        ...({} as MiniAppUiRuntime['workspace']),
         focusWorkItem: (id) => void focused.push(`host:${id}`),
       },
     })
-    const unbindDouble = bindPluginUiRuntime({
+    const unbindDouble = bindMiniAppUiRuntime({
       ...host,
       workspace: { ...host.workspace, focusWorkItem: (id) => void focused.push(`double:${id}`) },
     })
-    pluginWorkspace.focusWorkItem('a')
+    miniAppWorkspace.focusWorkItem('a')
     unbindDouble()
-    pluginWorkspace.focusWorkItem('b')
+    miniAppWorkspace.focusWorkItem('b')
     expect(focused).toEqual(['double:a', 'host:b'])
   })
 })

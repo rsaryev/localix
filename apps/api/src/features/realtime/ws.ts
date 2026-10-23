@@ -14,7 +14,7 @@ import type { InboxChange } from '../notifications/contracts'
 import type { AgentStreamEvent, MessageBinding } from '../chat/contracts'
 import type { ToolSurface } from '@localixai/agent/agents'
 import type { PreviewResultPayload } from '../chat/runtime/preview-command-registry'
-import type { PluginCommandResultPayload } from '../chat/runtime/plugin-command-registry'
+import type { MiniAppCommandResultPayload } from '../chat/runtime/plugin-command-registry'
 import {
   parseRealtimeCommand,
   type InlineCompletionPayload,
@@ -90,9 +90,9 @@ export interface RealtimeDeps {
   ) => { ok: boolean }
   // Settle a pending awaited plugin command (`emitCommandWithReply`) from the
   // client sink's reply. Optional so partial dep sets in tests still build.
-  pluginCommandResult?: (
+  miniAppCommandResult?: (
     commandId: string,
-    payload: PluginCommandResultPayload,
+    payload: MiniAppCommandResultPayload,
     callerUserId?: string,
   ) => { ok: boolean }
   // Inspector-editor ↔ language-server document sync (diagnostics ride back on the
@@ -716,7 +716,7 @@ export function createRealtimeRoute(deps: RealtimeDeps) {
         if (command.kind === 'plugin-command-result') {
           // A plugin's client sink answered an awaited command — settle its promise.
           const { commandId, ok, result, error } = command.body
-          const settled = deps.pluginCommandResult?.(commandId, { ok, result, error }, userId)
+          const settled = deps.miniAppCommandResult?.(commandId, { ok, result, error }, userId)
           reply({ ok: true, result: { resolved: settled?.ok ?? false } })
           return
         }

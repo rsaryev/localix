@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { bindPluginUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
+import { bindMiniAppUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
 import type { DockerResourceDetail } from '../model/dockerResourceDetail'
 import type { DockerResourceDetailModel } from '../model/useDockerResourceDetail'
 import { DockerResourceContent } from './DockerResourceContent'
@@ -38,7 +38,7 @@ function model(overrides: Partial<DockerResourceDetailModel> = {}): DockerResour
 // restores whatever it shadowed, so its doubles never become the next suite's host.
 let unbindHostComponents: (() => void) | undefined
 beforeAll(() => {
-  unbindHostComponents = bindPluginUiTestDoubles()
+  unbindHostComponents = bindMiniAppUiTestDoubles()
 })
 afterAll(() => unbindHostComponents?.())
 

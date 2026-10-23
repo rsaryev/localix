@@ -118,8 +118,8 @@ The client working set is `completionWorkingSet()`, which the grid provides at s
 ranked bindings the composer shows as ambient chips. For an editor it leaves out the editor's own
 tab. The hub folds the working set into its fingerprint and cache keys, so an answer produced beside
 one open file is never reused beside another. Plugin editors receive the working set through the
-host's `pluginEditor.predictNextEdit`. Plugin text fields receive it through
-`usePluginTextInputCompletion`.
+host's `miniAppEditor.predictNextEdit`. Plugin text fields receive it through
+`useMiniAppTextInputCompletion`.
 
 ### Produce an edit prediction
 

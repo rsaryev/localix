@@ -1,6 +1,6 @@
 import type {
-  PluginContext,
-  PluginRegistration,
+  MiniAppContext,
+  MiniAppRegistration,
   WorkspaceScopeHost,
 } from '@localixai/mini-app-sdk/backend'
 import { createResumeService } from './service'
@@ -9,7 +9,7 @@ import { createResumeResourceProvider, createResumeContextProvider } from './con
 import { createResumeTool } from './tool'
 
 let workspaceScope: WorkspaceScopeHost | undefined
-export function register(ctx: PluginContext): PluginRegistration {
+export function register(ctx: MiniAppContext): MiniAppRegistration {
   workspaceScope = ctx.host?.workspaceScope ?? workspaceScope
   const resolveService = async (userId: string, sessionId?: string) => {
     if (!sessionId || !workspaceScope) return null

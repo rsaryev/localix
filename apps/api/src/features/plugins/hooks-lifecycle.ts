@@ -1,10 +1,10 @@
-import type { LoadedPluginHook } from './loader'
+import type { LoadedMiniAppHook } from './loader'
 import { HOOK_TIMEOUT_MS, invokeHook, type HookRunOptions } from './hook-invoke'
 import type {
   HitlRequestEvent,
   HitlResolvedEvent,
   HumanAssignedEvent,
-  PluginHooks,
+  MiniAppHooks,
   SubagentStopEvent,
 } from './native'
 
@@ -18,8 +18,8 @@ async function runObserverHooks<
   K extends 'onSubagentStop' | 'onHitlRequest' | 'onHitlResolved' | 'onHumanAssigned',
 >(
   hookName: K,
-  hookEntries: readonly LoadedPluginHook[],
-  event: Parameters<NonNullable<PluginHooks[K]>>[0],
+  hookEntries: readonly LoadedMiniAppHook[],
+  event: Parameters<NonNullable<MiniAppHooks[K]>>[0],
   options: HookRunOptions,
 ): Promise<void> {
   const timeoutMs = options.timeoutMs ?? HOOK_TIMEOUT_MS
@@ -42,7 +42,7 @@ async function runObserverHooks<
 
 /** Fire every plugin's `onSubagentStop` when a child session reaches a terminal status. */
 export async function runSubagentStopHooks(
-  hookEntries: readonly LoadedPluginHook[],
+  hookEntries: readonly LoadedMiniAppHook[],
   event: SubagentStopEvent,
   options: HookRunOptions,
 ): Promise<void> {
@@ -51,7 +51,7 @@ export async function runSubagentStopHooks(
 
 /** Fire every plugin's `onHitlRequest` when a run blocks on a human (confirm/ask/quiz). */
 export async function runHitlRequestHooks(
-  hookEntries: readonly LoadedPluginHook[],
+  hookEntries: readonly LoadedMiniAppHook[],
   event: HitlRequestEvent,
   options: HookRunOptions,
 ): Promise<void> {
@@ -60,7 +60,7 @@ export async function runHitlRequestHooks(
 
 /** Fire every plugin's `onHitlResolved` when a pending HITL request is answered or dismissed. */
 export async function runHitlResolvedHooks(
-  hookEntries: readonly LoadedPluginHook[],
+  hookEntries: readonly LoadedMiniAppHook[],
   event: HitlResolvedEvent,
   options: HookRunOptions,
 ): Promise<void> {
@@ -69,7 +69,7 @@ export async function runHitlResolvedHooks(
 
 /** Fire every plugin's `onHumanAssigned` when a board card is assigned to the person. */
 export async function runHumanAssignedHooks(
-  hookEntries: readonly LoadedPluginHook[],
+  hookEntries: readonly LoadedMiniAppHook[],
   event: HumanAssignedEvent,
   options: HookRunOptions,
 ): Promise<void> {
@@ -83,7 +83,7 @@ export async function runHumanAssignedHooks(
  * Best-effort: isolation + timeout per plugin, never throws.
  */
 export async function runSessionEndHooks(
-  hookEntries: readonly LoadedPluginHook[],
+  hookEntries: readonly LoadedMiniAppHook[],
   options: HookRunOptions,
 ): Promise<void> {
   const timeoutMs = options.timeoutMs ?? HOOK_TIMEOUT_MS

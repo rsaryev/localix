@@ -1,9 +1,9 @@
 import { describe, expect, test } from 'bun:test'
 import {
-  capPluginToolDescription,
+  capMiniAppToolDescription,
   isAcceptableToolName,
   isReservedToolName,
-  PLUGIN_TOOL_DESCRIPTION_MAX_CHARS,
+  MINI_APP_TOOL_DESCRIPTION_MAX_CHARS,
   TOOL_NAME_RE,
 } from './tool-policy'
 import { BUILTIN_TOOL_NAMES } from '../agent-core/tool-names'
@@ -94,14 +94,14 @@ describe('plugin tool-name policy', () => {
 describe('plugin tool model metadata budget', () => {
   test('keeps ordinary detailed descriptions unchanged', () => {
     const description = 'What it does. When to use it. How to call it. Important caveat.'
-    expect(capPluginToolDescription(description)).toBe(description)
+    expect(capMiniAppToolDescription(description)).toBe(description)
   })
 
   test('caps an anomalous description deterministically with an explicit marker', () => {
-    const description = 'x'.repeat(PLUGIN_TOOL_DESCRIPTION_MAX_CHARS + 500)
-    const capped = capPluginToolDescription(description)
+    const description = 'x'.repeat(MINI_APP_TOOL_DESCRIPTION_MAX_CHARS + 500)
+    const capped = capMiniAppToolDescription(description)
 
-    expect(capped).toHaveLength(PLUGIN_TOOL_DESCRIPTION_MAX_CHARS)
+    expect(capped).toHaveLength(MINI_APP_TOOL_DESCRIPTION_MAX_CHARS)
     expect(capped).toEndWith('…')
   })
 })

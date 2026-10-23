@@ -1,8 +1,8 @@
 import { FileSpreadsheet, FileText, Presentation } from 'lucide-react'
 import type { IconComponent, StatusItemState } from '@localixai/mini-app-sdk/ui'
-import { pluginWorkspace, statusMenuList } from '@localixai/mini-app-sdk/ui'
+import { miniAppWorkspace, statusMenuList } from '@localixai/mini-app-sdk/ui'
 import { fileExtension } from '@localixai/mini-app-sdk/ui/file-types'
-import { usePluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime-hooks'
+import { useMiniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 
 /**
  * The formats this plugin OWNS a viewer for, and the glyph each reads as.
@@ -53,7 +53,7 @@ function basename(path: string): string {
  * in front. No session, no item — there is no chat to open the file into.
  */
 export function useDocumentsStatusItem(sessionId: string | null): StatusItemState | null {
-  const workspace = usePluginWorkspace()
+  const workspace = useMiniAppWorkspace()
 
   const documents = Object.entries(workspace.items)
     .filter(([, item]) => item?.kind === 'file')
@@ -72,7 +72,7 @@ export function useDocumentsStatusItem(sessionId: string | null): StatusItemStat
 
   // Re-opening an already-open file is how the host reveals it — the same gesture the file tree
   // uses, so a row here lands the person on the tab rather than making a second one.
-  const reveal = (path: string) => () => pluginWorkspace.openFile({ sessionId, path })
+  const reveal = (path: string) => () => miniAppWorkspace.openFile({ sessionId, path })
 
   return {
     label:

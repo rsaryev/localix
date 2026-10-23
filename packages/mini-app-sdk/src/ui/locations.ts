@@ -1,4 +1,4 @@
-import type { IconComponent, PluginOwnedContribution } from './contrib'
+import type { IconComponent, MiniAppOwnedContribution } from './contrib'
 import type { UiAnchorOpenResult } from './anchors'
 import type { LocalixUiPrimitive } from '../navigation'
 import type { UI_AGENT_LOCATION_CATALOG_VERSION } from './location-wire-values'
@@ -175,7 +175,7 @@ export function isContextualUiSurface(value: unknown): value is UiContextualSurf
  */
 export interface UiLocationContribution<
   TParams extends UiLocationParamSchema = UiLocationParamSchema,
-> extends PluginOwnedContribution {
+> extends MiniAppOwnedContribution {
   id: string
   uri: string
   title: string

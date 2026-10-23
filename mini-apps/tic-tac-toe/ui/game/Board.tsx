@@ -47,7 +47,7 @@ function useArrivals(game: Game): Map<number, number> {
 /**
  * The board's geometry, INLINE on purpose. It is the one layout here that everything drawn over
  * the board depends on, and utility classes reach a plugin through the host's de-duplicated sheet
- * (`pluginStyleDedupe`), where a rule judged a duplicate of the host's is dropped — live, the
+ * (`miniAppStyleDedupe`), where a rule judged a duplicate of the host's is dropped — live, the
  * tiles collapsed into one column. An inline style cannot be dropped or out-ranked.
  */
 const GRID: CSSProperties = {

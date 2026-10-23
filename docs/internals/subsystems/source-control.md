@@ -118,7 +118,7 @@ session".
 Session/project changes use a fresh read after any older request settles; pending directory
 resolution retries at the active cadence, while negative probes remain at the idle cadence.
 
-The poller subscribes to the chat's workspace changes (`pluginFiles.watchWorkspace`, which reports
+The poller subscribes to the chat's workspace changes (`miniAppFiles.watchWorkspace`, which reports
 `.git` too), so a terminal branch switch is read within the change window; the status read runs with
 `GIT_OPTIONAL_LOCKS=0`, because a refreshing `git status` rewrites `.git/index` and that write would
 itself be the change that schedules the next read. Line deltas come from `git diff --numstat -z`:

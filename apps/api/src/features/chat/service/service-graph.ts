@@ -24,7 +24,7 @@ import { normalizeProjectSettings } from '../../projects/contracts'
 import { safeJsonParse } from '../../../lib/json'
 import { createAgentRunner, type AgentRunner } from '../runtime/agent-runner'
 import { createHitlRegistry, type HitlRegistry } from '../runtime/hitl-registry'
-import { createPluginCommandRegistry } from '../runtime/plugin-command-registry'
+import { createMiniAppCommandRegistry } from '../runtime/plugin-command-registry'
 import { createPreviewCommandRegistry } from '../runtime/preview-command-registry'
 import { createSessionStreamRegistry } from '../runtime/session-stream-registry'
 import { createKeyedSerializer } from '../../../lib/keyed-serializer'
@@ -87,7 +87,7 @@ export function createChatServiceGraph(deps: ChatServiceDeps) {
   // Awaitable plugin→UI command relay (`emitCommandWithReply`): publishes a
   // `plugin.command` frame and parks a promise the client sink settles via the
   // `plugin-command-result` WS RPC — the preview relay's generic sibling.
-  const pluginCommands = createPluginCommandRegistry({ streamRegistry })
+  const pluginCommands = createMiniAppCommandRegistry({ streamRegistry })
   // Per-session preview-target registry: bash records a detected dev-server URL here,
   // and browser lazily auto-opens it on the first drive action (the single
   // instance is shared by both via the runner deps).

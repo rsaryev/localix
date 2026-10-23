@@ -24,7 +24,7 @@ app.post('/items', validated('json', itemSchema), (c) => c.json(save(c.req.valid
 
 | Envelope           | A rejected request answers                   | Read by                                  |
 | ------------------ | -------------------------------------------- | ---------------------------------------- |
-| `nested` (default) | `{ error: { code, message, detail } }`       | The SDK client's `unwrapPluginResponse`  |
+| `nested` (default) | `{ error: { code, message, detail } }`       | The SDK client's `unwrapMiniAppResponse` |
 | `flat`             | `{ error, code, detail }`                    | Clients that branch on a typed `code`    |
 | `text`             | `{ error }`, one sentence naming every field | Clients that read `error` as the message |
 
@@ -51,7 +51,7 @@ clients must handle transport/parsing errors as well as structured schema errors
 
 ## Read the request scope
 
-Type contributed Hono apps with `PluginRouteContext` and read scope from `c.env`, including
+Type contributed Hono apps with `MiniAppRouteContext` and read scope from `c.env`, including
 `userId`, `cwd` and the optional `sessionId`. Host context variables such as `c.get('userId')` are
 not forwarded to the contributed app. The host includes `sessionId` only after its live-session
 ownership check succeeds; a foreign, missing or deleted session leaves it absent. A session-owned

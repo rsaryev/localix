@@ -1,5 +1,5 @@
 import { Ellipsis } from 'lucide-react'
-import type { PluginCategory } from '@localixai/mini-app-sdk/manifest'
+import type { MiniAppCategory } from '@localixai/mini-app-sdk/manifest'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { DROP_TARGET_INSET_ACTIVE, DROP_TARGET_TRANSITION } from '@localixai/kit/drop-target'
 import type { UseRailDnd } from '../model/useRailDnd'
@@ -19,7 +19,7 @@ interface RailWorkspaceGroupProps {
   /** Entries the user placed in this zone (already ordered). */
   barEntries: RailEntry[]
   toolEntries: RailEntry[]
-  pluginCategories?: ReadonlyMap<string, PluginCategory | undefined>
+  miniAppCategories?: ReadonlyMap<string, MiniAppCategory | undefined>
   pinnedToolIds: ReadonlySet<string>
   onPinTool: (id: string, pinned: boolean) => void
   onUnpinTool: (id: string) => void
@@ -47,7 +47,7 @@ export function RailWorkspaceGroup({
   mainRailActions,
   barEntries,
   toolEntries,
-  pluginCategories,
+  miniAppCategories,
   pinnedToolIds,
   onPinTool,
   onUnpinTool,
@@ -122,7 +122,7 @@ export function RailWorkspaceGroup({
             ))}
           <RailToolGroups
             entries={barEntries.filter(isRailTool)}
-            categories={pluginCategories}
+            categories={miniAppCategories}
             renderEntry={(entry) => (
               <CustomizableRailButton
                 key={entry.id}
@@ -175,7 +175,7 @@ export function RailWorkspaceGroup({
           {/* Full tool catalog with inline pins and a link to plugin settings. */}
           <RailToolMenu
             entries={toolEntries}
-            categories={pluginCategories}
+            categories={miniAppCategories}
             pinnedIds={pinnedToolIds}
             onPinChange={onPinTool}
             icon={<Ellipsis />}

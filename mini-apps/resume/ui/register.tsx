@@ -4,7 +4,7 @@ import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-sessi
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
 import {
   resourceMessageBindingDraft,
-  type PluginUiHost,
+  type MiniAppUiHost,
   type PublishMessageContext,
   type WorkItemLike,
 } from '@localixai/mini-app-sdk/ui'
@@ -40,8 +40,8 @@ function ResumeBody({
     </Suspense>
   )
 }
-const registered = new WeakSet<PluginUiHost>()
-export function registerUi(host: PluginUiHost): void {
+const registered = new WeakSet<MiniAppUiHost>()
+export function registerUi(host: MiniAppUiHost): void {
   if (registered.has(host)) return
   registered.add(host)
   host.workItems.register({

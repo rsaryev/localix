@@ -10,7 +10,7 @@
  */
 import type { Kysely } from 'kysely'
 import type { LanguageModelFactory } from '@localixai/agent/runtime'
-import type { PluginTextInputCompletionSurface } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppTextInputCompletionSurface } from '@localixai/mini-app-sdk/backend'
 import type { AppDatabase } from '../db/types'
 import { createAuxProviderHelpers } from '../features/chat/service/aux-provider'
 import { createEditPredictionEngine } from '../features/edit-prediction/engine'
@@ -43,7 +43,7 @@ export interface AuxAssistDeps {
   userService: ReturnType<typeof createUserService>
   projectsService: ReturnType<typeof createProjectsService>
   /** Plugin-contributed text-input completion surfaces, resolved per call. */
-  contributedCompletionSurface: (id: string) => PluginTextInputCompletionSurface | undefined
+  contributedCompletionSurface: (id: string) => MiniAppTextInputCompletionSurface | undefined
   /** Shared aux ledger — every aux call accumulates onto one row per (session, kind). */
   auxUsageRepo: ReturnType<typeof createUsageRepository>
 }

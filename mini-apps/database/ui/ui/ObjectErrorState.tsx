@@ -1,4 +1,4 @@
-import { ProblemState, type PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
+import { ProblemState, type MiniAppProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
 import { useDbProblem, type DbProblemOptions } from '../problems'
 
 /**
@@ -18,13 +18,13 @@ export function useObjectProblem(
   error: string | null | undefined,
   onRetry: () => void,
   options: DbProblemOptions = {},
-): PluginProblemLineProps | null {
+): MiniAppProblemLineProps | null {
   return useDbProblem(subject, error, {
     ...options,
     actions: [{ id: 'retry', label: 'Retry', run: onRetry }, ...(options.actions ?? [])],
   })
 }
 
-export function ObjectErrorState({ problem }: { problem: PluginProblemLineProps }) {
+export function ObjectErrorState({ problem }: { problem: MiniAppProblemLineProps }) {
   return <ProblemState {...problem} />
 }

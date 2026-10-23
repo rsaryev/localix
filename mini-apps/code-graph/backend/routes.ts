@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { jsonBody, jsonError, type PluginRouteContext } from '@localixai/mini-app-sdk/backend'
+import { jsonBody, jsonError, type MiniAppRouteContext } from '@localixai/mini-app-sdk/backend'
 import { clearAgentView, reportGraphView } from './agent-view'
 import { graphCameraReportSchema } from '../shared/camera'
 import { projectIndex } from './indexing/projects'
@@ -53,7 +53,7 @@ export function createGraphRoutes(dataDir: string) {
   // The actions carry no fields, but still arrive as JSON: `jsonBody` refuses a body that did not,
   // which is what keeps a plain cross-site form post from reaching them.
   const noFields = jsonBody(z.object({}))
-  return new Hono<PluginRouteContext>()
+  return new Hono<MiniAppRouteContext>()
     .get('/view', (context) => answer(context, context.env.cwd, context.req.url))
     .post('/reindex', noFields, (context) => {
       void indexOf(context.env.cwd).refresh()

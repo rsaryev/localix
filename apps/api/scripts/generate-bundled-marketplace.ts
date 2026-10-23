@@ -12,7 +12,7 @@
 import { promises as fs } from 'node:fs'
 import { dirname, join } from 'node:path'
 
-import { discoverBundledPlugins, bundledPluginsRoot } from '../src/features/plugins/discovery'
+import { discoverBundledMiniApps, bundledMiniAppsRoot } from '../src/features/plugins/discovery'
 import { validateMarketplace } from '../src/features/plugins/marketplace'
 import { buildMarketplaceManifest } from '../src/features/plugins/marketplace-build'
 import {
@@ -25,8 +25,8 @@ async function main(): Promise<void> {
   // plugins ahead of bundled and dedupes by name, so a same-named local install would SHADOW the
   // bundled copy and silently drop it from
   // the catalog — making generation depend on what the dev happens to have installed.
-  const bundled = (await discoverBundledPlugins()).filter((p) => !p.error)
-  const metadataFile = join(bundledPluginsRoot(), MARKETPLACE_METADATA_FILE)
+  const bundled = (await discoverBundledMiniApps()).filter((p) => !p.error)
+  const metadataFile = join(bundledMiniAppsRoot(), MARKETPLACE_METADATA_FILE)
   const metadata = JSON.parse(await fs.readFile(metadataFile, 'utf8')) as {
     name: string
     description?: string
@@ -54,7 +54,7 @@ async function main(): Promise<void> {
   }
   for (const w of warnings) console.warn(`warning: ${w}`)
 
-  const file = join(bundledPluginsRoot(), MARKETPLACE_CATALOG_FILE)
+  const file = join(bundledMiniAppsRoot(), MARKETPLACE_CATALOG_FILE)
   await fs.mkdir(dirname(file), { recursive: true })
   await fs.writeFile(file, JSON.stringify(market, null, 2) + '\n')
   console.log(`Wrote ${market.plugins.length} plugins to ${file}`)

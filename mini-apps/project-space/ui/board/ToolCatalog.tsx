@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Braces, Check, FilePlus2, Keyboard, Lock, Plus } from 'lucide-react'
-import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import { FIELD_SURFACE, cn } from '@localixai/mini-app-sdk/ui/classes'
 import {
   Command,
@@ -134,7 +134,7 @@ export function ToolCatalog({
                 </CommandItem>
                 <CommandItem
                   onSelect={() =>
-                    choose(() => pluginWorkspace.openFile({ sessionId, path: BOARD_FILE }))
+                    choose(() => miniAppWorkspace.openFile({ sessionId, path: BOARD_FILE }))
                   }
                 >
                   <Braces className="size-4" /> Open board file

@@ -1,6 +1,6 @@
 import { errorMessage } from '../lib/errors'
 import { resolveDefaultUserId, userHome } from '../lib/env'
-import { createPluginChannelHost } from '../features/plugins/channel-host'
+import { createMiniAppChannelHost } from '../features/plugins/channel-host'
 import { createChannelWorkspace } from '../features/plugins/channel-workspace'
 import { createPluginMonitorHost } from '../features/plugins/monitor-host'
 import { setSkillInvocationListener } from '../features/agent-core/skill-invocations'
@@ -9,17 +9,17 @@ import { readAvailability } from '../features/capabilities/availability'
 import { runIdleTasks, type IdleTask, type IdleTaskContext } from '../lib/idle-tasks'
 import type { InfraPhase } from './infra'
 import type { DomainServicesPhase } from './domain-services'
-import type { PluginHostRefs } from './plugin-host-refs'
+import type { MiniAppHostRefs } from './plugin-host-refs'
 import type { PluginHostsPhase } from './plugin-hosts'
 import type { createChatService } from '../features/chat/service'
 import { createCapabilitySourceRepository } from '../features/capabilities/source-repository'
-import { bundledPluginsSyncRoot } from '../features/plugins/discovery'
+import { bundledMiniAppsSyncRoot } from '../features/plugins/discovery'
 import {
   bundledStagingFailures,
   invalidateBundledSync,
-  syncBundledPlugins,
+  syncBundledMiniApps,
 } from '../features/plugins/bundled-install'
-import { watchStagedPluginsRoot } from '../features/plugins/bundled-watch'
+import { watchStagedMiniAppsRoot } from '../features/plugins/bundled-watch'
 import { recoverDelegationReports } from '../features/chat/service/recover-delegation'
 import { sweepOrphanSessionData } from '../features/plugins/session-storage'
 import { PLUGIN_WARNINGS, warnOnce } from '../lib/warn-once'
@@ -35,12 +35,12 @@ export interface OpsTimersPhaseInput
     Pick<DomainServicesPhase, 'projectsService' | 'skillsCuratorService' | 'pluginService'> {
   chatService: ReturnType<typeof createChatService>
   maintainStorage: StorageMaintenance
-  hostRefs: PluginHostRefs
+  hostRefs: MiniAppHostRefs
   pluginConditions: PluginHostsPhase['pluginConditions']
 }
 
 export interface OpsTimersPhase {
-  channelHost: ReturnType<typeof createPluginChannelHost>
+  channelHost: ReturnType<typeof createMiniAppChannelHost>
   monitorHost: ReturnType<typeof createPluginMonitorHost>
   startOpsTimers: (signal?: AbortSignal) => void
   warmStartupCaches: () => void
@@ -94,7 +94,7 @@ export function createOpsTimersPhase({
     catalogService,
     providerConnectionsService,
   })
-  const channelHost = createPluginChannelHost({
+  const channelHost = createMiniAppChannelHost({
     homeDir: userHome(),
     repo: createCapabilitySourceRepository(db, 'plugin'),
     availabilityFor: (userId) => readAvailability(db, { userId, agentId: DEFAULT_AGENT_ID }),
@@ -171,7 +171,7 @@ export function createOpsTimersPhase({
     // A plugin whose source did not build or install is raised as a condition, each time the
     // staged root settles: after a sync, so a copy that failed in THIS pass is in the report.
     const reportStagingFailures = (root: string) =>
-      syncBundledPlugins(root, userHome())
+      syncBundledMiniApps(root, userHome())
         .then(() => bundledStagingFailures(root, userHome()))
         .then((failures) => pluginConditions.stagingFailed(failures))
         .catch((error) =>
@@ -182,10 +182,10 @@ export function createOpsTimersPhase({
     // the staged root's marker. Forget the sync memo and raise the same change every plugin
     // toggle raises, so the catalog and the hosts converge without `/plugin reload`. Armed at
     // once — a re-stage during the idle wait below must not go unseen.
-    const stagedRoot = bundledPluginsSyncRoot()
+    const stagedRoot = bundledMiniAppsSyncRoot()
     void stagedRoot.then((root) => {
       if (!root || signal.aborted) return
-      const watcher = watchStagedPluginsRoot({
+      const watcher = watchStagedMiniAppsRoot({
         root,
         onChange: () => {
           invalidateBundledSync()

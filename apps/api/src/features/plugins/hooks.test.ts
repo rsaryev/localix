@@ -15,19 +15,19 @@ import {
   ToolCallBlockedError,
   POST_APPEND_CAP_BYTES,
 } from './hooks'
-import type { LoadedPluginHook } from './loader'
+import type { LoadedMiniAppHook } from './loader'
 import {
   ASSISTANT_BINDINGS_MAX,
   ASSISTANT_BINDING_DATA_CAP_BYTES,
   MEMORY_CONTEXT_CAP_CHARS,
-  type PluginContext,
-  type PluginHooks,
+  type MiniAppContext,
+  type MiniAppHooks,
   type MemoryProvider,
 } from './native'
 
 /** Minimal hook entry — ctx is unused by the hook runner itself. */
-function entry(pluginName: string, hooks: PluginHooks): LoadedPluginHook {
-  return { pluginName, hooks, ctx: { pluginName } as unknown as PluginContext }
+function entry(pluginName: string, hooks: MiniAppHooks): LoadedMiniAppHook {
+  return { pluginName, hooks, ctx: { pluginName } as unknown as MiniAppContext }
 }
 
 function makeEchoTool(calls: unknown[] = []): AgentTool {
@@ -465,7 +465,7 @@ describe('memory provider invocation', () => {
   const mem = (provider: Partial<MemoryProvider>, pluginName = 'mem') => ({
     pluginName,
     provider: provider as MemoryProvider,
-    ctx: { pluginName } as unknown as PluginContext,
+    ctx: { pluginName } as unknown as MiniAppContext,
   })
   const EVENT = {
     sessionId: 's1',

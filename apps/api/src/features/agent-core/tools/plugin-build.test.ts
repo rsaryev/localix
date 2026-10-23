@@ -1,9 +1,9 @@
 import { expect, test } from 'bun:test'
 
-import { createPluginBuildTool } from './plugin-build'
+import { createMiniAppBuildTool } from './plugin-build'
 
 test('plugin_build is external for every call: it runs a build and reloads host code', () => {
-  const tool = createPluginBuildTool({ run: async () => ({ text: '', ok: true }) })
+  const tool = createMiniAppBuildTool({ run: async () => ({ text: '', ok: true }) })
   expect(tool.mutates).toBe(true)
   for (const input of [{ name: 'gpu-monitor' }, { name: 'x', description: 'new' }, undefined]) {
     expect(tool.classify?.(input)).toEqual({ effect: 'external' })

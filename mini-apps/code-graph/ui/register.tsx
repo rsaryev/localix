@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react'
 import { Network } from 'lucide-react'
 import {
   resourceMessageBindingDraft,
-  type PluginUiHost,
+  type MiniAppUiHost,
   type PublishMessageContext,
 } from '@localixai/mini-app-sdk/ui'
 import { LoadingHint } from '@localixai/kit/empty-hint'
@@ -26,14 +26,14 @@ function GraphBody({
   )
 }
 
-const registeredHosts = new WeakSet<PluginUiHost>()
+const registeredHosts = new WeakSet<MiniAppUiHost>()
 
 /**
  * One map PER CHAT (`scope: 'session'`): a chat has a project, and the map is of that project. The
  * agent in the chat drives the same map through `code_graph_show`, and the tab's published context
  * tells it what the person is looking at.
  */
-export function registerUi(host: PluginUiHost): void {
+export function registerUi(host: MiniAppUiHost): void {
   if (registeredHosts.has(host)) return
   registeredHosts.add(host)
   host.workItems.register({

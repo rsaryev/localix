@@ -24,5 +24,5 @@ export interface RailPlacement {
 export interface RailLayoutState {
   entries: RailPlacement[]
   /** Restore former plugin overflow defaults and move built-in tools from the lower rail. */
-  legacyPluginPins?: boolean
+  legacyMiniAppPins?: boolean
 }

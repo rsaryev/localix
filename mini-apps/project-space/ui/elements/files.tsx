@@ -1,7 +1,7 @@
 import { Code2, ExternalLink, FileText, Folder } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
-import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import { useZoomBelow } from '@localixai/kit/canvas'
 import { languageFromPath } from '@localixai/kit/diff'
 import { fileIcon, folderIcon } from '@localixai/kit/file-icon'
@@ -224,7 +224,7 @@ function FolderView({ props, sessionId, stamp, missing }: ElementViewProps<Folde
 // Opened in the chat whose board this is (the `sessionId` the contract hands every `open`), never
 // the one in front — a board kept open in another chat's tab put its files in that chat.
 const openPath = (props: { path: string; line?: number }, sessionId: string) =>
-  pluginWorkspace.openFile({
+  miniAppWorkspace.openFile({
     sessionId,
     path: props.path,
     ...(props.line ? { line: props.line } : {}),

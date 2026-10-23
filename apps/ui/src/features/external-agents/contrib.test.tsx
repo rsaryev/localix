@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import type {
-  PluginUiHost,
+  MiniAppUiHost,
   WorkItemKindContribution,
   UiAnchorContribution,
   SessionSurfaceContribution,
@@ -19,7 +19,7 @@ test('core external transcripts and resource anchors work without a plugin or ex
     railSections: { register: (item: unknown) => rail.push(item) },
     railViewlets: { register: (item: unknown) => rail.push(item) },
     sessionSurfaces: { register: (item: SessionSurfaceContribution) => surfaces.push(item) },
-  } as unknown as PluginUiHost
+  } as unknown as MiniAppUiHost
   registerUi(host)
   const kind = workItems.find((item) => item.kind === 'external-agent-transcript')!
   const uri = externalSessionUri('codex:s1')

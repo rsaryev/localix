@@ -11,7 +11,7 @@ import { sourceTree } from '@localixai/source-lint'
  * boundary, so a single plugin throwing replaces the entire workspace with an error screen. That is
  * not hypothetical: the comment at `editor-grid/ui/registry.tsx` records it happening live, from a
  * `localix://` URI built with an empty id. (The work-item site itself is
- * `editor-grid/ui/PluginWorkItemBody.tsx`, which also remounts the boundary on a plugin rebuild.)
+ * `editor-grid/ui/MiniAppWorkItemBody.tsx`, which also remounts the boundary on a plugin rebuild.)
  *
  * Both known sites are wrapped today. This test is what keeps the next one from not being: the
  * convention is invisible at the moment somebody adds a third contribution point, and nothing else
@@ -39,7 +39,7 @@ describe('contributed plugin surfaces render inside a boundary', () => {
   const files = sourceTree({
     roots: [join(repoRoot, ROOT)],
     mustInclude: [
-      'widgets/editor-grid/ui/PluginWorkItemBody.tsx',
+      'widgets/editor-grid/ui/MiniAppWorkItemBody.tsx',
       'widgets/editor-grid/ui/FileEditorPicker.tsx',
     ],
     minFiles: 200,
@@ -56,7 +56,7 @@ describe('contributed plugin surfaces render inside a boundary', () => {
       'apps/ui/src/shared/contrib/FileEditorEnhancements.tsx',
       'apps/ui/src/shared/contrib/WorkItemSlot.tsx',
       'apps/ui/src/widgets/editor-grid/ui/FileEditorPicker.tsx',
-      'apps/ui/src/widgets/editor-grid/ui/PluginWorkItemBody.tsx',
+      'apps/ui/src/widgets/editor-grid/ui/MiniAppWorkItemBody.tsx',
     ])
   })
 

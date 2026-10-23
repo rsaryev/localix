@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'bun:test'
 
-import { pluginUiHostFor } from './host'
+import { miniAppUiHostFor } from './host'
 import { fileEditorById } from './fileEditors'
 import { contributedVscFileIcon, resourceRefIcon } from './iconContributions'
 import { searchDomains } from './searchDomains'
@@ -10,10 +10,10 @@ import { resolveUiLocation } from './uiLocations'
 import { railSectionRegistry, railViewletRegistry, workItemKindRegistry } from './uiContrib'
 import {
   pluginActivationVersion,
-  pluginContributionActivation,
+  miniAppContributionActivation,
   setEnabledPluginNames,
   subscribePluginActivation,
-} from './pluginActivation'
+} from './miniAppActivation'
 
 const Component = () => null
 const Icon = () => null
@@ -35,7 +35,7 @@ describe('bundled plugin UI activation', () => {
   })
 
   it('gates every contribution kind by the host-stamped plugin owner', () => {
-    const host = pluginUiHostFor('activation-fixture')
+    const host = miniAppUiHostFor('activation-fixture')
     const handler = () => undefined
     host.workItems.register({ kind: 'activation-fixture:item', Component, Icon })
     host.railSections.register({
@@ -73,7 +73,7 @@ describe('bundled plugin UI activation', () => {
     host.sessionEvents.register('activation-fixture:updated', handler)
 
     setEnabledPluginNames(null)
-    expect(pluginContributionActivation('activation-fixture')).toBe('pending')
+    expect(miniAppContributionActivation('activation-fixture')).toBe('pending')
     expect(workItemKindRegistry.get('activation-fixture:item')).toBeUndefined()
     expect(workItemKindRegistry.getRegistered('activation-fixture:item')?.pluginName).toBe(
       'activation-fixture',
@@ -88,7 +88,7 @@ describe('bundled plugin UI activation', () => {
     expect(sessionEventHandlersFor('activation-fixture:updated')).toEqual([])
 
     setEnabledPluginNames(new Set(['activation-fixture']))
-    expect(pluginContributionActivation('activation-fixture')).toBe('enabled')
+    expect(miniAppContributionActivation('activation-fixture')).toBe('enabled')
     expect(workItemKindRegistry.get('activation-fixture:item')?.pluginName).toBe(
       'activation-fixture',
     )
@@ -120,7 +120,7 @@ describe('bundled plugin UI activation', () => {
     expect(sessionEventHandlersFor('activation-fixture:updated')).toEqual([handler])
 
     setEnabledPluginNames(new Set(['someone-else']))
-    expect(pluginContributionActivation('activation-fixture')).toBe('disabled')
+    expect(miniAppContributionActivation('activation-fixture')).toBe('disabled')
     expect(workItemKindRegistry.get('activation-fixture:item')).toBeUndefined()
     expect(contributedVscFileIcon('activation-fixture.file')).toBeUndefined()
     expect(resolveUiAnchor('localix://resource/fixture/item')).toBeNull()

@@ -1,6 +1,6 @@
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
-import { usePluginWorkspaceChanges } from '@localixai/mini-app-sdk/ui/runtime-hooks'
-import { pluginApiFetch } from '@localixai/mini-app-sdk/ui/transport'
+import { useMiniAppWorkspaceChanges } from '@localixai/mini-app-sdk/ui/runtime-hooks'
+import { miniAppApiFetch } from '@localixai/mini-app-sdk/ui/transport'
 import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { touchesProject } from '../shared/changes'
 import { MAX_TRAIL } from '../shared/lens'
@@ -56,14 +56,14 @@ export function useGraph(active: boolean) {
   const missed = useRef(false)
   const notifyChanged = useCallback(() => {
     if (!sessionId) return
-    void pluginApiFetch(`${ROUTE_PATH}/changed?${new URLSearchParams({ sessionId })}`, {
+    void miniAppApiFetch(`${ROUTE_PATH}/changed?${new URLSearchParams({ sessionId })}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: '{}',
       signal: AbortSignal.timeout(5000),
     }).catch(() => undefined)
   }, [sessionId])
-  const live = usePluginWorkspaceChanges(
+  const live = useMiniAppWorkspaceChanges(
     sessionId,
     ({ paths }) => {
       if (root.current && !touchesProject(root.current, paths)) return

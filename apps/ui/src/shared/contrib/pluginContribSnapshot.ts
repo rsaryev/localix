@@ -1,7 +1,7 @@
 import type {
   CapabilitySnapshot,
   CapabilityToolSurface,
-  PluginViewSpec,
+  MiniAppViewSpec,
   PluginRecord,
 } from '@/shared/api/contracts'
 
@@ -20,7 +20,7 @@ export interface PluginContribSnapshot {
   /** Installed plugin records, including disabled plugins and plugins with no UI views. */
   plugins: PluginRecord[]
   /** Sandboxed views contributed by enabled plugins — one rail button + tab each. */
-  views: PluginViewSpec[]
+  views: MiniAppViewSpec[]
   /**
    * The scope's tool surface + catalog, or null before the first fetch resolves.
    * Same document as `plugins` above, so a tool cannot outlive its owning plugin's

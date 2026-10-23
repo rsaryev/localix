@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
-import { bindPluginUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
+import { bindMiniAppUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
 import { tradingApi } from './api/tradingApi'
 
 let teardown: () => Promise<void>
@@ -8,7 +8,7 @@ let unbindDoubles: () => void
 
 beforeAll(() => {
   teardown = registerDom()
-  unbindDoubles = bindPluginUiTestDoubles()
+  unbindDoubles = bindMiniAppUiTestDoubles()
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 })
 

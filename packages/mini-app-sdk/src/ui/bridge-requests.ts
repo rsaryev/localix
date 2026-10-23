@@ -1,4 +1,4 @@
-import type { PluginBridgeMessage, PluginBridgeErrorPayload } from './bridge'
+import type { MiniAppBridgeMessage, MiniAppBridgeErrorPayload } from './bridge'
 
 // ─── Request/reply correlation ───────────────────────────────────────────────
 
@@ -13,7 +13,7 @@ export interface BridgeRequests {
   /** Mint a pending request. `timeoutMs` (optional) rejects it if no reply lands. */
   create<T = unknown>(timeoutMs?: number): { id: string; promise: Promise<T> }
   /** Settle a pending request from an inbound `result`/`error`. False = not ours. */
-  settle(message: PluginBridgeMessage): boolean
+  settle(message: MiniAppBridgeMessage): boolean
   /** Reject everything still pending (e.g. the iframe went away). */
   rejectAll(reason?: unknown): void
   /** Number of requests still awaiting a reply. */
@@ -60,7 +60,7 @@ export function createBridgeRequests(): BridgeRequests {
       if (!entry) return false
       if (message.type === 'result') entry.resolve(message.payload)
       else {
-        const payload = message.payload as PluginBridgeErrorPayload | undefined
+        const payload = message.payload as MiniAppBridgeErrorPayload | undefined
         entry.reject(new Error(payload?.message ?? 'Bridge invoke failed'))
       }
       return true

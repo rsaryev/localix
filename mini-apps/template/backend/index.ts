@@ -1,4 +1,4 @@
-import type { PluginContext, PluginRegistration } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext, MiniAppRegistration } from '@localixai/mini-app-sdk/backend'
 import { formatSystemSnapshot } from '../shared/system'
 import { formatProcessSnapshot } from '../shared/processes'
 import { formatSystemMarks, SYSTEM_MARK_NOTE_MAX } from '../shared/system-marks'
@@ -29,7 +29,7 @@ export function createRoutes(dataDir: string) {
   })
 }
 
-export function register(ctx: PluginContext): PluginRegistration {
+export function register(ctx: MiniAppContext): MiniAppRegistration {
   // What the person creates lives under `ctx.dataDir`: the routes and the tools reach the same
   // store, so a mark the agent makes is in the view and one the view makes is in the tool.
   const marks = createSystemMarks(ctx.dataDir, readSystem)

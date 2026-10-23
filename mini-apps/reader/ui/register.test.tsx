@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { recordingPluginUiHost } from '@localixai/mini-app-sdk/ui/testing'
+import { recordingMiniAppUiHost } from '@localixai/mini-app-sdk/ui/testing'
 import type {
   FileEditorContribution,
   StatusItemContribution,
@@ -13,7 +13,7 @@ import { registerUi } from './register'
 test('registers reader work items, links, and ebook editor through the plugin host', () => {
   // A recording host from the SDK, not a hand-rolled literal: the contract owns which registries
   // exist, so adding a seam to it can no longer break a plugin that does not use the seam.
-  const { host, registrations } = recordingPluginUiHost()
+  const { host, registrations } = recordingMiniAppUiHost()
   registerUi(host)
 
   const workItems = registrations.workItems as WorkItemKindContribution[]

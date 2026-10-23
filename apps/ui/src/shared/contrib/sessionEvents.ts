@@ -3,12 +3,12 @@
  * counterpart of a plugin backend's own stream frames (e.g. `<domain>.updated`).
  * The chat runtime's demultiplexer dispatches an event type here AFTER its
  * built-in routes: a contributed type is consumed by its handlers and does not
- * reach the generic store reducer. Registration comes through the PluginUiHost
+ * reach the generic store reducer. Registration comes through the MiniAppUiHost
  * (`host.sessionEvents.register`) from a plugin's `ui/register.tsx`.
  */
 
 export type SessionEventHandler = (sessionId: string, event: unknown) => void
-import { isPluginContributionEnabled } from './pluginActivation'
+import { isMiniAppContributionEnabled } from './miniAppActivation'
 
 interface RegisteredHandler {
   handler: SessionEventHandler
@@ -40,6 +40,6 @@ export function removeSessionEventHandlersOf(owner: string): void {
 
 export function sessionEventHandlersFor(type: string): SessionEventHandler[] {
   return (handlers.get(type) ?? []).flatMap((entry) =>
-    isPluginContributionEnabled(entry.pluginName) ? [entry.handler] : [],
+    isMiniAppContributionEnabled(entry.pluginName) ? [entry.handler] : [],
   )
 }

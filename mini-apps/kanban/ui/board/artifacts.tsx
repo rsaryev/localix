@@ -1,5 +1,5 @@
 import { FileText, Link2, Terminal, StickyNote, type LucideIcon } from 'lucide-react'
-import { pluginTerminal, pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppTerminal, miniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import { Chip } from '@localixai/kit/chip'
 import { ExternalAnchor } from '@localixai/kit/external-anchor'
 import { TextAction } from '@localixai/kit/text-action'
@@ -71,7 +71,7 @@ export function ArtifactList({ artifacts }: { artifacts: KanbanArtifact[] }) {
                 </ExternalAnchor>
               ) : sessionId && a.kind === 'file' ? (
                 <TextAction
-                  onClick={() => pluginWorkspace.openFile({ sessionId, path: a.value })}
+                  onClick={() => miniAppWorkspace.openFile({ sessionId, path: a.value })}
                   tooltip={`Open ${a.value}`}
                   className={ARTIFACT_LINK}
                 >
@@ -80,7 +80,7 @@ export function ArtifactList({ artifacts }: { artifacts: KanbanArtifact[] }) {
               ) : sessionId && a.kind === 'command' ? (
                 <TextAction
                   // Pasted, never run: the person reads the line on the prompt and presses Enter.
-                  onClick={() => pluginTerminal.paste({ sessionId, command: a.value })}
+                  onClick={() => miniAppTerminal.paste({ sessionId, command: a.value })}
                   tooltip={`Paste into the terminal: ${a.value}`}
                   className={ARTIFACT_LINK}
                 >

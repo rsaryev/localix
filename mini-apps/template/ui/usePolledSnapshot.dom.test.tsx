@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { z } from 'zod'
-import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
+import { bindMiniAppUiTransport } from '@localixai/mini-app-sdk/ui/transport'
 import { registerDom } from '@localixai/kit/testing'
 import type { PolledSnapshot } from './usePolledSnapshot'
 
@@ -32,7 +32,7 @@ test('an action shows its answer at once, and a poll that overlapped it cannot u
   let server: Counter = { count: 0 }
   const heldPolls: Array<() => void> = []
   let holdPolls = false
-  const unbind = bindPluginUiTransport({
+  const unbind = bindMiniAppUiTransport({
     url: (path) => path,
     request: async (path, init) => {
       if (init?.method === 'POST') {

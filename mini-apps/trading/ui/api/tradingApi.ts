@@ -5,7 +5,7 @@
 // PUBLIC MARKET DATA ONLY — the `:id` is an ephemeral `public:<exchange>` source profile and
 // every route is a read. This workbench holds no credentials and has no account or order
 // surface to call.
-import { pluginApiFetch } from '@localixai/mini-app-sdk/ui/transport'
+import { miniAppApiFetch } from '@localixai/mini-app-sdk/ui/transport'
 import type {
   Candle,
   ExchangeCatalogEntry,
@@ -59,10 +59,11 @@ const EXCHANGE_CATALOG_FRESH_MS = 5 * 60_000
 const EXCHANGE_DESCRIPTION_FRESH_MS = 60_000
 const MARKET_PAGE_FRESH_MS = 2_000
 
-const get = async <T>(path: string): Promise<T> => readOr<T>(await pluginApiFetch(`${base}${path}`))
+const get = async <T>(path: string): Promise<T> =>
+  readOr<T>(await miniAppApiFetch(`${base}${path}`))
 const jsonPost = async <T>(path: string, body?: unknown): Promise<T> =>
   readOr<T>(
-    await pluginApiFetch(`${base}${path}`, {
+    await miniAppApiFetch(`${base}${path}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),

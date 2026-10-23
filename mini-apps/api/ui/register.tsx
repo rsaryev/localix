@@ -3,7 +3,7 @@
  *
  * The plugin contributes ONE workspace (a rail VIEWLET → one grid tab per chat, since the
  * collection lives in that chat's project) plus the per-request tab kind a user can pop out of it,
- * through the {@link PluginUiHost} façade (the
+ * through the {@link MiniAppUiHost} façade (the
  * plugin-SDK contract). It is discovered + invoked generically by `shared/contrib/discover.ts`.
  *
  * It used to register a rail SECTION whose rows opened tabs, which made it the last plugin in the
@@ -19,7 +19,7 @@ import {
   type FileEditorProps,
   resourceMessageBindingDraft,
   type MessageContextBindingDraft,
-  type PluginUiHost,
+  type MiniAppUiHost,
   type PublishMessageContext,
   type WorkItemLike,
 } from '@localixai/mini-app-sdk/ui'
@@ -136,7 +136,7 @@ export function __resetApiUiRegistration(): void {
   registered = false
 }
 
-export function registerUi(host: PluginUiHost): void {
+export function registerUi(host: MiniAppUiHost): void {
   if (registered) return
   registered = true
 

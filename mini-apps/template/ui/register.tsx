@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react'
 import { MonitorCog } from 'lucide-react'
 import {
   resourceMessageBindingDraft,
-  type PluginUiHost,
+  type MiniAppUiHost,
   type PublishMessageContext,
 } from '@localixai/mini-app-sdk/ui'
 import { SYSTEM_URI } from '../shared/system'
@@ -26,9 +26,9 @@ function TemplateBody({
   )
 }
 
-const registeredHosts = new WeakSet<PluginUiHost>()
+const registeredHosts = new WeakSet<MiniAppUiHost>()
 
-export function registerUi(host: PluginUiHost): void {
+export function registerUi(host: MiniAppUiHost): void {
   if (registeredHosts.has(host)) return
   registeredHosts.add(host)
   host.workItems.register({

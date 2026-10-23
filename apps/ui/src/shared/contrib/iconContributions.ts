@@ -1,5 +1,5 @@
 import type { FileIconData, IconComponent } from '@localixai/mini-app-sdk/ui'
-import { isPluginContributionEnabled } from './pluginActivation'
+import { isMiniAppContributionEnabled } from './miniAppActivation'
 
 interface OwnedContribution<T> {
   value: T
@@ -33,7 +33,7 @@ export function registerResourceRefIcons(
 /** Resolve a contributed `resourceIcon` hint → its icon. */
 export function resourceRefIcon(key: string): IconComponent | undefined {
   const entry = resourceIcons.get(key)
-  return entry && isPluginContributionEnabled(entry.pluginName) ? entry.value : undefined
+  return entry && isMiniAppContributionEnabled(entry.pluginName) ? entry.value : undefined
 }
 
 /** Register trusted, build-time SVG data for an exact file name. */
@@ -58,5 +58,5 @@ export function removeIconsOf(owner: string): void {
 
 export function contributedVscFileIcon(name: string): FileIconData | undefined {
   const entry = fileIcons.get(name.toLowerCase())
-  return entry && isPluginContributionEnabled(entry.pluginName) ? entry.value : undefined
+  return entry && isMiniAppContributionEnabled(entry.pluginName) ? entry.value : undefined
 }

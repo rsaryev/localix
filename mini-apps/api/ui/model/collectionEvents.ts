@@ -1,7 +1,7 @@
-import { pluginCommandBus, type PluginCommandEvent } from '@localixai/mini-app-sdk/ui/commands'
+import { miniAppCommandBus, type MiniAppCommandEvent } from '@localixai/mini-app-sdk/ui/commands'
 import {
   API_WORKSPACE_CHANNEL,
-  API_PLUGIN,
+  API_MINI_APP,
   parseApiWorkspaceCommand,
   type ApiWorkspaceCommand,
 } from '../../backend/collection-command'
@@ -19,7 +19,7 @@ const listeners = new Set<Listener>()
  * safe from any chat — the listener re-reads its OWN session — while a per-request fact (the agent
  * is sending this one) is matched against the listener's session by the listener.
  */
-export function handleApiWorkspaceCommand(event: PluginCommandEvent): void {
+export function handleApiWorkspaceCommand(event: MiniAppCommandEvent): void {
   const command = parseApiWorkspaceCommand(event.payload)
   if (!command) return
   for (const listener of Array.from(listeners)) listener(command, event.sessionId)
@@ -30,7 +30,7 @@ let initialized = false
 export function initApiWorkspaceCommands(): void {
   if (initialized) return
   initialized = true
-  pluginCommandBus.register(API_PLUGIN, API_WORKSPACE_CHANNEL, handleApiWorkspaceCommand)
+  miniAppCommandBus.register(API_MINI_APP, API_WORKSPACE_CHANNEL, handleApiWorkspaceCommand)
 }
 
 export function subscribeApiWorkspaceCommands(listener: Listener): () => void {

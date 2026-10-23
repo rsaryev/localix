@@ -5,7 +5,7 @@
  * mounted via a static `app.route()` loop, providers registered in one bootstrap
  * pass. Toggling a plugin therefore needed a process restart. This host owns that
  * wiring as a RECONCILER instead: `reconcile()` recomputes the desired set (via the
- * same failure-isolated `loadPluginBackends` path boot used) and diffs it against
+ * same failure-isolated `loadMiniAppBackends` path boot used) and diffs it against
  * what is currently wired, per plugin — enable wires, disable unwires, boot is just
  * the first reconcile. There is exactly ONE wiring code path.
  *
@@ -34,13 +34,13 @@ import type { Env, Schema } from 'hono'
 import { createDebouncer } from '../../lib/debounce'
 import type { BackendSubsystem } from '../ext/subsystem-contrib'
 import type { SearchProviderRegistry } from '../agent-core/search/provider'
-import type { PluginRouteScope } from '@localixai/mini-app-sdk/backend'
-import { createPluginUiActionTable } from './backend-host-ui-actions'
+import type { MiniAppRouteScope } from '@localixai/mini-app-sdk/backend'
+import { createMiniAppUiActionTable } from './backend-host-ui-actions'
 
-import type { PluginBackendHostDeps, PluginBackendHost } from './backend-host-contracts'
-import { planPluginBackends } from './backend-host-plan'
+import type { MiniAppBackendHostDeps, MiniAppBackendHost } from './backend-host-contracts'
+import { planMiniAppBackends } from './backend-host-plan'
 
-export type { PluginBackendHostDeps, PluginBackendHost } from './backend-host-contracts'
+export type { MiniAppBackendHostDeps, MiniAppBackendHost } from './backend-host-contracts'
 
 const REFRESH_DEBOUNCE_MS = 300
 
@@ -50,7 +50,7 @@ interface WiredBackend {
   wrapper?: Hono
 }
 
-export function createPluginBackendHost(deps: PluginBackendHostDeps): PluginBackendHost {
+export function createMiniAppBackendHost(deps: MiniAppBackendHostDeps): MiniAppBackendHost {
   /** Wired subsystems by OWNING PLUGIN name (a plugin may contribute several). */
   const wired = new Map<string, WiredBackend[]>()
   /**
@@ -61,7 +61,7 @@ export function createPluginBackendHost(deps: PluginBackendHostDeps): PluginBack
    */
   const wiredRevisions = new Map<string, string>()
   /** Exact-scope UI handlers; unlike process-global providers, project overrides coexist. */
-  let uiActions = createPluginUiActionTable()
+  let uiActions = createMiniAppUiActionTable()
   /** Live mount table the dispatcher reads per request. */
   const mounts = new Map<string, Hono>()
   /** Subsystem ids whose capabilities are currently registered — one register per id, so a
@@ -187,7 +187,7 @@ export function createPluginBackendHost(deps: PluginBackendHostDeps): PluginBack
     const desired = await deps.loadBackends()
     // The load is the slow part; a shutdown that landed meanwhile must not get new wiring.
     if (stopped) return
-    const { desiredByName, nextUiActions, refused, revisionOf } = planPluginBackends(desired, deps)
+    const { desiredByName, nextUiActions, refused, revisionOf } = planMiniAppBackends(desired, deps)
 
     // Deleting the CURRENT key mid-iteration is well-defined for a Map, and the awaits
     // below cannot interleave another writer (reconciles are serialized on `lifecycle`).
@@ -243,7 +243,7 @@ export function createPluginBackendHost(deps: PluginBackendHostDeps): PluginBack
             // place). Resolution failures degrade to no environment rather than a 500: a plugin
             // route that does not need scope must keep working.
             const userId = c.get('userId') as string | undefined
-            let scope: PluginRouteScope | undefined
+            let scope: MiniAppRouteScope | undefined
             if (deps.resolveScope && userId) {
               try {
                 scope = await deps.resolveScope({ userId, request: c.req.raw })

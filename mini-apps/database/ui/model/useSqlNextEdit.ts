@@ -1,9 +1,9 @@
 import { useCallback } from 'react'
 import type { NextEditRequest, NextEditSource, EditorSuggestion } from '@localixai/kit/code-editor'
-import { pluginEditor } from '@localixai/mini-app-sdk/ui/runtime'
-import { usePluginEditPredictionEnabled } from '@localixai/mini-app-sdk/ui/runtime-hooks'
+import { miniAppEditor } from '@localixai/mini-app-sdk/ui/runtime'
+import { useMiniAppEditPredictionEnabled } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
-import type { PluginCompletionReference } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppCompletionReference } from '@localixai/mini-app-sdk/ui'
 
 /**
  * AI edit prediction for the SQL console — the SAME unified edit-prediction
@@ -21,9 +21,9 @@ import type { PluginCompletionReference } from '@localixai/mini-app-sdk/ui'
  * never sends schema text, provider provenance, or sensitivity labels directly.
  */
 export function useSqlNextEdit(
-  getContextReferences?: (request: NextEditRequest) => PluginCompletionReference[],
+  getContextReferences?: (request: NextEditRequest) => MiniAppCompletionReference[],
 ): NextEditSource | undefined {
-  const enabled = usePluginEditPredictionEnabled()
+  const enabled = useMiniAppEditPredictionEnabled()
   const sessionId = useWorkItemSessionId()
 
   const source = useCallback(
@@ -31,7 +31,7 @@ export function useSqlNextEdit(
       if (!sessionId) return null
       // Nothing useful to predict on a blank buffer.
       if (!req.content.trim()) return null
-      const result = await pluginEditor.predictNextEdit(
+      const result = await miniAppEditor.predictNextEdit(
         sessionId,
         {
           file: 'query.sql',

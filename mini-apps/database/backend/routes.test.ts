@@ -99,7 +99,7 @@ const newService = (createDriver: () => DbDriver = fakeDriver) =>
   })
 
 /**
- * Mount the routes as the host does and supply the per-request PluginRouteScope as Hono env.
+ * Mount the routes as the host does and supply the per-request MiniAppRouteScope as Hono env.
  */
 function harness(service: DatabaseService, userId = 'user-a') {
   const app = new Hono()

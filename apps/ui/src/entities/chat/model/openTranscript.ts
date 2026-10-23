@@ -1,5 +1,5 @@
 import type { Message } from '@/shared/api/contracts'
-import type { PluginTranscriptAction } from '@localixai/mini-app-sdk/ui/runtime'
+import type { MiniAppTranscriptAction } from '@localixai/mini-app-sdk/ui/runtime'
 import { inspector } from '@/shared/lib/inspectorBus'
 
 export interface TranscriptActionDestination {
@@ -44,8 +44,8 @@ export interface OpenTranscriptInput {
    * Kept beside the in-memory content because callbacks cannot be serialized into a work-item
    * payload. A transcript without an action stays a plain reader.
    */
-  readonly action?: PluginTranscriptAction
-  readonly actions?: readonly PluginTranscriptAction[]
+  readonly action?: MiniAppTranscriptAction
+  readonly actions?: readonly MiniAppTranscriptAction[]
 }
 
 /** Content lives here, not in the work item's payload: payloads are serialized into the persisted

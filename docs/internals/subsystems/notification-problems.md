@@ -104,9 +104,9 @@ actions do not expire.
 
 ### Attribute plugin rows
 
-The host wraps the shared SDK `toast` with `apps/ui/src/shared/contrib/pluginToast.ts`.
-`attributePluginCaller` (`apps/ui/src/shared/contrib/pluginAttribution.ts`) finds the innermost
-loaded plugin artifact in V8 or JavaScriptCore call stacks. For a deferred `runPluginAction`
+The host wraps the shared SDK `toast` with `apps/ui/src/shared/contrib/miniAppToast.ts`.
+`attributeMiniAppCaller` (`apps/ui/src/shared/contrib/miniAppAttribution.ts`) finds the innermost
+loaded plugin artifact in V8 or JavaScriptCore call stacks. For a deferred `runMiniAppAction`
 failure, the SDK supplies its call-time stack.
 
 The wrapper supplies the plugin display name as `source`. `recordClientFact` (`clientFacts.ts`) uses
@@ -124,7 +124,7 @@ reporter, so reading a plugin's roster never files a problem.
 
 ## Limits
 
-- Stack attribution requires a plugin frame or the call-time stack supplied by `runPluginAction`.
+- Stack attribution requires a plugin frame or the call-time stack supplied by `runMiniAppAction`.
   Asynchronous effects without that context fall back to the report scope or an unlabeled toast.
 - Transient toast callbacks expire after one minute and stay in the originating window. Durable
   recovery belongs in a problem report, navigation action, or typed command.
@@ -143,8 +143,8 @@ reporter, so reading a plugin's roster never files a problem.
 - [Client standing conditions](../../../apps/ui/src/shared/lib/notifications/store.ts)
 - [Incident fallback and duplicate suppression](../../../apps/ui/src/shared/lib/notifications/incidentFallback.ts)
 - [Client causal tracing](../../../apps/ui/src/shared/lib/notifications/clientFacts.ts)
-- [Plugin notification wrapper](../../../apps/ui/src/shared/contrib/pluginToast.ts)
-- [Plugin stack attribution](../../../apps/ui/src/shared/contrib/pluginAttribution.ts)
+- [Plugin notification wrapper](../../../apps/ui/src/shared/contrib/miniAppToast.ts)
+- [Plugin stack attribution](../../../apps/ui/src/shared/contrib/miniAppAttribution.ts)
 - [Server plugin problem reporter](../../../apps/api/src/features/plugins/problem-reporter.ts)
 - [SDK request attribution](../../../packages/mini-app-sdk/src/ui/transport.ts)
 - [Headline wording guard](../../../apps/ui/src/shared/lib/notifications/wording.test.ts)

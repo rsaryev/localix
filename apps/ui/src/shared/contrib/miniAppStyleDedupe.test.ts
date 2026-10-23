@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { canonicalRuleText, dropHostDuplicates, hostRuleTexts } from './pluginStyleDedupe'
+import { canonicalRuleText, dropHostDuplicates, hostRuleTexts } from './miniAppStyleDedupe'
 
 type FakeRule = { cssText: string; cssRules?: FakeRule[] }
 const sheet = (rules: FakeRule[]) => ({

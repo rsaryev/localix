@@ -1,11 +1,11 @@
-import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 
 import { learningCourseUri } from '../../shared/resource-uri'
 
 export const learningCourseTabId = (courseId: string) => `learning:course:${courseId}`
 
 export function openLearningLibrary(sessionId: string): void {
-  pluginWorkspace.openWorkItem({
+  miniAppWorkspace.openWorkItem({
     workKind: 'learning:workspace',
     id: 'learning:workspace',
     title: 'Learning Studio',
@@ -24,7 +24,7 @@ export function openLearningCourse(
   title: string,
   resourceUri?: string,
 ): void {
-  pluginWorkspace.openWorkItem({
+  miniAppWorkspace.openWorkItem({
     workKind: 'learning:course',
     id: learningCourseTabId(courseId),
     title,

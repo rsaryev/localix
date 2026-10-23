@@ -1,7 +1,7 @@
 import { Container, ScrollText, Gauge, Cpu, Layers, HardDrive, Network } from 'lucide-react'
 import fileTypeDocker from '@iconify-icons/vscode-icons/file-type-docker'
 
-import { resourceMessageBindingDraft, type PluginUiHost } from '@localixai/mini-app-sdk/ui'
+import { resourceMessageBindingDraft, type MiniAppUiHost } from '@localixai/mini-app-sdk/ui'
 import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 import { detectManifestKind } from './model/dockerManifestCommands'
 import { resolveDockerAnchor } from './register/anchor'
@@ -18,7 +18,7 @@ import { DockerContainerBody, DockerManifestTab, DockerResourceBody } from './re
  * The provider intentionally does not own a rail section: the root DevOps plugin
  * composes it with Kubernetes behind the single DevOps Workspace entry.
  */
-export function registerDockerContributions(host: PluginUiHost): void {
+export function registerDockerContributions(host: MiniAppUiHost): void {
   host.workItems.register({
     kind: 'devops:docker-container',
     Component: DockerContainerBody,

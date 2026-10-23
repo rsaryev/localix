@@ -1,9 +1,9 @@
 import {
-  PLUGIN_UI_KIT_PREFIX,
-  PLUGIN_UI_PRELOADED_MODULES,
-  PLUGIN_UI_SHARED_GLOBAL,
-  isPluginUiSharedModule,
-  type PluginUiSharedModules,
+  MINI_APP_UI_KIT_PREFIX,
+  MINI_APP_UI_PRELOADED_MODULES,
+  MINI_APP_UI_SHARED_GLOBAL,
+  isMiniAppUiSharedModule,
+  type MiniAppUiSharedModules,
 } from '@localixai/mini-app-sdk/ui-artifact'
 
 /**
@@ -141,7 +141,7 @@ const KIT_DOORS = underVite
   : {}
 const HOST_LENT = underVite ? import.meta.glob<Record<string, unknown>>('./kit/*.ts') : {}
 const kitSpecifier = (path: string): string =>
-  `${PLUGIN_UI_KIT_PREFIX}${/\/([^/]+)\.ts$/u.exec(path)?.[1] ?? path}`
+  `${MINI_APP_UI_KIT_PREFIX}${/\/([^/]+)\.ts$/u.exec(path)?.[1] ?? path}`
 const KIT: Record<string, Loader> = Object.fromEntries(
   [...Object.entries(KIT_DOORS), ...Object.entries(HOST_LENT)].map(([path, load]) => [
     kitSpecifier(path),
@@ -194,7 +194,7 @@ function pageLifetime(): PageLifetime {
 export function createPluginSharedModules(
   loaders: Readonly<Record<string, Loader>>,
   lifetime: PageLifetime = pageLifetime(),
-): PluginUiSharedModules {
+): MiniAppUiSharedModules {
   const loading = new Map<string, Promise<Record<string, unknown>>>()
   const loaded = new Map<string, Record<string, unknown>>()
   const refuse = (specifier: string) =>
@@ -220,7 +220,7 @@ export function createPluginSharedModules(
       if (!lifetime.alive()) return never()
       const known = loading.get(specifier)
       if (known) return known
-      const load = isPluginUiSharedModule(specifier) ? loaders[specifier] : undefined
+      const load = isMiniAppUiSharedModule(specifier) ? loaders[specifier] : undefined
       if (!load) return Promise.reject(refuse(specifier))
       const next = whileAlive(
         load().then((module) => {
@@ -236,10 +236,10 @@ export function createPluginSharedModules(
     require(specifier) {
       const module = loaded.get(specifier)
       if (module) return module
-      if (!loaders[specifier] || !isPluginUiSharedModule(specifier)) throw refuse(specifier)
+      if (!loaders[specifier] || !isMiniAppUiSharedModule(specifier)) throw refuse(specifier)
       throw new Error(
         `[plugin-ui] "${specifier}" was required before the host loaded it; only ` +
-          `${PLUGIN_UI_PRELOADED_MODULES.join(', ')} can be required synchronously`,
+          `${MINI_APP_UI_PRELOADED_MODULES.join(', ')} can be required synchronously`,
       )
     },
   }
@@ -250,12 +250,12 @@ export function createPluginSharedModules(
  * re-exports features); the plugin UI runtime in `shared/contrib` reads it only through the SDK
  * contract, so no lower layer imports the kit.
  */
-export function installPluginSharedModules(): PluginUiSharedModules {
-  const scope = globalThis as unknown as Record<string, PluginUiSharedModules | undefined>
-  scope[PLUGIN_UI_SHARED_GLOBAL] ??= createPluginSharedModules({
+export function installPluginSharedModules(): MiniAppUiSharedModules {
+  const scope = globalThis as unknown as Record<string, MiniAppUiSharedModules | undefined>
+  scope[MINI_APP_UI_SHARED_GLOBAL] ??= createPluginSharedModules({
     ...CORE,
     ...SDK_SHARED_MODULES,
     ...KIT,
   })
-  return scope[PLUGIN_UI_SHARED_GLOBAL]
+  return scope[MINI_APP_UI_SHARED_GLOBAL]
 }

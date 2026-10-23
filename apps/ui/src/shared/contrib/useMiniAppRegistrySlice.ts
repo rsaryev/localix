@@ -1,5 +1,5 @@
 import { useCallback, useRef, useSyncExternalStore } from 'react'
-import { pluginActivationVersion, subscribePluginActivation } from './pluginActivation'
+import { pluginActivationVersion, subscribePluginActivation } from './miniAppActivation'
 import { registryChangeVersion, subscribeRegistryChanges } from './registryChanges'
 
 /**
@@ -16,7 +16,7 @@ import { registryChangeVersion, subscribeRegistryChanges } from './registryChang
  * The slice is recomputed only when the registries or the activation state moved since it was
  * cached, which keeps `getSnapshot` stable as `useSyncExternalStore` requires.
  */
-export function usePluginRegistrySlice<T>(key: string, select: () => T): T {
+export function useMiniAppRegistrySlice<T>(key: string, select: () => T): T {
   const cache = useRef<{ key: string; stamp: string; value: T } | null>(null)
   const selectRef = useRef(select)
   selectRef.current = select
@@ -29,11 +29,11 @@ export function usePluginRegistrySlice<T>(key: string, select: () => T): T {
     cache.current = { key, stamp, value }
     return value
   }, [key])
-  return useSyncExternalStore(subscribePluginRegistry, getSnapshot, getSnapshot)
+  return useSyncExternalStore(subscribeMiniAppRegistry, getSnapshot, getSnapshot)
 }
 
 /** Registry flushes and activation broadcasts: the two ways a registry read can change. */
-export function subscribePluginRegistry(listener: () => void): () => void {
+export function subscribeMiniAppRegistry(listener: () => void): () => void {
   const offRegistry = subscribeRegistryChanges(listener)
   const offActivation = subscribePluginActivation(listener)
   return () => {

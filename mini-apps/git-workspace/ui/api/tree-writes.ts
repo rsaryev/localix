@@ -7,7 +7,7 @@
  * patches the matching repo row, and repaints. Anything that CAN move a branch
  * tip lives in `ref-writes.ts` and answers with the branch list too.
  */
-import { unwrapPluginResponse } from '@localixai/mini-app-sdk/ui'
+import { unwrapMiniAppResponse } from '@localixai/mini-app-sdk/ui'
 import type { SourceControlMutation } from '../../backend/source-control/contracts'
 import { client } from './client'
 
@@ -19,7 +19,7 @@ export const treeWrites = {
     header: string,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control']['revert-hunk'].$post({
         json: { sessionId, path, index, header, repoRoot },
       }),
@@ -34,7 +34,7 @@ export const treeWrites = {
     diffId: string,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control']['stage-lines'].$post({
         json: { sessionId, path, lines, diffId, repoRoot },
       }),
@@ -49,7 +49,7 @@ export const treeWrites = {
     diffId: string,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control']['unstage-lines'].$post({
         json: { sessionId, path, lines, diffId, repoRoot },
       }),
@@ -64,7 +64,7 @@ export const treeWrites = {
     diffId: string,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control']['discard-lines'].$post({
         json: { sessionId, path, lines, diffId, repoRoot },
       }),
@@ -76,7 +76,7 @@ export const treeWrites = {
     paths: string[],
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control'].stage.$post({ json: { sessionId, paths, repoRoot } }),
     )
   },
@@ -86,7 +86,7 @@ export const treeWrites = {
     paths: string[],
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control'].unstage.$post({ json: { sessionId, paths, repoRoot } }),
     )
   },
@@ -96,7 +96,7 @@ export const treeWrites = {
     paths: string[],
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control'].discard.$post({ json: { sessionId, paths, repoRoot } }),
     )
   },
@@ -107,7 +107,7 @@ export const treeWrites = {
     patterns: string[],
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control'].gitignore.$post({
         json: { sessionId, patterns, repoRoot },
       }),

@@ -26,8 +26,8 @@ import type { createLogger } from '../lib/logger'
 import { userHome, type loadEnv } from '../lib/env'
 import type { createDigestLoaders } from '../boot/digests'
 import type { RegistriesPhase } from './registries'
-import type { PluginHostRefs } from './plugin-host-refs'
-import type { createPluginBackendHost } from '../features/plugins/backend-host'
+import type { MiniAppHostRefs } from './plugin-host-refs'
+import type { createMiniAppBackendHost } from '../features/plugins/backend-host'
 import { PLUGIN_WARNINGS, warnOnce } from '../lib/warn-once'
 
 export interface DomainServicesPhaseInput
@@ -43,8 +43,8 @@ export interface DomainServicesPhaseInput
   loadTerminalDigest: ReturnType<typeof createDigestLoaders>['loadTerminalDigest']
   loadCallDigest: ReturnType<typeof createDigestLoaders>['loadCallDigest']
   loadMessageDigest: ReturnType<typeof createDigestLoaders>['loadMessageDigest']
-  backendHost: ReturnType<typeof createPluginBackendHost>
-  hostRefs: PluginHostRefs
+  backendHost: ReturnType<typeof createMiniAppBackendHost>
+  hostRefs: MiniAppHostRefs
 }
 
 export interface DomainServicesPhase {

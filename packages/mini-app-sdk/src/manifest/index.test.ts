@@ -3,16 +3,16 @@ import * as manifest from './index'
 import * as primitives from './primitives'
 
 import {
-  PLUGIN_API_VERSION,
-  PLUGIN_CONFIG_TYPES,
+  MINI_APP_API_VERSION,
+  MINI_APP_CONFIG_TYPES,
   PLUGIN_NAME_RE,
   PLUGIN_QUALIFIED_NAME_RE,
-  isWorkbenchPlugin,
-  normalizePluginSurfaces,
-  pluginConfigOptionSchema,
-  pluginManifestCoreSchema,
-  type PluginConfigOptionInput,
-  type PluginManifestCoreInput,
+  isWorkbenchMiniApp,
+  normalizeMiniAppSurfaces,
+  miniAppConfigOptionSchema,
+  miniAppManifestCoreSchema,
+  type MiniAppConfigOptionInput,
+  type MiniAppManifestCoreInput,
 } from './index'
 
 describe('plugin name rules', () => {
@@ -36,70 +36,70 @@ describe('plugin name rules', () => {
 
 describe('surfaces', () => {
   test('absent/empty declarations default to the agent surface', () => {
-    expect(normalizePluginSurfaces(undefined)).toEqual(['agent'])
-    expect(normalizePluginSurfaces(null)).toEqual(['agent'])
-    expect(normalizePluginSurfaces([])).toEqual(['agent'])
-    expect(normalizePluginSurfaces(['  ', ''])).toEqual(['agent'])
+    expect(normalizeMiniAppSurfaces(undefined)).toEqual(['agent'])
+    expect(normalizeMiniAppSurfaces(null)).toEqual(['agent'])
+    expect(normalizeMiniAppSurfaces([])).toEqual(['agent'])
+    expect(normalizeMiniAppSurfaces(['  ', ''])).toEqual(['agent'])
   })
 
   test('normalizes case/whitespace and de-dupes, preserving unknown surfaces', () => {
-    expect(normalizePluginSurfaces([' Agent', 'WORKBENCH', 'agent'])).toEqual([
+    expect(normalizeMiniAppSurfaces([' Agent', 'WORKBENCH', 'agent'])).toEqual([
       'agent',
       'workbench',
     ])
-    expect(normalizePluginSurfaces(['future-surface'])).toEqual(['future-surface'])
+    expect(normalizeMiniAppSurfaces(['future-surface'])).toEqual(['future-surface'])
   })
 
-  test('isWorkbenchPlugin keys off the workbench surface only', () => {
-    expect(isWorkbenchPlugin(['workbench'])).toBe(true)
-    expect(isWorkbenchPlugin(['agent', 'Workbench'])).toBe(true)
-    expect(isWorkbenchPlugin(['agent'])).toBe(false)
-    expect(isWorkbenchPlugin(undefined)).toBe(false)
+  test('isWorkbenchMiniApp keys off the workbench surface only', () => {
+    expect(isWorkbenchMiniApp(['workbench'])).toBe(true)
+    expect(isWorkbenchMiniApp(['agent', 'Workbench'])).toBe(true)
+    expect(isWorkbenchMiniApp(['agent'])).toBe(false)
+    expect(isWorkbenchMiniApp(undefined)).toBe(false)
   })
 })
 
 test('the SDK pins plugin API v1', () => {
-  expect(PLUGIN_API_VERSION).toBe(1)
+  expect(MINI_APP_API_VERSION).toBe(1)
 })
 
 describe('plugin manifest core contract', () => {
   test('accepts one broad category and rejects unknown ones', () => {
-    expect(pluginManifestCoreSchema.parse({ name: 'game', category: 'games' }).category).toBe(
+    expect(miniAppManifestCoreSchema.parse({ name: 'game', category: 'games' }).category).toBe(
       'games',
     )
-    expect(pluginManifestCoreSchema.safeParse({ name: 'game', category: 'arcade' }).success).toBe(
+    expect(miniAppManifestCoreSchema.safeParse({ name: 'game', category: 'arcade' }).success).toBe(
       false,
     )
   })
 
   test('owns identity defaults and preserves free-form surface declarations', () => {
-    expect(pluginManifestCoreSchema.parse({ name: 'sample-plugin' })).toEqual({
+    expect(miniAppManifestCoreSchema.parse({ name: 'sample-plugin' })).toEqual({
       name: 'sample-plugin',
       version: '0.0.0',
     })
     expect(
-      pluginManifestCoreSchema.parse({
+      miniAppManifestCoreSchema.parse({
         name: 'sample-plugin',
-        apiVersion: PLUGIN_API_VERSION,
+        apiVersion: MINI_APP_API_VERSION,
         surfaces: ['agent', 'future-surface'],
       }),
     ).toEqual({
       name: 'sample-plugin',
       version: '0.0.0',
-      apiVersion: PLUGIN_API_VERSION,
+      apiVersion: MINI_APP_API_VERSION,
       surfaces: ['agent', 'future-surface'],
     })
   })
 
   test('owns declarative config defaults and preserves compatibility hints', () => {
-    expect(PLUGIN_CONFIG_TYPES).toEqual(['string', 'number', 'boolean', 'directory', 'file'])
+    expect(MINI_APP_CONFIG_TYPES).toEqual(['string', 'number', 'boolean', 'directory', 'file'])
     const authored = {
       title: 'Tags',
       multiple: true,
       min: 1,
       max: 3,
-    } satisfies PluginConfigOptionInput
-    expect(pluginConfigOptionSchema.parse(authored)).toEqual({
+    } satisfies MiniAppConfigOptionInput
+    expect(miniAppConfigOptionSchema.parse(authored)).toEqual({
       type: 'string',
       description: '',
       required: false,
@@ -113,8 +113,8 @@ describe('plugin manifest core contract', () => {
     const manifest = {
       name: 'configured',
       config: { API_KEY: { type: 'string', secret: true } },
-    } satisfies PluginManifestCoreInput
-    expect(pluginManifestCoreSchema.parse(manifest).config).toEqual({
+    } satisfies MiniAppManifestCoreInput
+    expect(miniAppManifestCoreSchema.parse(manifest).config).toEqual({
       API_KEY: {
         type: 'string',
         description: '',
@@ -125,26 +125,26 @@ describe('plugin manifest core contract', () => {
   })
 
   test('keeps config defaults scalar and rejects unknown option types', () => {
-    expect(pluginConfigOptionSchema.safeParse({ default: null }).success).toBe(false)
-    expect(pluginConfigOptionSchema.safeParse({ default: ['a'] }).success).toBe(false)
-    expect(pluginConfigOptionSchema.safeParse({ type: 'json' }).success).toBe(false)
+    expect(miniAppConfigOptionSchema.safeParse({ default: null }).success).toBe(false)
+    expect(miniAppConfigOptionSchema.safeParse({ default: ['a'] }).success).toBe(false)
+    expect(miniAppConfigOptionSchema.safeParse({ type: 'json' }).success).toBe(false)
   })
 
   test('rejects invalid names and API versions at the shared boundary', () => {
-    expect(pluginManifestCoreSchema.safeParse({ name: 'bad/name' }).success).toBe(false)
-    expect(pluginManifestCoreSchema.safeParse({ name: 'ok', apiVersion: 0 }).success).toBe(false)
-    expect(pluginManifestCoreSchema.safeParse({ name: 'ok', apiVersion: 1.5 }).success).toBe(false)
+    expect(miniAppManifestCoreSchema.safeParse({ name: 'bad/name' }).success).toBe(false)
+    expect(miniAppManifestCoreSchema.safeParse({ name: 'ok', apiVersion: 0 }).success).toBe(false)
+    expect(miniAppManifestCoreSchema.safeParse({ name: 'ok', apiVersion: 1.5 }).success).toBe(false)
   })
   test('accepts a generic private distribution marker', () => {
-    expect(pluginManifestCoreSchema.parse({ name: 'scaffold', private: true }).private).toBe(true)
+    expect(miniAppManifestCoreSchema.parse({ name: 'scaffold', private: true }).private).toBe(true)
   })
 })
 
 test('the compatibility manifest retains the same primitive objects and functions', () => {
   expect(manifest.PLUGIN_NAME_RE).toBe(primitives.PLUGIN_NAME_RE)
   expect(manifest.PLUGIN_QUALIFIED_NAME_RE).toBe(primitives.PLUGIN_QUALIFIED_NAME_RE)
-  expect(manifest.PLUGIN_CONFIG_TYPES).toBe(primitives.PLUGIN_CONFIG_TYPES)
-  expect(manifest.PLUGIN_CATEGORIES).toBe(primitives.PLUGIN_CATEGORIES)
-  expect(manifest.normalizePluginSurfaces).toBe(primitives.normalizePluginSurfaces)
-  expect(manifest.isWorkbenchPlugin).toBe(primitives.isWorkbenchPlugin)
+  expect(manifest.MINI_APP_CONFIG_TYPES).toBe(primitives.MINI_APP_CONFIG_TYPES)
+  expect(manifest.MINI_APP_CATEGORIES).toBe(primitives.MINI_APP_CATEGORIES)
+  expect(manifest.normalizeMiniAppSurfaces).toBe(primitives.normalizeMiniAppSurfaces)
+  expect(manifest.isWorkbenchMiniApp).toBe(primitives.isWorkbenchMiniApp)
 })

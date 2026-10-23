@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createResourceSync, type ResourceSyncReader } from './resource-sync'
-import { usePluginWorkspaceChanges } from './runtime-hooks'
+import { useMiniAppWorkspaceChanges } from './runtime-hooks'
 import { runAsBackgroundWork, useVisiblePolling, useWorkItemVisible } from './visibility'
 
 /** Conservative path matching includes a folder's creation/removal as well as its contents. */
@@ -91,7 +91,7 @@ export function useFileResourceSync<T>(options: FileResourceSyncOptions<T>) {
       window.removeEventListener('focus', focus)
     }
   }, [active, refresh])
-  const live = usePluginWorkspaceChanges(
+  const live = useMiniAppWorkspaceChanges(
     sessionId,
     (change) => {
       if (workspacePathsTouch(change.paths, prefix)) engine.invalidate(['snapshot'])

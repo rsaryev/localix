@@ -4,7 +4,7 @@
  */
 
 /** The visible screen of a terminal, already VT-emulated by the host. */
-export interface PluginScreenSnapshot {
+export interface MiniAppScreenSnapshot {
   /** Visible rows joined with '\n', trailing blanks trimmed. */
   readonly text: string
   readonly cursor: { readonly row: number; readonly col: number }
@@ -17,7 +17,7 @@ export interface TerminalRead {
   screen(input: {
     sessionId: string | null
     terminalId: string
-  }): Promise<PluginScreenSnapshot | null>
+  }): Promise<MiniAppScreenSnapshot | null>
   /**
    * The retained final screen of a terminal that has EXITED. Separate from `screen` so a finished
    * process is never mistaken for a live one.
@@ -25,7 +25,7 @@ export interface TerminalRead {
   finalScreen(input: {
     sessionId: string | null
     terminalId: string
-  }): Promise<PluginScreenSnapshot | null>
+  }): Promise<MiniAppScreenSnapshot | null>
   /** Live terminals bound to this chat session. */
   list(input: { sessionId: string | null }): { terminalId: string; command?: string }[]
   /**

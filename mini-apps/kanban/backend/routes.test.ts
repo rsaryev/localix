@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { PluginRouteScope } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppRouteScope } from '@localixai/mini-app-sdk/backend'
 
 import type { KanbanBoard, KanbanTask } from '../shared/contracts'
 import { createBoardRoutes } from './routes'
@@ -23,7 +23,7 @@ function routes(sessionId: string | null = 's1') {
     agents,
   )
   // The host puts a session here only once it checked the user owns it.
-  const scope: PluginRouteScope = {
+  const scope: MiniAppRouteScope = {
     userId: 'u1',
     ...(sessionId ? { sessionId } : {}),
     projectId: '',

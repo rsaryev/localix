@@ -1,6 +1,6 @@
 import { Gauge, Square } from 'lucide-react'
 import type { MenuEntry, StatusItemState } from '@localixai/mini-app-sdk/ui'
-import { pluginWorkspace, runPluginAction, statusMenuList } from '@localixai/mini-app-sdk/ui'
+import { miniAppWorkspace, runMiniAppAction, statusMenuList } from '@localixai/mini-app-sdk/ui'
 import {
   createSharedResource,
   GLOBAL_RESOURCE_KEY,
@@ -44,7 +44,7 @@ export function useDevOpsForwardsStatusItem(sessionId: string | null): StatusIte
 
   const openForwards = sessionId
     ? () =>
-        pluginWorkspace.openWorkItem({
+        miniAppWorkspace.openWorkItem({
           workKind: WORK_KIND,
           id: WORK_KIND,
           title: 'DevOps',
@@ -56,7 +56,7 @@ export function useDevOpsForwardsStatusItem(sessionId: string | null): StatusIte
   // A tunnel that refuses to close is the one failure this item exists to make visible: the port
   // stays bound, nothing on screen says why, and the next thing that wants 5432 fails instead.
   const stop = (forward: PortForward) =>
-    runPluginAction(
+    runMiniAppAction(
       () => kubernetesApi.stopPortForward(forward.id),
       `Could not stop the port-forward on 127.0.0.1:${forward.localPort}`,
     )

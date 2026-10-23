@@ -1,11 +1,11 @@
 import { z } from 'zod'
 import { contributionInputSchema } from '../ext/contribution-input'
-import { pluginManifestCoreSchema } from './contracts-base'
+import { miniAppManifestCoreSchema } from './contracts-base'
 import {
   pluginPromptSectionSchema,
-  pluginViewSchema,
+  miniAppViewSchema,
   PROMPT_SECTIONS_MAX_PER_PLUGIN,
-  VIEWS_MAX_PER_PLUGIN,
+  VIEWS_MAX_PER_MINI_APP,
 } from './contracts-contributions'
 import { pluginCommandOptionsSchema, pluginCommandSchema } from './contracts-commands'
 import { pluginAgentSchema } from './contracts-agents'
@@ -18,7 +18,7 @@ const pathOrPaths = z.union([z.string(), z.array(z.string())])
  * so a manifest written for a newer plugin host still loads here. Path fields are
  * resolved relative to the plugin directory.
  */
-export const pluginManifestSchema = pluginManifestCoreSchema.extend({
+export const pluginManifestSchema = miniAppManifestCoreSchema.extend({
   /** Native typed contributions; each kind's payload is validated by the owning subsystem. */
   contributions: z.array(contributionInputSchema).max(1000).optional(),
   /**
@@ -136,9 +136,9 @@ export const pluginManifestSchema = pluginManifestCoreSchema.extend({
   /**
    * Sandboxed UI views the plugin contributes, each opened as a work-item TAB.
    * The single UI-surface contract — a legacy `panels` array is promoted into
-   * this field before parse. See {@link pluginViewSchema}; capped per plugin.
+   * this field before parse. See {@link miniAppViewSchema}; capped per plugin.
    */
-  views: z.array(pluginViewSchema).max(VIEWS_MAX_PER_PLUGIN).optional(),
+  views: z.array(miniAppViewSchema).max(VIEWS_MAX_PER_MINI_APP).optional(),
   /**
    * Custom worker ROLES (sub-agents) the plugin contributes. Either inline
    * objects (see {@link pluginAgentSchema}) OR — for Claude Code compatibility —

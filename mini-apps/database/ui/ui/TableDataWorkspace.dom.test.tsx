@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
 import '@localixai/kit/testing/host-runtime'
 import { registerDom } from '@localixai/kit/testing'
-import { warmPluginUiComponents } from '@localixai/kit/testing/lent-components'
+import { warmMiniAppUiComponents } from '@localixai/kit/testing/lent-components'
 import type { DbConnectionInfo, DbTableSchema } from '../dbClient'
 import { databaseApi } from '../api/databaseApi'
 import type { SchemaState } from '../model/useSchema'
@@ -13,7 +13,7 @@ beforeAll(async () => {
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
   // The structure and DDL views report through the host's lazy problem line; on a cold cache it
   // had not loaded by the assertion, and the engine's reason was simply absent.
-  await warmPluginUiComponents()
+  await warmMiniAppUiComponents()
 })
 
 afterAll(async () => {

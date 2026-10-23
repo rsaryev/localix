@@ -16,15 +16,15 @@ import { resolvePluginConfig } from './config'
 import {
   makeContext,
   importNativeModule,
-  type PluginHostServices,
-  type PluginProblemSink,
+  type MiniAppHostServices,
+  type MiniAppProblemSink,
 } from './native'
-import { pluginProblemReporter } from './problem-reporter'
+import { miniAppProblemReporter } from './problem-reporter'
 import { recordPluginLoad } from '../notifications/conditions/plugins'
 import {
-  capPluginToolDescription,
+  capMiniAppToolDescription,
   isAcceptableToolName,
-  PLUGIN_TOOL_DESCRIPTION_MAX_CHARS,
+  MINI_APP_TOOL_DESCRIPTION_MAX_CHARS,
 } from './tool-policy'
 import { buildMcpRecords } from './mcp'
 import {
@@ -32,7 +32,7 @@ import {
   appendPluginRuntimeDeclarations,
 } from './loader-runtime-declarations'
 
-export type { LoadedPluginHook, LoadedPluginMonitor, LoadedPlugins } from './loader-contract'
+export type { LoadedMiniAppHook, LoadedPluginMonitor, LoadedPlugins } from './loader-contract'
 
 /**
  * Plugin loader — turns enabled, discovered plugins into things the agent runtime
@@ -62,21 +62,21 @@ export async function loadEnabledPlugins(opts: {
     /** Optional — when present, the load emits its per-plugin timing summary here. */
     info?: (msg: string, meta?: unknown) => void
   }
-  /** Generic host-service seam for backend subsystems (see {@link PluginHostServices}).
+  /** Generic host-service seam for backend subsystems (see {@link MiniAppHostServices}).
    *  Threaded into each plugin's `register(ctx)` context. Passed only on the boot-time
    *  backend load; undefined for the ordinary per-run load. */
-  host?: PluginHostServices
+  host?: MiniAppHostServices
   /** Preferred authority seam: binds audit/use capability to the plugin identity. */
-  hostForPlugin?: (pluginName: string) => PluginHostServices
+  hostForMiniApp?: (pluginName: string) => MiniAppHostServices
   /** Where a plugin's problem that names a chat is ALSO drawn. Supplied by the per-RUN load,
    *  the only caller with a session firehose behind it. Every load records the problem in the
    *  Event Center regardless (`problem-reporter.ts`), so `ctx.reportProblem` is always present. */
-  reportProblem?: PluginProblemSink
+  reportProblem?: MiniAppProblemSink
   /** Session storage for the per-RUN load, bound to each plugin's name — the boot load gets it
-   *  through `hostForPlugin` instead, so tools and routes resolve the same folder. */
-  sessionStorageFor?: (pluginName: string) => NonNullable<PluginHostServices['sessionStorage']>
-  /** The agent directory for the per-RUN load — the boot load gets it through `hostForPlugin`. */
-  agentDirectory?: PluginHostServices['agents']
+   *  through `hostForMiniApp` instead, so tools and routes resolve the same folder. */
+  sessionStorageFor?: (pluginName: string) => NonNullable<MiniAppHostServices['sessionStorage']>
+  /** The agent directory for the per-RUN load — the boot load gets it through `hostForMiniApp`. */
+  agentDirectory?: MiniAppHostServices['agents']
 }): Promise<LoadedPlugins> {
   const now = opts.now ?? (() => new Date().toISOString())
   const result = emptyLoadedPlugins()
@@ -156,8 +156,8 @@ export async function loadEnabledPlugins(opts: {
       opts.cwd,
       opts.userId,
       opts.homeDir,
-      opts.hostForPlugin?.(plugin.manifest.name) ?? opts.host,
-      pluginProblemReporter(opts.userId, opts.reportProblem),
+      opts.hostForMiniApp?.(plugin.manifest.name) ?? opts.host,
+      miniAppProblemReporter(opts.userId, opts.reportProblem),
       opts.sessionStorageFor?.(plugin.manifest.name),
       opts.agentDirectory,
     )
@@ -234,13 +234,13 @@ export async function loadEnabledPlugins(opts: {
             continue
           }
           seenToolNames.add(tool.name)
-          const description = capPluginToolDescription(tool.description)
+          const description = capMiniAppToolDescription(tool.description)
           if (description !== tool.description) {
             opts.logger?.warn(
               `plugin "${plugin.manifest.name}" tool "${tool.name}" description capped for model context`,
               {
                 originalChars: tool.description.length,
-                maxChars: PLUGIN_TOOL_DESCRIPTION_MAX_CHARS,
+                maxChars: MINI_APP_TOOL_DESCRIPTION_MAX_CHARS,
               },
             )
           }
@@ -366,7 +366,7 @@ export async function loadEnabledPlugins(opts: {
  * The process-global host composes this function across every scope and wires a
  * backend while at least one scope enables its owning plugin.
  */
-export async function loadPluginBackends(opts: {
+export async function loadMiniAppBackends(opts: {
   repo: CapabilitySourceRepository
   /** What the scope's rules say; a trust gate decides whatever they do not. */
   availability: AvailabilityReader
@@ -382,9 +382,9 @@ export async function loadPluginBackends(opts: {
   }
   /** Generic host-service seam threaded into each backend plugin's `register(ctx)` — the
    *  boot-time authority for capabilities a subsystem service needs (e.g. secret
-   *  resolution). See {@link PluginHostServices}. */
-  host?: PluginHostServices
-  hostForPlugin?: (pluginName: string) => PluginHostServices
+   *  resolution). See {@link MiniAppHostServices}. */
+  host?: MiniAppHostServices
+  hostForMiniApp?: (pluginName: string) => MiniAppHostServices
 }): Promise<Pick<LoadedPlugins, 'backends' | 'loaded'>> {
   const loaded = await loadEnabledPlugins({
     repo: opts.repo,
@@ -395,7 +395,7 @@ export async function loadPluginBackends(opts: {
     homeDir: opts.homeDir,
     logger: opts.logger,
     host: opts.host,
-    hostForPlugin: opts.hostForPlugin,
+    hostForMiniApp: opts.hostForMiniApp,
   })
   return { backends: loaded.backends, loaded: loaded.loaded }
 }

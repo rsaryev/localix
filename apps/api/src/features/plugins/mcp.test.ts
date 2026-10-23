@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
 import { connectServerConfig } from '../mcp/expand'
-import type { PluginConfigValues } from './config'
+import type { MiniAppConfigValues } from './config'
 import {
   pluginDataDir,
   isPlainObject,
@@ -125,7 +125,7 @@ describe('buildMcpRecords', () => {
   })
 
   test('a headersHelper that references ${user_config.*} fails the server, configured or not', () => {
-    const configs: PluginConfigValues[] = [{ REGION: 'eu' }, {}]
+    const configs: MiniAppConfigValues[] = [{ REGION: 'eu' }, {}]
     for (const config of configs) {
       const warns: unknown[] = []
       const recs = buildMcpRecords(
@@ -249,7 +249,7 @@ describe('buildPluginOptionEnv', () => {
     })
   })
   test('skips undefined / null but keeps falsy-but-present values', () => {
-    // `PluginConfigValues` says a value is string|number|boolean, so this input is
+    // `MiniAppConfigValues` says a value is string|number|boolean, so this input is
     // unspellable under the type — yet the null-guard in buildPluginOptionEnv is LIVE,
     // not dead: the plugins table's `config` column is parsed JSON that nothing
     // runtime-validates, and `resolvePluginConfig` copies stored entries in verbatim.
@@ -258,7 +258,7 @@ describe('buildPluginOptionEnv', () => {
     // than pretend the type permits it.
     const fromStoredJson = JSON.parse(
       '{"a":null,"b":null,"c":0,"d":false,"e":""}',
-    ) as PluginConfigValues
+    ) as MiniAppConfigValues
     expect(buildPluginOptionEnv(fromStoredJson)).toEqual({
       CLAUDE_PLUGIN_OPTION_c: '0',
       CLAUDE_PLUGIN_OPTION_d: 'false',

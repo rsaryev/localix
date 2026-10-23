@@ -2,7 +2,7 @@ import { afterEach, expect, test } from 'bun:test'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { PluginWakeRequest } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppWakeRequest } from '@localixai/mini-app-sdk/backend'
 
 import { createGameService } from './game-service'
 
@@ -14,7 +14,7 @@ const seat = { userId: 'u1', sessionId: 's1' }
 function setup() {
   const root = mkdtempSync(join(tmpdir(), 'game-2048-'))
   roots.push(root)
-  const woke: PluginWakeRequest[] = []
+  const woke: MiniAppWakeRequest[] = []
   const games = createGameService({
     resolveDir: async (_user, session) => {
       const dir = join(root, session)

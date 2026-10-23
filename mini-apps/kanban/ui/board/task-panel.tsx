@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { MessageSquareOff, SquareKanban } from 'lucide-react'
 import { toast, type WorkItemLike } from '@localixai/mini-app-sdk/ui'
 import { useCopied } from '@localixai/mini-app-sdk/ui/interactions'
-import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { Button } from '@localixai/kit/button'
@@ -135,7 +135,7 @@ function TaskDetailPanel({ sessionId, taskId }: { sessionId: string; taskId: str
   )
   const onOpenTask = useCallback((task: KanbanTask) => openTask(sessionId, task), [sessionId])
   const onOpenFile = useCallback(
-    (path: string) => pluginWorkspace.openFile({ sessionId, path }),
+    (path: string) => miniAppWorkspace.openFile({ sessionId, path }),
     [sessionId],
   )
   const onCopyRef = useCallback(() => void copy(taskId), [copy, taskId])
@@ -148,7 +148,7 @@ function TaskDetailPanel({ sessionId, taskId }: { sessionId: string; taskId: str
       setBoardTasks(sessionId, (prev) => prev.filter((task) => task.id !== taskId))
       // The person deleted the card from its own tab, so the tab goes with it. A card deleted
       // elsewhere keeps the notice below: a tab must not vanish under someone reading it.
-      pluginWorkspace.closeWorkItems(taskItemId(taskId), { session: sessionId })
+      miniAppWorkspace.closeWorkItems(taskItemId(taskId), { session: sessionId })
     } catch (error) {
       toast.error('Could not delete this task', {
         description: errorMessage(error, '') || undefined,

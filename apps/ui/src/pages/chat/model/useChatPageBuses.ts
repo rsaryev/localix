@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 
 import { useChatEventStream } from '@/entities/chat/model/agent-runtime'
 import { usePlanEventFocus } from '@/entities/chat/model/planEventFocus'
-import { usePluginViewAgent } from '@/features/inspector/ui/usePluginViewAgent'
+import { useMiniAppViewAgent } from '@/features/inspector/ui/useMiniAppViewAgent'
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle'
 import { subscribeRevealInTree } from '@/shared/lib/explorerBus'
 import { publishPageOpenChat } from '@/shared/lib/pageOpenChat'
@@ -20,7 +20,7 @@ export function useChatPageBuses({ hasHydrated }: { hasHydrated: boolean }): voi
   useGridInspectorBus()
   // The agent's `browser` commands for `plugin:<name>`: the workbench is where a plugin's view
   // lives, so this page is the host that opens and drives it.
-  usePluginViewAgent()
+  useMiniAppViewAgent()
 }
 
 export function useWorkspaceBuses({

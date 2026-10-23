@@ -15,7 +15,7 @@ import {
   type DedicatedViewerType,
   type FileViewerKind,
 } from '@localixai/mini-app-sdk/ui/file-types'
-import { isPluginContributionEnabled } from '@/shared/contrib/pluginActivation'
+import { isMiniAppContributionEnabled } from '@/shared/contrib/miniAppActivation'
 
 export {
   CSV_CONTENT_TYPE,
@@ -71,7 +71,7 @@ export function removeDedicatedViewerTypesOf(owner: string): void {
 
 function registeredType(path: string): RegisteredViewerType | undefined {
   const variants = registry.get(fileExtension(path))
-  return variants?.findLast((entry) => isPluginContributionEnabled(entry.pluginName))
+  return variants?.findLast((entry) => isMiniAppContributionEnabled(entry.pluginName))
 }
 
 /** MIME content-type for a recognized viewer format, else `undefined` (opens in editor). */
@@ -89,7 +89,7 @@ export function isOpenExternallyType(contentType: string | undefined): boolean {
   if (contentType === undefined) return false
   for (const variants of registry.values()) {
     const entry = variants.findLast((candidate) =>
-      isPluginContributionEnabled(candidate.pluginName),
+      isMiniAppContributionEnabled(candidate.pluginName),
     )
     if (entry?.contentType === contentType) return entry.openExternally === true
   }

@@ -2,27 +2,31 @@ import { randomUUID } from 'node:crypto'
 import { promises as fs } from 'node:fs'
 import { join } from 'node:path'
 
-import { PLUGIN_UI_ARTIFACT_DIR } from '@localixai/mini-app-sdk/ui-artifact'
+import { MINI_APP_UI_ARTIFACT_DIR } from '@localixai/mini-app-sdk/ui-artifact'
 
 import { errorMessage } from '../../../lib/errors'
 import {
-  buildPluginBackend,
-  discardPluginBackendCandidate,
-  prunePluginBackendBuilds,
-  publishPluginBackend,
+  buildMiniAppBackend,
+  discardMiniAppBackendCandidate,
+  pruneMiniAppBackendBuilds,
+  publishMiniAppBackend,
 } from './backend-build'
 import { backendPointer } from '../layout/backend-pointer'
-import { checkPluginBindings } from './binding-check'
+import { checkMiniAppBindings } from './binding-check'
 import { runBun } from './bun-child'
-import type { PluginKit } from './kit'
+import type { MiniAppKit } from './kit'
 import { PLUGIN_KIT_TEST_PRELOAD } from './kit-layout'
 import { assertSafeAuthoringPaths } from './output-paths'
-import { checkPluginRoutes } from './route-check'
-import { checkPluginStyle } from './style-check'
+import { checkMiniAppRoutes } from './route-check'
+import { checkMiniAppStyle } from './style-check'
 import { findTemplateResidue, listFiles, loadTemplateScaffold } from './template-layout'
-import { writePluginKitCatalog } from './kit-catalog'
-import { typecheckPlugin, writePluginTsconfig } from './typecheck'
-import { buildPluginUiArtifact, publishPluginUiArtifact, removePluginUiArtifact } from './ui-build'
+import { writeMiniAppKitCatalog } from './kit-catalog'
+import { typecheckMiniApp, writeMiniAppTsconfig } from './typecheck'
+import {
+  buildMiniAppUiArtifact,
+  publishMiniAppUiArtifact,
+  removeMiniAppUiArtifact,
+} from './ui-build'
 import { retainPreviousHashedFiles } from './ui-retained-files'
 
 /**
@@ -39,7 +43,7 @@ import { retainPreviousHashedFiles } from './ui-retained-files'
  * so an invalid build cannot replace the previous working backend or UI.
  */
 
-export interface PluginCheckStep {
+export interface MiniAppCheckStep {
   title: string
   ok: boolean
   problems: string[]
@@ -47,15 +51,15 @@ export interface PluginCheckStep {
   errored?: boolean
 }
 
-export interface PluginCheckReport {
+export interface MiniAppCheckReport {
   ok: boolean
   /** True only when checked artifacts became the running plugin's next version. */
   published: boolean
-  steps: PluginCheckStep[]
+  steps: MiniAppCheckStep[]
 }
 
 /** Runs the plugin's tests; `ok` false with the output tail when any failed. */
-export type PluginTestRunner = (input: {
+export type MiniAppTestRunner = (input: {
   pluginDir: string
   preload: string
 }) => Promise<{ ok: boolean; output: string }>
@@ -69,12 +73,12 @@ function tail(output: string): string[] {
 }
 
 /** `bun test` on the runtime binary itself — the one the app ships, on every platform. */
-export const runPluginTests: PluginTestRunner = async ({ pluginDir, preload }) => {
+export const runMiniAppTests: MiniAppTestRunner = async ({ pluginDir, preload }) => {
   const run = await runBun(['test', '--preload', preload], pluginDir, TEST_TIMEOUT_MS)
   return { ok: run.code === 0, output: run.output }
 }
 
-async function step(title: string, run: () => Promise<string[]>): Promise<PluginCheckStep> {
+async function step(title: string, run: () => Promise<string[]>): Promise<MiniAppCheckStep> {
   try {
     const problems = await run()
     return { title, ok: problems.length === 0, problems }
@@ -83,16 +87,16 @@ async function step(title: string, run: () => Promise<string[]>): Promise<Plugin
   }
 }
 
-export async function checkUserPlugin(input: {
-  kit: PluginKit
+export async function checkUserMiniApp(input: {
+  kit: MiniAppKit
   pluginDir: string
   name: string
-  runTests?: PluginTestRunner
+  runTests?: MiniAppTestRunner
   /** The untouched reference intentionally has residue, but all other checks must pass. */
   allowTemplateResidue?: boolean
-}): Promise<PluginCheckReport> {
-  const { kit, pluginDir, name, runTests = runPluginTests } = input
-  const liveUiDir = join(pluginDir, PLUGIN_UI_ARTIFACT_DIR)
+}): Promise<MiniAppCheckReport> {
+  const { kit, pluginDir, name, runTests = runMiniAppTests } = input
+  const liveUiDir = join(pluginDir, MINI_APP_UI_ARTIFACT_DIR)
   const candidateUiDir = `${liveUiDir}.candidate-${randomUUID()}`
   let backendTools: string | null = null
   let hasUi = false
@@ -100,29 +104,29 @@ export async function checkUserPlugin(input: {
   // Tests and type-checking read source, while the backend and UI builders write only to their
   // own candidate paths. Give tests a complete tsconfig first, then run independent gates together.
   await assertSafeAuthoringPaths(pluginDir)
-  await writePluginTsconfig(kit, pluginDir)
-  await writePluginKitCatalog(kit, pluginDir)
+  await writeMiniAppTsconfig(kit, pluginDir)
+  await writeMiniAppKitCatalog(kit, pluginDir)
   const steps = await Promise.all([
     step('template residue', async () =>
       findTemplateResidue(pluginDir, name, loadTemplateScaffold(kit.templateDir)),
     ),
-    step('style', () => checkPluginStyle(pluginDir, kit)),
-    step('routes', () => checkPluginRoutes(pluginDir)),
-    step('message context', () => checkPluginBindings(pluginDir)),
+    step('style', () => checkMiniAppStyle(pluginDir, kit)),
+    step('routes', () => checkMiniAppRoutes(pluginDir)),
+    step('message context', () => checkMiniAppBindings(pluginDir)),
     step('backend build', async () => {
-      backendTools = await buildPluginBackend({ kit, pluginDir, publish: false })
+      backendTools = await buildMiniAppBackend({ kit, pluginDir, publish: false })
       return []
     }),
     step('UI build', async () => {
       hasUi =
-        (await buildPluginUiArtifact({
+        (await buildMiniAppUiArtifact({
           kit,
           pluginDir,
           outDir: candidateUiDir,
         })) !== null
       return []
     }),
-    step('types', () => typecheckPlugin(kit, pluginDir)),
+    step('types', () => typecheckMiniApp(kit, pluginDir)),
     step('tests', async () => {
       if (!listFiles(pluginDir).some((file) => TEST_FILE.test(file))) return []
       const result = await runTests({ pluginDir, preload: join(kit.dir, PLUGIN_KIT_TEST_PRELOAD) })
@@ -142,11 +146,11 @@ export async function checkUserPlugin(input: {
       if (hasUi) await retainPreviousHashedFiles(liveUiDir, candidateUiDir)
       const manifestPath = (await backendPointer(pluginDir)).path
       const previousManifest = await fs.readFile(manifestPath, 'utf8').catch(() => null)
-      await publishPluginBackend(pluginDir, backendTools, { prune: false })
+      await publishMiniAppBackend(pluginDir, backendTools, { prune: false })
       try {
         if (hasUi)
-          await publishPluginUiArtifact(candidateUiDir, liveUiDir, { retainPrevious: false })
-        else await removePluginUiArtifact(liveUiDir)
+          await publishMiniAppUiArtifact(candidateUiDir, liveUiDir, { retainPrevious: false })
+        else await removeMiniAppUiArtifact(liveUiDir)
       } catch (error) {
         if (previousManifest === null) await fs.rm(manifestPath, { force: true })
         else {
@@ -156,20 +160,20 @@ export async function checkUserPlugin(input: {
         }
         throw error
       }
-      await prunePluginBackendBuilds(pluginDir, backendTools).catch(() => {})
+      await pruneMiniAppBackendBuilds(pluginDir, backendTools).catch(() => {})
       completed = true
     }
   } finally {
     await fs.rm(candidateUiDir, { recursive: true, force: true }).catch(() => {})
-    if (!completed) await discardPluginBackendCandidate(pluginDir, backendTools)
+    if (!completed) await discardMiniAppBackendCandidate(pluginDir, backendTools)
   }
   return { ok, published: publish, steps }
 }
 
 /** The report as the agent and the chat read it. */
-export function formatPluginCheck(
+export function formatMiniAppCheck(
   name: string,
-  report: PluginCheckReport,
+  report: MiniAppCheckReport,
   options: {
     previousBuild?: boolean
     /**

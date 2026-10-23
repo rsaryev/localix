@@ -5,14 +5,14 @@ import { dirname, join, relative } from 'node:path'
 import { wasImportedByThisProcess } from '../../../lib/module-url'
 import { backendPointer, readPointerManifest } from '../layout/backend-pointer'
 import { formatBuildLogs } from './build-logs'
-import type { PluginKit } from './kit'
+import type { MiniAppKit } from './kit'
 import { assertSafeAuthoringPaths } from './output-paths'
 import { assertContainedBuildInputs } from './source-imports'
 import {
-  PLUGIN_BACKEND_SHARED_MODULES,
-  USER_PLUGIN_BACKEND_DIR,
-  USER_PLUGIN_BACKEND_SOURCE,
-  isUserPluginBackendBuild,
+  MINI_APP_BACKEND_SHARED_MODULES,
+  USER_MINI_APP_BACKEND_DIR,
+  USER_MINI_APP_BACKEND_SOURCE,
+  isUserMiniAppBackendBuild,
 } from './kit-layout'
 
 /**
@@ -46,7 +46,7 @@ const BUILD_FILE = /^index-[0-9a-f]{16}\.mjs$/u
  * class from the host's.
  */
 function hostModulesPlugin(pluginDir: string): Bun.BunPlugin {
-  const allowed = new Set(PLUGIN_BACKEND_SHARED_MODULES)
+  const allowed = new Set(MINI_APP_BACKEND_SHARED_MODULES)
   return {
     name: 'localix-plugin-backend-shared',
     setup(build) {
@@ -54,7 +54,7 @@ function hostModulesPlugin(pluginDir: string): Bun.BunPlugin {
         if (BUILTIN.test(args.path)) return undefined
         if (allowed.has(args.path)) return { path: args.path, external: true }
         throw new Error(
-          `${relative(pluginDir, args.importer)} imports "${args.path}", which a plugin backend cannot use — available: ${PLUGIN_BACKEND_SHARED_MODULES.join(', ')}, node:* and bun:*`,
+          `${relative(pluginDir, args.importer)} imports "${args.path}", which a plugin backend cannot use — available: ${MINI_APP_BACKEND_SHARED_MODULES.join(', ')}, node:* and bun:*`,
         )
       })
     },
@@ -73,11 +73,11 @@ async function writeAtomically(path: string, bytes: string | Uint8Array): Promis
 }
 
 /** Pruning is inert cleanup after both backend and UI have been published. */
-export async function prunePluginBackendBuilds(
+export async function pruneMiniAppBackendBuilds(
   pluginDir: string,
   tools: string | null,
 ): Promise<void> {
-  const outDir = join(pluginDir, USER_PLUGIN_BACKEND_DIR)
+  const outDir = join(pluginDir, USER_MINI_APP_BACKEND_DIR)
   for (const file of await fs.readdir(outDir).catch(() => [])) {
     const path = join(outDir, file)
     if (tools?.endsWith(`/${file}`) || !BUILD_FILE.test(file) || wasImportedByThisProcess(path))
@@ -89,7 +89,7 @@ export async function prunePluginBackendBuilds(
 }
 
 /** Drop a candidate whose manifest never advanced; repeated failed edits cannot fill dist. */
-export async function discardPluginBackendCandidate(
+export async function discardMiniAppBackendCandidate(
   pluginDir: string,
   tools: string | null,
 ): Promise<void> {
@@ -107,7 +107,7 @@ export async function discardPluginBackendCandidate(
 }
 
 /** Point the manifest at a checked build, then prune builds this process has never loaded. */
-export async function publishPluginBackend(
+export async function publishMiniAppBackend(
   pluginDir: string,
   tools: string | null,
   options: { prune?: boolean } = {},
@@ -116,29 +116,29 @@ export async function publishPluginBackend(
   const manifest = await readPointerManifest(pluginDir, pointer)
   const next = { ...manifest }
   if (tools) next[pointer.field] = tools
-  else if (isUserPluginBackendBuild(next[pointer.field])) delete next[pointer.field]
+  else if (isUserMiniAppBackendBuild(next[pointer.field])) delete next[pointer.field]
   if (next[pointer.field] !== manifest[pointer.field]) {
     await fs.mkdir(dirname(pointer.path), { recursive: true })
     await writeAtomically(pointer.path, `${JSON.stringify(next, null, 2)}\n`)
   }
 
-  if (options.prune !== false) await prunePluginBackendBuilds(pluginDir, tools)
+  if (options.prune !== false) await pruneMiniAppBackendBuilds(pluginDir, tools)
 }
 
 /**
  * Build `<pluginDir>/backend/index.ts`. A candidate stays unreferenced until checks pass; the
  * default direct call publishes it for repository staging and callers that already validated it.
  */
-export async function buildPluginBackend(input: {
-  kit: PluginKit
+export async function buildMiniAppBackend(input: {
+  kit: MiniAppKit
   pluginDir: string
   publish?: boolean
 }): Promise<string | null> {
   const { kit, pluginDir } = input
   await assertSafeAuthoringPaths(pluginDir)
-  const entry = join(pluginDir, USER_PLUGIN_BACKEND_SOURCE)
+  const entry = join(pluginDir, USER_MINI_APP_BACKEND_SOURCE)
   if (!(await fs.stat(entry).catch(() => null))) {
-    if (input.publish !== false) await publishPluginBackend(pluginDir, null)
+    if (input.publish !== false) await publishMiniAppBackend(pluginDir, null)
     return null
   }
   const result = await Bun.build({
@@ -158,12 +158,12 @@ export async function buildPluginBackend(input: {
     metafile: result.metafile,
     pluginDir,
     kitDir: kit.dir,
-    sharedSpecifiers: new Set(PLUGIN_BACKEND_SHARED_MODULES),
+    sharedSpecifiers: new Set(MINI_APP_BACKEND_SHARED_MODULES),
   })
 
   const bytes = new Uint8Array(await output.arrayBuffer())
   const name = `index-${createHash('sha256').update(bytes).digest('hex').slice(0, 16)}.mjs`
-  const outDir = join(pluginDir, USER_PLUGIN_BACKEND_DIR)
+  const outDir = join(pluginDir, USER_MINI_APP_BACKEND_DIR)
   await fs.mkdir(outDir, { recursive: true })
   const outFile = join(outDir, name)
   // Same content, same name: an unchanged build touches nothing.
@@ -180,7 +180,7 @@ export async function buildPluginBackend(input: {
     throw new Error(`Backend build ${name} exists with different content or file type`)
   }
 
-  const tools = `./${USER_PLUGIN_BACKEND_DIR}/${name}`
-  if (input.publish !== false) await publishPluginBackend(pluginDir, tools)
+  const tools = `./${USER_MINI_APP_BACKEND_DIR}/${name}`
+  if (input.publish !== false) await publishMiniAppBackend(pluginDir, tools)
   return tools
 }

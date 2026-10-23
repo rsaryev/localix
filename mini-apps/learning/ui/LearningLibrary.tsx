@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BookOpen, Clock3, Download, GraduationCap, Upload } from 'lucide-react'
 import { acknowledgeInline, toast } from '@localixai/mini-app-sdk/ui'
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
-import { pluginFiles } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppFiles } from '@localixai/mini-app-sdk/ui/runtime'
 
 import { Button } from '@localixai/kit/button'
 import { ComposerCommandButton } from '@localixai/kit/composer-command-button'
@@ -84,7 +84,7 @@ export function LearningLibrary({
     setExportingId(course.id)
     try {
       const { blob, filename } = await learningApi.exportCourse(sessionId, course.id)
-      await pluginFiles.saveBlob(filename, blob)
+      await miniAppFiles.saveBlob(filename, blob)
     } catch (cause) {
       toast.error(`Could not export “${course.title}”`, {
         description: errorMessage(cause, '') || undefined,

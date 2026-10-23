@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import type { CapabilitySnapshot } from '@/shared/api/contracts'
 import { __resetPluginContrib, refetchPluginContrib } from '@/shared/contrib/enabledPlugins'
 import {
-  arePluginContributionsPending,
-  pluginContributionActivation,
-} from '@/shared/contrib/pluginActivation'
-import { __resetPluginUiLoads } from '@/shared/contrib/pluginUiLoads'
+  areMiniAppContributionsPending,
+  miniAppContributionActivation,
+} from '@/shared/contrib/miniAppActivation'
+import { __resetPluginUiLoads } from '@/shared/contrib/miniAppUiLoads'
 import { __setRegistryFlushScheduler } from '@/shared/contrib/registryChanges'
 import { isUnavailableContributedKind } from './capabilities'
 
@@ -35,8 +35,8 @@ describe('a restored plugin tab over a failed UI import', () => {
       async (_plugins, settled) => settled?.('git', false),
     )
     // Every other gate is authoritative, but the kind may still be git's: nothing is closed.
-    expect(arePluginContributionsPending()).toBe(true)
-    expect(pluginContributionActivation('git')).toBe('pending')
+    expect(areMiniAppContributionsPending()).toBe(true)
+    expect(miniAppContributionActivation('git')).toBe('pending')
     expect(isUnavailableContributedKind('git:panel')).toBe(false)
   })
 })

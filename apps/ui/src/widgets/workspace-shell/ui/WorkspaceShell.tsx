@@ -16,7 +16,7 @@ import { useRailTools } from '../model/useRailTools'
 import { useRailDnd } from '../model/useRailDnd'
 import { buildRailEntries } from '../model/buildRailEntries'
 import type { RailEntry } from './shellTypes'
-import type { PluginCategory } from '@localixai/mini-app-sdk/manifest'
+import type { MiniAppCategory } from '@localixai/mini-app-sdk/manifest'
 import { CustomizableRailButton } from './CustomizableRailButton'
 import { WorkspaceRail } from './WorkspaceRail'
 import type { RailAction, RailSection } from './shellTypes'
@@ -46,7 +46,7 @@ interface WorkspaceShellProps {
   railActions?: RailAction[]
   /** True while the catalog's enabled-plugin set is still loading. */
   pluginsPending?: boolean
-  pluginCategories?: ReadonlyMap<string, PluginCategory | undefined>
+  miniAppCategories?: ReadonlyMap<string, MiniAppCategory | undefined>
   capabilitiesManageUri?: string
   onNavigateUi?: (uri: string) => void
   onOpenSidebar: () => void
@@ -94,7 +94,7 @@ export function WorkspaceShell({
   onSectionChange,
   railActions = NO_RAIL_ACTIONS,
   pluginsPending = false,
-  pluginCategories,
+  miniAppCategories,
   capabilitiesManageUri,
   onNavigateUi,
   onOpenSidebar,
@@ -255,7 +255,7 @@ export function WorkspaceShell({
       onHistoryClick={handleHistoryClick}
       barEntries={barEntries}
       toolEntries={toolEntries}
-      pluginCategories={pluginCategories}
+      miniAppCategories={miniAppCategories}
       pinnedToolIds={pinnedToolIds}
       onPinTool={pinTool}
       onUnpinTool={unpinTool}

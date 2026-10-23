@@ -10,18 +10,18 @@ import {
 import { resolve } from 'node:path'
 import {
   discoverPlugins,
-  discoverBundledPlugins,
+  discoverBundledMiniApps,
   loadManifest,
-  bundledPluginsRoot,
+  bundledMiniAppsRoot,
   bundledSourceRoots,
   pluginInstallRoot,
 } from './discovery'
 import { resolveEntrypoints } from './discovery-entrypoints'
 
 describe('plugin path resolvers', () => {
-  it('bundledPluginsRoot self-locates a plugins/ root (no env)', () => {
+  it('bundledMiniAppsRoot self-locates a plugins/ root (no env)', () => {
     // Pure self-location from the module URL — no LOCALIX_BUNDLED_PLUGINS_DIR.
-    const root = bundledPluginsRoot()
+    const root = bundledMiniAppsRoot()
     expect(root.length).toBeGreaterThan(0)
     expect(root.endsWith('plugins')).toBe(true)
   })
@@ -62,7 +62,7 @@ describe('plugin path resolvers', () => {
     const isolatedHome = await fs.mkdtemp(join(tmpdir(), 'plugins-source-fallback-home-'))
     delete process.env.LOCALIX_BUNDLED_PLUGINS_DIR
     try {
-      const sourcePlugins = await discoverBundledPlugins()
+      const sourcePlugins = await discoverBundledMiniApps()
       expect(sourcePlugins.length).toBeGreaterThan(0)
 
       const discovered = await discoverPlugins({ cwd: null, homeDir: isolatedHome })
@@ -863,7 +863,7 @@ describe('B1 — CC directory/file config-option types', () => {
 /**
  * BUG B2 REPRO — CC `userConfig` with `sensitive: true` must map to `secret: true`.
  *
- * Before fix: `sensitive` is an unknown field on `pluginConfigOptionSchema`; Zod strips it.
+ * Before fix: `sensitive` is an unknown field on `miniAppConfigOptionSchema`; Zod strips it.
  * The parsed option ends up with `secret: false` (the schema default), so
  * `makePluginSubstituter`'s `isSecret` predicate returns false and the value is
  * substituted into model-facing prompt sections, skill content, and agent prompts.

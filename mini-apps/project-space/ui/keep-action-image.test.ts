@@ -1,11 +1,11 @@
 import { expect, test } from 'bun:test'
-import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
+import { bindMiniAppUiTransport } from '@localixai/mini-app-sdk/ui/transport'
 import { keepActionImage } from './keep-action-image'
 
 test('generated media and inline images are kept as files; remote URLs and project paths remain references', async () => {
   const requests: string[] = []
   const bodies: Blob[] = []
-  const unbind = bindPluginUiTransport({
+  const unbind = bindMiniAppUiTransport({
     url: (path) => `https://local.test${path}`,
     request: async (path, init) => {
       requests.push(path)
@@ -39,7 +39,7 @@ test('generated media and inline images are kept as files; remote URLs and proje
 })
 test('failed media and non-image responses never create files', async () => {
   const requests: string[] = []
-  const unbind = bindPluginUiTransport({
+  const unbind = bindMiniAppUiTransport({
     url: (path) => `https://local.test${path}`,
     request: async (path) => {
       requests.push(path)

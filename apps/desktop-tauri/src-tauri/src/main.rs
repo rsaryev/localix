@@ -4,7 +4,7 @@
 fn main() {
     // A plugin installed as its own app is a clone of this binary; it never starts the shell.
     #[cfg(target_os = "macos")]
-    if desktop_tauri_lib::run_plugin_app() {
+    if desktop_tauri_lib::run_mini_app() {
         return;
     }
     #[cfg(target_os = "macos")]

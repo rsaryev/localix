@@ -77,7 +77,7 @@ Registration returns generic `BackendSubsystem` contributions from the plugin SD
 - `/rpc/table`, which owns spreadsheet ingestion, paging, export, and native opening.
 
 The host injects `userId`, `dataDir`, media access, session storage, and desktop file intents
-through `PluginContext`. The plugin never imports `apps/api` internals or computes host storage
+through `MiniAppContext`. The plugin never imports `apps/api` internals or computes host storage
 paths.
 
 ## Related guides

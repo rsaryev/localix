@@ -1,5 +1,5 @@
 import type { DbConnectionConfig } from '../../dbClient'
-import { pluginSecrets } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppSecrets } from '@localixai/mini-app-sdk/ui/runtime'
 import {
   deriveSecretKey,
   deriveSecretKeyFromHost,
@@ -23,7 +23,7 @@ export async function vaultSecrets(
     vaultTlsKey: boolean
   },
   writeSecret: (request: { key: string; value: string }) => Promise<unknown> = (request) =>
-    pluginSecrets.set(request),
+    miniAppSecrets.set(request),
 ): Promise<DbConnectionConfig> {
   let finalConfig = config
   if (opts.vaultPassword && !('file' in config)) {

@@ -1,7 +1,7 @@
 import {
-  pluginApiFetch,
-  pluginApiUrl,
-  unwrapPluginResponse,
+  miniAppApiFetch,
+  miniAppApiUrl,
+  unwrapMiniAppResponse,
 } from '@localixai/mini-app-sdk/ui/transport'
 import type { AppliedView, FileText, FolderListing, SpaceView, SteppedView } from '../shared/api'
 import type { CameraReport } from '../shared/camera'
@@ -27,8 +27,8 @@ const read = async <T>(
 ) => {
   const signal = init?.signal ?? AbortSignal.timeout(init?.method === 'POST' ? 30_000 : 15_000)
   try {
-    return await unwrapPluginResponse<T>(
-      await pluginApiFetch(route(sessionId, path, query), { ...init, signal }),
+    return await unwrapMiniAppResponse<T>(
+      await miniAppApiFetch(route(sessionId, path, query), { ...init, signal }),
     )
   } catch (error) {
     if (signal.aborted && signal.reason?.name === 'TimeoutError')
@@ -75,5 +75,5 @@ export const spaceApi = {
     read<{ ok: true }>(sessionId, '/camera/report', post(report)),
   /** A URL an `<img>` or an `<iframe>` can load a referenced file from. */
   rawUrl: (sessionId: string, path: string, revision = '') =>
-    pluginApiUrl(route(sessionId, '/raw', { path, ...(revision ? { v: revision } : {}) })),
+    miniAppApiUrl(route(sessionId, '/raw', { path, ...(revision ? { v: revision } : {}) })),
 }

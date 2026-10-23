@@ -20,7 +20,7 @@ describe('plugin view host', () => {
 
   async function withView() {
     const { railViewletRegistry, workItemKindRegistry } = await import('@/shared/contrib/uiContrib')
-    const { setEnabledPluginNames } = await import('@/shared/contrib/pluginActivation')
+    const { setEnabledPluginNames } = await import('@/shared/contrib/miniAppActivation')
     setEnabledPluginNames(new Set(['focus-timer']))
     railViewletRegistry.register({
       kind: 'focus-timer:workspace',
@@ -49,7 +49,7 @@ describe('plugin view host', () => {
   test('a snapshot reads the plugin panel and nothing of the app around it', async () => {
     const cleanup = await withView()
     try {
-      const { runPluginViewCommand } = await import('./pluginViewHost')
+      const { runPluginViewCommand } = await import('./miniAppViewHost')
       const reply = await runPluginViewCommand('focus-timer', { action: 'snapshot' }, here)
       expect(reply.ok).toBe(true)
       const tree = reply.result?.snapshot?.tree ?? ''
@@ -67,7 +67,7 @@ describe('plugin view host', () => {
   })
 
   test('evaluate is refused — alone or inside steps — before anything runs', async () => {
-    const { runPluginViewCommand } = await import('./pluginViewHost')
+    const { runPluginViewCommand } = await import('./miniAppViewHost')
     for (const command of [
       { action: 'evaluate' as const, expression: 'document.cookie' },
       {
@@ -84,7 +84,7 @@ describe('plugin view host', () => {
   test('an unknown plugin names the views this window does have', async () => {
     const cleanup = await withView()
     try {
-      const { runPluginViewCommand } = await import('./pluginViewHost')
+      const { runPluginViewCommand } = await import('./miniAppViewHost')
       const reply = await runPluginViewCommand('focus-timr', { action: 'snapshot' }, here)
       expect(reply).toMatchObject({ ok: false, errorCode: 'not_found' })
       expect(reply.error).toContain('focus-timer')
@@ -97,7 +97,7 @@ describe('plugin view host', () => {
     // An agent in a background chat screenshotted the person's chat's board.
     const cleanup = await withView()
     try {
-      const { runPluginViewCommand } = await import('./pluginViewHost')
+      const { runPluginViewCommand } = await import('./miniAppViewHost')
       const reply = await runPluginViewCommand(
         'focus-timer',
         { action: 'snapshot' },
@@ -124,7 +124,7 @@ describe('plugin view host', () => {
       },
     }
     try {
-      const { runPluginViewCommand } = await import('./pluginViewHost')
+      const { runPluginViewCommand } = await import('./miniAppViewHost')
       const reply = await runPluginViewCommand('focus-timer', { action: 'screenshot' }, here)
       expect(reply).toMatchObject({ ok: true, result: { action: 'screenshot', image } })
       expect(calls.map((call) => call.command)).toEqual(['workbench_snapshot'])
@@ -147,7 +147,7 @@ describe('plugin view host', () => {
       )
       document.querySelector<HTMLElement>('[data-work-item-id$="@S9"]')!.getBoundingClientRect =
         () => ({ width: 640, height: 480 }) as DOMRect
-      const { runPluginViewCommand } = await import('./pluginViewHost')
+      const { runPluginViewCommand } = await import('./miniAppViewHost')
       const reply = await runPluginViewCommand('focus-timer', { action: 'snapshot' }, here)
       const tree = reply.result?.snapshot?.tree ?? ''
       expect(tree).toContain('25:00')

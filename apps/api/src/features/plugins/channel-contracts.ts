@@ -13,5 +13,5 @@ export type {
   ChannelRunEvent,
   ChannelSessionSummary,
   ChannelWorkspaceApi,
-  PluginChannel,
+  MiniAppChannel,
 } from '@localixai/mini-app-sdk/backend'

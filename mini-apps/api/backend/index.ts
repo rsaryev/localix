@@ -13,7 +13,7 @@
  *             question the model already thought to ask.
  */
 
-import type { PluginContext, PluginRegistration } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext, MiniAppRegistration } from '@localixai/mini-app-sdk/backend'
 import { createApiTool } from './api-tool'
 import { createRestContextProvider } from './context-provider'
 import { scopedRequestPort, createRestResourceProvider } from './resource-provider'
@@ -22,7 +22,7 @@ import { createRestSearchProvider } from './search-provider'
 import { bindVault, getBindSecret, getResolveSecret, getStoreSecret } from './singleton'
 import { bindEnvironmentStateDir, collectionFor, environmentsFor } from './collection/for-scope'
 
-export function register(ctx: PluginContext): PluginRegistration {
+export function register(ctx: MiniAppContext): MiniAppRegistration {
   // Only the boot load carries a host; binding here is what lets the per-run tool load reach the
   // vault — to RESOLVE a `${secret:KEY}` at send time, and to FILL one when an import arrives
   // carrying a literal.

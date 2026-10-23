@@ -1,4 +1,4 @@
-import { postPluginJson, unwrapPluginResponse } from '@localixai/mini-app-sdk/ui/transport'
+import { postMiniAppJson, unwrapMiniAppResponse } from '@localixai/mini-app-sdk/ui/transport'
 import { resumeLayout } from '../shared/layout'
 import type { ResumeDocument } from '../shared/schema'
 
@@ -9,13 +9,13 @@ export function renderResumePdf(document: ResumeDocument): Promise<Blob> {
   const key = JSON.stringify(layout)
   const existing = cache.get(key)
   if (existing) return existing
-  const pending = postPluginJson('/rpc/documents/render', {
+  const pending = postMiniAppJson('/rpc/documents/render', {
     format: 'pdf',
     content: 'Resume',
     layout,
   })
     .then(async (response) => {
-      if (!response.ok) await unwrapPluginResponse(response)
+      if (!response.ok) await unwrapMiniAppResponse(response)
       return response.blob()
     })
     .catch((error) => {

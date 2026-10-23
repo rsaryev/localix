@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { bindPluginUiComponents } from '@localixai/mini-app-sdk/ui'
+import { bindMiniAppUiComponents } from '@localixai/mini-app-sdk/ui'
 import { problemReportTitle } from '@localixai/mini-app-sdk/ui/problems'
-import type { PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
+import type { MiniAppProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
 import { registerDom } from '@localixai/kit/testing'
 
 let teardown: () => Promise<void>
@@ -16,7 +16,7 @@ let unbindComponents: (() => void) | undefined
  */
 function bindHostComponents(): () => void {
   const Empty = () => null
-  const Problem = ({ report, actions }: PluginProblemLineProps) => (
+  const Problem = ({ report, actions }: MiniAppProblemLineProps) => (
     <div role="alert">
       <span>{problemReportTitle(report)}</span>
       {/* The ways OUT are the point of this line, and the reader's tests assert on them by
@@ -29,7 +29,7 @@ function bindHostComponents(): () => void {
       <button type="button">Details</button>
     </div>
   )
-  return bindPluginUiComponents({
+  return bindMiniAppUiComponents({
     FileTab: Empty,
     TableGrid: Empty,
     ContextBindingIcon: Empty,

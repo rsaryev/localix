@@ -5,16 +5,16 @@ import { join } from 'node:path'
 
 import type { DiscoveredPlugin } from './discovery'
 import {
-  createPluginInspectionStore,
+  createMiniAppInspectionStore,
   durableInspectionFingerprint,
-  type PluginToolInspection,
+  type MiniAppToolInspection,
 } from './inspection-store'
 import { MARKER_FILE, MARKER_KIND } from './managed-copy'
 
 let home: string
 const cacheFile = () => join(home, '.localix', 'cache', 'plugin-inspection-cache-v1.json')
 
-const inspection = (toolName: string): PluginToolInspection => ({
+const inspection = (toolName: string): MiniAppToolInspection => ({
   tools: [{ name: toolName, label: toolName, description: 'a tool' }],
   backendSubsystems: ['backend'],
   routeMounts: [],
@@ -42,11 +42,11 @@ afterEach(async () => {
 
 describe('plugin inspection store', () => {
   test('an entry written by one process is served to the next only under its fingerprint', async () => {
-    const first = createPluginInspectionStore(home)
+    const first = createMiniAppInspectionStore(home)
     first.set('k1', entry('alpha', 'fp-1'))
     await first.flush()
 
-    const restarted = createPluginInspectionStore(home)
+    const restarted = createMiniAppInspectionStore(home)
     expect(await restarted.get('k1', 'fp-1')).toEqual(inspection('alpha_tool'))
     // A changed input is a miss, never the stale answer.
     expect(await restarted.get('k1', 'fp-2')).toBeNull()
@@ -54,7 +54,7 @@ describe('plugin inspection store', () => {
   })
 
   test('the file names no plugin path, user or cwd in its keys', async () => {
-    const store = createPluginInspectionStore(home)
+    const store = createMiniAppInspectionStore(home)
     store.set('/secret/plugin/dir\u0000u1\u0000/Users/me/project', entry('alpha', 'fp'))
     await store.flush()
     const text = await readFile(cacheFile(), 'utf8')
@@ -63,39 +63,39 @@ describe('plugin inspection store', () => {
   })
 
   test('a lifecycle drop persists, so a restart cannot resurrect the dropped answer', async () => {
-    const store = createPluginInspectionStore(home)
+    const store = createMiniAppInspectionStore(home)
     store.set('k1', entry('alpha', 'fp'))
     store.set('k2', entry('beta', 'fp'))
     store.drop((stored) => stored.pluginName === 'alpha')
     await store.flush()
 
-    const restarted = createPluginInspectionStore(home)
+    const restarted = createMiniAppInspectionStore(home)
     expect(await restarted.get('k1', 'fp')).toBeNull()
     expect(await restarted.get('k2', 'fp')).toEqual(inspection('beta_tool'))
 
     restarted.drop()
     await restarted.flush()
-    expect(await createPluginInspectionStore(home).get('k2', 'fp')).toBeNull()
+    expect(await createMiniAppInspectionStore(home).get('k2', 'fp')).toBeNull()
   })
 
   test('a corrupt or foreign file is an empty cache, and the next write replaces it', async () => {
     await mkdir(join(home, '.localix', 'cache'), { recursive: true })
     await writeFile(cacheFile(), '{"version":1,"entries":{"x": ')
-    const store = createPluginInspectionStore(home)
+    const store = createMiniAppInspectionStore(home)
     expect(await store.get('k1', 'fp')).toBeNull()
     store.set('k1', entry('alpha', 'fp'))
     await store.flush()
-    expect(await createPluginInspectionStore(home).get('k1', 'fp')).not.toBeNull()
+    expect(await createMiniAppInspectionStore(home).get('k1', 'fp')).not.toBeNull()
 
     // Structurally wrong entries are skipped one by one; a valid neighbour survives.
     const parsed = JSON.parse(await readFile(cacheFile(), 'utf8'))
     parsed.entries.bogus = { pluginName: 'x', projectId: '', fingerprint: 'fp', result: {} }
     await writeFile(cacheFile(), JSON.stringify(parsed))
-    const reread = createPluginInspectionStore(home)
+    const reread = createMiniAppInspectionStore(home)
     expect(await reread.get('k1', 'fp')).not.toBeNull()
 
     await writeFile(cacheFile(), JSON.stringify({ version: 999, entries: parsed.entries }))
-    expect(await createPluginInspectionStore(home).get('k1', 'fp')).toBeNull()
+    expect(await createMiniAppInspectionStore(home).get('k1', 'fp')).toBeNull()
   })
 })
 

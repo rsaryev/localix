@@ -2,7 +2,7 @@ import { afterEach, expect, spyOn, test } from 'bun:test'
 import type { CommentActionContribution } from '@localixai/mini-app-sdk/ui'
 
 import { commentActions, registerCommentAction, removeCommentActionsOf } from './commentActions'
-import { setEnabledPluginNames } from './pluginActivation'
+import { setEnabledPluginNames } from './miniAppActivation'
 
 const Icon = () => null
 

@@ -1,4 +1,4 @@
-import type { PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import { realpath } from 'node:fs/promises'
 
 import type { ReaderSource } from '../shared/contracts'
@@ -61,7 +61,7 @@ export function boundedReaderText(
  * book/chapter link inspect the outline, fetch bounded chapter text, or search for corroborating
  * passages without asking the UI to paste source text into the user's message.
  */
-export function createReaderResearchTool(ctx: PluginContext, service: ReaderService) {
+export function createReaderResearchTool(ctx: MiniAppContext, service: ReaderService) {
   const source = ctx.z.union([
     ctx.z.object({ path: ctx.z.string().trim().min(1).max(4_096) }).strict(),
     ctx.z

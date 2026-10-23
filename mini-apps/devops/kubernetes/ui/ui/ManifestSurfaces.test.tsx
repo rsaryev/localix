@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
-import { bindPluginUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
+import { bindMiniAppUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { initialManifestEditorState } from '../model/manifestEditor'
 import type { ManifestEditorModel } from '../model/useManifestEditor'
@@ -10,7 +10,7 @@ import { ManifestToolbar } from './ManifestToolbar'
 // SDK's double. Unbound afterwards, so the shared `bun test plugins` process gets its host back.
 let unbindDoubles: () => void
 beforeAll(() => {
-  unbindDoubles = bindPluginUiTestDoubles()
+  unbindDoubles = bindMiniAppUiTestDoubles()
 })
 afterAll(() => unbindDoubles())
 

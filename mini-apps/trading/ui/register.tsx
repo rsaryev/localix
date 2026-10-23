@@ -18,7 +18,7 @@ import {
 
 import {
   localixUriNamespace,
-  type PluginUiHost,
+  type MiniAppUiHost,
   type PublishMessageContext,
   type WorkItemLike,
 } from '@localixai/mini-app-sdk/ui'
@@ -33,7 +33,7 @@ import { chartToMessageBinding, technicalsToMessageBinding } from './model/tabBi
 
 /**
  * UI registration for the bundled Trading subsystem. Contributes one root Trading Workspace
- * plus its chart/technicals work-item kinds through the {@link PluginUiHost}
+ * plus its chart/technicals work-item kinds through the {@link MiniAppUiHost}
  * registration façade (the plugin-SDK contract). It is discovered + invoked
  * generically by `shared/contrib/discover.ts`.
  */
@@ -126,7 +126,7 @@ function TradingTechnicalsBody({
 
 let registered = false
 
-export function registerUi(host: PluginUiHost): void {
+export function registerUi(host: MiniAppUiHost): void {
   if (registered) return
   registered = true
 

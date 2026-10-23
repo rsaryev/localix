@@ -24,7 +24,7 @@ import { Fragment, type ComponentType, type ReactNode } from 'react'
 import type { FileEditorEnhancerContribution } from '@localixai/mini-app-sdk/ui'
 import { SurfaceErrorBoundary } from '@/shared/ui/SurfaceErrorBoundary'
 import { fileEditorEnhancersFor } from './fileEditorEnhancers'
-import { usePluginRegistrySlice } from './usePluginRegistrySlice'
+import { useMiniAppRegistrySlice } from './useMiniAppRegistrySlice'
 
 export interface FileEditorEnhancementsProps {
   /** The file being edited — what each enhancer matches on and scopes its hooks to. */
@@ -41,7 +41,7 @@ export function FileEditorEnhancements({
   children,
   ...props
 }: FileEditorEnhancementsProps): ReactNode {
-  const enhancers = usePluginRegistrySlice(`enhancers:${props.path}`, () =>
+  const enhancers = useMiniAppRegistrySlice(`enhancers:${props.path}`, () =>
     fileEditorEnhancersFor(props.path),
   )
   return nest(enhancers, props, {}, children)

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { pluginLoadBlockReason } from './loadable'
-import { PLUGIN_API_VERSION } from './contracts-base'
+import { MINI_APP_API_VERSION } from './contracts-base'
 import type { DiscoveredPlugin } from './discovery'
 
 /**
@@ -27,15 +27,15 @@ const plugin = (over: {
 
 describe('pluginLoadBlockReason', () => {
   test('refuses a plugin that targets a newer API than the host implements', () => {
-    const reason = pluginLoadBlockReason(plugin({ apiVersion: PLUGIN_API_VERSION + 1 }))
-    expect(reason).toContain(`targets API v${PLUGIN_API_VERSION + 1}`)
-    expect(reason).toContain(`this host implements v${PLUGIN_API_VERSION}`)
+    const reason = pluginLoadBlockReason(plugin({ apiVersion: MINI_APP_API_VERSION + 1 }))
+    expect(reason).toContain(`targets API v${MINI_APP_API_VERSION + 1}`)
+    expect(reason).toContain(`this host implements v${MINI_APP_API_VERSION}`)
   })
 
   test('allows the host version and anything older', () => {
-    expect(pluginLoadBlockReason(plugin({ apiVersion: PLUGIN_API_VERSION }))).toBeNull()
-    if (PLUGIN_API_VERSION > 1)
-      expect(pluginLoadBlockReason(plugin({ apiVersion: PLUGIN_API_VERSION - 1 }))).toBeNull()
+    expect(pluginLoadBlockReason(plugin({ apiVersion: MINI_APP_API_VERSION }))).toBeNull()
+    if (MINI_APP_API_VERSION > 1)
+      expect(pluginLoadBlockReason(plugin({ apiVersion: MINI_APP_API_VERSION - 1 }))).toBeNull()
   })
 
   test('allows a manifest with no apiVersion at all', () => {
@@ -62,7 +62,7 @@ describe('pluginLoadBlockReason', () => {
     // Order matters for the message: "not valid JSON" is actionable, while a version parsed out of a
     // broken manifest is not trustworthy enough to report as the cause.
     expect(
-      pluginLoadBlockReason(plugin({ error: 'broken', apiVersion: PLUGIN_API_VERSION + 5 })),
+      pluginLoadBlockReason(plugin({ error: 'broken', apiVersion: MINI_APP_API_VERSION + 5 })),
     ).toBe('broken')
   })
 })

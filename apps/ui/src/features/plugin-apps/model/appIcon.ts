@@ -11,7 +11,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
  */
 export interface IconRendition {
   size: number
-  /** Base64 PNG, as the shell's `plugin_app_install` takes it. */
+  /** Base64 PNG, as the shell's `mini_app_install` takes it. */
   png: string
 }
 

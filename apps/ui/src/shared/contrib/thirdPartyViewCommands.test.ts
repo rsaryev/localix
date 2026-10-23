@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 
 import { syncThirdPartyViews, __resetThirdPartyViews } from './runtimeViews'
 import { buildThirdPartyViewCommands } from './thirdPartyViewCommands'
-import type { PluginViewSpec } from '@/shared/api/contracts'
+import type { MiniAppViewSpec } from '@/shared/api/contracts'
 
 /**
  * Palette commands for installed third-party views: one "Open …" entry per enabled
@@ -10,7 +10,7 @@ import type { PluginViewSpec } from '@/shared/api/contracts'
  * buttons (the enable/disable contract).
  */
 
-const view = (pluginName: string, id: string): PluginViewSpec => ({
+const view = (pluginName: string, id: string): MiniAppViewSpec => ({
   pluginName,
   projectId: '',
   id,

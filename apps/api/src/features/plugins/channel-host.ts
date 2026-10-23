@@ -1,6 +1,6 @@
 import { errorMessage } from '../../lib/errors'
 import { localixWorkspaceDir } from '../../lib/env'
-import { loadEnabledPluginChannels } from './loader-channels'
+import { loadEnabledMiniAppChannels } from './loader-channels'
 import type { AvailabilityReader } from '../capabilities/availability'
 import type { CapabilitySourceRepository } from '../capabilities/source-repository'
 import type {
@@ -8,8 +8,8 @@ import type {
   ChannelInboundMessage,
   ChannelInboundResult,
   ChannelWorkspaceApi,
-  PluginChannel,
-  PluginContext,
+  MiniAppChannel,
+  MiniAppContext,
 } from './native'
 import { createDebouncer } from '../../lib/debounce'
 import { withTimeout } from '../../lib/timeout'
@@ -40,7 +40,7 @@ export interface ChannelInboundHandler {
   }): Promise<ChannelInboundResult>
 }
 
-export interface PluginChannelHostOptions {
+export interface MiniAppChannelHostOptions {
   /**
    * What the rules say about this user's plugins. A PORT: this host owns no storage, and
    * the composition root is the only place that can bind the rule store.
@@ -65,12 +65,12 @@ export interface PluginChannelHostOptions {
 
 interface RunningChannel {
   pluginName: string
-  channel: PluginChannel
+  channel: MiniAppChannel
   controller: AbortController
   done: Promise<void>
 }
 
-export interface PluginChannelHost {
+export interface MiniAppChannelHost {
   /** Load enabled plugins' channels and start them. Safe to call once at boot. */
   start(): Promise<void>
   /** Stop everything and start again from current plugin state (debounced). */
@@ -83,7 +83,7 @@ export interface PluginChannelHost {
 
 const REFRESH_DEBOUNCE_MS = 500
 
-export function createPluginChannelHost(options: PluginChannelHostOptions): PluginChannelHost {
+export function createMiniAppChannelHost(options: MiniAppChannelHostOptions): MiniAppChannelHost {
   const { repo, userId, availabilityFor, inbound, logger } = options
   let channels: RunningChannel[] = []
   const refreshDebouncer = createDebouncer(REFRESH_DEBOUNCE_MS)
@@ -92,8 +92,8 @@ export function createPluginChannelHost(options: PluginChannelHostOptions): Plug
 
   function startChannel(
     pluginName: string,
-    channel: PluginChannel,
-    ctx: PluginContext,
+    channel: MiniAppChannel,
+    ctx: MiniAppContext,
   ): RunningChannel {
     const controller = new AbortController()
     const channelCtx: ChannelContext = {
@@ -145,7 +145,7 @@ export function createPluginChannelHost(options: PluginChannelHostOptions): Plug
     // Channels only. This ran the FULL loader — every enabled plugin's SKILL.md files
     // read off disk, its MCP records, agents, prompt sections and LSP configs built —
     // to take one field, at boot and again on every plugin toggle.
-    const found = await loadEnabledPluginChannels({
+    const found = await loadEnabledMiniAppChannels({
       repo,
       availability: await availabilityFor(userId),
       userId,

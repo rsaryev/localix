@@ -7,7 +7,7 @@ import path from 'node:path'
 
 import { CHAT_RUN_PROFILE } from '../../../agent-core/run-shape'
 import { TOOL } from '../../../agent-core/tool-names'
-import type { PluginAuthoring } from '../../../plugins/authoring/service'
+import type { MiniAppAuthoring } from '../../../plugins/authoring/service'
 import type { SessionRecord } from '../../repository'
 import { buildOptionalToolPorts } from './runtime-tool-ports'
 import type { RuntimeToolWiringContext } from './runtime-tools'
@@ -20,7 +20,7 @@ test('plugin_build suggests browser verification only when browser survives the 
     build: async () => ({
       report: { ok: true, published: true, steps: [] },
     }),
-  } as unknown as PluginAuthoring
+  } as unknown as MiniAppAuthoring
   const ctx = {
     deps: {
       db: {},

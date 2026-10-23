@@ -1,6 +1,6 @@
 import {
-  postPluginJson as postJson,
-  unwrapPluginResponse,
+  postMiniAppJson as postJson,
+  unwrapMiniAppResponse,
 } from '@localixai/mini-app-sdk/ui/transport'
 import type { DocumentFormat, ExtractOptions, ExtractResponse } from '../docClient'
 
@@ -22,13 +22,13 @@ export interface ExtractInput {
  * Raw fetch (not the typed hono client): the route is mounted by the bundled
  * documents PLUGIN, so it is not part of core's `AppType`.
  *
- * Failures arrive as `PluginApiError`, carrying the route's classified sentence and the
+ * Failures arrive as `MiniAppApiError`, carrying the route's classified sentence and the
  * extraction library's own words in `detail`. This file used to hand-roll that reader,
  * because the SDK's unwrap saw only the host's NESTED envelope and this route answers the
  * flat `{ error, code, detail }` one. The SDK reads both now, so the copy is gone.
  */
 export const documentsApi = {
   async extract(input: ExtractInput): Promise<ExtractResponse> {
-    return unwrapPluginResponse<ExtractResponse>(await postJson('/rpc/documents/extract', input))
+    return unwrapMiniAppResponse<ExtractResponse>(await postJson('/rpc/documents/extract', input))
   },
 }

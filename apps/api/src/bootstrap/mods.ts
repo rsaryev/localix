@@ -22,7 +22,7 @@ import type { ProviderConnectionsService } from '../features/provider-connection
 import type { RealtimeResource } from '../features/realtime/resources'
 import type { BootstrapServiceRefs } from './chat-service-deps'
 import { sessionReadOf } from './mods-session'
-import type { PluginHostRefs } from './plugin-host-refs'
+import type { MiniAppHostRefs } from './plugin-host-refs'
 import { createDebouncer, createThrottle } from '../lib/debounce'
 import { localixWorkspaceDir, userHome } from '../lib/env'
 import type { createLogger } from '../lib/logger'
@@ -71,7 +71,7 @@ export function createModsPhase(input: {
     serviceRefs: BootstrapServiceRefs
     bootRepo: { listMessages(userId: string, sessionId: string): Promise<PersistedMessage[]> }
   }
-  hostRefs: PluginHostRefs
+  hostRefs: MiniAppHostRefs
 }): { modsHost: ModsHost; refreshMods: () => void } {
   const { infra, hostRefs } = input
   const deps = {

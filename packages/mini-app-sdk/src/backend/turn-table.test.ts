@@ -8,7 +8,7 @@ import { agentWaitSchema, type AgentWait } from '../agent-wait'
 import { DECISION_HOLDS_SEAT, opponentSchema } from '../opponent'
 import type { Seat, Wake } from './agent-turn'
 import type { DecisionHost } from './decision'
-import type { PluginWakeRequest } from './host-services'
+import type { MiniAppWakeRequest } from './host-services'
 import { createTurnTable } from './turn-table'
 
 const roots: string[] = []
@@ -59,7 +59,7 @@ function setup(
 ) {
   const root = mkdtempSync(join(tmpdir(), 'turn-table-'))
   roots.push(root)
-  const woke: PluginWakeRequest[] = []
+  const woke: MiniAppWakeRequest[] = []
   const wake: Wake = async (request) => {
     woke.push(request)
     return { status: 'delivered' }

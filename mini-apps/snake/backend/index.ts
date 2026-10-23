@@ -1,4 +1,4 @@
-import type { PluginContext, PluginRegistration } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext, MiniAppRegistration } from '@localixai/mini-app-sdk/backend'
 import { createJsonStoreFeed } from '@localixai/mini-app-sdk/backend'
 
 import { ROUTE_PATH } from '../shared/resource'
@@ -11,7 +11,7 @@ import { createGameTools } from './tools'
  * model. `register(ctx)` runs more than once — for the backend, and again for each run's tools —
  * and only the backend load carries `ctx.host`, which is where the decision model's runs start.
  */
-export function register(ctx: PluginContext): PluginRegistration {
+export function register(ctx: MiniAppContext): MiniAppRegistration {
   const storage = ctx.sessionStorage
   const games = createGameService({
     ...(storage ? { resolveDir: (...args) => storage.resolveDataDir(...args) } : {}),

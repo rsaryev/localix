@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'n
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { z } from 'zod'
-import type { PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import { SYSTEM_MARKS_LIMIT, systemMarksSchema } from '../shared/system-marks'
 import { register } from './index'
 import { createTemplateRoutes } from './routes'
@@ -96,7 +96,7 @@ test.each([
     dataDir: dataDir(),
     z,
     defineTool: (tool: unknown) => tool,
-  } as unknown as PluginContext
+  } as unknown as MiniAppContext
   const tool = register(ctx).tools!.find((candidate) => candidate.name === name)!
   // The host gate's rule: the tool's own class, else its static flag read fail-closed.
   const actual = tool.classify
@@ -111,7 +111,7 @@ test('the agent tool acts on the same store the view reads', async () => {
     dataDir: dir,
     z,
     defineTool: (tool: unknown) => tool,
-  } as unknown as PluginContext
+  } as unknown as MiniAppContext
   const tool = register(ctx).tools?.find((candidate) => candidate.name === 'system_mark')
   expect(tool?.mutates).toBe(true)
   expect(tool?.executionMode).toBe('sequential')

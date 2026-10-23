@@ -1,4 +1,4 @@
-import { pluginWorkspace } from '@localixai/mini-app-sdk/ui'
+import { miniAppWorkspace } from '@localixai/mini-app-sdk/ui'
 import { baseName } from '@localixai/mini-app-sdk/ui/utilities'
 import { mediaTypeForPath } from '@localixai/mini-app-sdk/ui/file-types'
 import type { RepoFileChange } from '../../../backend/source-control/contracts'
@@ -30,13 +30,13 @@ export async function openChangedFile(
   // An unmerged entry opens as the file itself: the editor finds the conflict markers and
   // turns its resolver on, which is the only surface that can resolve them.
   if (file.status === 'conflicted' || opensAsFile(file)) {
-    pluginWorkspace.openFile({ sessionId, path: absPath })
+    miniAppWorkspace.openFile({ sessionId, path: absPath })
     return
   }
   // A tracked text change opens straight into the staging pane, which fetches its own
   // indexed lines — fetching the unified text here as well read every such file twice.
   if (file.status !== 'untracked' && file.status !== 'deleted') {
-    pluginWorkspace.openDiff({
+    miniAppWorkspace.openDiff({
       sessionId,
       path: absPath,
       diff: '',
@@ -59,10 +59,10 @@ export async function openChangedFile(
       root,
     )
     if (d.binary && file.status !== 'deleted') {
-      pluginWorkspace.openFile({ sessionId, path: absPath })
+      miniAppWorkspace.openFile({ sessionId, path: absPath })
       return
     }
-    pluginWorkspace.openDiff({
+    miniAppWorkspace.openDiff({
       sessionId,
       path: absPath,
       diff: d.diff,

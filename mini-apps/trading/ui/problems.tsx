@@ -13,7 +13,7 @@
 
 import { useMemo } from 'react'
 import { useProblemReport } from '@localixai/mini-app-sdk/ui'
-import type { PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
+import type { MiniAppProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
 import type { ProblemConsequence, ProblemReport } from '@localixai/mini-app-sdk/ui/problems'
 
 /** Namespace for this plugin's rows in the Event Center. */
@@ -39,7 +39,7 @@ export function useTradingProblem({
   /** Overrides the headline when the surface knows a better sentence than the venue's. */
   title?: string
   onRetry?: () => void
-}): PluginProblemLineProps | null {
+}): MiniAppProblemLineProps | null {
   const report = useMemo<ProblemReport | null>(
     () =>
       failure

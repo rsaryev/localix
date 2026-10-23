@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useShallowStable } from './useShallowStable'
-import { acknowledgeInline, runPluginAction } from '@localixai/mini-app-sdk/ui'
+import { acknowledgeInline, runMiniAppAction } from '@localixai/mini-app-sdk/ui'
 import type { DbErrorCode } from '../dbClient'
 import { databaseApi, DbApiError } from '../api/databaseApi'
 import { adaptResult } from './resultAdapter'
@@ -257,7 +257,7 @@ export function useSqlConsole(
   const cancel = useCallback(() => {
     const activeRun = activeRunRef.current
     if (!activeRun) return
-    runPluginAction(() => databaseApi.cancel(activeRun.connectionId), 'Could not cancel the query')
+    runMiniAppAction(() => databaseApi.cancel(activeRun.connectionId), 'Could not cancel the query')
   }, [])
 
   const run = useCallback(() => execute(sqlRef.current), [execute, sqlRef])

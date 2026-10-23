@@ -3,7 +3,7 @@ import { isAtOrUnder } from '@localixai/path-containment/ancestry'
 import type { RepoDiffLine, SourceControlStatus } from '../../backend/source-control/contracts'
 import { sourceControlApi } from '../api'
 import { useSourceControlStore } from '../source-control/model/store'
-import { pluginFiles } from '@localixai/mini-app-sdk/ui'
+import { miniAppFiles } from '@localixai/mini-app-sdk/ui'
 import {
   computeWordDiffMarks,
   mergeDirtyChanges,
@@ -170,7 +170,7 @@ export function useFileDirtyDiff(sessionId: string | null, editPath: string | nu
   )
 
   const onHunkReverted = useCallback(() => {
-    if (editPath) pluginFiles.announceReloaded([editPath])
+    if (editPath) miniAppFiles.announceReloaded([editPath])
     // No success row: the reverted lines vanish from the editor the person is looking at.
     if (sessionId) void useSourceControlStore.getState().refresh(sessionId)
   }, [sessionId, editPath])

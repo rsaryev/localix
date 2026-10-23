@@ -4,7 +4,7 @@ import {
   snippetMessageBindingDraft,
   toast,
 } from '@localixai/mini-app-sdk/ui'
-import { pluginComposer, pluginFiles } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppComposer, miniAppFiles } from '@localixai/mini-app-sdk/ui/runtime'
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 import type { ReaderChapter, ReaderDocument, ReaderSource } from '../shared/contracts'
@@ -62,7 +62,7 @@ export function useReaderAnnotationActions({
   const attachAnnotationContext = (item: ReaderSavedQuote) => {
     if (!document) return
     const uri = readerChapterUri(source, item.chapter)
-    pluginComposer.insert({
+    miniAppComposer.insert({
       sessionId,
       bindings: [
         resourceMessageBindingDraft({
@@ -113,7 +113,7 @@ export function useReaderAnnotationActions({
     }
     try {
       // The host's save (a download or a desktop save) is its own confirmation.
-      await pluginFiles.saveBlob(
+      await miniAppFiles.saveBlob(
         readerAnnotationExportFileName(displayBookTitle),
         new Blob([JSON.stringify(payload, null, 2)], {
           type: 'application/json',

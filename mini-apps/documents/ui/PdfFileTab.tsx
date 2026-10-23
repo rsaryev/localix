@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { FileWarning } from 'lucide-react'
 import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'
-import { pluginFiles } from '@localixai/mini-app-sdk/ui/runtime'
-import { pluginApiUrl } from '@localixai/mini-app-sdk/ui/transport'
+import { miniAppFiles } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppApiUrl } from '@localixai/mini-app-sdk/ui/transport'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { StateNotice } from '@localixai/kit/state-notice'
 import { baseName } from '@localixai/mini-app-sdk/ui/utilities'
@@ -56,7 +56,7 @@ export function PdfFileTab({
   const [state, setState] = useState<PdfLoadState>({ status: 'loading' })
   const [contextId, setContextId] = useState<string>()
   const [reloadNonce, setReloadNonce] = useState(0)
-  const mediaUrl = mediaId ? pluginApiUrl(`/rpc/media/${encodeURIComponent(mediaId)}`) : null
+  const mediaUrl = mediaId ? miniAppApiUrl(`/rpc/media/${encodeURIComponent(mediaId)}`) : null
 
   // Mounted with a stable key by the registry, so 'loading' is the correct initial
   // state; Retry resets it explicitly (below) — no synchronous setState in the effect.
@@ -71,7 +71,7 @@ export function PdfFileTab({
     if (mediaId) return // media-backed path handled above
     let cancelled = false
     let objectUrl: string | null = null
-    pluginFiles
+    miniAppFiles
       .read(sessionId, path, { full: true })
       .then((res) => {
         if (cancelled) return

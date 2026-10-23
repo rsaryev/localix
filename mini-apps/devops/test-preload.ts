@@ -9,7 +9,7 @@ export {}
 // Re-bound per test because a suite that imports the real host runtime replaces the binding with a
 // lazy component, which renders as nothing under `renderToStaticMarkup`.
 const { beforeEach } = await import('bun:test')
-const { bindPluginUiTestDoubles } = await import('@localixai/mini-app-sdk/ui/testing')
+const { bindMiniAppUiTestDoubles } = await import('@localixai/mini-app-sdk/ui/testing')
 
-bindPluginUiTestDoubles()
-beforeEach(bindPluginUiTestDoubles)
+bindMiniAppUiTestDoubles()
+beforeEach(bindMiniAppUiTestDoubles)

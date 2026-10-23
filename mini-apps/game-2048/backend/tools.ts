@@ -1,4 +1,4 @@
-import { classifyByAction, type PluginContext } from '@localixai/mini-app-sdk/backend'
+import { classifyByAction, type MiniAppContext } from '@localixai/mini-app-sdk/backend'
 
 import { describeGame, drawBoard, endLine } from '../shared/describe'
 import {
@@ -58,7 +58,7 @@ interface PlanInput {
 }
 
 /** The table a tool call acts on: the chat the call runs in. */
-function seatOf(ctx: PluginContext, context: { session?: { id: string } } | undefined): Seat {
+function seatOf(ctx: MiniAppContext, context: { session?: { id: string } } | undefined): Seat {
   const sessionId = context?.session?.id
   if (!sessionId) throw new MoveRefused('2048 is played in a chat; this call has none.')
   return { userId: ctx.userId, sessionId }
@@ -117,7 +117,7 @@ function afterMoves(result: Played, plan: Plan): Result {
   return { content: [playedLine(result, plan), describeGame(game), '', nextLine(game)].join('\n') }
 }
 
-export function createGameTools(ctx: PluginContext, games: GameService) {
+export function createGameTools(ctx: MiniAppContext, games: GameService) {
   const openBoard = (seat: Seat) =>
     ctx.ui.offer({
       uri: gameUri(seat.sessionId),

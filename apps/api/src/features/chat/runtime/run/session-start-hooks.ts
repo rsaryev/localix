@@ -6,10 +6,10 @@
  * Layer rule (same as execute-run.ts): runtime/infra; never imports
  * features/chat/service*.
  */
-import type { LoadedPluginHook } from '../../../plugins/loader'
+import type { LoadedMiniAppHook } from '../../../plugins/loader'
 
 export interface FireSessionStartHooksArgs {
-  hooks: readonly LoadedPluginHook[]
+  hooks: readonly LoadedMiniAppHook[]
   sessionId: string
   /** Set of session ids whose onSessionStart has already fired (mutated here). */
   startedSessions: Set<string>

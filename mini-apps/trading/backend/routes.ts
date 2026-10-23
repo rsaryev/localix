@@ -13,7 +13,7 @@
  */
 import { Hono } from 'hono'
 import type { Context } from 'hono'
-import { routeValidator, type PluginRouteContext } from '@localixai/mini-app-sdk/backend'
+import { routeValidator, type MiniAppRouteContext } from '@localixai/mini-app-sdk/backend'
 import type { TradingErrorResponse } from './contracts'
 import {
   depthQuerySchema,
@@ -82,8 +82,8 @@ const validated = routeValidator({
 })
 
 export function createTradingRoutes(service: TradingService) {
-  const app = new Hono<PluginRouteContext>()
-  const uid = (c: Context<PluginRouteContext>) => c.env.userId
+  const app = new Hono<MiniAppRouteContext>()
+  const uid = (c: Context<MiniAppRouteContext>) => c.env.userId
 
   const routes = app
     // ── Public sources ───────────────────────────────────────────────────────

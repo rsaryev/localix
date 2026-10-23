@@ -2,7 +2,7 @@
 // database workbench owns its `db-console` WorkItemKind, the per-connection tab-id formula,
 // and the payload shape here — core just opens/closes what it's told (see inspectorBus
 // `openWorkItem` / `closeWorkItems`), so nothing db-specific lives in the shared bus.
-import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import type { ConnectionColor, DbConnectionInfo, DbDialect } from '../dbClient'
 import { DATABASE_DRIVER_CATALOG } from '../../shared/driver-catalog'
 import { connectionDisplayName } from './connectionDisplayName'
@@ -49,7 +49,7 @@ function consolePayload(
 /** Open or focus the stable schema-browser tab owned by one connection. */
 export function openDbConnection(sessionId: string, connection: DbConnectionInfo): void {
   const title = connectionDisplayName(connection)
-  pluginWorkspace.openWorkItem({
+  miniAppWorkspace.openWorkItem({
     workKind: DB_CONNECTION_KIND,
     id: connectionWorkItemId(connection.id),
     title,
@@ -74,7 +74,7 @@ export function openDbConsole(
   readonly?: boolean,
   color?: ConnectionColor,
 ): void {
-  pluginWorkspace.openWorkItem({
+  miniAppWorkspace.openWorkItem({
     workKind: DB_CONSOLE_KIND,
     id: consolePrefix(connectionId),
     title: name,
@@ -94,7 +94,7 @@ export function newDbConsole(
   color?: ConnectionColor,
 ): void {
   const rand = (globalThis.crypto?.randomUUID?.() ?? String(Math.random())).slice(0, 8)
-  pluginWorkspace.openWorkItem({
+  miniAppWorkspace.openWorkItem({
     workKind: DB_CONSOLE_KIND,
     id: `${consolePrefix(connectionId)}:${rand}`,
     title: name,
@@ -118,7 +118,7 @@ export function openDbTable(opts: {
   schema?: string
   mode?: DbTableOpenMode
 }): void {
-  pluginWorkspace.openWorkItem({
+  miniAppWorkspace.openWorkItem({
     workKind: DB_TABLE_KIND,
     id: tableWorkItemId(opts.connectionId, opts.table, opts.schema),
     title: opts.table,
@@ -145,7 +145,7 @@ export function openDbTable(opts: {
 /** Open or focus a connection's relationship diagram as a first-class editor tab. */
 export function openDbDiagram(sessionId: string, connection: DbConnectionInfo): void {
   const title = connectionDisplayName(connection)
-  pluginWorkspace.openWorkItem({
+  miniAppWorkspace.openWorkItem({
     workKind: DB_DIAGRAM_KIND,
     id: diagramWorkItemId(connection.id),
     title: `${title} relationships`,
@@ -169,8 +169,8 @@ export function openDbDiagram(sessionId: string, connection: DbConnectionInfo): 
  */
 export function closeDbConnectionWorkItems(connectionId: string): void {
   const everyChat = { everyChat: true }
-  pluginWorkspace.closeWorkItems(connectionWorkItemId(connectionId), everyChat)
-  pluginWorkspace.closeWorkItems(consolePrefix(connectionId), everyChat)
-  pluginWorkspace.closeWorkItems(tablePrefix(connectionId), everyChat)
-  pluginWorkspace.closeWorkItems(diagramWorkItemId(connectionId), everyChat)
+  miniAppWorkspace.closeWorkItems(connectionWorkItemId(connectionId), everyChat)
+  miniAppWorkspace.closeWorkItems(consolePrefix(connectionId), everyChat)
+  miniAppWorkspace.closeWorkItems(tablePrefix(connectionId), everyChat)
+  miniAppWorkspace.closeWorkItems(diagramWorkItemId(connectionId), everyChat)
 }

@@ -14,7 +14,7 @@ define_class!(
     #[unsafe(super(NSObject))]
     #[thread_kind = MainThreadOnly]
     #[ivars = PathBuf]
-    #[name = "LocalixPluginAppScheme"]
+    #[name = "LocalixMiniAppScheme"]
     pub(crate) struct Scheme;
 
     unsafe impl NSObjectProtocol for Scheme {}

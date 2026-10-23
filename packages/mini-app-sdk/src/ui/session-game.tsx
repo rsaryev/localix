@@ -1,7 +1,7 @@
 import { Suspense, type ComponentType, type ReactNode } from 'react'
 
 import type { IconComponent, WorkItemAgentContext } from './contrib'
-import type { PluginUiHost } from './host'
+import type { MiniAppUiHost } from './host'
 import type { PublishMessageContext } from './message-bindings'
 
 /**
@@ -31,7 +31,7 @@ export function sessionGameUi(game: {
   agentContext: WorkItemAgentContext
   /** The session a board URI names, `null` for the bare one, `undefined` for another URI. */
   sessionOf: (uri: string) => string | null | undefined
-}): (host: PluginUiHost) => void {
+}): (host: MiniAppUiHost) => void {
   const { kind, title, Icon, Workspace } = game
 
   function GameBody({
@@ -48,7 +48,7 @@ export function sessionGameUi(game: {
     )
   }
 
-  const registeredHosts = new WeakSet<PluginUiHost>()
+  const registeredHosts = new WeakSet<MiniAppUiHost>()
   return (host) => {
     if (registeredHosts.has(host)) return
     registeredHosts.add(host)

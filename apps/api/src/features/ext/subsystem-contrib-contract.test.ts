@@ -22,7 +22,7 @@ setDefaultTimeout(30_000)
  * shutdown hook. Core names none of the four plugins — it just loops over the registry.
  *
  * WHICH MEANS A CONTRIBUTION CAN BE SILENTLY IGNORED. Add a field to `BackendSubsystem`,
- * thread it through `loadPluginBackends`, ship a plugin that populates it — and if nobody
+ * thread it through `loadMiniAppBackends`, ship a plugin that populates it — and if nobody
  * added the consumption loop in the composition root, NOTHING FAILS. The plugin's
  * contribution just never happens. Type-check is green (the field is optional), the
  * plugin's own tests are green (they assert the backend RETURNS the field), and the

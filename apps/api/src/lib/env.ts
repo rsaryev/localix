@@ -38,7 +38,7 @@ import type { LogLevel } from './logger'
  * Two roots derive from this one, and only two:
  *   - MACHINE-level key/token state → here (`~/.localix/vault`, `~/.localix/mcp-oauth`);
  *   - host-owned blobs that belong to a DB row → beside the db — move the db and
- *     its blobs must move with it. Plugin data roots come from PluginContext.
+ *     its blobs must move with it. Plugin data roots come from MiniAppContext.
  */
 export function localixHome(): string {
   return path.join(userHome(), '.localix')

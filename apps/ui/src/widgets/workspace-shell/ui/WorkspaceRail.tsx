@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Menu, Plus } from 'lucide-react'
-import type { PluginCategory } from '@localixai/mini-app-sdk/manifest'
+import type { MiniAppCategory } from '@localixai/mini-app-sdk/manifest'
 import { CMD } from '@/shared/lib/keybindings'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { DROP_TARGET_INSET_ACTIVE, DROP_TARGET_TRANSITION } from '@localixai/kit/drop-target'
@@ -21,7 +21,7 @@ interface WorkspaceRailProps {
   /** Customizable entries currently pinned to the bar (already ordered). */
   barEntries: RailEntry[]
   toolEntries: RailEntry[]
-  pluginCategories?: ReadonlyMap<string, PluginCategory | undefined>
+  miniAppCategories?: ReadonlyMap<string, MiniAppCategory | undefined>
   pinnedToolIds: ReadonlySet<string>
   onPinTool: (id: string, pinned: boolean) => void
   onUnpinTool: (id: string) => void
@@ -67,7 +67,7 @@ export function WorkspaceRail({
   topEntries,
   barEntries,
   toolEntries,
-  pluginCategories,
+  miniAppCategories,
   pinnedToolIds,
   onPinTool,
   onUnpinTool,
@@ -198,7 +198,7 @@ export function WorkspaceRail({
         mainRailActions={mainRailActions}
         barEntries={barEntries}
         toolEntries={toolEntries}
-        pluginCategories={pluginCategories}
+        miniAppCategories={miniAppCategories}
         pinnedToolIds={pinnedToolIds}
         onPinTool={onPinTool}
         onUnpinTool={onUnpinTool}

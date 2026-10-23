@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import type { PublishedMessageContext } from '@localixai/mini-app-sdk/ui'
-import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
+import { bindMiniAppUiTransport } from '@localixai/mini-app-sdk/ui/transport'
 import { registerDom } from '@localixai/kit/testing'
-import { bindPluginUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
+import { bindMiniAppUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
 
 let teardown: () => Promise<void>
 let unbindDoubles: () => void
@@ -12,7 +12,7 @@ beforeAll(() => {
   teardown = registerDom()
   // The dashboard reports failures through the host's `ProblemLine`, which the SDK resolves from
   // the host-bound component set; bind the same test doubles a plugin preload would.
-  unbindDoubles = bindPluginUiTestDoubles()
+  unbindDoubles = bindMiniAppUiTestDoubles()
   actEnvironment.IS_REACT_ACT_ENVIRONMENT = true
 })
 afterAll(async () => {
@@ -37,7 +37,7 @@ test('renders one system surface, publishes its sample, marks stale data and cle
   let requests = 0
   const requestedPaths: string[] = []
   let context: PublishedMessageContext | null = null
-  const unbind = bindPluginUiTransport({
+  const unbind = bindMiniAppUiTransport({
     url: (path) => path,
     request: async (path) => {
       requests++
@@ -86,7 +86,7 @@ test('a process list that failed to load says so, and never claims to be empty',
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { Workspace } = await import('./Workspace')
-  const unbind = bindPluginUiTransport({
+  const unbind = bindMiniAppUiTransport({
     url: (path) => path,
     request: async (path) => {
       if (path.endsWith('/processes')) {

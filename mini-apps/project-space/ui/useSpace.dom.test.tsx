@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
-import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
-import { bindPluginUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
-import { pluginRealtime, pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
+import { bindMiniAppUiTransport } from '@localixai/mini-app-sdk/ui/transport'
+import { bindMiniAppUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
+import { miniAppRealtime, miniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import { WorkItemVisibilityProvider } from '@localixai/mini-app-sdk/ui/visibility'
 import { emptySpace } from '../shared/format/document'
 import type { SpaceView } from '../shared/api'
@@ -70,7 +70,7 @@ test('a chat addition reaches an already mounted board immediately; an older pol
   let saved = initial
   const staleRead = deferred<Response>()
   let reads = 0
-  const unbind = bindPluginUiTransport({
+  const unbind = bindMiniAppUiTransport({
     url: (path) => path,
     request: async (path, init) => {
       if (path.includes('/space?'))
@@ -81,7 +81,7 @@ test('a chat addition reaches an already mounted board immediately; an older pol
       return Response.json({ ...saved, results: applied.results })
     },
   })
-  const open = spyOn(pluginWorkspace, 'openWorkItem').mockImplementation(() => {})
+  const open = spyOn(miniAppWorkspace, 'openWorkItem').mockImplementation(() => {})
   const probe = await mount('immediate-add')
   try {
     await probe.act(async () => probe.state().reload())
@@ -126,7 +126,7 @@ test('a poll that started during a write is discarded even if it finishes after 
   const initial = view()
   const write = deferred<Response>()
   const staleRead = deferred<Response>()
-  const unbind = bindPluginUiTransport({
+  const unbind = bindMiniAppUiTransport({
     url: (path) => path,
     request: async (path) => (path.includes('/ops?') ? write.promise : staleRead.promise),
   })
@@ -154,7 +154,7 @@ test('a poll that started during a write is discarded even if it finishes after 
 
 test('late reads cannot change the board after switching sessions', async () => {
   const old = deferred<Response>()
-  const unbind = bindPluginUiTransport({
+  const unbind = bindMiniAppUiTransport({
     url: (path) => path,
     request: async (path) =>
       path.includes('sessionId=old-session') ? old.promise : Response.json(view('new-session')),
@@ -183,8 +183,8 @@ test('rapid optimistic edits compose before React renders, and saves stay in ord
   let saved = view()
   const first = deferred<void>()
   const calls: string[] = []
-  const unbindUi = bindPluginUiTestDoubles()
-  const unbind = bindPluginUiTransport({
+  const unbindUi = bindMiniAppUiTestDoubles()
+  const unbind = bindMiniAppUiTransport({
     url: (path) => path,
     request: async (path, init) => {
       if (path.includes('/space?')) return Response.json(saved)
@@ -247,26 +247,26 @@ test('many fragment buttons share a read and socket subscription; deletion resto
   const frames = new Set<(json: string) => void>()
   const reconnects = new Set<() => void>()
   const commands: Record<string, unknown>[] = []
-  const frameSpy = spyOn(pluginRealtime, 'onFrame').mockImplementation((tag, callback) => {
+  const frameSpy = spyOn(miniAppRealtime, 'onFrame').mockImplementation((tag, callback) => {
     expect(tag).toBe(SPACE_FRAME_TAG)
     frames.add(callback)
     return () => {
       frames.delete(callback)
     }
   })
-  const reconnectSpy = spyOn(pluginRealtime, 'onReconnect').mockImplementation((callback) => {
+  const reconnectSpy = spyOn(miniAppRealtime, 'onReconnect').mockImplementation((callback) => {
     reconnects.add(callback)
     return () => {
       reconnects.delete(callback)
     }
   })
-  const requestSpy = spyOn(pluginRealtime, 'request').mockImplementation(
+  const requestSpy = spyOn(miniAppRealtime, 'request').mockImplementation(
     async <T,>(payload: Record<string, unknown>): Promise<T> => {
       commands.push(payload)
       return {} as T
     },
   )
-  const unbind = bindPluginUiTransport({
+  const unbind = bindMiniAppUiTransport({
     url: (path) => path,
     request: async (path, init) => {
       if (path.includes('/space?')) {
@@ -324,17 +324,17 @@ test('many fragment buttons share a read and socket subscription; deletion resto
 test('HTTP must advertise a live backend before any subscription, including after a failed read', async () => {
   const sessionId = 'capability-handshake'
   const commands: Record<string, unknown>[] = []
-  const requestSpy = spyOn(pluginRealtime, 'request').mockImplementation(
+  const requestSpy = spyOn(miniAppRealtime, 'request').mockImplementation(
     async <T,>(payload: Record<string, unknown>): Promise<T> => {
       commands.push(payload)
       return {} as T
     },
   )
-  const frameSpy = spyOn(pluginRealtime, 'onFrame').mockImplementation(() => () => {})
-  const reconnectSpy = spyOn(pluginRealtime, 'onReconnect').mockImplementation(() => () => {})
+  const frameSpy = spyOn(miniAppRealtime, 'onFrame').mockImplementation(() => () => {})
+  const reconnectSpy = spyOn(miniAppRealtime, 'onReconnect').mockImplementation(() => () => {})
   let status = 404
   let saved = view()
-  const unbind = bindPluginUiTransport({
+  const unbind = bindMiniAppUiTransport({
     url: (path) => path,
     request: async () => Response.json(saved, { status }),
   })
@@ -372,7 +372,7 @@ test('recovering a lost save response reads past an older in-flight poll', async
   let saved = old
   let reads = 0
   let writes = 0
-  const unbind = bindPluginUiTransport({
+  const unbind = bindMiniAppUiTransport({
     url: (path) => path,
     request: async (path, init) => {
       if (path.includes('/space?')) return ++reads === 1 ? poll.promise : Response.json(saved)
@@ -386,7 +386,7 @@ test('recovering a lost save response reads past an older in-flight poll', async
       throw new Error('Connection lost after saving')
     },
   })
-  const open = spyOn(pluginWorkspace, 'openWorkItem').mockImplementation(() => {})
+  const open = spyOn(miniAppWorkspace, 'openWorkItem').mockImplementation(() => {})
   const reading = spaceApi.space(sessionId)
   try {
     await addContentToSpace({

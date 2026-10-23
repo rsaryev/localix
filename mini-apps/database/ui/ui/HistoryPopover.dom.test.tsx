@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
-import * as pluginUiSdk from '@localixai/mini-app-sdk/ui'
+import * as miniAppUiSdk from '@localixai/mini-app-sdk/ui'
 import { registerDom } from '@localixai/kit/testing'
 import type { SqlHistoryEntry } from '../model/sqlHistory'
 import type { SqlHistoryState } from '../model/useSqlHistory'
@@ -53,13 +53,13 @@ async function render(history: SqlHistoryState) {
   const { act } = React
   const { createRoot } = await import('react-dom/client')
   const toasts: ToastCall[] = []
-  const success = spyOn(pluginUiSdk.toast, 'success').mockImplementation(
+  const success = spyOn(miniAppUiSdk.toast, 'success').mockImplementation(
     (message: string, opts?: { action?: ToastCall['action'] }) => {
       toasts.push({ message: String(message), action: opts?.action })
       return 'id'
     },
   )
-  const info = spyOn(pluginUiSdk.toast, 'info').mockImplementation((message: string) => {
+  const info = spyOn(miniAppUiSdk.toast, 'info').mockImplementation((message: string) => {
     toasts.push({ message: String(message) })
     return 'id'
   })

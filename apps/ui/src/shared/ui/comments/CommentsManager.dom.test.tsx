@@ -25,7 +25,7 @@ describe('CommentsManager actions', () => {
     const { CommentsManager } = await import('./CommentsManager')
     const { registerCommentAction, removeCommentActionsOf } =
       await import('@/shared/contrib/commentActions')
-    const { setEnabledPluginNames } = await import('@/shared/contrib/pluginActivation')
+    const { setEnabledPluginNames } = await import('@/shared/contrib/miniAppActivation')
     const onClear = mock(() => {})
     const onSubmit = mock(() => {})
     const onAction = mock((_action: CommentActionContribution) => {})

@@ -2,9 +2,9 @@ import { afterEach, expect, spyOn, test } from 'bun:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
-import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
-import { recordingPluginUiHost } from '@localixai/mini-app-sdk/ui/testing'
+import { bindMiniAppUiTransport } from '@localixai/mini-app-sdk/ui/transport'
+import { miniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
+import { recordingMiniAppUiHost } from '@localixai/mini-app-sdk/ui/testing'
 import type { ActionContext, ActionContribution } from '@localixai/mini-app-sdk/ui'
 import { createSpaceRoutes } from '../backend/routes'
 import { registerUi } from './register'
@@ -37,7 +37,7 @@ test('the contributed action keeps editable Mermaid source on the originating pr
   roots.push(root)
   const routes = createSpaceRoutes()
   const requests: string[] = []
-  const unbind = bindPluginUiTransport({
+  const unbind = bindMiniAppUiTransport({
     url: (path) => path,
     request: async (path, init) => {
       requests.push(path)
@@ -50,9 +50,9 @@ test('the contributed action keeps editable Mermaid source on the originating pr
       })
     },
   })
-  const open = spyOn(pluginWorkspace, 'openWorkItem').mockImplementation(() => {})
+  const open = spyOn(miniAppWorkspace, 'openWorkItem').mockImplementation(() => {})
   try {
-    const { host, registrations } = recordingPluginUiHost()
+    const { host, registrations } = recordingMiniAppUiHost()
     registerUi(host)
     const action = registrations.actions[0] as ActionContribution
     expect(action.id).toBe('project-space:add-content')
@@ -102,7 +102,7 @@ test('the contributed action keeps editable Mermaid source on the originating pr
 })
 
 test('a refused board placement does not open a destination or report success', async () => {
-  const unbind = bindPluginUiTransport({
+  const unbind = bindMiniAppUiTransport({
     url: (path) => path,
     request: async (path) =>
       Response.json(
@@ -111,9 +111,9 @@ test('a refused board placement does not open a destination or report success', 
           : { results: [{ ok: false, error: 'Board is read-only' }] },
       ),
   })
-  const open = spyOn(pluginWorkspace, 'openWorkItem').mockImplementation(() => {})
+  const open = spyOn(miniAppWorkspace, 'openWorkItem').mockImplementation(() => {})
   try {
-    const { host, registrations } = recordingPluginUiHost()
+    const { host, registrations } = recordingMiniAppUiHost()
     registerUi(host)
     await expect((registrations.actions[0] as ActionContribution).run(picture)).rejects.toThrow(
       'Board is read-only',
@@ -130,7 +130,7 @@ test('add, delete and re-add the same fragment; live plugin eligibility follows 
   roots.push(root)
   const routes = createSpaceRoutes()
   const context: ActionContext = { ...picture, sessionId: 'repeat-fragment' }
-  const unbind = bindPluginUiTransport({
+  const unbind = bindMiniAppUiTransport({
     url: (path) => path,
     request: async (path, init) =>
       routes.request(path.slice(ROUTE_PATH.length), init, {
@@ -140,9 +140,9 @@ test('add, delete and re-add the same fragment; live plugin eligibility follows 
         cwd: root,
       }),
   })
-  const open = spyOn(pluginWorkspace, 'openWorkItem').mockImplementation(() => {})
+  const open = spyOn(miniAppWorkspace, 'openWorkItem').mockImplementation(() => {})
   try {
-    const { host, registrations } = recordingPluginUiHost()
+    const { host, registrations } = recordingMiniAppUiHost()
     registerUi(host)
     const action = registrations.actions[0] as ActionContribution
     const id = await prepareFragmentId(context.target)
@@ -170,7 +170,7 @@ test('a lost save response is reconciled by its fragment id without repeating th
   roots.push(root)
   const routes = createSpaceRoutes()
   let writes = 0
-  const unbind = bindPluginUiTransport({
+  const unbind = bindMiniAppUiTransport({
     url: (path) => path,
     request: async (path, init) => {
       const response = await routes.request(path.slice(ROUTE_PATH.length), init, {
@@ -186,9 +186,9 @@ test('a lost save response is reconciled by its fragment id without repeating th
       return response
     },
   })
-  const open = spyOn(pluginWorkspace, 'openWorkItem').mockImplementation(() => {})
+  const open = spyOn(miniAppWorkspace, 'openWorkItem').mockImplementation(() => {})
   try {
-    const { host, registrations } = recordingPluginUiHost()
+    const { host, registrations } = recordingMiniAppUiHost()
     registerUi(host)
     const action = registrations.actions[0] as ActionContribution
     const context = { ...picture, sessionId: 'lost-answer' }

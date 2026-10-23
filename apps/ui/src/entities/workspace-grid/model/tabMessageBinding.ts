@@ -59,7 +59,7 @@ function staticMessageBindings(item: WorkItem): MessageBindingDragPayload[] {
   return one ? [one] : []
 }
 
-function pluginAgentContext(item: WorkItem): WorkItemAgentContext | null {
+function miniAppAgentContext(item: WorkItem): WorkItemAgentContext | null {
   const contribution = activeWorkItemContribution(item.kind)
   const configured = contribution?.agentContext
   if (configured) return typeof configured === 'function' ? configured(item) : configured
@@ -79,7 +79,7 @@ function pluginGuidanceBinding(
   item: WorkItem,
   liveContextAvailable: boolean,
 ): MessageBindingDragPayload | null {
-  const context = pluginAgentContext(item)
+  const context = miniAppAgentContext(item)
   if (!context) return null
   const owner = activeWorkItemContribution(item.kind)?.pluginName
   const pluginName =
@@ -215,7 +215,7 @@ export function workItemToMessageBindings(item: WorkItem | undefined): MessageBi
 }
 
 /** The plugin that owns a tab — its contribution's, or a generic plugin view's named owner. */
-export function tabOwnerPlugin(item: WorkItem): string | undefined {
+export function tabOwnerMiniApp(item: WorkItem): string | undefined {
   const owner = activeWorkItemContribution(item.kind)?.pluginName
   if (owner) return owner
   return item.kind === 'plugin-view' && typeof item.payload?.pluginName === 'string'
@@ -234,7 +234,7 @@ function ownedBy(
   item: WorkItem,
   bindings: readonly MessageBindingDragPayload[],
 ): MessageBindingDragPayload[] {
-  const plugin = tabOwnerPlugin(item)
+  const plugin = tabOwnerMiniApp(item)
   return bindings.map(({ plugin: _claimed, ...binding }) =>
     plugin ? { ...binding, plugin } : binding,
   )

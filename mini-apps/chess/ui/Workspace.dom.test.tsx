@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import type { PublishedMessageContext } from '@localixai/mini-app-sdk/ui'
-import { bindPluginUiRuntime, type PluginUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
-import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
+import { bindMiniAppUiRuntime, type MiniAppUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
+import { bindMiniAppUiTransport } from '@localixai/mini-app-sdk/ui/transport'
 import { WorkItemSessionProvider } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { registerDom } from '@localixai/kit/testing'
 
@@ -31,7 +31,7 @@ const AT = '2026-09-26T10:00:00.000Z'
 function fakeBackend(unreachable?: string) {
   let game: Game = newGame({ id: 'g1', you: 'white', now: AT })
   const requests: { path: string; body?: unknown }[] = []
-  const unbindTransport = bindPluginUiTransport({
+  const unbindTransport = bindMiniAppUiTransport({
     url: (path) => path,
     request: async (path, init) => {
       const body = init?.body ? JSON.parse(init.body as string) : undefined
@@ -52,9 +52,9 @@ function fakeBackend(unreachable?: string) {
       return Response.json(game)
     },
   })
-  const unbindRuntime = bindPluginUiRuntime({
+  const unbindRuntime = bindMiniAppUiRuntime({
     sessions: { list: () => [], subscribe: () => () => {} },
-  } as unknown as PluginUiRuntime)
+  } as unknown as MiniAppUiRuntime)
   return {
     requests,
     agentPlays: (move: string) => {

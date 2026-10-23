@@ -1,5 +1,5 @@
 /**
- * Coalescing for the workspace file-change signal (`pluginFiles.watchWorkspace`).
+ * Coalescing for the workspace file-change signal (`miniAppFiles.watchWorkspace`).
  *
  * The host's watcher already settles a burst for a quarter second, but an agent run, a build or a
  * branch switch is many bursts in a row, and a plugin that re-reads on each one (a `git status`, a
@@ -8,7 +8,7 @@
  * delivery per window instead of starving until the churn stops, which a trailing debounce would
  * do while the person watches a stale panel.
  */
-import type { PluginWorkspaceChange } from './runtime-payloads'
+import type { MiniAppWorkspaceChange } from './runtime-payloads'
 
 /** Default window: long enough to fold a save-and-format, short enough to feel live. */
 export const DEFAULT_WORKSPACE_CHANGE_WINDOW_MS = 500
@@ -36,7 +36,7 @@ const realTimers: Timers = {
 
 export function createWorkspaceChangeCoalescer(
   sessionId: string,
-  deliver: (change: PluginWorkspaceChange) => void,
+  deliver: (change: MiniAppWorkspaceChange) => void,
   windowMs: number = DEFAULT_WORKSPACE_CHANGE_WINDOW_MS,
   timers: Timers = realTimers,
 ): WorkspaceChangeCoalescer {
@@ -48,7 +48,7 @@ export function createWorkspaceChangeCoalescer(
   const flush = () => {
     timer = null
     if (closed) return
-    const change: PluginWorkspaceChange = { sessionId, paths: coarse ? null : [...paths] }
+    const change: MiniAppWorkspaceChange = { sessionId, paths: coarse ? null : [...paths] }
     paths = new Set()
     coarse = false
     deliver(change)

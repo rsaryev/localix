@@ -1,4 +1,4 @@
-import { pluginApiFetch } from '@localixai/mini-app-sdk/ui'
+import { miniAppApiFetch } from '@localixai/mini-app-sdk/ui'
 
 import type {
   ReaderBookMetadataPatch,
@@ -51,7 +51,7 @@ function sourceQuery(source: ReaderSource): URLSearchParams {
 
 export const readerApi = {
   async library(): Promise<ReaderLibraryResponse> {
-    return readOr<ReaderLibraryResponse>(await pluginApiFetch(`${BASE}/library`))
+    return readOr<ReaderLibraryResponse>(await miniAppApiFetch(`${BASE}/library`))
   },
 
   async searchLibrary(
@@ -60,19 +60,19 @@ export const readerApi = {
   ): Promise<ReaderLibrarySearchResponse> {
     const query = new URLSearchParams({ query: queryValue, limit: '100' })
     return readOr<ReaderLibrarySearchResponse>(
-      await pluginApiFetch(`${BASE}/library/search?${query}`, { signal }),
+      await miniAppApiFetch(`${BASE}/library/search?${query}`, { signal }),
     )
   },
 
   async document(source: ReaderSource): Promise<ReaderDocumentResponse> {
     const query = sourceQuery(source)
-    return readOr<ReaderDocumentResponse>(await pluginApiFetch(`${BASE}/document?${query}`))
+    return readOr<ReaderDocumentResponse>(await miniAppApiFetch(`${BASE}/document?${query}`))
   },
 
   async chapter(source: ReaderSource, chapter: number): Promise<ReaderChapterResponse> {
     const query = sourceQuery(source)
     query.set('chapter', String(chapter))
-    return readOr<ReaderChapterResponse>(await pluginApiFetch(`${BASE}/chapter?${query}`))
+    return readOr<ReaderChapterResponse>(await miniAppApiFetch(`${BASE}/chapter?${query}`))
   },
 
   async search(
@@ -89,18 +89,20 @@ export const readerApi = {
     query.set('matchDiacritics', String(options.matchDiacritics))
     query.set('nearbyWords', String(options.nearbyWords))
     query.set('limit', String(options.limit))
-    return readOr<ReaderSearchResponse>(await pluginApiFetch(`${BASE}/search?${query}`, { signal }))
+    return readOr<ReaderSearchResponse>(
+      await miniAppApiFetch(`${BASE}/search?${query}`, { signal }),
+    )
   },
 
   async stats(source: ReaderSource): Promise<ReaderStatsResponse> {
     const query = sourceQuery(source)
-    return readOr<ReaderStatsResponse>(await pluginApiFetch(`${BASE}/stats?${query}`))
+    return readOr<ReaderStatsResponse>(await miniAppApiFetch(`${BASE}/stats?${query}`))
   },
 
   async recordReadingEvent(event: ReaderReadingEventInput): Promise<boolean> {
     return (
       await readOr<{ recorded: boolean }>(
-        await pluginApiFetch(`${BASE}/stats/events`, {
+        await miniAppApiFetch(`${BASE}/stats/events`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify(event),
@@ -114,7 +116,7 @@ export const readerApi = {
     const query = sourceQuery(source)
     return (
       await readOr<{ removed: boolean }>(
-        await pluginApiFetch(`${BASE}/library?${query}`, { method: 'DELETE' }),
+        await miniAppApiFetch(`${BASE}/library?${query}`, { method: 'DELETE' }),
       )
     ).removed
   },
@@ -122,7 +124,7 @@ export const readerApi = {
   async removeMany(sources: ReaderSource[]): Promise<number> {
     return (
       await readOr<{ removed: number }>(
-        await pluginApiFetch(`${BASE}/library/bulk`, {
+        await miniAppApiFetch(`${BASE}/library/bulk`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ action: 'remove', sources }),
@@ -138,7 +140,7 @@ export const readerApi = {
     const query = sourceQuery(source)
     return (
       await readOr<{ book: ReaderBookSummary }>(
-        await pluginApiFetch(`${BASE}/library/book?${query}`, {
+        await miniAppApiFetch(`${BASE}/library/book?${query}`, {
           method: 'PATCH',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify(patch),
@@ -153,7 +155,7 @@ export const readerApi = {
   ): Promise<ReaderBookSummary[]> {
     return (
       await readOr<{ books: ReaderBookSummary[] }>(
-        await pluginApiFetch(`${BASE}/library/bulk`, {
+        await miniAppApiFetch(`${BASE}/library/bulk`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ action: 'setCollections', sources, collectionIds }),
@@ -169,7 +171,7 @@ export const readerApi = {
   ): Promise<ReaderBookSummary[]> {
     return (
       await readOr<{ books: ReaderBookSummary[] }>(
-        await pluginApiFetch(`${BASE}/library/bulk`, {
+        await miniAppApiFetch(`${BASE}/library/bulk`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
@@ -186,7 +188,7 @@ export const readerApi = {
   async createCollection(name: string): Promise<ReaderCollection> {
     return (
       await readOr<{ collection: ReaderCollection }>(
-        await pluginApiFetch(`${BASE}/library/collections`, {
+        await miniAppApiFetch(`${BASE}/library/collections`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ name }),
@@ -198,7 +200,7 @@ export const readerApi = {
   async renameCollection(id: string, name: string): Promise<ReaderCollection> {
     return (
       await readOr<{ collection: ReaderCollection }>(
-        await pluginApiFetch(`${BASE}/library/collections/${encodeURIComponent(id)}`, {
+        await miniAppApiFetch(`${BASE}/library/collections/${encodeURIComponent(id)}`, {
           method: 'PATCH',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ name }),
@@ -210,7 +212,7 @@ export const readerApi = {
   async removeCollection(id: string): Promise<boolean> {
     return (
       await readOr<{ removed: boolean }>(
-        await pluginApiFetch(`${BASE}/library/collections/${encodeURIComponent(id)}`, {
+        await miniAppApiFetch(`${BASE}/library/collections/${encodeURIComponent(id)}`, {
           method: 'DELETE',
         }),
       )

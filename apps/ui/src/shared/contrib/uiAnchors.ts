@@ -4,7 +4,7 @@ import {
   type UiAnchorNode,
   type UiAnchorOpenResult,
 } from '@localixai/mini-app-sdk/ui'
-import { isPluginContributionEnabled } from './pluginActivation'
+import { isMiniAppContributionEnabled } from './miniAppActivation'
 
 export interface UiAnchorRegistry {
   register(contribution: UiAnchorContribution): boolean
@@ -53,7 +53,7 @@ export function createUiAnchorRegistry(): UiAnchorRegistry {
     resolve(uri) {
       const namespace = localixUriNamespace(uri)
       const contribution = namespace ? byNamespace.get(namespace) : undefined
-      return contribution && isPluginContributionEnabled(contribution.pluginName)
+      return contribution && isMiniAppContributionEnabled(contribution.pluginName)
         ? contribution.resolve(uri)
         : null
     },
@@ -64,7 +64,7 @@ export function createUiAnchorRegistry(): UiAnchorRegistry {
           )
         : Array.from(byId.values())
       const rows = contributions.flatMap((contribution) =>
-        isPluginContributionEnabled(contribution.pluginName)
+        isMiniAppContributionEnabled(contribution.pluginName)
           ? (contribution.listChildren?.(parentUri, query) ?? [])
           : [],
       )
@@ -77,7 +77,7 @@ export function createUiAnchorRegistry(): UiAnchorRegistry {
     },
     owner(namespace) {
       const contribution = byNamespace.get(namespace.toLowerCase())
-      return contribution && isPluginContributionEnabled(contribution.pluginName)
+      return contribution && isMiniAppContributionEnabled(contribution.pluginName)
         ? contribution
         : undefined
     },

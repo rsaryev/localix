@@ -149,9 +149,9 @@ Context comes in two kinds
   Fabric under the `inline-completion` destination and is excerpted against the words in the
   surfaces' fragments. It is rendered once per call, however many surfaces the call serves.
 
-A plugin field needs two declarations. Its backend lists a `PluginTextInputCompletionSurface` in
+A plugin field needs two declarations. Its backend lists a `MiniAppTextInputCompletionSurface` in
 `BackendSubsystem.textInputCompletionSurfaces`, with an id namespaced by the plugin. Its UI calls
-`usePluginTextInputCompletion` from the SDK. Any number of plugins may contribute surfaces side by
+`useMiniAppTextInputCompletion` from the SDK. Any number of plugins may contribute surfaces side by
 side.
 
 Text transport reports `suggested`, `empty`, `cancelled`, `timeout`, `disabled`, `no_model`, or

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import { kubernetesApi } from '../api/kubernetesApi'
 
 const POD_TAB_PREFIX = 'devops:kubernetes-pod:'
@@ -25,9 +25,9 @@ function podTabIds(items: Record<string, unknown>): Set<string> {
  */
 export function useKubernetesForwardCleanup(): void {
   useEffect(() => {
-    let prev = podTabIds(pluginWorkspace.getSnapshot().items)
-    return pluginWorkspace.subscribe(() => {
-      const next = podTabIds(pluginWorkspace.getSnapshot().items)
+    let prev = podTabIds(miniAppWorkspace.getSnapshot().items)
+    return miniAppWorkspace.subscribe(() => {
+      const next = podTabIds(miniAppWorkspace.getSnapshot().items)
       if (next.size >= prev.size && [...prev].every((id) => next.has(id))) {
         prev = next
         return

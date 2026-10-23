@@ -4,7 +4,7 @@
  */
 
 import type { AgentTool, AgentToolExecutionContext } from '@localixai/agent/agents'
-import type { PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import path from 'node:path'
 import { classifyHttpRequestCall } from './call-class'
 import { requestFilePath } from './collection/paths'
@@ -24,7 +24,7 @@ import type { CollectionStore } from './collection/store'
 import { buildCollectionUri, buildRequestUri } from './uri'
 
 export interface HttpRequestDeps {
-  ctx: PluginContext
+  ctx: MiniAppContext
   store: CollectionStore
   environments: EnvironmentService
   resolveSecret: ResolveSecret

@@ -8,7 +8,7 @@
  * `model/git-store/mutations.ts`, pinned by its test), which is what tells the
  * commit graph (which fetches its own log) that its data is stale.
  */
-import { unwrapPluginResponse } from '@localixai/mini-app-sdk/ui'
+import { unwrapMiniAppResponse } from '@localixai/mini-app-sdk/ui'
 import type {
   BisectTerm,
   RebaseTodoEntry,
@@ -23,7 +23,7 @@ export const historyWrites = {
     message: string,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control'].commit.$post({ json: { sessionId, message, repoRoot } }),
     )
   },
@@ -33,7 +33,7 @@ export const historyWrites = {
     message: string,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control'].amend.$post({ json: { sessionId, message, repoRoot } }),
     )
   },
@@ -46,7 +46,7 @@ export const historyWrites = {
     removeUntracked: boolean,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control'].nuke.$post({
         json: { sessionId, removeUntracked, repoRoot },
       }),
@@ -61,7 +61,7 @@ export const historyWrites = {
     hash: string,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control'].revert.$post({ json: { sessionId, hash, repoRoot } }),
     )
   },
@@ -72,7 +72,7 @@ export const historyWrites = {
     hash: string,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control']['cherry-pick'].$post({
         json: { sessionId, hash, repoRoot },
       }),
@@ -86,7 +86,7 @@ export const historyWrites = {
     mode: ResetMode,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control'].reset.$post({ json: { sessionId, hash, mode, repoRoot } }),
     )
   },
@@ -97,7 +97,7 @@ export const historyWrites = {
     hash: string,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control']['checkout-commit'].$post({
         json: { sessionId, hash, repoRoot },
       }),
@@ -113,7 +113,7 @@ export const historyWrites = {
     entries: RebaseTodoEntry[],
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control'].rebase.$post({
         json: { sessionId, fromHash, entries, repoRoot },
       }),
@@ -127,7 +127,7 @@ export const historyWrites = {
     message: string,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control'].reword.$post({
         json: { sessionId, hash, message, repoRoot },
       }),
@@ -140,7 +140,7 @@ export const historyWrites = {
     hash: string,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control']['fixup-into'].$post({
         json: { sessionId, hash, repoRoot },
       }),
@@ -153,7 +153,7 @@ export const historyWrites = {
     base: string,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control']['rebase-onto'].$post({
         json: { sessionId, base, repoRoot },
       }),
@@ -162,7 +162,7 @@ export const historyWrites = {
 
   /** Continue an in-progress rebase after conflicts were resolved + staged. */
   async rebaseContinue(sessionId: string, repoRoot?: string): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control']['rebase-continue'].$post({
         json: { sessionId, repoRoot },
       }),
@@ -171,14 +171,14 @@ export const historyWrites = {
 
   /** Abort an in-progress rebase, restoring the pre-rebase state. */
   async rebaseAbort(sessionId: string, repoRoot?: string): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control']['rebase-abort'].$post({ json: { sessionId, repoRoot } }),
     )
   },
 
   /** Skip the current patch of an in-progress rebase. */
   async rebaseSkip(sessionId: string, repoRoot?: string): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control']['rebase-skip'].$post({ json: { sessionId, repoRoot } }),
     )
   },
@@ -192,7 +192,7 @@ export const historyWrites = {
     good?: string,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control'].bisect.start.$post({
         json: { sessionId, hash, good, repoRoot },
       }),
@@ -205,14 +205,14 @@ export const historyWrites = {
     term: BisectTerm,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control'].bisect.mark.$post({ json: { sessionId, term, repoRoot } }),
     )
   },
 
   /** End the bisect and return to the original branch/HEAD. */
   async bisectReset(sessionId: string, repoRoot?: string): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control'].bisect.reset.$post({ json: { sessionId, repoRoot } }),
     )
   },

@@ -1,5 +1,5 @@
 /**
- * Follow a plugin's realtime stream — subscribe over `pluginRealtime`, hear frames by tag, know
+ * Follow a plugin's realtime stream — subscribe over `miniAppRealtime`, hear frames by tag, know
  * whether the stream is live, and survive a reconnect.
  *
  * Nine plugins wrote this by hand, and each copy carried its own subset of the same fixes:
@@ -22,7 +22,7 @@
  * CHANGE of its key's liveness; `feed.live(key)` is the state when it joins.
  */
 import { useEffect, useRef, useState } from 'react'
-import { pluginRealtime } from './runtime'
+import { miniAppRealtime } from './runtime'
 
 export interface RealtimeFeedSpec<Key, Frame> {
   /** The plugin's frame tag: one lowercase character that core does not reserve. */
@@ -91,7 +91,7 @@ export function createRealtimeFeed<Key = string, Frame = unknown>(
 
   const send = (payload: Record<string, unknown>): Promise<boolean> => {
     try {
-      return pluginRealtime.request<{ subscribed?: boolean } | undefined>(payload).then(
+      return miniAppRealtime.request<{ subscribed?: boolean } | undefined>(payload).then(
         (answer) => answer?.subscribed === true,
         () => false,
       )
@@ -161,9 +161,9 @@ export function createRealtimeFeed<Key = string, Frame = unknown>(
   }
   const attach = (): (() => void) => {
     const offs = [
-      guarded(() => pluginRealtime.onFrame(spec.tag, onFrame)),
-      guarded(() => pluginRealtime.onReconnect(onReconnect)),
-      guarded(() => pluginRealtime.onDisconnect(onDisconnect)),
+      guarded(() => miniAppRealtime.onFrame(spec.tag, onFrame)),
+      guarded(() => miniAppRealtime.onReconnect(onReconnect)),
+      guarded(() => miniAppRealtime.onDisconnect(onDisconnect)),
     ]
     if (spec.pauseWhileHidden && typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', onVisibility)

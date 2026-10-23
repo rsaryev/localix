@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import '@localixai/kit/testing/host-runtime'
 import { registerInspectorHandler } from '@localixai/kit/testing'
-import type { PluginCommandEvent } from '@localixai/mini-app-sdk/ui/commands'
+import type { MiniAppCommandEvent } from '@localixai/mini-app-sdk/ui/commands'
 import type { ChartCommandPayload } from '../../backend/chart-command'
 import { chartControlBus, type ChartControlCommand } from './chartControlBus'
 import { chartStateStore } from './chartStateStore'
@@ -120,7 +120,7 @@ describe('planChartCommand — wire payload → open + bus commands', () => {
   })
 })
 
-const commandEvent = (over: Partial<PluginCommandEvent>): PluginCommandEvent => ({
+const commandEvent = (over: Partial<MiniAppCommandEvent>): MiniAppCommandEvent => ({
   sessionId: 's-1',
   active: true,
   payload: payload({ action: 'set_timeframe', timeframe: '4h' }),
@@ -206,7 +206,7 @@ describe('handleChartCommandEvent — the sink + placement policy', () => {
 })
 
 describe('handleChartCommandEvent — snapshot (read-only round-trip)', () => {
-  const snapshotEvent = (over: Partial<PluginCommandEvent>): PluginCommandEvent =>
+  const snapshotEvent = (over: Partial<MiniAppCommandEvent>): MiniAppCommandEvent =>
     commandEvent({ payload: payload({ action: 'snapshot' }), ...over })
 
   test('replies with the tab state and NEVER opens/focuses — even from the active session', () => {

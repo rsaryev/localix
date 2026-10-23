@@ -1,7 +1,7 @@
 export { type CoreWorkItemKind, type WorkItem, type WorkItemKind } from '@/shared/lib/workItem'
 export { isCoreWorkItemKind, resolveExistingWorkItemFocus } from './workItemAddressability'
 export { isRestorable, activeWorkItemContribution, isEphemeralItem } from './capabilities'
-export { usePluginKind, useWorkItemKindContributions } from './usePluginKind'
+export { useMiniAppKind, useWorkItemKindContributions } from './useMiniAppKind'
 export {
   type GridNode,
   type LeafNode,

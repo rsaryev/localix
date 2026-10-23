@@ -1,9 +1,9 @@
 import { expect, test } from 'bun:test'
-import { recordingPluginUiHost } from '@localixai/mini-app-sdk/ui/testing'
+import { recordingMiniAppUiHost } from '@localixai/mini-app-sdk/ui/testing'
 import { registerUi } from './register'
 
 test('registers a restorable workspace and overflow launcher once per host', () => {
-  const { host, registrations } = recordingPluginUiHost()
+  const { host, registrations } = recordingMiniAppUiHost()
   registerUi(host)
   registerUi(host)
   expect(registrations.workItems).toHaveLength(1)
@@ -18,7 +18,7 @@ test('registers a restorable workspace and overflow launcher once per host', () 
     title: 'System Overview',
     defaultArea: 'overflow',
   })
-  const second = recordingPluginUiHost()
+  const second = recordingMiniAppUiHost()
   registerUi(second.host)
   expect(second.registrations.workItems).toHaveLength(1)
 })

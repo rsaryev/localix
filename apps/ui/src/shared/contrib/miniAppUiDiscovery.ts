@@ -1,19 +1,19 @@
 import type { PluginRecord } from '@/shared/api/contracts'
 import { API_BASE_URL, apiFetch } from '@/shared/api/internal'
 import { announcePluginUiChanged } from './enabledPlugins'
-import { dropHostDuplicates, hostRuleTexts } from './pluginStyleDedupe'
-import { pluginUiHostFor, removePluginUiContributions } from './host'
-import { setPluginSources, type PluginUiSource } from './pluginAttribution'
+import { dropHostDuplicates, hostRuleTexts } from './miniAppStyleDedupe'
+import { miniAppUiHostFor, removeMiniAppUiContributions } from './host'
+import { setPluginSources, type PluginUiSource } from './miniAppAttribution'
 import {
-  PLUGIN_UI_PRELOADED_MODULES,
-  PLUGIN_UI_SHARED_GLOBAL,
-  type PluginUiSharedModules,
+  MINI_APP_UI_PRELOADED_MODULES,
+  MINI_APP_UI_SHARED_GLOBAL,
+  type MiniAppUiSharedModules,
 } from '@localixai/mini-app-sdk/ui-artifact'
 import {
   createPluginUiRuntime,
   type PluginUiArtifact,
   type PluginUiFailureReporter,
-} from './pluginUiRuntime'
+} from './miniAppUiRuntime'
 
 /**
  * The workbench's ONE plugin UI runtime, wired to the host: artifacts come from the capability
@@ -45,7 +45,7 @@ function artifactUrl(path: string, revision: string): string {
  * Attach one plugin's sheets and resolve when they applied (or failed: a sheet is not fatal).
  *
  * The Tailwind utilities sheet is fetched and adopted with the host's duplicates removed (see
- * `pluginStyleDedupe`), so a plugin cannot out-rank the host on the host's own elements. A `<link>`
+ * `miniAppStyleDedupe`), so a plugin cannot out-rank the host on the host's own elements. A `<link>`
  * cannot do that: on the desktop the artifact comes from the API's origin, and a cross-origin
  * sheet's rules cannot be read or edited. Only that sheet: an adopted sheet resolves `url()`
  * against the document rather than the artifact, which a component's own CSS (fonts, images) may
@@ -112,15 +112,15 @@ function linkStyles(artifact: PluginUiArtifact, styles: readonly string[]): Prom
  * SDK contract, so this layer never imports the kit the app composes.
  */
 async function sharedModulesReady(): Promise<void> {
-  const scope = globalThis as unknown as Record<string, PluginUiSharedModules | undefined>
-  const shared = scope[PLUGIN_UI_SHARED_GLOBAL]
+  const scope = globalThis as unknown as Record<string, MiniAppUiSharedModules | undefined>
+  const shared = scope[MINI_APP_UI_SHARED_GLOBAL]
   if (!shared) throw new Error('[plugin-ui] the host installed no shared modules for plugin UI')
-  await Promise.all(PLUGIN_UI_PRELOADED_MODULES.map((specifier) => shared.load(specifier)))
+  await Promise.all(MINI_APP_UI_PRELOADED_MODULES.map((specifier) => shared.load(specifier)))
 }
 
 let runtime: ReturnType<typeof createPluginUiRuntime> | undefined
 
-function pluginUiRuntime() {
+function miniAppUiRuntime() {
   if (runtime) return runtime
   // Awaited before the first artifact import (a CommonJS dependency that `require`s React finds
   // it loaded) and only then: a snapshot with no artifacts costs nothing.
@@ -136,8 +136,8 @@ function pluginUiRuntime() {
       return import(/* @vite-ignore */ artifactUrl(artifact.entry, artifact.revision))
     },
     mountStyles,
-    hostFor: pluginUiHostFor,
-    remove: removePluginUiContributions,
+    hostFor: miniAppUiHostFor,
+    remove: removeMiniAppUiContributions,
     announce: announcePluginUiChanged,
     report: warnPluginUiFailure,
   })
@@ -172,11 +172,11 @@ export function pluginSources(plugins: readonly PluginRecord[]): {
 }
 
 /** Converge the workbench on the UI of exactly these (enabled) plugins; see `reconcile`. */
-export const discoverEnabledPluginUi = (
+export const discoverEnabledMiniAppUi = (
   plugins: readonly PluginRecord[],
   settled?: (pluginName: string, ok: boolean) => void,
 ): Promise<void> => {
   const { sources, names } = pluginSources(plugins)
   setPluginSources(sources, names)
-  return pluginUiRuntime().reconcile(pluginUiArtifacts(plugins), settled)
+  return miniAppUiRuntime().reconcile(pluginUiArtifacts(plugins), settled)
 }

@@ -2,7 +2,7 @@
  * read-only grid otherwise), Indexes and Relations, switched by a segmented control. */
 import { useState } from 'react'
 import { KeyRound, Lock } from 'lucide-react'
-import type { PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
+import type { MiniAppProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
 import {
   SegmentedControl,
   SegmentedControlItem,
@@ -141,7 +141,7 @@ export function StructureView({
   target: DatabaseObjectTarget
   schema: SchemaState
   /** The object's introspection failure, owned by the workspace above. */
-  readProblem: PluginProblemLineProps | null
+  readProblem: MiniAppProblemLineProps | null
   onOpenConsoleWithSql: (sql: string) => void
 }) {
   const [section, setSection] = useState<Section>('columns')

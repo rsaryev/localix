@@ -5,7 +5,7 @@ import { railViewletRegistry } from '@/shared/contrib/uiContrib'
 import {
   pluginActivationVersion,
   subscribePluginActivation,
-} from '@/shared/contrib/pluginActivation'
+} from '@/shared/contrib/miniAppActivation'
 import { viewStateStore } from '@/shared/lib/view-state/store'
 import { ensurePluginAppProject } from '@/shared/lib/pluginAppProject'
 import { toast } from '@/shared/lib/notify'
@@ -34,7 +34,7 @@ interface PluginAppOptions {
  * plugin's own screen in it, and keep the native window told which conversation and theme it is
  * showing. Inert in the workspace, where `app` is null.
  */
-export function usePluginApp(
+export function useMiniApp(
   app: PluginAppContext | null,
   {
     hasHydrated,

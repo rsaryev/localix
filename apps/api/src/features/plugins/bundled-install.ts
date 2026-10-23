@@ -207,7 +207,7 @@ async function syncOnce(sourceRoot: string, homeDir: string): Promise<Set<string
  * global install root. Runtime discovery reads the resulting `.localix/plugins`
  * copies; `plugins/` remains source material, never a second execution root.
  */
-export function syncBundledPlugins(sourceRoot: string, homeDir: string): Promise<Set<string>> {
+export function syncBundledMiniApps(sourceRoot: string, homeDir: string): Promise<Set<string>> {
   const key = `${sourceRoot}\0${homeDir}`
   const existing = syncs.get(key)
   if (existing) return existing

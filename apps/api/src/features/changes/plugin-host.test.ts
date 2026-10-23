@@ -1,16 +1,16 @@
 import { describe, expect, test } from 'bun:test'
-import type { CoreDeletion, PluginChange } from '@localixai/mini-app-sdk/backend'
+import type { CoreDeletion, MiniAppChange } from '@localixai/mini-app-sdk/backend'
 import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createCoreChangeFeed, recordCoreChanges } from './core-entities'
-import { createPluginChangeHosts } from './plugin-host'
+import { createMiniAppChangeHosts } from './plugin-host'
 
 async function setup() {
   const db = createDatabase()
   await migrateToLatest(db)
   const logged: string[] = []
   const core = createCoreChangeFeed(db)
-  const hosts = createPluginChangeHosts({ db, core, log: (event) => logged.push(event) })
+  const hosts = createMiniAppChangeHosts({ db, core, log: (event) => logged.push(event) })
   return { db, hosts, logged }
 }
 
@@ -19,10 +19,10 @@ const tick = () => new Promise((resolve) => setTimeout(resolve, 120))
 describe('host.changes', () => {
   test("a plugin's notices reach its own consumer, never another plugin's", async () => {
     const { hosts } = await setup()
-    const board = hosts.forPlugin('board')
-    const notes = hosts.forPlugin('notes')
-    const seenByBoard: PluginChange[] = []
-    const seenByNotes: PluginChange[] = []
+    const board = hosts.forMiniApp('board')
+    const notes = hosts.forMiniApp('notes')
+    const seenByBoard: MiniAppChange[] = []
+    const seenByNotes: MiniAppChange[] = []
     const stopBoard = await board.subscribe('index', (change) => void seenByBoard.push(change))
     const stopNotes = await notes.subscribe('index', (change) => void seenByNotes.push(change))
     board.record([
@@ -42,7 +42,7 @@ describe('host.changes', () => {
 
   test('a kind with an invalid name is dropped and logged, the rest recorded', async () => {
     const { db, hosts, logged } = await setup()
-    hosts.forPlugin('board').record([
+    hosts.forMiniApp('board').record([
       { entity: 'Bad Name', op: 'resync' },
       { entity: 'card', op: 'resync' },
     ])
@@ -57,7 +57,7 @@ describe('host.changes', () => {
     const { db, hosts } = await setup()
     const seen: CoreDeletion[] = []
     const stop = await hosts
-      .forPlugin('board')
+      .forMiniApp('board')
       .followCoreDeletions('cleanup', (deletion) => void seen.push(deletion))
     await recordCoreChanges(db, [
       { entity: 'agent', op: 'deleted', ref: { id: 'old', scope: 'global', agentId: 'a1' } },
@@ -88,7 +88,7 @@ describe('host.changes', () => {
     const { db, hosts } = await setup()
     const first: CoreDeletion[] = []
     const second: CoreDeletion[] = []
-    const board = hosts.forPlugin('board')
+    const board = hosts.forMiniApp('board')
     await board.followCoreDeletions('cleanup', (deletion) => void first.push(deletion))
     const stop = await board.followCoreDeletions('cleanup', (d) => void second.push(d))
     await recordCoreChanges(db, { entity: 'project', op: 'deleted', ref: { id: 'p', userId: 'u' } })

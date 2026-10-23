@@ -8,13 +8,13 @@
  * so that one is kept; anything else is classified and its raw text goes where raw text belongs.
  */
 
-import { PluginApiError } from '@localixai/mini-app-sdk/ui/transport'
+import { MiniAppApiError } from '@localixai/mini-app-sdk/ui/transport'
 
 export function documentFailure(
   error: unknown,
   message: string,
 ): { message: string; detail?: string } {
-  if (error instanceof PluginApiError) {
+  if (error instanceof MiniAppApiError) {
     return { message: error.message, ...(error.detail ? { detail: error.detail } : {}) }
   }
   const raw = error instanceof Error ? error.message : String(error)

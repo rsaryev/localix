@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 
-import { makePluginUi } from './native-context'
+import { makeMiniAppUi } from './native-context'
 
 describe('native plugin UI intents', () => {
   test('offers a user-driven destination and never an automatic reveal', () => {
-    const ui = makePluginUi()
+    const ui = makeMiniAppUi()
 
     expect(
       ui.offer({
@@ -23,7 +23,7 @@ describe('native plugin UI intents', () => {
 
   test('rejects write-action URIs', () => {
     expect(() =>
-      makePluginUi().offer({
+      makeMiniAppUi().offer({
         uri: 'localix://ui/action/command/plugins.enable',
         label: 'Enable plugin',
       }),

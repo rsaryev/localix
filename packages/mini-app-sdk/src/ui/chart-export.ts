@@ -1,4 +1,4 @@
-import { pluginFiles } from './runtime'
+import { miniAppFiles } from './runtime'
 
 function safeName(title: string | undefined, fallback: string): string {
   const base = (title ?? fallback)
@@ -25,7 +25,7 @@ function serializeSvg(svg: SVGSVGElement): string {
 export function downloadChartSvg(svg: SVGSVGElement, title?: string): void {
   const blob = new Blob([serializeSvg(svg)], { type: 'image/svg+xml;charset=utf-8' })
   const filename = `${safeName(title, 'chart')}.svg`
-  void pluginFiles.saveBlob(filename, blob)
+  void miniAppFiles.saveBlob(filename, blob)
 }
 
 /** Rasterize the rendered chart SVG to a PNG (2x) and download it. */
@@ -59,5 +59,5 @@ export async function downloadChartPng(svg: SVGSVGElement, title?: string): Prom
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
   if (!blob) throw new Error('Could not encode the chart as a PNG.')
   const filename = `${safeName(title, 'chart')}.png`
-  await pluginFiles.saveBlob(filename, blob)
+  await miniAppFiles.saveBlob(filename, blob)
 }

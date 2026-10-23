@@ -3,11 +3,11 @@ import { capabilityResourceUri } from '@localixai/mini-app-sdk/navigation'
 import { closeGridTab, isTabOpenedAs, useGridStore } from '@/entities/workspace-grid/model'
 import { resolveViewIcon } from '@/features/inspector/ui/viewIcon'
 import { requireOpenChat } from '@/shared/lib/pageOpenChat'
-import type { PluginViewSpec } from '@/shared/api/contracts'
+import type { MiniAppViewSpec } from '@/shared/api/contracts'
 import type { RailAction } from '@/widgets/workspace-shell'
 
-interface PluginViewRailActionArgs {
-  view: PluginViewSpec
+interface MiniAppViewRailActionArgs {
+  view: MiniAppViewSpec
   /** The focused group's visible active tab — the button is "active" when it is this view. */
   focusedActiveId: string | null
   /** The chat the page has open: a plugin view is a tab of ONE chat, and it opens in this one. */
@@ -25,13 +25,13 @@ interface PluginViewRailActionArgs {
  * the focused tab" matches the id as opened rather than the bare id — and an open names the chat,
  * since the grid refuses a session tab opened without one. With no chat open it says so.
  */
-export function pluginViewRailAction({
+export function miniAppViewRailAction({
   view,
   focusedActiveId,
   openSessionId,
   capabilityScope,
   run,
-}: PluginViewRailActionArgs): RailAction {
+}: MiniAppViewRailActionArgs): RailAction {
   const tabId = `plugin-view:${view.fullName}`
   const isActive = focusedActiveId !== null && isTabOpenedAs(focusedActiveId, tabId)
   return {

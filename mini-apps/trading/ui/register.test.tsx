@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 
-import { recordingPluginUiHost } from '@localixai/mini-app-sdk/ui/testing'
+import { recordingMiniAppUiHost } from '@localixai/mini-app-sdk/ui/testing'
 import type {
   RailSectionContribution,
   RailViewletContribution,
@@ -19,7 +19,7 @@ import { registerUi } from './register'
  * contract, and does.
  */
 test('registers one Trading Workspace viewlet over chart and technical work items', () => {
-  const { host, registrations } = recordingPluginUiHost()
+  const { host, registrations } = recordingMiniAppUiHost()
 
   registerUi(host)
 

@@ -4,8 +4,8 @@ import {
   contextBindingMediaId,
   contextBindingImageMimeType,
   contextBindingPreviewKind,
-  type PluginContextBindingIconProps,
-  type PluginContextBindingPreviewProps,
+  type MiniAppContextBindingIconProps,
+  type MiniAppContextBindingPreviewProps,
 } from '@localixai/mini-app-sdk/ui'
 
 import { conversationPreview } from './binding-previews/LinkPreviews'
@@ -15,7 +15,7 @@ import { fileIcon } from '@/shared/ui/file-icon/fileIcon'
 import { mediaSrc } from '@/shared/lib/mediaSrc'
 import { apiFetch } from '@/shared/api/internal'
 
-export function PluginContextBindingIcon({ binding, className }: PluginContextBindingIconProps) {
+export function PluginContextBindingIcon({ binding, className }: MiniAppContextBindingIconProps) {
   'use no memo'
   if (binding.target.kind === 'file') {
     const path = binding.target.attributes?.path
@@ -38,7 +38,7 @@ type BindingPreviewState =
  * (`binding-previews/LinkPreviews.tsx`). Kinds with nothing to show beyond their name render
  * nothing, and the caller's own label stands alone.
  */
-export function PluginContextBindingPreview(props: PluginContextBindingPreviewProps) {
+export function PluginContextBindingPreview(props: MiniAppContextBindingPreviewProps) {
   'use no memo'
   const Conversation = conversationPreview(props.binding.target.kind)
   if (Conversation) return <Conversation binding={props.binding} className={props.className} />
@@ -50,7 +50,7 @@ function FileBindingPreview({
   sessionId,
   className,
   onIntrinsicSize,
-}: PluginContextBindingPreviewProps) {
+}: MiniAppContextBindingPreviewProps) {
   'use no memo'
   // The caller's chat, as it says: a path is read from THAT workspace. Filling a missing one with
   // the chat on screen previewed a same-named file from another project.

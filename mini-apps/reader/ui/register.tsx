@@ -3,7 +3,7 @@ import { BookOpen, Library, TextQuote } from 'lucide-react'
 import {
   resourceMessageBindingDraft,
   type FileEditorProps,
-  type PluginUiHost,
+  type MiniAppUiHost,
   type PublishMessageContext,
   type WorkItemLike,
 } from '@localixai/mini-app-sdk/ui'
@@ -98,7 +98,7 @@ function readerBookTabId(path: string): string {
 
 let registered = false
 
-export function registerUi(host: PluginUiHost): void {
+export function registerUi(host: MiniAppUiHost): void {
   if (registered) return
   registered = true
 

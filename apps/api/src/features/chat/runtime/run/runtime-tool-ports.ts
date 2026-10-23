@@ -14,7 +14,7 @@ import type { ToolLedger } from '../../../agent-core/tool-ledger'
 import { createContextBudgetTool } from '../../../agent-core/tools/context-budget'
 import { isToolDirect } from '../../../agent-core/run-shape'
 import { TOOL } from '../../../agent-core/tool-names'
-import { runPluginBuild } from '../../../plugins/authoring/build-port'
+import { runMiniAppBuild } from '../../../plugins/authoring/build-port'
 import { buildDirectToolInstances } from './runtime-tool-instances'
 import { buildBrowserOptions } from './browser-options'
 import { buildTaskDelegationOptions } from './task-delegation-options'
@@ -154,7 +154,7 @@ export function buildOptionalToolPorts(
       deps.pluginAuthoring && isToolDirect(agentProfile, TOOL.plugin_build)
         ? {
             run: (input) =>
-              runPluginBuild(deps.pluginAuthoring!, userId, input, {
+              runMiniAppBuild(deps.pluginAuthoring!, userId, input, {
                 // The host port can exist while policy or the model still withholds the tool.
                 // Read the final registry verdict when the build is called.
                 canLook:

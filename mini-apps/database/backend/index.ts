@@ -2,7 +2,7 @@
  * Database workbench — bundled first-party plugin backend.
  *
  * `register(ctx)` gets (or lazily builds) the process-wide database service and
- * contributes it as a `BackendSubsystem`: the boot-time loader (`loadPluginBackends`)
+ * contributes it as a `BackendSubsystem`: the boot-time loader (`loadMiniAppBackends`)
  * mounts the route (`/rpc/database`), registers the resource (`localix://resource/db`) + global-search
  * providers, and calls `onShutdown` on shutdown. The ONE `database_client` agent tool (connections,
  * schema, browse, query and connection management behind an `action`; see `database-tool.ts`)
@@ -20,7 +20,7 @@
 import type { AgentTool } from '@localixai/agent/agents'
 import { join } from 'node:path'
 import { createStoreChangeFeed, safeFileKey } from '@localixai/mini-app-sdk/backend'
-import type { PluginContext, PluginRegistration } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext, MiniAppRegistration } from '@localixai/mini-app-sdk/backend'
 import {
   currentDatabaseService,
   releaseDatabaseService,
@@ -37,12 +37,12 @@ import {
 import { createDatabaseTool } from './database-tool'
 
 /** The generic host capabilities this plugin reads off the register context. Declared
- *  narrowly (a structural subset of the host `PluginContext`) so the plugin stays
+ *  narrowly (a structural subset of the host `MiniAppContext`) so the plugin stays
  *  decoupled from core plugin internals — the loader passes the full context, of which
  *  this is a subset. */
-type DatabaseRegisterContext = Pick<PluginContext, 'dataDir' | 'host' | 'userId' | 'watchPath'>
+type DatabaseRegisterContext = Pick<MiniAppContext, 'dataDir' | 'host' | 'userId' | 'watchPath'>
 
-export async function register(ctx: DatabaseRegisterContext): Promise<PluginRegistration> {
+export async function register(ctx: DatabaseRegisterContext): Promise<MiniAppRegistration> {
   // Boot-time call supplies the real vault resolver; per-run tool loads reuse the
   // already-built singleton (whose bound resolver stays live). Resolved per call, never
   // captured — see `currentDatabaseService` for the two-instance split capturing caused.

@@ -14,12 +14,12 @@
 import type { ContextContribution } from './context-fabric'
 
 /** Whatever the requesting client sent along with the caret — the surface validates its own shape. */
-export type PluginTextInputCompletionPayload = unknown
+export type MiniAppTextInputCompletionPayload = unknown
 
-export interface PluginTextInputCompletionRequest {
+export interface MiniAppTextInputCompletionRequest {
   readonly userId: string
   readonly sessionId: string
-  readonly payload: PluginTextInputCompletionPayload
+  readonly payload: MiniAppTextInputCompletionPayload
   /** Aborts when the user types on, or navigates away, mid-flight. */
   readonly signal?: AbortSignal
   /**
@@ -30,7 +30,7 @@ export interface PluginTextInputCompletionRequest {
   readonly deadlineAtMs?: number
 }
 
-export interface PluginTextInputCompletionSurface {
+export interface MiniAppTextInputCompletionSurface {
   /** Stable id the client asks for, namespaced by the owning plugin (`git-workspace.commit`). */
   readonly id: string
 
@@ -40,18 +40,18 @@ export interface PluginTextInputCompletionSurface {
    * cannot make a keystroke expensive. Return `[]` to decline — never throw to decline.
    */
   resolveContext: (
-    request: PluginTextInputCompletionRequest,
+    request: MiniAppTextInputCompletionRequest,
   ) => Promise<readonly ContextContribution[]>
 
   /** Whether a completion is worth asking for at all, given the payload and admitted context. */
-  actionable: (payload: PluginTextInputCompletionPayload, context: string) => boolean
+  actionable: (payload: MiniAppTextInputCompletionPayload, context: string) => boolean
 
   /** The prompt fragment carrying the admitted context, plus whatever the payload adds to it. */
-  buildFragment: (payload: PluginTextInputCompletionPayload, context: string) => string
+  buildFragment: (payload: MiniAppTextInputCompletionPayload, context: string) => string
 
   /** What the model is being asked for, in one sentence, for this exact payload. */
-  instruction: (payload: PluginTextInputCompletionPayload) => string
+  instruction: (payload: MiniAppTextInputCompletionPayload) => string
 
   /** Trim the raw completion to what may be inserted — the surface owns its own field's rules. */
-  clean: (raw: string, payload: PluginTextInputCompletionPayload) => string
+  clean: (raw: string, payload: MiniAppTextInputCompletionPayload) => string
 }

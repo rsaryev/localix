@@ -2,7 +2,7 @@
  * Kubernetes provider backend inside the bundled DevOps Workspace plugin.
  *
  * `register()` constructs the Kubernetes API service and contributes it as a `BackendSubsystem`: the
- * boot-time loader (`loadPluginBackends`) mounts the route (`/rpc/kubernetes`),
+ * boot-time loader (`loadMiniAppBackends`) mounts the route (`/rpc/kubernetes`),
  * registers the resource (`localix://resource/k8s`) + global-search providers, wires the live
  * pod-watch, the deployment/service/node changes, the port-forward changes and the followed pod
  * logs (`logs-follow.ts`) as generic WS-frame streams, and calls `onShutdown` on shutdown.
@@ -34,7 +34,7 @@ import {
   COLLECTIONS_UNSUBSCRIBE,
 } from './collections-contract'
 import { createKubeLogsHub, createKubeLogsWsFrame } from './logs-follow'
-import type { PluginRegistration, WsFrameContribution } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppRegistration, WsFrameContribution } from '@localixai/mini-app-sdk/backend'
 
 /**
  * The forward registry's changes as a stream. Forwards are host-wide (every tab reads the one
@@ -79,7 +79,7 @@ export function createCollectionsWsFrame(
   }
 }
 
-export async function register(): Promise<PluginRegistration> {
+export async function register(): Promise<MiniAppRegistration> {
   const service = createKubernetesService()
   const logs = createKubeLogsHub()
 

@@ -35,7 +35,7 @@ test('core and plugin tools share pins, grouping and a catalog; management opens
       }}
       onCloseSidebar={noOp}
       onCreateChat={noOp}
-      pluginCategories={
+      miniAppCategories={
         new Map([
           ['game-one', 'games'],
           ['game-two', 'games'],

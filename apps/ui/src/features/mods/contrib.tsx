@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { Blocks } from 'lucide-react'
-import type { PluginUiHost, StatusItemState } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppUiHost, StatusItemState } from '@localixai/mini-app-sdk/ui'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { useModSession } from './model/useModSession'
 
@@ -33,7 +33,7 @@ function useModsStatusItem(sessionId: string | null): StatusItemState | null {
 let registered = false
 
 /** Claude Code mods: the panes they open, in one app-wide tab. */
-export function registerUi(host: PluginUiHost): void {
+export function registerUi(host: MiniAppUiHost): void {
   if (registered) return
   registered = true
   host.workItems.register({

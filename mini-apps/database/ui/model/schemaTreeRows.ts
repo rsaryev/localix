@@ -1,4 +1,4 @@
-import type { PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
+import type { MiniAppProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
 import type { DbColumn, DbConnectionInfo, DbIndex, DbSchemaItem } from '../dbClient'
 import type { SchemaItemMatch, SchemaMatchReason } from './schemaSearch'
 import type { SchemaState } from './useSchema'
@@ -103,7 +103,7 @@ export interface StatusTreeRow extends RowBase {
   table?: string
   schemaArg?: string
   /** `problem`: the owned report to render (null until its owner has published it). */
-  line?: PluginProblemLineProps | null
+  line?: MiniAppProblemLineProps | null
 }
 
 export type SchemaTreeRow =

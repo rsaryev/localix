@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { BookMarked, NotebookPen } from 'lucide-react'
-import { createMessageBindingDraft, runPluginAction, toast } from '@localixai/mini-app-sdk/ui'
-import { pluginFiles, pluginNavigation } from '@localixai/mini-app-sdk/ui/runtime'
+import { createMessageBindingDraft, runMiniAppAction, toast } from '@localixai/mini-app-sdk/ui'
+import { miniAppFiles, miniAppNavigation } from '@localixai/mini-app-sdk/ui/runtime'
 import { loadJSON, saveJSON } from '@localixai/mini-app-sdk/ui/storage'
 
 import { Button } from '@localixai/kit/button'
@@ -104,8 +104,8 @@ export function LibraryPane({
   // nothing can open says so. A picker or navigation that throws is reported too, instead of the
   // button silently doing nothing.
   const chooseBook = useCallback(() => {
-    runPluginAction(async () => {
-      const [path] = await pluginFiles.pickFiles({ extensions: READER_EXTENSIONS })
+    runMiniAppAction(async () => {
+      const [path] = await miniAppFiles.pickFiles({ extensions: READER_EXTENSIONS })
       if (!path) return
       const reason = readerUnsupportedReason({ path })
       if (!reason) {
@@ -114,7 +114,10 @@ export function LibraryPane({
       }
       const name = readerFileName({ path })
       if (
-        await pluginNavigation.openBinding(createMessageBindingDraft('file', path, name), sessionId)
+        await miniAppNavigation.openBinding(
+          createMessageBindingDraft('file', path, name),
+          sessionId,
+        )
       )
         return
       toast.error(`Could not open “${name}”`, { description: reason })

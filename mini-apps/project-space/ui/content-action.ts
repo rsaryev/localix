@@ -1,5 +1,5 @@
 import type { ActionContext } from '@localixai/mini-app-sdk/ui'
-import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import { SPACE_KIND, SPACE_TITLE } from '../shared/resource'
 import { spaceApi } from './api'
 import { canAddToSpace, contentOperation } from './action-target'
@@ -36,7 +36,7 @@ export async function addContentToSpace(context: ActionContext) {
     throw new Error(result?.error || 'The board did not accept the content.')
   // Asked before the tab opens: a board that mounts for it takes the request on its first look.
   requestAddedFocus(sessionId, [id])
-  pluginWorkspace.openWorkItem({
+  miniAppWorkspace.openWorkItem({
     workKind: SPACE_KIND,
     id: SPACE_KIND,
     title: SPACE_TITLE,

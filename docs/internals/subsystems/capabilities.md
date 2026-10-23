@@ -187,9 +187,9 @@ Enablement, configuration, installation, removal, and `/plugin reload` invalidat
 inspections are never cached; an unreadable cache is treated as empty.
 
 The client publishes the snapshot's enabled plugins and tool roster together. A plugin UI not yet
-registered is `pending` (`apps/ui/src/shared/contrib/pluginActivation.ts`), so its restored tabs
+registered is `pending` (`apps/ui/src/shared/contrib/miniAppActivation.ts`), so its restored tabs
 remain open. Failed imports retry on the startup backoff
-(`apps/ui/src/shared/contrib/pluginUiLoads.ts`); exhausted retries become `failed`, while retaining
+(`apps/ui/src/shared/contrib/miniAppUiLoads.ts`); exhausted retries become `failed`, while retaining
 the tabs. A later snapshot publish retries the import. A request that fails before publishing cannot
 settle another pass's pending work.
 

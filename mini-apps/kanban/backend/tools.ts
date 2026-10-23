@@ -1,4 +1,4 @@
-import type { AgentToolExecutionContext, PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { AgentToolExecutionContext, MiniAppContext } from '@localixai/mini-app-sdk/backend'
 
 import {
   AGENT_TARGET_STATUSES,
@@ -47,7 +47,7 @@ type Result = { content: string; details?: KanbanToolDetails; isError?: boolean 
 
 const LIST_CAP = 50
 
-export function createKanbanTools(ctx: PluginContext, boards: BoardService) {
+export function createKanbanTools(ctx: MiniAppContext, boards: BoardService) {
   const z = ctx.z
   const createEntry = z.object({
     title: z.string().describe('The card title.'),

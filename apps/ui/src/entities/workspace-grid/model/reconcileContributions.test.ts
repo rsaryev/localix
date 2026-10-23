@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { pluginUiHostFor } from '@/shared/contrib/host'
-import { setEnabledPluginNames } from '@/shared/contrib/pluginActivation'
+import { miniAppUiHostFor } from '@/shared/contrib/host'
+import { setEnabledPluginNames } from '@/shared/contrib/miniAppActivation'
 import { reconcileUnavailableContributedItems, useGridStore } from './store'
 
 const KIND = 'reconcile-plugin:tab'
 const PLUGIN = 'reconcile-plugin'
 
-pluginUiHostFor(PLUGIN).workItems.register({
+miniAppUiHostFor(PLUGIN).workItems.register({
   kind: KIND,
   Component: () => null,
   Icon: () => null,
@@ -83,7 +83,7 @@ describe('reconcileUnavailableContributedItems', () => {
 
   test('does not close a core-kind tab because a disabled plugin reused its kind', () => {
     expect(() =>
-      pluginUiHostFor('core-kind-shadow-reconcile').workItems.register({
+      miniAppUiHostFor('core-kind-shadow-reconcile').workItems.register({
         kind: 'chat',
         Component: () => null,
         Icon: () => null,

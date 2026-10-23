@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { z } from 'zod'
-import type { PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'
 
 import type { KanbanToolDetails } from '../shared/tool'
 import { register } from './index'
@@ -37,7 +37,7 @@ function board() {
     },
     defineTool: (definition: unknown) => definition,
     ui: { offer: (destination: object) => ({ type: 'ui.navigate', ...destination }) },
-  } as unknown as PluginContext
+  } as unknown as MiniAppContext
   const kanban = (register(ctx).tools ?? []).find((candidate) => candidate.name === 'kanban')!
   return (speaker: object, input: object) =>
     kanban.execute('call-1', input as never, undefined, undefined, {

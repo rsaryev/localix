@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { z } from 'zod'
-import type { PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import { createGraphTools } from './tools'
 import { closeProjects, projectIndex } from './indexing/projects'
 import { readAgentView, reportGraphView, subscribeAgentView } from './agent-view'
@@ -41,7 +41,7 @@ async function setup() {
     z,
     defineTool: (tool: unknown) => tool,
     ui: { offer: (destination: object) => ({ type: 'ui.navigate', ...destination }) },
-  } as unknown as PluginContext
+  } as unknown as MiniAppContext
   const tools = createGraphTools(ctx)
   await projectIndex(ctx.dataDir, root).ready(20_000)
   const call = (name: string, input: object, sessionId = 'chat-a') =>

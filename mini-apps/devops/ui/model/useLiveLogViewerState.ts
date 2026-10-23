@@ -1,5 +1,5 @@
 import { useDeferredValue, useMemo, useState } from 'react'
-import { pluginFiles } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppFiles } from '@localixai/mini-app-sdk/ui/runtime'
 import { useCopied } from '@localixai/mini-app-sdk/ui/interactions'
 import { ALL_LOG_SEVERITIES, filterLogLines, parseLogLines, type LogSeverity } from './logLines'
 import { logDownloadFilename, toggleLogSeverity as updateLogSeverities } from './logViewer'
@@ -25,7 +25,7 @@ export function useLiveLogViewerState(content: string, downloadName: string) {
   const download = () => {
     const filename = logDownloadFilename(downloadName)
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
-    void pluginFiles.saveBlob(filename, blob)
+    void miniAppFiles.saveBlob(filename, blob)
   }
 
   return {

@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import type { ToolCardContribution } from '@localixai/mini-app-sdk/ui'
 
-import { isPluginContributionEnabled, subscribePluginActivation } from './pluginActivation'
+import { isMiniAppContributionEnabled, subscribePluginActivation } from './miniAppActivation'
 
 /**
  * How a plugin's own tools read in the transcript, keyed by the tool's name.
@@ -57,7 +57,7 @@ export function removeToolCardsOf(owner: string): void {
 /** The contribution for `tool` while its plugin is enabled; a disabled plugin's tool is generic. */
 export function toolCardFor(tool: string): ToolCardContribution | undefined {
   const contribution = contributions.get(tool)
-  return contribution && isPluginContributionEnabled(contribution.pluginName)
+  return contribution && isMiniAppContributionEnabled(contribution.pluginName)
     ? contribution
     : undefined
 }

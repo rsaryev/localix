@@ -5,13 +5,13 @@ import { fileURLToPath } from 'node:url'
 
 import type { DiscoveredPlugin } from './discovery'
 import { readManagedFingerprint } from './managed-copy'
-import type { inspectPluginTools } from './native'
+import type { inspectMiniAppTools } from './native'
 
 /**
  * Plugin tool inspections that survive a restart.
  *
  * The defect this stops: the capability snapshot names each enabled plugin's tools by importing
- * its backend and calling `register()` (`inspectPluginTools`), and that answer lived only in the
+ * its backend and calling `register()` (`inspectMiniAppTools`), and that answer lived only in the
  * service's memory. So EVERY launch imported every backend bundle (~20 bundles, 14 MB, ~265 ms)
  * before the first snapshot could answer, and the UI's plugin rail waited on it. The answer
  * rarely changes between launches, so it is kept on disk and a launch whose inputs are unchanged
@@ -25,13 +25,13 @@ import type { inspectPluginTools } from './native'
  * failed inspection is never stored, and a file that does not parse is an empty cache.
  */
 
-export type PluginToolInspection = Awaited<ReturnType<typeof inspectPluginTools>>
+export type MiniAppToolInspection = Awaited<ReturnType<typeof inspectMiniAppTools>>
 
 interface StoredInspection {
   pluginName: string
   projectId: string
   fingerprint: string
-  result: PluginToolInspection
+  result: MiniAppToolInspection
 }
 
 const STORE_VERSION = 1
@@ -110,7 +110,7 @@ export async function durableInspectionFingerprint(
 const isStringArray = (value: unknown): value is string[] =>
   Array.isArray(value) && value.every((item) => typeof item === 'string')
 
-function isInspection(value: unknown): value is PluginToolInspection {
+function isInspection(value: unknown): value is MiniAppToolInspection {
   if (!value || typeof value !== 'object') return false
   const v = value as Record<string, unknown>
   return (
@@ -149,9 +149,9 @@ function isStored(value: unknown): value is StoredInspection {
   )
 }
 
-export interface PluginInspectionStore {
+export interface MiniAppInspectionStore {
   /** The stored result for `key` when it was recorded under exactly `fingerprint`. */
-  get(key: string, fingerprint: string): Promise<PluginToolInspection | null>
+  get(key: string, fingerprint: string): Promise<MiniAppToolInspection | null>
   set(key: string, entry: StoredInspection): void
   /** Drop every entry `match` selects (a lifecycle change); no argument drops all. */
   drop(match?: (entry: { pluginName: string; projectId: string }) => boolean): void
@@ -160,7 +160,7 @@ export interface PluginInspectionStore {
 }
 
 /** The on-disk inspection store of one Localix home: `<home>/.localix/cache/<STORE_FILE>`. */
-export function createPluginInspectionStore(homeDir: string): PluginInspectionStore {
+export function createMiniAppInspectionStore(homeDir: string): MiniAppInspectionStore {
   const file = join(homeDir, '.localix', 'cache', STORE_FILE)
   // Keyed by a digest: the raw key carries the plugin path, user and cwd.
   const digest = (key: string) => createHash('sha256').update(key).digest('hex')

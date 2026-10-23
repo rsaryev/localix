@@ -6,11 +6,11 @@ import {
   createManifestOAuthAdapter,
   pollDeviceCode,
   type OAuthCredential,
-  type PluginOAuth,
+  type MiniAppOAuth,
 } from '@localixai/mini-app-sdk/backend'
 
 /**
- * Host implementation of `ctx.oauth` — the {@link PluginOAuth} contract is OWNED
+ * Host implementation of `ctx.oauth` — the {@link MiniAppOAuth} contract is OWNED
  * by `@localixai/mini-app-sdk` (plugins compile against it); this module provides
  * the generic PKCE engine exposed to plugin code so a Spotify/Google/GitHub tool
  * never copy-pastes the verifier/challenge/loopback dance. Pure-data specs
@@ -20,7 +20,7 @@ import {
  * `ctx.helpers.readJson/writeJson`) — the host doesn't take custody of
  * third-party credentials beyond the declared `config` secrets.
  */
-export type { PluginOAuth } from '@localixai/mini-app-sdk/backend'
+export type { MiniAppOAuth } from '@localixai/mini-app-sdk/backend'
 
 const LOGIN_TIMEOUT_MS = 5 * 60 * 1000
 
@@ -33,7 +33,7 @@ const SUCCESS_HTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Co
 // The callback receives an authorization code, so its listener never leaves this machine.
 const LOOPBACK_CALLBACK_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]'])
 
-export function makePluginOAuth(pluginName: string): PluginOAuth {
+export function makeMiniAppOAuth(pluginName: string): MiniAppOAuth {
   return {
     beginLogin(spec, opts) {
       if (spec.callbackMode !== 'local-server' || !spec.localServer) {

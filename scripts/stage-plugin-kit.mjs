@@ -27,7 +27,7 @@ import { cachedKit, kitInputsDigest, storeKit } from './plugin-kit-cache.mjs'
 import { MINI_APPS_DIR, miniAppsRoot } from './lib/bundled-roots.mjs'
 
 import {
-  PLUGIN_BACKEND_SHARED_MODULES,
+  MINI_APP_BACKEND_SHARED_MODULES,
   PLUGIN_KIT_BACKEND_DIR,
   PLUGIN_KIT_CATALOG,
   PLUGIN_KIT_MANIFEST,
@@ -36,15 +36,15 @@ import {
   PLUGIN_KIT_TEMPLATE_DIR,
   PLUGIN_KIT_TEST_PRELOAD,
   PLUGIN_KIT_UI_VENDOR_DIR,
-  PLUGIN_TEST_EXTRA_MODULES,
-  PLUGIN_UI_VENDOR_PACKAGES,
+  MINI_APP_TEST_EXTRA_MODULES,
+  MINI_APP_UI_VENDOR_PACKAGES,
   TAILWIND_UTILITIES,
   TEMPLATE_SCAFFOLD_FILE,
 } from '@localixai/api/plugin-kit-layout'
-import { PLUGIN_UI_KIT_PREFIX } from '@localixai/mini-app-sdk/ui-artifact'
+import { MINI_APP_UI_KIT_PREFIX } from '@localixai/mini-app-sdk/ui-artifact'
 
 import { stageHostStylesheets } from './stage-plugin-kit-styles.mjs'
-import { stagePluginKitTypes } from './stage-plugin-kit-types.mjs'
+import { stageMiniAppKitTypes } from './stage-plugin-kit-types.mjs'
 
 /** The host's design-system stylesheet: its theme, variants and utilities. */
 export const HOST_STYLESHEET = 'apps/ui/src/app/index.css'
@@ -67,7 +67,7 @@ const SKIP = new Set(['node_modules', 'dist', '.turbo', '.preview-data'])
  * One list, read by the dev watcher (re-stage while the API runs) and by packaging (its cache
  * key), so the two cannot disagree about when a kit is current.
  */
-export const PLUGIN_KIT_INPUTS = [
+export const MINI_APP_KIT_INPUTS = [
   'scripts/stage-plugin-kit.mjs',
   'scripts/stage-plugin-kit-styles.mjs',
   'scripts/stage-plugin-kit-types.mjs',
@@ -87,7 +87,7 @@ export const PLUGIN_KIT_INPUTS = [
 ]
 
 /** The plugin that describes itself as the template (it carries a scaffold description). */
-export function findTemplatePlugin(repoRoot) {
+export function findTemplateMiniApp(repoRoot) {
   const plugins = miniAppsRoot(repoRoot)
   const found = readdirSync(plugins).filter((name) =>
     existsSync(join(plugins, name, TEMPLATE_SCAFFOLD_FILE)),
@@ -118,8 +118,8 @@ function esmExportNames(file, seen = new Set()) {
 
 /** The names a shared module exports, read from the module the HOST hands over. */
 export async function sharedExportNames(specifier, { repoRoot }) {
-  if (specifier.startsWith(PLUGIN_UI_KIT_PREFIX)) {
-    const file = kitModuleFile(repoRoot, specifier.slice(PLUGIN_UI_KIT_PREFIX.length))
+  if (specifier.startsWith(MINI_APP_UI_KIT_PREFIX)) {
+    const file = kitModuleFile(repoRoot, specifier.slice(MINI_APP_UI_KIT_PREFIX.length))
     if (!file) throw new Error(`${specifier}: no such kit module`)
     return esmExportNames(file)
   }
@@ -153,7 +153,7 @@ async function uiSharedExports(repoRoot) {
   const { HOST_SHARED_SPECIFIERS } = await import(join(repoRoot, HOST_SHARED_MODULES))
   const specifiers = [
     ...HOST_SHARED_SPECIFIERS,
-    ...kitModuleIds(repoRoot).map((id) => `${PLUGIN_UI_KIT_PREFIX}${id}`),
+    ...kitModuleIds(repoRoot).map((id) => `${MINI_APP_UI_KIT_PREFIX}${id}`),
   ]
   const entries = []
   for (const specifier of specifiers)
@@ -183,7 +183,7 @@ function copyTemplate(templateDir, outDir) {
  * they resolve its packages.
  */
 async function buildBackendModules(repoRoot, outDir) {
-  const specifiers = [...PLUGIN_BACKEND_SHARED_MODULES, ...PLUGIN_TEST_EXTRA_MODULES]
+  const specifiers = [...MINI_APP_BACKEND_SHARED_MODULES, ...MINI_APP_TEST_EXTRA_MODULES]
   mkdirSync(join(repoRoot, '.turbo'), { recursive: true })
   const scratch = mkdtempSync(join(repoRoot, '.turbo', 'plugin-kit-'))
   try {
@@ -240,7 +240,7 @@ plugin({
 /** Each vendor package's ES module tree, source maps dropped. */
 function stageVendorPackages(repoRoot, outDir) {
   const modules = {}
-  for (const name of PLUGIN_UI_VENDOR_PACKAGES) {
+  for (const name of MINI_APP_UI_VENDOR_PACKAGES) {
     const manifestPath = Bun.resolveSync(`${name}/package.json`, join(repoRoot, KIT_DOORS_DIR))
     const root = dirname(manifestPath)
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
@@ -291,10 +291,10 @@ async function stageKitCatalog(repoRoot, outKit) {
   return PLUGIN_KIT_CATALOG
 }
 
-export async function stagePluginKit({ repoRoot, outKit, log = () => {} }) {
+export async function stageMiniAppKit({ repoRoot, outKit, log = () => {} }) {
   rmSync(outKit, { recursive: true, force: true })
   mkdirSync(outKit, { recursive: true })
-  copyTemplate(findTemplatePlugin(repoRoot), join(outKit, PLUGIN_KIT_TEMPLATE_DIR))
+  copyTemplate(findTemplateMiniApp(repoRoot), join(outKit, PLUGIN_KIT_TEMPLATE_DIR))
   const stylesDir = join(outKit, PLUGIN_KIT_STYLES_DIR)
   const hostStylesheet = stageHostStylesheets({
     entry: join(repoRoot, HOST_STYLESHEET),
@@ -302,7 +302,7 @@ export async function stagePluginKit({ repoRoot, outKit, log = () => {} }) {
     packages: [TAILWIND_UTILITIES.replace(/\.css$/u, '')],
   })
   const shared = await uiSharedExports(repoRoot)
-  const types = stagePluginKitTypes({
+  const types = stageMiniAppKitTypes({
     repoRoot,
     outKit,
     uiSharedExports: shared,
@@ -348,15 +348,15 @@ if (process.argv[1] && resolve(process.argv[1]) === resolve(import.meta.path)) {
   try {
     // Development only (`--cache`): reuse the kit staged for identical inputs. See
     // `plugin-kit-cache.mjs` for why a kit is safe to reuse and why the key is content.
-    const digest = cacheRoot ? kitInputsDigest(root, PLUGIN_KIT_INPUTS) : null
+    const digest = cacheRoot ? kitInputsDigest(root, MINI_APP_KIT_INPUTS) : null
     const hit = digest ? cachedKit(cacheRoot, digest, PLUGIN_KIT_MANIFEST) : null
     if (hit) {
       cpSync(hit, next, { recursive: true })
       log('reused the plugin kit')
     } else {
-      await stagePluginKit({ repoRoot: root, outKit: next, log })
+      await stageMiniAppKit({ repoRoot: root, outKit: next, log })
       // An input edited while staging ran makes this kit match neither digest; keep it uncached.
-      if (digest && kitInputsDigest(root, PLUGIN_KIT_INPUTS) === digest) {
+      if (digest && kitInputsDigest(root, MINI_APP_KIT_INPUTS) === digest) {
         storeKit(cacheRoot, digest, next)
       }
     }

@@ -5,23 +5,23 @@ import { isPathBelow } from '../../../lib/path-containment'
 
 import type { DiscoveredPlugin } from '../discovery'
 import {
-  checkUserPlugin,
-  formatPluginCheck,
-  type PluginCheckReport,
-  type PluginTestRunner,
+  checkUserMiniApp,
+  formatMiniAppCheck,
+  type MiniAppCheckReport,
+  type MiniAppTestRunner,
 } from './check'
-import { loadPluginKit, type PluginKit } from './kit'
-import { USER_PLUGIN_BACKEND_SOURCE, isUserPluginBackendBuild } from './kit-layout'
+import { loadMiniAppKit, type MiniAppKit } from './kit'
+import { USER_MINI_APP_BACKEND_SOURCE, isUserMiniAppBackendBuild } from './kit-layout'
 import { agentInstruction } from './prose'
 import {
   PLUGIN_NAME_RE,
   ScaffoldError,
-  USER_PLUGIN_AUTHORING_MARKER,
-  scaffoldUserPlugin,
+  USER_MINI_APP_AUTHORING_MARKER,
+  scaffoldUserMiniApp,
   titleCase,
   type ScaffoldResult,
 } from './scaffold'
-import { pluginUiEntry } from './ui-build'
+import { miniAppUiEntry } from './ui-build'
 
 /**
  * Creating and building USER plugins — the app's side of plugin authoring.
@@ -32,7 +32,7 @@ import { pluginUiEntry } from './ui-build'
  * plugin is never built here (staging built it; its managed copy is not the user's to change).
  */
 
-export interface PluginAuthoringDeps {
+export interface MiniAppAuthoringDeps {
   /** Every plugin visible to the user, bundled ones included (names are global). */
   discover(): Promise<DiscoveredPlugin[]>
   /** The user plugins root a new plugin lands in (`~/.localix/plugins`). */
@@ -51,20 +51,20 @@ export interface PluginAuthoringDeps {
   disable?(userId: string, name: string): Promise<unknown>
   /** Tell every host a plugin changed (backend reconcile, `resources.changed` to the UI). */
   changed(): void
-  runTests?: PluginTestRunner
+  runTests?: MiniAppTestRunner
 }
 
-export interface CreatedUserPlugin extends ScaffoldResult {
-  report: PluginCheckReport
+export interface CreatedUserMiniApp extends ScaffoldResult {
+  report: MiniAppCheckReport
   /** The turn that builds the copy out, for a request that said what to build. */
   instruction: string
 }
 
-export interface PluginAuthoring {
+export interface MiniAppAuthoring {
   create(
     userId: string,
     input: { name: string; displayName?: string; description?: string },
-  ): Promise<CreatedUserPlugin>
+  ): Promise<CreatedUserMiniApp>
   /**
    * `base`, or the first `base-N` that no plugin, folder or install of another source holds. A
    * creation never edits what is already there, and a refused name only made the model guess
@@ -75,18 +75,20 @@ export interface PluginAuthoring {
   build(
     userId: string,
     name: string,
-  ): Promise<{ plugin: DiscoveredPlugin; report: PluginCheckReport }>
+  ): Promise<{ plugin: DiscoveredPlugin; report: MiniAppCheckReport }>
   /** Rebuild every user plugin authored in the kit layout; `/plugin reload` runs it. */
-  rebuildAll(userId: string): Promise<{ name: string; report: PluginCheckReport }[]>
+  rebuildAll(userId: string): Promise<{ name: string; report: MiniAppCheckReport }[]>
 }
 
-export class UserPluginNotFoundError extends Error {}
+export class UserMiniAppNotFoundError extends Error {}
 
 const MAX_NAME_SUFFIX = 20
 
 /** Older generated copies predate the marker, but carry this exact authoring preamble. */
 async function isGeneratedCopy(dir: string, name: string): Promise<boolean> {
-  const marker = await fs.readFile(join(dir, USER_PLUGIN_AUTHORING_MARKER), 'utf8').catch(() => '')
+  const marker = await fs
+    .readFile(join(dir, USER_MINI_APP_AUTHORING_MARKER), 'utf8')
+    .catch(() => '')
   if (marker) {
     try {
       const parsed = JSON.parse(marker) as Record<string, unknown>
@@ -108,16 +110,16 @@ async function isGeneratedCopy(dir: string, name: string): Promise<boolean> {
 }
 
 /** A plugin the app builds: the user's own, laid out the way the kit's template is. */
-export async function isAuthoredUserPlugin(plugin: DiscoveredPlugin): Promise<boolean> {
+export async function isAuthoredUserMiniApp(plugin: DiscoveredPlugin): Promise<boolean> {
   if (plugin.bundled) return false
   if (await isGeneratedCopy(plugin.dir, plugin.manifest.name)) return true
   const builtBackend =
-    isUserPluginBackendBuild(plugin.manifest.tools) &&
-    existsSync(join(plugin.dir, USER_PLUGIN_BACKEND_SOURCE))
-  return builtBackend || pluginUiEntry(plugin.dir) !== null
+    isUserMiniAppBackendBuild(plugin.manifest.tools) &&
+    existsSync(join(plugin.dir, USER_MINI_APP_BACKEND_SOURCE))
+  return builtBackend || miniAppUiEntry(plugin.dir) !== null
 }
 
-export function createPluginAuthoring(deps: PluginAuthoringDeps): PluginAuthoring {
+export function createMiniAppAuthoring(deps: MiniAppAuthoringDeps): MiniAppAuthoring {
   /**
    * A plugin the app may build for this user: authored in the kit layout, a folder of the user's
    * own plugins root (never a Claude Code install or an in-place folder, which Localix does not
@@ -127,11 +129,11 @@ export function createPluginAuthoring(deps: PluginAuthoringDeps): PluginAuthorin
     !plugin.claudeCodeInstall &&
     !plugin.inPlaceInstall &&
     isPathBelow(deps.pluginsRoot, plugin.dir) &&
-    (await isAuthoredUserPlugin(plugin)) &&
+    (await isAuthoredUserMiniApp(plugin)) &&
     (await deps.allowed(userId, plugin))
-  const kit = (): Promise<PluginKit> => loadPluginKit(deps.kitDir())
+  const kit = (): Promise<MiniAppKit> => loadMiniAppKit(deps.kitDir())
   const active = new Map<string, Promise<void>>()
-  const withPluginLock = async <T>(name: string, run: () => Promise<T>): Promise<T> => {
+  const withMiniAppLock = async <T>(name: string, run: () => Promise<T>): Promise<T> => {
     const previous = active.get(name)
     let release!: () => void
     const current = new Promise<void>((resolve) => {
@@ -146,8 +148,8 @@ export function createPluginAuthoring(deps: PluginAuthoringDeps): PluginAuthorin
       if (active.get(name) === current) active.delete(name)
     }
   }
-  const check = async (plugin: DiscoveredPlugin, loaded?: PluginKit) =>
-    checkUserPlugin({
+  const check = async (plugin: DiscoveredPlugin, loaded?: MiniAppKit) =>
+    checkUserMiniApp({
       kit: loaded ?? (await kit()),
       pluginDir: plugin.dir,
       name: plugin.manifest.name,
@@ -171,7 +173,7 @@ export function createPluginAuthoring(deps: PluginAuthoringDeps): PluginAuthorin
       throw new ScaffoldError(`Every name from "${base}" to "${base}-${MAX_NAME_SUFFIX}" is taken.`)
     },
     create: (userId, input) =>
-      withPluginLock(input.name, async () => {
+      withMiniAppLock(input.name, async () => {
         const source = await deps.installedSource?.(userId, input.name)
         if (source && source !== 'local') {
           throw new ScaffoldError(
@@ -180,7 +182,7 @@ export function createPluginAuthoring(deps: PluginAuthoringDeps): PluginAuthorin
         }
         const loaded = await kit()
         const takenNames = new Set((await deps.discover()).map((plugin) => plugin.manifest.name))
-        const created = await scaffoldUserPlugin({
+        const created = await scaffoldUserMiniApp({
           kit: loaded,
           pluginsRoot: deps.pluginsRoot,
           name: input.name,
@@ -188,12 +190,12 @@ export function createPluginAuthoring(deps: PluginAuthoringDeps): PluginAuthorin
           ...(input.displayName ? { displayName: input.displayName } : {}),
           ...(input.description ? { description: input.description } : {}),
         })
-        let report: PluginCheckReport
+        let report: MiniAppCheckReport
         let enableStarted = false
         try {
           // The reference still names its template domain, so residue is the agent's first to-do
           // list. Every executable check must pass before this newly enabled plugin can run.
-          report = await checkUserPlugin({
+          report = await checkUserMiniApp({
             kit: loaded,
             pluginDir: created.dir,
             name: created.name,
@@ -202,7 +204,7 @@ export function createPluginAuthoring(deps: PluginAuthoringDeps): PluginAuthorin
           })
           if (!report.published) {
             throw new ScaffoldError(
-              `The reference plugin did not pass its initial checks:\n${formatPluginCheck(created.name, report, { previousBuild: false })}`,
+              `The reference plugin did not pass its initial checks:\n${formatMiniAppCheck(created.name, report, { previousBuild: false })}`,
             )
           }
           enableStarted = true
@@ -230,13 +232,13 @@ export function createPluginAuthoring(deps: PluginAuthoringDeps): PluginAuthorin
       }),
 
     build: (userId, name) =>
-      withPluginLock(name, async () => {
+      withMiniAppLock(name, async () => {
         const plugin = (await deps.discover()).find(
           (candidate) => candidate.manifest.name === name && !candidate.bundled,
         )
         if (!plugin || !(await buildable(userId, plugin))) {
-          throw new UserPluginNotFoundError(
-            `No user plugin named "${name}" to build — first-party plugins ship built, and a user plugin needs an authored copy, ${USER_PLUGIN_BACKEND_SOURCE} or ui/register.tsx, in your plugins folder, switched on.`,
+          throw new UserMiniAppNotFoundError(
+            `No user plugin named "${name}" to build — first-party plugins ship built, and a user plugin needs an authored copy, ${USER_MINI_APP_BACKEND_SOURCE} or ui/register.tsx, in your plugins folder, switched on.`,
           )
         }
         const report = await check(plugin)
@@ -252,7 +254,7 @@ export function createPluginAuthoring(deps: PluginAuthoringDeps): PluginAuthorin
       const loaded = await kit()
       const results = []
       for (const plugin of plugins) {
-        const report = await withPluginLock(plugin.manifest.name, () => check(plugin, loaded))
+        const report = await withMiniAppLock(plugin.manifest.name, () => check(plugin, loaded))
         results.push({ name: plugin.manifest.name, report })
       }
       return results

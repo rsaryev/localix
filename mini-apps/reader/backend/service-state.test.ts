@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import type { PluginHelpers } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppHelpers } from '@localixai/mini-app-sdk/backend'
 
 import { ReaderService } from './service'
 
@@ -14,7 +14,7 @@ const book = {
 const collection = { id: 'shelf', name: 'Shelf', createdAt: '2026-01-01', updatedAt: '2026-01-01' }
 
 function serviceWithState(state: unknown): ReaderService {
-  const helpers: Pick<PluginHelpers, 'readJson' | 'writeJson'> = {
+  const helpers: Pick<MiniAppHelpers, 'readJson' | 'writeJson'> = {
     async readJson<T>(
       _filePath: string,
       fallback: T,

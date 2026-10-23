@@ -19,13 +19,13 @@ import { projectsApi } from '@/shared/api/projects-client'
 import { toast } from '@/shared/lib/notify'
 import {
   createMessageBindingDraft,
-  type PluginUiRuntime,
-  type PluginWorkspaceWatchHandlers,
+  type MiniAppUiRuntime,
+  type MiniAppWorkspaceWatchHandlers,
 } from '@localixai/mini-app-sdk/ui'
 import { onFsChange } from '@/shared/lib/fsChangeBus'
 import { eventSocket } from '@/shared/api/eventSocket'
 
-export function createPluginFilesRuntime(): PluginUiRuntime['files'] {
+export function createPluginFilesRuntime(): MiniAppUiRuntime['files'] {
   return {
     announceReloaded: (paths) => publishFilesReloaded(paths),
     saveBlob: (filename, blob) => {
@@ -113,7 +113,7 @@ export function createPluginFilesRuntime(): PluginUiRuntime['files'] {
  */
 export function watchWorkspace(
   sessionId: string,
-  handlers: PluginWorkspaceWatchHandlers,
+  handlers: MiniAppWorkspaceWatchHandlers,
   deps: {
     listDirectory: (sessionId: string) => Promise<{ live?: boolean }>
     onFsChange: typeof onFsChange

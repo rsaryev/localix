@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { bindPluginUiRuntime, type PluginUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
+import { bindMiniAppUiRuntime, type MiniAppUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
 
 import {
   createEventRefreshBatcher,
@@ -17,7 +17,7 @@ function fakeRealtime() {
   const reconnects = new Set<() => void>()
   const disconnects = new Set<() => void>()
   const requests: Record<string, unknown>[] = []
-  const unbind = bindPluginUiRuntime({
+  const unbind = bindMiniAppUiRuntime({
     realtime: {
       onFrame: (tag: string, handler: (json: string) => void) => {
         if (tag !== 'k') return () => {}
@@ -37,7 +37,7 @@ function fakeRealtime() {
         return {}
       },
     },
-  } as unknown as PluginUiRuntime)
+  } as unknown as MiniAppUiRuntime)
   return {
     requests,
     push: (frame: unknown) => {

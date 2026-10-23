@@ -12,9 +12,9 @@ import {
   listMarketplacesResponseSchema,
   removeMarketplaceRequestSchema,
   installPluginRequestSchema,
-  pluginViewHtmlResponseSchema,
-  invokePluginUiActionRequestSchema,
-  invokePluginUiActionResponseSchema,
+  miniAppViewHtmlResponseSchema,
+  invokeMiniAppUiActionRequestSchema,
+  invokeMiniAppUiActionResponseSchema,
   pluginRecordSchema,
   removePluginRequestSchema,
   setPluginConfigRequestSchema,
@@ -26,8 +26,8 @@ export type PluginRoutesService = Pick<
   PluginService,
   | 'listPlugins'
   | 'listPluginCommands'
-  | 'resolvePluginArgOptions'
-  | 'listPluginViews'
+  | 'resolveMiniAppArgOptions'
+  | 'listMiniAppViews'
   | 'listOutputStyles'
   | 'getViewHtml'
   | 'resolveUiFile'
@@ -61,7 +61,7 @@ export function createPluginRoutes(service: PluginRoutesService) {
       ),
       async (c) => {
         const body = c.req.valid('json')
-        const response = await service.resolvePluginArgOptions(c.get('userId'), {
+        const response = await service.resolveMiniAppArgOptions(c.get('userId'), {
           ...body,
           projectId: body.projectId ?? null,
         })
@@ -101,15 +101,15 @@ export function createPluginRoutes(service: PluginRoutesService) {
           viewId: id,
           projectId: projectId ?? null,
         })
-        return c.json(pluginViewHtmlResponseSchema.parse(response), 200)
+        return c.json(miniAppViewHtmlResponseSchema.parse(response), 200)
       },
     )
     .post(
       '/ui-actions/invoke',
-      zValidator('json', invokePluginUiActionRequestSchema),
+      zValidator('json', invokeMiniAppUiActionRequestSchema),
       async (c) => {
         const response = await service.invokeUiAction(c.get('userId'), c.req.valid('json'))
-        return c.json(invokePluginUiActionResponseSchema.parse(response), 200)
+        return c.json(invokeMiniAppUiActionResponseSchema.parse(response), 200)
       },
     )
     .post('/config', zValidator('json', setPluginConfigRequestSchema), async (c) => {

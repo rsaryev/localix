@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test'
 import type { UiLocationContribution, UiLocationParamSchema } from '@localixai/mini-app-sdk/ui'
-import { setEnabledPluginNames } from './pluginActivation'
+import { setEnabledPluginNames } from './miniAppActivation'
 import {
   createUiLocationRegistry,
-  pluginLocationId,
+  miniAppLocationId,
   parseUiLocationArgs,
   subscribeUiLocations,
   type UiLocationRegistry,
@@ -592,16 +592,16 @@ describe('rejection is reported, not swallowed', () => {
   })
 })
 
-describe('pluginLocationId', () => {
+describe('miniAppLocationId', () => {
   const VALID_ID = /^[a-z0-9][a-z0-9:._-]{0,127}$/
 
   test('normalizes plugin-supplied names that the registry would otherwise reject', () => {
     // camelCase is ordinary in JS and the plugin contract accepts any string, so the
     // previous raw interpolation produced an invalid id for a perfectly normal manifest.
-    expect(pluginLocationId('plugin-view.open', 'sample:sqlConsole')).toBe(
+    expect(miniAppLocationId('plugin-view.open', 'sample:sqlConsole')).toBe(
       'plugin-view.open.sample:sqlconsole',
     )
-    expect(pluginLocationId('plugin-panel.open', 'Sample:Chart View')).toBe(
+    expect(miniAppLocationId('plugin-panel.open', 'Sample:Chart View')).toBe(
       'plugin-panel.open.sample:chart-view',
     )
   })
@@ -618,12 +618,12 @@ describe('pluginLocationId', () => {
       `${'x'.repeat(300)}:v`,
       'emoji:🚀view',
     ]) {
-      expect(pluginLocationId('plugin-view.open', name)).toMatch(VALID_ID)
+      expect(miniAppLocationId('plugin-view.open', name)).toMatch(VALID_ID)
     }
   })
 
   test('keeps an already-valid name byte-identical apart from the prefix', () => {
-    expect(pluginLocationId('plugin-view.open', 'sample:container-logs')).toBe(
+    expect(miniAppLocationId('plugin-view.open', 'sample:container-logs')).toBe(
       'plugin-view.open.sample:container-logs',
     )
   })
@@ -631,7 +631,7 @@ describe('pluginLocationId', () => {
   test('a normalized id registers, so one odd view no longer withdraws the group', () => {
     const registry = createUiLocationRegistry()
     const view = (fullName: string) => ({
-      id: pluginLocationId('plugin-view.open', fullName),
+      id: miniAppLocationId('plugin-view.open', fullName),
       uri: `localix://ui/plugin/view/${encodeURIComponent(fullName)}`,
       title: `View ${fullName}`,
       keywords: ['plugin'],

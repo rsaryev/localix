@@ -1,8 +1,8 @@
 import { basename } from 'node:path'
 
 import type { DiscoveredPlugin } from './discovery'
-import { PLUGIN_API_VERSION, type PluginValidation } from './contracts'
-import type { PluginConfigValues } from './config'
+import { MINI_APP_API_VERSION, type PluginValidation } from './contracts'
+import type { MiniAppConfigValues } from './config'
 import { validateCompatibility } from './validate-compat'
 import { validatePluginSkills } from './validate-skill'
 import { validatePluginConfig } from './validate-config'
@@ -35,7 +35,7 @@ import { checkApiVersion } from '../ext/manifest-validate'
 export function validatePlugin(
   plugin: DiscoveredPlugin,
   opts?: {
-    config?: PluginConfigValues
+    config?: MiniAppConfigValues
     /**
      * CC `--strict` mode: promote all warnings to errors. Useful in CI to
      * catch misspelled fields or leftover foreign manifest keys before publishing.
@@ -74,7 +74,7 @@ export function validatePlugin(
   // Claude Code plugin was not written for this host, so its user gets no nudges they can't act on.
   const imported = plugin.layout === 'plugin' || plugin.manifest.origin !== undefined
   const nudges = imported ? [] : warnings
-  checkApiVersion('Plugin', PLUGIN_API_VERSION, plugin.manifest.apiVersion, errors, nudges)
+  checkApiVersion('Plugin', MINI_APP_API_VERSION, plugin.manifest.apiVersion, errors, nudges)
 
   // Warn on missing discoverability metadata: descriptions explain purpose, Settings shows
   // authors, and explicit versions let users track updates.
@@ -215,7 +215,7 @@ export function validatePlugin(
  */
 export async function validatePluginFull(
   plugin: DiscoveredPlugin,
-  opts?: { config?: PluginConfigValues; strict?: boolean },
+  opts?: { config?: MiniAppConfigValues; strict?: boolean },
 ): Promise<PluginValidation> {
   const [manifest, skills] = await Promise.all([
     Promise.resolve(validatePlugin(plugin, { config: opts?.config })),

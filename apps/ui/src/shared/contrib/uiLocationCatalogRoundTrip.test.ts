@@ -5,7 +5,7 @@ import {
   type UiLocationContribution,
 } from '@localixai/mini-app-sdk/ui'
 
-import { setEnabledPluginNames } from './pluginActivation'
+import { setEnabledPluginNames } from './miniAppActivation'
 import { createUiLocationRegistry, type UiLocationRegistry } from './uiLocations'
 
 /**

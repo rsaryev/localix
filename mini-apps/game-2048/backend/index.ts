@@ -1,11 +1,11 @@
-import type { PluginContext, PluginRegistration } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext, MiniAppRegistration } from '@localixai/mini-app-sdk/backend'
 import { ROUTE_PATH } from '../shared/resource'
 import { createGameService } from './game-service'
 import { createGameRoutes } from './routes'
 import { createJsonStoreFeed } from '@localixai/mini-app-sdk/backend'
 import { createGameTools } from './tools'
 
-export function register(ctx: PluginContext): PluginRegistration {
+export function register(ctx: MiniAppContext): MiniAppRegistration {
   const storage = ctx.sessionStorage
   const games = createGameService({
     ...(storage ? { resolveDir: (...args) => storage.resolveDataDir(...args) } : {}),

@@ -2,7 +2,7 @@ import type { AgentTool, AgentToolResult } from '@localixai/agent/agents'
 
 import { reparseToolInput } from '../agent-core/tools/reparse-input'
 import { isBlockedThrow, resultFromThrow } from '../agent-core/tools/tool-error-result'
-import type { LoadedPluginHook } from './loader'
+import type { LoadedMiniAppHook } from './loader'
 import { isPlainObject } from './mcp'
 import { HOOK_TIMEOUT_MS, invokeHook, type HookRunOptions } from './hook-invoke'
 
@@ -23,7 +23,7 @@ export class ToolCallBlockedError extends Error {
 }
 
 /** Entries that actually declare a tool-call hook (cheap pre-filter). */
-function toolHookEntries(entries: readonly LoadedPluginHook[]): LoadedPluginHook[] {
+function toolHookEntries(entries: readonly LoadedMiniAppHook[]): LoadedMiniAppHook[] {
   return entries.filter((e) => e.hooks.onPreToolCall || e.hooks.onPostToolCall)
 }
 
@@ -37,7 +37,7 @@ function toolHookEntries(entries: readonly LoadedPluginHook[]): LoadedPluginHook
  */
 export function wrapToolsWithHooks(
   tools: readonly AgentTool[],
-  hookEntries: readonly LoadedPluginHook[],
+  hookEntries: readonly LoadedMiniAppHook[],
   options: HookRunOptions,
 ): AgentTool[] {
   const entries = toolHookEntries(hookEntries)

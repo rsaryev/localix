@@ -2,7 +2,7 @@ import { join } from 'node:path'
 
 import { runBun } from './bun-child'
 import { writeGeneratedFile } from './generated-file'
-import type { PluginKit } from './kit'
+import type { MiniAppKit } from './kit'
 import { PLUGIN_KIT_TYPECHECK } from './kit-layout'
 
 /**
@@ -31,7 +31,7 @@ export interface TypeDiagnostic {
 }
 
 /** The plugin's `tsconfig.json`: updated when the kit moves, without needless editor reloads. */
-export async function writePluginTsconfig(kit: PluginKit, pluginDir: string): Promise<void> {
+export async function writeMiniAppTsconfig(kit: MiniAppKit, pluginDir: string): Promise<void> {
   const paths = Object.fromEntries(
     Object.entries(kit.manifest.typePaths).map(([specifier, file]) => [
       specifier,
@@ -79,8 +79,8 @@ export function formatTypeDiagnostic(d: TypeDiagnostic): string {
 }
 
 /** One line per type error (capped), empty when the plugin type-checks. */
-export async function typecheckPlugin(kit: PluginKit, pluginDir: string): Promise<string[]> {
-  await writePluginTsconfig(kit, pluginDir)
+export async function typecheckMiniApp(kit: MiniAppKit, pluginDir: string): Promise<string[]> {
+  await writeMiniAppTsconfig(kit, pluginDir)
   const run = await runBun(
     [join(kit.dir, PLUGIN_KIT_TYPECHECK), pluginDir],
     pluginDir,

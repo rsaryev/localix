@@ -19,23 +19,23 @@ import { dirname, join, resolve } from 'node:path'
 
 import ts from '@localixai/mini-app-kit-compiler'
 
-import { checkUserPlugin } from '../apps/api/src/features/plugins/authoring/check'
-import { loadPluginKit, type PluginKit } from '../apps/api/src/features/plugins/authoring/kit'
+import { checkUserMiniApp } from '../apps/api/src/features/plugins/authoring/check'
+import { loadMiniAppKit, type MiniAppKit } from '../apps/api/src/features/plugins/authoring/kit'
 import {
-  isUserPluginBackendBuild,
+  isUserMiniAppBackendBuild,
   PLUGIN_KIT_DIGEST,
 } from '../apps/api/src/features/plugins/authoring/kit-layout'
 import {
-  buildPluginBackend,
-  discardPluginBackendCandidate,
+  buildMiniAppBackend,
+  discardMiniAppBackendCandidate,
 } from '../apps/api/src/features/plugins/authoring/backend-build'
 import { importFreshModule } from '../apps/api/src/lib/module-url'
 import { installBackendHostModules } from '../apps/api/src/features/plugins/backend-host-modules'
-import { typecheckPlugin } from '../apps/api/src/features/plugins/authoring/typecheck'
-import { scaffoldUserPlugin } from '../apps/api/src/features/plugins/authoring/scaffold'
+import { typecheckMiniApp } from '../apps/api/src/features/plugins/authoring/typecheck'
+import { scaffoldUserMiniApp } from '../apps/api/src/features/plugins/authoring/scaffold'
 import {
-  createPluginAuthoring,
-  isAuthoredUserPlugin,
+  createMiniAppAuthoring,
+  isAuthoredUserMiniApp,
 } from '../apps/api/src/features/plugins/authoring/service'
 import {
   copyDomain,
@@ -45,7 +45,7 @@ import {
   listFiles,
   loadTemplateScaffold,
 } from '../apps/api/src/features/plugins/authoring/template-layout'
-import { findTemplatePlugin } from './stage-plugin-kit.mjs'
+import { findTemplateMiniApp } from './stage-plugin-kit.mjs'
 import { kitCacheRoot } from './plugin-kit-cache.mjs'
 
 const PLUGIN_MANIFEST = '.claude-plugin/plugin.json'
@@ -53,10 +53,10 @@ const APP_MANIFEST = '.localix-app/app.json'
 
 const repoRoot = resolve(import.meta.dir, '..')
 const KIT_STAGER = join(import.meta.dir, 'stage-plugin-kit.mjs')
-const template = findTemplatePlugin(repoRoot)
+const template = findTemplateMiniApp(repoRoot)
 const scaffold = loadTemplateScaffold(template)
 const root = mkdtempSync(join(tmpdir(), 'plugin-kit-'))
-let kit: PluginKit
+let kit: MiniAppKit
 
 beforeAll(async () => {
   // A child, as staging runs it: a second in-process build of the SDK's own modules within one
@@ -70,14 +70,14 @@ beforeAll(async () => {
     timeout: 60_000,
     killSignal: 'SIGKILL',
   })
-  kit = await loadPluginKit(join(root, 'kit'))
+  kit = await loadMiniAppKit(join(root, 'kit'))
 }, 30_000)
 afterAll(() => rmSync(root, { recursive: true, force: true }))
 
 let copies = 0
 async function freshCopy(name = 'gpu-monitor') {
   const pluginsRoot = join(root, `plugins-${copies++}`)
-  return scaffoldUserPlugin({ kit, pluginsRoot, name, takenNames: new Set(['reader']) })
+  return scaffoldUserMiniApp({ kit, pluginsRoot, name, takenNames: new Set(['reader']) })
 }
 
 describe('the staged kit', () => {
@@ -238,7 +238,7 @@ describe('a scaffolded user plugin', () => {
 
   test('is built and tested from the kit, and loads in the host; only the residue check fails', async () => {
     const created = await freshCopy()
-    const report = await checkUserPlugin({
+    const report = await checkUserMiniApp({
       kit,
       pluginDir: created.dir,
       name: created.name,
@@ -260,7 +260,7 @@ describe('a scaffolded user plugin', () => {
     expect(plugin.name).toBe('gpu-monitor')
     const app = JSON.parse(readFileSync(join(created.dir, APP_MANIFEST), 'utf8'))
     expect(app.name).toBe('gpu-monitor')
-    expect(isUserPluginBackendBuild(app.backend)).toBe(true)
+    expect(isUserMiniAppBackendBuild(app.backend)).toBe(true)
     expect(app.defaultEnabled).toBeUndefined()
     const backend = await import(join(created.dir, app.backend))
     expect(typeof backend.register).toBe('function')
@@ -272,8 +272,8 @@ describe('a scaffolded user plugin', () => {
   test('a rebuild never replaces or deletes a build the process imported', async () => {
     const { dir } = await freshCopy()
     const tools = async () => JSON.parse(readFileSync(join(dir, APP_MANIFEST), 'utf8')).backend
-    const first = await buildPluginBackend({ kit, pluginDir: dir })
-    expect(await buildPluginBackend({ kit, pluginDir: dir })).toBe(first)
+    const first = await buildMiniAppBackend({ kit, pluginDir: dir })
+    expect(await buildMiniAppBackend({ kit, pluginDir: dir })).toBe(first)
     await importFreshModule(join(dir, first!))
     const edit = (n: number) =>
       writeFileSync(
@@ -281,11 +281,11 @@ describe('a scaffolded user plugin', () => {
         `${readFileSync(join(dir, 'backend', 'index.ts'), 'utf8')}\nexport const edit${n} = ${n}\n`,
       )
     edit(1)
-    const second = await buildPluginBackend({ kit, pluginDir: dir })
+    const second = await buildMiniAppBackend({ kit, pluginDir: dir })
     expect(second).not.toBe(first)
     expect(await tools()).toBe(second)
     edit(2)
-    const third = await buildPluginBackend({ kit, pluginDir: dir })
+    const third = await buildMiniAppBackend({ kit, pluginDir: dir })
     expect(existsSync(join(dir, first!))).toBe(true)
     expect(existsSync(join(dir, second!))).toBe(false)
     expect(existsSync(join(dir, third!))).toBe(true)
@@ -303,7 +303,7 @@ describe('a scaffolded user plugin', () => {
       writeFileSync(outside, 'export const secret = "outside"\n')
       writeFileSync(join(dir, 'backend', 'index.ts'), source(outside))
       const before = readFileSync(join(dir, APP_MANIFEST), 'utf8')
-      await expect(buildPluginBackend({ kit, pluginDir: dir, publish: false })).rejects.toThrow(
+      await expect(buildMiniAppBackend({ kit, pluginDir: dir, publish: false })).rejects.toThrow(
         'outside the plugin',
       )
       expect(readFileSync(join(dir, APP_MANIFEST), 'utf8')).toBe(before)
@@ -317,18 +317,18 @@ describe('a scaffolded user plugin', () => {
     mkdirSync(dirname(output), { recursive: true })
     writeFileSync(output, 'export {}\n')
     writeFileSync(join(dir, APP_MANIFEST), '{ malformed')
-    await discardPluginBackendCandidate(dir, tools)
+    await discardMiniAppBackendCandidate(dir, tools)
     expect(existsSync(output)).toBe(false)
 
     writeFileSync(output, 'export {}\n')
     writeFileSync(join(dir, APP_MANIFEST), JSON.stringify({ backend: tools }))
-    await discardPluginBackendCandidate(dir, tools)
+    await discardMiniAppBackendCandidate(dir, tools)
     expect(existsSync(output)).toBe(true)
   })
 
   test('a failed type check keeps the previous backend and UI active', async () => {
     const { dir, name } = await freshCopy()
-    const first = await checkUserPlugin({
+    const first = await checkUserMiniApp({
       kit,
       pluginDir: dir,
       name,
@@ -344,7 +344,7 @@ describe('a scaffolded user plugin', () => {
     )
     writeFileSync(join(dir, 'ui', 'Wrong.tsx'), 'export const wrong: number = "text"\n')
 
-    const failed = await checkUserPlugin({ kit, pluginDir: dir, name })
+    const failed = await checkUserMiniApp({ kit, pluginDir: dir, name })
     expect(failed.published).toBe(false)
     expect(failed.steps.find((entry) => entry.title === 'types')?.ok).toBe(false)
     expect(readFileSync(join(dir, APP_MANIFEST), 'utf8')).toBe(manifestBefore)
@@ -355,7 +355,7 @@ describe('a scaffolded user plugin', () => {
   test('an unreadable reference manifest is not excused as template residue', async () => {
     const { dir, name } = await freshCopy()
     writeFileSync(join(dir, PLUGIN_MANIFEST), '{ broken json\n')
-    const report = await checkUserPlugin({
+    const report = await checkUserMiniApp({
       kit,
       pluginDir: dir,
       name,
@@ -373,7 +373,7 @@ describe('a scaffolded user plugin', () => {
     mkdirSync(outside)
     writeFileSync(join(outside, 'marker'), 'keep me')
     symlinkSync(outside, join(dir, 'dist'))
-    await expect(checkUserPlugin({ kit, pluginDir: dir, name })).rejects.toThrow(
+    await expect(checkUserMiniApp({ kit, pluginDir: dir, name })).rejects.toThrow(
       'output path is not a regular directory',
     )
     expect(readFileSync(join(outside, 'marker'), 'utf8')).toBe('keep me')
@@ -383,7 +383,7 @@ describe('a scaffolded user plugin', () => {
     writeFileSync(externalConfig, 'keep me')
     symlinkSync(externalConfig, join(second.dir, 'tsconfig.json'))
     await expect(
-      checkUserPlugin({ kit, pluginDir: second.dir, name: second.name }),
+      checkUserMiniApp({ kit, pluginDir: second.dir, name: second.name }),
     ).rejects.toThrow('tsconfig.json must be a regular file')
     expect(readFileSync(externalConfig, 'utf8')).toBe('keep me')
   })
@@ -391,14 +391,14 @@ describe('a scaffolded user plugin', () => {
   test('a content-named backend artifact cannot be replaced by a symlink', async () => {
     if (process.platform === 'win32') return
     const { dir } = await freshCopy()
-    const tools = await buildPluginBackend({ kit, pluginDir: dir, publish: false })
+    const tools = await buildMiniAppBackend({ kit, pluginDir: dir, publish: false })
     expect(tools).toBeTruthy()
     const artifact = join(dir, tools!)
     const outside = join(dirname(dir), `backend-${copies++}.mjs`)
     writeFileSync(outside, 'export const wrong = true\n')
     rmSync(artifact)
     symlinkSync(outside, artifact)
-    await expect(buildPluginBackend({ kit, pluginDir: dir, publish: false })).rejects.toThrow(
+    await expect(buildMiniAppBackend({ kit, pluginDir: dir, publish: false })).rejects.toThrow(
       'exists with different content or file type',
     )
     expect(readFileSync(outside, 'utf8')).toBe('export const wrong = true\n')
@@ -408,7 +408,7 @@ describe('a scaffolded user plugin', () => {
     const pluginsRoot = join(root, `failed-create-${copies++}`)
     const calls: string[] = []
     let testRuns = 0
-    const authoring = createPluginAuthoring({
+    const authoring = createMiniAppAuthoring({
       discover: async () => [],
       pluginsRoot,
       kitDir: () => kit.dir,
@@ -433,7 +433,7 @@ describe('a scaffolded user plugin', () => {
   test('a failed activation is disabled before the new folder is rolled back', async () => {
     const pluginsRoot = join(root, `activation-${copies++}`)
     const calls: string[] = []
-    const authoring = createPluginAuthoring({
+    const authoring = createMiniAppAuthoring({
       discover: async () => [],
       pluginsRoot,
       kitDir: () => kit.dir,
@@ -458,7 +458,7 @@ describe('a scaffolded user plugin', () => {
   test('a new plugin takes the first name nothing else holds', async () => {
     const pluginsRoot = join(root, `free-${copies++}`)
     let installedSource: string | null = null
-    const authoring = createPluginAuthoring({
+    const authoring = createMiniAppAuthoring({
       discover: async () => [{ manifest: { name: 'reader' } } as never],
       pluginsRoot,
       kitDir: () => kit.dir,
@@ -477,7 +477,7 @@ describe('a scaffolded user plugin', () => {
     )
     expect(existsSync(join(pluginsRoot, 'notes'))).toBe(false)
 
-    await scaffoldUserPlugin({
+    await scaffoldUserMiniApp({
       kit,
       pluginsRoot,
       name: 'gpu-monitor',
@@ -495,7 +495,7 @@ describe('a scaffolded user plugin', () => {
     rmSync(join(pluginsRoot, 'gpu-monitor', 'backend', 'index.ts'))
     rmSync(join(pluginsRoot, 'gpu-monitor', 'ui', 'register.tsx'))
     expect(
-      await isAuthoredUserPlugin({
+      await isAuthoredUserMiniApp({
         dir: join(pluginsRoot, 'gpu-monitor'),
         bundled: false,
         manifest: { name: 'gpu-monitor' },
@@ -514,7 +514,7 @@ describe('a scaffolded user plugin', () => {
         "export const wrong = (publish: PublishMessageContext) => publish({ strategy: 'replace', text: 'x' })",
       ].join('\n'),
     )
-    const problems = await typecheckPlugin(kit, dir)
+    const problems = await typecheckMiniApp(kit, dir)
     expect(problems).toHaveLength(1)
     expect(problems[0]).toMatch(/^ui\/Wrong\.tsx:2:\d+ TS2353: .*'text' does not exist/u)
     expect(readFileSync(join(dir, 'tsconfig.json'), 'utf8')).toContain(kit.dir)
@@ -529,8 +529,8 @@ describe('a scaffolded user plugin', () => {
     writeFileSync(
       join(dir, 'backend', 'wrong-tool.ts'),
       [
-        "import type { PluginContext } from '@localixai/mini-app-sdk/backend'",
-        'export const wrong = (ctx: PluginContext) =>',
+        "import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'",
+        'export const wrong = (ctx: MiniAppContext) =>',
         '  ctx.defineTool({',
         "    name: 'wrong_tool',",
         "    label: 'Wrong',",
@@ -544,7 +544,7 @@ describe('a scaffolded user plugin', () => {
         '  })',
       ].join('\n'),
     )
-    const problems = (await typecheckPlugin(kit, dir)).join('\n')
+    const problems = (await typecheckMiniApp(kit, dir)).join('\n')
     expect(problems).toMatch(/backend\/wrong-tool\.ts:9:\d+ TS2322: .*"serial"/u)
     expect(problems).toMatch(/backend\/wrong-tool\.ts:11:\d+ TS2339: .*'note'/u)
   })
@@ -560,7 +560,7 @@ describe('a scaffolded user plugin', () => {
         'export const Wrong = () => <Button variant="primary">Go</Button>',
       ].join('\n'),
     )
-    const problems = (await typecheckPlugin(kit, dir)).join('\n')
+    const problems = (await typecheckMiniApp(kit, dir)).join('\n')
     expect(problems).toMatch(/ui\/WrongButton\.tsx:2:\d+ TS2322: .*"primary".*"mono"/u)
   })
 
@@ -577,7 +577,7 @@ describe('a scaffolded user plugin', () => {
         'export const Bad = NotAnIconAtAll',
       ].join('\n'),
     )
-    const problems = (await typecheckPlugin(kit, dir)).join('\n')
+    const problems = (await typecheckMiniApp(kit, dir)).join('\n')
     expect(problems).toMatch(/ui\/Icons\.tsx:1:\d+ TS2305: .*NotAnIconAtAll/u)
     expect(problems).not.toMatch(/ui\/Icons\.tsx:2:/u)
     expect(existsSync(join(kit.dir, 'types', 'node_modules', 'lucide-react', 'dynamic.d.ts'))).toBe(
@@ -600,7 +600,7 @@ describe('a scaffolded user plugin', () => {
         ')',
       ].join('\n'),
     )
-    const report = await checkUserPlugin({ kit, pluginDir: dir, name: 'gpu-monitor' })
+    const report = await checkUserMiniApp({ kit, pluginDir: dir, name: 'gpu-monitor' })
     const style = report.steps.find((entry) => entry.title === 'style')
     expect(style?.ok).toBe(false)
     expect(style?.problems).toEqual([
@@ -623,7 +623,7 @@ describe('a scaffolded user plugin', () => {
         ')',
       ].join('\n'),
     )
-    const report = await checkUserPlugin({ kit, pluginDir: dir, name: 'gpu-monitor' })
+    const report = await checkUserMiniApp({ kit, pluginDir: dir, name: 'gpu-monitor' })
     const style = report.steps.find((entry) => entry.title === 'style')
     expect(style?.problems).toEqual([
       expect.stringMatching(/^ui\/Absent\.tsx:3 bg-surface-subtle — absent token --color-/u),
@@ -649,7 +649,7 @@ describe('a scaffolded user plugin', () => {
     const { dir } = await freshCopy()
     expect(readFileSync(join(dir, 'KIT.md'), 'utf8')).toBe(staged)
     writeFileSync(join(dir, 'KIT.md'), '# stale\n')
-    await checkUserPlugin({ kit, pluginDir: dir, name: 'gpu-monitor' })
+    await checkUserMiniApp({ kit, pluginDir: dir, name: 'gpu-monitor' })
     expect(readFileSync(join(dir, 'KIT.md'), 'utf8')).toBe(staged)
   })
 
@@ -705,14 +705,16 @@ describe('a scaffolded user plugin', () => {
   test('refuses a bad name, a taken name and an existing folder, leaving nothing behind', async () => {
     const pluginsRoot = join(root, 'refusals')
     const input = { kit, pluginsRoot, takenNames: new Set(['reader']) }
-    await expect(scaffoldUserPlugin({ ...input, name: '../escape' })).rejects.toThrow(
+    await expect(scaffoldUserMiniApp({ ...input, name: '../escape' })).rejects.toThrow(
       'lower-kebab-case',
     )
-    await expect(scaffoldUserPlugin({ ...input, name: 'reader' })).rejects.toThrow('already exists')
-    await scaffoldUserPlugin({ ...input, name: 'twice' })
-    await expect(scaffoldUserPlugin({ ...input, name: 'twice' })).rejects.toThrow('already exists')
+    await expect(scaffoldUserMiniApp({ ...input, name: 'reader' })).rejects.toThrow(
+      'already exists',
+    )
+    await scaffoldUserMiniApp({ ...input, name: 'twice' })
+    await expect(scaffoldUserMiniApp({ ...input, name: 'twice' })).rejects.toThrow('already exists')
     symlinkSync(join(pluginsRoot, 'missing-target'), join(pluginsRoot, 'dangling'))
-    await expect(scaffoldUserPlugin({ ...input, name: 'dangling' })).rejects.toThrow(
+    await expect(scaffoldUserMiniApp({ ...input, name: 'dangling' })).rejects.toThrow(
       'already exists',
     )
     expect(listFiles(pluginsRoot).some((file) => file.startsWith('.scaffold-'))).toBe(false)

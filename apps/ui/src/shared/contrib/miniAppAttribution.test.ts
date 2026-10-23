@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 
-import { attributePluginCaller, pluginLabel, setPluginSources } from './pluginAttribution'
+import { attributeMiniAppCaller, pluginLabel, setPluginSources } from './miniAppAttribution'
 
 const API = 'http://127.0.0.1:43110'
 const acme = { pluginName: 'acme', base: `${API}/rpc/plugins/acme/ui/` }
@@ -13,8 +13,8 @@ const known = [acme, acmeTools]
 // Chrome / the Vite dev server: `at fn (URL:line:col)`, with the host's frames first.
 const V8_STACK = [
   'Error',
-  '    at callerStack (http://localhost:1420/src/shared/contrib/pluginToast.ts?t=1727000000:41:61)',
-  '    at sourceOf (http://localhost:1420/src/shared/contrib/pluginToast.ts:48:48)',
+  '    at callerStack (http://localhost:1420/src/shared/contrib/miniAppToast.ts?t=1727000000:41:61)',
+  '    at sourceOf (http://localhost:1420/src/shared/contrib/miniAppToast.ts:48:48)',
   '    at Object.error (http://localhost:1420/node_modules/.vite/deps/@localixai_mini-app-sdk_ui.js?v=9f1c2e:1203:31)',
   `    at onSelect (${API}/rpc/plugins/acme/ui/chunks/ConnectionMenu-3f9a1b.js:88:13)`,
   '    at HTMLUnknownElement.callCallback2 (http://localhost:1420/node_modules/.vite/deps/react-dom_client.js?v=9f1c2e:3674:22)',
@@ -32,47 +32,47 @@ const JSC_STACK = [
 
 afterEach(() => setPluginSources([], new Map()))
 
-describe('attributePluginCaller', () => {
+describe('attributeMiniAppCaller', () => {
   test('names the plugin whose chunk made the call in a V8 stack', () => {
-    expect(attributePluginCaller(V8_STACK, known)?.pluginName).toBe('acme')
+    expect(attributeMiniAppCaller(V8_STACK, known)?.pluginName).toBe('acme')
   })
 
   test('names the plugin whose entry made the call in a JavaScriptCore stack', () => {
-    expect(attributePluginCaller(JSC_STACK, known)?.pluginName).toBe('acme-tools')
+    expect(attributeMiniAppCaller(JSC_STACK, known)?.pluginName).toBe('acme-tools')
   })
 
   test('reads anonymous frames of both dialects', () => {
-    expect(attributePluginCaller(`    at ${acme.base}entry.js?v=r1:3:9`, known)).toMatchObject({
+    expect(attributeMiniAppCaller(`    at ${acme.base}entry.js?v=r1:3:9`, known)).toMatchObject({
       pluginName: 'acme',
     })
-    expect(attributePluginCaller(`@${acmeTools.base}entry.js?v=r1:3:9`, known)).toMatchObject({
+    expect(attributeMiniAppCaller(`@${acmeTools.base}entry.js?v=r1:3:9`, known)).toMatchObject({
       pluginName: 'acme-tools',
     })
   })
 
   // A plugin named after another's prefix must not claim its frames — the base ends in `/ui/`.
   test('a plugin whose name prefixes another is not blamed for its frames', () => {
-    expect(attributePluginCaller(JSC_STACK, [acme])).toBeNull()
+    expect(attributeMiniAppCaller(JSC_STACK, [acme])).toBeNull()
   })
 
   test("a call from the host's own code is nobody's", () => {
     const host = V8_STACK.split('\n').slice(0, 4).join('\n')
-    expect(attributePluginCaller(host, known)).toBeNull()
-    expect(attributePluginCaller('', known)).toBeNull()
+    expect(attributeMiniAppCaller(host, known)).toBeNull()
+    expect(attributeMiniAppCaller('', known)).toBeNull()
   })
 
   test('reads the registered sources and labels the plugin by its display name', () => {
     setPluginSources(known, new Map([['acme', 'Acme']]))
-    expect(attributePluginCaller(V8_STACK)).toEqual({ pluginName: 'acme', label: 'Acme' })
+    expect(attributeMiniAppCaller(V8_STACK)).toEqual({ pluginName: 'acme', label: 'Acme' })
     // No display name declared: the name itself is what a person reads.
-    expect(attributePluginCaller(JSC_STACK)).toEqual({
+    expect(attributeMiniAppCaller(JSC_STACK)).toEqual({
       pluginName: 'acme-tools',
       label: 'acme-tools',
     })
   })
 
   test('nothing registered attributes nothing', () => {
-    expect(attributePluginCaller(V8_STACK)).toBeNull()
+    expect(attributeMiniAppCaller(V8_STACK)).toBeNull()
   })
 })
 

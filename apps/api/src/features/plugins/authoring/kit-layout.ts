@@ -15,7 +15,7 @@
 
 /** The kit's directory name, a sibling of the staged plugins root. */
 export const PLUGIN_KIT_DIR_NAME = 'plugin-kit'
-/** The kit's self-description (see {@link PluginKitManifest}). */
+/** The kit's self-description (see {@link MiniAppKitManifest}). */
 export const PLUGIN_KIT_MANIFEST = 'kit.json'
 export const PLUGIN_KIT_SCHEMA_VERSION = 1
 /** The reference plugin every scaffold forks. */
@@ -47,13 +47,13 @@ export const PLUGIN_KIT_CATALOG = 'KIT.md'
  * the package's per-icon modules let the bundler keep only the ones a plugin uses (one icon: ~5 KB
  * against ~740 KB for a single prebundled file).
  */
-export const PLUGIN_UI_VENDOR_PACKAGES: readonly string[] = ['lucide-react', 'mediabunny']
+export const MINI_APP_UI_VENDOR_PACKAGES: readonly string[] = ['lucide-react', 'mediabunny']
 
 /**
  * Backend shared modules a plugin's UI bundles too, from the same prebuilt copy: the contracts in
  * `shared/` are zod schemas both halves import, and a user plugin has no other zod to resolve.
  */
-export const PLUGIN_UI_PREBUILT_MODULES: readonly string[] = ['zod']
+export const MINI_APP_UI_PREBUILT_MODULES: readonly string[] = ['zod']
 
 /**
  * The modules the HOST hands every plugin backend at runtime, instead of each bundle carrying its
@@ -67,7 +67,7 @@ export const PLUGIN_UI_PREBUILT_MODULES: readonly string[] = ['zod']
  * backends import (measured from their build graphs); a specifier the host does not list is
  * bundled as before.
  */
-export const PLUGIN_BACKEND_HOST_MODULES = [
+export const MINI_APP_BACKEND_HOST_MODULES = [
   'hono',
   'zod',
   '@localixai/mini-app-sdk/backend',
@@ -81,15 +81,15 @@ export const PLUGIN_BACKEND_HOST_MODULES = [
   '@localixai/mini-app-sdk/store-changes',
 ] as const
 
-export type PluginBackendHostModule = (typeof PLUGIN_BACKEND_HOST_MODULES)[number]
+export type MiniAppBackendHostModule = (typeof MINI_APP_BACKEND_HOST_MODULES)[number]
 
 /**
  * Bare modules a USER plugin backend may import. They are not installed beside the plugin — a user
  * plugin has no `node_modules` — so the host provides each at runtime (every one is in
- * {@link PLUGIN_BACKEND_HOST_MODULES}). Anything else bare is a build error that names this list;
+ * {@link MINI_APP_BACKEND_HOST_MODULES}). Anything else bare is a build error that names this list;
  * `node:*` and `bun:*` are the runtime's own.
  */
-export const PLUGIN_BACKEND_SHARED_MODULES: readonly string[] = [
+export const MINI_APP_BACKEND_SHARED_MODULES: readonly string[] = [
   'hono',
   'zod',
   '@localixai/mini-app-sdk/backend',
@@ -99,11 +99,11 @@ export const PLUGIN_BACKEND_SHARED_MODULES: readonly string[] = [
 ]
 
 /**
- * What a user plugin's TESTS may import besides {@link PLUGIN_BACKEND_SHARED_MODULES}: a test of
+ * What a user plugin's TESTS may import besides {@link MINI_APP_BACKEND_SHARED_MODULES}: a test of
  * shared logic reaches the SDK's UI helpers (a message-context builder) without rendering anything.
  * Rendering tests need the host's DOM harness, which only the in-repo plugins have.
  */
-export const PLUGIN_TEST_EXTRA_MODULES: readonly string[] = [
+export const MINI_APP_TEST_EXTRA_MODULES: readonly string[] = [
   '@localixai/mini-app-sdk/ui',
   'react',
   'react/jsx-runtime',
@@ -134,21 +134,21 @@ export const PLUGIN_KIT_DIGEST: readonly string[] = [
 ]
 
 /** Where a user plugin's backend source starts. */
-export const USER_PLUGIN_BACKEND_SOURCE = 'backend/index.ts'
+export const USER_MINI_APP_BACKEND_SOURCE = 'backend/index.ts'
 /**
  * Where the host writes its builds: one content-named file per build (`index-<hash>.mjs`), and
  * the mini app manifest's `backend` is rewritten to name the current one. Never one fixed file — see
  * `backend-build.ts` for the restart that caused.
  */
-export const USER_PLUGIN_BACKEND_DIR = 'dist/backend'
+export const USER_MINI_APP_BACKEND_DIR = 'dist/backend'
 /** Whether a manifest `tools` value names a host build of the backend. */
-export function isUserPluginBackendBuild(tools: unknown): boolean {
+export function isUserMiniAppBackendBuild(tools: unknown): boolean {
   // A shape check on the manifest string (one module file directly in the build directory), not a
   // containment decision: the loader resolves and confines `tools` itself.
   return typeof tools === 'string' && /^\.\/dist\/backend\/[^/\\]+\.mjs$/u.test(tools)
 }
 
-export interface PluginKitManifest {
+export interface MiniAppKitManifest {
   schemaVersion: typeof PLUGIN_KIT_SCHEMA_VERSION
   /** `@localixai/kit/<id>` ids, sorted. */
   kitModules: string[]
@@ -166,7 +166,7 @@ export interface PluginKitManifest {
   hostStylesheet: string
   /** Backend and test shared specifiers → the kit-relative prebuilt module. */
   backendModules: Record<string, string>
-  /** {@link PLUGIN_UI_VENDOR_PACKAGES} → the kit-relative ES module entry. */
+  /** {@link MINI_APP_UI_VENDOR_PACKAGES} → the kit-relative ES module entry. */
   uiVendorModules: Record<string, string>
   /** Every importable specifier → the kit-relative declaration file that types it. */
   typePaths: Record<string, string>
@@ -174,7 +174,7 @@ export interface PluginKitManifest {
   typescript: string
 }
 
-export function isPluginKitManifest(value: unknown): value is PluginKitManifest {
+export function isMiniAppKitManifest(value: unknown): value is MiniAppKitManifest {
   if (!value || typeof value !== 'object') return false
   const record = value as Record<string, unknown>
   return (

@@ -5,31 +5,31 @@
  * implements these interfaces; plugins only consume the types.
  */
 export type {
-  PluginAgentDirectory,
-  PluginAgentSummary,
-  PluginConfigValues,
-  PluginContext,
-  PluginProblem,
-  PluginPathWatch,
-  PluginScreenSnapshot,
+  MiniAppAgentDirectory,
+  MiniAppAgentSummary,
+  MiniAppConfigValues,
+  MiniAppContext,
+  MiniAppProblem,
+  MiniAppPathWatch,
+  MiniAppScreenSnapshot,
   TerminalRead,
-  PluginRuntimeInfo,
-  PluginUi,
-  PluginUiDestination,
+  MiniAppRuntimeInfo,
+  MiniAppUi,
+  MiniAppUiDestination,
 } from './context'
 export type {
-  PluginHostServices,
-  PluginMonitorArmOutcome,
-  PluginMonitorArmRequest,
-  PluginMonitorsHost,
-  PluginWakeOutcome,
-  PluginWakeRequest,
+  MiniAppHostServices,
+  MiniAppMonitorArmOutcome,
+  MiniAppMonitorArmRequest,
+  MiniAppMonitorsHost,
+  MiniAppWakeOutcome,
+  MiniAppWakeRequest,
   SecretConsumer,
   TerminalReadHost,
   WorkspaceScopeHost,
   WorkspacesHost,
 } from './host-services'
-export type { PluginHelpers, ReadableResult } from './helpers'
+export type { MiniAppHelpers, ReadableResult } from './helpers'
 export type {
   AutomaticContextProvider,
   AutomaticContextRequest,
@@ -185,8 +185,8 @@ export type { BodySchema, ZodIssueBearer, ZodIssueLike, ZodIssueSummary } from '
 export type {
   HostRouteContext,
   JsonErrorStatus,
-  PluginRouteContext,
-  PluginRouteScope,
+  MiniAppRouteContext,
+  MiniAppRouteScope,
 } from './http'
 export { hasSecretTokens, resolveSecretTokens } from './secret-interpolate'
 export { atomicWriteFile, ensureParentDir, statIfExists } from './file-io'
@@ -227,17 +227,17 @@ export type {
   DocumentGeneratePort,
   DocumentTextExtractor,
 } from './document-ports'
-export type { PluginOAuth, PluginOAuthLogin } from './oauth'
+export type { MiniAppOAuth, MiniAppOAuthLogin } from './oauth'
 export { CAP_DOCUMENT_EXTRACT } from './capabilities'
 export type { Capabilities, CapabilityKey, CapabilityShapes } from './capabilities'
 export type {
-  PluginTextInputCompletionPayload,
-  PluginTextInputCompletionRequest,
-  PluginTextInputCompletionSurface,
+  MiniAppTextInputCompletionPayload,
+  MiniAppTextInputCompletionRequest,
+  MiniAppTextInputCompletionSurface,
 } from './text-input-completion-port'
 export { cleanCompletionSuffix, completionDraftTail } from './completion-text'
-export type { BackendSubsystem, PluginUiActionContext, PluginUiActionHandler } from './subsystem'
-export type { PluginRegistration } from './registration'
+export type { BackendSubsystem, MiniAppUiActionContext, MiniAppUiActionHandler } from './subsystem'
+export type { MiniAppRegistration } from './registration'
 export { createManifestOAuthAdapter } from './oauth-manifest'
 export { pollDeviceCode } from './oauth-device-code'
 export type { ManifestOAuthSpec } from './oauth-manifest'
@@ -257,7 +257,7 @@ export type {
   MemoryLoadContextEvent,
   MemoryProvider,
   MemoryRunEndEvent,
-  PluginHooks,
+  MiniAppHooks,
   PostToolCallEvent,
   PostToolCallHookResult,
   PreToolCallEvent,
@@ -274,7 +274,7 @@ export type {
   ChannelRunEvent,
   ChannelSessionSummary,
   ChannelWorkspaceApi,
-  PluginChannel,
+  MiniAppChannel,
 } from './channels'
 
 // Agent-tool contracts a plugin types its tools against — re-exported so a plugin

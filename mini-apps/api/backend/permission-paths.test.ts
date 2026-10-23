@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { defineAgentTool } from '@localixai/agent/agents'
-import type { PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import path from 'node:path'
 import { z } from 'zod'
 
@@ -25,7 +25,7 @@ test('API tools declare the paths their execute branches can write', () => {
       configBoolean: (_value: unknown, fallback: boolean) => fallback,
     },
     ui: { offer: () => ({}) },
-  } as unknown as PluginContext
+  } as unknown as MiniAppContext
   const deps = {
     ctx,
     store: { root: () => collectionRoot },

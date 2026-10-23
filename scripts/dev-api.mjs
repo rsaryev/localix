@@ -2,8 +2,8 @@ import { readdirSync, rmSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
 import { kitCacheRoot } from './plugin-kit-cache.mjs'
-import { stageDropins, stagePluginKitBeside } from './stage-dropins.mjs'
-import { watchPluginKitInputs, watchPluginsForRestage } from './dev-plugin-watch.mjs'
+import { stageDropins, stageMiniAppKitBeside } from './stage-dropins.mjs'
+import { watchMiniAppKitInputs, watchPluginsForRestage } from './dev-plugin-watch.mjs'
 import { repoRoot } from './lib/paths.mjs'
 import { STAGED_APPS_DIR } from './lib/bundled-roots.mjs'
 
@@ -55,7 +55,7 @@ pruneOrphanedStageTrees()
 // first: the UI builds read it, and the API needs it to create and build user plugins.
 // Kits staged for identical inputs are reused across launches (`plugin-kit-cache.mjs`).
 const kitCache = kitCacheRoot(repo)
-stagePluginKitBeside({ repoRoot: repo, outPlugins: stagedPlugins, cacheRoot: kitCache })
+stageMiniAppKitBeside({ repoRoot: repo, outPlugins: stagedPlugins, cacheRoot: kitCache })
 stageDropins({
   repoRoot: repo,
   outPlugins: stagedPlugins,
@@ -75,7 +75,7 @@ const pluginWatcher = watchPluginsForRestage({
 })
 // The kit follows its inputs the same way, so the reloading API never reads a kit older than
 // its own authoring code.
-const kitWatcher = watchPluginKitInputs({
+const kitWatcher = watchMiniAppKitInputs({
   repoRoot: repo,
   outPlugins: stagedPlugins,
   cacheRoot: kitCache,

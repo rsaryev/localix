@@ -187,7 +187,7 @@ const BOOTSTRAP_SOURCE = String.raw`
 const NONCE_RE = /^[A-Za-z0-9_-]{16,128}$/
 
 /** The bootstrap for ONE srcdoc document, stamped with that document's bridge nonce. */
-export function pluginUiApiBootstrap(nonce: string): string {
+export function miniAppUiApiBootstrap(nonce: string): string {
   if (!NONCE_RE.test(nonce)) throw new Error('Invalid plugin bridge nonce')
   return BOOTSTRAP_SOURCE.replace('__LOCALIX_BRIDGE_NONCE__', nonce)
 }

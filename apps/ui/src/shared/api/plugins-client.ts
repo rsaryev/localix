@@ -12,7 +12,7 @@ export const pluginsApi = {
    * Resolve a plugin command arg's DYNAMIC options on demand (its composer picker).
    * The server runs the plugin's declared options script; failures yield `[]`.
    */
-  async fetchPluginArgOptions(input: {
+  async fetchMiniAppCommandArgOptions(input: {
     plugin: string
     command: string
     arg: string
@@ -53,7 +53,7 @@ export const pluginsApi = {
   },
 
   /** One enabled view's sandboxed HTML. */
-  async getPluginViewHtml(
+  async getMiniAppViewHtml(
     pluginName: string,
     viewId: string,
     opts?: { projectId?: string | null },
@@ -68,7 +68,7 @@ export const pluginsApi = {
   },
 
   /** Host-brokered call from a sandboxed surface to its owning plugin backend. */
-  async invokePluginUiAction(input: {
+  async invokeMiniAppUiAction(input: {
     pluginName: string
     projectId?: string | null
     viewId: string

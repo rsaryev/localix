@@ -2,15 +2,15 @@ import {
   errorMessage,
   isInvokePayload,
   isMessageFromWindow,
-  isPluginBridgeMessage,
+  isMiniAppBridgeMessage,
   resultMessage,
   sessionEventMessage,
   themeMessage,
-  type PluginBridgeThemePayload,
-  type PluginSessionPhase,
+  type MiniAppBridgeThemePayload,
+  type MiniAppSessionPhase,
 } from '@localixai/mini-app-sdk/ui'
 
-import type { PanelActionContext, PanelActionTable } from '@/shared/contrib/pluginPanelActions'
+import type { PanelActionContext, PanelActionTable } from '@/shared/contrib/miniAppPanelActions'
 
 /**
  * Framework-free HOST side of the plugin-panel bridge (protocol:
@@ -53,13 +53,13 @@ export interface PanelBridgeHost {
   /** Feed a window `message` event (structurally typed for tests). */
   handleMessage(event: { data: unknown; source: unknown }): void
   /** Stream a live theme update into a BRIDGED panel (no-op otherwise). */
-  postTheme(payload: PluginBridgeThemePayload): void
+  postTheme(payload: MiniAppBridgeThemePayload): void
   /**
    * Forward a SAFE session lifecycle signal into a BRIDGED panel (no-op until
    * bridged). Only the phase + session id cross — no tool I/O, no secrets. The
    * caller is responsible for the per-session gate (only THIS view's session).
    */
-  postSessionEvent(sessionId: string, phase: PluginSessionPhase): void
+  postSessionEvent(sessionId: string, phase: MiniAppSessionPhase): void
   isBridged(): boolean
 }
 
@@ -94,7 +94,7 @@ export function createPanelBridgeHost(options: PanelBridgeHostOptions): PanelBri
 
   return {
     handleMessage(event) {
-      if (!isPluginBridgeMessage(event.data)) return
+      if (!isMiniAppBridgeMessage(event.data)) return
       // Trust only THIS panel's live iframe — fail closed when it is unmounted.
       if (!isMessageFromWindow(getWindow(), event.source)) return
       // ...and only the document the host built for it. Fail closed without a nonce.

@@ -3,7 +3,7 @@
  * has a typed payload, an admitted and clipped context string, prompt rules,
  * and an output cleaner. Domain context is loaded outside this registry.
  *
- * A PLUGIN field needs none of this: it declares a `PluginTextInputCompletionSurface` on its
+ * A PLUGIN field needs none of this: it declares a `MiniAppTextInputCompletionSurface` on its
  * backend subsystem. Only a surface core itself owns is added here (plus its payload in the
  * browser-safe map and its validation in `ws-commands.ts`).
  */

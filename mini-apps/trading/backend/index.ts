@@ -4,7 +4,7 @@
  * capabilities are not registered by this entry point.
  */
 import type { AgentTool } from '@localixai/agent/agents'
-import type { PluginContext, PluginRegistration } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext, MiniAppRegistration } from '@localixai/mini-app-sdk/backend'
 import { bindStoreSecret, getTradingService } from './singleton'
 import { createTradingRoutes } from './routes'
 import { createTradingResourceProvider } from './resource-provider'
@@ -17,12 +17,12 @@ import { DEFAULT_PUBLIC_EXCHANGE_ID, publicConnectionId } from './public-connect
 import { createTradingPublicContextProvider } from './context-provider'
 
 /** The generic host capabilities this plugin reads off the register context. Declared
- *  narrowly (a structural subset of the host `PluginContext`) so the plugin stays decoupled
+ *  narrowly (a structural subset of the host `MiniAppContext`) so the plugin stays decoupled
  *  from core plugin internals. Only the BOOT-time load carries `host`; the per-run tool load
  *  arrives without one, and the singleton's latest-real-host-wins binding covers it. */
-type TradingRegisterContext = Pick<PluginContext, 'dataDir' | 'host' | 'userId'>
+type TradingRegisterContext = Pick<MiniAppContext, 'dataDir' | 'host' | 'userId'>
 
-export async function register(ctx: TradingRegisterContext): Promise<PluginRegistration> {
+export async function register(ctx: TradingRegisterContext): Promise<MiniAppRegistration> {
   // The ONE host coupling — resolving `${secret:KEY}` credentials against the central vault —
   // arrives through the generic plugin host seam. Bind it into the process-wide singleton so a
   // per-run tool load (no host) still resolves secrets bound at boot. The create-only writer

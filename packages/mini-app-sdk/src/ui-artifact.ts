@@ -14,15 +14,15 @@
  * copy — so a shared module is loaded when the chunk that needs it loads, never before.
  */
 
-/** Global the host installs before importing any artifact; see {@link PluginUiSharedModules}. */
-export const PLUGIN_UI_SHARED_GLOBAL = '__LOCALIX_PLUGIN_UI_SHARED__'
+/** Global the host installs before importing any artifact; see {@link MiniAppUiSharedModules}. */
+export const MINI_APP_UI_SHARED_GLOBAL = '__LOCALIX_MINI_APP_UI_SHARED__'
 
-/** What the host provides under {@link PLUGIN_UI_SHARED_GLOBAL}. */
-export interface PluginUiSharedModules {
+/** What the host provides under {@link MINI_APP_UI_SHARED_GLOBAL}. */
+export interface MiniAppUiSharedModules {
   /** Resolve a shared specifier to the host's module namespace; rejects for anything else. */
   load(specifier: string): Promise<Record<string, unknown>>
   /**
-   * The same, synchronously, for {@link PLUGIN_UI_PRELOADED_MODULES} — which the host loads before
+   * The same, synchronously, for {@link MINI_APP_UI_PRELOADED_MODULES} — which the host loads before
    * importing any artifact, so their shims need no top-level `await`. That matters: an older
    * CommonJS dependency `require`s React, and a `require` cannot reach a module that awaits.
    */
@@ -30,7 +30,7 @@ export interface PluginUiSharedModules {
 }
 
 /** Shared modules the host loads before any artifact, and which artifacts read synchronously. */
-export const PLUGIN_UI_PRELOADED_MODULES: readonly string[] = [
+export const MINI_APP_UI_PRELOADED_MODULES: readonly string[] = [
   'react',
   'react/jsx-runtime',
   'react-dom',
@@ -38,7 +38,7 @@ export const PLUGIN_UI_PRELOADED_MODULES: readonly string[] = [
 ]
 
 /** The host UI kit: the host's explicit public component surface. */
-export const PLUGIN_UI_KIT_PREFIX = '@localixai/kit/'
+export const MINI_APP_UI_KIT_PREFIX = '@localixai/kit/'
 
 /**
  * Every specifier an artifact takes from the host instead of bundling it: React's and ReactDOM's
@@ -50,31 +50,31 @@ export const PLUGIN_UI_KIT_PREFIX = '@localixai/kit/'
  * that filter has to match exactly these: a bundler callback that matches an import it then
  * declines is not neutral (the plugin UI builder says why).
  */
-export const PLUGIN_UI_SHARED_MODULE =
+export const MINI_APP_UI_SHARED_MODULE =
   /^(?:react(?:\/jsx-(?:dev-)?runtime)?|react-dom(?:\/client)?|@localixai\/kit\/(?!testing).+|@localixai\/mini-app-sdk\/(?!backend(?:\/|$)).+)$/u
 
 /** Whether an artifact must take `specifier` from the host instead of bundling it. */
-export function isPluginUiSharedModule(specifier: string): boolean {
-  return PLUGIN_UI_SHARED_MODULE.test(specifier)
+export function isMiniAppUiSharedModule(specifier: string): boolean {
+  return MINI_APP_UI_SHARED_MODULE.test(specifier)
 }
 
 /** Where an artifact lives inside a plugin's installed copy. */
-export const PLUGIN_UI_ARTIFACT_DIR = 'dist/ui'
+export const MINI_APP_UI_ARTIFACT_DIR = 'dist/ui'
 /** The artifact's self-description, beside its files. */
-export const PLUGIN_UI_ARTIFACT_MANIFEST = 'manifest.json'
+export const MINI_APP_UI_ARTIFACT_MANIFEST = 'manifest.json'
 
 /**
  * `dist/ui/manifest.json`. Paths are relative to the artifact directory. `revision` is a hash
  * of every artifact file, so it moves exactly when the UI changed — not when the plugin's
  * backend or docs did — and a host holding an older revision replaces that plugin, nothing else.
  */
-export interface PluginUiArtifactManifest {
+export interface MiniAppUiArtifactManifest {
   entry: string
   styles: string[]
   revision: string
 }
 
-export function isPluginUiArtifactManifest(value: unknown): value is PluginUiArtifactManifest {
+export function isMiniAppUiArtifactManifest(value: unknown): value is MiniAppUiArtifactManifest {
   if (!value || typeof value !== 'object') return false
   const record = value as Record<string, unknown>
   return (

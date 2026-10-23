@@ -38,14 +38,14 @@ export function createFirstReconcileSignal(): FirstReconcile & { mark: () => voi
   }
 }
 
-export interface PluginRouteHost {
+export interface MiniAppRouteHost {
   /** The backend host's stable route dispatcher (`backend-host.ts` `middleware`). */
   middleware(): MiddlewareHandler
   firstReconcile: FirstReconcile
 }
 
-export function holdPluginRoutesUntilWired(
-  host: PluginRouteHost,
+export function holdMiniAppRoutesUntilWired(
+  host: MiniAppRouteHost,
   waitMs = FIRST_RECONCILE_WAIT_MS,
 ): MiddlewareHandler {
   const dispatch = host.middleware()

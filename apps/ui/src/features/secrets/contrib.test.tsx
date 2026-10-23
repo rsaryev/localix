@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 
 import type {
-  PluginUiHost,
+  MiniAppUiHost,
   RailViewletContribution,
   UiAnchorContribution,
   WorkItemKindContribution,
@@ -30,7 +30,7 @@ test('registers the core Vault as a global restorable workspace and URI anchor',
     fileEditors: noop,
     fileFormats: noop,
     sessionEvents: noop,
-  } as unknown as PluginUiHost
+  } as unknown as MiniAppUiHost
 
   registerUi(host)
 

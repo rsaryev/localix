@@ -116,7 +116,7 @@ describe('editor grid memo boundaries', () => {
     const { act } = React
     const { createRoot } = await import('react-dom/client')
     const { WorkItemBody } = await import('./registry')
-    const { setEnabledPluginNames } = await import('@/shared/contrib/pluginActivation')
+    const { setEnabledPluginNames } = await import('@/shared/contrib/miniAppActivation')
     // Settle plugin activation, so an unknown kind is "unsupported" (a cheap, real
     // body) instead of the "restoring workspace" placeholder.
     setEnabledPluginNames(new Set())

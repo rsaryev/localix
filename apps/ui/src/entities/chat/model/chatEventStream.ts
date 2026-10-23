@@ -16,12 +16,12 @@ import { removeHitlInteractionsFromSource } from '@/shared/api/applyStreamEvent'
 import { applyAttentionRoster, loadAttention } from './attention/store'
 import { routePlanPresented } from './plans'
 import {
-  routePluginCommand,
+  routeMiniAppCommand,
   routeFsChanged,
   routeTerminalOpened,
   routeTerminalState,
   routeTerminalFinished,
-  routePluginSessionEvent,
+  routeMiniAppSessionEvent,
 } from './sessionEventRouters'
 import { sessionEventHandlersFor } from '@/shared/contrib/sessionEvents'
 import { sessionPreviews } from '@/shared/lib/sessionPreviews'
@@ -107,9 +107,9 @@ export function useChatEventStream(enabled = true): void {
     // Forward SAFE lifecycle signals (run start/completed/failed) to bridged
     // plugin views. Additive + non-consuming: the SDK allow-list gates what
     // crosses, and every other branch below still runs unchanged.
-    routePluginSessionEvent(sessionId, parsed.type)
+    routeMiniAppSessionEvent(sessionId, parsed.type)
     if (parsed.type === 'plugin.command') {
-      routePluginCommand(sessionId, parsed)
+      routeMiniAppCommand(sessionId, parsed)
       return
     }
     if (parsed.type === 'preview.updated') {

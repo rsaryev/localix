@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { routeValidator, type PluginRouteContext } from '@localixai/mini-app-sdk/backend'
+import { routeValidator, type MiniAppRouteContext } from '@localixai/mini-app-sdk/backend'
 import type { z } from 'zod'
 
 import type { ReaderService } from './service'
@@ -96,7 +96,7 @@ export function createReaderRoutes(
   service: ReaderService,
   statsService: ReaderStatsService = new ReaderStatsService(),
 ) {
-  return new Hono<PluginRouteContext>()
+  return new Hono<MiniAppRouteContext>()
     .get('/library', async (context) => {
       try {
         return context.json(await service.list())

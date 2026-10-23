@@ -28,7 +28,7 @@ import { createPluginsSearchProvider } from '../features/plugins/search-provider
 import { createMcpSearchProvider } from '../features/mcp/search-provider'
 import { createAgentsSearchProvider } from '../features/agents/search-provider'
 import { createModelsSearchProvider } from '../features/catalog/search-provider'
-import type { PluginBackendHost } from '../features/plugins/backend-host'
+import type { MiniAppBackendHost } from '../features/plugins/backend-host'
 import type { createChatService } from '../features/chat/service'
 import type { createProjectsService } from '../features/projects/service'
 import type { createSecretsService } from '../features/secrets/service'
@@ -50,7 +50,7 @@ export interface SearchCompositionDeps {
   chatService: ReturnType<typeof createChatService>
   /** A bundled subsystem (workbench plugin) contributes its own search provider —
    *  LIVE through the backend host, so a hot plugin toggle adds/removes its group. */
-  backendHost: Pick<PluginBackendHost, 'setSearchRegistry'>
+  backendHost: Pick<MiniAppBackendHost, 'setSearchRegistry'>
   secretsService: ReturnType<typeof createSecretsService>
   skillsCuratorService: ReturnType<typeof createSkillsCuratorService>
   pluginService: ReturnType<typeof createPluginService>

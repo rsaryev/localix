@@ -15,7 +15,7 @@ afterAll(async () => {
   await teardown()
 })
 
-const pluginEditor: FileEditorContribution = {
+const miniAppEditor: FileEditorContribution = {
   id: 'example:table',
   label: 'Table view',
   match: (path: string) => path.endsWith('.csv'),
@@ -34,7 +34,7 @@ async function mount() {
 function body(props: { requestedBuiltin: boolean; revealAt: number }) {
   return (
     <ContributedFileBody
-      matches={[pluginEditor]}
+      matches={[miniAppEditor]}
       fileKey="/tmp/x.csv"
       fallbackLabel="Code editor"
       requestedBuiltin={props.requestedBuiltin}

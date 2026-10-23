@@ -76,7 +76,7 @@ export function resolveRailAreas(
     if (placed.has(entry.id) || !saved) continue
     placed.add(entry.id)
     const restore =
-      state?.legacyPluginPins &&
+      state?.legacyMiniAppPins &&
       ((saved.plugin && entry.area === 'overflow') ||
         (saved.tool && !saved.plugin && entry.area === 'bottom'))
     const area = restore ? 'bar' : entry.area

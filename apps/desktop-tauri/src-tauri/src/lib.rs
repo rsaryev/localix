@@ -219,7 +219,7 @@ use crate::updater::{updater_check, updater_install, PendingUpdate};
 /// A plugin app bundle (`app_runner.rs`) runs its own window instead of the shell. False for
 /// Localix itself, which then calls [`run`].
 #[cfg(target_os = "macos")]
-pub fn run_plugin_app() -> bool {
+pub fn run_mini_app() -> bool {
     app_runner::run_if_app()
 }
 
@@ -436,13 +436,13 @@ pub fn run() {
             crate::workspace_drag::workspace_transfer_presented,
             crate::workspace_tab_drop::workspace_tab_drop_destination,
             #[cfg(target_os = "macos")]
-            crate::app_bundle_commands::plugin_apps,
+            crate::app_bundle_commands::mini_app_apps,
             #[cfg(target_os = "macos")]
-            crate::app_bundle_commands::plugin_app_install,
+            crate::app_bundle_commands::mini_app_install,
             #[cfg(target_os = "macos")]
-            crate::app_bundle_commands::plugin_app_open,
+            crate::app_bundle_commands::mini_app_open,
             #[cfg(target_os = "macos")]
-            crate::app_bundle_commands::plugin_app_uninstall,
+            crate::app_bundle_commands::mini_app_uninstall,
             #[cfg(all(debug_assertions, target_os = "macos"))]
             crate::workspace_probe::workspace_probe
         ])

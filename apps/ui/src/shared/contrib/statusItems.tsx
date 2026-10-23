@@ -1,7 +1,7 @@
 import { Component, useEffect, useSyncExternalStore, type ReactNode } from 'react'
 import type { StatusItemContribution, StatusItemState } from '@localixai/mini-app-sdk/ui'
 
-import { isPluginContributionEnabled, subscribePluginActivation } from './pluginActivation'
+import { isMiniAppContributionEnabled, subscribePluginActivation } from './miniAppActivation'
 import {
   isStatusItemPresent,
   reportStatusItemPresence,
@@ -90,7 +90,7 @@ export function useStatusItemsVersion(): number {
  */
 export function statusItemsFor(placement: string): StatusItemContribution[] {
   return [...contributions.values()]
-    .filter((item) => item.placement === placement && isPluginContributionEnabled(item.pluginName))
+    .filter((item) => item.placement === placement && isMiniAppContributionEnabled(item.pluginName))
     .sort(
       (a, b) => (a.pluginName ?? '').localeCompare(b.pluginName ?? '') || a.id.localeCompare(b.id),
     )

@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { Hono } from 'hono'
 import type { CapabilitySourceRepository } from '../capabilities/source-repository'
 
-import { loadPluginBackends } from './loader'
+import { loadMiniAppBackends } from './loader'
 import { makeApiScratchDir } from '../../testing/scratch-dir'
 import { createSubsystemRegistry } from '../ext/subsystem-contrib'
 import { createWsFrameRegistry, createWsFrameConnection } from '../ext/ws-frame-registry'
@@ -135,9 +135,9 @@ afterAll(async () => {
   await fs.rm(fixtureBase, { recursive: true, force: true })
 })
 
-describe('loadPluginBackends', () => {
+describe('loadMiniAppBackends', () => {
   it("collects an enabled plugin's backend contribution", async () => {
-    const { backends } = await loadPluginBackends({
+    const { backends } = await loadMiniAppBackends({
       availability: UNDECIDED,
       repo: emptyRepo,
       userId: 'u',
@@ -159,7 +159,7 @@ describe('loadPluginBackends', () => {
    * WHAT THIS PROVES, AND WHAT IT DOES NOT.
    *
    * It proves the contribution SHAPE is CONSUMABLE: a backend returned by
-   * `loadPluginBackends` can be fed to each registry, its route answers, its providers
+   * `loadMiniAppBackends` can be fed to each registry, its route answers, its providers
    * resolve, its WS frame streams, its shutdown hook fires.
    *
    * It does NOT prove the composition root still does any of that. The loops below are
@@ -172,7 +172,7 @@ describe('loadPluginBackends', () => {
    * REAL composition root and fails if any contributable field stops being consumed.
    */
   it('a loaded backend is CONSUMABLE by each registry (shape, not wiring — see the contract test)', async () => {
-    const { backends } = await loadPluginBackends({
+    const { backends } = await loadMiniAppBackends({
       availability: UNDECIDED,
       repo: emptyRepo,
       userId: 'u',

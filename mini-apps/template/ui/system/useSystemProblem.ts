@@ -12,7 +12,7 @@
  */
 import { useMemo } from 'react'
 import { useProblemReport } from '@localixai/mini-app-sdk/ui'
-import type { PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
+import type { MiniAppProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
 import type { ProblemConsequence, ProblemReport } from '@localixai/mini-app-sdk/ui/problems'
 
 export function useSystemProblem({
@@ -28,7 +28,7 @@ export function useSystemProblem({
   /** `stale` while the last good sample is still on screen; `blocked` when nothing is. */
   consequence: ProblemConsequence
   title?: string
-}): PluginProblemLineProps | null {
+}): MiniAppProblemLineProps | null {
   const report = useMemo<ProblemReport | null>(
     () =>
       failure

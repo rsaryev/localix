@@ -1,5 +1,5 @@
 import { HUMAN_ASSIGNEE_ID } from '../shared/rules'
-import type { PluginAgentDirectory } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppAgentDirectory } from '@localixai/mini-app-sdk/backend'
 import type { z } from 'zod'
 
 import {
@@ -36,7 +36,7 @@ export interface BoardServiceDeps {
   /** The session's plugin folder; the host rejects a session the user does not own. */
   resolveDir: (userId: string, sessionId: string) => Promise<string>
   /** The agents a card may be assigned to. Absent: a card cannot name one. */
-  agents?: PluginAgentDirectory
+  agents?: MiniAppAgentDirectory
   now?: () => string
 }
 

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Import as ImportIcon } from 'lucide-react'
-import type { PluginTranscriptAction } from '@localixai/mini-app-sdk/ui/runtime'
+import type { MiniAppTranscriptAction } from '@localixai/mini-app-sdk/ui/runtime'
 import { useAutoScroll } from '@/shared/hooks/useAutoScroll'
 import { useRoutedNavigation } from '@/shared/hooks/useRoutedNavigation'
 import { toast } from '@/shared/lib/notify'
@@ -38,7 +38,7 @@ export function TranscriptTab({
 
   const actions = transcript.actions ?? (transcript.action ? [transcript.action] : [])
   const description = actions.find((action) => action.description)?.description
-  const runAction = async (action: PluginTranscriptAction, index: number) => {
+  const runAction = async (action: MiniAppTranscriptAction, index: number) => {
     if (inFlight.current) return
     inFlight.current = true
     setRunningAction(index)

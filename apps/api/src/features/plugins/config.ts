@@ -1,9 +1,9 @@
 import type { PluginManifest } from './contracts'
 
-// The value shape is OWNED by `@localixai/mini-app-sdk` (part of PluginContext);
+// The value shape is OWNED by `@localixai/mini-app-sdk` (part of MiniAppContext);
 // re-exported so the historical import surface stays unchanged.
-export type { PluginConfigValues } from '@localixai/mini-app-sdk/backend'
-import type { PluginConfigValues } from '@localixai/mini-app-sdk/backend'
+export type { MiniAppConfigValues } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppConfigValues } from '@localixai/mini-app-sdk/backend'
 
 /**
  * Resolve a plugin's effective config: declared defaults overlaid with the user's
@@ -12,9 +12,9 @@ import type { PluginConfigValues } from '@localixai/mini-app-sdk/backend'
  */
 export function resolvePluginConfig(
   manifest: PluginManifest,
-  stored: PluginConfigValues | undefined,
-): PluginConfigValues {
-  const out: PluginConfigValues = {}
+  stored: MiniAppConfigValues | undefined,
+): MiniAppConfigValues {
+  const out: MiniAppConfigValues = {}
   for (const [k, opt] of Object.entries(manifest.config ?? {})) {
     if (opt.default !== undefined) out[k] = opt.default
   }
@@ -26,7 +26,7 @@ export function resolvePluginConfig(
  * A stored value as its declared type. The vault holds a secret option as text, so a sensitive
  * number or boolean comes back as `"1234"` or `"false"` (which reads as true); it is turned back.
  */
-function typed(type: string | undefined, value: PluginConfigValues[string]) {
+function typed(type: string | undefined, value: MiniAppConfigValues[string]) {
   if (typeof value !== 'string') return value
   if (type === 'boolean' && (value === 'true' || value === 'false')) return value === 'true'
   if (type === 'number' && value.trim() !== '' && Number.isFinite(Number(value)))

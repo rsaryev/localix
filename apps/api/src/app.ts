@@ -37,8 +37,8 @@ import {
 import { createMcpRoutes, type McpRoutesService } from './features/mcp/routes'
 import { createPluginRoutes, type PluginRoutesService } from './features/plugins/routes'
 import {
-  holdPluginRoutesUntilWired,
-  type PluginRouteHost,
+  holdMiniAppRoutesUntilWired,
+  type MiniAppRouteHost,
 } from './features/plugins/plugin-route-boot-hold'
 import { createAgentsRoutes, type AgentsRoutesService } from './features/agents/routes'
 import { createSkillsCuratorRoutes } from './features/skills-curator/routes'
@@ -137,7 +137,7 @@ export interface AppDeps extends ConversationRouteDeps {
    *  each wired subsystem's '/rpc/<id>' from a mutable mount table, so a hot
    *  plugin toggle adds/removes routes with no restart. Optional so lightweight
    *  test harnesses can build the app without it. */
-  pluginBackendHost?: PluginRouteHost
+  pluginBackendHost?: MiniAppRouteHost
   /** Generic WS-frame registry — subsystem-contributed live streams that the
    *  realtime socket consults for unrecognized subscribe/unsubscribe commands.
    *  Optional so lightweight test harnesses can build the app without it. */
@@ -226,7 +226,7 @@ h2{margin:0 0 .5rem}p{margin:0;color:#888;font-size:.9rem}</style></head>
   // never-mounted route produced). These routes are untyped (not part of the
   // exported AppType) — subsystem UIs use untyped fetch. A request nothing answered
   // before the first reconcile waits for it instead of reading a 404 as "no plugin".
-  if (deps.pluginBackendHost) app.use('*', holdPluginRoutesUntilWired(deps.pluginBackendHost))
+  if (deps.pluginBackendHost) app.use('*', holdMiniAppRoutesUntilWired(deps.pluginBackendHost))
 
   // Liveness probe — dependency-free, so it lives in its own module and is mounted
   // here rather than declared inline in the typed chain below (see health.ts).
@@ -335,7 +335,7 @@ h2{margin:0 0 .5rem}p{margin:0;color:#888;font-size:.9rem}</style></head>
         // authenticated user rides as the last parameter, `callerUserId`).
         submitSecret: (...args) => deps.chatService.submitSecret(...args),
         previewResult: (...args) => deps.chatService.resolvePreviewCommand(...args),
-        pluginCommandResult: (...args) => deps.chatService.resolvePluginCommand(...args),
+        miniAppCommandResult: (...args) => deps.chatService.resolvePluginCommand(...args),
         revokeSessionPermission: (...args) => deps.chatService.revokeSessionPermission(...args),
         // Generic registry-driven live streams (backend subsystems / bundled plugins).
         // ws.ts consults it for unrecognized subscribe/unsubscribe commands.

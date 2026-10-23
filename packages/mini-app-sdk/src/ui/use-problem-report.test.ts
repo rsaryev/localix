@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 
-import { bindPluginUiToast, type PluginToast } from './notifications'
+import { bindMiniAppUiToast, type MiniAppToast } from './notifications'
 import type { ProblemReport } from './problems'
 import { createProblemPublisher } from './use-problem-report'
 
@@ -13,7 +13,7 @@ let said: string[] = []
 beforeEach(() => {
   said = []
   const unused = () => 0
-  bindPluginUiToast(
+  bindMiniAppUiToast(
     Object.assign(unused, {
       success: unused,
       error: unused,
@@ -27,7 +27,7 @@ beforeEach(() => {
       problemsCleared: (subject: Pick<ProblemReport, 'subject'>, scope: string) => {
         said.push(`clear ${scope}:${subject.subject.label}`)
       },
-    }) as PluginToast,
+    }) as MiniAppToast,
   )
 })
 

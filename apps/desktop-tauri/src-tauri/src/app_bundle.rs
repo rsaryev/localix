@@ -7,7 +7,7 @@ use std::process::Command;
 use tauri::AppHandle;
 
 use crate::app_bundle_host::{host, info_plist, plist_string, Host};
-pub(crate) use crate::app_bundle_names::valid_plugin;
+pub(crate) use crate::app_bundle_names::valid_mini_app;
 use crate::app_bundle_names::{bundle_id_part, bundle_name};
 use crate::app_runner::keys;
 
@@ -76,7 +76,7 @@ pub(crate) fn installed() -> Vec<InstalledApp> {
 fn read_bundle(path: &Path) -> Option<InstalledApp> {
     let plist = std::fs::read_to_string(path.join("Contents/Info.plist")).ok()?;
     let read = |key: &str| plist_string(&plist, key);
-    let plugin = read(keys::PLUGIN).filter(|plugin| valid_plugin(plugin))?;
+    let plugin = read(keys::PLUGIN).filter(|plugin| valid_mini_app(plugin))?;
     Some(InstalledApp {
         name: read("CFBundleName").unwrap_or_else(|| plugin.clone()),
         bundle_id: read("CFBundleIdentifier")?,
@@ -95,7 +95,7 @@ pub(crate) fn install(
     title: &str,
     icon: &[u8],
 ) -> Result<InstalledApp, String> {
-    if !valid_plugin(plugin) {
+    if !valid_mini_app(plugin) {
         return Err(format!("invalid plugin name {plugin:?}"));
     }
     let _change = CHANGES

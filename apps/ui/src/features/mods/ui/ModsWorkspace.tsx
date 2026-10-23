@@ -5,7 +5,7 @@ import { IconButton } from '@localixai/kit/icon-button'
 import { SectionLabel } from '@localixai/kit/section-label'
 import { MENU_ROW, SELECTED_ROW } from '@localixai/kit/selected-row'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
-import { runPluginAction } from '@localixai/mini-app-sdk/ui'
+import { runMiniAppAction } from '@localixai/mini-app-sdk/ui'
 import { modsApi, type ModPaneRef } from '@/shared/api/modsApi'
 import { useModPane, useModsOverview } from '../model/useMods'
 import { ModClientScope, type ModClientScopeValue } from './ModClient'
@@ -97,7 +97,7 @@ function ModPane({ pane }: { pane: ModPaneRef }) {
     [pane.instance, pane.id, pane.plugin, generation],
   )
   const act = (action: Parameters<typeof modsApi.act>[2]) =>
-    runPluginAction(() => modsApi.act(pane.instance, pane.id, action), 'The mod did not take that')
+    runMiniAppAction(() => modsApi.act(pane.instance, pane.id, action), 'The mod did not take that')
   return (
     <div className="flex flex-col gap-3 px-4 py-3">
       <header className="flex items-center gap-2">
@@ -109,7 +109,7 @@ function ModPane({ pane }: { pane: ModPaneRef }) {
           className="ml-auto"
           aria-label="Close pane"
           onClick={() =>
-            runPluginAction(() => modsApi.close(pane.instance, pane.id), 'The pane did not close')
+            runMiniAppAction(() => modsApi.close(pane.instance, pane.id), 'The pane did not close')
           }
         >
           <X />

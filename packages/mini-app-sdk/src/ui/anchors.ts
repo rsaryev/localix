@@ -9,7 +9,7 @@ export {
   settingsEntityUiUri,
   settingsUiUri,
 } from '../navigation'
-import type { IconComponent, PluginOwnedContribution } from './contrib'
+import type { IconComponent, MiniAppOwnedContribution } from './contrib'
 
 /** A provider-neutral item addressable from the UI (settings, a tab, or a backend resource). */
 export type UiAnchorNode = AddressableResource
@@ -257,7 +257,7 @@ export type UiAnchorOpenResult =
  * host navigation; optional `listChildren` adds client-only nodes to `/open`.
  * Backend resource providers remain the source for data-backed resource trees.
  */
-export interface UiAnchorContribution extends PluginOwnedContribution {
+export interface UiAnchorContribution extends MiniAppOwnedContribution {
   id: string
   /** Localix URI namespaces exclusively owned by this contribution. Collisions are rejected. */
   namespaces: readonly string[]

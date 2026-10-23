@@ -40,7 +40,7 @@ import type {
   ReplaceContentResult,
 } from './service/file-ops'
 import type { PreviewResultPayload } from './runtime/preview-command-registry'
-import type { PluginCommandResultPayload } from './runtime/plugin-command-registry'
+import type { MiniAppCommandResultPayload } from './runtime/plugin-command-registry'
 
 // The service contract the chat HTTP routes depend on. Extracted from routes.ts
 // so that file holds the Hono route wiring and this one the (large) interface.
@@ -246,7 +246,7 @@ export interface ChatRoutesService {
   /** Settle a pending awaited plugin command (`emitCommandWithReply`) from the client's reply. */
   resolvePluginCommand(
     commandId: string,
-    payload: PluginCommandResultPayload,
+    payload: MiniAppCommandResultPayload,
     callerUserId?: string,
   ): { ok: boolean }
   usageOverview(userId: string, opts: UsageOverviewOpts): Promise<UsageOverview>

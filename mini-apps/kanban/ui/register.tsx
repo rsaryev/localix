@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react'
 import { SquareKanban } from 'lucide-react'
 import {
   resourceMessageBindingDraft,
-  type PluginUiHost,
+  type MiniAppUiHost,
   type SessionSurfaceProps,
   type WorkItemLike,
 } from '@localixai/mini-app-sdk/ui'
@@ -47,7 +47,7 @@ function ComposerHeader(props: SessionSurfaceProps) {
 const taskIdOf = (item: WorkItemLike) =>
   typeof item.payload?.taskId === 'string' ? item.payload.taskId : null
 
-const registeredHosts = new WeakSet<PluginUiHost>()
+const registeredHosts = new WeakSet<MiniAppUiHost>()
 
 /**
  * One board PER CHAT (`scope: 'session'`), kept by the person and the agent in that chat and
@@ -57,7 +57,7 @@ const registeredHosts = new WeakSet<PluginUiHost>()
  * A dragged or auto-linked tab links the board as a resource, naming the chat the host says the tab
  * belongs to; everything rendered reads the session from `useWorkItemSessionId`.
  */
-export function registerUi(host: PluginUiHost): void {
+export function registerUi(host: MiniAppUiHost): void {
   if (registeredHosts.has(host)) return
   registeredHosts.add(host)
 

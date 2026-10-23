@@ -8,7 +8,7 @@ import {
   type Marketplace,
   type MarketplaceRelevance,
 } from './marketplace'
-import { bundledPluginsRoot } from './discovery'
+import { bundledMiniAppsRoot } from './discovery'
 import { marketplacesRoot, type MarketplaceSource } from './marketplace-source'
 import {
   locateManifest,
@@ -71,7 +71,7 @@ export async function readMarketplace(dir: string): Promise<Marketplace> {
 export const LOCALIX_MARKETPLACE = 'localix'
 
 export function localixMarketplaceDir(deps: MarketplaceRegistryDeps): string {
-  return deps.localixDir ?? bundledPluginsRoot()
+  return deps.localixDir ?? bundledMiniAppsRoot()
 }
 
 /** Per-entry summary carried on a marketplace listing row (UI/agent surfaces). */

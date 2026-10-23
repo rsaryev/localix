@@ -1,7 +1,7 @@
 import type { Context } from 'hono'
 
 import type { Seat } from './agent-turn'
-import { jsonError, type PluginRouteContext } from './http'
+import { jsonError, type MiniAppRouteContext } from './http'
 
 /**
  * A game view's route answer. The table is the chat the board belongs to: the view names it as
@@ -18,7 +18,7 @@ export function seatedAnswer<G, V = G>(options: {
   view?: (game: G) => V
 }) {
   const view = options.view ?? ((game: G) => game as unknown as V)
-  return async (c: Context<PluginRouteContext>, action: (seat: Seat) => Promise<G>) => {
+  return async (c: Context<MiniAppRouteContext>, action: (seat: Seat) => Promise<G>) => {
     const sessionId = c.env.sessionId
     if (!sessionId) return jsonError(c, 404, options.missing.code, options.missing.message)
     try {

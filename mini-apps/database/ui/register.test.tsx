@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 
-import { recordingPluginUiHost } from '@localixai/mini-app-sdk/ui/testing'
+import { recordingMiniAppUiHost } from '@localixai/mini-app-sdk/ui/testing'
 import type {
   RailSectionContribution,
   RailViewletContribution,
@@ -20,7 +20,7 @@ import { registerUi } from './register'
  * contract, and does.
  */
 test('registers Database as a root workspace and routes resource anchors into Explorer', () => {
-  const { host, registrations } = recordingPluginUiHost()
+  const { host, registrations } = recordingMiniAppUiHost()
 
   registerUi(host)
 

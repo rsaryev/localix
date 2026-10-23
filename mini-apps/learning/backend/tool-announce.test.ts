@@ -1,8 +1,8 @@
 import { expect, test } from 'bun:test'
 import { z } from 'zod'
-import type { PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import type { LearningCourse } from '../shared/contracts'
-import { LEARNING_CHANGES_CHANNEL, LEARNING_PLUGIN } from '../shared/course-changes'
+import { LEARNING_CHANGES_CHANNEL, LEARNING_MINI_APP } from '../shared/course-changes'
 import type { LearningService } from './service'
 import type { LearningTutor } from './tutor'
 import { createLearningCourseTool } from './tool'
@@ -27,7 +27,7 @@ function harness() {
     cwd: '/work',
     defineTool: (definition: unknown) => definition,
     ui: { offer: (target: unknown) => target },
-  } as unknown as PluginContext
+  } as unknown as MiniAppContext
   const service = {
     get: async () => course,
     setActive: async () => course,
@@ -66,7 +66,7 @@ test('a change through the tool is announced to the UI; a read is not', async ()
   expect((await run({ action: 'open', course_id: 'course', lesson_id: 'lesson' })).isError).toBe(
     undefined,
   )
-  expect(commands).toEqual([[LEARNING_PLUGIN, LEARNING_CHANGES_CHANNEL, { courseId: 'course' }]])
+  expect(commands).toEqual([[LEARNING_MINI_APP, LEARNING_CHANGES_CHANNEL, { courseId: 'course' }]])
 
   await run({
     action: 'review',

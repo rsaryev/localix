@@ -22,7 +22,7 @@ Center rather than the surface headline.
 
 Put the code in `Problem.code` and the failed call in `Problem.request`; the Event Center traces
 exactly that request. An API error built with `problemRequestOf(response)` from
-`@localixai/mini-app-sdk/ui/transport` carries it, and `pluginFailureFacts(error)` spreads code,
+`@localixai/mini-app-sdk/ui/transport` carries it, and `miniAppFailureFacts(error)` spreads code,
 detail, request and prerequisite into a problem.
 
 When the failure is an external program that is missing or stopped, say so as a `Prerequisite`

@@ -10,7 +10,7 @@ import type {
 
 import { buildPluginCatalog } from './catalog'
 import { listViewsFromCatalog, readViewHtml } from './views'
-import { PLUGIN_VIEW_HTML_CAP_BYTES } from './contracts'
+import { MINI_APP_VIEW_HTML_CAP_BYTES } from './contracts'
 
 function fakeRepo(rows: CapabilitySourceRecord[]): CapabilitySourceRepository {
   const byKey = new Map(rows.map((r) => [`${r.projectId}:${r.name}`, r]))
@@ -95,7 +95,7 @@ beforeAll(async () => {
   await fs.writeFile(join(mon, 'views', 'dash.html'), '<h1>Dash</h1>')
   await fs.writeFile(join(mon, 'views', 'panel.html'), '<h1>Panel</h1>')
   await fs.writeFile(join(mon, 'views', 'empty.html'), '   ')
-  await fs.writeFile(join(mon, 'views', 'huge.html'), 'x'.repeat(PLUGIN_VIEW_HTML_CAP_BYTES + 1))
+  await fs.writeFile(join(mon, 'views', 'huge.html'), 'x'.repeat(MINI_APP_VIEW_HTML_CAP_BYTES + 1))
 
   // A plugin still on the LEGACY `panels` contract — promoted into `views` at parse
   // (`name` becomes the view id), which is the whole point of keeping one surface.

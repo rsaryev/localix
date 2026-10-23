@@ -172,8 +172,8 @@ command and check that the diff only removes entries. Scope notes:
 
 Checks that hold today and back these rules:
 
-- `kitBoundaryProblem`, `pluginSdkLayerProblem`, `pluginHostBoundaryProblem` and
-  `pluginWorkspaceImportProblem` keep packages and plugins inside their boundaries.
+- `kitBoundaryProblem`, `miniAppSdkLayerProblem`, `miniAppHostBoundaryProblem` and
+  `miniAppWorkspaceImportProblem` keep packages and plugins inside their boundaries.
 - `ENGINE_LAYERS` limits each engine package's workspace imports, and only the composition root may
   import the engine.
 - The UI layer check rejects an import from a higher layer.

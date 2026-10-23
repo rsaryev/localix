@@ -1,6 +1,6 @@
 import { defineAgentTool } from '@localixai/agent/agents'
 import type { MarketDataConnection } from './market-data-port'
-import { TRADING_CHART_CHANNEL, TRADING_PLUGIN, type ChartCommandPayload } from './chart-command'
+import { TRADING_CHART_CHANNEL, TRADING_MINI_APP, type ChartCommandPayload } from './chart-command'
 import { classifyManageChartCall } from './manage-chart-class'
 import { describeChartDrawing } from './chart-drawing'
 import { describeChartSnapshot, parseChartSnapshotResult } from './chart-snapshot'
@@ -20,7 +20,7 @@ import { DEFAULT_PUBLIC_EXCHANGE_ID, publicConnectionId } from './public-connect
  *
  * Route B (typed command stream): it does not touch the venue at all — it validates, resolves the
  * connection, and emits ONE command payload as a `plugin.command` stream frame
- * (`session.emitCommand` → `plugin.command` → pluginCommandBus), keyed `trading`/`chart`.
+ * (`session.emitCommand` → `plugin.command` → miniAppCommandBus), keyed `trading`/`chart`.
  * Replayable + non-coalescing: two back-to-back commands both arrive, and a reconnecting client
  * still receives what it missed (deduped by the envelope's commandId). The trading UI's sink
  * opens/focuses the chart tab and applies the command — unless the run belongs to a BACKGROUND
@@ -178,7 +178,7 @@ export function createManageChartTool(options: ManageChartToolOptions) {
       if (input.action === 'draw' && input.drawings !== undefined) {
         const drawings = buildChartDrawings(input)
         for (const drawing of drawings) {
-          session.emitCommand(TRADING_PLUGIN, TRADING_CHART_CHANNEL, {
+          session.emitCommand(TRADING_MINI_APP, TRADING_CHART_CHANNEL, {
             action: 'draw',
             connectionId: target.id,
             symbol: input.symbol,
@@ -210,7 +210,7 @@ export function createManageChartTool(options: ManageChartToolOptions) {
           }
         }
         const outcome = await session.emitCommandWithReply(
-          TRADING_PLUGIN,
+          TRADING_MINI_APP,
           TRADING_CHART_CHANNEL,
           payload,
         )
@@ -239,7 +239,7 @@ export function createManageChartTool(options: ManageChartToolOptions) {
         }
       }
 
-      session.emitCommand(TRADING_PLUGIN, TRADING_CHART_CHANNEL, payload)
+      session.emitCommand(TRADING_MINI_APP, TRADING_CHART_CHANNEL, payload)
       return {
         content: describeChartCommand(payload, target.name),
         details,

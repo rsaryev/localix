@@ -1,7 +1,7 @@
 import {
-  assertPluginResponse,
-  pluginApiFetch,
-  unwrapPluginResponse,
+  assertMiniAppResponse,
+  miniAppApiFetch,
+  unwrapMiniAppResponse,
 } from '@localixai/mini-app-sdk/ui/transport'
 
 import type {
@@ -22,7 +22,7 @@ import { ROUTE_PATH } from '../../shared/resource'
  * the person had switched to while a background tab kept talking. So the session is a required
  * argument of every method, never ambient state.
  *
- * Failures reject with the SDK's `PluginApiError`, which carries the route's own sentence and
+ * Failures reject with the SDK's `MiniAppApiError`, which carries the route's own sentence and
  * code (`task_changed`, `forbidden_transition`, …) and its HTTP status (`taskIsGone` reads 404).
  */
 
@@ -45,7 +45,7 @@ const json = (method: 'POST' | 'PATCH', body: unknown): RequestInit => ({
 })
 
 async function read<T>(sessionId: string, path: string, init?: RequestInit): Promise<T> {
-  return unwrapPluginResponse<T>(await pluginApiFetch(route(sessionId, path), init))
+  return unwrapMiniAppResponse<T>(await miniAppApiFetch(route(sessionId, path), init))
 }
 
 export const boardApi = {
@@ -67,8 +67,8 @@ export const boardApi = {
     read<KanbanTask>(sessionId, card(id), json('PATCH', patch)),
 
   async remove(sessionId: string, id: string): Promise<void> {
-    await assertPluginResponse(
-      await pluginApiFetch(route(sessionId, card(id)), { method: 'DELETE' }),
+    await assertMiniAppResponse(
+      await miniAppApiFetch(route(sessionId, card(id)), { method: 'DELETE' }),
     )
   },
 }

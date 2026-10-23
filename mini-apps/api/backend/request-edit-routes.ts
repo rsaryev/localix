@@ -1,6 +1,6 @@
 import type { Hono, Schema } from 'hono'
 import { z } from 'zod'
-import type { PluginRouteContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppRouteContext } from '@localixai/mini-app-sdk/backend'
 import type { RestRoutesDeps } from './routes'
 import type { RestRouteScope } from './route-scope'
 import { HTTP_METHODS, isHttpUrl, type RequestSpec } from './request-spec'
@@ -73,7 +73,7 @@ const authSchema = z.discriminatedUnion('type', [
 
 /** Register whole-request replacement and credential-preserving auth editing in order. */
 export function registerRequestEditRoutes<TSchema extends Schema>(
-  app: Hono<PluginRouteContext, TSchema>,
+  app: Hono<MiniAppRouteContext, TSchema>,
   { uid, collection, envs, deps }: RequestEditRouteDeps,
 ) {
   return (

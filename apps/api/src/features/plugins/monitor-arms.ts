@@ -11,7 +11,7 @@
  * Keyed `<plugin>:<monitor>`, the same key the host runs a monitor under. In memory: an arm lasts
  * the process, exactly as the monitor it points does.
  */
-import type { PluginMonitorArmRequest, PluginMonitorsHost } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppMonitorArmRequest, MiniAppMonitorsHost } from '@localixai/mini-app-sdk/backend'
 
 import type { PluginMonitorHost } from './monitor-host'
 
@@ -39,8 +39,8 @@ export function bindPluginMonitors(deps: {
   host: () => Pick<PluginMonitorHost, 'arm' | 'disarm'> | undefined
   /** The ownership gate: rejects (or resolves null) for a missing, foreign or deleted session. */
   resolveSessionCwd: (userId: string, sessionId: string) => Promise<string | null | undefined>
-}): PluginMonitorsHost {
-  const target = (request: PluginMonitorArmRequest) => ({
+}): MiniAppMonitorsHost {
+  const target = (request: MiniAppMonitorArmRequest) => ({
     userId: request.userId,
     sessionId: request.sessionId,
     pluginName: deps.pluginName,

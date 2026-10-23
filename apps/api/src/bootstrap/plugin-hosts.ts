@@ -1,11 +1,11 @@
-import { createPluginBackendHost } from '../features/plugins/backend-host'
-import { loadPluginBackends } from '../features/plugins/loader'
-import { createPluginWakes } from '../features/plugins/plugin-wake'
-import { resolvePluginRouteScope } from '../features/plugins/route-scope'
+import { createMiniAppBackendHost } from '../features/plugins/backend-host'
+import { loadMiniAppBackends } from '../features/plugins/loader'
+import { createMiniAppWakes } from '../features/plugins/plugin-wake'
+import { resolveMiniAppRouteScope } from '../features/plugins/route-scope'
 import { loadScopesWithinBudget, PLUGIN_SCOPE_BUDGET_MS } from '../features/plugins/scope-load'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { readAvailability } from '../features/capabilities/availability'
-import { createPluginHostServices } from './plugin-host-services'
+import { createMiniAppHostServices } from './plugin-host-services'
 import type { SemanticService } from '../features/embeddings/service'
 import type { DecisionService } from '../features/decisions/service'
 import { createProjectsRepository } from '../features/projects/repository'
@@ -18,7 +18,7 @@ import { localixWorkspaceDir, userHome, type loadEnv } from '../lib/env'
 import type { createDatabase } from '../db'
 import type { RegistriesPhase } from './registries'
 import type { BootstrapServiceRefs } from './chat-service-deps'
-import type { PluginHostRefs } from './plugin-host-refs'
+import type { MiniAppHostRefs } from './plugin-host-refs'
 import { createCapabilitySourceRepository } from '../features/capabilities/source-repository'
 import {
   createPluginConditions,
@@ -55,8 +55,8 @@ export interface PluginHostsPhaseInput
 }
 
 export interface PluginHostsPhase {
-  backendHost: ReturnType<typeof createPluginBackendHost>
-  hostRefs: PluginHostRefs
+  backendHost: ReturnType<typeof createMiniAppBackendHost>
+  hostRefs: MiniAppHostRefs
   startBackendHost: () => void
   /** What is wrong with a plugin, as Event Center conditions — shared with the later hosts. */
   pluginConditions: PluginConditions
@@ -93,16 +93,16 @@ export function createPluginHostsPhase({
   // The HOST owns the wiring as a reconciler (backend-host.ts): boot is the first
   // `reconcile()`, and a plugin toggle re-converges the same way via `refresh()`,
   // so enable/disable needs no restart. Failure-isolated per plugin inside
-  // loadPluginBackends.
+  // loadMiniAppBackends.
   // Late-bound settle hook: chatService (the stream registry the resources.changed
   // event rides) is created far below; the host reads this at settle time.
-  const hostRefs: PluginHostRefs = {}
+  const hostRefs: MiniAppHostRefs = {}
   // Safe to read `hostRefs.wakes` per wake: a plugin wakes long after chat bound it.
-  const pluginWakes = createPluginWakes({
+  const miniAppWakes = createMiniAppWakes({
     deliver: (...args) => hostRefs.wakes!.deliver(...args),
     logger,
   })
-  const hostForPlugin = createPluginHostServices({
+  const hostForMiniApp = createMiniAppHostServices({
     hostRefs,
     serviceRefs,
     semanticService,
@@ -111,10 +111,10 @@ export function createPluginHostsPhase({
     secretsStore,
     secretExposureShield,
     mediaStore,
-    pluginWakes,
+    miniAppWakes,
   })
   const backendScopeProjectsRepo = createProjectsRepository(db)
-  const backendHost = createPluginBackendHost({
+  const backendHost = createMiniAppBackendHost({
     /**
      * WHERE a plugin route call is happening, resolved per request (`route-scope.ts`): the session
      * id reaches `c.env` only once its ownership check passed. Read from the request rather than
@@ -125,7 +125,7 @@ export function createPluginHostsPhase({
      * uses for `resolveSessionCwd`.
      */
     resolveScope: ({ userId, request }) =>
-      resolvePluginRouteScope({
+      resolveMiniAppRouteScope({
         userId,
         request,
         resolveSessionCwd: async (...args) =>
@@ -137,7 +137,7 @@ export function createPluginHostsPhase({
       const userId = env.LOCALIX_DEFAULT_USER_ID
       const projects = await backendScopeProjectsRepo.listProjects(userId)
       const loadScope = async (projectId: string, cwd: string) =>
-        loadPluginBackends({
+        loadMiniAppBackends({
           homeDir: userHome(),
           repo: createCapabilitySourceRepository(db, 'plugin'),
           availability: await readAvailability(db, { userId, agentId: DEFAULT_AGENT_ID }),
@@ -150,7 +150,7 @@ export function createPluginHostsPhase({
             // log so `scripts/startup-budget.ts` can report what a launch spent here.
             info: (msg, meta) => logger.info({ ...(meta as object), msg }),
           },
-          hostForPlugin,
+          hostForMiniApp,
         })
       // The global scope first (it runs the shared bundled sync), projects concurrently, and a
       // project stuck past the budget (a folder-access prompt) joins on a later reconcile.
@@ -166,8 +166,8 @@ export function createPluginHostsPhase({
           backendHost.refresh()
         },
       })
-      const scopedBackends: Awaited<ReturnType<typeof loadPluginBackends>>['backends'] = []
-      const summaries: Awaited<ReturnType<typeof loadPluginBackends>>['loaded'] = []
+      const scopedBackends: Awaited<ReturnType<typeof loadMiniAppBackends>>['backends'] = []
+      const summaries: Awaited<ReturnType<typeof loadMiniAppBackends>>['loaded'] = []
       const seenScopeBackends = new Set<string>()
       for (const { backends: loaded, loaded: loadedSummaries } of results) {
         for (const backend of loaded) {
@@ -180,7 +180,7 @@ export function createPluginHostsPhase({
         }
         summaries.push(...loadedSummaries)
       }
-      pluginWakes.recordTools(summaries)
+      miniAppWakes.recordTools(summaries)
       // Only when EVERY scope answered may a plugin none of them enables lose its rows: a late
       // project's plugins are simply not in this pass yet.
       if (late.length === 0) await pluginConditions.enabled(new Set(summaries.map((s) => s.name)))

@@ -4,11 +4,11 @@ import { promises as fs } from 'node:fs'
 import type { resolvePluginConfig } from './config'
 import type { DiscoveredPlugin } from './discovery'
 import {
-  createPluginInspectionStore,
+  createMiniAppInspectionStore,
   durableInspectionFingerprint,
-  type PluginToolInspection,
+  type MiniAppToolInspection,
 } from './inspection-store'
-import { inspectPluginTools } from './native'
+import { inspectMiniAppTools } from './native'
 import { createBoundedCache } from '../../lib/bounded-cache'
 
 /**
@@ -28,12 +28,12 @@ interface InspectionSnapshot {
   pluginName: string
   projectId: string
   fingerprint: string
-  result: Promise<PluginToolInspection>
+  result: Promise<MiniAppToolInspection>
 }
 
 const MAX_INSPECTION_SNAPSHOTS = 128
 
-const cloneInspection = (value: PluginToolInspection): PluginToolInspection => ({
+const cloneInspection = (value: MiniAppToolInspection): MiniAppToolInspection => ({
   tools: value.tools.map((tool) => ({ ...tool })),
   backendSubsystems: [...value.backendSubsystems],
   routeMounts: [...value.routeMounts],
@@ -68,26 +68,26 @@ async function inspectionFingerprint(
     .digest('hex')
 }
 
-export interface PluginInspections {
+export interface MiniAppInspections {
   inspect(
     plugin: DiscoveredPlugin,
     config: PluginConfig,
     userId: string,
     cwd: string,
-  ): Promise<PluginToolInspection>
+  ): Promise<MiniAppToolInspection>
   /** A lifecycle change: drop `name` (in `projectId`, or everywhere for a global change), or all. */
   invalidate(name?: string, projectId?: string): void
 }
 
-export function createPluginInspections(deps: {
+export function createMiniAppInspections(deps: {
   homeDir: string
   logger?: { warn: (msg: string, meta?: unknown) => void }
-}): PluginInspections {
+}): MiniAppInspections {
   // Least recently used is evicted first, so a hot settings entry stays.
   const snapshots = createBoundedCache<string, InspectionSnapshot>({
     maxEntries: MAX_INSPECTION_SNAPSHOTS,
   })
-  const store = createPluginInspectionStore(deps.homeDir)
+  const store = createMiniAppInspectionStore(deps.homeDir)
 
   return {
     invalidate(name, projectId) {
@@ -116,11 +116,11 @@ export function createPluginInspections(deps: {
 
       // The durable read sits INSIDE the shared promise, so concurrent callers of one key (the
       // snapshot's two scopes, the cache warm) still share one attempt, disk hit or not.
-      const run = async (): Promise<PluginToolInspection> => {
+      const run = async (): Promise<MiniAppToolInspection> => {
         const durable = await durableInspectionFingerprint(plugin, fingerprint)
         const stored = durable ? await store.get(key, durable) : null
         if (stored) return stored
-        const inspected = await inspectPluginTools(
+        const inspected = await inspectMiniAppTools(
           plugin,
           config,
           { userId, cwd, homeDir: deps.homeDir },

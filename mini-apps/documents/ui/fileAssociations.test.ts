@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import type { PluginUiHost } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppUiHost } from '@localixai/mini-app-sdk/ui'
 import type { DedicatedViewerType } from '@localixai/mini-app-sdk/ui/file-types'
 import { __resetDocumentsUiRegistration, registerUi } from './register'
 
@@ -38,7 +38,7 @@ registerUi({
   },
   sessionEvents: { register: () => {} },
   statusItems: noop,
-} as unknown as PluginUiHost)
+} as unknown as MiniAppUiHost)
 
 const manifest = JSON.parse(
   readFileSync(join(import.meta.dir, '..', '.localix-app', 'app.json'), 'utf8'),

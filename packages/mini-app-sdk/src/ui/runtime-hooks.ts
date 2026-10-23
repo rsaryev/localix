@@ -1,26 +1,26 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import {
-  pluginCompletion,
-  pluginEditor,
-  pluginFiles,
-  pluginSessions,
-  pluginWorkspace,
-  type PluginSession,
-  type PluginTextInputCompletion,
-  type PluginTextInputCompletionInput,
-  type PluginWorkspaceChange,
-  type PluginWorkspaceSnapshot,
+  miniAppCompletion,
+  miniAppEditor,
+  miniAppFiles,
+  miniAppSessions,
+  miniAppWorkspace,
+  type MiniAppSession,
+  type MiniAppTextInputCompletion,
+  type MiniAppTextInputCompletionInput,
+  type MiniAppWorkspaceChange,
+  type MiniAppWorkspaceSnapshot,
 } from './runtime'
 
 /**
- * Run `onChange` when files change under `sessionId`'s workspace (see `pluginFiles.watchWorkspace`)
+ * Run `onChange` when files change under `sessionId`'s workspace (see `miniAppFiles.watchWorkspace`)
  * and answer whether that signal is LIVE for the chat: `null` until the host has answered, then
  * true or false. A fully covered resource needs polling only while the signal is unavailable. `onChange` may change identity on every render; only
  * `sessionId`, `enabled` and `windowMs` re-subscribe.
  */
-export function usePluginWorkspaceChanges(
+export function useMiniAppWorkspaceChanges(
   sessionId: string | null,
-  onChange: (change: PluginWorkspaceChange) => void,
+  onChange: (change: MiniAppWorkspaceChange) => void,
   options: { windowMs?: number; enabled?: boolean } = {},
 ): boolean | null {
   const { windowMs, enabled = true } = options
@@ -33,7 +33,7 @@ export function usePluginWorkspaceChanges(
     if (!sessionId || !enabled) return
     setLive(null)
     try {
-      return pluginFiles.watchWorkspace(sessionId, (change) => handler.current(change), {
+      return miniAppFiles.watchWorkspace(sessionId, (change) => handler.current(change), {
         windowMs,
         onLive: (next) => setLive({ sessionId, live: next }),
       })
@@ -49,8 +49,8 @@ export function usePluginWorkspaceChanges(
 }
 
 /** Session roster through the stable, store-agnostic plugin runtime port. */
-export function usePluginSessions(): readonly PluginSession[] {
-  return useSyncExternalStore(pluginSessions.subscribe, pluginSessions.list, pluginSessions.list)
+export function useMiniAppSessions(): readonly MiniAppSession[] {
+  return useSyncExternalStore(miniAppSessions.subscribe, miniAppSessions.list, miniAppSessions.list)
 }
 
 /**
@@ -58,18 +58,18 @@ export function usePluginSessions(): readonly PluginSession[] {
  * working-set context as the chat composer. Declare the surface on the backend subsystem
  * (`textInputCompletionSurfaces`), then call this with the field's live state.
  */
-export function usePluginTextInputCompletion(
-  input: PluginTextInputCompletionInput,
-): PluginTextInputCompletion {
-  return pluginCompletion.useTextInput(input)
+export function useMiniAppTextInputCompletion(
+  input: MiniAppTextInputCompletionInput,
+): MiniAppTextInputCompletion {
+  return miniAppCompletion.useTextInput(input)
 }
 
 /** Whether the host's edit-prediction route is enabled. */
-export function usePluginEditPredictionEnabled(): boolean {
+export function useMiniAppEditPredictionEnabled(): boolean {
   return useSyncExternalStore(
-    pluginEditor.subscribe,
-    pluginEditor.predictionEnabled,
-    pluginEditor.predictionEnabled,
+    miniAppEditor.subscribe,
+    miniAppEditor.predictionEnabled,
+    miniAppEditor.predictionEnabled,
   )
 }
 
@@ -79,10 +79,10 @@ export function usePluginEditPredictionEnabled(): boolean {
  * A plugin launcher needs both to render "open this" versus "you are already here", and
  * reading them from the host's grid store instead is exactly the coupling the seam removes.
  */
-export function usePluginWorkspace(): PluginWorkspaceSnapshot {
+export function useMiniAppWorkspace(): MiniAppWorkspaceSnapshot {
   return useSyncExternalStore(
-    pluginWorkspace.subscribe,
-    pluginWorkspace.getSnapshot,
-    pluginWorkspace.getSnapshot,
+    miniAppWorkspace.subscribe,
+    miniAppWorkspace.getSnapshot,
+    miniAppWorkspace.getSnapshot,
   )
 }

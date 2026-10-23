@@ -7,10 +7,10 @@ import { join, resolve } from 'node:path'
 import {
   KIT_LAYOUT_INPUTS,
   pluginNameForChange,
-  watchPluginKitInputs,
+  watchMiniAppKitInputs,
   watchPluginsForRestage,
 } from './dev-plugin-watch.mjs'
-import { PLUGIN_KIT_INPUTS } from './stage-plugin-kit.mjs'
+import { MINI_APP_KIT_INPUTS } from './stage-plugin-kit.mjs'
 
 /** A kit watcher over fake watch/timer ports: emit changes per input, fire the live timer. */
 function kitHarness(restageKit: () => Promise<void> | void = () => {}) {
@@ -18,7 +18,7 @@ function kitHarness(restageKit: () => Promise<void> | void = () => {}) {
   const listeners = new Map<string, () => void>()
   const live = new Map<number, { fn: () => void; delay: number }>()
   let nextTimer = 0
-  const handle = watchPluginKitInputs({
+  const handle = watchMiniAppKitInputs({
     repoRoot,
     outPlugins: '/unused',
     restageKit,
@@ -52,9 +52,9 @@ test('re-stages the plugin kit once per burst of changes to any of its inputs', 
   let restaged = 0
   const kit = kitHarness(() => void restaged++)
   expect([...kit.listeners.keys()]).toEqual(
-    PLUGIN_KIT_INPUTS.map((input) => resolve(kit.repoRoot, input)),
+    MINI_APP_KIT_INPUTS.map((input) => resolve(kit.repoRoot, input)),
   )
-  for (const input of PLUGIN_KIT_INPUTS) kit.change(input)
+  for (const input of MINI_APP_KIT_INPUTS) kit.change(input)
   await kit.fire()
   expect(restaged).toBe(1)
   kit.handle.close()

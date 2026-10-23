@@ -44,7 +44,7 @@ import { SetupAnnouncement } from '@/widgets/workspace-tips/ui/SetupAnnouncement
 import { FolderTree } from 'lucide-react'
 import { discoverUi } from '@/shared/contrib/discover'
 import { pluginApp } from '@/shared/lib/pluginApp'
-import { usePluginApp } from '../model/usePluginApp'
+import { useMiniApp } from '../model/useMiniApp'
 import { railSectionRegistry, railViewletRegistry } from '@/shared/contrib/uiContrib'
 import { useSystemToggle } from '@/shared/hooks/useSystemToggle'
 import { useIsMobile, isMobileViewport } from '@/shared/hooks/useIsMobile'
@@ -53,7 +53,10 @@ import { ConfirmDialog } from '@localixai/kit/confirm-dialog'
 import { useUrlStoreSync } from '../model/useUrlStoreSync'
 import { useRailActions } from '../model/useRailActions'
 import { useEditorGridCommands } from '../model/useEditorGridCommands'
-import { usePluginContributions, usePluginContributionsSync } from '../model/usePluginContributions'
+import {
+  usePluginContributions,
+  useMiniAppContributionsSync,
+} from '../model/usePluginContributions'
 import { useNewChatAction } from '../model/useNewChatAction'
 import {
   useChatPageBuses,
@@ -203,7 +206,7 @@ export function ChatPage() {
     (routePathname === '/' || routePathname.startsWith('/global'))
   const { enabledPluginNames, plugins, pluginsPending, thirdPartyViewsV, contribScope } =
     usePluginContributions({ routeProjectId, onHomeRoute: isHomeRoute })
-  const pluginCategories = useMemo(
+  const miniAppCategories = useMemo(
     () => new Map(plugins.map((plugin) => [plugin.name, plugin.category])),
     [plugins],
   )
@@ -219,7 +222,7 @@ export function ChatPage() {
   }, [sidebarOpen, isMobile])
 
   const { resolvedTheme } = useTheme()
-  const pluginAppChat = usePluginApp(PLUGIN_APP, {
+  const pluginAppChat = useMiniApp(PLUGIN_APP, {
     hasHydrated,
     enabledPluginNames,
     activeSessionId,
@@ -344,7 +347,7 @@ export function ChatPage() {
     routeProjectId,
     isLegacyRoute,
     isHomeRoute,
-    // A plugin app opens its own conversation (`usePluginApp`), never the last workspace.
+    // A plugin app opens its own conversation (`useMiniApp`), never the last workspace.
     isColdIndex: !PLUGIN_APP && routePathname === '/',
     activeSessionId,
     isMobile,
@@ -406,7 +409,7 @@ export function ChatPage() {
     toggleSidebar,
   })
 
-  const pluginViews = usePluginContributionsSync({
+  const pluginViews = useMiniAppContributionsSync({
     hasHydrated,
     routeProjectId: contribScope,
     thirdPartyViewsV,
@@ -499,7 +502,7 @@ export function ChatPage() {
       }
       railActions={railActions}
       pluginsPending={pluginsPending}
-      pluginCategories={pluginCategories}
+      miniAppCategories={miniAppCategories}
       capabilitiesManageUri={settingsTargetUri({ tab: 'plugins', scope: capabilityScope })}
       onNavigateUi={(uri) => {
         navigateUi(uri, uiNavigation)

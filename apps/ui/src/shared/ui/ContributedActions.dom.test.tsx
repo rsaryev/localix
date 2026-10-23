@@ -2,9 +2,9 @@ import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { WorkItemSessionProvider } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { ActionSurfaceProvider } from '@localixai/mini-app-sdk/ui'
-import { bindPluginUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
+import { bindMiniAppUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
 import { registerAction, removeActionsOf } from '@/shared/contrib/actions'
-import { setEnabledPluginNames } from '@/shared/contrib/pluginActivation'
+import { setEnabledPluginNames } from '@/shared/contrib/miniAppActivation'
 import { ContributedActions } from './ContributedActions'
 
 let teardown: () => Promise<void>
@@ -17,7 +17,7 @@ afterAll(() => teardown())
 test('plugin eligibility hides and restores a button live; fast clicks run once and subscriptions release', async () => {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
-  const unbind = bindPluginUiTestDoubles()
+  const unbind = bindMiniAppUiTestDoubles()
   const listeners = new Set<() => void>()
   let needed = true
   let runs = 0

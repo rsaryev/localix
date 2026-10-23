@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { jsonBody, jsonError, type PluginRouteContext } from '@localixai/mini-app-sdk/backend'
+import { jsonBody, jsonError, type MiniAppRouteContext } from '@localixai/mini-app-sdk/backend'
 import { systemMarkInputSchema } from '../shared/system-marks'
 import type { SystemReader } from './system'
 import type { ProcessService } from './processes'
@@ -21,7 +21,7 @@ export interface TemplateServices {
 export function createTemplateRoutes({ read, processes, marks }: TemplateServices) {
   const unavailable = (context: Parameters<typeof jsonError>[0]) =>
     jsonError(context, 503, 'system_marks_unavailable', 'Marks are temporarily unavailable.')
-  return new Hono<PluginRouteContext>()
+  return new Hono<MiniAppRouteContext>()
     .get('/system', (context) => {
       context.header('Cache-Control', 'no-store')
       try {

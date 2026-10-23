@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { loadGrid, type PersistedGrid } from './persistence'
 import { __resetGridForTests, hydrateGrid, useGridStore } from './store'
 import { workItemKindRegistry } from '@/shared/contrib/uiContrib'
-import { setEnabledPluginNames } from '@/shared/contrib/pluginActivation'
+import { setEnabledPluginNames } from '@/shared/contrib/miniAppActivation'
 import type { WorkItemKind } from '@/shared/lib/workItem'
 
 const KIND = 'db-console' as WorkItemKind

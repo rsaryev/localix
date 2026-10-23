@@ -3,7 +3,7 @@ import type { Context } from 'hono'
 import {
   defaultErrorHandler,
   routeValidator,
-  type PluginRouteContext,
+  type MiniAppRouteContext,
 } from '@localixai/mini-app-sdk/backend'
 import {
   batchRequestSchema,
@@ -77,8 +77,8 @@ async function connectionJson(c: Context, run: () => Promise<DbConnectionInfo | 
  * aux-LLM text-to-SQL route here.
  */
 export function createDatabaseRoutes(service: DatabaseService) {
-  const app = new Hono<PluginRouteContext>()
-  const uid = (c: Context<PluginRouteContext>) => c.env.userId
+  const app = new Hono<MiniAppRouteContext>()
+  const uid = (c: Context<MiniAppRouteContext>) => c.env.userId
 
   const routes = app
     .get('/', async (c) => c.json({ connections: await service.list(uid(c)) }))

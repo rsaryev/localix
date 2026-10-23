@@ -9,7 +9,7 @@ import { Input } from '@localixai/kit/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@localixai/kit/popover'
 import { WorkbenchSash } from '@localixai/kit/button'
 import { COL_MIN } from './useColumnLayout'
-import type { PluginTableGridProps } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppTableGridProps } from '@localixai/mini-app-sdk/ui'
 import { ColumnMenu } from './ColumnMenu'
 
 /**
@@ -55,7 +55,7 @@ export function HeaderCell({
   /** Fixed user width; undefined means the CSS grid still owns an automatic track. */
   columnWidth?: number
   showColumnIcons?: boolean
-  columnActions?: PluginTableGridProps['columnActions']
+  columnActions?: MiniAppTableGridProps['columnActions']
   columnCount?: number
 }) {
   const sortable = col.sortable !== false

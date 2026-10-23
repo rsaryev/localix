@@ -10,7 +10,7 @@
  * service.
  */
 import path from 'node:path'
-import type { PluginHostServices } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppHostServices } from '@localixai/mini-app-sdk/backend'
 import { createDocumentsService, type DocumentsService } from './documents/service'
 import { createDocumentStore, type DocumentStore } from './documents/store'
 import { createTableService, type TableService } from './table/service'
@@ -18,7 +18,7 @@ import { createTableStore, type TableStore } from './table/store'
 import { createRecentsIndex, type RecentsIndex } from './recents'
 
 /** Structural mirror of the host media seam (`ctx.host.media`). */
-export type DocumentsHost = Pick<PluginHostServices, 'files' | 'media' | 'sessionStorage'>
+export type DocumentsHost = Pick<MiniAppHostServices, 'files' | 'media' | 'sessionStorage'>
 
 export interface DocumentsServices {
   documentsService: DocumentsService
@@ -28,8 +28,8 @@ export interface DocumentsServices {
   /** Recent-extraction index behind the `localix://resource/doc` resource tree. */
   recents: RecentsIndex
   /** The media seam captured at build time (undefined on a host-less build). */
-  media?: NonNullable<PluginHostServices['media']>
-  hostFiles?: NonNullable<PluginHostServices['files']>
+  media?: NonNullable<MiniAppHostServices['media']>
+  hostFiles?: NonNullable<MiniAppHostServices['files']>
 }
 
 const KEY = Symbol.for('localix.plugin.documents.services')

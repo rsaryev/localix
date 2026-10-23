@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { z } from 'zod'
-import { bindPluginUiRuntime, type PluginUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
-import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
+import { bindMiniAppUiRuntime, type MiniAppUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
+import { bindMiniAppUiTransport } from '@localixai/mini-app-sdk/ui/transport'
 import { registerDom } from '@localixai/kit/testing'
 import { STORE_FRAME_TAG } from '../shared/store-feed'
 
@@ -23,14 +23,14 @@ function fakeHost() {
   const reconnects = new Set<() => void>()
   const disconnects = new Set<() => void>()
   const commands: string[] = []
-  const unbindTransport = bindPluginUiTransport({
+  const unbindTransport = bindMiniAppUiTransport({
     url: (path) => path,
     request: async () => {
       reads += 1
       return Response.json(server)
     },
   })
-  const unbindRuntime = bindPluginUiRuntime({
+  const unbindRuntime = bindMiniAppUiRuntime({
     realtime: {
       onFrame: (tag: string, handler: (json: string) => void) => {
         if (tag !== STORE_FRAME_TAG) return () => {}
@@ -56,7 +56,7 @@ function fakeHost() {
         return String(payload.t).endsWith('.subscribe') ? { subscribed: true } : {}
       },
     },
-  } as unknown as PluginUiRuntime)
+  } as unknown as MiniAppUiRuntime)
   return {
     set: (n: number) => (server = { n }),
     reads: () => reads,

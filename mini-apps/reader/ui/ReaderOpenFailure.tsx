@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
-import { createMessageBindingDraft, runPluginAction, toast } from '@localixai/mini-app-sdk/ui'
+import { createMessageBindingDraft, runMiniAppAction, toast } from '@localixai/mini-app-sdk/ui'
 import { ProblemState } from '@localixai/mini-app-sdk/ui/components'
-import { pluginNavigation } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppNavigation } from '@localixai/mini-app-sdk/ui/runtime'
 
 import type { ReaderSource } from '../shared/contracts'
 import { readerFileName, readerUnsupportedReason } from '../shared/formats'
@@ -42,9 +42,9 @@ export function useReaderOpenFailure({
   const path = 'path' in source ? source.path : null
   // A rejected navigation used to be an unhandled rejection: the button did nothing, silently.
   const openOutside = () => {
-    runPluginAction(async () => {
+    runMiniAppAction(async () => {
       if (
-        await pluginNavigation.openBinding(
+        await miniAppNavigation.openBinding(
           createMessageBindingDraft('file', path!, name),
           sessionId,
         )

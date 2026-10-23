@@ -1,4 +1,4 @@
-import type { IconComponent, PluginOwnedContribution } from './contrib'
+import type { IconComponent, MiniAppOwnedContribution } from './contrib'
 
 /**
  * STATUS ITEMS — the one way a plugin puts something in the workbench's persistent chrome.
@@ -180,7 +180,7 @@ export interface StatusItemState {
   menu?: readonly MenuEntry[]
 }
 
-export interface StatusItemContribution extends PluginOwnedContribution {
+export interface StatusItemContribution extends MiniAppOwnedContribution {
   /** `<plugin>:<item>` — namespace-asserted like every other plugin-chosen identity. */
   id: string
   /**

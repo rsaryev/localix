@@ -294,7 +294,7 @@ is outside the shared `NotificationPreferences` contract.
 - Desktop native delivery sends title and body only. Navigation, Retry, and Respond remain in the
   Event Center.
 - Plugin attribution reads the call stack. A publish that runs after an `await` outside
-  `runPluginAction`, or from a React effect in the shared `useProblemReport` hook, has no plugin
+  `runMiniAppAction`, or from a React effect in the shared `useProblemReport` hook, has no plugin
   frame on the stack; problem reports then fall back to their `scope`, toasts to no label.
 - Native banners still depend on shell support and operating-system permission. The shared router
   cannot prove that the operating system displayed a selected notification.

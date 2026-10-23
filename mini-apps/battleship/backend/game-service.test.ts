@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { PluginWakeOutcome, PluginWakeRequest } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppWakeOutcome, MiniAppWakeRequest } from '@localixai/mini-app-sdk/backend'
 
 import { shotsBy } from '../shared/game'
 import { SIZE, cellName, knownCells } from '../shared/rules'
@@ -49,8 +49,8 @@ function seeded(seed: number) {
 const S1 = { userId: 'u1', sessionId: 's1' }
 const S2 = { userId: 'u1', sessionId: 's2' }
 
-function setup(outcome: PluginWakeOutcome = { status: 'delivered' }) {
-  const woke: PluginWakeRequest[] = []
+function setup(outcome: MiniAppWakeOutcome = { status: 'delivered' }) {
+  const woke: MiniAppWakeRequest[] = []
   const storage = sessionStorage()
   let ids = 0
   const games = createGameService({

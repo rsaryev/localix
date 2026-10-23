@@ -21,7 +21,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 
-import { toast, type PluginProblemsOptions } from './notifications'
+import { toast, type MiniAppProblemsOptions } from './notifications'
 import { problemSubjectKey, type ProblemRecovery, type ProblemReport } from './problems'
 
 export interface OwnedProblemReport {
@@ -53,7 +53,7 @@ const owners = new Map<string, number>()
  */
 export function useProblemReport(
   report: ProblemReport | null,
-  options: PluginProblemsOptions,
+  options: MiniAppProblemsOptions,
 ): OwnedProblemReport | null {
   const [entryId, setEntryId] = useState<string | undefined>(undefined)
   const subjectKey = report ? problemSubjectKey(options.scope, report.subject) : null
@@ -100,7 +100,7 @@ export function useProblemReport(
 
 export type ProblemPublisher = (
   report: ProblemReport | null,
-  options: PluginProblemsOptions,
+  options: MiniAppProblemsOptions,
 ) => string | undefined
 
 /**

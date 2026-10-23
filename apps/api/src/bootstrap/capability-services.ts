@@ -71,8 +71,8 @@ export function createCapabilityServices({
   const capabilityRules = createCapabilityRuleRepository(db)
   const capabilitySnapshotService = createCapabilitySnapshotService({
     builtinCommands: SLASH_COMMANDS,
-    listPluginContributions: async (userId, projectId) => {
-      const contributions = await pluginService.listPluginContributions(userId, { projectId })
+    listMiniAppContributions: async (userId, projectId) => {
+      const contributions = await pluginService.listMiniAppContributions(userId, { projectId })
       return describeCommands
         ? { ...contributions, commands: await describeCommands(contributions.commands) }
         : contributions

@@ -41,7 +41,7 @@ export async function refreshPluginApps(): Promise<void> {
   const invoke = tauriInvoke()
   if (!pluginAppsSupported || !invoke) return
   try {
-    const list = await invoke('plugin_apps')
+    const list = await invoke('mini_app_apps')
     if (Array.isArray(list)) publish(list as InstalledPluginApp[])
   } catch (error) {
     console.warn('[plugin-apps] could not list installed apps', error)
@@ -73,12 +73,12 @@ export async function installPluginApp(source: PluginAppSource): Promise<void> {
     // Drawn only here, so the renderer it needs stays out of the workspace's startup.
     const { renderAppIcon } = await import('./appIcon')
     const icons = await renderAppIcon(source.Icon)
-    const installed = (await invoke('plugin_app_install', {
+    const installed = (await invoke('mini_app_install', {
       request: { plugin: source.plugin, name: source.title, icons },
     })) as InstalledPluginApp
     // The app opens into a project of its own: make it now, before the app's first launch.
     if (installed.projectDir) await ensurePluginAppProject(installed.projectDir, source.title)
-    await invoke('plugin_app_open', { plugin: source.plugin })
+    await invoke('mini_app_open', { plugin: source.plugin })
     toast.success(`${source.title} is now an app`, {
       description: 'Find it in Applications, Launchpad and Spotlight, or keep it in the Dock.',
     })
@@ -93,7 +93,7 @@ export async function installPluginApp(source: PluginAppSource): Promise<void> {
 
 export async function openPluginApp(app: InstalledPluginApp): Promise<void> {
   try {
-    await tauriInvoke()?.('plugin_app_open', { plugin: app.plugin })
+    await tauriInvoke()?.('mini_app_open', { plugin: app.plugin })
   } catch (error) {
     toast.error(`Could not open ${app.name}`, { description: errorMessage(error, '') || undefined })
   }
@@ -101,7 +101,7 @@ export async function openPluginApp(app: InstalledPluginApp): Promise<void> {
 
 export async function removePluginApp(app: InstalledPluginApp): Promise<void> {
   try {
-    await tauriInvoke()?.('plugin_app_uninstall', { plugin: app.plugin })
+    await tauriInvoke()?.('mini_app_uninstall', { plugin: app.plugin })
     toast.success(`${app.name} app moved to the Trash`, {
       description: 'The plugin stays in Localix.',
     })

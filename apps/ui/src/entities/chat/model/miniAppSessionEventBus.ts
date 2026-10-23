@@ -1,4 +1,4 @@
-import type { PluginSessionPhase } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppSessionPhase } from '@localixai/mini-app-sdk/ui'
 
 /**
  * Tiny pub/sub carrying the SAFE session lifecycle phases the chat runtime
@@ -12,23 +12,23 @@ import type { PluginSessionPhase } from '@localixai/mini-app-sdk/ui'
  * tool payloads, error text and message ids never do.
  */
 
-export interface PluginSessionEvent {
+export interface MiniAppSessionEvent {
   sessionId: string
-  phase: PluginSessionPhase
+  phase: MiniAppSessionPhase
 }
 
-type Listener = (event: PluginSessionEvent) => void
+type Listener = (event: MiniAppSessionEvent) => void
 
 const listeners = new Set<Listener>()
 
-export const pluginSessionEventBus = {
+export const miniAppSessionEventBus = {
   subscribe(listener: Listener): () => void {
     listeners.add(listener)
     return () => {
       listeners.delete(listener)
     }
   },
-  publish(event: PluginSessionEvent): void {
+  publish(event: MiniAppSessionEvent): void {
     for (const listener of listeners) {
       try {
         listener(event)

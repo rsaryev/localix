@@ -1,13 +1,13 @@
 import type { BackendSubsystem } from '../ext/subsystem-contrib'
-import { createPluginUiActionTable } from './backend-host-ui-actions'
-import type { PluginBackendHostDeps } from './backend-host-contracts'
+import { createMiniAppUiActionTable } from './backend-host-ui-actions'
+import type { MiniAppBackendHostDeps } from './backend-host-contracts'
 
 /**
  * Process-global registry keys contributed by a plugin belong to its manifest
  * namespace. Public/model-facing names (tools, routes and resource URIs) keep
  * their own contracts; these internal routing keys must never be ambiguous.
  */
-export function pluginBackendIdentityProblems(
+export function miniAppBackendIdentityProblems(
   pluginName: string,
   backend: BackendSubsystem,
 ): string[] {
@@ -31,21 +31,21 @@ export function pluginBackendIdentityProblems(
 }
 
 /** Select process-global backends and scope-specific UI actions before changing live wiring. */
-export function planPluginBackends(
-  desired: Awaited<ReturnType<PluginBackendHostDeps['loadBackends']>>,
-  deps: Pick<PluginBackendHostDeps, 'logger'>,
+export function planMiniAppBackends(
+  desired: Awaited<ReturnType<MiniAppBackendHostDeps['loadBackends']>>,
+  deps: Pick<MiniAppBackendHostDeps, 'logger'>,
 ) {
   const desiredByName = new Map<string, BackendSubsystem[]>()
   const backendOwners = new Map<string, string>()
-  const nextUiActions = createPluginUiActionTable()
-  const processScopeByPlugin = new Map<string, string>()
+  const nextUiActions = createMiniAppUiActionTable()
+  const processScopeByMiniApp = new Map<string, string>()
   const desiredRevisions = new Map<string, Set<string>>()
   // Why each plugin's backend was refused this pass — told to the person, not only the log.
   const refused = new Map<string, string[]>()
   for (const { pluginName, projectId = '', backend, revision } of desired) {
     const problems = refused.get(pluginName) ?? []
     refused.set(pluginName, problems)
-    const identityProblems = pluginBackendIdentityProblems(pluginName, backend)
+    const identityProblems = miniAppBackendIdentityProblems(pluginName, backend)
     if (identityProblems.length > 0) {
       deps.logger?.warn(`plugin backend rejected: ${pluginName}/${backend.id}`, {
         problems: identityProblems,
@@ -58,9 +58,9 @@ export function planPluginBackends(
     // Providers/routes are process-global and keep the long-standing first
     // discovered scope. UI actions are scoped above and therefore do not lose
     // a project-local override with the same plugin name.
-    const processScope = processScopeByPlugin.get(pluginName)
+    const processScope = processScopeByMiniApp.get(pluginName)
     if (processScope !== undefined && processScope !== projectId) continue
-    processScopeByPlugin.set(pluginName, projectId)
+    processScopeByMiniApp.set(pluginName, projectId)
     const existingOwner = backendOwners.get(backend.id)
     if (existingOwner) {
       deps.logger?.warn(`duplicate plugin backend id "${backend.id}" rejected`, {

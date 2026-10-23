@@ -75,7 +75,7 @@ export function forgetSessionRuntimeState(
     RuntimeState,
     | 'actionRegistry'
     | 'work'
-    | 'pluginStartedSessions'
+    | 'miniAppStartedSessions'
     | 'ccHooksStartedSessions'
     | 'ccHooksSessionStartSource'
     | 'ccHookOnceKeys'
@@ -109,7 +109,7 @@ export function forgetSessionRuntimeState(
   }
   // Also covers work whose action disposer raced or was malformed: its rows went with the cascade.
   state.work.forgetSession(sessionId)
-  state.pluginStartedSessions.delete(sessionId)
+  state.miniAppStartedSessions.delete(sessionId)
   state.sessionAutoApprovedTools.delete(sessionId)
   state.ccHooksStartedSessions.delete(sessionId)
   state.ccHooksSessionStartSource.delete(sessionId)
@@ -177,7 +177,7 @@ export function createRuntimeState(work: WorkRegistry): RuntimeState {
     cascadeStoppedSessionIds: new Set(),
     // Sessions whose plugin onSessionStart hooks have already fired (once per
     // session, not once per turn). Process-lifetime — re-fires after a restart.
-    pluginStartedSessions: new Set(),
+    miniAppStartedSessions: new Set(),
     ccHooksStartedSessions: new Set(),
     ccHooksSessionStartSource: new Map(),
     ccHookOnceKeys: new Map(),

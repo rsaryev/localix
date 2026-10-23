@@ -1,13 +1,13 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 
 import {
-  bindPluginUiToast,
-  pluginNotificationCallSite,
-  runPluginAction,
-  type PluginToast,
-  type PluginToastOptions,
+  bindMiniAppUiToast,
+  miniAppNotificationCallSite,
+  runMiniAppAction,
+  type MiniAppToast,
+  type MiniAppToastOptions,
 } from './notifications'
-import { PluginApiError } from './transport'
+import { MiniAppApiError } from './transport'
 
 interface Published {
   message: string
@@ -18,15 +18,15 @@ interface Published {
 
 function bindRecordingHost(): Published[] {
   const published: Published[] = []
-  const record = (message: string, options?: PluginToastOptions) => {
+  const record = (message: string, options?: MiniAppToastOptions) => {
     published.push({
       message,
       description: options?.description,
-      callSite: pluginNotificationCallSite(),
+      callSite: miniAppNotificationCallSite(),
     })
     return published.length
   }
-  bindPluginUiToast(
+  bindMiniAppUiToast(
     Object.assign(record, {
       success: record,
       error: record,
@@ -35,7 +35,7 @@ function bindRecordingHost(): Published[] {
       message: record,
       problems: () => undefined,
       problemsCleared: () => undefined,
-    }) as PluginToast,
+    }) as MiniAppToast,
   )
   return published
 }
@@ -43,30 +43,30 @@ function bindRecordingHost(): Published[] {
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 afterEach(() => {
-  bindPluginUiToast(undefined as unknown as PluginToast)
+  bindMiniAppUiToast(undefined as unknown as MiniAppToast)
 })
 
-describe('runPluginAction', () => {
+describe('runMiniAppAction', () => {
   test('the failure sentence leads and the error message goes under it', async () => {
     const published = bindRecordingHost()
-    runPluginAction(() => Promise.reject(new Error('connection refused')), 'Could not connect')
+    runMiniAppAction(() => Promise.reject(new Error('connection refused')), 'Could not connect')
     await settle()
     expect(published).toMatchObject([
       { message: 'Could not connect', description: 'connection refused' },
     ])
   })
 
-  // The defect: a PluginApiError's `detail` — the driver's own words — was dropped, leaving the row
+  // The defect: a MiniAppApiError's `detail` — the driver's own words — was dropped, leaving the row
   // with a classified sentence and nothing naming the reason.
   test("a plugin request's detail is kept on its own line under the message", async () => {
     const published = bindRecordingHost()
-    const error = new PluginApiError(
+    const error = new MiniAppApiError(
       'The server rejected this request.',
       400,
       'bad_sql',
       'syntax error at or near "SELEC"',
     )
-    runPluginAction(() => Promise.reject(error), 'Could not run the query')
+    runMiniAppAction(() => Promise.reject(error), 'Could not run the query')
     await settle()
     expect(published[0]?.description).toBe(
       'The server rejected this request.\nsyntax error at or near "SELEC"',
@@ -75,15 +75,15 @@ describe('runPluginAction', () => {
 
   test('a detail that only repeats the message is not written twice', () => {
     const published = bindRecordingHost()
-    runPluginAction(() => {
-      throw new PluginApiError('Port 5432 is taken', 409, null, 'Port 5432 is taken')
+    runMiniAppAction(() => {
+      throw new MiniAppApiError('Port 5432 is taken', 409, null, 'Port 5432 is taken')
     }, 'Could not start the forward')
     expect(published[0]?.description).toBe('Port 5432 is taken')
   })
 
   test('a rejection with no readable message adds no noise under the sentence', async () => {
     const published = bindRecordingHost()
-    runPluginAction(() => Promise.reject({ code: 1 }), 'Could not switch')
+    runMiniAppAction(() => Promise.reject({ code: 1 }), 'Could not switch')
     await settle()
     expect(published).toEqual([
       { message: 'Could not switch', description: undefined, callSite: expect.any(String) },
@@ -94,12 +94,12 @@ describe('runPluginAction', () => {
   // could not tell which plugin failed. The call site recorded at the call must be lent to it.
   test('lends the call-time stack to the host for a deferred publish, and only then', async () => {
     const published = bindRecordingHost()
-    function pluginMenuRowHandler() {
-      runPluginAction(() => Promise.reject(new Error('nope')), 'Could not stop')
+    function miniAppMenuRowHandler() {
+      runMiniAppAction(() => Promise.reject(new Error('nope')), 'Could not stop')
     }
-    pluginMenuRowHandler()
+    miniAppMenuRowHandler()
     await settle()
-    expect(published[0]?.callSite).toContain('pluginMenuRowHandler')
-    expect(pluginNotificationCallSite()).toBeUndefined()
+    expect(published[0]?.callSite).toContain('miniAppMenuRowHandler')
+    expect(miniAppNotificationCallSite()).toBeUndefined()
   })
 })

@@ -1,4 +1,4 @@
-import type { PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import { graphCameraSchema } from '../shared/camera'
 import { graphUri } from '../shared/resource'
 import { nodeLine } from '../shared/format'
@@ -14,7 +14,7 @@ import { projectIndex } from './indexing/projects'
 import { findNode } from './refs'
 
 /** Like Project Space's view tool, report the tab's applied camera, never a guessed viewport. */
-export function createGraphViewTool(ctx: PluginContext) {
+export function createGraphViewTool(ctx: MiniAppContext) {
   return ctx.defineTool({
     name: 'code_graph_view',
     label: 'Read or move the Code Graph camera',

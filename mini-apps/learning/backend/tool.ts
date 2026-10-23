@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
-import { classifyByAction, type PluginContext } from '@localixai/mini-app-sdk/backend'
+import { classifyByAction, type MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import { learningCourseUri, learningLessonUri, learningStepUri } from '../shared/resource-uri'
 import { lessons, lessonScore } from '../shared/progression'
 import { formatCourseBundleError, loadCourseBundle } from './course-bundle'
@@ -9,7 +9,7 @@ import type { LearningTutor } from './tutor'
 import { createCourseDraft } from './course-draft'
 import {
   LEARNING_CHANGES_CHANNEL,
-  LEARNING_PLUGIN,
+  LEARNING_MINI_APP,
   type CourseChange,
 } from '../shared/course-changes'
 
@@ -33,7 +33,7 @@ export const classifyLearningCourseCall = classifyByAction({
 })
 
 export function createLearningCourseTool(
-  ctx: PluginContext,
+  ctx: MiniAppContext,
   service: LearningService,
   tutor: LearningTutor,
 ) {
@@ -102,7 +102,7 @@ export function createLearningCourseTool(
       // The open course and library learn of this tool's changes only from this — see
       // `shared/course-changes.ts`. Said after the change landed, so a re-read sees it.
       const announce = (courseId: string) =>
-        context?.session?.emitCommand?.(LEARNING_PLUGIN, LEARNING_CHANGES_CHANNEL, {
+        context?.session?.emitCommand?.(LEARNING_MINI_APP, LEARNING_CHANGES_CHANNEL, {
           courseId,
         } satisfies CourseChange)
       try {

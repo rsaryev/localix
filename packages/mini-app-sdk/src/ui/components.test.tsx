@@ -2,9 +2,9 @@ import { describe, expect, test } from 'bun:test'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
-import { bindPluginUiComponents, Input, type PluginUiComponents } from './components'
+import { bindMiniAppUiComponents, Input, type MiniAppUiComponents } from './components'
 
-function componentsRendering(label: string): PluginUiComponents {
+function componentsRendering(label: string): MiniAppUiComponents {
   const nothing = () => null
   return {
     FileTab: nothing,
@@ -18,17 +18,17 @@ function componentsRendering(label: string): PluginUiComponents {
   }
 }
 
-describe('bindPluginUiComponents', () => {
+describe('bindMiniAppUiComponents', () => {
   test('ending a binding restores the one it shadowed instead of leaving nothing bound', () => {
-    const unbindHost = bindPluginUiComponents(componentsRendering('host'))
-    const unbindDouble = bindPluginUiComponents(componentsRendering('double'))
+    const unbindHost = bindMiniAppUiComponents(componentsRendering('host'))
+    const unbindDouble = bindMiniAppUiComponents(componentsRendering('double'))
     expect(renderToStaticMarkup(createElement(Input))).toBe('<span>double</span>')
 
     unbindDouble()
     expect(renderToStaticMarkup(createElement(Input))).toBe('<span>host</span>')
 
     // An unbind of a binding a newer one already replaced changes nothing.
-    const unbindLater = bindPluginUiComponents(componentsRendering('later'))
+    const unbindLater = bindMiniAppUiComponents(componentsRendering('later'))
     unbindDouble()
     expect(renderToStaticMarkup(createElement(Input))).toBe('<span>later</span>')
     unbindLater()

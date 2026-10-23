@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Gauge } from 'lucide-react'
 
-import type { PluginUiHost, WorkItemLike } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppUiHost, WorkItemLike } from '@localixai/mini-app-sdk/ui'
 import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { EmptyHint, LoadingHint } from '@localixai/kit/empty-hint'
 import type { DockerResourceView } from '../docker/ui/model/dockerView'
@@ -69,7 +69,7 @@ function DevOpsLifecycle() {
 let registered = false
 
 /** Register one extensible DevOps Workspace tab and both provider contribution sets. */
-export function registerUi(host: PluginUiHost): void {
+export function registerUi(host: MiniAppUiHost): void {
   if (registered) return
   registered = true
 

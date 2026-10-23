@@ -20,7 +20,7 @@ import { defaultDbFile, localixHome, resolveDbFile } from '../../lib/env'
  * there — a new plugin is covered the day it ships, and no plugin can opt out by forgetting.
  */
 
-const SAFE_PLUGIN_NAME = /^[a-z0-9][a-z0-9._-]{0,127}$/
+const SAFE_MINI_APP_NAME = /^[a-z0-9][a-z0-9._-]{0,127}$/
 
 /**
  * A startup sweep asks only its own database which sessions exist. Sharing the production
@@ -41,12 +41,12 @@ export function sessionDataDir(sessionId: string, root = sessionDataRoot()): str
   return join(root, encodeURIComponent(sessionId))
 }
 
-export function pluginSessionDataDir(
+export function miniAppSessionDataDir(
   pluginName: string,
   sessionId: string,
   root = sessionDataRoot(),
 ): string {
-  if (!SAFE_PLUGIN_NAME.test(pluginName)) throw new Error('Invalid plugin name')
+  if (!SAFE_MINI_APP_NAME.test(pluginName)) throw new Error('Invalid plugin name')
   return join(sessionDataDir(sessionId, root), pluginName)
 }
 
@@ -55,7 +55,7 @@ export function pluginSessionDataDir(
  * session the user does not own or that no longer exists — before anything touches the disk, so
  * a stale id can never recreate the folder of a deleted session.
  */
-export async function resolvePluginSessionDataDir(options: {
+export async function resolveMiniAppSessionDataDir(options: {
   pluginName: string
   userId: string
   sessionId: string
@@ -63,7 +63,7 @@ export async function resolvePluginSessionDataDir(options: {
   root?: string
 }): Promise<string> {
   await options.authorize(options.userId, options.sessionId)
-  const directory = pluginSessionDataDir(options.pluginName, options.sessionId, options.root)
+  const directory = miniAppSessionDataDir(options.pluginName, options.sessionId, options.root)
   await mkdir(directory, { recursive: true })
   return directory
 }
@@ -123,11 +123,11 @@ export async function sweepOrphanSessionData(input: {
  * The folders `pluginName` already has, one per session, without creating any: what a plugin's
  * cross-chat cleanup walks (a deleted agent unassigned from every board).
  */
-export async function listPluginSessionDataDirs(
+export async function listMiniAppSessionDataDirs(
   pluginName: string,
   root = sessionDataRoot(),
 ): Promise<{ sessionId: string; dir: string }[]> {
-  if (!SAFE_PLUGIN_NAME.test(pluginName)) throw new Error('Invalid plugin name')
+  if (!SAFE_MINI_APP_NAME.test(pluginName)) throw new Error('Invalid plugin name')
   const entries = await readdir(root, { withFileTypes: true }).catch(() => [])
   const found = await Promise.all(
     entries.map(async (entry) => {

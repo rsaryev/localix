@@ -4,7 +4,7 @@
  */
 
 import type { AgentTool } from '@localixai/agent/agents'
-import type { PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import path from 'node:path'
 import { classifyEnvironmentCall } from './call-class'
 import { collectionRootFor } from './collection/for-scope'
@@ -19,7 +19,7 @@ import {
 import { activePairs } from './request-spec'
 
 export interface ManageEnvironmentDeps {
-  ctx: PluginContext
+  ctx: MiniAppContext
   environments: EnvironmentService
   userId: string
 }

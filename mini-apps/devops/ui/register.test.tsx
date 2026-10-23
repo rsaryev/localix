@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 
-import { recordingPluginUiHost } from '@localixai/mini-app-sdk/ui/testing'
+import { recordingMiniAppUiHost } from '@localixai/mini-app-sdk/ui/testing'
 import type {
   RailViewletContribution,
   StatusItemContribution,
@@ -17,7 +17,7 @@ import { registerUi } from './register'
  * contract, and does.
  */
 test('registers one DevOps Workspace viewlet over both provider contribution sets', () => {
-  const { host, registrations } = recordingPluginUiHost()
+  const { host, registrations } = recordingMiniAppUiHost()
 
   registerUi(host)
 

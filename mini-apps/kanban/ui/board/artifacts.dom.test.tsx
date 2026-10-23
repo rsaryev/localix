@@ -2,9 +2,9 @@ import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { act } from 'react'
 import { registerDom } from '@localixai/kit/testing'
 import {
-  bindPluginUiRuntime,
-  type PluginOpenFileRequest,
-  type PluginUiRuntime,
+  bindMiniAppUiRuntime,
+  type MiniAppOpenFileRequest,
+  type MiniAppUiRuntime,
 } from '@localixai/mini-app-sdk/ui/runtime'
 import { WorkItemSessionProvider } from '@localixai/mini-app-sdk/ui/work-item-session'
 
@@ -36,12 +36,12 @@ const artifacts: KanbanArtifact[] = [
 ]
 
 async function render(sessionId: string | null) {
-  const files: PluginOpenFileRequest[] = []
+  const files: MiniAppOpenFileRequest[] = []
   const pastes: { sessionId: string; command: string }[] = []
-  const unbind = bindPluginUiRuntime({
-    workspace: { openFile: (request: PluginOpenFileRequest) => files.push(request) },
+  const unbind = bindMiniAppUiRuntime({
+    workspace: { openFile: (request: MiniAppOpenFileRequest) => files.push(request) },
     terminal: { paste: (request: { sessionId: string; command: string }) => pastes.push(request) },
-  } as unknown as PluginUiRuntime)
+  } as unknown as MiniAppUiRuntime)
   const { createRoot } = await import('react-dom/client')
   const host = document.createElement('div')
   document.body.append(host)

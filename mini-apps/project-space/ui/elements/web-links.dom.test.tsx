@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { act } from 'react'
-import { bindPluginUiRuntime, type PluginUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
+import { bindMiniAppUiRuntime, type MiniAppUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
 import { registerDom } from '@localixai/kit/testing'
 import { viewOf } from './index'
 import { LinkForm } from './WebLink'
@@ -18,9 +18,9 @@ afterAll(async () => {
 
 test('a note offers a web link without opening it while selecting or editing text', async () => {
   const opened: string[] = []
-  const unbind = bindPluginUiRuntime({
+  const unbind = bindMiniAppUiRuntime({
     external: { open: (url: string) => opened.push(url) },
-  } as unknown as PluginUiRuntime)
+  } as unknown as MiniAppUiRuntime)
   const host = document.createElement('div')
   document.body.append(host)
   const { createRoot } = await import('react-dom/client')
@@ -66,9 +66,9 @@ test('a note offers a web link without opening it while selecting or editing tex
 test('a link card has a visible open action and its form saves a normalized address', async () => {
   const opened: string[] = []
   const saved: unknown[] = []
-  const unbind = bindPluginUiRuntime({
+  const unbind = bindMiniAppUiRuntime({
     external: { open: (url: string) => opened.push(url) },
-  } as unknown as PluginUiRuntime)
+  } as unknown as MiniAppUiRuntime)
   const host = document.createElement('div')
   document.body.append(host)
   const { createRoot } = await import('react-dom/client')

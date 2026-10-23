@@ -1,8 +1,8 @@
 import { pluginViewTarget } from '../../../contracts/plugin-view-target'
 import { errorMessage } from '../../../lib/errors'
-import { formatPluginCheck } from './check'
-import { ScaffoldError, toPluginName } from './scaffold'
-import type { PluginAuthoring } from './service'
+import { formatMiniAppCheck } from './check'
+import { ScaffoldError, toMiniAppName } from './scaffold'
+import type { MiniAppAuthoring } from './service'
 
 /**
  * The host side of the `plugin_build` tool: build the named user plugin, or — when the call
@@ -18,18 +18,18 @@ import type { PluginAuthoring } from './service'
  * on the first click. So when the run can look (`canLook`: it has the browser tool), a pass says
  * where to look, at the moment the agent would otherwise report done.
  */
-export async function runPluginBuild(
-  authoring: PluginAuthoring,
+export async function runMiniAppBuild(
+  authoring: MiniAppAuthoring,
   userId: string,
   input: { name: string; title?: string; description?: string },
   options: { canLook?: boolean } = {},
 ): Promise<{ text: string; ok: boolean }> {
   const description = input.description?.trim()
-  if (description) return createPlugin(authoring, userId, { ...input, description })
+  if (description) return createMiniApp(authoring, userId, { ...input, description })
 
   try {
     const { report } = await authoring.build(userId, input.name)
-    const text = formatPluginCheck(input.name, report)
+    const text = formatMiniAppCheck(input.name, report)
     return {
       text: report.ok && options.canLook ? `${text}\n\n${lookHint(input.name)}` : text,
       ok: report.ok,
@@ -39,13 +39,13 @@ export async function runPluginBuild(
   }
 }
 
-async function createPlugin(
-  authoring: PluginAuthoring,
+async function createMiniApp(
+  authoring: MiniAppAuthoring,
   userId: string,
   input: { name: string; title?: string; description: string },
 ): Promise<{ text: string; ok: boolean }> {
   try {
-    const requested = toPluginName(input.name)
+    const requested = toMiniAppName(input.name)
     const name = await authoring.freeName(userId, requested)
     const created = await authoring.create(userId, {
       name,
@@ -59,7 +59,7 @@ async function createPlugin(
     return {
       text: [
         `Created ${created.displayName} (${created.name}) at ${created.dir}.${renamed}`,
-        formatPluginCheck(created.name, created.report, { freshCopy: true }),
+        formatMiniAppCheck(created.name, created.report, { freshCopy: true }),
         created.instruction,
       ].join('\n\n'),
       // A fresh copy fails its residue check by design; creation itself succeeded.

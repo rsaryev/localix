@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { defineAgentTool } from '@localixai/agent/agents'
-import type { PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import { z } from 'zod'
 import { createManageEnvironmentTool } from './manage-environment'
 import type { EnvironmentService } from './environments/service'
@@ -28,7 +28,7 @@ describe('agent environment saves', () => {
       z,
       defineTool: defineAgentTool,
       helpers: { errorResult: (message: string) => ({ content: message, isError: true }) },
-    } as unknown as PluginContext
+    } as unknown as MiniAppContext
     const tool = createManageEnvironmentTool({ ctx, environments, userId: 'u' })
 
     const result = await tool.execute('call', {

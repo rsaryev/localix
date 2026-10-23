@@ -1,4 +1,4 @@
-import { isWorkbenchPlugin } from '@localixai/mini-app-sdk/manifest-primitives'
+import { isWorkbenchMiniApp } from '@localixai/mini-app-sdk/manifest-primitives'
 import { pluginCapabilityLabels, pluginIssueSummary } from '@localixai/api/plugin-presentation'
 import type { PluginRecord, Project } from '@/shared/api/contracts'
 import { projectScopeLabel } from '@/shared/lib/projectScope'
@@ -86,7 +86,7 @@ export function PluginRow({
     ...(plugin.migratedFrom
       ? [{ label: 'migrated', title: `Migrated from ${plugin.migratedFrom}` }]
       : []),
-    ...(isWorkbenchPlugin(plugin.surfaces)
+    ...(isWorkbenchMiniApp(plugin.surfaces)
       ? [
           {
             label: 'workbench',

@@ -46,7 +46,7 @@ export const enc = encodeURIComponent
  *
  * A collection is a directory inside the project, so every route needs to know which one — and
  * the plugin's backend is wired ONCE, so it cannot know. The host resolves the scope per request
- * (`PluginRouteScope`), from the session named here; without it every call would read the
+ * (`MiniAppRouteScope`), from the session named here; without it every call would read the
  * collection under the API process's own working directory, which is the repo the app was
  * launched from rather than the one the user is looking at.
  *

@@ -1,5 +1,5 @@
 import type { DiscoveredPlugin } from './discovery'
-import type { PluginConfigValues } from './config'
+import type { MiniAppConfigValues } from './config'
 import { collectMcpConfigTokens, mcpShellFieldReferencingOption } from './mcp'
 import { collectHookUserConfigTokens } from '../cc-hooks/config'
 import { isRequiredConfigMissing } from '../ext/manifest-validate'
@@ -18,7 +18,7 @@ const BUILTIN_PLUGIN_VARS = new Set([
 export function validatePluginConfig(
   plugin: DiscoveredPlugin,
   warnings: string[],
-  opts?: { config?: PluginConfigValues },
+  opts?: { config?: MiniAppConfigValues },
 ): void {
   // `${KEY}` tokens in MCP config that aren't declared in `config` resolve to '' and
   // can't read host env — flag them so a typo doesn't silently blank a value.

@@ -1,11 +1,11 @@
 /**
  * The Kubernetes RPC transport: the typed error, the GET/POST helpers over
- * `pluginApiFetch`, and the shared query-string builder.
+ * `miniAppApiFetch`, and the shared query-string builder.
  *
  * Split from `kubernetesApi.ts` so that file is only the call surface, and so a
  * transport concern (a header, an error shape, the base path) has one home.
  */
-import { pluginApiFetch } from '@localixai/mini-app-sdk/ui/transport'
+import { miniAppApiFetch } from '@localixai/mini-app-sdk/ui/transport'
 
 import type { KubeErrorCode } from '../../backend/errors'
 import { DevOpsApiError, readApiResponse } from '../../../ui/apiFailure'
@@ -21,7 +21,7 @@ const base = '/rpc/kubernetes'
 
 /** GET a backend path and parse the typed body (or throw a `KubeApiError`). */
 export async function get<T>(path: string): Promise<T> {
-  return readOr<T>(await pluginApiFetch(`${base}${path}`), 'GET')
+  return readOr<T>(await miniAppApiFetch(`${base}${path}`), 'GET')
 }
 
 /** POST a backend path (JSON body when given) and parse the typed body. */
@@ -34,7 +34,7 @@ export async function post<T>(path: string, body?: unknown): Promise<T> {
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify(body),
         }
-  return readOr<T>(await pluginApiFetch(`${base}${path}`, init), 'POST')
+  return readOr<T>(await miniAppApiFetch(`${base}${path}`, init), 'POST')
 }
 
 /** Build a `?context=&namespace=` query string, omitting blanks. */

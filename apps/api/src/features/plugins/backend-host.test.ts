@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import { Hono } from 'hono'
-import { createPluginBackendHost } from './backend-host'
+import { createMiniAppBackendHost } from './backend-host'
 import { createSubsystemRegistry, type BackendSubsystem } from '../ext/subsystem-contrib'
 import { createCapabilityRegistry } from '../ext/capability-registry'
 import { CAP_DOCUMENT_EXTRACT } from '@localixai/mini-app-sdk/backend'
@@ -64,7 +64,7 @@ function setup() {
     contextProviderRegistry: createContextProviderRegistry(),
   }
   let settled = 0
-  const host = createPluginBackendHost({
+  const host = createMiniAppBackendHost({
     ...registries,
     // Fresh register() per load, like the real loader: a new backend object each time.
     loadBackends: async () =>
@@ -80,7 +80,7 @@ function setup() {
   return { host, app, enabled, counters, registries, settled: () => settled }
 }
 
-describe('createPluginBackendHost', () => {
+describe('createMiniAppBackendHost', () => {
   it('boot reconcile wires routes, providers, and frames; disable tears them down', async () => {
     const { host, app, enabled, counters, registries } = setup()
     await host.reconcile()
@@ -109,7 +109,7 @@ describe('createPluginBackendHost', () => {
     const counters = { registered: 0, shutdown: 0 }
     let revision = 'build-1'
     let routePath = '/old'
-    const host = createPluginBackendHost({
+    const host = createMiniAppBackendHost({
       subsystemRegistry: createSubsystemRegistry(),
       capabilityRegistry: createCapabilityRegistry(),
       wsFrameRegistry: createWsFrameRegistry(),
@@ -210,7 +210,7 @@ describe('createPluginBackendHost', () => {
       resourceRefsRegistry: createResourceProviderRegistry(),
       contextProviderRegistry: createContextProviderRegistry(),
     }
-    const host = createPluginBackendHost({
+    const host = createMiniAppBackendHost({
       ...registries,
       loadBackends: async () => [
         {
@@ -276,7 +276,7 @@ describe('createPluginBackendHost', () => {
     const counters = { registered: 0, shutdown: 0 }
     let fail = false
     let settled = 0
-    const host = createPluginBackendHost({
+    const host = createMiniAppBackendHost({
       loadBackends: async () => {
         if (fail) throw new Error('boom')
         return [{ pluginName: 'sample', backend: makeBackend('sample', counters) }]
@@ -335,7 +335,7 @@ describe('createPluginBackendHost', () => {
       return { id: `${name}:backend`, routeMount: { path: sharedPath, app: app as never } }
     }
     const warnings: string[] = []
-    const host = createPluginBackendHost({
+    const host = createMiniAppBackendHost({
       subsystemRegistry: createSubsystemRegistry(),
       capabilityRegistry: createCapabilityRegistry(),
       wsFrameRegistry: createWsFrameRegistry(),
@@ -363,7 +363,7 @@ describe('createPluginBackendHost', () => {
   it('rejects a backend that claims process-global identities outside its owner namespace', async () => {
     const warnings: Array<{ message: string; meta: unknown }> = []
     const wsFrameRegistry = createWsFrameRegistry()
-    const host = createPluginBackendHost({
+    const host = createMiniAppBackendHost({
       subsystemRegistry: createSubsystemRegistry(),
       capabilityRegistry: createCapabilityRegistry(),
       wsFrameRegistry,
@@ -426,7 +426,7 @@ describe('createPluginBackendHost', () => {
         },
       ],
     })
-    const host = createPluginBackendHost({
+    const host = createMiniAppBackendHost({
       subsystemRegistry: createSubsystemRegistry(),
       capabilityRegistry: createCapabilityRegistry(),
       wsFrameRegistry: createWsFrameRegistry(),
@@ -453,7 +453,7 @@ describe('createPluginBackendHost', () => {
       app.get('/who', (c) => c.json({ who: name }))
       return { id: `${name}:backend`, routeMount: { path: `/rpc/${name}`, app: app as never } }
     }
-    const host = createPluginBackendHost({
+    const host = createMiniAppBackendHost({
       subsystemRegistry: createSubsystemRegistry(),
       capabilityRegistry: createCapabilityRegistry(),
       wsFrameRegistry: createWsFrameRegistry(),
@@ -521,9 +521,9 @@ describe('per-request scope', () => {
   }
 
   function scopedSetup(
-    resolveScope?: Parameters<typeof createPluginBackendHost>[0]['resolveScope'],
+    resolveScope?: Parameters<typeof createMiniAppBackendHost>[0]['resolveScope'],
   ) {
-    const host = createPluginBackendHost({
+    const host = createMiniAppBackendHost({
       subsystemRegistry: createSubsystemRegistry(),
       capabilityRegistry: createCapabilityRegistry(),
       wsFrameRegistry: createWsFrameRegistry(),
@@ -587,7 +587,7 @@ describe('what the backend host tells a person', () => {
     const reconciles: Array<string | undefined> = []
     let backends: Array<{ pluginName: string; backend: BackendSubsystem }> = []
     let explode = false
-    const host = createPluginBackendHost({
+    const host = createMiniAppBackendHost({
       subsystemRegistry: createSubsystemRegistry(),
       capabilityRegistry: createCapabilityRegistry(),
       wsFrameRegistry: createWsFrameRegistry(),

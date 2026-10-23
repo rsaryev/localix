@@ -34,7 +34,7 @@ export interface FileIconData {
  * externally-loaded UI (a future dynamic loader) can hand a plugin the same
  * object. The host builds the singleton adapter over its real registries.
  */
-export interface PluginUiHost {
+export interface MiniAppUiHost {
   /** Editor-grid WorkItem tab kinds. */
   workItems: { register(contribution: WorkItemKindContribution): void }
   /** Left-rail sections (sidebar + URL section id). */

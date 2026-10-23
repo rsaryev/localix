@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { act } from 'react'
 import {
-  bindPluginUiComponents,
+  bindMiniAppUiComponents,
   MESSAGE_BINDING_MIME,
   readMessageBindingDrag,
   type MessageContextBindingDraft,
@@ -24,7 +24,7 @@ beforeAll(() => {
   teardown = registerDom()
   actEnvironment.IS_REACT_ACT_ENVIRONMENT = true
   const Empty = () => null
-  unbind = bindPluginUiComponents({
+  unbind = bindMiniAppUiComponents({
     FileTab: Empty,
     TableGrid: Empty,
     ContextBindingIcon: Empty,

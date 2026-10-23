@@ -1,5 +1,5 @@
 import type { FileEditorContribution } from '@localixai/mini-app-sdk/ui'
-import { isPluginContributionEnabled } from './pluginActivation'
+import { isMiniAppContributionEnabled } from './miniAppActivation'
 
 /**
  * OPEN file-type editor registry — a feature that has a specialised editor for a
@@ -44,13 +44,13 @@ export function removeFileEditorsOf(owner: string): void {
 
 export function fileEditorsFor(path: string): FileEditorContribution[] {
   return editors.filter(
-    (editor) => isPluginContributionEnabled(editor.pluginName) && editor.match(path),
+    (editor) => isMiniAppContributionEnabled(editor.pluginName) && editor.match(path),
   )
 }
 
 /** A registered editor by its stable id (the persisted "open with" choice). */
 export function fileEditorById(id: string): FileEditorContribution | undefined {
   return editors.find(
-    (editor) => editor.id === id && isPluginContributionEnabled(editor.pluginName),
+    (editor) => editor.id === id && isMiniAppContributionEnabled(editor.pluginName),
   )
 }

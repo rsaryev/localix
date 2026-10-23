@@ -15,7 +15,7 @@ import type { PluginMonitorHost } from '../features/plugins/monitor-host'
  * Its own module because it is a CONTRACT between phases, while `plugin-hosts.ts` is composition:
  * every phase that fulfils a ref imports this, and none of them wants the host builder.
  */
-export interface PluginHostRefs {
+export interface MiniAppHostRefs {
   onBackendHostSettled?: () => void
   chatServiceForCwd?: Pick<
     ReturnType<typeof createChatService>,

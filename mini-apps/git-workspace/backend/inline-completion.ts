@@ -1,4 +1,4 @@
-import type { PluginTextInputCompletionSurface } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppTextInputCompletionSurface } from '@localixai/mini-app-sdk/backend'
 import { cleanCompletionSuffix, completionDraftTail } from '@localixai/mini-app-sdk/backend'
 
 import { renderCommitCompletionContext } from './completion-context'
@@ -50,7 +50,7 @@ export function cleanCommitCompletion(raw: string, draft = ''): string {
 
 export function createCommitCompletionSurface(
   sourceControl: Pick<ReturnType<typeof createSourceControlService>, 'getCommitCompletionContext'>,
-): PluginTextInputCompletionSurface {
+): MiniAppTextInputCompletionSurface {
   return {
     id: COMMIT_COMPLETION_SURFACE_ID,
     async resolveContext(request) {

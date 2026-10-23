@@ -1,5 +1,5 @@
-import { runPluginAction, toast } from '@localixai/mini-app-sdk/ui'
-import { pluginFiles } from '@localixai/mini-app-sdk/ui/runtime'
+import { runMiniAppAction, toast } from '@localixai/mini-app-sdk/ui'
+import { miniAppFiles } from '@localixai/mini-app-sdk/ui/runtime'
 import { captureBoard } from '@localixai/kit/canvas'
 import { platformCapabilities } from '@localixai/kit/platform'
 import type { SpaceDocument, SpaceElement } from '../../shared/format/document'
@@ -27,7 +27,7 @@ export function copyBoardImage(
   /** `save` writes a PNG file instead of trying the clipboard first. */
   mode: 'copy' | 'save' = 'copy',
 ) {
-  runPluginAction(async () => {
+  runMiniAppAction(async () => {
     if (!root) return
     const live = ids.filter((id) => space.elements[id])
     const box = live.length
@@ -42,12 +42,12 @@ export function copyBoardImage(
     ).finally(release)
     const what = live.length ? `${live.length} element${live.length === 1 ? '' : 's'}` : 'The board'
     if (mode === 'save') {
-      await pluginFiles.saveBlob('project-space.png', blob)
+      await miniAppFiles.saveBlob('project-space.png', blob)
       return void toast.success(`${what} saved as project-space.png`)
     }
     if (await platformCapabilities().clipboard.writeBlob(blob, 'image/png'))
       return void toast.success(`${what} copied as an image`)
-    await pluginFiles.saveBlob('project-space.png', blob)
+    await miniAppFiles.saveBlob('project-space.png', blob)
     toast.info(`${what} saved as project-space.png`, {
       description: 'The clipboard did not take the image.',
     })

@@ -1,4 +1,4 @@
-import { pluginApiFetch, pluginApiUrl } from '@localixai/mini-app-sdk/ui/transport'
+import { miniAppApiFetch, miniAppApiUrl } from '@localixai/mini-app-sdk/ui/transport'
 import { spaceApi } from './api'
 import { localPath, webUrl } from './action-target'
 
@@ -8,7 +8,7 @@ const MAX_IMAGE_BYTES = 25 * 1024 * 1024
 function mediaRoute(src: string): string | null {
   if (/^\/rpc\/media\/[^/?#]+(?:\?.*)?$/u.test(src)) return src
   try {
-    const base = new URL(pluginApiUrl('/rpc/'))
+    const base = new URL(miniAppApiUrl('/rpc/'))
     const url = new URL(src)
     return url.origin === base.origin && /^\/rpc\/media\/[^/]+$/u.test(url.pathname)
       ? `${url.pathname}${url.search}`
@@ -47,7 +47,7 @@ export async function keepActionImage(
   const route = mediaRoute(src)
   let file: Blob | undefined
   if (route)
-    file = await boundedImage(await pluginApiFetch(route, { signal: AbortSignal.timeout(10000) }))
+    file = await boundedImage(await miniAppApiFetch(route, { signal: AbortSignal.timeout(10000) }))
   else if (/^data:/iu.test(src)) {
     const match = /^data:(image\/[\w.+-]+);base64,([a-z\d+/=\s]+)$/iu.exec(src)
     if (!match || match[2]!.length > Math.ceil((MAX_IMAGE_BYTES * 4) / 3))

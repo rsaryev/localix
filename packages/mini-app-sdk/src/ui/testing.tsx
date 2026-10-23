@@ -14,21 +14,21 @@
 
 import { createElement } from 'react'
 
-import { bindPluginUiComponents, type PluginUiComponents } from './components'
-import type { PluginUiHost } from './host'
-import { bindPluginUiToast, type PluginToast } from './notifications'
+import { bindMiniAppUiComponents, type MiniAppUiComponents } from './components'
+import type { MiniAppUiHost } from './host'
+import { bindMiniAppUiToast, type MiniAppToast } from './notifications'
 import { problemReportTitle } from './problems'
 
 const nothing = () => null
 
-/** Every registry on {@link PluginUiHost}, in the order the contract declares them. */
-export type PluginUiHostRegistry = keyof PluginUiHost
+/** Every registry on {@link MiniAppUiHost}, in the order the contract declares them. */
+export type MiniAppUiHostRegistry = keyof MiniAppUiHost
 
-/** What a {@link recordingPluginUiHost} saw, keyed by registry. */
-export type PluginUiRegistrations = Record<PluginUiHostRegistry, unknown[]>
+/** What a {@link recordingMiniAppUiHost} saw, keyed by registry. */
+export type MiniAppUiRegistrations = Record<MiniAppUiHostRegistry, unknown[]>
 
 /**
- * A {@link PluginUiHost} that records rather than renders, for a `registerUi` test.
+ * A {@link MiniAppUiHost} that records rather than renders, for a `registerUi` test.
  *
  * The point is that it is COMPLETE. A hand-rolled fixture enumerates the registries its plugin
  * happens to use and casts past the rest, so the day a seam is added to the contract every such
@@ -39,11 +39,11 @@ export type PluginUiRegistrations = Record<PluginUiHostRegistry, unknown[]>
  * Each entry is the argument list of one `register` call, so a test can assert on order, count and
  * payload: `host.registrations.workItems.map((c) => c.kind)`.
  */
-export function recordingPluginUiHost(): {
-  host: PluginUiHost
-  registrations: PluginUiRegistrations
+export function recordingMiniAppUiHost(): {
+  host: MiniAppUiHost
+  registrations: MiniAppUiRegistrations
 } {
-  const registrations: PluginUiRegistrations = {
+  const registrations: MiniAppUiRegistrations = {
     workItems: [],
     railSections: [],
     railViewlets: [],
@@ -65,7 +65,7 @@ export function recordingPluginUiHost(): {
     actions: [],
   }
   const record =
-    (registry: PluginUiHostRegistry) =>
+    (registry: MiniAppUiHostRegistry) =>
     (...args: unknown[]) => {
       registrations[registry].push(args.length > 1 ? args : args[0])
     }
@@ -92,7 +92,7 @@ export function recordingPluginUiHost(): {
     toolCards: { register: record('toolCards') },
     commentActions: { register: record('commentActions') },
     actions: { register: record('actions') },
-  } satisfies PluginUiHost
+  } satisfies MiniAppUiHost
 
   return { host, registrations }
 }
@@ -109,9 +109,9 @@ export function recordingPluginUiHost(): {
  * that outlive it become the next plugin's host: its real grid renders as the stub. The unbind
  * restores whatever the suite shadowed.
  */
-export function bindPluginUiTestDoubles(): () => void {
+export function bindMiniAppUiTestDoubles(): () => void {
   const problemShape =
-    (shape: 'line' | 'state'): PluginUiComponents['ProblemLine'] =>
+    (shape: 'line' | 'state'): MiniAppUiComponents['ProblemLine'] =>
     ({ report, actions }) =>
       report.problems.length
         ? createElement(
@@ -131,7 +131,7 @@ export function bindPluginUiTestDoubles(): () => void {
             ),
           )
         : null
-  const components: PluginUiComponents = {
+  const components: MiniAppUiComponents = {
     FileTab: nothing,
     TableGrid: nothing,
     ContextBindingIcon: nothing,
@@ -142,10 +142,10 @@ export function bindPluginUiTestDoubles(): () => void {
     // The pane shape renders the same title and the same ways out; a test asserts on those.
     ProblemState: problemShape('state'),
   }
-  const unbindComponents = bindPluginUiComponents(components)
+  const unbindComponents = bindMiniAppUiComponents(components)
 
-  const noop = (() => undefined) as unknown as PluginToast
-  const unbindToast = bindPluginUiToast(
+  const noop = (() => undefined) as unknown as MiniAppToast
+  const unbindToast = bindMiniAppUiToast(
     Object.assign(noop, {
       success: noop,
       error: noop,
@@ -155,7 +155,7 @@ export function bindPluginUiTestDoubles(): () => void {
       // A stable id, so a test can assert that the line was given one to point at.
       problems: () => 'test-entry',
       problemsCleared: () => undefined,
-    }) as PluginToast,
+    }) as MiniAppToast,
   )
   return () => {
     unbindToast()

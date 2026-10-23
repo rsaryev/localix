@@ -1,7 +1,7 @@
 import { ArrowDown, ArrowUp, ClipboardCopy, GitBranch, RefreshCw } from 'lucide-react'
 import type { StatusItemState, MenuEntry } from '@localixai/mini-app-sdk/ui'
-import { pluginWorkspace, runPluginAction, statusMenuList } from '@localixai/mini-app-sdk/ui'
-import { usePluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime-hooks'
+import { miniAppWorkspace, runMiniAppAction, statusMenuList } from '@localixai/mini-app-sdk/ui'
+import { useMiniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 import { copyText } from '@localixai/mini-app-sdk/ui/interactions'
 
 import { useSessionGitField, useSourceControlStore } from '../source-control/model/store'
@@ -28,7 +28,7 @@ import { GIT_WORKSPACE_KIND } from '../workItemKinds'
  */
 export function useGitBranchStatusItem(sessionId: string | null): StatusItemState | null {
   const status = useSessionGitField(sessionId, 'status')
-  const workspace = usePluginWorkspace()
+  const workspace = useMiniAppWorkspace()
   const { list, onPick } = useBranchSwitcher(sessionId)
   const fetch = useSourceControlStore((s) => s.fetch)
   const pull = useSourceControlStore((s) => s.pull)
@@ -106,7 +106,7 @@ export function useGitBranchStatusItem(sessionId: string | null): StatusItemStat
       id: 'fetch',
       label: 'Fetch',
       icon: RefreshCw,
-      onSelect: () => runPluginAction(() => fetch(sessionId), 'Could not fetch'),
+      onSelect: () => runMiniAppAction(() => fetch(sessionId), 'Could not fetch'),
     },
     {
       id: 'pull',
@@ -116,7 +116,7 @@ export function useGitBranchStatusItem(sessionId: string | null): StatusItemStat
       // command, and the number lands in the column every other trailing value in this app uses.
       ...(behind > 0 ? { hint: String(behind) } : {}),
       disabled: behind === 0,
-      onSelect: () => runPluginAction(() => pull(sessionId), 'Could not pull'),
+      onSelect: () => runMiniAppAction(() => pull(sessionId), 'Could not pull'),
     },
     {
       id: 'push',
@@ -124,7 +124,7 @@ export function useGitBranchStatusItem(sessionId: string | null): StatusItemStat
       icon: ArrowUp,
       ...(ahead > 0 ? { hint: String(ahead) } : {}),
       disabled: ahead === 0,
-      onSelect: () => runPluginAction(() => push(sessionId), 'Could not push'),
+      onSelect: () => runMiniAppAction(() => push(sessionId), 'Could not push'),
     },
   ]
 
@@ -142,7 +142,9 @@ export function useGitBranchStatusItem(sessionId: string | null): StatusItemStat
     ],
     active,
     onClick: () =>
-      active && focusedId ? pluginWorkspace.closeWorkItems(focusedId) : openGitWorkspace(sessionId),
+      active && focusedId
+        ? miniAppWorkspace.closeWorkItems(focusedId)
+        : openGitWorkspace(sessionId),
     menu,
   }
 }

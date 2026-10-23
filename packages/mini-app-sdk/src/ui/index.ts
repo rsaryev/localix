@@ -1,7 +1,7 @@
 /**
  * Workbench UI contribution surface — the contracts a plugin's `ui/register.tsx`
  * compiles against. The host (`apps/ui`) implements the registries and passes a
- * {@link PluginUiHost} into `registerUi(host)`.
+ * {@link MiniAppUiHost} into `registerUi(host)`.
  */
 export type {
   MessageBindingTargetKind,
@@ -10,7 +10,7 @@ export type {
   PublishedMessageContext,
   PublishMessageContext,
   IconComponent,
-  PluginOwnedContribution,
+  MiniAppOwnedContribution,
   RailSectionContribution,
   RailViewletContribution,
   SessionSurfaceContribution,
@@ -142,23 +142,23 @@ export { STATUS_ITEM_PLACEMENTS } from './status-items'
 export { tonedIcon } from './toned-icon'
 export type { StatusMenuListOptions } from './status-menu'
 export { STATUS_MENU_LIST_LIMIT, statusMenuList } from './status-menu'
-export type { FileIconData, PluginUiHost } from './host'
+export type { FileIconData, MiniAppUiHost } from './host'
 export type { ToolCardContribution, ToolPresentation } from './tool-cards'
 export type { CommentActionContribution, CommentBatch } from './comment-actions'
 export type { ActionContext, ActionContribution, ActionTarget } from './actions'
 export { ActionSurfaceProvider, useActionSurface } from './action-context'
 export {
   acknowledgeInline,
-  bindPluginUiToast,
-  pluginNotificationCallSite,
-  runPluginAction,
+  bindMiniAppUiToast,
+  miniAppNotificationCallSite,
+  runMiniAppAction,
   toast,
 } from './notifications'
 export type {
-  PluginProblemsOptions,
-  PluginToast,
-  PluginToastId,
-  PluginToastOptions,
+  MiniAppProblemsOptions,
+  MiniAppToast,
+  MiniAppToastId,
+  MiniAppToastOptions,
 } from './notifications'
 export { useProblemReport } from './use-problem-report'
 // Prerequisite recovery (Install / Start) has its own subpath, `./ui/prerequisite-recovery`, and the
@@ -191,7 +191,7 @@ export { ResultCountStatus, type ResultCountStatusProps } from './result-count-s
 export { downloadChartPng, downloadChartSvg } from './chart-export'
 export { ChartView } from './charts/ChartView'
 export {
-  bindPluginUiComponents,
+  bindMiniAppUiComponents,
   ContextBindingIcon,
   ContextBindingPreview,
   FileTab,
@@ -201,18 +201,18 @@ export {
   Textarea,
 } from './components'
 export type {
-  PluginContextBindingIconProps,
-  PluginContextBindingPreviewProps,
-  PluginEditorCompletionItem,
-  PluginEditorPosition,
-  PluginEditorRunContext,
-  PluginFileTabProps,
-  PluginInputProps,
-  PluginNextEditRequest,
-  PluginStagedTableChanges,
-  PluginTableGridProps,
-  PluginTextareaProps,
-  PluginUiComponents,
+  MiniAppContextBindingIconProps,
+  MiniAppContextBindingPreviewProps,
+  MiniAppEditorCompletionItem,
+  MiniAppEditorPosition,
+  MiniAppEditorRunContext,
+  MiniAppFileTabProps,
+  MiniAppInputProps,
+  MiniAppNextEditRequest,
+  MiniAppStagedTableChanges,
+  MiniAppTableGridProps,
+  MiniAppTextareaProps,
+  MiniAppUiComponents,
   EditorRunContext,
 } from './components'
 export {
@@ -240,9 +240,9 @@ export { DistributionChart, TrendChart } from './stats-charts'
 export type { ChartPoint } from './stats-charts'
 export { groupComments, useComments, useScopeComments } from './comments'
 export type { Comment, CommentAnchor } from './comments'
-export { pluginCommandBus } from './commands'
-export type { PluginCommandEvent, PluginCommandFrame, PluginCommandReply } from './commands'
-export { pluginResources } from './runtime'
+export { miniAppCommandBus } from './commands'
+export type { MiniAppCommandEvent, MiniAppCommandFrame, MiniAppCommandReply } from './commands'
+export { miniAppResources } from './runtime'
 export { copyText, useCopied } from './interactions'
 export {
   MESSAGE_BINDING_DRAG_MAX_BYTES,
@@ -271,41 +271,41 @@ export { loadJSON, loadString, saveJSON, saveString } from './storage'
 export type { PathTreeDir, PathTreeItem, PathTreeLeaf, PathTreeNode } from './path-tree'
 export { buildPathTree, folderPaths } from './path-tree'
 export type { TableCopyColumn } from './table'
-export type { PluginUiTransport } from './transport'
+export type { MiniAppUiTransport } from './transport'
 export {
-  PluginApiError,
-  assertPluginResponse,
-  bindPluginUiTransport,
-  cleanPluginQuery,
-  pluginApiFetch,
-  pluginErrorDetail,
-  pluginApiUrl,
-  postPluginJson,
-  unwrapPluginResponse,
+  MiniAppApiError,
+  assertMiniAppResponse,
+  bindMiniAppUiTransport,
+  cleanMiniAppQuery,
+  miniAppApiFetch,
+  miniAppErrorDetail,
+  miniAppApiUrl,
+  postMiniAppJson,
+  unwrapMiniAppResponse,
 } from './transport'
 // The whole runtime vocabulary, not a hand-maintained list of it. Every added door used to need
-// an edit here too, and the list silently fell behind more than once — `PluginOpenFileRequest` was
+// an edit here too, and the list silently fell behind more than once — `MiniAppOpenFileRequest` was
 // declared, exported from `./ui/runtime`, and missing from this barrel.
 export type * from './runtime'
 export {
-  bindPluginUiRuntime,
-  pluginClipboard,
-  pluginComposer,
-  pluginEditor,
-  pluginExternal,
-  pluginFiles,
-  pluginNavigation,
-  pluginProjects,
-  pluginRealtime,
-  pluginSessions,
-  pluginSecrets,
-  pluginTerminal,
-  pluginWorkspace,
+  bindMiniAppUiRuntime,
+  miniAppClipboard,
+  miniAppComposer,
+  miniAppEditor,
+  miniAppExternal,
+  miniAppFiles,
+  miniAppNavigation,
+  miniAppProjects,
+  miniAppRealtime,
+  miniAppSessions,
+  miniAppSecrets,
+  miniAppTerminal,
+  miniAppWorkspace,
 } from './runtime'
 export {
-  usePluginEditPredictionEnabled,
-  usePluginSessions,
-  usePluginTextInputCompletion,
+  useMiniAppEditPredictionEnabled,
+  useMiniAppSessions,
+  useMiniAppTextInputCompletion,
 } from './runtime-hooks'
 export {
   allSessionActivityVersion,
@@ -332,8 +332,8 @@ export {
 // (third-party) plugin iframes. Types + framework-free runtime helpers shared
 // by the host and plugin sides.
 export {
-  PLUGIN_UI_BRIDGE_MARKER,
-  PLUGIN_UI_BRIDGE_VERSION,
+  MINI_APP_UI_BRIDGE_MARKER,
+  MINI_APP_UI_BRIDGE_VERSION,
   SESSION_EVENT_NAME,
   createBridgeRequests,
   errorMessage,
@@ -342,7 +342,7 @@ export {
   invokeMessage,
   isInvokePayload,
   isMessageFromWindow,
-  isPluginBridgeMessage,
+  isMiniAppBridgeMessage,
   isSessionEventData,
   readyMessage,
   resultMessage,
@@ -352,16 +352,16 @@ export {
 export type {
   AcquireLocalixApi,
   BridgeRequests,
-  PluginBridgeErrorPayload,
-  PluginBridgeEventPayload,
-  PluginBridgeInvokePayload,
-  PluginBridgeMessage,
-  PluginBridgeMessageType,
-  PluginBridgeSessionEventData,
-  PluginBridgeThemePayload,
-  PluginSessionPhase,
-  PluginUiApi,
-  PluginUiInvokeOptions,
+  MiniAppBridgeErrorPayload,
+  MiniAppBridgeEventPayload,
+  MiniAppBridgeInvokePayload,
+  MiniAppBridgeMessage,
+  MiniAppBridgeMessageType,
+  MiniAppBridgeSessionEventData,
+  MiniAppBridgeThemePayload,
+  MiniAppSessionPhase,
+  MiniAppUiApi,
+  MiniAppUiInvokeOptions,
 } from './bridge'
 
 /**

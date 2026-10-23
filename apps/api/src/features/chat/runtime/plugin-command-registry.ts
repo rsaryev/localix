@@ -9,7 +9,7 @@
  * frame in phase 2.1 exactly so it could be this correlation key.
  *
  * Lives here (the chat runtime, which owns `streamRegistry`) and is handed to the
- * agent loop as the injected `PluginCommandControl` capability — so plugin tools
+ * agent loop as the injected `MiniAppCommandControl` capability — so plugin tools
  * see only the narrow `emitCommandWithReply` seam and core stays plugin-agnostic.
  */
 
@@ -20,7 +20,7 @@ import { isInteractAllowedForOwner } from './interact-ownership'
 import { createPendingReplyRegistry, type ReplyScheduler } from './pending-reply-registry'
 
 /** Reply payload from the client sink (carried by the `plugin-command-result` WS RPC). */
-export interface PluginCommandResultPayload {
+export interface MiniAppCommandResultPayload {
   ok: boolean
   /** Opaque to core — the plugin's two ends share the shape. */
   result?: unknown
@@ -28,11 +28,11 @@ export interface PluginCommandResultPayload {
 }
 
 /** How one awaited command ended. `noReply` = no client answered (not a defect). */
-export type PluginCommandOutcome =
+export type MiniAppCommandOutcome =
   | { ok: true; result: unknown }
   | { ok: false; error: string; noReply?: boolean }
 
-export interface PluginCommandSendInput {
+export interface MiniAppCommandSendInput {
   userId: string
   sessionId: string
   plugin: string
@@ -44,13 +44,13 @@ export interface PluginCommandSendInput {
 }
 
 /** The narrow capability the agent loop injects (see RunnerDeps.pluginCommands). */
-export interface PluginCommandControl {
-  send(input: PluginCommandSendInput): Promise<PluginCommandOutcome>
+export interface MiniAppCommandControl {
+  send(input: MiniAppCommandSendInput): Promise<MiniAppCommandOutcome>
 }
 
-export interface PluginCommandRegistry extends PluginCommandControl {
+export interface MiniAppCommandRegistry extends MiniAppCommandControl {
   /** Settle a pending command from the client's reply. false → unknown id / owner mismatch. */
-  resolve(commandId: string, payload: PluginCommandResultPayload, callerUserId?: string): boolean
+  resolve(commandId: string, payload: MiniAppCommandResultPayload, callerUserId?: string): boolean
   /** Reject every pending command for a (user, session) — e.g. the session was closed. */
   closeForSession(userId: string, sessionId: string): void
 }
@@ -71,13 +71,13 @@ interface PendingMeta {
   sessionId: string
 }
 
-export function createPluginCommandRegistry(deps: {
+export function createMiniAppCommandRegistry(deps: {
   streamRegistry: SessionStreamRegistry
   timeoutMs?: number
   /** Timer seam for deterministic lifecycle tests. */
   scheduler?: ReplyScheduler
-}): PluginCommandRegistry {
-  const replies = createPendingReplyRegistry<PluginCommandOutcome, PendingMeta>(deps.scheduler)
+}): MiniAppCommandRegistry {
+  const replies = createPendingReplyRegistry<MiniAppCommandOutcome, PendingMeta>(deps.scheduler)
   const timeoutMs = deps.timeoutMs ?? DEFAULT_TIMEOUT_MS
 
   return {
@@ -108,7 +108,7 @@ export function createPluginCommandRegistry(deps: {
     },
 
     resolve(commandId, payload, callerUserId) {
-      const outcome: PluginCommandOutcome = payload.ok
+      const outcome: MiniAppCommandOutcome = payload.ok
         ? { ok: true, result: payload.result }
         : { ok: false, error: payload.error ?? 'The plugin UI reported a failure.' }
       return replies.resolve(

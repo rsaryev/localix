@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { z } from 'zod'
 import { registerDom } from '@localixai/kit/testing/dom'
-import { bindPluginUiTransport } from './transport'
+import { bindMiniAppUiTransport } from './transport'
 import { usePolledSnapshot, type PolledSnapshot } from './route-snapshot'
 
 let teardown: () => Promise<void>
@@ -17,7 +17,7 @@ test('a read that brings back the same data keeps the rendered object, so nothin
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   let board = ['X']
-  const unbind = bindPluginUiTransport({
+  const unbind = bindMiniAppUiTransport({
     url: (path) => path,
     request: async () => Response.json({ board }),
   })

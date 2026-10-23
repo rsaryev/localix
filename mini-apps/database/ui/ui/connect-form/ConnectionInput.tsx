@@ -3,7 +3,7 @@ import { AlertCircle, Check, Database, File, FolderOpen, Link2 } from 'lucide-re
 import { Button } from '@localixai/kit/button'
 import { Input } from '@localixai/kit/input'
 import { TextAction } from '@localixai/kit/text-action'
-import { pluginFiles } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppFiles } from '@localixai/mini-app-sdk/ui/runtime'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import {
   SegmentedControl,
@@ -62,7 +62,7 @@ export function ConnectionInput({
 }) {
   const changed = () => f.resetTest()
   const pickFile = async () => {
-    const paths = await pluginFiles.pickFiles()
+    const paths = await miniAppFiles.pickFiles()
     if (!paths[0]) return
     f.setFile(paths[0])
     changed()

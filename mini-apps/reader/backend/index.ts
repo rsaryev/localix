@@ -1,7 +1,7 @@
 import { join } from 'node:path'
 
 import { createStoreChangeFeed } from '@localixai/mini-app-sdk/backend'
-import type { PluginContext, PluginRegistration } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext, MiniAppRegistration } from '@localixai/mini-app-sdk/backend'
 
 import { createReaderContextProvider } from './context-provider'
 import { createReaderResourceProvider } from './resource-provider'
@@ -11,7 +11,7 @@ import { createReaderSearchProvider } from './search-provider'
 import { ReaderService } from './service'
 import { ReaderStatsService } from './stats'
 
-export function register(context: PluginContext): PluginRegistration {
+export function register(context: MiniAppContext): MiniAppRegistration {
   const service = new ReaderService(context.host, {
     filePath: join(context.dataDir, 'library.json'),
     helpers: context.helpers,

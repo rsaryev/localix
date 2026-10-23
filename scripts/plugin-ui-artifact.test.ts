@@ -13,18 +13,18 @@ import {
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 
-import { loadPluginKit, type PluginKit } from '../apps/api/src/features/plugins/authoring/kit'
+import { loadMiniAppKit, type MiniAppKit } from '../apps/api/src/features/plugins/authoring/kit'
 import {
-  buildPluginUiArtifact,
-  publishPluginUiArtifact,
+  buildMiniAppUiArtifact,
+  publishMiniAppUiArtifact,
   sharedShim,
 } from '../apps/api/src/features/plugins/authoring/ui-build'
-import { NO_SOURCE_MAPS_FLAG, stagePluginUi, takeStagedUiArtifact } from './stage-plugin-ui.mjs'
+import { NO_SOURCE_MAPS_FLAG, stageMiniAppUi, takeStagedUiArtifact } from './stage-plugin-ui.mjs'
 import { kitCacheRoot } from './plugin-kit-cache.mjs'
 
 const repoRoot = resolve(import.meta.dir, '..')
 const root = mkdtempSync(join(tmpdir(), 'plugin-ui-artifact-'))
-let kit: PluginKit
+let kit: MiniAppKit
 let dirs = 0
 
 beforeAll(async () => {
@@ -42,7 +42,7 @@ beforeAll(async () => {
     ],
     { stdio: 'pipe', timeout: 60_000, killSignal: 'SIGKILL' },
   )
-  kit = await loadPluginKit(join(root, 'kit'))
+  kit = await loadMiniAppKit(join(root, 'kit'))
 }, 30_000)
 afterAll(() => rmSync(root, { recursive: true, force: true }))
 
@@ -58,7 +58,7 @@ function write(path: string, content: string) {
 }
 
 /** A plugin with an eager entry and a lazy chunk that alone needs the heavy kit module. */
-function fixturePlugin(extra: Record<string, string> = {}): string {
+function fixtureMiniApp(extra: Record<string, string> = {}): string {
   const plugin = join(tempDir(), 'fixture')
   write(
     join(plugin, 'ui', 'register.tsx'),
@@ -76,8 +76,8 @@ function fixturePlugin(extra: Record<string, string> = {}): string {
     join(plugin, 'ui', 'Panel.tsx'),
     [
       "import { CodeEditor } from '@localixai/kit/code-editor'",
-      "import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'",
-      'export const Panel = [CodeEditor, pluginWorkspace]',
+      "import { miniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime'",
+      'export const Panel = [CodeEditor, miniAppWorkspace]',
     ].join('\n'),
   )
   for (const [path, content] of Object.entries(extra)) write(join(plugin, path), content)
@@ -87,10 +87,10 @@ function fixturePlugin(extra: Record<string, string> = {}): string {
 const read = (dir: string, file: string) => readFileSync(join(dir, file), 'utf8')
 const chunks = (dir: string) => readdirSync(join(dir, 'chunks')).filter((f) => f.endsWith('.js'))
 const build = (pluginDir: string, outDir = join(tempDir(), 'out')) =>
-  buildPluginUiArtifact({ kit, pluginDir, outDir })
+  buildMiniAppUiArtifact({ kit, pluginDir, outDir })
 
 test('relocated media encoding vendor retains its browser exclusions without node_modules', async () => {
-  const plugin = fixturePlugin({
+  const plugin = fixtureMiniApp({
     'ui/Panel.tsx':
       "import { CanvasSource, BufferTarget, Output, Mp4OutputFormat } from 'mediabunny'\nexport const Panel = [CanvasSource, BufferTarget, Output, Mp4OutputFormat]\n",
   })
@@ -109,7 +109,7 @@ test('relocated media encoding vendor retains its browser exclusions without nod
 describe('plugin UI artifact', () => {
   test('bundles the plugin, takes shared modules from the host, loads the heavy one lazily', async () => {
     const out = join(tempDir(), 'out')
-    const manifest = await build(fixturePlugin(), out)
+    const manifest = await build(fixtureMiniApp(), out)
     expect(manifest).toMatchObject({ entry: 'entry.js', styles: ['utilities.css'] })
     expect(manifest?.revision).toMatch(/^[0-9a-f]{16}$/u)
     expect(JSON.parse(read(out, 'manifest.json'))).toEqual(manifest)
@@ -140,14 +140,14 @@ describe('plugin UI artifact', () => {
   // leaves them out (17 MB of the installer). Both halves, so neither default can drift.
   test('source maps are emitted by default and left out when asked', async () => {
     const withMaps = join(tempDir(), 'out')
-    await build(fixturePlugin(), withMaps)
+    await build(fixtureMiniApp(), withMaps)
     expect(existsSync(join(withMaps, 'entry.js.map'))).toBe(true)
     expect(read(withMaps, 'entry.js')).toContain('sourceMappingURL=entry.js.map')
 
     const withoutMaps = join(tempDir(), 'out')
-    await buildPluginUiArtifact({
+    await buildMiniAppUiArtifact({
       kit,
-      pluginDir: fixturePlugin(),
+      pluginDir: fixtureMiniApp(),
       outDir: withoutMaps,
       sourceMaps: false,
     })
@@ -157,7 +157,7 @@ describe('plugin UI artifact', () => {
   })
 
   test('the revision is a content hash: same sources, same revision; an edit moves it', async () => {
-    const plugin = fixturePlugin()
+    const plugin = fixtureMiniApp()
     const first = await build(plugin)
     expect((await build(plugin))?.revision).toBe(first?.revision)
     write(join(plugin, 'ui', 'Panel.tsx'), "export const Panel = () => 'edited'\n")
@@ -165,7 +165,7 @@ describe('plugin UI artifact', () => {
   })
 
   test('retains one previous set of lazy chunks without changing the current revision', async () => {
-    const plugin = fixturePlugin()
+    const plugin = fixtureMiniApp()
     const out = join(tempDir(), 'out')
     const currentChunks = () =>
       (JSON.parse(read(out, '.current-files.json')) as string[]).filter((file) =>
@@ -190,7 +190,7 @@ describe('plugin UI artifact', () => {
   })
 
   test('a failed rebuild keeps the last complete artifact until a successful replacement', async () => {
-    const plugin = fixturePlugin()
+    const plugin = fixtureMiniApp()
     const out = join(tempDir(), 'out')
     const first = await build(plugin, out)
     const before = {
@@ -219,16 +219,16 @@ describe('plugin UI artifact', () => {
   })
 
   test('a stylesheet failure after bundling preserves the live artifact', async () => {
-    const plugin = fixturePlugin()
+    const plugin = fixtureMiniApp()
     const out = join(tempDir(), 'out')
     await build(plugin, out)
     const before = read(out, 'manifest.json')
-    const kitWithMissingTheme: PluginKit = {
+    const kitWithMissingTheme: MiniAppKit = {
       ...kit,
       manifest: { ...kit.manifest, hostStylesheet: 'ui/styles/missing.css' },
     }
     await expect(
-      buildPluginUiArtifact({ kit: kitWithMissingTheme, pluginDir: plugin, outDir: out }),
+      buildMiniAppUiArtifact({ kit: kitWithMissingTheme, pluginDir: plugin, outDir: out }),
     ).rejects.toThrow()
     expect(read(out, 'manifest.json')).toBe(before)
     expect(existsSync(join(out, 'entry.js'))).toBe(true)
@@ -238,7 +238,7 @@ describe('plugin UI artifact', () => {
     const out = join(tempDir(), 'out')
     write(join(out, 'manifest.json'), '{"revision":"previous"}')
     await expect(
-      publishPluginUiArtifact(join(dirname(out), 'missing-candidate'), out),
+      publishMiniAppUiArtifact(join(dirname(out), 'missing-candidate'), out),
     ).rejects.toThrow()
     expect(read(out, 'manifest.json')).toBe('{"revision":"previous"}')
     expect(readdirSync(dirname(out)).some((file) => file.startsWith('.out-previous-'))).toBe(false)
@@ -247,7 +247,7 @@ describe('plugin UI artifact', () => {
   test('refuses host internals: a plugin reaches the host only through the kit', async () => {
     // With the `@/*` mapping real plugins carry for the compiler: the boundary must hold even
     // where the path WOULD resolve.
-    const plugin = fixturePlugin({
+    const plugin = fixtureMiniApp({
       'tsconfig.json': JSON.stringify({
         compilerOptions: { paths: { '@/*': [`${repoRoot}/apps/ui/src/*`] } },
       }),
@@ -264,7 +264,7 @@ describe('plugin UI artifact', () => {
       (outside: string) =>
         `import { secret } from ${JSON.stringify(outside)}\nexport const value = secret\n`,
     ]) {
-      const plugin = fixturePlugin()
+      const plugin = fixtureMiniApp()
       const outside = join(dirname(plugin), 'outside.ts')
       write(outside, 'export const secret = "outside"\n')
       write(join(plugin, 'ui', 'register.tsx'), source(outside))
@@ -273,7 +273,7 @@ describe('plugin UI artifact', () => {
   })
 
   test('refuses a tsconfig bare alias that resolves outside the plugin', async () => {
-    const plugin = fixturePlugin()
+    const plugin = fixtureMiniApp()
     const outside = join(dirname(plugin), 'outside.ts')
     write(outside, 'export const secret = "outside"\n')
     write(
@@ -291,7 +291,7 @@ describe('plugin UI artifact', () => {
     // Bun workspaces install a plugin's dependency into an ANCESTOR `node_modules`, so the file is
     // outside the plugin by path. Refusing it took the UI of every bundled plugin with a
     // dependency down; the package's own relative and self-subpath imports are its code.
-    const plugin = fixturePlugin()
+    const plugin = fixtureMiniApp()
     const pkg = join(dirname(plugin), 'node_modules', 'hoisted-dep')
     write(
       join(pkg, 'package.json'),
@@ -324,7 +324,7 @@ describe('plugin UI artifact', () => {
 
   test('refuses an import that escapes through a source symlink', async () => {
     if (process.platform === 'win32') return // Creating a symlink may require elevated privileges.
-    const plugin = fixturePlugin()
+    const plugin = fixtureMiniApp()
     const outside = join(dirname(plugin), 'outside.ts')
     write(outside, 'export const secret = "outside"\n')
     symlinkSync(outside, join(plugin, 'ui', 'link.ts'))
@@ -339,7 +339,7 @@ describe('plugin UI artifact', () => {
   })
 
   test('removing the UI entry removes a previously built artifact', async () => {
-    const plugin = fixturePlugin()
+    const plugin = fixtureMiniApp()
     const out = join(tempDir(), 'out')
     await build(plugin, out)
     rmSync(join(plugin, 'ui', 'register.tsx'))
@@ -350,20 +350,20 @@ describe('plugin UI artifact', () => {
   test('a shim re-exports exactly the given names; only preloaded modules are read synchronously', () => {
     expect(sharedShim('react', ['useState', 'default', 'not-an-identifier', 'useState'])).toBe(
       [
-        'const m = globalThis["__LOCALIX_PLUGIN_UI_SHARED__"].require("react")',
+        'const m = globalThis["__LOCALIX_MINI_APP_UI_SHARED__"].require("react")',
         'export const { useState } = m',
         'export default m.default',
       ].join('\n'),
     )
     expect(sharedShim('@localixai/kit/button', ['Button'])).toStartWith(
-      'const m = await globalThis["__LOCALIX_PLUGIN_UI_SHARED__"].load("@localixai/kit/button")',
+      'const m = await globalThis["__LOCALIX_MINI_APP_UI_SHARED__"].load("@localixai/kit/button")',
     )
   })
 
   // An older CommonJS dependency `require`s React (`@xyflow/react` → `use-sync-external-store`),
   // and Bun refuses a `require` whose chain reaches a top-level `await`.
   test('a CommonJS dependency that requires React builds', async () => {
-    const plugin = fixturePlugin({
+    const plugin = fixtureMiniApp({
       'node_modules/legacy-hook/package.json': '{"name":"legacy-hook","main":"index.js"}',
       'node_modules/legacy-hook/index.js':
         "'use strict'\nvar React = require('react')\nmodule.exports = function use() { return React.useState }\n",
@@ -378,7 +378,7 @@ describe('plugin UI artifact', () => {
   // reports success: `isTextItem` from `@localixai/agent/agents/items` shipped as an undeclared
   // `E_`, and every external-agents session import failed with "Can't find variable: E_".
   test('a bundled re-export barrel keeps the definitions it re-exports', async () => {
-    const plugin = fixturePlugin({
+    const plugin = fixtureMiniApp({
       'node_modules/lean-items/package.json': JSON.stringify({
         name: 'lean-items',
         type: 'module',
@@ -414,7 +414,7 @@ describe('staging a plugin UI', () => {
   test('builds against the kit staged beside the plugins', () => {
     const { repo, outPlugins } = staged()
     const calls: string[][] = []
-    stagePluginUi('demo', {
+    stageMiniAppUi('demo', {
       repoRoot: repo,
       outPlugins,
       log,
@@ -428,7 +428,7 @@ describe('staging a plugin UI', () => {
   test('release staging asks the builder for an artifact without source maps', () => {
     const { repo, outPlugins } = staged()
     const calls: string[][] = []
-    stagePluginUi('demo', {
+    stageMiniAppUi('demo', {
       repoRoot: repo,
       outPlugins,
       log,
@@ -443,7 +443,7 @@ describe('staging a plugin UI', () => {
     const { repo, outPlugins, artifact } = staged()
     const previous = takeStagedUiArtifact(join(outPlugins, 'demo'))
     expect(existsSync(artifact)).toBe(false)
-    const failure = stagePluginUi('demo', {
+    const failure = stageMiniAppUi('demo', {
       repoRoot: repo,
       outPlugins,
       log,
@@ -461,7 +461,7 @@ describe('staging a plugin UI', () => {
   test('a successful build replaces the artifact and drops the one set aside', () => {
     const { repo, outPlugins, artifact } = staged()
     const previous = takeStagedUiArtifact(join(outPlugins, 'demo'))
-    const failure = stagePluginUi('demo', {
+    const failure = stageMiniAppUi('demo', {
       repoRoot: repo,
       outPlugins,
       log,
@@ -491,7 +491,7 @@ describe('staging a plugin UI', () => {
         killSignal: 'SIGKILL',
       })
     const previous = takeStagedUiArtifact(join(outPlugins, 'demo'))
-    const failure = stagePluginUi('demo', {
+    const failure = stageMiniAppUi('demo', {
       repoRoot: repo,
       outPlugins,
       log,
@@ -509,7 +509,7 @@ describe('staging a plugin UI', () => {
     for (let attempt = 0; attempt < 2; attempt++) {
       const kept = takeStagedUiArtifact(join(outPlugins, 'demo'))
       expect(
-        stagePluginUi('demo', {
+        stageMiniAppUi('demo', {
           repoRoot: repo,
           outPlugins,
           log,
@@ -527,7 +527,7 @@ describe('staging a plugin UI', () => {
   test('release staging (fatal) stops on a failed UI build', () => {
     const { repo, outPlugins } = staged()
     expect(() =>
-      stagePluginUi('demo', {
+      stageMiniAppUi('demo', {
         repoRoot: repo,
         outPlugins,
         log,

@@ -94,7 +94,7 @@ Localix (runtime, plugins, data; workspaces held back until Localix itself is as
   only: the kit's glass coats and system font apply, while the JavaScript `isDesktop` stays false
   because there is no shell to invoke. `useTheme` and the anti-FOUC script in `index.html` skip the
   inline fill for the same reason the macOS workspace does.
-- **Conversation.** `usePluginApp` finds the app's project, then opens the conversation recorded in
+- **Conversation.** `useMiniApp` finds the app's project, then opens the conversation recorded in
   view state (`surface`, key `plugin-app:<plugin>`) while it is still one of the project's, else the
   project's newest, else a new one (`pluginAppConversation.ts`, read from the hydrated roster). Any
   conversation of the project the person opens becomes the remembered one; one elsewhere is visited,

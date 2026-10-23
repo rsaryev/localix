@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
 import '@localixai/kit/testing/host-runtime'
 import { registerDom } from '@localixai/kit/testing'
-import { warmPluginUiComponents } from '@localixai/kit/testing/lent-components'
+import { warmMiniAppUiComponents } from '@localixai/kit/testing/lent-components'
 
 let teardown: () => Promise<void>
 beforeAll(async () => {
@@ -9,7 +9,7 @@ beforeAll(async () => {
   ;(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
   // A failed apply renders the host's lazy ProblemLine. Bind and warm it here rather than
   // depending on whichever other plugin suite happened to run first.
-  await warmPluginUiComponents()
+  await warmMiniAppUiComponents()
 })
 afterAll(async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))

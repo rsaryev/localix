@@ -1,5 +1,5 @@
 import type { ComponentType, ReactNode } from 'react'
-import type { PluginOwnedContribution, PublishMessageContext } from './contrib'
+import type { MiniAppOwnedContribution, PublishMessageContext } from './contrib'
 
 /**
  * File-type editor contribution — a plugin that has a specialised editor for a
@@ -43,7 +43,7 @@ export interface FileEditorProps {
   publishMessageContext?: PublishMessageContext
 }
 
-export interface FileEditorContribution extends PluginOwnedContribution {
+export interface FileEditorContribution extends MiniAppOwnedContribution {
   /**
    * Stable identity, `<plugin>.<editor>` by convention (e.g. `sample.spreadsheet`,
    * `sample.sql`). Persisted as the user's remembered "open with" choice when
@@ -103,7 +103,7 @@ export interface FileEditorEnhancerProps extends FileEditorProps {
   render: (contribution: Readonly<Record<string, unknown>>) => ReactNode
 }
 
-export interface FileEditorEnhancerContribution extends PluginOwnedContribution {
+export interface FileEditorEnhancerContribution extends MiniAppOwnedContribution {
   /** Stable identity, `<plugin>.<enhancer>` by convention. */
   id: string
   /** Which files this enhancer attaches to; `() => true` for all of them. */
@@ -150,7 +150,7 @@ export interface FileTreeDecorationIndex {
  * Decorations for the file tree. At most ONE contribution is honoured — the tree has a single
  * badge slot per row, so two providers would silently race for it; the host keeps the first.
  */
-export interface FileTreeDecorationContribution extends PluginOwnedContribution {
+export interface FileTreeDecorationContribution extends MiniAppOwnedContribution {
   /** Stable identity, `<plugin>.<decoration>` by convention. */
   id: string
   /** The hook the tree calls, once, with the session whose tree is on screen. */

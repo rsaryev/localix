@@ -5,7 +5,7 @@ import type { McpServerRecord } from '../mcp/repository'
 import type { DiscoveredSkill } from '../agent-core/skill-discovery'
 import type { BackendSubsystem } from '../ext/subsystem-contrib'
 import { normalizeCcToolName } from './discovery'
-import type { MemoryProvider, PluginChannel, PluginContext, PluginHooks } from './native'
+import type { MemoryProvider, MiniAppChannel, MiniAppContext, MiniAppHooks } from './native'
 import type { PluginAgent, PluginMonitor } from './contracts'
 import type { PluginOutputStyle } from './output-styles'
 
@@ -46,10 +46,10 @@ export interface LoadedPluginAgent {
   isolation?: 'isolated'
 }
 
-export interface LoadedPluginHook {
+export interface LoadedMiniAppHook {
   pluginName: string
-  hooks: PluginHooks
-  ctx: PluginContext
+  hooks: MiniAppHooks
+  ctx: MiniAppContext
 }
 
 /**
@@ -80,7 +80,7 @@ export interface LoadedPlugins {
   /** Bundled skills to fold into the filesystem skill list. */
   skills: DiscoveredSkill[]
   /** Hooks collected from enabled plugins, each bound to its context. */
-  hooks: LoadedPluginHook[]
+  hooks: LoadedMiniAppHook[]
   /**
    * Declarative Claude Code hook configs (`hooks/hooks.json`) from enabled
    * plugins — raw JSON + plugin root, merged with the settings-file hooks by the
@@ -100,7 +100,7 @@ export interface LoadedPlugins {
    */
   monitors: LoadedPluginMonitor[]
   /** Long-running platform channels, each bound to its context. Started by the channel host, NOT per turn. */
-  channels: Array<{ pluginName: string; channel: PluginChannel; ctx: PluginContext }>
+  channels: Array<{ pluginName: string; channel: MiniAppChannel; ctx: MiniAppContext }>
   /** Declarative system-prompt sections from enabled plugins (manifest data, size-capped by schema). */
   promptSections: Array<{ pluginName: string; title: string; content: string }>
   /**
@@ -121,12 +121,12 @@ export interface LoadedPlugins {
    */
   mainAgent: LoadedPluginAgent | null
   /** The active external memory provider, or null. At most ONE — first enabled plugin wins. */
-  memory: { pluginName: string; provider: MemoryProvider; ctx: PluginContext } | null
+  memory: { pluginName: string; provider: MemoryProvider; ctx: MiniAppContext } | null
   /**
    * Process-GLOBAL backend subsystems contributed by enabled plugins' `register()`
    * (route mount / resource provider / search provider / live WS frames / shutdown).
    * Collected here but NOT consumed per-run — the plugin backend HOST
-   * ([[loadPluginBackends]] → backend-host.ts) reconciles them into the subsystem +
+   * ([[loadMiniAppBackends]] → backend-host.ts) reconciles them into the subsystem +
    * WS-frame registries, at boot and on every hot enable/disable. Empty for a normal
    * plugin that contributes only tools/hooks/skills. Each entry carries the owning
    * plugin's name so the host can diff wired-vs-desired per plugin, and the `revision` of the

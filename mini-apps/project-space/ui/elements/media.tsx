@@ -1,7 +1,7 @@
 import type { SyntheticEvent } from 'react'
 import { ExternalLink, FileType2, Globe, Image as ImageIcon } from 'lucide-react'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
-import { pluginExternal, pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppExternal, miniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import { fileIcon } from '@localixai/kit/file-icon'
 import { IconButton } from '@localixai/kit/icon-button'
 import { Popover, PopoverAnchor, PopoverContent } from '@localixai/kit/popover'
@@ -137,7 +137,7 @@ function LinkView({ props, editing, commit, stopEditing }: ElementViewProps<Link
             tooltip="Open website"
             onClick={(event) => {
               event.stopPropagation()
-              void pluginExternal.open(props.url)
+              void miniAppExternal.open(props.url)
             }}
             onDoubleClick={(event) => event.stopPropagation()}
           >
@@ -173,8 +173,8 @@ export const mediaViews = [
     keepAspect: (props: ImageProps) => props.fit === 'contain',
     controls: [imageFitControl],
     open: (props: ImageProps, sessionId: string) => {
-      if (props.url) void pluginExternal.open(props.url)
-      else if (props.path) pluginWorkspace.openFile({ sessionId, path: props.path })
+      if (props.url) void miniAppExternal.open(props.url)
+      else if (props.path) miniAppWorkspace.openFile({ sessionId, path: props.path })
     },
   }),
   defineView({
@@ -185,7 +185,7 @@ export const mediaViews = [
     // Double-click lets a PDF take the pointer, to scroll and select in it.
     editable: true,
     open: (props: DocumentProps, sessionId: string) =>
-      pluginWorkspace.openFile({ sessionId, path: props.path }),
+      miniAppWorkspace.openFile({ sessionId, path: props.path }),
   }),
   defineView({
     type: 'link',
@@ -193,7 +193,7 @@ export const mediaViews = [
     Icon: Globe,
     editable: true,
     chrome: 'card',
-    open: (props: LinkProps) => void pluginExternal.open(props.url),
+    open: (props: LinkProps) => void miniAppExternal.open(props.url),
     insert: { order: 6, description: 'Add a website with a visible open action', input: 'link' },
   }),
 ]

@@ -150,4 +150,4 @@ These are code constants, not user settings.
 - [Send precedence and budgets](../../../apps/ui/src/entities/chat/model/sendRefs.ts) ·
   [context-ref hook](../../../apps/ui/src/entities/chat/model/useContextRefs.ts)
 - [Core file live state](../../../apps/ui/src/features/inspector/ui/FileTab.tsx)
-- [Sandboxed bridge action](../../../apps/ui/src/shared/contrib/pluginPanelActions.ts)
+- [Sandboxed bridge action](../../../apps/ui/src/shared/contrib/miniAppPanelActions.ts)

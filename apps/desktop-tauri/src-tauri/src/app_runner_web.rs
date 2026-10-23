@@ -46,7 +46,7 @@ define_class!(
     #[unsafe(super(NSObject))]
     #[thread_kind = MainThreadOnly]
     #[ivars = State]
-    #[name = "LocalixPluginAppController"]
+    #[name = "LocalixMiniAppController"]
     pub(crate) struct Controller;
 
     unsafe impl NSObjectProtocol for Controller {}

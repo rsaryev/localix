@@ -1,4 +1,4 @@
-import { classifyByAction, type PluginContext } from '@localixai/mini-app-sdk/backend'
+import { classifyByAction, type MiniAppContext } from '@localixai/mini-app-sdk/backend'
 
 import {
   describeGame,
@@ -63,13 +63,13 @@ function afterMove(game: Game, ends: boolean): string {
 }
 
 /** The table a tool call acts on: the chat the call runs in. */
-function seatOf(ctx: PluginContext, context: { session?: { id: string } } | undefined): Seat {
+function seatOf(ctx: MiniAppContext, context: { session?: { id: string } } | undefined): Seat {
   const sessionId = context?.session?.id
   if (!sessionId) throw new MoveRefused('Chess is played in a chat; this call has none.')
   return { userId: ctx.userId, sessionId }
 }
 
-export function createGameTools(ctx: PluginContext, games: GameService) {
+export function createGameTools(ctx: MiniAppContext, games: GameService) {
   const stepSchema = ctx.z.object({
     action: ctx.z.enum(['move', 'state', 'new_game', 'resign']),
     move: ctx.z.string().min(2).max(12).optional(),

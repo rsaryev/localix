@@ -9,7 +9,7 @@ const PLUGINS_ROOT = join(REPO_ROOT, 'mini-apps')
 /** The titlebar action recipe, through the kit's door or the host path it moved out of. */
 const CHROME_ACTION_IMPORT = /['"](?:@localixai\/kit|@\/shared\/ui)\/chrome-action['"]/u
 
-function pluginUiSources(): { path: string; source: string }[] {
+function miniAppUiSources(): { path: string; source: string }[] {
   return readdirSync(PLUGINS_ROOT, { encoding: 'utf8', recursive: true })
     .filter(
       (entry) =>
@@ -38,7 +38,7 @@ function pluginUiSources(): { path: string; source: string }[] {
  * (`host.statusItems.register`), and this is what keeps the old door shut.
  */
 describe('plugins do not draw the workbench chrome', () => {
-  const sources = pluginUiSources()
+  const sources = miniAppUiSources()
 
   test('the plugin UI tree is actually being read', () => {
     // A scan that reaches nothing is a disabled lint: an empty offender list looks exactly like a
@@ -122,7 +122,7 @@ describe('plugins do not draw the workbench chrome', () => {
  * near-identical per-plugin structure tests.
  */
 describe('contributed status items stay declarations', () => {
-  const modules = pluginUiSources().filter(({ path }) => /\/statusItems?\.tsx?$/u.test(path))
+  const modules = miniAppUiSources().filter(({ path }) => /\/statusItems?\.tsx?$/u.test(path))
 
   test('every plugin that contributes one has a module this scan reaches', () => {
     expect(modules.length).toBeGreaterThanOrEqual(8)

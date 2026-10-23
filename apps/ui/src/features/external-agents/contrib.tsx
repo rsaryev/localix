@@ -2,14 +2,14 @@ import { lazy } from 'react'
 import { FolderTree, History } from 'lucide-react'
 import { externalAgentPresentation } from '@/shared/ui/externalAgentPresentation'
 import { LinkedAgentTerminalPill } from './ui/LinkedAgentTerminalPill'
-import type { PluginUiHost } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppUiHost } from '@localixai/mini-app-sdk/ui'
 import { resourceMessageBindingDraft } from '@localixai/mini-app-sdk/ui'
 import { EXTERNAL_NAMESPACE, parseExternalResource } from './model/sessionResource'
 
 const Transcript = lazy(() => import('./ui/ExternalTranscript'))
 const HistoryTab = lazy(() => import('./ui/ExternalHistoryTab'))
 
-export function registerUi(host: PluginUiHost): void {
+export function registerUi(host: MiniAppUiHost): void {
   host.sessionSurfaces.register({ surface: 'composer.context', Component: LinkedAgentTerminalPill })
   host.workItems.register({
     kind: 'external-agent-transcript',

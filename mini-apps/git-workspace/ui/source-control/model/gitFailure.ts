@@ -1,5 +1,5 @@
 import { toast } from '@localixai/mini-app-sdk/ui'
-import { pluginErrorDetail } from '@localixai/mini-app-sdk/ui'
+import { miniAppErrorDetail } from '@localixai/mini-app-sdk/ui'
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 
 /**
@@ -48,7 +48,7 @@ export async function guardGit(action: string, fn: () => Promise<unknown>): Prom
  * the files.
  */
 export function gitDetail(error: unknown): string | undefined {
-  return pluginErrorDetail(error) ?? (errorMessage(error, '') || undefined)
+  return miniAppErrorDetail(error) ?? (errorMessage(error, '') || undefined)
 }
 
 /**

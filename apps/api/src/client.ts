@@ -155,10 +155,10 @@ export type {
 // `.localix-app/app.json`, every consumer (onboarding steps, settings grouping) reads the
 // declaration through these pure helpers — no host-side plugin allowlist.
 export {
-  PLUGIN_SURFACE_AGENT,
-  PLUGIN_SURFACE_WORKBENCH,
-  normalizePluginSurfaces,
-  isWorkbenchPlugin,
+  MINI_APP_SURFACE_AGENT,
+  MINI_APP_SURFACE_WORKBENCH,
+  normalizeMiniAppSurfaces,
+  isWorkbenchMiniApp,
 } from './features/plugins/contracts-base'
 export {
   pluginCapabilityLabels,
@@ -171,11 +171,11 @@ export type {
   PluginRecord,
   PluginProvides,
   PluginConfigField,
-  PluginConfigOption,
-  PluginConfigType,
+  MiniAppConfigOption,
+  MiniAppConfigType,
   PluginManifest,
   PluginCommand,
-  PluginCommandArg,
+  MiniAppCommandArg,
   PluginCommandSpec,
   ListPluginCommandsResponse,
   PluginValidation,

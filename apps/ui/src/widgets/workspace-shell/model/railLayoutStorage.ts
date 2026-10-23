@@ -20,7 +20,7 @@ export const RAIL_LAYOUT_STORAGE_KEY = 'localix_rail_layout'
  */
 export function parseRailLayout(
   raw: string | null,
-  restorePluginPins = false,
+  restoreMiniAppPins = false,
 ): RailLayoutState | null {
   if (!raw) return null
   let data: unknown
@@ -32,8 +32,8 @@ export function parseRailLayout(
   const state = coerceRailLayout(data)
   const version =
     data && typeof data === 'object' && 'v' in data && typeof data.v === 'number' ? data.v : 0
-  return state && restorePluginPins && version < RAIL_LAYOUT_VERSION
-    ? { ...state, legacyPluginPins: true }
+  return state && restoreMiniAppPins && version < RAIL_LAYOUT_VERSION
+    ? { ...state, legacyMiniAppPins: true }
     : state
 }
 

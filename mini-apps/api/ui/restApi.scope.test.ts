@@ -37,7 +37,7 @@ async function transport(): Promise<string> {
 
 /** Every SDK transport request argument in the client, up to its first comma. */
 function fetchTargets(code: string): string[] {
-  return [...code.matchAll(/pluginApiFetch\(\s*([^,]+)/g)].map((m) => m[1]!.trim())
+  return [...code.matchAll(/miniAppApiFetch\(\s*([^,]+)/g)].map((m) => m[1]!.trim())
 }
 
 describe('every request carries its scope', () => {

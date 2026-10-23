@@ -2,7 +2,7 @@
  * Process-wide database-service singleton.
  *
  * The workbench's `register()` runs MORE THAN ONCE per process: once at boot (the
- * backend/route contribution, via `loadPluginBackends`) and again per agent run (the
+ * backend/route contribution, via `loadMiniAppBackends`) and again per agent run (the
  * `database_client` tool contribution, via the per-run plugin loader). Both paths share
  * ONE `DatabaseService` instance, because the live-driver registry (open connections,
  * manual transactions) lives in memory on the instance — a second instance would have an

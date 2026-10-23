@@ -1,4 +1,4 @@
-import type { IconComponent, PluginOwnedContribution } from './contrib'
+import type { IconComponent, MiniAppOwnedContribution } from './contrib'
 
 /** Content supplied by the host, rather than DOM nodes or a destination's private format. */
 export type ActionTarget =
@@ -30,7 +30,7 @@ export interface ActionContext {
   target: ActionTarget
 }
 
-export interface ActionContribution extends PluginOwnedContribution {
+export interface ActionContribution extends MiniAppOwnedContribution {
   id: string
   label: string
   title?: string

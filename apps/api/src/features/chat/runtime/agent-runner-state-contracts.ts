@@ -89,7 +89,7 @@ export interface RuntimeState {
    * stopped" row per child it took down was noise (`notifications/producers/runs.ts`).
    */
   cascadeStoppedSessionIds: Set<string>
-  pluginStartedSessions: Set<string>
+  miniAppStartedSessions: Set<string>
   /** Sessions whose CC-hook `SessionStart` already fired (once per session, like plugins). */
   ccHooksStartedSessions: Set<string>
   /**

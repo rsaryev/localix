@@ -1,12 +1,12 @@
 import { describe, expect, test } from 'bun:test'
 import { runInNewContext } from 'node:vm'
 import type {
-  PluginBridgeEventPayload,
-  PluginBridgeMessage,
-  PluginUiApi,
+  MiniAppBridgeEventPayload,
+  MiniAppBridgeMessage,
+  MiniAppUiApi,
 } from '@localixai/mini-app-sdk/ui'
 
-import { pluginUiApiBootstrap } from './pluginUiApiBootstrap'
+import { miniAppUiApiBootstrap } from './miniAppUiApiBootstrap'
 
 type MessageListener = (event: { source: unknown; data: unknown }) => void
 
@@ -21,11 +21,11 @@ async function rejectionMessage(promise: Promise<unknown>): Promise<string> {
 
 function bootstrapFixture() {
   const listeners: MessageListener[] = []
-  const posted: PluginBridgeMessage[] = []
+  const posted: MiniAppBridgeMessage[] = []
   const attributes = new Map<string, string>([['data-theme', 'dark']])
   const styles = new Map<string, string>()
   const parent = {
-    postMessage(message: PluginBridgeMessage) {
+    postMessage(message: MiniAppBridgeMessage) {
       posted.push(message)
     },
   }
@@ -35,7 +35,7 @@ function bootstrapFixture() {
     },
   } as {
     addEventListener(type: string, listener: MessageListener): void
-    acquireLocalixApi?: () => PluginUiApi
+    acquireLocalixApi?: () => MiniAppUiApi
   }
   const document = {
     documentElement: {
@@ -54,7 +54,7 @@ function bootstrapFixture() {
     },
   }
 
-  runInNewContext(pluginUiApiBootstrap('test-bridge-nonce-0001'), {
+  runInNewContext(miniAppUiApiBootstrap('test-bridge-nonce-0001'), {
     window,
     parent,
     document,
@@ -164,7 +164,7 @@ describe('host-injected plugin UI API', () => {
     const fixture = bootstrapFixture()
     const api = fixture.acquire()
     const themes: string[] = []
-    const events: PluginBridgeEventPayload[] = []
+    const events: MiniAppBridgeEventPayload[] = []
     api.onTheme((theme) => themes.push(theme.theme))
     api.onEvent((event) => events.push(event))
 

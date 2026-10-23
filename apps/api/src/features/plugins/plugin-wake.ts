@@ -18,38 +18,38 @@
  * outcome instead of a throw, and the host stamping the source, plus the tools the turn answers
  * with.
  */
-import type { PluginWakeOutcome, PluginWakeRequest } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppWakeOutcome, MiniAppWakeRequest } from '@localixai/mini-app-sdk/backend'
 
 import type { WakeRequest } from '../chat/contracts'
 import type { WakeOutcome } from '../triggers/delivery'
 
 /** A wake is a notice, not a document: past this the agent is being handed a report to read. */
-export const PLUGIN_WAKE_MESSAGE_MAX = 2_000
+export const MINI_APP_WAKE_MESSAGE_MAX = 2_000
 /** More than this is a suite rather than an answer, and every tool named stays on the wire. */
-export const PLUGIN_WAKE_TOOLS_MAX = 6
+export const MINI_APP_WAKE_TOOLS_MAX = 6
 const KEY_SHAPE = /^[\w.:-]{1,120}$/
 
 type Checked =
   | { ok: true; message: string; tools: string[]; key?: string }
   | { ok: false; reason: string }
 
-/** The request against the contract in `PluginWakeRequest`, and the tools this plugin owns. */
-export function checkPluginWake(
-  request: PluginWakeRequest,
+/** The request against the contract in `MiniAppWakeRequest`, and the tools this plugin owns. */
+export function checkMiniAppWake(
+  request: MiniAppWakeRequest,
   ownedTools: readonly string[],
 ): Checked {
   if (!request.userId?.trim() || !request.sessionId?.trim())
     return { ok: false, reason: 'a wake needs the userId and sessionId of the session to wake' }
   const message = request.message?.trim() ?? ''
   if (!message) return { ok: false, reason: 'the message is empty' }
-  if (message.length > PLUGIN_WAKE_MESSAGE_MAX)
+  if (message.length > MINI_APP_WAKE_MESSAGE_MAX)
     return {
       ok: false,
-      reason: `the message is ${message.length} characters; a wake carries at most ${PLUGIN_WAKE_MESSAGE_MAX}`,
+      reason: `the message is ${message.length} characters; a wake carries at most ${MINI_APP_WAKE_MESSAGE_MAX}`,
     }
   const tools = [...new Set(request.tools ?? [])]
-  if (tools.length > PLUGIN_WAKE_TOOLS_MAX)
-    return { ok: false, reason: `a wake names at most ${PLUGIN_WAKE_TOOLS_MAX} tools` }
+  if (tools.length > MINI_APP_WAKE_TOOLS_MAX)
+    return { ok: false, reason: `a wake names at most ${MINI_APP_WAKE_TOOLS_MAX} tools` }
   const foreign = tools.filter((tool) => !ownedTools.includes(tool))
   if (foreign.length > 0)
     return {
@@ -66,7 +66,7 @@ export function checkPluginWake(
  * row's origin tag — it never sees that — so it says who sent it, that the person did not type it,
  * and what answers it. The same shape as the webhook's `wrapInboundMessage`.
  */
-export function framePluginWake(
+export function frameMiniAppWake(
   pluginName: string,
   message: string,
   tools: readonly string[],
@@ -75,7 +75,7 @@ export function framePluginWake(
   return `[From the "${pluginName}" plugin — sent by the plugin, not typed by the user.${answer}]\n\n${message}`
 }
 
-export interface PluginWakesDeps {
+export interface MiniAppWakesDeps {
   /** The one wake delivery. Read per wake: it is bound after the plugin hosts are built. */
   deliver: (request: WakeRequest) => Promise<WakeOutcome>
   logger: { warn: (entry: Record<string, unknown>) => void }
@@ -85,7 +85,7 @@ export interface PluginWakesDeps {
  * The `wake` host service, one per plugin, checked against what each plugin registered on the
  * latest load — replaced whole on every load, so a rebuilt plugin's renamed tool is refused at once.
  */
-export function createPluginWakes(deps: PluginWakesDeps) {
+export function createMiniAppWakes(deps: MiniAppWakesDeps) {
   let ownedTools = new Map<string, readonly string[]>()
 
   return {
@@ -97,14 +97,14 @@ export function createPluginWakes(deps: PluginWakesDeps) {
       ownedTools = next
     },
 
-    forPlugin(pluginName: string) {
-      return async (request: PluginWakeRequest): Promise<PluginWakeOutcome> => {
-        const checked = checkPluginWake(request, ownedTools.get(pluginName) ?? [])
+    forMiniApp(pluginName: string) {
+      return async (request: MiniAppWakeRequest): Promise<MiniAppWakeOutcome> => {
+        const checked = checkMiniAppWake(request, ownedTools.get(pluginName) ?? [])
         if (!checked.ok) return { status: 'refused', reason: checked.reason }
         const outcome = await deps.deliver({
           userId: request.userId,
           sessionId: request.sessionId,
-          content: framePluginWake(pluginName, checked.message, checked.tools),
+          content: frameMiniAppWake(pluginName, checked.message, checked.tools),
           source: 'plugin',
           plugin: pluginName,
           ...(checked.key ? { deliveryKey: `plugin:${pluginName}:${checked.key}` } : {}),

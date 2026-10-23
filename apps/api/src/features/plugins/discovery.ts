@@ -7,7 +7,7 @@ import { resolveBundledRoot } from '../../lib/bundled-root'
 import { envString } from '../../lib/env'
 
 import type { DiscoveredPlugin } from './discovery-types'
-import { syncBundledPlugins } from './bundled-install'
+import { syncBundledMiniApps } from './bundled-install'
 
 import { scanDirsCached } from './discovery-cached-scan'
 
@@ -47,7 +47,7 @@ const BUNDLED_STAGING_MARKER = '.localix-staged.json'
  * module (the BUNDLED layout), else the repo root `plugins/` five levels up
  * (plugins → features → src → api → apps → root) when running from source.
  */
-export function bundledPluginsRoot(): string {
+export function bundledMiniAppsRoot(): string {
   return resolveBundledRoot({
     moduleUrl: import.meta.url,
     dirName: 'plugins',
@@ -63,7 +63,7 @@ export function bundledPluginsRoot(): string {
  * repo plugins contain authoring files and unresolved TS/workspace imports and
  * must never be copied into the user's global install root.
  *
- * `discoverBundledPlugins()` deliberately does not use this gate — marketplace
+ * `discoverBundledMiniApps()` deliberately does not use this gate — marketplace
  * generation and validation still inspect the raw authoring tree in-place.
  */
 /**
@@ -73,16 +73,16 @@ export function bundledPluginsRoot(): string {
  * root a build stages both into.
  */
 export function bundledSourceRoots(): string[] {
-  const root = bundledPluginsRoot()
+  const root = bundledMiniAppsRoot()
   if (envString('LOCALIX_BUNDLED_PLUGINS_DIR') || basename(root) !== 'plugins') return [root]
   // A packaged app's staged root has no `mini-apps/` beside it: everything is staged into it.
   const miniApps = join(dirname(root), 'mini-apps')
   return existsSync(miniApps) ? [miniApps, root] : [root]
 }
 
-export async function bundledPluginsSyncRoot(): Promise<string | null> {
+export async function bundledMiniAppsSyncRoot(): Promise<string | null> {
   const explicit = envString('LOCALIX_BUNDLED_PLUGINS_DIR')
-  const root = bundledPluginsRoot()
+  const root = bundledMiniAppsRoot()
   if (explicit || (await pathExists(join(root, BUNDLED_STAGING_MARKER)))) return root
   return null
 }
@@ -125,8 +125,10 @@ export async function discoverPlugins(opts: {
   const projectId = opts.projectId ?? ''
   const includeBundled = opts.includeBundled ?? true
   const absCwd = opts.cwd && opts.cwd !== '/' ? resolve(opts.cwd) : null
-  const bundledRoot = includeBundled ? await bundledPluginsSyncRoot() : null
-  const bundledNames = bundledRoot ? await syncBundledPlugins(bundledRoot, home) : new Set<string>()
+  const bundledRoot = includeBundled ? await bundledMiniAppsSyncRoot() : null
+  const bundledNames = bundledRoot
+    ? await syncBundledMiniApps(bundledRoot, home)
+    : new Set<string>()
 
   const projectScan =
     absCwd && absCwd !== home
@@ -183,7 +185,7 @@ export async function discoverPlugins(opts: {
  * across machines and would otherwise churn the generated catalog. `discoverPlugins`
  * applies the same sort via `mergeByPrecedence`.
  */
-export async function discoverBundledPlugins(): Promise<DiscoveredPlugin[]> {
+export async function discoverBundledMiniApps(): Promise<DiscoveredPlugin[]> {
   const found = (
     await Promise.all(
       bundledSourceRoots().map((root) => scanDirs(root, [''], 'global', '', { bundled: true })),

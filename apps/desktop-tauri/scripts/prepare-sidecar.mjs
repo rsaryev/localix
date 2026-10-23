@@ -47,9 +47,9 @@ import {
 import {
   STAGED_DROPINS_MARKER,
   stageDropins,
-  stagePluginKitBeside,
+  stageMiniAppKitBeside,
 } from '../../../scripts/stage-dropins.mjs'
-import { PLUGIN_KIT_INPUTS } from '../../../scripts/stage-plugin-kit.mjs'
+import { MINI_APP_KIT_INPUTS } from '../../../scripts/stage-plugin-kit.mjs'
 import { BUNDLED_DIRS, STAGED_APPS_DIR } from '../../../scripts/lib/bundled-roots.mjs'
 import { BUILD_STAMP_ENV, resolveBuildStamp } from '../../../scripts/build-stamp.mjs'
 import {
@@ -132,7 +132,7 @@ const runtimeKey = fingerprint([
   join(repo, 'scripts', 'stage-plugin-ui.mjs'),
   join(repo, 'scripts', 'build-plugin-ui.mjs'),
   // Everything the plugin kit is made from — the same list the dev watcher re-stages on.
-  ...PLUGIN_KIT_INPUTS.map((input) => join(repo, input)),
+  ...MINI_APP_KIT_INPUTS.map((input) => join(repo, input)),
   join(repo, 'scripts', 'stage-third-party-notices.mjs'),
   join(repo, 'scripts', 'rust-third-party-notices.mjs'),
   join(desktop, 'licenses'),
@@ -255,7 +255,7 @@ if (!runtimeReady) {
   // without it the packaged app's contributed backends failed to load.
   // The plugin kit first: the plugin UI builds read it, and the installed app needs it to
   // create and build the user's own plugins without a source tree.
-  stagePluginKitBeside({ repoRoot: repo, outPlugins: join(resources, STAGED_APPS_DIR) })
+  stageMiniAppKitBeside({ repoRoot: repo, outPlugins: join(resources, STAGED_APPS_DIR) })
   stageDropins({
     repoRoot: repo,
     outPlugins: join(resources, STAGED_APPS_DIR),

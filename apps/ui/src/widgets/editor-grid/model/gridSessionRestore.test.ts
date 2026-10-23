@@ -14,8 +14,8 @@ import {
   useGridStore,
 } from '@/entities/workspace-grid/model'
 import { workItemKindRegistry } from '@/shared/contrib/uiContrib'
-import { pluginUiHostFor } from '@/shared/contrib/host'
-import { setEnabledPluginNames } from '@/shared/contrib/pluginActivation'
+import { miniAppUiHostFor } from '@/shared/contrib/host'
+import { setEnabledPluginNames } from '@/shared/contrib/miniAppActivation'
 import { syncGridChatSelection } from './useGridChatSync'
 
 const STORAGE_KEY = 'workspace_grid_v2'
@@ -87,7 +87,7 @@ describe('a restored session keeps the tab it was serialized with', () => {
     expect(useGridStore.getState().items[boardTab]?.payload).toEqual({ boardId: 'board-1' })
 
     if (!workItemKindRegistry.getRegistered('sample-space:workspace')) {
-      pluginUiHostFor('sample-space').workItems.register({
+      miniAppUiHostFor('sample-space').workItems.register({
         kind: 'sample-space:workspace',
         Component: () => null,
         Icon: () => null,

@@ -1,8 +1,8 @@
 import { Globe } from 'lucide-react'
 import type { StatusItemState, MenuEntry } from '@localixai/mini-app-sdk/ui'
-import { pluginWorkspace, runPluginAction } from '@localixai/mini-app-sdk/ui'
+import { miniAppWorkspace, runMiniAppAction } from '@localixai/mini-app-sdk/ui'
 import { createSharedResource } from '@localixai/mini-app-sdk/ui/shared-resource'
-import { usePluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime-hooks'
+import { useMiniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 
 import type { EnvironmentInfo } from '../backend/contracts'
 import { restApi } from './restApi'
@@ -51,7 +51,7 @@ subscribeApiWorkspaceCommands((command) => {
  * them from, so no item either.
  */
 export function useApiEnvironmentStatusItem(sessionId: string | null): StatusItemState | null {
-  const workspace = usePluginWorkspace()
+  const workspace = useMiniAppWorkspace()
   const list = environments.use(sessionId)
 
   const focusedId = workspace.focusedId
@@ -62,7 +62,7 @@ export function useApiEnvironmentStatusItem(sessionId: string | null): StatusIte
   const current = list.find((environment) => environment.active)
 
   const open = () =>
-    pluginWorkspace.openWorkItem({
+    miniAppWorkspace.openWorkItem({
       workKind: WORKSPACE_KIND,
       id: WORKSPACE_KIND,
       title: 'API Client',
@@ -77,7 +77,7 @@ export function useApiEnvironmentStatusItem(sessionId: string | null): StatusIte
   // closed with the old environment still selected — indistinguishable from a row that does
   // nothing, which is the least explicable thing a UI can do.
   const activate = (name: string) =>
-    runPluginAction(
+    runMiniAppAction(
       () => restApi.useEnvironment(sessionId, name),
       name === '' ? 'Could not clear the environment' : `Could not switch to “${name}”`,
     )
@@ -106,7 +106,7 @@ export function useApiEnvironmentStatusItem(sessionId: string | null): StatusIte
     // nothing and a send fails in a way the response body explains badly.
     ...(current ? {} : { tone: 'warning' as const }),
     active,
-    onClick: () => (active && focusedId ? pluginWorkspace.closeWorkItems(focusedId) : open()),
+    onClick: () => (active && focusedId ? miniAppWorkspace.closeWorkItems(focusedId) : open()),
     menu,
   }
 }

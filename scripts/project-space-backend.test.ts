@@ -7,9 +7,9 @@ import { z } from 'zod'
 import {
   createWsFrameConnection,
   type HostRouteContext,
-  type PluginContext,
+  type MiniAppContext,
 } from '@localixai/mini-app-sdk/backend'
-import { createPluginBackendHost } from '../apps/api/src/features/plugins/backend-host'
+import { createMiniAppBackendHost } from '../apps/api/src/features/plugins/backend-host'
 import { createSubsystemRegistry } from '../apps/api/src/features/ext/subsystem-contrib'
 import { createCapabilityRegistry } from '../apps/api/src/features/ext/capability-registry'
 import { createWsFrameRegistry } from '../apps/api/src/features/ext/ws-frame-registry'
@@ -39,8 +39,8 @@ test('the scoped Project Space backend serves HTTP and live changes through the 
         resolveProjectRoot: async () => root,
       },
     },
-  } as unknown as PluginContext
-  const host = createPluginBackendHost({
+  } as unknown as MiniAppContext
+  const host = createMiniAppBackendHost({
     subsystemRegistry: createSubsystemRegistry(),
     capabilityRegistry: createCapabilityRegistry(),
     wsFrameRegistry,

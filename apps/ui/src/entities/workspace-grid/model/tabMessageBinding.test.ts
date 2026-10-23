@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import type { WorkItem } from '@/shared/lib/workItem'
-import { setEnabledPluginNames } from '@/shared/contrib/pluginActivation'
+import { setEnabledPluginNames } from '@/shared/contrib/miniAppActivation'
 import { workItemKindRegistry } from '@/shared/contrib/uiContrib'
 import { workItemToMessageBinding, workItemToMessageBindings } from './tabMessageBinding'
 import { clearLiveTabMessageContext, publishLiveTabMessageContext } from './liveTabMessageContext'

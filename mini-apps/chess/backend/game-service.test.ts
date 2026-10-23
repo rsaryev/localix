@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { PluginWakeOutcome, PluginWakeRequest } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppWakeOutcome, MiniAppWakeRequest } from '@localixai/mini-app-sdk/backend'
 
 import { ANSWER_TOOLS } from './ask-agent'
 import { createGameService } from './game-service'
@@ -39,8 +39,8 @@ const S1 = { userId: 'u1', sessionId: 's1' }
 const S2 = { userId: 'u1', sessionId: 's2' }
 
 /** Games over fresh session storage, with a wake that records its requests and answers `outcome`. */
-function setup(outcome: PluginWakeOutcome = { status: 'delivered' }) {
-  const woke: PluginWakeRequest[] = []
+function setup(outcome: MiniAppWakeOutcome = { status: 'delivered' }) {
+  const woke: MiniAppWakeRequest[] = []
   const storage = sessionStorage()
   let ids = 0
   const games = createGameService({
@@ -103,7 +103,7 @@ describe('a person’s move wakes the chat the board belongs to', () => {
   })
 
   test('an answer that arrives after the agent already moved is not written over the board', async () => {
-    let release: (outcome: PluginWakeOutcome) => void = () => {}
+    let release: (outcome: MiniAppWakeOutcome) => void = () => {}
     const storage = sessionStorage()
     const games = createGameService({
       resolveDir: storage.resolveDir,

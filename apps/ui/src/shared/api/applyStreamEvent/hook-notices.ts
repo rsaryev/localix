@@ -1,6 +1,6 @@
 /** Bounded hook notices and plugin problem pointers in the transcript. */
 import { settingsEntityAnchor } from '@localixai/mini-app-sdk/navigation'
-import { pluginLabel } from '@/shared/contrib/pluginAttribution'
+import { pluginLabel } from '@/shared/contrib/miniAppAttribution'
 import type { StreamEventOf, StreamReducers } from './types'
 import { noticePosition } from './notice-position'
 
@@ -30,7 +30,7 @@ function noticeDetail(event: StreamEventOf<'hook.notice'>): string {
  * read as N. What the conversation still needs is WHEN it happened, so the line stays — neutral,
  * naming the plugin, with the problem as its detail and the same settings destination as the row.
  */
-function pluginProblemPointer(event: StreamEventOf<'hook.notice'>, pluginName: string) {
+function miniAppProblemPointer(event: StreamEventOf<'hook.notice'>, pluginName: string) {
   return {
     kind: 'hook_notice' as const,
     tone: 'neutral' as const,
@@ -57,7 +57,7 @@ export const hookNoticeReducers: StreamReducers<'hook.notice'> = {
       afterMessageId: anchorMsg?.id ?? null,
       withinMessage: noticePosition(session, anchorMsg),
       systemNotice: event.plugin
-        ? pluginProblemPointer(event, event.plugin.name)
+        ? miniAppProblemPointer(event, event.plugin.name)
         : {
             kind: 'hook_notice' as const,
             tone: 'warning' as const,

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { invokeMessage, readyMessage } from '@localixai/mini-app-sdk/ui'
 
-import { createPanelActions } from '@/shared/contrib/pluginPanelActions'
+import { createPanelActions } from '@/shared/contrib/miniAppPanelActions'
 import { createPanelBridgeHost, type PanelWindowLike } from './panelBridgeCore'
 
 /**

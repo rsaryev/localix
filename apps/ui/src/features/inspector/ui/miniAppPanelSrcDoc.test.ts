@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { buildPanelSrcDoc, PANEL_CDN_HOSTS, PANEL_CSP } from './pluginPanelSrcDoc'
+import { buildPanelSrcDoc, PANEL_CDN_HOSTS, PANEL_CSP } from './miniAppPanelSrcDoc'
 
 const TAURI_CONF = resolve(
   import.meta.dir,

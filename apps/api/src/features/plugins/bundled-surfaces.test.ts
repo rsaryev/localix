@@ -3,10 +3,10 @@ import { access } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { isWorkbenchPlugin } from '@localixai/mini-app-sdk/manifest'
-import { discoverBundledPlugins } from './discovery'
+import { isWorkbenchMiniApp } from '@localixai/mini-app-sdk/manifest'
+import { discoverBundledMiniApps } from './discovery'
 import { resolvePluginConfig } from './config'
-import { inspectPluginTools } from './native'
+import { inspectMiniAppTools } from './native'
 import { validatePluginFull } from './validate'
 import { assertNotVoid } from '../../lib/source-lint'
 
@@ -28,7 +28,7 @@ async function exists(path: string): Promise<boolean> {
  */
 describe('bundled plugin surface contract', () => {
   it('keeps native UI entrypoints and the workbench surface in sync without an allowlist', async () => {
-    const plugins = await discoverBundledPlugins()
+    const plugins = await discoverBundledMiniApps()
     // ANTI-VOID. Every assertion below compares a list DERIVED from discovery against
     // `[]`, so an empty discovery makes all of them pass while inspecting nothing —
     // proven: with `plugins = []`, `mismatches` and `failures` are both `[]`. Same
@@ -36,7 +36,7 @@ describe('bundled plugin surface contract', () => {
     assertNotVoid(
       'bundled plugins',
       plugins.length,
-      'discoverBundledPlugins() walks plugins/*/plugin.json — check the glob and directory layout.',
+      'discoverBundledMiniApps() walks plugins/*/plugin.json — check the glob and directory layout.',
     )
     const mismatches: string[] = []
 
@@ -45,7 +45,7 @@ describe('bundled plugin surface contract', () => {
         const hasNativeUi =
           (await exists(join(plugin.dir, 'ui', 'register.ts'))) ||
           (await exists(join(plugin.dir, 'ui', 'register.tsx')))
-        const declaresWorkbench = isWorkbenchPlugin(plugin.manifest.surfaces)
+        const declaresWorkbench = isWorkbenchMiniApp(plugin.manifest.surfaces)
         if (hasNativeUi !== declaresWorkbench) {
           mismatches.push(
             `${plugin.manifest.name}: ui/register=${hasNativeUi}, workbench=${declaresWorkbench}`,
@@ -58,11 +58,11 @@ describe('bundled plugin surface contract', () => {
   })
 
   it('strict-validates every installable bundled plugin', async () => {
-    const plugins = await discoverBundledPlugins()
+    const plugins = await discoverBundledMiniApps()
     assertNotVoid(
       'bundled plugins to validate',
       plugins.length,
-      'discoverBundledPlugins() walks plugins/*/plugin.json — check the glob and directory layout.',
+      'discoverBundledMiniApps() walks plugins/*/plugin.json — check the glob and directory layout.',
     )
     const results = await Promise.all(
       plugins.map(async (plugin) => ({
@@ -77,7 +77,7 @@ describe('bundled plugin surface contract', () => {
   })
 
   it('imports and registers every native bundled entrypoint without errors', async () => {
-    const plugins = (await discoverBundledPlugins()).filter(
+    const plugins = (await discoverBundledMiniApps()).filter(
       (plugin) => plugin.provides.hasNativeTools,
     )
     assertNotVoid(
@@ -88,7 +88,7 @@ describe('bundled plugin surface contract', () => {
     const results = await Promise.all(
       plugins.map(async (plugin) => ({
         name: plugin.manifest.name,
-        result: await inspectPluginTools(plugin, resolvePluginConfig(plugin.manifest, undefined), {
+        result: await inspectMiniAppTools(plugin, resolvePluginConfig(plugin.manifest, undefined), {
           // Inspection builds a real context, which creates the plugin's roots: never the real home.
           homeDir: join(tmpdir(), 'localix-bundled-surfaces-home'),
         }),

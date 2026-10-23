@@ -3,17 +3,17 @@ import { existsSync, promises as fs } from 'node:fs'
 import { basename, dirname, join, relative } from 'node:path'
 
 import {
-  PLUGIN_UI_ARTIFACT_MANIFEST,
-  PLUGIN_UI_PRELOADED_MODULES,
-  PLUGIN_UI_SHARED_GLOBAL,
-  PLUGIN_UI_SHARED_MODULE,
-  type PluginUiArtifactManifest,
+  MINI_APP_UI_ARTIFACT_MANIFEST,
+  MINI_APP_UI_PRELOADED_MODULES,
+  MINI_APP_UI_SHARED_GLOBAL,
+  MINI_APP_UI_SHARED_MODULE,
+  type MiniAppUiArtifactManifest,
 } from '@localixai/mini-app-sdk/ui-artifact'
 
 import { isPathWithin } from '../../../lib/path-containment'
 import { formatBuildLogs } from './build-logs'
-import type { PluginKit } from './kit'
-import { PLUGIN_UI_PREBUILT_MODULES } from './kit-layout'
+import type { MiniAppKit } from './kit'
+import { MINI_APP_UI_PREBUILT_MODULES } from './kit-layout'
 import { assertSafeAuthoringPaths } from './output-paths'
 import { assertContainedBuildInputs } from './source-imports'
 import {
@@ -21,7 +21,7 @@ import {
   recordCurrentHashedFiles,
   retainPreviousHashedFiles,
 } from './ui-retained-files'
-import { buildPluginStylesheet } from './ui-styles'
+import { buildMiniAppStylesheet } from './ui-styles'
 import { escapeRegExp } from '../../../lib/regexp'
 
 /**
@@ -35,7 +35,7 @@ import { escapeRegExp } from '../../../lib/regexp'
  * for a first-party plugin at staging and for a user plugin on an installed app with no source
  * tree.
  *
- * The artifact bundles its own dependencies except the shared modules (`PLUGIN_UI_SHARED_MODULE`):
+ * The artifact bundles its own dependencies except the shared modules (`MINI_APP_UI_SHARED_MODULE`):
  * each import of one becomes a tiny module that takes the host's instance and re-exports exactly
  * the names the kit recorded for it.
  */
@@ -44,7 +44,7 @@ const UI_ENTRIES = ['ui/register.tsx', 'ui/register.ts']
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/u
 const SHARED_NAMESPACE = 'localix-shared'
 
-export function pluginUiEntry(pluginDir: string): string | null {
+export function miniAppUiEntry(pluginDir: string): string | null {
   return UI_ENTRIES.map((path) => join(pluginDir, path)).find((path) => existsSync(path)) ?? null
 }
 
@@ -61,10 +61,10 @@ export function pluginUiEntry(pluginDir: string): string | null {
  */
 export function sharedShim(specifier: string, names: readonly string[]): string {
   const named = [...new Set(names)].filter((name) => name !== 'default' && IDENTIFIER.test(name))
-  const host = `globalThis[${JSON.stringify(PLUGIN_UI_SHARED_GLOBAL)}]`
+  const host = `globalThis[${JSON.stringify(MINI_APP_UI_SHARED_GLOBAL)}]`
   const id = JSON.stringify(specifier)
   return [
-    PLUGIN_UI_PRELOADED_MODULES.includes(specifier)
+    MINI_APP_UI_PRELOADED_MODULES.includes(specifier)
       ? `const m = ${host}.require(${id})`
       : `const m = await ${host}.load(${id})`,
     named.length ? `export const { ${named.join(', ')} } = m` : '',
@@ -73,8 +73,8 @@ export function sharedShim(specifier: string, names: readonly string[]): string 
 }
 
 /** Bare specifiers the build takes from the kit: vendor packages and the prebuilt portable modules. */
-function kitBundledModules(kit: PluginKit): Record<string, string> {
-  const prebuilt = PLUGIN_UI_PREBUILT_MODULES.flatMap((specifier) => {
+function kitBundledModules(kit: MiniAppKit): Record<string, string> {
+  const prebuilt = MINI_APP_UI_PREBUILT_MODULES.flatMap((specifier) => {
     const file = kit.manifest.backendModules[specifier]
     return file ? [[specifier, file] as const] : []
   })
@@ -96,7 +96,7 @@ function exactly(specifiers: readonly string[]): RegExp {
  * bundled plugin's every session import failed. So each filter names exactly its modules, and every other
  * import meets Bun's own resolver, browser conditions and all, with no plugin in the way.
  */
-function sharedModulesPlugin(kit: PluginKit, pluginDir: string): Bun.BunPlugin {
+function sharedModulesPlugin(kit: MiniAppKit, pluginDir: string): Bun.BunPlugin {
   const vendor = kitBundledModules(kit)
   const vendored = Object.keys(vendor)
   return {
@@ -109,7 +109,7 @@ function sharedModulesPlugin(kit: PluginKit, pluginDir: string): Bun.BunPlugin {
           `${relative(pluginDir, args.importer)} imports host internals ("${args.path}"); use a @localixai/kit module`,
         )
       })
-      build.onResolve({ filter: PLUGIN_UI_SHARED_MODULE }, (args) => {
+      build.onResolve({ filter: MINI_APP_UI_SHARED_MODULE }, (args) => {
         if (!kit.manifest.uiSharedExports[args.path]) {
           throw new Error(
             `${relative(pluginDir, args.importer)}: the host provides no "${args.path}"`,
@@ -134,7 +134,7 @@ function sharedModulesPlugin(kit: PluginKit, pluginDir: string): Bun.BunPlugin {
  * Move a fully built UI artifact into the served location. A failed publication restores the
  * previous artifact; callers may also use this after other plugin checks pass.
  */
-export async function publishPluginUiArtifact(
+export async function publishMiniAppUiArtifact(
   stagedDir: string,
   outDir: string,
   options: { retainPrevious?: boolean } = {},
@@ -166,7 +166,7 @@ export async function publishPluginUiArtifact(
 }
 
 /** Retire a removed UI entry with one rename; cleanup cannot partly erase the live artifact. */
-export async function removePluginUiArtifact(outDir: string): Promise<void> {
+export async function removeMiniAppUiArtifact(outDir: string): Promise<void> {
   const previous = join(dirname(outDir), `.${basename(outDir)}-removed-${randomUUID()}`)
   try {
     await fs.rename(outDir, previous)
@@ -185,18 +185,18 @@ export async function removePluginUiArtifact(outDir: string): Promise<void> {
  * beside it. Release staging of the FIRST-PARTY plugins turns them off — maps of code nobody
  * debugs on a user's machine were 17 MB of the installer.
  */
-export async function buildPluginUiArtifact(input: {
-  kit: PluginKit
+export async function buildMiniAppUiArtifact(input: {
+  kit: MiniAppKit
   pluginDir: string
   outDir: string
   sourceMaps?: boolean
-}): Promise<PluginUiArtifactManifest | null> {
+}): Promise<MiniAppUiArtifactManifest | null> {
   const { kit, pluginDir, outDir, sourceMaps = true } = input
   if (isPathWithin(pluginDir, outDir)) await assertSafeAuthoringPaths(pluginDir)
-  const entry = pluginUiEntry(pluginDir)
+  const entry = miniAppUiEntry(pluginDir)
   if (!entry) {
     // A successful build of a plugin whose UI entry was removed also removes its old view.
-    await removePluginUiArtifact(outDir)
+    await removeMiniAppUiArtifact(outDir)
     return null
   }
   // Build away from the served artifact. A syntax error or stylesheet failure must leave the
@@ -212,7 +212,7 @@ export async function buildPluginUiArtifact(input: {
       outDir: staging,
       sourceMaps,
     })
-    await publishPluginUiArtifact(staging, outDir)
+    await publishMiniAppUiArtifact(staging, outDir)
     return manifest
   } finally {
     await fs.rm(staging, { recursive: true, force: true })
@@ -220,12 +220,12 @@ export async function buildPluginUiArtifact(input: {
 }
 
 async function buildStagedUiArtifact(input: {
-  kit: PluginKit
+  kit: MiniAppKit
   pluginDir: string
   entry: string
   outDir: string
   sourceMaps: boolean
-}): Promise<PluginUiArtifactManifest> {
+}): Promise<MiniAppUiArtifactManifest> {
   const { kit, pluginDir, entry, outDir, sourceMaps } = input
   const result = await Bun.build({
     entrypoints: [entry],
@@ -259,7 +259,7 @@ async function buildStagedUiArtifact(input: {
     ),
   })
 
-  const utilities = await buildPluginStylesheet(kit, pluginDir)
+  const utilities = await buildMiniAppStylesheet(kit, pluginDir)
   if (utilities.trim()) await fs.writeFile(join(outDir, 'utilities.css'), utilities)
 
   // A fixed order, so the revision hashes content, not directory-listing order.
@@ -271,7 +271,7 @@ async function buildStagedUiArtifact(input: {
       .update('\0')
       .update(await fs.readFile(join(outDir, file)))
   }
-  const manifest: PluginUiArtifactManifest = {
+  const manifest: MiniAppUiArtifactManifest = {
     entry: 'entry.js',
     // Bundled stylesheets first (a component's own CSS), host-themed utilities last so they win.
     styles: [
@@ -281,7 +281,7 @@ async function buildStagedUiArtifact(input: {
     revision: revision.digest('hex').slice(0, 16),
   }
   await fs.writeFile(
-    join(outDir, PLUGIN_UI_ARTIFACT_MANIFEST),
+    join(outDir, MINI_APP_UI_ARTIFACT_MANIFEST),
     `${JSON.stringify(manifest, null, 2)}\n`,
   )
   await recordCurrentHashedFiles(outDir, files)

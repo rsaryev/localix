@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import type { Context } from 'hono'
 import { z } from 'zod'
 import { routeValidator, summarizeZodIssues } from '@localixai/mini-app-sdk/backend'
-import type { PluginRouteContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppRouteContext } from '@localixai/mini-app-sdk/backend'
 import type { DockerErrorResponse } from './contracts'
 import { logsQuerySchema, pruneTargetSchema, removeQuerySchema } from './contracts'
 import { DockerError, mapDockerError, toErrorInfo } from './errors'
@@ -64,7 +64,7 @@ const okOr = (c: Context, fn: () => Promise<void>): Promise<Response> =>
  * sidebar renders as an empty state rather than an error toast.
  */
 export function createDockerRoutes(service: DockerService) {
-  const app = new Hono<PluginRouteContext>()
+  const app = new Hono<MiniAppRouteContext>()
 
   const routes = app
     .get('/containers', (c) =>

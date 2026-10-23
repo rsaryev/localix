@@ -1,7 +1,7 @@
 /**
  * HTTP routes for the REST workbench UI, mounted at `/rpc/api`.
  *
- * User-scoped state reads `c.env.userId`, supplied by the host through `PluginRouteContext` for
+ * User-scoped state reads `c.env.userId`, supplied by the host through `MiniAppRouteContext` for
  * every request. The router never captures boot-time identity or reads host headers/env vars.
  *
  * The routes serve the REDACTED view (`RequestInfo`), never the store's `SavedRequest`: the UI is
@@ -10,7 +10,7 @@
 
 import { Hono } from 'hono'
 import { z } from 'zod'
-import type { PluginRouteContext, PluginRouteScope } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppRouteContext, MiniAppRouteScope } from '@localixai/mini-app-sdk/backend'
 import { defaultErrorHandler } from '@localixai/mini-app-sdk/backend'
 import type { SendResponse } from './contracts'
 import { statusFor } from './errors'
@@ -85,18 +85,18 @@ export function createRestRoutes(deps: RestRoutesDeps) {
   // Typed with the host's per-request scope: `c.env.cwd` is the project this call belongs to,
   // and it is the ONLY place the collection's location comes from. A route that captured it
   // would serve the first project the process ever saw (see collection/for-scope.ts).
-  const app = new Hono<PluginRouteContext>()
-  const uid = (c: { env: PluginRouteScope }) => c.env.userId
-  const sid = (c: { env?: Partial<PluginRouteScope> }) => c.env?.sessionId
+  const app = new Hono<MiniAppRouteContext>()
+  const uid = (c: { env: MiniAppRouteScope }) => c.env.userId
+  const sid = (c: { env?: Partial<MiniAppRouteScope> }) => c.env?.sessionId
   const resolveCollection = deps.collection ?? collectionFor
-  const collection = (c: { env?: Partial<PluginRouteScope> }) =>
+  const collection = (c: { env?: Partial<MiniAppRouteScope> }) =>
     resolveCollection(c.env?.cwd, sid(c))
   // Environments are part of the collection, so they follow the SAME scope. An injected
   // `environments` (tests) wins, exactly as an injected collection does.
   const resolveEnvironments = deps.environments
     ? () => deps.environments!
     : (cwd: string | undefined, sessionId?: string) => environmentsFor(cwd, sessionId)
-  const envs = (c: { env?: Partial<PluginRouteScope> }) => resolveEnvironments(c.env?.cwd, sid(c))
+  const envs = (c: { env?: Partial<MiniAppRouteScope> }) => resolveEnvironments(c.env?.cwd, sid(c))
 
   const requestRoutes = app
     .get('/requests', async (c) => {

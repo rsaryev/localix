@@ -1,7 +1,7 @@
 import { resolveDefaultUserId } from '../../../lib/env'
 import type { VaultItemType } from '../../secrets/contracts'
 import { isInteractAllowedForOwner } from '../runtime/interact-ownership'
-import type { PluginCommandResultPayload } from '../runtime/plugin-command-registry'
+import type { MiniAppCommandResultPayload } from '../runtime/plugin-command-registry'
 import type { PreviewResultPayload } from '../runtime/preview-command-registry'
 import type { ChatServiceDeps } from './context'
 import type { ChatServiceGraph } from './service-graph'
@@ -187,7 +187,7 @@ export function createChatInteractionFacade({
      */
     resolvePluginCommand(
       commandId: string,
-      payload: PluginCommandResultPayload,
+      payload: MiniAppCommandResultPayload,
       callerUserId?: string,
     ): { ok: boolean } {
       return { ok: pluginCommands.resolve(commandId, payload, callerUserId) }

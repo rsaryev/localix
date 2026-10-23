@@ -1,16 +1,16 @@
-import type { PluginProblem } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppProblem } from '@localixai/mini-app-sdk/backend'
 
 import { recordPluginProblem } from '../notifications/conditions/plugins'
 
 /** Draw a plugin's problem on a chat's transcript. Supplied only where a session firehose
  *  exists to carry it (the per-run load), and only ever handed a problem that names a chat. */
-export type PluginProblemSink = (
+export type MiniAppProblemSink = (
   pluginName: string,
-  problem: PluginProblem & { sessionId: string },
+  problem: MiniAppProblem & { sessionId: string },
 ) => void
 
-/** What `makeContext` binds `ctx.reportProblem` to: see {@link pluginProblemReporter}. */
-export type PluginProblemReporter = (pluginName: string, problem: PluginProblem) => void
+/** What `makeContext` binds `ctx.reportProblem` to: see {@link miniAppProblemReporter}. */
+export type MiniAppProblemReporter = (pluginName: string, problem: MiniAppProblem) => void
 
 /**
  * THE binding of `ctx.reportProblem` for every load that runs plugin code.
@@ -24,10 +24,10 @@ export type PluginProblemReporter = (pluginName: string, problem: PluginProblem)
  * Plugin inspection passes no reporter on purpose: reading a roster for Settings must not file
  * problems. The contract is fire-and-forget, so a failing sink never reaches the plugin.
  */
-export function pluginProblemReporter(
+export function miniAppProblemReporter(
   userId: string,
-  session?: PluginProblemSink,
-): PluginProblemReporter {
+  session?: MiniAppProblemSink,
+): MiniAppProblemReporter {
   return (pluginName, problem) => {
     try {
       recordPluginProblem(userId, pluginName, problem)

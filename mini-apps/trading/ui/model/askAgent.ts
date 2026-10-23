@@ -15,7 +15,7 @@
  * Pure text-building is kept separate from the bus side effect so it unit-tests directly,
  * exactly like `askAgentAboutResponse.ts`'s split.
  */
-import { pluginComposer } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppComposer } from '@localixai/mini-app-sdk/ui/runtime'
 import { buildTradeUri, type MarketLeaf } from '../../backend/uri'
 
 export interface MarketSurfaceRef {
@@ -104,7 +104,7 @@ export function buildCarryStatPrefill(
  * chart kept open for chat A put its question into chat B's draft once the person switched.
  */
 export function askAgent(sessionId: string, p: AskAgentPrefill): void {
-  pluginComposer.insert({ sessionId, text: p.text })
+  miniAppComposer.insert({ sessionId, text: p.text })
 }
 
 /* ------------------------------- AI technical analysis ------------------------------- */
@@ -254,7 +254,7 @@ export function buildTechnicalAnalysisPrefill(
  *  it) — the user picked their intent in the wizard's controls, not by typing this wall of text.
  *  Submitted in `sessionId`, the chart's own chat — see {@link askAgent}. */
 export function runAnalysis(sessionId: string, ref: MarketSurfaceRef, req: AnalysisRequest): void {
-  pluginComposer.insert({
+  miniAppComposer.insert({
     sessionId,
     text: buildTechnicalAnalysisPrefill(ref, req).text,
     submit: true,

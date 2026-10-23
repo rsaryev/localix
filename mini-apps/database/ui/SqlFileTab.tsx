@@ -4,7 +4,7 @@ import { FileTab, type EditorRunContext } from '@localixai/mini-app-sdk/ui/compo
 import { activeResultFacet, outputFacet } from './model/consoleContext'
 import { mergeMessageContext } from './model/mergeMessageContext'
 import type { EditorPosition } from '@localixai/kit/code-editor'
-import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import { useSqlFileConnections } from './model/useSqlFileConnections'
 import { useSchema } from './model/useSchema'
 import { useSqlConsole } from './model/useSqlConsole'
@@ -168,7 +168,7 @@ export function SqlFileTab(props: React.ComponentProps<typeof FileTab>) {
         onExplain={active && supportsExplain(active.dialect) ? explainFromEditor : undefined}
         onFormat={formatFromEditor}
         onStop={sqlConsole.cancel}
-        onOpenWorkbench={() => pluginWorkspace.openSidebarSection('database')}
+        onOpenWorkbench={() => miniAppWorkspace.openSidebarSection('database')}
         problems={problems}
         onRevealProblem={revealFirstProblem}
       />

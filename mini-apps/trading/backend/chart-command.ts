@@ -2,7 +2,7 @@
  * The WIRE CONTRACT between the `manage_chart` agent tool (backend) and the trading UI's command
  * sink — the one payload shape both sides compile against. Route B: the tool emits it as a typed,
  * REPLAYABLE `plugin.command` stream frame (`context.session.emitCommand` → `plugin.command` →
- * `pluginCommandBus`), keyed by {@link TRADING_PLUGIN} + {@link TRADING_CHART_CHANNEL}; the UI
+ * `miniAppCommandBus`), keyed by {@link TRADING_MINI_APP} + {@link TRADING_CHART_CHANNEL}; the UI
  * sink parses it back with {@link parseChartCommandPayload} because the envelope's payload is
  * `unknown`-typed by design.
  *
@@ -10,7 +10,7 @@
  * it imports `./contracts`.
  */
 
-export const TRADING_PLUGIN = 'trading'
+export const TRADING_MINI_APP = 'trading'
 export const TRADING_CHART_CHANNEL = 'chart'
 
 import {

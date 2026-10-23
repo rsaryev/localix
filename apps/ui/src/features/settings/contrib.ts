@@ -1,5 +1,5 @@
 import { Puzzle, Settings, SlidersHorizontal, Wrench } from 'lucide-react'
-import type { PluginUiHost, UiAnchorNode } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppUiHost, UiAnchorNode } from '@localixai/mini-app-sdk/ui'
 import { SETTINGS_INDEX } from '@/shared/lib/settings-index/settingsIndex'
 import {
   settingsTargetUri,
@@ -72,7 +72,7 @@ function settingsChildren(parentUri: string | null): UiAnchorNode[] {
   return rows
 }
 
-export function registerUi(host: PluginUiHost): void {
+export function registerUi(host: MiniAppUiHost): void {
   host.anchors.register({
     id: 'settings',
     namespaces: ['settings'],

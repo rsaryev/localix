@@ -37,7 +37,7 @@ interface NewChatActionOptions {
   focusAdjacentGroup: (direction: 1 | -1) => void
   cycleFocusedTab: (direction: 1 | -1) => void
   reopenClosedTab: () => void
-  /** A plugin app starts its own next conversation instead (`usePluginApp`). */
+  /** A plugin app starts its own next conversation instead (`useMiniApp`). */
   replaceNewChat?: (() => void) | null
 }
 

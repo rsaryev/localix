@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { usePluginWorkspaceChanges } from '@localixai/mini-app-sdk/ui/runtime-hooks'
+import { useMiniAppWorkspaceChanges } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 import { useVisiblePolling, useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { repoPresence } from './repoPresence'
 import { useSourceControlStore } from './store'
@@ -72,7 +72,7 @@ export function useGitPoller(
     () => workItemVisible && (typeof document === 'undefined' || !document.hidden),
     [workItemVisible],
   )
-  const live = usePluginWorkspaceChanges(
+  const live = useMiniAppWorkspaceChanges(
     sessionId,
     () => {
       if (!sessionId) return

@@ -18,9 +18,9 @@ setDefaultTimeout(30_000)
  * Framework contracts and portable utilities live in the SDK (context fabric,
  * resource refs, search, typed errors, lifecycle helpers, document ports, and
  * registration contracts). Stateful host behavior is exposed through narrow
- * `PluginContext` services instead of relative imports.
+ * `MiniAppContext` services instead of relative imports.
  *
- * This is a hard-zero invariant. Host-owned behavior is injected through PluginContext;
+ * This is a hard-zero invariant. Host-owned behavior is injected through MiniAppContext;
  * portable contracts and utilities belong to @localixai/mini-app-sdk.
  *
  * Same source-reading idiom, and same kit, as `ext/safe-file-key-contract.test.ts` and
@@ -80,7 +80,7 @@ describe('plugin → host boundary contract', () => {
       offenders.length === 0
         ? ''
         : 'A plugin reaches into host internals. Move portable contracts/utilities to ' +
-            '@localixai/mini-app-sdk or inject host-owned behavior through PluginContext:\n  ' +
+            '@localixai/mini-app-sdk or inject host-owned behavior through MiniAppContext:\n  ' +
             offenders.join('\n  '),
     ).toEqual([])
   })

@@ -15,7 +15,7 @@
  *   ("background sessions must not steal focus") without importing the chat store.
  */
 
-export interface PluginCommandEvent {
+export interface MiniAppCommandEvent {
   /** The session whose agent issued the command. */
   sessionId: string
   /** True when that session is the one on screen — the sink's focus-policy input. */
@@ -32,18 +32,18 @@ export interface PluginCommandEvent {
    * to an honest `noReply`. Dedup above guarantees at most one delivery per
    * commandId, so a replayed frame can never double-reply.
    */
-  reply?: (payload: PluginCommandReply) => void
+  reply?: (payload: MiniAppCommandReply) => void
 }
 
 /** A sink's answer to one awaited command. `result` is the plugin's own shape. */
-export interface PluginCommandReply {
+export interface MiniAppCommandReply {
   ok: boolean
   result?: unknown
   error?: string
 }
 
 /** The `plugin.command` frame as the stream router hands it over (sans `type`). */
-export interface PluginCommandFrame {
+export interface MiniAppCommandFrame {
   sessionId: string
   plugin: string
   channel: string
@@ -52,7 +52,7 @@ export interface PluginCommandFrame {
   seq: number
 }
 
-type Handler = (event: PluginCommandEvent) => void
+type Handler = (event: MiniAppCommandEvent) => void
 
 const key = (plugin: string, channel: string) => `${plugin}:${channel}`
 
@@ -64,7 +64,7 @@ const handlers = new Map<string, Set<Handler>>()
 const appliedCommandIds = new Set<string>()
 const MAX_APPLIED_IDS = 500
 
-export const pluginCommandBus = {
+export const miniAppCommandBus = {
   /** Register a sink for one (plugin, channel) key. Returns the unsubscribe. */
   register(plugin: string, channel: string, handler: Handler): () => void {
     const k = key(plugin, channel)
@@ -89,16 +89,16 @@ export const pluginCommandBus = {
    * dropped too — core cannot queue for a plugin UI that never registered.
    */
   publish(
-    frame: PluginCommandFrame,
+    frame: MiniAppCommandFrame,
     active: boolean,
-    reply?: (payload: PluginCommandReply) => void,
+    reply?: (payload: MiniAppCommandReply) => void,
   ): void {
     if (appliedCommandIds.has(frame.commandId)) return
     if (appliedCommandIds.size >= MAX_APPLIED_IDS) appliedCommandIds.clear()
     appliedCommandIds.add(frame.commandId)
     const set = handlers.get(key(frame.plugin, frame.channel))
     if (!set) return
-    const event: PluginCommandEvent = {
+    const event: MiniAppCommandEvent = {
       sessionId: frame.sessionId,
       active,
       payload: frame.payload,

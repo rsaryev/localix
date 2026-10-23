@@ -20,11 +20,11 @@ const modelDescriptionSchema = z
   )
 
 /** Max UI views one plugin may declare. */
-export const VIEWS_MAX_PER_PLUGIN = 6
+export const VIEWS_MAX_PER_MINI_APP = 6
 /** Max bytes of view HTML served to the UI (matches the inline-widget cap). */
-export const PLUGIN_VIEW_HTML_CAP_BYTES = 1.5 * 1024 * 1024
+export const MINI_APP_VIEW_HTML_CAP_BYTES = 1.5 * 1024 * 1024
 /** Optional Lucide icon NAME hint for a view (host resolves it, falls back to Puzzle). */
-export const PLUGIN_VIEW_ICON_RE = /^[a-z][a-z0-9-]{0,39}$/i
+export const MINI_APP_VIEW_ICON_RE = /^[a-z][a-z0-9-]{0,39}$/i
 
 /**
  * A declarative UI VIEW — the ONE way a plugin contributes its own screen.
@@ -41,20 +41,20 @@ export const PLUGIN_VIEW_ICON_RE = /^[a-z][a-z0-9-]{0,39}$/i
  * `icon` is an optional Lucide name the host maps to a glyph (unknown/absent →
  * the generic Puzzle icon).
  */
-export const pluginViewSchema = z.object({
+export const miniAppViewSchema = z.object({
   id: z.string().regex(PLUGIN_NAME_RE, 'View id must be letters, numbers, dashes or underscores.'),
   /** Tab label. */
   title: z.string().min(1).max(40),
   /** HTML file path relative to the plugin directory. */
   file: z.string().min(1),
   /** Optional Lucide icon name hint. */
-  icon: z.string().regex(PLUGIN_VIEW_ICON_RE, 'Icon must be a Lucide icon name.').optional(),
+  icon: z.string().regex(MINI_APP_VIEW_ICON_RE, 'Icon must be a Lucide icon name.').optional(),
   /** Explicit opt-in copy for agent discovery; absent keeps the view user-only. */
   agentDescription: modelDescriptionSchema.optional(),
 })
 
 /** One enabled view on the list response (HTML fetched separately on open). */
-export const pluginViewSpecSchema = z.object({
+export const miniAppViewSpecSchema = z.object({
   pluginName: z.string(),
   /** Exact discovery scope needed when HTML/actions are fetched later. */
   projectId: z.string(),
@@ -65,27 +65,27 @@ export const pluginViewSpecSchema = z.object({
   icon: z.string().optional(),
   agentDescription: modelDescriptionSchema.optional(),
 })
-export type PluginViewSpec = z.infer<typeof pluginViewSpecSchema>
+export type MiniAppViewSpec = z.infer<typeof miniAppViewSpecSchema>
 
-export const pluginViewHtmlResponseSchema = z.object({ html: z.string() })
+export const miniAppViewHtmlResponseSchema = z.object({ html: z.string() })
 
 /** Stable identifier shape for a plugin-owned UI → backend operation. */
-export const pluginUiActionNameSchema = z
+export const miniAppUiActionNameSchema = z
   .string()
   .trim()
   .regex(/^[a-z][a-z0-9._-]{0,63}$/i, 'Invalid plugin UI action name')
 
-export const invokePluginUiActionRequestSchema = z.object({
+export const invokeMiniAppUiActionRequestSchema = z.object({
   pluginName: z.string().min(1),
   projectId: z.string().optional(),
   viewId: z.string().min(1).max(128),
   sessionId: z.string().min(1).optional(),
-  action: pluginUiActionNameSchema,
+  action: miniAppUiActionNameSchema,
   payload: z.unknown().optional(),
 })
-export type InvokePluginUiActionRequest = z.infer<typeof invokePluginUiActionRequestSchema>
+export type InvokeMiniAppUiActionRequest = z.infer<typeof invokeMiniAppUiActionRequestSchema>
 
-export const invokePluginUiActionResponseSchema = z.object({ result: z.unknown() })
+export const invokeMiniAppUiActionResponseSchema = z.object({ result: z.unknown() })
 
 /** Caps for manifest prompt sections — the system prompt is shared real estate. */
 export const PROMPT_SECTIONS_MAX_PER_PLUGIN = 3

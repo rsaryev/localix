@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { recordingPluginUiHost } from '@localixai/mini-app-sdk/ui/testing'
+import { recordingMiniAppUiHost } from '@localixai/mini-app-sdk/ui/testing'
 import type {
   RailViewletContribution,
   StatusItemContribution,
@@ -18,7 +18,7 @@ import { registerUi } from './register'
  * completeness check belongs in the package that owns the contract, and does.
  */
 test('keeps the library and course tabs session-scoped', () => {
-  const { host, registrations } = recordingPluginUiHost()
+  const { host, registrations } = recordingMiniAppUiHost()
 
   registerUi(host)
 

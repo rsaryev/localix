@@ -27,7 +27,7 @@ describe('createRuntimeState', () => {
     expect(s.activeRuns.size).toBe(0)
     expect(s.activeRunSessions.size).toBe(0)
     expect(s.stoppedRuntimeSessionIds.size).toBe(0)
-    expect(s.pluginStartedSessions.size).toBe(0)
+    expect(s.miniAppStartedSessions.size).toBe(0)
     expect(s.actionRegistry.size).toBe(0)
     expect(s.work.owners()).toEqual([])
     expect(s.childRuntimeSessions.size).toBe(0)
@@ -93,8 +93,8 @@ describe('forgetSessionRuntimeState', () => {
     })
     startJob(s, 'job-dead', 'dead')
     startJob(s, 'job-alive', 'alive')
-    s.pluginStartedSessions.add('dead')
-    s.pluginStartedSessions.add('alive')
+    s.miniAppStartedSessions.add('dead')
+    s.miniAppStartedSessions.add('alive')
     s.contextSnapshots.set('dead', 'boundary', { marker: 'stale' } as never)
     s.contextSnapshots.set('alive', 'boundary', { marker: 'fresh' } as never)
     s.childRuntimeSessions.set('dead', {
@@ -123,7 +123,7 @@ describe('forgetSessionRuntimeState', () => {
     forgetSessionRuntimeState(s, 'dead')
 
     // dead session is fully reaped
-    expect(s.pluginStartedSessions.has('dead')).toBe(false)
+    expect(s.miniAppStartedSessions.has('dead')).toBe(false)
     expect(s.actionRegistry.has('job-dead')).toBe(false)
     expect(s.work.get('job-dead')).toBeUndefined()
     expect(deadLifecycle.forgotten).toBe(true)
@@ -133,7 +133,7 @@ describe('forgetSessionRuntimeState', () => {
     expect(s.drainingSessions.has('dead')).toBe(false)
     expect(s.terminalWaits.has('pty-dead')).toBe(false)
     // unrelated session untouched
-    expect(s.pluginStartedSessions.has('alive')).toBe(true)
+    expect(s.miniAppStartedSessions.has('alive')).toBe(true)
     expect(s.actionRegistry.has('job-alive')).toBe(true)
     expect(s.work.get('job-alive')).toBeDefined()
     expect(aliveKills).toBe(0)
@@ -144,9 +144,9 @@ describe('forgetSessionRuntimeState', () => {
 
   test('is a no-op for a session with no entries', () => {
     const s = createRuntimeState(testWork())
-    s.pluginStartedSessions.add('other')
+    s.miniAppStartedSessions.add('other')
     forgetSessionRuntimeState(s, 'ghost')
-    expect(s.pluginStartedSessions.has('other')).toBe(true)
+    expect(s.miniAppStartedSessions.has('other')).toBe(true)
   })
 
   test('continues terminal cleanup when one background kill action throws', () => {
@@ -164,11 +164,11 @@ describe('forgetSessionRuntimeState', () => {
       },
     })
     startJob(s, 'broken-job', 'dead')
-    s.pluginStartedSessions.add('dead')
+    s.miniAppStartedSessions.add('dead')
 
     expect(() => forgetSessionRuntimeState(s, 'dead')).not.toThrow()
     expect(s.actionRegistry.has('broken-job')).toBe(false)
     expect(s.work.get('broken-job')).toBeUndefined()
-    expect(s.pluginStartedSessions.has('dead')).toBe(false)
+    expect(s.miniAppStartedSessions.has('dead')).toBe(false)
   })
 })

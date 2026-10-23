@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 
-import { checkPluginBindings } from './binding-check'
+import { checkMiniAppBindings } from './binding-check'
 
 const dirs: string[] = []
 afterEach(() => {
@@ -35,21 +35,21 @@ test('a resource binding without a backend provider is reported at its line', as
     'ui/register.tsx': REGISTER,
     'backend/index.ts': '// a resourceProvider is mentioned only here\nexport const x = 1\n',
   })
-  const problems = await checkPluginBindings(dir)
+  const problems = await checkMiniAppBindings(dir)
   expect(problems).toHaveLength(1)
   expect(problems[0]).toStartWith('ui/register.tsx:4 attaches a resource to messages')
 })
 
 test('a backend that registers a provider, or a view with no resource binding, passes', async () => {
   expect(
-    await checkPluginBindings(
+    await checkMiniAppBindings(
       plugin({
         'ui/register.tsx': REGISTER,
         'backend/index.ts': 'export const reg = { resourceProvider: provider }\n',
       }),
     ),
   ).toEqual([])
-  expect(await checkPluginBindings(plugin({ 'ui/register.tsx': 'export const x = 1\n' }))).toEqual(
+  expect(await checkMiniAppBindings(plugin({ 'ui/register.tsx': 'export const x = 1\n' }))).toEqual(
     [],
   )
 })

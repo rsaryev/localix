@@ -13,7 +13,7 @@ import { createCourseDraft } from './course-draft'
 import { ModuleGenerator, moduleToWarm } from './module-generation'
 import { register } from './index'
 import { z } from 'zod'
-import type { PluginContext, PluginWakeRequest } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext, MiniAppWakeRequest } from '@localixai/mini-app-sdk/backend'
 
 const roots: string[] = []
 
@@ -27,7 +27,7 @@ afterEach(async () => {
   await Promise.all(roots.splice(0).map((value) => rm(value, { recursive: true, force: true })))
 })
 
-test('learning routes resolve user identity per request through PluginRouteContext', async () => {
+test('learning routes resolve user identity per request through MiniAppRouteContext', async () => {
   const storage = await root()
   const seen: string[] = []
   const service = new LearningService(async (userId, sessionId) => {
@@ -71,7 +71,7 @@ test('a tool-time registration uses sessionStorage without requiring a backend h
         return path.join(storage, sessionId)
       },
     },
-  } as unknown as PluginContext
+  } as unknown as MiniAppContext
   const backends = register(ctx).backend!
   const routes = (Array.isArray(backends) ? backends[0]! : backends).routeMount!.app
   const result = await routes.request(
@@ -564,7 +564,7 @@ describe('learner evidence and common tutor wake', () => {
     await expect(
       service.completeStep('user-a', 'S', 'systems-thinking', 'feedback-loop', 'apply-loop'),
     ).rejects.toThrow('passing review')
-    const wakes: PluginWakeRequest[] = []
+    const wakes: MiniAppWakeRequest[] = []
     const tutor = new LearningTutor(service, async (request) => {
       wakes.push(request)
       return { status: 'delivered' }

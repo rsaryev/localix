@@ -6,10 +6,10 @@ import {
   parseLocalixResourceUri,
   resourceMessageBindingDraft,
   type WorkItemLike,
-  type PluginUiHost,
+  type MiniAppUiHost,
   type PublishMessageContext,
 } from '@localixai/mini-app-sdk/ui'
-import { usePluginSessions } from '@localixai/mini-app-sdk/ui/runtime-hooks'
+import { useMiniAppSessions } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import type { LineStageMode } from '../backend/source-control/contracts'
@@ -43,7 +43,7 @@ function GitWorkspaceBody({
   // Read through the SDK's session seam rather than the host's chat store: a plugin does not get
   // to reach into core feature state, and the seam already publishes the project needed here.
   const sessionId = useWorkItemSessionId()
-  const sessions = usePluginSessions()
+  const sessions = useMiniAppSessions()
   const projectId = sessions.find((session) => session.id === sessionId)?.projectId ?? null
 
   // A mounted Git Workspace is itself useful agent context. Publish the working
@@ -112,7 +112,7 @@ function ProvenanceSlot({ value }: { value?: unknown }) {
 let registered = false
 
 /** Register the Git surface through the same open workbench seams as other bundled plugins. */
-export function registerUi(host: PluginUiHost): void {
+export function registerUi(host: MiniAppUiHost): void {
   if (registered) return
   registered = true
 

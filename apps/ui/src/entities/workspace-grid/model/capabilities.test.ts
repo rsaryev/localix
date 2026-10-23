@@ -12,8 +12,8 @@ import {
   capsOf,
 } from './capabilities'
 import type { WorkItem, WorkItemKind } from '@/shared/lib/workItem'
-import { pluginUiHostFor } from '@/shared/contrib/host'
-import { setEnabledPluginNames } from '@/shared/contrib/pluginActivation'
+import { miniAppUiHostFor } from '@/shared/contrib/host'
+import { setEnabledPluginNames } from '@/shared/contrib/miniAppActivation'
 
 afterEach(() => setEnabledPluginNames(null))
 
@@ -102,7 +102,7 @@ describe('capsOf', () => {
   })
 
   test('pending plugin ownership waits only for plugin-exclusive kinds', () => {
-    const host = pluginUiHostFor('pending-render-fixture')
+    const host = miniAppUiHostFor('pending-render-fixture')
     host.workItems.register({
       kind: 'pending-render-fixture:item',
       Component: () => null,
@@ -122,7 +122,7 @@ describe('capsOf', () => {
   })
 
   test('an enabled plugin cannot replace a reserved core-kind contract', () => {
-    const host = pluginUiHostFor('core-kind-collision-fixture')
+    const host = miniAppUiHostFor('core-kind-collision-fixture')
     expect(() =>
       host.workItems.register({
         kind: 'file',

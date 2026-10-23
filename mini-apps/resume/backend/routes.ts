@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { jsonBody, type PluginRouteContext } from '@localixai/mini-app-sdk/backend'
+import { jsonBody, type MiniAppRouteContext } from '@localixai/mini-app-sdk/backend'
 import { documentSchema, idSchema, resumeSummary } from '../shared/schema'
 import { operationsSchema } from '../shared/operations'
 import { exportDocument } from '../shared/format'
@@ -17,7 +17,7 @@ export function createResumeRoutes(resolveService: (workspace: string) => Resume
       )
     return resolveService(c.env.cwd)
   }
-  return new Hono<PluginRouteContext>()
+  return new Hono<MiniAppRouteContext>()
     .use('*', async (c, next) => {
       c.header('Cache-Control', 'no-store')
       await next()

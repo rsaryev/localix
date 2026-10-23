@@ -1,4 +1,4 @@
-import type { PluginContext, PluginRegistration } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext, MiniAppRegistration } from '@localixai/mini-app-sdk/backend'
 import { ROUTE_PATH } from '../shared/resource'
 import { createGraphContextProvider, createGraphResourceProvider } from './context'
 import { closeProjects } from './indexing/projects'
@@ -16,7 +16,7 @@ export function createRoutes(dataDir: string) {
   return createGraphRoutes(dataDir)
 }
 
-export function register(ctx: PluginContext): PluginRegistration {
+export function register(ctx: MiniAppContext): MiniAppRegistration {
   // Indexes are module-level (`indexing/projects.ts`): this is called for the backend and again for
   // each run, and every caller must reach the same parsed project.
   const resourceProvider = createGraphResourceProvider(ctx.dataDir, ctx.cwd, ctx.host)

@@ -1,10 +1,10 @@
 import type {
-  PluginWorkItemRequest,
+  MiniAppWorkItemRequest,
   RailSectionContribution,
   RailViewletContribution,
   WorkItemKindContribution,
 } from '@localixai/mini-app-sdk/ui'
-import { isPluginContributionEnabled } from './pluginActivation'
+import { isMiniAppContributionEnabled } from './miniAppActivation'
 
 /**
  * OPEN UI registries mirroring the backend `SubsystemRegistry`: a bundled
@@ -60,11 +60,11 @@ function createRegistry<T extends { kind?: string; id?: string; pluginName?: str
     },
     get(key) {
       const entry = entries.get(key)
-      return entry && isPluginContributionEnabled(entry.pluginName) ? entry : undefined
+      return entry && isMiniAppContributionEnabled(entry.pluginName) ? entry : undefined
     },
     list() {
       return Array.from(entries.values()).filter((entry) =>
-        isPluginContributionEnabled(entry.pluginName),
+        isMiniAppContributionEnabled(entry.pluginName),
       )
     },
     removeOwner(owner) {
@@ -82,7 +82,7 @@ export const railViewletRegistry = createRegistry<RailViewletContribution>('rail
  * instance id created under that kind. Core kinds have no pluginName and retain
  * their existing id contracts.
  */
-export function assertPluginOwnedWorkItemInstance(request: PluginWorkItemRequest): void {
+export function assertMiniAppOwnedWorkItemInstance(request: MiniAppWorkItemRequest): void {
   const owner = workItemKindRegistry.getRegistered(request.workKind)?.pluginName
   if (!owner || request.id.startsWith(`${owner}:`)) return
   throw new Error(

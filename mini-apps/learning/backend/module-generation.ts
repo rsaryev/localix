@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto'
-import type { PluginWakeOutcome, PluginWakeRequest } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppWakeOutcome, MiniAppWakeRequest } from '@localixai/mini-app-sdk/backend'
 import type { LearningCourse } from '../shared/contracts'
 import type { LearningService } from './service'
 
-type Wake = (request: PluginWakeRequest) => Promise<PluginWakeOutcome>
+type Wake = (request: MiniAppWakeRequest) => Promise<MiniAppWakeOutcome>
 const QUEUED_TIMEOUT_MS = 15 * 60_000
 const FAILED_RETRY_MS = 60_000
 
@@ -37,7 +37,7 @@ export class ModuleGenerator {
   ) {}
 
   async warm(userId: string, sessionId: string, courseId: string): Promise<LearningCourse | null> {
-    let request: PluginWakeRequest | null = null
+    let request: MiniAppWakeRequest | null = null
     let moduleId: string | null = null
     const claimed = await this.service.change(userId, sessionId, courseId, (course) => {
       moduleId = moduleToWarm(course)
@@ -100,7 +100,7 @@ export class ModuleGenerator {
       }
     })
     if (!request || !moduleId) return claimed
-    let outcome: PluginWakeOutcome
+    let outcome: MiniAppWakeOutcome
     try {
       outcome = this.wake
         ? await this.wake(request)

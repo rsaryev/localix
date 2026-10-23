@@ -12,14 +12,14 @@
  * Separate from `context.ts` because these are what the HOST implements, not what a
  * plugin is handed per run: every interface here is a capability the host may or may not
  * offer, each with its own reasoning about what it deliberately does NOT allow. Reading
- * `PluginContext` should not mean reading all of that first.
+ * `MiniAppContext` should not mean reading all of that first.
  */
 
 import type {
-  PluginAgentDirectory,
-  PluginContext,
-  PluginPathWatch,
-  PluginScreenSnapshot,
+  MiniAppAgentDirectory,
+  MiniAppContext,
+  MiniAppPathWatch,
+  MiniAppScreenSnapshot,
 } from './context'
 import type { ChangeFeedHost } from './changes'
 import type { DecisionHost } from './decision'
@@ -31,12 +31,12 @@ export interface TerminalReadHost {
     userId: string
     sessionId: string | null
     terminalId: string
-  }): Promise<PluginScreenSnapshot | null>
+  }): Promise<MiniAppScreenSnapshot | null>
   finalScreen(input: {
     userId: string
     sessionId: string | null
     terminalId: string
-  }): Promise<PluginScreenSnapshot | null>
+  }): Promise<MiniAppScreenSnapshot | null>
   list(input: { userId: string; sessionId: string | null }): {
     terminalId: string
     command?: string
@@ -52,7 +52,7 @@ export interface TerminalReadHost {
  *
  * The returned path is host authority, never a path supplied by plugin UI or encoded in an
  * opaque resource URI. This keeps project-local providers usable from background registry
- * calls (resource expansion/search), where there is no HTTP `PluginRouteContext` carrying cwd.
+ * calls (resource expansion/search), where there is no HTTP `MiniAppRouteContext` carrying cwd.
  */
 export interface WorkspaceScopeHost {
   resolveSessionRoot(userId: string, sessionId: string): Promise<string | null>
@@ -123,7 +123,7 @@ export interface WorkspacesHost {
  * the person typed; and it stamps the provenance itself ("via Plugin"), so a plugin cannot pose as
  * a person or a loop.
  */
-export interface PluginWakeRequest {
+export interface MiniAppWakeRequest {
   /** The session's owner: `c.env.userId` in a route, the user who armed a watcher. */
   userId: string
   /** The session to wake — for a view, the one open beside it (`c.env.sessionId`). */
@@ -147,7 +147,7 @@ export interface PluginWakeRequest {
  * What became of a wake. Answered, never thrown: when nobody will answer, the plugin decides what
  * happens instead — a game plays its own move, a watcher keeps its alert for later.
  */
-export type PluginWakeOutcome =
+export type MiniAppWakeOutcome =
   /** Queued for a turn: the session takes it now, or right after the run in flight. */
   | { status: 'delivered' }
   /** The session is gone or cannot take a wake. Nothing to retry. */
@@ -166,7 +166,7 @@ export type PluginWakeOutcome =
  * its monitor was armed for, and a line no session armed is delivered to nobody (the host logs it
  * as undelivered). The plugin names the session; the host never picks one.
  */
-export interface PluginMonitorArmRequest {
+export interface MiniAppMonitorArmRequest {
   /** The session's owner: `c.env.userId` in a route. */
   userId: string
   /** The session the monitor's lines wake — for a view, the one open beside it (`c.env.sessionId`). */
@@ -175,7 +175,7 @@ export interface PluginMonitorArmRequest {
   monitor: string
 }
 
-export type PluginMonitorArmOutcome =
+export type MiniAppMonitorArmOutcome =
   /** The monitor's lines now wake this session, until it is disarmed or the session goes. */
   | { status: 'armed' }
   /** Not this plugin's monitor, not the user's session, or not a user monitors run for. */
@@ -186,13 +186,13 @@ export type PluginMonitorArmOutcome =
  * monitor itself restarts with the process, so a plugin that keeps an arm across restarts stores
  * it and arms again when its backend registers.
  */
-export interface PluginMonitorsHost {
-  arm(request: PluginMonitorArmRequest): Promise<PluginMonitorArmOutcome>
+export interface MiniAppMonitorsHost {
+  arm(request: MiniAppMonitorArmRequest): Promise<MiniAppMonitorArmOutcome>
   /** Stop waking this session. Disarming a session that was not armed is a no-op. */
-  disarm(request: PluginMonitorArmRequest): void
+  disarm(request: MiniAppMonitorArmRequest): void
 }
 
-export interface PluginHostServices {
+export interface MiniAppHostServices {
   /** Resolve a trusted project root for session/project-scoped plugin resources. */
   workspaceScope?: WorkspaceScopeHost
   /** Enumerate the user's projects — the roots of a project-rooted resource provider. */
@@ -205,8 +205,8 @@ export interface PluginHostServices {
    * is a decision to take on purpose, not one to inherit from a convenience.
    */
   terminalRead?: TerminalReadHost
-  /** Native file watching for the plugin's own paths (see {@link PluginPathWatch}). */
-  watchPath?: PluginPathWatch
+  /** Native file watching for the plugin's own paths (see {@link MiniAppPathWatch}). */
+  watchPath?: MiniAppPathWatch
   /**
    * Session-isolated durable artifact storage for the owning plugin.
    *
@@ -215,9 +215,9 @@ export interface PluginHostServices {
    * `~/.localix` paths themselves; a request for one session never reaches another's folder.
    * Only the backend's own cleanup lists the folders it already has (`listDataDirs`).
    */
-  sessionStorage?: PluginContext['sessionStorage']
-  /** The enabled agents of a session's scope, read-only (see {@link PluginAgentDirectory}). */
-  agents?: PluginAgentDirectory
+  sessionStorage?: MiniAppContext['sessionStorage']
+  /** The enabled agents of a session's scope, read-only (see {@link MiniAppAgentDirectory}). */
+  agents?: MiniAppAgentDirectory
   /** The embedding seam: the index of the plugin's own collections, and vectors on demand. */
   semantic?: SemanticIndexHost
   /** The decision-model seam (see {@link DecisionHost}); spend is recorded per session. */
@@ -284,7 +284,7 @@ export interface PluginHostServices {
   bindSecret?: (userId: string, key: string, consumer: SecretConsumer) => Promise<boolean>
   /**
    * Start a turn in a session, answered through this plugin's tools — see
-   * {@link PluginWakeRequest}. Wake-only: a plugin can wake a session it was given the id of,
+   * {@link MiniAppWakeRequest}. Wake-only: a plugin can wake a session it was given the id of,
    * never read one.
    *
    * For events the agent did not cause: a person acting in the plugin's view, a condition a
@@ -293,12 +293,12 @@ export interface PluginHostServices {
    *
    * Optional: a leaner host omits it, and the plugin carries on without the agent.
    */
-  wake?: (request: PluginWakeRequest) => Promise<PluginWakeOutcome>
+  wake?: (request: MiniAppWakeRequest) => Promise<MiniAppWakeOutcome>
   /**
-   * Point the plugin's manifest `monitors` at a session — see {@link PluginMonitorArmRequest}.
+   * Point the plugin's manifest `monitors` at a session — see {@link MiniAppMonitorArmRequest}.
    * Without an arm a monitor still runs, and its lines reach no one.
    */
-  monitors?: PluginMonitorsHost
+  monitors?: MiniAppMonitorsHost
   /**
    * The host's media store (chat uploads / generated artifacts), by-id only — a
    * plugin can read the bytes behind a media id it was handed (e.g. a dropped

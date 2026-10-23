@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 
-import type { PluginConfigValues } from '../plugins/config'
+import type { MiniAppConfigValues } from '../plugins/config'
 import { normalizeTokenKey } from './manifest-substitute'
 
 /**
@@ -57,7 +57,7 @@ export function pluginDataDir(pluginName: string, home: string): string {
  * home themselves, and every plugin context a test built — about thirty fixture plugins — left a
  * `plugin-state/` and `plugin-data/` directory in the developer's real `~/.localix`.
  */
-export function pluginStateDir(pluginName: string, home: string): string {
+export function miniAppStateDir(pluginName: string, home: string): string {
   return join(home, '.localix', 'plugin-state', pluginName)
 }
 
@@ -74,7 +74,7 @@ const CREDENTIAL_NAME =
 const REMOTE_FIELDS = new Set(['url', 'headers'])
 
 interface SubstituteCtx {
-  config: PluginConfigValues
+  config: MiniAppConfigValues
   allowedEnvKeys: ReadonlySet<string>
   environment: McpEnvironmentPolicy
   /** The top-level field being substituted (`url`, `args`, …). */
@@ -142,7 +142,7 @@ function walk(value: unknown, ctx: SubstituteCtx): unknown {
 export function substituteMcpServerEntry(
   serverName: string,
   raw: Record<string, unknown>,
-  config: PluginConfigValues,
+  config: MiniAppConfigValues,
   allowedEnvKeys: ReadonlySet<string>,
   environment: McpEnvironmentPolicy = 'declared',
 ): McpSubstitutionResult {
@@ -213,7 +213,7 @@ export function userConfigShellVar(key: string): string {
  */
 export function bindUserConfigInShell(
   text: string,
-  config: PluginConfigValues,
+  config: MiniAppConfigValues,
   isSensitive: (key: string) => boolean,
 ): ShellBindingResult {
   const blocked = new Set<string>()
@@ -242,7 +242,7 @@ export function bindUserConfigInShell(
  */
 export function substituteUserConfigInText(
   text: string,
-  config: PluginConfigValues,
+  config: MiniAppConfigValues,
   isSensitive: (key: string) => boolean,
 ): ShellSubstitutionResult {
   const blocked = new Set<string>()

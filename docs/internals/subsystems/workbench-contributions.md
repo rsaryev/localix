@@ -6,14 +6,14 @@ workbench, its registry entries, or its enable and disable lifecycle.
 
 ## Terminology
 
-| Term                | Meaning                                                                 | Boundary                                                                       |
-| ------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Backend subsystem   | One `BackendSubsystem` returned by a plugin's native `register()` call. | It is process-global while the owning plugin is enabled in at least one scope. |
-| Backend host        | Reconciler that wires desired plugin subsystems into live registries.   | It keeps an already-wired instance instead of rebuilding it on every refresh.  |
-| Host service        | Narrow capability supplied to plugin code through `PluginContext.host`. | Services are optional and do not expose their owning core subsystem directly.  |
-| Plugin UI host      | Registration façade passed to a plugin's `registerUi(host)`.            | Plugin code must not import host registry modules.                             |
-| Native workbench UI | React contribution built into its own artifact and loaded by URL.       | Bundled plugins, and other plugins once the user enabled them (consent).       |
-| Manifest UI         | Sandboxed view described as data in `.localix-app/app.json`.            | Runs in a sandboxed frame, whatever the plugin's origin.                       |
+| Term                | Meaning                                                                  | Boundary                                                                       |
+| ------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| Backend subsystem   | One `BackendSubsystem` returned by a plugin's native `register()` call.  | It is process-global while the owning plugin is enabled in at least one scope. |
+| Backend host        | Reconciler that wires desired plugin subsystems into live registries.    | It keeps an already-wired instance instead of rebuilding it on every refresh.  |
+| Host service        | Narrow capability supplied to plugin code through `MiniAppContext.host`. | Services are optional and do not expose their owning core subsystem directly.  |
+| Plugin UI host      | Registration façade passed to a plugin's `registerUi(host)`.             | Plugin code must not import host registry modules.                             |
+| Native workbench UI | React contribution built into its own artifact and loaded by URL.        | Bundled plugins, and other plugins once the user enabled them (consent).       |
+| Manifest UI         | Sandboxed view described as data in `.localix-app/app.json`.             | Runs in a sandboxed frame, whatever the plugin's origin.                       |
 
 ## What you can do
 
@@ -32,7 +32,7 @@ workbench, its registry entries, or its enable and disable lifecycle.
 
 ### Backend contribution lifecycle
 
-`loadPluginBackends` discovers enabled plugins for the global and project scopes and runs their
+`loadMiniAppBackends` discovers enabled plugins for the global and project scopes and runs their
 native `register()` functions behind the normal trust and failure-isolation gate. The composition
 phase keeps the first returned backend group for each plugin name, so one plugin can contribute
 several subsystems without being wired again for every enabled scope.
@@ -50,15 +50,15 @@ one field.
 | Consumer               | Loader                                                | Imports plugin code |
 | ---------------------- | ----------------------------------------------------- | ------------------- |
 | Per-run prompt context | `loadEnabledPlugins`                                  | Yes — needs it all  |
-| Plugin backend host    | `loadPluginBackends`                                  | Yes                 |
-| Plugin channel host    | `loadEnabledPluginChannels` (`loader-channels.ts`)    | Yes — from register |
+| Plugin backend host    | `loadMiniAppBackends`                                 | Yes                 |
+| Plugin channel host    | `loadEnabledMiniAppChannels` (`loader-channels.ts`)   | Yes — from register |
 | Plugin monitor host    | `loadEnabledPluginMonitors` (`loader-declarative.ts`) | No — manifest data  |
 
 Each load reports its own cost: one `plugins.loaded` line carrying the catalog time, the native time
 and the slowest plugins. `apps/api/scripts/startup-budget.ts` reads it out of the runtime log, and
 says so explicitly when a boot loads plugins more than once.
 
-`createPluginBackendHost` reconciles the desired plugin names with the currently wired set. Enable
+`createMiniAppBackendHost` reconciles the desired plugin names with the currently wired set. Enable
 registers subsystem, capability, WebSocket, resource, context, and search contributions before
 publishing the route mount. Disable calls `onShutdown`, unregisters identity-checked contributions,
 and removes the mount. Reconciles are serialized, and toggle-triggered refreshes are debounced by
@@ -66,7 +66,7 @@ and removes the mount. Reconciles are serialized, and toggle-triggered refreshes
 
 Hono route tables cannot remove routes after composition. The backend host therefore mounts one
 stable middleware and consults a mutable prefix-to-wrapper map for each request. It resolves the
-current user, project, and working directory into the plugin app's `PluginRouteScope`; a plugin
+current user, project, and working directory into the plugin app's `MiniAppRouteScope`; a plugin
 route does not recover that scope from core environment globals.
 
 ### Backend contribution fields
@@ -82,7 +82,7 @@ route does not recover that scope from core environment globals.
 | `capabilities`           | Typed capability registry                 | Only keys declared in `CapabilityShapes` compile; the first enabled provider wins. |
 | `onShutdown`             | Backend-host disable and process shutdown | Exceptions are logged; remaining contributions are still unwired.                  |
 
-`PluginHostServices` carries narrow reverse-direction ports: read-only terminal access,
+`MiniAppHostServices` carries narrow reverse-direction ports: read-only terminal access,
 session-owned storage, secret resolution and create-if-free storage, optional secret-reference
 binding, wake-only session messages, arming the plugin's own manifest monitors for a session, and
 by-id media bytes. The host binds plugin identity and checks user or session ownership. Terminal
@@ -93,10 +93,10 @@ port.
 
 Core `features/*/contrib` modules register through `discoverUi`. A bundled plugin's React UI is not
 host source: it is a built artifact the API advertises on the plugin record and serves, which
-[`pluginUiRuntime.ts`](../../../apps/ui/src/shared/contrib/pluginUiRuntime.ts) imports by URL for
-the enabled plugins of the current capability snapshot. `pluginUiHostFor` stamps the plugin name
+[`miniAppUiRuntime.ts`](../../../apps/ui/src/shared/contrib/miniAppUiRuntime.ts) imports by URL for
+the enabled plugins of the current capability snapshot. `miniAppUiHostFor` stamps the plugin name
 rather than trusting a plugin-supplied owner, and
-[`removePluginUiContributions`](../../../apps/ui/src/shared/contrib/host.ts) takes back everything
+[`removeMiniAppUiContributions`](../../../apps/ui/src/shared/contrib/host.ts) takes back everything
 that owner registered in every registry.
 
 A new artifact revision is imported first and then swapped in (remove the plugin's entries, register
@@ -111,21 +111,21 @@ about a later registration. Every seam of the façade reports one to
 [`registryChanges.ts`](../../../apps/ui/src/shared/contrib/registryChanges.ts), and so does each
 first-load settle. The registry itself changes at once, but listeners are told on the next frame: N
 plugins registering in one burst cost one notification, not N full re-renders. Consumers subscribe
-through [`usePluginRegistrySlice`](../../../apps/ui/src/shared/contrib/usePluginRegistrySlice.ts)
-with a named slice: one tab kind (`usePluginKind`), one session surface, one slot, one file's
+through [`useMiniAppRegistrySlice`](../../../apps/ui/src/shared/contrib/useMiniAppRegistrySlice.ts)
+with a named slice: one tab kind (`useMiniAppKind`), one session surface, one slot, one file's
 enhancers or one tab strip's kinds. Only a consumer whose own slice moved re-renders.
 
-| `PluginUiHost` registry | Contribution effect                                                        | Boundary                                                                |
-| ----------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `workItems`             | Adds editor-grid tab kinds and optional restoration or message binding.    | Duplicate kinds keep the first owner.                                   |
-| `railSections`          | Adds a sidebar section and derives an addressable UI location.             | Use for an actual sidebar; it is not a generic workbench launcher.      |
-| `railViewlets`          | Adds a launcher for one global work-item surface and derives its location. | The registered work item must exist for activation to succeed.          |
-| `search`                | Adds a search scope and result glyph vocabulary.                           | Search metadata does not own activation.                                |
-| `anchors`               | Resolves a resource namespace into a semantic navigation target.           | Namespace collisions are rejected.                                      |
-| `locations`             | Adds a strict parameterized UI destination.                                | The [UI anchors page](ui-anchors.md) owns URI, effect, and agent rules. |
-| `resourceRefIcons`      | Maps resource kind hints to icons.                                         | Icons carry no provider or navigation behavior.                         |
-| `fileEditors`           | Selects a specialized editor by file predicate.                            | Runs before file routing; one `preferred` match skips the chooser.      |
-| `sessionEvents`         | Handles plugin-specific session stream events.                             | Handlers must be idempotent for each session and event.                 |
+| `MiniAppUiHost` registry | Contribution effect                                                        | Boundary                                                                |
+| ------------------------ | -------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `workItems`              | Adds editor-grid tab kinds and optional restoration or message binding.    | Duplicate kinds keep the first owner.                                   |
+| `railSections`           | Adds a sidebar section and derives an addressable UI location.             | Use for an actual sidebar; it is not a generic workbench launcher.      |
+| `railViewlets`           | Adds a launcher for one global work-item surface and derives its location. | The registered work item must exist for activation to succeed.          |
+| `search`                 | Adds a search scope and result glyph vocabulary.                           | Search metadata does not own activation.                                |
+| `anchors`                | Resolves a resource namespace into a semantic navigation target.           | Namespace collisions are rejected.                                      |
+| `locations`              | Adds a strict parameterized UI destination.                                | The [UI anchors page](ui-anchors.md) owns URI, effect, and agent rules. |
+| `resourceRefIcons`       | Maps resource kind hints to icons.                                         | Icons carry no provider or navigation behavior.                         |
+| `fileEditors`            | Selects a specialized editor by file predicate.                            | Runs before file routing; one `preferred` match skips the chooser.      |
+| `sessionEvents`          | Handles plugin-specific session stream events.                             | Handlers must be idempotent for each session and event.                 |
 
 ### Module invariants and failure modes
 
@@ -137,9 +137,9 @@ enhancers or one tab strip's kinds. Only a consumer whose own slice moved re-ren
 | [`apps/api/src/features/ext/capability-registry.ts`](../../../apps/api/src/features/ext/capability-registry.ts)                 | Capability ownership is first-wins and source-checked on removal.              | A disabled loser can otherwise remove or replace the active provider.                    |
 | [`packages/mini-app-sdk/src/backend/ws-frame-registry.ts`](../../../packages/mini-app-sdk/src/backend/ws-frame-registry.ts)     | Command pairs are unique and connection streams are reference-counted.         | Subscribe routing becomes ambiguous or one consumer stops another's stream.              |
 | [`apps/ui/src/shared/contrib/host.ts`](../../../apps/ui/src/shared/contrib/host.ts)                                             | Plugins receive one façade and host-stamped ownership.                         | Plugin code can couple to private registries or impersonate another owner.               |
-| [`apps/ui/src/shared/contrib/pluginUiRuntime.ts`](../../../apps/ui/src/shared/contrib/pluginUiRuntime.ts)                       | Import a revision before removing the running one; one queue per plugin.       | A broken build blanks a plugin, or racing snapshots leave a stale revision registered.   |
+| [`apps/ui/src/shared/contrib/miniAppUiRuntime.ts`](../../../apps/ui/src/shared/contrib/miniAppUiRuntime.ts)                     | Import a revision before removing the running one; one queue per plugin.       | A broken build blanks a plugin, or racing snapshots leave a stale revision registered.   |
 | [`apps/ui/src/shared/contrib/registryChanges.ts`](../../../apps/ui/src/shared/contrib/registryChanges.ts)                       | Every registration is announced, coalesced to one flush per frame.             | A late plugin stays invisible under an open surface, or each plugin re-renders the app.  |
-| [`apps/ui/src/shared/contrib/pluginUiLoads.ts`](../../../apps/ui/src/shared/contrib/pluginUiLoads.ts)                           | A failed first load stays pending and is retried; the publisher owns settling. | A transient 503 closes restored tabs, or a failed later request leaves a plugin pending. |
+| [`apps/ui/src/shared/contrib/miniAppUiLoads.ts`](../../../apps/ui/src/shared/contrib/miniAppUiLoads.ts)                         | A failed first load stays pending and is retried; the publisher owns settling. | A transient 503 closes restored tabs, or a failed later request leaves a plugin pending. |
 | [`apps/ui/src/app/pluginSharedModules.ts`](../../../apps/ui/src/app/pluginSharedModules.ts)                                     | Artifacts get the host's single React, SDK and kit instances.                  | A second React breaks hooks; a second SDK has unbound transport and empty command maps.  |
 | [`apps/ui/src/shared/contrib/enabledPlugins.ts`](../../../apps/ui/src/shared/contrib/enabledPlugins.ts)                         | One capability snapshot drives plugins, tools, and views for the active scope. | UI contributions and model-facing tools can disagree about enablement.                   |
 
@@ -209,8 +209,8 @@ keep using a registry that predates its imports. Ordinary component edits keep V
 - [Plugin-host composition](../../../apps/api/src/bootstrap/plugin-hosts.ts)
 - [Plugin UI host contract](../../../packages/mini-app-sdk/src/ui/host.ts)
 - [UI host adapter](../../../apps/ui/src/shared/contrib/host.ts)
-- [Plugin UI wiring](../../../apps/ui/src/shared/contrib/pluginUiDiscovery.ts)
-- [Plugin UI runtime](../../../apps/ui/src/shared/contrib/pluginUiRuntime.ts)
+- [Plugin UI wiring](../../../apps/ui/src/shared/contrib/miniAppUiDiscovery.ts)
+- [Plugin UI runtime](../../../apps/ui/src/shared/contrib/miniAppUiRuntime.ts)
 - [Plugin UI artifact builder](../../../apps/api/src/features/plugins/authoring/ui-build.ts)
 - [Plugin kit staging](../../../scripts/stage-plugin-kit.mjs)
 - [Development kit cache](../../../scripts/plugin-kit-cache.mjs) (a kit staged for identical inputs

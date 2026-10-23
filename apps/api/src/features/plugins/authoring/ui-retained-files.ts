@@ -1,7 +1,7 @@
 import { existsSync, promises as fs } from 'node:fs'
 import { dirname, join, relative, resolve } from 'node:path'
 
-import { PLUGIN_UI_ARTIFACT_MANIFEST } from '@localixai/mini-app-sdk/ui-artifact'
+import { MINI_APP_UI_ARTIFACT_MANIFEST } from '@localixai/mini-app-sdk/ui-artifact'
 
 import { isPathBelow } from '../../../lib/path-containment'
 
@@ -31,7 +31,7 @@ export async function recordCurrentHashedFiles(dir: string, files: string[]): Pr
 async function readRevision(dir: string): Promise<string | null> {
   try {
     const manifest: unknown = JSON.parse(
-      await fs.readFile(join(dir, PLUGIN_UI_ARTIFACT_MANIFEST), 'utf8'),
+      await fs.readFile(join(dir, MINI_APP_UI_ARTIFACT_MANIFEST), 'utf8'),
     )
     if (!manifest || typeof manifest !== 'object' || !('revision' in manifest)) return null
     return typeof manifest.revision === 'string' && manifest.revision ? manifest.revision : null

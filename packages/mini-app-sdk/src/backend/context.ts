@@ -2,12 +2,12 @@ import type { defineAgentTool } from '@localixai/agent/agents'
 import type { z } from 'zod'
 
 import type { UiNavigationAction } from '../ui/anchors'
-import type { PluginHelpers } from './helpers'
-import type { PluginOAuth } from './oauth'
-import type { PluginHostServices } from './host-services'
+import type { MiniAppHelpers } from './helpers'
+import type { MiniAppOAuth } from './oauth'
+import type { MiniAppHostServices } from './host-services'
 import type { TerminalRead } from './terminal-read'
 
-export type { PluginScreenSnapshot, TerminalRead } from './terminal-read'
+export type { MiniAppScreenSnapshot, TerminalRead } from './terminal-read'
 
 /**
  * Watch a file or directory on this machine; returns the release.
@@ -23,7 +23,7 @@ export type { PluginScreenSnapshot, TerminalRead } from './terminal-read'
  * file), or `null` when unknown. `onError` means events may have been lost: re-read once.
  * `recursive: false` reports direct entries only.
  */
-export type PluginPathWatch = (
+export type MiniAppPathWatch = (
   path: string,
   recursive: boolean,
   onEvent: (name: string | null) => void,
@@ -31,7 +31,7 @@ export type PluginPathWatch = (
 ) => () => void
 
 /** Resolved plugin config values (declared defaults overlaid with stored values). */
-export type PluginConfigValues = Record<string, string | number | boolean>
+export type MiniAppConfigValues = Record<string, string | number | boolean>
 
 /**
  * Runtime environment facts about the HOST instance, handed to a plugin so it never
@@ -39,7 +39,7 @@ export type PluginConfigValues = Record<string, string | number | boolean>
  * from the same single source its system prompt uses, so a plugin and the agent
  * always agree on how to reach this instance.
  */
-export interface PluginRuntimeInfo {
+export interface MiniAppRuntimeInfo {
   /** Loopback-normalized host reachable by callers on the same machine. */
   host: string
   /** The listen port. */
@@ -50,7 +50,7 @@ export interface PluginRuntimeInfo {
   webhookUrl: string
 }
 
-export interface PluginUiDestination {
+export interface MiniAppUiDestination {
   /** Canonical read-only `localix://ui/...` or `localix://resource/...` URI. */
   uri: string
   /** Compact transcript label retained as a manual reopen affordance. */
@@ -66,8 +66,8 @@ export interface PluginUiDestination {
  * A plugin never reveals a view on its own: the host tells the model the offered URI,
  * and the agent decides whether to show it with the core `open` tool.
  */
-export interface PluginUi {
-  offer(destination: PluginUiDestination): UiNavigationAction
+export interface MiniAppUi {
+  offer(destination: MiniAppUiDestination): UiNavigationAction
 }
 
 /**
@@ -80,7 +80,7 @@ export interface PluginUi {
  * the line itself. `source` names the part of the plugin that produced it, the way a
  * Claude Code hook's notice names the hook event it came from.
  */
-export interface PluginProblem {
+export interface MiniAppProblem {
   /**
    * The chat the problem belongs to. Hooks take it from the event they were handed —
    * a plugin context is built once per SCOPE (user + project + cwd) and shared by a
@@ -99,7 +99,7 @@ export interface PluginProblem {
 }
 
 /** One agent a plugin may name — as the owner of a card, say. `id` is what to store. */
-export interface PluginAgentSummary {
+export interface MiniAppAgentSummary {
   /** The stable registry identity; a handle can be renamed, this cannot. */
   readonly id: string
   /** The name people and the model address it by, without `@`. */
@@ -126,8 +126,8 @@ export interface PluginAgentSummary {
  *
  * Deliberately a listing and nothing more: a plugin cannot invite an agent, start one or change it.
  */
-export interface PluginAgentDirectory {
-  list(userId: string, sessionId: string): Promise<readonly PluginAgentSummary[]>
+export interface MiniAppAgentDirectory {
+  list(userId: string, sessionId: string): Promise<readonly MiniAppAgentSummary[]>
   /**
    * Tell the person something now waits on them in this chat (a card assigned to `@human`): the
    * stream frame, the attention item and `onHumanAssigned`. Best-effort; absent on hosts that
@@ -141,11 +141,11 @@ export interface PluginAgentDirectory {
 }
 
 /** Context handed to a plugin's native `register(ctx)` / hooks. */
-export interface PluginContext {
+export interface MiniAppContext {
   /** The resolved host user identity for user-scoped plugin state and tools. */
   userId: string
   /** Resolved config (declared defaults overlaid with stored values, incl. secrets). */
-  config: PluginConfigValues
+  config: MiniAppConfigValues
   /** Absolute plugin directory — read bundled data files relative to this. */
   pluginDir: string
   pluginName: string
@@ -173,7 +173,7 @@ export interface PluginContext {
    * NOT for things the MODEL should act on: a tool that failed says so in its own
    * result. This is for a standing condition a HUMAN has to fix.
    */
-  reportProblem?: (problem: PluginProblem) => void
+  reportProblem?: (problem: MiniAppProblem) => void
   /**
    * The HOST's zod instance. Build tool input schemas with this — a plugin installed
    * to ~/.localix/plugins has no node_modules, so `import 'zod'` would fail to
@@ -206,22 +206,22 @@ export interface PluginContext {
    */
   terminalRead?: TerminalRead
   /**
-   * Native file watching (see {@link PluginPathWatch}). Present on the boot-time backend load;
+   * Native file watching (see {@link MiniAppPathWatch}). Present on the boot-time backend load;
    * absent on per-run tool/hook loads, so a backend singleton keeps the one it was given.
    */
-  watchPath?: PluginPathWatch
+  watchPath?: MiniAppPathWatch
   /** Shared utilities (config coercion, error results, timeouts, JSON state). */
-  helpers: PluginHelpers
+  helpers: MiniAppHelpers
   /**
    * Provider-neutral UI intents for tool results. Plugins address their own
    * registered surfaces by canonical URI; the host owns the concrete tab/panel.
    */
-  ui: PluginUi
+  ui: MiniAppUi
   /**
    * Generic OAuth-PKCE utilities for tools that connect third-party accounts
    * (Spotify, Google, …). Persist credentials yourself under `stateDir`.
    */
-  oauth: PluginOAuth
+  oauth: MiniAppOAuth
   /**
    * Writable per-plugin state directory (`~/.localix/plugin-state/<plugin>`) for
    * data that must survive restarts but is not user-facing config (e.g. a
@@ -255,21 +255,21 @@ export interface PluginContext {
     listDataDirs?(): Promise<readonly { sessionId: string; dir: string }[]>
   }
   /**
-   * The agents a chat can name (see {@link PluginAgentDirectory}). Present on every load — the
+   * The agents a chat can name (see {@link MiniAppAgentDirectory}). Present on every load — the
    * boot-time backend (routes) and each run's tools alike — so a route and a tool resolve a name
    * against the same registry.
    */
-  agents?: PluginAgentDirectory
+  agents?: MiniAppAgentDirectory
   /**
    * Host runtime facts (address + inbound-webhook URL). Use this instead of
    * reconstructing the host's address from env — the host is the authority on
    * how it can be reached (it knows the real HOST/PORT and the route path).
    */
-  runtime: PluginRuntimeInfo
+  runtime: MiniAppRuntimeInfo
   /**
    * Generic host-service capabilities for a bundled BACKEND subsystem (see
-   * {@link PluginHostServices}). Present only on the boot-time backend load; a plugin
+   * {@link MiniAppHostServices}). Present only on the boot-time backend load; a plugin
    * that reads it must tolerate its absence (undefined) on the per-run tool/hook load.
    */
-  host?: PluginHostServices
+  host?: MiniAppHostServices
 }

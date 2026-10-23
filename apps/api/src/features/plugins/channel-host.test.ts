@@ -16,8 +16,8 @@ const on = (...names: string[]): AvailabilityReader => ({
 const ALL_OFF: AvailabilityReader = { effectFor: () => 'deny' }
 
 import { loadEnabledPlugins } from './loader'
-import { loadEnabledPluginChannels } from './loader-channels'
-import { createPluginChannelHost } from './channel-host'
+import { loadEnabledMiniAppChannels } from './loader-channels'
+import { createMiniAppChannelHost } from './channel-host'
 import type { ChannelWorkspaceApi } from './native'
 
 /** Inert workspace stub — these tests only exercise lifecycle + inbound. */
@@ -137,7 +137,7 @@ describe('plugin channels', () => {
    */
   it('the channel-only load agrees with the full loader, and keeps the trust gate', async () => {
     const scope = { userId: 'u1', projectId: '', cwd: dir, homeDir: dir }
-    const enabled = await loadEnabledPluginChannels({
+    const enabled = await loadEnabledMiniAppChannels({
       availability: on('chan'),
       ...scope,
       repo: fakeRepo([state('chan')]),
@@ -156,7 +156,7 @@ describe('plugin channels', () => {
     // …and the same load with the plugin switched OFF contributes nothing: the
     // channel-only path keeps the gate the full loader keeps.
     expect(
-      await loadEnabledPluginChannels({
+      await loadEnabledMiniAppChannels({
         availability: on(),
         ...scope,
         repo: fakeRepo([state('chan')]),
@@ -166,7 +166,7 @@ describe('plugin channels', () => {
 
   it('host starts a channel, bridges inbound, and stops it via the signal', async () => {
     const inboundCalls: unknown[] = []
-    const host = createPluginChannelHost({
+    const host = createMiniAppChannelHost({
       availabilityFor: async () => on('chan'),
       repo: fakeRepo([state('chan')]),
       userId: 'u1',
@@ -201,7 +201,7 @@ describe('plugin channels', () => {
 
   it('reports a crashed receive loop as a condition, cleared by the next start', async () => {
     const events: string[] = []
-    const host = createPluginChannelHost({
+    const host = createMiniAppChannelHost({
       availabilityFor: async () => on('chan'),
       repo: fakeRepo([state('chan')]),
       userId: 'u1',
@@ -225,7 +225,7 @@ describe('plugin channels', () => {
   })
 
   it('a plugin the rules switched off contributes no channels', async () => {
-    const host = createPluginChannelHost({
+    const host = createMiniAppChannelHost({
       availabilityFor: async () => ALL_OFF,
       repo: fakeRepo([state('chan')]),
       userId: 'u1',

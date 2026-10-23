@@ -33,11 +33,11 @@ async function mountReaders() {
   const { useDbConnections } = await import('./useDbConnections')
   const { useSqlFileConnections } = await import('./useSqlFileConnections')
   const { useDatabaseStatusItem } = await import('../statusItem')
-  const { bindPluginUiRuntime } = await import('@localixai/mini-app-sdk/ui/runtime')
-  type Runtime = Parameters<typeof bindPluginUiRuntime>[0]
+  const { bindMiniAppUiRuntime } = await import('@localixai/mini-app-sdk/ui/runtime')
+  type Runtime = Parameters<typeof bindMiniAppUiRuntime>[0]
   // The titlebar item reads which work item is focused; nothing is, in this harness.
   const workspaceSnapshot = { focusedId: null, items: {} }
-  const unbind = bindPluginUiRuntime({
+  const unbind = bindMiniAppUiRuntime({
     workspace: { getSnapshot: () => workspaceSnapshot, subscribe: () => () => {} },
   } as unknown as Runtime)
 

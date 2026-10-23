@@ -3,8 +3,8 @@ import { z } from 'zod'
 import { registerDom } from '@localixai/kit/testing/dom'
 
 import { useTableGame } from './game-table'
-import { bindPluginUiRuntime, type PluginUiRuntime } from './runtime'
-import { bindPluginUiTransport } from './transport'
+import { bindMiniAppUiRuntime, type MiniAppUiRuntime } from './runtime'
+import { bindMiniAppUiTransport } from './transport'
 import { WorkItemSessionProvider } from './work-item-session'
 
 let teardown: () => Promise<void>
@@ -23,7 +23,7 @@ async function mount(sessionId: string | null) {
   const { createRoot } = await import('react-dom/client')
   let game: Game = { moves: 0, owes: false }
   const requests: { path: string; body?: unknown }[] = []
-  const unbindTransport = bindPluginUiTransport({
+  const unbindTransport = bindMiniAppUiTransport({
     url: (path) => path,
     request: async (path, init) => {
       const body = init?.body ? JSON.parse(init.body as string) : undefined
@@ -32,9 +32,9 @@ async function mount(sessionId: string | null) {
       return Response.json(game)
     },
   })
-  const unbindRuntime = bindPluginUiRuntime({
+  const unbindRuntime = bindMiniAppUiRuntime({
     sessions: { list: () => [], subscribe: () => () => {} },
-  } as unknown as PluginUiRuntime)
+  } as unknown as MiniAppUiRuntime)
   let latest!: ReturnType<typeof useTableGame<Game>>
   function Probe() {
     latest = useTableGame({

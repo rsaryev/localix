@@ -1,5 +1,5 @@
 /**
- * Opening a request's center tab, routed through the generic `pluginWorkspace.openWorkItem` seam — core
+ * Opening a request's center tab, routed through the generic `miniAppWorkspace.openWorkItem` seam — core
  * names no subsystem.
  *
  * The tab-id FORMULA is exported rather than inlined, because two places must agree on it: this
@@ -7,7 +7,7 @@
  * request opens as two tabs and neither focuses the other — so the formula has one owner.
  */
 
-import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 
 export const REQUEST_WORK_KIND = 'api:request'
 
@@ -22,7 +22,7 @@ export function restRequestTabId(name: string): string {
  * one the host guessed and read another project's collection.
  */
 export function openRestRequestTab(sessionId: string, name: string): void {
-  pluginWorkspace.openWorkItem({
+  miniAppWorkspace.openWorkItem({
     workKind: REQUEST_WORK_KIND,
     id: restRequestTabId(name),
     title: name,

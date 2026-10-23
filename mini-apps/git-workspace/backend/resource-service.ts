@@ -1,12 +1,12 @@
 import { basename, relative as relativePath } from 'node:path'
-import type { PluginHostServices } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppHostServices } from '@localixai/mini-app-sdk/backend'
 
 import type { GitRepoProject, ResourceGitService } from './source-control/resource-provider'
 import { createGitBackend } from './source-control/git/backend'
 import { getBranchDiff, getStagedDiff, getUnstagedDiff } from './source-control/git/scope-diff'
 import { discoverRepos } from './source-control/repos/discovery'
 
-type WorkspaceHost = NonNullable<PluginHostServices['workspaces']>
+type WorkspaceHost = NonNullable<MiniAppHostServices['workspaces']>
 
 export function createGitResourceService(workspaces: WorkspaceHost): ResourceGitService {
   const backend = createGitBackend()

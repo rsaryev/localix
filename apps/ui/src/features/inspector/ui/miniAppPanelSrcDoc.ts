@@ -4,7 +4,7 @@
 // (collectThemeCss) and passes it in; everything here is deterministic.
 
 import { EMBEDDED_VISUAL_PREFERENCES_CSS } from '@localixai/kit/embedded-visual-preferences'
-import { pluginUiApiBootstrap } from './pluginUiApiBootstrap'
+import { miniAppUiApiBootstrap } from './miniAppUiApiBootstrap'
 
 /**
  * The library CDNs a panel may load scripts and styles from (Chart.js, D3, three.js, mermaid).
@@ -80,7 +80,7 @@ button{font-family:inherit;font-size:inherit;cursor:pointer}
 /* OS preferences must be declared inside the sandboxed document. */
 ${EMBEDDED_VISUAL_PREFERENCES_CSS}
 </style>
-<script>${pluginUiApiBootstrap(nonce)}</script>
+<script>${miniAppUiApiBootstrap(nonce)}</script>
 </head>
 <body>
 ${html}

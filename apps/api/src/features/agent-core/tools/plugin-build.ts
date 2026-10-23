@@ -14,7 +14,7 @@ import { TOOL } from '../tool-names'
  * plugin under the first free name — so an agent that chose a plugin's name never needs another
  * way in.
  */
-export interface PluginBuildToolOptions {
+export interface MiniAppBuildToolOptions {
   /** Build (creating first when asked) and reload one user plugin; the text is the report. */
   run(input: {
     name: string
@@ -36,7 +36,7 @@ const inputSchema = z.object({
 
 const PLUGIN_BUILD_CLASS: CallClass = { effect: 'external' }
 
-export function createPluginBuildTool(options: PluginBuildToolOptions) {
+export function createMiniAppBuildTool(options: MiniAppBuildToolOptions) {
   return defineAgentTool({
     name: TOOL.plugin_build,
     description:

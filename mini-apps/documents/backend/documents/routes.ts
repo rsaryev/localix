@@ -5,7 +5,7 @@ import { validated } from '../validator'
 import {
   defaultErrorHandler,
   jsonError,
-  type PluginRouteContext,
+  type MiniAppRouteContext,
 } from '@localixai/mini-app-sdk/backend'
 import { extractRequestSchema } from './contracts'
 import {
@@ -44,7 +44,7 @@ export interface DocumentsRoutesDeps {
  * returning the content id + a suggested filename.
  */
 export function createDocumentsRoutes(service: DocumentsService, deps: DocumentsRoutesDeps = {}) {
-  const app = new Hono<PluginRouteContext>()
+  const app = new Hono<MiniAppRouteContext>()
 
   const routes = app
     .get('/font/:font/:face', async (c) => {

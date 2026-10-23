@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Check, Code2, StickyNote, Table2 } from 'lucide-react'
-import { TableGrid, toast, type PluginStagedTableChanges } from '@localixai/mini-app-sdk/ui'
+import { TableGrid, toast, type MiniAppStagedTableChanges } from '@localixai/mini-app-sdk/ui'
 import { IconButton } from '@localixai/kit/icon-button'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { readTable, writeTable, TABLE_LIMIT, type TableProps } from '../../shared/types/table'
@@ -16,7 +16,7 @@ import { newId, takenIn } from '../../shared/format/ids'
 import { defineView, type ElementViewProps } from './contract'
 
 /** Translate the host grid's edits into native board rows, preserving original row order. */
-export function tableRowsAfter(props: TableProps, changes: PluginStagedTableChanges): string[][] {
+export function tableRowsAfter(props: TableProps, changes: MiniAppStagedTableChanges): string[][] {
   const removed = new Set(changes.deletes.map((row) => Number(row.__spaceRow)))
   const updates = new Map(
     changes.updates.map((update) => [Number(update.row.__spaceRow), update.values]),
@@ -51,7 +51,7 @@ function TableView({ props, editing, commit, stopEditing }: ElementViewProps<Tab
   const rows = props.rows.map((row, index) =>
     Object.fromEntries([['__spaceRow', index], ...row.map((cell, column) => [`c${column}`, cell])]),
   )
-  const save = (changes: PluginStagedTableChanges) => {
+  const save = (changes: MiniAppStagedTableChanges) => {
     const next = tableRowsAfter(props, changes)
     if (next.length > TABLE_LIMIT.rows) {
       toast.error(`A table can have at most ${TABLE_LIMIT.rows} rows`)

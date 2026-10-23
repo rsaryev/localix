@@ -2,10 +2,10 @@ import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
 import { act } from 'react'
 import { registerDom } from '@localixai/kit/testing'
 import {
-  bindPluginUiRuntime,
-  type PluginUiRuntime,
-  type PluginSession,
-  type PluginWorkspaceWatchHandlers,
+  bindMiniAppUiRuntime,
+  type MiniAppUiRuntime,
+  type MiniAppSession,
+  type MiniAppWorkspaceWatchHandlers,
 } from '@localixai/mini-app-sdk/ui/runtime'
 import { useSourceControlStore } from '../source-control/model/store'
 import { CHANGE_WINDOW_MS } from '../source-control/model/useGitPoller'
@@ -23,10 +23,10 @@ afterAll(async () => {
 
 test('polls the chat it is mounted for and retries negative probes, project changes, and run completion', async () => {
   const { createRoot } = await import('react-dom/client')
-  let sessions = [{ id: 's1', projectId: 'p1', isRunning: false }] as PluginSession[]
+  let sessions = [{ id: 's1', projectId: 'p1', isRunning: false }] as MiniAppSession[]
   const listeners = new Set<() => void>()
   // No `activeId` here: the runtime no longer has one, and the poller must not need it.
-  const unbind = bindPluginUiRuntime({
+  const unbind = bindMiniAppUiRuntime({
     sessions: {
       list: () => sessions,
       subscribe: (listener: () => void) => {
@@ -34,7 +34,7 @@ test('polls the chat it is mounted for and retries negative probes, project chan
         return () => listeners.delete(listener)
       },
     },
-  } as unknown as PluginUiRuntime)
+  } as unknown as MiniAppUiRuntime)
   const original = useSourceControlStore.getState()
   const refresh = spyOn(original, 'refresh').mockResolvedValue(undefined)
   const fresh = spyOn(original, 'refreshFresh').mockResolvedValue(undefined)
@@ -126,12 +126,12 @@ test('polls the chat it is mounted for and retries negative probes, project chan
  */
 test('a live workspace signal drives the refresh and relaxes the timer to a backstop', async () => {
   const { createRoot } = await import('react-dom/client')
-  const sessions = [{ id: 's1', projectId: 'p1', isRunning: false }] as PluginSession[]
-  let handlers: PluginWorkspaceWatchHandlers | null = null
-  const unbind = bindPluginUiRuntime({
+  const sessions = [{ id: 's1', projectId: 'p1', isRunning: false }] as MiniAppSession[]
+  let handlers: MiniAppWorkspaceWatchHandlers | null = null
+  const unbind = bindMiniAppUiRuntime({
     sessions: { list: () => sessions, subscribe: () => () => {} },
     files: {
-      watchWorkspace: (sessionId: string, next: PluginWorkspaceWatchHandlers) => {
+      watchWorkspace: (sessionId: string, next: MiniAppWorkspaceWatchHandlers) => {
         expect(sessionId).toBe('s1')
         handlers = next
         return () => {
@@ -139,7 +139,7 @@ test('a live workspace signal drives the refresh and relaxes the timer to a back
         }
       },
     },
-  } as unknown as PluginUiRuntime)
+  } as unknown as MiniAppUiRuntime)
   const original = useSourceControlStore.getState()
   const refresh = spyOn(original, 'refresh').mockResolvedValue(undefined)
   const fresh = spyOn(original, 'refreshFresh').mockResolvedValue(undefined)
@@ -247,10 +247,10 @@ test('a live workspace signal drives the refresh and relaxes the timer to a back
 
 test('a mount without a chat reads no repository — there is no session to guess', async () => {
   const { createRoot } = await import('react-dom/client')
-  const sessions = [{ id: 's1', projectId: 'p1', isRunning: true }] as PluginSession[]
-  const unbind = bindPluginUiRuntime({
+  const sessions = [{ id: 's1', projectId: 'p1', isRunning: true }] as MiniAppSession[]
+  const unbind = bindMiniAppUiRuntime({
     sessions: { list: () => sessions, subscribe: () => () => {} },
-  } as unknown as PluginUiRuntime)
+  } as unknown as MiniAppUiRuntime)
   const original = useSourceControlStore.getState()
   const refresh = spyOn(original, 'refresh').mockResolvedValue(undefined)
   const fresh = spyOn(original, 'refreshFresh').mockResolvedValue(undefined)

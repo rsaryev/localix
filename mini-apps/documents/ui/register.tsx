@@ -10,7 +10,7 @@ import {
   XLSX_CONTENT_TYPE,
   fileExtension,
 } from '@localixai/mini-app-sdk/ui/file-types'
-import type { FileEditorProps, PluginUiHost } from '@localixai/mini-app-sdk/ui'
+import type { FileEditorProps, MiniAppUiHost } from '@localixai/mini-app-sdk/ui'
 
 import { useDocumentsStatusItem } from './statusItem'
 
@@ -105,7 +105,7 @@ export function __resetDocumentsUiRegistration(): void {
   registered = false
 }
 
-export function registerUi(host: PluginUiHost): void {
+export function registerUi(host: MiniAppUiHost): void {
   if (registered) return
   registered = true
 

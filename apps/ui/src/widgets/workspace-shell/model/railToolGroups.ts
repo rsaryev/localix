@@ -1,4 +1,4 @@
-import type { PluginCategory } from '@localixai/mini-app-sdk/manifest'
+import type { MiniAppCategory } from '@localixai/mini-app-sdk/manifest'
 import type { RailEntry } from '../ui/shellTypes'
 
 export type RailToolCategory = 'workspace' | 'tools' | 'games'
@@ -15,7 +15,7 @@ export function isRailTool(entry: RailEntry): boolean {
 
 export function railToolCategoryFor(
   entry: RailEntry,
-  categories?: ReadonlyMap<string, PluginCategory | undefined>,
+  categories?: ReadonlyMap<string, MiniAppCategory | undefined>,
 ): RailToolCategory {
   const category =
     entry.toolCategory ?? (entry.pluginName ? categories?.get(entry.pluginName) : undefined)
@@ -28,7 +28,7 @@ export function railToolCategoryFor(
 /** The launcher and rail use the same manifest categories and stable display order. */
 export function groupRailTools(
   entries: readonly RailEntry[],
-  categories?: ReadonlyMap<string, PluginCategory | undefined>,
+  categories?: ReadonlyMap<string, MiniAppCategory | undefined>,
 ) {
   const buckets = new Map<RailToolCategory, RailEntry[]>()
   for (const entry of entries) {

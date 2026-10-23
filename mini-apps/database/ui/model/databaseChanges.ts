@@ -7,10 +7,10 @@
  * Every session's frames count, not only the active chat's: connections and schemas belong to the
  * machine, so an agent working in a background chat still moves what the workbench shows.
  */
-import { pluginCommandBus } from '@localixai/mini-app-sdk/ui/commands'
+import { miniAppCommandBus } from '@localixai/mini-app-sdk/ui/commands'
 import {
   DATABASE_CHANGES_CHANNEL,
-  DATABASE_PLUGIN,
+  DATABASE_MINI_APP,
   parseDatabaseChange,
   type DatabaseChange,
 } from '../../shared/database-changes'
@@ -43,7 +43,7 @@ let registered = false
 export function initDatabaseChanges(): void {
   if (registered) return
   registered = true
-  pluginCommandBus.register(DATABASE_PLUGIN, DATABASE_CHANGES_CHANNEL, (event) => {
+  miniAppCommandBus.register(DATABASE_MINI_APP, DATABASE_CHANGES_CHANNEL, (event) => {
     const change = parseDatabaseChange(event.payload)
     if (change) applyDatabaseChange(change)
   })

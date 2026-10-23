@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 
-import { PLUGIN_NAME_RE, toPluginName } from './scaffold'
+import { PLUGIN_NAME_RE, toMiniAppName } from './scaffold'
 
 // A creation refused for its name's shape cost the model a round trip to fix a mechanical rule,
 // so the host applies the rule; whatever comes out must be a name the scaffold accepts.
@@ -16,6 +16,6 @@ test.each([
   ['', 'my-plugin'],
   ['a'.repeat(80), 'a'.repeat(40)],
 ])('%p becomes %p', (raw, name) => {
-  expect(toPluginName(raw)).toBe(name)
-  expect(PLUGIN_NAME_RE.test(toPluginName(raw))).toBe(true)
+  expect(toMiniAppName(raw)).toBe(name)
+  expect(PLUGIN_NAME_RE.test(toMiniAppName(raw))).toBe(true)
 })

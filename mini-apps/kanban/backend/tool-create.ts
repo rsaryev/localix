@@ -1,4 +1,4 @@
-import type { PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppContext } from '@localixai/mini-app-sdk/backend'
 
 import type { KanbanTask } from '../shared/contracts'
 import { BoardRefusal } from '../shared/errors'
@@ -34,7 +34,7 @@ type CreateResult = { content: string; details?: KanbanToolDetails }
  * land unassigned in backlog whatever owner the member named.
  */
 export async function createCards(
-  ctx: PluginContext,
+  ctx: MiniAppContext,
   boards: BoardService,
   seat: BoardSeat,
   input: CreateInput,

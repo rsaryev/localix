@@ -119,11 +119,11 @@ handler accepted the request, not that the destination is visibly open.
 
 `app.security.csp` allows scripts and styles from four public CDNs. That is not a convenience for
 the app shell, which loads nothing from them — it is load-bearing for plugin views. They are
-`srcdoc` iframes ([`pluginPanelSrcDoc.ts`](../ui/src/features/inspector/ui/pluginPanelSrcDoc.ts))
+`srcdoc` iframes ([`miniAppPanelSrcDoc.ts`](../ui/src/features/inspector/ui/miniAppPanelSrcDoc.ts))
 that carry their own, much stricter `<meta>` policy — but a `srcdoc` frame INHERITS the parent
 policy and the two intersect. Removing a host here silently removes it from every plugin view, no
 matter what the view's own CSP allows. The single source for the list is `PANEL_CDN_HOSTS` in that
-file; keep this policy a superset of it (`pluginPanelSrcDoc.test.ts` fails when it is not).
+file; keep this policy a superset of it (`miniAppPanelSrcDoc.test.ts` fails when it is not).
 
 ## Native workspace tabs (macOS)
 

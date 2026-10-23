@@ -7,7 +7,7 @@
  * no longer re-reads the workspace after a click: deleting a branch used to mean
  * a write plus a full four-endpoint refresh queued behind the current poll.
  */
-import { unwrapPluginResponse } from '@localixai/mini-app-sdk/ui'
+import { unwrapMiniAppResponse } from '@localixai/mini-app-sdk/ui'
 import type { SourceControlMutation } from '../../backend/source-control/contracts'
 import { client } from './client'
 
@@ -17,7 +17,7 @@ export const refWrites = {
     branch: string,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control'].switch.$post({ json: { sessionId, branch, repoRoot } }),
     )
   },
@@ -28,7 +28,7 @@ export const refWrites = {
     remoteRef: string,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control']['checkout-remote'].$post({
         json: { sessionId, remoteRef, repoRoot },
       }),
@@ -42,7 +42,7 @@ export const refWrites = {
     noFastForward?: boolean,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control'].merge.$post({
         json: { sessionId, branch, noFastForward, repoRoot },
       }),
@@ -51,7 +51,7 @@ export const refWrites = {
 
   /** Abandon an in-progress merge. */
   async abortMerge(sessionId: string, repoRoot?: string): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control']['merge-abort'].$post({ json: { sessionId, repoRoot } }),
     )
   },
@@ -62,7 +62,7 @@ export const refWrites = {
     name: string,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control']['create-branch'].$post({
         json: { sessionId, name, repoRoot },
       }),
@@ -76,7 +76,7 @@ export const refWrites = {
     to: string,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control']['rename-branch'].$post({
         json: { sessionId, from, to, repoRoot },
       }),
@@ -90,7 +90,7 @@ export const refWrites = {
     force: boolean,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control']['delete-branch'].$post({
         json: { sessionId, name, force, repoRoot },
       }),
@@ -103,20 +103,20 @@ export const refWrites = {
     repoRoot?: string,
     force?: boolean,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control'].push.$post({ json: { sessionId, repoRoot, force } }),
     )
   },
 
   async pull(sessionId: string, repoRoot?: string): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control'].pull.$post({ json: { sessionId, repoRoot } }),
     )
   },
 
   /** Refresh remote-tracking refs (git fetch) so behind/ahead reflect the remote. */
   async fetch(sessionId: string, repoRoot?: string): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control'].fetch.$post({ json: { sessionId, repoRoot } }),
     )
   },
@@ -127,7 +127,7 @@ export const refWrites = {
     opts?: { message?: string; includeUntracked?: boolean },
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control'].stash.$post({
         json: {
           sessionId,
@@ -146,7 +146,7 @@ export const refWrites = {
     pop: boolean,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control']['stash-apply'].$post({
         json: { sessionId, index, pop, repoRoot },
       }),
@@ -159,7 +159,7 @@ export const refWrites = {
     index: number,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control']['stash-drop'].$post({
         json: { sessionId, index, repoRoot },
       }),
@@ -173,7 +173,7 @@ export const refWrites = {
     hash: string,
     repoRoot?: string,
   ): Promise<SourceControlMutation> {
-    return unwrapPluginResponse<SourceControlMutation>(
+    return unwrapMiniAppResponse<SourceControlMutation>(
       await client.rpc['source-control']['branch-at'].$post({
         json: { sessionId, name, hash, repoRoot },
       }),

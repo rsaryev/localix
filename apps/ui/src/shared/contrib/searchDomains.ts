@@ -3,7 +3,7 @@ import type {
   SearchDomainContribution,
   SearchDomainScope,
 } from '@localixai/mini-app-sdk/ui'
-import { isPluginContributionEnabled } from './pluginActivation'
+import { isMiniAppContributionEnabled } from './miniAppActivation'
 
 /**
  * OPEN search-domain registry — a bundled subsystem contributes its own search
@@ -51,7 +51,7 @@ export function removeSearchDomainsOf(owner: string): void {
 /** All registered domains, in insertion order. */
 export function searchDomains(): SearchDomainContribution[] {
   return Array.from(registry.values()).filter((domain) =>
-    isPluginContributionEnabled(domain.pluginName),
+    isMiniAppContributionEnabled(domain.pluginName),
   )
 }
 
@@ -59,7 +59,7 @@ export function searchDomains(): SearchDomainContribution[] {
 export function searchDomainScopes(): Array<{ id: string; scope: SearchDomainScope }> {
   const out: Array<{ id: string; scope: SearchDomainScope }> = []
   for (const domain of registry.values()) {
-    if (!isPluginContributionEnabled(domain.pluginName)) continue
+    if (!isMiniAppContributionEnabled(domain.pluginName)) continue
     if (domain.scope) out.push({ id: domain.id, scope: domain.scope })
   }
   return out
@@ -68,7 +68,7 @@ export function searchDomainScopes(): Array<{ id: string; scope: SearchDomainSco
 /** Resolve a contributed glyph key → its icon (first domain that declares it). */
 export function searchDomainIcon(key: string): IconComponent | undefined {
   for (const domain of registry.values()) {
-    if (!isPluginContributionEnabled(domain.pluginName)) continue
+    if (!isMiniAppContributionEnabled(domain.pluginName)) continue
     const icon = domain.icons?.[key]
     if (icon) return icon
   }

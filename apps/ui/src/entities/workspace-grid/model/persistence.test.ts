@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { loadGrid, emptyEditorState, persistGrid, type PersistedGrid } from './persistence'
 import { flushAllBeforeQuit } from '@/shared/lib/quitFlush'
 import { leafIds, findLeaf } from './tree'
-import { pluginUiHostFor } from '@/shared/contrib/host'
-import { setEnabledPluginNames } from '@/shared/contrib/pluginActivation'
+import { miniAppUiHostFor } from '@/shared/contrib/host'
+import { setEnabledPluginNames } from '@/shared/contrib/miniAppActivation'
 import { installTestLocalStorage, removeTestLocalStorage } from '@localixai/kit/testing/dom'
 
 function installStorage(): Map<string, string> {
@@ -54,7 +54,7 @@ describe('loadGrid', () => {
 
   test('retains a registered plugin tab while activation is still loading', () => {
     const kind = 'slow-plugin:pending-persistence-fixture'
-    pluginUiHostFor('slow-plugin').workItems.register({
+    miniAppUiHostFor('slow-plugin').workItems.register({
       kind,
       Component: () => null,
       Icon: () => null,
@@ -101,7 +101,7 @@ describe('loadGrid', () => {
 
   test('drops a plugin tab only after its owner is authoritatively disabled', () => {
     const kind = 'disabled-plugin:persistence-fixture'
-    pluginUiHostFor('disabled-plugin').workItems.register({
+    miniAppUiHostFor('disabled-plugin').workItems.register({
       kind,
       Component: () => null,
       Icon: () => null,
@@ -121,7 +121,7 @@ describe('loadGrid', () => {
 
   test('a disabled plugin registration cannot make a restorable core kind disappear', () => {
     expect(() =>
-      pluginUiHostFor('core-kind-shadow').workItems.register({
+      miniAppUiHostFor('core-kind-shadow').workItems.register({
         kind: 'chat',
         Component: () => null,
         Icon: () => null,

@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path'
 import type { PluginCatalog } from './catalog'
 import type { DiscoveredPlugin } from './discovery'
 import { createPluginRoutes, type PluginRoutesService } from './routes'
-import { readPluginUiDescriptor, resolvePluginUiFile } from './ui-artifact'
+import { readMiniAppUiDescriptor, resolveMiniAppUiFile } from './ui-artifact'
 
 const root = mkdtempSync(join(tmpdir(), 'plugin-ui-artifact-api-'))
 afterAll(() => rmSync(root, { recursive: true, force: true }))
@@ -39,7 +39,7 @@ const artifact = { entry: 'entry.js', styles: ['entry.css', 'utilities.css'], re
 
 describe('the plugin record ui descriptor', () => {
   test('a plugin advertises its artifact as URLs the host imports, with its revision', async () => {
-    expect(await readPluginUiDescriptor(installed('demo', { manifest: artifact }))).toEqual({
+    expect(await readMiniAppUiDescriptor(installed('demo', { manifest: artifact }))).toEqual({
       entry: '/rpc/plugins/demo/ui/entry.js',
       styles: ['/rpc/plugins/demo/ui/entry.css', '/rpc/plugins/demo/ui/utilities.css'],
       revision: 'r1',
@@ -47,15 +47,15 @@ describe('the plugin record ui descriptor', () => {
   })
 
   test('no artifact or a malformed manifest advertise no UI', async () => {
-    expect(await readPluginUiDescriptor(installed('backend-only', {}))).toBeUndefined()
+    expect(await readMiniAppUiDescriptor(installed('backend-only', {}))).toBeUndefined()
     expect(
-      await readPluginUiDescriptor(installed('broken', { manifest: { entry: 1 } })),
+      await readMiniAppUiDescriptor(installed('broken', { manifest: { entry: 1 } })),
     ).toBeUndefined()
   })
 
   test('a user plugin built by the app advertises its UI like a first-party one', async () => {
     const user = installed('user-built', { bundled: false, manifest: artifact })
-    expect((await readPluginUiDescriptor(user))?.entry).toBe('/rpc/plugins/user-built/ui/entry.js')
+    expect((await readMiniAppUiDescriptor(user))?.entry).toBe('/rpc/plugins/user-built/ui/entry.js')
   })
 })
 
@@ -69,27 +69,29 @@ describe('serving artifact files', () => {
   const catalog = catalogOf(demo, outsider, consented)
 
   test('a non-first-party plugin is served only once the user consented to it', () => {
-    expect(() => resolvePluginUiFile(catalog, 'outsider', 'entry.js')).toThrow('ships no UI')
-    expect(resolvePluginUiFile(catalog, 'consented', 'entry.js')).toBe(
+    expect(() => resolveMiniAppUiFile(catalog, 'outsider', 'entry.js')).toThrow('ships no UI')
+    expect(resolveMiniAppUiFile(catalog, 'consented', 'entry.js')).toBe(
       join(consented.dir, 'dist', 'ui', 'entry.js'),
     )
   })
 
   test('resolves a file inside the artifact and nothing outside it', () => {
-    expect(resolvePluginUiFile(catalog, 'served', 'entry.js')).toBe(
+    expect(resolveMiniAppUiFile(catalog, 'served', 'entry.js')).toBe(
       join(demo.dir, 'dist', 'ui', 'entry.js'),
     )
     for (const escape of ['../../plugin.json', '../ui/../../plugin.json', '/etc/passwd']) {
-      expect(() => resolvePluginUiFile(catalog, 'served', escape)).toThrow('inside the UI artifact')
+      expect(() => resolveMiniAppUiFile(catalog, 'served', escape)).toThrow(
+        'inside the UI artifact',
+      )
     }
-    expect(() => resolvePluginUiFile(catalog, 'outsider', 'entry.js')).toThrow('ships no UI')
-    expect(() => resolvePluginUiFile(catalog, 'missing', 'entry.js')).toThrow('ships no UI')
+    expect(() => resolveMiniAppUiFile(catalog, 'outsider', 'entry.js')).toThrow('ships no UI')
+    expect(() => resolveMiniAppUiFile(catalog, 'missing', 'entry.js')).toThrow('ships no UI')
   })
 
   test('the route answers a module with a JavaScript type; entry revalidates, chunks are immutable', async () => {
     const service = {
       resolveUiFile: async (_userId: string, input: { pluginName: string; file: string }) =>
-        resolvePluginUiFile(catalog, input.pluginName, input.file),
+        resolveMiniAppUiFile(catalog, input.pluginName, input.file),
     } as unknown as PluginRoutesService
     const app = createPluginRoutes(service)
 

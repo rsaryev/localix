@@ -1,4 +1,4 @@
-import type { PluginUiHost } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppUiHost } from '@localixai/mini-app-sdk/ui'
 
 /**
  * The lifecycle of plugin UI inside a RUNNING workbench: load, replace and unload one
@@ -22,7 +22,7 @@ import type { PluginUiHost } from '@localixai/mini-app-sdk/ui'
  *  - Failures are per plugin and reported, never thrown: one broken plugin cannot hide the rest.
  */
 
-type PluginUiModule = { registerUi?: (host: PluginUiHost) => void }
+type PluginUiModule = { registerUi?: (host: MiniAppUiHost) => void }
 
 /** One enabled plugin's artifact, from the snapshot. */
 export interface PluginUiArtifact {
@@ -41,7 +41,7 @@ export interface PluginUiRuntimeDeps {
   /** Attach an artifact's stylesheets; resolves once they applied, with their removal. */
   mountStyles: (artifact: PluginUiArtifact) => Promise<() => void>
   /** The ownership-stamping registration façade for one plugin. */
-  hostFor: (pluginName: string) => PluginUiHost
+  hostFor: (pluginName: string) => MiniAppUiHost
   /** Take back everything `pluginName` registered. */
   remove: (pluginName: string) => void
   /** Registries changed without a capability publish: every surface re-reads. */
@@ -49,7 +49,7 @@ export interface PluginUiRuntimeDeps {
   report: PluginUiFailureReporter
 }
 
-export interface PluginUiRuntime {
+export interface MiniAppUiRuntime {
   /**
    * Converge on exactly these enabled artifacts. `settled` hears each plugin as ITS work ends
    * (registered, failed or unchanged), so one slow artifact does not hold back the others. `ok`
@@ -70,7 +70,7 @@ interface Loaded {
   unmountStyles: () => void
 }
 
-export function createPluginUiRuntime(deps: PluginUiRuntimeDeps): PluginUiRuntime {
+export function createPluginUiRuntime(deps: PluginUiRuntimeDeps): MiniAppUiRuntime {
   const loaded = new Map<string, Loaded>()
   /** What the latest reconcile wants per plugin: a revision, or null for "not loaded". */
   const wanted = new Map<string, string | null>()

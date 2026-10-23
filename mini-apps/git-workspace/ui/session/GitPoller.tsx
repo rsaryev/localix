@@ -1,5 +1,5 @@
 import type { SessionSurfaceProps } from '@localixai/mini-app-sdk/ui'
-import { usePluginSessions } from '@localixai/mini-app-sdk/ui/runtime-hooks'
+import { useMiniAppSessions } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 import { useGitPoller } from '../source-control/model/useGitPoller'
 
 /**
@@ -12,7 +12,7 @@ import { useGitPoller } from '../source-control/model/useGitPoller'
  * that chat is focused, null otherwise) and the Git workspace tab (its own chat, while visible).
  */
 export function GitPoller({ sessionId }: Pick<SessionSurfaceProps, 'sessionId'>) {
-  const sessions = usePluginSessions()
+  const sessions = useMiniAppSessions()
   const session = sessionId ? sessions.find((candidate) => candidate.id === sessionId) : undefined
   useGitPoller(sessionId, session?.isRunning, session?.projectId)
   return null

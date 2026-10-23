@@ -1,13 +1,13 @@
 import type { AgentTool } from '@localixai/agent/agents'
-import type { PluginChannel } from './channels'
-import type { MemoryProvider, PluginHooks } from './hooks'
+import type { MiniAppChannel } from './channels'
+import type { MemoryProvider, MiniAppHooks } from './hooks'
 import type { BackendSubsystem } from './subsystem'
 
 /** Value returned by a native plugin's `register(ctx)` entry point. */
-export interface PluginRegistration {
+export interface MiniAppRegistration {
   tools?: AgentTool[]
-  hooks?: PluginHooks
-  channels?: PluginChannel[]
+  hooks?: MiniAppHooks
+  channels?: MiniAppChannel[]
   memory?: MemoryProvider
   backend?: BackendSubsystem | BackendSubsystem[]
 }

@@ -13,7 +13,7 @@ import { useId, useRef, type ReactNode } from 'react'
 import { useFocusEntry } from '@localixai/mini-app-sdk/ui/focus'
 import { matchesChord } from '@localixai/kit/keybindings'
 
-export function PluginPane({
+export function MiniAppPane({
   visible,
   hasSelection,
   closeLocalSelection,

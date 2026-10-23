@@ -1,4 +1,4 @@
-import { classifyByAction, type PluginContext } from '@localixai/mini-app-sdk/backend'
+import { classifyByAction, type MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import { z } from 'zod'
 import { resolve } from 'node:path'
 import { templateIds } from '../shared/templates'
@@ -63,7 +63,7 @@ function describeIssues(error: z.ZodError) {
     .join('\n')
 }
 
-export function createResumeTool(ctx: PluginContext, service: ResumeService) {
+export function createResumeTool(ctx: MiniAppContext, service: ResumeService) {
   return ctx.defineTool({
     name: 'resume',
     label: 'Resume',

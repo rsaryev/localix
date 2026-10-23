@@ -2,7 +2,7 @@ import { GraduationCap } from 'lucide-react'
 import type { StatusItemState } from '@localixai/mini-app-sdk/ui'
 import { statusMenuList } from '@localixai/mini-app-sdk/ui'
 import { createSharedResource } from '@localixai/mini-app-sdk/ui/shared-resource'
-import { usePluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime-hooks'
+import { useMiniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 
 import type { CourseSummary } from '../shared/contracts'
 import { learningApi } from './api/learningApi'
@@ -35,7 +35,7 @@ function progressOf(course: CourseSummary): string | null {
  * No courses in this session, no control. The plugin is silent for every chat that is not studying.
  */
 export function useLearningStatusItem(sessionId: string | null): StatusItemState | null {
-  const workspace = usePluginWorkspace()
+  const workspace = useMiniAppWorkspace()
   const list = courses.use(sessionId)
 
   const focusedId = workspace.focusedId

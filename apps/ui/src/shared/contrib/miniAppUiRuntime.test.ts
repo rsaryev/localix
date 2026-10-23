@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import type { PluginUiHost } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppUiHost } from '@localixai/mini-app-sdk/ui'
 
-import { createPluginUiRuntime, type PluginUiArtifact } from './pluginUiRuntime'
+import { createPluginUiRuntime, type PluginUiArtifact } from './miniAppUiRuntime'
 
 type Modules = Record<string, () => unknown>
 
@@ -23,7 +23,7 @@ function harness(build: (log: string[]) => Modules) {
       log.push(`styles+ ${name}@${revision}`)
       return () => log.push(`styles- ${name}@${revision}`)
     },
-    hostFor: (name) => ({ name }) as unknown as PluginUiHost,
+    hostFor: (name) => ({ name }) as unknown as MiniAppUiHost,
     remove: (name) => log.push(`remove ${name}`),
     announce: () => log.push('announce'),
     report: (name) => failures.push(name),
@@ -40,7 +40,7 @@ const artifact = (name: string, revision: string): PluginUiArtifact => ({
 
 /** A module whose `registerUi` logs `register <name>@<label>`. */
 const version = (log: string[], label: string) => () => ({
-  registerUi: (host: PluginUiHost) => {
+  registerUi: (host: MiniAppUiHost) => {
     log.push(`register ${(host as unknown as { name: string }).name}@${label}`)
   },
 })

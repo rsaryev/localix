@@ -5,7 +5,7 @@ import {
   useProblemReport,
   type PublishMessageContext,
 } from '@localixai/mini-app-sdk/ui'
-import { pluginComposer } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppComposer } from '@localixai/mini-app-sdk/ui/runtime'
 import { useComments, useScopeComments } from '@localixai/mini-app-sdk/ui/comments'
 import { ProblemLine } from '@localixai/mini-app-sdk/ui/components'
 import type { ProblemReport } from '@localixai/mini-app-sdk/ui/problems'
@@ -116,7 +116,7 @@ export function LearningWorkspace({
   const title = step ? stepTitle(step) : location.lesson.title
   const stageComments = () => {
     if (!comments.length) return
-    pluginComposer.insert({
+    miniAppComposer.insert({
       sessionId,
       text: commentsText(`${course.title} · ${title}`, comments),
       bindings: [resourceMessageBindingDraft({ uri: activeUri, label: title })],

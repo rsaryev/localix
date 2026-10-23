@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { FileWarning } from 'lucide-react'
 import { snippetMessageBindingDraft, type PublishMessageContext } from '@localixai/mini-app-sdk/ui'
-import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-session'
 import { Button } from '@localixai/kit/button'
 import { CanvasProvider } from '@localixai/kit/canvas'
@@ -73,7 +73,7 @@ export function SpaceWorkspace({
       <LoadingHint>Opening the board…</LoadingHint>
     )
 
-  const openFile = () => pluginWorkspace.openFile({ sessionId, path: BOARD_FILE })
+  const openFile = () => miniAppWorkspace.openFile({ sessionId, path: BOARD_FILE })
   return (
     <CanvasProvider>
       <div className="flex h-full min-h-0 flex-col">

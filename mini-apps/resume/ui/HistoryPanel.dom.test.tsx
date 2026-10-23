@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing'
-import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
+import { bindMiniAppUiTransport } from '@localixai/mini-app-sdk/ui/transport'
 import type { PublishedMessageContext } from '@localixai/mini-app-sdk/ui'
 import { createTemplateDocument } from '../shared/templates'
 import type { Resume } from '../shared/schema'
@@ -50,7 +50,7 @@ test('selects a historical snapshot, confirms restoration, stays visible after a
       label: 'Initial version',
     },
   ]
-  const unbind = bindPluginUiTransport({
+  const unbind = bindMiniAppUiTransport({
     url: (path) => path,
     request: async (path) => {
       const pathname = new URL(path, 'http://localhost').pathname

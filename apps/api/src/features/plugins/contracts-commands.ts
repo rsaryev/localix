@@ -9,9 +9,9 @@ import { PLUGIN_QUALIFIED_NAME_RE } from './contracts-base'
  */
 /** Gate an arg on an earlier choice chip (mirrors the shared `ArgCondition`): the arg
  *  is only offered once the chip named `arg` was committed with value `equals`. */
-export const pluginCommandArgConditionSchema = z.object({ arg: z.string(), equals: z.string() })
+export const miniAppCommandArgConditionSchema = z.object({ arg: z.string(), equals: z.string() })
 
-export const pluginCommandArgSchema = z.object({
+export const miniAppCommandArgSchema = z.object({
   /** Arg name — must be a valid `${name}` placeholder (letters, digits, underscores, hyphens). */
   name: z
     .string()
@@ -41,9 +41,9 @@ export const pluginCommandArgSchema = z.object({
    */
   optionsScript: z.string().optional(),
   /** Show this arg only after an earlier choice chip took a given value. */
-  when: pluginCommandArgConditionSchema.optional(),
+  when: miniAppCommandArgConditionSchema.optional(),
 })
-export type PluginCommandArg = z.infer<typeof pluginCommandArgSchema>
+export type MiniAppCommandArg = z.infer<typeof miniAppCommandArgSchema>
 
 /**
  * An inline slash-command a plugin declares in its manifest. `prompt` is an
@@ -55,7 +55,7 @@ export const pluginCommandSchema = z.object({
   // single-segment name is the common case (PLUGIN_QUALIFIED_NAME_RE ⊇ PLUGIN_NAME_RE).
   name: z.string().regex(PLUGIN_QUALIFIED_NAME_RE),
   description: z.string().default(''),
-  args: z.array(pluginCommandArgSchema).default([]),
+  args: z.array(miniAppCommandArgSchema).default([]),
   prompt: z.string(), // agent-macro template; ${argName} placeholders
   /**
    * CC `arguments` — names for the positional arguments, filling `$name` in the prompt
@@ -108,11 +108,11 @@ export const pluginCommandOptionsSchema = pluginCommandSchema
  * `<plugin>:<name>` the user types.
  */
 /**
- * UI-facing arg spec. Derived from `pluginCommandArgSchema` but the script PATH is
+ * UI-facing arg spec. Derived from `miniAppCommandArgSchema` but the script PATH is
  * never sent to the client — it's collapsed to a `dynamic` boolean (the composer only
  * needs to know it must fetch options on demand, not where from).
  */
-export const pluginCommandArgSpecSchema = z.object({
+export const miniAppCommandArgSpecSchema = z.object({
   name: z.string(),
   type: z.enum(['text', 'choice']),
   description: z.string().default(''),
@@ -129,7 +129,7 @@ export const pluginCommandArgSpecSchema = z.object({
     .optional(),
   /** True when this arg's options load on demand from the plugin (via `optionsScript`). */
   dynamic: z.boolean().optional(),
-  when: pluginCommandArgConditionSchema.optional(),
+  when: miniAppCommandArgConditionSchema.optional(),
 })
 
 export const pluginCommandSpecSchema = z.object({
@@ -137,7 +137,7 @@ export const pluginCommandSpecSchema = z.object({
   name: z.string(), // bare command name
   fullName: z.string(), // namespaced "<plugin>:<name>"
   description: z.string(),
-  args: z.array(pluginCommandArgSpecSchema),
+  args: z.array(miniAppCommandArgSpecSchema),
   /** Composer placeholder hint (CC compat: `argument-hint` in command frontmatter). */
   argumentHint: z.string().optional(),
   /** Shown first in the slash menu, under "Suggested". */

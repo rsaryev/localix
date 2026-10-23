@@ -7,10 +7,10 @@ import { tempDirPerFile } from '@localixai/testing'
 import { assertNotVoid } from '../../lib/source-lint'
 import { actionFor } from '../capabilities/resolve'
 import { resolvePluginConfig } from './config'
-import { normalizePluginSurfaces } from './contracts-base'
-import { discoverBundledPlugins, type DiscoveredPlugin } from './discovery'
+import { normalizeMiniAppSurfaces } from './contracts-base'
+import { discoverBundledMiniApps, type DiscoveredPlugin } from './discovery'
 import { pluginTrustClass } from './enable'
-import { inspectPluginTools } from './native'
+import { inspectMiniAppTools } from './native'
 import { toConfigFields } from './service-types'
 
 // The first run transpiles every bundled backend: seconds under a parallel run, not milliseconds.
@@ -76,7 +76,7 @@ function entryOf(plugin: DiscoveredPlugin, tools: string[]): BaselineEntry {
   const { manifest } = plugin
   return {
     category: manifest.category ?? null,
-    surfaces: normalizePluginSurfaces(manifest.surfaces),
+    surfaces: normalizeMiniAppSurfaces(manifest.surfaces),
     trust: pluginTrustClass(plugin),
     ruleKey: actionFor('plugin', manifest.name),
     skills: sorted(plugin.provides.skills),
@@ -92,17 +92,17 @@ function entryOf(plugin: DiscoveredPlugin, tools: string[]): BaselineEntry {
 
 /** Every bundled extension's entry, by name, plus the inspections that failed. */
 async function currentBaseline(homeDir: string): Promise<{ baseline: Baseline; errors: string[] }> {
-  const plugins = await discoverBundledPlugins()
+  const plugins = await discoverBundledMiniApps()
   assertNotVoid(
     'bundled extensions',
     plugins.length,
-    'discoverBundledPlugins() reads the bundled root — check its location and layout.',
+    'discoverBundledMiniApps() reads the bundled root — check its location and layout.',
   )
   const errors: string[] = []
   const entries = await Promise.all(
     plugins.map(async (plugin) => {
       const inspection = plugin.provides.hasNativeTools
-        ? await inspectPluginTools(plugin, resolvePluginConfig(plugin.manifest, undefined), {
+        ? await inspectMiniAppTools(plugin, resolvePluginConfig(plugin.manifest, undefined), {
             userId: 'bundled-baseline',
             cwd: plugin.dir,
             homeDir,

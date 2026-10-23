@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import type { CommentActionContribution } from '@localixai/mini-app-sdk/ui'
 
-import { isPluginContributionEnabled, subscribePluginActivation } from './pluginActivation'
+import { isMiniAppContributionEnabled, subscribePluginActivation } from './miniAppActivation'
 
 /**
  * What else a batch of review comments can become, beside "Send to the agent".
@@ -56,7 +56,7 @@ export function removeCommentActionsOf(owner: string): void {
 export function commentActions(): readonly CommentActionContribution[] {
   if (snapshot?.version === version) return snapshot.actions
   const actions = [...contributions.values()]
-    .filter((action) => isPluginContributionEnabled(action.pluginName))
+    .filter((action) => isMiniAppContributionEnabled(action.pluginName))
     .sort(
       (a, b) => (a.pluginName ?? '').localeCompare(b.pluginName ?? '') || a.id.localeCompare(b.id),
     )

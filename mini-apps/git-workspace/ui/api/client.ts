@@ -1,13 +1,13 @@
 import { hc } from 'hono/client'
 // The SDK transport, not the host's API internals: a plugin owns its own client and must not
 // reach into `shared/api` for the base URL, the envelope reader or the query cleaner.
-import { pluginApiUrl } from '@localixai/mini-app-sdk/ui'
+import { miniAppApiUrl } from '@localixai/mini-app-sdk/ui'
 import type { SourceControlRoutes } from '../../backend/source-control/routes'
 
 /**
  * The typed RPC client every call in `api/` shares.
  *
- * Built LAZILY, on first call rather than at module load. `pluginApiUrl` reads the transport the
+ * Built LAZILY, on first call rather than at module load. `miniAppApiUrl` reads the transport the
  * HOST binds, and a plugin module is imported during discovery — which can run before that
  * binding, and does under SSR and in tests. Constructing at module scope therefore threw "Plugin
  * UI transport is not bound by the host" while the module was still evaluating, so `registerUi`
@@ -15,7 +15,7 @@ import type { SourceControlRoutes } from '../../backend/source-control/routes'
  * it needed no host at all.
  */
 let routeClient: ReturnType<typeof hc<SourceControlRoutes>> | undefined
-const rpc = () => (routeClient ??= hc<SourceControlRoutes>(pluginApiUrl('/rpc/source-control')))
+const rpc = () => (routeClient ??= hc<SourceControlRoutes>(miniAppApiUrl('/rpc/source-control')))
 
 export const client = {
   rpc: {

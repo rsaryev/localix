@@ -1,4 +1,4 @@
-import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 import type { DockerImage, DockerNetwork, DockerVolume } from '../../backend/contracts'
 
@@ -6,14 +6,14 @@ import type { DockerImage, DockerNetwork, DockerVolume } from '../../backend/con
  * Open (or focus) a container's details + logs center tab. This feature owns the
  * `devops:docker-container` WorkItemKind + its tab-id formula, so re-opening the same
  * container focuses the existing tab. Routed through the generic
- * `pluginWorkspace.openWorkItem` seam — core names no subsystem.
+ * `miniAppWorkspace.openWorkItem` seam — core names no subsystem.
  *
  * A session kind, opened IN the chat it was asked from: its Exec spawns a shell in that chat's
  * terminal, and a container tab that belonged to no chat opened that shell in whichever chat was
  * on screen.
  */
 export function openDockerContainerTab(sessionId: string, containerId: string, name: string): void {
-  pluginWorkspace.openWorkItem({
+  miniAppWorkspace.openWorkItem({
     workKind: 'devops:docker-container',
     id: `devops:docker-container:${containerId}`,
     title: name,
@@ -52,7 +52,7 @@ export function dockerResourceLabel(input: DockerResourceTabInput): string {
  */
 export function openDockerResourceTab(input: DockerResourceTabInput): void {
   const uri = dockerResourceUri(input)
-  pluginWorkspace.openWorkItem({
+  miniAppWorkspace.openWorkItem({
     workKind: 'devops:docker-resource',
     id: `devops:docker-resource:${uri}`,
     title: dockerResourceLabel(input),

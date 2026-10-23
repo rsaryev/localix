@@ -1,9 +1,9 @@
 import { pluginViewTarget } from '../../../contracts/plugin-view-target'
-import type { PluginKit } from './kit'
+import type { MiniAppKit } from './kit'
 import {
-  PLUGIN_BACKEND_SHARED_MODULES,
+  MINI_APP_BACKEND_SHARED_MODULES,
   PLUGIN_KIT_CATALOG,
-  USER_PLUGIN_BACKEND_DIR,
+  USER_MINI_APP_BACKEND_DIR,
 } from './kit-layout'
 import {
   copyDomain,
@@ -33,7 +33,7 @@ import {
 /** The tool that builds, tests and reloads a user plugin (see `agent-core/tools/plugin-build`). */
 export const PLUGIN_BUILD_TOOL = 'plugin_build'
 
-function frameList(kit: PluginKit, scaffold: TemplateScaffold): string[] {
+function frameList(kit: MiniAppKit, scaffold: TemplateScaffold): string[] {
   return templateFrame(scaffold, listFiles(kit.templateDir))
 }
 
@@ -45,7 +45,7 @@ function frameList(kit: PluginKit, scaffold: TemplateScaffold): string[] {
  * backstop.
  */
 export const LIVE_DATA_CONTRACT =
-  "- Changes are PUSHED, not polled. State in openJsonStore: read it with ui/useStoreSnapshot.ts, which backend/store-feed.ts nudges. Any other live data: a wsFrames entry in the backend (subscribeCommand, unsubscribeCommand, frameTag — one lowercase letter, not s, r or n — and start(params, send, { userId })), followed in the view with createRealtimeFeed and useRealtimeFeed from @localixai/mini-app-sdk/ui/realtime-feed, which share one subscription per key, resubscribe after a reconnect and say whether the stream is live. Files in the chat's workspace: usePluginWorkspaceChanges(sessionId, onChange) from @localixai/mini-app-sdk/ui/runtime-hooks. A backend that watches files uses ctx.watchPath(path, recursive, onEvent, onError), never node:fs.watch: Bun's recursive fs.watch on macOS drops part of a burst. Use the SDK file/store read coordinator. Poll only while push coverage is unavailable, or for a named source it cannot cover; a healthy fully covered resource has no timer."
+  "- Changes are PUSHED, not polled. State in openJsonStore: read it with ui/useStoreSnapshot.ts, which backend/store-feed.ts nudges. Any other live data: a wsFrames entry in the backend (subscribeCommand, unsubscribeCommand, frameTag — one lowercase letter, not s, r or n — and start(params, send, { userId })), followed in the view with createRealtimeFeed and useRealtimeFeed from @localixai/mini-app-sdk/ui/realtime-feed, which share one subscription per key, resubscribe after a reconnect and say whether the stream is live. Files in the chat's workspace: useMiniAppWorkspaceChanges(sessionId, onChange) from @localixai/mini-app-sdk/ui/runtime-hooks. A backend that watches files uses ctx.watchPath(path, recursive, onEvent, onError), never node:fs.watch: Bun's recursive fs.watch on macOS drops part of a burst. Use the SDK file/store read coordinator. Poll only while push coverage is unavailable, or for a named source it cannot cover; a healthy fully covered resource has no timer."
 
 /**
  * What a plugin is FOR, said before how to build one. Told only the template's mechanics, a copy
@@ -98,7 +98,7 @@ workspace overflow menu or the command palette.
 export function agentsMd(input: {
   name: string
   displayName: string
-  kit: PluginKit
+  kit: MiniAppKit
   scaffold: TemplateScaffold
 }): string {
   const { name, displayName, kit, scaffold } = input
@@ -122,7 +122,7 @@ ${HOST_JUDGMENT_CONTRACT}
   Code format (name, description, keywords; its skills under \`skills/\`), and
   \`.localix-app/app.json\` is the mini app around it (category, settings, the backend). The
   mini app's \`backend\` is written by the build: it names the current build of
-  \`backend/index.ts\` under \`${USER_PLUGIN_BACKEND_DIR}/\`, which is what runs. Leave it alone.
+  \`backend/index.ts\` under \`${USER_MINI_APP_BACKEND_DIR}/\`, which is what runs. Leave it alone.
 - Keep what the user creates with \`openJsonStore\` (\`backend/store.ts\`) under \`ctx.dataDir\`,
   given to \`register(ctx)\`; \`ctx.stateDir\` is for internal state. Never only in memory.
 - Act through \`ui/usePolledSnapshot.ts\`: \`send()\` for every action, never a second copy of the
@@ -131,7 +131,7 @@ ${HOST_JUDGMENT_CONTRACT}
 - Hear changes instead of polling for them. State in \`openJsonStore\` is read with
   \`ui/useStoreSnapshot.ts\`, which \`backend/store-feed.ts\` nudges; any other live data is a
   \`wsFrames\` entry followed with \`createRealtimeFeed\`/\`useRealtimeFeed\`
-  (\`@localixai/mini-app-sdk/ui/realtime-feed\`); workspace files with \`usePluginWorkspaceChanges\`. A
+  (\`@localixai/mini-app-sdk/ui/realtime-feed\`); workspace files with \`useMiniAppWorkspaceChanges\`. A
   backend watches files with \`ctx.watchPath\`, never \`node:fs.watch\` (Bun's recursive watch on
   macOS drops bursts). A poll is only the slow backstop.
 - A tool is \`ctx.defineTool({ …, inputSchema: ctx.z.object({…}), executionMode: 'parallel' |
@@ -142,7 +142,7 @@ ${HOST_JUDGMENT_CONTRACT}
   without an \`action\` field gets a constant (\`classify: () => ({ effect: 'read' })\`).
 - A \`toMessageBinding\` to a resource URI needs a backend \`resourceProvider\` that expands it;
   without one, drop the binding and publish the visible state with \`publishMessageContext\`.
-- The backend may import ${PLUGIN_BACKEND_SHARED_MODULES.join(', ')}, \`node:*\`, \`bun:*\` and its own files.
+- The backend may import ${MINI_APP_BACKEND_SHARED_MODULES.join(', ')}, \`node:*\`, \`bun:*\` and its own files.
   The UI may import React, \`zod\`, \`lucide-react\`, \`@localixai/mini-app-sdk/ui*\` (not \`/ui/testing\`)
   and the host kit \`@localixai/kit/<id>\`. Nothing else is available.
 - Build every control from the kit and colour with host tokens; \`${PLUGIN_BUILD_TOOL}\` reports a raw
@@ -163,7 +163,7 @@ export function agentInstruction(input: {
   displayName: string
   description: string
   dir: string
-  kit: PluginKit
+  kit: MiniAppKit
   scaffold: TemplateScaffold
 }): string {
   const { name, displayName, description, dir, kit, scaffold } = input
@@ -224,6 +224,6 @@ export function agentInstruction(input: {
       .join('\n'),
     // The catalog already names every kit id by its job; the bare list of ~100 ids repeated it
     // without the job, and only when there is no catalog is the list the agent's sole source.
-    `Imports: the backend may use ${PLUGIN_BACKEND_SHARED_MODULES.join(', ')}, node:*, bun:* and its own files; the UI may use React, zod, lucide-react, @localixai/mini-app-sdk/ui* (not /ui/testing) and the host kit \`@localixai/kit/<id>\`${catalog ? ` — the ids ${PLUGIN_KIT_CATALOG} lists` : ` — ids: ${kit.manifest.kitModules.join(', ')}`}. Nothing else resolves. Everything you need is in this folder and this message; do not search the disk for SDK or kit sources.`,
+    `Imports: the backend may use ${MINI_APP_BACKEND_SHARED_MODULES.join(', ')}, node:*, bun:* and its own files; the UI may use React, zod, lucide-react, @localixai/mini-app-sdk/ui* (not /ui/testing) and the host kit \`@localixai/kit/<id>\`${catalog ? ` — the ids ${PLUGIN_KIT_CATALOG} lists` : ` — ids: ${kit.manifest.kitModules.join(', ')}`}. Nothing else resolves. Everything you need is in this folder and this message; do not search the disk for SDK or kit sources.`,
   ].join('\n\n')
 }

@@ -10,7 +10,7 @@ export { pluginCapabilityVersion } from './capabilityVersion'
 import type {
   CapabilitySnapshot,
   CapabilityToolSurface,
-  PluginViewSpec,
+  MiniAppViewSpec,
   PluginRecord,
 } from '@/shared/api/contracts'
 import {
@@ -23,7 +23,7 @@ import {
 import { tauriFrontendLog } from '@/shared/lib/tauri'
 import type * as SyncProblems from './pluginSyncProblems'
 import { syncThirdPartyViews, __resetThirdPartyViews } from './runtimeViews'
-import { setEnabledPluginNames, setPluginUiPending } from './pluginActivation'
+import { setEnabledPluginNames, setMiniAppUiPending } from './miniAppActivation'
 import { noteRegistryChange } from './registryChanges'
 import {
   __resetPluginUiLoads,
@@ -31,7 +31,7 @@ import {
   pluginUiPending,
   runPluginUiLoads,
   type PluginUiDiscovery,
-} from './pluginUiLoads'
+} from './miniAppUiLoads'
 import { __resetCapabilityVersion, noteCapabilityDocument } from './capabilityVersion'
 import { rememberShellCapabilities, type ShellCapabilitiesFrame } from '@/shared/lib/shellSnapshot'
 
@@ -68,7 +68,7 @@ let stopActiveSync: (() => void) | null = null
 /**
  * Names publish when the snapshot lands, not after the slowest UI artifact (that kept every name
  * gate empty for 0.5–1.3s); a restored tab of a not-yet-registered kind is held by the pending UI
- * loads instead (`pluginUiLoads.ts`).
+ * loads instead (`miniAppUiLoads.ts`).
  */
 const publishNames = (names: Set<string> | null) => {
   const { loading, failed } = pluginUiPending()
@@ -93,7 +93,7 @@ export function announcePluginUiChanged(bumpVersion = true): void {
   if (snapshot.enabledNames === null) return
   if (bumpVersion) version += 1
   const { loading, failed } = pluginUiPending()
-  setPluginUiPending(loading, failed)
+  setMiniAppUiPending(loading, failed)
   noteRegistryChange(reannounceNames)
 }
 function reannounceNames(): void {
@@ -165,7 +165,7 @@ export function restorePluginContribFrame(
     document: null,
     enabledNames: new Set(frame.enabledNames),
     plugins: frame.plugins as PluginRecord[],
-    views: frame.views as PluginViewSpec[],
+    views: frame.views as MiniAppViewSpec[],
     tools: frame.tools as CapabilityToolSurface | null,
     revision: frame.revision,
   }
@@ -201,16 +201,16 @@ export interface PluginContribSource {
   loadSnapshot: () => Promise<CapabilitySnapshot>
 }
 
-export type { PluginUiDiscovery } from './pluginUiLoads'
+export type { PluginUiDiscovery } from './miniAppUiLoads'
 
 // The plugin UI runtime stays out of first paint: which plugins to load is only known once the
 // snapshot resolves. A failed chunk import is forgotten, so the retry imports it again.
-let pluginUiDiscovery: Promise<PluginUiDiscovery> | undefined
+let miniAppUiDiscovery: Promise<PluginUiDiscovery> | undefined
 const discoverPluginUiLazily: PluginUiDiscovery = (plugins, settled) => {
-  const loaded = (pluginUiDiscovery ??= import('./pluginUiDiscovery').then(
-    ({ discoverEnabledPluginUi }) => discoverEnabledPluginUi,
+  const loaded = (miniAppUiDiscovery ??= import('./miniAppUiDiscovery').then(
+    ({ discoverEnabledMiniAppUi }) => discoverEnabledMiniAppUi,
     (error: unknown) => {
-      pluginUiDiscovery = undefined
+      miniAppUiDiscovery = undefined
       throw error
     },
   ))
@@ -282,7 +282,7 @@ export async function refetchPluginContrib(
       revision: loaded.revision,
     })
     // Each plugin's UI registers as ITS artifact lands; this pass owns settling until the next
-    // publish claims (`pluginUiLoads.ts`). The version moves once, when the last one settles.
+    // publish claims (`miniAppUiLoads.ts`). The version moves once, when the last one settles.
     await runPluginUiLoads(claim, loaded.plugins, discoverPluginUi, announcePluginUiChanged)
     // Names and tools were published at `snapshotMs`; `uiMs` later every artifact had settled.
     if (firstLoad) {

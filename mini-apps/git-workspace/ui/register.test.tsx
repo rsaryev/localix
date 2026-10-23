@@ -1,6 +1,6 @@
 import { localixResourceUri } from '@localixai/mini-app-sdk/navigation'
 import { expect, test } from 'bun:test'
-import { recordingPluginUiHost } from '@localixai/mini-app-sdk/ui/testing'
+import { recordingMiniAppUiHost } from '@localixai/mini-app-sdk/ui/testing'
 import type {
   RailViewletContribution,
   StatusItemContribution,
@@ -13,7 +13,7 @@ test('registers a native auxiliary Git Workspace with a resource anchor', () => 
   // The SDK's recording host, not a literal: this test used to enumerate the registries by hand
   // and cast past the rest, so the day the contract grew a seam the plugin uses, `registerUi`
   // died on `undefined.register` inside a test whose job is to prove registration works.
-  const { host, registrations } = recordingPluginUiHost()
+  const { host, registrations } = recordingMiniAppUiHost()
   const workItems = registrations.workItems as WorkItemKindContribution[]
   const viewlets = registrations.railViewlets as RailViewletContribution[]
   const statusItems = registrations.statusItems as StatusItemContribution[]
@@ -22,7 +22,7 @@ test('registers a native auxiliary Git Workspace with a resource anchor', () => 
 
   const anchor = (registrations.anchors as UiAnchorContribution[])[0]
 
-  // Namespaced by owner. The host's `assertPluginOwnedIdentity` THROWS on a bare `git-workspace`,
+  // Namespaced by owner. The host's `assertMiniAppOwnedIdentity` THROWS on a bare `git-workspace`,
   // and because `registerUi` latches `registered` before it registers anything, that first throw
   // silently cost the plugin its entire UI — so the prefix is a contract, not a convention.
   // A SESSION kind: the workspace shows one chat's repository. As a global tab it followed the chat

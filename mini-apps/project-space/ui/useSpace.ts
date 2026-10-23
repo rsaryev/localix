@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { acknowledgeInline, toast } from '@localixai/mini-app-sdk/ui'
-import { pluginErrorDetail } from '@localixai/mini-app-sdk/ui/transport'
+import { miniAppErrorDetail } from '@localixai/mini-app-sdk/ui/transport'
 import type { SpaceView } from '../shared/api'
 import { applyOps } from '../shared/ops/apply'
 import type { OpResult, SpaceOp } from '../shared/ops/contract'
@@ -100,7 +100,7 @@ export function useSpace(sessionId: string | null): SpaceState {
     } catch (failure) {
       if (owner.current !== sessionId || sequence !== readSequence.current) return
       acknowledgeInline(failure)
-      setError(pluginErrorDetail(failure) ?? 'The board could not be read.')
+      setError(miniAppErrorDetail(failure) ?? 'The board could not be read.')
     }
   }, [sessionId])
 
@@ -133,7 +133,7 @@ export function useSpace(sessionId: string | null): SpaceState {
       } catch (failure) {
         if (owner.current !== sessionId || generation.current !== startedIn) return []
         inFlight.current--
-        toast.error(pluginErrorDetail(failure) ?? 'The change was not saved.')
+        toast.error(miniAppErrorDetail(failure) ?? 'The change was not saved.')
         await reload()
         return []
       }
@@ -155,7 +155,7 @@ export function useSpace(sessionId: string | null): SpaceState {
           )
       } catch (failure) {
         if (owner.current !== sessionId || generation.current !== startedIn) return
-        toast.error(pluginErrorDetail(failure) ?? `Could not ${side}.`)
+        toast.error(miniAppErrorDetail(failure) ?? `Could not ${side}.`)
       }
     },
     [sessionId, accept],

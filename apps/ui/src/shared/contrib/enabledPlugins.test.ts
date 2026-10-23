@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
-import type { CapabilitySnapshot, PluginRecord, PluginViewSpec } from '@/shared/api/contracts'
+import type { CapabilitySnapshot, PluginRecord, MiniAppViewSpec } from '@/shared/api/contracts'
 import {
   __resetPluginContrib,
   announcePluginUiChanged,
@@ -17,8 +17,8 @@ import {
 import { backendClient } from '@/shared/api/client'
 import { __resetThirdPartyViews, listThirdPartyViews } from './runtimeViews'
 import { resolveUiLocation } from './uiLocations'
-import { arePluginContributionsPending, pluginContributionActivation } from './pluginActivation'
-import type { PluginUiSettled } from './pluginUiLoads'
+import { areMiniAppContributionsPending, miniAppContributionActivation } from './miniAppActivation'
+import type { PluginUiSettled } from './miniAppUiLoads'
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0))
 
@@ -26,7 +26,7 @@ function plugin(name: string, enabled = true): PluginRecord {
   return { name, enabled } as PluginRecord
 }
 
-function view(pluginName: string, id: string): PluginViewSpec {
+function view(pluginName: string, id: string): MiniAppViewSpec {
   return {
     pluginName,
     projectId: '',
@@ -100,9 +100,9 @@ describe('plugin contribution synchronization', () => {
       views: [],
       tools: EMPTY_TOOLS,
     })
-    expect(pluginContributionActivation('sample')).toBe('pending')
-    expect(pluginContributionActivation('plain')).toBe('enabled')
-    expect(arePluginContributionsPending()).toBe(true)
+    expect(miniAppContributionActivation('sample')).toBe('pending')
+    expect(miniAppContributionActivation('plain')).toBe('enabled')
+    expect(areMiniAppContributionsPending()).toBe(true)
   })
 
   test('the production default loader does not receive the retry attempt as a plugin source', () => {
@@ -440,19 +440,19 @@ describe('plugin contribution synchronization', () => {
     expect(pluginContribSnapshot().enabledNames).toEqual(new Set(['slow', 'fast', 'no-ui']))
     // A plugin whose UI has not registered yet reads as pending, so a restored tab of its
     // kind is kept rather than closed as unavailable.
-    expect(pluginContributionActivation('slow')).toBe('pending')
-    expect(pluginContributionActivation('no-ui')).toBe('enabled')
-    expect(arePluginContributionsPending()).toBe(true)
+    expect(miniAppContributionActivation('slow')).toBe('pending')
+    expect(miniAppContributionActivation('no-ui')).toBe('enabled')
+    expect(areMiniAppContributionsPending()).toBe(true)
     const beforeSettle = pluginContribVersion()
 
     settlers[0]!('fast', true)
-    expect(pluginContributionActivation('fast')).toBe('enabled')
-    expect(pluginContributionActivation('slow')).toBe('pending')
+    expect(miniAppContributionActivation('fast')).toBe('enabled')
+    expect(miniAppContributionActivation('slow')).toBe('pending')
     // One plugin settling is not a capability change: other scopes' documents stay fresh.
     expect(pluginContribVersion()).toBe(beforeSettle)
 
     settlers[0]!('slow', true)
-    expect(arePluginContributionsPending()).toBe(false)
+    expect(areMiniAppContributionsPending()).toBe(false)
     expect(pluginContribVersion()).toBe(beforeSettle + 1)
     finishDiscovery()
     expect(await refetched).toBe(true)
@@ -462,7 +462,7 @@ describe('plugin contribution synchronization', () => {
       source({ plugins: [withUi('slow'), withUi('fast'), plugin('no-ui')] }),
       async () => {},
     )
-    expect(pluginContributionActivation('slow')).toBe('enabled')
+    expect(miniAppContributionActivation('slow')).toBe('enabled')
   })
 
   test('a successful empty response really removes disabled contributions', async () => {

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
+import { bindMiniAppUiTransport } from '@localixai/mini-app-sdk/ui/transport'
 
 import { DockerApiError, dockerApi } from '../docker/ui/dockerApi'
 import { KubeApiError } from '../kubernetes/ui/api/transport'
@@ -15,7 +15,7 @@ afterEach(() => {
 /** Answer every plugin request with `body` at `status`, recording what was asked. */
 function answer(status: number, body: unknown) {
   const calls: Array<{ path: string; method: string }> = []
-  unbind = bindPluginUiTransport({
+  unbind = bindMiniAppUiTransport({
     request: async (path, init) => {
       calls.push({ path, method: init?.method ?? 'GET' })
       return new Response(JSON.stringify(body), {

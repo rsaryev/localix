@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { PluginProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
+import type { MiniAppProblemLineProps } from '@localixai/mini-app-sdk/ui/components'
 import type { Problem } from '@localixai/mini-app-sdk/ui/problems'
 import type { DbConnectionInfo } from '../../dbClient'
 import { connectionDisplayName } from '../../model/connectionDisplayName'
 import type { SchemaReader } from '../../model/schemaTreeRows'
 import { useDbProblem } from '../../problems'
 
-type Lines = { reconnect: PluginProblemLineProps | null; schema: PluginProblemLineProps | null }
+type Lines = { reconnect: MiniAppProblemLineProps | null; schema: MiniAppProblemLineProps | null }
 
 /**
  * Ownership of each connection's standing problems, held OUTSIDE the windowed tree.

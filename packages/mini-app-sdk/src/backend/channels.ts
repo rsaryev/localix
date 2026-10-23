@@ -6,7 +6,7 @@
 // them (channel lifecycle, session binding) lives in the host (`apps/api`).
 
 import type { MessageAttachment, ReasoningEffort } from '@localixai/agent'
-import type { PluginContext } from './context'
+import type { MiniAppContext } from './context'
 
 /**
  * Live progress for an in-flight inbound turn, delivered to the channel's
@@ -164,7 +164,7 @@ export interface ChannelWorkspaceApi {
 }
 
 /** Context handed to a channel's `start()` — the plugin context plus the host bridge. */
-export interface ChannelContext extends PluginContext {
+export interface ChannelContext extends MiniAppContext {
   /**
    * Deliver an incoming platform message to the agent. Resolves when the agent
    * turn COMPLETES, with the final reply text. Conversations are persistent:
@@ -186,7 +186,7 @@ export interface ChannelContext extends PluginContext {
  * until `ctx.signal` aborts. `stop()` is optional extra cleanup beyond the
  * signal. Channels are restarted on plugin config changes.
  */
-export interface PluginChannel {
+export interface MiniAppChannel {
   /** Channel name, unique within the plugin. */
   name: string
   start: (ctx: ChannelContext) => void | Promise<void>

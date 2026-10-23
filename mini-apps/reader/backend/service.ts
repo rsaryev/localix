@@ -3,8 +3,8 @@ import { stat } from 'node:fs/promises'
 import { isAbsolute } from 'node:path'
 
 import type {
-  PluginHelpers,
-  PluginHostServices,
+  MiniAppHelpers,
+  MiniAppHostServices,
   WorkspaceScopeHost,
 } from '@localixai/mini-app-sdk/backend'
 
@@ -39,7 +39,7 @@ import {
 
 interface ReaderPersistence {
   filePath: string
-  helpers: Pick<PluginHelpers, 'readJson' | 'writeJson'>
+  helpers: Pick<MiniAppHelpers, 'readJson' | 'writeJson'>
 }
 
 interface ReaderReadOptions {
@@ -49,7 +49,7 @@ interface ReaderReadOptions {
 
 export class ReaderService {
   private workspaceScope?: WorkspaceScopeHost
-  private media?: NonNullable<PluginHostServices['media']>
+  private media?: NonNullable<MiniAppHostServices['media']>
   private readonly documents = new BookCache<ParsedReaderDocument>(estimateParsedBytes)
   private readonly opened = new Map<string, ReaderBookSummary>()
   private readonly collections = new Map<string, ReaderCollection>()
@@ -61,14 +61,14 @@ export class ReaderService {
   private savePromise: Promise<void> = Promise.resolve()
 
   constructor(
-    host?: Pick<PluginHostServices, 'workspaceScope' | 'media'>,
+    host?: Pick<MiniAppHostServices, 'workspaceScope' | 'media'>,
     persistence?: ReaderPersistence,
   ) {
     this.persistence = persistence
     this.bindHost(host)
   }
 
-  bindHost(host?: Pick<PluginHostServices, 'workspaceScope' | 'media'>): void {
+  bindHost(host?: Pick<MiniAppHostServices, 'workspaceScope' | 'media'>): void {
     if (host?.workspaceScope) this.workspaceScope = host.workspaceScope
     if (host?.media) this.media = host.media
   }

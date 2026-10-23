@@ -1,5 +1,5 @@
-import type { PluginHostServices } from '@localixai/mini-app-sdk/backend'
-import type { PluginHostRefs } from './plugin-host-refs'
+import type { MiniAppHostServices } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppHostRefs } from './plugin-host-refs'
 
 /**
  * The two workspace capabilities a plugin backend may hold, built from the late-bound host refs.
@@ -14,8 +14,8 @@ import type { PluginHostRefs } from './plugin-host-refs'
  * services are created after the plugin host phase and rebind on reload.
  */
 export function workspaceCapabilities(
-  hostRefs: PluginHostRefs,
-): Pick<PluginHostServices, 'workspaceScope' | 'workspaces'> {
+  hostRefs: MiniAppHostRefs,
+): Pick<MiniAppHostServices, 'workspaceScope' | 'workspaces'> {
   // Every session-half door goes through the chat service's `sessionCoordination`. Reading it per
   // call rather than destructuring it once is what keeps a plugin working across a chat-service
   // rebind — the ref is replaced, not mutated.

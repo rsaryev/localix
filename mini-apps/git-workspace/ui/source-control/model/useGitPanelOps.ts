@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { toast } from '@localixai/mini-app-sdk/ui'
-import { PluginApiError } from '@localixai/mini-app-sdk/ui'
+import { MiniAppApiError } from '@localixai/mini-app-sdk/ui'
 import { sourceControlApi } from '../../api'
 import { useWorkItemVisible } from '@localixai/mini-app-sdk/ui/visibility'
 import { useHeadStamp, useSourceControlStore } from './store'
@@ -122,7 +122,7 @@ export function useGitPanelOps(sessionId: string | null, repoRoot?: string) {
     try {
       await store.push(sessionId, force)
     } catch (err) {
-      if (!force && err instanceof PluginApiError && err.code === 'git_push_rejected') {
+      if (!force && err instanceof MiniAppApiError && err.code === 'git_push_rejected') {
         toast.warning('The remote rejected this push', {
           description:
             'Its branch has commits yours does not. Pull to integrate them, or force-push if you rewrote this history yourself.',
@@ -200,7 +200,7 @@ export function useGitPanelOps(sessionId: string | null, repoRoot?: string) {
     try {
       await fn()
     } catch (err) {
-      if (err instanceof PluginApiError && err.code === 'git_rebase_conflict') {
+      if (err instanceof MiniAppApiError && err.code === 'git_rebase_conflict') {
         toast.warning('Stopped on another conflict', {
           description: 'Resolve and stage the conflicts, then Continue again — or Abort.',
         })

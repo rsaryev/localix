@@ -17,7 +17,7 @@
 import { statSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-import { discoverBundledPlugins, type DiscoveredPlugin } from '../src/features/plugins/discovery'
+import { discoverBundledMiniApps, type DiscoveredPlugin } from '../src/features/plugins/discovery'
 import { loadManifest } from '../src/features/plugins/manifest-load'
 import { validatePluginFull } from '../src/features/plugins/validate'
 
@@ -46,7 +46,7 @@ for (const p of paths) {
 // no args → the whole bundled reference set. Both paths yield ordinary DiscoveredPlugins.
 const plugins: DiscoveredPlugin[] = paths.length
   ? await Promise.all(paths.map((p) => loadManifest(resolve(p), 'global', '', false)))
-  : await discoverBundledPlugins()
+  : await discoverBundledMiniApps()
 
 const color = !process.env.NO_COLOR && process.stdout.isTTY
 const paint = (code: string, s: string) => (color ? `\x1b[${code}m${s}\x1b[0m` : s)

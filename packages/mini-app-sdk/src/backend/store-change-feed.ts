@@ -1,5 +1,5 @@
 import { join, sep } from 'node:path'
-import type { PluginPathWatch } from './context'
+import type { MiniAppPathWatch } from './context'
 import type { WsFrameContribution } from './ws-frame-registry'
 import { STORE_FRAME_TAG, storeFeedCommands, type StoreFrame } from '../store-changes'
 
@@ -16,7 +16,7 @@ export function createStoreChangeFeed(options: {
   plugin: string
   resolveDir: (userId: string, sessionId: string | null) => Promise<string | null>
   subscribeWrites: (listener: (path: string) => void) => () => void
-  watchPath?: PluginPathWatch
+  watchPath?: MiniAppPathWatch
   /** Refresh domain caches before a filesystem-triggered read. */
   onExternalChange?: (userId: string) => void
   acceptPath?: (userId: string, path: string) => boolean

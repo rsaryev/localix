@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import type { ActionContext, ActionContribution } from '@localixai/mini-app-sdk/ui'
-import { isPluginContributionEnabled, subscribePluginActivation } from './pluginActivation'
+import { isMiniAppContributionEnabled, subscribePluginActivation } from './miniAppActivation'
 
 // Late plugin loading and activation must update already rendered content. First owner wins,
 // as with comment actions: a collision must never change where a person's content is sent.
@@ -36,7 +36,7 @@ export function removeActionsOf(owner: string): void {
 
 export function contributedActions(): readonly ActionContribution[] {
   return (snapshot ??= [...entries.values()]
-    .filter((action) => isPluginContributionEnabled(action.pluginName))
+    .filter((action) => isMiniAppContributionEnabled(action.pluginName))
     .sort(
       (a, b) => (a.pluginName ?? '').localeCompare(b.pluginName ?? '') || a.id.localeCompare(b.id),
     ))

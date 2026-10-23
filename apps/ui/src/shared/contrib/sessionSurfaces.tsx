@@ -1,5 +1,5 @@
 import type { SessionSurfaceContribution } from '@localixai/mini-app-sdk/ui'
-import { usePluginRegistrySlice } from './usePluginRegistrySlice'
+import { useMiniAppRegistrySlice } from './useMiniAppRegistrySlice'
 
 const contributions: SessionSurfaceContribution[] = []
 
@@ -43,7 +43,7 @@ export function SessionSurface({
   sessionId: string | null
   context?: unknown
 }) {
-  const contributions = usePluginRegistrySlice(`surface:${surface}`, () =>
+  const contributions = useMiniAppRegistrySlice(`surface:${surface}`, () =>
     sessionSurfacesFor(surface),
   )
   return (

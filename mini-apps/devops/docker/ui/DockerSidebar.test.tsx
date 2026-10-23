@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, expect, test } from 'bun:test'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { bindPluginUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
+import { bindMiniAppUiTestDoubles } from '@localixai/mini-app-sdk/ui/testing'
 
 // Bound here, not only in the plugin preload: the combined `bun test plugins` run loads no preload,
 // and another suite's doubles would decide what the problem surface renders.
 let unbind = () => {}
 beforeEach(() => {
-  unbind = bindPluginUiTestDoubles()
+  unbind = bindMiniAppUiTestDoubles()
 })
 afterEach(() => unbind())
 import type { DockerWorkbenchModel } from './model/useDocker'

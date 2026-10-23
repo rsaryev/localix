@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import type { NativeSubscribeOptions, NativeWatchEvent } from '../fs-watch/subscribe'
-import { watchStagedPluginsRoot } from './bundled-watch'
+import { watchStagedMiniAppsRoot } from './bundled-watch'
 import { STAGED_MARKER_FILE } from './staged-marker'
 
 const ROOT = '/staged/plugins'
@@ -67,7 +67,7 @@ describe('staged plugins root watcher', () => {
     const t = manualTimers()
     let changes = 0
     let revision = 'before'
-    const handle = watchStagedPluginsRoot({
+    const handle = watchStagedMiniAppsRoot({
       root: ROOT,
       onChange: () => changes++,
       subscribe: fake.subscribe,
@@ -95,7 +95,7 @@ describe('staged plugins root watcher', () => {
     const t = manualTimers()
     let revision: string | null = 'before'
     let changes = 0
-    const handle = watchStagedPluginsRoot({
+    const handle = watchStagedMiniAppsRoot({
       root: ROOT,
       subscribe: fake.subscribe,
       revision: () => revision,
@@ -123,7 +123,7 @@ describe('staged plugins root watcher', () => {
   // is healthy — and is exactly what a reported failure switches to.
   test('no poll while the native watch is healthy', () => {
     const poll = manualPoll()
-    const handle = watchStagedPluginsRoot({
+    const handle = watchStagedMiniAppsRoot({
       root: ROOT,
       onChange: () => {},
       subscribe: fakeSubscribe().subscribe,
@@ -139,7 +139,7 @@ describe('staged plugins root watcher', () => {
     const lines: string[] = []
     let revision = 'before'
     let changes = 0
-    const handle = watchStagedPluginsRoot({
+    const handle = watchStagedMiniAppsRoot({
       root: ROOT,
       subscribe: fake.subscribe,
       revision: () => revision,
@@ -165,7 +165,7 @@ describe('staged plugins root watcher', () => {
   test('no native watcher on this platform: reported, not thrown, and polled', () => {
     const poll = manualPoll()
     const lines: string[] = []
-    const handle = watchStagedPluginsRoot({
+    const handle = watchStagedMiniAppsRoot({
       root: ROOT,
       onChange: () => {},
       subscribe: fakeSubscribe({ failOnSubscribe: true }).subscribe,
@@ -191,7 +191,7 @@ describe('staged plugins root watcher (real fs)', () => {
     writeFileSync(join(dir, STAGED_MARKER_FILE), '{"v":1}')
     let changes = 0
     const lines: string[] = []
-    const handle = watchStagedPluginsRoot({
+    const handle = watchStagedMiniAppsRoot({
       root: dir,
       onChange: () => changes++,
       debounceMs: 30,

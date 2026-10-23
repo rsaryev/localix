@@ -8,7 +8,7 @@ import {
 } from '../../../contracts/ui-token-existence'
 import { UI_TOKEN_RULES, type UiTokenRule } from '../../../contracts/ui-token-rules'
 import { scanSources } from '../../../lib/source-lint'
-import type { PluginKit } from './kit'
+import type { MiniAppKit } from './kit'
 import { PLUGIN_KIT_STYLES_DIR } from './kit-layout'
 
 /**
@@ -23,7 +23,7 @@ import { PLUGIN_KIT_STYLES_DIR } from './kit-layout'
  * the tokens; a hand-written one has to remember all three, and that timer's remembered none.
  */
 
-export const PLUGIN_STYLE_RULES: readonly UiTokenRule[] = [
+export const MINI_APP_STYLE_RULES: readonly UiTokenRule[] = [
   {
     name: 'native control',
     // A file, range, colour or hidden input has no kit counterpart; everything else does.
@@ -56,7 +56,7 @@ async function cssFilesUnder(dir: string): Promise<string[]> {
  * A kit whose theme declares no colour is a broken install, not a plugin with no problems: every
  * kit-family class would read as absent, so it throws and the step reports an error instead.
  */
-async function kitThemeTokens(kit: PluginKit): Promise<ThemeTokens> {
+async function kitThemeTokens(kit: MiniAppKit): Promise<ThemeTokens> {
   const files = await cssFilesUnder(join(kit.dir, PLUGIN_KIT_STYLES_DIR))
   const tokens = themeTokensOf(
     ...(await Promise.all(files.map((file) => fs.readFile(file, 'utf8')))),
@@ -70,13 +70,13 @@ async function kitThemeTokens(kit: PluginKit): Promise<ThemeTokens> {
 }
 
 /** One `file:line` problem per departure from the house style; empty when there is none. */
-export async function checkPluginStyle(pluginDir: string, kit: PluginKit): Promise<string[]> {
+export async function checkMiniAppStyle(pluginDir: string, kit: MiniAppKit): Promise<string[]> {
   // A plugin without a UI has nothing to check, which is not a disabled check.
   const files = await scanSources({ root: pluginDir, include: SOURCES, skip: isTest, minFiles: 0 })
   const tokens = files.length > 0 ? await kitThemeTokens(kit) : null
   const problems: string[] = []
   for (const { file, code } of files) {
-    for (const rule of [...UI_TOKEN_RULES, ...PLUGIN_STYLE_RULES]) {
+    for (const rule of [...UI_TOKEN_RULES, ...MINI_APP_STYLE_RULES]) {
       for (const match of code.matchAll(rule.pattern)) {
         const line = code.slice(0, match.index).split('\n').length
         problems.push(`${file}:${line} ${match[0]} — ${rule.name}: ${rule.fix}`)

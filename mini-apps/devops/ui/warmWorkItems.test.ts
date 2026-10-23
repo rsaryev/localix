@@ -11,7 +11,7 @@ describe('warm-hidden DevOps work items', () => {
    * walked straight past it: `resource-nodes.ts` later grew `import { mapKubeError } from
    * './errors'`, and THAT file imported the `./backend` barrel — which re-exports `net-safety`,
    * which reaches for `node:dns`. Vite externalizes `node:dns` to a stub that throws on first
-   * property access, so importing the DevOps UI entrypoint threw, `bundledPluginUi` caught it
+   * property access, so importing the DevOps UI entrypoint threw, `bundledMiniAppUi` caught it
    * per-plugin, and the only visible symptom was a DevOps workspace missing from the rail and
    * the Capabilities panel while the plugin itself still listed as enabled.
    *

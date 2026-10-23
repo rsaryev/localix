@@ -3,9 +3,9 @@ import { act } from 'react'
 import { registerDom } from '@localixai/kit/testing'
 import type { StatusItemState } from '@localixai/mini-app-sdk/ui'
 import {
-  bindPluginUiRuntime,
-  type PluginUiRuntime,
-  type PluginWorkItemRequest,
+  bindMiniAppUiRuntime,
+  type MiniAppUiRuntime,
+  type MiniAppWorkItemRequest,
 } from '@localixai/mini-app-sdk/ui/runtime'
 
 import { useReaderStatusItem } from './statusItem'
@@ -27,18 +27,18 @@ afterAll(async () => {
  * an item with no chat offers nothing rather than guessing.
  */
 async function renderItem(sessionId: string | null) {
-  const opened: PluginWorkItemRequest[] = []
+  const opened: MiniAppWorkItemRequest[] = []
   const snapshot = {
     items: { 'reader:book:a': { kind: 'reader:book', id: 'reader:book:a', title: 'Dune' } },
     focusedId: null,
   }
-  const unbind = bindPluginUiRuntime({
+  const unbind = bindMiniAppUiRuntime({
     workspace: {
-      openWorkItem: (request: PluginWorkItemRequest) => opened.push(request),
+      openWorkItem: (request: MiniAppWorkItemRequest) => opened.push(request),
       getSnapshot: () => snapshot,
       subscribe: () => () => {},
     },
-  } as unknown as PluginUiRuntime)
+  } as unknown as MiniAppUiRuntime)
   let latest: StatusItemState | null = null
   function Probe() {
     latest = useReaderStatusItem(sessionId)

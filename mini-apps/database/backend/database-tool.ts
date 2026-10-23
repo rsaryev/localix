@@ -5,7 +5,7 @@
  * stays its own module, the way `api_client` fronts requests and environments.
  */
 import { defineAgentTool, type AgentToolExecutionContext } from '@localixai/agent/agents'
-import { DATABASE_CHANGES_CHANNEL, DATABASE_PLUGIN } from '../shared/database-changes'
+import { DATABASE_CHANGES_CHANNEL, DATABASE_MINI_APP } from '../shared/database-changes'
 import { createDbBrowseTool, type DbBrowsePort } from './db-browse'
 import { runConnectionAction, type DbConnectionsPort } from './db-connections'
 import { createDbQueryTool, type DbQueryPort } from './db-query'
@@ -106,7 +106,11 @@ export function createDatabaseTool(options: { userId: string; ports: DatabaseToo
       // The workbench learns of its own writes from its own calls, never of these: say what moved.
       const change = result.isError ? null : changeOfCall(input)
       if (change) {
-        executionContext?.session?.emitCommand?.(DATABASE_PLUGIN, DATABASE_CHANGES_CHANNEL, change)
+        executionContext?.session?.emitCommand?.(
+          DATABASE_MINI_APP,
+          DATABASE_CHANGES_CHANNEL,
+          change,
+        )
       }
       return result
     },

@@ -6,7 +6,7 @@ import { Button } from '@localixai/kit/button'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { StateNotice } from '@localixai/kit/state-notice'
 import { WorkbenchNoticeBar } from '@localixai/kit/workbench-notice-bar'
-import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import { fileId } from '../shared/ids'
 import { LENS_KINDS, type CodeCard } from '../shared/lens'
 import type { NodeSummaryView, ViewNode } from '../shared/view'
@@ -143,7 +143,7 @@ export function Workspace({
   const openFile = useCallback(
     (card: CodeCard) => {
       if (!graph.sessionId) return
-      pluginWorkspace.openFile({
+      miniAppWorkspace.openFile({
         sessionId: graph.sessionId,
         path: `${snapshot?.root ?? ''}/${card.node.path}`,
         line: card.startLine,

@@ -1,4 +1,4 @@
-import type { CallClass, PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { CallClass, MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import { NODE_KINDS } from '../shared/model'
 import { nodeLine } from '../shared/format'
 import { ROOT_DIR_ID } from '../shared/ids'
@@ -33,7 +33,7 @@ export const VIEW_CALL: CallClass = { effect: 'view' }
  */
 const FIRST_BUILD_WAIT_MS = 20_000
 
-export function createGraphTools(ctx: PluginContext) {
+export function createGraphTools(ctx: MiniAppContext) {
   const z = ctx.z
   const nodeArg = z
     .string()

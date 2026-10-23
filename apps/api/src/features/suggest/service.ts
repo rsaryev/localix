@@ -26,7 +26,7 @@ import { startCompletionOperation } from './operation'
 import type { SurfaceContextResolver } from './context-resolvers'
 import { isModelRoutingTaskEnabled } from '../../contracts/model-task-catalog'
 import type { Usage } from '@localixai/agent'
-import type { PluginTextInputCompletionSurface } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppTextInputCompletionSurface } from '@localixai/mini-app-sdk/backend'
 import type { ContextContribution } from '../context-fabric/contracts'
 import { mergeCompletionReferences } from '../autocomplete/completion-references'
 import { packCompletionContext, renderCompletionContext } from '../autocomplete/completion-context'
@@ -63,7 +63,7 @@ export interface InlineCompletionServiceDeps extends AuxLanguageModelDeps, Surfa
    * The surface a plugin contributed under this id, or undefined. Resolved per call so a plugin
    * toggle takes effect in both directions; core's own surfaces never reach it.
    */
-  contributedSurface?: (id: string) => PluginTextInputCompletionSurface | undefined
+  contributedSurface?: (id: string) => MiniAppTextInputCompletionSurface | undefined
   /** The model-answer cache; one per service by default (`model-call.ts`). Tests inject theirs. */
   resultCache?: ReturnType<typeof completionCache>
   /** Record this aux call's tokens in the usage ledger (optional, fire-and-forget). */

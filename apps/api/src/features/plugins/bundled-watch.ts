@@ -7,7 +7,7 @@ import { STAGED_MARKER_FILE } from './staged-marker'
 /**
  * Push, where bundled-plugin synchronization is pull.
  *
- * `syncBundledPlugins` runs when something asks for the plugin catalog, and it memoizes for
+ * `syncBundledMiniApps` runs when something asks for the plugin catalog, and it memoizes for
  * ten seconds. A plugin re-staged while the API runs (a scaffold, a backend edit) therefore
  * reached the API only when somebody next asked AND the memo had expired — in practice, when
  * the user typed `/plugin reload` and then waited. The staged root announces every change by
@@ -49,7 +49,7 @@ export interface StagedRootWatch {
   close: () => void
 }
 
-export function watchStagedPluginsRoot({
+export function watchStagedMiniAppsRoot({
   root,
   onChange,
   log = () => {},

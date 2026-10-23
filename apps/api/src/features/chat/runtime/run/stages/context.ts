@@ -16,11 +16,11 @@ import { createParticipantLaneSnapshotRepository } from '../../../participant-la
 import { consoleWarnLogger } from '../../plugin-hook-logger'
 import { prepareRunContext } from '../../prompt-context'
 import { capabilitiesInMode } from '../../../../capabilities/permission-mode-policy'
-import { pluginProblemNotice } from '../../plugin-problem-notice'
-import { resolvePluginSessionDataDir } from '../../../../plugins/session-storage'
-import { createPluginAgentDirectory } from '../../../../plugins/agent-directory'
+import { miniAppProblemNotice } from '../../plugin-problem-notice'
+import { resolveMiniAppSessionDataDir } from '../../../../plugins/session-storage'
+import { createMiniAppAgentDirectory } from '../../../../plugins/agent-directory'
 import { runHumanAssignedHooks } from '../../../../plugins/hooks'
-import type { LoadedPluginHook } from '../../../../plugins/loader'
+import type { LoadedMiniAppHook } from '../../../../plugins/loader'
 import { publishHumanAssignment } from '../human-assignment'
 import { applyPluginMainAgent } from '../plugin-main-agent'
 import { applyPluginSubagent } from '../plugin-subagent'
@@ -43,7 +43,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     deps.resolveHuman?.(user, projectId) ?? Promise.resolve(undefined)
   // Observer hooks (HITL, subagent stop, a card assigned to `@human`) are fire-and-forget: no loop latency. The
   // plugin hooks are bound once loaded below; a card assigned before then fires none.
-  let pluginHooks: readonly LoadedPluginHook[] = []
+  let pluginHooks: readonly LoadedMiniAppHook[] = []
   const hookRunOptions: HookRunOptions = { sessionId: session.id, logger: consoleWarnLogger }
   const [context, humanProfile] = await Promise.all([
     prepareRunContext(
@@ -60,13 +60,13 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
         // non-blocking `systemMessage` does — one inline transcript warning the client renders —
         // marked as a plugin's, so the client also keeps it as a standing Event Center row.
         publishPluginProblem: ({ userId: owner, ...problem }) =>
-          deps.streamRegistry.publish(owner, problem.sessionId, pluginProblemNotice(problem)),
+          deps.streamRegistry.publish(owner, problem.sessionId, miniAppProblemNotice(problem)),
         // A tool's session folder, behind the same ownership gate a route's goes through: a
         // session that is gone (or never was the user's) rejects before anything is created. Pure
         // in its arguments — the plugin context it lands on is shared by every run of the scope.
         pluginSessionStorage: (pluginName) => ({
           resolveDataDir: (owner, sessionId) =>
-            resolvePluginSessionDataDir({
+            resolveMiniAppSessionDataDir({
               pluginName,
               userId: owner,
               sessionId,
@@ -78,7 +78,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
         }),
         // The agents a plugin tool may name, behind the same ownership gate: the session is read
         // for the user first, then only the enabled agents of its scope are listed.
-        pluginAgentDirectory: createPluginAgentDirectory({
+        pluginAgentDirectory: createMiniAppAgentDirectory({
           sessionProject: async (user, session) => {
             const record = await env.repo.getSession(user, session)
             return record ? (record.projectId ?? null) : undefined
@@ -139,7 +139,7 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
   fireSessionStartHooks({
     hooks: loadedPlugins.hooks,
     sessionId: session.id,
-    startedSessions: runtimeState.pluginStartedSessions,
+    startedSessions: runtimeState.miniAppStartedSessions,
   })
 
   // Claude Code declarative hooks: the registry, its three evaluators and the once-per-session

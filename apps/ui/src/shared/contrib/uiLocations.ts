@@ -11,13 +11,13 @@ import {
   parseUiLocationArgs,
   UI_AGENT_LOCATION_CATALOG_VERSION,
 } from '@localixai/mini-app-sdk/ui'
-import { isPluginContributionEnabled, subscribePluginActivation } from './pluginActivation'
+import { isMiniAppContributionEnabled, subscribePluginActivation } from './miniAppActivation'
 import { registerResourceRefIcons } from './iconContributions'
 import { checkContribution } from './uiLocationValidation'
 import { rankUiLocations } from './uiLocationSearch'
 import { parseRegisteredUri } from './uiLocationIdentity'
 
-export { pluginLocationId } from './uiLocationIdentity'
+export { miniAppLocationId } from './uiLocationIdentity'
 import {
   locationDescriptor,
   storeLocationContribution,
@@ -130,7 +130,7 @@ export function createUiLocationRegistry(): UiLocationRegistry {
       const parsed = parseRegisteredUri(uri)
       if (!parsed) return null
       const entry = byUri.get(parsed.baseUri)
-      if (!entry || !isPluginContributionEnabled(entry.pluginName)) return null
+      if (!entry || !isMiniAppContributionEnabled(entry.pluginName)) return null
       if (entry.effect === 'write' && !access?.allowWrite) return null
       const args = parseUiLocationArgs(entry.params ?? {}, parsed.searchParams)
       if (!args) return null
@@ -160,7 +160,7 @@ export function createUiLocationRegistry(): UiLocationRegistry {
     },
     build(id, args = {}, access) {
       const entry = byId.get(id)
-      if (!entry || !isPluginContributionEnabled(entry.pluginName)) return null
+      if (!entry || !isMiniAppContributionEnabled(entry.pluginName)) return null
       if (entry.effect === 'write' && !access?.allowWrite) return null
       const uri = buildSerializedUiLocationUri(
         { uri: entry.uri, surface: entry.surface, params: entry.params ?? {} },
@@ -172,7 +172,7 @@ export function createUiLocationRegistry(): UiLocationRegistry {
     list(options) {
       const entries: UiLocationDescriptor[] = []
       for (const entry of byId.values()) {
-        if (!isPluginContributionEnabled(entry.pluginName)) continue
+        if (!isMiniAppContributionEnabled(entry.pluginName)) continue
         if (
           options?.exposure &&
           (options.exposure === 'agent'

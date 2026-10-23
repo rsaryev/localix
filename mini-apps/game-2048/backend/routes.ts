@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { jsonBody, seatedAnswer, type PluginRouteContext } from '@localixai/mini-app-sdk/backend'
+import { jsonBody, seatedAnswer, type MiniAppRouteContext } from '@localixai/mini-app-sdk/backend'
 import { directions, modes, MoveRefused, OPPONENTS, type Game } from '../shared/game'
 import type { GameService } from './game-service'
 
@@ -14,7 +14,7 @@ export function createGameRoutes(games: GameService) {
     missing: { code: 'no_game', message: 'This game belongs to a chat that is not available.' },
     refused: { error: MoveRefused, code: 'move_refused' },
   })
-  return new Hono<PluginRouteContext>()
+  return new Hono<MiniAppRouteContext>()
     .get('/game', (c) => {
       c.header('Cache-Control', 'no-store')
       return answer(c, (seat) => games.read(seat))

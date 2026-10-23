@@ -17,32 +17,32 @@ reach the host through its UI kit, and understand how an edit reaches the screen
 
 ## What you can do
 
-| Task                           | Mechanism                                                      | Boundary                                                             |
-| ------------------------------ | -------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Create a plugin                | `/plugin create <what it should do>`                           | The agent names it; enabled in the user plugin root.                 |
-| Build, test and reload it      | The agent's `plugin_build` tool, or `/plugin reload`           | Leftovers, style, builds, types, the plugin's tests.                 |
-| Look at it and use it          | The agent's `browser` tool with `url: "plugin:<name>"`         | snapshot, take_screenshot, steps, console; no evaluate.              |
-| Use a host control             | Import it from `@localixai/kit/<id>`                           | Typed by its real props; an `@/…` import fails the build.            |
-| Draw a graph or a board        | `Canvas` from `@localixai/kit/canvas`                          | The host's camera and edge; never bundle `@xyflow/react`.            |
-| Take any app link              | `readMessageBindingDrag`, `linksInText` (`kit/context-links`)  | A drop or a pasted `@session:…`/`localix://…` is the same link.      |
-| Show an app link               | `ContextBindingPreview` from `@localixai/mini-app-sdk/ui`      | The host draws it: a file, a session, a message, a tool call's card. |
-| Act on the plugin's state      | `send()` from the frame's `ui/usePolledSnapshot.ts`            | The route answers with the new state.                                |
-| Hear what the agent wrote      | `useStoreSnapshot` + `createStoreFeed` (frame)                 | A nudge per store write in one scope; re-read via the route.         |
-| Follow a live stream           | `createRealtimeFeed`, `useRealtimeFeed` (`ui/realtime-feed`)   | One subscription per key; resubscribes after a reconnect.            |
-| Complete what is typed         | `usePluginTextInputCompletion` + `textInputCompletionSurfaces` | Surface id `<plugin>.<field>`; open tabs are added by the host.      |
-| Keep what the user creates     | `openJsonStore` from the frame's `backend/store.ts`            | Under `ctx.dataDir`; one change at a time per file.                  |
-| Keep what one chat creates     | `ctx.sessionStorage.resolveDataDir(userId, sessionId)`         | Removed with the chat and every session beneath it.                  |
-| Keep tabs in their workspace   | The default work-item scope (`'session'`)                      | Scoped instances stay in their root workspace.                       |
-| Know the tab's own chat        | `useWorkItemSessionId()` from `ui/work-item-session`           | The only session a tab acts for; the SDK has no active session.      |
-| React to file changes          | `usePluginWorkspaceChanges` (`ui/runtime-hooks`)               | One chat, coalesced; poll only when source coverage is unavailable.  |
-| Use icons                      | Import from `lucide-react`                                     | Bundled per icon from the plugin kit.                                |
-| See an edit in the running app | Rebuild; the plugin is swapped in place                        | An open tab re-renders; the app is never reloaded.                   |
+| Task                           | Mechanism                                                       | Boundary                                                             |
+| ------------------------------ | --------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Create a plugin                | `/plugin create <what it should do>`                            | The agent names it; enabled in the user plugin root.                 |
+| Build, test and reload it      | The agent's `plugin_build` tool, or `/plugin reload`            | Leftovers, style, builds, types, the plugin's tests.                 |
+| Look at it and use it          | The agent's `browser` tool with `url: "plugin:<name>"`          | snapshot, take_screenshot, steps, console; no evaluate.              |
+| Use a host control             | Import it from `@localixai/kit/<id>`                            | Typed by its real props; an `@/…` import fails the build.            |
+| Draw a graph or a board        | `Canvas` from `@localixai/kit/canvas`                           | The host's camera and edge; never bundle `@xyflow/react`.            |
+| Take any app link              | `readMessageBindingDrag`, `linksInText` (`kit/context-links`)   | A drop or a pasted `@session:…`/`localix://…` is the same link.      |
+| Show an app link               | `ContextBindingPreview` from `@localixai/mini-app-sdk/ui`       | The host draws it: a file, a session, a message, a tool call's card. |
+| Act on the plugin's state      | `send()` from the frame's `ui/usePolledSnapshot.ts`             | The route answers with the new state.                                |
+| Hear what the agent wrote      | `useStoreSnapshot` + `createStoreFeed` (frame)                  | A nudge per store write in one scope; re-read via the route.         |
+| Follow a live stream           | `createRealtimeFeed`, `useRealtimeFeed` (`ui/realtime-feed`)    | One subscription per key; resubscribes after a reconnect.            |
+| Complete what is typed         | `useMiniAppTextInputCompletion` + `textInputCompletionSurfaces` | Surface id `<plugin>.<field>`; open tabs are added by the host.      |
+| Keep what the user creates     | `openJsonStore` from the frame's `backend/store.ts`             | Under `ctx.dataDir`; one change at a time per file.                  |
+| Keep what one chat creates     | `ctx.sessionStorage.resolveDataDir(userId, sessionId)`          | Removed with the chat and every session beneath it.                  |
+| Keep tabs in their workspace   | The default work-item scope (`'session'`)                       | Scoped instances stay in their root workspace.                       |
+| Know the tab's own chat        | `useWorkItemSessionId()` from `ui/work-item-session`            | The only session a tab acts for; the SDK has no active session.      |
+| React to file changes          | `useMiniAppWorkspaceChanges` (`ui/runtime-hooks`)               | One chat, coalesced; poll only when source coverage is unavailable.  |
+| Use icons                      | Import from `lucide-react`                                      | Bundled per icon from the plugin kit.                                |
+| See an edit in the running app | Rebuild; the plugin is swapped in place                         | An open tab re-renders; the app is never reloaded.                   |
 
-Open HTTP and HTTPS links with `pluginExternal.open(url)` from `@localixai/mini-app-sdk/ui/runtime`.
-They open in the active conversation's Browser by default. Pass `true` as the second argument for
-flows that require the system browser, such as OAuth: `pluginExternal.open(authorizationUrl, true)`.
-Mail and phone links use the system handler. When no conversation workspace is ready, web links also
-fall back to the system browser. System handoffs retain the host's confirmation policy.
+Open HTTP and HTTPS links with `miniAppExternal.open(url)` from
+`@localixai/mini-app-sdk/ui/runtime`: the active conversation's Browser by default, the system
+browser with `true` as the second argument, for flows such as OAuth. Mail and phone links use the
+system handler; web links fall back to it when no conversation workspace is ready. System handoffs
+retain the host's confirmation policy.
 
 ```text
 /plugin create Show GPU temperature and fan speeds, and warn me above 85 °C
@@ -165,7 +165,7 @@ not merge their server-side data ownership.
 chat, `useWorkItemSessionId()` is `null` inside it, and it opens with `scope: null`. A surface that
 sends to a chat, opens a chat's files or calls its backend for a chat is a session kind.
 
-Instance ids passed to `pluginWorkspace.openWorkItem` must begin with the registered owner's name
+Instance ids passed to `miniAppWorkspace.openWorkItem` must begin with the registered owner's name
 and a colon, such as `my-plugin:report-42`. The host rejects another namespace. Use the hook's
 session context, not the opaque `item.scope`, for session requests.
 
@@ -230,9 +230,9 @@ subscription cannot cover, such as metrics without a push API.
 ### Files that change under a chat
 
 A view that mirrors the disk — a repository's status, an index of the code — hears changes instead
-of polling for them. `pluginFiles.watchWorkspace(sessionId, listener, { windowMs, onLive })`, or the
-hook `usePluginWorkspaceChanges(sessionId, onChange, { windowMs })`, delivers `{ sessionId, paths }`
-for that chat's workspace:
+of polling for them. `miniAppFiles.watchWorkspace(sessionId, listener, { windowMs, onLive })`, or
+the hook `useMiniAppWorkspaceChanges(sessionId, onChange, { windowMs })`, delivers
+`{ sessionId, paths }` for that chat's workspace:
 
 | Field / answer | Meaning                                                                                                             |
 | -------------- | ------------------------------------------------------------------------------------------------------------------- |
@@ -379,13 +379,13 @@ Use `MarkdownRenderer` from `@localixai/kit/markdown` with source as `children`;
   and
   [the token rules](https://github.com/rsaryev/localix/blob/main/apps/api/src/contracts/ui-token-rules.ts)
 - [Kit declarations](https://github.com/rsaryev/localix/blob/main/scripts/stage-plugin-kit-declarations.mjs)
-- [Plugin view host](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/inspector/model/pluginViewHost.ts)
+- [Plugin view host](https://github.com/rsaryev/localix/blob/main/apps/ui/src/features/inspector/model/miniAppViewHost.ts)
   and
   [the embedded actuator](https://github.com/rsaryev/localix/blob/main/packages/visual-feedback/src/embedded/index.ts)
 - [Plugin record and file route](https://github.com/rsaryev/localix/blob/main/apps/api/src/features/plugins/ui-artifact.ts)
-- [Workbench runtime](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/contrib/pluginUiRuntime.ts)
+- [Workbench runtime](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/contrib/miniAppUiRuntime.ts)
   and
-  [host wiring](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/contrib/pluginUiDiscovery.ts)
+  [host wiring](https://github.com/rsaryev/localix/blob/main/apps/ui/src/shared/contrib/miniAppUiDiscovery.ts)
 - [Shared-module registry](https://github.com/rsaryev/localix/blob/main/apps/ui/src/app/pluginSharedModules.ts)
 - [Realtime feed](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui/realtime-feed.ts)
 - [Tool cards](https://github.com/rsaryev/localix/blob/main/packages/mini-app-sdk/src/ui/tool-cards.ts),

@@ -76,7 +76,7 @@ fn config() -> Option<Config> {
         let value = bundle.objectForInfoDictionaryKey(&NSString::from_str(key))?;
         Some(value.downcast::<NSString>().ok()?.to_string())
     };
-    let plugin = read(keys::PLUGIN).filter(|plugin| crate::app_bundle::valid_plugin(plugin))?;
+    let plugin = read(keys::PLUGIN).filter(|plugin| crate::app_bundle::valid_mini_app(plugin))?;
     let ui = read(keys::UI)?;
     let ui = if ui.starts_with("http://") {
         Ui::Url(ui)
@@ -141,7 +141,7 @@ fn open_window(mtm: MainThreadMarker, controller: &Retained<Controller>, name: &
     window.setBackgroundColor(Some(&NSColor::clearColor()));
     window.center();
     // Each app is its own bundle, so each remembers its own frame in its own defaults.
-    let autosave = ns_string!("LocalixPluginApp");
+    let autosave = ns_string!("LocalixMiniApp");
     window.setFrameUsingName(autosave);
     window.setFrameAutosaveName(autosave);
 

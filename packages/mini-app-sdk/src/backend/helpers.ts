@@ -18,7 +18,7 @@ export interface ReadableResult {
  * still inline its own copies (older plugins keep working), but new code should
  * reach for these. The host (`apps/api`) implements this interface.
  */
-export interface PluginHelpers {
+export interface MiniAppHelpers {
   /** Coerce a config value to a finite number without the `|| default` trap (0 / "0" are valid). */
   configNumber(value: unknown, fallback: number): number
   /** Coerce a config value to a boolean ("true"/"1" are true). */

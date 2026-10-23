@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { createStoreChangeFeed } from './store-change-feed'
-import type { PluginPathWatch } from './context'
+import type { MiniAppPathWatch } from './context'
 import type { StoreFrame } from '../store-changes'
 
 const tick = () => new Promise((resolve) => setTimeout(resolve, 5))
@@ -9,7 +9,7 @@ test('one store feed proves native coverage, batches writes and disk edits, and 
   let disk: () => void = () => {}
   let fail: () => void = () => {}
   let releases = 0
-  const watchPath: PluginPathWatch = (_path, _recursive, event, error) => {
+  const watchPath: MiniAppPathWatch = (_path, _recursive, event, error) => {
     disk = () => event('game.json')
     fail = error
     return () => {

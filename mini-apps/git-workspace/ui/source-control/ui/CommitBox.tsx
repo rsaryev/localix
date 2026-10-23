@@ -3,8 +3,8 @@ import { Check } from 'lucide-react'
 import { Spinner } from '@localixai/kit/spinner'
 import { InlineCompletionGhost } from '@localixai/kit/inline-completion-ghost'
 import {
-  usePluginEditPredictionEnabled,
-  usePluginTextInputCompletion,
+  useMiniAppEditPredictionEnabled,
+  useMiniAppTextInputCompletion,
 } from '@localixai/mini-app-sdk/ui/runtime-hooks'
 import { Button } from '@localixai/kit/button'
 import { useCommitRecall } from '../model/useCommitRecall'
@@ -73,8 +73,8 @@ export function CommitBox({
   const history = useCommitRecall(recentMessages, message, setMessage, ref)
   const { caretRef, edit: editMessage } = history
 
-  const completionEnabled = usePluginEditPredictionEnabled()
-  const completion = usePluginTextInputCompletion({
+  const completionEnabled = useMiniAppEditPredictionEnabled()
+  const completion = useMiniAppTextInputCompletion({
     surface: COMMIT_COMPLETION_SURFACE_ID,
     sessionId,
     value: message,

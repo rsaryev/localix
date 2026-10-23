@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { Hono } from 'hono'
 import type { Editor } from '@tiptap/react'
 import { registerDom } from '@localixai/kit/testing'
-import { bindPluginUiTransport } from '@localixai/mini-app-sdk/ui/transport'
+import { bindMiniAppUiTransport } from '@localixai/mini-app-sdk/ui/transport'
 import type { PublishedMessageContext } from '@localixai/mini-app-sdk/ui'
 import { createResumeRoutes } from '../backend/routes'
 import { createResumeService } from '../backend/service'
@@ -33,7 +33,7 @@ test('workspace publishes saved section, labels rich drafts and clears inactive/
   const created = await service.create('user', createTemplateDocument('awal', 'CV'))
   const section = created.document.sections.find((item) => item.type === 'summary')!
   const app = new Hono().route('/rpc/resume', createResumeRoutes(createResumeService))
-  const unbind = bindPluginUiTransport({
+  const unbind = bindMiniAppUiTransport({
     url: (path) => path,
     request: async (path, init) =>
       app.request(`http://localhost${path}`, init, {

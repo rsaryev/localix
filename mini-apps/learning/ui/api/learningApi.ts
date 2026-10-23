@@ -1,4 +1,4 @@
-import { pluginApiFetch, postPluginJson as postJson } from '@localixai/mini-app-sdk/ui/transport'
+import { miniAppApiFetch, postMiniAppJson as postJson } from '@localixai/mini-app-sdk/ui/transport'
 
 import { LEARNING_COURSES } from '../model/topics'
 
@@ -48,13 +48,13 @@ function currentCourse(course: LearningCourse | null): LearningCourse | null {
 export const learningApi = {
   async list(sessionId: string) {
     const query = new URLSearchParams({ sessionId })
-    const response = await pluginApiFetch(`${BASE}/courses?${query}`)
+    const response = await miniAppApiFetch(`${BASE}/courses?${query}`)
     return (await readOr<CourseListResponse>(response)).courses
   },
 
   async get(sessionId: string, courseId: string): Promise<LearningCourse | null> {
     const query = new URLSearchParams({ sessionId, courseId })
-    const response = await pluginApiFetch(`${BASE}/course?${query}`)
+    const response = await miniAppApiFetch(`${BASE}/course?${query}`)
     return currentCourse((await readOr<MaybeCourseResponse>(response)).course)
   },
 
@@ -63,7 +63,7 @@ export const learningApi = {
     courseId: string,
   ): Promise<{ blob: Blob; filename: string }> {
     const query = new URLSearchParams({ sessionId, courseId })
-    const response = await pluginApiFetch(`${BASE}/course/export?${query}`)
+    const response = await miniAppApiFetch(`${BASE}/course/export?${query}`)
     if (!response.ok) {
       const failure = await response.json().catch(() => null)
       throw new LearningApiError(
@@ -82,7 +82,7 @@ export const learningApi = {
       throw new LearningApiError('The selected course file is too large.')
     }
     const query = new URLSearchParams({ sessionId })
-    const response = await pluginApiFetch(`${BASE}/course/import?${query}`, {
+    const response = await miniAppApiFetch(`${BASE}/course/import?${query}`, {
       method: 'POST',
       headers: {
         'Content-Type': file.type || 'application/vnd.localix.learning-course+json',

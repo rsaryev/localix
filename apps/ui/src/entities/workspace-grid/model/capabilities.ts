@@ -4,10 +4,10 @@
 import type { CoreWorkItemKind, WorkItem, WorkItemKind } from '@/shared/lib/workItem'
 import { workItemKindRegistry, type WorkItemKindContribution } from '@/shared/contrib/uiContrib'
 import {
-  arePluginContributionsPending,
-  arePluginUiLoadsInFlight,
-  pluginContributionActivation,
-} from '@/shared/contrib/pluginActivation'
+  areMiniAppContributionsPending,
+  areMiniAppUiLoadsInFlight,
+  miniAppContributionActivation,
+} from '@/shared/contrib/miniAppActivation'
 
 export interface WorkItemCapability {
   /** One instance per scope (fixed id, qualified by its session — `tabIdInScope`). Splitting or
@@ -134,9 +134,9 @@ export function isRestorableForPersistence(kind: WorkItemKind): boolean {
     // Lazy bundled plugin modules are deliberately not registered until the
     // backend confirms they are enabled. Preserve their serialized tabs during
     // that cold window; the authoritative pass below removes true leftovers.
-    return arePluginContributionsPending()
+    return areMiniAppContributionsPending()
   }
-  const activation = pluginContributionActivation(contributed.pluginName)
+  const activation = miniAppContributionActivation(contributed.pluginName)
   // A plugin may accidentally reuse a built-in kind. While that plugin is pending
   // or disabled, its dormant registration must not make the core kind disappear
   // from persistence. Keeping a tab when either possible owner is restorable is
@@ -165,13 +165,14 @@ export function persistedScopeKindOf(kind: WorkItemKind): 'session' | 'global' |
 
 /** True after the backend confirms that a plugin-only kind has no active renderer. */
 export function isUnavailableContributedKind(kind: WorkItemKind): boolean {
-  if (isBuiltInWorkItemKind(kind) || arePluginContributionsPending()) return false
+  if (isBuiltInWorkItemKind(kind) || areMiniAppContributionsPending()) return false
   const contributed = workItemKindRegistry.getRegistered(kind)
   // Disabled bundled plugins were never imported, so their kinds are unknown
   // rather than registered-with-a-disabled-owner. Once activation is
   // authoritative, both states mean the persisted tab cannot be rendered.
   return (
-    contributed === undefined || pluginContributionActivation(contributed.pluginName) === 'disabled'
+    contributed === undefined ||
+    miniAppContributionActivation(contributed.pluginName) === 'disabled'
   )
 }
 
@@ -181,12 +182,12 @@ export function isUnavailableContributedKind(kind: WorkItemKind): boolean {
  * {@link isUnavailableContributedKind}) but no longer claims to be on its way.
  */
 export function isPendingContributedKind(kind: WorkItemKind): boolean {
-  if (isBuiltInWorkItemKind(kind) || !arePluginUiLoadsInFlight()) return false
+  if (isBuiltInWorkItemKind(kind) || !areMiniAppUiLoadsInFlight()) return false
   const contributed = workItemKindRegistry.getRegistered(kind)
   // With lazy discovery an enabled plugin's kind is initially unknown. Render
   // the restoring placeholder until the first activation snapshot decides it.
   return (
-    contributed === undefined || pluginContributionActivation(contributed.pluginName) === 'pending'
+    contributed === undefined || miniAppContributionActivation(contributed.pluginName) === 'pending'
   )
 }
 

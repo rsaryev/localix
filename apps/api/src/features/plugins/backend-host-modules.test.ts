@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import { Hono } from 'hono'
 import { ZodObject } from 'zod'
 
-import { PLUGIN_BACKEND_HOST_MODULES } from './authoring/kit-layout'
+import { MINI_APP_BACKEND_HOST_MODULES } from './authoring/kit-layout'
 import { hostModule, installBackendHostModules } from './backend-host-modules'
 
 const dirs: string[] = []
@@ -36,7 +36,7 @@ async function buildExternalBackend(): Promise<string> {
     entrypoints: [entry],
     target: 'bun',
     outdir: join(dir, 'out'),
-    external: [...PLUGIN_BACKEND_HOST_MODULES],
+    external: [...MINI_APP_BACKEND_HOST_MODULES],
   })
   expect(result.success).toBe(true)
   return join(dir, 'out', 'index.js')
@@ -67,7 +67,7 @@ describe('host-provided backend modules', () => {
   })
 
   test('every listed specifier has an instance to serve', () => {
-    for (const specifier of PLUGIN_BACKEND_HOST_MODULES) {
+    for (const specifier of MINI_APP_BACKEND_HOST_MODULES) {
       expect(Object.keys(hostModule(specifier)).length).toBeGreaterThan(0)
     }
   })

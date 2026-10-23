@@ -54,7 +54,7 @@ export function useSlashArgOptions(
       const src = command.argSource
       if (!src) return []
       const rows = await backendClient
-        .fetchPluginArgOptions({
+        .fetchMiniAppCommandArgOptions({
           plugin: src.plugin,
           command: src.command,
           arg: argName,

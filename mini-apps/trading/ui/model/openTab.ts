@@ -1,4 +1,4 @@
-import { pluginWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
+import { miniAppWorkspace } from '@localixai/mini-app-sdk/ui/runtime'
 import {
   DEFAULT_PUBLIC_EXCHANGE_ID,
   publicConnectionId,
@@ -8,7 +8,7 @@ import {
 /**
  * This feature owns the `trading:chart` WorkItemKind + its tab-id formula, so re-opening
  * the same market focuses the existing chart tab. Routed through the generic
- * `pluginWorkspace.openWorkItem` seam — core names no subsystem. The tab-id builder is shared
+ * `miniAppWorkspace.openWorkItem` seam — core names no subsystem. The tab-id builder is shared
  * with the search-domain `activate` (see `register.tsx`) so the two can't drift.
  */
 
@@ -89,7 +89,7 @@ export function tradingTechnicalsTabId(connectionId: string, symbol: string): st
  * so it has no session to name and is the same page in every chat.
  */
 export function openTradingTechnicalsTab(args: { connectionId: string; symbol: string }): void {
-  pluginWorkspace.openWorkItem({
+  miniAppWorkspace.openWorkItem({
     workKind: 'trading:technicals',
     id: tradingTechnicalsTabId(args.connectionId, args.symbol),
     title: `${args.symbol} · Technicals`,
@@ -104,7 +104,7 @@ export function openTradingTechnicalsTab(args: { connectionId: string; symbol: s
  * the chat, its questions went to whichever composer was on screen.
  */
 export function openTradingChartTab(sessionId: string, args: OpenChartArgs): void {
-  pluginWorkspace.openWorkItem({
+  miniAppWorkspace.openWorkItem({
     workKind: 'trading:chart',
     id: tradingChartTabId(args.connectionId, args.symbol),
     title: args.symbol,

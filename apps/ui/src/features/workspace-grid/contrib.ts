@@ -1,5 +1,5 @@
 import { SquareStack } from 'lucide-react'
-import type { PluginUiHost, UiAnchorNode } from '@localixai/mini-app-sdk/ui'
+import type { MiniAppUiHost, UiAnchorNode } from '@localixai/mini-app-sdk/ui'
 import { listUiLocations } from '@/shared/contrib/uiLocations'
 
 const ROOT = 'localix://ui/page/catalog'
@@ -38,7 +38,7 @@ function listChildren(parent: string | null): UiAnchorNode[] {
   return locations
 }
 
-export function registerUi(host: PluginUiHost): void {
+export function registerUi(host: MiniAppUiHost): void {
   host.anchors.register({
     id: 'workspace-views',
     namespaces: ['page'],

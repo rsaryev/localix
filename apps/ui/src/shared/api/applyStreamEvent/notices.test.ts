@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 
-import { setPluginSources } from '@/shared/contrib/pluginAttribution'
+import { setPluginSources } from '@/shared/contrib/miniAppAttribution'
 import type { UiSession } from '../contracts'
 import { noticeReducers } from './notices'
 import type { StreamEventOf } from './types'

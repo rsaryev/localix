@@ -3,7 +3,7 @@ import { dirname, join, resolve } from 'node:path'
 import { compile } from 'tailwindcss'
 
 import { isPathWithin } from '../../../lib/path-containment'
-import type { PluginKit } from './kit'
+import type { MiniAppKit } from './kit'
 import { PLUGIN_KIT_STYLES_DIR, TAILWIND_UTILITIES } from './kit-layout'
 
 /**
@@ -73,7 +73,7 @@ export async function pluginCandidates(pluginDir: string): Promise<string[]> {
   return [...candidates]
 }
 
-export async function buildPluginStylesheet(kit: PluginKit, pluginDir: string): Promise<string> {
+export async function buildMiniAppStylesheet(kit: MiniAppKit, pluginDir: string): Promise<string> {
   const stylesRoot = join(kit.dir, PLUGIN_KIT_STYLES_DIR)
   const host = join(kit.dir, kit.manifest.hostStylesheet)
   const input = [

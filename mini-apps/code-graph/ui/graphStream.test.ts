@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from 'bun:test'
-import { bindPluginUiRuntime, type PluginUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
+import { bindMiniAppUiRuntime, type MiniAppUiRuntime } from '@localixai/mini-app-sdk/ui/runtime'
 import { GRAPH_FRAME_TAG, GRAPH_SUBSCRIBE, GRAPH_UNSUBSCRIBE } from '../shared/stream'
 import { graphFeed, graphFollower, type GraphStreamListener } from './graphStream'
 
@@ -16,7 +16,7 @@ function fakeRealtime() {
   const frames = new Map<string, Set<(json: string) => void>>()
   const reconnects = new Set<() => void>()
   const commands: Array<{ t: string; sessionId: string }> = []
-  unbind = bindPluginUiRuntime({
+  unbind = bindMiniAppUiRuntime({
     realtime: {
       onFrame: (tag: string, handler: (json: string) => void) => {
         const set = frames.get(tag) ?? new Set()
@@ -32,7 +32,7 @@ function fakeRealtime() {
         commands.push(payload)
       },
     },
-  } as unknown as PluginUiRuntime)
+  } as unknown as MiniAppUiRuntime)
   return {
     commands,
     frame: (value: unknown) => {

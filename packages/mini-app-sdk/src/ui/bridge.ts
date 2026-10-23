@@ -25,46 +25,46 @@
  */
 
 /** Envelope marker — fixed discriminator for plugin-UI bridge traffic. */
-export const PLUGIN_UI_BRIDGE_MARKER = 'plugin-ui' as const
+export const MINI_APP_UI_BRIDGE_MARKER = 'plugin-ui' as const
 /** Protocol version this module speaks. */
-export const PLUGIN_UI_BRIDGE_VERSION = 1 as const
+export const MINI_APP_UI_BRIDGE_VERSION = 1 as const
 
-export type PluginBridgeMessageType = 'ready' | 'theme' | 'invoke' | 'result' | 'error' | 'event'
+export type MiniAppBridgeMessageType = 'ready' | 'theme' | 'invoke' | 'result' | 'error' | 'event'
 
 /** The versioned wire envelope. `id` correlates an `invoke` with its reply. */
-export interface PluginBridgeMessage<P = unknown> {
-  lx: typeof PLUGIN_UI_BRIDGE_MARKER
-  v: typeof PLUGIN_UI_BRIDGE_VERSION
-  type: PluginBridgeMessageType
+export interface MiniAppBridgeMessage<P = unknown> {
+  lx: typeof MINI_APP_UI_BRIDGE_MARKER
+  v: typeof MINI_APP_UI_BRIDGE_VERSION
+  type: MiniAppBridgeMessageType
   id?: string
   payload?: P
 }
 
 /** `theme` payload — the host theme name plus its forwarded CSS custom properties. */
-export interface PluginBridgeThemePayload {
+export interface MiniAppBridgeThemePayload {
   theme: 'light' | 'dark'
   vars: Record<string, string>
 }
 
 /** `invoke` payload — a named host action plus its argument. */
-export interface PluginBridgeInvokePayload {
+export interface MiniAppBridgeInvokePayload {
   action: string
   payload?: unknown
 }
 
 /** `error` payload — human-readable failure for a correlated `invoke`. */
-export interface PluginBridgeErrorPayload {
+export interface MiniAppBridgeErrorPayload {
   message: string
 }
 
 /** `event` payload — a one-way host push. */
-export interface PluginBridgeEventPayload {
+export interface MiniAppBridgeEventPayload {
   name: string
   data?: unknown
 }
 
 /** Options for one host action invoked through the injected plugin UI API. */
-export interface PluginUiInvokeOptions {
+export interface MiniAppUiInvokeOptions {
   /** Wall-clock request timeout. The host bootstrap clamps it to 100 ms–2 min. */
   timeoutMs?: number
 }
@@ -76,21 +76,21 @@ export interface PluginUiInvokeOptions {
  * instance, explicit opt-in, correlated requests, persisted view state, and live
  * host events without importing application code or reaching the network.
  */
-export interface PluginUiApi {
-  readonly version: typeof PLUGIN_UI_BRIDGE_VERSION
+export interface MiniAppUiApi {
+  readonly version: typeof MINI_APP_UI_BRIDGE_VERSION
   /** Opt into the live bridge. Idempotent for the acquired instance. */
   ready(): void
   /** Invoke one capability exposed by the host action table. */
   invoke<T = unknown>(
     action: string,
     payload?: unknown,
-    options?: PluginUiInvokeOptions,
+    options?: MiniAppUiInvokeOptions,
   ): Promise<T>
   /** Call one named operation exposed by this plugin's own backend subsystem. */
   callBackend<T = unknown>(
     action: string,
     payload?: unknown,
-    options?: PluginUiInvokeOptions,
+    options?: MiniAppUiInvokeOptions,
   ): Promise<T>
   /** Read this plugin+view's persisted JSON scratch state. */
   getState<T = unknown>(): Promise<T | null>
@@ -99,13 +99,13 @@ export interface PluginUiApi {
   /** Current host appearance already applied to the iframe document. */
   getTheme(): 'light' | 'dark'
   /** Subscribe to future host theme payloads; returns an unsubscribe function. */
-  onTheme(listener: (payload: PluginBridgeThemePayload) => void): () => void
+  onTheme(listener: (payload: MiniAppBridgeThemePayload) => void): () => void
   /** Subscribe to safe one-way host events; returns an unsubscribe function. */
-  onEvent(listener: (payload: PluginBridgeEventPayload) => void): () => void
+  onEvent(listener: (payload: MiniAppBridgeEventPayload) => void): () => void
 }
 
 /** Type authors can use for `declare const acquireLocalixApi: AcquireLocalixApi`. */
-export type AcquireLocalixApi = () => PluginUiApi
+export type AcquireLocalixApi = () => MiniAppUiApi
 
 // ─── Forwarded session lifecycle events ──────────────────────────────────────
 
@@ -113,12 +113,12 @@ export type AcquireLocalixApi = () => PluginUiApi
  * The `event` name under which the host forwards SESSION LIFECYCLE signals. A
  * bridged view opts in the same way it opts into theme (post `ready`); it then
  * receives `event` messages named {@link SESSION_EVENT_NAME}, each carrying a
- * {@link PluginBridgeSessionEventData}.
+ * {@link MiniAppBridgeSessionEventData}.
  */
 export const SESSION_EVENT_NAME = 'session' as const
 
 /** The SAFE, minimal lifecycle phases a bridged view may observe. */
-export type PluginSessionPhase = 'run-started' | 'run-completed' | 'run-failed'
+export type MiniAppSessionPhase = 'run-started' | 'run-completed' | 'run-failed'
 
 /**
  * The payload of a forwarded `session` event. Deliberately just the phase + the
@@ -126,8 +126,8 @@ export type PluginSessionPhase = 'run-started' | 'run-completed' | 'run-failed'
  * NO secrets. A view uses it as a "the agent started / finished a turn" signal
  * for the session it is contextually in.
  */
-export interface PluginBridgeSessionEventData {
-  phase: PluginSessionPhase
+export interface MiniAppBridgeSessionEventData {
+  phase: MiniAppSessionPhase
   sessionId: string
 }
 
@@ -138,24 +138,24 @@ export interface PluginBridgeSessionEventData {
  * is typed and unit-testable on both sides.
  *
  * `fs.changed` in particular stays off: it carries absolute paths of the person's
- * files. Native workbench UI hears file changes through `pluginFiles.watchWorkspace`
+ * files. Native workbench UI hears file changes through `miniAppFiles.watchWorkspace`
  * instead, a door that does not reach a sandboxed view.
  */
-const FORWARDABLE_SESSION_EVENTS: Readonly<Record<string, PluginSessionPhase>> = {
+const FORWARDABLE_SESSION_EVENTS: Readonly<Record<string, MiniAppSessionPhase>> = {
   'run.started': 'run-started',
   'run.completed': 'run-completed',
   'run.failed': 'run-failed',
 }
 
 /** The safe phase an internal event type forwards as, or null when it must not cross. */
-export function forwardableSessionPhase(type: string): PluginSessionPhase | null {
+export function forwardableSessionPhase(type: string): MiniAppSessionPhase | null {
   return Object.prototype.hasOwnProperty.call(FORWARDABLE_SESSION_EVENTS, type)
     ? FORWARDABLE_SESSION_EVENTS[type]
     : null
 }
 
 /** Structural guard for a forwarded `session`-event payload (for the plugin side + tests). */
-export function isSessionEventData(data: unknown): data is PluginBridgeSessionEventData {
+export function isSessionEventData(data: unknown): data is MiniAppBridgeSessionEventData {
   if (typeof data !== 'object' || data === null) return false
   const d = data as Record<string, unknown>
   return (
@@ -176,17 +176,17 @@ const MESSAGE_TYPES: ReadonlySet<string> = new Set([
 ])
 
 /** Structural guard for the v1 envelope. Anything else on the wire is ignored. */
-export function isPluginBridgeMessage(data: unknown): data is PluginBridgeMessage {
+export function isMiniAppBridgeMessage(data: unknown): data is MiniAppBridgeMessage {
   if (typeof data !== 'object' || data === null) return false
   const d = data as Record<string, unknown>
-  if (d.lx !== PLUGIN_UI_BRIDGE_MARKER || d.v !== PLUGIN_UI_BRIDGE_VERSION) return false
+  if (d.lx !== MINI_APP_UI_BRIDGE_MARKER || d.v !== MINI_APP_UI_BRIDGE_VERSION) return false
   if (typeof d.type !== 'string' || !MESSAGE_TYPES.has(d.type)) return false
   if ('id' in d && d.id !== undefined && typeof d.id !== 'string') return false
   return true
 }
 
 /** Guard for a well-formed `invoke` payload on an already-validated envelope. */
-export function isInvokePayload(payload: unknown): payload is PluginBridgeInvokePayload {
+export function isInvokePayload(payload: unknown): payload is MiniAppBridgeInvokePayload {
   if (typeof payload !== 'object' || payload === null) return false
   const p = payload as Record<string, unknown>
   return typeof p.action === 'string' && p.action.length > 0
@@ -205,10 +205,10 @@ export function isMessageFromWindow(win: unknown, source: unknown): boolean {
 
 // ─── Constructors ────────────────────────────────────────────────────────────
 
-function envelope<P>(type: PluginBridgeMessageType, payload?: P, id?: string) {
-  const msg: PluginBridgeMessage<P> = {
-    lx: PLUGIN_UI_BRIDGE_MARKER,
-    v: PLUGIN_UI_BRIDGE_VERSION,
+function envelope<P>(type: MiniAppBridgeMessageType, payload?: P, id?: string) {
+  const msg: MiniAppBridgeMessage<P> = {
+    lx: MINI_APP_UI_BRIDGE_MARKER,
+    v: MINI_APP_UI_BRIDGE_VERSION,
     type,
   }
   if (id !== undefined) msg.id = id
@@ -217,15 +217,15 @@ function envelope<P>(type: PluginBridgeMessageType, payload?: P, id?: string) {
 }
 
 export const readyMessage = () => envelope('ready')
-export const themeMessage = (payload: PluginBridgeThemePayload) => envelope('theme', payload)
+export const themeMessage = (payload: MiniAppBridgeThemePayload) => envelope('theme', payload)
 export const invokeMessage = (id: string, action: string, payload?: unknown) =>
-  envelope<PluginBridgeInvokePayload>('invoke', { action, payload }, id)
+  envelope<MiniAppBridgeInvokePayload>('invoke', { action, payload }, id)
 export const resultMessage = (id: string, value: unknown) => envelope('result', value, id)
 export const errorMessage = (id: string, message: string) =>
-  envelope<PluginBridgeErrorPayload>('error', { message }, id)
+  envelope<MiniAppBridgeErrorPayload>('error', { message }, id)
 export const eventMessage = (name: string, data?: unknown) =>
-  envelope<PluginBridgeEventPayload>('event', { name, data })
-export const sessionEventMessage = (sessionId: string, phase: PluginSessionPhase) =>
-  eventMessage(SESSION_EVENT_NAME, { phase, sessionId } satisfies PluginBridgeSessionEventData)
+  envelope<MiniAppBridgeEventPayload>('event', { name, data })
+export const sessionEventMessage = (sessionId: string, phase: MiniAppSessionPhase) =>
+  eventMessage(SESSION_EVENT_NAME, { phase, sessionId } satisfies MiniAppBridgeSessionEventData)
 
 export { createBridgeRequests, type BridgeRequests } from './bridge-requests'

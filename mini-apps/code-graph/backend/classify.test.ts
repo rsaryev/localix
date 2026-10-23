@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { z } from 'zod'
-import type { CallClass, PluginContext } from '@localixai/mini-app-sdk/backend'
+import type { CallClass, MiniAppContext } from '@localixai/mini-app-sdk/backend'
 import { createGraphTools } from './tools'
 
 const ctx = {
@@ -9,7 +9,7 @@ const ctx = {
   z,
   defineTool: (tool: unknown) => tool,
   ui: { offer: (destination: object) => ({ type: 'ui.navigate', ...destination }) },
-} as unknown as PluginContext
+} as unknown as MiniAppContext
 
 /** What the host's gate computes: the tool's own class, else its static flag read fail-closed. */
 function classOf(name: string, input: unknown): CallClass {

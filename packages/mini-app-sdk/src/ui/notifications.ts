@@ -1,10 +1,10 @@
 import type { ProblemLocation, ProblemRecovery, ProblemReport } from './problems'
-import type { PluginApiError } from './transport'
+import type { MiniAppApiError } from './transport'
 
-export type PluginToastId = string | number
+export type MiniAppToastId = string | number
 
-export interface PluginToastOptions {
-  id?: PluginToastId
+export interface MiniAppToastOptions {
+  id?: MiniAppToastId
   description?: string
   action?: {
     label: string
@@ -20,9 +20,9 @@ export interface PluginToastOptions {
   }
 }
 
-type PluginToastMethod = (message: string, options?: PluginToastOptions) => PluginToastId
+type MiniAppToastMethod = (message: string, options?: MiniAppToastOptions) => MiniAppToastId
 
-export interface PluginProblemsOptions {
+export interface MiniAppProblemsOptions {
   /**
    * Namespace for the report's identity — use the plugin id. The host names the row after the
    * calling plugin by itself (see "Attribution" below); when it cannot tell (a report published
@@ -40,12 +40,12 @@ export interface PluginProblemsOptions {
   actions?: readonly ProblemRecovery[]
 }
 
-export interface PluginToast extends PluginToastMethod {
-  success: PluginToastMethod
-  error: PluginToastMethod
-  info: PluginToastMethod
-  warning: PluginToastMethod
-  message: PluginToastMethod
+export interface MiniAppToast extends MiniAppToastMethod {
+  success: MiniAppToastMethod
+  error: MiniAppToastMethod
+  info: MiniAppToastMethod
+  warning: MiniAppToastMethod
+  message: MiniAppToastMethod
   /**
    * Publish a structured problem report to the host's notification centre.
    *
@@ -53,7 +53,7 @@ export interface PluginToast extends PluginToastMethod {
    * looking at that surface learns nothing. Reporting here as well is what makes a plugin's
    * failures as visible as the host's own.
    */
-  problems: (report: ProblemReport, options: PluginProblemsOptions) => string | undefined
+  problems: (report: ProblemReport, options: MiniAppProblemsOptions) => string | undefined
   /** The subject validates again; settle whatever the centre still says about it. */
   problemsCleared: (subject: Pick<ProblemReport, 'subject'>, scope: string) => void
   /**
@@ -83,7 +83,7 @@ let deferredCallSite: string | undefined
  * published right now, when the publishing frame itself no longer contains it. Undefined outside
  * such a publish — the host then reads the live stack.
  */
-export function pluginNotificationCallSite(): string | undefined {
+export function miniAppNotificationCallSite(): string | undefined {
   return deferredCallSite
 }
 
@@ -97,9 +97,9 @@ function publishFrom(callSite: string | undefined, publish: () => void): void {
   }
 }
 
-let hostToast: PluginToast | undefined
+let hostToast: MiniAppToast | undefined
 
-function requireHostToast(): PluginToast {
+function requireHostToast(): MiniAppToast {
   if (!hostToast) {
     throw new Error('Plugin UI toast used before the host notification surface was bound')
   }
@@ -110,9 +110,9 @@ function requireHostToast(): PluginToast {
  * Bind the plugin-facing notification surface to the host's notification adapter.
  * The host owns routing, policy and attribution (which plugin a row names — see above); the SDK
  * only preserves the familiar toast call shape. The returned unbind RESTORES the binding this one
- * shadowed — the scope rule every host binding follows (`bindPluginUiRuntime`).
+ * shadowed — the scope rule every host binding follows (`bindMiniAppUiRuntime`).
  */
-export function bindPluginUiToast(toast: PluginToast): () => void {
+export function bindMiniAppUiToast(toast: MiniAppToast): () => void {
   const previous = hostToast
   hostToast = toast
   return () => {
@@ -120,25 +120,25 @@ export function bindPluginUiToast(toast: PluginToast): () => void {
   }
 }
 
-const notify: PluginToastMethod = (message, options) => requireHostToast()(message, options)
+const notify: MiniAppToastMethod = (message, options) => requireHostToast()(message, options)
 
-export const toast: PluginToast = Object.assign(notify, {
-  success: (message: string, options?: PluginToastOptions) =>
+export const toast: MiniAppToast = Object.assign(notify, {
+  success: (message: string, options?: MiniAppToastOptions) =>
     requireHostToast().success(message, options),
-  error: (message: string, options?: PluginToastOptions) =>
+  error: (message: string, options?: MiniAppToastOptions) =>
     requireHostToast().error(message, options),
-  info: (message: string, options?: PluginToastOptions) =>
+  info: (message: string, options?: MiniAppToastOptions) =>
     requireHostToast().info(message, options),
-  warning: (message: string, options?: PluginToastOptions) =>
+  warning: (message: string, options?: MiniAppToastOptions) =>
     requireHostToast().warning(message, options),
-  message: (message: string, options?: PluginToastOptions) =>
+  message: (message: string, options?: MiniAppToastOptions) =>
     requireHostToast().message(message, options),
   // Problem reporting DEGRADES instead of throwing. Every other method here is called from a
   // working code path, where an unbound host is a real misconfiguration worth failing loudly on.
   // These two are the failure path itself: a surface already reporting something broken must not
   // be brought down by the reporting. It also keeps the shared `useProblemReport` usable in a unit
   // test that renders one component and never boots the host.
-  problems: (report: ProblemReport, options: PluginProblemsOptions) =>
+  problems: (report: ProblemReport, options: MiniAppProblemsOptions) =>
     hostToast?.problems(report, options),
   problemsCleared: (subject: Pick<ProblemReport, 'subject'>, scope: string) =>
     hostToast?.problemsCleared(subject, scope),
@@ -179,7 +179,7 @@ export function acknowledgeInline(error?: unknown): void {
  * Deliberately returns `void`: the caller is a menu row, and giving it a promise to ignore would
  * re-open the hole this closes.
  */
-export function runPluginAction(run: () => Promise<unknown> | void, failure: string): void {
+export function runMiniAppAction(run: () => Promise<unknown> | void, failure: string): void {
   // Recorded NOW, while the plugin's frame is on the stack: the rejection below is handled on a
   // later microtask whose stack holds only this module, which the host cannot attribute.
   const callSite = new Error('plugin action call site').stack
@@ -201,7 +201,7 @@ export function runPluginAction(run: () => Promise<unknown> | void, failure: str
  * which is a line of noise under a sentence that was already complete — the caller's `failure` is
  * what the person is meant to read.
  *
- * A {@link PluginApiError} also carries `detail`: what the engine, driver or parser actually said.
+ * A {@link MiniAppApiError} also carries `detail`: what the engine, driver or parser actually said.
  * Dropping it left a durable row reading "The server rejected this request." with the one line
  * that named the reason thrown away. The row is the place with room for it (the transport's own
  * rule: `detail` is for the Event Center, never a surface line), so it goes on its own line, once —
@@ -216,8 +216,8 @@ function describeFailure(error: unknown): string | undefined {
   return lines.join('\n') || undefined
 }
 
-/** `PluginApiError.detail`, read structurally so a host error of the same shape counts too. */
+/** `MiniAppApiError.detail`, read structurally so a host error of the same shape counts too. */
 function detailOf(error: Error): string {
-  const { detail } = error as Partial<Pick<PluginApiError, 'detail'>>
+  const { detail } = error as Partial<Pick<MiniAppApiError, 'detail'>>
   return typeof detail === 'string' ? detail.trim() : ''
 }

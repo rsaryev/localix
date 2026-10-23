@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 
 import type {
-  PluginUiHost,
+  MiniAppUiHost,
   UiAnchorContribution,
   WorkItemKindContribution,
 } from '@localixai/mini-app-sdk/ui'
@@ -26,7 +26,7 @@ test('live Kubernetes tabs stay transient and expose native agent context bindin
     fileEditors: noop,
     fileFormats: noop,
     sessionEvents: noop,
-  } as unknown as PluginUiHost
+  } as unknown as MiniAppUiHost
 
   registerKubernetesContributions(host)
 

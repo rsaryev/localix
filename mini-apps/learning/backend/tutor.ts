@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto'
-import type { PluginWakeOutcome, PluginWakeRequest } from '@localixai/mini-app-sdk/backend'
+import type { MiniAppWakeOutcome, MiniAppWakeRequest } from '@localixai/mini-app-sdk/backend'
 import type { LearningCourse } from '../shared/contracts'
 import { lessons, lessonUnlocked, stepUnlocked } from '../shared/progression'
 import type { LearningService } from './service'
 import { ModuleGenerator } from './module-generation'
 
-type Wake = (request: PluginWakeRequest) => Promise<PluginWakeOutcome>
+type Wake = (request: MiniAppWakeRequest) => Promise<MiniAppWakeOutcome>
 
 export class LearningTutor {
   private readonly generator: ModuleGenerator
@@ -133,7 +133,7 @@ export class LearningTutor {
     })
   }
 
-  private async deliver(request: PluginWakeRequest): Promise<PluginWakeOutcome> {
+  private async deliver(request: MiniAppWakeRequest): Promise<MiniAppWakeOutcome> {
     if (!this.wake) return { status: 'missed', reason: 'The tutor is unavailable in this host.' }
     try {
       return await this.wake(request)

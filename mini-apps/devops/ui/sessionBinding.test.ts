@@ -9,11 +9,11 @@
 
 import { afterEach, describe, expect, test } from 'bun:test'
 import {
-  bindPluginUiRuntime,
-  type PluginUiRuntime,
-  type PluginWorkItemRequest,
+  bindMiniAppUiRuntime,
+  type MiniAppUiRuntime,
+  type MiniAppWorkItemRequest,
 } from '@localixai/mini-app-sdk/ui/runtime'
-import { recordingPluginUiHost } from '@localixai/mini-app-sdk/ui/testing'
+import { recordingMiniAppUiHost } from '@localixai/mini-app-sdk/ui/testing'
 import type { WorkItemKindContribution } from '@localixai/mini-app-sdk/ui'
 
 import { openDockerContainerTab, openDockerResourceTab } from '../docker/ui/model/openTab'
@@ -27,20 +27,20 @@ import {
 } from '../kubernetes/ui/model/openTab'
 import { registerKubernetesContributions } from '../kubernetes/ui/register'
 
-const opened: PluginWorkItemRequest[] = []
+const opened: MiniAppWorkItemRequest[] = []
 const spawned: Array<{ command: string; sessionId: string; title?: string }> = []
 let unbind: (() => void) | undefined
 
 function bind() {
-  unbind = bindPluginUiRuntime({
-    workspace: { openWorkItem: (request: PluginWorkItemRequest) => opened.push(request) },
+  unbind = bindMiniAppUiRuntime({
+    workspace: { openWorkItem: (request: MiniAppWorkItemRequest) => opened.push(request) },
     terminal: {
       spawnCommand: async (request: { command: string; sessionId: string; title?: string }) => {
         spawned.push(request)
         return { terminalId: 't-1' }
       },
     },
-  } as unknown as PluginUiRuntime)
+  } as unknown as MiniAppUiRuntime)
 }
 
 afterEach(() => {
@@ -80,7 +80,7 @@ describe('DevOps tabs open in the chat that asked', () => {
   })
 
   test('only the Docker resource kind is registered app-level', () => {
-    const { host, registrations } = recordingPluginUiHost()
+    const { host, registrations } = recordingMiniAppUiHost()
     registerDockerContributions(host)
     registerKubernetesContributions(host)
 

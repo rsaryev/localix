@@ -4,10 +4,10 @@ import { useWorkItemSessionId } from '@localixai/mini-app-sdk/ui/work-item-sessi
 import { useLatestRef } from '@/shared/lib/useLatestRef'
 import { sendChatMessage } from '@/entities/chat/model/sendChatMessage'
 import { getThemeVars, themeVarsBus } from '@/entities/chat/model/themeVarsBus'
-import { pluginSessionEventBus } from '@/entities/chat/model/pluginSessionEventBus'
-import { createPanelActions } from '@/shared/contrib/pluginPanelActions'
+import { miniAppSessionEventBus } from '@/entities/chat/model/miniAppSessionEventBus'
+import { createPanelActions } from '@/shared/contrib/miniAppPanelActions'
 import { createPanelBridgeHost } from './panelBridgeCore'
-import { readPluginViewState, writePluginViewState } from './pluginViewState'
+import { readPluginViewState, writePluginViewState } from './miniAppViewState'
 import type { PublishMessageContext } from '@localixai/mini-app-sdk/ui'
 import { backendClient } from '@/shared/api/client'
 
@@ -78,7 +78,7 @@ export function usePluginPanelBridge({
           readViewState: readPluginViewState,
           writeViewState: writePluginViewState,
           publishMessageContext,
-          invokePluginBackend: (input) => backendClient.invokePluginUiAction(input),
+          invokePluginBackend: (input) => backendClient.invokeMiniAppUiAction(input),
         },
         pluginName,
       ),
@@ -99,7 +99,7 @@ export function usePluginPanelBridge({
     // Forward SAFE session lifecycle signals — but ONLY for the chat this view's tab belongs to
     // (the same session `sendPrompt` targets). Another chat's run finishing never reaches this
     // view: per-session isolation lives here, at the subscriber edge.
-    const unsubscribeSession = pluginSessionEventBus.subscribe((event) => {
+    const unsubscribeSession = miniAppSessionEventBus.subscribe((event) => {
       if (event.sessionId !== sessionRef.current) return
       core.postSessionEvent(event.sessionId, event.phase)
     })

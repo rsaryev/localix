@@ -2,7 +2,7 @@
 
 /// Plugin names as manifests allow them (`PLUGIN_NAME_RE` in `mini-app-sdk`: letters, digits, `-`
 /// and `_`, not leading with a separator), bounded; nothing else reaches a path or a bundle id.
-pub(crate) fn valid_plugin(name: &str) -> bool {
+pub(crate) fn valid_mini_app(name: &str) -> bool {
     (1..=64).contains(&name.len())
         && name.starts_with(|first: char| first.is_ascii_alphanumeric())
         && name
@@ -31,12 +31,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn plugin_names_follow_the_manifest_grammar() {
+    fn mini_app_names_follow_the_manifest_grammar() {
         for name in ["kanban", "game-2048", "my_tool", "Notes2"] {
-            assert!(valid_plugin(name), "{name}");
+            assert!(valid_mini_app(name), "{name}");
         }
         for name in ["", "-lead", "_lead", "../x", "a b", "a.b", &"a".repeat(65)] {
-            assert!(!valid_plugin(name), "{name}");
+            assert!(!valid_mini_app(name), "{name}");
         }
     }
 

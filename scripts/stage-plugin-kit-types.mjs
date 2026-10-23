@@ -106,7 +106,7 @@ function typesEntry(dir, subpath = '.') {
  * Stage `<outKit>/types` and return `{ typePaths, typescript }`, kit-relative: `typePaths` maps each
  * importable specifier to its declaration file; `typescript` is the compiler module.
  */
-export function stagePluginKitTypes({ repoRoot, outKit, uiSharedExports, sdkDir, kitDirs }) {
+export function stageMiniAppKitTypes({ repoRoot, outKit, uiSharedExports, sdkDir, kitDirs }) {
   const out = join(outKit, TYPES_DIR)
   mkdirSync(out, { recursive: true })
   const rel = (path) => relative(outKit, path).split(sep).join('/')
