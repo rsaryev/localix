@@ -6,11 +6,12 @@ const STORE_KEY = 'mini-app-store'
 
 /**
  * What the catalogs offer, what is installed and the installs in flight. The server pokes
- * `mini-app-installs` as an install moves and `mini-apps` when one lands; either reads the list
+ * `mini-app-installs` as an install moves, `mini-apps` when one lands and `mini-app-catalogs` when a
+ * catalog is added or removed; each reads the list
  * again — nothing here patches it.
  */
 export function useMiniAppStore(enabled = true) {
-  useRevalidateOnResources(STORE_KEY, ['mini-app-installs', 'mini-apps'])
+  useRevalidateOnResources(STORE_KEY, ['mini-app-installs', 'mini-apps', 'mini-app-catalogs'])
   const { data, error, isLoading, mutate } = useSWR(enabled ? STORE_KEY : null, () =>
     backendClient.listMiniAppStore(),
   )

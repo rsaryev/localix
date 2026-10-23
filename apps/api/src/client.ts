@@ -197,6 +197,7 @@ export type {
 } from './features/mini-apps/contracts'
 export type { MiniAppViewSpec } from './features/mini-apps/contracts-contributions'
 export type {
+  MiniAppCatalogEntryRecord,
   MiniAppStoreEntryRecord,
   MiniAppStoreResponse,
 } from './features/mini-apps/contracts-store'

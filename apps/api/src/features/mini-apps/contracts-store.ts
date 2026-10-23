@@ -34,3 +34,11 @@ export const installMiniAppRequestSchema = z.object({
   /** The person said yes to a publisher Localix does not vouch for. */
   acceptUnverified: z.boolean().optional(),
 })
+
+/** One catalog the store reads (`catalogs.ts`). */
+export const miniAppCatalogSchema = z.object({ url: z.string(), builtIn: z.boolean() })
+export type MiniAppCatalogEntryRecord = z.infer<typeof miniAppCatalogSchema>
+
+export const miniAppCatalogsResponseSchema = z.object({ catalogs: z.array(miniAppCatalogSchema) })
+
+export const miniAppCatalogRequestSchema = z.object({ url: z.string().min(1).max(2048) })

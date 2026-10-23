@@ -28,7 +28,8 @@ import { toMiniAppRecord } from './records'
 import { syncBundledContributions } from './sync-bundled-contributions'
 import { resolveMiniAppUiFile } from './ui-artifact'
 import { createMiniAppWrites } from './service-writes'
-import { createMiniAppStore, defaultMiniAppStoreSources, type MiniAppStoreSource } from './store'
+import { createMiniAppCatalogs } from './catalogs'
+import { builtInMiniAppSources, createMiniAppStore, type MiniAppStoreSource } from './store'
 import {
   invokeMiniAppUiAction,
   resolveMiniAppArgOptions,
@@ -56,7 +57,7 @@ export interface MiniAppServiceDeps {
   logger?: { warn: (msg: string, meta?: unknown) => void }
   /** Where the mini app kit is; defaults to the one shipped beside the staged mini apps. */
   miniAppKitDir?: () => string
-  /** Where the store's offers come from; defaults to the staged first-party apps. */
+  /** The catalogs every installation reads; defaults to {@link builtInMiniAppSources}. */
   storeSources?: () => Promise<MiniAppStoreSource[]>
 }
 
@@ -181,9 +182,14 @@ export function createMiniAppService(deps: MiniAppServiceDeps) {
   }
 
   // The store: what catalogs offer and the installs in flight; a finished install is announced.
+  // The catalogs the store reads: the built-in ones, then those the person added.
+  const catalogs = createMiniAppCatalogs({
+    db: deps.db,
+    builtIn: deps.storeSources ?? builtInMiniAppSources,
+  })
   const store = createMiniAppStore({
     homeDir: deps.homeDir,
-    sources: deps.storeSources ?? defaultMiniAppStoreSources,
+    sources: catalogs.sources,
     onInstalled: async (name, { fresh, userId }) => {
       // Choosing it in the store is the person's yes to run it; an update keeps their decision.
       if (fresh && userId) await setEnabled(userId, { name, enabled: true })
@@ -197,6 +203,7 @@ export function createMiniAppService(deps: MiniAppServiceDeps) {
 
   return {
     authoring,
+    catalogs,
     store,
     /**
      * `/mini-app reload`: rebuild the person's own mini apps, then say every one changed, since a

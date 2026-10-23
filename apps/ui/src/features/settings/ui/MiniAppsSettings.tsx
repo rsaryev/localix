@@ -8,6 +8,7 @@ import { CapabilityRegistryBody } from './capabilities/CapabilityRegistryBody'
 import { MiniAppRow } from './capabilities/MiniAppRow'
 import { Button } from '@localixai/kit/button'
 import { openMiniAppStore } from '@/entities/mini-app-store/model/openMiniAppStore'
+import { MiniAppCatalogs } from '@/entities/mini-app-store/ui/MiniAppCatalogs'
 
 interface MiniAppsSettingsProps {
   /** '' = no project; otherwise a project id: which installed mini apps are listed. */
@@ -83,6 +84,13 @@ export function MiniAppsSettings({ scope, agentScope = '', projects }: MiniAppsS
         <Button size="sm" variant="field" onClick={openMiniAppStore}>
           Open the store
         </Button>
+      </SettingsSection>
+
+      <SettingsSection
+        title="Catalogs"
+        description="Where the store finds mini apps. Add a publisher's catalog by its address."
+      >
+        <MiniAppCatalogs />
       </SettingsSection>
     </div>
   )

@@ -480,6 +480,12 @@ export interface ToolUsageTable {
   updated_at: ColumnType<string, string | undefined, string | undefined>
 }
 
+/** A catalog a person added to the mini app store, by its URL (`features/mini-apps/catalogs.ts`). */
+export interface MiniAppCatalogsTable {
+  url: string
+  added_at: string
+}
+
 export interface AppDatabase {
   provider_connections: ProviderConnectionsTable
   provider_connection_keys: ProviderConnectionKeysTable
@@ -518,6 +524,7 @@ export interface AppDatabase {
   agent_turn_starts: AgentTurnStartsTable
   wake_outbox: WakeOutboxTable
   mcp_channel_bindings: McpChannelBindingsTable
+  mini_app_catalogs: MiniAppCatalogsTable
   agent_memory: AgentMemoryTable
   user_view_state: UserViewStateTable
   semantic_settings: SemanticSettingsTable

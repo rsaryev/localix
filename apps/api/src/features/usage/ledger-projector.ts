@@ -34,6 +34,7 @@ export function createUsageLedgerProjector(deps: {
     skill: 'ignore',
     plugin: 'ignore',
     'mini-app': 'ignore',
+    'mini-app.catalog': 'ignore',
     mcp: 'ignore',
     agent: 'ignore',
     'capability.rule': 'ignore',

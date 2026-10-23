@@ -16,8 +16,16 @@ const entry: MiniAppStoreEntry = {
   update: false,
 }
 
-function app(installed: string[]) {
+function app(installed: string[], catalogs: string[] = []) {
   const service = {
+    catalogs: {
+      list: async () => [
+        { url: 'https://hosted.test/mini-app-catalog.json', builtIn: true },
+        ...catalogs.map((url) => ({ url, builtIn: false })),
+      ],
+      add: async (url: string) => void catalogs.push(url),
+      remove: async (url: string) => void catalogs.splice(catalogs.indexOf(url), 1),
+    },
     store: {
       list: async () => ({ entries: [entry], problems: [] }),
       install: async (name: string, opts: { acceptUnverified?: boolean }) =>
@@ -49,5 +57,26 @@ describe('/rpc/mini-apps/store', () => {
     })
     expect(response.status).toBe(202)
     expect(installed).toEqual(['chess!'])
+  })
+
+  test('the catalogs are listed, added and removed; a write answers 204 and is announced', async () => {
+    const kept: string[] = []
+    const root = app([], kept)
+    const send = (path: string, url: string) =>
+      root.request(`/rpc/mini-apps/catalogs${path}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ url }),
+      })
+    expect((await send('', 'https://ada.test/c.json')).status).toBe(204)
+    const listed = await (await root.request('/rpc/mini-apps/catalogs')).json()
+    expect(listed).toEqual({
+      catalogs: [
+        { url: 'https://hosted.test/mini-app-catalog.json', builtIn: true },
+        { url: 'https://ada.test/c.json', builtIn: false },
+      ],
+    })
+    expect((await send('/remove', 'https://ada.test/c.json')).status).toBe(204)
+    expect(kept).toEqual([])
   })
 })

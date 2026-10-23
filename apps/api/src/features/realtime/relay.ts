@@ -58,6 +58,8 @@ export const RELAY_TOPICS = {
   // A mini app installed, updated, removed or reconfigured: the mini apps list and what the catalog
   // offers (its tools join or leave runs).
   'mini-app': { resources: ['mini-apps', 'capabilities'], bumpsCapabilities: true },
+  // The store's catalogs: their list and what the store offers.
+  'mini-app.catalog': { resources: ['mini-app-catalogs'] },
   mcp: 'ignore',
   // What the `local` provider lists reaches clients through the catalog's own refresh; the
   // install itself through the `local-models` status poke (`status-pokes.ts`), which every

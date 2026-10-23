@@ -1,0 +1,114 @@
+import { pathToFileURL } from 'node:url'
+import type { Kysely } from 'kysely'
+
+import type { AppDatabase } from '../../db/types'
+import { ConflictError, InvalidRequestError } from '../../lib/domain-errors'
+import { errorMessage } from '../../lib/errors'
+import { recordCoreChanges } from '../changes/core-entities'
+import { readMiniAppCatalog } from './catalog-feed'
+import type { MiniAppStoreSource } from './store-offers'
+
+/** One catalog the store reads, as Settings lists it. */
+export interface MiniAppCatalogRecord {
+  url: string
+  /** Comes with Localix: the hosted catalog, or a development checkout's apps. */
+  builtIn: boolean
+}
+
+const urlOf = (source: MiniAppStoreSource) =>
+  source.kind === 'catalog' ? source.url : pathToFileURL(source.root).href
+
+/** An HTTPS URL or a `file://` path, or null: a catalog is fetched with no other scheme. */
+function normalize(raw: string): string | null {
+  try {
+    const url = new URL(raw.trim())
+    return url.protocol === 'https:' || url.protocol === 'file:' ? url.href : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * The catalogs the mini app store reads: the built-in ones, then those the person added, kept in
+ * `mini_app_catalogs`. Adding one reads it first, so what is kept is a catalog. Every change is
+ * announced as a `mini-app.catalog` notice in the same write (C1), and the store re-reads.
+ * A publisher in an added catalog is never verified: Localix vouches only for its own.
+ */
+export function createMiniAppCatalogs(deps: {
+  db: Kysely<AppDatabase>
+  builtIn: () => Promise<MiniAppStoreSource[]>
+  fetchImpl?: typeof fetch
+}) {
+  const added = async () =>
+    (
+      await deps.db
+        .selectFrom('mini_app_catalogs')
+        .select('url')
+        .orderBy('added_at')
+        .orderBy('url')
+        .execute()
+    ).map((row) => row.url)
+
+  return {
+    async list(): Promise<MiniAppCatalogRecord[]> {
+      const builtIn = (await deps.builtIn()).map((source) => ({
+        url: urlOf(source),
+        builtIn: true,
+      }))
+      const known = new Set(builtIn.map(({ url }) => url))
+      return [
+        ...builtIn,
+        ...(await added()).filter((url) => !known.has(url)).map((url) => ({ url, builtIn: false })),
+      ]
+    },
+
+    /** What the store reads, in order: the built-in sources first, so they win a name. */
+    async sources(): Promise<MiniAppStoreSource[]> {
+      const builtIn = await deps.builtIn()
+      const known = new Set(builtIn.map(urlOf))
+      return [
+        ...builtIn,
+        ...(await added())
+          .filter((url) => !known.has(url))
+          .map((url): MiniAppStoreSource => ({ kind: 'catalog', url, vouches: false })),
+      ]
+    },
+
+    async add(raw: string): Promise<void> {
+      const url = normalize(raw)
+      if (!url)
+        throw new InvalidRequestError(
+          'mini_app_catalog_url',
+          'A catalog is an HTTPS address or a file:// path to its mini-app-catalog.json',
+        )
+      try {
+        await readMiniAppCatalog(url, { fetchImpl: deps.fetchImpl })
+      } catch (error) {
+        throw new InvalidRequestError('mini_app_catalog_unreadable', errorMessage(error))
+      }
+      await deps.db.transaction().execute(async (trx) => {
+        await trx
+          .insertInto('mini_app_catalogs')
+          .values({ url, added_at: new Date().toISOString() })
+          .onConflict((conflict) => conflict.column('url').doNothing())
+          .execute()
+        await recordCoreChanges(trx, { entity: 'mini-app.catalog', op: 'upserted', ref: { url } })
+      })
+    },
+
+    async remove(raw: string): Promise<void> {
+      const url = normalize(raw) ?? raw
+      if ((await deps.builtIn()).some((source) => urlOf(source) === url))
+        throw new ConflictError(
+          'mini_app_catalog_built_in',
+          'The Localix catalog comes with Localix and cannot be removed',
+        )
+      await deps.db.transaction().execute(async (trx) => {
+        await trx.deleteFrom('mini_app_catalogs').where('url', '=', url).execute()
+        await recordCoreChanges(trx, { entity: 'mini-app.catalog', op: 'deleted', ref: { url } })
+      })
+    },
+  }
+}
+
+export type MiniAppCatalogs = ReturnType<typeof createMiniAppCatalogs>

@@ -26,6 +26,7 @@ export function createSubagentRowsChanges(live: SubagentRowsLive) {
     },
     plugin: () => live.refreshAll(),
     'mini-app': 'ignore',
+    'mini-app.catalog': 'ignore',
     skill: 'ignore',
     mcp: 'ignore',
     agent: 'ignore',

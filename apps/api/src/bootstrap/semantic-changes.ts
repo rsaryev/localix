@@ -25,6 +25,7 @@ export function coreSemanticTargets(db: Kysely<AppDatabase>) {
     skill: skillsSemanticTarget,
     plugin: pluginsSemanticTarget,
     'mini-app': 'ignore',
+    'mini-app.catalog': 'ignore',
     mcp: mcpSemanticTarget,
     agent: agentsSemanticTarget,
     project: 'ignore',

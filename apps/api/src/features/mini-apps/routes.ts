@@ -17,7 +17,12 @@ import {
   setMiniAppEnabledRequestSchema,
 } from './contracts'
 import type { MiniAppService } from './service'
-import { installMiniAppRequestSchema, miniAppStoreResponseSchema } from './contracts-store'
+import {
+  installMiniAppRequestSchema,
+  miniAppCatalogRequestSchema,
+  miniAppCatalogsResponseSchema,
+  miniAppStoreResponseSchema,
+} from './contracts-store'
 
 /** The slice of the mini app service these routes call. */
 export type MiniAppRoutesService = Pick<
@@ -31,6 +36,7 @@ export type MiniAppRoutesService = Pick<
   | 'getViewHtml'
   | 'invokeUiAction'
   | 'store'
+  | 'catalogs'
 >
 
 /**
@@ -68,6 +74,19 @@ export function createMiniAppRoutes(service: MiniAppRoutesService) {
       const { name, acceptUnverified } = c.req.valid('json')
       await service.store.install(name, { userId: c.get('userId'), acceptUnverified })
       return c.body(null, 202)
+    })
+    // The catalogs the store reads. Adding one reads it first; both writes announce
+    // `mini-app.catalog`, so the store and this list re-read.
+    .get('/catalogs', async (c) =>
+      c.json(miniAppCatalogsResponseSchema.parse({ catalogs: await service.catalogs.list() }), 200),
+    )
+    .post('/catalogs', zValidator('json', miniAppCatalogRequestSchema), async (c) => {
+      await service.catalogs.add(c.req.valid('json').url)
+      return c.body(null, 204)
+    })
+    .post('/catalogs/remove', zValidator('json', miniAppCatalogRequestSchema), async (c) => {
+      await service.catalogs.remove(c.req.valid('json').url)
+      return c.body(null, 204)
     })
     .post(
       '/command-args/options',

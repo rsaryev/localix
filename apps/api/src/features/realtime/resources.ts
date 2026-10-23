@@ -15,6 +15,8 @@ export const REALTIME_RESOURCES = [
   'local-models',
   // Mini app installs and updates in flight, with their progress.
   'mini-app-installs',
+  // The catalogs the mini app store reads.
+  'mini-app-catalogs',
   'semantic',
   // What loaded mods put on screen: their panes and what is drawn in them.
   'mods',

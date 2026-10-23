@@ -15,15 +15,15 @@ publish theirs the same way, from a fork of the template, and people add it to t
 
 ## What you can do
 
-| Task                      | Do this                                                                           | Boundary                                                            |
-| ------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Start an app              | Copy `mini-apps/template` to `mini-apps/<name>` and rename it                     | Or `/mini-app create`, which forks the same template.               |
-| Pack it                   | `bun run pack:mini-apps --only <name> --publisher "<you>"`                        | Builds it exactly as a Localix release does.                        |
-| Pack an app Localix built | `bun run pack:mini-apps --source ~/.localix/mini-apps/<name> --publisher "<you>"` | Run `/mini-app reload` first, so its backend and screens are built. |
-| Host the catalog          | Upload everything in the output folder to one place: a GitHub release, a site     | Any HTTPS host, or a folder read as `file://`.                      |
-| Add a catalog to Localix  | Set `LOCALIX_MINI_APP_CATALOGS` to its URL, comma-separated for several           | Its publishers are shown as unverified.                             |
-| Ship an update            | Raise `version`, pack again, replace the hosted files                             | Installed copies update within six hours, or at once with Update.   |
-| Require a newer Localix   | Raise `apiVersion` in `mini-app.json`                                             | Older Localix lists the app as needing a newer version.             |
+| Task                      | Do this                                                                              | Boundary                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| Start an app              | Copy `mini-apps/template` to `mini-apps/<name>` and rename it                        | Or `/mini-app create`, which forks the same template.               |
+| Pack it                   | `bun run pack:mini-apps --only <name> --publisher "<you>"`                           | Builds it exactly as a Localix release does.                        |
+| Pack an app Localix built | `bun run pack:mini-apps --source ~/.localix/mini-apps/<name> --publisher "<you>"`    | Run `/mini-app reload` first, so its backend and screens are built. |
+| Host the catalog          | Upload everything in the output folder to one place: a GitHub release, a site        | Any HTTPS host, or a folder read as `file://`.                      |
+| Add a catalog to Localix  | **Catalogs** in the store, or Settings → Mini apps → **Catalogs**: paste its address | Its publishers are shown as unverified.                             |
+| Ship an update            | Raise `version`, pack again, replace the hosted files                                | Installed copies update within six hours, or at once with Update.   |
+| Require a newer Localix   | Raise `apiVersion` in `mini-app.json`                                                | Older Localix lists the app as needing a newer version.             |
 
 ## How it works
 
@@ -82,12 +82,12 @@ bun run pack:mini-apps --only notes --publisher "Ada" --out dist/catalog
 gh release create notes-v1.2.0 dist/catalog/*
 ```
 
-People then add `https://github.com/<you>/<repo>/releases/latest/download/mini-app-catalog.json`.
-`latest` follows your newest release, so the next release is the next update.
+People then add `https://github.com/<you>/<repo>/releases/latest/download/mini-app-catalog.json`
+under **Catalogs** in the store. `latest` follows your newest release, so the next release is the
+next update.
 
 ## Limits
 
-- Adding a catalog is an environment variable for now; there is no field for it in Settings.
 - Only the hosted Localix catalog marks publishers as verified.
 - An app is updated by `version` alone. New content under the same version reaches no one who has it
   installed.

@@ -122,6 +122,7 @@ export function createRouteRepair(ports: RouteRepairPorts) {
     skill: 'ignore',
     plugin: 'ignore',
     'mini-app': 'ignore',
+    'mini-app.catalog': 'ignore',
     mcp: 'ignore',
     agent: 'ignore',
     project: 'ignore',

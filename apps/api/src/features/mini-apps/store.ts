@@ -212,31 +212,15 @@ export const DEFAULT_MINI_APP_CATALOG_URL =
   'https://github.com/rsaryev/localix/releases/latest/download/mini-app-catalog.json'
 
 /**
- * The sources a host offers by default. In development (the checkout's apps staged) only those,
- * published by Localix — a change is installed without a release. Otherwise the hosted catalog,
- * which `LOCALIX_MINI_APP_CATALOG_URL` replaces, and the catalogs in `LOCALIX_MINI_APP_CATALOGS`
- * (comma-separated URLs or `file://` paths), whose publishers Localix does not vouch for.
+ * The catalogs every installation reads (`catalogs.ts` adds the person's own after them). In a
+ * development checkout, its staged `mini-apps/`, published by Localix — a change is installed
+ * without a release. Otherwise the hosted Localix catalog.
  */
-export async function defaultMiniAppStoreSources(): Promise<MiniAppStoreSource[]> {
-  const extra = (envString('LOCALIX_MINI_APP_CATALOGS') ?? '')
-    .split(',')
-    .map((url) => url.trim())
-    .filter(Boolean)
-    .map((url): MiniAppStoreSource => ({ kind: 'catalog', url, vouches: false }))
+export async function builtInMiniAppSources(): Promise<MiniAppStoreSource[]> {
   if (envString('LOCALIX_BUNDLED_MINI_APPS_DIR')) {
     const staged = await bundledMiniAppsSyncRoot()
     if (staged)
-      return [
-        { kind: 'local', root: staged, publisher: { name: 'Localix', verified: true } },
-        ...extra,
-      ]
+      return [{ kind: 'local', root: staged, publisher: { name: 'Localix', verified: true } }]
   }
-  return [
-    {
-      kind: 'catalog',
-      url: envString('LOCALIX_MINI_APP_CATALOG_URL') ?? DEFAULT_MINI_APP_CATALOG_URL,
-      vouches: true,
-    },
-    ...extra,
-  ]
+  return [{ kind: 'catalog', url: DEFAULT_MINI_APP_CATALOG_URL, vouches: true }]
 }

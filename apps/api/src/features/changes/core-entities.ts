@@ -28,6 +28,8 @@ export const CORE_REFS = {
   plugin: z.object({ id: z.string(), scope }),
   // A mini app installed, updated, removed or its settings changed (`id` is its name).
   'mini-app': z.object({ id: z.string(), scope }),
+  // A catalog added to or removed from the mini app store (`url` is its key).
+  'mini-app.catalog': z.object({ url: z.string() }),
   // `id` is the server's name (its catalog key); `serverId` its record id, on a deletion.
   mcp: z.object({ id: z.string(), scope, serverId: z.string().optional() }),
   // `id` is the agent's catalog key (its handle); `agentId` its stable id, when the owner knows it.

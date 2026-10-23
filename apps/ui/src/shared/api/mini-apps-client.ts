@@ -1,5 +1,5 @@
 import { assertOk, cleanQuery, client, unwrap } from './internal'
-import type { MiniAppStoreResponse } from '@localixai/api/client'
+import type { MiniAppCatalogEntryRecord, MiniAppStoreResponse } from '@localixai/api/client'
 import type { MiniAppRecord } from './contracts'
 
 /**
@@ -126,5 +126,19 @@ export const miniAppsApi = {
   /** Queue an install; its progress arrives as `mini-app-installs` pokes. */
   async installMiniApp(name: string, opts?: { acceptUnverified?: boolean }): Promise<void> {
     await assertOk(await client.rpc['mini-apps'].store.install.$post({ json: { name, ...opts } }))
+  },
+
+  /** The catalogs the store reads, Localix's own first. */
+  async listMiniAppCatalogs(): Promise<MiniAppCatalogEntryRecord[]> {
+    return (await unwrap(await client.rpc['mini-apps'].catalogs.$get())).catalogs
+  },
+
+  /** Add a catalog; the server reads it first and refuses one that is not a catalog. */
+  async addMiniAppCatalog(url: string): Promise<void> {
+    await assertOk(await client.rpc['mini-apps'].catalogs.$post({ json: { url } }))
+  },
+
+  async removeMiniAppCatalog(url: string): Promise<void> {
+    await assertOk(await client.rpc['mini-apps'].catalogs.remove.$post({ json: { url } }))
   },
 }
