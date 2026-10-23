@@ -608,6 +608,7 @@ describe('marketplace registry (add / list / resolve / remove)', () => {
       expect(known['npmmkt']).toEqual({
         source: { source: 'npm', package: 'acme-marketplace', version: '^1.0.0' },
         installLocation: join(root, 'npmmkt'),
+        lastUpdated: '2026-01-01T00:00:00.000Z',
       })
       const resolved = await resolveMarketplaceInstall(
         { plugin: 'cool', marketplace: 'npmmkt' },

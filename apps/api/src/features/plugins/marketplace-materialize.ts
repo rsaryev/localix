@@ -14,6 +14,7 @@ import { assertGitArgs } from './marketplace-git-args'
 import { fetchNpmPlugin } from './marketplace-source-npm'
 import { fetchArchivePlugin, fetchCatalogText } from './marketplace-source-archive'
 import type { MarketplaceRegistryDeps } from './marketplace-registry'
+import { readHeadCommit } from './git-fetch'
 
 /**
  * Fetching for the marketplace registry: a marketplace source into its staging dir, and one
@@ -32,8 +33,9 @@ export async function materializeMarketplace(
   source: MarketplaceSource,
   staging: string,
   deps: MarketplaceRegistryDeps,
-): Promise<void> {
+): Promise<{ commitSha?: string }> {
   await rmrf(staging)
+  let commitSha: string | undefined
   if (source.source === 'local') {
     await copyExtensionTree(source.path, staging)
   } else if (source.source === 'file') {
@@ -50,9 +52,11 @@ export async function materializeMarketplace(
     const url = sourceCloneUrl(source)
     if (!url) throw new Error('Unsupported marketplace source')
     assertGitArgs('Marketplace source', url, source.ref)
-    await deps.cloneRepo(url, staging, source.ref)
+    await deps.cloneRepo(url, staging, source.ref, source.sparsePaths)
+    commitSha = await readHeadCommit(staging)
   }
   await stripDotGit(staging)
+  return commitSha ? { commitSha } : {}
 }
 
 /** Put a catalog where Claude Code reads it, `<root>/.claude-plugin/marketplace.json`. */
@@ -69,25 +73,27 @@ export async function fetchEntryPlugin(
   resolved: Exclude<ResolvedEntrySource, { localPath: string }>,
   staging: string,
   deps: MarketplaceRegistryDeps,
-): Promise<string> {
+): Promise<{ dir: string; commitSha?: string }> {
   await rmrf(staging)
   if ('npm' in resolved) {
     await (deps.fetchNpm ?? fetchNpmPlugin)(resolved.npm, staging)
-    return staging
+    return { dir: staging }
   }
   if ('archive' in resolved) {
     await (deps.fetchArchive ?? fetchArchivePlugin)(resolved.archive, staging)
-    return staging
+    return { dir: staging }
   }
   const { url, ref, subdir } = resolved.git
   assertGitArgs('Plugin source', url, ref)
   await deps.cloneRepo(url, staging, ref, subdir)
+  const commitSha = await readHeadCommit(staging)
   await stripDotGit(staging)
-  if (!subdir) return staging
+  const commit = commitSha ? { commitSha } : {}
+  if (!subdir) return { dir: staging, ...commit }
   const dir = resolve(staging, subdir)
   if (!isPathWithin(resolve(staging), dir))
     throw new Error(`Source path escapes the repository: ${subdir}`)
   if (!(await fs.stat(dir).catch(() => null))?.isDirectory())
     throw new Error(`Source path does not exist: ${subdir} in ${url}`)
-  return dir
+  return { dir, ...commit }
 }

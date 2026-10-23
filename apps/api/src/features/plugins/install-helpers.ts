@@ -72,9 +72,10 @@ export async function cloneRepo(
   url: string,
   dest: string,
   ref?: string,
-  sparse?: string,
+  sparse?: string | string[],
 ): Promise<void> {
-  await fetchGitTree(url, dest, { ...(ref ? { ref } : {}), ...(sparse ? { sparse } : {}) })
+  const paths = Array.isArray(sparse) && sparse.length === 0 ? undefined : sparse
+  await fetchGitTree(url, dest, { ...(ref ? { ref } : {}), ...(paths ? { sparse: paths } : {}) })
 }
 
 /**

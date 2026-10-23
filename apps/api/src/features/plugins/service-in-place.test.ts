@@ -145,13 +145,15 @@ describe('a plugin from a local-folder marketplace loads in place', () => {
       }),
     })
     const copied = await service.install(user(), { source: 'tool@mine', enable: true })
-    expect(copied.dir).toBe(join(pluginsRoot(), 'tool'))
+    // A copy goes into the version cache now; the update below still turns it into one in place.
+    expect(copied.dir.startsWith(join(pluginsRoot(), 'cache', 'mine', 'tool'))).toBe(true)
     expect(copied.loadsInPlace).toBeUndefined()
 
     const rec = await service.update(user(), { name: 'tool' })
     expect(rec.loadsInPlace).toBe(true)
     expect(rec.dir).toBe(join(folder, 'plugins', 'tool'))
     expect(existsSync(join(pluginsRoot(), 'tool'))).toBe(false)
+    expect(existsSync(join(copied.dir, '.orphaned_at'))).toBe(true)
     expect(existsSync(oldMarket)).toBe(false)
     folderIntact()
   })

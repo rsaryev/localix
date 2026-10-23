@@ -34,6 +34,15 @@ export interface DiscoveredPlugin {
    * never the folder.
    */
   inPlaceInstall?: string
+  /** Shipped inside Localix (`builtin-plugins.ts`): `<name>@builtin`, updated with Localix. */
+  builtin?: boolean
+  /** On a built-in plugin: the other copies of its name that do not load because of it. */
+  shadowNotes?: string[]
+  /**
+   * A user-scope copy installed from a marketplace into the version cache (`plugin-cache.ts`):
+   * its `<name>@<marketplace>` and the resolved version it was installed at.
+   */
+  cachedInstall?: { id: string; version: string }
   /** What Claude Code's own rules found in the plugin (unknown fields, unsupported parts). */
   manifestIssues?: PluginIssue[]
   /** Manifest parse/validation error — the plugin still surfaces in the UI. */

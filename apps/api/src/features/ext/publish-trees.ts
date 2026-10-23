@@ -11,6 +11,11 @@ const serialize = createKeyedSerializer()
 export interface ExtensionTreeInput {
   source: string
   name: string
+  /**
+   * The folder this tree is published into, when not the batch's `installRoot` (a versioned
+   * cache, `<root>/<name>` being one version). Locks are per destination either way.
+   */
+  root?: string
   replace?: boolean
   /** The marketplace the source came from: links into it are dereferenced, not dropped. */
   linkRoot?: string
@@ -51,7 +56,7 @@ export async function publishExtensionTrees(input: {
   hold?: readonly string[]
   commit?: (directories: readonly string[]) => Promise<void>
 }): Promise<string[]> {
-  const names = new Set<string>()
+  const destinations = new Set<string>()
   const assertSegment = (name: string) => {
     if (!name || name === '.' || name === '..' || /[/\\\0]/.test(name))
       throw new UnprocessableError(
@@ -59,22 +64,31 @@ export async function publishExtensionTrees(input: {
         'Extension name must be one path segment',
       )
   }
+  const root = resolve(input.installRoot)
   for (const tree of input.trees) {
     assertSegment(tree.name)
-    if (names.has(tree.name))
+    const destination = join(resolve(tree.root ?? root), tree.name)
+    if (destinations.has(destination))
       throw new UnprocessableError(
         'duplicate_extension_destination',
         'Duplicate extension destination',
       )
-    names.add(tree.name)
+    destinations.add(destination)
   }
   for (const name of input.hold ?? []) assertSegment(name)
-  const root = resolve(input.installRoot)
-  await fs.mkdir(root, { recursive: true })
-  const canonicalRoot = await fs.realpath(root)
-  const keys = [...new Set([...names, ...(input.hold ?? [])])]
-    .sort()
-    .map((name) => join(canonicalRoot, name))
+  const canonical = async (dir: string) => {
+    await fs.mkdir(dir, { recursive: true })
+    return fs.realpath(dir)
+  }
+  const canonicalRoot = await canonical(root)
+  const treeKeys = await Promise.all(
+    input.trees.map(async (tree) =>
+      join(tree.root ? await canonical(resolve(tree.root)) : canonicalRoot, tree.name),
+    ),
+  )
+  const keys = [
+    ...new Set([...treeKeys, ...(input.hold ?? []).map((name) => join(canonicalRoot, name))]),
+  ].sort()
   const lock = (index: number): Promise<string[]> =>
     index === keys.length
       ? publish(root, input.trees, input.commit)
@@ -96,14 +110,16 @@ async function publish(
           'invalid_extension_source',
           'Extension source must be a directory',
         )
-      const destination = join(root, input.name)
+      const treeRoot = input.root ? resolve(input.root) : root
+      const destination = join(treeRoot, input.name)
       const previous = await statIfPresent(destination)
       if (previous && !input.replace)
         throw new ConflictError(
           'extension_exists',
           'An extension already exists at this destination',
         )
-      const workspace = await fs.mkdtemp(join(root, PREFIX))
+      // Staged beside its destination, so activation is a rename on one filesystem.
+      const workspace = await fs.mkdtemp(join(treeRoot, PREFIX))
       const tree: PreparedTree = {
         destination,
         workspace,

@@ -16,8 +16,8 @@ import { parseNpmEntrySource, type NpmEntrySource } from './marketplace-source-n
  * hosted catalog (`url`, only the `marketplace.json` is fetched), or an npm package.
  */
 export type MarketplaceSource =
-  | { source: 'github'; repo: string; ref?: string }
-  | { source: 'git'; url: string; ref?: string }
+  | { source: 'github'; repo: string; ref?: string; sparsePaths?: string[] }
+  | { source: 'git'; url: string; ref?: string; sparsePaths?: string[] }
   | { source: 'local'; path: string }
   | { source: 'file'; path: string }
   | { source: 'url'; url: string }

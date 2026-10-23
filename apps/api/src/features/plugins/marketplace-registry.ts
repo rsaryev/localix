@@ -23,6 +23,7 @@ import {
 } from './marketplace-in-place'
 
 import {
+  keptPreferences,
   readKnownMarketplaces,
   writeKnownMarketplaces,
   readMarketplace,
@@ -69,7 +70,7 @@ export interface MarketplaceRegistryDeps {
    * Fetch `url` at `ref` (a branch, tag or commit; the default branch when absent) into `dest`,
    * checking out only the `sparse` directory when given; throws on failure.
    */
-  cloneRepo: (url: string, dest: string, ref?: string, sparse?: string) => Promise<void>
+  cloneRepo: (url: string, dest: string, ref?: string, sparse?: string | string[]) => Promise<void>
   /** Download an npm plugin source into `dest`. Defaults to `fetchNpmPlugin` (tests stub). */
   fetchNpm?: (src: NpmEntrySource, dest: string) => Promise<void>
   /** Download an archive plugin source into `dest`. Defaults to `fetchArchivePlugin`. */
@@ -115,8 +116,9 @@ async function addMarketplaceUnlocked(
 
   const staging = join(root, `.staging-${Math.abs(hashString(JSON.stringify(source)))}`)
   let market: Marketplace
+  let fetched: { commitSha?: string }
   try {
-    await materializeMarketplace(source, staging, deps)
+    fetched = await materializeMarketplace(source, staging, deps)
     market = await readMarketplace(staging)
     await assertRegistrable(market, source, root)
   } catch (err) {
@@ -143,7 +145,13 @@ async function addMarketplaceUnlocked(
 
     const known = await readKnownMarketplaces(root)
     const previous = known[market.name]
-    known[market.name] = { source, installLocation }
+    known[market.name] = {
+      ...keptPreferences(previous),
+      source,
+      installLocation,
+      lastUpdated: (deps.now ?? (() => new Date().toISOString()))(),
+      ...(fetched.commitSha ? { gitCommitSha: fetched.commitSha } : {}),
+    }
     await writeKnownMarketplaces(root, known)
     if (hasBackup) await rmrf(backupLocation).catch(() => {})
     // A record that pointed at a folder read in place leaves that folder alone.
@@ -237,6 +245,8 @@ export interface ResolvedMarketplaceInstall {
   inPlace?: boolean
   /** The catalog's `allowCrossMarketplaceDependenciesOn` list (absent → none allowed). */
   allowCrossMarketplaceDependenciesOn?: string[]
+  /** The commit the plugin's files come from, when that is a git checkout. */
+  commitSha?: string
   /**
    * Set when the requested name was an OLD name the catalog's `renames` map redirected
    * (CC 2.1.193+) — callers can surface "installed as <entry.name>" to the user.
@@ -303,13 +313,17 @@ export async function resolveMarketplaceInstall(
     if (!(await fs.stat(resolved.localPath).catch(() => null))?.isDirectory())
       throw new Error(`Source path does not exist: ${resolved.localPath}`)
     const inPlace = readsInPlace(byName ?? bySource?.[1], root) ? { inPlace: true } : {}
-    return { dir: resolved.localPath, linkRoot: marketplaceDir, ...base, ...inPlace }
+    // A relative entry of a git-hosted marketplace is at the marketplace's commit.
+    const commit = (byName ?? bySource?.[1])?.gitCommitSha
+    const commitSha = commit ? { commitSha: commit } : {}
+    return { dir: resolved.localPath, linkRoot: marketplaceDir, ...base, ...inPlace, ...commitSha }
   }
 
   // Remote sources stage into a stable temp dir under the marketplaces root; git, npm and
   // archives land the same shape (a plain plugin dir handed to `installFromLocal`).
   const staging = join(root, `.fetch-${Math.abs(hashString(`${ref.plugin}\0${ref.marketplace}`))}`)
-  return { dir: await fetchEntryPlugin(resolved, staging, deps), linkRoot: staging, ...base }
+  const fetched = await fetchEntryPlugin(resolved, staging, deps)
+  return { ...fetched, linkRoot: staging, ...base }
 }
 
 /**

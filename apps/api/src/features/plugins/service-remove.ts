@@ -4,6 +4,8 @@ import { removeIfUnderRoot } from '../ext/install-tree'
 import { listDependents } from './dependencies'
 import { pluginInstallRoot, type DiscoveredPlugin } from './discovery'
 import { setInPlaceRecord } from './in-place-installs'
+import { assertNotBuiltin } from './builtin-plugins'
+import { releaseCachedInstall } from './install-versioned'
 import { removeDataIfLastCopy, rowScopeOf } from './service-lifecycle'
 import type { PluginService } from './service-types'
 
@@ -32,6 +34,7 @@ export async function removePlugin(
   const discovered = await ctx.discover({ cwd, projectId })
   const plugin =
     discovered.find((p) => p.manifest.name === input.name && p.projectId === projectId) ?? null
+  assertNotBuiltin(plugin, 'uninstall')
   // Nothing to remove used to answer like a removal, so `/plugin remove typo` said "Removed".
   let rowScope = rowScopeOf(plugin, projectId)
   if (!plugin && !(await repo.get(userId, projectId, input.name))) {
@@ -54,9 +57,10 @@ export async function removePlugin(
   await repo.remove(userId, rowScope, input.name)
   // An older build kept a user-scope plugin's options in a per-project row as well.
   if (rowScope !== projectId) await repo.remove(userId, projectId, input.name)
-  // An in-place plugin's folder is the person's: it is not deleted. Anything else only inside
-  // its root.
-  if (plugin && !plugin.inPlaceInstall) {
+  // An in-place plugin's folder is the person's: it is not deleted. A cached version is orphaned,
+  // so whatever started from it keeps its files for 14 days. Anything else only inside its root.
+  if (plugin?.cachedInstall) await releaseCachedInstall(home, plugin.cachedInstall.id, plugin.dir)
+  else if (plugin && !plugin.inPlaceInstall) {
     await removeIfUnderRoot(plugin.dir, pluginInstallRoot(plugin.scope, cwd, home))
   }
   await removeDataIfLastCopy({

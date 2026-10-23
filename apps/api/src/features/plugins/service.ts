@@ -59,6 +59,13 @@ import {
 } from './service-lifecycle'
 import { removePlugin } from './service-remove'
 import { inPlaceInstallFor, inPlacePublication } from './install-in-place'
+import { assertNameNotBuiltin, assertNotBuiltin, BUILTIN_ORIGIN } from './builtin-plugins'
+import {
+  claimCachedRecord,
+  existingVersion,
+  releaseCachedCopiesOf,
+  versionedInstallFor,
+} from './install-versioned'
 
 // Repo-clone + tree-copy install primitives live in ./install-helpers; re-exported
 // here so existing importers of `./service` keep their import surface unchanged.
@@ -106,9 +113,11 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
   ): Promise<PluginRecord> => {
     const resolvedConfig = resolvePluginConfig(plugin.manifest, scalarConfig(state?.config))
     let error = plugin.error
+    const validationNotes = plugin.shadowNotes ?? []
     const loadBlocked = pluginLoadBlockReason(plugin)
     if (loadBlocked) error = error ? `${error}; ${loadBlocked}` : loadBlocked
     const validation = await validatePluginFull(plugin, { config: resolvedConfig })
+    if (validationNotes.length) validation.warnings.push(...validationNotes)
     return {
       name: plugin.manifest.name,
       displayName: plugin.manifest.displayName,
@@ -122,7 +131,8 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       scope: plugin.scope,
       dir: plugin.dir,
       ...(plugin.inPlaceInstall ? { loadsInPlace: true } : {}),
-      source: state?.source ?? 'local',
+      source: plugin.builtin ? BUILTIN_ORIGIN : (state?.source ?? 'local'),
+      ...(plugin.builtin ? { builtin: true } : {}),
       enabled,
       ...(awaitingConsent ? { awaitingConsent } : {}),
       provides: plugin.provides,
@@ -207,17 +217,20 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
     userId: string,
     input: { name: string; projectId?: string | null },
     opts: { refreshMarketplace: boolean },
-  ): Promise<PluginRecord> =>
-    reinstallFromSource({
+  ): Promise<PluginRecord> => {
+    const plugin = await findPlugin(userId, input.name, input.projectId ?? '')
+    assertNotBuiltin(plugin, 'update')
+    return reinstallFromSource({
       repo,
       userId,
       name: input.name,
       projectId: input.projectId ?? '',
-      plugin: await findPlugin(userId, input.name, input.projectId ?? ''),
+      plugin,
       registryDeps: opts.refreshMarketplace ? registryDeps : null,
       install: (source, projectId) =>
         service.install(userId, { source, projectId }, { replace: true }),
     })
+  }
 
   const service: PluginService = {
     listOutputStyles: (userId, opts) =>
@@ -372,7 +385,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
         warn: (message) => deps.logger?.warn(message),
       }),
 
-    async install(userId, input, opts?: { replace?: boolean }) {
+    async install(userId, input, opts) {
       const scope: 'global' | 'project' = input.projectId ? 'project' : 'global'
       const projectId = input.projectId ?? ''
       const cwd = projectId ? await cwdFor(userId, projectId) : null
@@ -403,6 +416,28 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       let depInstall: PreparedDependencyInstall | null = null
       // From a local-folder marketplace, a Claude Code plugin loads from that folder, never written.
       const inPlace = await inPlaceInstallFor(resolvedMarket, scope, installRoot)
+      // A user-scope copy from a marketplace goes into the version cache (`install-versioned.ts`).
+      const versioned = await versionedInstallFor({
+        resolved: resolvedMarket,
+        inPlace,
+        scope,
+        home,
+      })
+      if (versioned) {
+        // Claude Code computes the version again and leaves the copy alone when it is the same.
+        const current = await existingVersion(home, versioned, replace)
+        const installed = current ? await findPlugin(userId, versioned.plugin, projectId) : null
+        if (installed?.cachedInstall?.id === versioned.id) {
+          const state = await repo.get(userId, '', installed.manifest.name)
+          const record = await toRecord(
+            installed,
+            await hydrateSecretOption(userId, state),
+            await verdictFor(userId, installed),
+          )
+          return { ...record, upToDate: true }
+        }
+      }
+      opts?.onPhase?.('installing')
       // Validate the actual copied tree before it becomes discoverable. Marketplace
       // overlays belong to preparation too: their failures must preserve the live tree.
       const prepare = async (directory: string) => {
@@ -413,6 +448,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
           ? await inPlace.load(projectId)
           : await loadManifest(directory, scope, projectId)
         if (candidate.error) throw new InvalidRequestError('plugin_invalid', candidate.error)
+        await assertNameNotBuiltin(candidate.manifest.name)
         installNotes.push(
           ...(candidate.manifestIssues ?? []).map((found) => `${found.path}: ${found.message}`),
         )
@@ -441,6 +477,15 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
             installRoot,
             parent: inPlace ? { ...parent, inPlace: true } : parent,
             ...inPlacePublication(inPlace, scope, installRoot, projectId),
+            ...(versioned
+              ? {
+                  versioned: {
+                    root: versioned.root,
+                    name: versioned.version,
+                    claim: () => claimCachedRecord(home, versioned, now),
+                  },
+                }
+              : {}),
             // A marketplace install records its canonical `<plugin>@<marketplace>` reference.
             source: resolvedMarket
               ? `${resolvedMarket.entry.name}@${resolvedMarket.marketplace}`
@@ -453,6 +498,9 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
             discover: () => discover({ cwd, projectId }),
           }),
       )
+      // A user-scope install that is not a cached copy takes the name from one an earlier
+      // install put in the version cache, which would otherwise keep loading first.
+      if (scope === 'global' && !versioned) await releaseCachedCopiesOf(home, plugin.manifest.name)
       deps.onChanged?.()
       const record = await toRecord(
         plugin,

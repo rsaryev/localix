@@ -39,6 +39,15 @@ export async function publishPluginInstallation(input: {
   loadParent?: (directory: string) => Promise<DiscoveredPlugin>
   /** A user-scope install's in-place record (`install-in-place.ts`), written with the commit. */
   inPlaceClaim?: InPlaceClaim
+  /**
+   * A user-scope marketplace copy goes into the version cache (`install-versioned.ts`): its tree is
+   * published as `<root>/<name>` (one version) and `claim` records it inside the commit.
+   */
+  versioned?: {
+    root: string
+    name: string
+    claim: () => Promise<{ undo: () => Promise<void>; settle: () => Promise<void> }>
+  }
 }): Promise<{ plugin: DiscoveredPlugin; state: CapabilitySourceRecord; warnings: string[] }> {
   const publication = input.dependencies?.publication(input)
   let result:
@@ -63,6 +72,13 @@ export async function publishPluginInstallation(input: {
           input.replace,
         )
       : null
+    let cached: Awaited<ReturnType<NonNullable<typeof input.versioned>['claim']>> | null = null
+    try {
+      cached = (await input.versioned?.claim()) ?? null
+    } catch (error) {
+      await claim?.undo()
+      throw error
+    }
     const write = input.db.transaction().execute(async (transaction) => {
       const repo = input.stores.sources(transaction, 'plugin', input.now)
       const dependencySources = (await publication?.write(repo)) ?? []
@@ -112,10 +128,12 @@ export async function publishPluginInstallation(input: {
       return saved
     })
     const state = await write.catch(async (error: unknown) => {
+      await cached?.undo()
       await claim?.undo()
       throw error
     })
     await claim?.settle()
+    await cached?.settle()
     result = { plugin, state, warnings }
   }
   // A discovered drop-in is user-owned in place. Only dependency trees are published for it.
@@ -123,14 +141,16 @@ export async function publishPluginInstallation(input: {
   try {
     await publishExtensionTrees({
       installRoot: input.installRoot,
-      // A plugin used where it is publishes no tree of its own, but still holds its name.
-      ...(input.parent.inPlace ? { hold: [input.parent.name] } : {}),
+      // A plugin used where it is publishes no tree of its own, but still holds its name; so does
+      // one whose tree goes into the version cache.
+      ...(input.parent.inPlace || input.versioned ? { hold: [input.parent.name] } : {}),
       trees: [
         ...(!input.parent.inPlace
           ? [
               {
                 source: input.parent.directory,
-                name: input.parent.name,
+                name: input.versioned?.name ?? input.parent.name,
+                ...(input.versioned ? { root: input.versioned.root } : {}),
                 replace: input.replace,
                 linkRoot: input.parent.linkRoot,
                 prepare: input.prepare,

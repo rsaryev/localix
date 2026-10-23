@@ -5,6 +5,7 @@ import { rmrf } from '../ext/install-tree'
 import { marketplaceNameProblem } from './claude-code-marketplace'
 import type { Marketplace } from './marketplace'
 import {
+  keptPreferences,
   readKnownMarketplaces,
   readMarketplace,
   writeKnownMarketplaces,
@@ -78,7 +79,7 @@ export async function addMarketplaceInPlace(
   await assertRegistrable(market, source, root)
   const known = await readKnownMarketplaces(root)
   const previous = known[market.name]
-  known[market.name] = { source, installLocation }
+  known[market.name] = { ...keptPreferences(previous), source, installLocation }
   await writeKnownMarketplaces(root, known)
   if (previous && resolve(previous.installLocation) !== installLocation)
     await removeOwnedMarketplaceDir(root, previous.installLocation).catch(() => {})

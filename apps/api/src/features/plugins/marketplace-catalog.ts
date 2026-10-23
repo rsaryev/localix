@@ -22,6 +22,20 @@ import type { MarketplaceRegistryDeps } from './marketplace-registry'
 export interface KnownMarketplace {
   source: MarketplaceSource
   installLocation: string
+  /** When the listing was last fetched (Claude Code's `lastUpdated`). */
+  lastUpdated?: string
+  /**
+   * Whether the background pass refreshes it and updates its plugins (Claude Code's `autoUpdate`,
+   * which the Marketplaces toggle writes). Absent: the default (`marketplace-auto-update.ts`).
+   */
+  autoUpdate?: boolean
+  /** The commit the listing was fetched at, for a git source. */
+  gitCommitSha?: string
+}
+
+/** What a re-registration of the same marketplace keeps of its record: the person's choices. */
+export function keptPreferences(previous: KnownMarketplace | undefined): { autoUpdate?: boolean } {
+  return typeof previous?.autoUpdate === 'boolean' ? { autoUpdate: previous.autoUpdate } : {}
 }
 
 const knownFile = (root: string): string => join(root, 'known.json')

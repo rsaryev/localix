@@ -73,8 +73,13 @@ export const pluginRecordSchema = z.object({
    * loads in place, so an edit there takes effect at `/plugin reload` with no update.
    */
   loadsInPlace: z.boolean().optional(),
-  /** Where it came from: 'local' (dropped in / picked dir) or a git URL. */
+  /**
+   * Where it came from: 'local' (dropped in / picked dir), a git URL, `<plugin>@<marketplace>`, or
+   * 'builtin' for a plugin shipped inside Localix.
+   */
   source: z.string(),
+  /** Shipped inside Localix: it can be switched off, but not uninstalled or updated on its own. */
+  builtin: z.boolean().optional(),
   enabled: z.boolean(),
   /**
    * Installed, not denied, and not running: nobody has allowed it yet.
@@ -90,6 +95,8 @@ export const pluginRecordSchema = z.object({
   error: z.string().optional(),
   /** Structured manifest/command/skill validation outcome surfaced in the UI. */
   validation: pluginValidationSchema,
+  /** On an update: the computed version is the one installed, so nothing was installed. */
+  upToDate: z.boolean().optional(),
   /** On an install: the dependencies it installed alongside, which the success message names. */
   installedDependencies: z.array(z.string()).optional(),
 })

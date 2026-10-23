@@ -113,10 +113,15 @@ export interface PluginService {
    * value in plain text, a user-scope plugin's per-project copy). Run at boot; idempotent.
    */
   reconcileStoredConfig(userId: string): Promise<number>
+  /**
+   * Install from a source. `onPhase('installing')` is told once the source is fetched and the files
+   * are being written (an update's progress row moves on). With `replace`, a marketplace copy whose
+   * computed version is the one installed installs nothing and comes back `upToDate`.
+   */
   install(
     userId: string,
     input: Omit<InstallPluginRequest, 'enable'> & { enable?: boolean },
-    opts?: { replace?: boolean },
+    opts?: { replace?: boolean; onPhase?: (phase: 'installing') => void },
   ): Promise<PluginRecord>
   /** Validate a plugin folder in place, installed or not (`claude plugin validate <path>`). */
   validatePath(

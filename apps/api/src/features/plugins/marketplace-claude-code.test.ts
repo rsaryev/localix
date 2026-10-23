@@ -36,7 +36,7 @@ const catalog = (plugins: unknown[], name = 'acme-tools') =>
 
 /** Registry deps rooted in the test dir; clones record their arguments and copy `upstream`. */
 function registry(upstream?: string) {
-  const clones: Array<{ url: string; ref?: string; sparse?: string }> = []
+  const clones: Array<{ url: string; ref?: string; sparse?: string | string[] }> = []
   const deps: MarketplaceRegistryDeps = {
     root: join(dir(), 'registry'),
     cloneRepo: async (url, dest, ref, sparse) => {

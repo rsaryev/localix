@@ -147,3 +147,23 @@ test('duplicate destinations reject before preparation or commit', async () => {
   expect(await f.version('a')).toBe('old')
   expect(await fs.readdir(f.installRoot)).toEqual(['a', 'b'])
 })
+
+test('a tree may name its own destination root; a failed commit leaves nothing there', async () => {
+  const f = await fixture()
+  const versions = join(f.root, 'cache', 'market', 'a')
+  const trees = [{ ...f.trees[0]!, name: '2.0.0', root: versions }, f.trees[1]!]
+  await expect(
+    publishExtensionTrees({
+      installRoot: f.installRoot,
+      trees,
+      commit: async (directories) => {
+        expect(directories).toEqual([join(versions, '2.0.0'), join(f.installRoot, 'b')])
+        throw new Error('transaction failed')
+      },
+    }),
+  ).rejects.toThrow('transaction failed')
+  expect(await fs.readdir(versions)).toEqual([])
+  const published = await publishExtensionTrees({ installRoot: f.installRoot, trees })
+  expect(published[0]).toBe(join(versions, '2.0.0'))
+  expect(await fs.readFile(join(versions, '2.0.0', 'version'), 'utf8')).toBe('new')
+})

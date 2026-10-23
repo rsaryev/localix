@@ -1,4 +1,5 @@
 import { promises as fs } from 'node:fs'
+import { join } from 'node:path'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 
@@ -13,8 +14,11 @@ const execFileAsync = promisify(execFile)
 export interface GitCheckoutTarget {
   /** A branch, a tag, or a commit SHA (full or abbreviated). Absent: the default branch. */
   ref?: string
-  /** Check out only this directory (Claude Code's `git-subdir` sparse checkout). */
-  sparse?: string
+  /**
+   * Check out only this directory (Claude Code's `git-subdir` sparse checkout), or these paths (a
+   * marketplace's `sparsePaths`).
+   */
+  sparse?: string | string[]
 }
 
 const GIT_TIMEOUT_MS = 120_000
@@ -31,11 +35,42 @@ const REPO_LOCATION_VARS = [
   'GIT_PREFIX',
 ]
 
-async function git(args: string[], cwd?: string): Promise<void> {
+async function git(args: string[], cwd?: string): Promise<string> {
   // Never prompt: a host without stored credentials fails instead of waiting for a password.
   const env = childEnvNonInteractive()
   for (const key of REPO_LOCATION_VARS) delete env[key]
-  await execFileAsync('git', args, { cwd, timeout: GIT_TIMEOUT_MS, env, windowsHide: true })
+  const { stdout } = await execFileAsync('git', args, {
+    cwd,
+    timeout: GIT_TIMEOUT_MS,
+    env,
+    windowsHide: true,
+  })
+  return String(stdout)
+}
+
+/**
+ * The commit a checkout Localix made is at, or undefined. Only the checkout's own `.git` is read,
+ * never a repository that encloses it (Claude Code does not take a version from one either).
+ */
+export async function readHeadCommit(dir: string): Promise<string | undefined> {
+  if (!(await fs.stat(join(dir, '.git')).catch(() => null))) return undefined
+  try {
+    const sha = (await git(['rev-parse', 'HEAD'], dir)).trim()
+    return /^[0-9a-f]{40}$/i.test(sha) ? sha : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/** The commit `ref` (the default branch when absent) points at on the remote, or undefined. */
+export async function readRemoteCommit(url: string, ref?: string): Promise<string | undefined> {
+  try {
+    const out = await git(['ls-remote', '--', url, ref ?? 'HEAD'])
+    const sha = out.split(/\s+/)[0] ?? ''
+    return /^[0-9a-f]{40}$/i.test(sha) ? sha : undefined
+  } catch {
+    return undefined
+  }
 }
 
 /**
@@ -59,7 +94,8 @@ export async function fetchGitTree(
     if (target.sparse) {
       await git(['config', 'remote.origin.promisor', 'true'], dest)
       await git(['config', 'remote.origin.partialclonefilter', 'blob:none'], dest)
-      await git(['sparse-checkout', 'set', '--', target.sparse], dest)
+      const paths = Array.isArray(target.sparse) ? target.sparse : [target.sparse]
+      await git(['sparse-checkout', 'set', '--', ...paths], dest)
     }
     const want = target.ref ?? 'HEAD'
     try {
