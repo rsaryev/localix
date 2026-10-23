@@ -11,6 +11,7 @@ bun run dev                  # native desktop app (Tauri)
 bun run dev:workspace        # API and UI dev servers without the desktop shell
 bun run test                 # every workspace's unit tests, the scripts workspace included
 bun run test:integration     # real processes, PTYs and watchers, every workspace
+bun run check:size           # product code under the 500,000-line budget (comments not counted)
 bun run type-check           # tsc across workspaces (`check:tests` covers test files)
 bun run lint:changed         # oxlint on files that differ from main, the fast local loop
 bun run format               # oxfmt --write

@@ -40,6 +40,7 @@ jobs:
             run: |
               bun run type-check
               bun run check:tests
+              bun run check:size
           - check: unit tests
             cache: unit
             run: bun run test

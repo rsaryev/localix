@@ -33,7 +33,15 @@ type Workflow = {
 const ci = Bun.YAML.parse(read('.github/workflows/ci.yml')) as Workflow
 const release = Bun.YAML.parse(read('.github/workflows/release.yml')) as Workflow
 const landing = Bun.YAML.parse(read('.github/workflows/landing.yml')) as Workflow
-const gates = ['type-check', 'check:tests', 'test', 'test:integration', 'check:bundle', 'coverage']
+const gates = [
+  'type-check',
+  'check:tests',
+  'check:size',
+  'test',
+  'test:integration',
+  'check:bundle',
+  'coverage',
+]
 const slices = ci.jobs.app.strategy?.matrix.include ?? []
 /** Every `bun run <script>` the app matrix runs, slice by slice. */
 const sliceCommands = slices.flatMap((slice) =>

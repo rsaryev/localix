@@ -1,0 +1,16 @@
+{
+  "limit": 500000,
+  "exclude": [
+    "**/node_modules/**",
+    "**/vendor/**",
+    "**/dist/**",
+    "**/generated/**",
+    "**/testing/**",
+    "**/fixtures/**",
+    "**/__fixtures__/**",
+    "**/*.test-utils.ts",
+    "**/*.test-utils.tsx",
+    "**/test-harness.ts",
+    "**/test-preload.ts"
+  ]
+}

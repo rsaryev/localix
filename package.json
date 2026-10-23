@@ -37,6 +37,7 @@
     "lint:react-doctor": "oxlint -c config/oxlint-react-doctor.json apps/api/src apps/desktop-tauri/scripts apps/landing/src apps/ui/src packages plugins scripts",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
+    "check:size": "bun scripts/code-budget.mjs",
     "check:public": "bun scripts/check-public-repo.mjs",
     "check:architecture": "bun scripts/check-architecture.mjs",
     "check:docs": "bun scripts/check-doc-refs.mjs",

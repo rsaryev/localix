@@ -59,6 +59,14 @@ Use `packages/kit` for UI. First read `.claude/skills/localix-ui-kit/SKILL.md` a
 `docs/internals/visual-system.md`; repository components and tokens take precedence over generic
 skills.
 
+## Code budget
+
+Product code stays under **500,000 lines**, counted by `bun run check:size` (CI fails above it).
+Comments and blank lines do not count, so explaining code costs nothing; tests, test helpers,
+generated and vendored code do not count either. The limit is in `config/code-budget.json` and is
+not raised. Keep under it by deleting dead code, duplication and code another package already
+provides; a change that adds code makes room for it. Never compress code or strip comments to fit.
+
 ## Tests first (TDD)
 
 Every change is red, green, refactor:
