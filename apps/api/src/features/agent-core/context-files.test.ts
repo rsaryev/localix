@@ -185,11 +185,53 @@ describe('@import expansion', () => {
     expect(files[0].content).toContain('imported:')
   })
 
-  test('resolves a ~/ home import', async () => {
+  test('resolves a ~/ home import from the user-global context', async () => {
     await fs.writeFile(join(home, 'shared.md'), 'HOME SHARED')
-    await writeContext(root, 'prefs @~/shared.md')
+    await writeContext(home, 'prefs @~/shared.md')
     const files = await discover(root)
     expect(files[0].content).toContain('HOME SHARED')
+  })
+
+  // A checkout must not pull files from outside itself into the prompt: an import from a
+  // project file reaches only files inside the project, and anything else stays a marker.
+  describe('project files import nothing from outside the project', () => {
+    const SECRET = 'aws_secret_access_key=DUMMYSECRET'
+    beforeEach(async () => {
+      await fs.mkdir(join(home, '.aws'))
+      await fs.writeFile(join(home, '.aws', 'credentials'), SECRET)
+    })
+    const leaked = async () =>
+      (await discover(root)).some((file) => file.content.includes('DUMMYSECRET'))
+
+    test('a ~/ import in AGENTS.md', async () => {
+      await fs.writeFile(join(root, 'AGENTS.md'), 'ctx\n@~/.aws/credentials')
+      expect(await leaked()).toBe(false)
+      const [file] = await discover(root)
+      expect(file.content).toContain('import skipped')
+    })
+
+    test('an absolute import in .localix/context.md', async () => {
+      await writeContext(root, `@${join(home, '.aws', 'credentials')}`)
+      expect(await leaked()).toBe(false)
+    })
+
+    test('a relative import through a symlink inside the project', async () => {
+      await fs.symlink(join(home, '.aws', 'credentials'), join(root, 'creds.md'))
+      await fs.writeFile(join(root, 'CLAUDE.md'), '@creds.md')
+      expect(await leaked()).toBe(false)
+    })
+
+    test('.localix/context.md itself as a symlink out of the project', async () => {
+      await fs.mkdir(join(root, '.localix'))
+      await fs.symlink(join(home, '.aws', 'credentials'), join(root, '.localix', 'context.md'))
+      expect(await leaked()).toBe(false)
+    })
+
+    test('a rule file as a symlink out of the project', async () => {
+      await fs.mkdir(join(root, '.localix', 'rules'), { recursive: true })
+      await fs.symlink(join(home, '.aws', 'credentials'), join(root, '.localix', 'rules', 'x.md'))
+      expect(await leaked()).toBe(false)
+    })
   })
 
   test('skips imports inside code spans and fenced blocks', async () => {

@@ -50,6 +50,12 @@ export interface DiscoverContextEnv {
 const readNamed = (path: string): Promise<string | null> =>
   readCappedFile(path, { maxChars: MAX_CHARS_PER_FILE, truncationMarker: TRUNCATION_MARKER })
 
+const realPathOf = (path: string): Promise<string | undefined> =>
+  fs.realpath(path).then(
+    (real) => real,
+    () => undefined,
+  )
+
 async function isGitRoot(dir: string): Promise<boolean> {
   try {
     await fs.stat(join(dir, '.git'))
@@ -81,14 +87,28 @@ class ContextCollector {
       : this.ruleCount >= MAX_RULE_FILES
   }
 
-  /** Read, import-expand, dedupe, budget, and push a file. Returns true if added. */
-  async add(path: string, kind: 'context' | 'rule', rawOverride?: string): Promise<boolean> {
+  /**
+   * Read, import-expand, dedupe, budget, and push a file. Returns true if added. A project file
+   * (`confineTo`, the project root) must really lie inside the project, symlinks followed, and
+   * its imports stay there too.
+   */
+  async add(
+    path: string,
+    kind: 'context' | 'rule',
+    rawOverride?: string,
+    confineTo?: string,
+  ): Promise<boolean> {
     if (this.capReached(kind)) return false
     const abs = resolve(path)
     if (this.seenPaths.has(abs)) return false
+    const root = confineTo ? await realPathOf(confineTo) : undefined
+    if (confineTo && (!root || !isPathWithin(root, (await realPathOf(abs)) ?? ''))) return false
     const raw = rawOverride ?? (await readNamed(abs))
     if (!raw) return false
-    const expanded = await expandImports(raw, dirname(abs), { homeDir: this.env?.homeDir })
+    const expanded = await expandImports(raw, dirname(abs), {
+      homeDir: this.env?.homeDir,
+      ...(root ? { confineTo: root } : {}),
+    })
     const content = expanded.trim()
     if (!content) return false
     if (this.seenContent.has(content)) {
@@ -119,9 +139,10 @@ async function collectRules(
   rulesDir: string,
   projectRoot: string,
   collector: ContextCollector,
+  confineTo?: string,
 ): Promise<void> {
   for (const rule of await discoverRules(rulesDir, projectRoot, readNamed)) {
-    await collector.add(rule.path, 'rule', rule.body)
+    await collector.add(rule.path, 'rule', rule.body, confineTo)
   }
 }
 
@@ -142,15 +163,17 @@ async function collectDir(
         fs.realpath(projectRoot),
         fs.realpath(join(dir, name)),
       ])
-      if (isPathWithin(root, contract)) await collector.add(join(dir, name), 'context')
+      if (isPathWithin(root, contract)) {
+        await collector.add(join(dir, name), 'context', undefined, projectRoot)
+      }
       break
     } catch {
       // Absent: try the next name; none leaves native Localix context discovery intact.
     }
   }
   const localixDir = join(dir, '.localix')
-  await collector.add(join(localixDir, 'context.md'), 'context')
-  await collectRules(join(localixDir, 'rules'), projectRoot, collector)
+  await collector.add(join(localixDir, 'context.md'), 'context', undefined, projectRoot)
+  await collectRules(join(localixDir, 'rules'), projectRoot, collector, projectRoot)
 }
 
 /**

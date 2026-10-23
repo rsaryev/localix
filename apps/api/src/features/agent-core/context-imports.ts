@@ -1,5 +1,7 @@
+import { realpath, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { isPathWithin } from '../../lib/path-containment'
 
 import { readCappedFile } from './context-read'
 
@@ -14,7 +16,8 @@ import { readCappedFile } from './context-read'
  * current import stack is left literal). Each imported file is size-capped.
  *
  * Paths resolve relative to the importing file's directory, or as an absolute
- * path, or under `~/` (the user's home directory) — never relative to cwd.
+ * path, or under `~/` (the user's home directory) — never relative to cwd. A project file's
+ * imports stay inside the project (see {@link ImportEnv.confineTo}).
  */
 export const MAX_IMPORT_DEPTH = 5
 export const MAX_IMPORT_CHARS = 20_000
@@ -24,7 +27,29 @@ const IMPORT_TRUNCATION = '\n[... truncated: imported file exceeds the character
 export interface ImportEnv {
   /** Override for the user's home directory (test seam). Defaults to os.homedir(). */
   homeDir?: string
+  /**
+   * The real path of the project an importing file belongs to. Set, every import (at any depth)
+   * must resolve, symlinks followed, inside it; one that does not stays a marker, never content.
+   * A checkout must not pull `~/.aws/credentials` into the prompt with one line.
+   */
+  confineTo?: string
 }
+
+/** The real path of an import target, when it lies inside `root` (itself a real path). */
+async function realWithin(path: string, root: string): Promise<string | null> {
+  try {
+    const real = await realpath(path)
+    return isPathWithin(root, real) ? real : null
+  } catch {
+    return null
+  }
+}
+
+const isFile = (path: string): Promise<boolean> =>
+  stat(path).then(
+    (s) => s.isFile(),
+    () => false,
+  )
 
 /** Resolve an `@`-import spec against the importing file's directory. */
 function resolveImportPath(spec: string, baseDir: string, home: string): string | null {
@@ -76,7 +101,7 @@ export async function expandImports(
   env?: ImportEnv,
 ): Promise<string> {
   const home = env?.homeDir ?? homedir()
-  return expand(content, baseDir, home, [])
+  return expand(content, baseDir, home, [], env?.confineTo)
 }
 
 async function expand(
@@ -84,6 +109,7 @@ async function expand(
   baseDir: string,
   home: string,
   stack: string[],
+  confineTo: string | undefined,
 ): Promise<string> {
   if (stack.length >= MAX_IMPORT_DEPTH) return content
 
@@ -134,14 +160,20 @@ async function expand(
         // Cycle — leave the reference literal.
         continue
       }
-      const body = await readCapped(abs)
-      if (body == null) continue
+      const target = confineTo ? await realWithin(abs, confineTo) : abs
+      const body = target ? await readCapped(target) : null
+      // Outside the project: say so only for a file that exists, so prose `@mentions` stay prose.
+      if (body == null && (target || !(await isFile(abs)))) continue
       spec = trimmed || spec
       matched = true
       // Keep the text up to and including the reference, drop nothing from prose.
       rebuilt += line.slice(cursor, m.index + m[1].length) + `@${spec}`
       cursor = m.index + m[1].length + 1 + spec.length
-      const expandedBody = await expand(body, dirname(abs), home, [...stack, abs])
+      if (body == null) {
+        inlined.push(`\n<!-- import skipped: ${abs} is outside the project -->`)
+        continue
+      }
+      const expandedBody = await expand(body, dirname(abs), home, [...stack, abs], confineTo)
       inlined.push(`\n<!-- imported: ${abs} -->\n${expandedBody}\n<!-- end import: ${abs} -->`)
     }
     if (matched) {
