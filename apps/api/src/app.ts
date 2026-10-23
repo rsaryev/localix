@@ -8,6 +8,7 @@ import { createHealthRoutes } from './health'
 import { errorMessage } from './lib/errors'
 import { createRequestBoundary } from './lib/request-boundary'
 import { escapeHtml } from './lib/html-escape'
+import { createUiStaticHandler } from './lib/ui-static'
 import {
   createLocalOriginBoundary,
   createLocalOriginPolicy,
@@ -433,17 +434,7 @@ h2{margin:0 0 .5rem}p{margin:0;color:#888;font-size:.9rem}</style></head>
         hint: 'Build the UI first: `cd apps/ui && bun run build` (or build the desktop app: `bun run build:desktop`).',
       })
     }
-    routes.use('*', async (c) => {
-      const reqPath = c.req.path === '/' ? '/index.html' : c.req.path
-      const requested = Bun.file(join(uiRoot, reqPath))
-      // SPA fallback — let the client-side router handle unknown paths.
-      const file = (await requested.exists()) ? requested : Bun.file(join(uiRoot, 'index.html'))
-      // Set Content-Type explicitly: Bun infers it lazily on `new Response(file)`,
-      // but the upstream cors() middleware clones the response and drops that lazy
-      // header, leaving assets (JS/CSS) typeless — which makes the browser refuse to
-      // execute the module script and renders a blank page.
-      return new Response(file, { headers: { 'Content-Type': file.type } })
-    })
+    routes.use('*', createUiStaticHandler(uiRoot))
   }
 
   routes.notFound((c) => jsonError(c, 404, 'not_found', 'Route not found'))
