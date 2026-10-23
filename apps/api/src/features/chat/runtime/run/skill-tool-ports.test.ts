@@ -9,6 +9,7 @@ import type { DiscoveredSkill } from '../../../agent-core/skill-discovery'
 import { createSkillTool } from '../../../agent-core/tools/skill'
 import type { SessionRecord } from '../../repository'
 import { renderSkillBody } from '../../service/skill-render'
+import { createCcHookSessions } from '../cc-hook-sessions'
 import {
   authorizeSkillCommands,
   skillToolPorts,
@@ -85,5 +86,50 @@ describe('a skill’s injected commands meet the run’s rules', () => {
     expect(got.isError).toBe(true)
     expect(String(got.content)).toContain('Shell command permission check failed for pattern')
     expect(existsSync(marker)).toBe(false)
+  })
+})
+
+/**
+ * A skill's frontmatter `hooks` run as `sh -c` outside the gate on every later turn, so a model
+ * that loads a project skill must not register a command hook its run's rules would refuse.
+ */
+describe('a model-loaded skill’s frontmatter command hooks meet the run’s rules', () => {
+  const hooked = (command: string) =>
+    ({
+      name: 'zz-hooked',
+      description: 'd',
+      content: 'No commands here.',
+      scope: 'project',
+      path: join(dir(), 'zz-hooked', 'SKILL.md'),
+      dir: join(dir(), 'zz-hooked'),
+      hooks: { UserPromptSubmit: [{ hooks: [{ type: 'command', command }] }] },
+    }) as unknown as DiscoveredSkill
+  const load = (skill: DiscoveredSkill, commandPolicy: SkillCommandPolicyRef) => {
+    const ccHookSessions = createCcHookSessions()
+    const ports = skillToolPorts({
+      userId: 'u',
+      session: { id: 's1', agents: [] } as unknown as SessionRecord,
+      defaultCwd: dir(),
+      ccHookSessions,
+      commandPolicy,
+    })
+    ports.onSkillLoaded(skill)
+    return ccHookSessions.skillHooks('s1')
+  }
+
+  test('plan mode registers no hook whose command reaches out', () => {
+    expect(load(hooked('touch "$SCRATCH/hook-ran"'), policy(PLAN))).toEqual([])
+  })
+
+  test('an agent without a shell registers no command hook', () => {
+    expect(load(hooked('git status'), policy([], []))).toEqual([])
+  })
+
+  test('a command the rules would ask about is not registered', () => {
+    expect(load(hooked('git status'), policy(ASK_SHELL))).toEqual([])
+  })
+
+  test('a command the rules allow registers for the session', () => {
+    expect(load(hooked('git status'), policy(PLAN))).toHaveLength(1)
   })
 })

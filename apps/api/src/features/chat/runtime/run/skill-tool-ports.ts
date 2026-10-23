@@ -44,6 +44,27 @@ export function authorizeSkillCommands(
   }
 }
 
+/** Each `type: command` handler of a raw frontmatter `hooks` map, as the shell would run it. */
+function commandHookTexts(raw: unknown): string[] {
+  const texts: string[] = []
+  const isRecord = (v: unknown): v is Record<string, unknown> =>
+    typeof v === 'object' && v !== null && !Array.isArray(v)
+  if (!isRecord(raw)) return texts
+  for (const groups of Object.values(raw)) {
+    if (!Array.isArray(groups)) continue
+    for (const group of groups) {
+      if (!isRecord(group) || !Array.isArray(group.hooks)) continue
+      for (const handler of group.hooks) {
+        if (!isRecord(handler)) continue
+        if ((typeof handler.type === 'string' ? handler.type : 'command') !== 'command') continue
+        const args = Array.isArray(handler.args) ? handler.args.map(String) : []
+        texts.push([String(handler.command ?? ''), ...args].join(' ').trim())
+      }
+    }
+  }
+  return texts
+}
+
 /** The plugin a skill came from, as its commands and hooks see it. */
 function skillPlugin(skill: DiscoveredSkill) {
   if (!skill.pluginName || !skill.pluginRoot) return undefined
@@ -59,7 +80,7 @@ function skillPlugin(skill: DiscoveredSkill) {
  * runs as one the person types as `/name` does. Its content renders the same way (commands,
  * arguments, `${CLAUDE_*}`), a plugin monitor waiting for it starts, and its frontmatter `hooks`
  * register for the rest of the session (Claude Code: "registers them when you or Claude invoke the
- * skill"), from the session's next run on.
+ * skill"), from the session's next run on, once their commands pass the run's rules.
  */
 export function skillToolPorts(input: {
   userId: string
@@ -84,6 +105,15 @@ export function skillToolPorts(input: {
       })
       if (!skill.hooks) return
       const plugin = skillPlugin(skill)
+      // A command hook runs as `sh -c` on later turns, outside the gate. Enabling a plugin is
+      // the consent for its hooks; any other skill the model loads (a checkout's, or one it
+      // wrote) registers none unless the run's rules would let the shell run each command.
+      if (!plugin) {
+        const authorize = authorizeSkillCommands(commandPolicy, skill)
+        if (commandHookTexts(skill.hooks).some((command) => authorize(command) !== undefined)) {
+          return
+        }
+      }
       ccHookSessions?.addSkillHooks(session.id, {
         raw: skill.hooks,
         source: 'skill',

@@ -132,6 +132,10 @@ model decision or an explicit user request, not a guaranteed post-run action.
 Token lists accept a YAML list, an inline array, or comma- or space-separated text. Parenthesized
 tool patterns remain one token, so `Bash(git *)` is not split at its space.
 
+When the model loads a skill that no plugin ships, its `hooks` register only if every command hook
+would pass the run's permission rules as a Bash call, the check its `!cmd` lines meet. Plan mode, an
+agent without Bash, or a command the rules would ask about registers none of them.
+
 `keywords` uses comma-separated phrases or a YAML list; spaces within a phrase are preserved.
 Keyword injection has its own 32,000-code-unit body budget and skips already pinned names. It adds
 instructions to the prompt; it does not guarantee that the model follows them or record curator use.
