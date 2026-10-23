@@ -31,7 +31,11 @@ const LAYOUT_LABELS: Record<PluginRecord['layout'], SettingRegistryMetaItem> = {
   },
   'mini-app': {
     label: 'mini app',
-    title: 'A Localix mini app with its plugin: screens, a backend and agent tools',
+    title: 'A Localix mini app (mini-app.json): screens, a backend and agent tools',
+  },
+  decorated: {
+    label: 'plugin with .localix-app',
+    title: 'A plugin and a mini app in one folder, written before they were separated',
   },
   legacy: {
     label: 'legacy manifest',

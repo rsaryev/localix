@@ -6,6 +6,82 @@ const plugin = (json: unknown): ManifestFiles['plugin'] => ({
   json,
 })
 const app = (json: unknown): ManifestFiles['app'] => ({ file: '.localix-app/app.json', json })
+const miniApp = (json: unknown): ManifestFiles['miniApp'] => ({ file: 'mini-app.json', json })
+
+const calories = {
+  name: 'calories',
+  version: '0.1.0',
+  description: 'Logs meals the agent reads from photos.',
+  category: 'utilities',
+  surfaces: ['agent', 'workbench'],
+  backend: './backend/index.ts',
+}
+
+describe('a mini-app.json folder', () => {
+  test('is a mini app on its own: identity, backend, settings, commands and a guide', () => {
+    const composed = composeManifest(
+      {
+        miniApp: miniApp({
+          ...calories,
+          config: { DAILY_GOAL: { type: 'number', default: 2000 } },
+          commands: {
+            log: {
+              description: 'Log a meal',
+              prompt: 'Log this meal: ${meal}',
+              args: [{ name: 'meal', type: 'text' }],
+              featured: true,
+              activateTools: ['calories_log'],
+            },
+          },
+        }),
+      },
+      'calories',
+    )
+    expect(composed.layout).toBe('mini-app')
+    expect(composed.issues).toEqual([])
+    expect(composed.raw).toMatchObject({
+      name: 'calories',
+      version: '0.1.0',
+      description: 'Logs meals the agent reads from photos.',
+      category: 'utilities',
+      tools: './backend/index.ts',
+      guide: './guide.md',
+      config: { DAILY_GOAL: { type: 'number', default: 2000 } },
+      commands: [
+        {
+          name: 'log',
+          description: 'Log a meal',
+          prompt: 'Log this meal: ${meal}',
+          args: [{ name: 'meal', type: 'text' }],
+          featured: true,
+          activateTools: ['calories_log'],
+        },
+      ],
+    })
+  })
+
+  test('loads nothing when the folder also holds a plugin or an older manifest', () => {
+    for (const other of [
+      { plugin: plugin({ name: 'calories' }) },
+      { app: app({ name: 'calories' }) },
+      { legacy: { file: 'plugin.json', json: { name: 'calories' } } },
+    ] satisfies ManifestFiles[]) {
+      const composed = composeManifest({ miniApp: miniApp(calories), ...other }, 'calories')
+      expect(composed.raw).toBeNull()
+      expect(composed.error).toContain('mini-app.json')
+      expect(composed.error).toContain(Object.values(other)[0]!.file)
+    }
+  })
+
+  test('a Claude Code key in mini-app.json is refused by name', () => {
+    const composed = composeManifest(
+      { miniApp: miniApp({ ...calories, skills: './skills' }) },
+      'calories',
+    )
+    expect(composed.raw).toBeNull()
+    expect(composed.error).toContain('skills')
+  })
+})
 
 describe('composeManifest', () => {
   test('a Claude Code plugin loads in place, with Claude Code’s rules made explicit', () => {
@@ -55,7 +131,7 @@ describe('composeManifest', () => {
       },
       'tiles',
     )
-    expect(composed.layout).toBe('mini-app')
+    expect(composed.layout).toBe('decorated')
     expect(composed.raw).toMatchObject({
       name: 'tiles',
       // The plugin keeps its version; the mini app speaks for display.

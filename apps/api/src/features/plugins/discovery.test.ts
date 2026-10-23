@@ -960,13 +960,13 @@ describe('B2 — CC userConfig sensitive → secret promotion', () => {
 })
 
 describe('resolveEntrypoints', () => {
-  it('applies directory defaults (./tools for a mini app, ./skills) when the manifest is silent', async () => {
+  it('applies directory defaults (./tools for a decorated plugin, ./skills) when the manifest is silent', async () => {
     const pluginDir = join(dir, '.localix', 'plugins', 'weather')
     const plugin = await loadManifest(pluginDir, 'project', 'proj1')
     const eps = await resolveEntrypoints(
       pluginDir,
       { name: 'weather', version: '0', description: '' },
-      'mini-app',
+      'decorated',
     )
     expect(eps.toolEntries.some((p) => p.endsWith('tools/index.mjs'))).toBe(true)
     expect(eps.skillDirs.some((p) => p.endsWith('/skills'))).toBe(true)

@@ -5,25 +5,31 @@ import {
 } from '@localixai/claude-plugin'
 import {
   LEGACY_MINI_APP_MANIFEST_FILE,
+  MINI_APP_MANIFEST_FILE,
   legacyMiniAppManifestSchema,
+  miniAppManifestSchema,
   type LegacyMiniAppManifest,
+  type MiniAppManifest,
 } from '@localixai/mini-app-sdk/app-manifest'
 import { summarizeZodIssues } from '@localixai/mini-app-sdk/backend'
 import { fromClaudePlugin } from './claude-code'
 
 /**
  * THE seam between the two extension layers and the runtime (`docs/internals/plugins-and-mini-apps.md`).
- * A folder may hold a plugin (`.claude-plugin/plugin.json`), a mini app (`.localix-app/app.json`),
- * both, or a legacy root `plugin.json`; the loader, catalog and UI read the one runtime manifest
- * composed here. A later split into separate plugin and mini-app records cuts here.
+ * A folder holds a plugin (`.claude-plugin/plugin.json`) or a mini app (`mini-app.json`), never
+ * both (rule X2). Until the mini app runtime is its own feature, both are read into the one runtime
+ * manifest composed here; so are the two layouts written before the split: a plugin decorated by
+ * `.localix-app/app.json`, and a legacy root `plugin.json`.
  */
 
-export type ExtensionLayout = 'plugin' | 'mini-app' | 'legacy'
+export type ExtensionLayout = 'plugin' | 'mini-app' | 'decorated' | 'legacy'
 
 /** A manifest file as read: its parsed JSON, or why it could not be read. */
 export type ManifestFile = { file: string } & ({ json: unknown } | { readError: string })
 
 export interface ManifestFiles {
+  /** `mini-app.json` */
+  miniApp?: ManifestFile
   /** `.claude-plugin/plugin.json` */
   plugin?: ManifestFile
   /** `.localix-app/app.json` */
@@ -50,6 +56,7 @@ const fail = (layout: ExtensionLayout, issues: PluginIssue[], error: string): Co
 })
 
 export function composeManifest(files: ManifestFiles, folderName: string): ComposedManifest {
+  if (files.miniApp) return composeMiniApp(files)
   if (!files.plugin && !files.app) {
     // No manifest at all: a plugin named after its folder, as in Claude Code.
     if (!files.legacy) return { layout: 'plugin', raw: null, issues: [] }
@@ -60,7 +67,7 @@ export function composeManifest(files: ManifestFiles, folderName: string): Compo
       : fail('legacy', [], 'Invalid plugin.json: the manifest is not a JSON object')
   }
   const issues: PluginIssue[] = []
-  const layout: ExtensionLayout = files.app ? 'mini-app' : 'plugin'
+  const layout: ExtensionLayout = files.app ? 'decorated' : 'plugin'
   if (files.legacy && !isImportArtifact(files.legacy))
     issues.push({
       severity: 'warning',
@@ -94,6 +101,39 @@ export function composeManifest(files: ManifestFiles, folderName: string): Compo
       `${LEGACY_MINI_APP_MANIFEST_FILE} names "${app.name}" but its plugin is "${String(plugin.name)}": a mini app and its plugin share one name`,
     )
   return { layout, raw: withMiniApp(plugin ?? { name: app.name }, app), issues }
+}
+
+/** A mini app is its own manifest; a plugin or an older manifest beside it loads nothing (X2). */
+function composeMiniApp(files: ManifestFiles): ComposedManifest {
+  const file = files.miniApp!
+  const beside = [files.plugin, files.app, files.legacy].find((other) => other !== undefined)
+  if (beside)
+    return fail(
+      'mini-app',
+      [],
+      `${MINI_APP_MANIFEST_FILE} and ${beside.file} are both here: a folder is a mini app or a plugin, not both`,
+    )
+  if ('readError' in file) return fail('mini-app', [], file.readError)
+  const parsed = miniAppManifestSchema.safeParse(file.json)
+  if (!parsed.success)
+    return fail(
+      'mini-app',
+      [],
+      `Invalid ${MINI_APP_MANIFEST_FILE}: ${summarizeZodIssues(parsed.error).message}`,
+    )
+  return { layout: 'mini-app', raw: fromMiniApp(parsed.data), issues: [] }
+}
+
+/** The runtime manifest of a mini app: its backend is `tools`, its commands carry their prompts. */
+function fromMiniApp(app: MiniAppManifest): Record<string, unknown> {
+  const { backend, commands, ...rest } = app
+  return {
+    ...rest,
+    ...(backend !== undefined ? { tools: backend } : {}),
+    ...(commands
+      ? { commands: Object.entries(commands).map(([name, command]) => ({ name, ...command })) }
+      : {}),
+  }
 }
 
 /** Display fields the mini app speaks for; the plugin keeps its version, as in Claude Code. */

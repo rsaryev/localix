@@ -133,6 +133,8 @@ export const pluginManifestSchema = miniAppManifestCoreSchema.extend({
    * See {@link pluginPromptSectionSchema}; capped per plugin.
    */
   promptSections: z.array(pluginPromptSectionSchema).max(PROMPT_SECTIONS_MAX_PER_PLUGIN).optional(),
+  /** A mini app's guide for the agent (`mini-app.json` `guide`), relative to its folder. */
+  guide: z.string().optional(),
   /**
    * Sandboxed UI views the plugin contributes, each opened as a work-item TAB.
    * The single UI-surface contract — a legacy `panels` array is promoted into

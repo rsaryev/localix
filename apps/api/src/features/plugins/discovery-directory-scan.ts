@@ -2,7 +2,10 @@ import { join } from 'node:path'
 import { listSubdirs, pathExists } from '../ext/fs-discovery'
 import { isExtensionPublicationArtifact } from '../ext/publish-tree'
 import { COMPONENT_MARKERS } from '@localixai/claude-plugin'
-import { LEGACY_MINI_APP_MANIFEST_FILE } from '@localixai/mini-app-sdk/app-manifest'
+import {
+  LEGACY_MINI_APP_MANIFEST_FILE,
+  MINI_APP_MANIFEST_FILE,
+} from '@localixai/mini-app-sdk/app-manifest'
 import { locateManifest, PLUGIN_MANIFEST_CANDIDATES } from './manifest-locate'
 import { loadManifest } from './manifest-load'
 import { withWorkflowCommands } from './workflow-commands'
@@ -19,6 +22,7 @@ export async function findManifestPath(dir: string): Promise<string | null> {
  * optional). A legacy `tools/` entrypoint counts too. Bare dirs (e.g. a `cache`) are skipped.
  */
 const EXTENSION_MARKERS = [
+  MINI_APP_MANIFEST_FILE,
   ...COMPONENT_MARKERS,
   LEGACY_MINI_APP_MANIFEST_FILE,
   'plugin.json',

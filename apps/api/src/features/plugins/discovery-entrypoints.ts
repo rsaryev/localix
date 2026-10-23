@@ -88,7 +88,7 @@ export interface PluginArtifactDiagnostic {
  * still runs the entrypoint its `tools` field names.
  */
 export const searchesNativeDefaults = (layout: ExtensionLayout | undefined): boolean =>
-  layout === 'mini-app'
+  layout === 'decorated'
 
 /**
  * Resolve a manifest's declared artifacts to absolute paths, applying directory
@@ -146,6 +146,22 @@ export async function resolveEntrypoints(
       }
     }),
   )
+
+  // A mini app holds no Claude Code plugin (rule X2): none of a plugin's default folders or files
+  // mean anything in it. Its commands are inline in mini-app.json and its guide is read on demand.
+  if (layout === 'mini-app') {
+    return {
+      toolEntries,
+      skillDirs: [],
+      mcpServers: {},
+      commandFiles: [],
+      agentFiles: [],
+      hookConfigs: [],
+      lspServers: {},
+      monitors: [],
+      diagnostics,
+    }
+  }
 
   // ---- Skill dirs ----------------------------------------------------------
   // CC path-behavior: `skills` ADDS to the default `./skills` dir (never replaces it).

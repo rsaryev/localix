@@ -117,7 +117,7 @@ export const pluginRecordSchema = z.object({
    * What the folder holds: a `plugin` in the Claude Code format, a `mini-app` with its plugin,
    * or a `legacy` root `plugin.json` (docs/internals/plugins-and-mini-apps.md).
    */
-  layout: z.enum(['plugin', 'mini-app', 'legacy']),
+  layout: z.enum(['plugin', 'mini-app', 'decorated', 'legacy']),
   /**
    * The surfaces the plugin declares it extends (normalized; `['agent']` when the
    * manifest says nothing). Consumers group by it — see `isWorkbenchMiniApp`.
