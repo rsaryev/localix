@@ -12,8 +12,9 @@ import {
   type MarketplaceRegistryDeps,
 } from './marketplace-registry'
 
-// Claude Code's marketplace symlink rules, end to end: a local marketplace is materialized,
-// one of its plugins resolved, then published into an install root.
+// Claude Code's marketplace symlink rules, end to end: a marketplace is materialized (from its
+// catalog file, which copies the folder around it; a local folder is read in place instead), one
+// of its plugins resolved, then published into an install root.
 
 const tempDir = tempDirPerTest('mkt-symlinks-')
 
@@ -51,12 +52,17 @@ async function fixture() {
       throw new Error('no network in this test')
     },
   }
-  return { upstream, deps }
+  // The catalog file of a folder: the marketplace is copied, like a fetched one.
+  const source = {
+    source: 'file' as const,
+    path: join(upstream, '.claude-plugin', 'marketplace.json'),
+  }
+  return { upstream, deps, source }
 }
 
-test('a local marketplace keeps only the links that resolve inside it', async () => {
-  const { upstream, deps } = await fixture()
-  await addMarketplace({ source: 'local', path: upstream }, deps)
+test('a copied marketplace keeps only the links that resolve inside it', async () => {
+  const { deps, source } = await fixture()
+  await addMarketplace(source, deps)
   const installed = join(deps.root!, 'acme')
 
   expect(await fs.readlink(join(installed, 'plugins', 'meta', 'skills', 'foo'))).toBe(
@@ -69,8 +75,8 @@ test('a local marketplace keeps only the links that resolve inside it', async ()
 })
 
 test('installing a marketplace plugin dereferences links into the marketplace', async () => {
-  const { upstream, deps } = await fixture()
-  await addMarketplace({ source: 'local', path: upstream }, deps)
+  const { deps, source } = await fixture()
+  await addMarketplace(source, deps)
   const resolved = await resolveMarketplaceInstall({ plugin: 'meta', marketplace: 'acme' }, deps)
   expect(resolved.linkRoot).toBe(join(deps.root!, 'acme'))
 
@@ -99,8 +105,8 @@ test('installing a marketplace plugin dereferences links into the marketplace', 
 })
 
 test('a marketplace plugin whose path links out of the marketplace is not installed', async () => {
-  const { upstream, deps } = await fixture()
-  await addMarketplace({ source: 'local', path: upstream }, deps)
+  const { deps, source } = await fixture()
+  await addMarketplace(source, deps)
   // A git marketplace is cloned verbatim, so `./plugins/meta` can itself be a link out of it.
   const outside = join(tempDir(), 'outside')
   await write(join(outside, '.claude-plugin', 'plugin.json'), JSON.stringify({ name: 'meta' }))

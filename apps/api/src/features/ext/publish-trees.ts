@@ -47,15 +47,20 @@ const sameIdentity = (left: Stats | null, right: Stats | null) =>
 export async function publishExtensionTrees(input: {
   installRoot: string
   trees: readonly ExtensionTreeInput[]
+  /** Destinations to hold through the commit without publishing a tree to them. */
+  hold?: readonly string[]
   commit?: (directories: readonly string[]) => Promise<void>
 }): Promise<string[]> {
   const names = new Set<string>()
-  for (const tree of input.trees) {
-    if (!tree.name || tree.name === '.' || tree.name === '..' || /[/\\\0]/.test(tree.name))
+  const assertSegment = (name: string) => {
+    if (!name || name === '.' || name === '..' || /[/\\\0]/.test(name))
       throw new UnprocessableError(
         'invalid_extension_name',
         'Extension name must be one path segment',
       )
+  }
+  for (const tree of input.trees) {
+    assertSegment(tree.name)
     if (names.has(tree.name))
       throw new UnprocessableError(
         'duplicate_extension_destination',
@@ -63,10 +68,13 @@ export async function publishExtensionTrees(input: {
       )
     names.add(tree.name)
   }
+  for (const name of input.hold ?? []) assertSegment(name)
   const root = resolve(input.installRoot)
   await fs.mkdir(root, { recursive: true })
   const canonicalRoot = await fs.realpath(root)
-  const keys = [...names].sort().map((name) => join(canonicalRoot, name))
+  const keys = [...new Set([...names, ...(input.hold ?? [])])]
+    .sort()
+    .map((name) => join(canonicalRoot, name))
   const lock = (index: number): Promise<string[]> =>
     index === keys.length
       ? publish(root, input.trees, input.commit)

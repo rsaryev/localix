@@ -103,10 +103,9 @@ export async function validatePluginDir(
 
 /**
  * Before an update re-installs `<plugin>@<marketplace>` from a marketplace added from a local
- * folder (or a catalog file inside one), take a fresh copy of that folder. Claude Code loads such a plugin in place ("Your edits
- * … take effect at the next session start or /reload-plugins, and you don't need to increase the
- * version"); Localix installs from the copy it took when the marketplace was added, which an
- * update used to re-install unchanged. A folder that is gone keeps the copy there is.
+ * folder (or a catalog file inside one), read that folder again. A folder is registered in place,
+ * so this re-reads its catalog (and retires a copy an older build took of it); a catalog file's
+ * marketplace is a copy, which this refreshes. A folder that is gone keeps what there is.
  */
 export async function refreshLocalMarketplace(
   source: string,
@@ -124,7 +123,8 @@ export async function refreshLocalMarketplace(
  * `plugin update`: re-install from the source the plugin was installed from, at the scope of its
  * own row, so a user-scope plugin updated from a project chat stays a user-scope plugin ("updates
  * the plugin at the most specific scope it's installed at"). With `registryDeps`, a plugin from a
- * local-folder marketplace takes a fresh copy of that folder first. Installation owns staging and
+ * local-folder marketplace has that folder read again first; one loading in place is validated
+ * again and keeps loading from the folder. Installation owns staging and
  * rollback; leaving `enable` out keeps the plugin's existing rules.
  */
 export async function reinstallFromSource<R>(input: {

@@ -10,6 +10,10 @@ export function errorCode(err: unknown): string | undefined {
 
 const names = (list: readonly string[]) => list.map((name) => `\`${name}\``).join(', ')
 
+/** Loading.md: "Your edits to the source directory take effect at the next session start or `/reload-plugins`". */
+const IN_PLACE =
+  'It loads in place from that folder, so your edits there take effect at `/plugin reload`, with no update and no version bump.'
+
 /**
  * The reply to `/plugin install`. It says "enabled" only when the plugin is (a
  * `defaultEnabled: false` plugin "is installed but stays off until you turn it on"), and names the
@@ -22,15 +26,27 @@ export function installReply(rec: PluginRecord): string {
   if (!rec.enabled) {
     return [
       `${head}. It starts turned off; run \`/plugin enable ${rec.name}\` to turn it on.`,
+      ...(rec.loadsInPlace ? [IN_PLACE] : []),
       ...(deps.length ? [`Also installed: ${names(deps)}.`] : []),
     ].join(' ')
   }
   const note = rec.provides.hasNativeTools ? ' — it runs native in-process code' : ''
   return [
     `${head} and enabled it${note}.`,
+    ...(rec.loadsInPlace ? [IN_PLACE] : []),
     ...(deps.length ? [`Also installed and enabled: ${names(deps)}.`] : []),
     'Start a new turn to use it.',
   ].join(' ')
+}
+
+/**
+ * The reply to `/plugin update`. A plugin loading in place from a local-folder marketplace has
+ * nothing to fetch: the update checked its files again, and the reply says where it loads from.
+ */
+export function updateReply(rec: PluginRecord): string {
+  if (rec.loadsInPlace)
+    return `\`${rec.name}\` v${rec.version} loads in place from \`${rec.dir}\` and its files check out. Edits there take effect at \`/plugin reload\`; it needs no update.`
+  return `Updated \`${rec.name}\` to v${rec.version}. Run \`/plugin reload\` or start a new turn for it to take effect.`
 }
 
 /**

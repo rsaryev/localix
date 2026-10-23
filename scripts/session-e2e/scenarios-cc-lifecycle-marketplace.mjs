@@ -59,6 +59,9 @@ export const CC_LIFECYCLE_MARKETPLACE_SCENARIOS = [
           /^Removed marketplace `lc-market`.*`mk-solo`/,
         )
         assert.ok(!existsSync(path.join(pluginsDir(rt), 'mk-solo')))
+        // The marketplace was read in place from the person's folder; removing it leaves the folder.
+        assert.ok(existsSync(path.join(dir, '.claude-plugin/marketplace.json')), 'source kept')
+        assert.ok(existsSync(path.join(solo, 'skills/solo/SKILL.md')), 'plugin source kept')
         assert.doesNotMatch(await say('/plugin list'), /mk-solo/)
         assert.ok(!(await probe(rt)).system.includes('MK-SOLO-SKILL'))
         assert.match(
@@ -87,8 +90,6 @@ export const CC_LIFECYCLE_MARKETPLACE_SCENARIOS = [
   },
   {
     name: 'cc-lifecycle: an edit to a plugin in a local-folder marketplace loads at /plugin reload, with no update and no version bump',
-    known:
-      'Localix installs a copy of the plugin into ~/.localix/plugins, so the edit in the marketplace folder never loads; /plugin reload keeps serving MK-IP-V1.',
     async run(rt) {
       const plugins = { 'mk-inplace': { 'skills/inplace/SKILL.md': skill('inplace', 'MK-IP-V1') } }
       await withMarket(rt, 'lc-inplace', plugins, async ({ say, dir }) => {

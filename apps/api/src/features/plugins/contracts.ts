@@ -129,6 +129,11 @@ export const pluginRecordSchema = z.object({
   scope: z.enum(['global', 'project']),
   /** Absolute plugin directory. */
   dir: z.string(),
+  /**
+   * True when `dir` is the plugin's own folder in a marketplace added from a local folder: it
+   * loads in place, so an edit there takes effect at `/plugin reload` with no update.
+   */
+  loadsInPlace: z.boolean().optional(),
   /** Where it came from: 'local' (dropped in / picked dir) or a git URL. */
   source: z.string(),
   enabled: z.boolean(),

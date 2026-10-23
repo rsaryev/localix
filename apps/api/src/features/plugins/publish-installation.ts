@@ -16,6 +16,7 @@ import type { MaterializedPluginSource } from './install-helpers'
 import { normalizePluginDependencies } from './dependencies'
 import { planDependencyEnables } from './dependencies-policy'
 import { actionFor } from '../capabilities/resolve'
+import { claimInPlaceRecord, type InPlaceClaim } from './install-in-place'
 
 /** One file publication and one database commit for the parent and its dependency plan. */
 export async function publishPluginInstallation(input: {
@@ -34,20 +35,35 @@ export async function publishPluginInstallation(input: {
   dependencies: Pick<PreparedDependencyInstall, 'publication'> | null
   prepare: (directory: string) => Promise<void>
   discover: () => Promise<DiscoveredPlugin[]>
+  /** Reads the parent as it will load; a plugin loading in place is read with its entry. */
+  loadParent?: (directory: string) => Promise<DiscoveredPlugin>
+  /** A user-scope install's in-place record (`install-in-place.ts`), written with the commit. */
+  inPlaceClaim?: InPlaceClaim
 }): Promise<{ plugin: DiscoveredPlugin; state: CapabilitySourceRecord; warnings: string[] }> {
   const publication = input.dependencies?.publication(input)
   let result:
     | { plugin: DiscoveredPlugin; state: CapabilitySourceRecord; warnings: string[] }
     | undefined
   const commit = async (directory: string) => {
-    const plugin = await loadManifest(directory, input.scope, input.projectId)
+    const plugin = input.loadParent
+      ? await input.loadParent(directory)
+      : await loadManifest(directory, input.scope, input.projectId)
     if (plugin.error) throw new InvalidRequestError('plugin_invalid', plugin.error)
     // Files are published while their backups and locks are retained. Resolve the graph before
     // taking the database transaction so discovery never calls back into a held DB connection.
     const hasDependencies = normalizePluginDependencies(plugin.manifest.dependencies).length > 0
     const discovered = hasDependencies ? await input.discover() : []
     const warnings: string[] = []
-    const state = await input.db.transaction().execute(async (transaction) => {
+    // The record, the row and its change notice are written here, under the destination lock.
+    const claim = input.inPlaceClaim
+      ? await claimInPlaceRecord(
+          input.inPlaceClaim,
+          plugin.manifest.name,
+          input.parent.name,
+          input.replace,
+        )
+      : null
+    const write = input.db.transaction().execute(async (transaction) => {
       const repo = input.stores.sources(transaction, 'plugin', input.now)
       const dependencySources = (await publication?.write(repo)) ?? []
       const saved = await repo.upsert(input.userId, input.projectId, plugin.manifest.name, {
@@ -94,6 +110,11 @@ export async function publishPluginInstallation(input: {
       }
       return saved
     })
+    const state = await write.catch(async (error: unknown) => {
+      await claim?.undo()
+      throw error
+    })
+    await claim?.settle()
     result = { plugin, state, warnings }
   }
   // A discovered drop-in is user-owned in place. Only dependency trees are published for it.
@@ -101,6 +122,8 @@ export async function publishPluginInstallation(input: {
   try {
     await publishExtensionTrees({
       installRoot: input.installRoot,
+      // A plugin used where it is publishes no tree of its own, but still holds its name.
+      ...(input.parent.inPlace ? { hold: [input.parent.name] } : {}),
       trees: [
         ...(!input.parent.inPlace
           ? [

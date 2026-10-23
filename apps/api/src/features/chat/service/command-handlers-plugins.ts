@@ -6,7 +6,12 @@ import type { CommandHandlerContext, DirectReply } from './command-handlers'
 import { handleMarketplaceSubcommand } from './command-handlers-plugins-marketplace'
 import { formatPluginCheck } from '../../plugins/authoring/check'
 import { handlePluginCreateSubcommand } from './command-handlers-plugins-create'
-import { errorCode, installReply, validatePathReply } from './command-handlers-plugins-replies'
+import {
+  errorCode,
+  installReply,
+  updateReply,
+  validatePathReply,
+} from './command-handlers-plugins-replies'
 import { isAbsolute } from 'node:path'
 
 /** The slice of {@link CommandHandlerContext} the `/plugin` sub-commands need. */
@@ -154,9 +159,7 @@ export async function handlePluginsControlCommand(
       return directReply('Usage: `/plugin update <name>` — re-installs from the original source.')
     try {
       const rec = await pluginService.update(userId, { name, projectId: session.projectId ?? null })
-      return directReply(
-        `Updated \`${rec.name}\` to v${rec.version}. Run \`/plugin reload\` or start a new turn for it to take effect.`,
-      )
+      return directReply(updateReply(rec))
     } catch (err) {
       return directReply(`Update failed: ${errorMessage(err)}`)
     }

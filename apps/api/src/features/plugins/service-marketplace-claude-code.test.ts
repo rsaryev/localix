@@ -78,7 +78,9 @@ describe('a Claude Code marketplace through the plugin service', () => {
     expect(rec.name).toBe('typescript-lsp')
     expect(rec.version).toBe('1.0.0')
     expect(rec.provides.lspServers).toEqual(['typescript'])
-    // The registered marketplace copy is untouched; the installed copy carries the manifest.
+    // It loads in place with its entry as the manifest; the person's folder is never written.
+    expect(rec.loadsInPlace).toBe(true)
+    expect(rec.dir).toBe(join(root, 'marketplace/plugins/typescript-lsp'))
     expect(
       await fs
         .stat(join(root, 'marketplace/plugins/typescript-lsp/.claude-plugin'))

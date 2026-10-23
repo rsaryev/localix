@@ -13,8 +13,14 @@ import {
 } from './marketplace-source'
 import type { NpmEntrySource } from './marketplace-source-npm'
 import { fetchEntryPlugin, materializeMarketplace } from './marketplace-materialize'
-import { marketplaceNameProblem } from './claude-code-marketplace'
-import { differentSourceMessage, sameMarketplaceSource } from './marketplace-source-identity'
+import {
+  addMarketplaceInPlace,
+  addsInPlace,
+  assertOwnedMarketplaceDir,
+  assertRegistrable,
+  readsInPlace,
+  removeOwnedMarketplaceDir,
+} from './marketplace-in-place'
 
 import {
   LOCALIX_MARKETPLACE,
@@ -50,7 +56,8 @@ export {
  * name@marketplace` flow. A marketplace is a git repo, local dir, catalog file or hosted
  * catalog holding a `.localix-plugin/marketplace.json` or Claude Code
  * `.claude-plugin/marketplace.json` catalog. We materialize it under
- * `~/.localix/marketplaces/<name>/` and track the set in `known.json` (keyed by name,
+ * `~/.localix/marketplaces/<name>/` (a local folder is read in place, see
+ * `marketplace-in-place.ts`) and track the set in `known.json` (keyed by name,
  * mirroring CC's `known_marketplaces.json`: `{ source, installLocation }`).
  *
  * One unified system: resolution always ends in a local plugin directory handed to
@@ -109,23 +116,14 @@ async function addMarketplaceUnlocked(
 ): Promise<{ name: string; count: number }> {
   const root = deps.root ?? marketplacesRoot()
   await fs.mkdir(root, { recursive: true })
+  if (addsInPlace(source, root)) return addMarketplaceInPlace(source, root)
 
   const staging = join(root, `.staging-${Math.abs(hashString(JSON.stringify(source)))}`)
   let market: Marketplace
   try {
     await materializeMarketplace(source, staging, deps)
     market = await readMarketplace(staging)
-    if (market.name === LOCALIX_MARKETPLACE)
-      throw new Error(
-        `"${LOCALIX_MARKETPLACE}" is the built-in marketplace and cannot be overridden.`,
-      )
-    const refused = marketplaceNameProblem(market.name, source)
-    if (refused) throw new Error(refused)
-    // A name registered from another source keeps it: re-pointing it would move where the
-    // plugins installed from it update from. Replacing it takes an explicit remove first.
-    const existing = (await readKnownMarketplaces(root))[market.name]
-    if (existing && !sameMarketplaceSource(existing.source, source))
-      throw new Error(differentSourceMessage(market.name, existing.source))
+    await assertRegistrable(market, source, root)
   } catch (err) {
     await rmrf(staging)
     throw err
@@ -133,6 +131,9 @@ async function addMarketplaceUnlocked(
 
   const installLocation = join(root, market.name)
   const backupLocation = join(root, `.backup-${market.name}-${randomUUID()}`)
+  // Only Localix's own directories are renamed or deleted, never a folder registered in place.
+  assertOwnedMarketplaceDir(root, installLocation)
+  assertOwnedMarketplaceDir(root, backupLocation)
   let hasBackup = false
   let activated = false
   try {
@@ -146,9 +147,13 @@ async function addMarketplaceUnlocked(
     activated = true
 
     const known = await readKnownMarketplaces(root)
+    const previous = known[market.name]
     known[market.name] = { source, installLocation }
     await writeKnownMarketplaces(root, known)
     if (hasBackup) await rmrf(backupLocation).catch(() => {})
+    // A record that pointed at a folder read in place leaves that folder alone.
+    if (previous && previous.installLocation !== installLocation)
+      await removeOwnedMarketplaceDir(root, previous.installLocation).catch(() => {})
   } catch (error) {
     try {
       if (activated) await rmrf(installLocation)
@@ -209,7 +214,8 @@ async function removeMarketplaceUnlocked(
   if (!entry) throw new Error(`Unknown marketplace "${name}".`)
   delete known[name]
   await writeKnownMarketplaces(root, known)
-  await rmrf(entry.installLocation)
+  // A marketplace read in place is the person's folder: only Localix's own copy is deleted.
+  await removeOwnedMarketplaceDir(root, entry.installLocation)
 }
 
 export async function removeMarketplace(
@@ -233,6 +239,11 @@ export interface ResolvedMarketplaceInstall {
   entry: MarketplaceEntry
   /** The marketplace the entry came from (dependency resolution's parent catalog). */
   marketplace: string
+  /**
+   * The entry is a relative path in a marketplace read in place (added from a local folder), so
+   * `dir` is the person's folder and the plugin may load from it (`install-in-place.ts`).
+   */
+  inPlace?: boolean
   /** The catalog's `allowCrossMarketplaceDependenciesOn` list (absent → none allowed). */
   allowCrossMarketplaceDependenciesOn?: string[]
   /**
@@ -303,7 +314,8 @@ export async function resolveMarketplaceInstall(
       )
     if (!(await fs.stat(resolved.localPath).catch(() => null))?.isDirectory())
       throw new Error(`Source path does not exist: ${resolved.localPath}`)
-    return { dir: resolved.localPath, linkRoot: marketplaceDir, ...base }
+    const inPlace = readsInPlace(byName ?? bySource?.[1], root) ? { inPlace: true } : {}
+    return { dir: resolved.localPath, linkRoot: marketplaceDir, ...base, ...inPlace }
   }
 
   // Remote sources stage into a stable temp dir under the marketplaces root; git, npm and

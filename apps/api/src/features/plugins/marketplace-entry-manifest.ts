@@ -180,6 +180,10 @@ async function keepListedSkills(dir: string, entry: MarketplaceEntry): Promise<M
   return (outside.length ? { ...rest, skills: outside } : rest) as unknown as MarketplaceEntry
 }
 
+/** True when installing the entry trims its copy's skills, which a folder read in place cannot. */
+export const entryPrunesSkills = (entry: MarketplaceEntry): boolean =>
+  sourceIsRoot(entry) && raw(entry).skills !== undefined
+
 /**
  * Reconcile a freshly-staged plugin copy with its marketplace entry: synthesize
  * `<dir>/.claude-plugin/plugin.json` when the plugin has no manifest, else combine the entry into

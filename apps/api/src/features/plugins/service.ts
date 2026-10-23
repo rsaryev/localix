@@ -19,7 +19,6 @@ import { errorMessage } from '../../lib/errors'
 import { localixWorkspaceDir } from '../../lib/env'
 import { createContributionKindRegistry } from '../ext/contribution-kinds'
 import { isGitSource } from '../ext/git-source'
-import { removeIfUnderRoot } from '../ext/install-tree'
 import {
   discoverPlugins,
   loadManifest,
@@ -45,7 +44,7 @@ import {
   type ResolvedMarketplaceInstall,
 } from './marketplace-registry'
 import { createMarketplaceMethods } from './service-marketplaces'
-import { listDependents, normalizePluginDependencies } from './dependencies'
+import { normalizePluginDependencies } from './dependencies'
 import { planDependencyEnables } from './dependencies-policy'
 import { actionFor } from '../capabilities/resolve'
 import type { RuleChange } from '../capabilities/rule-changes'
@@ -73,10 +72,11 @@ import { reconcileStoredConfig, savePluginConfig } from './service-config'
 import {
   assertEnableChanges,
   reinstallFromSource,
-  removeDataIfLastCopy,
   rowScopeOf,
   validatePluginDir,
 } from './service-lifecycle'
+import { removePlugin } from './service-remove'
+import { inPlaceInstallFor, inPlacePublication } from './install-in-place'
 
 // Repo-clone + tree-copy install primitives live in ./install-helpers; re-exported
 // here so existing importers of `./service` keep their import surface unchanged.
@@ -170,6 +170,7 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       projectId: plugin.projectId,
       scope: plugin.scope,
       dir: plugin.dir,
+      ...(plugin.inPlaceInstall ? { loadsInPlace: true } : {}),
       source: state?.source ?? 'local',
       enabled,
       ...(awaitingConsent ? { awaitingConsent } : {}),
@@ -627,12 +628,17 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
       }
 
       let depInstall: PreparedDependencyInstall | null = null
+      // From a local-folder marketplace, a Claude Code plugin loads from that folder, never written.
+      const inPlace = await inPlaceInstallFor(resolvedMarket, scope, installRoot)
       // Validate the actual copied tree before it becomes discoverable. Marketplace
       // overlays belong to preparation too: their failures must preserve the live tree.
       const prepare = async (directory: string) => {
-        // A Claude Code plugin loads in place; what Localix does not run is said once, here.
-        if (resolvedMarket) await applyEntryManifestOverrides(directory, resolvedMarket.entry)
-        const candidate = await loadManifest(directory, scope, projectId)
+        // What Localix does not run is said once, here.
+        if (resolvedMarket && !inPlace)
+          await applyEntryManifestOverrides(directory, resolvedMarket.entry)
+        const candidate = inPlace
+          ? await inPlace.load(projectId)
+          : await loadManifest(directory, scope, projectId)
         if (candidate.error) throw new InvalidRequestError('plugin_invalid', candidate.error)
         installNotes.push(
           ...(candidate.layoutIssues ?? []).map((found) => `${found.path}: ${found.message}`),
@@ -660,7 +666,8 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
             projectId,
             scope,
             installRoot,
-            parent,
+            parent: inPlace ? { ...parent, inPlace: true } : parent,
+            ...inPlacePublication(inPlace, scope, installRoot, projectId),
             // A marketplace install records its canonical `<plugin>@<marketplace>` reference.
             source: resolvedMarket
               ? `${resolvedMarket.entry.name}@${resolvedMarket.marketplace}`
@@ -690,53 +697,28 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
 
     update: (userId, input) => updatePlugin(userId, input, { refreshMarketplace: true }),
 
-    async remove(userId, input) {
-      const projectId = input.projectId ?? ''
-      const cwd = projectId ? await cwdFor(userId, projectId) : null
-      const discovered = await discover({ cwd, projectId })
-      const plugin =
-        discovered.find((p) => p.manifest.name === input.name && p.projectId === projectId) ?? null
-      // Nothing to remove used to answer like a removal, so `/plugin remove typo` said "Removed".
-      const rowScope = rowScopeOf(plugin, projectId)
-      if (!plugin && !(await repo.get(userId, projectId, input.name)))
-        throw new NotFoundError('plugin_not_found', `Plugin "${input.name}" is not installed`)
-      // Claude Code owns what it installed; Localix reads that folder in place. Turning the
-      // plugin off here is the part that is ours to change.
-      if (plugin?.claudeCodeInstall) {
-        await service.setEnabled(
-          userId,
-          { name: input.name, projectId: projectId || null, enabled: false },
-          { ignoreDependents: true },
-        )
-        return { warnings: [], claudeCodeInstall: plugin.claudeCodeInstall }
-      }
-      // NO cascade on remove — dependents keep working off their own state — but WARN
-      // when other installed plugins still declare a dependency on the removed one.
-      const dependents = listDependents(input.name, discovered)
-      await repo.remove(userId, rowScope, input.name)
-      // An older build kept a user-scope plugin's options in a per-project row as well.
-      if (rowScope !== projectId) await repo.remove(userId, projectId, input.name)
-      // A bundled plugin is a shared managed artifact projected into every
-      // scope. Removing one scope must never delete the code used by the others.
-      if (plugin && !plugin.bundled) {
-        await removeIfUnderRoot(plugin.dir, pluginInstallRoot(plugin.scope, cwd, home))
-      }
-      await removeDataIfLastCopy({
+    remove: (userId, input) =>
+      removePlugin(
+        {
+          repo,
+          home,
+          cwdFor,
+          discover,
+          disable: (user, name, projectId) =>
+            service.setEnabled(
+              user,
+              { name, projectId: projectId || null, enabled: false },
+              { ignoreDependents: true },
+            ),
+          changed: (name, projectId) => {
+            invalidateInspection(name, projectId)
+            deps.onChanged?.()
+          },
+          warn: (message) => deps.logger?.warn?.(message),
+        },
         userId,
-        name: input.name,
-        home,
-        repo,
-        discoverHome: () => discover({ cwd: null, projectId: '' }),
-      })
-      invalidateInspection(input.name, projectId)
-      deps.onChanged?.()
-      if (dependents.length) {
-        const warning = `"${input.name}" was removed, but other installed plugin(s) still depend on it: ${dependents.join(', ')}.`
-        deps.logger?.warn?.(warning)
-        return { warnings: [warning] }
-      }
-      return undefined
-    },
+        input,
+      ),
 
     validatePath: (dir, opts) => validatePluginDir(dir, opts),
 

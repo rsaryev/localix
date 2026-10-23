@@ -118,6 +118,27 @@ output styles and themes are added and its hooks replace the manifest's per even
 with components in both is refused as conflicting manifests. Reserved marketplace names (Anthropic's
 own, `inline`, `npm` and look-alikes) are refused unless the source is Anthropic's GitHub.
 
+A marketplace added from a local folder is read where it is, not copied. A user-scope install of one
+of its relative-path plugins loads in place from its folder, as in Claude Code: edit the files and
+run `/plugin reload`, with no update and no version bump. `${CLAUDE_PLUGIN_ROOT}` is that folder,
+and `/plugin update` checks the files again and says the plugin loads in place. `/plugin remove` and
+`/plugin marketplace remove` forget the record Localix keeps in `~/.localix/plugins/.in-place.json`;
+no command deletes or changes the folder.
+
+| Plugin from a local-folder marketplace                                          | Installed as                      |
+| ------------------------------------------------------------------------------- | --------------------------------- |
+| Claude Code format, user scope                                                  | Loads in place from its folder    |
+| With a mini app (`.localix-app/app.json`), native tools or a root `plugin.json` | A copy under `~/.localix/plugins` |
+| Installed with `--project`                                                      | A copy in the project             |
+| An entry at the marketplace root that lists its `skills`                        | A copy with the listed skills     |
+
+A plugin installed as a copy by an earlier version keeps working as one; `/plugin update` turns it
+into an in-place plugin and removes the copy.
+
+**Trust:** you approve the plugin, not its files, and its folder can change after you approve it. A
+hook, MCP server or script added there later loads at the next `/plugin reload` under that approval,
+as in Claude Code, so add a marketplace from a local folder only when you control what is in it.
+
 ### Output styles, themes and settings
 
 An output style shapes how agents answer. Localix offers Claude Code's Default, Proactive, Concise,
@@ -282,9 +303,10 @@ Claude Code's own mods — `diff`, `agents-md`, `sec-default`, `telemetry` — a
 - A plugin whose components live only in its marketplace entry, such as the `*-lsp` plugins, has
   them when installed through the marketplace, not from its folder alone.
 - A hosted `marketplace.json` takes only entries with their own sources, since relative paths have
-  no folder to resolve from. `update` and `remove` act on global installs, not project ones. An
-  added marketplace is a copy under `~/.localix/marketplaces`: after editing a local one, run
-  `/plugin marketplace update <name>`.
+  no folder to resolve from. `update` and `remove` act on global installs, not project ones. A
+  marketplace added from a git repository, npm, a URL or a catalog file is a copy under
+  `~/.localix/marketplaces`: run `/plugin marketplace update <name>` to refresh it. One added from a
+  local folder is read in place, but a change to its catalog still takes that update.
 - A Default project chat has no project folder, so `--project` there fails with a hint to install
   globally.
 - Enabling a plugin with hooks, a hooks module, MCP servers or `bin/` executables lets it run local

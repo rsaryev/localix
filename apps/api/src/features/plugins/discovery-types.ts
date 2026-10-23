@@ -31,6 +31,12 @@ export interface DiscoveredPlugin {
    * never delete it.
    */
   claudeCodeInstall?: string
+  /**
+   * `<name>@<marketplace>` when the plugin loads in place from a marketplace added from a local
+   * folder (`in-place-installs.ts`). The folder is the person's: an uninstall drops the record,
+   * never the folder.
+   */
+  inPlaceInstall?: string
   /** A plugin (Claude Code format), a mini app with its plugin, or a legacy root `plugin.json`. */
   layout: ExtensionLayout
   /** What the plugin and mini-app formats' own rules found (unknown fields, unsupported parts). */

@@ -47,6 +47,20 @@ describe('plugin command replies', () => {
     expect(off).toContain('run `/plugin enable top`')
   })
 
+  test('a plugin loading in place says where edits take effect, on install and on update', async () => {
+    // loading.md: "Your edits to the source directory take effect at the next session start or
+    // `/reload-plugins`, and you don't need to increase the version".
+    const inPlace = record({ dir: '/src/market/plugins/top', loadsInPlace: true })
+    expect(installReply(inPlace)).toContain('It loads in place from that folder')
+    const update = async () => inPlace
+    expect(await say({ update }, '/plugin update top')).toBe(
+      '`top` v1.0.0 loads in place from `/src/market/plugins/top` and its files check out. Edits there take effect at `/plugin reload`; it needs no update.',
+    )
+    expect(await say({ update: async () => record({}) }, '/plugin update top')).toStartWith(
+      'Updated `top` to v1.0.0.',
+    )
+  })
+
   test('a switch or install that changes nothing is said plainly, not as a failure', async () => {
     const already = (code: string, message: string) => async () => {
       throw new ConflictError(code, message)

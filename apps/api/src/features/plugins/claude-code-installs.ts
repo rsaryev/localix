@@ -156,7 +156,7 @@ async function marketplaceListing(known: unknown, id: string): Promise<Listing |
  * on disk (`marketplace-entry-manifest.ts`). A plugin without either is named by its entry, not by
  * its cache folder (a version).
  */
-function withEntry(id: string, entry: MarketplaceEntry | undefined) {
+export function withEntry(id: string, entry: MarketplaceEntry | undefined) {
   return (read: ManifestFiles): ManifestFiles => {
     // Claude Code never reads a root `plugin.json`, so neither its fields nor its `tools`
     // entrypoint (Localix native code) count for a plugin Claude Code installed.
