@@ -9,6 +9,7 @@ import { CustomizableRailButton } from './CustomizableRailButton'
 import { RailRecentsDock } from './RailRecentsDock'
 import { RailToolGroups } from './RailToolGroups'
 import { RailToolMenu } from './RailToolMenu'
+import { RailAddMiniApp } from './RailAddMiniApp'
 import { RailToolMenuGroup } from './RailToolMenuGroup'
 import type { RailAction, RailEntry } from './shellTypes'
 import { isRailTool } from '../model/railToolGroups'
@@ -172,7 +173,7 @@ export function RailWorkspaceGroup({
               />
             )}
           />
-          {/* Full tool catalog with inline pins and a link to plugin settings. */}
+          {/* Full tool catalog with inline pins and a link to mini app settings; then the store. */}
           <RailToolMenu
             entries={toolEntries}
             categories={miniAppCategories}
@@ -184,6 +185,7 @@ export function RailWorkspaceGroup({
             pending={miniAppsPending}
             onManage={onCapabilitiesClick}
           />
+          <RailAddMiniApp />
         </div>
       </div>
     </RailToolMenuGroup>

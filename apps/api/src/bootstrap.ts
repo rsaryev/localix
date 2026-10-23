@@ -322,7 +322,14 @@ export async function bootstrap(
       startEngines()
       startOpsTimers(signal)
       startSemantic({ db, logger, localModels, semanticService, changes: infra.changes, signal })
-      startModelStatusPokes({ localModels, semanticService, chatService, env, signal })
+      startModelStatusPokes({
+        localModels,
+        semanticService,
+        miniAppStore: miniAppService.store,
+        chatService,
+        env,
+        signal,
+      })
       void startCoreReactors({
         db,
         feed: infra.changes.core,

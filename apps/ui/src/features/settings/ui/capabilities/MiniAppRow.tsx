@@ -14,7 +14,7 @@ import {
 
 /**
  * One installed mini app as a registry row: what it gives the agent and the workbench, its switch,
- * and its settings form when expanded. A mini app Localix ships is switched off, never removed.
+ * and its settings form when expanded.
  */
 export function MiniAppRow({
   app,
@@ -92,11 +92,9 @@ export function MiniAppRow({
               Settings
             </Button>
           )}
-          {!app.bundled && (
-            <Button variant="destructive" size="default" onClick={onRemove} disabled={busy}>
-              Remove
-            </Button>
-          )}
+          <Button variant="destructive" size="default" onClick={onRemove} disabled={busy}>
+            Remove
+          </Button>
         </>
       }
       header={

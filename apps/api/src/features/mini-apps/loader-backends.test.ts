@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { Hono } from 'hono'
 import type { CapabilitySourceRepository } from '../capabilities/source-repository'
 
+import { installBundledMiniApp } from './bundled-install'
 import { loadMiniAppBackends } from './loader'
 import { makeApiScratchDir } from '../../testing/scratch-dir'
 import { createSubsystemRegistry } from '../ext/subsystem-contrib'
@@ -123,6 +124,8 @@ export async function register() {
   )
 
   process.env.LOCALIX_BUNDLED_MINI_APPS_DIR = fixtureRoot
+  // Shipped is not installed: the person chose this one from the catalog.
+  await installBundledMiniApp(fixtureRoot, fixtureHome, 'test-sub')
   globalThis.__TEST_SUB_STOP__ = 0
   globalThis.__TEST_SUB_SHUTDOWN__ = 0
 })

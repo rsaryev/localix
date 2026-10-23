@@ -14,20 +14,27 @@ add yourself waits for your yes before its code runs; one the agent builds for y
 
 ## What you can do
 
-| Outcome                      | How                                                                        | Boundary                                                          |
-| ---------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| See your mini apps           | `/mini-app list`, or Settings → Capabilities → Mini apps                   | The list shows the scope of the current chat's project.           |
-| Turn one on or off           | `/mini-app enable <name>`, `/mini-app disable <name>`, or the row's switch | A switch in Settings applies to the agent selected there.         |
-| Change a mini app's settings | **Settings** on its row in Settings → Mini apps                            | Secret settings are kept in the [vault](secrets.md).              |
-| Remove one                   | `/mini-app remove <name>`, or **Remove** on its row                        | A bundled mini app cannot be removed; switch it off instead.      |
-| Have the agent build one     | `/mini-app create <what it should do>`                                     | See [Build with the agent](../extending/build-with-the-agent.md). |
-| Pick up edits to its files   | `/mini-app reload`                                                         | Rebuilds your own mini apps, then reloads every mini app.         |
-| Open the list from the rail  | **Manage mini apps…** in the rail's tools menu                             | Opens Settings → Mini apps.                                       |
-| Run one as its own Mac app   | **Install _Name_ as App** on its tab; see [Mac apps](mini-app-mac-apps.md) | macOS only, for a mini app with a screen of its own.              |
+| Outcome                      | How                                                                         | Boundary                                                          |
+| ---------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| See your mini apps           | `/mini-app list`, or Settings → Capabilities → Mini apps                    | The list shows the scope of the current chat's project.           |
+| Add one from the catalog     | The **+** button in the rail, **Catalog** in Settings → Mini apps, or setup | Nothing is installed until you choose it.                         |
+| Update one                   | **Update** on its card in the catalog                                       | Shown when the catalog offers another version than yours.         |
+| Turn one on or off           | `/mini-app enable <name>`, `/mini-app disable <name>`, or the row's switch  | A switch in Settings applies to the agent selected there.         |
+| Change a mini app's settings | **Settings** on its row in Settings → Mini apps                             | Secret settings are kept in the [vault](secrets.md).              |
+| Remove one                   | `/mini-app remove <name>`, or **Remove** on its row                         | Its data folder stays, so a reinstall finds it.                   |
+| Have the agent build one     | `/mini-app create <what it should do>`                                      | See [Build with the agent](../extending/build-with-the-agent.md). |
+| Pick up edits to its files   | `/mini-app reload`                                                          | Rebuilds your own mini apps, then reloads every mini app.         |
+| Open the list from the rail  | **Manage mini apps…** in the rail's tools menu                              | Opens Settings → Mini apps.                                       |
+| Run one as its own Mac app   | **Install _Name_ as App** on its tab; see [Mac apps](mini-app-mac-apps.md)  | macOS only, for a mini app with a screen of its own.              |
 
 Changes made with `/mini-app` take effect on the next turn.
 
 ## How it works
+
+The catalog shows every app as a card: its publisher, a mark when Localix verified that publisher,
+its category and one action — **Install**, **Update**, or where an install is. Search and the
+category pills narrow the cards. The same catalog opens from the rail's **+**, from Settings → Mini
+apps and from setup.
 
 Each row in Settings → Capabilities → Mini apps shows the app's version, project scope, category and
 what it brings: tools, screens, commands, a guide. A row marked **awaiting your yes** came from
@@ -35,7 +42,7 @@ outside Localix and has not run yet; **runs code** means its backend runs while 
 
 | Where it lives                         | What is there                                             |
 | -------------------------------------- | --------------------------------------------------------- |
-| `~/.localix/mini-apps/<name>/`         | Your mini apps, in every project, and the bundled ones    |
+| `~/.localix/mini-apps/<name>/`         | Your mini apps, in every project, and the catalog's ones  |
 | `<project>/.localix/mini-apps/<name>/` | A project's own mini apps                                 |
 | `~/.localix/mini-apps-data/<name>/`    | What a mini app keeps; it outlives updates and reinstalls |
 
@@ -55,8 +62,8 @@ that opens the app's row in Settings → Mini apps. The entry clears once the ap
 - A mini app's backend is not sandboxed. Turning one on is consent, not isolation.
 - `/mini-app enable` and `/mini-app disable` change whether the app runs; they do not delete it or
   its data.
-- A catalog to install and update mini apps from is planned and not yet available. Today the bundled
-  mini apps ship with Localix, and your own come from `/mini-app create` or a folder you add.
+- The catalog offers the mini apps that come with this copy of Localix. A hosted catalog, with apps
+  from other publishers and updates that install themselves, is planned and not yet available.
 - Earlier versions kept mini apps under `~/.localix/plugins`. Those copies are removed at startup,
   and settings saved under the old names are not carried over.
 

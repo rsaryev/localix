@@ -1,11 +1,10 @@
-import { promises as fs } from 'node:fs'
-
-import { ConflictError, InvalidRequestError } from '../../lib/domain-errors'
+import { InvalidRequestError } from '../../lib/domain-errors'
 import { scalarConfig, type CapabilitySourceRepository } from '../capabilities/source-repository'
 import { recordCoreChanges } from '../changes/core-entities'
 import type { CapabilitySourceRecord } from '../capabilities/source-repository'
 import type { MiniAppCatalog } from './catalog'
 import { miniAppOptions } from './config-vault'
+import { retireManagedCopy } from './managed-copy'
 import type { DiscoveredMiniApp } from './discovery'
 import type { MiniAppInspections } from './inspection-snapshots'
 import type { MiniAppServiceDeps } from './service'
@@ -65,18 +64,15 @@ export function createMiniAppWrites({
     },
 
     /**
-     * Remove a mini app the person installed or made. One Localix ships comes back with the next
-     * sync, so it is switched off rather than removed. Its data folder stays: a reinstall finds it.
+     * Remove a mini app the person installed or made. One installed from a catalog stays removed:
+     * a sync only refreshes what is installed. The folder is set aside, not deleted — its backend
+     * may be the module this process still runs — and pruned on the next start. Its data folder
+     * stays: a reinstall finds it.
      */
     async remove(userId: string, input: { name: string; projectId?: string | null }) {
       const projectId = input.projectId ?? ''
       const { app } = await requireApp(userId, input.name, projectId)
-      if (app.bundled)
-        throw new ConflictError(
-          'mini_app_bundled',
-          `"${input.name}" ships with Localix; switch it off instead`,
-        )
-      await fs.rm(app.dir, { recursive: true, force: true })
+      await retireManagedCopy(app.dir)
       await repo.remove(userId, app.scope === 'project' ? projectId : '', input.name)
       const left = await catalogFor(userId, projectId)
       if (!left.catalog.all.some(({ app: other }) => other.name === input.name))

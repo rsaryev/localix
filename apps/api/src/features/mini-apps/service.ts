@@ -28,6 +28,7 @@ import { toMiniAppRecord } from './records'
 import { syncBundledContributions } from './sync-bundled-contributions'
 import { resolveMiniAppUiFile } from './ui-artifact'
 import { createMiniAppWrites } from './service-writes'
+import { createMiniAppStore, defaultMiniAppStoreSources, type MiniAppStoreSource } from './store'
 import {
   invokeMiniAppUiAction,
   resolveMiniAppArgOptions,
@@ -55,6 +56,8 @@ export interface MiniAppServiceDeps {
   logger?: { warn: (msg: string, meta?: unknown) => void }
   /** Where the mini app kit is; defaults to the one shipped beside the staged mini apps. */
   miniAppKitDir?: () => string
+  /** Where the store's offers come from; defaults to the staged first-party apps. */
+  storeSources?: () => Promise<MiniAppStoreSource[]>
 }
 
 export type MiniAppService = ReturnType<typeof createMiniAppService>
@@ -177,8 +180,21 @@ export function createMiniAppService(deps: MiniAppServiceDeps) {
     await recordCoreChanges(deps.db, { entity: 'mini-app', op: 'resync' })
   }
 
+  // The store: what catalogs offer and the installs in flight; a finished install is announced.
+  const store = createMiniAppStore({
+    homeDir: deps.homeDir,
+    sources: deps.storeSources ?? defaultMiniAppStoreSources,
+    announce: (name) =>
+      recordCoreChanges(deps.db, {
+        entity: 'mini-app',
+        op: 'upserted',
+        ref: { id: name, scope: 'global' },
+      }),
+  })
+
   return {
     authoring,
+    store,
     /**
      * `/mini-app reload`: rebuild the person's own mini apps, then say every one changed, since a
      * folder edited on disk is a change no write announced.

@@ -6,6 +6,7 @@ import { GoalAction, GoalScene } from './scenes/GoalScene'
 import { IslandAction, IslandScene } from './scenes/IslandScene'
 import { KeymapAction, KeymapScene } from './scenes/KeymapScene'
 import { MentionScene } from './scenes/MentionScene'
+import { MiniAppsAction, MiniAppsScene } from './scenes/MiniAppsScene'
 import { ModelAction, ModelScene } from './scenes/ModelScene'
 import { PaletteScene } from './scenes/PaletteScene'
 import { ProjectAction, ProjectScene } from './scenes/ProjectScene'
@@ -22,7 +23,7 @@ export interface WorkspaceTip {
   rest: string
   Scene: ComponentType
   Action?: ComponentType
-  /** Shown only when an enabled plugin features a command for this slide to teach. */
+  /** Shown only when an enabled mini app or plugin features a command for this slide to teach. */
   needsFeaturedCommand?: boolean
   /** Shown only where the agent island exists (the macOS desktop app). */
   needsIsland?: boolean
@@ -65,9 +66,16 @@ export const WORKSPACE_TIPS: WorkspaceTip[] = [
   {
     id: 'decisions',
     lead: 'Connect OpenRouter for decisions.',
-    rest: 'Small decision models, a fraction of a cent each, route group chats, drive the Browser and play games and plugins —',
+    rest: 'Small decision models, a fraction of a cent each, route group chats, drive the Browser and play games in mini apps —',
     Scene: DecisionScene,
     Action: DecisionAction,
+  },
+  {
+    id: 'mini-apps',
+    lead: 'Add mini apps.',
+    rest: 'Apps with their own screens and tools — games, a board, a reader — install from',
+    Scene: MiniAppsScene,
+    Action: MiniAppsAction,
   },
   {
     id: 'approvals',

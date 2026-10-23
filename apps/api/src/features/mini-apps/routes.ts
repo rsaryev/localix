@@ -17,6 +17,7 @@ import {
   setMiniAppEnabledRequestSchema,
 } from './contracts'
 import type { MiniAppService } from './service'
+import { installMiniAppRequestSchema, miniAppStoreResponseSchema } from './contracts-store'
 
 /** The slice of the mini app service these routes call. */
 export type MiniAppRoutesService = Pick<
@@ -29,6 +30,7 @@ export type MiniAppRoutesService = Pick<
   | 'resolveUiFile'
   | 'getViewHtml'
   | 'invokeUiAction'
+  | 'store'
 >
 
 /**
@@ -56,6 +58,15 @@ export function createMiniAppRoutes(service: MiniAppRoutesService) {
     .post('/remove', zValidator('json', removeMiniAppRequestSchema), async (c) => {
       await service.remove(c.get('userId'), c.req.valid('json'))
       return c.body(null, 204)
+    })
+    // The store: what the catalogs offer, and installs queued here whose progress arrives as
+    // `mini-app-installs` pokes the client answers by reading the list again.
+    .get('/store', async (c) =>
+      c.json(miniAppStoreResponseSchema.parse({ entries: await service.store.list() }), 200),
+    )
+    .post('/store/install', zValidator('json', installMiniAppRequestSchema), async (c) => {
+      await service.store.install(c.req.valid('json').name)
+      return c.body(null, 202)
     })
     .post(
       '/command-args/options',

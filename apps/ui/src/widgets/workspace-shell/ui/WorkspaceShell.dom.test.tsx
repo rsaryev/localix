@@ -494,7 +494,7 @@ describe('WorkspaceShell status contribution', () => {
     try {
       await act(async () => root.render(renderShell(['reader', 'office'])))
       // Unpinned tools are available only in the catalog until opened.
-      expect(railSlots()).toEqual(['All tools'])
+      expect(railSlots()).toEqual(['All tools', 'Add mini apps'])
 
       // Launch Reader from its launcher row — the row records the open.
       const openReader = async () => {
@@ -522,7 +522,7 @@ describe('WorkspaceShell status contribution', () => {
       await openReader()
       // Default mode collapses an inactive recent behind the dock's trigger, so the
       // rail itself gains exactly one quiet button instead of a plugin icon.
-      expect(railSlots()).toEqual(['All tools'])
+      expect(railSlots()).toEqual(['All tools', 'Add mini apps'])
       const dockTrigger = host.querySelector<HTMLButtonElement>(
         '[data-rail-group="workspace"] [data-rail-recents-trigger]',
       )!
@@ -541,7 +541,7 @@ describe('WorkspaceShell status contribution', () => {
       // Re-opening it does NOT reshuffle the slots — the whole point of excluding
       // an already-visible recent from the touch wrapper.
       await openReader()
-      expect(railSlots()).toEqual(['All tools'])
+      expect(railSlots()).toEqual(['All tools', 'Add mini apps'])
 
       // Reader's plugin goes away: its slot goes with it, without erasing the entry
       // from the recents store (re-enabling brings it back).

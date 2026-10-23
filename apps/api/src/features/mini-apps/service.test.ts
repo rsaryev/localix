@@ -7,6 +7,7 @@ import { createDatabase } from '../../db/connection'
 import { migrateToLatest } from '../../db/migrator'
 import { createCapabilityRuleRepository } from '../capabilities/rule-repository'
 import { createCapabilitySourceRepository } from '../capabilities/source-repository'
+import { __resetBundledSyncCache, installBundledMiniApp } from './bundled-install'
 import { createMiniAppService } from './service'
 
 let home: string
@@ -58,5 +59,33 @@ describe('the mini app service', () => {
     expect(commands[0]).toMatchObject({ app: 'notes', fullName: 'notes:open' })
     expect(commands[0]!.args[0]).toMatchObject({ name: 'note', dynamic: true })
     expect(JSON.stringify(commands)).not.toContain('scripts/notes.ts')
+  })
+
+  test('an app installed from the catalog is removed, and no later sync brings it back', async () => {
+    const db = createDatabase()
+    await migrateToLatest(db)
+    const staged = join(home, 'staged')
+    await fs.mkdir(join(staged, 'tiles'), { recursive: true })
+    await fs.writeFile(
+      join(staged, 'tiles', 'mini-app.json'),
+      JSON.stringify({ name: 'tiles', version: '1.0.0', description: 'Tiles' }),
+    )
+    process.env.LOCALIX_BUNDLED_MINI_APPS_DIR = staged
+    await installBundledMiniApp(staged, home, 'tiles')
+    const service = createMiniAppService({
+      db,
+      capabilityStores: {
+        sources: createCapabilitySourceRepository,
+        rules: createCapabilityRuleRepository,
+      },
+      homeDir: home,
+    })
+    await service.remove('u1', { name: 'tiles' })
+    __resetBundledSyncCache()
+    const { miniApps } = await service.list('u1')
+    expect(miniApps.map((app) => app.name)).not.toContain('tiles')
+    // Set aside, not deleted: its backend may be the module this process still runs.
+    const left = await fs.readdir(join(home, '.localix', 'mini-apps'))
+    expect(left.some((name) => name.startsWith('.sync-retired-tiles-'))).toBe(true)
   })
 })

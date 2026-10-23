@@ -130,7 +130,16 @@ async function readMarker(dir: string): Promise<ManagedMarker | null> {
   }
 }
 
-async function syncOnce(sourceRoot: string, homeDir: string): Promise<Set<string>> {
+/**
+ * One pass over the source: refresh the managed copies the person installed, retire those no
+ * longer shipped, and install the ones named in `install`. Nothing else is installed: a mini app
+ * the person never chose is not on their machine (rule X5).
+ */
+async function syncOnce(
+  sourceRoot: string,
+  homeDir: string,
+  install: ReadonlySet<string> = new Set(),
+): Promise<Set<string>> {
   const installRoot = join(homeDir, MINI_APPS_SUBDIR)
   const managed = new Set<string>()
   if (!prunedRoots.has(installRoot)) {
@@ -171,6 +180,8 @@ async function syncOnce(sourceRoot: string, homeDir: string): Promise<Set<string
     // A same-named plugin installed by the user is never overwritten or promoted
     // to trusted/bundled status. Only copies carrying our marker are refreshed.
     if (destinationExists && !currentMarker) continue
+    // Not installed, and not being installed now: the person did not choose it.
+    if (!destinationExists && !install.has(entry.name)) continue
 
     const stagedFingerprint = stagedMarker?.pluginHashes[entry.name]
     // The staged hash is only a fast equality proof for a managed copy already
@@ -241,6 +252,29 @@ export function syncBundledMiniApps(sourceRoot: string, homeDir: string): Promis
     })
   syncs.set(key, pending)
   return pending
+}
+
+/**
+ * Install one mini app the source offers, chosen by the person: a managed copy the later syncs
+ * refresh. Refuses a name the source does not offer, and never replaces the person's own folder
+ * of that name.
+ */
+export async function installBundledMiniApp(
+  sourceRoot: string,
+  homeDir: string,
+  name: string,
+): Promise<void> {
+  // A malformed manifest is still a mini app the source offers: discovery reports what is wrong.
+  const manifest = await readJson(join(sourceRoot, name, MINI_APP_MANIFEST_FILE))
+  if (manifest === undefined || (manifest as { private?: unknown } | null)?.private === true)
+    throw new Error(`The catalog offers no mini app named "${name}"`)
+  const installed = await syncOnce(sourceRoot, homeDir, new Set([name]))
+  invalidateBundledSync()
+  if (!installed.has(name))
+    throw new Error(
+      installErrors.get(name) ??
+        `"${name}" is already installed as your own mini app, so it was left as it is`,
+    )
 }
 
 /**
