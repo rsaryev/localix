@@ -1,88 +1,140 @@
 # Plugins and mini apps
 
-Localix extensions come in two layers. A **plugin** is what the agent uses, in the Claude Code
-plugin format: the same folder loads in Claude Code and in Localix. A **mini app** is what the
-person uses in Localix: screens, a backend, agent tools over Localix's own APIs, and pickers for its
-commands. A mini app contains its plugin; a plugin knows nothing about mini apps.
+Localix has two kinds of extension, and they share nothing: no manifest, no folder, no record, no
+route, no settings form and no code path.
 
-## The two layers
+- A **plugin** is a Claude Code plugin, read exactly as Claude Code reads it: skills, commands,
+  agents, hooks and a hooks module (a mod), MCP and LSP servers, monitors, output styles, themes,
+  `bin/`, `settings.json` and `userConfig`. Localix is one more host for that format. A plugin
+  folder that loads in Claude Code loads in Localix, and the reverse.
+- A **mini app** is a Localix application: screens, a native backend, agent tools over Localix's
+  APIs, a guide for the agent and commands with pickers. It is Localix's own format and means
+  nothing to Claude Code.
 
-| Layer    | Manifest                     | Contents                                                                                                                                                                                                                                                               | Who reads it            |
-| -------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| Plugin   | `.claude-plugin/plugin.json` | Skills, commands, agents, hooks (`hooks/hooks.json`), a hooks module, MCP servers (`.mcp.json`), LSP servers (`.lsp.json`), monitors, `bin/`, `userConfig`, `dependencies`.                                                                                            | Claude Code and Localix |
-| Mini app | `.localix-app/app.json`      | A backend (`register(ctx)`: agent tools, routes, subsystems, Localix hooks, channels, memory), a native UI (`ui/register.tsx`), sandboxed views, prompt sections, typed contributions, file associations, settings, and Localix presentation of its plugin's commands. | Localix only            |
+A mini app does not contain, name or depend on a plugin, and a plugin knows nothing of mini apps.
 
-A folder may hold both manifests. Claude Code ignores `.localix-app/`, the backend and the UI, so
-copying a mini app's folder into Claude Code installs its plugin. Localix reads both and serves them
-as one extension under one name.
+This page is the contract for the split. The status table at the end says what is already true.
+
+## Rules
+
+| Id  | Rule                                                                                                                                                                                                                             |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| X1  | `features/plugins` and `features/mini-apps` never import each other; `packages/claude-plugin` and `packages/mini-app-sdk` never import each other. Machinery both need (pinned downloads, archives, git) lives in a neutral lib. |
+| X2  | A folder is one or the other. A mini app folder holds no `.claude-plugin/`; a plugin folder holds no `mini-app.json`. The loader refuses a folder with both and says why.                                                        |
+| X3  | Each layer has its own records, routes, storage, settings page, slash command and model-facing names. Nothing is "an extension" that could be either.                                                                            |
+| X4  | The core names no mini app. A feature that needs one (a task board) asks for a capability a mini app declares, never for a mini app by name.                                                                                     |
+| X5  | Localix ships no mini app. Every mini app, first-party included, is installed and updated from a catalog.                                                                                                                        |
+
+`scripts/check-architecture.mjs` enforces X1 and X4; the loaders enforce X2.
+
+## Plugins
+
+| Part     | Where                                                                                    |
+| -------- | ---------------------------------------------------------------------------------------- |
+| Format   | `packages/claude-plugin` (`@localixai/claude-plugin`): Claude Code's documented format.  |
+| Runtime  | `apps/api/src/features/plugins/`: discovery, loading, marketplaces, enable state.        |
+| Disk     | `~/.localix/plugins/<name>/`, `<project>/.localix/plugins/<name>/`, plugin data folders. |
+| Surfaces | `/rpc/plugins`, Settings → Plugins, `/plugin`.                                           |
+| Agent    | Skills, commands and agents, namespaced `/<plugin>:<name>` as in Claude Code.            |
+
+A part Claude Code defines and Localix does not run is reported in the plugin's validation, never
+dropped silently. A key Claude Code does not define is a validation warning, as in Claude Code.
+
+## Mini apps
+
+### Format
 
 ```text
 chess/
-  .claude-plugin/plugin.json   the plugin: name, version, description
-  skills/play-chess/SKILL.md   the plugin's skill
-  .localix-app/app.json        the mini app: category, backend, settings
-  backend/index.ts             register(ctx): the board's routes and the agent's chess tool
-  ui/register.tsx              the board
+  mini-app.json      name, version, apiVersion, category, backend, commands, settings
+  guide.md           what the agent needs to know to use the app
+  icon.svg
+  backend/index.ts   register(ctx): tools, routes, services, channels, hooks
+  ui/register.tsx    the screens
+  shared/            code the backend and the UI both import
 ```
 
-### Rules
+- `mini-app.json` is the only manifest, validated by `packages/mini-app-sdk/src/manifest/`.
+- `guide.md` is a prompt section the agent reads while the mini app is enabled: which tool does
+  what, and what to tell the person. It is bounded in size and replaces the skills a mini app used
+  to carry.
+- A **command** is declared in `mini-app.json`: its `prompt` (with `$name` for each argument),
+  `description`, `args` with chips and pickers, `featured`, and the tools it switches on
+  (`activateTools`). It runs as `/<app>:<command>`.
+- A tool's description says what the tool does; `guide.md` says when to use it.
 
-1. **One direction.** Nothing in a plugin names a mini app or a Localix API. The mini app names its
-   plugin (the one in its folder, which has the same name) and any other plugins it needs
-   (`dependencies`, resolved and enabled with it like a plugin's dependencies).
-2. **The plugin format is Claude Code's.** Localix reads `.claude-plugin/plugin.json` and the
-   component folders in place, with Claude Code's defaults: listed `commands`, `agents`,
-   `outputStyles` replace their default folder; `skills` add to it; `hooks`, `mcpServers` and
-   `lspServers` merge with their default files. A part Localix does not run is reported in the
-   plugin's validation, never silently dropped.
-3. **Localix fields live in the mini app.** `apiVersion`, `category`, `surfaces`, `private`, a
-   native backend, views, prompt sections, contributions and file associations are mini-app fields.
-   A plugin manifest that carries one gets a validation warning, as Claude Code warns about an
-   unknown key.
-4. **Commands keep one prompt.** A command's prompt is the plugin's (`commands/<name>.md`). The mini
-   app may describe how Localix offers it: argument chips and pickers (`args`), `featured`,
-   `activateTools`. A named argument fills `$name` in the prompt, as Claude Code's `arguments`
-   frontmatter does.
-5. **One name.** A mini app and the plugin in its folder share a name; components stay namespaced by
-   the plugin's name (`/chess:play-chess`), exactly as in Claude Code.
-6. **Settings.** The plugin's `userConfig` and the mini app's `config` are one settings form; a key
-   both declare is the plugin's.
+### Runtime
 
-## Kinds of extension
+| Part     | Where                                                                                                                 |
+| -------- | --------------------------------------------------------------------------------------------------------------------- |
+| SDK      | `packages/mini-app-sdk` (`@localixai/mini-app-sdk`): manifest, backend and UI contracts. The host serves its modules. |
+| Runtime  | `apps/api/src/features/mini-apps/`: catalog, install and update, backend host, UI artifacts, views, authoring.        |
+| Disk     | `~/.localix/mini-apps/<name>/` (the installed build) and `~/.localix/mini-apps-data/<name>/` (its state).             |
+| Surfaces | `/rpc/mini-apps`, Settings → Mini apps, `/mini-app`.                                                                  |
+| Agent    | Backend tools, `guide.md`, commands, the `mini_app_build` tool.                                                       |
 
-| Kind     | Has                                   | Examples                                            |
-| -------- | ------------------------------------- | --------------------------------------------------- |
-| Plugin   | `.claude-plugin/plugin.json` only     | Any Claude Code plugin; a skills-only extension.    |
-| Mini app | `.localix-app/app.json` (and plugin)  | Chess, Kanban, Reader, Workflows (command pickers). |
-| Legacy   | A root `plugin.json` with both layers | Extensions written before the split; still loaded.  |
+### Distribution
 
-Only a mini app with a screen (a rail viewlet) can be installed as a Mac app
-([plugin apps](plugin-apps.md)).
+The source of every first-party mini app stays in `mini-apps/` of this repository. Localix does not
+ship them; a release publishes them.
 
-## Where the code lives
+1. **Release.** CI builds each mini app into an archive: the backend bundle, the UI artifact,
+   `mini-app.json`, `guide.md` and the icon. Nothing in it needs a build tool or `node_modules` on
+   the person's machine. Beside the archives it publishes `catalog.json`:
 
-| Part                       | Home                                                          | Knows about                                  |
-| -------------------------- | ------------------------------------------------------------- | -------------------------------------------- |
-| Claude Code plugin format  | `packages/claude-plugin` (`@localixai/claude-plugin`)         | Claude Code's documented format only; zod.   |
-| Mini app manifest          | `packages/mini-app-sdk/src/manifest/app.ts` (`/app-manifest`) | Plugin names; Localix's extension contracts. |
-| Reading a folder           | `apps/api/src/features/plugins/layout/`                       | Both formats; composes one runtime manifest. |
-| Loading, catalog, enabling | `apps/api/src/features/plugins/` (unchanged by the split)     | The composed manifest.                       |
+   ```json
+   {
+     "schemaVersion": 1,
+     "apps": [
+       {
+         "name": "chess",
+         "displayName": "Chess",
+         "version": "0.3.0",
+         "apiVersion": 1,
+         "category": "games",
+         "description": "Legal moves and agent-opponent play.",
+         "archive": { "url": "https://…/chess-0.3.0.zip", "bytes": 182340, "sha256": "…" }
+       }
+     ]
+   }
+   ```
 
-The loader, catalog, capability rules and UI keep working on one composed manifest per extension.
-`layout/compose.ts` is the one place that maps the two manifests onto it, so a later change that
-gives plugins and mini apps separate records has one seam to cut.
+2. **Choose.** On first start, and at any time in Settings → Mini apps, the person picks what to
+   install from the catalog.
+3. **Install.** One queue downloads each archive with progress (resumable, size-capped, verified
+   against the catalog's sha256 before anything is unpacked), unpacks it into a staging folder and
+   moves it into place in one rename. A failed or cancelled install leaves the previous build.
+4. **Update.** The catalog is checked periodically. A newer version with a compatible `apiVersion`
+   is offered with an Update action, or installed on its own when automatic updates are on. An
+   update replaces the build, never the data folder.
+5. **Create.** `mini_app_build` (and `/mini-app create`) forks the template into
+   `~/.localix/mini-apps/<name>/` and builds it with the host's build. A mini app the person made is
+   theirs: the catalog never updates or removes it.
+
+A mini app from the first-party catalog is trusted on install; one from any other source runs its
+backend and screens only after the person enables it.
+
+In development the catalog is built from the checkout, so a change to `mini-apps/` is installed
+without a release.
 
 ## Migration
 
-- Bundled extensions ship in the new layout. Each root `plugin.json` was split once into the two
-  manifests, the inverse of `compose.ts`.
-- A Claude Code plugin installs in place: no native `plugin.json` is written next to it any more.
-  Folders imported by earlier versions carry both files; the `.claude-plugin/` manifest wins.
-- A legacy root `plugin.json` keeps loading. `/plugin create` writes the new layout.
+On the first start of a version with the split, once, and safe to run again:
 
-## Not yet
+- The bundled copies earlier versions synchronized into `~/.localix/plugins/` are removed.
+- Each mini app the person made in `~/.localix/plugins/` moves to `~/.localix/mini-apps/`, rewritten
+  to `mini-app.json` and `guide.md`, with its imports moved to `@localixai/mini-app-sdk`. The
+  original is kept under `~/.localix/backups/`.
+- Mini app state moves from `plugin-state/` and `plugin-data/` to `mini-apps-data/`.
+- The first-party mini apps that were enabled are preselected in the picker.
 
-- Four hook events have no Localix moment and stay inert, each with its reason in
-  `apps/api/src/features/cc-hooks/contracts.ts` (`CC_INERT_HOOK_EVENTS`).
-- Mods know nothing of mini apps; a mini app's JavaScript hooks stay a mini-app backend feature.
-  Mods are `user`-tier only: Localix has no managed or bundled mods.
+## Status
+
+| Phase | Change                                                                                               | State |
+| ----- | ---------------------------------------------------------------------------------------------------- | ----- |
+| 0     | This contract; Workflows removed.                                                                    | Done  |
+| 1     | `mini-app.json` and `guide.md`; the bundled mini apps converted; no `.claude-plugin/` in a mini app. |       |
+| 2     | `features/mini-apps` split from `features/plugins`; the composed manifest and legacy layout removed. |       |
+| 3     | Separate storage, records, routes, settings and model-facing names; the start-up migration.          |       |
+| 4     | Release archives, `catalog.json`, the install and update queue, the picker; nothing bundled.         |       |
+| 5     | Tests, guards, screenshots, docs and copy that assumed bundled mini apps.                            |       |

@@ -26,11 +26,14 @@ owner; use typed ports for cross-feature behavior.
 
 ## Plugins and mini apps
 
-Two separate layers, named strictly. A **plugin** is the Claude Code format: skills, commands,
-agents, hooks, mods, MCP and LSP servers (`.claude-plugin/plugin.json`). A **mini app** is Localix's
-own layer: screens, a backend and agent tools over Localix's APIs. A mini app contains a plugin;
-that is the only link. Plugin code never knows about mini apps, and nothing that is about screens,
-backends or the mini app SDK is called "plugin".
+Two separate products that share nothing, named strictly. A **plugin** is the Claude Code format:
+skills, commands, agents, hooks, mods, MCP and LSP servers (`.claude-plugin/plugin.json`). A **mini
+app** is Localix's own format: screens, a backend, agent tools over Localix's APIs, a `guide.md` and
+commands (`mini-app.json`). A mini app contains no plugin and a plugin knows nothing of mini apps;
+neither layer's code imports the other's. Localix ships no mini app: they are installed and updated
+from a catalog. Nothing that is about screens, backends or the mini app SDK is called "plugin".
+Rules X1–X5 and the migration status:
+[plugins and mini apps](docs/internals/plugins-and-mini-apps.md).
 
 ## Architecture
 
