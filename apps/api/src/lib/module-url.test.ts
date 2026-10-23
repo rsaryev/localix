@@ -88,6 +88,23 @@ describe('freshModuleUrl', () => {
     expect(loaded.value).toBe(42)
   })
 
+  test('a retry that cannot rebuild names the import it could not resolve', async () => {
+    // Bun.build throws a bare "Bundle failed" unless asked not to, and that was all a person saw
+    // of a mini app backend whose chunk had gone: no file, no import, nothing to act on.
+    const file = path.join(dir, 'unresolved-retry.mjs')
+    const fixedTime = new Date('2026-07-30T00:00:00.000Z')
+    await fsp.writeFile(file, 'export const value = }')
+    await fsp.utimes(file, fixedTime, fixedTime)
+    expect(importFreshModule(file)).rejects.toThrow()
+
+    // The same mtime URL, so the retry rebuilds the entry rather than importing it again.
+    await fsp.writeFile(file, 'export { value } from "./chunks/gone.mjs"')
+    await fsp.utimes(file, fixedTime, fixedTime)
+    const failure = await importFreshModule(file).catch((error: Error) => error)
+    expect(String(failure)).toContain('chunks/gone.mjs')
+    expect(String(failure)).not.toContain('Bundle failed')
+  })
+
   test('restores when the cached recovery bundle has been removed from $TMPDIR', async () => {
     // The recovered bundle is written to a SHARED $TMPDIR directory, which is not ours to rely
     // on: the OS purges temp files and this process deletes its own artifacts on exit. Caching

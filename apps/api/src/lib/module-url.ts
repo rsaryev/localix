@@ -181,6 +181,9 @@ export async function importFreshModule(absPath: string): Promise<unknown> {
         target: 'bun',
         format: 'esm',
         packages: 'bundle',
+        // The build's own messages name the file and the import; a thrown `Bundle failed` names
+        // neither, and was all a person saw of a backend that could not load.
+        throw: false,
       })
       if (!built.success || !built.outputs[0]) {
         state.generation += 1
