@@ -21,7 +21,7 @@ describe('a mini app’s icon on the rail', () => {
     const img = host.querySelector('img')!
     expect(img.getAttribute('src')).toEndWith('/rpc/mini-apps/chess/icon?v=1.0.0')
     expect(img.getAttribute('alt')).toBe('')
-    expect(img.className).toContain('size-4')
+    expect(img.className).toContain('size-6')
     await act(async () => root.unmount())
   })
 })

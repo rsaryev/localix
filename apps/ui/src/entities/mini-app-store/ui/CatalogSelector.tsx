@@ -46,7 +46,6 @@ export function CatalogSelector({
     ...catalogs.map((catalog) => ({
       id: `catalog:${catalog.url}`,
       label: catalogLabel(catalog),
-      description: catalog.builtIn ? 'Comes with Localix' : catalog.url,
       hint: String(counts[catalog.url] ?? 0),
       selected: active === catalog.url,
       onSelect: () => onChoose(catalog.url),
@@ -54,7 +53,7 @@ export function CatalogSelector({
     { separator: true },
     ...added.map((catalog) => ({
       id: `remove:${catalog.url}`,
-      label: `Remove ${catalogLabel(catalog)}`,
+      label: `Remove ${catalogLabel(catalog).replace(/^A /, 'a ')}`,
       icon: Trash2,
       danger: true,
       onSelect: () => onRemove(catalog.url),
