@@ -184,6 +184,11 @@ export async function openPreviewCore(
       content: `Unsupported protocol "${parsed.protocol}": only http(s) URLs and local files open.`,
     }
   }
+  // On Windows the packaged app itself is served at http(s)://tauri.localhost, an origin the API
+  // and the desktop shell trust; a browser tab must never load it.
+  if (parsed.hostname.replace(/\.$/, '') === 'tauri.localhost') {
+    return { ok: false, content: `Refused to open the app's own origin: ${parsed.host}` }
+  }
 
   // A local page is shown in an iframe, so read whether it refuses framing — best effort: an
   // address that does not answer is opened all the same and shows what it returns, and `open`

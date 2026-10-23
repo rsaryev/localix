@@ -226,7 +226,26 @@ fn page_url(value: &str) -> Result<Url, String> {
     if !matches!(parsed.scheme(), "http" | "https") {
         return Err("Browser tabs accept only HTTP and HTTPS URLs".into());
     }
+    if is_app_origin(&parsed) {
+        return Err("Browser tabs cannot open the app's own origin".into());
+    }
     Ok(parsed)
+}
+
+/// On Windows the packaged app is served at http(s)://tauri.localhost, an origin the API and the
+/// Tauri IPC trust, so no browser page may load it.
+fn is_app_origin(url: &Url) -> bool {
+    url.host_str()
+        .map(|host| {
+            host.trim_end_matches('.')
+                .eq_ignore_ascii_case("tauri.localhost")
+        })
+        .unwrap_or(false)
+}
+
+/// Where a browser page may navigate: web pages and blank documents, never the app's origin.
+fn navigable(next: &Url) -> bool {
+    matches!(next.scheme(), "http" | "https" | "about") && !is_app_origin(next)
 }
 
 pub(crate) fn page_label(owner: &str, tab_id: &str) -> Result<String, String> {
@@ -317,7 +336,7 @@ fn open_page(
     #[cfg(target_os = "macos")]
     let builder = builder.user_agent(safari_user_agent());
     let builder = builder
-        .on_navigation(|next| matches!(next.scheme(), "http" | "https" | "about"))
+        .on_navigation(navigable)
         .on_page_load(move |_view, payload| {
             #[cfg(not(target_os = "macos"))]
             {
@@ -1100,6 +1119,27 @@ mod tests {
         assert!(page_url("https://example.com/a").is_ok());
         assert!(page_url("file:///private/key").is_err());
         assert!(page_url("tauri://localhost/").is_err());
+    }
+
+    /// On Windows the packaged app is served at http(s)://tauri.localhost; a page there would run
+    /// with the app's origin, which the API and Tauri IPC trust.
+    #[test]
+    fn browser_navigation_rejects_the_packaged_app_origin() {
+        assert!(page_url("http://tauri.localhost/").is_err());
+        assert!(page_url("https://tauri.localhost/").is_err());
+        assert!(page_url("http://TAURI.localhost:8080/index.html").is_err());
+        assert!(page_url("http://tauri.localhost./").is_err());
+        assert!(page_url("https://nottauri.localhost/").is_ok());
+        assert!(super::navigable(&super::Url::parse("about:blank").unwrap()));
+        assert!(super::navigable(
+            &super::Url::parse("https://example.com/").unwrap()
+        ));
+        assert!(!super::navigable(
+            &super::Url::parse("http://tauri.localhost/").unwrap()
+        ));
+        assert!(!super::navigable(
+            &super::Url::parse("https://tauri.localhost/").unwrap()
+        ));
     }
 
     /// The tokens sites sniff for must be present, or they serve the page to an unknown browser.

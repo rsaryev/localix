@@ -254,6 +254,18 @@ describe('openPreviewCore', () => {
     expect(events[0].url).toBe('https://github.com/')
   })
 
+  test.each([
+    'http://tauri.localhost/',
+    'https://tauri.localhost/',
+    'http://TAURI.localhost:8080/x',
+    'http://tauri.localhost./',
+  ])('refuses the packaged app origin %s instead of opening it as a remote page', async (url) => {
+    const { options, events } = makeCore()
+    const result = await openPreviewCore(options, { url })
+    expect(result.ok).toBe(false)
+    expect(events).toHaveLength(0)
+  })
+
   test('the same origin lands in the same derived tab, and a later call bumps the version', async () => {
     const { options, events } = makeCore()
     await openPreviewCore(options, {
