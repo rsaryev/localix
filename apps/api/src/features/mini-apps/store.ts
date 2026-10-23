@@ -6,7 +6,9 @@ import { envString } from '../../lib/env'
 import { errorMessage } from '../../lib/errors'
 import { bundledMiniAppsSyncRoot } from './discovery'
 import { MINI_APPS_SUBDIR } from './paths'
+import { storePage, type MiniAppStorePage } from './store-detail'
 import { installedBy, installOffer } from './store-install'
+import { createStoreMediaReader, storeMediaUrl, type StoreMediaKind } from './store-media'
 import {
   createOfferReader,
   readManifest,
@@ -43,6 +45,13 @@ export interface MiniAppStoreEntry {
   /** The version the catalog offers. */
   version?: string
   publisher: MiniAppPublisher
+  /** The catalog it comes from, as the catalog list names it. */
+  source: string
+  /** Where the host serves its icon; the row draws a monogram when it has none. */
+  icon?: string
+  tags?: string[]
+  /** In the Featured group above the rest (the Localix catalog only). */
+  featured?: boolean
   /** What is on this machine, or null. */
   installed: { version?: string } | null
   /** The catalog offers a version other than the installed one. */
@@ -58,6 +67,9 @@ export interface MiniAppStoreListing {
   problems: string[]
 }
 
+/** A catalog's store media, kept by hash once fetched. */
+export const MINI_APP_STORE_CACHE_SUBDIR = '.localix/cache/mini-app-store'
+
 const incompatible = (offer: Offer) => (offer.apiVersion ?? 1) > MINI_APP_API_VERSION
 
 export function createMiniAppStore(deps: {
@@ -70,9 +82,15 @@ export function createMiniAppStore(deps: {
    */
   onInstalled: (name: string, info: { fresh: boolean; userId?: string }) => Promise<void>
   fetchImpl?: typeof fetch
+  /** Where a catalog's media are kept once fetched; under the Localix cache by default. */
+  cacheDir?: string
 }) {
   const installRoot = join(deps.homeDir, MINI_APPS_SUBDIR)
   const readOffers = createOfferReader({ sources: deps.sources, fetchImpl: deps.fetchImpl })
+  const readMedia = createStoreMediaReader({
+    cacheDir: deps.cacheDir ?? join(deps.homeDir, MINI_APP_STORE_CACHE_SUBDIR),
+    fetchImpl: deps.fetchImpl,
+  })
   const jobs = new Map<string, MiniAppJob>()
   const listeners = new Set<() => void>()
   let queue: Promise<void> = Promise.resolve()
@@ -105,6 +123,39 @@ export function createMiniAppStore(deps: {
     }
   }
 
+  async function toEntry(offer: Offer): Promise<MiniAppStoreEntry> {
+    const installed = await readManifest(join(installRoot, offer.name))
+    const installedVersion = typeof installed?.version === 'string' ? installed.version : undefined
+    const job = jobs.get(offer.name)
+    const { icon, tags, featured } = offer.store
+    return {
+      name: offer.name,
+      ...(offer.displayName ? { displayName: offer.displayName } : {}),
+      description: offer.description,
+      ...(offer.category ? { category: offer.category } : {}),
+      ...(offer.version ? { version: offer.version } : {}),
+      publisher: offer.publisher,
+      source: offer.source,
+      ...(icon ? { icon: storeMediaUrl(offer.name, 'icon', icon) } : {}),
+      ...(tags.length ? { tags } : {}),
+      ...(featured ? { featured: true } : {}),
+      installed: installed ? (installedVersion ? { version: installedVersion } : {}) : null,
+      update: Boolean(installed && offer.version && installedVersion !== offer.version),
+      ...(incompatible(offer) ? { incompatible: true } : {}),
+      ...(job ? { job } : {}),
+    }
+  }
+
+  const offerNamed = async (name: string): Promise<Offer> => {
+    const offer = (await readOffers()).offers.get(name)
+    if (!offer)
+      throw new NotFoundError(
+        'mini_app_not_offered',
+        `No catalog offers a mini app named "${name}"`,
+      )
+    return offer
+  }
+
   const enqueue = (offer: Offer, userId?: string) => {
     setJob(offer.name, { phase: 'queued' })
     queue = queue.then(() => run(offer, userId))
@@ -113,27 +164,19 @@ export function createMiniAppStore(deps: {
   return {
     async list(): Promise<MiniAppStoreListing> {
       const { offers, problems } = await readOffers()
-      const entries = await Promise.all(
-        [...offers.values()].map(async (offer) => {
-          const installed = await readManifest(join(installRoot, offer.name))
-          const installedVersion =
-            typeof installed?.version === 'string' ? installed.version : undefined
-          const job = jobs.get(offer.name)
-          return {
-            name: offer.name,
-            ...(offer.displayName ? { displayName: offer.displayName } : {}),
-            description: offer.description,
-            ...(offer.category ? { category: offer.category } : {}),
-            ...(offer.version ? { version: offer.version } : {}),
-            publisher: offer.publisher,
-            installed: installed ? (installedVersion ? { version: installedVersion } : {}) : null,
-            update: Boolean(installed && offer.version && installedVersion !== offer.version),
-            ...(incompatible(offer) ? { incompatible: true } : {}),
-            ...(job ? { job } : {}),
-          } satisfies MiniAppStoreEntry
-        }),
-      )
+      const entries = await Promise.all([...offers.values()].map(toEntry))
       return { entries: entries.sort((a, b) => a.name.localeCompare(b.name)), problems }
+    },
+
+    /** One app's store page: its row, README, screenshots and what it brings. */
+    async detail(name: string): Promise<MiniAppStorePage<MiniAppStoreEntry>> {
+      const offer = await offerNamed(name)
+      return storePage(offer, await toEntry(offer), readMedia)
+    },
+
+    /** One of an app's store files, checked to be what it claims (`store-media.ts`). */
+    async media(name: string, kind: StoreMediaKind, index?: number) {
+      return readMedia.read(await offerNamed(name), kind, index)
     },
 
     /**
@@ -147,12 +190,7 @@ export function createMiniAppStore(deps: {
       opts: { userId?: string; acceptUnverified?: boolean } = {},
     ): Promise<void> {
       if (busy(name)) return
-      const offer = (await readOffers()).offers.get(name)
-      if (!offer)
-        throw new NotFoundError(
-          'mini_app_not_offered',
-          `No catalog offers a mini app named "${name}"`,
-        )
+      const offer = await offerNamed(name)
       if (incompatible(offer))
         throw new ConflictError(
           'mini_app_incompatible',
@@ -191,6 +229,9 @@ export function createMiniAppStore(deps: {
       }
       return queued
     },
+
+    /** A catalog's icon, checked against its pin, for a catalog not added yet. */
+    catalogImage: readMedia.catalogImage,
 
     /** Resolves when every queued install has finished (tests, shutdown). */
     settled: () => queue,

@@ -28,6 +28,7 @@ import { toMiniAppRecord } from './records'
 import { syncBundledContributions } from './sync-bundled-contributions'
 import { resolveMiniAppUiFile } from './ui-artifact'
 import { createMiniAppWrites } from './service-writes'
+import { withCatalogPreview } from './catalog-preview'
 import { createMiniAppCatalogs } from './catalogs'
 import { builtInMiniAppSources, createMiniAppStore, type MiniAppStoreSource } from './store'
 import {
@@ -183,13 +184,13 @@ export function createMiniAppService(deps: MiniAppServiceDeps) {
 
   // The store: what catalogs offer and the installs in flight; a finished install is announced.
   // The catalogs the store reads: the built-in ones, then those the person added.
-  const catalogs = createMiniAppCatalogs({
+  const catalogList = createMiniAppCatalogs({
     db: deps.db,
     builtIn: deps.storeSources ?? builtInMiniAppSources,
   })
   const store = createMiniAppStore({
     homeDir: deps.homeDir,
-    sources: catalogs.sources,
+    sources: catalogList.sources,
     onInstalled: async (name, { fresh, userId }) => {
       // Choosing it in the store is the person's yes to run it; an update keeps their decision.
       if (fresh && userId) await setEnabled(userId, { name, enabled: true })
@@ -200,6 +201,7 @@ export function createMiniAppService(deps: MiniAppServiceDeps) {
       })
     },
   })
+  const catalogs = withCatalogPreview(catalogList, store)
 
   return {
     authoring,

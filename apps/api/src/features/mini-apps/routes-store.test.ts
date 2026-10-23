@@ -12,9 +12,14 @@ const entry: MiniAppStoreEntry = {
   category: 'games',
   version: '1.0.0',
   publisher: { name: 'Localix', verified: true },
+  source: 'https://hosted.test/mini-app-catalog.json',
+  icon: '/rpc/mini-apps/store/media/chess/icon?v=abc',
+  tags: ['game'],
   installed: null,
   update: false,
 }
+const SVG = new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"/>')
+const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47])
 
 function app(installed: string[], catalogs: string[] = []) {
   const service = {
@@ -25,9 +30,27 @@ function app(installed: string[], catalogs: string[] = []) {
       ],
       add: async (url: string) => void catalogs.push(url),
       remove: async (url: string) => void catalogs.splice(catalogs.indexOf(url), 1),
+      preview: async (url: string) => ({
+        url,
+        publishers: ['Ada'],
+        apps: 2,
+        icons: [],
+        verified: false,
+        added: false,
+      }),
     },
     store: {
       list: async () => ({ entries: [entry], problems: [] }),
+      detail: async (name: string) => ({
+        entry: { ...entry, name },
+        readme: '# Chess',
+        screenshots: [{ url: '/rpc/mini-apps/store/media/chess/screenshot/0?v=abc' }],
+        details: { version: '1.0.0', size: 120, license: 'MIT' },
+      }),
+      media: async (_name: string, kind: string, index?: number) =>
+        kind === 'icon'
+          ? { bytes: SVG, type: 'image/svg+xml' }
+          : { bytes: PNG, type: 'image/png', index },
       install: async (name: string, opts: { acceptUnverified?: boolean }) =>
         void installed.push(opts.acceptUnverified ? `${name}!` : name),
     },
@@ -78,5 +101,40 @@ describe('/rpc/mini-apps/store', () => {
     })
     expect((await send('/remove', 'https://ada.test/c.json')).status).toBe(204)
     expect(kept).toEqual([])
+  })
+
+  test('one app’s store page: its row, README, screenshots and details', async () => {
+    const response = await app([]).request('/rpc/mini-apps/store/chess')
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({
+      entry: { name: 'chess' },
+      readme: '# Chess',
+      details: { size: 120 },
+    })
+  })
+
+  test('media are served with their type, never sniffed, and an SVG cannot run anything', async () => {
+    const icon = await app([]).request('/rpc/mini-apps/store/media/chess/icon')
+    expect(icon.status).toBe(200)
+    expect(icon.headers.get('content-type')).toBe('image/svg+xml')
+    expect(icon.headers.get('x-content-type-options')).toBe('nosniff')
+    expect(icon.headers.get('content-security-policy')).toBe(
+      "default-src 'none'; style-src 'unsafe-inline'",
+    )
+    const shot = await app([]).request('/rpc/mini-apps/store/media/chess/screenshot/0?v=abc')
+    expect(shot.headers.get('content-type')).toBe('image/png')
+    expect(shot.headers.get('cache-control')).toContain('immutable')
+    expect(new Uint8Array(await shot.arrayBuffer())).toEqual(PNG)
+    expect((await app([]).request('/rpc/mini-apps/store/media/chess/readme')).status).toBe(400)
+  })
+
+  test('a catalog is previewed before it is added', async () => {
+    const response = await app([]).request('/rpc/mini-apps/catalogs/preview', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ url: 'https://ada.test/c.json' }),
+    })
+    expect(response.status).toBe(200)
+    expect(await response.json()).toMatchObject({ publishers: ['Ada'], apps: 2, verified: false })
   })
 })

@@ -14,6 +14,7 @@ const entry = (
 ): MiniAppStoreEntryRecord => ({
   description: `${over.name} does things`,
   publisher: { name: 'Localix', verified: true },
+  source: 'https://hosted.test/mini-app-catalog.json',
   installed: null,
   update: false,
   ...over,

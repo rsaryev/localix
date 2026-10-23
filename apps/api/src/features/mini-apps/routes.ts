@@ -20,9 +20,29 @@ import type { MiniAppService } from './service'
 import {
   installMiniAppRequestSchema,
   miniAppCatalogRequestSchema,
+  miniAppCatalogPreviewSchema,
   miniAppCatalogsResponseSchema,
+  miniAppStoreMediaParamsSchema,
+  miniAppStorePageSchema,
   miniAppStoreResponseSchema,
 } from './contracts-store'
+
+/**
+ * How a store file leaves the host: its checked type, never sniffed, and an SVG that can load and
+ * run nothing even when opened on its own. A catalog's file is named by its hash, so it is cached.
+ */
+function mediaResponse(file: { bytes: Uint8Array; type: string }, hashed: boolean): Response {
+  return new Response(new Blob([file.bytes as Uint8Array<ArrayBuffer>]), {
+    headers: {
+      'Content-Type': file.type,
+      'X-Content-Type-Options': 'nosniff',
+      'Cache-Control': hashed ? 'public, max-age=31536000, immutable' : 'no-cache',
+      ...(file.type === 'image/svg+xml'
+        ? { 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'" }
+        : {}),
+    },
+  })
+}
 
 /** The slice of the mini app service these routes call. */
 export type MiniAppRoutesService = Pick<
@@ -70,6 +90,23 @@ export function createMiniAppRoutes(service: MiniAppRoutesService) {
     .get('/store', async (c) =>
       c.json(miniAppStoreResponseSchema.parse(await service.store.list()), 200),
     )
+    // A store file: the icon or one screenshot, read from the app's folder or a catalog's pinned
+    // copy (`store-media.ts`). The README reaches the client inside the store page.
+    .get(
+      '/store/media/:name/:kind/:index?',
+      zValidator('param', miniAppStoreMediaParamsSchema),
+      async (c) => {
+        const { name, kind, index } = c.req.valid('param')
+        const file = await service.store.media(name, kind, index)
+        return mediaResponse(file, Boolean(c.req.query('v')))
+      },
+    )
+    .get('/store/:name', zValidator('param', z.object({ name: z.string().min(1) })), async (c) =>
+      c.json(
+        miniAppStorePageSchema.parse(await service.store.detail(c.req.valid('param').name)),
+        200,
+      ),
+    )
     .post('/store/install', zValidator('json', installMiniAppRequestSchema), async (c) => {
       const { name, acceptUnverified } = c.req.valid('json')
       await service.store.install(name, { userId: c.get('userId'), acceptUnverified })
@@ -84,6 +121,13 @@ export function createMiniAppRoutes(service: MiniAppRoutesService) {
       await service.catalogs.add(c.req.valid('json').url)
       return c.body(null, 204)
     })
+    // Read a catalog before it is added: who publishes it and what is in it. Writes nothing.
+    .post('/catalogs/preview', zValidator('json', miniAppCatalogRequestSchema), async (c) =>
+      c.json(
+        miniAppCatalogPreviewSchema.parse(await service.catalogs.preview(c.req.valid('json').url)),
+        200,
+      ),
+    )
     .post('/catalogs/remove', zValidator('json', miniAppCatalogRequestSchema), async (c) => {
       await service.catalogs.remove(c.req.valid('json').url)
       return c.body(null, 204)

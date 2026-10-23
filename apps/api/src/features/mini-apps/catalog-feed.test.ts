@@ -56,6 +56,59 @@ describe('a mini app catalog', () => {
     expect(apps.map((app) => app.name)).toEqual(['chess'])
   })
 
+  test('reads the store fields beside it, media resolved against the catalog; a bad one is dropped alone', async () => {
+    const media = (url: string, type?: string) => ({
+      url,
+      bytes: 10,
+      sha256: sha,
+      ...(type ? { type } : {}),
+    })
+    const [chess] = await readMiniAppCatalog('https://example.test/mini-apps/catalog.json', {
+      fetchImpl: serve({
+        schema: 1,
+        apps: [
+          {
+            ...catalog.apps[0]!,
+            icon: media('chess-icon.svg', 'image/svg+xml'),
+            screenshots: [
+              { ...media('chess-1.png', 'image/png'), caption: 'A position' },
+              media('http://elsewhere.test/2.png', 'image/png'),
+              { url: 'broken.png' },
+            ],
+            readme: media('chess-readme.md'),
+            tags: ['game', 'Not A Tag', 'board-game'],
+            homepage: 'https://example.test/chess',
+            license: 'MIT',
+            author: 'Ada',
+            featured: true,
+            surfaces: ['agent', 'workbench'],
+            commands: ['new'],
+          },
+        ],
+      }),
+    })
+    expect(chess).toMatchObject({
+      icon: { url: 'https://example.test/mini-apps/chess-icon.svg', type: 'image/svg+xml' },
+      screenshots: [{ url: 'https://example.test/mini-apps/chess-1.png', caption: 'A position' }],
+      readme: { url: 'https://example.test/mini-apps/chess-readme.md', bytes: 10 },
+      tags: ['game', 'board-game'],
+      homepage: 'https://example.test/chess',
+      license: 'MIT',
+      author: 'Ada',
+      featured: true,
+      surfaces: ['agent', 'workbench'],
+      commands: ['new'],
+    })
+    expect(chess!.screenshots).toHaveLength(1)
+
+    const [plain] = await readMiniAppCatalog('https://example.test/catalog.json', {
+      fetchImpl: serve({ schema: 1, apps: [{ ...catalog.apps[0]!, icon: 'icon.svg', tags: 3 }] }),
+    })
+    expect(plain!.name).toBe('chess')
+    expect(plain!.icon).toBeUndefined()
+    expect(plain!.tags).toBeUndefined()
+  })
+
   test('a catalog that cannot be read says where and why', async () => {
     await expect(
       readMiniAppCatalog('https://example.test/catalog.json', { fetchImpl: serve({}, 503) }),

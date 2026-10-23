@@ -19,7 +19,7 @@ const urlOf = (source: MiniAppStoreSource) =>
   source.kind === 'catalog' ? source.url : pathToFileURL(source.root).href
 
 /** An HTTPS URL or a `file://` path, or null: a catalog is fetched with no other scheme. */
-function normalize(raw: string): string | null {
+export function normalizeCatalogUrl(raw: string): string | null {
   try {
     const url = new URL(raw.trim())
     return url.protocol === 'https:' || url.protocol === 'file:' ? url.href : null
@@ -75,7 +75,7 @@ export function createMiniAppCatalogs(deps: {
     },
 
     async add(raw: string): Promise<void> {
-      const url = normalize(raw)
+      const url = normalizeCatalogUrl(raw)
       if (!url)
         throw new InvalidRequestError(
           'mini_app_catalog_url',
@@ -97,7 +97,7 @@ export function createMiniAppCatalogs(deps: {
     },
 
     async remove(raw: string): Promise<void> {
-      const url = normalize(raw) ?? raw
+      const url = normalizeCatalogUrl(raw) ?? raw
       if ((await deps.builtIn()).some((source) => urlOf(source) === url))
         throw new ConflictError(
           'mini_app_catalog_built_in',

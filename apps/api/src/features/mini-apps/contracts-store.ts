@@ -8,6 +8,12 @@ export const miniAppStoreEntrySchema = z.object({
   category: z.string().optional(),
   version: z.string().optional(),
   publisher: z.object({ name: z.string(), verified: z.boolean() }),
+  /** The catalog it comes from, as `/catalogs` lists it. */
+  source: z.string(),
+  /** A host address (`/rpc/mini-apps/store/media/…`), never where the catalog keeps the file. */
+  icon: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  featured: z.boolean().optional(),
   installed: z.object({ version: z.string().optional() }).nullable(),
   update: z.boolean(),
   incompatible: z.boolean().optional(),
@@ -42,3 +48,38 @@ export type MiniAppCatalogEntryRecord = z.infer<typeof miniAppCatalogSchema>
 export const miniAppCatalogsResponseSchema = z.object({ catalogs: z.array(miniAppCatalogSchema) })
 
 export const miniAppCatalogRequestSchema = z.object({ url: z.string().min(1).max(2048) })
+
+/** One app's store page (`GET /store/:name`). */
+export const miniAppStorePageSchema = z.object({
+  entry: miniAppStoreEntrySchema,
+  readme: z.string().nullable(),
+  screenshots: z.array(z.object({ url: z.string(), caption: z.string().optional() })),
+  details: z.object({
+    version: z.string().optional(),
+    apiVersion: z.number().optional(),
+    size: z.number().optional(),
+    license: z.string().optional(),
+    author: z.string().optional(),
+    homepage: z.string().optional(),
+    surfaces: z.array(z.string()).optional(),
+    commands: z.number().optional(),
+  }),
+})
+export type MiniAppStorePageRecord = z.infer<typeof miniAppStorePageSchema>
+
+export const miniAppStoreMediaParamsSchema = z.object({
+  name: z.string().min(1),
+  kind: z.enum(['icon', 'screenshot']),
+  index: z.coerce.number().int().min(0).max(9).optional(),
+})
+
+/** What a catalog would add, read before it is added (`POST /catalogs/preview`). */
+export const miniAppCatalogPreviewSchema = z.object({
+  url: z.string(),
+  publishers: z.array(z.string()),
+  apps: z.number(),
+  icons: z.array(z.object({ name: z.string(), label: z.string(), src: z.string() })),
+  verified: z.literal(false),
+  added: z.boolean(),
+})
+export type MiniAppCatalogPreviewRecord = z.infer<typeof miniAppCatalogPreviewSchema>
