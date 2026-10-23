@@ -14,6 +14,8 @@ export const miniAppStoreEntrySchema = z.object({
   icon: z.string().optional(),
   tags: z.array(z.string()).optional(),
   featured: z.boolean().optional(),
+  /** What it adds: `workbench` is a screen of its own (the one a desktop app opens on). */
+  surfaces: z.array(z.string()).optional(),
   installed: z.object({ version: z.string().optional() }).nullable(),
   update: z.boolean(),
   incompatible: z.boolean().optional(),

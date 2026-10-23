@@ -3,6 +3,7 @@ import { errorMessage } from '../../lib/errors'
 import { ConflictError, NotFoundError, UnavailableError } from '../../lib/domain-errors'
 import { scalarConfig } from '../capabilities/source-repository'
 import { confineToDir } from '../ext/fs-discovery'
+import { readMiniAppIcon } from './app-icon'
 import { parseArgOptions, runArgOptionsScript, type ArgOption } from './arg-options'
 import type { MiniAppCatalog } from './catalog'
 import { resolveMiniAppConfig } from './config'
@@ -116,4 +117,16 @@ export async function resolveMiniAppArgOptions(
     deps.logger?.warn('mini app arg options failed', { err: errorMessage(err) })
     return { options: [] }
   }
+}
+
+/** An installed mini app's own icon, by the scope it is installed in. */
+export async function readInstalledMiniAppIcon(
+  { catalogFor }: MiniAppServiceScope,
+  userId: string,
+  input: { app: string; projectId?: string | null },
+) {
+  const projectId = input.projectId ?? ''
+  const entry = (await catalogFor(userId, projectId)).catalog.find(input.app, projectId)
+  if (!entry) throw new NotFoundError('mini_app_not_found', `No mini app named "${input.app}"`)
+  return readMiniAppIcon(entry.app)
 }

@@ -3,6 +3,7 @@ import { Hono } from 'hono'
 
 import type { AppContext } from '../../app'
 import { createMiniAppRoutes, type MiniAppRoutesService } from './routes'
+import { NotFoundError } from '../../lib/domain-errors'
 import type { MiniAppStoreEntry } from './store'
 
 const entry: MiniAppStoreEntry = {
@@ -23,6 +24,11 @@ const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47])
 
 function app(installed: string[], catalogs: string[] = []) {
   const service = {
+    appIcon: async (_userId: string, { app }: { app: string }) => {
+      if (app !== 'chess')
+        throw new NotFoundError('mini_app_icon_not_found', `"${app}" has no icon`)
+      return { bytes: SVG, type: 'image/svg+xml' }
+    },
     catalogs: {
       list: async () => [
         { url: 'https://hosted.test/mini-app-catalog.json', builtIn: true },
@@ -136,5 +142,12 @@ describe('/rpc/mini-apps/store', () => {
     })
     expect(response.status).toBe(200)
     expect(await response.json()).toMatchObject({ publishers: ['Ada'], apps: 2, verified: false })
+  })
+
+  test('an installed app’s own icon is served the same way, and one with none is a 404', async () => {
+    const icon = await app([]).request('/rpc/mini-apps/chess/icon?v=1.0.0')
+    expect(icon.status).toBe(200)
+    expect(icon.headers.get('content-security-policy')).toContain("default-src 'none'")
+    expect((await app([]).request('/rpc/mini-apps/notes/icon')).status).toBe(404)
   })
 })

@@ -33,6 +33,7 @@ import { createMiniAppCatalogs } from './catalogs'
 import { builtInMiniAppSources, createMiniAppStore, type MiniAppStoreSource } from './store'
 import {
   invokeMiniAppUiAction,
+  readInstalledMiniAppIcon,
   resolveMiniAppArgOptions,
   type MiniAppArgOptionsInput,
   type MiniAppServiceScope,
@@ -182,8 +183,7 @@ export function createMiniAppService(deps: MiniAppServiceDeps) {
     await recordCoreChanges(deps.db, { entity: 'mini-app', op: 'resync' })
   }
 
-  // The store: what catalogs offer and the installs in flight; a finished install is announced.
-  // The catalogs the store reads: the built-in ones, then those the person added.
+  // The catalogs (built in, then the person's) and the store over them; an install is announced.
   const catalogList = createMiniAppCatalogs({
     db: deps.db,
     builtIn: deps.storeSources ?? builtInMiniAppSources,
@@ -251,6 +251,9 @@ export function createMiniAppService(deps: MiniAppServiceDeps) {
       const { catalog } = await catalogFor(userId, input.projectId ?? '')
       return readViewHtml(catalog, input)
     },
+
+    appIcon: (userId: string, input: { app: string; projectId?: string | null }) =>
+      readInstalledMiniAppIcon(scope, userId, input),
 
     async resolveUiFile(userId: string, input: { app: string; file: string }) {
       const { catalog } = await catalogFor(userId, '')

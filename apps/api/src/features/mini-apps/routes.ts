@@ -53,6 +53,7 @@ export type MiniAppRoutesService = Pick<
   | 'remove'
   | 'resolveArgOptions'
   | 'resolveUiFile'
+  | 'appIcon'
   | 'getViewHtml'
   | 'invokeUiAction'
   | 'store'
@@ -159,6 +160,16 @@ export function createMiniAppRoutes(service: MiniAppRoutesService) {
     // content-hashed and never changes under its name. `Content-Type` is set explicitly because
     // the `cors()` middleware clones the response and drops Bun's lazy type, and a module script
     // without a JavaScript type is refused.
+    // An installed mini app's own icon: the rail draws it, a Mac app is rasterised from it.
+    .get(
+      '/:app/icon',
+      zValidator('query', z.object({ projectId: z.string().optional(), v: z.string().optional() })),
+      async (c) => {
+        const { projectId, v } = c.req.valid('query')
+        const file = await service.appIcon(c.get('userId'), { app: c.req.param('app'), projectId })
+        return mediaResponse(file, Boolean(v))
+      },
+    )
     .get('/:app/ui/*', async (c) => {
       const name = c.req.param('app')
       const file = decodeURIComponent(c.req.path.slice(c.req.path.indexOf('/ui/') + 4))

@@ -52,6 +52,7 @@ export interface MiniAppStoreEntry {
   tags?: string[]
   /** In the Featured group above the rest (the Localix catalog only). */
   featured?: boolean
+  surfaces?: string[]
   /** What is on this machine, or null. */
   installed: { version?: string } | null
   /** The catalog offers a version other than the installed one. */
@@ -127,7 +128,7 @@ export function createMiniAppStore(deps: {
     const installed = await readManifest(join(installRoot, offer.name))
     const installedVersion = typeof installed?.version === 'string' ? installed.version : undefined
     const job = jobs.get(offer.name)
-    const { icon, tags, featured } = offer.store
+    const { icon, tags, featured, surfaces } = offer.store
     return {
       name: offer.name,
       ...(offer.displayName ? { displayName: offer.displayName } : {}),
@@ -139,6 +140,7 @@ export function createMiniAppStore(deps: {
       ...(icon ? { icon: storeMediaUrl(offer.name, 'icon', icon) } : {}),
       ...(tags.length ? { tags } : {}),
       ...(featured ? { featured: true } : {}),
+      ...(surfaces ? { surfaces } : {}),
       installed: installed ? (installedVersion ? { version: installedVersion } : {}) : null,
       update: Boolean(installed && offer.version && installedVersion !== offer.version),
       ...(incompatible(offer) ? { incompatible: true } : {}),
