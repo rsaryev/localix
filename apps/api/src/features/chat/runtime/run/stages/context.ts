@@ -188,6 +188,8 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
     ...context,
     agent: main.agent,
     disabledTools: main.disabledTools,
+    // The plugin agent type a delegated child runs as: its `tools` shape the run's surface.
+    pluginSubagent: asType?.subagent ?? null,
     ...(humanProfile ? { human: humanProfile } : {}),
     hookRunOptions,
     ccHooks,

@@ -6,7 +6,7 @@
 import type { AgentTool, ToolSurface } from '@localixai/agent/agents'
 
 import { approvedInputFor, type CcHooksRuntime } from '../../../cc-hooks'
-import type { RunProfile } from '../../../agent-core/run-shape'
+import { gathersMcpTools, type RunProfile } from '../../../agent-core/run-shape'
 import type { LoadedPlugins } from '../../../plugins/loader'
 import type { SessionRecord } from '../../repository'
 import { TOOL } from '../../../agent-core/tool-names'
@@ -133,11 +133,9 @@ export async function assembleRunTools(
   // `required:true` servers fail startup. Servers removed/disabled since the last
   // gather get their clients disposed by the manager. Disabled tools are
   // filtered by the registry's allow-list, mirroring built-in tools.
-  // Only a chat's OPEN toolset receives MCP tools (`openToolset`, `run-shape.ts`). A
-  // delegated child and an automation run are CLOSED allowlists — MCP tools would otherwise
-  // bypass their filter and bloat every worker's tool payload with servers it never uses.
-  // Skipping the gather also avoids the per-run MCP connect cost for workers.
-  const mcp = agentProfile.openToolset
+  // Only an OPEN toolset, or a list naming an MCP tool, gathers (`run-shape.ts`): a closed
+  // worker would pay every server's connect cost and schemas for tools it never uses.
+  const mcp = gathersMcpTools(agentProfile)
     ? await resolveMcpTools({
         env,
         userId,
@@ -146,6 +144,7 @@ export async function assembleRunTools(
         defaultCwd,
         availability,
         agentId: options.agentId,
+        bindChannels: agentProfile.shape === 'chat',
       })
     : {
         gather: undefined,
@@ -224,8 +223,9 @@ export async function assembleRunTools(
   // Wrapping happens BEFORE this split, so a deferred tool keeps its plugin hooks, its CC
   // hooks and its failure guard — deferral is a wire decision and nothing else.
   const sourceByTool = new Map<string, string>()
+  // A closed list NAMED its MCP tools: they ride the wire like its built-ins, no activator.
   for (const [name, server] of Object.entries(mcp.gather?.serverByTool ?? {}))
-    if (acceptedMcpModelNames.has(name)) sourceByTool.set(name, server)
+    if (agentProfile.openToolset && acceptedMcpModelNames.has(name)) sourceByTool.set(name, server)
   for (const tool of [...loadedPlugins.tools, ...claimedMods.tools])
     if (!sourceByTool.has(tool.name)) sourceByTool.set(tool.name, 'plugins')
   const activatedForSession = session.activatedTools ?? []

@@ -56,6 +56,8 @@ export async function resolveMcpTools(args: {
   availability: AvailabilityReader
   /** The agent those rules belong to: its servers are its own gather scope. */
   agentId?: string
+  /** Whether a channel among the servers speaks into this session; false for a delegated child. */
+  bindChannels?: boolean
 }): Promise<ResolvedMcpTools> {
   const { env, userId, session, pluginMcpServers, defaultCwd, availability } = args
   const empty: ResolvedMcpTools = {
@@ -96,10 +98,12 @@ export async function resolveMcpTools(args: {
       // reach different servers. A shared scope let one chat's gather (an empty one, when its
       // agent reaches no server) drop and stop the other chat's live clients mid-call.
       scope: `${userId}:${session.projectId ?? ''}:${defaultCwd}:${args.agentId ?? ''}`,
-      // A Claude Code channel among these servers speaks into this conversation from now on. Only
-      // a chat's open toolset gathers MCP servers (`tool-assembly.ts`), so a delegated child's
-      // run never takes a channel from the chat that started it.
-      channelTarget: { userId, sessionId: session.id, projectId: session.projectId ?? '' },
+      // A Claude Code channel among these servers speaks into this conversation from now on. A
+      // delegated child that gathers them (`tool-assembly.ts`) never takes a channel from the chat
+      // that started it.
+      ...(args.bindChannels === false
+        ? {}
+        : { channelTarget: { userId, sessionId: session.id, projectId: session.projectId ?? '' } }),
       logger: prefixedWarnLogger('mcp'),
     })
     // Keep descriptors intact. Assembly's shared ledger owns tool policy, authority and

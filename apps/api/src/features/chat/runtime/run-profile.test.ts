@@ -37,3 +37,30 @@ test('ordinary native runs derive instructions without an override', () => {
     'Registry instructions',
   )
 })
+
+const child = { sessionKind: 'subagent' } as const
+
+test('a child run as a plugin agent type without a tools list inherits the conversation’s tools', () => {
+  const profile = resolveExecutionProfile(child, 'Plugin body', {}, {})
+  expect(profile.openToolset).toBe(true)
+  expect(profile.inheritsConversation).toBe(true)
+  expect(profile.declaredTools).toBeNull()
+  // Any other child, and a job, keep the closed surface their shape gives them.
+  expect(resolveExecutionProfile(child, 'Registry body', {}).openToolset).toBe(false)
+  expect(resolveExecutionProfile(session, 'Plugin body', {}, {}).openToolset).toBe(false)
+})
+
+test('a plugin agent type’s tools list is the exact allowlist, narrowed by a host roster', () => {
+  const profile = resolveExecutionProfile(child, 'Plugin body', {}, { tools: ['read'] })
+  expect(Object.keys(profile.toolExposure).sort()).toEqual(['read', 'tool_output'])
+  expect(profile.openToolset).toBe(false)
+  for (const name of ['browser', 'codemode', 'vault', 'context_budget'] as const)
+    expect(isToolDirect(profile, name)).toBe(false)
+  const narrowed = resolveExecutionProfile(
+    child,
+    'Plugin body',
+    { hostTools: ['read'] },
+    { tools: ['read', 'bash'] },
+  )
+  expect(narrowed.declaredTools).toEqual(['read'])
+})

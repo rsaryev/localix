@@ -191,3 +191,56 @@ describe('the ledger — one verdict, one reason, in layer order', () => {
     expect(authority).toBe('the host does not provide it in this run')
   })
 })
+
+describe('a plugin agent type’s lists', () => {
+  const echo = tool('mcp_p_ctl_echo', { aliases: ['mcp__plugin_p_ctl__echo'] })
+  const other = tool('mcp_p_ctl_admin_drop', { aliases: ['mcp__plugin_p_ctl_admin__drop'] })
+  const notDeclared = { state: 'withheld', reason: { layer: 'shape', kind: 'not-declared' } }
+
+  test('a tools list names an MCP tool by its engine name, its CC address or its server’s *', () => {
+    for (const entry of ['mcp_p_ctl_echo', 'mcp__plugin_p_ctl__echo', 'mcp__plugin_p_ctl__*'])
+      expect(verdictFor(child(['read', entry]), { name: echo.name, tool: echo })).toEqual({
+        state: 'live',
+      })
+    // A server's * ends where the server's name does, in either spelling.
+    for (const entry of ['mcp__plugin_p_ctl__*', 'mcp_p_ctl_*'])
+      expect(verdictFor(child([entry]), { name: other.name, tool: other })).toMatchObject(
+        notDeclared,
+      )
+    expect(verdictFor(child(['mcp_p_ctl_*']), { name: echo.name, tool: echo })).toEqual({
+      state: 'live',
+    })
+    expect(verdictFor(child(['read']), { name: echo.name, tool: echo })).toMatchObject(notDeclared)
+  })
+
+  test('disallowedTools switch an MCP tool off by its CC address or its server’s *', () => {
+    for (const entry of ['mcp__plugin_p_ctl__echo', 'mcp_p_ctl_*'])
+      expect(
+        verdictFor(child(['read', 'mcp_p_ctl_echo'], { disabledTools: new Set([entry]) }), {
+          name: echo.name,
+          tool: echo,
+        }),
+      ).toMatchObject({ state: 'withheld', reason: { layer: 'policy' } })
+  })
+
+  test('without a tools list the child takes what the chat admits by default', () => {
+    const facts: RunFacts = {
+      profile: resolveRunProfile({ sessionKind: 'subagent' }, { inheritsConversationTools: true }),
+      authority: undefined,
+      disabledTools: new Set(),
+    }
+    const plugin = tool('lookup')
+    const chatOnly = tool('canvas', {
+      exposure: { chat: 'opt-in', subagent: 'opt-in', automation: 'opt-in' },
+    })
+    expect(verdictFor(facts, { name: echo.name, tool: echo })).toEqual({ state: 'live' })
+    expect(verdictFor(facts, { name: 'lookup', tool: plugin })).toEqual({ state: 'live' })
+    expect(verdictFor(facts, { name: 'canvas', tool: chatOnly })).toMatchObject(notDeclared)
+    // Built-ins stay the subagent shape's: a chat-only default is not inherited.
+    expect(verdictFor(facts, { name: TOOL.memory, tool: tool(TOOL.memory) })).toMatchObject(
+      notDeclared,
+    )
+    // A child that did not inherit takes none of them.
+    expect(verdictFor(child(null), { name: echo.name, tool: echo })).toMatchObject(notDeclared)
+  })
+})

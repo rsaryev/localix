@@ -3,8 +3,10 @@
 Connect Model Context Protocol (MCP) servers to give a primary chat external tools and resources.
 Use Settings to scope servers, test connections, and control which tools reach the model.
 
-**Availability:** MCP is omitted from closed child, worker, and automation tool profiles. A server
-the scope has not enabled is never connected at all.
+**Availability:** MCP is omitted from closed child, worker, and automation tool profiles. A child
+delegated as a plugin agent type without a `tools` list inherits the chat's MCP tools, and one whose
+`tools` names an MCP tool gets that tool. A server the scope has not enabled is never connected at
+all.
 
 ## What you can do
 

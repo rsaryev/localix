@@ -249,3 +249,26 @@ describe('normalizeCcToolName / mapCcToolList — MCP aliases', () => {
     expect(normalizeCcToolName('mcp__github__get_issue(foo)')).toBe('mcp_github_get_issue')
   })
 })
+
+describe('MCP addresses map to the name the engine registers', () => {
+  it("drops Claude Code's plugin_ server prefix: a plugin's server record is <plugin>_<server>", () => {
+    // `plugins/mcp.ts` names the record `<plugin>_<server>`; `mcp/mcp-tools.ts` sanitizes.
+    expect(normalizeMcpToolAlias('mcp__plugin_e2e-ag_ctl__echo')).toBe('mcp_e2e_ag_ctl_echo')
+    expect(normalizeCcToolName('mcp__plugin_p_db__run_query')).toBe('mcp_p_db_run_query')
+  })
+
+  it("keeps a server's * and a tool's own double underscore", () => {
+    expect(normalizeMcpToolAlias('mcp__github__*')).toBe('mcp_github_*')
+    expect(normalizeMcpToolAlias('mcp__plugin_p_ctl__*')).toBe('mcp_p_ctl_*')
+    expect(normalizeMcpToolAlias('mcp__github__get__issue')).toBe('mcp_github_get__issue')
+  })
+
+  it('keeps the case of an engine MCP name and keeps it in a frontmatter list', () => {
+    expect(normalizeCcToolName('mcp_GitHub_getIssue')).toBe('mcp_GitHub_getIssue')
+    expect(
+      mapCcToolList(['Read', 'mcp__plugin_p_ctl__echo', 'mcp_GitHub_getIssue'], {
+        dropUnknown: true,
+      }),
+    ).toEqual(['read', 'mcp_p_ctl_echo', 'mcp_GitHub_getIssue'])
+  })
+})

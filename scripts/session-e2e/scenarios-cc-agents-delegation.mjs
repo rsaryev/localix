@@ -133,8 +133,6 @@ export const CC_AGENT_DELEGATION_SCENARIOS = [
   },
   {
     name: 'cc-agents: a subagent without a tools list inherits the main conversation’s plugin MCP tools',
-    known:
-      'a delegated child runs a closed toolset (`openToolset` is chat-only in run-shape.ts): no MCP tools and no `activate_tools`',
     async run(rt) {
       const files = {
         ...agentPlugin('inheritor', [], 'MCPIN-INHERITOR body.'),

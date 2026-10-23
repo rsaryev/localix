@@ -38,7 +38,12 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
   const { state } = turn
   const { defaultCwd, loadedPlugins, ccHooks } = inputs
 
-  const agentProfile = resolveExecutionProfile(session, inputs.agent.instructions, params.scope)
+  const agentProfile = resolveExecutionProfile(
+    session,
+    inputs.agent.instructions,
+    params.scope,
+    inputs.pluginSubagent,
+  )
   // Protected orchestration authority comes only from the host, never from the agent.
   const toolSurface = executionToolSurface(params.scope.executionContext)
   const disabledTools = resolveRunDisabledTools(

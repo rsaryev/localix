@@ -4,7 +4,13 @@ import {
   type RunShape,
   type ToolExposure,
 } from '@localixai/agent/agents'
-import { BUILTIN_TOOL_NAMES, TOOL, builtinToolExposure, type ToolName } from './tool-names'
+import {
+  BUILTIN_TOOL_NAMES,
+  MCP_RESOURCE_TOOL_NAMES,
+  TOOL,
+  builtinToolExposure,
+  type ToolName,
+} from './tool-names'
 import { DESCRIPTIONS, GUIDANCE, NON_INTERACTIVE_BASH_FEATURES } from './run-shape-surfaces'
 
 /**
@@ -48,6 +54,12 @@ export interface RunAgent {
   tools?: readonly string[]
   /** The agent's own system prompt — the run's identity. */
   prompt?: string
+  /**
+   * A delegated child run as a Claude Code plugin agent type that lists no `tools`: as there, it
+   * "inherits every tool available to subagents" — the main conversation's MCP and plugin tools
+   * too (`chat/runtime/run-profile.ts`). Ignored with a `tools` list and outside a subagent.
+   */
+  inheritsConversationTools?: boolean
 }
 
 export interface RunProfile {
@@ -74,9 +86,15 @@ export interface RunProfile {
    * where an unanticipated MCP server is the point. Every unattended run is a CLOSED
    * allowlist by design — MCP tools bypass the registry's profile filter otherwise, bloating
    * every worker's tool payload with servers it will never use, on every turn, multiplied by
-   * the number of workers. Undefined = closed.
+   * the number of workers. Undefined = closed. The one exception is a child that inherits the
+   * conversation's tools ({@link RunProfile.inheritsConversation}).
    */
   openToolset?: boolean
+  /**
+   * A subagent that takes the tools a chat admits by default beside its shape's built-ins: MCP
+   * tools, plugin and mod tools whose chat exposure is `default` (`tool-ledger.ts`).
+   */
+  inheritsConversation?: boolean
   prompt: RunPromptProfile
 }
 
@@ -163,12 +181,16 @@ export function resolveRunProfile(
   // loop and applies the declaration directly, as it always has.
   // An explicit empty host roster must not restore shell/file defaults.
   const declared = shape === 'chat' || agent?.tools == null ? null : [...agent.tools]
+  const inherits =
+    shape === 'subagent' && declared === null && agent?.inheritsConversationTools === true
   // A declaration is taken as written — that is how a role opts into a tool — EXCEPT a name
   // the catalog marks `never` for this shape: no agent may grant itself the user-blocking
   // tools in an unattended run. The ledger reports the rejection; here it is simply not a
   // candidate.
+  // An inheriting child also reads its MCP servers' resources, as the chat does.
+  const defaults = [...shapeDefaultTools(shape), ...(inherits ? MCP_RESOURCE_TOOL_NAMES : [])]
   const names = withElisionRecovery(
-    (declared ?? shapeDefaultTools(shape)).filter((name) => exposureLevel(shape, name) !== 'never'),
+    (declared ?? defaults).filter((name) => exposureLevel(shape, name) !== 'never'),
   )
   const guidance = [...GUIDANCE[shape]]
   return {
@@ -179,8 +201,10 @@ export function resolveRunProfile(
     // Open only in a chat. Every unattended run is a closed surface, whether or not its
     // agent enumerated tools: whether the author bothered to list them says nothing about
     // whether a human is watching — and nobody is. Each extra schema bloats prefill on
-    // every turn of every child and dilutes its focus.
-    openToolset: shape === 'chat',
+    // every turn of every child and dilutes its focus. A plugin agent type without a `tools`
+    // list is the exception its author chose: Claude Code's subagents inherit the chat's tools.
+    openToolset: shape === 'chat' || inherits,
+    ...(inherits ? { inheritsConversation: true } : {}),
     ...(shape === 'chat'
       ? {}
       : {
@@ -195,6 +219,11 @@ export function resolveRunProfile(
 /** The surface an ordinary chat gets before anything narrows it — the default for callers
  *  (prompt builders, the tool registry) that have no session in hand. */
 export const CHAT_RUN_PROFILE: RunProfile = resolveRunProfile({ sessionKind: 'chat' })
+
+/** Must the run gather MCP servers: an open toolset, or a list that names an MCP tool. */
+export function gathersMcpTools(profile: RunProfile): boolean {
+  return profile.openToolset === true || !!profile.declaredTools?.some((n) => n.startsWith('mcp'))
+}
 
 export function toolExposure(profile: RunProfile, toolName: string): ToolVisibility {
   return profile.toolExposure[toolName] ?? 'hidden'

@@ -79,12 +79,25 @@ function stripCcToken(raw: string): string {
  * form as an alias lets a ported `allowed-tools` / permission rule keep matching
  * without renaming any live tool. Case is PRESERVED (server/tool names are not
  * lowercased by the engine).
+ *
+ * A plugin's server is `plugin_<plugin>_<server>` in Claude Code's address and the record
+ * `<plugin>_<server>` here (`plugins/mcp.ts`), so `mcp__plugin_p_s__t` → `mcp_p_s_t`. A trailing
+ * `*` (`mcp__<server>__*`, every tool of a server) is kept: `mcp_<server>_*`.
  */
 export function normalizeMcpToolAlias(name: string): string | undefined {
   if (!name.startsWith('mcp__')) return undefined
-  // Collapse the `__` separators, then apply the same sanitization the engine's
-  // `namespacedName` uses so e.g. `mcp__git-hub__get_issue` → `mcp_git_hub_get_issue`.
-  return name.replace(/__+/g, '_').replace(/[^a-zA-Z0-9_]/g, '_')
+  const wildcard = name.endsWith('*')
+  const address = name.slice('mcp__'.length, wildcard ? -1 : undefined)
+  // The server ends at the first `__`; the tool keeps any `__` of its own, as the engine does.
+  const split = address.indexOf('__')
+  const server = (split < 0 ? address : address.slice(0, split)).replace(/^plugin_/, '')
+  const tool = split < 0 ? undefined : address.slice(split + 2)
+  // The same sanitization the engine's `namespacedName` applies (`mcp/mcp-tools.ts`).
+  const engine = `mcp_${server}${tool === undefined ? '' : `_${tool}`}`.replace(
+    /[^a-zA-Z0-9_]/g,
+    '_',
+  )
+  return wildcard ? `${engine}*` : engine
 }
 
 /**
@@ -97,6 +110,8 @@ export function normalizeCcToolName(name: string): string {
   const bare = stripCcToken(name)
   const mcpAlias = normalizeMcpToolAlias(bare)
   if (mcpAlias) return mcpAlias
+  // An engine MCP name keeps its case: `mcp_GitHub_getIssue` is not `mcp_github_getissue`.
+  if (bare.startsWith('mcp_')) return bare
   const lower = bare.toLowerCase()
   return CC_TOOL_NAME_MAP[lower] ?? lower
 }
@@ -116,7 +131,8 @@ export function mapCcToolList(list: string[], opts: { dropUnknown: boolean }): s
   const out: string[] = []
   for (const raw of list) {
     const bare = stripCcToken(raw)
-    const mcpAlias = normalizeMcpToolAlias(bare)
+    // A Claude Code MCP address becomes the engine's name; an engine MCP name stays as written.
+    const mcpAlias = normalizeMcpToolAlias(bare) ?? (bare.startsWith('mcp_') ? bare : undefined)
     if (mcpAlias) {
       if (!out.includes(mcpAlias)) out.push(mcpAlias)
       continue

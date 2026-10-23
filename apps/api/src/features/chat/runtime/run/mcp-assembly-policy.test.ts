@@ -9,7 +9,7 @@ const specialistRules = [
   { action: 'tool:read', resource: '*', effect: 'allow' as const },
   { action: 'tool:mcp_resources', resource: '*', effect: 'allow' as const },
 ]
-import { resolveRunProfile } from '../../../agent-core/run-shape'
+import { resolveRunProfile, type RunProfile } from '../../../agent-core/run-shape'
 import type { ToolLedger } from '../../../agent-core/tool-ledger'
 import { assembleRunTools, type AssembleRunToolsOptions } from './tool-assembly'
 
@@ -30,6 +30,7 @@ const gather: McpGatherResult = {
   resourceServers: [],
 }
 let restore: (() => void) | undefined
+let gatherCalls: unknown[][] = []
 afterEach(() => {
   restore?.()
   restore = undefined
@@ -42,17 +43,19 @@ async function assemble(
     primary?: AgentTool[]
     ledger?: ToolLedger
     gathered?: McpGatherResult
+    profile?: RunProfile
   } = {},
 ) {
   const mocked = spyOn(mcpClientManager, 'gather').mockResolvedValue(input.gathered ?? gather)
   restore = () => mocked.mockRestore()
+  gatherCalls = mocked.mock.calls
   let visibleLedger: ToolLedger | undefined
   const primary = input.primary ?? [tool('read')]
   const result = await assembleRunTools({
     env: { mcpRepo: { listForScope: async () => [{ name: 'records' }] } },
     userId: 'u',
     session: { id: 's', projectId: 'p', activatedTools: input.activated ?? [] },
-    agentProfile: resolveRunProfile({ sessionKind: 'chat' }),
+    agentProfile: input.profile ?? resolveRunProfile({ sessionKind: 'chat' }),
     runtimeTools: {
       tools: primary,
       ledger: input.ledger ?? new Map(primary.map((entry) => [entry.name, { state: 'live' }])),
@@ -123,4 +126,32 @@ test('a resource provider fills an empty optional core port in the canonical led
   expect(result.preflightTools.map((entry) => entry.name)).toContain('mcp_resources')
   expect(result.ledger.get('mcp_resources')).toEqual({ state: 'live' })
   expect(result.visibleLedger).toEqual(result.ledger)
+})
+
+const subagent = (agent: Parameters<typeof resolveRunProfile>[1]) =>
+  resolveRunProfile({ sessionKind: 'subagent' }, agent)
+const gatheredFor = () => gatherCalls[0]?.[1] as { channelTarget?: unknown } | undefined
+
+test('a child that inherits the conversation’s tools gathers MCP behind the activator, without its channels', async () => {
+  const result = await assemble({ profile: subagent({ inheritsConversationTools: true }) })
+  expect(result.ledger.get(candidate.name)).toMatchObject({ state: 'deferred' })
+  expect(result.tools.map((entry) => entry.name)).toEqual(['read', 'activate_tools'])
+  // A channel among the chat's servers keeps speaking into the chat, not into its child.
+  expect(gatheredFor()?.channelTarget).toBeUndefined()
+})
+
+test('a closed child gathers MCP only for a tools list that names an MCP tool, then on the wire', async () => {
+  const closed = await assemble({ profile: subagent({ tools: ['read'] }) })
+  expect(gatherCalls).toHaveLength(0)
+  expect(closed.tools.map((entry) => entry.name)).toEqual(['read'])
+  restore?.()
+  const named = await assemble({ profile: subagent({ tools: ['read', candidate.name] }) })
+  expect(named.tools.map((entry) => entry.name)).toEqual(['read', candidate.name])
+  expect(named.ledger.get(candidate.name)).toEqual({ state: 'live' })
+  expect(gatheredFor()?.channelTarget).toBeUndefined()
+})
+
+test('a chat binds its servers’ channels to itself', async () => {
+  await assemble()
+  expect(gatheredFor()?.channelTarget).toMatchObject({ sessionId: 's' })
 })

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import {
   CHAT_RUN_PROFILE,
+  gathersMcpTools,
   hasToolFeature,
   isToolDirect,
   resolveRunProfile,
@@ -106,6 +107,37 @@ describe('an agent dispatched into a run', () => {
     expect(p.openToolset).toBe(true)
     // The identity still comes from the record.
     expect(p.prompt.identity).toBe('You lead.')
+  })
+})
+
+describe('a child that inherits the conversation’s tools', () => {
+  const inheriting = (sessionKind: 'subagent' | 'job', tools?: string[]) =>
+    resolveRunProfile({ sessionKind }, { inheritsConversationTools: true, tools })
+
+  test('opens its toolset to MCP and keeps its own shape’s built-ins', () => {
+    const p = inheriting('subagent')
+    expect(p.openToolset).toBe(true)
+    expect(p.inheritsConversation).toBe(true)
+    expect(isToolDirect(p, 'read')).toBe(true)
+    expect(isToolDirect(p, 'mcp_resources')).toBe(true)
+    // Still a child: it cannot ask the person or delegate again.
+    for (const name of ['ask', 'delegate', 'configure'] as const)
+      expect(isToolDirect(p, name)).toBe(false)
+    expect(gathersMcpTools(p)).toBe(true)
+  })
+
+  test('only a subagent without a tools list inherits; a list or another shape stays closed', () => {
+    for (const p of [inheriting('subagent', ['read']), inheriting('job')]) {
+      expect(p.openToolset).toBe(false)
+      expect(p.inheritsConversation).toBeUndefined()
+    }
+    expect(isToolDirect(child(), 'mcp_resources')).toBe(false)
+  })
+
+  test('a closed list gathers MCP servers only when it names an MCP tool', () => {
+    expect(gathersMcpTools(child(['read']))).toBe(false)
+    expect(gathersMcpTools(child(['read', 'mcp_p_ctl_echo']))).toBe(true)
+    expect(gathersMcpTools(child(['read', 'mcp__srv__*']))).toBe(true)
   })
 })
 

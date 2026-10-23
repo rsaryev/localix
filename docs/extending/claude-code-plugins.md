@@ -141,6 +141,12 @@ preloaded `skills` and `maxTurns`. `background: true` never waits for the report
 `isolation: worktree` works in a fresh git worktree, which is kept. As in Claude Code, a plugin
 agent's `hooks`, `mcpServers` and `permissionMode` are ignored.
 
+Without `tools`, the child inherits the chat's tools, its MCP tools included behind
+`activate_tools`. A `tools` list is exact: the child holds those tools and `tool_output`, which
+recovers compressed results. It names an MCP tool as `mcp__<server>__<tool>`, a plugin's server as
+`plugin_<plugin>_<server>`, or every tool of a server as `mcp__<server>__*`; `disallowedTools` takes
+the same names.
+
 A plugin's `settings.json` `agent` runs chats on the default agent as that plugin agent, on its
 `model`, unless you picked the chat's model yourself. `subagentStatusLine` rewrites the rows of
 running subagents in the agent sessions panel under the message box.

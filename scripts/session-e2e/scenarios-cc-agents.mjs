@@ -11,9 +11,11 @@
 import { CC_AGENT_DELEGATION_SCENARIOS } from './scenarios-cc-agents-delegation.mjs'
 import { CC_AGENT_HOOK_SCENARIOS } from './scenarios-cc-agents-hooks.mjs'
 import { CC_AGENT_SETTING_SCENARIOS } from './scenarios-cc-agents-settings.mjs'
+import { CC_AGENT_TOOL_SCENARIOS } from './scenarios-cc-agents-tools.mjs'
 
 export const CC_AGENT_SCENARIOS = [
   ...CC_AGENT_DELEGATION_SCENARIOS,
+  ...CC_AGENT_TOOL_SCENARIOS,
   ...CC_AGENT_HOOK_SCENARIOS,
   ...CC_AGENT_SETTING_SCENARIOS,
 ]

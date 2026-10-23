@@ -1,6 +1,7 @@
 import type { AgentTool, RunShape } from '@localixai/agent/agents'
 import { declaresTool, exposureLevel, type RunProfile } from './run-shape'
-import { isProtocolTool } from './tool-names'
+import { namesTool } from './tool-name-match'
+import { builtinToolExposure, isProtocolTool } from './tool-names'
 
 /**
  * The LEDGER: for every tool a run could have, one verdict with one reason.
@@ -103,10 +104,31 @@ function shapeVerdict(facts: RunFacts, candidate: ToolCandidate): ToolVerdict | 
   const level = exposureLevel(profile.shape, candidate.name, candidate.tool?.exposure)
   if (level === 'never') return withheld('never')
   if (declaresTool(profile, candidate.name)) return null
+  // A list may name an MCP tool by Claude Code's address or a whole server (`tool-name-match.ts`).
+  const tool = candidate.tool
+  if (tool && profile.declaredTools?.some((entry) => namesTool(entry, tool))) return null
   // Only a chat's OPEN toolset admits plugin tools it never declared — the same rule the
   // registry applied before the ledger existed.
   if (profile.openToolset && level === 'default') return null
+  // A child that inherits the conversation's tools takes the dynamic ones a chat would; its
+  // built-ins stay its own shape's.
+  if (
+    profile.inheritsConversation &&
+    !builtinToolExposure(candidate.name) &&
+    exposureLevel('chat', candidate.name, tool?.exposure) === 'default'
+  )
+    return null
   return withheld('not-declared')
+}
+
+/** Switched off by name, or — for an MCP tool — by its Claude Code address or its server's `*`. */
+function isDisabled(facts: RunFacts, candidate: ToolCandidate): boolean {
+  if (facts.disabledTools.has(candidate.name)) return true
+  const tool = candidate.tool
+  if (!tool) return false
+  for (const entry of facts.disabledTools)
+    if (entry.startsWith('mcp_') && namesTool(entry, tool)) return true
+  return false
 }
 
 function authorityVerdict(facts: RunFacts, candidate: ToolCandidate): ToolVerdict | null {
@@ -149,7 +171,7 @@ function policyVerdict(facts: RunFacts, candidate: ToolCandidate): ToolVerdict |
   // primitive like an optional capability caused an agent to enable it for "the next turn",
   // after the current turn had already become impossible to finish correctly.
   if (isProtocolTool(candidate.name)) return null
-  if (!facts.disabledTools.has(candidate.name)) return null
+  if (!isDisabled(facts, candidate)) return null
   const denial = facts.toolDenials?.get(candidate.name) ?? null
   return {
     state: 'withheld',
