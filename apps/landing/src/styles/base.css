@@ -34,6 +34,8 @@ html {
   --landing-line: color-mix(in oklch, var(--foreground) 9%, transparent);
   --landing-panel: color-mix(in oklch, var(--foreground) 2.5%, transparent);
   --landing-shadow: 0 48px 120px -56px color-mix(in oklch, var(--foreground) 18%, transparent);
+  /* A strong ease-out for what arrives, as on llx.sh. */
+  --landing-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   /* A gentle spring, about 4% overshoot, for things that arrive (`journey/useSequence.ts`). */
   --ease-spring: linear(
     0,

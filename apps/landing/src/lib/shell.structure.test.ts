@@ -12,13 +12,12 @@ describe('landing page shell', () => {
     // shared footer a few pixels wider than the page above it on /docs.
     expect(read('lib/shell.ts')).toContain("'mx-auto w-full max-w-[90rem] px-6 lg:px-10'")
 
-    // The home column lives on `<Section>`; SiteLayout and DocsPage carry theirs
-    // directly. All three must resolve to the same one constant.
-    for (const file of [
-      'components/SiteLayout.tsx',
-      'components/home/Reveal.tsx',
-      'pages/DocsPage.tsx',
-    ]) {
+    // SiteLayout and DocsPage carry the column directly and resolve to the same one constant.
+    // The one-screen home uses HOME_SHELL instead, and so do the header and footer around it.
+    expect(read('pages/HomePage.tsx')).toContain('HOME_SHELL')
+    expect(read('components/SiteHeader.tsx')).toContain('docs ? PAGE_SHELL : HOME_SHELL')
+    expect(read('components/SiteLayout.tsx')).toContain('isDocsRoute ? PAGE_SHELL : HOME_SHELL')
+    for (const file of ['components/SiteLayout.tsx', 'pages/DocsPage.tsx']) {
       expect(read(file)).toContain('PAGE_SHELL')
       // No hand-rolled second shell.
       expect(read(file)).not.toContain('max-w-[88rem]')

@@ -42,14 +42,14 @@ test('focuses cold and same-route fragments, then returns focus to main from the
 
   await act(async () => {
     root.render(
-      <MemoryRouter initialEntries={['/#demo']}>
+      <MemoryRouter initialEntries={['/docs#demo']}>
         <Routes>
           <Route element={<SiteLayout />}>
             <Route
-              index
+              path="docs"
               element={
                 <>
-                  <Link to="/#details">Open details</Link>
+                  <Link to="/docs#details">Open details</Link>
                   <section id="demo">Inspectable task pipeline</section>
                   <section id="details">Product details</section>
                 </>
@@ -64,6 +64,9 @@ test('focuses cold and same-route fragments, then returns focus to main from the
 
   expect(document.activeElement).toBe(document.getElementById('demo'))
   expect(host.querySelector('footer span')?.textContent).toBe('Localix')
+  expect(host.querySelector('footer p')?.textContent).toBe(
+    'Localix is MIT-licensed and open source.',
+  )
   const footer = host.querySelector('footer')!
   expect(footer.classList.contains('site-footer')).toBe(true)
   expect(footer.querySelector('a')?.getAttribute('href')).toBe('/docs')

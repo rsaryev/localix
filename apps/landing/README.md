@@ -6,7 +6,9 @@ It shares the product's UI foundations and adds styles for the public site:
 - `src/styles.css` imports `apps/ui/src/app/index.css` for shared tokens, fonts, keyframes, and
   resets, then overrides page scrolling, site fonts, surface colors, and layout.
 - The page declares a dark theme in `index.html`; it does not offer the workspace's theme switcher.
-- The hero uses the product's `BirdStage` component through the `@ui` alias, with the shared logo.
+- The homepage follows the llx.sh layout on one screen: a heavy headline with one word on a chip,
+  the sentence, the download, and the demo film beside them where llx replays its terminal. The film
+  plays muted once on screen and pauses away from it; reduced motion and Save-Data wait for a click.
 
 ## Auto-collected docs
 
@@ -35,13 +37,6 @@ bun run shots:gen  # validate and index real product screenshots
 ```
 
 From the repo root: `bun run dev:landing` / `bun run build:landing`.
-
-The optional feature-card checks run with `bun run --cwd apps/landing test:features`. They check
-whole-card mouse and keyboard navigation, narrow layouts, and reduced motion at four viewport sizes.
-The `landing/feature-highlights` scenario captures the workbench-building card and individual
-bundled tools at native 3× density. Captures stay in the system temporary directory; this suite is
-separate from the normal tests and CI. It reuses a running landing server or stops the server it
-starts.
 
 ## Deploy
 

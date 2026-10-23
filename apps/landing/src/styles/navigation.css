@@ -3,6 +3,33 @@
   position: relative;
   background: transparent;
 }
+/* The bird stands where llx.sh sets its wordmark; it leans in a little on hover. */
+.site-mark {
+  display: inline-grid;
+  place-items: center;
+  width: var(--chrome-control-touch);
+  height: var(--chrome-control-touch);
+  margin-left: -0.375rem;
+  border-radius: var(--radius-sm);
+}
+.site-mark img {
+  width: 2rem;
+  height: 2rem;
+  transition: transform 220ms var(--landing-ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .site-mark:hover img {
+    transform: translate(2px, -2px) rotate(-3deg);
+  }
+}
+/* Footer links in mono, quiet until hovered. */
+.site-footer-nav {
+  font: 500 0.75rem/1 var(--font-mono);
+}
+.site-footer-nav a {
+  color: var(--text-soft);
+  transition: color 160ms ease;
+}
 .site-header-link {
   display: inline-flex;
   align-items: center;
@@ -144,34 +171,12 @@
   .site-header > div {
     height: 4rem;
   }
-  #intro .display {
-    font-size: clamp(2rem, 8.5vw, 2.5rem);
-    line-height: 1.08;
-  }
-  #intro .lede {
-    margin-top: 1.25rem;
-    font-size: 1.0625rem;
-  }
-  #intro .demo-film {
-    margin-top: 2rem;
-  }
-  #intro .demo-play {
-    height: var(--chrome-control-lg);
-    padding-inline: 1rem;
-  }
-  main > section:not(#intro) {
-    padding-block: 3rem;
-  }
-  .section-title {
-    font-size: 1.85rem;
-    line-height: 1.15;
-  }
   .site-footer > div {
     flex-direction: row;
     gap: 0.5rem;
     padding-block: 1rem;
   }
-  .site-footer > div > div {
+  .site-footer > div > nav {
     flex: none;
     gap: 0.5rem;
   }

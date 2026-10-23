@@ -80,14 +80,13 @@ test('homepage copy states no speed or duration the repository does not measure'
   )
 })
 
-test('the homepage is the hero and the demo', () => {
+test('the homepage is one hero with the demo in it, as on llx.sh', () => {
   const homePage = readFileSync(new URL('./HomePage.tsx', import.meta.url), 'utf8')
-  const rendered = [...homePage.matchAll(/<Section\s+id="([a-z-]+)"/gu)].map((match) => match[1])
+  const sections = [...homePage.matchAll(/<section\s+id="([a-z-]+)"/gu)].map((match) => match[1])
 
-  expect(rendered).toEqual(['intro'])
+  expect(sections).toEqual(['intro'])
   expect(homePage).toContain('<DemoFilm />')
-  expect(homePage).not.toContain('PlatformBento')
-  expect(homePage).not.toContain('SectionNav')
+  expect(homePage).not.toContain('<Features')
 })
 
 test('the demo film is published with its poster', () => {
@@ -96,17 +95,6 @@ test('the demo film is published with its poster', () => {
 
   expect(films).toContain(DEMO_SRC.replace('/films/', ''))
   expect(films).toContain(DEMO_POSTER.replace('/films/', ''))
-})
-
-test('the hero sizes its bird through the responsive layout', () => {
-  const homePage = readFileSync(new URL('./HomePage.tsx', import.meta.url), 'utf8')
-
-  expect(homePage).toContain('hero-bird-slot')
-  expect(homePage).toContain('hero-layout')
-  expect(homePage).not.toContain('lg:-ml-28')
-  const bird = readFileSync(new URL('../components/home/HeroBird.tsx', import.meta.url), 'utf8')
-  expect(bird).toContain('stageClassName="h-full w-full"')
-  expect(bird).not.toContain('calc(100%+')
 })
 
 test('every homepage capability links to a published documentation page', () => {

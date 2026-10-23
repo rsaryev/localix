@@ -1,17 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
-import { LazyMotion, MotionConfig, domAnimation } from 'motion/react'
-
-/**
- * Motion for the homepage only: the DOM feature bundle loads with the page, and `reducedMotion`
- * follows the visitor's setting so transforms drop out while opacity changes stay.
- */
-export function HomeMotion({ children }: { children: ReactNode }) {
-  return (
-    <LazyMotion features={domAnimation} strict>
-      <MotionConfig reducedMotion="user">{children}</MotionConfig>
-    </LazyMotion>
-  )
-}
+import { useEffect, useState } from 'react'
 
 /**
  * Whether the element is on screen. Without an observer (old browsers, tests) it reports

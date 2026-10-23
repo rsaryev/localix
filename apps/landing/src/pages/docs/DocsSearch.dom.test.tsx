@@ -35,8 +35,9 @@ test('working docs render a header search trigger without permanent search field
     const trigger = host.querySelector<HTMLButtonElement>('[aria-label="Search documentation"]')!
     expect(trigger).not.toBeNull()
     expect(host.querySelector('[aria-current="page"]')?.textContent).toBe('Docs')
-    expect(host.querySelector('.site-header [aria-label="Localix home"]')).toBeNull()
-    expect(host.querySelector('.site-header img')).toBeNull()
+    expect(
+      host.querySelector('.site-header [aria-label="Localix home"] img')?.getAttribute('src'),
+    ).toBe('/logo.svg')
     expect(host.querySelector('.site-header [aria-label="Localix on GitHub"]')).not.toBeNull()
     for (const link of host.querySelectorAll('.site-header a')) {
       expect(link.classList.contains('focus-ring')).toBe(true)
@@ -59,7 +60,7 @@ test('working docs render a header search trigger without permanent search field
   }
 })
 
-test('home header keeps Docs and GitHub without the brand link or logo', async () => {
+test('home header is the bird, Docs and GitHub', async () => {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { MemoryRouter } = await import('react-router')
@@ -76,13 +77,14 @@ test('home header keeps Docs and GitHub without the brand link or logo', async (
       ),
     )
     const header = host.querySelector('.site-header')!
-    expect(header.querySelectorAll('a')).toHaveLength(2)
+    expect(header.querySelectorAll('a')).toHaveLength(3)
     expect(header.querySelector('a[href="/docs"]')?.textContent).toBe('Docs')
     expect(header.querySelector('[aria-label="Localix on GitHub"]')?.getAttribute('href')).toBe(
       'https://github.com/rsaryev/localix',
     )
-    expect(header.querySelector('[aria-label="Localix home"]')).toBeNull()
-    expect(header.querySelector('img')).toBeNull()
+    // The bird stands where llx.sh sets its wordmark, and its link carries the name.
+    expect(header.querySelector('[aria-label="Localix home"]')?.getAttribute('href')).toBe('/')
+    expect(header.querySelector('[aria-label="Localix home"] img')?.getAttribute('alt')).toBe('')
     expect(header.textContent).not.toContain('Beta')
   } finally {
     await act(async () => root.unmount())

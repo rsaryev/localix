@@ -66,8 +66,8 @@
         color-scheme: dark;
       }
     </style>
-    <!-- Sections fade in on scroll only where the observer that un-hides them exists; everywhere
-         else (no script, an old browser, reduced motion) the content simply stays visible. -->
+    <!-- The hero rises in on the first paint only with script and without reduced motion;
+         everywhere else the content simply stands. -->
     <script>
       if (
         'IntersectionObserver' in window &&

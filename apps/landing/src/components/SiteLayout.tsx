@@ -1,8 +1,15 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { Outlet, Link, useLocation } from 'react-router'
-import { PAGE_SHELL } from '../lib/shell'
+import { HOME_SHELL, PAGE_SHELL } from '../lib/shell'
 import { Button } from './Button'
 import { SiteHeader } from './SiteHeader'
+import { REPOSITORY_URL } from '../lib/site'
+
+const FOOTER_LINKS = [
+  { label: 'GitHub', href: REPOSITORY_URL },
+  { label: 'Changelog', href: `${REPOSITORY_URL}/blob/main/CHANGELOG.md` },
+  { label: 'Security', href: `${REPOSITORY_URL}/blob/main/SECURITY.md` },
+]
 
 export function SiteLayout({ children }: { children?: ReactNode }) {
   const location = useLocation()
@@ -45,28 +52,34 @@ export function SiteLayout({ children }: { children?: ReactNode }) {
         className={`site-footer${isDocsRoute ? ' docs-site-footer border-t border-border-subtle' : ''}`}
       >
         <div
-          className={`${PAGE_SHELL} flex flex-col items-center justify-between gap-4 py-10 text-sm text-text-faint sm:flex-row`}
+          className={`${isDocsRoute ? PAGE_SHELL : HOME_SHELL} flex flex-wrap items-center justify-between gap-4 pt-7 pb-10 text-[0.8125rem] text-text-faint`}
         >
-          <div className="flex items-center gap-2.5">
-            <img src="/logo.svg" alt="" className="size-5 opacity-80" />
-            <span>Localix</span>
-          </div>
-          <div className="flex items-center gap-5">
+          <p className="m-0">
+            <span className="text-text-soft">Localix</span> is MIT-licensed and open source.
+          </p>
+          <nav aria-label="Footer" className="site-footer-nav flex items-center gap-5">
             <Link to="/docs" className="hover:text-foreground">
               Docs
             </Link>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-                mainRef.current?.focus({ preventScroll: true })
-                window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' })
-              }}
-            >
-              Back to top
-            </Button>
-          </div>
+            {FOOTER_LINKS.map(({ label, href }) => (
+              <a key={label} href={href} className="hover:text-foreground">
+                {label}
+              </a>
+            ))}
+            {isDocsRoute && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                  mainRef.current?.focus({ preventScroll: true })
+                  window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' })
+                }}
+              >
+                Back to top
+              </Button>
+            )}
+          </nav>
         </div>
       </footer>
     </div>

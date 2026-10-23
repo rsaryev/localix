@@ -12,3 +12,10 @@
  * an aliased import breaks every DOM test that module-loads the importer.
  */
 export const PAGE_SHELL = 'mx-auto w-full max-w-[90rem] px-6 lg:px-10'
+
+/**
+ * The homepage's wider column. The home is one screen, so it scales with the window instead of
+ * stopping at the docs' reading measure: the header, the hero and the footer share it so their
+ * edges line up at every width. Its geometry lives in `styles/hero.css`.
+ */
+export const HOME_SHELL = 'home-shell'

@@ -1,14 +1,15 @@
-/* The demo film: the recording is cropped to the app window, so the frame is the window itself. */
+/* The demo sits where llx.sh replays its terminal: a window as plain as a real one, a slightly
+   lighter ground and a soft shadow, no frame. The recording is cropped to the app window, so the
+   frame is the window itself. */
 .demo-film {
   position: relative;
   overflow: hidden;
   aspect-ratio: 1680 / 946;
-  margin: 4rem auto 0;
-  border-radius: clamp(0.625rem, 1.4vw, 1rem);
-  background-color: #000;
+  border-radius: var(--landing-radius);
+  background-color: #0f0f0f;
   box-shadow:
-    0 0 0 1px color-mix(in oklch, var(--foreground) 8%, transparent),
-    0 2rem 4rem -1.5rem rgb(0 0 0 / 0.6);
+    0 1px 0 rgb(255 255 255 / 0.03) inset,
+    0 40px 90px -40px rgb(0 0 0 / 0.95);
 }
 .demo-video {
   display: block;
@@ -36,18 +37,35 @@
   padding: clamp(0.875rem, 2.2vw, 1.5rem);
   background: linear-gradient(to top, rgb(0 0 0 / 0.55), transparent 32%);
   pointer-events: none;
-  transition:
-    opacity var(--dur-moderate) var(--ease-standard),
-    background-color var(--dur-moderate) var(--ease-standard);
-}
-.demo-toggle:hover + .demo-cover .demo-play {
-  transform: translateY(-1px);
+  transition: opacity var(--dur-moderate) var(--ease-standard);
 }
 .demo-film[data-playing] .demo-cover {
   opacity: 0;
 }
 .demo-play {
   padding-inline: 1.25rem;
-  transition: transform var(--dur-fast) var(--ease-soft);
+  transition: transform 160ms var(--landing-ease-out);
   box-shadow: 0 0.75rem 2rem -0.5rem rgb(0 0 0 / 0.5);
+}
+@media (hover: hover) and (pointer: fine) {
+  .demo-toggle:hover + .demo-cover .demo-play {
+    transform: translateY(-1px);
+  }
+}
+.demo-toggle:active + .demo-cover .demo-play {
+  transform: scale(0.97);
+}
+
+/* One quiet line under the film says what it shows, in the mono of the hero's own under-line. */
+.demo-caption {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  justify-content: space-between;
+  margin: 0.9rem 0.25rem 0;
+  color: var(--text-faint);
+  font: 400 var(--home-small) / 1.5 var(--font-mono);
+}
+.demo-caption code {
+  color: var(--text-soft);
 }
