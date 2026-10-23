@@ -8,8 +8,7 @@ import {
   localixUiUri,
   parseCapabilityResourceUri,
   parseLocalixUri,
-} from './navigation'
-import { parseLocalixResourceUri } from './resource'
+} from './index'
 
 describe('capability resource URIs', () => {
   test('round-trips encoded ids and exact scope', () => {
@@ -66,19 +65,14 @@ describe('canonical Localix URI protocol', () => {
   //     equality. That works only because `localix:` is a NON-SPECIAL scheme, so its host is
   //     opaque and `URL` leaves the case alone — `new URL('localix://RESOURCE/x').hostname` is
   //     `'RESOURCE'`, where an `http:` host would have been folded to lowercase.
-  //   - The PROVIDER is held by `LOCALIX_PROVIDER`, which is case-sensitive. `resource.ts` had a
-  //     second, case-INSENSITIVE copy of that rule plus a `.toLowerCase()`, reading as "uppercase
-  //     is accepted and folded"; those lines could never run.
+  //   - The PROVIDER is held by `LOCALIX_PROVIDER`, which is case-sensitive. The SDK's resource
+  //     parser reads it the same way (`mini-app-sdk/src/resource.test.ts`).
   test('requires canonical lowercase spelling for both the authority and the provider', () => {
     expect(parseLocalixUri('localix://resource/fixture-db/x')).toMatchObject({
       primitive: 'resource',
     })
     expect(parseLocalixUri('localix://RESOURCE/db/x')).toBeNull()
     expect(parseLocalixUri('localix://resource/DB/x')).toBeNull()
-    expect(parseLocalixResourceUri('localix://resource/DB/x')).toBeNull()
-    expect(parseLocalixResourceUri('localix://resource/fixture-db/x')).toMatchObject({
-      provider: 'fixture-db',
-    })
   })
 
   test('uses the same grammar for UI destinations without conflating authorities', () => {

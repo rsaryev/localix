@@ -24,6 +24,7 @@ export const SDK_DECLARATION_DEPENDENCIES = [
   '@localixai/agent',
   '@localixai/dataview',
   '@localixai/search',
+  '@localixai/uri',
 ]
 
 /** A package's directory, found by walking `node_modules` upward (exports may hide package.json). */

@@ -39,6 +39,7 @@
         "@localixai/os-open": "workspace:*",
         "@localixai/path-containment": "workspace:*",
         "@localixai/search": "workspace:*",
+        "@localixai/uri": "workspace:*",
         "@localixai/visual-feedback": "workspace:*",
         "@modelcontextprotocol/sdk": "^1.32.1",
         "@mozilla/readability": "^0.6.0",
@@ -782,6 +783,7 @@
         "@localixai/dataview": "workspace:*",
         "@localixai/path-containment": "workspace:*",
         "@localixai/search": "workspace:*",
+        "@localixai/uri": "workspace:*",
         "@localixai/visual-feedback": "workspace:*",
         "clsx": "^2.1.1",
         "hono": "^4.12.30",
@@ -862,6 +864,15 @@
       "version": "0.1.0",
       "devDependencies": {
         "@types/bun": "1.4.3",
+        "typescript": "^7.0.2",
+      },
+    },
+    "packages/uri": {
+      "name": "@localixai/uri",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@types/bun": "1.4.3",
+        "shx": "^0.4.0",
         "typescript": "^7.0.2",
       },
     },
@@ -1250,6 +1261,8 @@
     "@localixai/testing": ["@localixai/testing@workspace:packages/testing"],
 
     "@localixai/ui": ["@localixai/ui@workspace:apps/ui"],
+
+    "@localixai/uri": ["@localixai/uri@workspace:packages/uri"],
 
     "@localixai/visual-feedback": ["@localixai/visual-feedback@workspace:packages/visual-feedback"],
 

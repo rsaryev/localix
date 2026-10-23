@@ -26,7 +26,9 @@ This page is the contract for the split. The status table at the end says what i
 | X5  | Localix ships no mini app. Every mini app, first-party included, is installed and updated from a catalog.                                                                                                                        |
 
 `scripts/architecture-rules.test.ts` enforces X1, with a baseline in
-`scripts/architecture-baselines/x1.json` that only shrinks; the loaders enforce X2.
+`scripts/architecture-baselines/x1.json` that only shrinks and is now empty: the `localix://`
+address grammar both sides name lives in `packages/uri` (the SDK re-exports it for mini apps). The
+loaders enforce X2.
 
 ## Plugins
 

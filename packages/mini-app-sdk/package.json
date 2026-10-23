@@ -281,6 +281,7 @@
     "@localixai/dataview": "workspace:*",
     "@localixai/path-containment": "workspace:*",
     "@localixai/search": "workspace:*",
+    "@localixai/uri": "workspace:*",
     "@localixai/visual-feedback": "workspace:*",
     "clsx": "^2.1.1",
     "hono": "^4.12.30",

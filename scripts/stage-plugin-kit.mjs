@@ -83,6 +83,7 @@ export const MINI_APP_KIT_INPUTS = [
   'packages/agent/dist',
   'packages/dataview/dist',
   'packages/search/dist',
+  'packages/uri/dist',
   `${MINI_APPS_DIR}/template`,
 ]
 
@@ -97,7 +98,7 @@ export function findTemplateMiniApp(repoRoot) {
   return join(plugins, found[0])
 }
 
-/** Value exports of an ES module, following relative `export *` chains. */
+/** Value exports of an ES module, following its `export *` chains (relative or a package). */
 function esmExportNames(file, seen = new Set()) {
   if (seen.has(file)) return []
   seen.add(file)
