@@ -1,12 +1,13 @@
 import { isPathWithin } from '@localixai/path-containment'
 import { realpathSync } from 'node:fs'
+import path from 'node:path'
 import { AGENT_ALLOWED_ROOTS, isInsideWorkspace } from './tools/workspace'
 
 /**
  * Is one resolved path outside the workspace, for THIS tool?
  *
- * Its own module because the answer is not uniform: a mutation is judged lexically against the
- * root, while a reader — whose output enters model context — is judged against the canonical
+ * Its own module because the answer is not uniform: a mutation must be inside the root both
+ * lexically and once its existing folders are resolved, while a reader — whose output enters model context — is judged against the canonical
  * root and may also draw from the session scratch tree. Two rules living inside the fact
  * extractor read as one function with an exception; here the exception is the subject.
  */
@@ -43,6 +44,27 @@ function canonical(value: string): string {
 }
 
 /**
+ * A mutation's target usually does not exist yet, so its own realpath fails — but the folders
+ * it will be created in do, and the OS follows a linked folder among them. Measured: a write to
+ * `<root>/link/new.txt`, `link` pointing outside, was judged inside and landed outside. So the
+ * deepest EXISTING ancestor is resolved and the rest of the path re-attached to it.
+ */
+function canonicalAncestor(value: string): string {
+  const rest: string[] = []
+  let head = path.resolve(value)
+  for (;;) {
+    try {
+      return path.join(realpathSync.native(head), ...rest)
+    } catch {
+      const parent = path.dirname(head)
+      if (parent === head) return value
+      rest.unshift(path.basename(head))
+      head = parent
+    }
+  }
+}
+
+/**
  * The derived half of the facts — every named CLASS the rule grammar can ask about, answered
  * once so the two return sites below cannot answer them differently.
  *
@@ -57,7 +79,15 @@ export function isOutsideWorkspace(
   candidate: string,
 ): boolean {
   if (!root || root === '/' || root === '') return false
-  if (!WORKSPACE_CONFINED_READERS.has(toolName)) return !isInsideWorkspace(root, candidate)
+  if (!WORKSPACE_CONFINED_READERS.has(toolName)) {
+    // Mutations: lexically inside AND inside once linked folders are followed, both sides
+    // resolved (macOS `/tmp` is itself a link), against the same roots a write may touch.
+    if (!isInsideWorkspace(root, candidate)) return true
+    const target = canonicalAncestor(candidate)
+    return ![root, ...AGENT_ALLOWED_ROOTS].some((allowed) =>
+      isPathWithin(canonicalAncestor(allowed), target),
+    )
+  }
   // Readers are judged on canonical paths (a link inside may point out), against the workspace
   // and the agent-authored roots — the same roots a write may touch, so a plugin an agent was
   // asked to build is as readable as it is writable.

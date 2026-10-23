@@ -128,8 +128,9 @@ way in a rule, but it is a fact about the ARTIFACT rather than the call — so i
 For a batch of shell commands, an `ask` or `deny` applies as soon as ONE command matches, while an
 `allow` must cover EVERY command — and a line whose commands cannot be read (command substitution)
 can never establish an allow. Read-confined tools resolve real paths, including symlinks, before
-containment checks. Plugin tools expose their targets through `permissionPaths`, and any tool can
-declare native resources through `permissionResources`.
+containment checks; a write or edit through a linked folder that points outside the workspace counts
+as outside it. Plugin tools expose their targets through `permissionPaths`, and any tool can declare
+native resources through `permissionResources`.
 
 ### The guards a shipped role carries
 

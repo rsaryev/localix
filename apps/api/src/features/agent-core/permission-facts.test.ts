@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'bun:test'
+import { tempDirPerTest } from '@localixai/testing'
+import { mkdirSync, symlinkSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { localixHome } from '../../lib/env'
 import { extractCallFacts, writeTargets } from './permission-facts'
@@ -143,5 +145,32 @@ describe('batched reads', () => {
     const facts = extractCallFacts('search', { query: 'x', path: '/etc' }, root)
     expect(facts.paths).toContain('/etc')
     expect(facts.outsideWorkspace).toBe(true)
+  })
+})
+
+describe('mutation containment through a symlinked directory', () => {
+  const tmp = tempDirPerTest('facts-symlink-')
+
+  // A directory link inside the workspace that points out of it (one a cloned repo can carry)
+  // read as contained, so a write or edit through it skipped the outside-workspace ask while
+  // the OS followed the link and changed the file outside.
+  test('a write or edit through a linked folder pointing out is outside the workspace', () => {
+    const ws = path.join(tmp(), 'ws')
+    const outside = path.join(tmp(), 'outside')
+    mkdirSync(ws)
+    mkdirSync(outside)
+    writeFileSync(path.join(outside, 'existing.txt'), 'a')
+    symlinkSync(outside, path.join(ws, 'link'))
+    const write = extractCallFacts('write', { files: [{ path: 'link/new.txt', content: 'x' }] }, ws)
+    expect(write.outsidePaths).toEqual([path.join(ws, 'link', 'new.txt')])
+    const edit = extractCallFacts(
+      'edit',
+      { edits: [{ path: 'link/existing.txt', old_string: 'a', new_string: 'b' }] },
+      ws,
+    )
+    expect(edit.outsideWorkspace).toBe(true)
+    // An ordinary new file in a new folder of the workspace stays inside.
+    const plain = extractCallFacts('write', { path: 'src/new/a.ts', content: 'x' }, ws)
+    expect(plain.outsideWorkspace).toBe(false)
   })
 })
