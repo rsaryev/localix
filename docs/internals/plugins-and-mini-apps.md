@@ -100,7 +100,8 @@ What a mini app is, fixed so a host can install, update and refuse one without r
   `apiVersion` the host API it was built against.
 - **The archive** a catalog distributes: `mini-app.json`, `guide.md`, `guide/`, `icon.svg`,
   `dist/backend/` and `dist/ui/`. Built code only: no source, no `node_modules`, nothing for the
-  person's machine to build.
+  person's machine to build. The icon the manifest names travels in it; the screenshots and README
+  are published beside it as pinned store media, served to the page only by the host.
 - **`.localix-install.json`**, written beside an installed copy: its source, version, sha256 and
   install time. A folder without it is the person's own mini app, which no catalog updates or
   removes.
@@ -143,10 +144,11 @@ Only developer mode builds on the person's machine; every other source ships bui
    archive and writes its catalog entry. The same version with other content is refused by its
    sha256.
 2. **Choose.** The store is its own workspace tab, opened from the rail's add button, from setup and
-   from Settings → Mini apps. Category tabs and a search, then Updates, Installed and Available as
-   one-line rows: the app's mark, name, description, publisher when not verified, and Install,
-   Update, Remove or the download's progress. Install and update reuse the local models' pinned
-   download (`lib/pinned-download.ts`).
+   from Settings → Mini apps. Category tabs, a tag filter, a search and a catalog menu, then
+   Featured, Updates, Installed and Available as rows: the app's own icon, name, description, tags,
+   publisher when not verified, and Install (or Install with desktop app), Update, Remove or the
+   download's progress. A row opens the app's page: screenshots, README and details. Install and
+   update reuse the local models' pinned download (`lib/pinned-download.ts`).
 3. **Install.** One queue downloads each archive with progress (resumable, size-capped, verified
    against the catalog's sha256 before anything is unpacked), unpacks it beside the installed copy
    and swaps it in with one rename. A failed install leaves the previous build.

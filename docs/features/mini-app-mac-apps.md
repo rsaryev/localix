@@ -14,17 +14,20 @@ Mini apps stay tabs in the workspace until you choose otherwise; nothing becomes
 
 Any of these does the same:
 
-| Where                      | Do this                                                                           |
-| -------------------------- | --------------------------------------------------------------------------------- |
-| A mini app's tab           | Right-click the tab and choose **Install _Name_ as App**.                         |
-| The tab strip              | With the mini app's tab on screen, click the app button at the right of the tabs. |
-| The mini app's rail button | Right-click it and choose **Install _Name_ as App**.                              |
-| The command palette        | Run **Install _Name_ as App**.                                                    |
+| Where                      | Do this                                                                               |
+| -------------------------- | ------------------------------------------------------------------------------------- |
+| A mini app's tab           | Right-click the tab and choose **Install _Name_ as App**.                             |
+| The tab strip              | With the mini app's tab on screen, click the app button at the right of the tabs.     |
+| The mini app's rail button | Right-click it and choose **Install _Name_ as App**.                                  |
+| The command palette        | Run **Install _Name_ as App**.                                                        |
+| The store, installing      | **Install** ▾ → **Install with desktop app**: the app is made once the install lands. |
+| The store, installed       | **Add desktop app** on the mini app's page; **Remove desktop app** takes it away.     |
 
-Localix draws the app's icon from the mini app's own glyph on a black tile like Localix's, creates
-the app in `~/Applications/Localix Apps`, makes the app's project and opens it. From there it is an
-ordinary Mac app: keep it in the Dock, open it from Spotlight or Launchpad, or drag it anywhere you
-keep apps.
+The app's icon is the mini app's own icon, the one its `mini-app.json` names and the store shows,
+drawn at every size the Dock uses. A mini app that names no icon cannot become an app until it has
+one; Localix says so. Localix creates the app in `~/Applications/Localix Apps`, makes the app's
+project and opens it. From there it is an ordinary Mac app: keep it in the Dock, open it from
+Spotlight or Launchpad, or drag it anywhere you keep apps.
 
 The app's project is named after the app and lives in `~/.localix/apps/<name>`. It appears in the
 workspace's project switcher like any other project, so you can open the app's conversations from
@@ -79,6 +82,8 @@ mini app is on again.
 - macOS only. The Windows and Linux desktop apps, and Localix in a browser, keep mini apps as tabs.
 - A mini app needs a screen of its own (the button it adds to the rail) to become an app. A Claude
   Code plugin has no screen, so it cannot become an app.
+- Installing with the desktop app from the store does not undo the install when the desktop app
+  cannot be made; the store says why beside the app.
 - A development build keeps its apps separately, in `~/Applications/Localix Dev Apps`, and they need
   the development servers running.
 

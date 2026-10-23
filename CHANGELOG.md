@@ -8,6 +8,17 @@ Changes land on `main`.
 
 ### Added
 
+- **Mini app store pages**: every mini app has its own icon, and choosing one in the store opens its
+  page: screenshots at full resolution with a full-window viewer, its README as About, and details
+  such as size, license and what it adds. Tags filter the store, and featured apps come first. See
+  [Mini apps](docs/features/mini-apps.md#how-it-works).
+- **Install with desktop app** (macOS): the store's Install menu also makes the app its own Mac app
+  once it is installed, with the app's own icon in the Dock. See
+  [Mac apps](docs/features/mini-app-mac-apps.md).
+- **Catalogs**: the store's catalog menu shows one catalog or all of them with their app counts, and
+  **Add catalog…** shows who publishes a catalog before you add it. `/mini-app catalog list`, `add`
+  and `remove` do the same from the chat, and a publisher can link people straight to the dialog.
+  See [Publish a mini app](docs/extending/mini-app-publishing.md).
 - **Mini apps**: `/plugin create <what it should do>` has the agent build an app inside Localix — a
   calorie counter that logs a meal from a photo, a dashboard, a game — with its own screen and tools
   the chat agent uses. A mini app can start an agent turn, ask decision models, search its own items

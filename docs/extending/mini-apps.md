@@ -233,23 +233,26 @@ All paths are relative to the mini app's folder and confined to it.
 `mini-app.json` at the folder root (`miniAppManifestSchema`, `@localixai/mini-app-sdk/app-manifest`)
 refuses unknown keys, a plugin's `skills` or `hooks` among them:
 
-| Field                    | Shape                                                     | Effect and boundary                                                                             |
-| ------------------------ | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `name`                   | string, required                                          | Letters, numbers, dashes or underscores; the namespace of its tools and commands.               |
-| `version`, `description` | string, required                                          | The app's version, and what it does, shown in Settings and in the agent's listing.              |
-| `displayName`, …         | `author`, `homepage`, `repository`, `license`, `keywords` | Display fields.                                                                                 |
-| `apiVersion`             | positive integer                                          | Targets the contract, currently `1`. A newer version blocks loading; omission warns.            |
-| `category`               | `development`, `data`, `content`, `utilities` or `games`  | Groups workbenches in the rail's tools menu; one per app.                                       |
-| `surfaces`               | string array; `['agent']`                                 | `workbench` adds a screen. Unknown values are retained.                                         |
-| `private`                | boolean                                                   | Keeps an authoring scaffold out of packaging.                                                   |
-| `backend`                | string or string array                                    | The native entrypoint(s) exporting `register(ctx)`; `mini_app_build` writes it.                 |
-| `guide`                  | path; `./guide.md`                                        | The agent's guide; pages it links live in `guide/<page>.md`.                                    |
-| `config`                 | config-option map                                         | Settings delivered through `ctx.config`.                                                        |
-| `commands`               | map keyed by command name                                 | Each `{ prompt, description?, args?, argumentHint?, featured?, activateTools? }` (max 8 tools). |
-| `views`                  | view array; max 6                                         | Sandboxed iframe UI, each a work-item tab; HTML capped at 1.5 MiB.                              |
-| `promptSections`         | `{ title, content }` array; max 3                         | Static text under the app's prompt section; title max 80, content max 2,000 characters.         |
-| `contributions`          | typed declaration array; max 1,000                        | Native values through host-owned schemas; unknown kinds fail closed.                            |
-| `fileAssociations`       | association array                                         | File types projected into desktop packaging; only bundled declarations reach the OS.            |
+| Field                    | Shape                                                     | Effect and boundary                                                                                                                  |
+| ------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `name`                   | string, required                                          | Letters, numbers, dashes or underscores; the namespace of its tools and commands.                                                    |
+| `version`, `description` | string, required                                          | The app's version, and what it does, shown in Settings and in the agent's listing.                                                   |
+| `displayName`, …         | `author`, `homepage`, `repository`, `license`, `keywords` | Display fields; a published `homepage` is an `https://` address.                                                                     |
+| `icon`                   | path in the folder                                        | The app's icon in the store, the rail and its Mac app. Required to publish; see [icon](mini-app-publishing.md#icon-and-screenshots). |
+| `screenshots`            | `{ path, caption? }` array; max 10                        | Shown on the app's store page at their own resolution; `.png`, `.jpg` or `.webp`, ≤5 MB each.                                        |
+| `tags`                   | string array; max 8                                       | Lower-case words joined by dashes; the store filters and searches by them.                                                           |
+| `apiVersion`             | positive integer                                          | Targets the contract, currently `1`. A newer version blocks loading; omission warns.                                                 |
+| `category`               | `development`, `data`, `content`, `utilities` or `games`  | Groups workbenches in the rail's tools menu; one per app.                                                                            |
+| `surfaces`               | string array; `['agent']`                                 | `workbench` adds a screen. Unknown values are retained.                                                                              |
+| `private`                | boolean                                                   | Keeps an authoring scaffold out of packaging.                                                                                        |
+| `backend`                | string or string array                                    | The native entrypoint(s) exporting `register(ctx)`; `mini_app_build` writes it.                                                      |
+| `guide`                  | path; `./guide.md`                                        | The agent's guide; pages it links live in `guide/<page>.md`.                                                                         |
+| `config`                 | config-option map                                         | Settings delivered through `ctx.config`.                                                                                             |
+| `commands`               | map keyed by command name                                 | Each `{ prompt, description?, args?, argumentHint?, featured?, activateTools? }` (max 8 tools).                                      |
+| `views`                  | view array; max 6                                         | Sandboxed iframe UI, each a work-item tab; HTML capped at 1.5 MiB.                                                                   |
+| `promptSections`         | `{ title, content }` array; max 3                         | Static text under the app's prompt section; title max 80, content max 2,000 characters.                                              |
+| `contributions`          | typed declaration array; max 1,000                        | Native values through host-owned schemas; unknown kinds fail closed.                                                                 |
+| `fileAssociations`       | association array                                         | File types projected into desktop packaging; only bundled declarations reach the OS.                                                 |
 
 The native UI is found by convention at `ui/register.tsx`. A `views[]` entry is
 `{ id, title, file, icon?, agentDescription? }`; a `fileAssociations[]` entry is

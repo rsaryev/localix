@@ -29,6 +29,8 @@ the normal mini app catalog and follows the same enablement rules as Database, D
 | Location                  | Responsibility                                                  |
 | ------------------------- | --------------------------------------------------------------- |
 | `mini-app.json`           | The mini app: identity, category, surfaces, backend, commands   |
+| `icon.svg`                | Its icon in the store, the rail and its Mac app; replace it     |
+| `screenshots/`            | What the store page shows; replace them with your app's own     |
 | `backend/system.ts`       | Injectable native OS reader and one-second snapshot cache       |
 | `backend/processes.ts`    | Cross-platform process collector                                |
 | `backend/system-marks.ts` | Marks: notes saved with the CPU and memory of their moment      |
@@ -114,3 +116,11 @@ hosting, updates and trust.
 - [Process collectors](backend/processes.ts)
 - [System sampling and history limits](ui/system/useSystem.ts)
 - [Shared store synchronization](../../packages/mini-app-sdk/src/ui/store-snapshot.ts)
+
+## Publish it
+
+`mini-app.json` names the app's `icon`, `screenshots` and `tags`. A copy keeps `icon.svg`, so it
+always has an icon; draw your own on the same tile, and take screenshots of your app at full
+resolution. `mini_app_build` and `/mini-app reload` report problems with them in the **store media**
+step, and packing refuses an app without a valid icon. See
+[Publish a mini app](../../docs/extending/mini-app-publishing.md).
