@@ -150,10 +150,12 @@ dependency tree: use relative modules and built-in modules only, or pre-bundle d
 | Project       | `<project>/.localix/plugins/<name>/` | Bundled ones projected into that project scope |
 | No project    | `~/.localix/plugins/<name>/`         | Bundled ones in the personal scope             |
 
-A project session sees your personal extensions as well as its own, the project's copy winning a
-name collision. A personal extension has one configuration in every project; a `sensitive` setting
-is kept in the [vault](../features/secrets.md). Use Settings → Capabilities → Plugins to install,
-configure, validate, and enable one; after copying a directory into a root, run `/plugin reload`.
+A project session sees your personal extensions as well as its own. On a name collision your
+extension wins and the project's copy is hidden, so a repository cannot run its code under a
+permission you gave your own plugin. A personal extension has one configuration in every project; a
+`sensitive` setting is kept in the [vault](../features/secrets.md). Use Settings → Capabilities →
+Plugins to install, configure, validate, and enable one; after copying a directory into a root, run
+`/plugin reload`.
 
 ### Native module contract
 

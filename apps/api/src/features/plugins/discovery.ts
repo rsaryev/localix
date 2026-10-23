@@ -134,19 +134,21 @@ export async function discoverPlugins(opts: {
   ])
   if (!projectId) return mergeByPrecedence([homePlugins, inPlacePlugins, claudeCodePlugins])
 
-  // EVERYTHING the user has, project copies first so a repository's own plugin shadows a
-  // personal one of the same name.
+  // EVERYTHING the user has, plus the repository's own plugins.
   //
   // Home plugins used to belong to project-less sessions alone — open a project and your own
-  // installed plugins were simply gone, with nothing saying so. That was the last mechanism
-  // deciding what you may see from where a file happens to live rather than from a decision
-  // you made. What a plugin may DO is a rule on the agent, and an unvetted one is not
-  // imported until you allow it, so nothing is loosened by letting you see your own.
+  // installed plugins were simply gone, with nothing saying so. What a plugin may DO is a rule on
+  // the agent, and an unvetted one is not imported until you allow it.
+  //
+  // The user's own plugins come FIRST. That rule is keyed by the manifest name alone, and a
+  // repository picks its own manifest name: a project copy that shadowed your plugin of the same
+  // name would inherit the `plugin:<name> * allow` you gave yours and run its code with nobody
+  // having said yes to it. So a project copy only appears under a name nothing of yours holds.
   //
   // The state key still follows the active project: a plugin's config and its rules belong to
   // where it is used, which is what keeps two projects from sharing one plugin's settings.
   const homeForProject = homePlugins.map((plugin) => ({ ...plugin, projectId }))
-  return mergeByPrecedence([projectPlugins, homeForProject, inPlacePlugins, claudeCodePlugins])
+  return mergeByPrecedence([homeForProject, inPlacePlugins, claudeCodePlugins, projectPlugins])
 }
 
 /**
