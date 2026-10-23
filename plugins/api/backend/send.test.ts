@@ -28,7 +28,13 @@ const spec = (over: Partial<RequestSpec> = {}): RequestSpec => ({
   ...over,
 })
 
-const OPTS = { timeoutMs: 5_000, maxBodyBytes: 100_000, allowPrivateNetwork: false }
+const OPTS = {
+  timeoutMs: 5_000,
+  maxBodyBytes: 100_000,
+  allowPrivateNetwork: false,
+  // Every test host is public; a stub keeps the address check off real DNS.
+  resolveHost: async () => ['93.184.216.34'],
+}
 
 /** The message `sendRequest` refused with, or '' when it did not refuse. */
 async function refusal(spec: RequestSpec, opts = OPTS): Promise<string> {

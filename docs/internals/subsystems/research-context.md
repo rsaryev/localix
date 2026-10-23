@@ -114,7 +114,8 @@ and injected into the tool by
 - Safe reading extracts bounded HTML, Markdown, JSON, or text. Client-rendered pages, authentication
   walls, paywalls, and non-article markup can yield sparse or failed evidence.
 - `research.allowPrivate` lifts the private-address guard for HTTP(S) resources. It does not permit
-  non-HTTP schemes or embedded URL credentials.
+  non-HTTP schemes or embedded URL credentials. With it off, a host whose address cannot be resolved
+  for the guard is refused rather than fetched.
 - A discovered title or snippet never becomes consulted evidence by itself. The page read must
   succeed and contribute content.
 - The tool can attempt bounded alternates after failures, but it never exceeds eight total read

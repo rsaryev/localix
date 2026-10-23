@@ -103,14 +103,19 @@ export async function checkUrlSafety(
   if (isIP(host)) {
     return isPrivateAddress(host) ? `IP ${host} is a private/internal address` : null
   }
+  let addresses: string[]
   try {
-    for (const address of await resolve(host)) {
-      if (isPrivateAddress(address)) {
-        return `Host "${host}" resolves to private/internal address ${address}`
-      }
-    }
+    addresses = await resolve(host)
   } catch {
-    return null // unresolvable — let fetch produce the real network error
+    addresses = []
+  }
+  // Fail closed: the later fetch resolves the host again on its own, so a lookup that failed
+  // here proves nothing about the address it will reach.
+  if (addresses.length === 0) return `Host "${host}" could not be resolved for the safety check`
+  for (const address of addresses) {
+    if (isPrivateAddress(address)) {
+      return `Host "${host}" resolves to private/internal address ${address}`
+    }
   }
   return null
 }

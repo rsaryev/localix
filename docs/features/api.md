@@ -6,7 +6,8 @@ addressable inside the Localix workspace.
 
 **Availability:** The bundled `api` plugin is enabled by default and can be disabled in **Settings →
 Capabilities → Plugins**. Requests to private or local hosts require the plugin’s **Allow
-private/internal hosts** option; enable it only for services you intend to call.
+private/internal hosts** option; enable it only for services you intend to call. Without it, a host
+whose address cannot be resolved is refused as well.
 
 ![A saved release readiness request with a successful JSON response from the local demo service](../assets/screenshots/api/request-response--2026-10-08.png)
 

@@ -71,6 +71,17 @@ describe('checkUrlSafety (SSRF guard)', () => {
     const resolve = async () => ['93.184.216.34']
     expect(await checkUrlSafety(new URL('http://example.com/'), resolve)).toBeNull()
   })
+  it('refuses a hostname whose resolution fails (fail closed)', async () => {
+    const resolve = async (): Promise<string[]> => {
+      throw new Error('ENOTFOUND')
+    }
+    expect(await checkUrlSafety(new URL('http://attacker.test/'), resolve)).toMatch(
+      /could not be resolved/,
+    )
+    expect(await checkUrlSafety(new URL('http://empty.test/'), async () => [])).toMatch(
+      /could not be resolved/,
+    )
+  })
 })
 
 describe('readBodyCapped', () => {
@@ -198,6 +209,26 @@ describe('research readable-page loader — validation + guards', () => {
     )
     expect(r.isError).toBe(true)
     expect(r.content).toMatch(/Blocked/)
+    expect(called).toBe(false)
+  })
+  it('does not fetch a host whose safety check could not resolve it', async () => {
+    let called = false
+    const fetchImpl = (async () => {
+      called = true
+      return fakeResponse({ headers: { 'content-type': 'text/plain' }, body: 'INTERNAL_MARKER' })
+    }) as unknown as typeof fetch
+    const r = await fetchReadablePage(
+      { url: 'http://attacker.test/' },
+      {
+        fetchImpl,
+        resolveHost: async () => {
+          throw new Error('ENOTFOUND')
+        },
+      },
+    )
+    expect(r.isError).toBe(true)
+    expect(r.content).toMatch(/Blocked/)
+    expect(r.content).not.toContain('INTERNAL_MARKER')
     expect(called).toBe(false)
   })
   it('allows a private target when config.allowPrivate is set', async () => {

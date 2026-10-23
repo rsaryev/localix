@@ -7,7 +7,7 @@
  * the cloud metadata service, and an automatic redirect makes that invisible to us.
  */
 
-import { checkUrlSafety, readBodyCapped } from '@localixai/plugin-sdk/backend'
+import { checkUrlSafety, readBodyCapped, type HostResolver } from '@localixai/plugin-sdk/backend'
 import { finalHeaders } from './auth'
 import { decodingPlan } from './charset'
 import { type Cookie, collectCookies } from './cookie-jar'
@@ -45,6 +45,8 @@ export interface SendOptions {
   signal?: AbortSignal
   /** Resolved native-Vault environment values, used only to scrub reflected response data. */
   secretValues?: readonly string[]
+  /** Host resolver for the address check; tests inject one so no real DNS is consulted. */
+  resolveHost?: HostResolver
 }
 
 export interface SendResult {
@@ -96,7 +98,7 @@ export { RequestTimeoutError } from './send-errors'
  * can forget. `ALLOW_PRIVATE_NETWORK` deliberately does NOT relax it: that setting is about
  * reaching your own LAN, and no value of it should make `file://` a thing this plugin does.
  */
-async function guard(url: URL, allowPrivate: boolean): Promise<void> {
+async function guard(url: URL, allowPrivate: boolean, resolveHost?: HostResolver): Promise<void> {
   // `blocked`, not `bad_request`: both of these are well-formed urls we are REFUSING. The route
   // turns that into a 403 and the UI must not offer a retry — we would refuse it again.
   if (!isHttpUrl(url.toString())) {
@@ -106,7 +108,7 @@ async function guard(url: URL, allowPrivate: boolean): Promise<void> {
     )
   }
   if (allowPrivate) return
-  const problem = await checkUrlSafety(url)
+  const problem = await checkUrlSafety(url, resolveHost)
   if (problem) {
     throw new SendError(
       'blocked',
@@ -209,7 +211,7 @@ export async function sendRequest(spec: RequestSpec, opts: SendOptions): Promise
   let jar: Cookie[] = []
 
   for (let redirects = 0; ; redirects++) {
-    await guard(url, opts.allowPrivateNetwork)
+    await guard(url, opts.allowPrivateNetwork, opts.resolveHost)
     const hopStarted = Date.now()
 
     let res: Response
