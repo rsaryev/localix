@@ -119,3 +119,30 @@ describe('fetchNpmPlugin over plain http', () => {
     expect(urls).toEqual([`${lan}/p`, `${lan}/p/-/p-1.0.0.tgz`])
   })
 })
+
+describe('which registry a source with no `registry` resolves against', () => {
+  it("uses the user's @scope:registry, then their default, never the public registry first", async () => {
+    const home = dir()
+    writeTree(home, {
+      '.npmrc': '@acme:registry=https://npm.acme.example/\nregistry=https://mirror.acme.example/\n',
+    })
+    const opts = { env: {}, home }
+    const urls = record(() => new Response('nope', { status: 404 }))
+    await expect(
+      fetchNpmPlugin({ package: '@acme/plugin' }, join(dir(), 'a'), opts),
+    ).rejects.toThrow()
+    await expect(fetchNpmPlugin({ package: 'plain' }, join(dir(), 'b'), opts)).rejects.toThrow()
+    await expect(
+      fetchNpmPlugin(
+        { package: '@acme/plugin', registry: 'https://r.example' },
+        join(dir(), 'c'),
+        opts,
+      ),
+    ).rejects.toThrow()
+    expect(urls).toEqual([
+      'https://npm.acme.example/@acme%2fplugin',
+      'https://mirror.acme.example/plain',
+      'https://r.example/@acme%2fplugin',
+    ])
+  })
+})

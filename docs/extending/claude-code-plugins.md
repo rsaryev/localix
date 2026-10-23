@@ -108,7 +108,7 @@ A marketplace entry names where its plugin comes from, and Localix fetches it as
 | -------------------------------------- | ----------------------------------------------------------------------------- |
 | A relative path, `metadata.pluginRoot` | Read from the marketplace's own folder                                        |
 | `github`, `url`, `git-subdir`          | Fetched with git at `sha`, `commit` or `ref`; a subdirectory checks out alone |
-| `npm`                                  | Installed from the npm registry                                               |
+| `npm`                                  | Installed from the npm registry your `~/.npmrc` picks for the package's scope |
 | `archive`                              | Downloaded over https, checked against its `sha256`, unpacked                 |
 | `command`                              | Not run; install from the folder the command prints                           |
 

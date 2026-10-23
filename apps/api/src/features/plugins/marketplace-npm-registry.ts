@@ -13,13 +13,19 @@ import { isForbiddenHost, type HopCheck } from './marketplace-download'
 
 export const DEFAULT_NPM_REGISTRY = 'https://registry.npmjs.org'
 
-/** The `registry=` line of an `.npmrc` (scoped `@scope:registry=` lines are not the default). */
-function registryLine(text: string): string | undefined {
+/** The `registry=` line of an `.npmrc`, or the `@scope:registry=` line when a scope is given. */
+function registryLine(text: string, scope?: string): string | undefined {
+  const key = scope ? `${scope}:registry` : 'registry'
   for (const raw of text.split(/\r?\n/)) {
     const line = raw.trim()
     if (line.startsWith('#') || line.startsWith(';')) continue
-    const match = line.match(/^registry\s*=\s*(.+)$/)
-    if (match) return match[1].trim().replace(/^["']|["']$/g, '')
+    const eq = line.indexOf('=')
+    if (eq < 0 || line.slice(0, eq).trim() !== key) continue
+    const value = line
+      .slice(eq + 1)
+      .trim()
+      .replace(/^["']|["']$/g, '')
+    if (value) return value
   }
   return undefined
 }
@@ -36,6 +42,25 @@ export async function userDefaultNpmRegistry(
   if (fromEnv?.trim()) return fromEnv.trim()
   const npmrc = await fs.readFile(join(home, '.npmrc'), 'utf8').catch(() => '')
   return registryLine(npmrc) ?? DEFAULT_NPM_REGISTRY
+}
+
+/**
+ * The registry npm itself would use for `pkg`: its scope's `@scope:registry=` line in `~/.npmrc`,
+ * else the user's default registry. A catalog that names no registry gets this, so a private
+ * scoped package is never looked up on the public registry by mistake.
+ */
+export async function userNpmRegistryFor(
+  pkg: string,
+  env: NodeJS.ProcessEnv = process.env,
+  home: string = homedir(),
+): Promise<string> {
+  const scope = pkg.startsWith('@') ? pkg.slice(0, pkg.indexOf('/')) : undefined
+  if (scope && scope.length > 1) {
+    const npmrc = await fs.readFile(join(home, '.npmrc'), 'utf8').catch(() => '')
+    const scoped = registryLine(npmrc, scope)
+    if (scoped) return scoped
+  }
+  return userDefaultNpmRegistry(env, home)
 }
 
 function originOf(url: string): string | null {

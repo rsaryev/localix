@@ -11,7 +11,7 @@ import { childEnv } from '../../lib/login-shell-env'
 import { rmrf } from '../ext/install-tree'
 import { fetchChecked, readCapped } from './marketplace-download'
 import { assertGunzipWithin } from './marketplace-gzip-limit'
-import { DEFAULT_NPM_REGISTRY, npmHop, userDefaultNpmRegistry } from './marketplace-npm-registry'
+import { DEFAULT_NPM_REGISTRY, npmHop, userNpmRegistryFor } from './marketplace-npm-registry'
 
 export { DEFAULT_NPM_REGISTRY } from './marketplace-npm-registry'
 
@@ -235,10 +235,14 @@ async function fetchNpm(
 }
 
 /** The package's packument, its body capped and every failure a per-entry `ApiError`. */
-async function fetchPackument(src: NpmEntrySource, defaultRegistry: string): Promise<Packument> {
+async function fetchPackument(
+  src: NpmEntrySource,
+  defaultRegistry: string,
+  registry: string,
+): Promise<Packument> {
   const what = `npm metadata for "${src.package}"`
   const response = await fetchNpm(
-    npmMetadataUrl(src.package, src.registry),
+    npmMetadataUrl(src.package, registry),
     what,
     defaultRegistry,
     NPM_METADATA_TIMEOUT_MS,
@@ -268,11 +272,14 @@ async function fetchPackument(src: NpmEntrySource, defaultRegistry: string): Pro
 export async function fetchNpmPlugin(
   src: NpmEntrySource,
   dest: string,
-  opts: { defaultRegistry?: string } = {},
+  opts: { defaultRegistry?: string; env?: NodeJS.ProcessEnv; home?: string } = {},
 ): Promise<void> {
-  // Plain http only on the user's own default registry, checked before anything is contacted.
-  const defaultRegistry = opts.defaultRegistry ?? (await userDefaultNpmRegistry())
-  const meta = await fetchPackument(src, defaultRegistry)
+  // The registry npm would use for this package (its scope's line, else the default). A catalog's
+  // own `registry` still wins for the lookup, but plain http stays allowed only on the user's own
+  // registry, checked before anything is contacted.
+  const defaultRegistry =
+    opts.defaultRegistry ?? (await userNpmRegistryFor(src.package, opts.env, opts.home))
+  const meta = await fetchPackument(src, defaultRegistry, src.registry ?? defaultRegistry)
   const version = pickNpmVersion(src.package, meta, src.version)
   const dist = meta.versions?.[version]?.dist
   if (!dist?.tarball) {
