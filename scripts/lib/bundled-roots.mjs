@@ -3,8 +3,8 @@
 // folder under `mini-apps/` is one mini app (its screens, backend and tools, with the plugin it
 // contains), and each folder under `plugins/` is one plugin with no mini app. A build stages both
 // into one root beside the server bundle, which the API reads at runtime.
-import { existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { hasExtensionManifest } from './extension-manifest.mjs'
 
 /** The repository folder of the bundled mini apps, one folder each. */
 export const MINI_APPS_DIR = 'mini-apps'
@@ -33,11 +33,12 @@ export function bundledRoots(repoRoot) {
 
 /**
  * The folder of the bundled extension called `name`, in whichever bundled folder holds it, or null
- * when neither does. A mini app and a plugin never share a name.
+ * when neither does. A mini app and a plugin never share a name; a folder without a manifest (the
+ * ignored build caches a move leaves behind) is not one.
  */
 export function bundledFolderOf(repoRoot, name) {
   for (const root of bundledRoots(repoRoot)) {
-    if (existsSync(join(root, name))) return join(root, name)
+    if (hasExtensionManifest(join(root, name))) return join(root, name)
   }
   return null
 }

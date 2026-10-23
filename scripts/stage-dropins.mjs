@@ -314,13 +314,22 @@ export function stageDropins({
   const names = []
   for (const repoPlugins of bundledRoots(repoRoot)) {
     if (!existsSync(repoPlugins)) continue
-    const privatePlugins = privatePluginDirs(repoPlugins)
+    // A folder without a manifest is not an extension: a checkout keeps ignored build caches
+    // (`.turbo`, `node_modules`) in the folders a move left behind, and copying one over the
+    // extension of the same name in the other root broke its staging. A name staged from an
+    // earlier root keeps that copy.
+    const skipTopDirs = privatePluginDirs(repoPlugins)
+    for (const entry of readdirSync(repoPlugins, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue
+      if (names.includes(entry.name) || !hasExtensionManifest(join(repoPlugins, entry.name)))
+        skipTopDirs.add(entry.name)
+      else if (!skipTopDirs.has(entry.name)) names.push(entry.name)
+    }
     cpSync(repoPlugins, outPlugins, {
       recursive: true,
       force: true,
-      filter: makeCopyFilter(repoPlugins, { skipTopDirs: privatePlugins }),
+      filter: makeCopyFilter(repoPlugins, { skipTopDirs }),
     })
-    for (const name of readdirSync(repoPlugins)) if (!privatePlugins.has(name)) names.push(name)
   }
 
   // Pre-bundle tools FROM THE REPO TREE, where workspace deps (declared in a

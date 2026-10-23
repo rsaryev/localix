@@ -88,8 +88,13 @@ describe('bundled roots', () => {
   })
 
   const checkout = tempDirPerTest('bundled-roots', {
+    'mini-apps/chess/.localix-app/app.json': '{"name":"chess"}',
     'mini-apps/chess/ui/register.tsx': '',
+    'plugins/workflows/.claude-plugin/plugin.json': '{"name":"workflows"}',
     'plugins/workflows/commands/workflows.md': '',
+    // What a move leaves behind in a checkout: ignored build caches, no manifest.
+    'plugins/chess/.turbo/turbo-build.log': '',
+    'plugins/stale/node_modules/.keep': '',
   })
 
   test('an extension is found in whichever bundled folder holds it', () => {
@@ -98,6 +103,10 @@ describe('bundled roots', () => {
       join(checkout(), PLUGINS_DIR, 'workflows'),
     )
     expect(bundledFolderOf(checkout(), 'missing')).toBeNull()
+  })
+
+  test('a folder without a manifest is not an extension', () => {
+    expect(bundledFolderOf(checkout(), 'stale')).toBeNull()
   })
 
   test('a checkout bundles mini apps and plugins in folders of their own', () => {

@@ -165,6 +165,28 @@ describe('stageDropins', () => {
     expect(marker.unavailable.broken).not.toContain('Command failed')
   })
 
+  test('a folder without a manifest in the other bundled root does not stage over a mini app', () => {
+    // The failure this guards: after the mini apps moved to `mini-apps/`, a checkout kept ignored
+    // build caches under `plugins/trading/`. Staging counted that folder as a second `trading`,
+    // copied it over the mini app and bundled it again from the already repointed manifest:
+    // `ModuleNotFound resolving …/backend/index.bundle.mjs`.
+    const root = mkdtempSync(join(tmpdir(), 'localix-stage-dropins-'))
+    roots.push(root)
+    const outPlugins = join(root, 'staged', 'plugins')
+    write(
+      join(root, 'mini-apps', 'trading', '.localix-app', 'app.json'),
+      JSON.stringify({ name: 'trading', backend: './backend/index.ts' }),
+    )
+    write(join(root, 'mini-apps', 'trading', 'backend', 'index.ts'), 'export const tools = []\n')
+    write(join(root, 'plugins', 'trading', 'backend', 'tmp', 'cache.json'), '{}\n')
+
+    const { skipped } = stageDropins({ repoRoot: root, outPlugins, onPluginError: 'skip' })
+
+    expect(skipped).toEqual([])
+    expect(existsSync(join(outPlugins, 'trading', 'backend', 'index.bundle.mjs'))).toBe(true)
+    expect(existsSync(join(outPlugins, 'trading', 'backend', 'tmp'))).toBe(false)
+  })
+
   test('a re-stage that builds again clears the recorded failure; one that breaks records it', () => {
     const root = mkdtempSync(join(tmpdir(), 'localix-stage-dropins-'))
     roots.push(root)
