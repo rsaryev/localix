@@ -64,7 +64,7 @@ export const TypescriptServer: LspServerDef = {
     // (Bun) so TypeScript intelligence needs NO Node.js install. We tried
     // typescript-language-server but it does not run cleanly under Bun; vtsls
     // does (verified: real diagnostics, hover, completion).
-    const bin = resolveNpmBin('vtsls', rootDir) ?? resolveNpmBin('vtsls', projectRoot)
+    const bin = resolveNpmBin('vtsls', rootDir, projectRoot)
     if (!bin) return undefined
 
     // vtsls needs a TypeScript install — point it at the `typescript/lib` dir
@@ -121,9 +121,7 @@ export const VueServer: LspServerDef = {
     return findUpward(path.dirname(filePath), projectRoot, lockfiles) ?? projectRoot
   },
   async spawn(rootDir, projectRoot) {
-    const bin =
-      resolveNpmBin('vue-language-server', rootDir) ??
-      resolveNpmBin('vue-language-server', projectRoot)
+    const bin = resolveNpmBin('vue-language-server', rootDir, projectRoot)
     if (!bin) return undefined
     const proc = spawnJsServer(bin, ['--stdio'], rootDir)
     if (!proc) return undefined

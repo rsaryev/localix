@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import { createMemoizedLookup } from './lsp-bin-resolve'
+import path from 'node:path'
+import { tempDirPerTest, writeTree } from '@localixai/testing'
+import { createMemoizedLookup, resolveNpmBin } from './lsp-bin-resolve'
 
 /**
  * `which()` is called from every LSP server definition's `spawn`, and `lsp-manager`
@@ -69,5 +71,47 @@ describe('memoized PATH lookup', () => {
     expect(cache.get('gopls')).toBe('/bin/gopls')
     expect(cache.get('pyright-langserver')).toBeUndefined()
     expect(calls).toEqual(['pylsp', 'gopls', 'pyright-langserver'])
+  })
+})
+
+describe('npm language server lookup', () => {
+  const dir = tempDirPerTest('lsp-bin')
+  const shim = '#!/usr/bin/env node\nprocess.exit(0)\n'
+
+  test('a bundled server comes from the installation, not a node_modules the opened repo ships', () => {
+    const install = path.join(dir(), 'install')
+    const project = path.join(dir(), 'repo')
+    writeTree(dir(), {
+      'install/node_modules/.bin/vtsls': shim,
+      'repo/node_modules/.bin/vtsls': shim,
+    })
+    expect(resolveNpmBin('vtsls', project, project, install)).toBe(
+      path.join(install, 'node_modules', '.bin', 'vtsls'),
+    )
+  })
+
+  test('a bundled server falls back to the project only when the installation lacks it', () => {
+    const install = path.join(dir(), 'install')
+    const project = path.join(dir(), 'repo')
+    writeTree(dir(), { 'repo/node_modules/.bin/yaml-language-server': shim })
+    expect(resolveNpmBin('yaml-language-server', project, project, install)).toBe(
+      path.join(project, 'node_modules', '.bin', 'yaml-language-server'),
+    )
+  })
+
+  test('lookup never climbs above the project root', () => {
+    const install = path.join(dir(), 'install')
+    const project = path.join(dir(), 'parent', 'repo')
+    const root = path.join(project, 'packages', 'web')
+    writeTree(dir(), {
+      'parent/node_modules/.bin/localix-test-ls': shim,
+      'parent/repo/packages/web/.keep': '',
+    })
+    expect(resolveNpmBin('localix-test-ls', root, project, install)).toBeUndefined()
+
+    writeTree(dir(), { 'parent/repo/node_modules/.bin/localix-test-ls': shim })
+    expect(resolveNpmBin('localix-test-ls', root, project, install)).toBe(
+      path.join(project, 'node_modules', '.bin', 'localix-test-ls'),
+    )
   })
 })

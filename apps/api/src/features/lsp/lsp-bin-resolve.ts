@@ -167,28 +167,53 @@ export function findUpward(
   return undefined
 }
 
-export function resolveNpmBin(bin: string, rootDir: string): string | undefined {
-  const local = resolveBinPath(path.join(rootDir, 'node_modules', '.bin', bin))
-  if (local) return local
-  // walk upward from rootDir
-  let dir = path.dirname(rootDir)
+/**
+ * Language servers the API installation ships in its own `node_modules`. An opened repository may
+ * not replace these: its `node_modules/.bin` is repository code, and the resolved entry runs with
+ * the API's runtime as soon as a matching file is opened.
+ */
+const BUNDLED_NPM_BINS: ReadonlySet<string> = new Set([
+  'vtsls',
+  'vscode-json-language-server',
+  'vscode-css-language-server',
+  'docker-langserver',
+  'yaml-language-server',
+])
+
+/** First `node_modules/.bin/<bin>` from `startDir` upward, stopping after `stopDir` when given. */
+function findNpmBinUpward(bin: string, startDir: string, stopDir?: string): string | undefined {
+  let dir = startDir
   while (true) {
     const candidate = resolveBinPath(path.join(dir, 'node_modules', '.bin', bin))
     if (candidate) return candidate
     const parent = path.dirname(dir)
-    if (parent === dir) break
+    if (dir === stopDir || parent === dir) return undefined
     dir = parent
   }
-  // Fall back to walking upward from this file's own location (finds monorepo-installed binaries)
-  let selfDir = import.meta.dir
-  while (true) {
-    const candidate = resolveBinPath(path.join(selfDir, 'node_modules', '.bin', bin))
-    if (candidate) return candidate
-    const parent = path.dirname(selfDir)
-    if (parent === selfDir) break
-    selfDir = parent
-  }
-  return which(bin)
+}
+
+/**
+ * Resolve an npm language server, then fall back to `PATH`. A server Localix bundles comes from
+ * the installation first and from the project only when the installation lacks it; any other
+ * server comes from the project first. Project lookup walks from `rootDir` up to `projectRoot` and
+ * never above it (only `rootDir` itself when it lies outside the project). `installDir` is the
+ * installation's own location, injectable for tests.
+ */
+export function resolveNpmBin(
+  bin: string,
+  rootDir: string,
+  projectRoot: string = rootDir,
+  installDir: string = import.meta.dir,
+): string | undefined {
+  const bundled = BUNDLED_NPM_BINS.has(bin)
+  const own = bundled ? findNpmBinUpward(bin, installDir) : undefined
+  if (own) return own
+  const relative = path.relative(projectRoot, rootDir)
+  const inside =
+    relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative)
+  const fromProject = findNpmBinUpward(bin, rootDir, inside ? projectRoot : rootDir)
+  if (fromProject) return fromProject
+  return (bundled ? undefined : findNpmBinUpward(bin, installDir)) ?? which(bin)
 }
 
 export function resolveUpward(relativePath: string, startDir: string): string | undefined {

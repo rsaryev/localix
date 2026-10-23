@@ -1,4 +1,4 @@
-import { resolveNpmBin, spawnJsServer, which } from './lsp-bin-resolve'
+import { resolveNpmBin, spawnJsServer } from './lsp-bin-resolve'
 import type { LspServerDef } from './lsp-servers'
 
 interface BundledServerOptions {
@@ -8,7 +8,7 @@ interface BundledServerOptions {
   matchesFilename?: LspServerDef['matchesFilename']
 }
 
-/** JavaScript servers with project-local lookup, PATH fallback and no extra initialization. */
+/** JavaScript servers resolved installation-first, then project and PATH, with no extra init. */
 export function createBundledJsServer({
   id,
   extensions,
@@ -23,8 +23,7 @@ export function createBundledJsServer({
       return projectRoot
     },
     async spawn(rootDir, projectRoot) {
-      const bin =
-        resolveNpmBin(binName, rootDir) ?? resolveNpmBin(binName, projectRoot) ?? which(binName)
+      const bin = resolveNpmBin(binName, rootDir, projectRoot)
       if (!bin) return undefined
       const proc = spawnJsServer(bin, ['--stdio'], rootDir)
       if (!proc) return undefined

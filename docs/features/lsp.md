@@ -172,11 +172,13 @@ For each enabled plugin server, Localix reports two things in the plugin's valid
 There is no LSP tool. The agent receives diagnostics inside `edit` and `write` results, and the
 prompt line for a plugin server says so.
 
-Executable lookup uses the API host's login-shell environment. npm-based definitions first look for
-project and ancestor `node_modules/.bin` entries, then the API installation and `PATH`. A missing
-`PATH` executable is cached for 60 seconds, so installing it may require another attempt after that
-interval. A found `PATH` location is cached until the API restarts; restart after moving an
-executable or changing the launch environment.
+Executable lookup uses the API host's login-shell environment. Servers Localix bundles (TypeScript,
+JSON, CSS, YAML, Dockerfile) run from the API installation first and use the project's
+`node_modules/.bin` only when the installation lacks them. Other npm-based servers look in the
+project's `node_modules/.bin` first, then the API installation and `PATH`. Project lookup never goes
+above the project root. A missing `PATH` executable is cached for 60 seconds, so installing it may
+require another attempt after that interval. A found `PATH` location is cached until the API
+restarts; restart after moving an executable or changing the launch environment.
 
 ## Changes made outside Localix
 
