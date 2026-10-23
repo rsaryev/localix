@@ -99,7 +99,7 @@ describe('scanZip', () => {
 describe('verifyZipMembers', () => {
   it('passes entries that inflate to what they declare', async () => {
     const zip = makeZip([{ name: 'a', data: 'hello '.repeat(100) }])
-    await verifyZipMembers(zip, scanZip(zip).members)
+    await expect(verifyZipMembers(zip, scanZip(zip).members)).resolves.toBeUndefined()
   })
 
   it('refuses an entry that inflates past its declared size', async () => {

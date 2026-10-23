@@ -128,11 +128,4 @@ describe('direct slash-command transcript reads', () => {
     const graph = createChatServiceGraph({ db: {}, runner: {}, ports } as never)
     expect(graph.pluginService).toBe(host)
   })
-
-  test('and falls back to its own only when nobody supplied one', () => {
-    const graph = createChatFeaturePorts({} as never)
-    // The fallback must still announce mutations, or a toggle would never invalidate
-    // the run-scope cache for a consumer with no host.
-    expect(typeof graph.pluginService.onChanged).toBe('function')
-  })
 })

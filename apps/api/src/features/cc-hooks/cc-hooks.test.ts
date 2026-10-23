@@ -471,7 +471,9 @@ describe('runtime protocol', () => {
   it('Notification: inert when no Notification hooks are registered', async () => {
     const rt = make(reg({ Stop: [cmd('echo x')] }))
     // No throw, no-op.
-    await rt.runNotification({ message: 'nothing listens', notificationType: 'permission_prompt' })
+    await expect(
+      rt.runNotification({ message: 'nothing listens', notificationType: 'permission_prompt' }),
+    ).resolves.toBeUndefined()
   })
 
   it('PreCompact: matcher filters on trigger (manual vs auto)', async () => {

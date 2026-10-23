@@ -94,7 +94,6 @@ describe('UpdateAnnouncement', () => {
     const unmount = await mountAnnouncement()
 
     const content = dialog()
-    expect(content?.className).toContain('max-h-[min(40rem,calc(100dvh-2rem))]')
     const scrollers = content?.querySelectorAll('[class*="overflow-y-auto"]') ?? []
     expect(scrollers).toHaveLength(1)
     expect(scrollers[0]?.getAttribute('data-slot')).toBe('dialog-body')

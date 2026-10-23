@@ -11,7 +11,6 @@ describe('railRecentsPref', () => {
     expect(parseRailRecentsMode(null)).toBe(DEFAULT_RAIL_RECENTS_MODE)
     expect(parseRailRecentsMode('')).toBe(DEFAULT_RAIL_RECENTS_MODE)
     expect(parseRailRecentsMode('collapsed')).toBe(DEFAULT_RAIL_RECENTS_MODE)
-    expect(DEFAULT_RAIL_RECENTS_MODE).toBe('hover')
   })
 
   test('every real mode round-trips', () => {

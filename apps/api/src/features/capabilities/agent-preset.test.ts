@@ -78,9 +78,9 @@ describe('agentPresetRules', () => {
     // exceptions out of the closing denial that precedes them.
     const record = { tools: ['read'], pinnedSkills: ['review'], mcp_servers: ['grep'] }
     const asked = new Set(['tool:read', 'skill:review', 'mcp:grep'])
-    for (const rule of agentPresetRules(record)) {
-      if (rule.effect === 'allow') expect(asked.has(rule.action)).toBe(true)
-    }
+    const allows = agentPresetRules(record).filter((rule) => rule.effect === 'allow')
+    expect(allows.length).toBeGreaterThan(0)
+    for (const rule of allows) expect(asked.has(rule.action)).toBe(true)
   })
 
   test('a rule appended after the preset narrows it', () => {

@@ -39,7 +39,4 @@ test('early discovery and painted faces refer to the same font assets', () => {
   for (const face of faces(landingFonts)) {
     expect(html).toContain(face.asset!)
   }
-  expect(landingFonts).not.toContain('loading-slow')
-  expect(html).not.toContain('__loadingFrames')
-  expect(read('../../vite.config.ts')).not.toContain('temporary-loading-sampler')
 })

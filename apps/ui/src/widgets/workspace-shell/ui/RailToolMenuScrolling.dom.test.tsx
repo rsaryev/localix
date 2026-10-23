@@ -51,10 +51,7 @@ test('a long catalog scrolls independently of its management footer and keeps ke
     const menu = document.querySelector<HTMLElement>('[role="menu"]')!
     const list = menu.querySelector<HTMLElement>('[data-rail-tool-menu-list]')!
     const footer = menu.querySelector<HTMLElement>('[data-rail-tool-menu-footer]')!
-    expect(list.classList.contains('overflow-y-auto')).toBe(true)
-    expect(menu.classList.contains('overflow-hidden')).toBe(true)
     expect(list.contains(footer)).toBe(false)
-    expect(footer.classList.contains('shrink-0')).toBe(true)
     const rows = [...list.querySelectorAll<HTMLElement>('[role="menuitemradio"]')]
     expect(rows).toHaveLength(40)
     const manage = footer.querySelector<HTMLElement>('[role="menuitem"]')!

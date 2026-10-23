@@ -1,9 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
 import { registerDom } from '@localixai/kit/testing/dom'
 import type { ConfigFormField } from './SettingsConfigForm'
-
-const source = readFileSync(new URL('./SettingsConfigForm.tsx', import.meta.url), 'utf8')
 
 /**
  * `docs/extending/plugins.md` documents `title` as "the human-readable label shown in the
@@ -105,33 +102,15 @@ describe('SettingsConfigForm renders the field title, keyed fallback', () => {
     try {
       const button = host.querySelector('button')
       expect(button?.getAttribute('aria-busy')).toBe('true')
-      expect(button?.innerHTML).toContain('lx-activity-orb')
       expect(button?.textContent).toContain('Saving config')
       expect(button?.textContent).not.toContain('…')
-      expect(button?.getAttribute('data-slot')).toBe('button')
-      expect(button?.getAttribute('data-size')).toBe('xl')
       expect(host.querySelector('input')?.disabled).toBe(true)
     } finally {
       await cleanup()
     }
   })
 
-  test('uses shared, settings-scale controls without the legacy form class layer', async () => {
-    const { host, cleanup } = await render([field({ key: 'TOKEN' })])
-    try {
-      const input = host.querySelector('input')
-      expect(input?.getAttribute('data-slot')).toBe('input')
-      expect(input?.className).toContain('h-[var(--chrome-control-xl)]')
-      expect(source).not.toContain('INPUT_CLS')
-      expect(source).not.toContain('BTN_PRIMARY')
-      expect(source).not.toContain('<input')
-      expect(source).not.toContain('<button')
-    } finally {
-      await cleanup()
-    }
-  })
-
-  test('enum fields use the same large choice-trigger geometry as text fields', async () => {
+  test('an enum field is a labelled combobox showing the current choice', async () => {
     const { host, cleanup } = await render([
       field({ key: 'REGION', enum: [{ value: 'eu', label: 'Europe' }], value: 'eu' }),
     ])
@@ -141,7 +120,6 @@ describe('SettingsConfigForm renders the field title, keyed fallback', () => {
         ? host.querySelector<HTMLButtonElement>(`button[id="${controlId}"]`)
         : null
       expect(trigger?.textContent).toContain('Europe')
-      expect(trigger?.className).toContain('h-[var(--chrome-control-xl)]')
       expect(trigger?.getAttribute('role')).toBe('combobox')
       expect(trigger?.getAttribute('aria-autocomplete')).toBe('none')
     } finally {
@@ -158,7 +136,6 @@ describe('SettingsConfigForm renders the field title, keyed fallback', () => {
       expect(control?.checked).toBe(true)
       expect(host.querySelector('label')?.htmlFor).toBe(control?.id)
       expect(host.querySelector('[role="combobox"]')).toBeNull()
-      expect(source).not.toContain("label: 'true'")
     } finally {
       await cleanup()
     }

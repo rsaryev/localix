@@ -16,21 +16,12 @@ import {
  * proves nothing about a product dialog that forgets its `DialogBody`, measures itself by hand, or
  * reaches past the shells to radix/vaul and paints its own scrim. The kit never reads the host, so
  * the same detectors — with their positive controls in the kit — run over the app and the plugins
- * here, together with the cases that pin one product surface.
+ * here.
  */
 const REPO_ROOT = new URL('../../../../../', import.meta.url).pathname
 const hostSources = () => tsxSourcesUnder(REPO_ROOT, ['apps/ui/src', 'plugins'])
-const read = (name: string) => readFileSync(new URL(name, import.meta.url), 'utf8')
 
 describe('modal surface regions', () => {
-  test('routes title tools through the explicit header region', () => {
-    const cellViewer = read('../../features/inspector/ui/table/CellValueViewer.tsx')
-
-    expect(cellViewer).toContain('actionsLabel="Cell value actions"')
-    expect(cellViewer).toContain('actions={')
-    expect(cellViewer).not.toContain('<DialogHeader className="flex-row')
-  })
-
   test('every current and future standard dialog declares its one scroll-owning body', async () => {
     const { checked, violations } = dialogBodyViolations(await hostSources())
     expect(violations).toEqual([])
@@ -47,29 +38,6 @@ describe('modal surface regions', () => {
       violations,
       `use the DialogContent \`size\` prop instead:\n${violations.join('\n')}`,
     ).toEqual([])
-  })
-
-  test('interaction views inside a modal scroll on one axis and break what cannot wrap', () => {
-    // `overflow-x-hidden` is the mask, not the fix: the box is still an x scroll container, so
-    // whatever overflowed became unreachable rather than absent. The shells use `clip` (the kit
-    // half of this rule); the frame the product renders inside them must do the same.
-    const frame = read('../../entities/chat/ui/hitl/HitlInteractionFrame.tsx')
-    expect(frame).toContain('overflow-x-clip overflow-y-auto')
-    // The causes, not the clip: the header row, the detail line and the scroll region all
-    // opt out of the `min-width: auto` that makes a flex/grid child refuse to shrink.
-    expect(frame).toContain('min-h-0 w-full min-w-0 flex-1')
-    expect(frame).toContain('<div className="min-w-0 flex-1">')
-
-    // Every interaction view that can receive an unbreakable string states how it breaks it.
-    const ask = read('../../entities/chat/ui/hitl/AskQuestionForm.tsx')
-    const secret = read('../../entities/chat/ui/hitl/SecretInteractionView.tsx')
-    const confirm = read('../../entities/chat/ui/hitl/ConfirmInteractionView.tsx')
-    expect(ask).toContain('leading-snug wrap-anywhere')
-    expect(ask).toContain('flex min-h-9 min-w-0 items-center')
-    expect(secret).toContain('font-mono text-xs font-medium break-all')
-    expect(secret).toContain('<span className="font-mono break-all">secret:{payload.key}</span>')
-    expect(confirm).toContain('min-w-0 truncate font-mono')
-    expect(confirm).toContain('whitespace-pre-wrap break-all')
   })
 
   /**

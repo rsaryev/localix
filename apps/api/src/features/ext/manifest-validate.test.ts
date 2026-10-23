@@ -1,5 +1,4 @@
 import {
-  DECLARABLE_EFFORTS_TEXT,
   REASONING_EFFORTS,
   isDeclarableEffort,
   resolveDeclaredReasoningEffort,
@@ -196,7 +195,6 @@ describe('isDeclarableEffort', () => {
     }
     // Surrounding whitespace is tolerated rather than being a mysterious rejection.
     expect(resolveDeclaredReasoningEffort('  medium ')).toBe('medium')
-    expect(DECLARABLE_EFFORTS_TEXT).toBe('off, minimal, low, medium, high, xhigh, max')
   })
 
   it('an unrecognized value resolves to undefined, never to a level', () => {

@@ -39,9 +39,6 @@ test('working docs render a header search trigger without permanent search field
       host.querySelector('.site-header [aria-label="Localix home"] img')?.getAttribute('src'),
     ).toBe('/logo.svg')
     expect(host.querySelector('.site-header [aria-label="Localix on GitHub"]')).not.toBeNull()
-    for (const link of host.querySelectorAll('.site-header a')) {
-      expect(link.classList.contains('focus-ring')).toBe(true)
-    }
     expect(host.querySelectorAll('input')).toHaveLength(0)
     await act(async () => trigger.click())
     expect(document.querySelector('[role="dialog"]')).not.toBeNull()

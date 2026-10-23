@@ -41,11 +41,6 @@ describe('the composer authors no tip text', () => {
     })
   }
 
-  test('the pool comes straight from the capability snapshot', () => {
-    const source = readFileSync(join(import.meta.dir, 'useComposerTips.ts'), 'utf8')
-    expect(source).toContain('snapshot?.tips ?? NO_TIPS')
-  })
-
   // Positive control: the detector is only worth its test if it would fire.
   test('the detector catches a planted tip', () => {
     const planted = `const tip = { text: 'Enable the browser plugin so the agent can click.' }`

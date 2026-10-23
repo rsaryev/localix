@@ -12,14 +12,11 @@ import { startUiLocationCatalogSync } from './uiLocationCatalogSync'
  * which `scripts/check-ui-startup-budget.mjs` ratchets.
  *
  * Staging is only safe while every reader either subscribes to the registry
- * revision or awaits `whenUiSurfacesReady()`. These tests pin both halves: the
- * glob stays lazy, AND the one reader that must see a complete catalog — the
- * agent-facing catalog publication — cannot publish before discovery settles.
+ * revision or awaits `whenUiSurfacesReady()`. The entry-graph half is the startup
+ * budget's job; these tests pin the other: the one reader that must see a complete
+ * catalog — the agent-facing catalog publication — cannot publish before discovery
+ * settles.
  */
-const discovery = readFileSync(new URL('./discover.ts', import.meta.url), 'utf8')
-const manifest = readFileSync(new URL('./uiSurfaceManifest.ts', import.meta.url), 'utf8')
-const catalogSync = readFileSync(new URL('./uiLocationCatalogSync.ts', import.meta.url), 'utf8')
-const viteConfig = readFileSync(new URL('../../../vite.config.ts', import.meta.url), 'utf8')
 const catalogSyncCallSite = readFileSync(
   new URL('../../pages/chat/model/usePluginContributions.ts', import.meta.url),
   'utf8',
@@ -31,50 +28,16 @@ afterEach(() => {
   mock.restore()
 })
 
-test('feature contribs stay eager and surface declarations stay staged', () => {
-  expect(discovery).toContain(
-    "import.meta.glob('/src/features/*/contrib.{ts,tsx}', { eager: true })",
-  )
-  // The surface glob lives behind the lazy manifest boundary and nowhere else.
-  // Reintroducing it here would put every declaration back in the entry chunk.
-  expect(discovery).not.toContain("import.meta.glob('/src/**/*.surface.{ts,tsx}'")
-  expect(manifest).toContain("'/src/**/*.surface.{ts,tsx}'")
-  expect(discovery).toContain("import('./uiSurfaceManifest')")
-})
-
-test('the manifest stays one chunk rather than one chunk per declaration', () => {
-  // Eager INSIDE the lazy boundary. A lazy glob here would emit ~80 chunks and
-  // force every module they share with the shell into further shared chunks —
-  // startup requests traded for startup bytes.
-  expect(manifest).toContain('{ eager: true }')
-})
-
-test('discoverUi starts the staged pass at composition without blocking on it', () => {
-  // Started, not awaited: registration is in flight from the earliest possible
-  // moment, but the entry chunk never waits for those modules.
-  expect(discovery).toContain('void whenUiSurfacesReady()')
-  expect(discovery).toMatch(/export function whenUiSurfacesReady\(\): Promise<void>/)
-  // One registration pass over the whole set keeps first-owner-wins ownership
-  // deterministic instead of depending on chunk arrival order.
-  expect(discovery).toContain('registerDiscoveredUiSurfaces(uiSurfaceModules, registerSurface)')
-})
-
-test('the startup icon group cannot pull lazy-only icons onto the startup path', () => {
-  // `$initial` is load-bearing: without it the group hoists every icon in the
-  // app — including ones only a lazy surface renders — into a chunk the startup
-  // document preloads. Measured: +43 kB of startup bytes for glyphs nothing on
-  // screen needs yet.
-  const group = viteConfig.slice(viteConfig.indexOf("name: 'startup-icons'"))
-  expect(group).toContain("tags: ['$initial']")
-  expect(group).toContain('includeDependenciesRecursively: false')
-})
-
-test('the agent catalog publication is gated on staged discovery', () => {
-  expect(catalogSync).toContain('whenContributionsReady: Promise<void>')
-  expect(catalogSync).toContain('queue: (run) => afterContributions(() => enqueueMicrotask(run))')
-  expect(catalogSyncCallSite).toContain(
+test('the route publishes the catalog gated on staged discovery, after failing closed', () => {
+  // The call site is the only place that hands the discovery promise to the sync. Without it the
+  // behavioural gate below never engages; and the scope must be prepared synchronously first, or
+  // project B's first catalog can capture project A's plugin destinations.
+  const prepare = catalogSyncCallSite.indexOf('preparePluginContribScope(routeProjectId)')
+  const publish = catalogSyncCallSite.indexOf(
     'startUiLocationCatalogSync(routeProjectId, whenUiSurfacesReady())',
   )
+  expect(prepare).toBeGreaterThan(-1)
+  expect(publish).toBeGreaterThan(prepare)
 })
 
 test('no catalog is published until staged discovery settles', async () => {

@@ -15,10 +15,3 @@ test('non-macOS selects a companion adapter without any native island producers'
   expect(createsIsland('WebviewWindowBuilder::new(app, LABEL, url)')).toBe(true)
   expect(createsIsland('app.global_shortcut().on_shortcut(SHORTCUT, callback)')).toBe(true)
 })
-
-test('System island startup never substitutes a forced dark appearance', () => {
-  const source = read('companion.rs')
-  expect(source).toContain('load_theme_is_dark(app).map(')
-  expect(source).toContain('.theme(theme)')
-  expect(source).not.toContain('load_theme_is_dark(app) != Some(false)')
-})

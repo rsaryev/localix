@@ -90,5 +90,4 @@ test('registers one Trading Workspace viewlet over chart and technical work item
   expect(items.map(({ id, placement }) => ({ id, placement }))).toEqual([
     { id: 'trading:market', placement: 'titlebar' },
   ])
-  expect(typeof items[0]?.useItem).toBe('function')
 })

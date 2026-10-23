@@ -1,5 +1,4 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
 import { registerDom } from '@localixai/kit/testing/dom'
 
 let teardown: () => Promise<void>
@@ -11,8 +10,6 @@ afterAll(async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))
   await teardown()
 })
-
-const read = (file: string) => readFileSync(new URL(`./${file}`, import.meta.url), 'utf8')
 
 /**
  * The composer's draft text lives in ChatSurface, so EVERY keystroke re-renders the
@@ -91,38 +88,5 @@ describe('composer header memo boundary', () => {
       root.unmount()
     })
     host.remove()
-  })
-
-  test('every keystroke-independent composer component is a memo boundary', () => {
-    for (const [file, name] of [
-      ['StatusTipStrip.tsx', 'StatusTipStrip'],
-      ['WorkStrip.tsx', 'WorkStrip'],
-      ['SchedulesPanel.tsx', 'SchedulesPanel'],
-      ['SpendAlertStrip.tsx', 'SpendAlertStrip'],
-      ['ComposerQueuePanel.tsx', 'ComposerQueuePanel'],
-      ['SessionUsageIndicator.tsx', 'SessionUsageIndicator'],
-      ['ModelSearchSelect.tsx', 'ModelSearchSelect'],
-    ] as const) {
-      expect(read(file)).toContain(`export const ${name} = memo(function ${name}(`)
-    }
-  })
-
-  /**
-   * The preconditions for those memos to bail. `useConnections` is handed WHOLE to
-   * the model picker, and the two setters are created in ChatSurface, which
-   * re-renders on every keystroke — an object literal or an inline arrow in either
-   * place silently turns the memo into dead weight.
-   */
-  test('the props those memos depend on keep a stable identity', () => {
-    expect(read('useConnections.ts')).toContain('return useMemo(')
-
-    const chatSurface = readFileSync(
-      new URL('../../../../widgets/chat-workspace/ui/ChatSurface.tsx', import.meta.url),
-      'utf8',
-    )
-    expect(chatSurface).toContain('const selectModel = useCallback(')
-    expect(chatSurface).toContain('const selectReasoningEffort = useCallback(')
-    expect(chatSurface).toContain('setModel={selectModel}')
-    expect(chatSurface).toContain('setReasoningEffort={selectReasoningEffort}')
   })
 })

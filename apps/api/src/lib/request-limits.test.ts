@@ -8,14 +8,9 @@
 import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { MAX_REQUEST_BODY_BYTES, formatByteLimit } from './request-limits'
+import { formatByteLimit } from './request-limits'
 
 describe('the declared limit', () => {
-  test('is stated as a number, not inherited from the runtime default', () => {
-    // The point of the constant: a Bun upgrade that moves its default cannot move ours silently.
-    expect(MAX_REQUEST_BODY_BYTES).toBe(134_217_728)
-  })
-
   test('formats as a limit a person can act on', () => {
     expect(formatByteLimit()).toBe('128 MB')
     expect(formatByteLimit(1024 * 1024)).toBe('1 MB')

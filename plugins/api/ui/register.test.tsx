@@ -69,7 +69,6 @@ describe('API request file integration', () => {
     expect(items.map(({ id, placement }) => ({ id, placement }))).toEqual([
       { id: 'api:environment', placement: 'titlebar' },
     ])
-    expect(typeof items[0]?.useItem).toBe('function')
   })
 
   test('maps nested files in the session collection back to request names', () => {

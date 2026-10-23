@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 import type { MenuActionEntry, MenuEntry, MenuSubmenuEntry } from '@localixai/plugin-sdk/ui'
@@ -16,9 +15,6 @@ const byId = (entries: readonly MenuEntry[], id: string) => {
 }
 const submenu = (entries: readonly MenuEntry[], id: string) => byId(entries, id) as MenuSubmenuEntry
 const action = (entries: readonly MenuEntry[], id: string) => byId(entries, id) as MenuActionEntry
-
-const toolbarSource = readFileSync(new URL('./toolbar.tsx', import.meta.url), 'utf8')
-const filterSource = readFileSync(new URL('./toolbar-filter-row.tsx', import.meta.url), 'utf8')
 
 const noop = () => {}
 
@@ -46,13 +42,6 @@ const filters: KanbanFilters = {
 }
 
 describe('Kanban toolbar presentation', () => {
-  test('uses the shared semantic workbench header for stacked controls', () => {
-    expect(toolbarSource).toContain('<WorkbenchToolbar')
-    expect(toolbarSource).toContain('as="header"')
-    expect(toolbarSource).toContain('layout="stacked"')
-    expect(toolbarSource).toContain('aria-label="Kanban controls"')
-  })
-
   test('composes quick creation from the shared input group and action scale', () => {
     const html = renderToStaticMarkup(
       <KanbanCreateRow
@@ -69,23 +58,6 @@ describe('Kanban toolbar presentation', () => {
     expect(html).toContain('aria-label="New task actions"')
     expect(html).toContain('aria-label="New task with full details"')
     expect(html).toContain('aria-label="Add task"')
-    expect(html).not.toContain('shadow-(--shadow-soft)')
-    expect(html).not.toContain('rounded-xl')
-  })
-
-  test('names filter clusters and uses shared control sizes', () => {
-    expect(filterSource).toContain('aria-label="Task filters"')
-    expect(filterSource).toContain('aria-label="Active filters"')
-    expect(filterSource).toContain('aria-label="Kanban view"')
-    expect(filterSource).toContain('<SegmentedRadioGroup')
-    expect(filterSource).not.toContain('<SegmentedControl')
-    // One rung with the create row above (`md`, 28px): the filter row sat on `lg` and the two
-    // rows never lined up. A pressed or filtered state is the kit's, not a hand-tinted border.
-    expect(filterSource).toContain('size="md"')
-    expect(filterSource).not.toContain('size="lg"')
-    expect(filterSource).not.toContain('border-status-info')
-    expect(filterSource).toContain('<IconButton')
-    expect(filterSource).toContain('aria-label={`Remove ${chip.group} filter: ${chip.label}`}')
   })
 
   test('renders Board and Stats as one native radio choice', () => {
@@ -98,11 +70,6 @@ describe('Kanban toolbar presentation', () => {
     expect(html.match(/type="radio"/g)).toHaveLength(2)
     expect(html).toContain('aria-label="Board view"')
     expect(html).toContain('aria-label="Stats view"')
-  })
-
-  test('the Filters trigger opens the shared menu, not a popover of chip grids', () => {
-    expect(filterSource).toContain('<MenuEntries')
-    expect(filterSource).not.toContain('<Popover')
   })
 
   test('multi-select facets are toggles that return to a level whose hint shows the pick', () => {

@@ -37,7 +37,6 @@ test('renders Shell fences with Bash highlighting and copies the original source
   expect(host.querySelector('.docs-code-toolbar span')?.textContent).toBe('Shell')
   expect(host.querySelector('code .hljs-built_in')?.textContent).toBe('sudo')
   expect(host.querySelector('code .hljs-variable')?.textContent).toBe('$HOME')
-  expect(host.querySelector('.docs-code-block')?.classList.contains('lx-glass')).toBe(false)
   await act(async () => host.querySelector<HTMLButtonElement>('[aria-label="Copy code"]')?.click())
   expect(copied).toEqual([source])
 

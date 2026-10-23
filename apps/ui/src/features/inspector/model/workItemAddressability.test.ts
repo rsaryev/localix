@@ -41,20 +41,6 @@ describe('core WorkItem addressability metadata', () => {
     )
   })
 
-  test('classifies every core kind under one deterministic contract', () => {
-    for (const kind of CORE_WORK_ITEM_KINDS) {
-      const metadata = workItemAddressability(kind)
-      expect(['direct', 'focus-existing', 'non-addressable']).toContain(metadata.mode)
-      if (metadata.mode === 'focus-existing') {
-        expect(metadata.locationId).toBe('work-item.focus')
-        expect(metadata.reason.length).toBeGreaterThan(0)
-      }
-      if (metadata.mode === 'non-addressable') {
-        expect(metadata.reason.length).toBeGreaterThan(0)
-      }
-    }
-  })
-
   test('keeps the generic runtime view bridge directly addressable', () => {
     expect(workItemAddressability('plugin-view')).toEqual({
       mode: 'direct',

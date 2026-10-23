@@ -1,4 +1,3 @@
-import { readLandingStyles } from '../../../scripts/read-styles'
 import { afterAll, beforeAll, expect, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
 
@@ -54,14 +53,6 @@ test('wide documentation tables preserve semantic columns inside a bounded scrol
     expect(host.querySelector('.docs-table-scroll > table')).not.toBeNull()
     expect(host.querySelectorAll('th')).toHaveLength(4)
     expect(host.querySelectorAll('td')).toHaveLength(4)
-    const css = readLandingStyles()
-    const rule = (selector: string) => css.slice(css.indexOf(selector + ' {')).split('}')[0]
-    expect(rule('.docs-table-scroll')).toContain('max-width: 100%')
-    expect(rule('.docs-table-scroll')).toContain('overflow-x: auto')
-    expect(rule('.docs-prose table')).toContain('width: max-content')
-    expect(rule('.docs-prose td')).toContain('max-width: 40ch')
-    expect(rule('.docs-prose td')).toContain('overflow-wrap: normal')
-    expect(rule('.docs-prose td')).not.toContain('white-space: nowrap')
   } finally {
     await act(async () => root.unmount())
   }

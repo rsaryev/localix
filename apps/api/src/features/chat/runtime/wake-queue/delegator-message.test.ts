@@ -2,7 +2,7 @@ import { afterEach, expect, test } from 'bun:test'
 
 import { sessionFixture } from '../../../../testing/session-fixture'
 import { createWakeQueue } from '../wake-queue'
-import { SELF_CAUSED_WAKES } from './self-wake-budget'
+import { createSelfWakeBudget, MAX_CONSECUTIVE_SELF_WAKES } from './self-wake-budget'
 
 /**
  * A delegator's message (`delegate` action message) reaches its child either way: a running child
@@ -92,6 +92,12 @@ test('the composer is told it arrives mid-run, the same fact steering acts on', 
 test('it counts toward the self-caused chain, so parent and child cannot ping-pong forever', () => {
   // Every run of a child reports, a report can prompt a message, and that message runs the child
   // again: `subagent` bounds the parent's side of the loop, `delegator` the child's.
-  expect(SELF_CAUSED_WAKES.has('delegator')).toBe(true)
-  expect(SELF_CAUSED_WAKES.has('subagent')).toBe(true)
+  const budget = createSelfWakeBudget()
+  const admitted = Array.from({ length: MAX_CONSECUTIVE_SELF_WAKES + 1 }, () => {
+    const ok = budget.admit('child', { internal: true, source: 'delegator' })
+    budget.admit('child', { internal: true, agentTurn: { source: 'runtime' } })
+    return ok
+  })
+  expect(admitted.slice(0, MAX_CONSECUTIVE_SELF_WAKES).every(Boolean)).toBe(true)
+  expect(admitted.at(-1)).toBe(false)
 })

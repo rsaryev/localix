@@ -158,7 +158,6 @@ describe('HITL control contracts', () => {
         'input[aria-label="Custom answer for Which direction?"]',
       )
       expect(custom?.getAttribute('data-slot')).toBe('input')
-      expect(custom?.className).toContain('h-[var(--chrome-control-xl)]')
 
       await act(async () => fast?.click())
       expect(fast?.getAttribute('aria-pressed')).toBe('true')

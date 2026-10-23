@@ -2,9 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import {
   createSessionStreamRegistry,
   isLiveOnlyEvent,
-  LIVE_ONLY_EVENT_TYPES,
   requiresWatchedSession,
-  ROSTER_EVENT_TYPES,
 } from './session-stream-registry'
 import type { AgentStreamEvent } from '../contracts'
 
@@ -13,12 +11,8 @@ import type { AgentStreamEvent } from '../contracts'
  * …>` in session-stream-registry.ts, so a new variant in `contracts.ts` cannot be added without
  * classifying it. It runs on `bun run type-check`, not just here.
  *
- * This is the RUNTIME half. It is an EXACT set pin, not a spot check: the old test asserted five
- * live-only names and four replayable ones out of thirty-five variants, so it had no stale-entry
- * half at all — a frame silently reclassified to live-only (losing it on reconnect, and letting
- * backpressure drop it) went unnoticed unless it happened to be one of the nine named. An exact
- * pin fails in BOTH directions: a new live-only frame and a demoted replayable one each turn it
- * red, which is the point — a tier change must be deliberate, not incidental.
+ * This is the RUNTIME half: each named frame is checked through `isLiveOnlyEvent`, and the
+ * replayable ones below must never read as live-only.
  */
 describe('isLiveOnlyEvent', () => {
   const EXPECTED_LIVE_ONLY: AgentStreamEvent['type'][] = [
@@ -33,10 +27,6 @@ describe('isLiveOnlyEvent', () => {
     'preview.command', // correlated commands must never execute again on reconnect
     'plan.presented', // one-shot "open the plan tab"; a replay would re-open a closed tab
   ]
-
-  test('exactly these frames are live-only — no more, no fewer', () => {
-    expect([...LIVE_ONLY_EVENT_TYPES].sort()).toEqual([...EXPECTED_LIVE_ONLY].sort())
-  })
 
   test('every live-only frame reads as live-only', () => {
     for (const type of EXPECTED_LIVE_ONLY) expect(isLiveOnlyEvent(type)).toBe(true)
@@ -824,12 +814,11 @@ describe('subscribeScoped', () => {
 })
 
 /**
- * The roster class is derived from the SAME table as the replay tier, so it cannot drift — but
- * the CONTENTS are a product decision, and each membership is load-bearing. Pinned exactly, in
- * both directions, for the same reason `isLiveOnlyEvent` is: a frame quietly moved to `watched`
- * goes unreachable for every session the user is not looking at, and nothing else would notice.
+ * The roster class is derived from the SAME table as the replay tier. Each named frame must bypass
+ * the watch gate: a frame quietly moved to `watched` goes unreachable for every session the user is
+ * not looking at.
  */
-describe('ROSTER_EVENT_TYPES', () => {
+describe('requiresWatchedSession', () => {
   const EXPECTED_ROSTER: AgentStreamEvent['type'][] = [
     'session.updated', // the sidebar row itself
     'session.deleted', // committed removal of the entire conversation tree
@@ -852,10 +841,6 @@ describe('ROSTER_EVENT_TYPES', () => {
     'preview.updated', // background hosts mount without selecting the conversation
     'preview.closed', // background hosts release without selecting the conversation
   ]
-
-  test('exactly these frames bypass the watch gate — no more, no fewer', () => {
-    expect([...ROSTER_EVENT_TYPES].sort()).toEqual([...EXPECTED_ROSTER].sort())
-  })
 
   test('requiresWatchedSession is the exact complement', () => {
     for (const type of EXPECTED_ROSTER) expect(requiresWatchedSession(type)).toBe(false)

@@ -91,16 +91,3 @@ test('a decoration provider registering after first paint remounts rather than r
     host.remove()
   }
 })
-
-/**
- * The rule above only holds while the tree actually keys itself on the provider, and that is a
- * property of the CALL SITE — no type or runtime check can state it. Pinned here in source, the way
- * the plugins' own structural guards are.
- */
-test('the file tree keys its session subtree on the decoration provider', async () => {
-  const source = await Bun.file(
-    new URL('../../features/inspector/ui/FileTreeSidebar.tsx', import.meta.url),
-  ).text()
-  expect(source).toContain('const scope = useFileTreeScopeKey(sessionId)')
-  expect(source).toContain('<SessionFileTreeSidebar key={scope}')
-})

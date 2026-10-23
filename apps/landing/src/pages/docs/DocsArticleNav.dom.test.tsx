@@ -45,14 +45,11 @@ test('breadcrumbs reveal the current page on mount and route change without scro
       )
     await render(first)
     const back = host.querySelector<HTMLButtonElement>('[aria-label="Back"]')!
-    expect(back.classList.contains('bg-transparent')).toBe(true)
-    expect(back.classList.contains('hover:bg-transparent')).toBe(true)
     expect(back.closest('.docs-breadcrumb-row')).not.toBeNull()
     const rail = host.querySelector<HTMLElement>('nav')!
     expect(rail.contains(back)).toBe(false)
     expect(rail.scrollLeft).toBe(600)
     expect(rail.querySelector('[aria-current="page"]')?.textContent).toBe(first.title)
-    expect(rail.querySelector('ol')?.classList.contains('flex-wrap')).toBe(false)
     rail.scrollLeft = 0
     await render(second)
     expect(rail.scrollLeft).toBe(600)

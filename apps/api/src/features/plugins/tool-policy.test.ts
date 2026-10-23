@@ -22,7 +22,8 @@ describe('plugin tool-name policy', () => {
     expect(isAcceptableToolName(aBuiltin)).toBe(false)
     for (const name of ['bash', 'read', 'write']) {
       // these are built-ins; even with a valid shape they must be unacceptable
-      if (builtins.has(name)) expect(isAcceptableToolName(name)).toBe(false)
+      expect(builtins.has(name)).toBe(true)
+      expect(isAcceptableToolName(name)).toBe(false)
     }
     for (const name of ['Bash', 'LOCALIX_UI', 'Vault']) {
       expect(isAcceptableToolName(name)).toBe(false)

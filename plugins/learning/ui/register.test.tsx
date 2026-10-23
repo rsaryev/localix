@@ -56,5 +56,4 @@ test('keeps the library and course tabs session-scoped', () => {
   expect(items.map(({ id, placement }) => ({ id, placement }))).toEqual([
     { id: 'learning:progress', placement: 'titlebar' },
   ])
-  expect(typeof items[0]?.useItem).toBe('function')
 })

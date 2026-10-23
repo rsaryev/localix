@@ -141,9 +141,6 @@ describe('TabBar trailing slot', () => {
       // Outside the tablist → the control is not announced as a tab.
       expect(tablist?.contains(trailing ?? null)).toBe(false)
       expect(tablist?.getAttribute('aria-label')).toBe('Request configuration')
-      // The row draws the only seam; nothing suppresses or restates it.
-      expect(row?.className).toContain('border-b')
-      expect(tablist?.className).not.toContain('border-b')
     } finally {
       await act(async () => root.unmount())
     }

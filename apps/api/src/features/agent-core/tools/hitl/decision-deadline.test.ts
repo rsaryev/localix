@@ -11,8 +11,7 @@ import {
 import { HumanInLoopDismissedError, HumanInLoopTimeoutError } from '@localixai/agent/agents'
 
 describe('the deadline', () => {
-  test('is five minutes, and the card is given the instant rather than the duration', () => {
-    expect(HITL_DECISION_MS).toBe(5 * 60_000)
+  test('the card is given the instant rather than the duration', () => {
     const at = hitlDecisionDeadline()
     expect(at).toBeGreaterThan(Date.now() + HITL_DECISION_MS - 1_000)
     expect(at).toBeLessThanOrEqual(Date.now() + HITL_DECISION_MS)

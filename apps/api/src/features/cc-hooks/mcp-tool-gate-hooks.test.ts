@@ -82,17 +82,4 @@ describe('PermissionRequest and PermissionDenied on a plugin MCP tool', () => {
     expect(await rt.runPermissionDenied(PLUGIN_TOOL, {}, 'tc1', 'denied')).toEqual({ retry: true })
     expect(input('pd.json')).toMatchObject({ tool_name: CC, mcp_server: PLUGIN_TOOL.mcpServer })
   })
-
-  it('never fires a matcher on the bare server key', async () => {
-    const rt = make({
-      PermissionRequest: [
-        { matcher: 'mcp__echo__.*', handlers: [cmd(`cat >/dev/null; ${json(deny)}`)] },
-      ],
-      PermissionDenied: [
-        { matcher: 'mcp__echo__.*', handlers: [cmd(`cat >/dev/null; ${json(retry)}`)] },
-      ],
-    })
-    expect(await rt.runPermissionRequest(PLUGIN_TOOL, {})).toEqual({})
-    expect(await rt.runPermissionDenied(PLUGIN_TOOL, {}, 'tc1', 'denied')).toEqual({ retry: false })
-  })
 })

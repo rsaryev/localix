@@ -1,5 +1,4 @@
 import { afterAll, beforeAll, expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
 import { registerDom } from '@localixai/kit/testing'
 
 let teardown: () => Promise<void>
@@ -49,14 +48,5 @@ test('an unreadable object’s DDL says why and retries instead of spinning fore
   } finally {
     await act(async () => root.unmount())
     host.remove()
-  }
-})
-
-test('both trees preview DDL through the one dialog that carries the load error', () => {
-  const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8')
-  // The connections tree had its own SqlPreviewDialog without `loadError`/`onRetryLoad`.
-  for (const source of [read('../explorer/ConnectionsTree.tsx'), read('../SchemaSidebar.tsx')]) {
-    expect(source).toContain('<DdlPreviewDialog')
-    expect(source).not.toContain('<SqlPreviewDialog')
   }
 })

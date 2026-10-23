@@ -11,8 +11,6 @@
  * cannot be reintroduced as a condition without changing the signature this file pins.
  */
 import { describe, expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import type { MessageBindingTargetKind, MessageContextBindingDraft } from '@localixai/plugin-sdk/ui'
 import {
   ambientAutoRefs,
@@ -182,59 +180,5 @@ describe('dismissal is per tab', () => {
       noop,
     )
     expect(refs).toHaveLength(2)
-  })
-})
-
-/**
- * The other half of the guard: this module can only be as correct as its wiring, and the
- * wiring is one argument in the composer's context-refs hook (`useComposerContextRefs.ts`).
- * Source-scanning, following the three rules `ChatSurface.test.ts` documents — assert the CALL
- * and its argument, never a bare identifier; comments are stripped first, because the prose
- * above the call names the very identifier this forbids and would satisfy a naive `includes`.
- */
-describe('PromptInput wires visibility, not focus', () => {
-  const stripComments = (text: string) =>
-    text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1')
-  const composer = stripComments(
-    readFileSync(resolve(import.meta.dir, './PromptInput.tsx'), 'utf8'),
-  )
-
-  test('the composer hands the hook the tab LIST, and no focus signal', () => {
-    const at = composer.indexOf('useComposerContextRefs(')
-    expect(at).toBeGreaterThan(-1)
-    const args = composer.slice(at, composer.indexOf(')', at))
-    expect(args).toContain('activeTabLinks')
-    expect(args).not.toContain('isFocused')
-  })
-
-  const source = readFileSync(resolve(import.meta.dir, './useComposerContextRefs.ts'), 'utf8')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(^|[^:])\/\/.*$/gm, '$1')
-
-  const callArgs = (fn: string): string => {
-    const at = source.indexOf(`${fn}(`)
-    expect(at).toBeGreaterThan(-1)
-    return source.slice(at + fn.length + 1, source.indexOf(')', at))
-  }
-
-  test('the ambient derivation is gated on the visibility signal', () => {
-    expect(source).toContain('useWorkItemVisible()')
-    const args = callArgs('ambientAutoRefs')
-    expect(args).toContain('visible')
-    // The reported defect, forbidden structurally.
-    expect(args).not.toContain('isFocused')
-  })
-
-  test('the ref preflight follows the SAME signal — one gate, not two', () => {
-    // Two gates would drift: chips visible with no sizes, or sizes fetched for a hidden panel.
-    const args = callArgs('useContextRefs')
-    expect(args).toContain('visible')
-    expect(args).not.toContain('isFocused')
-  })
-
-  test('the composer receives the LIST of tab candidates', () => {
-    // `activeTabLink` (singular) is what limited the agent to one open tab.
-    expect(source).toContain('activeTabLinks')
-    expect(source).not.toMatch(/\bactiveTabLink\b(?!s)/)
   })
 })

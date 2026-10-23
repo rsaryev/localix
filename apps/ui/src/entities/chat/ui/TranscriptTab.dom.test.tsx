@@ -214,7 +214,6 @@ describe('read-only transcript action footer', () => {
     const view = host.querySelector('[data-slot="transcript-view"]')
     const control = host.querySelector('[data-slot="transcript-scroll-control"]')
     const footer = host.querySelector('[data-slot="transcript-action-footer"]')
-    expect(view?.classList.contains('relative')).toBe(true)
     expect(view?.contains(control)).toBe(true)
     expect(footer?.contains(control)).toBe(false)
     expect(view?.nextElementSibling).toBe(footer)

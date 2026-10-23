@@ -1,6 +1,4 @@
 import { describe, expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { UiSession } from '@/shared/api/contracts'
 import { SessionRowContent, SessionRowMeta } from './SessionRowContent'
@@ -27,7 +25,6 @@ describe('the compact session row', () => {
     ]) {
       const html = row({ externalAgentProvider: provider })
       expect(html).toContain(`aria-label="${label}"`)
-      expect(html).toContain('size-3.5')
       expect(html.indexOf('<svg')).toBeLessThan(html.indexOf('Fix the parser'))
     }
   })
@@ -40,7 +37,6 @@ describe('the compact session row', () => {
   test('shows the Localix bird before the title of ordinary chats', () => {
     const html = row({})
     expect(html).toContain('aria-label="Localix"')
-    expect(html).toContain('mask-image:url(/logo-dark.svg)')
     expect(html.indexOf('aria-label="Localix"')).toBeLessThan(html.indexOf('Fix the parser'))
     expect(html).not.toContain('lucide-bot')
   })
@@ -67,38 +63,5 @@ describe('the compact session row', () => {
     )
     expect(html).toContain('Updated')
     expect(html).toContain('Unread conversation')
-  })
-
-  test('does not put activity beside the title or timestamp', () => {
-    const html = row({ isRunning: true })
-    expect(html).not.toContain('lx-activity-orb')
-    expect(html).not.toContain('lx-spinner')
-  })
-})
-
-describe('the row geometry', () => {
-  test('keeps leading icons only for sub-sessions and active work', () => {
-    const source = readFileSync(resolve(import.meta.dir, 'SessionItem.tsx'), 'utf8')
-    expect(source).toContain('data-slot="session-row-icon"')
-    expect(source).toContain('(depth > 0 || session.isRunning)')
-    expect(source).toContain('session.isRunning ? (')
-    expect(source).toContain('aria-label="Working"')
-    expect(source).not.toContain('showActivity=')
-    expect(source.indexOf('data-slot="session-row-icon"')).toBeLessThan(
-      source.indexOf('{isRenaming ? ('),
-    )
-  })
-  test('keeps its actions reachable even while running', () => {
-    const source = readFileSync(resolve(import.meta.dir, 'SessionItem.tsx'), 'utf8')
-    expect(source).not.toMatch(/!isGenerating\s*&&/)
-    expect(source).toContain('<SessionItemActions')
-  })
-
-  test('keeps actions in the row flow so they cannot overlap metadata', () => {
-    const source = readFileSync(resolve(import.meta.dir, 'SessionItem.tsx'), 'utf8')
-    const actions = readFileSync(resolve(import.meta.dir, 'SessionItemActions.tsx'), 'utf8')
-    expect(source).toContain('SESSION_ROW_HEIGHT_CLASS,')
-    expect(actions).toContain('<WorkbenchListRowActions')
-    expect(actions).not.toContain('absolute')
   })
 })

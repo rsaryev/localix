@@ -1,5 +1,4 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
 import { registerDom } from '@localixai/kit/testing/dom'
 
 let teardown: () => Promise<void>
@@ -102,22 +101,5 @@ describe('throttled markdown preview', () => {
       root.unmount()
     })
     host.remove()
-  })
-
-  test('the file tab renders the throttled text, not the live buffer', () => {
-    const source = readFileSync(
-      new URL('../../features/inspector/ui/FileTab.tsx', import.meta.url),
-      'utf8',
-    )
-    const body = readFileSync(
-      new URL('../../features/inspector/ui/FileEditorBody.tsx', import.meta.url),
-      'utf8',
-    )
-    expect(body).not.toContain('<MarkdownRenderer>{buffer}</MarkdownRenderer>')
-    expect(body).toContain('<MarkdownRenderer>{previewText}</MarkdownRenderer>')
-    expect(source).toContain('previewText={previewText}')
-    expect(source).toContain(
-      'const previewText = useStreamingThrottle(buffer, previewMounted, STREAM_MARKDOWN_REPARSE_MS)',
-    )
   })
 })

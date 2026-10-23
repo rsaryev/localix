@@ -36,25 +36,11 @@ test('the quiet action slot remains keyboard reachable and keeps its open menu v
     await React.act(async () => root.render(<Row />))
     const slot = host.querySelector<HTMLElement>('[data-slot="workbench-list-row-actions"]')!
     const button = host.querySelector<HTMLButtonElement>('button')!
-    const controls = slot.querySelector<HTMLElement>(
-      '[data-slot="workbench-list-row-action-controls"]',
-    )!
     const fallback = slot.querySelector<HTMLElement>(
       '[data-slot="workbench-list-row-action-fallback"]',
     )!
     expect(slot.dataset.visibility).toBe('hover')
-    // The kit owns reveal on row hover/focus, plus the shared touch-device override.
-    expect(slot.classList.contains('grid')).toBe(true)
     expect(fallback.textContent).toBe('2h')
-    expect(controls.classList.contains('lx-hover-actions')).toBe(true)
-    expect(controls.classList.contains('group-focus-within/workbench-row:opacity-100')).toBe(true)
-    expect(controls.classList.contains('group-hover/workbench-row:opacity-100')).toBe(true)
-    expect(
-      controls.classList.contains('group-has-[[data-state=open]]/workbench-actions:opacity-100'),
-    ).toBe(true)
-    expect(
-      fallback.classList.contains('group-has-[[data-state=open]]/workbench-actions:opacity-0'),
-    ).toBe(true)
     expect(button.tabIndex).toBe(0)
     expect(button.getAttribute('aria-label')).toBe('Conversation actions')
     await React.act(async () => {

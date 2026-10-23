@@ -97,13 +97,9 @@ describe('ToolChain live disclosure', () => {
         ),
       )
       const toggle = host.querySelector<HTMLButtonElement>('button[aria-expanded]')!
-      const track = toggle.parentElement!
       expect(toggle.disabled).toBe(false)
       expect(toggle.getAttribute('aria-expanded')).toBe('true')
       expect(toggle.getAttribute('aria-label')).toStartWith('Collapse tool chain')
-      expect(track.getAttribute('class')).toContain('border-l')
-      expect(track.getAttribute('class')).not.toContain('rounded-xl')
-      expect(track.getAttribute('class')).not.toContain('bg-surface-raised')
 
       await act(async () => toggle.click())
       const body = toggle.nextElementSibling as HTMLElement

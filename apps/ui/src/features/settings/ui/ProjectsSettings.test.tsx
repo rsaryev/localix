@@ -1,12 +1,9 @@
 import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { Project } from '@/shared/api/contracts'
 import { backendClient } from '@/shared/api/client'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { ProjectSettingsForm } from './ProjectsSettings'
-
-const source = readFileSync(new URL('./ProjectsSettings.tsx', import.meta.url), 'utf8')
 
 const project: Project = {
   id: 'project-1',
@@ -32,17 +29,14 @@ afterAll(async () => {
 const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
 
 describe('project settings presentation', () => {
-  test('keeps destructive controls in a flat bounded section instead of a heavy card', () => {
+  test('shows the danger zone and labelled fields with no in-flight labels at rest', () => {
     const html = renderToStaticMarkup(<ProjectSettingsForm project={project} />)
 
     expect(html).toContain('Danger zone')
-    expect(html).toContain('border-y')
-    expect(html).not.toContain('rounded-xl')
     expect(html).not.toContain('Saving…')
     expect(html).not.toContain('Deleting…')
     expect(html).toContain('aria-label="Display name"')
     expect(html).toContain('aria-label="Custom system prompt"')
-    expect(source).not.toContain('bg-status-error/10 px')
   })
 
   test('reports a failed blur save in the form instead of silently discarding it', async () => {

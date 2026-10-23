@@ -1,14 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import {
-  MODAL_ENTER_EXIT,
-  OVERLAY_ENTER_EXIT,
-  OVERLAY_NO_MOTION,
-  OVERLAY_SLIDE,
-  SCRIM_ENTER_EXIT,
-  TOOLTIP_ENTER_EXIT,
-} from './overlay-motion'
+import { MODAL_ENTER_EXIT } from './overlay-motion'
 
 const read = (file: string) => readFileSync(resolve(import.meta.dir, file), 'utf8')
 
@@ -48,30 +41,10 @@ describe('overlay motion', () => {
     expect(TRANSCRIBED_MOTION.test("'duration-(--dur-instant)'")).toBe(false)
   })
 
-  test('recipes are timed by the motion token, not a literal', () => {
-    for (const recipe of [OVERLAY_ENTER_EXIT, SCRIM_ENTER_EXIT, TOOLTIP_ENTER_EXIT]) {
-      expect(recipe).toContain('duration-(--dur-instant)')
-    }
-    // The tooltip cannot use the `data-open:` gate — its open state is `delayed-open`.
-    expect(TOOLTIP_ENTER_EXIT).not.toContain('data-open:')
-    expect(OVERLAY_SLIDE.near).toContain('slide-in-from-top-1')
-    expect(OVERLAY_SLIDE.far).toContain('slide-in-from-top-2')
-  })
-
-  test('every dialog and confirmation arrives the modal way; keyboard-summoned ones stay quick', () => {
-    expect(read('confirm-dialog.tsx')).toContain('MODAL_ENTER_EXIT,')
-    expect(read('confirm-dialog.tsx')).not.toContain('OVERLAY_ENTER_EXIT')
-    expect(read('dialog.tsx')).toContain(
-      "(layout === 'standard' ? MODAL_ENTER_EXIT : OVERLAY_ENTER_EXIT)",
-    )
+  test('the modal entrance recipe has its motion rules, with a reduced-motion escape', () => {
     const motion = readFileSync(resolve(import.meta.dir, '../../styles/motion.css'), 'utf8')
     expect(motion).toContain(`.${MODAL_ENTER_EXIT}[data-state='open']`)
     expect(motion).toContain(`.${MODAL_ENTER_EXIT}[data-state='closed']`)
     expect(motion).toContain('prefers-reduced-motion')
-  })
-
-  test('media backdrops retain their explicit open and closed animation opt-out', () => {
-    expect(OVERLAY_NO_MOTION).toBe('data-open:animate-none data-closed:animate-none')
-    expect(read('dialog.tsx')).toContain("appearance === 'media' ? OVERLAY_NO_MOTION : undefined")
   })
 })

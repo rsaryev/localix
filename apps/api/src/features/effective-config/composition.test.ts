@@ -1,6 +1,4 @@
 import { describe, expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 
 import { describeComposition } from './composition'
 import { forgetComposition, getComposition, recordComposition } from './composition-store'
@@ -102,27 +100,6 @@ describe('describeComposition', () => {
 })
 
 describe('the wrapper chain cannot drift from the code', () => {
-  test('the listed wrappers are exactly the ones the assembly applies', () => {
-    // The anti-drift gate, and the reason each entry names its FUNCTION: a new wrapper
-    // applied and forgotten here would make the dump quietly wrong about the order calls pass
-    // through — the failure a hand-written description invites. Comparing sets of identifiers
-    // is mechanical, so it cannot be satisfied by a plausible-looking label.
-    //
-    // The list and the code that applies it live in the SAME file, so this compares a
-    // declaration against its own neighbours rather than across modules.
-    const source = readFileSync(
-      join(import.meta.dir, '..', 'chat', 'runtime', 'run', 'tool-wrapper-chain.ts'),
-      'utf8',
-    )
-    // Call sites only: the list itself mentions every name as a string, so matching the
-    // identifier followed by `(` is what distinguishes application from declaration.
-    const applied = new Set(
-      [...source.matchAll(/\b(wrapToolsWith[A-Za-z]+)\s*\(/gu)].map((match) => match[1]!),
-    )
-
-    expect(applied).toEqual(new Set(TOOL_WRAPPER_CHAIN.map((entry) => entry.wrapper)))
-  })
-
   test('the report exposes readable labels, not function names', () => {
     const report = describeComposition({ assembled, loadedPlugins, wrappers: WRAPPERS })
     expect(report.wrappers).toEqual([

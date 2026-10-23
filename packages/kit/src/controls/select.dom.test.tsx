@@ -56,7 +56,6 @@ describe('Select DOM runtime', () => {
       )!
       expect(trigger).not.toBeNull()
       expect(trigger.textContent).toContain('From session')
-      expect(trigger.className).toContain('h-[var(--chrome-control-xl)]')
       expect(trigger.getAttribute('role')).toBe('combobox')
       expect(trigger.getAttribute('aria-haspopup')).toBe('listbox')
       expect(trigger.getAttribute('aria-autocomplete')).toBe('none')

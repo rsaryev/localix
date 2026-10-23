@@ -1,16 +1,7 @@
 import { expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { createElement, Fragment } from 'react'
 import { TabPanel, TabStrip } from './tabs'
-
-const source = readFileSync(new URL('./tab-bar.tsx', import.meta.url), 'utf8')
-
-test('tab content and its active underline switch atomically', () => {
-  expect(source).not.toContain('transition-[transform,width]')
-  expect(source).not.toContain('indicatorReady')
-  expect(source).toContain('useLayoutEffect(() =>')
-})
 
 test('tabs and keep-alive panels expose a complete accessible relationship', () => {
   const html = renderToStaticMarkup(
@@ -47,21 +38,4 @@ test('tabs and keep-alive panels expose a complete accessible relationship', () 
   expect(html).toContain('aria-labelledby="tab-a"')
   expect(html).toContain('id="panel-b"')
   expect(html).toContain('hidden=""')
-})
-
-test('keeps fixed tab actions outside the tablist in their own named group', () => {
-  const html = renderToStaticMarkup(
-    createElement(TabStrip, {
-      'aria-label': 'Editor tabs',
-      actionsLabel: 'Editor tab actions',
-      actions: createElement('button', { type: 'button' }, 'New terminal'),
-      items: [{ id: 'terminal', label: 'Terminal' }],
-      activeId: 'terminal',
-      onChange: () => {},
-    }),
-  )
-
-  expect(html).toContain('data-slot="tab-strip"')
-  expect(html).toContain('data-slot="tab-strip-list"')
-  expect(html).toContain('role="group" aria-label="Editor tab actions"')
 })

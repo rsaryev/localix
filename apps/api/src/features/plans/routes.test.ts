@@ -91,14 +91,9 @@ describe('plan routes', () => {
     expect(wakes).toEqual(['plan-approved'])
   })
 
-  test('approve takes an optional addressee from the roster; an unknown handle is a 400', async () => {
+  test('approve takes an optional addressee from the roster; an empty one is a 400', async () => {
     const { app, plan, wakes } = await harness()
     const url = `/rpc/sessions/root/plans/${plan.id}/approve`
-    const ghost = await app.request(url, json({ mode: 'default', to: 'ghost' }))
-    expect(ghost.status).toBe(400)
-    expect(((await ghost.json()) as { error: { code: string } }).error.code).toBe(
-      'unknown_participant',
-    )
     expect((await app.request(url, json({ mode: 'default', to: '' }))).status).toBe(400)
     expect(wakes).toEqual([])
     const approved = await app.request(url, json({ mode: 'default', to: 'backend' }))

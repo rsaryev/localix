@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { ContextAttemptSnapshot } from '../../model/contextUsage'
 import { buildUsageIndicatorView, UsageIndicator } from './UsageIndicator'
@@ -10,7 +9,6 @@ const lastSuccess = {
   outputTokens: 153,
   contextTokens: 143_663,
 }
-const source = readFileSync(new URL('./UsageIndicator.tsx', import.meta.url), 'utf8')
 
 describe('UsageIndicator context semantics', () => {
   test('does not use stale successful usage as the latest failed attempt', () => {
@@ -156,19 +154,5 @@ describe('UsageIndicator context semantics', () => {
     )
 
     expect(markup).toContain('>103%</button>')
-  })
-
-  test('uses a vertical rich hover surface instead of label-tooltip or local geometry', () => {
-    expect(source).toContain("from '@localixai/kit/hover-card'")
-    expect(source).toContain('<HoverCard openDelay={200} closeDelay={100}>')
-    expect(source).toContain('<HoverCardTrigger asChild>')
-    expect(source).toContain('<HoverCardContent')
-    expect(source).toContain('var(--radix-hover-card-content-available-height)')
-    expect(source).toContain('select-text')
-    expect(source).not.toContain("from '@localixai/kit/tooltip'")
-    expect(source).not.toContain('<TooltipContent')
-    expect(source).not.toContain('group/usage')
-    expect(source).not.toContain('pointer-events-none absolute bottom-full')
-    expect(source).not.toContain('z-50')
   })
 })

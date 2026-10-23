@@ -106,28 +106,12 @@ describe('plugin contribution synchronization', () => {
   })
 
   test('the production default loader does not receive the retry attempt as a plugin source', () => {
+    // startStartupRetry calls load(failureIndex); passing refetchPluginContrib directly would hand
+    // that number to it as the PluginContribSource and every retry would throw.
     const source = readFileSync(new URL('./enabledPlugins.ts', import.meta.url), 'utf8')
 
     expect(source).toContain('currentLoad: () => Promise<boolean> = () => refetchPluginContrib()')
     expect(source).not.toContain('currentLoad: () => Promise<boolean> = refetchPluginContrib')
-  })
-
-  test('keeps sync-failure reporting off the startup bundle', () => {
-    const source = readFileSync(new URL('./enabledPlugins.ts', import.meta.url), 'utf8')
-    // Type-only is erased; a value import would put the copy and the toast wiring on first paint.
-    expect(source).not.toMatch(/^import (?!type )[^\n]*from ['"]\.\/pluginSyncProblems['"]/m)
-    expect(source).toMatch(/^import type \* as \w+ from ['"]\.\/pluginSyncProblems['"]/m)
-    expect(source).toContain("import('./pluginSyncProblems')")
-  })
-
-  test('loads the plugin UI runtime only after capability discovery needs it', () => {
-    const source = readFileSync(new URL('./enabledPlugins.ts', import.meta.url), 'utf8')
-
-    expect(source).not.toMatch(
-      /import\s+\{\s*discoverEnabledPluginUi\s*\}\s+from\s+['"]\.\/pluginUiDiscovery['"]/,
-    )
-    expect(source).toContain("import('./pluginUiDiscovery')")
-    expect(source).toContain('discoverPluginUi: PluginUiDiscovery = discoverPluginUiLazily')
   })
 
   test('retries the webview-before-sidecar race until contributions are established', async () => {

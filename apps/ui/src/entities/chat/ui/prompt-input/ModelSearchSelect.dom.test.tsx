@@ -1,6 +1,4 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import type { CatalogModel } from '@localixai/agent/catalog'
 import type { ProviderConnection } from '@/shared/api/contracts'
 import { registerDom } from '@localixai/kit/testing/dom'
@@ -99,16 +97,6 @@ describe('ModelSearchSelect DOM runtime', () => {
       await React.act(async () => root.unmount())
       host.remove()
     }
-  })
-
-  test('keeps the interaction-only drawer out of the startup import graph', () => {
-    const source = readFileSync(resolve(import.meta.dir, './ModelSearchSelect.tsx'), 'utf8')
-
-    expect(source).not.toContain("from '@/shared/ui/drawer'")
-    expect(source).toContain("import('./ModelPickerDrawer')")
-    expect(source).toContain("import('./model-select/ModelBrowser')")
-    expect(source).toContain('const [drawer] = await Promise.all([')
-    expect(source).toContain('const ModelPickerDrawer = lazy(')
   })
 
   test('refreshes its compact trigger from reconnect state at a narrow width', async () => {

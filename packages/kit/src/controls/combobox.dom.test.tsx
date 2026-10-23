@@ -54,7 +54,6 @@ describe('Combobox DOM runtime', () => {
       await act(async () => root.render(<Harness />))
       const trigger = host.querySelector<HTMLButtonElement>('button[aria-label="Runtime model"]')!
       expect(trigger.textContent).toContain('Alpha')
-      expect(trigger.className).toContain('h-[var(--chrome-control-xl)]')
       expect(trigger.getAttribute('role')).toBeNull()
       expect(trigger.getAttribute('aria-haspopup')).toBe('dialog')
       expect(trigger.getAttribute('aria-expanded')).toBe('false')

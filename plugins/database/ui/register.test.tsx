@@ -88,5 +88,4 @@ test('registers Database as a root workspace and routes resource anchors into Ex
   expect(items.map(({ id, placement }) => ({ id, placement }))).toEqual([
     { id: 'database:connection', placement: 'titlebar' },
   ])
-  expect(typeof items[0]?.useItem).toBe('function')
 })

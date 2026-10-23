@@ -32,7 +32,8 @@ git's repository variables and makes a request to a non-loopback host fail at on
 
 ## Tests first
 
-Work red, green, refactor, as [AGENTS.md](../../AGENTS.md#tests-first-tdd) states:
+Work red, green, refactor, as
+[AGENTS.md](https://github.com/rsaryev/localix/blob/main/AGENTS.md#tests-first-tdd) states:
 
 1. For a bug, write a test that reproduces it at the layer where a person meets it, and run it to
    see it fail for the right reason. Then fix the code and see the test pass. The red run proves the

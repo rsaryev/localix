@@ -1,5 +1,4 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
 import { registerDom } from '@localixai/kit/testing/dom'
 
 let teardown: () => Promise<void>
@@ -11,8 +10,6 @@ afterAll(async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))
   await teardown()
 })
-
-const read = (file: string) => readFileSync(new URL(`./${file}`, import.meta.url), 'utf8')
 
 /**
  * Dragging a split sash writes the grid store on EVERY mousemove, so GridView
@@ -176,18 +173,5 @@ describe('editor grid memo boundaries', () => {
       await act(async () => root.unmount())
       host.remove()
     }
-  })
-
-  test('both grid boundaries are declared as memo components', () => {
-    expect(read('GroupView.tsx')).toContain('export const GroupView = memo(function GroupView(')
-    expect(read('registry.tsx')).toContain(
-      'export const WorkItemBody = memo(function WorkItemBody(',
-    )
-    // The props GridView hands the group must not be re-created per render, or the
-    // memo is dead weight: `leaf` comes from the layout (which passes tree nodes
-    // through) and `resolvedTheme` is a string.
-    expect(read('GridView.tsx')).toContain(
-      '<GroupView leaf={leaf} resolvedTheme={resolvedTheme} />',
-    )
   })
 })

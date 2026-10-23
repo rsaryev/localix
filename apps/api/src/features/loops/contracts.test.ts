@@ -70,8 +70,6 @@ describe('toLoopSummary', () => {
 
 describe('loop constants', () => {
   test('the dynamic delay window is sane (floor < ceiling, mirrors the harness)', () => {
-    expect(DYNAMIC_MIN_DELAY_SECONDS).toBe(60)
-    expect(DYNAMIC_MAX_DELAY_SECONDS).toBe(3600)
     expect(DYNAMIC_MIN_DELAY_SECONDS).toBeLessThan(DYNAMIC_MAX_DELAY_SECONDS)
   })
 

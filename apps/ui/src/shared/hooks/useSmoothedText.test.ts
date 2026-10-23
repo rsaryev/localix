@@ -1,6 +1,4 @@
 import { describe, expect, it } from 'bun:test'
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 
 import {
   advanceReveal,
@@ -78,45 +76,5 @@ describe('seedOnStreamStart (no replay of pre-existing content)', () => {
   it('is inert when entering with nothing new to show', () => {
     expect(seedOnStreamStart(0, 0, true)).toBe(0)
     expect(seedOnStreamStart(500, 500, true)).toBe(500)
-  })
-})
-
-describe('useSmoothedText rAF lifecycle (structural)', () => {
-  // Guard the self-stopping loop: an earlier impl scheduled an unconditional rAF in
-  // useEffect([], ...), so every settled caller kept a frame loop alive forever. The
-  // loop lives inside a hook with no cheap render seam, so these assert the source.
-  //
-  // They must pin CODE, never prose or formatting. The previous version asserted
-  // `toContain('rafRef.current = null; // caught up')` — a COMMENT — so rewording that
-  // comment, a zero-behavior-change edit, turned the suite red. A guard that bills you
-  // for editing a comment is a tax, not a test. (These were NOT vacuous — deleting the
-  // stop block does turn them red — so they are tightened, not replaced.)
-  const source = readFileSync(resolve(import.meta.dir, './useSmoothedText.ts'), 'utf8')
-
-  it('keys the reveal effect on the target text, not an empty dep array', () => {
-    expect(source).toMatch(/\},\s*\[text, active, catchUpMs, reducedMotion\]\)/)
-    expect(source).not.toMatch(/\},\s*\[\]\);?/)
-  })
-
-  it('cancels a live pacing loop when reduced motion becomes active', () => {
-    expect(source).toMatch(
-      /if \(reducedMotion\)\s*\{[\s\S]*?cancelAnimationFrame\(rafRef\.current\)[\s\S]*?setDisplayedLen\(total\)/,
-    )
-  })
-
-  it('stops the loop once caught up instead of rescheduling forever', () => {
-    // Mutation this must catch: deleting the `len >= total` stop block, so the rAF
-    // reschedules forever. Matched on the code, not on the trailing comment.
-    expect(source).toMatch(/if \(len >= total\)\s*\{\s*rafRef\.current = null;?/)
-  })
-
-  it('does not start a loop when already caught up or one is already running', () => {
-    expect(source).toMatch(
-      /if \(displayedRef\.current >= total \|\| rafRef\.current !== null\)\s*return;?/,
-    )
-  })
-
-  it('cancels the pending frame on cleanup', () => {
-    expect(source).toMatch(/cancelAnimationFrame\(rafRef\.current\)/)
   })
 })

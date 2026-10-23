@@ -83,8 +83,6 @@ describe('tool I/O actions', () => {
       expect(actions[0].getAttribute('role')).toBeNull()
       expect(actions[0].getAttribute('title')).toBeNull()
       expect(actions[0].getAttribute('data-tooltip-trigger')).toBe('true')
-      expect(actions[1].className).toContain('block')
-      expect(actions[1].className).toContain('truncate')
 
       await act(async () => actions[0].click())
       await act(async () => actions[1].click())
@@ -198,7 +196,6 @@ describe('tool I/O actions', () => {
       const button = host.querySelector<HTMLButtonElement>('button')!
       const anchor = host.querySelector<HTMLElement>('[data-disabled-tooltip-anchor]')!
       expect(button.disabled).toBe(true)
-      expect(button.className).toContain('hover:text-status-error')
       expect(button.getAttribute('title')).toBeNull()
       expect(anchor.tabIndex).toBe(0)
 

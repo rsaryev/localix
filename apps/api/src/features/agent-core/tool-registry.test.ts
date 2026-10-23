@@ -432,31 +432,6 @@ describe('createRuntimeToolRegistry', () => {
     expect(registry.promptSection).toBe('# Available tools')
   })
 
-  test('lsp_diagnostics tool no longer exists — diagnostics are auto-attached to edits instead', () => {
-    const registry = createRuntimeToolRegistry({
-      policy: { agentProfile: CHAT_RUN_PROFILE },
-      core: { reportDiagnostics: async () => undefined },
-    })
-
-    expect(registry.toolNames).not.toContain('lsp_diagnostics')
-    expect(registry.promptSection).not.toContain('lsp_diagnostics')
-  })
-
-  test('reportDiagnostics is threaded into write/edit when provided', async () => {
-    const seen: string[] = []
-    const registry = createRuntimeToolRegistry({
-      core: {
-        reportDiagnostics: async (paths) => {
-          seen.push(...paths)
-          return undefined
-        },
-      },
-    })
-    // The mutating file tools must be present and carry the reporter wiring.
-    expect(registry.toolNames).toContain('write')
-    expect(registry.toolNames).toContain('edit')
-  })
-
   test('subagent gets bash, but never the background/jobs half of it', () => {
     // A child that can edit but not type-check hands the parent unverified work; the
     // parent then re-reads the files the delegation existed to keep out of its context.

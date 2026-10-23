@@ -47,8 +47,6 @@ describe('WorkspaceShell responsive ownership', () => {
       expect(host.querySelectorAll('[data-sidebar-probe]')).toHaveLength(1)
       expect(host.querySelectorAll('[data-workspace-probe]')).toHaveLength(1)
       const mobileHeader = host.querySelector('header')
-      expect(mobileHeader?.classList.contains('shrink-0')).toBe(true)
-      expect(mobileHeader?.classList.contains('fixed')).toBe(false)
       const mobileHistory = mobileHeader?.querySelector<HTMLButtonElement>(
         '[aria-label="Chat history"]',
       )
@@ -253,12 +251,10 @@ describe('WorkspaceShell responsive ownership', () => {
       await act(async () => files!.click())
       // The sidebar's width is PAINTED from a custom property on the panel, which the
       // resize hook writes straight to the DOM during a drag (so a mousemove repaints
-      // without re-rendering the shell). The inner content column reads the same var,
-      // so the two can never drift.
+      // without re-rendering the shell).
       const sidebarColumn = () => host.querySelector<HTMLElement>('[data-focus-part="sidebar"]')!
       const paintedSidebarWidth = () =>
         sidebarColumn().parentElement!.style.getPropertyValue('--sidebar-width')
-      expect(sidebarColumn().style.width).toBe('var(--sidebar-width)')
 
       expect(paintedSidebarWidth()).toBe('300px')
 
@@ -423,7 +419,6 @@ describe('WorkspaceShell status contribution', () => {
       const bar = host.querySelector('[data-status-rail-drop-zone]')
       // One bar, one row of chrome: the host footer and the editor entries share it.
       expect(host.querySelectorAll('[data-status-rail-drop-zone]')).toHaveLength(1)
-      expect(bar?.className).toContain('h-[var(--statusbar-height)]')
       expect(bar?.querySelectorAll('[data-editor-status]')).toHaveLength(1)
       expect(bar?.querySelector('[data-host-status]')).not.toBeNull()
       // Nothing is left docked under the editor.

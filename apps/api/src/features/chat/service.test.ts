@@ -456,10 +456,9 @@ describe('chat service', () => {
     await destroyDatabase(db)
   })
 
-  // Context is checkpointed by the runtime on its own, so there is no command to shrink it by
-  // hand. A typed `/compact` must fail closed like any unknown command — never queue, never run,
-  // and never reach the model as a prompt.
-  test('/compact no longer exists: it fails closed on a busy session and queues nothing', async () => {
+  // The busy path: an unknown command (here the removed `/compact`) typed while a run is active
+  // must fail closed — never queue, never run, and never reach the model as a prompt.
+  test('an unknown slash command on a busy session fails closed and queues nothing', async () => {
     const db = createDatabase({ filename: join(tempDir, `${randomUUID()}.sqlite`) })
     await migrateToLatest(db)
 
@@ -503,7 +502,6 @@ describe('chat service', () => {
 
     await destroyDatabase(db)
   })
-
   test('unknown slash commands fail closed with a catalog suggestion instead of reaching the model', async () => {
     const db = createDatabase({ filename: join(tempDir, `${randomUUID()}.sqlite`) })
     await migrateToLatest(db)

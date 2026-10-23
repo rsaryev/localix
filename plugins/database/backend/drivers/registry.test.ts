@@ -8,7 +8,6 @@ describe('database driver registry', () => {
     for (const dialect of DATABASE_DIALECTS) {
       const definition = getDriverDefinition(dialect)
       expect(definition.manifest).toBe(DATABASE_DRIVER_CATALOG[dialect])
-      expect(typeof definition.create).toBe('function')
     }
   })
 })

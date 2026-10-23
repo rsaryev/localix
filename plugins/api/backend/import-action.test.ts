@@ -217,6 +217,7 @@ describe('an imported credential lands in the vault, not in the store', () => {
   test('the report names the key, so the user can find what was created', async () => {
     const { deps: d } = vaultDeps()
     const out = await runImportAction(d, CURL, true)
+    expect(out.ok).toBe(true)
     if (out.ok) {
       expect(out.content).toContain('secrets vault')
       expect(out.content).toContain('REST_API_USER_TOKEN')
@@ -250,6 +251,7 @@ describe('an imported credential lands in the vault, not in the store', () => {
     const out = await runImportAction(d, CURL, true)
     expect(rows()).toHaveLength(0)
     // …and we say so rather than implying it was secured.
+    expect(out.ok).toBe(true)
     if (out.ok) expect(out.content).toContain('could NOT be vaulted')
   })
 })

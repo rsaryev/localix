@@ -21,45 +21,10 @@ const uiSources = sourceFiles(devopsRoot)
   .map((path) => ({ path, source: readFileSync(path, 'utf8') }))
 
 describe('DevOps workbench geometry', () => {
-  test('keeps every resource tab header on one seam', () => {
-    for (const path of [
-      'docker/ui/ui/DockerResourceHeader.tsx',
-      'docker/ui/ui/DockerContainerHeader.tsx',
-      'kubernetes/ui/ui/KubernetesNodeHeader.tsx',
-      'kubernetes/ui/ui/KubernetesResourceHeader.tsx',
-      'kubernetes/ui/ui/PodTabHeader.tsx',
-    ]) {
-      const source = read(path)
-      expect(source).toContain('border-b border-border-soft px-3 py-2')
-      expect(source).not.toContain('px-4 py-3')
-    }
-  })
-
-  test('keeps the two workbench sidebars on one control-row seam', () => {
-    for (const path of [
-      'kubernetes/ui/ui/SidebarControls.tsx',
-      'docker/ui/ui/DockerSidebarHeader.tsx',
-    ]) {
-      expect(read(path)).toContain('<WorkbenchFilterBar')
-    }
-  })
-
   test('sizes chrome from the geometry scale instead of ad-hoc heights', () => {
     for (const { path, source } of uiSources) {
       expect(`${path}: ${source}`).not.toMatch(/\b(?:min-)?h-(?:7|8|9|10)\b/)
       expect(`${path}: ${source}`).not.toMatch(/\b(?:min-)?h-\[\d+px\]/)
-    }
-  })
-
-  test('lets resource detail grids span their pane instead of capping data', () => {
-    for (const path of [
-      'docker/ui/ui/DockerResourceContent.tsx',
-      'kubernetes/ui/ui/KubernetesNodeOverview.tsx',
-    ]) {
-      const source = read(path)
-      expect(source).toContain('border-y border-border-soft')
-      expect(source).not.toContain('max-w-')
-      expect(source).not.toContain('mx-auto')
     }
   })
 

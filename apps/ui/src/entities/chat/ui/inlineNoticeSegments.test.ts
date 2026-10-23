@@ -156,7 +156,7 @@ describe('notices inside a growing assistant reply', () => {
     const segments = inlineNoticeSegments(message)
     expect(segments).toHaveLength(2)
     expect(segments[0]).toEqual({ kind: 'body', items: [item] })
-    if (segments[0]?.kind === 'body') expect(segments[0].items?.[0]).toBe(item)
+    expect((segments[0] as { items?: readonly unknown[] }).items?.[0]).toBe(item)
     const html = renderToStaticMarkup(MessageBody({ message, isUser: false }))
     expect(html.match(/<pre\b/g)).toHaveLength(1)
     expect(html.replace(/<[^>]*>/g, '')).toContain('const value = 42')

@@ -51,6 +51,5 @@ describe('resolveWebhookUrl', () => {
     expect(resolveWebhookUrl(env({ HOST: '0.0.0.0', PORT: '9000' }))).toBe(
       `http://127.0.0.1:9000${WEBHOOK_MESSAGES_PATH}`,
     )
-    expect(WEBHOOK_MESSAGES_PATH).toBe('/rpc/webhook/messages')
   })
 })

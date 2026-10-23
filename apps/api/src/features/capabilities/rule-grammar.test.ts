@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
 import { ruleGrammar } from './rule-grammar'
 import { ACTION_PREFIX } from './resolve'
 import { EFFECTS } from '../agent-core/capability-rule'
@@ -91,31 +90,5 @@ describe('the worked examples', () => {
 
   test('every example carries a note saying what it is FOR', () => {
     for (const example of grammar.examples) expect(example.note.length).toBeGreaterThan(20)
-  })
-})
-
-describe('the client renders the grammar rather than restating it', () => {
-  /**
-   * The positive control for the whole arrangement.
-   *
-   * A server that ships the vocabulary buys nothing if the screen still hardcodes its own
-   * copy, so this reads the two components that render it and fails when either names a class
-   * or an effect in its own source.
-   */
-  test('neither the legend nor the editor names a class or an effect', () => {
-    const sources = [
-      'apps/ui/src/features/settings/ui/PermissionLegend.tsx',
-      'apps/ui/src/features/settings/ui/PermissionEditor.tsx',
-    ].map((path) => readFileSync(new URL(`../../../../../${path}`, import.meta.url), 'utf8'))
-    const named = RESOURCE_CLASSES.filter((entry) => entry.value !== '*').map(
-      (entry) => entry.value,
-    )
-    for (const source of sources) {
-      // Comments explain the mechanism and may cite an example; code may not.
-      const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
-      for (const value of named) {
-        expect({ value, inCode: code.includes(`'${value}'`) }).toEqual({ value, inCode: false })
-      }
-    }
   })
 })

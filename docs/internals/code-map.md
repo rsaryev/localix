@@ -66,8 +66,7 @@ root `plugin.json` (`split.ts`) and finds where the build writes the backend (`b
 plugin-hosts, domain-services, engines, chat-service-deps, agent-facade, app-services, create-app
 and ops-timers. `serviceRefs` is the forward holder for genuine cycles: a service that needs the
 finished `chatService` (its wake primitive, stream registry or cwd resolution) is built in
-`bootstrap/session-services.ts` and read back lazily. `bootstrap/post-listen-order.test.ts` pins the
-ordering that only matters after `listen`.
+`bootstrap/session-services.ts` and read back lazily.
 
 ## The agent boundary is enforced
 

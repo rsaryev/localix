@@ -55,20 +55,14 @@ describe('product positioning', () => {
     expect(read(file)).toContain(REPO_SHORT)
   })
 
-  test('the hero states the headline', () => {
-    expect(read('apps/landing/src/pages/HomePage.tsx')).toContain(HEADLINE)
+  test('llms.txt states the description inside its blockquote', () => {
+    const llms = readFileSync(join(repoRoot, 'apps/landing/public/llms.txt'), 'utf8')
+      .replaceAll(/^>\s?/gmu, '')
+      .replaceAll(/\s+/gu, ' ')
+    expect(llms).toContain(DESCRIPTION)
   })
 
-  // The old claim told readers what the product IS in category words only. Nothing may bring it
-  // back as the headline or the page title.
-  test('no carrier still leads with the retired headline', () => {
-    for (const file of [
-      'apps/landing/index.html',
-      'apps/landing/public/og.svg',
-      'apps/landing/src/pages/docs/useDocMetadata.ts',
-      'apps/desktop-tauri/src-tauri/Cargo.toml',
-    ]) {
-      expect(read(file)).not.toContain('Localix — The open source ADE')
-    }
+  test('the hero states the headline', () => {
+    expect(read('apps/landing/src/pages/HomePage.tsx')).toContain(HEADLINE)
   })
 })

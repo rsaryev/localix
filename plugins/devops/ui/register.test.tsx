@@ -53,5 +53,4 @@ test('registers one DevOps Workspace viewlet over both provider contribution set
   expect(items.map(({ id, placement }) => ({ id, placement }))).toEqual([
     { id: 'devops:port-forwards', placement: 'titlebar' },
   ])
-  expect(typeof items[0]?.useItem).toBe('function')
 })

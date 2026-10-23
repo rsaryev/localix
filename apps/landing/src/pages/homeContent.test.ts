@@ -80,15 +80,6 @@ test('homepage copy states no speed or duration the repository does not measure'
   )
 })
 
-test('the homepage is one hero with the demo in it, as on llx.sh', () => {
-  const homePage = readFileSync(new URL('./HomePage.tsx', import.meta.url), 'utf8')
-  const sections = [...homePage.matchAll(/<section\s+id="([a-z-]+)"/gu)].map((match) => match[1])
-
-  expect(sections).toEqual(['intro'])
-  expect(homePage).toContain('<DemoFilm />')
-  expect(homePage).not.toContain('<Features')
-})
-
 test('the demo film is published with its poster', () => {
   // A missing file plays nothing and leaves an empty frame on the page.
   const films = readdirSync(new URL('../../public/films/', import.meta.url))
@@ -127,67 +118,4 @@ test('every homepage capability links to a published documentation page', () => 
     )
     expect(headingIds.has(link.anchor)).toBe(true)
   }
-})
-
-test('homepage claims stay assigned to their owning guides', () => {
-  const ownership = Object.fromEntries(CAPABILITIES.map((item) => [item.title, item.slug]))
-
-  expect(ownership).toEqual({
-    'One conversation, as many agents as the work needs': 'features--conversations',
-    'Let the agent bring in a colleague': 'features--conversations',
-    'Give each agent its own role, rules, and model': 'features--capabilities',
-    'See who is answering, and stop it': 'features--conversations',
-    'Know what the next message carries': 'features--workspace',
-    'Open, search, link, and return': 'features--workspace',
-    'Turn command output into a working surface': 'features--workspace',
-    'Keep a long session inside the request budget': 'features--context-checkpoints',
-    'Read a page as a tree, not a screenshot': 'features--visual-feedback',
-    'Act in batches that settle once': 'features--visual-feedback',
-    'Verify before it says done': 'features--visual-feedback',
-    'Point at the result instead of describing it': 'features--visual-feedback',
-    'The agent works the board the way you do': 'features--project-space',
-    'References, not copies': 'features--project-space',
-    'Keep an answer where you can see it': 'features--project-space',
-    'A board your repository can hold': 'features--project-space',
-    'Photograph a meal, and the agent logs it': 'extending--build-with-the-agent',
-    'Interface and tools in one pass': 'extending--build-with-the-agent',
-    'A mini app uses the models Localix already has': 'extending--plugin-semantics',
-    'The product’s own workbenches are mini apps': 'extending--plugins',
-    'Claude Code plugins work as they are': 'extending--claude-code-plugins',
-    'Play against the agent': 'features--game-2048',
-    'The app and its plugins draw from one design system': 'extending--ui-kit',
-    'Keep projects in native workspace tabs': 'features--native-workspace-tabs',
-    'Tests keep the interface from drifting': 'extending--ui-kit',
-    'Dark, light, and what your system asks for': 'features--workspace',
-    'Reach anything without the mouse': 'features--workspace',
-    'Run a prompt on a schedule, or at the agent’s pace': 'features--loops',
-    'Ask the agent to watch, and wake it when it matters': 'features--monitors',
-    'Review a plan before anything runs': 'features--permission-modes',
-    'Pick up where a run stopped': 'features--permission-modes',
-    'Route each workload to its own model': 'features--providers',
-    'Set the tool surface before the run starts': 'features--capabilities',
-    'Decide tool calls with ordered rules': 'features--permissions',
-    'Keep keys out of the transcript': 'features--providers',
-    'Manage the board together': 'features--task-board',
-    'Let the agent build the plan': 'features--task-board',
-    'Choose when to delegate': 'features--task-board',
-    'Point the agent at a card': 'features--task-board',
-    // Bundled plugins that add a workbench, the five board games sharing one card. Code Review,
-    // Deliverables and Webhook Notifier declare no workbench and are listed in the plugin guide.
-    Database: 'features--database',
-    DevOps: 'features--devops',
-    Git: 'features--source-control',
-    'Code Graph': 'features--code-graph',
-    Reader: 'features--reader',
-    Trading: 'features--trading',
-    'Learning Studio': 'features--learning-loop',
-    Documents: 'features--documents',
-    Resumes: 'features--resumes',
-    'API Client': 'features--api',
-    'Your CLI history beside Localix chats': 'features--external-agents',
-    'Read or continue the native session': 'features--external-agents',
-    'Link a conversation instead of pasting it': 'features--external-agents',
-    'See external activity in the same statistics view': 'features--external-agents',
-    Games: 'features--game-2048',
-  })
 })

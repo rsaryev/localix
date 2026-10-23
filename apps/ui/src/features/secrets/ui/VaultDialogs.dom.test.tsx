@@ -74,23 +74,10 @@ describe('Vault dialog feedback', () => {
       await settle()
     })
 
-    const warning = Array.from(testDocument.body.querySelectorAll('div')).find(
-      (node) =>
-        node.textContent?.startsWith('High-impact item') &&
-        node.getAttribute('class')?.includes('border-y'),
+    const warning = Array.from(testDocument.body.querySelectorAll('div')).find((node) =>
+      node.textContent?.startsWith('High-impact item'),
     )
     expect(warning).toBeDefined()
-    expect(warning?.getAttribute('class')).not.toContain('rounded')
-    expect(warning?.getAttribute('class')).not.toContain('bg-status-warning')
-
-    const header = testDocument.body.querySelector('[data-slot="dialog-header"]')
-    const body = testDocument.body.querySelector('[data-slot="dialog-body"]')
-    const footer = testDocument.body.querySelector('[data-slot="dialog-footer"]')
-    expect(header?.className).toContain('shrink-0')
-    expect(body?.className).toContain('flex-1')
-    expect(body?.className).toContain('overflow-y-auto')
-    expect(footer?.className).toContain('shrink-0')
-    expect(footer?.className).toContain('border-t')
 
     const secretInput = testDocument.body.querySelector(
       'input[type="password"]',
@@ -105,7 +92,6 @@ describe('Vault dialog feedback', () => {
     })
     expect(rotate).toHaveBeenCalledTimes(1)
     expect(submit?.getAttribute('aria-busy')).toBe('true')
-    expect(submit?.innerHTML).toContain('lx-activity-orb')
     expect(submit?.textContent).toContain('Creating version')
 
     await act(async () => {
@@ -157,26 +143,21 @@ describe('Vault dialog feedback', () => {
       await settle()
     })
     expect(testDocument.body.textContent).toContain('Checking consumers')
-    expect(testDocument.body.innerHTML).toContain('lx-activity-orb')
 
     await act(async () =>
       root.render(render(false, false, { message: 'This Vault item could not be deleted.' })),
     )
-    const consumerWarning = Array.from(testDocument.body.querySelectorAll('div')).find(
-      (node) =>
-        node.textContent?.startsWith('This item is used by 1 consumer') &&
-        node.getAttribute('class')?.includes('border-y'),
+    const consumerWarning = Array.from(testDocument.body.querySelectorAll('div')).find((node) =>
+      node.textContent?.startsWith('This item is used by 1 consumer'),
     )
     expect(consumerWarning).toBeDefined()
-    expect(consumerWarning?.getAttribute('class')).not.toContain('rounded')
-    expect(consumerWarning?.getAttribute('class')).not.toContain('bg-status-warning')
-    const alert = testDocument.body.querySelector('[role="alert"]')
-    expect(alert?.getAttribute('class')).not.toContain('bg-status-error')
+    expect(testDocument.body.querySelector('[role="alert"]')?.textContent).toContain(
+      'This Vault item could not be deleted.',
+    )
 
     await act(async () => root.render(render(false, true)))
     const deleting = button(testDocument.body, 'Deleting')
     expect(deleting?.getAttribute('aria-busy')).toBe('true')
-    expect(deleting?.innerHTML).toContain('lx-activity-orb')
 
     await act(async () => root.unmount())
     container.remove()

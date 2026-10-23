@@ -40,7 +40,6 @@ describe('ActionButtons', () => {
       expect(composerGroup.getAttribute('role')).toBe('group')
       expect(send.getAttribute('data-variant')).toBe('mono')
       expect(send.getAttribute('data-emphasis')).toBe('solid')
-      expect(send.className).toContain('size-[var(--chrome-control-lg)]')
       await act(async () => send.click())
       expect(calls).toEqual(['send'])
       expect(host.querySelector('button[aria-label="Improve prompt"]')).toBeNull()

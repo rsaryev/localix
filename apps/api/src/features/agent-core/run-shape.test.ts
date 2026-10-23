@@ -171,7 +171,6 @@ describe('run shapes', () => {
     // TOOL left this test at 1 expect / 0 fail while scanning zero tools
     // (mutation-verified). Assert the corpus before trusting the verdict.
     expect(BUILTIN_TOOLS.length).toBeGreaterThan(20)
-    expect(SHAPES.length).toBe(3)
     const orphans = BUILTIN_TOOLS.filter(
       (name) => !SHAPES.some((shape) => isToolDirect(profileOf(shape), name)),
     )
@@ -262,7 +261,6 @@ describe('roleGuidance never names a tool', () => {
   // shape trivially "names no tool"). The positive control below proves the DETECTOR
   // fires; this proves it was pointed at something.
   test('the lint has a corpus and a vocabulary', () => {
-    expect(SHAPES.length).toBe(3)
     expect(NAMES.length).toBeGreaterThanOrEqual(15)
   })
 

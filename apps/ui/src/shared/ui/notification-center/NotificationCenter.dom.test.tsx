@@ -161,22 +161,11 @@ describe('Event Center', () => {
       const eventRows = document.body.querySelectorAll('[data-event-row-trigger]')
       const sessionSlots = document.body.querySelectorAll('[data-event-session-action]')
       expect(sessionSlots).toHaveLength(eventRows.length)
-      expect(eventRows[0]?.parentElement?.className).toContain(
-        'grid-cols-[minmax(0,1fr)_1.5rem_9rem_1.5rem]',
-      )
       expect(
         document.body
           .querySelector('button[aria-label="Expand event: Approve deployment"]')
           ?.getAttribute('aria-describedby'),
       ).not.toBeNull()
-      const dialog = document.body.querySelector('[role="dialog"]')
-      // The journal uses the same theme-owned frosted material as context menus.
-      expect(dialog?.className).toContain('lx-floating-surface')
-      expect(dialog?.className).toContain('bg-popover')
-      expect(dialog?.className).toContain('w-[46rem]')
-      expect(dialog?.className).toContain(
-        'max-h-[min(42rem,var(--radix-popover-content-available-height))]',
-      )
       const scopeFilters = document.body.querySelector('[role="group"][aria-label="Event status"]')
       expect(scopeFilters).not.toBeNull()
       expect(scopeFilters?.querySelector('[role="tab"]')).toBeNull()
@@ -184,10 +173,6 @@ describe('Event Center', () => {
         ...(scopeFilters?.querySelectorAll<HTMLButtonElement>('button') ?? []),
       ].find((button) => button.textContent?.trim() === 'All')
       expect(allFilter?.getAttribute('aria-pressed')).toBe('true')
-      expect(allFilter?.className).toContain('h-[var(--chrome-control-sm)]')
-      expect(document.body.querySelector('[aria-label="Event journal"]')?.className).toContain(
-        'flex-1',
-      )
       expect(document.activeElement?.getAttribute('aria-label')).toBe('Expand event: Build failed')
 
       const openSession = document.body.querySelector<HTMLButtonElement>(

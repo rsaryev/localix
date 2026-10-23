@@ -49,9 +49,6 @@ describe('SearchInput clear action', () => {
     expect(input?.getAttribute('role')).toBe('combobox')
     expect(input?.getAttribute('aria-expanded')).toBe('true')
     expect(input?.getAttribute('aria-controls')).toBe('model-results')
-    expect(input?.parentElement?.className).toContain(
-      'has-[:focus-visible]:ring-control-border-focus',
-    )
 
     // Hand focus back to the body BEFORE detaching the tree. jsdom leaves
     // `document.activeElement` pointing at a removed node, and the next suite's Radix

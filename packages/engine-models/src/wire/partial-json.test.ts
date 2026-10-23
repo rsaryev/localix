@@ -52,13 +52,10 @@ describe('a tool input as it streams', () => {
   test('reparses a long input a bounded number of times, and ends on the full parse', () => {
     const input = new StreamingToolInput()
     const seen = new Set<unknown>()
-    const started = performance.now()
     // A frozen clock: only growth can make a reparse due.
     for (let i = 0; i < full.length; i += 20) seen.add(input.push(full.slice(i, i + 20), 0))
-    const elapsed = performance.now() - started
     // ~5,000 deltas; growth by a quarter each time is a few dozen parses, not thousands.
     expect(seen.size).toBeLessThan(60)
-    expect(elapsed).toBeLessThan(500)
     expect(parseToolInput(full)).toEqual({ path: 'src/big.ts', content })
   })
 

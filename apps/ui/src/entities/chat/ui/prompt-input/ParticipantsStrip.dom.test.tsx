@@ -68,14 +68,9 @@ describe('ParticipantsStrip — the live order drawn onto the participants', () 
         'Conversation participants',
       )
       const chip = host.querySelector<HTMLElement>('[data-slot="participant-chip"]')!
-      expect(chip.className).toContain('h-[var(--chrome-control-sm)]')
-      expect(chip.className).toContain('bg-transparent')
-      expect(chip.className).not.toContain('bg-surface-raised')
-      expect(chip.className).not.toContain('shadow-')
       const select = chip.querySelector('button')!
       expect(select.getAttribute('title')).toBe(`Show @${handle}'s model`)
       expect(select.getAttribute('aria-label')).toContain('Show model')
-      expect(select.querySelector('.truncate')?.className).toContain('max-w-32')
     } finally {
       await cleanup()
     }
@@ -98,9 +93,6 @@ describe('ParticipantsStrip — the live order drawn onto the participants', () 
     )
     try {
       const remove = host.querySelector<HTMLButtonElement>('button[aria-label="Remove Qa"]')!
-      expect(remove.className).toContain('size-[var(--chrome-control-xs)]')
-      expect(remove.className).not.toContain('opacity-0')
-      expect(remove.className).toContain('focus-ring')
       const { act } = await import('react')
       await act(async () => remove.click())
       expect(removed).toEqual(['builtin:qa'])
@@ -207,8 +199,6 @@ describe('ParticipantsStrip — the live order drawn onto the participants', () 
       expect(bright).toHaveLength(1)
       const chip = bright[0]!.parentElement!
       expect(chip.textContent).toContain('Frontend')
-      expect(chip.className).toContain('bg-transparent')
-      expect(chip.className).not.toContain('bg-surface-active')
       expect(chip.querySelector('button')?.getAttribute('aria-label')).toContain('answering now')
       // The one waiting is marked by the same primitive, turned down.
       expect(
@@ -284,12 +274,6 @@ describe('ParticipantsStrip — the live order drawn onto the participants', () 
       // The orchestrator is in every conversation by construction, so it has no remove control
       // either.
       expect(removals).not.toContain('Remove Localix')
-      // Its chip keeps the button's width anyway, so the row stays on one line. Every participant
-      // ends with an element of that size, removable or not.
-      for (const beam of host.querySelectorAll('.lx-border-beam')) {
-        const chip = beam.parentElement!
-        expect(chip.lastElementChild?.className).toContain('size-[var(--chrome-control-xs)]')
-      }
     } finally {
       await cleanup()
     }

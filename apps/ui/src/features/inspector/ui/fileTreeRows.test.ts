@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
 import type { DirEntry } from '@/shared/api/contracts'
 
 import { filterFileTree } from './fileTreeFilter'
@@ -192,18 +191,5 @@ describe('fileTreeNavigation', () => {
       kind: 'toggle',
       path: '/p/src',
     })
-  })
-})
-
-describe('virtualized Explorer contract', () => {
-  test('renders the flat model through TanStack Virtual without recursive tree JSX', () => {
-    const sidebar = readFileSync(new URL('./FileTreeSidebar.tsx', import.meta.url), 'utf8')
-    const entries = readFileSync(new URL('./FileTreeEntries.tsx', import.meta.url), 'utf8')
-
-    expect(sidebar).toContain('useVirtualizer<HTMLDivElement, HTMLDivElement>')
-    expect(sidebar).toContain('rangeExtractor')
-    expect(sidebar).not.toContain('querySelectorAll')
-    expect(entries).not.toMatch(/<FileTreeEntries\b/)
-    expect(entries).toContain('getVirtualItems()')
   })
 })

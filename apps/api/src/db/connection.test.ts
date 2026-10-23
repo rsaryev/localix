@@ -58,6 +58,8 @@ describe('the database file is owner-only', () => {
   test('an in-memory database needs no path work and must not throw', async () => {
     const db = createDatabase({})
     await db.executeQuery(CompiledQuery.raw('create table t (a integer)'))
+    await db.executeQuery(CompiledQuery.raw('insert into t (a) values (1)'))
+    expect((await db.executeQuery(CompiledQuery.raw('select a from t'))).rows).toEqual([{ a: 1 }])
     await db.destroy()
   })
 })

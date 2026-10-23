@@ -222,9 +222,7 @@ describe('the described-menu walker', () => {
       expect(rows[1]?.getAttribute('aria-checked')).toBe('false')
       expect(rows[2]?.getAttribute('aria-checked')).toBe('true')
       // The checked row ends on the check; the unchecked one keeps the slot, empty, so hints align.
-      expect(rows[1]?.lastElementChild?.className).toContain('ml-auto')
       expect(rows[1]?.lastElementChild?.querySelector('svg')).toBeNull()
-      expect(rows[2]?.lastElementChild?.className).toContain('ml-auto')
       expect(rows[2]?.lastElementChild?.querySelector('svg')).not.toBeNull()
     } finally {
       await view.close()
@@ -271,8 +269,6 @@ describe('the described-menu walker', () => {
       expect(beam?.getAttribute('aria-hidden')).toBe('true')
       expect(beam?.getAttribute('data-intensity')).toBe('2')
       expect(marked!.hasAttribute('data-recommended')).toBe(true)
-      // The beam's containing block is the row itself, whose radius it inherits.
-      expect(marked!.className).toContain('relative')
       expect(marked!.getAttribute('role')).toBe('menuitem')
       expect(plain!.querySelector('.lx-border-beam')).toBeNull()
       expect(disabled!.querySelector('.lx-border-beam')).toBeNull()
@@ -308,8 +304,6 @@ describe('the described-menu walker', () => {
         (span) => span.textContent === sentence,
       )
       expect(line).toBeDefined()
-      expect(line?.className).not.toContain('truncate')
-      expect(line?.parentElement?.className).toContain('flex-col')
       expect(line?.previousElementSibling?.textContent).toBe('Plan')
     } finally {
       await view.close()

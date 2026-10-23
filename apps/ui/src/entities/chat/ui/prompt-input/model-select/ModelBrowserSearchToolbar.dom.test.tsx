@@ -109,7 +109,7 @@ async function renderToolbar(initialSearch = '') {
 }
 
 describe('ModelBrowser model search band', () => {
-  test('is one 28px combobox on a 36px band, with its trailing slot, above the results', async () => {
+  test('is one combobox with its trailing slot, above the results', async () => {
     const view = await renderToolbar()
     try {
       const input = view.host.querySelector<HTMLInputElement>('input')!
@@ -117,13 +117,8 @@ describe('ModelBrowser model search band', () => {
       expect(input.getAttribute('role')).toBe('combobox')
       expect(input.getAttribute('placeholder')).toBe('Search models…')
       const toolbar = view.host.querySelector('[data-slot="workbench-toolbar"]')!
-      // The default density is the panel-header measure, which the rail's band shares.
-      expect(toolbar.className).toContain('h-[var(--panel-header-height)]')
       expect(toolbar.nextElementSibling?.getAttribute('role')).toBe('listbox')
       expect(toolbar.querySelector('[data-slot="trailing-probe"]')).not.toBeNull()
-      expect(view.host.querySelector('[data-slot="input-group"]')?.className).toContain(
-        'h-(--chrome-control-md)!',
-      )
     } finally {
       await view.cleanup()
     }

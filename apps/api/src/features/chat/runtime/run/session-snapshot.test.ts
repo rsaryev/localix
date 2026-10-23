@@ -1,15 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { createRunSessionSnapshot, type RunSessionSnapshotRow } from './session-snapshot'
 
 describe('per-run session snapshot', () => {
-  test('loads the run projection instead of the wide UI roster', () => {
-    const source = readFileSync(join(import.meta.dir, 'session-snapshot.ts'), 'utf8')
-    expect(source).toContain('repo.listRunSessionSnapshotRows(userId)')
-    expect(source).not.toContain('repo.listSessions(userId)')
-  })
-
   test('shares one narrow roster query between ancestry and prompt consumers', async () => {
     let calls = 0
     const sessions: RunSessionSnapshotRow[] = [

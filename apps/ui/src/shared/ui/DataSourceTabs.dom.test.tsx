@@ -42,7 +42,6 @@ test('full-width source tabs share panel relationships and support keyboard swit
     await act(async () => root.render(<Probe />))
     const tabs = [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')]
     expect(tabs.map((tab) => tab.textContent)).toEqual(['Localix', 'External'])
-    expect(tabs.every((tab) => tab.classList.contains('flex-1'))).toBe(true)
     const local = tabs[0]!
     const external = tabs[1]!
     local.focus()

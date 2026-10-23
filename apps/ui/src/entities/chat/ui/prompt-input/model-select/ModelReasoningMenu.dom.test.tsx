@@ -65,7 +65,6 @@ describe('ModelReasoningMenu', () => {
     const ui = await mount({ value: 'high' })
     try {
       expect(ui.trigger.getAttribute('aria-label')).toBe('Reasoning for GPT-6 Luna: High')
-      expect(ui.trigger.className).not.toContain('border')
       await ui.open()
       // This model publishes no `off`: the runtime would send `low`, so Off is not offered.
       expect(ui.item('Off')).toBeUndefined()

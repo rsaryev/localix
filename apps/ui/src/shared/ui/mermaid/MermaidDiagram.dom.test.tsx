@@ -121,13 +121,7 @@ test('opens the rendered diagram without rerendering it and returns focus when c
     })
     const dialog = document.querySelector('[role="dialog"]')!
     expect(dialog).not.toBeNull()
-    expect(dialog.classList.contains('lx-modal-surface')).toBe(false)
     expect(dialog.querySelector('.react-flow__background')).toBeNull()
-    expect(dialog.querySelector('.localix-canvas')?.classList.contains('opacity-0')).toBe(false)
-    const backdrop = document.querySelector<HTMLElement>('[data-slot="dialog-overlay"]')!
-    expect(backdrop.classList.contains('lx-scrim')).toBe(true)
-    expect(backdrop.classList.contains('lx-scrim-light')).toBe(false)
-    expect(backdrop.style.backdropFilter).toBe('')
     expect(dialog.textContent).not.toContain('Drag to pan')
     expect(dialog.textContent).toContain('Long chain')
     expect(dialog.querySelector('button[aria-label="Fit everything"]')).not.toBeNull()

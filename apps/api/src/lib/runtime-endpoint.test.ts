@@ -204,6 +204,11 @@ describe('runtime endpoint descriptor', () => {
     dir = await mkdtemp(join(tmpdir(), 'localix-api-runtime-'))
     const first = await acquireRuntimeOwnership('db-a', join(dir, 'a.db'))
     const second = await acquireRuntimeOwnership('db-b', join(dir, 'b.db'))
+    const home = dir
+    const ownerOf = async (db: string) =>
+      (JSON.parse(await readFile(join(home, `${db}.api-owner`), 'utf8')) as { instanceId?: string })
+        .instanceId
+    expect([await ownerOf('a.db'), await ownerOf('b.db')]).toEqual(['db-a', 'db-b'])
     await first.release()
     await second.release()
   })

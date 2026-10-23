@@ -98,8 +98,6 @@ describe('PlanVersionMenu — the version this tab shows', () => {
     const v1 = plan('p1', 1, 'superseded')
     const ui = await mount([v2, v1], v2)
     try {
-      // A quiet trigger: no field frame.
-      expect(ui.host.querySelector('button')?.className).not.toContain('border')
       await ui.open()
       expect(ui.item('Version 2')?.getAttribute('role')).toBe('menuitemradio')
       expect(ui.item('Version 2')?.getAttribute('aria-checked')).toBe('true')

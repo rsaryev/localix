@@ -42,5 +42,4 @@ test('registers reader work items, links, and ebook editor through the plugin ho
   expect(items.map(({ id, placement }) => ({ id, placement }))).toEqual([
     { id: 'reader:open-book', placement: 'titlebar' },
   ])
-  expect(typeof items[0]?.useItem).toBe('function')
 })

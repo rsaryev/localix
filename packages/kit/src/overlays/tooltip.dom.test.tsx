@@ -50,8 +50,6 @@ describe('Tooltip portal contract', () => {
       expect(content.getAttribute('role')).toBe('tooltip')
       expect(trigger.getAttribute('aria-describedby')).toBe(accessibleDescription.id)
       expect(accessibleDescription.textContent).toContain('Context usage')
-      expect(content.className).toContain('w-64')
-      expect(content.className).toContain('items-stretch')
     } finally {
       await act(async () => root.unmount())
       host.remove()

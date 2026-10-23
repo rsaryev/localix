@@ -64,11 +64,6 @@ test('file menu reaches nested symbols outside any scope, and child menu jumps t
     expect(fileMenu.textContent).toContain('Service')
     expect(fileMenu.textContent).toContain('run')
     expect(fileMenu.textContent).toContain('L5')
-    expect(fileMenu.querySelector('[role="menuitem"]')!.className).toContain('py-0')
-    expect(fileMenu.className).toContain('max-h-[min(24rem,50dvh,')
-    expect(fileMenu.querySelector('[data-slot="breadcrumb-select-list"]')!.className).toContain(
-      'overflow-y-auto',
-    )
     await act(async () => fileMenu.querySelectorAll<HTMLElement>('[role="menuitem"]')[1]!.click())
     expect(jumps).toEqual([4])
     await render([outer])

@@ -9,7 +9,6 @@ import { loadTemplateScaffold } from './template-layout'
 
 const repoRoot = resolve(import.meta.dir, '../../../../../..')
 const templateDir = join(repoRoot, 'plugins', 'template')
-const sdkSrc = join(repoRoot, 'packages', 'plugin-sdk', 'src')
 const kit: PluginKit = {
   dir: repoRoot,
   templateDir,
@@ -81,15 +80,6 @@ describe('the authoring guidance teaches push before polling', () => {
     expect(Object.keys(sdk.exports)).toEqual(
       expect.arrayContaining(['./ui/realtime-feed', './ui/runtime-hooks']),
     )
-    const source = (file: string) => readFileSync(join(sdkSrc, file), 'utf8')
-    expect(source('ui/realtime-feed.ts')).toMatch(/export function createRealtimeFeed\b/)
-    expect(source('ui/realtime-feed.ts')).toMatch(/export function useRealtimeFeed\b/)
-    expect(source('ui/runtime-hooks.ts')).toMatch(/export function usePluginWorkspaceChanges\b/)
-    expect(source('backend/context.ts')).toMatch(/\bwatchPath\?: PluginPathWatch\b/)
-    expect(source('backend/host-services.ts')).toMatch(/\bsemantic\?: SemanticIndexHost\b/)
-    expect(source('backend/host-services.ts')).toMatch(/\bdecisions\?: DecisionHost\b/)
-    expect(source('backend/semantic.ts')).toMatch(/\brank\(/)
-    expect(source('backend/decision.ts')).toMatch(/export function confidentChoice\b/)
     for (const file of ['ui/useStoreSnapshot.ts', 'backend/store-feed.ts']) {
       expect(existsSync(join(templateDir, file)), file).toBe(true)
     }

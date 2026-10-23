@@ -1,5 +1,4 @@
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
 import type { ReactElement } from 'react'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
@@ -16,9 +15,6 @@ afterAll(async () => {
 })
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 30))
-const source = ['./ScopeSwitcher.tsx', './AgentSwitcher.tsx', './HeaderPickMenu.tsx']
-  .map((file) => readFileSync(new URL(file, import.meta.url), 'utf8'))
-  .join('\n')
 
 const project: Project = {
   id: 'project-1',
@@ -58,14 +54,6 @@ async function openMenu(element: ReactElement) {
 }
 
 describe('the two pickers', () => {
-  test('a header pick is a quiet menu trigger, never a framed form field', () => {
-    // A `Select` in a page header is a form field where nothing is saved: filled, bordered and
-    // louder than the title it qualifies (a pick is a menu, not a form).
-    expect(source).not.toContain('<Select')
-    expect(source).toContain('variant="ghost"')
-    expect(source).toContain('<MenuEntries')
-  })
-
   test('the project picker offers no agents — a project is not a permission scope', async () => {
     // The whole reason these are two controls. An agent in this list claimed an authority a
     // project has never had: rules belong to an agent, and a project decides what is
@@ -81,7 +69,6 @@ describe('the two pickers', () => {
       expect(rows.map((row) => row.textContent)).toEqual(['No project', 'Localix'])
       expect(rows.every((row) => row.getAttribute('role') === 'menuitemradio')).toBe(true)
       expect(rows[0]?.getAttribute('aria-checked')).toBe('true')
-      expect(source).not.toContain('agent:')
       await view.act(async () => {
         rows[1]!.click()
         await settle()

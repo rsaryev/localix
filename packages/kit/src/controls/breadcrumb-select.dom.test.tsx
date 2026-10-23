@@ -58,7 +58,6 @@ describe('BreadcrumbSelect interactions', () => {
       expect(trigger.getAttribute('aria-expanded')).toBe('true')
       expect(openStates).toEqual([true])
       const list = document.body.querySelector('[data-slot="breadcrumb-select-list"]')!
-      expect(list.className).toContain('overflow-y-auto')
       expect(list.querySelector('input')).toBeNull()
       expect(
         document.body.querySelector('[role="menuitem"][aria-current="page"]')?.textContent,

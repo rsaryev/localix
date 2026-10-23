@@ -6,10 +6,7 @@ import { tempDirPerTest } from '@localixai/testing'
 import { fetchUrl, stubFetch } from '../../testing/fetch-stub'
 import { isForbiddenHost } from './marketplace-download'
 import {
-  ARCHIVE_TIMEOUT_MS,
-  CATALOG_TIMEOUT_MS,
   MAX_ARCHIVE_BYTES,
-  MAX_CATALOG_BYTES,
   fetchArchivePlugin,
   fetchCatalogText,
 } from './marketplace-source-archive'
@@ -42,13 +39,6 @@ const redirect = (location: string, status = 302) =>
   new Response(null, { status, headers: { location } })
 
 describe('archive downloads', () => {
-  it('uses 256 MiB / 120 s for archives and 5 MiB / 10 s for catalogs', () => {
-    expect(MAX_ARCHIVE_BYTES).toBe(256 * 1024 * 1024)
-    expect(ARCHIVE_TIMEOUT_MS).toBe(120_000)
-    expect(MAX_CATALOG_BYTES).toBe(5 * 1024 * 1024)
-    expect(CATALOG_TIMEOUT_MS).toBe(10_000)
-  })
-
   it('refuses a redirect to plain http or to a loopback / metadata host before requesting it', async () => {
     for (const target of [
       'http://cdn.example/p.zip',

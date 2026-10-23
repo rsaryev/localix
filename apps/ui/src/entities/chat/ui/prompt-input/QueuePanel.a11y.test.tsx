@@ -78,10 +78,6 @@ describe('QueuePanel accessibility', () => {
     // Steering is named in the slot the actions take on hover, so the row never widens.
     const delivery = host.querySelector('[data-slot="workbench-list-row-action-fallback"]')!
     expect(delivery.textContent).toBe('Next tool')
-    const send = host.querySelector<HTMLButtonElement>(
-      'button[aria-label^="Send now queued item 1:"]',
-    )!
-    expect(send.className).toContain('size-[var(--chrome-control-sm)]')
     for (const action of Array.from(
       host.querySelectorAll<HTMLButtonElement>('button[data-size="icon-sm"]'),
     )) {

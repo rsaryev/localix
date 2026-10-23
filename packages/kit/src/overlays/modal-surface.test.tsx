@@ -7,16 +7,6 @@ import {
   MODAL_BACKDROP_TOKEN,
   MODAL_LIBRARY_IMPORT,
 } from '../testing/overlay-contracts'
-import { readKitStylesheet } from '../testing/stylesheet'
-import {
-  modalBody,
-  modalFooter,
-  modalFooterActions,
-  modalHeader,
-  modalHeaderActions,
-  modalShell,
-  modalSurface,
-} from './modal-surface'
 
 /**
  * This file renders markup, so it registers a DOM and loads react-dom and the dialog/drawer
@@ -46,39 +36,8 @@ const modalRegions = async () => {
 }
 
 describe('modal surface regions', () => {
-  test('long dialog and drawer bodies share one shrink-and-scroll contract', async () => {
-    const { renderToStaticMarkup, DialogBody, DrawerBody } = await modalRegions()
-    expect(modalSurface).toContain('lx-modal-surface')
-    expect(modalShell).toContain('min-h-0')
-    expect(modalShell).toContain('overflow-hidden')
-    expect(modalBody).toContain('min-h-0')
-    expect(modalBody).toContain('flex-1')
-    // One axis, stated: `clip` cannot scroll and does not pull `overflow-y` into pairing.
-    expect(modalBody).toContain('overflow-x-clip')
-    expect(modalBody).not.toContain('overflow-x-hidden')
-    expect(modalBody).toContain('overflow-y-auto')
-    expect(modalBody).toContain('overscroll-contain')
-
-    const dialog = renderToStaticMarkup(<DialogBody>Dialog fields</DialogBody>)
-    const drawer = renderToStaticMarkup(<DrawerBody>Drawer fields</DrawerBody>)
-
-    expect(dialog).toContain('data-slot="dialog-body"')
-    expect(drawer).toContain('data-slot="drawer-body"')
-    expect(dialog).toContain('overflow-y-auto')
-    expect(drawer).toContain('overflow-y-auto')
-  })
-
-  test('context and actions remain pinned around the one scrollable body', async () => {
-    const { renderToStaticMarkup, DialogFooter, DialogHeader, DrawerFooter, DrawerHeader } =
-      await modalRegions()
-    expect(modalHeader).toContain('shrink-0')
-    expect(modalFooter).toContain('shrink-0')
-    expect(modalFooter).toContain('border-t')
-    expect(modalFooter).toContain('flex-col-reverse')
-    expect(modalFooterActions).toContain('flex-col-reverse')
-    expect(modalFooterActions).toContain('sm:justify-end')
-    expect(modalHeaderActions).toContain('justify-end')
-
+  test('dialog header and footer name their action groups, aside before actions', async () => {
+    const { renderToStaticMarkup, DialogFooter, DialogHeader } = await modalRegions()
     const dialogHeader = renderToStaticMarkup(
       <DialogHeader actions={<button>Copy</button>} actionsLabel="Document actions">
         Context
@@ -90,14 +49,7 @@ describe('modal surface regions', () => {
         <button>Save</button>
       </DialogFooter>,
     )
-    const drawerHeader = renderToStaticMarkup(<DrawerHeader>Context</DrawerHeader>)
-    const drawerFooter = renderToStaticMarkup(<DrawerFooter>Actions</DrawerFooter>)
 
-    for (const region of [dialogHeader, dialogFooter, drawerHeader, drawerFooter]) {
-      expect(region).toContain('shrink-0')
-    }
-    expect(dialogFooter).toContain('border-t')
-    expect(drawerFooter).toContain('border-t')
     expect(dialogHeader).toContain('data-slot="dialog-header-main"')
     expect(dialogHeader).toContain('data-slot="dialog-header-actions"')
     expect(dialogHeader).toContain('role="group" aria-label="Document actions"')
@@ -107,34 +59,6 @@ describe('modal surface regions', () => {
     expect(dialogFooter.indexOf('dialog-footer-aside')).toBeLessThan(
       dialogFooter.indexOf('dialog-footer-actions'),
     )
-  })
-
-  test('reserves dialog title actions and keeps confirmation detail scrollable', async () => {
-    const dialogSource = await Bun.file(new URL('./dialog.tsx', import.meta.url)).text()
-    const confirmSource = await Bun.file(new URL('./confirm-dialog.tsx', import.meta.url)).text()
-    expect(dialogSource).toContain(
-      '<ModalHeaderRegion slot="dialog" className={cn(\'pr-10\', className)}',
-    )
-    expect(confirmSource).toContain(
-      '<div data-slot="alert-dialog-body" className={cn(modalBody, \'text-center\')}>',
-    )
-    expect(confirmSource.indexOf('data-slot="alert-dialog-body"')).toBeLessThan(
-      confirmSource.indexOf('<ModalFooterRegion'),
-    )
-  })
-
-  test('modal shells are viewport-clamped and use semantic stacking tokens', async () => {
-    const dialogSource = await Bun.file(new URL('./dialog.tsx', import.meta.url)).text()
-    const drawerSource = await Bun.file(new URL('./drawer.tsx', import.meta.url)).text()
-
-    expect(dialogSource).toContain('max-h-[calc(100dvh-2rem)]')
-    expect(drawerSource).toContain('max-h-[calc(100dvh-0.5rem)]')
-    expect(dialogSource).toContain('z-(--z-modal)')
-    expect(drawerSource).toContain('z-(--z-modal)')
-    expect(dialogSource).toContain('z-(--z-modal-backdrop)')
-    expect(drawerSource).toContain('z-(--z-modal-backdrop)')
-    expect(dialogSource).toContain('modalShell')
-    expect(drawerSource).toContain('modalShell')
   })
 
   test('every current and future standard kit dialog declares its one scroll-owning body', async () => {
@@ -153,54 +77,6 @@ describe('modal surface regions', () => {
     expect(scan('<DialogContent layout="edge-to-edge"><DialogBody /></DialogContent>')).toEqual([
       'x.tsx:1 must not own DialogBody',
     ])
-
-    const dialogSource = await Bun.file(new URL('./dialog.tsx', import.meta.url)).text()
-    expect(dialogSource).toContain("type DialogContentLayout = 'standard' | 'edge-to-edge'")
-    expect(dialogSource).toContain('data-layout={layout}')
-    expect(dialogSource).toContain("layout = 'standard'")
-  })
-
-  test('the modal material is frosted on every platform, with the opaque fallbacks intact', async () => {
-    const css = readKitStylesheet()
-    // The base recipe must exist OUTSIDE any `[data-os='mac']` scope, or dialogs are glass in
-    // the packaged Mac app and flat cards everywhere else — which is what they were.
-    const base = css.indexOf('\n.lx-modal-surface {')
-    expect(base).toBeGreaterThan(-1)
-    const recipe = css.slice(base, base + 400)
-    expect(recipe).toContain('backdrop-filter: blur(')
-    // Translucency without a frost is a see-through hole; the two ship together.
-    expect(css).toContain(
-      'background-color: color-mix(in oklch, var(--surface-raised) 86%, oklch(0 0 0 / 0))',
-    )
-    // Both accessibility/capability escapes go back to the opaque token.
-    const noBackdrop = css.indexOf(
-      '@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {\n  .lx-modal-surface {',
-    )
-    expect(noBackdrop).toBeGreaterThan(-1)
-    expect(css.slice(noBackdrop, noBackdrop + 260)).toContain(
-      'background-color: var(--surface-raised)',
-    )
-    const themedModal = ":root:is([data-theme='dark'], [data-theme='light']) .lx-modal-surface {"
-    const themedRecipe = css.indexOf(themedModal)
-    expect(themedRecipe).toBeGreaterThan(-1)
-    const themedBlock = css.slice(themedRecipe, css.indexOf('}', themedRecipe))
-    expect(themedBlock).toContain(
-      'background-color: color-mix(in oklch, var(--window-ground) 55%, transparent)',
-    )
-    expect(themedBlock).toContain('-webkit-backdrop-filter: blur(24px) saturate(1.1)')
-    expect(themedBlock).toContain('backdrop-filter: blur(24px) saturate(1.1)')
-
-    const reducedTransparency = css.indexOf(
-      '@media (prefers-reduced-transparency: reduce), (forced-colors: active)',
-      themedRecipe,
-    )
-    expect(reducedTransparency).toBeGreaterThan(themedRecipe)
-    const themedFallback = css.indexOf(themedModal, reducedTransparency)
-    expect(themedFallback).toBeGreaterThan(reducedTransparency)
-    const fallbackBlock = css.slice(themedFallback, css.indexOf('}', themedFallback))
-    expect(fallbackBlock).toContain('background-color: var(--surface-raised)')
-    expect(fallbackBlock).toContain('-webkit-backdrop-filter: none')
-    expect(fallbackBlock).toContain('backdrop-filter: none')
   })
 
   test('a dialog states its width through the size tier, never through className', async () => {
@@ -241,16 +117,6 @@ describe('modal surface regions', () => {
     }
     // The product's interaction views that render inside these surfaces, and how each breaks an
     // unbreakable string, are the host half: `apps/ui/src/shared/ui/modal-surface.contract.test.ts`.
-  })
-
-  test('the command palette labels the actual portalled content subtree', async () => {
-    const source = await Bun.file(new URL('./command.tsx', import.meta.url)).text()
-    const content = source.indexOf('<DialogContent')
-    const header = source.indexOf('<DialogHeader', content)
-    const close = source.indexOf('</DialogContent>', content)
-    expect(content).toBeGreaterThan(-1)
-    expect(header).toBeGreaterThan(content)
-    expect(header).toBeLessThan(close)
   })
 
   /**

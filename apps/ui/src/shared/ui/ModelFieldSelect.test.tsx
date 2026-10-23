@@ -1,9 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
 import type { CatalogModel } from '@/shared/hooks/useModelsCatalog'
 import { buildModelFieldOptions } from './ModelFieldSelect'
-
-const source = readFileSync(new URL('./ModelFieldSelect.tsx', import.meta.url), 'utf8')
 
 const model = (over: Partial<CatalogModel>): CatalogModel => ({
   id: 'gpt-5.6',
@@ -45,13 +42,5 @@ describe('ModelFieldSelect mapping', () => {
       group: 'Current (provider not connected)',
       hint: 'saved',
     })
-  })
-
-  test('delegates popup interaction and geometry instead of maintaining a second picker', () => {
-    expect(source).toContain('<Combobox')
-    expect(source).toContain('size="xl"')
-    expect(source).not.toContain('PopoverContent')
-    expect(source).not.toContain('CommandItem')
-    expect(source).not.toContain('<button')
   })
 })

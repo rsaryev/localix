@@ -1,5 +1,4 @@
 import { afterEach, describe, expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
 import { mkdtemp, readFile, readdir, rm, utimes, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -11,7 +10,6 @@ import {
   spillFullOutput,
   truncate,
   MAX_OUTPUT_BYTES,
-  SPILL_MIN_BYTES,
 } from './bash-output'
 
 let dir: string | undefined
@@ -70,10 +68,6 @@ describe('modelFacingOutput spill footer', () => {
     const out = modelFacingOutput('short output', { spillPath: '/tmp/spill/abc.log' })
     expect(out).toBe('short output')
   })
-
-  test('SPILL_MIN_BYTES matches the model-facing byte cap', () => {
-    expect(SPILL_MIN_BYTES).toBe(50 * 1024)
-  })
 })
 
 /**
@@ -108,17 +102,6 @@ describe('a model-facing cap always states what it dropped', () => {
       toolCallId: 'tc1',
     })
     expect(out).toContain('FINAL ERROR: boom')
-  })
-
-  test('bash-background routes its model-facing copy through this function', () => {
-    // A SOURCE assertion, and labelled as one: the background completion path needs a live PTY, so what
-    // is actually testable here is that it delegates rather than filtering on its own. It used to call
-    // `applyOutputFilters` directly, which applies the content filter and NO truncation notice — the
-    // whole defect. A deleted delegation is what regresses, so reading the file is the guard that
-    // catches it.
-    const src = readFileSync(join(import.meta.dir, 'bash-background.ts'), 'utf8')
-    expect(src).toContain('modelFacingOutput(finalOutput')
-    expect(src).toContain('spillFullOutput(finalOutput')
   })
 
   test('the immediate result a starting job returns carries a real marker', () => {

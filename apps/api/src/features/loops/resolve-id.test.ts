@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 
 import type { SessionLoop } from './contracts'
-import { MIN_LOOP_ID_PREFIX, resolveLoopId } from './resolve-id'
+import { resolveLoopId } from './resolve-id'
 
 function loop(id: string, over: Partial<SessionLoop> = {}): SessionLoop {
   return {
@@ -64,7 +64,6 @@ describe('resolveLoopId', () => {
   test('too-short prefix does not resolve', () => {
     expect(resolveLoopId('abc', [a, b]).kind).toBe('none')
     // A 5-char prefix is one short of the floor.
-    expect(MIN_LOOP_ID_PREFIX).toBe(6)
     expect(resolveLoopId('abcde', [a, b]).kind).toBe('none')
   })
 

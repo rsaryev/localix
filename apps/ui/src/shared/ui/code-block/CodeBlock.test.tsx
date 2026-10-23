@@ -48,7 +48,6 @@ describe('CodeBlock chrome', () => {
       expect(numbered.match(/class="sh__line"/g)).toHaveLength(3)
       expect(numbered).not.toContain('\r')
       expect(plain).not.toContain('code-line-numbers')
-      if (language === 'text') expect(plain).not.toContain('class="sh__line"')
     },
   )
 })

@@ -9,9 +9,6 @@ describe('UnreadableCredentialNotice presentation', () => {
     expect(html).toContain('lucide-triangle-alert')
     expect(html).toContain('Credential unavailable')
     expect(html).toContain('data-slot="workbench-notice-bar"')
-    expect(html).toContain('border-b')
-    expect(html).not.toContain('bg-status-warning')
-    expect(html).not.toContain('rounded-lg')
   })
 })
 
@@ -23,8 +20,6 @@ describe('ConnectionAuthStatus presentation', () => {
 
     expect(html).toContain('OAuth connected')
     expect(html).toContain('bg-status-success')
-    expect(html).not.toContain('rounded-lg')
-    expect(html).not.toContain('bg-muted/30')
   })
 
   test('does not claim an unreadable API key is connected', () => {

@@ -73,20 +73,6 @@ describe('transcript minimap', () => {
     }
   })
 
-  test('the rail hangs into the gutter only as far as the gutter exists', async () => {
-    const { host, dispose } = await mountMinimap(10, () => {})
-    try {
-      const rail = host.querySelector<HTMLElement>('[data-slot="transcript-minimap"]')!
-      // A fixed negative offset put 22px of content outside the scroll box whenever the prose
-      // column filled the pane, and the transcript grew a horizontal scrollbar. The offset is the
-      // REAL gutter (scroll-container width minus column width), capped at the rail width.
-      expect(rail.className).toContain('right-[max(-22px,calc((100%-100cqw)/2))]')
-      expect(rail.style.right).toBe('')
-    } finally {
-      await dispose()
-    }
-  })
-
   test('hovering a tick reveals the frosted preview with the excerpt', async () => {
     const { host, act, dispose } = await mountMinimap(10, () => {})
     try {

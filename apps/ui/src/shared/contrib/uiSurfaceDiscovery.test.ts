@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import type {
@@ -13,13 +12,6 @@ import { registerDiscoveredUiSurfaces } from './uiSurfaceDiscovery'
 import { createUiLocationRegistry } from './uiLocations'
 import { createContextualUiSurfaceRegistry } from './uiSurfaces'
 
-const discovery =
-  readFileSync(new URL('./discover.ts', import.meta.url), 'utf8') +
-  readFileSync(new URL('./uiSurfaceManifest.ts', import.meta.url), 'utf8')
-const workspaceViews = readFileSync(
-  new URL('../../features/workspace-grid/contrib.ts', import.meta.url),
-  'utf8',
-)
 const sourceRoot = fileURLToPath(new URL('../..', import.meta.url))
 // The kit's primitives declare surfaces too, from outside the app's source root.
 const kitSourceRoot = fileURLToPath(new URL('../../../../../packages/kit/src', import.meta.url))
@@ -63,23 +55,6 @@ function buildableArgs(schema: UiLocationParamSchema | undefined): Record<string
 }
 
 describe('UI surface discovery architecture', () => {
-  test('discovers feature-owned surface descriptors without naming their owners', () => {
-    expect(discovery).toContain('/src/**/*.surface.{ts,tsx}')
-    expect(discovery).toContain('packages/kit/src/**/*.surface.{ts,tsx}')
-    expect(discovery).toContain('registerDiscoveredUiSurfaces(uiSurfaceModules, registerSurface)')
-    expect(discovery).not.toContain('typeof import.meta.glob')
-
-    for (const feature of ['terminal', 'model-picker', 'global-search']) {
-      expect(discovery).not.toContain(`'${feature}'`)
-    }
-  })
-
-  test('the workspace anchor lists the live catalog instead of a core view mirror', () => {
-    expect(workspaceViews).toContain("listUiLocations({ exposure: 'search' })")
-    expect(workspaceViews).not.toContain('CORE_VIEWS')
-    expect(workspaceViews).not.toContain('uri === `${ROOT}/global-search`')
-  })
-
   test('loads every colocated app surface, including shared and deeply nested owners', async () => {
     const surfaces = await loadAppSurfaces()
 

@@ -40,11 +40,6 @@ describe('HoverCard', () => {
       expect(trigger.getAttribute('data-slot')).toBe('hover-card-trigger')
       expect(content).not.toBeNull()
       expect(host.contains(content)).toBe(false)
-      expect(content.className).toContain('flex-col')
-      expect(content.className).toContain('items-stretch')
-      expect(content.className).toContain('overflow-y-auto')
-      expect(content.className).toContain('select-text')
-      expect(content.className).not.toContain('pointer-events-none')
       expect(content.children).toHaveLength(2)
     } finally {
       await act(async () => root.unmount())

@@ -50,8 +50,7 @@
      positioned. Named here because the titlebar has to reserve room for a cluster it does not
      draw, and that reservation was a bare `padding-left: 78px` that no longer agreed with
      anything: change the inset on the Rust side and the strip kept the old gap, so the
-     breadcrumb sat crooked against the lights. `scripts/traffic-light-centering.test.ts` holds
-     the two files to each other. */
+     breadcrumb sat crooked against the lights. Change the inset on both sides together. */
   --macos-window-button-diameter: 12px;
   --macos-window-button-pitch: 20px;
   --macos-traffic-light-inset: 19px;

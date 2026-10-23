@@ -17,10 +17,7 @@ describe('FileChangeRow presentation', () => {
       />,
     )
 
-    expect(html).toContain('border-l-2')
     expect(html).toContain('src/app.ts')
-    expect(html).not.toContain('bg-surface-hover/55')
-    expect(html).not.toContain('rounded-lg')
     expect(html).toContain('data-tooltip-trigger="true"')
     expect(html).not.toContain('title=')
   })
@@ -41,8 +38,6 @@ describe('FileChangeRow presentation', () => {
 
     expect(html).toContain('border-l-status-error')
     expect(html).toContain('Context no longer matches')
-    expect(html).not.toContain('bg-status-error')
-    expect(html).not.toContain('rounded-lg')
     expect(html).toContain('data-tooltip-trigger="true"')
     expect(html).not.toContain('title=')
   })

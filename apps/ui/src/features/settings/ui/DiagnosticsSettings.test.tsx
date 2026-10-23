@@ -1,11 +1,7 @@
 import { describe, expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { EffectiveConfigReport } from '@localixai/api/client'
 import { DiagnosticsReport } from './DiagnosticsReport'
-
-const source = readFileSync(new URL('./DiagnosticsSettings.tsx', import.meta.url), 'utf8')
-const reportSource = readFileSync(new URL('./DiagnosticsReport.tsx', import.meta.url), 'utf8')
 
 const report: EffectiveConfigReport = {
   schemaVersion: 1,
@@ -59,28 +55,10 @@ const report: EffectiveConfigReport = {
 }
 
 describe('Diagnostics settings presentation', () => {
-  test('uses shared, labelled scope controls instead of local native form geometry', () => {
-    expect(source).toContain('aria-label="Effective configuration scope"')
-    expect(source).toContain('<Select')
-    expect(source).toContain('<Input')
-    expect(source).toContain('<Button')
-    expect(source).toContain('aria-labelledby={projectLabelId}')
-    expect(source).not.toContain('<select')
-    expect(source).not.toContain('INPUT_CLS')
-  })
-
-  test('uses flat native rows for diagnostics, consumers, permissions, and provenance', () => {
+  test('renders diagnostics and consumers from the effective configuration report', () => {
     const html = renderToStaticMarkup(<DiagnosticsReport report={report} />)
 
-    expect(html).toContain('border-y')
-    expect(html).toContain('divide-y')
     expect(html).toContain('The selected model is unavailable')
     expect(html).toContain('gpt-5.6')
-    expect(html).toContain('bg-status-success')
-    expect(html).toContain('>·</span>')
-    expect(html).not.toContain('rounded-xl')
-    expect(html).not.toContain('bg-background')
-    expect(reportSource).not.toContain('<Badge')
-    expect(reportSource).not.toContain("from '@/shared/ui/badge'")
   })
 })

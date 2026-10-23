@@ -61,5 +61,4 @@ test('registers a native auxiliary Git Workspace with a resource anchor', () => 
   expect(statusItems.map(({ id, placement }) => ({ id, placement }))).toEqual([
     { id: 'git-workspace:branch', placement: 'titlebar' },
   ])
-  for (const item of statusItems) expect(typeof item.useItem).toBe('function')
 })

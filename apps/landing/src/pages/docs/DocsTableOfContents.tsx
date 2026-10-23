@@ -31,7 +31,7 @@ function useActiveHeading(headings: Heading[]) {
 
 /**
  * The right rail. Carries the same sticky offset as the sidebar rail so the two
- * pin on one line (`shell.structure.test.ts` holds them together); a single
+ * pin on one line; a single
  * heading is not a table of contents, so it renders nothing.
  */
 export function DocsTableOfContents({ headings }: { headings: Heading[] }) {

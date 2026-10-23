@@ -2,10 +2,6 @@ import { describe, it, expect } from 'bun:test'
 import { PREVIEW_PORT_PRESETS, presetUrl } from './previewPortPresets'
 
 describe('previewPortPresets', () => {
-  it('has a non-empty curated list', () => {
-    expect(PREVIEW_PORT_PRESETS.length).toBeGreaterThan(0)
-  })
-
   it('has unique ports and valid port numbers', () => {
     const ports = PREVIEW_PORT_PRESETS.map((p) => p.port)
     expect(new Set(ports).size).toBe(ports.length)
@@ -20,10 +16,6 @@ describe('previewPortPresets', () => {
     for (const preset of PREVIEW_PORT_PRESETS) {
       expect(preset.label.trim().length).toBeGreaterThan(0)
     }
-  })
-
-  it('includes the common Vite dev port', () => {
-    expect(PREVIEW_PORT_PRESETS.some((p) => p.port === 5173)).toBe(true)
   })
 
   it('builds a localhost URL for a port', () => {

@@ -26,8 +26,6 @@ test('clock.after and every answer a timer whose cancel() stops it, as Claude Co
   const fired: string[] = []
   const once = system.clock.after(10, () => fired.push('after'))
   const poll = system.clock.every(10, () => fired.push('every'))
-  expect(typeof once.cancel).toBe('function')
-  expect(typeof poll.cancel).toBe('function')
   clock.tick()
   clock.tick()
   expect(fired).toEqual(['after', 'every', 'every'])

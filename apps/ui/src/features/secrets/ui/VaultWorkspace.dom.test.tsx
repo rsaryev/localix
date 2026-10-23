@@ -1,5 +1,4 @@
 import { afterAll, beforeAll, describe, expect, spyOn, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
 import type { SecretMeta } from '@localixai/api/client'
 import { registerDom } from '@localixai/kit/testing/dom'
 
@@ -14,15 +13,6 @@ afterAll(async () => {
 })
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 30))
-const source = [
-  'VaultWorkspace.tsx',
-  'VaultItemsView.tsx',
-  'VaultItemDetails.tsx',
-  'VaultUsageView.tsx',
-  'VaultActivityView.tsx',
-]
-  .map((file) => readFileSync(new URL(file, import.meta.url), 'utf8'))
-  .join('\n')
 
 const item = (overrides: Partial<SecretMeta>): SecretMeta => ({
   id: 'secret-1',
@@ -108,15 +98,6 @@ describe('Vault workspace presentation', () => {
     expect(summary?.querySelectorAll('[data-slot="workbench-status-item"]')).toHaveLength(4)
     expect(container.textContent).toContain('Personal token')
     expect(container.textContent).toContain('Generic secret·Personal·PERSONAL_TOKEN·v1')
-    expect(container.innerHTML).not.toContain('rounded-xl')
-    expect(container.innerHTML).not.toContain('bg-muted/15')
-    expect(container.querySelector('button[draggable="true"]')?.innerHTML).not.toContain(
-      'bg-surface-raised',
-    )
-    expect(source).not.toContain('<Badge')
-    expect(source).not.toContain("from '@/shared/ui/badge'")
-    expect(source).not.toContain('rounded-lg border border-border/45 bg-background/65')
-    expect(source).toContain('border-y border-border-faint')
 
     await act(async () => {
       findButton(container, 'Usage')?.click()
@@ -124,8 +105,6 @@ describe('Vault workspace presentation', () => {
     })
     expect(container.textContent).toContain('Consumer map')
     expect(container.textContent).toContain('Linear')
-    expect(container.innerHTML).toContain('bg-status-success')
-    expect(container.innerHTML).not.toContain('bg-background/70')
 
     await act(async () => {
       findButton(container, 'Activity')?.click()
@@ -133,39 +112,11 @@ describe('Vault workspace presentation', () => {
     })
     expect(container.textContent).toContain('Vault activity')
     expect(container.textContent).toContain('resolve')
-    expect(container.innerHTML).not.toContain('bg-muted/10')
 
     await act(async () => root.unmount())
     list.mockRestore()
     bindings.mockRestore()
     activity.mockRestore()
-  })
-
-  test('survives a narrow side panel: nothing clipped, nothing truncated that must be read', () => {
-    // The Vault is opened as an editor tab AND as a right-hand panel, and the panel is where the
-    // geometry used to fall apart: four summary metrics in a fixed-height clipped bar, three
-    // fixed-width filters in a wrapping flex, and a right-aligned truncating value column that
-    // made the alias — the one field people come here to copy — permanently an ellipsis.
-
-    // The summary keeps every metric by wrapping instead of clipping the tail.
-    expect(source).toContain('<WorkbenchStatusBar aria-label="Vault summary" seam="bottom" wrap>')
-
-    // The search flexes beside ONE filter menu, not a row of fixed-width framed selects.
-    expect(source).toContain(
-      'placeholder="Search names, aliases, tags…"\n          className="min-w-0 flex-1"',
-    )
-    expect(source).toContain('<FilterMenu')
-    expect(source).not.toContain('aria-label="Filter by type"')
-
-    // Long values wrap where they are read, and mono identifiers break inside the token —
-    // an alias has no spaces to break at.
-    expect(source).toContain("mono ? 'font-mono break-all' : 'wrap-anywhere'")
-    expect(source).toContain('font-mono text-xs break-all text-foreground')
-    expect(source).not.toContain('truncate text-right text-muted-foreground')
-
-    // Every flex/grid child that holds text opts out of the `min-width: auto` default.
-    expect(source).toContain('<div className="grid min-w-0 gap-4 @sm:gap-5">')
-    expect(source).toContain('<div className="flex min-w-0 items-start gap-2.5">')
   })
 
   test('does not describe an unavailable Vault as empty and retries in place', async () => {

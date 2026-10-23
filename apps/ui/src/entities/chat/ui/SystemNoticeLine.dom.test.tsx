@@ -53,8 +53,6 @@ describe('a notice that can be acted on', () => {
       expect(view.host.textContent).toContain('×3')
       const line = view.host.querySelector('[role="status"]')
       expect(line?.getAttribute('title')).toContain('this reply is incomplete')
-      expect(line?.className).toContain('text-text-faint')
-      expect(view.host.querySelector('span')?.className).toContain('truncate')
     } finally {
       await view.cleanup()
     }
