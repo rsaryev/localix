@@ -455,7 +455,7 @@ function uiLayer(path) {
 }
 
 function localWorkspacePackageName(specifier) {
-  const match = /^(@localix(?:ai|-plugin)\/[^/]+)/u.exec(specifier)
+  const match = /^(@localix(?:ai|-mini-app)\/[^/]+)/u.exec(specifier)
   // The kit is the host's contract, served by the running host; it is not a package to declare.
   return match?.[1] === HOST_UI_KIT ? null : (match?.[1] ?? null)
 }
