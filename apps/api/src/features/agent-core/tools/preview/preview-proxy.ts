@@ -12,6 +12,7 @@
 
 import { injectProbeIntoHtml } from './probe-inject'
 import { createPreviewServerCache } from './preview-server-cache'
+import { rejectForeignHost } from './preview-host-guard'
 import { websocketRelay, type WsRelay } from './preview-websocket-relay'
 
 export {
@@ -81,6 +82,9 @@ function ensureProxyServer(upstreamOrigin: string): number {
       hostname: '127.0.0.1',
       maxRequestBodySize: PREVIEW_PROXY_MAX_REQUEST_BODY_BYTES,
       async fetch(req, srv) {
+        // Before the upgrade branch too: a rebound page must not get a socket either.
+        const foreign = rejectForeignHost(req)
+        if (foreign) return foreign
         const reqUrl = new URL(req.url)
         // HMR / any app WebSocket: upgrade here and bridge to the upstream dev server,
         // so hot-reload survives while the page is loaded through the proxy.

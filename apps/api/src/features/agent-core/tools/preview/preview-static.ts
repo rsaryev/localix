@@ -9,6 +9,7 @@
 import path from 'node:path'
 import { isPathWithin } from '../../../../lib/path-containment'
 import { injectProbeIntoHtml } from './probe-inject'
+import { rejectForeignHost } from './preview-host-guard'
 import { createPreviewServerCache } from './preview-server-cache'
 
 const staticServers = createPreviewServerCache('static')
@@ -25,6 +26,8 @@ export function ensureStaticServer(dir: string): number {
       // which reaches it over loopback.
       hostname: '127.0.0.1',
       async fetch(req) {
+        const foreign = rejectForeignHost(req)
+        if (foreign) return foreign
         const url = new URL(req.url)
         let rel = decodeURIComponent(url.pathname).replace(/^\/+/, '')
         if (rel === '') rel = 'index.html'
