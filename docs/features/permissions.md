@@ -192,10 +192,11 @@ that answers for work happening beside a turn rather than inside one.
 
 The confirmation card offers **Approve** and **Deny**, a duration (**Once**, **This session**,
 **Always**) and, on a path card, the folder level from which down not to ask; see
-[Respond to human-in-the-loop requests](../features/hitl.md#confirm-and-session-grants). The desktop
-permission chip and the `/permissions` command can inspect or revoke current session grants. When no
-client can receive a confirmation request, an `ask` decision is denied with an unattended-run
-explanation.
+[Respond to human-in-the-loop requests](../features/hitl.md#confirm-and-session-grants). A path card
+lists every path of the call, outside-workspace paths first, and a session grant approves the call
+only when it covers all of them. The desktop permission chip and the `/permissions` command can
+inspect or revoke current session grants. When no client can receive a confirmation request, an
+`ask` decision is denied with an unattended-run explanation.
 
 ## Limits
 

@@ -4,6 +4,7 @@ import path from 'node:path'
 
 import { confirmSubject } from './permission-confirm-subject'
 import type { CallFacts } from './permission-facts'
+import { grantCoversCall } from './permission-grant-scope'
 
 const facts = (over: Partial<CallFacts>): CallFacts => ({
   paths: [],
@@ -44,15 +45,20 @@ describe('what a card shows and how far it may reach', () => {
     expect(shown.grants).toEqual([])
   })
 
-  test('a rule that would not allow this very call is withheld, the session grant kept', () => {
-    // A call can also name the directory it runs in, which a folder rule does not cover — so
-    // "Always" would write a row that asks again on the next call. The session grant matches
-    // only what the card showed, and still works.
-    const cwd = path.join(homedir(), 'workspace')
-    const shown = confirmSubject(facts({ paths: [file, cwd], outsidePaths: [file] }), 'edit')
-    const folder = shown.grants.find((g) => g.label === 'src')
-    expect(folder?.scope).toBe(`edit(${path.dirname(path.dirname(file))}${path.sep}*)`)
-    expect(folder?.rule).toBeUndefined()
+  test('a call straddling the workspace lists, and must be granted for, EVERY path', () => {
+    // A session grant for an outside folder used to auto-approve a read that also named an
+    // inside credential: the card's targets held only the outside paths, so the inside one
+    // was never shown and never matched against the grant.
+    const outside = path.join(homedir(), 'code', 'other', 'a.txt')
+    const inside = path.join(homedir(), 'code', 'mine', '.env')
+    const shown = confirmSubject(
+      facts({ paths: [inside, outside], outsidePaths: [outside], touchesSecret: true }),
+      'read',
+    )
+    expect(shown.targets).toEqual([outside, inside])
+    expect(shown.command).toBe(`${outside}\n${inside}`)
+    const grant = `read(${path.dirname(outside)}${path.sep}*)`
+    expect(grantCoversCall(grant, { toolName: 'read', ...shown })).toBe(false)
   })
 
   test('a call that names nothing shows the tool and offers it for the session only', () => {

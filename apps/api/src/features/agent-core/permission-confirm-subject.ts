@@ -30,8 +30,10 @@ function subjectOf(
 ): Pick<ConfirmSubject, 'command' | 'subject' | 'targets'> {
   if (call.command) return { command: call.command, subject: 'command', targets: [] }
   // Outside paths first: when a call straddles the boundary, the part the rule is about is
-  // the part worth reading at the top of a card.
-  const paths = call.outsidePaths.length > 0 ? call.outsidePaths : call.paths
+  // the part worth reading at the top of a card. The inside paths still follow: they are
+  // targets the grant must cover too, or a grant for an outside folder would approve an inside
+  // path that an ask rule targets (`W/.env` under `tool:read secrets ask`), unseen.
+  const paths = [...new Set([...call.outsidePaths, ...call.paths])]
   if (paths.length > 0) return { command: paths.join('\n'), subject: 'path', targets: paths }
   const resources = [...(call.resources ?? [])]
   if (resources.length > 0) {
