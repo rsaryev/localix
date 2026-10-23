@@ -56,13 +56,6 @@
       "author": "Localix"
     },
     {
-      "name": "deliverable",
-      "source": "./deliverable",
-      "description": "Attach files named in a final response as inline media or downloadable deliverables.",
-      "version": "1.0.0",
-      "author": "Localix"
-    },
-    {
       "name": "devops",
       "source": "./devops",
       "description": "Inspect local containers and Kubernetes resources through a shared operations workspace.",
@@ -127,13 +120,6 @@
       "author": "Localix"
     },
     {
-      "name": "review",
-      "source": "./review",
-      "description": "Run a scoped diff review and file prioritized inline suggestions.",
-      "version": "1.3.0",
-      "author": "Localix"
-    },
-    {
       "name": "rock-paper-scissors",
       "source": "./rock-paper-scissors",
       "description": "Rock paper scissors against the agent or a decision model, one table per chat: whoever moves first seals the move, and the round reveals both with a digest anyone can check.",
@@ -166,13 +152,6 @@
       "source": "./trading",
       "description": "Read-only market research workspace for venues, charts, indicators, order books, and trades; no account or order path.",
       "version": "0.1.0",
-      "author": "Localix"
-    },
-    {
-      "name": "webhook-notifier",
-      "source": "./webhook-notifier",
-      "description": "Send selected lifecycle events to a webhook with optional HMAC-SHA256 signing.",
-      "version": "2.0.0",
       "author": "Localix"
     },
     {

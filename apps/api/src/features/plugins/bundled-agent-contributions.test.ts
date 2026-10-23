@@ -194,15 +194,3 @@ test('disabling the parent source withdraws its registered reviewer immediately'
     (await f.agents.resolveRunAgent('u', reviewer.record.id, 'delegation', 'p')).status,
   ).not.toBe('allowed')
 })
-
-test('/review delegates to a child and contributes no agent of its own', async () => {
-  const review = await loadManifest(
-    join(import.meta.dir, '../../../../../plugins/review'),
-    'global',
-    '',
-  )
-  expect(review.provides.agents ?? []).toEqual([])
-  expect(review.commands[0]?.prompt).toContain('call `delegate`')
-  expect(review.commands[0]?.prompt).not.toContain('`agents`')
-  expect(review.commands[0]?.prompt).not.toContain('kanban_task_id')
-})

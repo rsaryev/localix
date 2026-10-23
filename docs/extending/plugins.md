@@ -84,7 +84,7 @@ command the agent composes calls to is a `bin/` executable. Skills, commands and
 make a plugin; tools over Localix's APIs, settings or a screen make a mini app. For a workbench,
 `/plugin create <what it should do>` has the agent fork the System Overview template into
 `~/.localix/plugins/<name>` and build it out; the [workbench UI guide](plugin-ui.md) explains the
-path. For examples without a workbench, read `plugins/deliverable/` or `plugins/webhook-notifier/`.
+path.
 
 ### A minimal plugin
 
@@ -307,9 +307,9 @@ The native UI is found by convention at `ui/register.tsx`. A `views[]` entry is
 A command's prompt is the plugin's `commands/<name>.md`. Its `arguments` frontmatter names the
 positional arguments that fill `$name`; `$ARGUMENTS` and `$1` work as in Claude Code. The mini app's
 `commands.<name>.args` adds chips and pickers: `text` or `choice`, static `options` or an
-`optionsScript`, and an optional `{ arg, equals }` condition. The bundled Code Review keeps its
-prompt in `plugins/review/commands/review.md` and its scope and branch pickers in its `app.json`.
-See [command authoring](../features/hooks-and-commands.md#plugin-command-example-and-options).
+`optionsScript`, and an optional `{ arg, equals }` condition. The bundled Workflows keeps its prompt
+in `plugins/workflows/commands/workflows.md` and its argument chips in its `app.json`. See
+[command authoring](../features/hooks-and-commands.md#plugin-command-example-and-options).
 
 ### Native agent contributions
 
@@ -357,14 +357,6 @@ trusted API process. Fifteen workbenches complement the four [games](../features
 | **System Overview** | this guide                                      | OS history, process context and a reusable skill                                      |
 
 ![The System Overview workbench reading live OS metrics and recent CPU and memory samples](../assets/screenshots/system/overview--2026-10-08.png)
-
-Three add agent capability with no workbench of their own:
-
-| Extension            | Guide                              | What it adds                                                                |
-| -------------------- | ---------------------------------- | --------------------------------------------------------------------------- |
-| **Code Review**      | this guide                         | A scoped diff review that files prioritized inline suggestions              |
-| **Deliverables**     | this guide                         | Files named in a final response become inline media or downloads            |
-| **Webhook Notifier** | [Webhooks](../features/webhook.md) | Sends selected lifecycle events to a webhook, optionally HMAC-SHA256 signed |
 
 ## Limits
 

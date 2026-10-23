@@ -50,11 +50,11 @@ chess/
 
 ## Kinds of extension
 
-| Kind     | Has                                   | Examples                                              |
-| -------- | ------------------------------------- | ----------------------------------------------------- |
-| Plugin   | `.claude-plugin/plugin.json` only     | Any Claude Code plugin; a skills-only extension.      |
-| Mini app | `.localix-app/app.json` (and plugin)  | Chess, Kanban, Reader, Code Review (command pickers). |
-| Legacy   | A root `plugin.json` with both layers | Extensions written before the split; still loaded.    |
+| Kind     | Has                                   | Examples                                            |
+| -------- | ------------------------------------- | --------------------------------------------------- |
+| Plugin   | `.claude-plugin/plugin.json` only     | Any Claude Code plugin; a skills-only extension.    |
+| Mini app | `.localix-app/app.json` (and plugin)  | Chess, Kanban, Reader, Workflows (command pickers). |
+| Legacy   | A root `plugin.json` with both layers | Extensions written before the split; still loaded.  |
 
 Only a mini app with a screen (a rail viewlet) can be installed as a Mac app
 ([plugin apps](plugin-apps.md)).

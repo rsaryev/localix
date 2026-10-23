@@ -606,10 +606,6 @@
         "vite": "^8.3.5",
       },
     },
-    "plugins/deliverable": {
-      "name": "@localix-plugin/deliverable",
-      "version": "1.0.0",
-    },
     "plugins/devops": {
       "name": "@localix-plugin/devops",
       "version": "1.0.0",
@@ -794,13 +790,6 @@
         "vite": "^8.3.5",
       },
     },
-    "plugins/review": {
-      "name": "@localix-plugin/review",
-      "version": "1.0.0",
-      "devDependencies": {
-        "@types/bun": "1.4.3",
-      },
-    },
     "plugins/rock-paper-scissors": {
       "name": "@localix-plugin/rock-paper-scissors",
       "version": "0.1.0",
@@ -889,10 +878,6 @@
         "react-dom": "^19.3.1",
         "vite": "^8.3.5",
       },
-    },
-    "plugins/webhook-notifier": {
-      "name": "@localix-plugin/webhook-notifier",
-      "version": "1.0.0",
     },
     "scripts": {
       "name": "@localixai/scripts",
@@ -1190,8 +1175,6 @@
 
     "@localix-plugin/database": ["@localix-plugin/database@workspace:plugins/database"],
 
-    "@localix-plugin/deliverable": ["@localix-plugin/deliverable@workspace:plugins/deliverable"],
-
     "@localix-plugin/devops": ["@localix-plugin/devops@workspace:plugins/devops"],
 
     "@localix-plugin/documents": ["@localix-plugin/documents@workspace:plugins/documents"],
@@ -1210,8 +1193,6 @@
 
     "@localix-plugin/resume": ["@localix-plugin/resume@workspace:plugins/resume"],
 
-    "@localix-plugin/review": ["@localix-plugin/review@workspace:plugins/review"],
-
     "@localix-plugin/rock-paper-scissors": ["@localix-plugin/rock-paper-scissors@workspace:plugins/rock-paper-scissors"],
 
     "@localix-plugin/snake": ["@localix-plugin/snake@workspace:plugins/snake"],
@@ -1221,8 +1202,6 @@
     "@localix-plugin/tic-tac-toe": ["@localix-plugin/tic-tac-toe@workspace:plugins/tic-tac-toe"],
 
     "@localix-plugin/trading": ["@localix-plugin/trading@workspace:plugins/trading"],
-
-    "@localix-plugin/webhook-notifier": ["@localix-plugin/webhook-notifier@workspace:plugins/webhook-notifier"],
 
     "@localixai/agent": ["@localixai/agent@workspace:packages/agent"],
 

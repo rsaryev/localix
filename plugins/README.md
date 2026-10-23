@@ -24,14 +24,11 @@ details, use the [plugin authoring guide](../docs/extending/plugins.md).
 
 ## Workflow and integration plugins
 
-| Plugin                                | Product surface                                                                                          |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| [API Client](api/)                    | HTTP requests, collections, and environments.                                                            |
-| [Deliverables](deliverable/)          | Attach supported files named in final responses.                                                         |
-| [Git](git-workspace/)                 | Source control, diffs, branches, and forge operations.                                                   |
-| [Kanban](kanban/)                     | A passive task board per chat.                                                                           |
-| [Code Review](review/)                | An explicit, scoped review command.                                                                      |
-| [Webhook Notifier](webhook-notifier/) | Lifecycle-event POSTs with optional HMAC signing. Off by default; enable it after setting `WEBHOOK_URL`. |
+| Plugin                | Product surface                                        |
+| --------------------- | ------------------------------------------------------ |
+| [API Client](api/)    | HTTP requests, collections, and environments.          |
+| [Git](git-workspace/) | Source control, diffs, branches, and forge operations. |
+| [Kanban](kanban/)     | A passive task board per chat.                         |
 
 ## Games
 
@@ -131,10 +128,9 @@ To add a first-party workbench plugin, copy [`template/`](template/) by hand —
 running `bun run dev` re-stages the plugin on every save (`scripts/dev-plugin-watch.mjs`), and the
 workbench swaps its UI in place.
 
-For anything smaller, copy the smallest bundled plugin whose shape matches what you are building —
-[`deliverable/`](deliverable/) for a hook-only plugin, [`webhook-notifier/`](webhook-notifier/) for
-one driven entirely by config. Keep the manifest and registration module small, split schemas from
-tool bodies, and add deterministic tests for validation and permission classification.
+For anything smaller, start from [`template/`](template/) and keep only the parts you need. Keep the
+manifest and registration module small, split schemas from tool bodies, and add deterministic tests
+for validation and permission classification.
 
 Use a focused check for the plugin being changed, from the repository root:
 

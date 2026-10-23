@@ -104,6 +104,11 @@ Changes land on `main`.
 - **Research and plugin downloads**: the research tool refuses a site whose address it cannot check,
   and an npm plugin source without its own registry uses the one your `~/.npmrc` names for it.
 
+### Removed
+
+- **Code Review, Deliverables and Webhook Notifier**: the three bundled plugins without a screen of
+  their own are gone, with the `/review` command.
+
 ## v0.1.0-beta.15 — 2026-10-21
 
 Localix now tells you what is new: each update is announced in a dialog with its release notes,

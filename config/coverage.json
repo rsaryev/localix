@@ -44,7 +44,6 @@
     "plugins/chess": 89.3,
     "plugins/code-graph": 86.5,
     "plugins/database": 84,
-    "plugins/deliverable": 97.4,
     "plugins/devops": 70.4,
     "plugins/documents": 75.2,
     "plugins/game-2048": 93.9,
@@ -54,13 +53,11 @@
     "plugins/project-space": 81.5,
     "plugins/reader": 70.3,
     "plugins/resume": 78.7,
-    "plugins/review": 53.5,
     "plugins/rock-paper-scissors": 95.8,
     "plugins/snake": 85.1,
     "plugins/template": 94.6,
     "plugins/tic-tac-toe": 91.1,
     "plugins/trading": 88.8,
-    "plugins/webhook-notifier": 92.3,
     "scripts": 69.6
   },
   "unloaded": [
@@ -559,9 +556,6 @@
     "plugins/resume/ui/CreateResumeDialog.tsx",
     "plugins/resume/ui/importFile.ts",
     "plugins/resume/ui/register.tsx",
-    "plugins/review/arg-sources/branches.ts",
-    "plugins/review/arg-sources/commits.ts",
-    "plugins/review/arg-sources/prs.ts",
     "plugins/snake/backend/index.ts",
     "plugins/template/preview/main.tsx",
     "plugins/template/preview/serve.ts",
@@ -672,7 +666,6 @@
     "plugins/chess": 123,
     "plugins/code-graph": 627,
     "plugins/database": 3888,
-    "plugins/deliverable": 3,
     "plugins/devops": 3829,
     "plugins/documents": 746,
     "plugins/game-2048": 71,
@@ -682,13 +675,11 @@
     "plugins/project-space": 2035,
     "plugins/reader": 2872,
     "plugins/resume": 1127,
-    "plugins/review": 13,
     "plugins/rock-paper-scissors": 38,
     "plugins/snake": 144,
     "plugins/template": 58,
     "plugins/tic-tac-toe": 89,
     "plugins/trading": 1404,
-    "plugins/webhook-notifier": 9,
     "scripts": 1608
   }
 }

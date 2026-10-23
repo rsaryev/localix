@@ -58,10 +58,6 @@ Specialists have explicit priorities from **−2** to **2**. Higher priority ele
 priorities retain participant order. Explicit user routing and existing work ownership still take
 precedence. Supporting specialists should have a lower priority than the coordinator.
 
-The bundled **Code Review** plugin adds the `/review` command, not an agent: the speaking agent
-delegates the review procedure to a child session, and the child returns findings and a structured
-verdict.
-
 ## Default tool candidates
 
 Localix has an open candidate policy, so newly installed tools can join its runs. A candidate still

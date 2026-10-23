@@ -24,6 +24,14 @@ in `packages/`, extensions in `plugins/`, automation in `scripts/`, configuratio
 in `docs/`, and media in `assets/`. Keep feature code within its owner; use typed ports for
 cross-feature behavior.
 
+## Plugins and mini apps
+
+Two separate layers, named strictly. A **plugin** is the Claude Code format: skills, commands,
+agents, hooks, mods, MCP and LSP servers (`.claude-plugin/plugin.json`). A **mini app** is Localix's
+own layer: screens, a backend and agent tools over Localix's APIs. A mini app contains a plugin;
+that is the only link. Plugin code never knows about mini apps, and nothing that is about screens,
+backends or the mini app SDK is called "plugin".
+
 ## Architecture
 
 Read [docs/internals/architecture/README.md](docs/internals/architecture/README.md) before changing

@@ -91,20 +91,6 @@
     "promptSections": [],
     "config": []
   },
-  "deliverable": {
-    "category": "content",
-    "surfaces": ["agent"],
-    "trust": "bundled",
-    "ruleKey": "plugin:deliverable",
-    "skills": [],
-    "commands": [],
-    "agents": [],
-    "contributions": [],
-    "tools": [],
-    "views": [],
-    "promptSections": [],
-    "config": ["MAX_FILE_MB", "MAX_FILES", "STRIP_PATHS"]
-  },
   "devops": {
     "category": "development",
     "surfaces": ["agent", "workbench"],
@@ -244,25 +230,6 @@
     "promptSections": [],
     "config": []
   },
-  "review": {
-    "category": "development",
-    "surfaces": ["agent"],
-    "trust": "bundled",
-    "ruleKey": "plugin:review",
-    "skills": [],
-    "commands": [
-      {
-        "name": "review",
-        "args": ["scope", "branch", "commit", "pr", "focus"]
-      }
-    ],
-    "agents": [],
-    "contributions": [],
-    "tools": [],
-    "views": [],
-    "promptSections": [],
-    "config": []
-  },
   "rock-paper-scissors": {
     "category": "games",
     "surfaces": ["agent", "workbench"],
@@ -332,20 +299,6 @@
     "views": [],
     "promptSections": [],
     "config": []
-  },
-  "webhook-notifier": {
-    "category": "utilities",
-    "surfaces": ["agent"],
-    "trust": "opt-in",
-    "ruleKey": "plugin:webhook-notifier",
-    "skills": [],
-    "commands": [],
-    "agents": [],
-    "contributions": [],
-    "tools": [],
-    "views": [],
-    "promptSections": [],
-    "config": ["WEBHOOK_URL", "EVENTS", "SECRET", "TIMEOUT_SECONDS"]
   },
   "workflows": {
     "category": "utilities",
