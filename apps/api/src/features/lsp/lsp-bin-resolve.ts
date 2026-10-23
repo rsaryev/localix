@@ -3,6 +3,7 @@ import path from 'node:path'
 import fs from 'node:fs'
 
 import { childEnv } from '../../lib/login-shell-env'
+import { isPathWithin } from '../../lib/path-containment'
 import { whichBinary } from '../agent-core/tools/environments/shell'
 import { resolveJsEntry } from './lsp-js-entry'
 
@@ -208,9 +209,7 @@ export function resolveNpmBin(
   const bundled = BUNDLED_NPM_BINS.has(bin)
   const own = bundled ? findNpmBinUpward(bin, installDir) : undefined
   if (own) return own
-  const relative = path.relative(projectRoot, rootDir)
-  const inside =
-    relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative)
+  const inside = isPathWithin(projectRoot, rootDir)
   const fromProject = findNpmBinUpward(bin, rootDir, inside ? projectRoot : rootDir)
   if (fromProject) return fromProject
   return (bundled ? undefined : findNpmBinUpward(bin, installDir)) ?? which(bin)
