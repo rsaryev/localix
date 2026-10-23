@@ -37,7 +37,8 @@ export interface RuleGrammar {
 const KIND_HINTS: Record<CapabilityKind, { label: string; hint: string }> = {
   tool: { label: 'Tool', hint: 'A model-facing tool — what the agent may call, and with what' },
   skill: { label: 'Skill', hint: 'A reusable procedure the agent can load into a turn' },
-  plugin: { label: 'Plugin', hint: 'An installed plugin, and everything it contributes' },
+  plugin: { label: 'Plugin', hint: 'A Claude Code plugin, and everything it contributes' },
+  'mini-app': { label: 'Mini app', hint: 'A Localix mini app: its screens, backend and tools' },
   mcp: { label: 'MCP', hint: 'An MCP server, or one tool of it as `server/tool`' },
   agent: { label: 'Agent', hint: 'Whether an agent may be used at all' },
 }

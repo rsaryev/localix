@@ -82,6 +82,21 @@ describe('projecting onto rosters', () => {
     expect(skillOverridesOf(projection.denied.skill)).toEqual({ deploy: 'off' })
   })
 
+  test('a mini app is its own kind: its rule never reaches a plugin of the same name', () => {
+    // Plugins and mini apps share nothing (docs/internals/plugins-and-mini-apps.md); turning one
+    // off was a `plugin:` rule, so it switched off a Claude Code plugin that happened to share
+    // the name.
+    const resolved = composeCapabilities([deny('mini-app:tiles')])
+    const projection = projectCapabilities(resolved, {
+      ...NO_ROSTERS,
+      plugin: ['tiles'],
+      'mini-app': ['tiles', 'notes'],
+    })
+    expect(projection.denied['mini-app']).toEqual(['tiles'])
+    expect(projection.denied.plugin).toEqual([])
+    expect(resolved.allows('plugin', 'tiles')).toBe(true)
+  })
+
   /**
    * The bug the roster type exists to make visible: a kind handed nothing reports nothing
    * denied, however many rules the list holds for it.

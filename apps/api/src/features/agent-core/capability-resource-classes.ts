@@ -86,8 +86,15 @@ export interface ResourceClass {
 }
 
 const TOOL_KINDS: readonly CapabilityKind[] = ['tool']
-const ARTIFACT_KINDS: readonly CapabilityKind[] = ['plugin', 'mcp', 'agent']
-const EVERY_KIND: readonly CapabilityKind[] = ['tool', 'skill', 'plugin', 'mcp', 'agent']
+const ARTIFACT_KINDS: readonly CapabilityKind[] = ['plugin', 'mini-app', 'mcp', 'agent']
+const EVERY_KIND: readonly CapabilityKind[] = [
+  'tool',
+  'skill',
+  'plugin',
+  'mini-app',
+  'mcp',
+  'agent',
+]
 
 export const RESOURCE_CLASSES = [
   {

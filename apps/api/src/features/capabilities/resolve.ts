@@ -22,6 +22,8 @@ import type { CapabilityRuleRepository } from './rule-repository'
 export const ACTION_PREFIX = {
   tool: 'tool:',
   plugin: 'plugin:',
+  /** A Localix mini app: its own kind, so a rule about it never reaches a plugin of that name. */
+  'mini-app': 'mini-app:',
   mcp: 'mcp:',
   skill: 'skill:',
   agent: 'agent:',
@@ -143,6 +145,7 @@ export const NO_ROSTERS: CapabilityRosters = {
   tool: [],
   skill: [],
   plugin: [],
+  'mini-app': [],
   mcp: [],
   agent: [],
 }
@@ -188,6 +191,7 @@ export function projectCapabilities(
       tool: toolDenials.map((denial) => denial.name),
       skill: resolved.denied('skill', rosters.skill),
       plugin: resolved.denied('plugin', rosters.plugin),
+      'mini-app': resolved.denied('mini-app', rosters['mini-app']),
       mcp: resolved.denied('mcp', rosters.mcp),
       agent: resolved.denied('agent', rosters.agent),
     },
