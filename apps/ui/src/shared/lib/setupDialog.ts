@@ -38,3 +38,6 @@ export const useSetupOpen = (): boolean =>
     () => open,
     () => false,
   )
+
+/** Whether setup is open now, outside React. */
+export const isSetupOpen = (): boolean => open

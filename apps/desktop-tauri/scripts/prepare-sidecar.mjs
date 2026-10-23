@@ -6,9 +6,7 @@
 // Produces (under src-tauri/):
 //   binaries/bun-<triple>.exe   the native Bun runtime (Tauri sidecar)
 //   resources/server.js         the API bundled to one JS file, migrations and `kysely` included
-//   resources/plugins/          bundled plugins (self-contained .mjs; a .ts backend
-//                               entry is PRE-BUNDLED from the repo tree — see step 3)
-//   resources/plugin-kit/       what the app needs to create, build and test USER plugins
+//   resources/plugin-kit/       what the app needs to create, build and test USER mini apps
 //                               (template, shared-module exports, theme stylesheets)
 //
 // Pass --ui to ALSO build apps/ui into apps/ui/dist (the prod frontendDist).
@@ -44,11 +42,7 @@ import {
   hostTriple,
   resourcesDir as resources,
 } from './tauri-staging.mjs'
-import {
-  STAGED_DROPINS_MARKER,
-  stageDropins,
-  stageMiniAppKitBeside,
-} from '../../../scripts/stage-dropins.mjs'
+import { stageMiniAppKitBeside } from '../../../scripts/stage-dropins.mjs'
 import { MINI_APP_KIT_INPUTS } from '../../../scripts/stage-plugin-kit.mjs'
 import { BUNDLED_DIRS, STAGED_APPS_DIR } from '../../../scripts/lib/bundled-roots.mjs'
 import { BUILD_STAMP_ENV, resolveBuildStamp } from '../../../scripts/build-stamp.mjs'
@@ -156,7 +150,6 @@ const runtimeReady =
   Object.values(SCRIPT_EXTENSION_FILES).every((file) => existsSync(join(resources, file))) &&
   existsSync(join(resources, 'visual-feedback-probe.js')) &&
   existsSync(join(resources, 'visual-feedback-native-probe.js')) &&
-  existsSync(join(resources, STAGED_APPS_DIR, STAGED_DROPINS_MARKER)) &&
   existsSync(join(resources, 'plugin-kit', 'kit.json')) &&
   existsSync(join(resources, 'cli', 'server', 'cli.js')) &&
   existsSync(join(resources, 'cli', 'package.json')) &&
@@ -180,8 +173,7 @@ if (!runtimeReady) {
 
   // ── 1. bundle the API to resources/server.js (plugins stay on disk). Use --outdir (not --outfile) so bun can also emit the native
   //       required `.node` addons it references beside server.js — --outfile refuses
-  //       multiple outputs. Optional plugin-native accelerators are handled by the
-  //       shared stageDropins bundler below.
+  //       multiple outputs.
   //       --entry-naming pins the entry filename to server.js.
   //       Minified for whitespace and syntax only: unminified, server.js was 13.9 MB parsed on
   //       every launch; identifiers stay so a crash report's stack still names the function. ──
@@ -248,21 +240,11 @@ if (!runtimeReady) {
     log,
   })
 
-  // ── 3. bundled plugins ─────────────────────────────────────────────────────────
-  // The shared stage-dropins script copies the plugin tree (stripping dev-only files
-  // and the template skeleton) and pre-bundles every TS-backend workbench plugin FROM
-  // THE REPO TREE (where its workspace deps resolve), repointing staged manifests —
-  // without it the packaged app's contributed backends failed to load.
-  // The plugin kit first: the plugin UI builds read it, and the installed app needs it to
-  // create and build the user's own plugins without a source tree.
+  // ── 3. the mini app kit ────────────────────────────────────────────────────────
+  // The app ships no mini app (rule X5): the store installs them from the hosted catalog the
+  // release publishes (`scripts/pack-mini-apps.mjs`). It ships the kit, which the installed app
+  // needs to create and build the person's own mini apps without a source tree.
   stageMiniAppKitBeside({ repoRoot: repo, outPlugins: join(resources, STAGED_APPS_DIR) })
-  stageDropins({
-    repoRoot: repo,
-    outPlugins: join(resources, STAGED_APPS_DIR),
-    log,
-    // First-party plugin UIs are not debugged on a user's machine; their maps were 17 MB.
-    uiSourceMaps: false,
-  })
 
   // ── 3b. the `localix` CLI, staged INSIDE the bundle (no separate CLI product) ──
   // The shim (bin/localix.mjs) + the launcher bundle it imports (runCli). lib.rs points

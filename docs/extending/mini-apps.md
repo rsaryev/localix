@@ -294,13 +294,15 @@ not a mini app, and one with both `mini-app.json` and `.claude-plugin/plugin.jso
 
 In the repository, run `bun test ./path/to/my-app`, then `bun run test`, `type-check` and `lint`. A
 standalone mini app brings its own tests; bundle any package dependencies into the backend and point
-`backend` at that file.
+`backend` at that file. To offer it to others, pack it into a catalog: see
+[Publish a mini app](mini-app-publishing.md).
 
-## Bundled mini apps
+## First-party mini apps
 
-Each has its own `mini-app.json` and `guide.md` and starts enabled; `surfaces` decides whether it
-adds a workbench. Its native code still runs in the trusted API process. Fifteen workbenches
-complement the four [games](../features/games.md):
+Localix publishes these in its catalog; none is installed until you add it from the store. Each has
+its own `mini-app.json` and `guide.md` and runs once installed; `surfaces` decides whether it adds a
+workbench. Its native code still runs in the trusted API process. Fifteen workbenches complement the
+four [games](../features/games.md):
 
 | Mini app            | Guide                                           | What the workbench shows                                                              |
 | ------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------- |
@@ -337,6 +339,7 @@ complement the four [games](../features/games.md):
 
 - [Mini apps](../features/mini-apps.md)
 - [Build with the agent](build-with-the-agent.md)
+- [Publish a mini app](mini-app-publishing.md)
 - [Build workbench UI](mini-app-ui.md)
 - [Mini apps as Mac apps](../features/mini-app-mac-apps.md)
 - [Claude Code plugins](claude-code-plugins.md)

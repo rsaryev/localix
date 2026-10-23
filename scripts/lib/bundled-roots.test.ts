@@ -23,7 +23,6 @@ const repoRoot = resolve(import.meta.dir, '../..')
 const ROOT_READERS = [
   'apps/desktop-tauri/scripts/file-associations.mjs',
   'apps/desktop-tauri/scripts/prepare-sidecar.mjs',
-  'apps/desktop-tauri/scripts/smoke-bundle.mjs',
   'scripts/architecture/package-rules.ts',
   'scripts/browser-graph.ts',
   'scripts/check-architecture.mjs',

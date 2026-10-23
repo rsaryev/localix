@@ -84,6 +84,26 @@ read-only system and process tools.
 
 See the [mini app guide](../../docs/extending/mini-apps.md) for the full Localix contract.
 
+## Fork it and publish
+
+Every mini app starts from this one. To make your own:
+
+1. Copy this folder to `mini-apps/<name>`. In `mini-app.json`, set `name`, `displayName`,
+   `description`, `category` and `author`, and start `version` at `0.1.0`. Rename the domain files
+   and tools that `scaffold.json` lists. `/mini-app create` does the same renames for you.
+2. Replace the system domain with yours, keeping the shapes: a store under `ctx.dataDir`, routes
+   that answer with the new state, tools for the agent, and a `guide.md` that tells the agent how to
+   read what the app shows.
+3. Check it: `bun run test`, `bun run type-check:tests` and `bun run build` in its folder.
+4. Pack it, from the repository root:
+   `bun run pack:mini-apps --only <name> --publisher "<you>" --out dist/catalog`.
+5. Publish the folder's files as one release's assets. Then share the catalog URL, which people add
+   to Localix.
+6. For every update, raise `version` and repeat steps 4 and 5.
+
+[Publish a mini app](../../docs/extending/mini-app-publishing.md) covers the catalog format,
+hosting, updates and trust.
+
 ## Source of truth
 
 - [Mini app manifest](mini-app.json) and [agent guide](guide.md)

@@ -122,6 +122,7 @@
         "extending/mini-apps.md",
         "extending/claude-code-plugins.md",
         "extending/build-with-the-agent.md",
+        "extending/mini-app-publishing.md",
         "extending/mini-app-ui.md",
         "extending/sandboxed-views.md",
         "extending/mini-app-sync.md",

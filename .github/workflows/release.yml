@@ -619,10 +619,52 @@ jobs:
           gh release upload "$RELEASE_TAG" \
             "${FILES[@]}" --clobber --repo "$RELEASE_REPO"
 
+  # ── mini-app-catalog: the hosted mini app catalog, as this release's assets ────
+  # The desktop app ships no mini app (rule X5); its store reads
+  # `releases/latest/download/mini-app-catalog.json`. Every app is staged as a release stages it,
+  # packed into its own pinned archive, and uploaded beside the catalog that names them.
+  mini-app-catalog:
+    name: Mini app catalog
+    needs: [prepare, verify, draft-release]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: release
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          persist-credentials: false
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup-workspace
+
+      - name: Build workspace packages
+        run: bunx turbo build --filter=@localixai/api
+
+      - name: Pack the mini apps
+        run: bun scripts/pack-mini-apps.mjs --out "$RUNNER_TEMP/mini-app-catalog"
+
+      - name: Upload the catalog to the draft release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          shopt -s nullglob
+          FILES=("$RUNNER_TEMP"/mini-app-catalog/*)
+          if [ ${#FILES[@]} -lt 2 ]; then
+            echo "The mini app catalog is empty" >&2
+            exit 1
+          fi
+          gh release upload "$RELEASE_TAG" "${FILES[@]}" --clobber --repo "$RELEASE_REPO"
+
   # ── publish-desktop: flip the draft to the public "latest" release ───────────
   publish-desktop:
     name: Publish release
-    needs: [prepare, build-desktop]
+    needs: [prepare, build-desktop, mini-app-catalog]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment: release

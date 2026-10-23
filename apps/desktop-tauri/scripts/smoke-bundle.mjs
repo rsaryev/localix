@@ -21,7 +21,6 @@ import {
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { STAGED_APPS_DIR } from '../../../scripts/lib/bundled-roots.mjs'
 import {
   DESKTOP_RUNTIME_ARG,
   LOCALIX_RUNTIME_READY_PREFIX,
@@ -174,7 +173,7 @@ const MIN_SIDECAR_BYTES = 20 * 1024 * 1024
  * Find the sidecar and the staged resources inside a packaged app: a macOS `.app`, an extracted
  * AppImage (`squashfs-root`), an unpacked `.deb` or an installed Windows directory. The layouts
  * differ, so this looks for what is distinctive rather than hard-coding each one: a `resources`
- * directory holding `server.js` and `plugins`, and a large executable named `bun`.
+ * directory holding `server.js`, and a large executable named `bun`.
  */
 export function locateBundle(root, maxDepth = 8) {
   let bun
@@ -184,12 +183,7 @@ export function locateBundle(root, maxDepth = 8) {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       const path = join(dir, entry.name)
       if (entry.isDirectory()) {
-        if (
-          entry.name === 'resources' &&
-          !resources &&
-          existsSync(join(path, 'server.js')) &&
-          existsSync(join(path, STAGED_APPS_DIR))
-        ) {
+        if (entry.name === 'resources' && !resources && existsSync(join(path, 'server.js'))) {
           resources = path
         } else visit(path, depth + 1)
       } else if (
@@ -223,7 +217,7 @@ async function main() {
   }
   const bun = found?.bun ?? option(args, '--bun') ?? staging.sidecarPath()
   const resources = found?.resources ?? option(args, '--resources') ?? staging.resourcesDir
-  for (const path of [bun, join(resources, 'server.js'), join(resources, STAGED_APPS_DIR)]) {
+  for (const path of [bun, join(resources, 'server.js')]) {
     if (!existsSync(path)) {
       console.error(`[smoke-bundle] ${path} is missing; run scripts/prepare-sidecar.mjs first`)
       process.exit(2)

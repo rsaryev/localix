@@ -28,8 +28,19 @@ describe('release workflow contract', () => {
       'verify',
       'draft-release',
       'build-desktop',
+      'mini-app-catalog',
       'publish-desktop',
     ])
+  })
+
+  test('publishes the mini app catalog with the release, and never a release without it', () => {
+    const workflow = Bun.YAML.parse(release) as {
+      jobs: Record<string, { needs?: string[]; steps: { run?: string }[] }>
+    }
+    const runs = workflow.jobs['mini-app-catalog']!.steps.map((step) => step.run ?? '').join('\n')
+    expect(runs).toContain('bun scripts/pack-mini-apps.mjs')
+    expect(runs).toContain('gh release upload')
+    expect(workflow.jobs['publish-desktop']!.needs).toContain('mini-app-catalog')
   })
 
   test('accepts release secrets only behind the protected release environment', () => {
@@ -39,7 +50,13 @@ describe('release workflow contract', () => {
     const workflow = Bun.YAML.parse(release) as {
       jobs: Record<string, { environment?: string }>
     }
-    for (const job of ['verify', 'draft-release', 'build-desktop', 'publish-desktop']) {
+    for (const job of [
+      'verify',
+      'draft-release',
+      'build-desktop',
+      'mini-app-catalog',
+      'publish-desktop',
+    ]) {
       expect(workflow.jobs[job].environment).toBe('release')
     }
     expect(releaseRefResolver).toContain('assertReleaseCommitOnMain(commit)')
@@ -151,7 +168,7 @@ describe('release workflow contract', () => {
 
   test('bounds every job, so a hung runner cannot burn the six-hour default', () => {
     const jobs = [...release.matchAll(/\n {2}([a-z-]+):\n(?: {4}.*\n)*? {4}runs-on:/gu)]
-    expect(jobs.length).toBe(5)
+    expect(jobs.length).toBe(6)
     for (const [, job] of jobs) {
       const start = release.indexOf(`\n  ${job}:`)
       const header = release.slice(start, release.indexOf('    steps:', start))

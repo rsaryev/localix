@@ -1,6 +1,7 @@
 import { BadgeCheck } from 'lucide-react'
 import { MonogramAvatar } from '@localixai/kit/avatar'
 import { openMiniAppStore } from '@/entities/mini-app-store/model/openMiniAppStore'
+import { closeSetup } from '@/shared/lib/setupDialog'
 import { TipPickTrigger } from '../TipPick'
 import './mini-apps-scene.css'
 
@@ -30,7 +31,19 @@ export function MiniAppsScene() {
   )
 }
 
-/** The sentence ends in the store itself: the same tab the rail's add button opens. */
+/**
+ * The sentence ends in the store itself: setup steps aside — it opens again from the command
+ * palette — and the same tab the rail's add button opens takes the window.
+ */
 export function MiniAppsAction() {
-  return <TipPickTrigger label="Mini apps" value="the store" onClick={openMiniAppStore} />
+  return (
+    <TipPickTrigger
+      label="Mini apps"
+      value="the store"
+      onClick={() => {
+        closeSetup()
+        openMiniAppStore()
+      }}
+    />
+  )
 }

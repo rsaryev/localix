@@ -120,7 +120,7 @@ those of other authors; each entry names its publisher and whether it is **verif
       "category": "games",
       "description": "Legal moves and agent-opponent play.",
       "publisher": { "name": "Localix", "verified": true },
-      "archive": { "url": "https://…/chess-0.3.0.zip", "bytes": 182340, "sha256": "…" }
+      "archive": { "url": "chess-0.3.0-3fa1c2d4e5b6.tar.gz", "bytes": 182340, "sha256": "…" }
     }
   ]
 }
@@ -129,8 +129,8 @@ those of other authors; each entry names its publisher and whether it is **verif
 | Source                | What it is                                                | Updates                     |
 | --------------------- | --------------------------------------------------------- | --------------------------- |
 | HTTPS catalog         | `catalog.json` and archives; Localix's own is the default | by version, automatically   |
-| Git repository        | a repository whose releases or tree hold the catalog      | by version, automatically   |
-| Local catalog folder  | `catalog.json` and archives on disk                       | by version, automatically   |
+| Git repository        | its release assets, read as an HTTPS catalog              | by version, automatically   |
+| Local catalog folder  | `catalog.json` and archives on disk, read as `file://`    | by version, automatically   |
 | Local mini app folder | one mini app's source: developer mode                     | rebuilt by the host on save |
 
 Only developer mode builds on the person's machine; every other source ships built archives.
@@ -140,20 +140,20 @@ Only developer mode builds on the person's machine; every other source ships bui
 1. **Release.** The author raises `version`; packing (CI for the first-party ones) builds the
    archive and writes its catalog entry. The same version with other content is refused by its
    sha256.
-2. **Choose.** On first start, from the add button in the mini app rail, and in Settings → Mini
-   apps, the person picks from the catalog. The three places show one catalog component: a store,
-   not a list — cards with the app's icon, name, description, category, publisher and verified mark,
-   filtered by category, each with Install, Remove or Update. Install and update reuse the download
-   progress the local models show.
+2. **Choose.** The store is its own workspace tab, opened from the rail's add button, from setup and
+   from Settings → Mini apps. Category tabs and a search, then Updates, Installed and Available as
+   one-line rows: the app's mark, name, description, publisher when not verified, and Install,
+   Update, Remove or the download's progress. Install and update reuse the local models' pinned
+   download (`lib/pinned-download.ts`).
 3. **Install.** One queue downloads each archive with progress (resumable, size-capped, verified
    against the catalog's sha256 before anything is unpacked), unpacks it beside the installed copy
    and swaps it in with one rename. A failed install leaves the previous build.
-4. **Update.** Catalogs refresh on their own. A newer version with a compatible `apiVersion` is
-   installed automatically; an incompatible one says Localix needs updating. The previous build
-   stays until the new one loads, and comes back if it does not. An update never touches the app's
-   data folder.
-5. **Trust.** A verified app runs once installed. An unverified one is marked so in the catalog and
-   in Settings, and its backend and screens run only after the person allows it.
+4. **Update.** A minute after start and every six hours the catalogs are re-read, and a newer
+   version with a compatible `apiVersion` is installed for every app a catalog put there; an
+   incompatible one says Localix needs updating. A failed download or archive leaves the previous
+   build. An update never touches the app's data folder.
+5. **Trust.** Installing from the store is the person's yes to run the app. An unverified publisher
+   is named in the row, and its install asks again first.
 6. **Create.** `mini_app_build` forks the template into `~/.localix/mini-apps/<name>/` and builds it
    with the host's build: the person's own app, updated by no catalog.
 
@@ -175,5 +175,5 @@ plugin names is no longer read. The managed copies earlier versions synchronized
 | 1     | `mini-app.json` and `guide.md`; the bundled mini apps converted; no `.claude-plugin/` in a mini app. | Done  |
 | 2     | `features/mini-apps` split from `features/plugins`; the composed manifest and legacy layout removed. | Done  |
 | 3     | Separate storage, records, routes, settings and model-facing names; the start-up migration.          | Doing |
-| 4     | Release archives, `catalog.json`, the install and update queue, the picker; nothing bundled.         | Doing |
+| 4     | Release archives, `catalog.json`, the install and update queue, the picker; nothing bundled.         | Done  |
 | 5     | Tests, guards, screenshots, docs and copy that assumed bundled mini apps.                            |       |
