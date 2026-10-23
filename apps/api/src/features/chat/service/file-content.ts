@@ -249,8 +249,8 @@ export async function writeResolvedFileUnderLock(
   else await env.writeFile(resolved, content)
   // The user saved this file from the editor — no agent tool observed the new
   // content. Forget the path in every session's store rather than recording the
-  // new mtime: `write` must then refuse the blind overwrite (handing the current
-  // content back) and `edit` must match against what is really on disk.
+  // new mtime: `write` must then refuse the blind overwrite until the file is read
+  // again, and `edit` must match against what is really on disk.
   invalidateFileMtime(resolved)
 
   return {

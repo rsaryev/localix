@@ -142,7 +142,6 @@ export function createWriteTool(
     // complete once every body has streamed, so it could no longer stop a doomed body early.
     guard: (ctx) =>
       evaluateBlindOverwriteGuard(
-        env,
         (prepareWriteArguments(ctx.input) as WriteToolInput).files.map((f) => f.path),
         ctx.input.cwd,
         defaultCwd,

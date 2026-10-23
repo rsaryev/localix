@@ -75,10 +75,8 @@ describe('createWriteTool', () => {
     expect(result.isError).toBe(true)
     expect(result.error?.retryable).toBe(true)
     expect(result.content).toContain('has not been read')
-    // Round-trip elimination: the error embeds the current content so the model
-    // can re-issue the write without a separate read.
-    expect(result.content).toContain('<current_file_content>')
-    expect(result.content).toContain('precious content')
+    // The guard runs before the permission gate, so it never hands back the file's content.
+    expect(result.content).not.toContain('precious content')
     // The targeted-change hint points at `edit`, never the removed patch tool.
     expect(result.content).toContain('use edit for targeted changes')
     expect(result.content).not.toContain('apply_patch')
@@ -86,10 +84,12 @@ describe('createWriteTool', () => {
     expect(await readFile(filePath, 'utf8')).toBe('precious content\n')
   })
 
-  test('a batch with one unread existing file is refused whole, and the same call then succeeds', async () => {
+  test('a batch with one unread existing file is refused whole, and succeeds once it is read', async () => {
     const unread = path.join(tempDir, 'unread.txt')
     await writeFile(unread, 'precious\n', 'utf8')
-    const tool = createWriteTool(undefined, tempDir)
+    const mtimes = createFileMtimeStore()
+    const readTool = createReadTool(undefined, tempDir, undefined, undefined, mtimes)
+    const tool = createWriteTool(undefined, tempDir, undefined, undefined, mtimes)
     const call = {
       files: [
         { path: 'fresh.txt', content: 'new\n' },
@@ -99,45 +99,20 @@ describe('createWriteTool', () => {
 
     const refused = await runGuarded(tool, 'wb1', call)
     expect(refused.isError).toBe(true)
-    expect(refused.content).toContain('<current_file_content>')
-    expect(refused.content).toContain('precious')
+    expect(refused.content).toContain('unread.txt')
+    expect(refused.content).not.toContain('precious')
     // Pre-flight: nothing of the batch was written, not even the new file.
     expect(await readdir(tempDir)).toEqual(['unread.txt'])
 
-    // The guard recorded the mtime, so the re-issued call passes and writes both files.
-    const retry = await runGuarded(tool, 'wb2', call)
+    // The refusal recorded nothing as read: the same call is refused again.
+    expect((await runGuarded(tool, 'wb2', call)).isError).toBe(true)
+
+    // Once the file has been read, the re-issued call passes and writes both files.
+    expect((await readTool.execute('wb3', { path: 'unread.txt' })).isError).toBeUndefined()
+    const retry = await runGuarded(tool, 'wb4', call)
     expect(retry.isError).toBeUndefined()
     expect(await readFile(unread, 'utf8')).toBe('replaced\n')
     expect(await readFile(path.join(tempDir, 'fresh.txt'), 'utf8')).toBe('new\n')
-  })
-
-  test('after the embedded-content refusal, re-issuing the same write succeeds', async () => {
-    const filePath = path.join(tempDir, 'retry.txt')
-    await writeFile(filePath, 'old stuff\n', 'utf8')
-    const tool = createWriteTool(undefined, tempDir)
-
-    const refused = await runGuarded(tool, 'w3b1', { path: 'retry.txt', content: 'replacement\n' })
-    expect(refused.isError).toBe(true)
-    expect(refused.content).toContain('re-issue the SAME write call')
-
-    const retry = await runGuarded(tool, 'w3b2', { path: 'retry.txt', content: 'replacement\n' })
-    expect(retry.isError).toBeUndefined()
-    expect(await readFile(filePath, 'utf8')).toBe('replacement\n')
-  })
-
-  test('embedded content is capped at 16KB with a truncation note and byte size', async () => {
-    const filePath = path.join(tempDir, 'big.txt')
-    const big = 'x'.repeat(40_000)
-    await writeFile(filePath, big, 'utf8')
-    const tool = createWriteTool(undefined, tempDir)
-
-    const result = await runGuarded(tool, 'w3c', { path: 'big.txt', content: 'tiny\n' })
-    expect(result.isError).toBe(true)
-    expect(result.content).toContain('truncated: showing first 16384 of 40000 bytes')
-    // The snapshot itself is capped.
-    const inner = String(result.content).split('<current_file_content>')[1] ?? ''
-    expect(inner.length).toBeLessThan(17_000)
-    expect(await readFile(filePath, 'utf8')).toBe(big)
   })
 
   test('allows the overwrite after the file has been read (same session store)', async () => {
