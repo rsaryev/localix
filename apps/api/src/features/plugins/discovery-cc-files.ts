@@ -187,17 +187,20 @@ export async function parseAgentFile(
     })
     return null
   }
-  const { fields, body } = parseMarkdownFrontmatter(raw)
+  const parsedMarkdown = parseMarkdownFrontmatter(raw)
+  const { body } = parsedMarkdown
+  // CC: frontmatter that does not parse leaves the agent loading with every field ignored.
+  const yaml = parseYamlFrontmatterBlock(raw)
+  const unparsable = /^---\r?\n/.test(raw) && yaml === undefined
+  const fields: typeof parsedMarkdown.fields = unparsable ? {} : parsedMarkdown.fields
   // Namespacing: a nested `agents/nested/security.md` scans as `nested:security`. A
   // frontmatter `name` overrides the LEAF segment but keeps the subdir prefix, so
   // `nested/security.md` with `name: sec` → `nested:sec` (folder structure preserved).
   const scanName = nameOverride ?? basename(file).replace(/\.md$/i, '')
-  // Docs, not agents: a `README.md` (any case) dropped into an agents dir is never
-  // an agent definition — skip it before it can be coerced into one by its filename.
-  const scanLeaf = scanName.split(':').pop() ?? scanName
-  if (scanLeaf.toLowerCase() === 'readme') return null
   const prefix = scanName.split(':').slice(0, -1)
-  const leaf = scalarField(fields.name)
+  // CC ignores a `name` longer than 256 characters and names the agent after its file.
+  const named = scalarField(fields.name)
+  const leaf = named && named.length <= 256 ? named : undefined
   const name = leaf ? [...prefix, leaf].join(':') : scanName
   if (!PLUGIN_QUALIFIED_NAME_RE.test(name)) {
     diagnostics?.push({ kind: 'agent', path: file, message: `Invalid agent name "${name}"` })
@@ -244,7 +247,6 @@ export async function parseAgentFile(
   // maps are reached with a real YAML parse (the line-based .md parser skips nested blocks);
   // ACTIVATED for the child delegate run (see command-handlers / delegate wiring). A flat-string
   // `hooks:` value (rare) is ignored — only a mapping is a valid CC hooks block.
-  const yaml = parseYamlFrontmatterBlock(raw)
   const hooks = isPlainRecord(yaml?.hooks) ? yaml!.hooks : undefined
   // CC `when-to-use:` (hyphen) and `when_to_use` (underscore) — appended to description.
   const desc =
@@ -252,10 +254,8 @@ export async function parseAgentFile(
       .filter(Boolean)
       .join(' ')
       .trim() || ''
-  // A real agent declares itself in frontmatter (CC requires `name` + `description`).
-  // A file with NO agent frontmatter at all (neither a `name` nor a `description`) —
-  // e.g. a plain markdown doc — must never be coerced into an agent by its filename.
-  if (!leaf && !desc) return null
+  // CC loads a file with no frontmatter too, named after the file; the loader gives it the
+  // description `Agent from <plugin> plugin` (`manifest-load.ts`).
   const parsed = pluginAgentSchema.safeParse({
     name,
     description: desc,

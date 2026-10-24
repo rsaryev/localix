@@ -166,7 +166,8 @@ export function buildLoadedAgent(
     name: agent.name,
     fullName: `${pluginName}:${agent.name}`,
     label: agent.label ?? agent.name,
-    description: agent.description,
+    // CC describes an agent whose file gives no description as `Agent from <plugin> plugin`.
+    description: agent.description || `Agent from ${pluginName} plugin`,
     prompt: subst(agent.prompt),
     ...(agent.tools && !agent.tools.includes('*')
       ? { tools: [...new Set(agent.tools.map(normalizeCcToolName))] }
