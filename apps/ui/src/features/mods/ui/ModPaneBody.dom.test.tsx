@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
-import type { ModPaneRef } from '@/shared/api/modsApi'
+import type { ModElement, ModPaneRef } from '@/shared/api/modsApi'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -22,7 +22,12 @@ const pane: ModPaneRef = {
   focusRequest: 1,
 }
 
-async function mount(panes: ModPaneRef[]) {
+const STEPS: ModElement[] = [
+  { type: 'Text', props: { bold: true }, children: ['Step 1 of 2'] },
+  { type: 'Button', props: { key: 'next', label: 'Next', hotkey: 'n' }, children: [] },
+]
+
+async function mount(panes: ModPaneRef[], tree: ModElement[] = STEPS) {
   const React = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { SWRConfig } = await import('swr')
@@ -43,10 +48,7 @@ async function mount(panes: ModPaneRef[]) {
       instance,
       plugin: 'gauge',
       id,
-      tree: [
-        { type: 'Text', props: { bold: true }, children: ['Step 1 of 2'] },
-        { type: 'Button', props: { key: 'next', label: 'Next', hotkey: 'n' }, children: [] },
-      ],
+      tree,
     })),
     spyOn(modsApi, 'act').mockImplementation(async (_instance, _id, action) => {
       calls.push(`act:${action.element}`)
@@ -111,6 +113,41 @@ test('a tab whose pane is gone says so', async () => {
   const view = await mount([])
   try {
     expect(view.host.textContent).toContain('This pane is closed.')
+  } finally {
+    await view.done()
+  }
+})
+
+test('the tab is the frame: a mod’s own frame and title go, its last buttons are the action bar', async () => {
+  const framed: ModElement = {
+    type: 'Box',
+    props: { flexDirection: 'column', borderStyle: 'round', borderColor: 'magenta', paddingX: 1 },
+    children: [
+      { type: 'Text', props: { bold: true, color: 'magenta' }, children: ['▶ Steps'] },
+      { type: 'Text', props: {}, children: ['the body'] },
+      {
+        type: 'Box',
+        props: { gap: 2, marginTop: 1 },
+        children: [
+          { type: 'Button', props: { key: 'back', label: 'Back', hotkey: 'b' }, children: [] },
+          { type: 'Button', props: { key: 'next', label: 'Next', hotkey: 'n' }, children: [] },
+        ],
+      },
+    ],
+  }
+  const view = await mount([pane], [framed])
+  try {
+    const body = view.host.querySelector<HTMLElement>('[role="region"][aria-label="Steps"]')!
+    // The tab's header already says the title, so the body starts with what the mod adds.
+    expect(body.textContent).not.toContain('Steps')
+    expect(body.textContent).toContain('the body')
+    // No second, coloured frame inside the tab.
+    expect(body.querySelector('div[class*="border"]')).toBeNull()
+    const bar = body.querySelector('[role="group"][aria-label="Steps actions"]')!
+    expect([...bar.querySelectorAll('button')].map((button) => button.textContent)).toEqual([
+      'Backb',
+      'Nextn',
+    ])
   } finally {
     await view.done()
   }

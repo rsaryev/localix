@@ -9,8 +9,9 @@ import { modsApi, type ModPaneRef } from '@/shared/api/modsApi'
 import { modPaneTabPayload, openPluginSettings } from '../model/paneTabs'
 import { closeModPane, useModPane, useModsOverview } from '../model/useMods'
 import { ModClientScope, type ModClientScopeValue } from './ModClient'
-import { ModSiteContext } from './modStyle'
+import { ModActionBarContext, ModControlContext, ModSiteContext } from './modSite'
 import { ModTree } from './ModTree'
+import { paneLayout } from './paneLayout'
 import { hotkeysOf, pressHotkey } from './siteHotkeys'
 
 /** Panes are drawn for this many text columns: what a mod reads as `e.props.bodyColumns`. */
@@ -25,7 +26,8 @@ export const projectOf = (cwd: string | null) =>
 
 /**
  * One mod pane as a workspace tab (`mod-pane`): its drawing at workbench density, redrawn whenever
- * its mod asks. Asked forward, the pane takes the keyboard — where its `autoFocus` control is, else
+ * its mod asks, laid out as a pane of the app's (`paneLayout.ts`): the tab is its frame and title,
+ * its last row of buttons the action bar under the body. Asked forward, the pane takes the keyboard — where its `autoFocus` control is, else
  * itself — and its Buttons' hotkeys press them while it holds it; Escape closes a pane opened with
  * `closeOnEscape`, as the person's close does.
  */
@@ -66,6 +68,8 @@ function ModPane({ pane }: { pane: ModPaneRef }) {
     runMiniAppAction(() => modsApi.act(pane.instance, pane.id, action), 'The mod did not take that')
   const tree = drawing.data?.tree
   const hotkeys = useMemo(() => hotkeysOf(tree ?? []), [tree])
+  const name = pane.title ?? pane.id
+  const layout = useMemo(() => (tree ? paneLayout(tree, name) : null), [tree, name])
   const body = useRef<HTMLDivElement>(null)
   const drawn = Boolean(tree)
   useEffect(() => {
@@ -103,7 +107,8 @@ function ModPane({ pane }: { pane: ModPaneRef }) {
         role="region"
         aria-label={pane.title ?? pane.id}
         tabIndex={-1}
-        className="min-h-0 flex-1 overflow-y-auto px-3 py-3 text-sm outline-none @2xl:px-4"
+        // The workbench pane's gutters (`visual-system.md`), on the pane's own ground.
+        className="min-h-0 flex-1 overflow-y-auto px-4 py-3 text-sm outline-none @2xl:px-6"
         onKeyDown={(event) => {
           if (event.key === 'Escape' && pane.closeOnEscape) {
             event.preventDefault()
@@ -116,14 +121,28 @@ function ModPane({ pane }: { pane: ModPaneRef }) {
       >
         {!drawing.data ? (
           <LoadingHint>Drawing…</LoadingHint>
-        ) : drawing.data.tree ? (
-          <div className="flex flex-col gap-2">
-            <ModSiteContext.Provider value="pane">
-              <ModClientScope.Provider value={scope}>
-                <ModTree nodes={drawing.data.tree} act={act} />
-              </ModClientScope.Provider>
-            </ModSiteContext.Provider>
-          </div>
+        ) : layout ? (
+          <ModSiteContext.Provider value="pane">
+            <ModClientScope.Provider value={scope}>
+              <div className="flex flex-col gap-2">
+                <ModTree nodes={layout.nodes} act={act} />
+              </div>
+              {layout.actions && (
+                <div
+                  role="group"
+                  aria-label={`${name} actions`}
+                  className="mt-4 flex flex-wrap items-center gap-2 text-xs text-text-soft"
+                >
+                  {/* The bar is chrome: its hint is in the UI's type, as its buttons are. */}
+                  <ModActionBarContext.Provider value={true}>
+                    <ModControlContext.Provider value={true}>
+                      <ModTree nodes={layout.actions} act={act} />
+                    </ModControlContext.Provider>
+                  </ModActionBarContext.Provider>
+                </div>
+              )}
+            </ModClientScope.Provider>
+          </ModSiteContext.Provider>
         ) : (
           <EmptyHint>{drawing.data.problem ?? 'The mod draws nothing in this pane.'}</EmptyHint>
         )}

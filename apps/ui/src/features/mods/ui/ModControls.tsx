@@ -6,12 +6,14 @@ import { Select } from '@localixai/kit/select'
 import { Textarea } from '@localixai/kit/textarea'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import type { ModAction } from '@/shared/api/modsApi'
-import { buttonLook, ModSiteContext } from './modStyle'
+import { ModActionBarContext, ModControlContext, ModSiteContext } from './modSite'
+import { buttonLook } from './modStyle'
 
 /**
  * A mod's controls, drawn with the kit's own. A Button's label is its `label`, else its children;
- * its `hotkey` shows as a key beside the label (the site presses it: `siteHotkeys.ts`); `plain`
- * draws it without chrome, `variant: 'primary'` as the main action, `dimColor` quiet. `autoFocus`
+ * its `hotkey` shows as the kit's keycap after the label (the site presses it: `siteHotkeys.ts`);
+ * `plain` draws it as a list row, `variant: 'primary'` as the main action, `dimColor` quiet. A
+ * label is the UI's own type even where the site draws a mod's text in the code face. `autoFocus`
  * marks where the site's focus starts when it takes the keyboard (`data-autofocus`).
  */
 
@@ -33,7 +35,7 @@ export function ModButton(input: {
   act: Act
 }) {
   const { props } = input
-  const look = buttonLook(props, useContext(ModSiteContext))
+  const look = buttonLook(props, useContext(ModSiteContext), useContext(ModActionBarContext))
   const hotkey = typeof props.hotkey === 'string' ? props.hotkey : undefined
   const label = typeof props.label === 'string' ? props.label : undefined
   return (
@@ -42,8 +44,6 @@ export function ModButton(input: {
       variant={look.variant}
       className={cn(
         'font-normal',
-        // At the band's 20px rung the label keeps the strip's 12px text, not the rung's 11px.
-        look.size === 'xs' && 'text-xs',
         // A plain button is a row: full width, its label at the start, its key at the end.
         look.row && 'w-full justify-start gap-2 text-left',
         look.quiet && 'text-text-soft hover:text-foreground',
@@ -52,8 +52,12 @@ export function ModButton(input: {
       {...autoFocusOf(props)}
       onClick={() => input.act({ kind: 'press', element: text(props.key) })}
     >
-      <span className="min-w-0 truncate">{label ?? (input.hasChildren ? input.children : '')}</span>
-      {hotkey && <Kbd className="ml-auto">{hotkey}</Kbd>}
+      <span className="min-w-0 truncate">
+        <ModControlContext.Provider value={true}>
+          {label ?? (input.hasChildren ? input.children : '')}
+        </ModControlContext.Provider>
+      </span>
+      {hotkey && <Kbd className={cn(look.row && 'ml-auto')}>{hotkey}</Kbd>}
     </Button>
   )
 }

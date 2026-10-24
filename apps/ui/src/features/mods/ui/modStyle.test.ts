@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { boxLook, buttonLook, colorOf, space, textLook } from './modStyle'
+import { boxLook, buttonLook, space, textLook } from './modStyle'
 
 describe('spacing at a site’s density', () => {
   test('a cell across and down is a fixed step per site', () => {
@@ -36,57 +36,78 @@ describe('spacing at a site’s density', () => {
 })
 
 describe('text at a site’s tier', () => {
-  test('sizes are relative to the site, and bold is never heavier than the site allows', () => {
+  test('sizes are relative to the site; bold is medium, never heavy', () => {
     expect(textLook({ size: 'body' }, 'band').tier).toBe('text')
     expect(textLook({ size: 'caption' }, 'band').tier).toBe('meta')
     expect(textLook({ size: 'title' }, 'pane').tier).toBe('title')
     expect(textLook({ bold: true }, 'band').weight).toBe('medium')
+    expect(textLook({ bold: true }, 'pane').weight).toBe('medium')
+    expect(textLook({ weight: 'bold' }, 'band').weight).toBe('medium')
     expect(textLook({ weight: 'bold' }, 'pane').weight).toBe('semibold')
     expect(textLook({ weight: 'medium' }, 'pane').weight).toBe('medium')
   })
 
-  test('dim, italic, struck-through and inverse text keep their meaning', () => {
-    const dim = textLook({ dimColor: true, italic: true, strikethrough: true }, 'pane')
-    expect(dim.tone).toBe('soft')
-    expect(dim.italic).toBe(true)
-    expect(dim.strikethrough).toBe(true)
-    const chip = textLook({ inverse: true, color: 'green' }, 'pane')
-    expect(chip.chip).toBe(true)
-    expect(chip.style.color).toBe('var(--status-success)')
+  test('a pane draws a terminal’s text on its grid, in the code face; the band is chrome', () => {
+    expect(textLook({}, 'pane').mono).toBe(true)
+    expect(textLook({ size: 'title' }, 'pane').mono).toBe(false)
+    expect(textLook({}, 'band').mono).toBe(false)
+    expect(textLook({ mono: true }, 'band').mono).toBe(true)
   })
 
-  test('the band mutes a coloured text toward the strip’s soft tone', () => {
-    const look = textLook({ color: 'magenta', bold: true }, 'band')
-    expect(look.style.color).toBe('color-mix(in oklab, var(--conn-violet) 70%, var(--text-soft))')
-    expect(look.weight).toBe('medium')
+  test('dim text is one step quieter than the site’s own text', () => {
+    expect(textLook({ dimColor: true }, 'band').tone).toBe('faint')
+    expect(textLook({ dimColor: true }, 'pane').tone).toBe('soft')
+    const dim = textLook({ dimColor: true, italic: true, strikethrough: true }, 'pane')
+    expect(dim.italic).toBe(true)
+    expect(dim.strikethrough).toBe(true)
+  })
+
+  test('inverse is the selected segment, whatever colour the mod named', () => {
+    const chip = textLook({ inverse: true, color: 'cyan' }, 'pane')
+    expect(chip.chip).toBe(true)
+    expect(chip.style.backgroundColor).toBe('var(--surface-active)')
+    expect(chip.style.color).toBe('var(--foreground)')
+  })
+
+  test('a colour is its tone’s token: toned in the band, the status colour in a pane', () => {
+    expect(textLook({ color: 'magenta', bold: true }, 'band').style.color).toBe(
+      'color-mix(in oklab, var(--conn-violet) 45%, var(--text-soft))',
+    )
+    expect(textLook({ color: 'green' }, 'pane').style.color).toBe('var(--status-success)')
+    expect(textLook({ color: 'cyan', dimColor: true }, 'pane').tone).toBe(null)
   })
 })
 
-describe('colours as theme tokens', () => {
-  test('terminal names map to the fixed palette', () => {
-    expect(colorOf('red')).toBe('var(--status-error)')
-    expect(colorOf('yellowBright')).toBe('var(--status-warning)')
-    expect(colorOf('cyan')).toBe('var(--chart-2)')
-    expect(colorOf('gray')).toBe('var(--text-faint)')
+describe('boxes', () => {
+  test('a row of one-line cells shares their baseline, as on a terminal’s line', () => {
+    expect(boxLook({}, 'band').style.alignItems).toBe('baseline')
+    expect(boxLook({ alignItems: 'center' }, 'band').style.alignItems).toBe('center')
+    expect(boxLook({ flexDirection: 'column' }, 'pane').style.alignItems).toBeUndefined()
   })
 
-  test('a hex or rgb colour lands on the palette entry nearest its hue', () => {
-    expect(colorOf('#ff3b30')).toBe('var(--status-error)')
-    expect(colorOf('#34c759')).toBe('var(--status-success)')
-    expect(colorOf('rgb(0, 122, 255)')).toBe('var(--status-info)')
-    expect(colorOf('#c040ff')).toBe('var(--conn-violet)')
-    expect(colorOf('#808080')).toBe('var(--text-faint)')
-    expect(colorOf('#f5f5f5')).toBe('var(--foreground)')
-    expect(colorOf('url(evil)')).toBeUndefined()
+  test('a ground is a neutral veil and a coloured frame keeps the border token', () => {
+    const look = boxLook(
+      { backgroundColor: 'magenta', borderStyle: 'round', borderColor: 'magenta' },
+      'pane',
+    )
+    expect(look.style.backgroundColor).toBe('var(--field-fill)')
+    expect(look.style.borderColor).toBeUndefined()
   })
 })
 
 describe('buttons at a site’s control rung', () => {
-  test('a default button is a compact field button, plain a quiet row, primary and danger kept', () => {
-    expect(buttonLook({}, 'band')).toMatchObject({ size: 'xs', variant: 'field', row: false })
-    expect(buttonLook({}, 'pane')).toMatchObject({ size: 'sm', variant: 'field', row: false })
+  test('one quiet style per site: ghost in the band, the soft fill in a pane', () => {
+    expect(buttonLook({}, 'band')).toMatchObject({ size: 'xs', variant: 'ghost', row: false })
+    expect(buttonLook({}, 'pane')).toMatchObject({ size: 'sm', variant: 'secondary', row: false })
     expect(buttonLook({ plain: true }, 'pane')).toMatchObject({ variant: 'ghost', row: true })
     expect(buttonLook({ variant: 'primary' }, 'band').variant).toBe('mono')
     expect(buttonLook({ variant: 'danger' }, 'band').variant).toBe('destructive')
+  })
+
+  test('in a pane’s action bar a plain button is one of the bar’s buttons, not a row', () => {
+    expect(buttonLook({ plain: true }, 'pane', true)).toMatchObject({
+      variant: 'secondary',
+      row: false,
+    })
   })
 })

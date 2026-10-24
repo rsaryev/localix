@@ -32,7 +32,7 @@ const band: ModElement[] = [
   },
 ]
 
-async function mount() {
+async function mount(tree: ModElement[] = band) {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
   const { ModBand } = await import('./ModBand')
@@ -48,7 +48,7 @@ async function mount() {
   await act(async () =>
     root.render(
       <ModBand
-        tree={band}
+        tree={tree}
         act={(action) => actions.push(action)}
         // No pause in a test: the digit is still alone in the box when the band looks.
         afterPause={(run) => (run(), () => {})}
@@ -110,7 +110,7 @@ test('a list of picks reads as one row of chips, each with its key, after its la
   // The label sits beside the row, not as a heading over a list.
   expect(row.parentElement!.textContent!.startsWith('next:')).toBe(true)
   // ← and → walk the chips.
-  chips[0]!.focus()
+  await act(async () => chips[0]!.focus())
   await act(async () => {
     chips[0]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }))
   })
@@ -132,5 +132,56 @@ test('collapsed, the band is one row of what it says, and no hotkey presses in i
   // A part of the summary opens the band again.
   await act(async () => summary.querySelector('button')!.click())
   expect(slot.querySelectorAll('[aria-keyshortcuts]')).toHaveLength(4)
+  await done()
+})
+
+/** A second made-up mod's status line beside its button, above the first one's picks. */
+const status: ModElement = {
+  type: 'Box',
+  props: { flexDirection: 'row', gap: 2, paddingX: 1 },
+  children: [
+    { type: 'Text', props: { color: 'magenta', bold: true }, children: ['▶ Status: 1 change'] },
+    { type: 'Button', props: { key: 'open', label: 'Open', hotkey: 'o' }, children: [] },
+  ],
+}
+
+test('the band is part of the composer: its surface, one hairline, a quiet collapse control', async () => {
+  const { slot, done } = await mount([status, ...band])
+  const strip = slot.firstElementChild as HTMLElement
+  // No stripe of its own: the composer's surface shows through.
+  expect(strip.className).not.toMatch(/\bbg-/)
+  // One hairline between the band and the input, inset to the composer's padding.
+  const seam = strip.querySelector<HTMLElement>('[data-slot="mods-band-seam"]')!
+  expect(seam.className).toContain('border-b')
+  expect(seam.className).toContain('border-border-faint')
+  const collapse = slot.querySelector<HTMLButtonElement>('button[aria-label="Collapse the band"]')!
+  expect(collapse.dataset.variant).toBe('ghost')
+  await done()
+})
+
+test('one button style: the line’s button and the picks are quiet ghost actions with keycaps', async () => {
+  const { act, slot, done } = await mount([status, ...band])
+  const buttons = [...slot.querySelectorAll<HTMLButtonElement>('button[aria-keyshortcuts]')]
+  expect(buttons.map((button) => button.dataset.variant)).toEqual(Array(5).fill('ghost'))
+  expect(buttons.map((button) => button.querySelector('kbd')?.textContent)).toEqual([
+    'o',
+    '1',
+    '2',
+    '3',
+    '0',
+  ])
+  // A pick's label truncates in its chip; the whole of it is in the tooltip.
+  const pick = buttons[1]!
+  expect(pick.getAttribute('title')).toBeNull()
+  await act(async () => {
+    pick.focus()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+  })
+  const tooltip = document.body.querySelector<HTMLElement>('[role="tooltip"]')!
+  expect(tooltip.textContent).toContain('Run the tests')
+  await act(async () => {
+    pick.blur()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+  })
   await done()
 })

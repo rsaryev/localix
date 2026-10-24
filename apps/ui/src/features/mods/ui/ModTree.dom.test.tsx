@@ -38,7 +38,7 @@ test('a mod’s drawing renders with kit controls and sends what the person does
   )
 
   expect(host.textContent).toContain('Calls: 3')
-  expect(host.querySelector('span')?.className).toContain('font-semibold')
+  expect(host.querySelector('span')?.className).toContain('font-medium')
   expect(host.querySelector('a')).toBeNull()
   expect(host.textContent).toContain('Sneaky')
   const svg = host.querySelector('img')!
@@ -99,4 +99,89 @@ test('Claude Code’s control and text props draw: labels from children, hotkeys
   expect(inverse.style.backgroundColor).toBe('var(--surface-active)')
   await act(async () => root.unmount())
   host.remove()
+})
+
+async function render(nodes: ModElement[], site: 'band' | 'pane') {
+  const { act } = await import('react')
+  const { createRoot } = await import('react-dom/client')
+  const { ModTree } = await import('./ModTree')
+  const { ModSiteContext } = await import('./modSite')
+  const host = document.createElement('div')
+  document.body.append(host)
+  const root = createRoot(host)
+  await act(async () =>
+    root.render(
+      <ModSiteContext.Provider value={site}>
+        <ModTree nodes={nodes} act={() => {}} />
+      </ModSiteContext.Provider>,
+    ),
+  )
+  const span = (text: string) =>
+    [...host.querySelectorAll('span')].find((node) => node.textContent === text)!
+  return {
+    host,
+    span,
+    done: async () => {
+      await act(async () => root.unmount())
+      host.remove()
+    },
+  }
+}
+
+test('in a pane a mod’s text keeps its terminal grid; a coloured +/− line is a diff row', async () => {
+  const { span, done } = await render(
+    [
+      { type: 'Text', props: {}, children: ['  context line'] },
+      { type: 'Text', props: { color: 'green' }, children: ['+ added line'] },
+      { type: 'Text', props: { color: 'red' }, children: ['- removed line'] },
+      { type: 'Text', props: { color: 'green' }, children: ['+31'] },
+      {
+        type: 'Button',
+        props: { key: 'next', hotkey: 'n' },
+        children: [{ type: 'Text', props: {}, children: ['Next'] }],
+      },
+    ],
+    'pane',
+  )
+  expect(span('  context line').className).toContain('font-mono')
+  const added = span('+ added line')
+  // The diff view's own row: its wash and gutter bar, the code in the text colour, the sign tinted.
+  expect(added.className).toContain('bg-diff-added')
+  expect(added.className).toContain('font-mono')
+  expect(added.style.color).toBe('')
+  expect(added.querySelector('span')!.className).toContain('text-status-success')
+  expect(span('- removed line').className).toContain('bg-diff-removed')
+  // A count stays a coloured word.
+  expect(span('+31').className).not.toContain('bg-diff-added')
+  expect(span('+31').style.color).toBe('var(--status-success)')
+  // A button's label is the UI's own type.
+  expect(span('Next').className).not.toContain('font-mono')
+  await done()
+})
+
+test('in the band text is chrome: the UI face, a leading glyph faint, a named colour toned', async () => {
+  const { span, done } = await render(
+    [{ type: 'Text', props: { color: 'magenta', bold: true }, children: ['▶ Replay: 1 edit'] }],
+    'band',
+  )
+  const line = span('▶ Replay: 1 edit')
+  expect(line.className).not.toContain('font-mono')
+  expect(line.className).toContain('font-medium')
+  // Magenta is the accent tone, toned into the strip's text (`modColor.ts`), not a raw violet.
+  expect(line.dataset.tone).toBe('accent')
+  expect(span('▶').className).toContain('text-text-faint')
+  await done()
+})
+
+test('a frame nested in a pane is a card of the app’s, not a coloured outline', async () => {
+  const { host, done } = await render(
+    [{ type: 'Box', props: { borderStyle: 'round', borderColor: 'magenta' }, children: ['card'] }],
+    'pane',
+  )
+  const card = host.querySelector('div')!
+  expect(card.className).toContain('border-border-faint')
+  expect(card.className).toContain('rounded-md')
+  expect(card.className).toContain('bg-foreground/[0.02]')
+  expect(card.style.borderColor).toBe('')
+  await done()
 })

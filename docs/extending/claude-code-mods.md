@@ -94,39 +94,71 @@ reload.
 
 ## How Localix draws a mod
 
-A mod is written for a terminal; Localix draws its tree with its own controls at the density of the
-place it draws on. The rules come from the site and the shape of the tree, never from which mod drew
-it, so every mod gets the same table.
+A mod is written for a terminal; Localix draws its tree with its own controls, type and colours, at
+the density of the place it draws on, so a mod looks like the rest of the app. The rules come from
+the site and the shape of the tree, never from which mod drew it, so every mod gets the same table.
 
-| Prop or element                                  | In the band above the message box                                                | In a pane tab                      |
-| ------------------------------------------------ | -------------------------------------------------------------------------------- | ---------------------------------- |
-| Text                                             | 12px, meta 11px                                                                  | 13px, meta 12px                    |
-| One cell of spacing (`gap`, `padding`, …)        | 4px across, 2px down, at most 12px                                               | 6px across, 4px down, at most 24px |
-| Steps `xs` `sm` `md` `lg` `xl`                   | 2, 4, 6, 8, 12px                                                                 | 2, 4, 8, 12, 16px                  |
-| `width`, `height` in cells                       | A character of the text across, a line down                                      | The same                           |
-| `size` caption, footnote / body / heading, title | Meta / text / text                                                               | Meta / text / text, title 14px     |
-| `bold`, `weight`                                 | Medium                                                                           | Semibold; `medium` stays medium    |
-| `dimColor`                                       | The soft text tone                                                               | The same                           |
-| `color` (a name, hex or `rgb()`)                 | The nearest theme colour, toned toward the strip's text                          | The nearest theme colour           |
-| `backgroundColor`                                | A soft tint of that colour                                                       | The same                           |
-| `inverse`                                        | A small chip in the colour                                                       | The same                           |
-| `borderStyle`                                    | A hairline with rounded corners; `bold`, `double` a stronger line; `quote` a bar | The same                           |
-| Button                                           | A 20px button with its key at the end                                            | A 24px button                      |
-| Button `plain`; `variant` primary, danger        | A quiet row; the solid and the destructive button                                | The same                           |
-| `Code`, `Markdown`, `Input`, `Select`            | A compact code block, the app's Markdown, kit fields                             | The same at pane size              |
+| Prop or element                                  | In the band above the message box                           | In a pane tab                                                       |
+| ------------------------------------------------ | ----------------------------------------------------------- | ------------------------------------------------------------------- |
+| Text                                             | The app's UI type at 11px, as the composer's other strips   | The code type at 12px, as the diff view: columns and ASCII line up  |
+| One cell of spacing (`gap`, `padding`, …)        | 4px across, 2px down, at most 12px                          | 6px across, 4px down, at most 24px                                  |
+| Steps `xs` `sm` `md` `lg` `xl`                   | 2, 4, 6, 8, 12px                                            | 2, 4, 8, 12, 16px                                                   |
+| `width`, `height` in cells                       | A character of the text across, a line down                 | The same                                                            |
+| A row `Box`                                      | Its cells share a baseline unless it sets `alignItems`      | The same                                                            |
+| `size` caption, footnote / body / heading, title | All 11px                                                    | Meta 11px / text / heading 13px and title 14px in the UI type       |
+| `bold`                                           | Medium                                                      | Medium; `weight: 'bold'` semibold                                   |
+| `dimColor`                                       | The faint text tone                                         | The soft text tone                                                  |
+| `color`                                          | Its tone (below), toned into the strip's text               | Its tone: the status colours as the app's own text uses them        |
+| `backgroundColor`                                | On text, the kit chip's 12% tint; on a box, a neutral veil  | The same                                                            |
+| `inverse`                                        | The selected-segment veil in the theme's text colour        | The same                                                            |
+| `borderStyle`, `borderColor`                     | A hairline; `bold`, `double` a stronger line; `quote` a bar | A card of the app's (faint outline, 2% veil); the colour only tints |
+| Button                                           | A 20px ghost button, its key in a keycap after the label    | A 24px button on the soft field fill                                |
+| Button `plain`; `variant` primary, danger        | A chip in a list of picks; the solid and destructive ones   | A quiet list row; the solid and destructive ones                    |
+| A leading glyph (`▶ `, `☁ `, `⚠ `)               | At the text's size in the faint tone                        | The same                                                            |
+| `Code`, `Markdown`, `Input`, `Select`            | A compact code block, the app's Markdown, kit fields        | The same at pane size                                               |
 
-Theme colours are the error, success, warning and info colours for red, green, yellow and blue, and
-fixed chart colours for cyan and magenta; greys are the soft or faint text. A colour therefore reads
-in the light and the dark theme alike.
+A colour a mod names lands on one of a few tones, never on the raw hue, so a `magenta` written for a
+terminal does not become the loudest thing on the screen. Colour is for text: no fill or frame takes
+a hue at strength, and every tone reads in the light and the dark theme alike.
 
-The band also lays its tree out by shape. A column `Box` with no frame or ground only stacks, and an
-empty `Box` only spaces, so the band's own rows and hairlines take their place.
+| `color` (a name, its `Bright` twin, or the hex or `rgb()` nearest it) | Tone    | Drawn with                                     |
+| --------------------------------------------------------------------- | ------- | ---------------------------------------------- |
+| red                                                                   | danger  | The error colour                               |
+| green                                                                 | success | The success colour                             |
+| yellow, orange                                                        | warning | The warning colour                             |
+| blue, cyan                                                            | info    | The info colour                                |
+| magenta, purple                                                       | accent  | A violet toned well into the soft text, always |
+| gray, grey, `blackBright`, a dark grey                                | muted   | The faint text                                 |
+| white, black, a light grey                                            | plain   | The text's own colour                          |
+
+A dim colour fades toward the faint text; a `borderColor` in the danger, success or warning tone
+tints the border faintly, and any other leaves the border token as it is.
+
+The band is part of the message box rather than a strip on top of it: it sits on the box's own
+surface, inset to its padding, with one hairline between it and the input, rows of one 28px height,
+and the collapse control as a quiet icon centred on the first row. It lays its tree out by shape. A
+column `Box` with no frame or ground only stacks, and an empty `Box` only spaces, so the band's own
+rows take their place.
 
 Two or more `plain` Buttons each alone on a row, with an optional text-only line before them as
-their label, are a list of picks: one row of chips with their keys. Rows of text and buttons one
-line high sit side by side in one row. A row that does not fit scrolls sideways, with the wheel and
-with ← and →. Anything else (a framed box, a field, code) is drawn as it is, and the band scrolls
-past 10 rows. The band draws one tree composed by all of a chat's mods, so it has no menu per mod.
+their label, are a list of picks: one row of chips with their keys, each label cut short with its
+whole text in a tooltip. Rows of text and buttons one line high sit side by side in one row. A row
+that does not fit scrolls sideways, with the wheel and with ← and →, its edge fading into the box.
+Anything else (a framed box, a field, code) is drawn as it is, and the band scrolls past 10 rows.
+The band draws one tree composed by all of a chat's mods, so it has no menu per mod.
+
+A pane tab is the mod's frame and title, so a pane lays its tree out by shape too:
+
+- The one root `Box` with a border — or the first one inside plain one-child wrappers — loses its
+  border, padding and margin; its direction, gap and alignment stay. A frame nested deeper is a
+  card.
+- A bold first line that repeats the pane's `title`, glyph and case aside, is dropped; one that goes
+  on after the title with `·`, `-` or `:` keeps only what it adds (`⚠ Blast Radius · rm -rf` in a
+  pane titled Blast Radius shows `rm -rf`).
+- A text of one string, green after `+ ` or red after `- `, is a diff line, drawn as the diff view
+  draws an added or removed row: its wash, its gutter bar and a tinted sign. `+31` stays a count.
+- A last row of Buttons, with at most text beside them, is the pane's action bar under the body,
+  where a `plain` Button is a button like its neighbours and the text is in the UI type.
 
 A Button without a `key` is addressed by its label, else its one string child, and draws its
 children as its label; `plain`, `variant`, `dimColor` and `hotkey` show as Localix draws a button

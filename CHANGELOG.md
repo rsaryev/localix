@@ -173,11 +173,14 @@ Changes land on `main`.
 
 ### Changed
 
-- **Mods look like the rest of the app**: the strip a mod draws above the message box uses the
-  composer strips' compact type, a list of picks reads as one row of chips with their keys, lines
-  sit side by side, and the strip scrolls rather than pushing the message box away; collapsed, it is
-  one row of what it says. A pane is drawn at workbench density. See
-  [How Localix draws a mod](docs/extending/claude-code-mods.md#how-localix-draws-a-mod).
+- **Mods look like the rest of the app**: the band a mod draws above the message box is part of the
+  box — its surface, its padding, one hairline above the input — in the composer strips' type, with
+  quiet buttons, picks as chips with keycaps and the full label in a tooltip; lines sit side by
+  side, and the band scrolls rather than pushing the message box away; collapsed, it is one row of
+  what it says. A mod's colours become the app's own tones (no raw magenta or cyan) in both themes.
+  A pane tab is the mod's frame and title: its text is set in the code type so columns line up, a
+  `+`/`-` line reads as a diff row, a nested frame as a card, and its last buttons form an action
+  bar. See [How Localix draws a mod](docs/extending/claude-code-mods.md#how-localix-draws-a-mod).
 - **Settings pages line up**: every page and section keeps its actions on its title's line, and
   moving between pages and tabs no longer moves the title, the tabs or the first section.
 
