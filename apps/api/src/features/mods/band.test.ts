@@ -90,7 +90,7 @@ describe('the AbovePrompt band', () => {
     expect(await host.band.interact('s1', { kind: 'press', element: 'gone' })).toBe(false)
   })
 
-  test('isWorking is true while the conversation’s turn runs', async () => {
+  test('isWorking is true while the conversation’s turn runs; the screen hears it too', async () => {
     const working: unknown[] = []
     const { host, scope } = await hostWithMod((on) => {
       on('ui.render', { component: 'AbovePrompt' }, (_$, e, next) => {
@@ -99,10 +99,11 @@ describe('the AbovePrompt band', () => {
       })
     })
     scope.wrapTools([])
-    await host.band.render('s1', { columns: 80, rows: 10 })
+    const during = await host.band.render('s1', { columns: 80, rows: 10 })
     await scope.turnComplete({ answer: '', turnId: 't', durationMs: 1, reason: 'answer' })
-    await host.band.render('s1', { columns: 80, rows: 10 })
+    const after = await host.band.render('s1', { columns: 80, rows: 10 })
     expect(working).toEqual([true, false])
+    expect([during.working, after.working]).toEqual([true, false])
   })
 
   test('a conversation that ran no turn since Localix started draws its band in its own project', async () => {

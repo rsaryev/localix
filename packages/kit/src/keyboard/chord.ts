@@ -58,8 +58,14 @@ function normalizeKey(rawKey: string): string {
   return rawKey.toLowerCase()
 }
 
+/** Keys besides letters whose character Option changes on a Mac (`[` → `“`), by physical key. */
+const OPTION_PUNCTUATION: Record<string, string> = { BracketLeft: '[', BracketRight: ']' }
+
 function optionLetter(e: KeyChordEvent, os: OsFamily): string | null {
-  if (os !== 'mac' || !e.altKey || !e.code || !/^Key[A-Z]$/.test(e.code)) return null
+  if (os !== 'mac' || !e.altKey || !e.code) return null
+  const punctuation = OPTION_PUNCTUATION[e.code]
+  if (punctuation) return e.key.length === 1 ? punctuation : null
+  if (!/^Key[A-Z]$/.test(e.code)) return null
   // Preserve ordinary layout letters; only recover keys transformed by Option (e.g. x → ≈).
   if (/^[a-z]$/i.test(e.key) || e.key.length !== 1) return null
   return e.code.slice(3).toLowerCase()

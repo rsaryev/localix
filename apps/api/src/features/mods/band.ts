@@ -26,6 +26,8 @@ export interface BandDrawing {
   tree: Array<JsonElement | string> | null
   /** Every page, the chain as Claude Code runs it first; empty when nothing draws. */
   pages: BandPage[]
+  /** The conversation's turn is running (`isWorking`): the screen holds its page still. */
+  working: boolean
   problem?: string
 }
 
@@ -93,7 +95,8 @@ export function createModBand(deps: {
       },
       viewport: { ...viewport, isFullscreen: false },
     }
-    if (instances.size === 0) return { sessionId, tree: null, pages: [] }
+    const working = running.has(sessionId)
+    if (instances.size === 0) return { sessionId, tree: null, pages: [], working }
     const { pages, problem } = await whileDrawing(`band\u0000${sessionId}`, () =>
       renderPages(instances, async (rest) => {
         const ran = { trace: [] as readonly TraceEntry[], chain: [] as readonly string[] }
@@ -117,6 +120,7 @@ export function createModBand(deps: {
     return {
       sessionId,
       tree: pages[0]?.tree ?? null,
+      working,
       pages: pages.map(({ mods, tree }) => ({ mods, tree })),
       ...(problem ? { problem } : {}),
     }

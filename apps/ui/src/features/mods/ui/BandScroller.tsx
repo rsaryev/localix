@@ -1,10 +1,18 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react'
 import { cn } from '@localixai/mini-app-sdk/ui/classes'
 
 /**
  * One row of the band that scrolls sideways when it does not fit: the wheel scrolls it, ← and →
  * move between its controls, items snap to the start, and a soft fade marks the edge with more
- * behind it. Smooth scrolling only where motion is welcome.
+ * behind it. Smooth scrolling only where motion is welcome. When what it says changes
+ * (`resetKey`), it starts at its left edge again rather than keeping an old scroll mid-word.
  */
 
 const FOCUSABLE = 'button:not([disabled]), a[href], input, [tabindex="0"]'
@@ -12,14 +20,25 @@ const FOCUSABLE = 'button:not([disabled]), a[href], input, [tabindex="0"]'
 export function BandScroller({
   label,
   className,
+  resetKey,
   children,
 }: {
   label: string
   className?: string
+  /** What the row says: a new value scrolls it back to its start. */
+  resetKey?: string
   children: ReactNode
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const [edges, setEdges] = useState({ start: false, end: false })
+
+  useLayoutEffect(() => {
+    const node = ref.current
+    if (!node || node.scrollLeft === 0) return
+    // At once, past the row's smooth scrolling: a jump back, not a slide under the fade.
+    node.scrollTo({ left: 0, behavior: 'instant' })
+    setEdges((now) => ({ ...now, start: false }))
+  }, [resetKey])
 
   useEffect(() => {
     const node = ref.current

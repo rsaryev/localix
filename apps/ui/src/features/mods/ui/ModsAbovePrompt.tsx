@@ -45,13 +45,19 @@ export function ModsAbovePrompt({
   const key = live ? `mod-band:${sessionId}:${columns}` : null
   useRevalidateOnResources(key ?? 'mod-band:none', ['mods'])
   const { data } = useSWR(key, () => modsApi.band(sessionId!, columns, BAND_ROWS))
+  const pages = data?.pages ?? (data?.tree ? [{ mods: [], tree: data.tree }] : [])
   return (
     <div ref={ref}>
-      {sessionId && data?.tree ? (
+      {sessionId && pages.length > 0 ? (
         <ModBand
-          tree={data.tree}
-          act={(action) =>
-            runMiniAppAction(() => modsApi.bandAct(sessionId, action), 'The mod did not take that')
+          sessionId={sessionId}
+          pages={pages}
+          working={data?.working ?? false}
+          act={(action, page) =>
+            runMiniAppAction(
+              () => modsApi.bandAct(sessionId, action, page),
+              'The mod did not take that',
+            )
           }
         />
       ) : null}

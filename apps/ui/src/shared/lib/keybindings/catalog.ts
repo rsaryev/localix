@@ -193,6 +193,20 @@ export const SHORTCUT_CATALOG: ShortcutCommand[] = [
     defaultChord: 'arrowdown',
     configurable: false,
   },
+  {
+    id: CMD.modBandPrevPage,
+    label: 'Previous mod band page',
+    description: 'Show the previous page of the mods band above the composer.',
+    category: 'composer',
+    defaultChord: 'alt+[',
+  },
+  {
+    id: CMD.modBandNextPage,
+    label: 'Next mod band page',
+    description: 'Show the next page of the mods band above the composer.',
+    category: 'composer',
+    defaultChord: 'alt+]',
+  },
 
   // File tree
   {

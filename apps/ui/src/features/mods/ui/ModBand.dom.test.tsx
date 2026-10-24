@@ -32,6 +32,8 @@ const band: ModElement[] = [
   },
 ]
 
+let mounts = 0
+
 async function mount(tree: ModElement[] = band) {
   const { act } = await import('react')
   const { createRoot } = await import('react-dom/client')
@@ -45,16 +47,20 @@ async function mount(tree: ModElement[] = band) {
   shell.append(slot, field)
   document.body.append(shell)
   const root = createRoot(slot)
-  await act(async () =>
-    root.render(
-      <ModBand
-        tree={tree}
-        act={(action) => actions.push(action)}
-        // No pause in a test: the digit is still alone in the box when the band looks.
-        afterPause={(run) => (run(), () => {})}
-      />,
-    ),
-  )
+  const sessionId = `band-${(mounts += 1)}`
+  const draw = (next: ModElement[]) =>
+    act(async () =>
+      root.render(
+        <ModBand
+          sessionId={sessionId}
+          pages={[{ mods: ['m'], tree: next }]}
+          act={(action) => actions.push(action)}
+          // No pause in a test: the digit is still alone in the box when the band looks.
+          afterPause={(run) => (run(), () => {})}
+        />,
+      ),
+    )
+  await draw(tree)
   const type = async (value: string) =>
     act(async () => {
       Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(
@@ -67,7 +73,7 @@ async function mount(tree: ModElement[] = band) {
     await act(async () => root.unmount())
     shell.remove()
   }
-  return { act, slot, field, actions, type, done }
+  return { act, slot, field, actions, type, draw, done }
 }
 
 test('the band draws the mods’ tree; a hotkey presses its Button while the band has focus', async () => {
@@ -183,5 +189,21 @@ test('one button style: the line’s button and the picks are quiet ghost action
     pick.blur()
     await new Promise((resolve) => setTimeout(resolve, 0))
   })
+  await done()
+})
+
+test('a row the mod redraws with new words starts at its left edge again', async () => {
+  const { slot, draw, done } = await mount([status])
+  const row = () => slot.querySelector<HTMLElement>('[role="group"][aria-label="Mods band line"]')!
+  row().scrollLeft = 120
+  // The same words keep the person's scroll.
+  await draw([status])
+  expect(row().scrollLeft).toBe(120)
+  const changed: ModElement = {
+    ...status,
+    children: [{ type: 'Text', props: {}, children: ['▶ Status: 2 changes'] }],
+  }
+  await draw([changed])
+  expect(row().scrollLeft).toBe(0)
   await done()
 })

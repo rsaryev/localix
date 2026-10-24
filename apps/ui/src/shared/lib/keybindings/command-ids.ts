@@ -35,6 +35,8 @@ export const CMD = {
   acceptSuggestion: 'composer.accept-suggestion',
   promptHistoryPrev: 'composer.prompt-history-prev',
   promptHistoryNext: 'composer.prompt-history-next',
+  modBandPrevPage: 'composer.mod-band-prev-page',
+  modBandNextPage: 'composer.mod-band-next-page',
   renameFile: 'files.rename',
   deleteFile: 'files.delete',
   cutFile: 'files.cut',

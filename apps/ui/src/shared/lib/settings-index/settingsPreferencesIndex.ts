@@ -21,6 +21,15 @@ export const PREFERENCES_SETTINGS_INDEX: SettingsIndexEntry[] = [
     anchor: 'prefs-rail-recents',
   },
   {
+    id: 'prefs.mod-band',
+    tab: 'preferences',
+    tabLabel: 'Preferences',
+    title: 'Mods band',
+    description: 'Rotate the pages of the mods band above the composer.',
+    keywords: ['mods', 'band', 'rotate', 'pages', 'above prompt', 'plugin', 'carousel'],
+    anchor: 'prefs-mod-band',
+  },
+  {
     id: 'prefs.output-style',
     tab: 'preferences',
     tabLabel: 'Preferences',

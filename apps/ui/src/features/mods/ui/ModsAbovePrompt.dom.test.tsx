@@ -38,13 +38,13 @@ async function mountBand(opts: {
   const { createRoot } = await import('react-dom/client')
   const { modsApi } = await import('@/shared/api/modsApi')
   const reads: Array<{ sessionId: string; columns: number; rows: number }> = []
-  const actions: Array<{ sessionId: string; action: ModAction }> = []
+  const actions: Array<{ sessionId: string; action: ModAction; page?: number }> = []
   spyOn(modsApi, 'band').mockImplementation(async (sessionId, columns, rows) => {
     reads.push({ sessionId, columns, rows })
     return opts.drawing()
   })
-  spyOn(modsApi, 'bandAct').mockImplementation(async (sessionId, action) => {
-    actions.push({ sessionId, action })
+  spyOn(modsApi, 'bandAct').mockImplementation(async (sessionId, action, page) => {
+    actions.push({ sessionId, action, ...(page ? { page } : {}) })
   })
   const { ModsAbovePrompt } = await import('./ModsAbovePrompt')
   const host = document.createElement('div')
@@ -92,6 +92,30 @@ describe('the mods’ band above the prompt box', () => {
     await band.React.act(async () => band.button('Commit')!.click())
     expect(band.actions).toEqual([
       { sessionId: 's-press', action: { kind: 'press', element: 'run' } },
+    ])
+    await band.done()
+  })
+
+  test('the band’s pages: a press on the second page names it', async () => {
+    const band = await mountBand({
+      sessionId: 's-pages',
+      drawing: () => ({
+        sessionId: 's-pages',
+        tree: suggestion('Replay'),
+        pages: [
+          { mods: ['replay'], tree: suggestion('Replay') },
+          { mods: ['weather'], tree: suggestion('Cloudy') },
+        ],
+        working: false,
+      }),
+    })
+    const next = band.host.querySelector<HTMLButtonElement>(
+      'button[aria-label="Next mod band page"]',
+    )!
+    await band.React.act(async () => next.click())
+    await band.React.act(async () => band.button('Cloudy')!.click())
+    expect(band.actions).toEqual([
+      { sessionId: 's-pages', action: { kind: 'press', element: 'run' }, page: 1 },
     ])
     await band.done()
   })
