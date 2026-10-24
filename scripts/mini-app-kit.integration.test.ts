@@ -250,6 +250,8 @@ describe('a scaffolded user mini app', () => {
       ['style', true],
       // The reference's own routes pass the rule every copy is held to.
       ['routes', true],
+      // The template ships the icon a published mini app needs, so its store media pass.
+      ['store media', true],
       ['message context', true],
       ['backend build', true],
       ['UI build', true],
