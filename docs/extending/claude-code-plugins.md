@@ -131,6 +131,54 @@ A marketplace entry names where its plugin comes from, and Localix fetches it as
 | `archive`                              | Downloaded over https, checked against its `sha256`, unpacked                 |
 | `command`                              | Not run; install from the folder the command prints                           |
 
+An npm `package` may carry its version (`@org/formatter@2.0.0`) or be an `https` link to the
+tarball; a link on github.com, gitlab.com (outside its npm registry API), bitbucket.org or git.sr.ht
+is refused. A registry your `~/.npmrc` holds an `_authToken` for receives it. An archive download
+gets the entry's `headers` and, on the catalog's own origin, the headers of a `url` marketplace
+source; an entry `headersHelper` is refused, since Claude Code first asks you to accept that
+command. A relative entry path must start with `./` (a bare name only under `metadata.pluginRoot`)
+and use `/`, and a catalog needs an `owner`, as in Claude Code.
+
+`/plugin install <name>@<marketplace>` and `/plugin update` read the marketplace again first, unless
+it was refreshed in the last 30 seconds or `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` is set; when
+that fails, the install goes on from the cached catalog and says `marketplace not refreshed`.
+`/plugin update` leaves a plugin as it is when the marketplace offers the version already installed
+(`plugin.json` first, then the entry); a plugin without a version, or from a local folder, is
+fetched again. `/plugin marketplace update` follows the catalog's `renames` chain and installs a
+renamed plugin under its current name; a plugin the catalog dropped stays with a warning, or is
+uninstalled when the catalog sets `forceRemoveDeletedPlugins`.
+
+When a plugin is copied in, its Node.js packages install from its lockfile as Claude Code installs
+them: `bun.lock`, `npm-shrinkwrap.json` or `package-lock.json` with a matching `package.json`, only
+pinned registry packages, scripts off, for at most 60 seconds, in a folder of its own. A lockfile
+that cannot be checked (`bun.lockb`, `yarn.lock`, `pnpm-lock.yaml`) leaves a note instead.
+
+A dependency resolves in its own marketplace, or in the one `"name@marketplace"` or
+`{ "marketplace": … }` names under the root catalog's `allowCrossMarketplaceDependenciesOn`. Its
+`version` range installs the highest `<plugin>--v<version>` tag of a git-backed plugin's repository
+(none in range fails the install), and a plugin whose installed dependency falls outside the range
+does not load. Only plugins at the install's scope count: a project's copy does not satisfy a
+user-wide install.
+
+### Claude Code settings
+
+Localix reads the marketplaces and plugins Claude Code's settings declare, where Claude Code keeps
+them: `CLAUDE_CONFIG_DIR` (else `~/.claude`) for the user's settings and
+`CLAUDE_CODE_PLUGIN_CACHE_DIR` (else `<config>/plugins`) for its installs.
+
+| Setting                                          | In Localix                                                                                                                                                                   |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `extraKnownMarketplaces`                         | Registered in the background when a scope's plugins are listed, from user, project, local and managed settings; the highest entry wins whole and its `autoUpdate` is kept    |
+| `enabledPlugins`                                 | Decides Claude Code's own installs; managed settings outrank every file, `true` forcing a plugin on and `false` blocking it, and a managed `false` refuses a Localix install |
+| `strictKnownMarketplaces`, `blockedMarketplaces` | Checked before a marketplace is added or installed from, with Claude Code's matching                                                                                         |
+| `pluginConfigs`                                  | A Claude Code install's saved option values, from user and managed settings, are its values here; a sensitive one is asked for again                                         |
+
+Managed settings are read from `managed-settings.json` and `managed-settings.d/*.json` in the system
+directory; MDM profiles and server-managed settings are not. A project's settings cannot re-point a
+marketplace already added, nor run a `headersHelper`. Localix's project scope is per machine, like
+Claude Code's `local` scope; Claude Code's shared project scope is read from the repository's
+`.claude/settings.json`.
+
 An entry whose plugin has no `.claude-plugin/plugin.json` is its manifest: the official `*-lsp`
 plugins get their language servers this way. Where both exist, the entry's commands, agents, skills,
 output styles and themes are added and its hooks replace the manifest's per event; `strict: false`
@@ -234,7 +282,7 @@ plugin's validation, never dropped silently. In October 2026 all 328 plugins of 
 | `userConfig` with `sensitive`                                           | Supported                                                                                                                                                                                                                                                                                                |
 | `monitors`, `experimental.monitors`, `monitors/monitors.json`           | Supported; an `on-skill-invoke` monitor starts the first time its skill or command runs in a chat, in that chat's working directory. An `always` monitor reaches every chat that runs, from a process in that chat's working directory                                                                   |
 | `bin/`                                                                  | Supported: on the PATH of the agent's shell and monitors                                                                                                                                                                                                                                                 |
-| `dependencies`                                                          | Supported for marketplace installs                                                                                                                                                                                                                                                                       |
+| `dependencies`                                                          | Supported for marketplace installs, with tag-resolved version ranges                                                                                                                                                                                                                                     |
 | `outputStyles`                                                          | Supported; see [Output styles](#output-styles-themes-and-settings)                                                                                                                                                                                                                                       |
 | `themes`                                                                | Supported in Settings → Preferences → Appearance and `/theme`                                                                                                                                                                                                                                            |
 | `workflows`                                                             | Supported; see [Workflows](#workflows)                                                                                                                                                                                                                                                                   |
@@ -322,6 +370,9 @@ Claude Code's own mods — `diff`, `agents-md`, `sec-default`, `telemetry` — a
 
 - A plugin whose components live only in its marketplace entry, such as the `*-lsp` plugins, has
   them when installed through the marketplace, not from its folder alone.
+- Plugins are keyed by name: two plugins of one name from different marketplaces cannot both be
+  installed, so `${CLAUDE_PLUGIN_DATA}` is `~/.localix/plugin-data/<name>`.
+- Background auto-update of marketplaces is not run yet; `autoUpdate` is recorded for it.
 - A hosted `marketplace.json` takes only entries with their own sources, since relative paths have
   no folder to resolve from. `update` and `remove` act on global installs, not project ones, and
   only user-scope copies go into the version cache and are auto-updated; a project install stays a

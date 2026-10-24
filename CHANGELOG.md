@@ -65,6 +65,12 @@ Changes land on `main`.
   or an `https://` URL) runs, with its own settings in the plugin's settings; a `userConfig` field
   with `options` is a picker of its values; and a plugin agent with `omitClaudeMd` runs without the
   workspace instruction files. See [Claude Code plugins](docs/extending/claude-code-plugins.md).
+- **Claude Code marketplaces, as Claude Code reads them**: marketplaces your Claude Code settings
+  declare (`extraKnownMarketplaces`) register on their own, managed settings decide what may be
+  added and installed, plugins configured in Claude Code arrive configured, npm sources take a
+  pinned version, a tarball link and a private registry token, a dependency's version range installs
+  the matching release tag, and a copied plugin gets its Node.js packages from its lockfile. See
+  [Claude Code settings](docs/extending/claude-code-plugins.md#claude-code-settings).
 - **Mini app store pages**: every mini app has its own icon, and choosing one in the store opens its
   page: screenshots at full resolution with a full-window viewer, its README as About, and details
   such as size, license and what it adds. Tags filter the store, and featured apps come first. See
@@ -197,6 +203,10 @@ Changes land on `main`.
   two minutes), `settings`, `workspaceFolder`, request and shutdown timeouts, restart limits,
   `diagnostics` and its own language ids. See
   [Language servers](docs/features/lsp.md#configuration).
+- **Plugin updates**: `/plugin install name@marketplace` and `/plugin update` read the marketplace
+  again first, so a plugin added since is found and new commits arrive; an update with nothing new
+  leaves the plugin as it is, a renamed plugin moves to its new name, and a dependency names its own
+  marketplace. See [Marketplaces](docs/extending/claude-code-plugins.md#marketplaces).
 - **Group chats** keep routing a message to the right participant after the model catalog refreshes:
   the decision model was dropped when the catalog named its vendor's own package.
 - **A repository can no longer run code before you allow it**: a plugin in a project named like one
