@@ -30,7 +30,7 @@ import { sweepOrphanSessionData } from '../features/mini-apps/session-storage'
 import { MINI_APP_WARNINGS, warnOnce } from '../lib/warn-once'
 import type { StorageMaintenance } from './storage-maintenance'
 import { armModelCatalogChecks } from '../features/catalog/refresh-schedule'
-import { armPluginAutoUpdate } from '../features/plugins/auto-update-schedule'
+import { armPluginUpdateTimers } from './plugin-update-timers'
 
 export interface OpsTimersPhaseInput
   extends
@@ -257,22 +257,13 @@ export function createOpsTimersPhase({
         })
     setInterval(() => void updateMiniApps(), 6 * 60 * 60 * 1000).unref?.()
 
-    // Plugins from marketplaces with auto-update on take their newer versions: a random one to ten
-    // minutes after start, then every six hours (`features/plugins/auto-update-schedule.ts`). The
-    // official `localix` marketplace is registered first, once (`official-marketplace.ts`).
-    const stopPluginUpdates = armPluginAutoUpdate({
-      run: () =>
-        pluginService.updates
-          .autoUpdatePass(env.LOCALIX_DEFAULT_USER_ID)
-          .then((outcome) => {
-            if (outcome.updated.length || outcome.failed.length)
-              logger.info({ event: 'plugins.auto_update', ...outcome })
-          })
-          .catch((error) =>
-            logger.warn({ event: 'plugins.auto_update_failed', error: errorMessage(error) }),
-          ),
+    // Plugin auto-update and the official marketplace (`plugin-update-timers.ts`).
+    const pluginTimers = armPluginUpdateTimers({
+      pluginService,
+      userId: env.LOCALIX_DEFAULT_USER_ID,
+      logger,
+      signal,
     })
-    signal.addEventListener('abort', stopPluginUpdates, { once: true })
 
     // Model lists: hourly, refetched past six hours (`features/catalog/refresh-schedule.ts`).
     const checkModelCatalog = armModelCatalogChecks({ catalogService, signal, logger })
@@ -309,19 +300,7 @@ export function createOpsTimersPhase({
       { name: 'storage_maintenance', run: (ctx) => maintainStorage(signal, ctx) },
       { name: 'recommended_mini_apps', run: installRecommended },
       // Near the end: it waits on the network (a first fetch of the official marketplace).
-      {
-        name: 'official_plugin_marketplace',
-        run: () =>
-          pluginService
-            .ensureOfficialMarketplace()
-            .then((outcome) => logger.info({ event: 'plugins.official_marketplace', ...outcome }))
-            .catch((error) =>
-              logger.warn({
-                event: 'plugins.official_marketplace_failed',
-                error: errorMessage(error),
-              }),
-            ),
-      },
+      pluginTimers.officialMarketplaceTask,
       // Last: it waits on the network, and the restored catalog is already served.
       ...(checkModelCatalog ? [{ name: 'model_catalog_check', run: checkModelCatalog }] : []),
     ]
