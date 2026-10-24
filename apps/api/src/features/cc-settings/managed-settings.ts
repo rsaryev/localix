@@ -92,8 +92,11 @@ export function macosMdmReader(
   return async () => {
     if (!(await fs.stat(file).catch(() => null))) return undefined
     const json = await new Promise<string | null>((done) =>
-      execFile('plutil', ['-convert', 'json', '-o', '-', file], { timeout: 5_000 }, (err, out) =>
-        done(err ? null : out),
+      execFile(
+        'plutil',
+        ['-convert', 'json', '-o', '-', file],
+        { timeout: 5_000, windowsHide: true },
+        (err, out) => done(err ? null : out),
       ),
     )
     if (!json) return undefined
