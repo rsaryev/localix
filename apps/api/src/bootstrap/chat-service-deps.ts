@@ -1,3 +1,4 @@
+import { claudeCodeHome } from '../features/cc-settings/config-dir'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { withChannelPermissionRelay } from './mcp-channels'
 import { createSessionSeatResolver } from '../features/agents/session-seat'
@@ -37,7 +38,6 @@ import { createAgentDirectoryPorts } from './agent-directory-ports'
 import { createTerminalPorts } from './terminal-ports'
 import { createChatFeaturePorts } from './chat-feature-ports'
 import { claudeCodeModes } from '../features/cc-settings/settings-modes'
-import { userHome } from '../lib/env'
 import type { MiniAppService } from '../features/mini-apps/service'
 import type { PluginService } from '../features/plugins/service-types'
 import type { ModsHost } from '../features/mods/host'
@@ -322,7 +322,7 @@ export function createChatServicePhase({
     vectors: semanticService.vectors,
     decisions: decisionService,
     resolveSessionAgent: createSessionSeatResolver(agentsService),
-    claudeCodeModes: (cwd) => claudeCodeModes({ homeDir: userHome(), cwd }),
+    claudeCodeModes: (cwd) => claudeCodeModes({ homeDir: claudeCodeHome(), cwd }),
     loadAgentModelDefaults: agentModelDefaultsPort(agentsService),
     ...createAgentDirectoryPorts(agentsService),
     agentManagement: agentsService,

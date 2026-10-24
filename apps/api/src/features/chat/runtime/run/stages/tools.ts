@@ -7,6 +7,7 @@
  * Which seat-bound protocol ports the run holds (`set_topic`, `skip_answer`) is its policy's
  * answer (`stages/policy.ts`); MCP gather and the session snapshot then run together.
  */
+import { claudeCodeHome } from '../../../../cc-settings/config-dir'
 import { mkdirSync } from 'node:fs'
 
 import { TOOL } from '../../../../agent-core/tool-names'
@@ -205,7 +206,7 @@ export async function assembleRunToolset(frame: RunFrame, turn: ResolvedTurn, in
   ] = await Promise.all([
     assembledPromise,
     frame.loadSessionSnapshot(),
-    loadClaudeCodePermissions({ homeDir: userHome(), cwd: defaultCwd }),
+    loadClaudeCodePermissions({ homeDir: claudeCodeHome(), cwd: defaultCwd }),
   ])
   // A bare deny in Claude Code's settings (`WebFetch`, `mcp__github`) takes the tool out of the
   // model's view, as Claude Code removes it; the gate refuses a call that names it anyway.

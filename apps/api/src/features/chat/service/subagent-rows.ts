@@ -1,6 +1,9 @@
+import { claudeCodeHome } from '../../cc-settings/config-dir'
 import { agentRoute } from '../../../contracts/session-route'
 import { userHome } from '../../../lib/env'
 import type { DelegatedRunSummary } from '../../agent-core/tools/delegate-control'
+import { settingsCommandLine } from '../../cc-settings/settings-commands'
+import { readSettingsFileLayers } from '../../cc-settings/settings-files'
 import type { PluginCatalog } from '../../plugins/catalog'
 import {
   activeSubagentStatusLine,
@@ -62,12 +65,17 @@ export function createSubagentRows(deps: SubagentRowsDeps) {
     samples: (taskId: string, tokens: number) => number[],
   ): Promise<SubagentRowsComputed> {
     const session = await deps.requireSession(userId, sessionId)
-    const line = activeSubagentStatusLine(await deps.buildSessionPluginCatalog(userId, session))
+    const cwd = await deps.resolveSessionWorkingDir(userId, session)
+    // The person's own Claude Code settings, a higher layer than any plugin's default.
+    const own = settingsCommandLine(
+      readSettingsFileLayers({ homeDir: deps.homeDir ?? claudeCodeHome(), cwd }),
+      'subagentStatusLine',
+    )
+    const line = own
+      ? { pluginName: '', pluginRoot: '', command: own.command }
+      : activeSubagentStatusLine(await deps.buildSessionPluginCatalog(userId, session))
     if (!line) return { view: { active: false, rows: [] }, running: false, ids: [] }
-    const [cwd, runs] = await Promise.all([
-      deps.resolveSessionWorkingDir(userId, session),
-      deps.listDelegatedRuns(userId, sessionId),
-    ])
+    const runs = await deps.listDelegatedRuns(userId, sessionId)
     const tasks: SubagentTask[] = []
     for (const run of runs.filter((entry) => entry.status !== 'closed').slice(0, MAX_TASKS)) {
       const child = await deps.getSession(userId, run.sessionId)

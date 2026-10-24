@@ -114,8 +114,13 @@ export async function runSubagentStatusLine(input: {
     maxOutputBytes: MAX_OUTPUT_BYTES,
     env: childEnv({
       CLAUDE_PROJECT_DIR: input.cwd,
-      CLAUDE_PLUGIN_ROOT: input.line.pluginRoot,
-      CLAUDE_PLUGIN_DATA: pluginDataDir(input.line.pluginName, input.homeDir),
+      // A line from the person's own settings belongs to no plugin.
+      ...(input.line.pluginName
+        ? {
+            CLAUDE_PLUGIN_ROOT: input.line.pluginRoot,
+            CLAUDE_PLUGIN_DATA: pluginDataDir(input.line.pluginName, input.homeDir),
+          }
+        : {}),
     }),
   }).catch(() => null)
   if (!result || result.code !== 0) return []

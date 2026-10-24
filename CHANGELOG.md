@@ -8,6 +8,10 @@ Changes land on `main`.
 
 ### Added
 
+- **Your Claude Code status line**: the `statusLine` command of your Claude Code settings draws the
+  line under a conversation's message box, reading the session (model, folder, cost, context) as
+  JSON on stdin as in Claude Code, redrawn on each message and every `refreshInterval`. A
+  `subagentStatusLine` in your own settings rewrites the subagent rows, over a plugin's.
 - **Claude Code's settings `env`**: the variables in the `env` block of your Claude Code settings
   reach what a Localix run in that folder starts — shell commands, hooks and stdio MCP servers — and
   the `${VAR}` expansion of MCP servers, as in Claude Code. A project's own variables wait until you

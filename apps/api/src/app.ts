@@ -280,7 +280,13 @@ h2{margin:0 0 .5rem}p{margin:0;color:#888;font-size:.9rem}</style></head>
     .route(MEDIA_SERVE_PREFIX, createMediaRoutes(deps.mediaStore))
     .route('/rpc/system', createSystemRoutes(deps.systemService))
     .route('/rpc/storage', createStorageRoutes(deps.storageService))
-    .route('/rpc/mods', createModRoutes(deps.modsHost ?? createModsHost(INERT_MOD_PORTS)))
+    .route(
+      '/rpc/mods',
+      createModRoutes(deps.modsHost ?? createModsHost(INERT_MOD_PORTS), {
+        sessionViewed: (userId, sessionId) =>
+          deps.chatService.statusLine?.viewed(userId, sessionId),
+      }),
+    )
     .route('/rpc/shell-command', createShellCommandRoutes(deps.shellCommandService))
     // Extension-owned routes are mounted through the generic subsystem registry below.
     .route('/rpc/secrets', createSecretsRoutes(deps.secretsService))

@@ -1,5 +1,5 @@
+import { claudeCodeHome } from '../cc-settings/config-dir'
 import { claudeCodeSettingsEnv } from '../cc-settings/settings-env'
-import { userHome } from '../../lib/env'
 import { connectServerConfig } from './expand'
 import type { McpServerRecord } from './repository'
 
@@ -27,7 +27,7 @@ export function mcpLaunch(
 
 /** The settings' `env` for the folder a server runs in. */
 export function folderSettingsEnv(cwd: string): Record<string, string> {
-  return claudeCodeSettingsEnv({ homeDir: userHome(), cwd })
+  return claudeCodeSettingsEnv({ homeDir: claudeCodeHome(), cwd })
 }
 
 function definedOnly(env: NodeJS.ProcessEnv): Record<string, string> {

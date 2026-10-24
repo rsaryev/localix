@@ -14,6 +14,8 @@ import { createChatInboundFacade } from './service/inbound-facade'
 import { createChatSkillFacade } from './service/skill-facade'
 import { listDelegatedRuns } from './service/delegated-runs'
 import { createSubagentRows } from './service/subagent-rows'
+import { createStatusLine } from './service/status-line'
+import { statusLineUsage } from './service/status-line-usage'
 
 /**
  * The chat service: one API surface assembled from facades over one object graph.
@@ -97,6 +99,15 @@ export function createChatService(deps: ChatServiceDeps) {
     }),
 
     ...createChatUsageFacade({ repo, usageRepo, streamRegistry, requireSession }),
+
+    // Claude Code's `statusLine`, drawn with the mods' status lines under the message box.
+    statusLine: createStatusLine({
+      requireSession,
+      resolveSessionWorkingDir: core.resolveSessionWorkingDir,
+      usage: (userId, sessionId) => statusLineUsage(repo, userId, sessionId),
+      publish: (sessionId, text) => deps.mods?.composer.status(sessionId, 'statusLine', text),
+      watched: (userId, sessionId) => streamRegistry.hasWatchers(userId, sessionId),
+    }),
 
     // A plugin's `subagentStatusLine` over this conversation's subagent rows.
     ...createSubagentRows({

@@ -1,3 +1,4 @@
+import { claudeCodeHome } from '../../../cc-settings/config-dir'
 import {
   createRuntimeToolRegistry,
   type RuntimeToolRegistry,
@@ -17,7 +18,6 @@ import { ccSessionEnvScripts, type CcHooksRuntime } from '../../../cc-hooks'
 import { ccSessionEnvFilesOf } from './cc-hook-session-facts'
 import { settingsEnvScriptFor } from './settings-env-script'
 import { claudeCodeSettingsEnv } from '../../../cc-settings/settings-env'
-import { userHome } from '../../../../lib/env'
 import { dirname } from 'node:path'
 import type { createEnvironment } from '../../../agent-core/tools/environments'
 import type { LoadedPlugins } from '../../../plugins/loader'
@@ -213,7 +213,7 @@ export function buildRunToolRegistry(
       bashEnvScripts: [
         ...settingsEnvScriptFor(
           dirname(ccSessionEnvFilesOf(session, deps.sessionDataRoot).sessionStart),
-          claudeCodeSettingsEnv({ homeDir: userHome(), cwd: defaultCwd }),
+          claudeCodeSettingsEnv({ homeDir: claudeCodeHome(), cwd: defaultCwd }),
         ),
         ...ccSessionEnvScripts(ccSessionEnvFilesOf(session, deps.sessionDataRoot)),
       ],

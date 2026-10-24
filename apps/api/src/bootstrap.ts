@@ -351,6 +351,7 @@ export async function bootstrap(
           channelHost.refresh()
         },
         subagentRows: chatService.subagentRowsLive,
+        statusLine: chatService.statusLine,
         publish: (userId, resources) =>
           chatService.streamRegistry.publish(userId, '', { type: 'resources.changed', resources }),
       }).catch((err: unknown) =>

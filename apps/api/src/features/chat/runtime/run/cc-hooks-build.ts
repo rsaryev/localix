@@ -41,8 +41,8 @@ import {
 } from './cc-hook-evaluators'
 import type { RunCatalog, RunEnv, RunParams } from './types'
 import { ccPermissionMode, ccSessionEnvFilesOf, ccSubagentOf } from './cc-hook-session-facts'
+import { claudeCodeHome } from '../../../cc-settings/config-dir'
 import { claudeCodeSettingsEnv } from '../../../cc-settings/settings-env'
-import { userHome } from '../../../../lib/env'
 import { createCcTranscript } from './cc-transcript'
 import type { PermissionMode } from '../../../../contracts/permission-modes'
 
@@ -101,7 +101,7 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
   const emitNotice = ccHookNoticeEmitter(deps.streamRegistry, userId, session.id)
   const envFiles = ccSessionEnvFilesOf(session, deps.sessionDataRoot)
   // Claude Code's settings `env` for this folder reaches every hook process.
-  const settingsEnv = claudeCodeSettingsEnv({ homeDir: userHome(), cwd: defaultCwd })
+  const settingsEnv = claudeCodeSettingsEnv({ homeDir: claudeCodeHome(), cwd: defaultCwd })
   const transcript = createCcTranscript({
     repo: env.repo,
     userId,

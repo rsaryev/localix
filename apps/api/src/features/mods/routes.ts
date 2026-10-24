@@ -35,7 +35,11 @@ const actionBody = z.object({
   value: z.string().max(100_000).optional(),
 })
 
-export function createModRoutes(host: ModsHost) {
+export function createModRoutes(
+  host: ModsHost,
+  /** A client opened a conversation's prompt box: Claude Code's status line draws for it. */
+  options: { sessionViewed?: (userId: string, sessionId: string) => void } = {},
+) {
   return (
     new Hono<AppContext>()
       .get('/', (c) =>
@@ -53,7 +57,10 @@ export function createModRoutes(host: ModsHost) {
         }),
       )
       // A conversation's prompt box and status line as its mods left them.
-      .get('/sessions/:sessionId', (c) => c.json(host.composer.view(c.req.param('sessionId'))))
+      .get('/sessions/:sessionId', (c) => {
+        options.sessionViewed?.(c.get('userId'), c.req.param('sessionId'))
+        return c.json(host.composer.view(c.req.param('sessionId')))
+      })
       .post('/sessions/:sessionId/taken', zValidator('json', takenBody), (c) => {
         host.composer.take(c.req.param('sessionId'), c.req.valid('json'))
         return c.json({ ok: true })

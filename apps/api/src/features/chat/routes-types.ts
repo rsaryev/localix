@@ -46,6 +46,8 @@ import type { MiniAppCommandResultPayload } from './runtime/mini-app-command-reg
 // so that file holds the Hono route wiring and this one the (large) interface.
 
 export interface ChatRoutesService {
+  /** Claude Code's `statusLine` per conversation (`service/status-line.ts`). */
+  statusLine?: { viewed(userId: string, sessionId: string): void }
   listSessions(userId: string): Promise<{ sessions: SessionSummary[] }>
   searchHistory(userId: string, query: string, limit?: number): Promise<HistorySearchHit[]>
   getSkill(userId: string, name: string, opts?: { projectId?: string | null }): Promise<SkillRecord>

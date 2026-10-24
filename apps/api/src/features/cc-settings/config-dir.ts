@@ -1,3 +1,4 @@
+import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 
 /**
@@ -29,4 +30,13 @@ export function claudeStateFile(
   return env.CLAUDE_CONFIG_DIR?.trim()
     ? join(claudeConfigDir(homeDir, env), '.claude.json')
     : join(homeDir, '.claude.json')
+}
+
+/**
+ * The home Claude Code's files are read from: `HOME`, as Claude Code resolves `~`, else the OS
+ * account's home. Read from the environment rather than once per process, so a test that gives
+ * the process a home of its own never reads the developer's Claude Code configuration.
+ */
+export function claudeCodeHome(env: Record<string, string | undefined> = process.env): string {
+  return env.HOME?.trim() || homedir()
 }

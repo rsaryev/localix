@@ -19,6 +19,8 @@ import { forgetSecretOptions } from '../features/plugins/config-vault'
 import { miniAppOptions } from '../features/mini-apps/config-vault'
 import { createSessionResidue } from '../features/chat/session-residue'
 import { createSubagentRowsChanges } from '../features/chat/service/subagent-rows-changes'
+import { createStatusLineChanges } from '../features/chat/service/status-line-changes'
+import type { StatusLine } from '../features/chat/service/status-line'
 import type { SubagentRowsLive } from '../features/chat/service/subagent-rows-live'
 import { cancelSessionLoops } from '../features/chat/service/loop-ops'
 import { stopSessionMonitors } from '../features/chat/service/monitor-ops'
@@ -55,6 +57,8 @@ export interface CoreReactorDeps {
   refreshMiniAppHosts(): void
   /** The subagent rows the chat service keeps: their inputs' notices redraw them. */
   subagentRows: SubagentRowsLive
+  /** Claude Code's `statusLine` per conversation: its conversation's notices redraw it. */
+  statusLine: StatusLine
 }
 
 export function createRouteRepairReactor(deps: CoreReactorDeps) {
@@ -219,6 +223,11 @@ export async function startCoreReactors(deps: CoreReactorDeps): Promise<void> {
   await deps.feed.subscribe('subagent-rows', subagentRows.handlers, {
     kind: 'projector',
     reconcile: subagentRows.reconcile,
+  })
+  const statusLine = createStatusLineChanges(deps.statusLine)
+  await deps.feed.subscribe('status-line', statusLine.handlers, {
+    kind: 'projector',
+    reconcile: statusLine.reconcile,
   })
   const relay = createRelay({ defaultUserId: deps.defaultUserId, publish: deps.publish })
   await deps.feed.subscribe('relay', relay.handlers, { kind: 'projector' })
