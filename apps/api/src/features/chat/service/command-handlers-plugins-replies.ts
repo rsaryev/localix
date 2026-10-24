@@ -45,6 +45,8 @@ export function installReply(rec: PluginRecord): string {
 export function updateReply(rec: PluginRecord): string {
   if (rec.loadsInPlace)
     return `\`${rec.name}\` v${rec.version} loads in place from \`${rec.dir}\` and its files check out. Edits there take effect at \`/plugin reload\`; it needs no update.`
+  // Claude Code computes the version again and leaves the copy alone when it is the same.
+  if (rec.upToDate) return `\`${rec.name}\` is already at the latest version (${rec.version}).`
   return `Updated \`${rec.name}\` to v${rec.version}. Run \`/plugin reload\` or start a new turn for it to take effect.`
 }
 

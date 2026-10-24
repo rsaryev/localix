@@ -29,7 +29,7 @@ const PLUGIN_SUBCOMMAND_USAGE = [
   '/plugin update <name>',
   '/plugin details <name>',
   '/plugin reload',
-  '/plugin marketplace list [<name>] | add <source> | update <name> | remove <name>',
+  '/plugin marketplace list [<name>] | add <source> | update [<name>] | remove <name>',
 ] as const
 
 /**

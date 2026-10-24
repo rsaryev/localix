@@ -99,4 +99,11 @@ describe('plugin command replies', () => {
     expect(strict).toContain('- `top` — 1 error(s), 0 warning(s)')
     expect(strict.split('\n').at(-1)).toBe('Validation failed (--strict treats warnings as errors)')
   })
+
+  test('an update whose computed version did not change says so in Claude Code’s words', async () => {
+    // loading.md: "`<name> is already at the latest version (<version>).`"
+    expect(
+      await say({ update: async () => record({ upToDate: true }) }, '/plugin update top'),
+    ).toBe('`top` is already at the latest version (1.0.0).')
+  })
 })
