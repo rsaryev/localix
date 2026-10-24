@@ -89,6 +89,26 @@ export const LISTS: readonly KitCatalogEntry[] = [
     not: 'Not a raw <table> with a hand-made sort header.',
   },
   {
+    specifier: k('shelf-row'),
+    category: 'lists',
+    provider: 'kit',
+    exports: ['ShelfRow'],
+    summary:
+      'A titled row of tiles that scrolls sideways with snap, faded edges, hover arrows and "See all".',
+    use: 'A storefront row previewing a longer list; the host picks `perView` from its pane’s width.',
+    not: 'Not a wrapping grid (`card-grid`) nor tabs (`tabs`).',
+  },
+  {
+    specifier: k('tile-card'),
+    category: 'lists',
+    provider: 'kit',
+    exports: ['TileCard'],
+    summary:
+      'The compact store lockup: icon, a name in up to two lines, one line under it and one action.',
+    use: 'Items inside a `ShelfRow`; the whole tile opens the item and `onIntent` lets the host read ahead.',
+    not: 'Not a list row with a description (`item-card`).',
+  },
+  {
     specifier: k('item-card'),
     category: 'lists',
     provider: 'kit',

@@ -210,3 +210,18 @@
     background-color: rgb(20 20 20 / 0.9);
   }
 }
+
+/* An app tile's monogram (`AppTile`): the bundled mini app icons' dark tile — inset and rounded as
+   they are, so a monogram and an icon side by side share one silhouette — with the name's hue
+   (`--avatar-hue`, set on the element) in the letters and a glow rising from the lower corner. */
+.lx-app-tile {
+  background:
+    radial-gradient(
+      120% 90% at 85% 110%,
+      oklch(var(--app-tile-glow-l) var(--app-tile-glow-c) var(--avatar-hue) / 0.42),
+      transparent 62%
+    ),
+    linear-gradient(var(--app-tile-top), var(--app-tile-bottom));
+  color: oklch(var(--app-tile-ink-l) var(--app-tile-ink-c) var(--avatar-hue));
+  box-shadow: inset 0 0 0 1px oklch(1 0 0 / 0.07);
+}

@@ -249,6 +249,26 @@ export const CONTENT: readonly KitCatalogEntry[] = [
     use: 'Making paths in output clickable.',
   },
   {
+    specifier: k('app-tile'),
+    category: 'content',
+    provider: 'kit',
+    exports: ['AppTile'],
+    summary:
+      'A package’s icon: its own picture, or a monogram in the bundled mini app icons’ dark tile, hued by its identity.',
+    use: 'Store tiles, rows and pages, wherever an installable package is drawn beside its name.',
+    not: 'Not a person’s or an agent’s avatar (`avatar`), whose tile is pale and tinted.',
+  },
+  {
+    specifier: k('hero-carousel'),
+    category: 'content',
+    provider: 'kit',
+    exports: ['HeroCarousel'],
+    summary:
+      'A storefront’s lead: one to three large cards with text, an action and wide media, paged and auto-advancing.',
+    use: 'The top of a browsing page; pass `layout` from the pane’s width (media beside the text, or on top).',
+    not: 'Not an item page’s screenshots (`media-carousel`).',
+  },
+  {
     specifier: k('media-carousel'),
     category: 'content',
     provider: 'kit',

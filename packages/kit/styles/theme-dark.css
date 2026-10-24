@@ -301,4 +301,16 @@
   --avatar-tile-c: 0.075;
   --avatar-ink-l: 0.88;
   --avatar-ink-c: 0.13;
+
+  /* App tiles: the monogram a package without an icon of its own gets. It is drawn in the same
+     near-black tile every bundled mini app icon is drawn in (mini-apps/<name>/icon.svg, the two
+     stops below), in both themes, because those icons are pictures and do not follow the theme: a
+     tinted pale tile beside them read as a different family. The name's hue tints the letters and
+     a faint glow; lightness and chroma stay here, as for the avatars above. */
+  --app-tile-top: #121215;
+  --app-tile-bottom: #09090b;
+  --app-tile-ink-l: 0.86;
+  --app-tile-ink-c: 0.11;
+  --app-tile-glow-l: 0.55;
+  --app-tile-glow-c: 0.17;
 }

@@ -144,3 +144,24 @@
     backdrop-filter: none;
   }
 }
+
+/* ── Faded edges of a horizontal strip ───────────────────────────────────────
+   A row that scrolls sideways fades out where more is hidden, so a cut tile reads as "there is
+   more this way" rather than as a clipped layout. A mask, not an overlay painted in the pane's
+   colour: masks read alpha only, so it is right on every ground, glass included. `data-fade` is
+   `start`, `end` or `both`; nothing fades while everything fits. */
+.lx-fade-x[data-fade='start'] {
+  mask-image: linear-gradient(to right, transparent, #000 var(--fade-x, 2.5rem));
+}
+.lx-fade-x[data-fade='end'] {
+  mask-image: linear-gradient(to left, transparent, #000 var(--fade-x, 2.5rem));
+}
+.lx-fade-x[data-fade='both'] {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--fade-x, 2.5rem),
+    #000 calc(100% - var(--fade-x, 2.5rem)),
+    transparent
+  );
+}

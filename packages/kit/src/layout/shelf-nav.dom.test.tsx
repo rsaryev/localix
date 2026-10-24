@@ -53,4 +53,42 @@ describe('ShelfNav', () => {
       await React.act(async () => root.unmount())
     }
   })
+
+  test('compact, it is a column of icons, each named by its label and count', async () => {
+    const React = await import('react')
+    const { createRoot } = await import('react-dom/client')
+    const { ShelfNav } = await import('./shelf-nav')
+    const { Compass, Package } = await import('lucide-react')
+    const host = document.createElement('div')
+    const root = createRoot(host)
+    try {
+      await React.act(async () =>
+        root.render(
+          <ShelfNav
+            compact
+            label="Store sections"
+            active="discover"
+            onSelect={() => {}}
+            groups={[
+              { id: 'top', items: [{ id: 'discover', label: 'Discover', icon: Compass }] },
+              {
+                id: 'library',
+                label: 'Library',
+                items: [{ id: 'installed', label: 'Installed', icon: Package, count: 3 }],
+              },
+            ]}
+          />,
+        ),
+      )
+      const nav = host.querySelector('nav')!
+      expect(nav.textContent).toBe('')
+      const names = [...nav.querySelectorAll('button')].map((b) => b.getAttribute('aria-label'))
+      expect(names).toEqual(['Discover', 'Installed, 3'])
+      expect(nav.querySelector('[aria-current="page"]')?.getAttribute('aria-label')).toBe(
+        'Discover',
+      )
+    } finally {
+      await React.act(async () => root.unmount())
+    }
+  })
 })

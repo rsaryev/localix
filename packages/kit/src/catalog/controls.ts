@@ -5,6 +5,16 @@ const k = (id: string) => `@localixai/kit/${id}`
 /** Things a person operates: buttons, fields, pickers, toggles. */
 export const CONTROLS: readonly KitCatalogEntry[] = [
   {
+    specifier: k('get-button'),
+    category: 'controls',
+    provider: 'kit',
+    exports: ['GetButton'],
+    summary:
+      'A store’s install control for its whole life: Get, a progress ring with %, then Open, Update or Retry.',
+    use: 'The one action of a package tile, row or page; it names its subject ("Get Chess") and its progress is a progressbar.',
+    not: 'Not a generic action button (`button`), nor a progress bar for a download list (`progress-bar`).',
+  },
+  {
     specifier: k('selection-tile'),
     category: 'controls',
     provider: 'kit',
