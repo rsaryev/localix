@@ -110,7 +110,7 @@ compose and the first deny stops the call. `PostToolUse` replacements are visibl
 | `PreToolUse`                | Stops the tool at the first deny; `allow` and `ask` remain advisory.                             |
 | `PostToolUse`               | Cannot undo execution; a block reason becomes added result context.                              |
 | `PostToolUseFailure`        | Cannot block; added context is appended to the failed result.                                    |
-| `Stop`                      | Requests another run with the reason, subject to continuation gates and a five-run cap.          |
+| `Stop`                      | Requests another run with the reason; eight in a row end the turn, and a tool call resets that.  |
 | `Stop` `additionalContext`  | Requests the same bounded run as feedback, without a block.                                      |
 | Scoped child `SubagentStop` | Can request the same bounded continuation in the child; parent observation does not restart it.  |
 | `PreCompact`                | Skips a proactive checkpoint; fails a turn whose checkpoint recovers from a context-limit error. |

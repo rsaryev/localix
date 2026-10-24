@@ -13,14 +13,7 @@ import { sessionAgent } from '../message-envelope'
 import type { RunTurnState } from './turn-state'
 import type { RunChain, RunEnv, RunParams } from './types'
 import { reenterRun } from './reenter-run'
-
-/**
- * Hard cap on consecutive Claude Code Stop / SubagentStop `decision:"block"`
- * continuations. CC's own loop-protection is the `stop_hook_active` input flag (a
- * hook is expected to check it and not block again); we ALSO cap here so a hook
- * that ignores the flag can never loop the agent forever.
- */
-const MAX_HOOK_STOP_CONTINUATIONS = 5
+import { nextStopContinuation } from './stop-continuation-cap'
 
 /**
  * Insert an internal nudge turn, then re-enter the runner for a continuation
@@ -130,11 +123,14 @@ export async function maybeStartContinuation(args: {
   // internal user-side turn — NOT a real user message (origin:'hook'). Checked
   // LAST so a configuration reload takes precedence; the
   // Stop hook re-fires on that run's finalize anyway. Gated on `canContinue`, so a
-  // human Stop is FINAL and never re-enters, and hard-capped to break a hook that
-  // ignores `stop_hook_active`.
+  // human Stop is FINAL and never re-enters, and capped as Claude Code caps it.
   if (canContinue && args.hookStopReason) {
-    const count = params.chain.hookStopContinuationCount
-    if (count < MAX_HOOK_STOP_CONTINUATIONS) {
+    // Claude Code's 8-in-a-row cap, reset by a tool call (`stop-continuation-cap.ts`).
+    const next = nextStopContinuation(
+      params.chain.hookStopContinuationCount,
+      state.toolCallsThisRun,
+    )
+    if (next !== null) {
       return startContinuationRun({
         env,
         userId,
@@ -144,7 +140,7 @@ export async function maybeStartContinuation(args: {
         reason: 'hook-stop',
         content: args.hookStopReason,
         origin: 'hook',
-        chain: { hookStopContinuationCount: count + 1 },
+        chain: { hookStopContinuationCount: next },
       })
     }
   }
