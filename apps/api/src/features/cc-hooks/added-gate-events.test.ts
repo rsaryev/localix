@@ -154,7 +154,11 @@ describe('PostToolBatch', () => {
       stop: false,
       additionalContext: 'run pytest',
     })
-    expect(input('pb.json')).toMatchObject({ hook_event_name: 'PostToolBatch', tool_calls: calls })
+    const absolute = { ...calls[0], tool_input: { path: 'a', file_path: join(dir(), 'a') } }
+    expect(input('pb.json')).toMatchObject({
+      hook_event_name: 'PostToolBatch',
+      tool_calls: [absolute],
+    })
 
     const blocking = make({
       PostToolBatch: [

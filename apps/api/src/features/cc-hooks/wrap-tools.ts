@@ -153,6 +153,8 @@ export function wrapToolsWithCcHooks(
       // runs PostToolUseFailure, not PostToolUse, for "a tool that started executing" and failed.
       let result: AgentToolResult
       let failure: string | undefined
+      const started = performance.now()
+      const elapsed = () => Math.round(performance.now() - started)
       try {
         result = await tool.execute(...call)
         if (result.isError && result.error?.kind !== 'blocked') failure = failureText(result)
@@ -166,10 +168,12 @@ export function wrapToolsWithCcHooks(
         failure = error instanceof Error ? error.message : String(error)
       }
       if (failure !== undefined) {
-        const failed = await runtime.runPostToolUseFailure(tool, effectiveInput, {
-          error: failure,
-          isInterrupt: Boolean(signal?.aborted),
-        })
+        const failed = await runtime.runPostToolUseFailure(
+          tool,
+          effectiveInput,
+          { error: failure, isInterrupt: Boolean(signal?.aborted), durationMs: elapsed() },
+          toolCallId,
+        )
         const context = joinContext([pre.additionalContext, failed.additionalContext])
         return { ...result, content: withContextReminder(result.content, context) }
       }
@@ -182,7 +186,8 @@ export function wrapToolsWithCcHooks(
       }
 
       // ---- PostToolUse ----------------------------------------------------
-      const post = await runtime.runPostToolUse(tool, effectiveInput, result, toolCallId)
+      const ran = elapsed()
+      const post = await runtime.runPostToolUse(tool, effectiveInput, result, toolCallId, ran)
       // `updatedToolOutput` REPLACES the model-facing result content (redaction,
       // summarization); `additionalContext` is appended after any replacement.
       if (post.updatedToolOutput !== undefined) {

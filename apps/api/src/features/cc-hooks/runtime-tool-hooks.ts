@@ -136,6 +136,7 @@ export function createToolHookRunners({
       input: unknown,
       result: { content: string; details?: unknown },
       toolUseId?: string,
+      durationMs?: number,
     ) {
       const ref = toolRefOf(tool)
       const toolName = ref.name
@@ -153,8 +154,11 @@ export function createToolHookRunners({
         tool_response: claudeCodeToolResponse(
           { name: toolName },
           replaced ? { content } : { content, details: result.details },
+          input,
+          base.cwd,
         ),
         ...(toolUseId ? { tool_use_id: toolUseId } : {}),
+        ...(durationMs !== undefined ? { duration_ms: durationMs } : {}),
       })
       fireAsync(selected.async, inputFor(result.content, false))
       const contexts: (string | undefined)[] = []
@@ -179,15 +183,17 @@ export function createToolHookRunners({
       }
     },
 
-    async runPostToolUseFailure(tool, input, failure) {
+    async runPostToolUseFailure(tool, input, failure, toolUseId) {
       const ref = toolRefOf(tool)
       const toolName = ref.name
       const base = baseInput('PostToolUseFailure')
       const hookInput: CcHookInput = {
         ...base,
         ...claudeCodeHookCall(ref, input, base.cwd),
+        ...(toolUseId ? { tool_use_id: toolUseId } : {}),
         error: failure.error,
         is_interrupt: failure.isInterrupt,
+        ...(failure.durationMs !== undefined ? { duration_ms: failure.durationMs } : {}),
       }
       const additionalContext = contextFrom(
         await runAll(

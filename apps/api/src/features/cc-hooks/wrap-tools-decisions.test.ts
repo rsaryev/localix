@@ -59,7 +59,7 @@ describe('wrapToolsWithCcHooks decisions', () => {
   })
 
   it('a command that ran and exited non-zero fires PostToolUseFailure, not PostToolUse', async () => {
-    const failures: { error: string; isInterrupt: boolean }[] = []
+    const failures: { error: string; isInterrupt: boolean; durationMs?: number }[] = []
     let posts = 0
     const [wrapped] = wrapToolsWithCcHooks(
       [tool(failed)],
@@ -79,7 +79,11 @@ describe('wrapToolsWithCcHooks decisions', () => {
     expect(posts).toBe(0)
     // "For Bash … a command that ran and exited produces a first line `Exit code N`".
     expect(failures).toEqual([
-      { error: 'Exit code 1\nls: /nope: No such file or directory', isInterrupt: false },
+      {
+        error: 'Exit code 1\nls: /nope: No such file or directory',
+        isInterrupt: false,
+        durationMs: expect.any(Number),
+      },
     ])
     expect(result.content).toEndWith('<system-reminder>\ncheck the path\n</system-reminder>')
   })

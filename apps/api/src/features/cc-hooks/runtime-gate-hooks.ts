@@ -3,7 +3,7 @@
  * approval card, an automatic denial, a tool batch, a task-board write, a member going idle.
  * Each fold follows the CC reference's decision control for its event.
  */
-import { claudeCodeHookCall, localInputFromHook } from '../ext/cc-tool-shapes'
+import { absoluteFilePaths, claudeCodeHookCall, localInputFromHook } from '../ext/cc-tool-shapes'
 import type { CcHookInput, CcHookOutcome } from './contracts'
 import { matchesField, matchesToolName } from './matcher'
 import type {
@@ -142,7 +142,13 @@ export function createGateHookRunners(deps: HookDispatchDeps): GateRunners {
     },
 
     async runPostToolBatch(calls) {
-      const input: CcHookInput = { ...baseInput('PostToolBatch'), tool_calls: [...calls] }
+      const base = baseInput('PostToolBatch')
+      // File paths absolute, as every tool event carries them (hooks.md, PreToolUse input).
+      const toolCalls = calls.map((call) => ({
+        ...call,
+        tool_input: absoluteFilePaths(call.tool_name, call.tool_input, base.cwd),
+      }))
+      const input: CcHookInput = { ...base, tool_calls: toolCalls }
       const outcomes = await runAll('PostToolBatch', all, input, false)
       const stopping = outcomes.filter((o) => refuses(o) || o.continue === false)
       const additionalContext = contextFrom(outcomes)

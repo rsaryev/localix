@@ -1,0 +1,229 @@
+/**
+ * Localix's file, shell, search and web tools in Claude Code's input shapes (hooks.md, PreToolUse
+ * input; the mod types' `BuiltinToolInputs`): `Bash` `command` / `timeout` in milliseconds /
+ * `run_in_background`, `Read` `file_path` / line `offset` / `limit`, `Edit`, `Write`, `Grep`
+ * and `Glob` `pattern` / `path`, `WebFetch` `url` / `prompt`, `WebSearch` `query`. Each shape
+ * keeps Localix's own fields beside Claude Code's and folds a hook's rewrite back onto them.
+ */
+import {
+  absolutePath,
+  baseOf,
+  defined,
+  num,
+  only,
+  str,
+  without,
+  type Fields,
+  type ToolShape,
+} from './cc-tool-fields'
+
+const EDIT_KEYS = ['file_path', 'old_string', 'new_string', 'replace_all'] as const
+
+/** A batch of commands as the one line Claude Code's Bash would run (each stops the next). */
+export function batchCommand(input: Fields): string | undefined {
+  const list = input.commands
+  if (!Array.isArray(list) || list.length === 0 || !list.every((c) => typeof c === 'string'))
+    return undefined
+  return list.join(input.keep_going === true ? '; ' : ' && ')
+}
+
+const bash: ToolShape = {
+  name: 'Bash',
+  toClaude: (input) =>
+    defined({
+      ...input,
+      command: input.command ?? batchCommand(input),
+      timeout: num(input.timeout) !== undefined ? num(input.timeout)! * 1000 : undefined,
+      run_in_background: typeof input.background === 'boolean' ? input.background : undefined,
+    }),
+  fromClaude(fields) {
+    const out = without(fields, ['run_in_background', 'description', 'dangerouslyDisableSandbox'])
+    const timeout = num(fields.timeout)
+    if (timeout !== undefined) out.timeout = Math.max(1, Math.round(timeout / 1000))
+    if (typeof fields.run_in_background === 'boolean') out.background = fields.run_in_background
+    const batch = batchCommand(out)
+    if (batch === undefined) return out
+    // The line the hook was shown, handed back: the batch runs. Rewritten: the line runs.
+    if (out.command === undefined || out.command === batch) return without(out, ['command'])
+    return without(out, ['commands', 'keep_going'])
+  },
+}
+
+const read: ToolShape = {
+  name: 'Read',
+  toClaude(input, cwd) {
+    const entry = only(input.reads)
+    const start = num(input.start_line) ?? num(entry?.start_line)
+    const end = num(input.end_line) ?? num(entry?.end_line)
+    const first = start ?? (end !== undefined ? 1 : undefined)
+    // Localix's `offset` counts bytes; Claude Code's counts lines, so only a line range shows.
+    return defined({
+      ...without(input, ['offset']),
+      file_path: absolutePath(input.path ?? entry?.path ?? input.file_path, baseOf(input, cwd)),
+      offset: first,
+      limit:
+        num(input.limit) ??
+        (first !== undefined && end !== undefined ? end - first + 1 : undefined),
+    })
+  },
+  fromClaude(fields) {
+    const rest = without(fields, ['file_path', 'offset', 'limit', 'allow_large'])
+    const start = num(fields.offset)
+    const limit = num(fields.limit)
+    const range = defined({
+      start_line: start ?? (limit !== undefined ? num(rest.start_line) : undefined),
+      end_line:
+        limit !== undefined ? (start ?? num(rest.start_line) ?? 1) + limit - 1 : rest.end_line,
+    })
+    const entry = only(rest.reads)
+    if (entry) {
+      const path = fields.file_path ?? entry.path
+      return { ...without(rest, ['start_line', 'end_line']), reads: [{ ...entry, path, ...range }] }
+    }
+    return defined({ ...rest, ...range, path: fields.file_path ?? rest.path })
+  },
+  carry: (seen) =>
+    num(seen.offset) !== undefined && seen.start_line === undefined ? { offset: seen.offset } : {},
+}
+
+const edit: ToolShape = {
+  name: 'Edit',
+  toClaude(input, cwd) {
+    const entry = only(input.edits)
+    if (!entry) return input
+    return defined({
+      ...input,
+      file_path: absolutePath(entry.path, baseOf(input, cwd)),
+      old_string: entry.old_string,
+      new_string: entry.new_string,
+      replace_all: entry.replace_all,
+    })
+  },
+  fromClaude(fields) {
+    // Any other shape (several edits, Claude Code's own) carried its fields unchanged.
+    const entry = only(fields.edits)
+    if (!entry) return fields
+    const rest = without(fields, EDIT_KEYS)
+    const folded = defined({
+      path: fields.file_path,
+      old_string: fields.old_string,
+      new_string: fields.new_string,
+      replace_all: fields.replace_all,
+    })
+    return { ...rest, edits: [{ ...entry, ...folded }] }
+  },
+}
+
+const write: ToolShape = {
+  name: 'Write',
+  toClaude(input, cwd) {
+    const entry = only(input.files)
+    return entry
+      ? {
+          ...input,
+          file_path: absolutePath(entry.path, baseOf(input, cwd)),
+          content: entry.content,
+        }
+      : input
+  },
+  fromClaude(fields) {
+    const entry = only(fields.files)
+    if (!entry) return fields
+    const rest = without(fields, ['file_path', 'content'])
+    return { ...rest, files: [{ ...entry, path: fields.file_path, content: fields.content }] }
+  },
+}
+
+/** Grep's and Glob's own fields, none of which Localix's `search` takes. */
+const SEARCH_KEYS = ['pattern', 'output_mode', '-i', '-n', '-A', '-B', '-C', 'multiline']
+const SEARCH_MORE = ['head_limit', 'offset', 'type', 'context_lines']
+
+/** Several regexes as one: Grep's `pattern` matches a line any of them matches. */
+const queriesPattern = (input: Fields) =>
+  Array.isArray(input.queries) ? input.queries.join('|') : undefined
+
+const search: ToolShape = {
+  name: 'Grep',
+  names: ['Glob'],
+  nameFor: (input) =>
+    input.query === undefined && input.queries === undefined && typeof input.glob === 'string'
+      ? 'Glob'
+      : 'Grep',
+  toClaude(input, cwd) {
+    const base = baseOf(input, cwd)
+    const path =
+      input.path !== undefined
+        ? absolutePath(input.path, base)
+        : input.cwd !== undefined
+          ? base
+          : undefined
+    if (search.nameFor!(input) === 'Glob') return defined({ ...input, pattern: input.glob, path })
+    return defined({
+      ...input,
+      pattern: input.query ?? queriesPattern(input),
+      path,
+      output_mode: 'content',
+      '-C': num(input.context),
+    })
+  },
+  fromClaude(fields, name) {
+    const rest = without(fields, [...SEARCH_KEYS, ...SEARCH_MORE])
+    const pattern = str(fields.pattern)
+    if (name === 'Glob')
+      return pattern === undefined ? rest : without({ ...rest, glob: pattern }, ['query'])
+    const context = num(fields['-C']) ?? num(fields.context_lines)
+    const out = context !== undefined ? { ...rest, context } : rest
+    if (pattern === undefined || pattern === queriesPattern(rest)) return out
+    // `-i` is ripgrep's inline flag; a rewritten pattern replaces the batch.
+    const query = fields['-i'] === true ? `(?i)${pattern}` : pattern
+    return { ...without(out, ['queries']), query }
+  },
+}
+
+const WEB_KEYS = ['query', 'url', 'prompt', 'allowed_domains', 'blocked_domains', 'mode', 'offset']
+
+const research: ToolShape = {
+  name: 'WebSearch',
+  names: ['WebFetch'],
+  nameFor: (input) =>
+    Array.isArray(input.urls) && input.urls.length > 0 && input.queries === undefined
+      ? 'WebFetch'
+      : 'WebSearch',
+  toClaude(input) {
+    if (research.nameFor!(input) === 'WebFetch')
+      return defined({ ...input, url: (input.urls as unknown[])[0], prompt: input.question })
+    return defined({
+      ...input,
+      query: input.question,
+      allowed_domains: input.include_domains,
+      blocked_domains: input.exclude_domains,
+    })
+  },
+  fromClaude(fields, name) {
+    const rest = without(fields, WEB_KEYS)
+    if (name === 'WebFetch') {
+      const urls = Array.isArray(rest.urls) ? (rest.urls as unknown[]) : []
+      const url = str(fields.url)
+      return defined({
+        ...rest,
+        question: fields.prompt ?? rest.question ?? url,
+        urls: url === undefined || url === urls[0] ? rest.urls : [url, ...urls.slice(1)],
+      })
+    }
+    return defined({
+      ...rest,
+      question: fields.query ?? rest.question,
+      include_domains: fields.allowed_domains ?? rest.include_domains,
+      exclude_domains: fields.blocked_domains ?? rest.exclude_domains,
+    })
+  },
+}
+
+export const FILE_AND_WEB_SHAPES: Record<string, ToolShape> = {
+  bash,
+  read,
+  edit,
+  write,
+  search,
+  research,
+}

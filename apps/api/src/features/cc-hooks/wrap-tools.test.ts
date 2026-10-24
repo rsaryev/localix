@@ -51,7 +51,9 @@ describe('wrapToolsWithCcHooks', () => {
       logger,
     )
     const result = await tool.execute('tc1', {})
-    expect(failures).toEqual([{ name: 'boom', error: 'disk on fire', isInterrupt: false }])
+    expect(failures).toEqual([
+      { name: 'boom', error: 'disk on fire', isInterrupt: false, durationMs: expect.any(Number) },
+    ])
     expect(posts).toEqual([])
     expect(result.isError).toBe(true)
     expect(result.error?.kind).toBe('execution')

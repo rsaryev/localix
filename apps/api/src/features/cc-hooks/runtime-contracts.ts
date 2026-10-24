@@ -94,12 +94,16 @@ export interface CcHooksRuntime
     input: unknown,
     result: { content: string; details?: unknown },
     toolUseId?: string,
+    /** How long the tool ran (hooks.md `duration_ms`), when measured. */
+    durationMs?: number,
   ): Promise<{ additionalContext?: string; updatedToolOutput?: string }>
   /** Fire the PostToolUseFailure hooks for a tool that threw; they may add context. */
   runPostToolUseFailure(
     tool: CcHookToolRef,
     input: unknown,
-    failure: { error: string; isInterrupt: boolean },
+    /** `durationMs`: how long the tool ran (hooks.md `duration_ms`), when measured. */
+    failure: { error: string; isInterrupt: boolean; durationMs?: number },
+    toolUseId?: string,
   ): Promise<{ additionalContext?: string }>
   /**
    * Fire the Stop hooks. `stopHookActive` is reported to hooks as `stop_hook_active`

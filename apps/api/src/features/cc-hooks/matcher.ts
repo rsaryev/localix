@@ -24,6 +24,7 @@
  * Pure module — no chat/UI imports.
  */
 import { CC_TOOL_NAME_MAP } from '../ext/cc-tool-names'
+import { claudeCodeNames } from '../ext/cc-tool-shapes'
 import { ccMcpMatcherVariants } from './mcp-names'
 
 /** Characters that keep a matcher on the "exact string(s)" path (no regex). */
@@ -178,6 +179,8 @@ export function toolNameCandidates(
     const cased = CC_CASED_NAMES.get(cc)
     if (cased) set.add(cased)
   }
+  // The names the tool's calls carry as `tool_name` (`delegate` is `Agent`, `SendMessage` …).
+  for (const cc of claudeCodeNames(lower)) set.add(cc).add(cc.toLowerCase())
   // MCP + plugin tools have no CC alias — the engine name is the only candidate,
   // preserved in its original casing too so a case-sensitive regex still matches.
   if (engineToolName !== lower) set.add(engineToolName)

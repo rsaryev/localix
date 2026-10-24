@@ -4,7 +4,8 @@
  *
  * Claude Code's `updatedToolOutput` "must match the tool's output shape": `Bash` returns
  * `{stdout, stderr, interrupted, isImage}`, and for a built-in tool "a value that doesn't match
- * the tool's output schema is ignored and the original output is used". `updatedMCPToolOutput`
+ * the tool's output schema is ignored and the original output is used". Read, Grep, Glob,
+ * WebFetch and WebSearch records are read the same way (`shapedText`). `updatedMCPToolOutput`
  * "replaces the output for MCP tools only", and MCP output "is passed through without schema
  * validation". A plain string is read as the text the model sees, for any tool.
  *
@@ -35,6 +36,36 @@ function bashText(value: Record<string, unknown>): string | undefined {
   return stderr ? `${value.stdout}${value.stdout ? '\n' : ''}${stderr}` : value.stdout
 }
 
+/** A string field of a record, nested by `path`. */
+const textAt = (value: Record<string, unknown>, ...path: string[]): string | undefined => {
+  let at: unknown = value
+  for (const key of path) at = isRecord(at) ? at[key] : undefined
+  return typeof at === 'string' ? at : undefined
+}
+
+/**
+ * The text a record in a built-in tool's own result shape stands for (`cc-tool-responses.ts`):
+ * Read's `file.content`, Grep's `content` or Glob's `filenames`, WebFetch's `result`, WebSearch's
+ * string `results`. Edit and Write answer with what changed, which the model does not read.
+ */
+function shapedText(toolName: string, value: Record<string, unknown>): string | undefined {
+  if (toolName === 'bash') return bashText(value)
+  if (toolName === 'read') return textAt(value, 'file', 'content')
+  if (toolName === 'search')
+    return (
+      textAt(value, 'content') ??
+      (Array.isArray(value.filenames) ? value.filenames.join('\n') : undefined)
+    )
+  if (toolName === 'research') {
+    const results = Array.isArray(value.results) ? value.results : undefined
+    return (
+      textAt(value, 'result') ??
+      results?.filter((entry): entry is string => typeof entry === 'string').join('\n')
+    )
+  }
+  return undefined
+}
+
 /**
  * The model-facing content a hook's replacement stands for, or undefined when it replaces
  * nothing (absent or not in the tool's shape). An empty replacement is one: a redaction hook
@@ -51,6 +82,6 @@ export function replacementContent(
     return mcpText(chosen)
   }
   if (typeof value === 'string') return value
-  if (toolName === 'bash' && isRecord(value)) return bashText(value)
+  if (isRecord(value)) return shapedText(toolName, value)
   return undefined
 }
