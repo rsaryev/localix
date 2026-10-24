@@ -43,6 +43,9 @@ import type { RunCatalog, RunEnv, RunParams } from './types'
 import { ccPermissionMode, ccSessionEnvFilesOf, ccSubagentOf } from './cc-hook-session-facts'
 import { claudeCodeHome } from '../../../cc-settings/config-dir'
 import { claudeCodeSettingsEnv } from '../../../cc-settings/settings-env'
+import { readSettingsFileLayers } from '../../../cc-settings/settings-files'
+import { settingsHooks } from '../../../cc-settings/settings-hooks'
+import { claudeCodeTrusts } from '../../../cc-settings/settings-trust'
 import { createCcTranscript } from './cc-transcript'
 import type { PermissionMode } from '../../../../contracts/permission-modes'
 
@@ -112,9 +115,18 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
   })
   const subagent = ccSubagentOf(session, speakerAgentId)
 
+  // Claude Code's settings files add their own `hooks`, and may hold plugins' back
+  // (`disableAllHooks`, `allowManagedHooksOnly`).
+  const settingsInput = { homeDir: claudeCodeHome(), cwd: defaultCwd }
+  const fromSettings = settingsHooks(readSettingsFileLayers(settingsInput), {
+    projectTrusted: claudeCodeTrusts(settingsInput),
+  })
   const { registry: ccHookRegistry } = await buildCcHookRegistry({
     projectDir: defaultCwd,
-    pluginHooks: loadedPlugins.ccHooks,
+    pluginHooks: loadedPlugins.ccHooks.filter((plugin) =>
+      fromSettings.pluginAllowed(plugin.pluginName),
+    ),
+    settingsHooks: fromSettings.blocks,
   })
   // The session's own hooks — before this run's scoped ones merge in — are what its between-run
   // events fire (a model switch, a project move, a watched file). See cc-hook-sessions.ts.

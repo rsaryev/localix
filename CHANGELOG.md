@@ -8,6 +8,10 @@ Changes land on `main`.
 
 ### Added
 
+- **Hooks from your Claude Code settings**: the `hooks` of your Claude Code settings files run in
+  Localix conversations in that folder — your own and your organization's always, a project's once
+  you trusted the folder in Claude Code — and `disableAllHooks` and `allowManagedHooksOnly` hold as
+  in Claude Code. See [Hooks and commands](docs/features/hooks-and-commands.md).
 - **Your Claude Code MCP servers**: the servers in `~/.claude.json` (user and local scope), a
   project's approved `.mcp.json`, and your organization's `managed-mcp.json` and `managedMcpServers`
   join Localix runs in that folder, with its `allowedMcpServers` and `deniedMcpServers` applied to

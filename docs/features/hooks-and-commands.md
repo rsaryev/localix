@@ -271,8 +271,11 @@ exits any other way, or is lost to an API restart, wakes nobody.
 
 ## Limits
 
-- Localix does not load hooks from ambient user, project, or local settings files. Declarative hooks
-  enter through an enabled plugin or the invoked skill or agent's run-scoped frontmatter.
+- Declarative hooks enter through an enabled plugin, the invoked skill or agent's run-scoped
+  frontmatter, and the `hooks` of your Claude Code settings files for the conversation's folder:
+  `~/.claude/settings.json` and managed settings always, a project's `.claude/settings.json` and
+  `.claude/settings.local.json` once you trusted the folder in Claude Code. `disableAllHooks` and
+  `allowManagedHooksOnly` limit them, plugins' included, as in Claude Code.
 - Enabling a hook-bearing plugin or mini app is a code-execution trust decision. Native and command
   hooks can run local code; HTTP hooks make network requests; MCP, prompt, and agent hooks invoke
   their named runtimes.

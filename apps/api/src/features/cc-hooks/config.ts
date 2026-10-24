@@ -183,9 +183,17 @@ export function mergeCcHookRegistries(dest: CcHookRegistry, src: CcHookRegistry)
 export async function buildCcHookRegistry(opts: {
   projectDir: string
   pluginHooks?: readonly PluginHookConfig[]
+  /** The `hooks` of Claude Code's settings files (`cc-settings/settings-hooks.ts`), lowest first. */
+  settingsHooks?: ReadonlyArray<{ source: 'user' | 'project' | 'local'; raw: unknown }>
 }): Promise<BuildRegistryResult> {
   const skipped: SkippedHandler[] = []
   const registry: CcHookRegistry = {}
+
+  for (const block of opts.settingsHooks ?? [])
+    mergeCcHookRegistries(
+      registry,
+      parseHooksBlock(block.raw, block.source, { projectDir: opts.projectDir }, skipped),
+    )
 
   for (const plugin of opts.pluginHooks ?? []) {
     const sensitive = new Set(plugin.sensitiveKeys ?? [])
