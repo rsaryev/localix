@@ -97,7 +97,8 @@ export function parsePluginCommandArgs(
  * - If no placeholder receives the arguments, appends `ARGUMENTS: <rawArgs>`.
  * - `\$` — backslash-escape for literal `$`.
  * - CC dynamic content (only when a `cwd` is provided): `` !`cmd` `` / ` ```! ` bash-embeds
- *   (executed in `cwd`, reusing the skill-command runner — 10s timeout, output-capped) and
+ *   (executed in `cwd`, reusing the skill-command runner — 2-minute timeout, output-capped; a
+ *   failing command aborts the invocation) and
  *   `@path` file references (inlined, confined to `cwd`/plugin dir, size-capped).
  * A `${name}` that is no declared arg stays as written. Async because the dynamic content runs shells + FS.
  */
