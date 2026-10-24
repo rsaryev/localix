@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
+import type { HookOrigin } from '@localixai/claude-plugin/mods'
 
 /**
  * The mods host's contracts: where an event happens, and the ports the host reaches the rest of
@@ -159,6 +160,32 @@ const scenes = new AsyncLocalStorage<ModScene>()
 export function inScene<T>(scene: ModScene, work: () => T): T {
   return scenes.run(scene, work)
 }
+
+/**
+ * A host's dispatch: an event through the chain of the instances `ids`, its `$` calls acting in
+ * `scene`; `signal` aborts when the event is abandoned (the run stopped), every `next.signal`.
+ */
+export const sceneDispatch =
+  (engine: {
+    dispatch(
+      event: string,
+      input: unknown,
+      core: (event: unknown) => unknown,
+      opts: { plugins?: ReadonlySet<string>; origin?: HookOrigin; signal?: AbortSignal },
+    ): Promise<unknown>
+  }) =>
+  (
+    event: string,
+    input: unknown,
+    core: (event: unknown) => unknown,
+    scene: ModScene,
+    ids?: ReadonlySet<string>,
+    origin?: HookOrigin,
+    signal?: AbortSignal,
+  ) =>
+    inScene(scene, () =>
+      engine.dispatch(event, input, core, { plugins: ids, origin, ...(signal ? { signal } : {}) }),
+    )
 
 /** The scene of the call in hand, else the one the host falls back to. */
 export function currentScene(fallback: ModScene): ModScene {

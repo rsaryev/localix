@@ -1,4 +1,4 @@
-import { elementTable, type ModsApi } from '@localixai/claude-plugin/mods'
+import type { elementTable, ModsApi } from '@localixai/claude-plugin/mods'
 import { currentScene, stringOr, type ModScene, type ModSource, type ModsPorts } from '../contracts'
 import type { ModComposer } from '../composer'
 import { DESCRIBING_CORES, type ModEventCalls } from '../event-calls'
@@ -17,15 +17,12 @@ import { createSessionApi } from './session-api'
 import { createStateApi, type StateSpaces } from './state-api'
 import { createStoreApi } from './store-api'
 import { createSystemApi } from './system-api'
-import { copyToClipboard } from './clipboard'
+import { createUiApi } from './ui-api'
 
 /**
  * One mod's `$`: the mods API bound to Localix. Calls act in the scene of the event being handled
  * (its conversation and working directory), else in the workspace.
  */
-
-/** A screen call Claude Code answers with `{ deny }` when the surface cannot do it. */
-const denied = (reason: string) => () => ({ deny: reason })
 
 export interface ModApiDeps {
   source: ModSource
@@ -76,29 +73,6 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
     },
     compact: () => deps.calls.compact(scene()),
   })
-
-  /**
-   * `$.ui.open`: the pane opens in the Mods tab. One that asks for the keyboard (`focus`) is
-   * brought forward there, so it is placed; one that does not waits in the tab's list, as Claude
-   * Code's waits undrawn, until the person opens it.
-   */
-  const openPane = (args: unknown) => {
-    const pane = (args ?? {}) as Record<string, unknown>
-    for (const flag of ['focus', 'closeOnEscape', 'holdToasts'])
-      if (flag in pane && pane[flag] !== true)
-        throw new Error(`ui.open: ${flag} is true or left out`)
-    const sessionId = scene().sessionId
-    registry.openPane(instance, {
-      id: pane.id as string,
-      ...(typeof pane.title === 'string' ? { title: pane.title } : {}),
-      ...(sessionId ? { sessionId } : {}),
-      ...(pane.closeOnEscape === true ? { closeOnEscape: true } : {}),
-      focus: pane.focus === true,
-    })
-    return pane.focus === true
-      ? { isPlaced: true }
-      : { isPlaced: false, reason: 'listed in the Mods tab until the person opens it' }
-  }
 
   const api: ModsApi = {
     plugin: { name: plugin, root: source.root },
@@ -186,49 +160,17 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
       },
     },
     settings: createSettingsApi({ cwd: () => scene().cwd, homeDir: ports.homeDir ?? '' }),
-    ui: {
-      resolve: (e?: { component?: unknown }) =>
-        (typeof e?.component === 'string' ? deps.tableOf(e.component) : undefined) ??
-        elementTable(),
-      invalidate: (event: unknown) => deps.calls.invalidate(event),
-      open: (args: unknown) => openPane(args),
-      close: (pane: { id: string } | string) =>
-        registry.closePane(instance, typeof pane === 'string' ? pane : pane.id),
-      // A pane asked forward is placed and shown in the Mods tab; focus is the person's to give.
-      panes: () =>
-        registry.panes(instance).map((pane) => ({
-          id: pane.id,
-          title: pane.title ?? pane.id,
-          isShown: pane.focusRequest > 0,
-          isFocused: false,
-          isPlaced: pane.focusRequest > 0,
-        })),
-      toast: (text: unknown) => ports.notify(scene(), { plugin, text: textOf(text), tone: 'info' }),
-      // A notification is the terminal's channel; the desktop has none, as in Claude Code's
-      // desktop app, so a mod falls back to a toast (`if (!r.isSent) $.ui.toast(text)`).
-      notify: () => ({ isSent: false, reason: 'no-surface' }),
-      // The conversation's status line, a line per mod, as Claude Code's status bar shows it.
-      status: (text: unknown) => {
-        const sessionId = scene().sessionId
-        if (sessionId)
-          deps.composer.status(sessionId, plugin, text == null ? undefined : textOf(text))
-      },
-      // `{ to: 'debug' }` keeps the line off the transcript.
-      log: (text: unknown, options?: { to?: unknown }) =>
-        options?.to === 'debug' ? undefined : ports.log(scene(), { plugin, text: textOf(text) }),
-      // A note under one tool call's card in Claude Code; a line in the conversation here.
-      notice: (_toolUseId: unknown, text: unknown) =>
-        text === undefined ? undefined : ports.log(scene(), { plugin, text: textOf(text) }),
-      // Localix scrolls and focuses a pane the way the person does, and draws no raster.
-      scroll: denied('Localix scrolls a pane as the person does'),
-      focus: denied('Localix moves focus as the person does'),
-      blit: denied('the desktop surface draws no terminal raster'),
+    ui: createUiApi({
+      plugin,
+      instance,
+      scene,
+      ports,
+      registry,
+      composer: deps.composer,
+      tableOf: deps.tableOf,
+      invalidate: (event) => deps.calls.invalidate(event),
       ask: run.ui.ask,
-      copy: (args: { text?: unknown }) => copyToClipboard(textOf(args)),
-      // The window's selection stays in the window: none reaches a mod.
-      selection: () => undefined,
-      view: () => ({ deny: 'Localix moves the view only on the person’s own input' }),
-    },
+    }),
     store: createStoreApi(ports.dataDir(plugin)),
     state: createStateApi({ plugin, space: deps.instance.cwd, spaces: deps.state }),
     fs: createFsApi(() => scene().cwd),
@@ -287,6 +229,16 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
     model: createModelApi({
       complete: (request) => ports.complete(scene(), request),
       messages: () => session.messages(),
+      // A fork reads what the conversation's model read: its system prompt as last composed.
+      systemPrompt: async () => {
+        const { sections } = (await deps.calls.compose(scene(), {})) as {
+          sections: readonly { text?: unknown }[]
+        }
+        return sections
+          .map((section) => (typeof section.text === 'string' ? section.text : ''))
+          .filter(Boolean)
+          .join('\n\n')
+      },
     }),
   }
   return { api, dispose: () => system.dispose() }

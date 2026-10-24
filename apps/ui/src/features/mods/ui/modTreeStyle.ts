@@ -8,11 +8,14 @@ import { cn } from '@localixai/mini-app-sdk/ui/classes'
  * the app's error red in either theme; a hex or `rgb()` colour is drawn as given.
  */
 
+/** One terminal cell of spacing, about a character of the app's text across. */
+const CELL_PX = 8
+
 const STEP_PX: Record<string, number> = { xs: 2, sm: 4, md: 8, lg: 12, xl: 16 }
 
 export const space = (value: unknown): string | undefined =>
   typeof value === 'number'
-    ? `${value * 4}px`
+    ? `${value * CELL_PX}px`
     : typeof value === 'string'
       ? `${STEP_PX[value] ?? 0}px`
       : undefined

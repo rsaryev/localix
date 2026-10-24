@@ -81,6 +81,8 @@ function signalOf(options: unknown, timeoutMs: number | undefined): AbortSignal 
 export function createModelApi(input: {
   complete: (request: ModelCompletionRequest) => Promise<ModelCompletion>
   messages: () => Promise<readonly ModSessionMessage[]>
+  /** The conversation's system prompt as its latest turn composed it, for a fork to share. */
+  systemPrompt?: () => Promise<string | undefined>
 }) {
   /** One completion, its empty reply and its abort named as Claude Code names them. */
   async function completion(request: ModelCompletionRequest): Promise<ModelCompletion> {
@@ -104,7 +106,8 @@ export function createModelApi(input: {
       if (typeof ask.prompt !== 'string') throw new Error('model.fork takes a prompt')
       const history = (await input.messages()).map(({ role, text }) => ({ role, text }))
       if (history.length === 0) return { isAnswered: false, reason: 'nothing-to-fork' }
-      return completion({ prompt: ask.prompt, history })
+      const system = await input.systemPrompt?.().catch(() => undefined)
+      return completion({ prompt: ask.prompt, history, ...(system ? { system } : {}) })
     },
     async classify(text: unknown, labels: unknown, options?: unknown): Promise<string | undefined> {
       if (typeof text !== 'string' || !Array.isArray(labels) || labels.length === 0)

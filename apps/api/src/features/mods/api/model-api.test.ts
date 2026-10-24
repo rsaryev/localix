@@ -113,6 +113,20 @@ describe('$.model', () => {
     })
   })
 
+  test('fork shares the conversation’s own system prompt', async () => {
+    const asked: ModelCompletionRequest[] = []
+    const api = createModelApi({
+      complete: async (request) => (
+        asked.push(request),
+        { isAnswered: true, text: 'ok', usage: USED }
+      ),
+      messages: async () => [{ role: 'user' as const, text: 'hi', toolUses: [] }],
+      systemPrompt: async () => 'You are Localix.',
+    })
+    await api.fork({ prompt: 'Summarize' })
+    expect(asked[0]).toMatchObject({ system: 'You are Localix.', prompt: 'Summarize' })
+  })
+
   test('classify names one of the labels', async () => {
     const { api } = modelApi(() => ({ isAnswered: true, text: ' "billing".', usage: USED }))
     expect(await api.classify('My card was charged twice', ['billing', 'bug'])).toBe('billing')

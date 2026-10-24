@@ -1,17 +1,12 @@
-import {
-  createModsEngine,
-  type HookOrigin,
-  type ModsEngineOptions,
-} from '@localixai/claude-plugin/mods'
+import { createModsEngine, type ModsEngineOptions } from '@localixai/claude-plugin/mods'
 import { createAnswerCache } from './answer-cache'
 import { buildModApi } from './api/build-api'
 import { createStateSpaces } from './api/state-api'
-import type { RunSurface } from './api/run-api'
 import { commandAnswer, commandRunEvent, type CommandInput } from './command-run'
 import { createModComposer } from './composer'
 import { createModConversations } from './conversations'
 import { createEventCalls } from './event-calls'
-import { inScene, type ModScene, type ModSource, type ModsPorts } from './contracts'
+import { sceneDispatch, type ModScene, type ModSource, type ModsPorts } from './contracts'
 import { createHooksLoader, type HooksOptions, type LoadedMod } from './hooks-load'
 import { instanceIdOf, pluginOfInstance, type ModInstance } from './instance-id'
 import { judgeJoin, resolveTables } from './joining'
@@ -47,6 +42,8 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
     report: (instance, event, reason) =>
       ports.report(pluginOfInstance(instance), `${event}: ${reason}`),
     pluginOf: pluginOfInstance,
+    // The chain runs in the plugins' order, whichever project's instance started first.
+    rankOf: (id) => [...sources.keys()].indexOf(pluginOfInstance(id)),
     // A mod's `$` calls reach the hooks of the mods running in its project, not another's.
     peersOf: (id) => sceneOf(id).instances,
     ...options.engine,
@@ -61,23 +58,10 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
   const starting = new Map<string, Promise<string | null>>()
   const clock = options.clock ?? SUPERVISOR_CLOCK
   const health = createModHealth({ ...RESTART_RULES, ...options.restarts }, clock.now, ports.report)
-  /** The running turn of each conversation with mods, lending them its tools. */
-  const runs = new Map<string, RunSurface>()
   let lifecycle: Promise<void> = Promise.resolve()
 
-  const dispatch = (
-    event: string,
-    input: unknown,
-    core: (event: unknown) => unknown,
-    scene: ModScene,
-    ids?: ReadonlySet<string>,
-    origin?: HookOrigin,
-    /** Aborts when the event is abandoned (the run stopped): every hook's `next.signal`. */
-    signal?: AbortSignal,
-  ) =>
-    inScene(scene, () =>
-      engine.dispatch(event, input, core, { plugins: ids, origin, ...(signal ? { signal } : {}) }),
-    )
+  /** An event through the chain of `ids`, its `$` calls acting in `scene` (`contracts.ts`). */
+  const dispatch = sceneDispatch(engine)
 
   const sceneOf = (id: string) => {
     const cwd = instances.get(id)?.cwd ?? ports.workspaceDir
@@ -115,7 +99,7 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
       registry,
       composer,
       runCommand: (input) => host.runCommand(input, scene, new Set([plugin])),
-      runOf: (sessionId) => (sessionId ? runs.get(sessionId) : undefined),
+      runOf: (sessionId) => (sessionId ? band.runs.get(sessionId) : undefined),
       tableOf: (component) => tables?.get(component),
       calls,
       state,
@@ -223,22 +207,12 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
     sources.get(pluginOfInstance(id))?.clients.get(module)
   const calls = createEventCalls(() => host)
   const panes = createModPanes({ dispatch, registry, changed: ports.changed, sceneOf, clientOf })
-  /**
-   * Where a conversation's band runs: where its latest turn ran; for one that ran none since
-   * Localix started, its own working directory, the mods loaded starting there for it.
-   */
-  const bandSceneOf = async (sessionId: string) => {
-    const joined = conversations.of(sessionId)
-    if (joined) return { scene: joined.scene, instances: joined.plugins }
-    const fallback: ModScene = { userId: '', sessionId, cwd: ports.workspaceDir }
-    const cwd = (await ports.sessionCwd?.(fallback).catch(() => null)) ?? ports.workspaceDir
-    const scene = { ...fallback, cwd }
-    return { scene, instances: await host.instancesFor(scene, new Set(host.loaded())) }
-  }
   const band = createModBand({
     dispatch,
-    sceneOf: bandSceneOf,
-    isWorking: (sessionId) => runs.has(sessionId),
+    joined: (sessionId) => conversations.of(sessionId),
+    sessionCwd: (scene) => ports.sessionCwd?.(scene) ?? Promise.resolve(null),
+    workspaceDir: ports.workspaceDir,
+    start: (scene) => host.instancesFor(scene, new Set(host.loaded())),
     changed: ports.changed,
   })
 
@@ -285,15 +259,6 @@ export function createModsHost(ports: ModsPorts, options: ModsHostOptions = {}) 
       dispatch,
       hears: (event, ids) => engine.hears(event, ids),
     }),
-    /** A conversation's turn lends its tools to `$.tool` and `$.mcp` while it runs. */
-    // The band's `isWorking` follows the turn, so it redraws as one starts and ends.
-    attachRun(sessionId: string, surface: RunSurface) {
-      runs.set(sessionId, surface)
-      ports.changed()
-    },
-    detachRun(sessionId: string) {
-      if (runs.delete(sessionId)) ports.changed()
-    },
     hears: (event: string, ids?: ReadonlySet<string>) => engine.hears(event, ids),
     /** `$.ui.invalidate(event)`: the event's kept answers go, and clients re-read the mods. */
     invalidate(event: unknown) {

@@ -89,3 +89,16 @@ test('an abandoned event goes no further: core never runs beneath a hook it cut 
   expect(await dispatched).toBe('abandoned')
   expect(ran).toBe(0)
 })
+
+test('the chain follows the mods’ order, not the order their instances happened to start in', async () => {
+  const order = ['first', 'second']
+  const engine = createModsEngine({ rankOf: (mod) => order.indexOf(mod.split('~')[0]!) })
+  const heard: string[] = []
+  const hook = (name: string) => (on: Parameters<Parameters<typeof engine.load>[1]>[0]) =>
+    void on('turn.start', (_$, e, next) => (heard.push(name), next(e)))
+  // The second plugin's instance in this project started before the first's.
+  await engine.load('second~p', hook('second'), {}, {})
+  await engine.load('first~p', hook('first'), {}, {})
+  await engine.dispatch('turn.start', {}, () => ({}))
+  expect(heard).toEqual(['first', 'second'])
+})

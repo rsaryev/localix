@@ -49,6 +49,12 @@ export interface ModsEngineOptions {
    * per project): its loads may add the same noun; two plugins may not.
    */
   pluginOf?: (mod: string) => string
+  /**
+   * Where a loaded mod's hooks stand in every chain: lower first, a tie in load order. A host that
+   * starts a plugin's mod per project gives the plugin's place, so the chain follows the plugins'
+   * order however their instances happened to start. Absent, load order.
+   */
+  rankOf?: (mod: string) => number
   /** The mods a loaded mod's `$` calls reach: those running where it runs. Absent, every mod. */
   peersOf?: (mod: string) => ReadonlySet<string> | undefined
 }
@@ -150,6 +156,14 @@ export function createModsEngine(options: ModsEngineOptions = {}) {
         throw error instanceof ModLoadError ? error : new ModLoadError(failureOf(error).message)
       }
       hooks = [...hooks, ...added]
+      // Stable: a mod's own hooks keep their `on` order, mods of one rank their load order.
+      if (options.rankOf) {
+        const rank = options.rankOf
+        hooks = hooks
+          .map((entry, index) => ({ entry, index, rank: rank(entry.plugin) }))
+          .sort((a, b) => a.rank - b.rank || a.index - b.index)
+          .map(({ entry }) => entry)
+      }
       if (added.some((entry) => matchesEventName(entry.pattern, 'engine.create')))
         try {
           await create(plugin)

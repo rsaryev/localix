@@ -112,7 +112,7 @@ export async function createModRunScope(
   let open: { turnId: string; at: number } | undefined
   async function complete(input: TurnEnd & { answer: string; turnId: string }) {
     open = undefined
-    if (scene.sessionId) host.detachRun(scene.sessionId)
+    if (scene.sessionId) host.band.runs.detach(scene.sessionId)
     await host.measure(scene, plugins).catch(() => {})
     if (!active || !host.hears('turn.complete', plugins)) return undefined
     const answer = (await host.dispatch(
@@ -178,7 +178,7 @@ export async function createModRunScope(
       if (!active) return [...tools]
       // The turn's tools, before the mods wrap them: `$.tool.call` fires `tool.call` itself.
       surface.tools = [...tools, ...modTools(scope)]
-      if (scene.sessionId) host.attachRun(scene.sessionId, surface)
+      if (scene.sessionId) host.band.runs.attach(scene.sessionId, surface)
       // `agent.spawn` inside `tool.call`, as the Agent tool runs inside its call; a result is
       // stored (`session.append`) once the call is done.
       const spawning = wrapDelegate(tools, scope, {

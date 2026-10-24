@@ -5,13 +5,13 @@ import {
   type Hook,
   type HookFailure,
   type HookOrigin,
-  type Next,
   type TargetTier,
 } from './chain'
 import { freezeDeep, pausedApi, type ModsApi } from './intercept'
-import { matchesEvent, matchesEventName, type Matcher } from './matcher'
-import { drive, isHookBody, openStream, type OpenStream, type Outcome } from './stream'
+import { matchesEvent, type Matcher } from './matcher'
+import { drive, isHookBody, type Outcome } from './stream'
 import { STREAMING_EVENTS } from './turn-step-stream'
+import { nextOf, type Call, type Open } from './next-of'
 import { traceEntry, type TraceEntry, type TraceOutcome } from './trace'
 
 /**
@@ -43,15 +43,6 @@ export interface ChainRunnerDeps {
 }
 
 const CORE: HookOrigin = { plugin: 'engine', tier: 'core' }
-
-/** One `next` call: what it settles to, and the stream the hook reads it through. */
-interface Call {
-  outcome: Promise<Outcome>
-  stream?: OpenStream
-}
-
-/** What a `next` call runs: an Outcome, and the chunk its stream starts at (a replay continues). */
-type Open = (event: unknown, tier?: TargetTier) => { outcome: Promise<Outcome>; start: number }
 
 interface Ran {
   value: unknown
@@ -113,53 +104,6 @@ export function createChainRunner(deps: ChainRunnerDeps) {
           : run(event, chain, i + 1, e, core, opts)
       }
 
-      const makeNext = (
-        meter: Meter,
-        ms: number,
-        extra: object,
-        open: Open,
-        record: (call: Call) => void,
-        signal: AbortSignal,
-      ): Next => {
-        let trace: readonly TraceEntry[] = []
-        const call = (e: unknown, tier?: TargetTier) => {
-          const { outcome, start } = open(e, tier)
-          // The trace of the latest call: what settled beneath, filled once it settles.
-          trace = []
-          const mine = outcome.then((settled) => {
-            if (latest === mine) trace = settled.trace ?? []
-          })
-          latest = mine
-          mine.catch(() => {})
-          const paused = meter.pause(outcome)
-          if (!site) {
-            record({ outcome })
-            return paused.then((settled) => settled.value)
-          }
-          const stream = openStream(paused, start)
-          record({ outcome, stream })
-          return stream
-        }
-        const budget = {
-          ms,
-          get remainingMs() {
-            return meter.remainingMs()
-          },
-        }
-        let latest: Promise<void> | undefined
-        const next = Object.assign((e?: unknown) => call(e), {
-          to: (e: unknown, tier: TargetTier) => call(e, tier),
-          signal,
-          origin: opts.origin ?? CORE,
-          budget,
-          event,
-          is: (pattern: unknown) => matchesEventName(String(pattern), event),
-          ...extra,
-        })
-        // Read fresh: the trace of the latest call, once it settled.
-        return Object.defineProperty(next, 'trace', { get: () => trace }) as unknown as Next
-      }
-
       const runHook = (
         hook: Hook,
         ms: number,
@@ -192,7 +136,17 @@ export function createChainRunner(deps: ChainRunnerDeps) {
           const answer = hook(
             pausedApi(api, meter.pause),
             frozen,
-            makeNext(meter, ms, extra, gated, remember, own.signal),
+            nextOf({
+              event,
+              streams: Boolean(site),
+              origin: opts.origin ?? CORE,
+              meter,
+              ms,
+              extra,
+              open: gated,
+              record: remember,
+              signal: own.signal,
+            }),
           )
           return isHookBody(answer)
             ? { value: await drive(answer, yielded), body: true }
