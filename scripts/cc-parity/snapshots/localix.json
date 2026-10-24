@@ -239,12 +239,6 @@
       "shape": {
         "content": "string",
         "file_path": "string",
-        "files": [
-          {
-            "content": "string",
-            "path": "string"
-          }
-        ],
         "tool": "string",
         "tool_use_id": "string"
       }
@@ -255,8 +249,7 @@
       "shape": {
         "input": {
           "content": "string",
-          "file_path": "string",
-          "files": "array"
+          "file_path": "string"
         },
         "tool": "string",
         "tool_use_id": "string"
@@ -347,9 +340,16 @@
       "kind": "result",
       "name": "tool.call:Write",
       "shape": {
+        "ref": "number",
         "result": {
-          "content": "string"
-        }
+          "content": "string",
+          "filePath": "string",
+          "originalFile": "null",
+          "structuredPatch": "array",
+          "type": "string",
+          "userModified": "boolean"
+        },
+        "text": "string"
       }
     },
     {

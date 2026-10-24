@@ -86,13 +86,16 @@ const read: ToolShape = {
     num(seen.offset) !== undefined && seen.start_line === undefined ? { offset: seen.offset } : {},
 }
 
+// One edit, or one file written, reads as Claude Code's single-file call with no list beside it;
+// several stay Localix's list (a mods host fires one `tool.call` per entry: `singleCalls`).
 const edit: ToolShape = {
   name: 'Edit',
   toClaude(input, cwd) {
     const entry = only(input.edits)
     if (!entry) return input
     return defined({
-      ...input,
+      ...without(input, ['edits']),
+      ...without(entry, ['path', ...EDIT_KEYS]),
       file_path: absolutePath(entry.path, baseOf(input, cwd)),
       old_string: entry.old_string,
       new_string: entry.new_string,
@@ -100,17 +103,16 @@ const edit: ToolShape = {
     })
   },
   fromClaude(fields) {
-    // Any other shape (several edits, Claude Code's own) carried its fields unchanged.
-    const entry = only(fields.edits)
-    if (!entry) return fields
+    // Several edits, or a list a hook passed, carry their fields unchanged.
+    if (fields.edits !== undefined || fields.file_path === undefined) return fields
     const rest = without(fields, EDIT_KEYS)
-    const folded = defined({
+    const entry = defined({
       path: fields.file_path,
       old_string: fields.old_string,
       new_string: fields.new_string,
       replace_all: fields.replace_all,
     })
-    return { ...rest, edits: [{ ...entry, ...folded }] }
+    return { ...rest, edits: [entry] }
   },
 }
 
@@ -118,19 +120,18 @@ const write: ToolShape = {
   name: 'Write',
   toClaude(input, cwd) {
     const entry = only(input.files)
-    return entry
-      ? {
-          ...input,
-          file_path: absolutePath(entry.path, baseOf(input, cwd)),
-          content: entry.content,
-        }
-      : input
+    if (!entry) return input
+    return {
+      ...without(input, ['files']),
+      ...without(entry, ['path', 'content']),
+      file_path: absolutePath(entry.path, baseOf(input, cwd)),
+      content: entry.content,
+    }
   },
   fromClaude(fields) {
-    const entry = only(fields.files)
-    if (!entry) return fields
+    if (fields.files !== undefined || fields.file_path === undefined) return fields
     const rest = without(fields, ['file_path', 'content'])
-    return { ...rest, files: [{ ...entry, path: fields.file_path, content: fields.content }] }
+    return { ...rest, files: [{ path: fields.file_path, content: fields.content }] }
   },
 }
 

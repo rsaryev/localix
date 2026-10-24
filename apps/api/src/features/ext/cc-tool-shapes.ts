@@ -44,19 +44,35 @@ export function localToolName(name: string): string {
   return Object.entries(SHAPES).find(([, shape]) => named(shape))?.[0] ?? name
 }
 
-/** The `tool.call` event of a call: Claude Code's name and arguments, and the call's id. */
+/**
+ * The `tool.call` event of a call: Claude Code's name and arguments, and the call's id. With the
+ * call's `cwd`, a file path is absolute, as Claude Code's hooks always see it.
+ */
 export function toolCallEvent(
   tool: { name: string; aliases?: readonly string[] },
   input: unknown,
   toolUseId: string,
+  cwd?: string,
 ): Fields {
   const fields = isRecord(input) ? input : {}
   const shape = SHAPES[tool.name]
   return {
-    ...(shape ? shape.toClaude(fields) : fields),
+    ...(shape ? shape.toClaude(fields, cwd) : fields),
     tool: claudeCodeToolName(tool, fields),
     tool_use_id: toolUseId,
   }
+}
+
+/**
+ * A Localix call as the single-file calls Claude Code's tools make: one input per edit, per file
+ * written or per file read, so each reads as `Edit`, `Write` or `Read` does (one input otherwise).
+ */
+export function singleCalls(tool: string, input: unknown): Fields[] {
+  const fields = isRecord(input) ? input : {}
+  const list = ({ edit: 'edits', write: 'files', read: 'reads' } as Record<string, string>)[tool]
+  const entries = list ? fields[list] : undefined
+  if (!list || !Array.isArray(entries) || entries.length < 2) return [fields]
+  return entries.map((entry) => ({ ...fields, [list]: [entry] }))
 }
 
 /** The tool's own input from the event a hook passed to `next`. */

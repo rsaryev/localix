@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import type { AgentTool } from '@localixai/agent/agents'
+import { claudeCodeToolResponse } from '../../ext/cc-tool-shapes'
 import type { ModVerdict } from '../tool-check'
-import { claudeCodeToolName, toolInputOf } from '../tool-shapes'
+import { claudeCodeToolName, localToolName, toolInputOf } from '../tool-shapes'
 
 /**
  * `$.tool`, `$.mcp` and `$.ui.ask`: the tools of the conversation's running turn, as Claude Code's mods call
- * them — under Claude Code's names and arguments, a result as `{ result }`. The turn lends them
+ * them — under Claude Code's names and arguments, a result as `{ result, text }`. The turn lends them
  * (`RunSurface`) while it runs; with none running, a call says so. `$.tool.call` is an event too
  * (`tool.call`), so the other mods' hooks see it before the tool runs.
  */
@@ -29,7 +30,11 @@ interface AskAnswer {
 const text = (content: unknown) =>
   typeof content === 'string' ? content : JSON.stringify(content ?? '')
 
-export function createRunApi(surface: () => RunSurface | undefined) {
+export function createRunApi(
+  surface: () => RunSurface | undefined,
+  /** Where the call's paths resolve: the conversation's working directory. */
+  cwd: () => string | undefined = () => undefined,
+) {
   const running = () => {
     const run = surface()
     if (!run) throw new Error('No turn is running in this conversation')
@@ -40,6 +45,8 @@ export function createRunApi(surface: () => RunSurface | undefined) {
       (candidate) =>
         claudeCodeToolName(candidate) === name ||
         candidate.name === name ||
+        // `Glob` is `search`, `SendMessage` the agent tool: every name Claude Code calls it by.
+        localToolName(name) === candidate.name ||
         candidate.aliases?.includes(name),
     )
     if (!tool) throw new Error(`No tool named ${name} in this turn`)
@@ -60,8 +67,14 @@ export function createRunApi(surface: () => RunSurface | undefined) {
         const event = (input ?? {}) as Record<string, unknown>
         if (typeof event.tool !== 'string') throw new Error('tool.call names the tool to call')
         const tool = find(event.tool)
-        const result = await execute(tool, toolInputOf(tool.name, event), event.tool_use_id)
-        return { result: result.content, ...(result.isError ? { isError: true } : {}) }
+        const own = toolInputOf(tool.name, event)
+        const result = await execute(tool, own, event.tool_use_id)
+        // As `next(e)` resolves on `tool.call`: the tool's own record, and the text it read.
+        return {
+          result: claudeCodeToolResponse(tool, result, own, cwd()),
+          text: result.content,
+          ...(result.isError ? { isError: true } : {}),
+        }
       },
       /** `$.tool.check`: the turn's verdict on a call it does not make. */
       check(input: unknown) {

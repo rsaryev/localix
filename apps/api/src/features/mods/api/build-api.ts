@@ -60,7 +60,10 @@ export function buildModApi(deps: ModApiDeps): { api: ModsApi; dispose: () => vo
   const textOf = (input: unknown) =>
     typeof input === 'string' ? input : stringOr((input as { text?: unknown } | null)?.text)
 
-  const run = createRunApi(() => deps.runOf(scene().sessionId))
+  const run = createRunApi(
+    () => deps.runOf(scene().sessionId),
+    () => scene().cwd,
+  )
   const session = createSessionApi({
     scene,
     ports,

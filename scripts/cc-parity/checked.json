@@ -22,9 +22,12 @@
     "call:ui.open",
     "event:command.run",
     "event:session.start",
+    "event:tool.call:Write",
+    "event:tool.check",
     "event:turn.start",
     "event:ui.render:AbovePrompt",
     "event:ui.render:Pane",
+    "result:tool.call:Write",
     "result:turn.step"
   ]
 }

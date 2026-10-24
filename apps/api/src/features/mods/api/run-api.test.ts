@@ -27,12 +27,15 @@ test('a running turn lends its tools under Claude Code’s names; none running, 
     ['Edit', false],
     ['mcp__docs__search', true],
   ])
-  expect(await api.tool.call({ tool: 'Bash', command: 'ls', timeout: 2000 })).toEqual({
-    result: 'bash got {"command":"ls","timeout":2}',
+  expect(await api.tool.call({ tool: 'Bash', command: 'ls', timeout: 2000 })).toMatchObject({
+    result: { stdout: 'bash got {"command":"ls","timeout":2}', stderr: '' },
+    text: 'bash got {"command":"ls","timeout":2}',
   })
   expect(
     await api.tool.call({ tool: 'Edit', file_path: 'a', old_string: 'x', new_string: 'y' }),
-  ).toEqual({ result: 'edit got {"file_path":"a","old_string":"x","new_string":"y"}' })
+  ).toMatchObject({
+    text: 'edit got {"edits":[{"path":"a","old_string":"x","new_string":"y"}]}',
+  })
   expect(await api.mcp.call('docs', 'search', { q: 'hooks' })).toEqual({
     content: [{ type: 'text', text: 'mcp_docs_search got {"q":"hooks"}' }],
     isError: false,

@@ -2,6 +2,7 @@ import { expect, test } from 'bun:test'
 import {
   claudeCodeHookCall,
   localInputFromHook,
+  singleCalls,
   toolCallEvent,
   toolInputOf,
 } from './cc-tool-shapes'
@@ -23,11 +24,31 @@ test('a one-file edit reads as Claude Code’s Edit, and a rewrite lands on the 
   })
 })
 
-test('several edits, and Claude Code’s own shape, pass through untouched', () => {
+test('several edits pass through untouched; Claude Code’s own shape comes back as the one edit', () => {
   const several = { edits: [{ path: 'a', old_string: '1', new_string: '2' }, { path: 'b' }] }
   expect(toolInputOf('edit', toolCallEvent({ name: 'edit' }, several, 'c'))).toEqual(several)
   const own = { file_path: 'a', old_string: '1', new_string: '2' }
-  expect(toolInputOf('edit', toolCallEvent({ name: 'edit' }, own, 'c'))).toEqual(own)
+  expect(toolInputOf('edit', toolCallEvent({ name: 'edit' }, own, 'c'))).toEqual({
+    edits: [{ path: 'a', old_string: '1', new_string: '2' }],
+  })
+})
+
+test('one edit or one file reads as Claude Code’s single-file call, its path absolute', () => {
+  expect(
+    toolCallEvent({ name: 'write' }, { files: [{ path: 'n.md', content: 'hi' }] }, 'w', '/p'),
+  ).toEqual({ tool: 'Write', tool_use_id: 'w', file_path: '/p/n.md', content: 'hi' })
+  expect(
+    toolCallEvent(
+      { name: 'edit' },
+      { edits: [{ path: 'a', old_string: '1', new_string: '2' }] },
+      'e',
+      '/p',
+    ),
+  ).toEqual({ tool: 'Edit', tool_use_id: 'e', file_path: '/p/a', old_string: '1', new_string: '2' })
+  expect(singleCalls('write', { files: [{ path: 'a' }, { path: 'b' }] })).toEqual([
+    { files: [{ path: 'a' }] },
+    { files: [{ path: 'b' }] },
+  ])
 })
 
 test('write, read, search and bash take Claude Code’s names and units', () => {
@@ -70,7 +91,7 @@ test('a hook reads the call as Claude Code names it: hookify tests `tool_name ==
     claudeCodeHookCall({ name: 'write' }, { files: [{ path: 'a.ts', content: 'x' }] }),
   ).toEqual({
     tool_name: 'Write',
-    tool_input: { files: [{ path: 'a.ts', content: 'x' }], file_path: 'a.ts', content: 'x' },
+    tool_input: { file_path: 'a.ts', content: 'x' },
   })
   // A tool with no Claude Code counterpart keeps its own name and input.
   expect(claudeCodeHookCall({ name: 'kanban_add' }, { title: 't' })).toEqual({

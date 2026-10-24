@@ -8,8 +8,6 @@
     "call:ui.panes": "Localix lists a pane's id and title, without isFocused, isPlaced or isShown.",
     "event:prompt.submit": "Localix also passes turnId; Claude Code gives it in turn.start only.",
     "event:session.end": "Localix gives the reason only, without sessionId or resume.",
-    "event:tool.call:Write": "Localix keeps its own files list beside Claude Code's file_path and content (ext/cc-tool-shapes.ts).",
-    "event:tool.check": "As tool.call: the input keeps Localix's files beside Claude Code's fields.",
     "event:turn.complete": "Localix sends no usage, the turn's token totals.",
     "event:turn.step": "Localix leaves effort out when the run sets no effort Claude Code names (the fixture's run sets none).",
     "event:ui.render:CommandOutput": "Localix's desktop surface draws only panes through ui.render.",
@@ -18,7 +16,6 @@
     "event:ui.render:Spinner": "Localix's desktop surface draws only panes through ui.render.",
     "event:ui.render:UserMessage": "Localix's desktop surface draws only panes through ui.render.",
     "result:prompt.submit": "Localix's core answer has no origin.",
-    "result:tool.call:Write": "Localix's core answer is { result: { content } }; Claude Code's is the tool's own result with ref and text.",
     "result:tool.check": "The fixture's permission verdict names no rule; Claude Code's names the rule that decided."
   }
 }
