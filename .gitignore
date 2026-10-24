@@ -80,3 +80,9 @@ probe-mutation.txt
 
 # A mini app preview run writes per-user sample data next to the mini app.
 **/.preview-data/
+
+# The cc-parity tool's working copies and the type declarations Claude Code writes for a mod:
+# Claude Code's own files, never committed (scripts/cc-parity/README.md).
+.cache/cc-parity/
+scripts/cc-parity/probe/.claude-plugin/types/
+scripts/cc-parity/probe/tsconfig.json

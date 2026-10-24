@@ -16,6 +16,7 @@
         "*.mjs",
         "*.ts",
         "lib/wait.mjs",
+        "cc-parity/run.mjs",
         "screenshots/{audit,fixture-service,publish,run,runtime,scripted-provider,seed,workbench-coverage}.mjs",
         "screenshots/playwright.config.mjs",
         "screenshots/*.pw.mjs",
