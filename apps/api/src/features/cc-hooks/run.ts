@@ -23,18 +23,13 @@ import { matchesField } from './matcher'
 import { PERMISSION_MODE_EVENTS } from './protocol-types'
 import { readsTranscript } from './transcript'
 import type { CcHooksRuntime, CcRunStop, CreateCcHooksRuntimeOptions } from './runtime-contracts'
-import {
-  EMPTY_RUNTIME,
-  joinContext,
-  contextFrom,
-  blockedFrom,
-  stopVerdictFrom,
-} from './runtime-results'
+import { EMPTY_RUNTIME, joinContext, contextFrom, blockedFrom } from './runtime-results'
 import { createHookSelector, spendOnce, type SelectOptions } from './runtime-selection'
 import { createHookHandlerRunner } from './runtime-handler'
 import { createToolHookRunners } from './runtime-tool-hooks'
 import { byFile } from './runtime-file-calls'
 import { runInParallel } from './runtime-parallel'
+import { createStopHookRunners } from './runtime-stop-hooks'
 import { createGateHookRunners } from './runtime-gate-hooks'
 import { createSessionHookRunners, watchPathsFrom } from './runtime-session-hooks'
 import { createDisplayHookRunners } from './runtime-display-hooks'
@@ -234,15 +229,8 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
     ...createDisplayHookRunners(dispatch),
     ...createWorktreeHookRunners(dispatch),
 
-    async runStop(stopOpts) {
-      const input: CcHookInput = {
-        ...baseInput('Stop'),
-        stop_hook_active: Boolean(stopOpts?.stopHookActive),
-        last_assistant_message: stopOpts?.lastAssistantMessage ?? '',
-        ...backgroundOf(),
-      }
-      return stopVerdictFrom(await runAll('Stop', () => true, input, false))
-    },
+    // Stop and SubagentStop carry the session's running work and loops.
+    ...createStopHookRunners(dispatch, backgroundOf, transcript),
 
     async runSessionEnd(reason: string) {
       const input: CcHookInput = { ...baseInput('SessionEnd'), reason }
@@ -272,25 +260,6 @@ export function createCcHooksRuntime(opts: CreateCcHooksRuntimeOptions): CcHooks
         await runAll('SubagentStart', (m) => matchesField(m, agentType), input, false),
       )
       return additionalContext ? { additionalContext } : {}
-    },
-
-    async runSubagentStop(agentType, agentId, lastMessage, subOpts) {
-      const sourcesOnly = subOpts?.sourcesOnly
-      const input: CcHookInput = {
-        ...baseInput('SubagentStop'),
-        agent_id: agentId,
-        agent_type: agentType,
-        ...(lastMessage ? { last_assistant_message: lastMessage } : {}),
-        stop_hook_active: Boolean(subOpts?.stopHookActive),
-        agent_transcript_path: transcript?.agentPath(agentId) ?? '',
-        // "scoped to the parent session, not the subagent".
-        ...backgroundOf(),
-      }
-      return stopVerdictFrom(
-        await runAll('SubagentStop', (m) => matchesField(m, agentType), input, false, {
-          filter: (h) => !sourcesOnly || sourcesOnly.includes(h.source),
-        }),
-      )
     },
 
     async runPreCompact(trigger: 'manual' | 'auto', customInstructions?: string) {
