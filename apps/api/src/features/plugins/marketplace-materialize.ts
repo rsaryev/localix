@@ -79,11 +79,58 @@ async function writeCatalog(root: string, text: string): Promise<void> {
   await fs.writeFile(join(root, MARKETPLACE_FILE), text)
 }
 
+/** How long a fetch made for a Store page waits for the install that may follow it. */
+export const PREFETCH_REUSE_MS = 10 * 60 * 1000
+
+const prefetchMarker = (staging: string) => `${staging}.prefetch.json`
+
+/**
+ * A fetch the Store made to show a plugin's page, still fresh and of the same source: the install
+ * that follows uses it once instead of fetching again.
+ */
+async function takePrefetched(
+  key: string,
+  staging: string,
+  now: number,
+): Promise<{ dir: string; commitSha?: string } | null> {
+  const file = prefetchMarker(staging)
+  const marker = await fs
+    .readFile(file, 'utf8')
+    .then(
+      (text) => JSON.parse(text) as { key?: string; at?: number; dir?: string; commitSha?: string },
+    )
+    .catch(() => null)
+  if (!marker) return null
+  await fs.rm(file, { force: true })
+  if (marker.key !== key || typeof marker.at !== 'number' || typeof marker.dir !== 'string')
+    return null
+  if (now - marker.at > PREFETCH_REUSE_MS) return null
+  if (!(await fs.stat(marker.dir).catch(() => null))?.isDirectory()) return null
+  return { dir: marker.dir, ...(marker.commitSha ? { commitSha: marker.commitSha } : {}) }
+}
+
 /**
  * Fetch an entry's remote plugin source into `staging` and return the plugin directory: the
  * checkout itself, or its `path` subdirectory (sparse-checked-out, confined to the checkout).
+ * With `prefetch` (a Store page), the fetch is kept for the install that may follow.
  */
 export async function fetchEntryPlugin(
+  resolved: Exclude<ResolvedEntrySource, { localPath: string }>,
+  staging: string,
+  deps: MarketplaceRegistryDeps,
+  opts: { prefetch?: boolean } = {},
+): Promise<{ dir: string; commitSha?: string }> {
+  const key = JSON.stringify(resolved)
+  const now = Date.parse((deps.now ?? (() => new Date().toISOString()))())
+  const reused = opts.prefetch ? null : await takePrefetched(key, staging, now)
+  if (reused) return reused
+  const fetched = await fetchInto(resolved, staging, deps)
+  if (opts.prefetch)
+    await fs.writeFile(prefetchMarker(staging), JSON.stringify({ key, at: now, ...fetched }))
+  return fetched
+}
+
+async function fetchInto(
   resolved: Exclude<ResolvedEntrySource, { localPath: string }>,
   staging: string,
   deps: MarketplaceRegistryDeps,

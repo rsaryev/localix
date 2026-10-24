@@ -24,7 +24,7 @@ import type {
 } from './contracts'
 import type { PluginThemeSpec } from './contracts-themes'
 import type { PluginUpdates } from './plugin-updates'
-import type { OfficialMarketplaceOutcome } from './official-marketplace'
+import type { DefaultMarketplaceOutcome } from './default-marketplaces'
 import type { UpdateMarketplaceResponse } from './contracts-updates'
 
 export interface PluginServiceDeps {
@@ -189,10 +189,11 @@ export interface PluginService {
    */
   removeMarketplace(userId: string, input: { name: string }): Promise<{ uninstalled: string[] }>
   /**
-   * Register the official `localix` marketplace unless it is there, the person removed it, or this
-   * run is offline (`official-marketplace.ts`). Run once at start.
+   * Register the Store's default marketplaces — `localix`, the official and the community one —
+   * for browsing, each unless it is there, the person removed it, or this run is offline
+   * (`default-marketplaces.ts`). Run once at start.
    */
-  ensureOfficialMarketplace(): Promise<OfficialMarketplaceOutcome>
+  ensureDefaultMarketplaces(): Promise<Record<string, DefaultMarketplaceOutcome>>
   /** Updates available, in flight, and the auto-update pass (`plugin-updates.ts`). */
   updates: PluginUpdates
   /** Notify all subscribers that plugins changed (mirrors CC's /reload-plugins; exposed as `/plugin reload`). */

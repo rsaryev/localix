@@ -208,6 +208,15 @@ export function createStoreService(deps: {
     },
 
     /**
+     * Every provider fetches its sources again (the six-hourly sync); what moved is indexed off
+     * the request path. A provider that cannot is left as it was.
+     */
+    async refreshSources(): Promise<void> {
+      await Promise.all(deps.providers.map((provider) => provider.refresh().catch(() => {})))
+      runs.invalidate()
+    },
+
+    /**
      * Update all: every provider re-reads its sources, then each install a newer version is
      * offered for is updated, unless a job already runs for it. Returns what was queued.
      */

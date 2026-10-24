@@ -54,7 +54,8 @@ export const RELAY_TOPICS = {
   // An agent's own change reaches its chats too; plugins and MCP servers poke as they converge.
   agent: { resources: ['capabilities', 'sessions'], resync: ['capabilities'] },
   skill: { resources: ['capabilities'] },
-  plugin: 'ignore',
+  // Plugins poke their own topics as they converge; the Store's listings show their installs.
+  plugin: { resources: ['store'] },
   // A mini app installed, updated, removed or reconfigured: the mini apps list, what the catalog
   // offers (its tools join or leave runs) and the Store's listings.
   'mini-app': { resources: ['mini-apps', 'capabilities', 'store'], bumpsCapabilities: true },

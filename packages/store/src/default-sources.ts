@@ -56,7 +56,7 @@ export const DEFAULT_SOURCES: readonly DefaultSource[] = [
     editorial: true,
   },
   {
-    id: 'claude-plugins-community',
+    id: 'claude-community',
     kind: 'plugin',
     input: 'anthropics/claude-plugins-community',
     trust: 'community',

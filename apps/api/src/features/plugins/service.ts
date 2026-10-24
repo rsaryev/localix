@@ -66,7 +66,7 @@ import { userDefaultNpmRegistry } from './marketplace-npm-registry'
 import { inPlaceInstallFor, inPlacePublication } from './install-in-place'
 import { assertNameNotBuiltin, assertNotBuiltin, BUILTIN_ORIGIN } from './builtin-plugins'
 import { createPluginUpdates } from './plugin-updates'
-import { ensureOfficialMarketplace } from './official-marketplace'
+import { ensureDefaultMarketplaces } from './default-marketplaces'
 import { setInstallRecord } from './plugin-cache'
 import { readRemoteCommit } from './git-fetch'
 import {
@@ -582,8 +582,8 @@ export function createPluginService(deps: PluginServiceDeps): PluginService {
 
     validatePath: (dir, opts) => validatePluginDir(dir, opts),
 
-    ensureOfficialMarketplace: () =>
-      ensureOfficialMarketplace({
+    ensureDefaultMarketplaces: () =>
+      ensureDefaultMarketplaces({
         root: registryDeps.root ?? marketplacesRoot(home),
         add: (source) => addMarketplace(source, registryDeps),
         env: deps.env ?? process.env,

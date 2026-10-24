@@ -68,6 +68,8 @@ export async function resolveMarketplaceInstall(
     versionRange?: string
     /** The person accepted this entry's `headersHelper` (`entry-headers-helper.ts`). */
     acceptCommand?: string
+    /** Fetched for a Store page: kept for the install that may follow (`fetchEntryPlugin`). */
+    prefetch?: boolean
   },
 ): Promise<ResolvedMarketplaceInstall> {
   const root = deps.root ?? marketplacesRoot()
@@ -152,7 +154,9 @@ export async function resolveMarketplaceInstall(
   // Remote sources stage into a stable temp dir under the marketplaces root; git, npm and
   // archives land the same shape (a plain plugin dir handed to `installFromLocal`).
   const staging = join(root, `.fetch-${Math.abs(hashString(`${ref.plugin}\0${ref.marketplace}`))}`)
-  const fetched = await fetchEntryPlugin(resolved, staging, deps)
+  const fetched = await fetchEntryPlugin(resolved, staging, deps, {
+    prefetch: opts?.prefetch ?? false,
+  })
   return { ...fetched, linkRoot: staging, ...base, ...(tagVersion ? { tagVersion } : {}) }
 }
 

@@ -23,7 +23,7 @@ describe('default sources', () => {
         editorial: true,
       },
       {
-        id: 'claude-plugins-community',
+        id: 'claude-community',
         kind: 'plugin',
         trust: 'community',
         weight: 0.35,

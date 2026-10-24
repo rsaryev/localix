@@ -1,7 +1,5 @@
 import { join } from 'node:path'
 
-import type { StoreProvider } from '@localixai/store'
-
 import { createMiniAppStoreProvider } from '../features/mini-apps/store-provider'
 import type { createMiniAppService } from '../features/mini-apps/service'
 import type { SemanticService } from '../features/embeddings/service'
@@ -13,7 +11,9 @@ import { createProjectSignals } from '../features/store/project-signals'
 import { createStoreSemanticSource } from '../features/store/semantic'
 import { STORE_COLLECTION } from '../features/store/search-provider'
 import { createStoreService, type StoreService } from '../features/store/service'
-import { localixHome } from '../lib/env'
+import { localixHome, userHome } from '../lib/env'
+import type { PluginService } from '../features/plugins/service-types'
+import { pluginStoreProviderOf } from '../features/plugins/store-wiring'
 
 /** The Store index's file: derived, so it lives with the caches, not beside the database. */
 export const storeIndexFile = (home = localixHome()) => join(home, 'cache', 'store-index.sqlite')
@@ -26,8 +26,8 @@ export const storeIndexFile = (home = localixHome()) => join(home, 'cache', 'sto
  */
 export function createStorePhase(deps: {
   miniAppService: ReturnType<typeof createMiniAppService>
-  /** Further providers (plugins), built by their owners' phases. */
-  providers?: readonly StoreProvider[]
+  /** The plugin service: its marketplaces are the plugins provider's sources. */
+  pluginService?: PluginService
   semanticService?: Pick<SemanticService, 'registerSource' | 'resync'>
   resolveProjectCwd: (userId: string, projectId: string) => Promise<string | null>
   owner: string
@@ -46,14 +46,22 @@ export function createStorePhase(deps: {
         catalogs: miniAppService.catalogs,
         apps: miniAppService,
       }),
-      ...(deps.providers ?? []),
+      ...(deps.pluginService
+        ? [
+            pluginStoreProviderOf(deps.pluginService, {
+              homeDir: userHome(),
+              owner: deps.owner,
+              cacheDir: join(localixHome(), 'cache', 'store-plugin-contents'),
+            }),
+          ]
+        : []),
     ],
     index,
-    search: async (userId, request) => {
+    search: async (...args) => {
       if (!search) throw new Error('The global search service is not built yet')
-      return search.search(userId, request)
+      return search.search(...args)
     },
-    projectWords: (userId, projectId) => signals.of(userId, projectId),
+    projectWords: (...args) => signals.of(...args),
     ...(deps.semanticService
       ? { resyncMeaning: () => void deps.semanticService!.resync(STORE_COLLECTION).catch(() => {}) }
       : {}),

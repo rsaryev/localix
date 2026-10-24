@@ -27,6 +27,11 @@ describe('a package identity is its origin, normalized', () => {
     expect(gitOrigin({ url: 'acme/tools', path: '.' })).toBe('git:github.com/acme/tools')
   })
 
+  test('the usual default branch is the repository itself, named or not', () => {
+    expect(gitOrigin({ url: 'acme/tools', ref: 'main' })).toBe(gitOrigin({ url: 'acme/tools' }))
+    expect(gitOrigin({ url: 'acme/tools', ref: 'master' })).toBe('git:github.com/acme/tools')
+  })
+
   test('an npm package by its name, a catalog archive by its own', () => {
     expect(npmOrigin('@Acme/Lint')).toBe('npm:@acme/lint')
     expect(catalogOrigin('chess')).toBe('catalog:chess')

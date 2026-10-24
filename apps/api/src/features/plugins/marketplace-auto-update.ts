@@ -21,6 +21,7 @@ export const OFFICIAL_MARKETPLACE: { name: string; source: MarketplaceSource } =
   // Only the catalog and the plugins are checked out, not the rest of the repository.
   source: { source: 'github', repo: 'rsaryev/localix', sparsePaths: ['.claude-plugin', 'plugins'] },
 }
+// The Store's default sources (`@localixai/store`) name the same repository and folders.
 
 const OFFICIAL_REPO = 'rsaryev/localix'
 

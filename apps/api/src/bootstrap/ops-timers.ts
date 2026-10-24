@@ -24,6 +24,9 @@ import { MINI_APP_WARNINGS, warnOnce } from '../lib/warn-once'
 import type { StorageMaintenance } from './storage-maintenance'
 import { armModelCatalogChecks } from '../features/catalog/refresh-schedule'
 import { armPluginUpdateTimers } from './plugin-update-timers'
+import { armPluginAutoUpdate } from '../features/plugins/auto-update-schedule'
+import type { StoreService } from '../features/store/service'
+import { envFlag } from '../lib/env'
 import { armMiniAppTimers } from './mini-app-timers'
 import { sessionDataSweepTask } from './session-data-sweep'
 
@@ -41,6 +44,8 @@ export interface OpsTimersPhaseInput
   maintainStorage: StorageMaintenance
   hostRefs: MiniAppHostRefs
   miniAppConditions: MiniAppHostsPhase['miniAppConditions']
+  /** The Store: its sources are fetched again every six hours, and read when they move. */
+  storeService?: Pick<StoreService, 'invalidate' | 'refreshSources'>
 }
 
 export interface OpsTimersPhase {
@@ -65,6 +70,7 @@ export function createOpsTimersPhase({
   hostRefs,
   notifications,
   miniAppConditions,
+  storeService,
 }: OpsTimersPhaseInput): OpsTimersPhase {
   const warnMiniAppOnce = warnOnce(logger, MINI_APP_WARNINGS)
   // What is wrong with a Claude Code plugin (its load, its monitors), as Event Center conditions.
@@ -190,7 +196,14 @@ export function createOpsTimersPhase({
       userId: env.LOCALIX_DEFAULT_USER_ID,
       logger,
       signal,
+      onListingsMoved: () => storeService?.invalidate(),
     })
+    // The Store's sources, every six hours on the plugin pass's clock (`store-scale.md`, "Sync");
+    // nothing is fetched while the person asked for no nonessential traffic.
+    if (storeService && !envFlag('CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC', false)) {
+      const stopStoreRefresh = armPluginAutoUpdate({ run: () => storeService.refreshSources() })
+      signal?.addEventListener('abort', stopStoreRefresh, { once: true })
+    }
 
     // Model lists: hourly, refetched past six hours (`features/catalog/refresh-schedule.ts`).
     const checkModelCatalog = armModelCatalogChecks({ catalogService, signal, logger })
@@ -210,7 +223,7 @@ export function createOpsTimersPhase({
       { name: 'storage_maintenance', run: (ctx) => maintainStorage(signal, ctx) },
       miniAppTimers.recommendedTask,
       // Near the end: it waits on the network (a first fetch of the official marketplace).
-      pluginTimers.officialMarketplaceTask,
+      pluginTimers.defaultMarketplacesTask,
       // Last: it waits on the network, and the restored catalog is already served.
       ...(checkModelCatalog ? [{ name: 'model_catalog_check', run: checkModelCatalog }] : []),
     ]

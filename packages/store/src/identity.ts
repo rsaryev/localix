@@ -3,7 +3,7 @@
  * normalized, so two sources that list one package are seen to. A git repository is its host and
  * path without `.git`, whatever the spelling (HTTPS, SSH, GitHub's `owner/repo`), plus the folder
  * inside it and the branch or tag it names; a pinned commit is a version of it, not another
- * package. An npm package is its name; a catalog archive is its catalog name.
+ * package, and `main` or `master` is the repository itself. An npm package is its name; a catalog archive is its catalog name.
  */
 
 const GITHUB_SHORTHAND = /^[\w.-]+\/[\w.-]+$/
@@ -26,9 +26,13 @@ const folderOf = (path: string | undefined) =>
     .replace(/^\/+|\/+$/g, '')
     .trim()
 
+/** Branches that are almost always the default one: naming them names the repository. */
+const DEFAULT_BRANCHES = new Set(['main', 'master', 'HEAD'])
+
 export function gitOrigin(source: { url: string; path?: string; ref?: string }): string {
   const folder = folderOf(source.path)
-  return `git:${repositoryOf(source.url)}${folder ? `#${folder}` : ''}${source.ref ? `@${source.ref}` : ''}`
+  const ref = source.ref && !DEFAULT_BRANCHES.has(source.ref) ? `@${source.ref}` : ''
+  return `git:${repositoryOf(source.url)}${folder ? `#${folder}` : ''}${ref}`
 }
 
 export const npmOrigin = (name: string): string => `npm:${name.trim().toLowerCase()}`

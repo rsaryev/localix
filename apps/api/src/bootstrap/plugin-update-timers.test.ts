@@ -39,7 +39,9 @@ function arm(opts: { outcomes?: Array<Outcome | Error>; official?: () => Promise
   const logs: Array<{ level: 'info' | 'warn'; entry: object }> = []
   const outcomes = [...(opts.outcomes ?? [])]
   const controller = new AbortController()
-  const { officialMarketplaceTask } = armPluginUpdateTimers({
+  const moved: string[] = []
+  const { defaultMarketplacesTask } = armPluginUpdateTimers({
+    onListingsMoved: () => void moved.push('moved'),
     pluginService: {
       updates: {
         autoUpdatePass: async (userId: string) => {
@@ -54,7 +56,8 @@ function arm(opts: { outcomes?: Array<Outcome | Error>; official?: () => Promise
           return next
         },
       } as never,
-      ensureOfficialMarketplace: (opts.official ?? (async () => ({ added: true }))) as never,
+      ensureDefaultMarketplaces: (opts.official ??
+        (async () => ({ localix: { status: 'registered' } }))) as never,
     },
     userId: 'u1',
     logger: {
@@ -64,7 +67,7 @@ function arm(opts: { outcomes?: Array<Outcome | Error>; official?: () => Promise
     signal: controller.signal,
     schedule: { timers: clock.timers, random: () => 0.5 },
   })
-  return { clock, passes, logs, controller, officialMarketplaceTask }
+  return { clock, passes, logs, controller, defaultMarketplacesTask, moved }
 }
 
 describe('the plugin auto-update timers', () => {
@@ -144,13 +147,21 @@ describe('the plugin auto-update timers', () => {
     expect(cadence()).toEqual([])
   })
 
-  test('the official marketplace task registers it once idle, logging what it did or why not', async () => {
+  test('the default marketplaces task registers them once idle, logging what it did or why not', async () => {
     const ctx = { signal: new AbortController().signal, yield: async () => {} } as IdleTaskContext
     const added = arm()
-    expect(added.officialMarketplaceTask.name).toBe('official_plugin_marketplace')
-    await added.officialMarketplaceTask.run(ctx)
+    expect(added.defaultMarketplacesTask.name).toBe('default_plugin_marketplaces')
+    await added.defaultMarketplacesTask.run(ctx)
+    // The marketplaces it registered are the Store's sources: its listings are read again.
+    expect(added.moved).toEqual(['moved'])
     expect(added.logs).toEqual([
-      { level: 'info', entry: { event: 'plugins.official_marketplace', added: true } },
+      {
+        level: 'info',
+        entry: {
+          event: 'plugins.default_marketplaces',
+          outcomes: { localix: { status: 'registered' } },
+        },
+      },
     ])
 
     const failed = arm({
@@ -158,11 +169,11 @@ describe('the plugin auto-update timers', () => {
         throw new Error('github unreachable')
       },
     })
-    await failed.officialMarketplaceTask.run(ctx)
+    await failed.defaultMarketplacesTask.run(ctx)
     expect(failed.logs).toEqual([
       {
         level: 'warn',
-        entry: { event: 'plugins.official_marketplace_failed', error: 'github unreachable' },
+        entry: { event: 'plugins.default_marketplaces_failed', error: 'github unreachable' },
       },
     ])
   })

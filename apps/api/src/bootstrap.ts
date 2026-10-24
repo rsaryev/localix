@@ -200,6 +200,7 @@ export async function bootstrap(
   // that search service once it is built.
   const store = createStorePhase({
     miniAppService,
+    pluginService,
     semanticService,
     resolveProjectCwd,
     owner: env.LOCALIX_DEFAULT_USER_ID,
@@ -286,6 +287,7 @@ export async function bootstrap(
     hostRefs,
     notifications,
     miniAppConditions,
+    storeService,
   })
   const startPostListen = (signal?: AbortSignal): Promise<void> =>
     startAfterListen(

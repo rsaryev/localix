@@ -28,6 +28,18 @@ describe('the relay', () => {
     }
   })
 
+  test('a plugin installed, removed or changed on disk tells the Store its listings moved', () => {
+    const published: string[][] = []
+    const relay = createRelay({
+      defaultUserId: 'owner',
+      publish: (_userId, resources) => void published.push(resources),
+    })
+    const plugin = (relay.handlers as Record<string, unknown>).plugin
+    expect(typeof plugin).toBe('function')
+    ;(plugin as (change: unknown) => void)({ entity: 'plugin', op: 'resync' })
+    expect(published).toEqual([['store']])
+  })
+
   test('every provider connection mutation reaches the clients through the feed', async () => {
     const db = createDatabase()
     await migrateToLatest(db)

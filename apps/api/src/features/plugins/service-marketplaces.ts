@@ -6,7 +6,6 @@ import {
   autoUpdatePassAllowed,
   isOfficialMarketplace,
   marketplaceAutoUpdate,
-  OFFICIAL_MARKETPLACE,
   setMarketplaceAutoUpdate,
 } from './marketplace-auto-update'
 import { readMarketplace } from './marketplace-catalog'
@@ -22,9 +21,10 @@ import {
   type MarketplaceRegistryDeps,
 } from './marketplace-registry'
 import {
-  forgetOfficialMarketplaceRemoval,
-  rememberOfficialMarketplaceRemoval,
-} from './official-marketplace'
+  defaultMarketplaceOf,
+  forgetDefaultMarketplaceRemoval,
+  rememberDefaultMarketplaceRemoval,
+} from './default-marketplaces'
 import type { PluginService } from './service-types'
 import { resolveEntryName, type Marketplace } from './marketplace'
 
@@ -96,7 +96,8 @@ export function createMarketplaceMethods(deps: {
       try {
         const added = await addMarketplace(parsed, registryDeps)
         // Added by the person: the start-up registration may keep it again from now on.
-        if (added.name === OFFICIAL_MARKETPLACE.name) await forgetOfficialMarketplaceRemoval(root)
+        const isDefault = defaultMarketplaceOf(added.name, parsed)
+        if (isDefault) await forgetDefaultMarketplaceRemoval(root, isDefault.id)
         return added
       } catch (err) {
         // The raw text is an npm/git/HTTP failure, which on its own names no action at all —
@@ -197,6 +198,7 @@ export function createMarketplaceMethods(deps: {
 
     async removeMarketplace(userId, input) {
       const plugins = await owned(userId, input.name)
+      const record = (await readKnownMarketplaces(root))[input.name]
       try {
         await removeMarketplace(input.name, registryDeps)
       } catch (err) {
@@ -206,7 +208,8 @@ export function createMarketplaceMethods(deps: {
         )
       }
       // Removed by the person: the start-up registration does not add it back.
-      if (input.name === OFFICIAL_MARKETPLACE.name) await rememberOfficialMarketplaceRemoval(root)
+      const isDefault = defaultMarketplaceOf(input.name, record?.source)
+      if (isDefault) await rememberDefaultMarketplaceRemoval(root, isDefault.id)
       for (const row of plugins) await deps.remove(userId, row.name)
       return { uninstalled: plugins.map((row) => row.name) }
     },

@@ -65,6 +65,15 @@ describe('the Store', () => {
     expect(apps.calls.filter((call) => call === 'listings')).toHaveLength(2)
   })
 
+  test('the sources are fetched again on the Store’s schedule, and what moved is indexed', async () => {
+    const { apps, plugins, store } = setup()
+    await store.listings(actor, {})
+    await store.refreshSources()
+    await store.settled()
+    expect(apps.calls).toEqual(['listings', 'refresh', 'listings'])
+    expect(plugins.calls).toEqual(['listings', 'refresh', 'listings'])
+  })
+
   test('a re-read that changes nothing writes nothing and pokes no one', async () => {
     const { store, pokes } = setup()
     await store.listings(actor, {})

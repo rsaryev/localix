@@ -1,6 +1,6 @@
 import { capabilityStores } from '../../bootstrap/capability-stores'
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { existsSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { makeTempDir, removeDir, writeTree } from '@localixai/testing'
@@ -108,12 +108,13 @@ describe('marketplace auto-update and updates', () => {
   })
 
   test('removing the official localix marketplace is remembered; adding it again forgets that', async () => {
-    const state = join(home, '.localix', 'marketplaces', '.official.json')
+    const state = join(home, '.localix', 'marketplaces', '.defaults.json')
+    const removed = () => (JSON.parse(readFileSync(state, 'utf8')) as { removed: string[] }).removed
     writeTree(root, {})
     await service.addMarketplace('u1', { source: catalogFile('own') })
     await service.removeMarketplace('u1', { name: 'localix' })
-    expect(existsSync(state)).toBe(true)
+    expect(removed()).toEqual(['localix'])
     await service.addMarketplace('u1', { source: catalogFile('own') })
-    expect(existsSync(state)).toBe(false)
+    expect(removed()).toEqual([])
   })
 })
