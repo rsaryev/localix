@@ -3,8 +3,8 @@ import { makeListing } from '@localixai/store/testing'
 import type { MiniAppUiHost } from '@localixai/mini-app-sdk/ui'
 import { registerDom } from '@localixai/kit/testing/dom'
 import { provideMiniAppDesktopApps } from '@/shared/lib/miniAppDesktopApps'
-import { provideStoreAppExtra, useStoreAppExtra } from '@/shared/lib/storeAppExtra'
-import { registerUi } from './contrib'
+import { useStoreInstallExtras } from '@/shared/lib/storeInstallExtra'
+import { registerUi, withdrawUi } from './contrib'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -14,7 +14,7 @@ beforeAll(() => {
 afterAll(async () => teardown())
 const INSTALLED = ['chess']
 afterEach(() => {
-  provideStoreAppExtra(() => undefined)
+  withdrawUi()
   provideMiniAppDesktopApps(null)
 })
 
@@ -41,7 +41,7 @@ test('once mini apps register, the Store offers a mini app with a screen as a de
   const seen: (boolean | undefined)[] = []
   const chess = makeListing({ id: 'chess', contents: { screen: 1 } })
   function Probe() {
-    const extra = useStoreAppExtra()
+    const [extra] = useStoreInstallExtras()
     seen.push(extra ? extra.available(chess) && extra.has(chess) : undefined)
     return null
   }

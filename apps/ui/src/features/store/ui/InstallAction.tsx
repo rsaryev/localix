@@ -1,13 +1,18 @@
 import { useState } from 'react'
-import { Download, MonitorDown, Trash2 } from 'lucide-react'
+import { Download, Trash2 } from 'lucide-react'
 import { hasUpdate, type Listing, type StoreJob } from '@localixai/store'
 import { Button } from '@localixai/kit/button'
 import { IconButton } from '@localixai/kit/icon-button'
 import { ProgressBar } from '@localixai/kit/progress-bar'
+import type { StoreInstallExtra } from '@/shared/lib/storeInstallExtra'
 import { isBusy } from '../model/filters'
+import { inSentence, KIND_LABELS } from '../model/presentation'
 
-export const APP_HINT =
-  'Also adds it as an app with its own window, Dock icon and place in Spotlight'
+/** An install extra this listing can have, and what choosing it does (`consent` as for Install). */
+export interface ExtraChoice {
+  extra: StoreInstallExtra
+  choose: (consent: boolean) => void
+}
 
 /** What the Store can do to a listing; `consent` is the person's yes to an unverified publisher. */
 export interface ListingActions {
@@ -21,29 +26,38 @@ const percent = (job: StoreJob) =>
 
 type Size = 'sm' | 'default'
 
+const NO_EXTRAS: readonly ExtraChoice[] = []
+
 /**
- * What a listing's state allows: how far its job is; Install, beside it Install as app where an
- * app of its own can be made (two named icons on a card, two buttons on its page); Update;
- * Remove; or why it cannot be installed. An unverified publisher's install asks "Install anyway?"
- * first, whichever choice it was, and only that yes is sent as consent.
+ * What a listing's state allows: how far its job is; Install, beside it each install extra it
+ * can have, such as Install as app (named icons side by side on a card, labelled buttons on its
+ * page); Update; Remove; or why it cannot be installed. An unverified publisher's install asks
+ * "Install anyway?" first, whichever choice it was, and only that yes is sent as consent.
  */
 export function InstallAction({
   listing,
   onInstall,
   onUpdate,
   onRemove,
-  onInstallAsApp,
+  extras = NO_EXTRAS,
   size = 'sm',
   removeAs = 'icon',
+  whole = false,
 }: {
   listing: Listing
-  /** Present only where an app of its own can be made for this listing. */
-  onInstallAsApp?: (consent: boolean) => void
+  /** The install extras this listing can have here. */
+  extras?: readonly ExtraChoice[]
   size?: Size
   /** On a card the remove action is a quiet icon on hover; on a page it is a button. */
   removeAs?: 'icon' | 'button'
+  /**
+   * Acting from one of its components rather than the package itself: the install names the
+   * package it installs whole, and an install already here is said, not removed from there.
+   */
+  whole?: boolean
 } & ListingActions) {
-  const [confirming, setConfirming] = useState<null | 'store' | 'app'>(null)
+  // Which choice waits for "Install anyway?": the plain install, or an extra by its id.
+  const [confirming, setConfirming] = useState<null | 'store' | { extra: string }>(null)
   const label = listing.displayName
   const job = listing.job
   const installed = listing.installs.length > 0
@@ -80,14 +94,16 @@ export function InstallAction({
           onClick={() => {
             const choice = confirming
             setConfirming(null)
-            if (choice === 'app') onInstallAsApp?.(true)
-            else onInstall(listing, true)
+            if (choice === 'store') onInstall(listing, true)
+            else extras.find(({ extra }) => extra.id === choice.extra)?.choose(true)
           }}
         >
           Install
         </Button>
       </div>
     )
+  if (installed && !update && whole)
+    return <span className="px-2 text-2xs text-text-faint">Installed</span>
   if (installed && !update)
     return removeAs === 'button' ? (
       <Button size={size} variant="ghost" onClick={() => onRemove(listing)}>
@@ -107,12 +123,13 @@ export function InstallAction({
 
   const trusted = listing.publisher.verified || installed
   const install = () => (trusted ? onInstall(listing, false) : setConfirming('store'))
-  const installAsApp = () => (trusted ? onInstallAsApp?.(false) : setConfirming('app'))
-  // An update, or a retry, is one action: the app of its own is for a first install.
-  const offersApp = Boolean(onInstallAsApp) && !installed
+  const pick = ({ extra, choose }: ExtraChoice) =>
+    trusted ? choose(false) : setConfirming({ extra: extra.id })
+  // An update, or a retry, is one action: an extra is for a first install.
+  const offered = installed ? [] : extras
   if (update || job?.phase === 'failed' || size === 'default')
     return (
-      <div className="flex items-center gap-1">
+      <div className="flex flex-wrap items-center justify-end gap-1">
         <Button
           size={size}
           variant={size === 'default' ? 'mono' : 'field'}
@@ -120,30 +137,49 @@ export function InstallAction({
         >
           {update ? 'Update' : job?.phase === 'failed' ? 'Try again' : 'Install'}
         </Button>
-        {offersApp && !update && (
-          <Button size={size} variant="ghost" title={APP_HINT} onClick={installAsApp}>
-            <MonitorDown data-icon="inline-start" aria-hidden />
-            Install as app
-          </Button>
-        )}
+        {!update &&
+          offered.map((choice) => (
+            <Button
+              key={choice.extra.id}
+              size={size}
+              variant="ghost"
+              title={choice.extra.hint}
+              onClick={() => pick(choice)}
+            >
+              <choice.extra.icon data-icon="inline-start" aria-hidden />
+              {choice.extra.label}
+            </Button>
+          ))}
       </div>
     )
-  // On a card: two quiet icons, each named, side by side.
+  if (whole)
+    return (
+      <Button
+        size={size}
+        variant="field"
+        aria-label={`Install the ${inSentence(KIND_LABELS[listing.ref.kind].one)} ${label}`}
+        onClick={install}
+      >
+        Install {label}
+      </Button>
+    )
+  // On a card: quiet icons side by side, each named.
   return (
     <div className="flex items-center gap-0.5">
       <IconButton size="sm" aria-label={`Install ${label}`} tooltip="Install" onClick={install}>
         <Download />
       </IconButton>
-      {offersApp && (
+      {offered.map((choice) => (
         <IconButton
+          key={choice.extra.id}
           size="sm"
-          aria-label={`Install ${label} as an app`}
-          tooltip={`Install as app — ${APP_HINT.toLowerCase()}`}
-          onClick={installAsApp}
+          aria-label={`${choice.extra.label}: ${label}`}
+          tooltip={`${choice.extra.label} — ${choice.extra.hint.toLowerCase()}`}
+          onClick={() => pick(choice)}
         >
-          <MonitorDown />
+          <choice.extra.icon />
         </IconButton>
-      )}
+      ))}
     </div>
   )
 }

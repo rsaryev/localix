@@ -11,7 +11,8 @@ import {
 } from '@localixai/store'
 import { makeListing, makeListingDetail } from '@localixai/store/testing'
 import type { StoreClient } from '@/shared/api/store-client'
-import type { StoreAppExtra } from '@/shared/lib/storeAppExtra'
+import { MonitorDown } from 'lucide-react'
+import type { StoreInstallExtra } from '@/shared/lib/storeInstallExtra'
 import type { StoreTarget } from '@/shared/lib/openStore'
 
 /**
@@ -63,6 +64,35 @@ export function answer(
     },
     problems: [],
   }
+}
+
+/**
+ * An install extra the way the desktop app is offered, for listings with a screen (or the ones
+ * named in `only`), recording what was made and removed.
+ */
+export function installExtra(
+  opts: { has?: string[]; fails?: string; only?: string[]; made?: string[] } = {},
+) {
+  const made = opts.made ?? []
+  const removed: string[] = []
+  const extra: StoreInstallExtra = {
+    id: 'desktop-app',
+    label: 'Install as app',
+    hint: 'Also adds it as an app with its own window',
+    icon: MonitorDown,
+    makes: 'desktop app',
+    available: (l) =>
+      opts.only
+        ? opts.only.includes(l.ref.id)
+        : l.contents !== 'unknown' && Boolean(l.contents.screen),
+    has: (l) => (opts.has ?? []).includes(l.ref.id),
+    make: async (l) => {
+      made.push(l.ref.id)
+      if (opts.fails) throw new Error(opts.fails)
+    },
+    remove: async (l) => void removed.push(l.ref.id),
+  }
+  return { extra, made, removed }
 }
 
 export interface StoreFake {
@@ -146,7 +176,7 @@ export interface RenderStoreOptions {
   sources?: SourceView[]
   previewFails?: string
   target?: StoreTarget
-  extra?: StoreAppExtra
+  extras?: StoreInstallExtra[]
 }
 
 /** Let reads answer: event-loop turns, never a timer. */
@@ -177,7 +207,7 @@ export async function renderStore(options: RenderStoreOptions) {
       <StoreView
         client={client}
         target={target}
-        extra={options.extra}
+        extras={options.extras ?? []}
         onConfigure={(uri) => fake.calls.push(`configure ${uri}`)}
       />
     </SWRConfig>

@@ -21,6 +21,7 @@ test('a mini app with a screen of its own can become a desktop app, made with it
     extra.available(makeListing({ id: 'chess', kind: 'plugin', contents: { screen: 1 } })),
   ).toBe(false)
   expect(extra.has(chess)).toBe(true)
+  expect([extra.label, extra.makes]).toEqual(['Install as app', 'desktop app'])
   await extra.make(chess)
   await extra.remove(chess)
   expect(asked).toEqual(['make chess Chess', 'remove chess'])

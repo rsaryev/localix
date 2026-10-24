@@ -1,17 +1,18 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import type { Listing, ListingRef, PackageKind, Scope } from '@localixai/store'
+import type { Listing, ListingRef, PackageKind, Scope, StoreComponent } from '@localixai/store'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { SearchInput } from '@localixai/kit/search-input'
 import { ShelfNav } from '@localixai/kit/shelf-nav'
 import { errorMessage } from '@localixai/mini-app-sdk/ui/utilities'
 import type { StoreClient } from '@/shared/api/store-client'
 import type { StoreTarget } from '@/shared/lib/openStore'
-import type { StoreAppExtra } from '@/shared/lib/storeAppExtra'
+import type { StoreInstallExtra } from '@/shared/lib/storeInstallExtra'
 import { NO_FILTER, type ShelfFilter } from '../model/filters'
 import { navGroups, parseSection, sectionLabel, type StoreSection } from '../model/navigation'
-import { useAppAfterInstall } from '../model/useAppAfterInstall'
+import { useExtrasAfterInstall } from '../model/useExtrasAfterInstall'
 import { useStoreListings, useStoreSources } from '../model/useStoreData'
 import { AddSourceDialog } from './AddSourceDialog'
+import { SectionPicker } from './SectionPicker'
 import { StoreContent } from './StoreContent'
 
 const scopeOf = (listing: Listing): Scope => listing.installs[0]?.scope ?? 'user'
@@ -26,18 +27,20 @@ const sameRef = (a: ListingRef, b: ListingRef) => a.kind === b.kind && a.id === 
 export function StoreView({
   client,
   target,
-  extra,
+  extras,
   onConfigure,
 }: {
   client: StoreClient
   target?: StoreTarget
-  extra?: StoreAppExtra
+  /** What a listing can get beside a plain install, as other features offer it. */
+  extras: readonly StoreInstallExtra[]
   /** Open a provider's own settings for an install (a `localix://` address). */
   onConfigure: (uri: string) => void
 }) {
   const [chosen, setSection] = useState<StoreSection>('discover')
   const [query, setQuery] = useState('')
   const [opened, setOpened] = useState<ListingRef | null>(null)
+  const [focus, setFocus] = useState<Pick<StoreComponent, 'kind' | 'name'> | undefined>()
   const [filter, setFilter] = useState<ShelfFilter>(NO_FILTER)
   const [adding, setAdding] = useState<{ kind: PackageKind; input?: string } | null>(null)
   const [problem, setProblem] = useState<string | null>(null)
@@ -53,6 +56,7 @@ export function StoreView({
     if (next) setSection(next)
     if (next || target.ref) setFilter(NO_FILTER)
     setOpened(target.ref ? (target.ref as ListingRef) : null)
+    setFocus(undefined)
     if (target.addSource)
       setAdding({ kind: target.addSource.kind as PackageKind, input: target.addSource.input })
   }
@@ -70,7 +74,7 @@ export function StoreView({
   const page = useStoreListings(client, q ? { q } : { shelf })
   const sources = useStoreSources(client)
   const all = everything.data?.listings ?? []
-  const app = useAppAfterInstall(all, extra)
+  const after = useExtrasAfterInstall(all, extras)
 
   // Back on the shelf: where it was scrolled to, and focus on the card that was opened.
   useLayoutEffect(() => {
@@ -96,16 +100,26 @@ export function StoreView({
     onUpdate: (listing: Listing) => run(client.update(listing.ref, scopeOf(listing))),
     onRemove: (listing: Listing) => run(client.remove(listing.ref, scopeOf(listing))),
   }
-  const withApp = (listing: Listing) =>
-    extra?.available(listing)
-      ? (consent: boolean) => {
-          app.afterInstall(listing)
-          actions.onInstall(listing, consent)
-        }
-      : undefined
-  const openListing = (listing: Listing) => {
+  const offered = (listing: Listing) => extras.filter((extra) => extra.available(listing))
+  const extrasFor = (listing: Listing) =>
+    offered(listing).map((extra) => ({
+      extra,
+      choose: (consent: boolean) => {
+        after.afterInstall(extra, listing)
+        actions.onInstall(listing, consent)
+      },
+    }))
+  const madeFor = (listing: Listing) =>
+    offered(listing).map((extra) => ({
+      extra,
+      has: extra.has(listing),
+      add: () => after.make(extra, listing),
+      remove: () => void extra.remove(listing),
+    }))
+  const openListing = (listing: Listing, component?: StoreComponent) => {
     listScroll.current = scroller.current?.scrollTop ?? 0
     setOpened(listing.ref)
+    setFocus(component ? { kind: component.kind, name: component.name } : undefined)
   }
   const back = () => {
     returnTo.current = opened?.id ?? null
@@ -118,11 +132,12 @@ export function StoreView({
     setFilter(NO_FILTER)
   }
 
+  const groups = navGroups(facets)
   const openedListing = opened ? all.find((listing) => sameRef(listing.ref, opened)) : undefined
   const loading = !everything.data && !everything.error
   return (
-    <div className="@container flex h-full min-h-0 flex-col">
-      <header className="flex items-center gap-3 px-4 pt-4 pb-3 @2xl:px-6">
+    <div className="@container/store flex h-full min-h-0 flex-col">
+      <header className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 pt-4 pb-3 @2xl/store:px-6">
         <h1 className="text-base font-semibold text-foreground">Store</h1>
         <SearchInput
           value={query}
@@ -133,18 +148,27 @@ export function StoreView({
           placeholder="Search everything"
           aria-label="Search the Store"
           size="md"
-          className="w-72 max-w-full"
+          className="w-72 max-w-full min-w-0 flex-1 @2xl/store:flex-none"
+        />
+        <SectionPicker
+          groups={groups}
+          active={q ? '' : section}
+          onSelect={choose}
+          className="@2xl/store:hidden"
         />
       </header>
       <div className="flex min-h-0 flex-1">
         <ShelfNav
           label="Store sections"
-          groups={navGroups(facets)}
+          groups={groups}
           active={q ? '' : section}
           onSelect={choose}
-          className="w-48 shrink-0 overflow-y-auto px-3 pb-4"
+          className="hidden w-48 shrink-0 overflow-y-auto px-3 pb-4 @2xl/store:flex"
         />
-        <div ref={scroller} className="min-w-0 flex-1 overflow-y-auto px-4 pb-6 @2xl:px-6">
+        <div
+          ref={scroller}
+          className="@container min-w-0 flex-1 overflow-y-auto px-4 pb-6 @2xl/store:px-6"
+        >
           {problem && <p className="px-2 pb-2 text-xs text-status-error">{problem}</p>}
           {loading ? (
             <LoadingHint>Loading the Store…</LoadingHint>
@@ -156,7 +180,9 @@ export function StoreView({
               listings={page.data?.listings ?? []}
               problems={everything.data?.problems ?? []}
               sources={sources.data ?? []}
+              everything={all}
               opened={openedListing}
+              focus={focus}
               backLabel={q ? 'Results' : sectionLabel(section)}
               filter={filter}
               onFilter={(patch) => setFilter((current) => ({ ...current, ...patch }))}
@@ -166,9 +192,9 @@ export function StoreView({
                 setFilter((current) => ({ ...current, tag }))
                 if (opened) back()
               }}
-              withApp={withApp}
-              app={app}
-              extra={extra}
+              extrasFor={extrasFor}
+              madeFor={madeFor}
+              extraProblems={after.problems}
               onRemoveSource={(source) => run(client.removeSource(source.kind, source.id))}
               onAddSource={(kind) => setAdding({ kind })}
               onUpdateAll={() => run(client.applyUpdates())}

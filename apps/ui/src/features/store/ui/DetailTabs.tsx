@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import type { Listing, ListingDetail } from '@localixai/store'
+import { useEffect, useRef, useState } from 'react'
+import type { Listing, ListingDetail, StoreComponent } from '@localixai/store'
+import { cn } from '@localixai/mini-app-sdk/ui/classes'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { TabBar, TabPanel, useTabPanelIds } from '@localixai/kit/tabs'
 import type { StoreClient } from '@/shared/api/store-client'
@@ -36,18 +37,27 @@ function Facts({ facts }: { facts: ListingDetail['facts'] }) {
   )
 }
 
-/** A list of parts: each with its kind's glyph, its name and what it is. */
-function Parts({
-  parts,
-}: {
-  parts: { kind: keyof typeof COMPONENT_LABELS; name: string; description?: string }[]
-}) {
+type Part = { kind: keyof typeof COMPONENT_LABELS; name: string; description?: string }
+
+/** A list of parts: each with its kind's glyph, its name and what it is; `marked` stands out. */
+function Parts({ parts, marked }: { parts: Part[]; marked?: Pick<Part, 'kind' | 'name'> }) {
+  const markedRow = useRef<HTMLLIElement>(null)
+  useEffect(() => markedRow.current?.scrollIntoView?.({ block: 'nearest' }), [])
   return (
     <ul className="flex flex-col gap-1">
       {parts.map(({ kind, name, description }) => {
         const Icon = COMPONENT_LABELS[kind].icon
+        const isMarked = marked?.kind === kind && marked.name === name
         return (
-          <li key={`${kind}:${name}`} className="flex min-h-8 items-center gap-2 text-sm">
+          <li
+            key={`${kind}:${name}`}
+            ref={isMarked ? markedRow : undefined}
+            aria-current={isMarked ? 'true' : undefined}
+            className={cn(
+              'flex min-h-8 min-w-0 items-center gap-2 rounded-sm px-2 text-sm',
+              isMarked && 'bg-surface-active',
+            )}
+          >
             <Icon className="size-4 shrink-0 text-text-faint" aria-hidden />
             <span className="truncate text-foreground">{name}</span>
             <span className="truncate text-xs text-text-soft">
@@ -97,18 +107,23 @@ function Permissions({ client, listing }: { client: StoreClient; listing: Listin
 
 /**
  * A listing page's tabs: Overview (README and facts), What's inside, Permissions (the plan) and
- * Versions. A tab with nothing to say is left out.
+ * Versions. A tab with nothing to say is left out. Opened for one of its components, the page
+ * starts on What's inside with that component marked.
  */
 export function DetailTabs({
   client,
   listing,
   detail,
+  focus,
 }: {
   client: StoreClient
   listing: Listing
   detail: ListingDetail
+  focus?: Pick<StoreComponent, 'kind' | 'name'>
 }) {
-  const [active, setActive] = useState<TabId>('overview')
+  const [active, setActive] = useState<TabId>(
+    focus && detail.components.length ? 'inside' : 'overview',
+  )
   const ids = useTabPanelIds('store-detail')
   const installed = listing.installs[0]
   const tabs: { id: TabId; label: string }[] = [
@@ -138,7 +153,7 @@ export function DetailTabs({
             {detail.facts.length > 0 && <Facts facts={detail.facts} />}
           </div>
         )}
-        {active === 'inside' && <Parts parts={detail.components} />}
+        {active === 'inside' && <Parts parts={detail.components} marked={focus} />}
         {active === 'permissions' && <Permissions client={client} listing={listing} />}
         {active === 'versions' && (
           <Facts

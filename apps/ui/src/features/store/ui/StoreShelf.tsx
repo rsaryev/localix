@@ -22,16 +22,19 @@ const GROUPS = [
   { id: 'available', title: 'Available' },
 ] as const
 
-export type CardProps = Omit<StoreCardProps, 'listing' | 'onInstallAsApp' | 'appProblem'> & {
-  withApp: (listing: Listing) => StoreCardProps['onInstallAsApp']
-  appProblems: Record<string, string>
+/** Featured on a shelf: what is offered and not here yet, its job included. */
+const inFeatured = (listing: Listing) => listing.featured && groupOf(listing) === 'available'
+
+export type CardProps = Omit<StoreCardProps, 'listing' | 'extras' | 'extraProblem'> & {
+  extrasFor: (listing: Listing) => StoreCardProps['extras']
+  extraProblems: Record<string, string>
 }
 
 function Group({
   title,
   rows,
-  withApp,
-  appProblems,
+  extrasFor,
+  extraProblems,
   ...props
 }: { title: string; rows: Listing[] } & CardProps) {
   if (rows.length === 0) return null
@@ -41,8 +44,8 @@ function Group({
         <StoreCard
           key={keyOf(listing)}
           listing={listing}
-          onInstallAsApp={withApp(listing)}
-          appProblem={appProblems[keyOf(listing)]}
+          extras={extrasFor(listing)}
+          extraProblem={extraProblems[keyOf(listing)]}
           {...props}
         />
       ))}
@@ -52,8 +55,8 @@ function Group({
 
 /**
  * One shelf: categories as tabs with the tag filter and the source menu beside them, then its
- * listings — featured first — as cards in Updates, Installed and Available. Discover shows only
- * Featured and Recommended.
+ * listings as cards: Featured on top — the ones not installed yet, each shown there only — then
+ * Updates, Installed and Available. Discover shows only Featured and Recommended.
  */
 export function StoreShelf({
   listings,
@@ -123,16 +126,12 @@ export function StoreShelf({
         </>
       ) : (
         <>
-          <Group
-            title="Featured"
-            rows={shown.filter((l) => l.featured && l.installs.length === 0)}
-            {...props}
-          />
+          <Group title="Featured" rows={shown.filter(inFeatured)} {...props} />
           {GROUPS.map(({ id, title }) => (
             <Group
               key={id}
               title={title}
-              rows={shown.filter((l) => groupOf(l) === id)}
+              rows={shown.filter((l) => !inFeatured(l) && groupOf(l) === id)}
               {...props}
             />
           ))}

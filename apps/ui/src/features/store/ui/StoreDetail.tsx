@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
-import { ArrowLeft, MonitorUp, MonitorX } from 'lucide-react'
-import type { Listing } from '@localixai/store'
+import { ArrowLeft, Trash2 } from 'lucide-react'
+import type { Listing, StoreComponent } from '@localixai/store'
 import { Button } from '@localixai/kit/button'
 import { LoadingHint } from '@localixai/kit/empty-hint'
 import { MediaCarousel } from '@localixai/kit/media-carousel'
@@ -10,7 +10,8 @@ import { storeMediaSrc } from '@/shared/ui/MiniAppIcon'
 import { CATEGORY_LABELS } from '../model/presentation'
 import { useListingDetail } from '../model/useStoreData'
 import { DetailTabs } from './DetailTabs'
-import { InstallAction, type ListingActions } from './InstallAction'
+import type { StoreInstallExtra } from '@/shared/lib/storeInstallExtra'
+import { InstallAction, type ExtraChoice, type ListingActions } from './InstallAction'
 import { ListingTile, PublisherMark, TagButton } from './StoreMarks'
 
 /** The listing's pictures, each opening full-window, paged the same way. */
@@ -30,10 +31,20 @@ function Pictures({ media, title }: { media: { url: string; caption?: string }[]
   )
 }
 
+/** An extra an installed listing can have: whether it has it, and how to change that. */
+export interface ExtraMade {
+  extra: StoreInstallExtra
+  has: boolean
+  add: () => void
+  remove: () => void
+}
+
+const NOTHING_MADE: readonly ExtraMade[] = []
+
 /**
- * One listing's page: a hero with its large icon, who publishes it and the action, its pictures,
- * then the tabs. The live listing drives the action, so a job's progress shows here as it does
- * on the shelf.
+ * One listing's page: a hero with its large icon, who publishes it and the actions — Install
+ * and each install extra, labelled — its pictures, then the tabs. The live listing drives the
+ * actions, so a job's progress shows here as it does on the shelf.
  */
 export function StoreDetail({
   client,
@@ -41,9 +52,10 @@ export function StoreDetail({
   backLabel,
   onBack,
   onTag,
-  onInstallAsApp,
-  app,
-  appProblem,
+  extras,
+  made = NOTHING_MADE,
+  extraProblem,
+  focus,
   ...actions
 }: {
   client: StoreClient
@@ -51,10 +63,12 @@ export function StoreDetail({
   backLabel: string
   onBack: () => void
   onTag: (tag: string) => void
-  onInstallAsApp?: (consent: boolean) => void
-  /** For an installed listing that can have one: whether it has its app, and how to change that. */
-  app?: { has: boolean; add: () => void; remove: () => void }
-  appProblem?: string
+  extras?: readonly ExtraChoice[]
+  /** For an installed listing, the extras it can have. */
+  made?: readonly ExtraMade[]
+  extraProblem?: string
+  /** The component it was opened for: What's inside opens with it marked. */
+  focus?: Pick<StoreComponent, 'kind' | 'name'>
 } & ListingActions) {
   const label = listing.displayName
   const heading = useRef<HTMLHeadingElement>(null)
@@ -104,22 +118,23 @@ export function StoreDetail({
             listing={listing}
             size="default"
             removeAs="button"
-            onInstallAsApp={onInstallAsApp}
+            extras={extras}
             {...actions}
           />
-          {app && installed && (
-            <Button size="default" variant="ghost" onClick={app.has ? app.remove : app.add}>
-              {app.has ? (
-                <MonitorX data-icon="inline-start" aria-hidden />
-              ) : (
-                <MonitorUp data-icon="inline-start" aria-hidden />
-              )}
-              {app.has ? 'Remove desktop app' : 'Add desktop app'}
-            </Button>
-          )}
-          {appProblem && (
+          {installed &&
+            made.map(({ extra, has, add, remove }) => (
+              <Button key={extra.id} size="default" variant="ghost" onClick={has ? remove : add}>
+                {has ? (
+                  <Trash2 data-icon="inline-start" aria-hidden />
+                ) : (
+                  <extra.icon data-icon="inline-start" aria-hidden />
+                )}
+                {has ? `Remove ${extra.makes}` : `Add ${extra.makes}`}
+              </Button>
+            ))}
+          {extraProblem && (
             <p role="alert" className="max-w-64 text-right text-xs text-status-error">
-              The desktop app was not made: {appProblem}
+              {extraProblem[0]!.toUpperCase() + extraProblem.slice(1)}
             </p>
           )}
         </div>
@@ -127,7 +142,7 @@ export function StoreDetail({
       {!detail && !error && <LoadingHint>Loading {label}…</LoadingHint>}
       {error && <p className="text-xs text-status-warning">This page could not be read.</p>}
       {detail && detail.media.length > 0 && <Pictures media={detail.media} title={label} />}
-      {detail && <DetailTabs client={client} listing={listing} detail={detail} />}
+      {detail && <DetailTabs client={client} listing={listing} detail={detail} focus={focus} />}
     </article>
   )
 }

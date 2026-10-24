@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, mock, spyOn, test } from 'bun:test'
 import { registerDom } from '@localixai/kit/testing/dom'
-import { answer, listing, SOURCES } from '@/testing/store'
+import { answer, installExtra, listing, SOURCES } from '@/testing/store'
 
 let teardown: () => Promise<void>
 beforeAll(() => {
@@ -12,9 +12,10 @@ afterAll(async () => {
   mock.restore()
   await teardown()
 })
-afterEach(async () => {
-  const { provideStoreAppExtra } = await import('@/shared/lib/storeAppExtra')
-  provideStoreAppExtra(() => undefined)
+let withdraw = () => {}
+afterEach(() => {
+  withdraw()
+  withdraw = () => {}
   document.body.innerHTML = ''
 })
 
@@ -84,19 +85,15 @@ describe('the Store tab', () => {
   test('without an app of its own here, the Store offers none', async () => {
     const page = await mountPage({ shelf: 'package:mini-app' })
     expect(page.button('Install Notes', page.card('notes')!)).toBeDefined()
-    expect(page.button('Install Notes as an app')).toBeUndefined()
+    expect(page.button('Install as app: Notes')).toBeUndefined()
     await page.unmount()
   })
 
-  test('with the app extra provided, an installed listing’s page adds one', async () => {
-    const { provideStoreAppExtra } = await import('@/shared/lib/storeAppExtra')
+  test('with an install extra provided, an installed listing’s page adds one', async () => {
+    const { provideStoreInstallExtra } = await import('@/shared/lib/storeInstallExtra')
     const made: string[] = []
-    provideStoreAppExtra(() => ({
-      available: (l) => l.ref.id === 'chess',
-      has: () => false,
-      make: async (l) => void made.push(l.ref.id),
-      remove: async () => {},
-    }))
+    const { extra } = installExtra({ made, only: ['chess'] })
+    withdraw = provideStoreInstallExtra(() => extra)
     const { storeApi } = await import('@/shared/api/store-client')
     const { makeListingDetail } = await import('@localixai/store/testing')
     spyOn(storeApi, 'detail').mockResolvedValue(makeListingDetail(chess))

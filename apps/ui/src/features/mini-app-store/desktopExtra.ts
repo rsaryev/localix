@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
+import { MonitorDown } from 'lucide-react'
 import { componentCount, type Listing } from '@localixai/store'
 import { useMiniAppDesktopApps, type MiniAppDesktopApps } from '@/shared/lib/miniAppDesktopApps'
-import type { StoreAppExtra } from '@/shared/lib/storeAppExtra'
+import type { StoreInstallExtra } from '@/shared/lib/storeInstallExtra'
 
 const isMiniApp = (listing: Listing) => listing.ref.kind === 'mini-app'
 
@@ -12,8 +13,13 @@ const isMiniApp = (listing: Listing) => listing.ref.kind === 'mini-app'
 export function desktopExtra(
   port: MiniAppDesktopApps,
   installed: readonly string[],
-): StoreAppExtra {
+): StoreInstallExtra {
   return {
+    id: 'desktop-app',
+    label: 'Install as app',
+    hint: 'Also adds it as an app with its own window, Dock icon and place in Spotlight',
+    icon: MonitorDown,
+    makes: 'desktop app',
     available: (listing) =>
       isMiniApp(listing) &&
       port.available(listing.ref.id, componentCount(listing, 'screen') > 0 ? ['workbench'] : []),
@@ -24,7 +30,7 @@ export function desktopExtra(
 }
 
 /** The extra, from the port the standalone-app feature provides; undefined where there is none. */
-export function useDesktopExtra(): StoreAppExtra | undefined {
+export function useDesktopExtra(): StoreInstallExtra | undefined {
   const desktop = useMiniAppDesktopApps()
   const port = desktop?.port
   const installed = desktop?.installed

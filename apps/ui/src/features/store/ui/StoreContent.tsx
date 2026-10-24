@@ -1,12 +1,19 @@
-import type { Listing, PackageKind, SourceView, StoreInstall } from '@localixai/store'
+import type {
+  BrowsableComponentKind,
+  Listing,
+  PackageKind,
+  SourceView,
+  StoreComponent,
+  StoreInstall,
+} from '@localixai/store'
 import type { StoreClient } from '@/shared/api/store-client'
-import type { StoreAppExtra } from '@/shared/lib/storeAppExtra'
 import { keyOf, type ShelfFilter } from '../model/filters'
 import type { StoreSection } from '../model/navigation'
 import { sectionLabel } from '../model/navigation'
-import type { useAppAfterInstall } from '../model/useAppAfterInstall'
-import type { ListingActions } from './InstallAction'
-import { StoreDetail } from './StoreDetail'
+import { COMPONENT_LABELS } from '../model/presentation'
+import type { ExtraChoice, ListingActions } from './InstallAction'
+import { StoreComponents } from './StoreComponents'
+import { StoreDetail, type ExtraMade } from './StoreDetail'
 import { StoreLibrary } from './StoreLibrary'
 import { StoreShelf } from './StoreShelf'
 import { StoreSources } from './StoreSources'
@@ -17,6 +24,9 @@ const SECTION_NOTES: Partial<Record<string, string>> = {
   discover: 'What Localix features and recommends, of every kind.',
 }
 
+const capabilityNote = (kind: BrowsableComponentKind) =>
+  `Every ${COMPONENT_LABELS[kind].one.toLowerCase()} a package adds. Installing one installs the package it comes in.`
+
 /** What the Store shows beside its shelves: a listing's page, results, a shelf, the library or sources. */
 export function StoreContent({
   client,
@@ -25,16 +35,18 @@ export function StoreContent({
   listings,
   problems,
   sources,
+  everything,
   opened,
+  focus,
   backLabel,
   filter,
   onFilter,
   onBack,
   onOpen,
   onTag,
-  withApp,
-  app,
-  extra,
+  extrasFor,
+  madeFor,
+  extraProblems,
   onRemoveSource,
   onAddSource,
   onUpdateAll,
@@ -48,16 +60,19 @@ export function StoreContent({
   listings: Listing[]
   problems: string[]
   sources: SourceView[]
+  /** Every listing, whatever the shelf: what a card says is weighed against them. */
+  everything: readonly Listing[]
   opened: Listing | undefined
+  focus?: Pick<StoreComponent, 'kind' | 'name'>
   backLabel: string
   filter: ShelfFilter
   onFilter: (patch: Partial<ShelfFilter>) => void
   onBack: () => void
-  onOpen: (listing: Listing) => void
+  onOpen: (listing: Listing, component?: StoreComponent) => void
   onTag: (tag: string) => void
-  withApp: (listing: Listing) => ((consent: boolean) => void) | undefined
-  app: ReturnType<typeof useAppAfterInstall>
-  extra: StoreAppExtra | undefined
+  extrasFor: (listing: Listing) => ExtraChoice[]
+  madeFor: (listing: Listing) => ExtraMade[]
+  extraProblems: Record<string, string>
   onRemoveSource: (source: SourceView) => void
   onAddSource: (kind: PackageKind) => void
   onUpdateAll: () => void
@@ -72,22 +87,18 @@ export function StoreContent({
         backLabel={backLabel}
         onBack={onBack}
         onTag={onTag}
-        onInstallAsApp={withApp(opened)}
-        app={
-          extra?.available(opened)
-            ? {
-                has: extra.has(opened),
-                add: () => app.make(opened),
-                remove: () => void extra.remove(opened),
-              }
-            : undefined
-        }
-        appProblem={app.problems[keyOf(opened)]}
+        extras={extrasFor(opened)}
+        made={madeFor(opened)}
+        extraProblem={extraProblems[keyOf(opened)]}
+        focus={focus}
         {...actions}
       />
     )
   const title = query ? `Results for “${query}”` : sectionLabel(section)
-  const note = query ? undefined : SECTION_NOTES[section]
+  const capability = (
+    section.startsWith('capability:') && !query ? section.slice(11) : undefined
+  ) as BrowsableComponentKind | undefined
+  const note = query ? undefined : capability ? capabilityNote(capability) : SECTION_NOTES[section]
   const kindOf = (section.startsWith('package:') ? section.slice(8) : undefined) as
     | PackageKind
     | undefined
@@ -102,7 +113,9 @@ export function StoreContent({
           {problem}
         </p>
       ))}
-      {section === 'sources' && !query ? (
+      {capability ? (
+        <StoreComponents kind={capability} listings={listings} onOpen={onOpen} {...actions} />
+      ) : section === 'sources' && !query ? (
         <StoreSources sources={sources} onRemove={onRemoveSource} onAdd={onAddSource} />
       ) : (section === 'installed' || section === 'updates') && !query ? (
         <StoreLibrary
@@ -126,8 +139,9 @@ export function StoreContent({
           onAddSource={kindOf ? () => onAddSource(kindOf) : undefined}
           onOpen={onOpen}
           onTag={onTag}
-          withApp={withApp}
-          appProblems={app.problems}
+          peers={everything}
+          extrasFor={extrasFor}
+          extraProblems={extraProblems}
           showKind={!kindOf || Boolean(query)}
           {...actions}
         />

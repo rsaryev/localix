@@ -19,7 +19,13 @@ import {
   Wrench,
   type LucideIcon,
 } from 'lucide-react'
-import type { ComponentKind, Listing, PackageKind } from '@localixai/store'
+import {
+  BROWSABLE_COMPONENT_KINDS,
+  componentCount,
+  type ComponentKind,
+  type Listing,
+  type PackageKind,
+} from '@localixai/store'
 
 /**
  * How the Store names and draws what the contract carries: a label and a glyph per package kind
@@ -86,21 +92,24 @@ export function capabilityLabel(kind: ComponentKind): string {
   return one === 'Agent tools' ? one : many[0]!.toUpperCase() + many.slice(1)
 }
 
+/** A label inside a sentence: "mini app", but "MCP server" keeps its capitals. */
+export const inSentence = (label: string) => (/^[A-Z]{2}/.test(label) ? label : label.toLowerCase())
+
 /**
- * What a card says is inside: "Screen · Agent tools · 2 commands · Runs code". The backend that
- * runs is said once, as "Runs code"; contents not known yet say nothing.
+ * What a card says is inside, only where it tells the package apart from the others of its kind
+ * in `peers`: the browsable components it has that not every one of them has ("2 commands").
+ * How a package works — a screen, a backend, agent tools — and whether it runs code are on its
+ * page, not on every card.
  */
-export function insideLine(listing: Listing): string {
-  const parts =
-    listing.contents === 'unknown'
-      ? []
-      : Object.entries(listing.contents).flatMap(([kind, count]) => {
-          if (!count || kind === 'backend') return []
-          const { one, many } = COMPONENT_LABELS[kind as ComponentKind]
-          return [count === 1 ? one : `${count} ${many}`]
-        })
-  if (listing.runsCode === true) parts.push('Runs code')
-  return parts.join(' · ')
+export function distinctInside(listing: Listing, peers: readonly Listing[]): string {
+  if (listing.contents === 'unknown') return ''
+  const kin = peers.filter((peer) => peer.ref.kind === listing.ref.kind)
+  return BROWSABLE_COMPONENT_KINDS.flatMap((kind) => {
+    const count = componentCount(listing, kind)
+    if (!count || (kin.length > 1 && kin.every((peer) => componentCount(peer, kind) > 0))) return []
+    const { one, many } = COMPONENT_LABELS[kind]
+    return [count === 1 ? `1 ${inSentence(one)}` : `${count} ${many}`]
+  }).join(' · ')
 }
 
 export const plural = (count: number, one: string, many = `${one}s`) =>

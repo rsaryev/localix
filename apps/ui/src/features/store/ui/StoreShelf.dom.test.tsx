@@ -23,6 +23,11 @@ const LISTINGS = [
     tags: ['game', 'board-game', 'chess', 'strategy'],
     featured: true,
     contents: { screen: 1, 'agent-tool': 1, backend: 1, command: 2 },
+    components: [
+      { kind: 'screen', name: 'Chess', description: 'A screen of its own' },
+      { kind: 'command', name: '/chess:play', description: 'Start a game' },
+      { kind: 'command', name: '/chess:hint' },
+    ],
     runsCode: true,
   }),
   listing({
@@ -74,7 +79,7 @@ describe('the Store’s shelves', () => {
       expect(view.shelf('Skills')).toBeUndefined()
       expect(nav.querySelector('[aria-current="page"]')?.textContent).toContain('Mini apps')
       await view.click(view.shelf('Commands'))
-      expect(view.card('chess')).not.toBeNull()
+      expect(view.host.querySelector('[data-component="command:/chess:play"]')).not.toBeNull()
       expect(view.card('kanban')).toBeNull()
     } finally {
       await view.done()
@@ -103,17 +108,34 @@ describe('the Store’s shelves', () => {
     }
   })
 
-  test('a card says what kind it is and what is inside, beside its own icon', async () => {
+  test('a featured listing shows once: in Featured, not again under Available', async () => {
+    const view = await renderStore({ listings: LISTINGS, target: APPS })
+    try {
+      expect(view.host.querySelectorAll('[data-listing="chess"]')).toHaveLength(1)
+      expect(sectionOf(view.card('chess'))).toContain('Featured')
+      expect(sectionOf(view.card('radio'))).toContain('Available')
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('a card is its icon, name, mark, summary and tags; what is inside only when it tells it apart', async () => {
     const view = await renderStore({ listings: LISTINGS, target: APPS })
     try {
       const chess = view.card('chess')!
-      expect(chess.textContent).toContain('Screen · Agent tools · 2 commands · Runs code')
+      // The title row is the name and the verified mark, nothing that could crowd them.
+      expect(chess.querySelector('p')?.textContent).toBe('Chess')
+      expect(chess.querySelector('[aria-label="Verified publisher"]')).not.toBeNull()
+      // A screen and agent tools go without saying for a mini app; what runs is on its page.
+      for (const noise of ['Screen', 'Agent tools', 'Runs code']) {
+        expect(chess.textContent).not.toContain(noise)
+      }
+      // Commands tell Chess apart: no other mini app here has any.
+      expect(chess.textContent).toContain('2 commands')
       // Its kind goes without saying on its kind's shelf, and is said everywhere else.
-      expect(chess.textContent).not.toContain('Mini app ·')
-      await view.click(view.shelf('Commands'))
-      expect(view.card('chess')!.textContent).toContain(
-        'Mini app · Screen · Agent tools · 2 commands · Runs code',
-      )
+      expect(chess.textContent).not.toContain('Mini app')
+      await view.click(view.shelf('Discover'))
+      expect(view.card('chess')!.textContent).toContain('Mini app · 2 commands')
       await view.click(view.shelf('Mini apps'))
       const icon = view.card('chess')!.querySelector('img')!
       expect(icon.getAttribute('src')).toEndWith('/rpc/mini-apps/store/media/chess/icon?v=abc')
@@ -121,6 +143,20 @@ describe('the Store’s shelves', () => {
       expect(view.card('kanban')!.querySelector('[data-slot="monogram-avatar"]')).not.toBeNull()
       await view.act(() => icon.dispatchEvent(new Event('error')))
       expect(view.card('chess')!.querySelector('img')).toBeNull()
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('what every listing of a kind has is not said on any of them', async () => {
+    const both = [
+      listing({ id: 'chess', displayName: 'Chess', contents: { screen: 1, command: 2 } }),
+      listing({ id: 'go', displayName: 'Go', contents: { screen: 1, command: 1 } }),
+    ]
+    const view = await renderStore({ listings: both, target: APPS })
+    try {
+      expect(view.card('chess')!.textContent).not.toContain('command')
+      expect(view.card('go')!.textContent).not.toContain('command')
     } finally {
       await view.done()
     }
@@ -237,6 +273,23 @@ describe('the Store’s shelves', () => {
       expect(view.card('kanban')).toBeNull()
       await view.retarget({ shelf: 'installed' })
       expect(view.host.querySelector('[aria-current="page"]')?.textContent).toContain('Installed')
+    } finally {
+      await view.done()
+    }
+  })
+
+  test('in a narrow pane the sections are one picker, which moves the Store like the column', async () => {
+    const view = await renderStore({ listings: LISTINGS, target: APPS })
+    try {
+      const picker = view.host.querySelector<HTMLElement>('[aria-label="Store section"]')!
+      expect(picker.textContent).toContain('Mini apps · 6')
+      await view.openMenu(picker)
+      const installed = [...document.body.querySelectorAll<HTMLElement>('[role="option"]')].find(
+        (option) => option.textContent?.includes('Installed'),
+      )
+      await view.click(installed)
+      const nav = view.host.querySelector('nav[aria-label="Store sections"]')!
+      expect(nav.querySelector('[aria-current="page"]')?.textContent).toContain('Installed')
     } finally {
       await view.done()
     }

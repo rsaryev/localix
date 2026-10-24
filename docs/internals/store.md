@@ -116,7 +116,7 @@ interface Listing {
     error?: string
   }
   incompatible?: string // why it cannot be installed here
-  componentNames?: string[] // names of what it contains, when known before install; searched
+  components?: Array<{ kind: ComponentKind; name: string; description?: string }> // when known before install
   configure?: string // a localix:// address of the provider's own settings for it
 }
 
@@ -263,8 +263,26 @@ Each step lands with its tests first, a screenshot scenario for the Store and th
 - **The person is named.** Every provider call but `refresh`, `subscribe` and the source methods
   takes a `StoreActor` (`{ userId }`): enabled state and the yes to run a mini app are the person's.
   `listings` also returns the sources it could not read, shown above the shelf.
-- **Two listing fields more.** `componentNames` feeds the search; `configure` is the address the
-  Installed menu's **Configure** opens. Neither names a provider.
+- **Two listing fields more.** `components` lists what it contains, one by one (kind, name,
+  description), when the provider knows before install: the search reads it and the capability
+  shelves list it. `configure` is the address the Installed menu's **Configure** opens. Neither
+  names a provider.
+- **A capability shelf lists components, not packages.** Commands shows one row per command: its
+  name, what it does and "from Chess · Mini app" beside the package's tile, with a filter and an
+  "Installed only" switch and no category tabs or groups. A row opens the package on What's inside
+  with that component marked; its button says it installs the package ("Install Chess").
+- **Cards** keep the mini app rows' layout: tile, name and verified mark, one line of summary, tags,
+  actions. The kind is said off its own shelf; what is inside only where it tells the package apart
+  from the others of its kind (a screen and agent tools never; "Runs code" only on the page). A
+  featured listing not yet installed shows once, in Featured, not again in Available; Discover shows
+  Featured and Recommended.
+- **Install extras.** Beside Install a listing can offer what another UI feature provides through
+  `provideStoreInstallExtra` (`shared/lib/storeInstallExtra.ts`): a label, a hint, a glyph and what
+  it makes. Mini apps provide **Install as app** (a desktop app, macOS shell only); the Store draws
+  each one as an icon on a card, a labelled button on the page and Add or Remove once installed, and
+  names no provider.
+- **Narrow panes.** The cards are one column until the content column itself is wide, and below
+  42rem of Store width the shelf column becomes one section picker beside the search.
 - **Shelf ids** are `discover`, `installed`, `updates`, `package:<kind>` and
   `capability:<component>` (`shelves.ts`); the UI adds `sources`. Only the components a person
   browses by get a capability shelf (`BROWSABLE_COMPONENT_KINDS`: skill, agent, command, hook, mod,

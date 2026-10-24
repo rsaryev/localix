@@ -1,44 +1,48 @@
 import { hasUpdate, type Listing } from '@localixai/store'
 import { ItemCard } from '@localixai/kit/item-card'
-import { insideLine, KIND_LABELS } from '../model/presentation'
-import { InstallAction, type ListingActions } from './InstallAction'
+import { distinctInside, KIND_LABELS } from '../model/presentation'
+import { InstallAction, type ExtraChoice, type ListingActions } from './InstallAction'
 import { ListingTile, PublisherMark, TagButton } from './StoreMarks'
 
 const CARD_TAGS = 3
 
 export interface StoreCardProps extends ListingActions {
   listing: Listing
+  /** Every listing in the Store, to say only what tells this one apart. */
+  peers: readonly Listing[]
   onOpen: (listing: Listing) => void
   onTag: (tag: string) => void
-  onInstallAsApp?: (consent: boolean) => void
-  /** Why the app of its own chosen with the install was not made. */
-  appProblem?: string
+  /** The install extras it can have here: an icon each beside Install. */
+  extras?: readonly ExtraChoice[]
+  /** Why an extra chosen with the install was not made. */
+  extraProblem?: string
   /** Say what kind it is: not on its own kind's shelf, where that goes without saying. */
   showKind?: boolean
 }
 
 /**
- * One listing on a shelf, the same for every kind: its icon, name, publisher, what it does, what
- * kind it is and what is inside, up to three tags, and the one action its state allows. The whole
- * card opens its page; the tags and the action are their own controls.
+ * One listing on a shelf, the same for every kind and laid out as the mini app rows always were:
+ * its icon; its name and verified mark; one line of what it does; up to three tags, followed by
+ * its kind and what is inside only where that tells it apart; and the actions its state allows.
+ * The whole card opens its page; the tags and the actions are their own controls.
  */
 export function StoreCard({
   listing,
+  peers,
   onOpen,
   onTag,
-  onInstallAsApp,
-  appProblem,
+  extras,
+  extraProblem,
   showKind = true,
   ...actions
 }: StoreCardProps) {
   const failed = listing.job?.phase === 'failed' ? listing.job.error : undefined
-  const note =
-    failed ??
-    (appProblem ? `Installed, but the desktop app was not made: ${appProblem}` : undefined)
+  const note = failed ?? (extraProblem ? `Installed, but ${extraProblem}` : undefined)
   const installed = listing.installs[0]
-  const inside = [showKind ? KIND_LABELS[listing.ref.kind].one : '', insideLine(listing)]
+  const about = [showKind ? KIND_LABELS[listing.ref.kind].one : '', distinctInside(listing, peers)]
     .filter(Boolean)
     .join(' · ')
+  const tags = listing.tags.slice(0, CARD_TAGS)
   return (
     <ItemCard
       data-listing={listing.ref.id}
@@ -54,23 +58,25 @@ export function StoreCard({
               {installed.version} → {installed.updateTo}
             </span>
           )}
-          <span className="min-w-0 truncate text-2xs font-normal text-text-faint" title={inside}>
-            {inside}
-          </span>
         </>
       }
       description={listing.summary}
       note={note}
       footer={
-        listing.tags.length > 0 ? (
+        tags.length > 0 || about ? (
           <>
-            {listing.tags.slice(0, CARD_TAGS).map((tag) => (
+            {tags.map((tag) => (
               <TagButton key={tag} tag={tag} onTag={onTag} />
             ))}
+            {about && (
+              <span className="pointer-events-none truncate px-1 text-2xs text-text-faint">
+                {about}
+              </span>
+            )}
           </>
         ) : undefined
       }
-      actions={<InstallAction listing={listing} onInstallAsApp={onInstallAsApp} {...actions} />}
+      actions={<InstallAction listing={listing} extras={extras} {...actions} />}
       onOpen={() => onOpen(listing)}
     />
   )
