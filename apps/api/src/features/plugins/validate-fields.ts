@@ -46,7 +46,8 @@ export function validatePluginCommands(plugin: DiscoveredPlugin): FieldValidatio
       }
     }
     for (const tool of cmd.allowedTools ?? []) {
-      if (!BUILTIN_TOOL_NAMES.includes(tool)) {
+      // `bash(git add:*)` names the tool before its pattern.
+      if (!BUILTIN_TOOL_NAMES.includes(tool.replace(/\(.*$/, ''))) {
         warnings.push(
           `Command "${cmd.name}" allowedTools lists "${tool}" which isn't a known engine tool — it will be ignored.`,
         )

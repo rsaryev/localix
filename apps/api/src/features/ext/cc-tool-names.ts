@@ -150,3 +150,21 @@ export function mapCcToolList(list: string[], opts: { dropUnknown: boolean }): s
   }
   return out
 }
+
+/**
+ * Map an `allowed-tools` list (a command's pre-approved tools) to engine names, keeping each
+ * `Tool(specifier)` pattern: `Bash(git add:*)` pre-approves `git add` only, never the whole shell.
+ * The permission gate reads the pattern (`skillPermissionRules`); a bare name approves the tool.
+ */
+export function mapCcAllowList(list: string[]): string[] {
+  const out: string[] = []
+  for (const raw of list) {
+    const token = raw.replace(/^["']|["']$/g, '').trim()
+    const pattern = token.match(/^([^(]+)\((.+)\)$/)
+    const mapped = pattern
+      ? mapCcToolList([pattern[1]!], { dropUnknown: true }).map((name) => `${name}(${pattern[2]})`)
+      : mapCcToolList([token], { dropUnknown: true })
+    for (const entry of mapped) if (!out.includes(entry)) out.push(entry)
+  }
+  return out
+}

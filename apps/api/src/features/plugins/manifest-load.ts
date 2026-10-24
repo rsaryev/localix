@@ -12,6 +12,7 @@ import {
   type PluginProvides,
 } from './contracts'
 import { mapCcTools, parseAgentFile, parseCommandFile } from './discovery-cc-files'
+import { mapCcAllowList } from '../ext/cc-tool-names'
 import type { DiscoveredPlugin } from './discovery-types'
 import { resolveEntrypoints } from './discovery-entrypoints'
 import { parseComposedManifest } from './manifest-parse'
@@ -30,7 +31,7 @@ function parseInlineCommands(field: PluginManifest['commands']): PluginCommand[]
     const cmd = parsed.data
     // Map CC tool names to engine names (Bash→bash, Grep→search) via CC_TOOL_NAME_MAP.
     if (cmd.allowedTools?.length) {
-      cmd.allowedTools = [...new Set(cmd.allowedTools.flatMap((t) => mapCcTools(t)))] // dedup
+      cmd.allowedTools = mapCcAllowList(cmd.allowedTools) // keeps `Bash(git add:*)` patterns
     }
     if (cmd.disallowedTools?.length) {
       cmd.disallowedTools = [...new Set(cmd.disallowedTools.flatMap((t) => mapCcTools(t)))]

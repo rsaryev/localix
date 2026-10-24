@@ -2,7 +2,7 @@ import { basename } from 'node:path'
 
 import { schemaIssue } from './contracts-base'
 
-import { mapCcToolList } from '../ext/cc-tool-names'
+import { mapCcAllowList, mapCcToolList } from '../ext/cc-tool-names'
 import { coerceFrontmatterBool, trimmedFrontmatterField } from '../ext/frontmatter'
 import { argumentHintField } from '../agent-core/skill-frontmatter'
 import {
@@ -84,8 +84,11 @@ export async function parseCommandFile(
   const argumentNames = fields.arguments
     ? (splitTokenList(fields.arguments) ?? []).filter((name) => !/^\d+$/.test(name))
     : []
-  // CC `allowed-tools` / `disallowed-tools`: map CC names → engine names via CC_TOOL_NAME_MAP.
-  const allowedTools = fields['allowed-tools'] ? mapCcTools(fields['allowed-tools']) : undefined
+  // CC `allowed-tools` / `disallowed-tools`: map CC names → engine names via CC_TOOL_NAME_MAP. An
+  // allowed `Bash(git add:*)` keeps its pattern: it pre-approves that command, not the shell.
+  const allowedTools = fields['allowed-tools']
+    ? mapCcAllowList(splitTokenList(fields['allowed-tools']) ?? [])
+    : undefined
   const disallowedTools = fields['disallowed-tools']
     ? mapCcTools(fields['disallowed-tools'])
     : undefined
