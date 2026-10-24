@@ -11,27 +11,21 @@ import { setSessionActivityListener } from '../features/agent-core/session-activ
 import { setSkillInvocationListener } from '../features/agent-core/skill-invocations'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { readAvailability } from '../features/capabilities/availability'
-import { runIdleTasks, type IdleTask, type IdleTaskContext } from '../lib/idle-tasks'
+import { runIdleTasks, type IdleTask } from '../lib/idle-tasks'
 import type { InfraPhase } from './infra'
 import type { DomainServicesPhase } from './domain-services'
 import type { MiniAppHostRefs } from './mini-app-host-refs'
 import type { MiniAppHostsPhase } from './mini-app-hosts'
 import type { createChatService } from '../features/chat/service'
 import { createCapabilitySourceRepository } from '../features/capabilities/source-repository'
-import { bundledMiniAppsSyncRoot } from '../features/mini-apps/discovery'
-import {
-  bundledStagingFailures,
-  invalidateBundledSync,
-  syncBundledMiniApps,
-} from '../features/mini-apps/bundled-install'
-import { watchStagedMiniAppsRoot } from '../features/mini-apps/bundled-watch'
 import { retireLegacyPluginCopies } from '../features/mini-apps/legacy-plugin-copies'
 import { recoverDelegationReports } from '../features/chat/service/recover-delegation'
-import { sweepOrphanSessionData } from '../features/mini-apps/session-storage'
 import { MINI_APP_WARNINGS, warnOnce } from '../lib/warn-once'
 import type { StorageMaintenance } from './storage-maintenance'
 import { armModelCatalogChecks } from '../features/catalog/refresh-schedule'
 import { armPluginUpdateTimers } from './plugin-update-timers'
+import { armMiniAppTimers } from './mini-app-timers'
+import { sessionDataSweepTask } from './session-data-sweep'
 
 export interface OpsTimersPhaseInput
   extends
@@ -54,25 +48,6 @@ export interface OpsTimersPhase {
   monitorHost: ReturnType<typeof createPluginMonitorHost>
   startOpsTimers: (signal?: AbortSignal) => void
   warmStartupCaches: () => void
-}
-
-/** Which of `ids` still have a session. Bounded batches: SQLite caps bound parameters. */
-async function liveSessionIds(
-  db: InfraPhase['db'],
-  ids: readonly string[],
-  ctx: IdleTaskContext,
-): Promise<Set<string>> {
-  const live = new Set<string>()
-  for (let at = 0; at < ids.length; at += 500) {
-    const rows = await db
-      .selectFrom('agent_sessions')
-      .select('id')
-      .where('id', 'in', ids.slice(at, at + 500))
-      .execute()
-    for (const row of rows) live.add(row.id)
-    await ctx.yield()
-  }
-  return live
 }
 
 export function createOpsTimersPhase({
@@ -189,37 +164,13 @@ export function createOpsTimersPhase({
       }
     }
 
-    // A mini app whose source did not build or install is raised as a condition, each time the
-    // staged root settles: after a sync, so a copy that failed in THIS pass is in the report.
-    const reportStagingFailures = (root: string) =>
-      syncBundledMiniApps(root, userHome())
-        .then(() => bundledStagingFailures(root, userHome()))
-        .then((failures) => miniAppConditions.stagingFailed(failures))
-        .catch((error) =>
-          logger.warn({ event: 'mini_apps.staging_report_failed', error: errorMessage(error) }),
-        )
-    // Bundled mini apps re-staged while this process runs (a scaffold, a backend save in the
-    // dev workspace, an app update that lands a new staged root) announce themselves through
-    // the staged root's marker. Forget the sync memo and record a `mini-app` resync, so the
-    // catalog and the hosts converge without `/mini-app reload`. Armed at once — a re-stage
-    // during the idle wait below must not go unseen.
-    const stagedRoot = bundledMiniAppsSyncRoot()
-    void stagedRoot.then((root) => {
-      if (!root || signal.aborted) return
-      const watcher = watchStagedMiniAppsRoot({
-        root,
-        onChange: () => {
-          invalidateBundledSync()
-          void miniAppService.resync()
-          logger.info({ event: 'mini_apps.staged_root_changed', root })
-          void reportStagingFailures(root)
-        },
-        log: (msg) => logger.warn({ event: 'mini_apps.staged_root_watch', msg }),
-      })
-      if (watcher) {
-        logger.info({ event: 'mini_apps.staged_root_watching', root })
-        signal.addEventListener('abort', () => watcher.close(), { once: true })
-      }
+    // Bundled mini apps' staged root, catalog updates and recommended installs.
+    const miniAppTimers = armMiniAppTimers({
+      miniAppService,
+      miniAppConditions,
+      userId: env.LOCALIX_DEFAULT_USER_ID,
+      logger,
+      signal,
     })
 
     setInterval(() => void maintainStorage(signal), 24 * 60 * 60 * 1000).unref?.()
@@ -232,37 +183,6 @@ export function createOpsTimersPhase({
         logger.warn({ event: 'skills_curator.scheduled_error', error: String(err) })
       })
     setInterval(() => void runCuratorCheck(), 24 * 60 * 60 * 1000).unref?.()
-
-    // Mini apps a catalog installed take its newer versions: a minute after start, then every six
-    // hours. A failed update keeps the version before (`features/mini-apps/store.ts`).
-    const updateMiniApps = () =>
-      miniAppService.store
-        .updateInstalled()
-        .then((queued) => {
-          if (queued.length) logger.info({ event: 'mini_apps.updates_queued', queued })
-        })
-        .catch((error) =>
-          logger.warn({ event: 'mini_apps.update_check_failed', error: errorMessage(error) }),
-        )
-    setTimeout(() => void updateMiniApps(), 60_000).unref?.()
-
-    // The apps the Localix catalog recommends, installed once on a new installation
-    // (`features/mini-apps/recommended.ts`). Offline or failed, it tries again: after five
-    // minutes, then twice as long each time, at most every six hours.
-    let recommendedRetryMs = 5 * 60_000
-    const installRecommended = (): Promise<void> =>
-      miniAppService
-        .installRecommended(env.LOCALIX_DEFAULT_USER_ID)
-        .catch((error) => {
-          logger.warn({ event: 'mini_apps.recommended_failed', error: errorMessage(error) })
-          return 'retry' as const
-        })
-        .then((outcome) => {
-          if (outcome === 'done' || signal.aborted) return
-          setTimeout(() => void installRecommended(), recommendedRetryMs).unref?.()
-          recommendedRetryMs = Math.min(recommendedRetryMs * 2, 6 * 60 * 60 * 1000)
-        })
-    setInterval(() => void updateMiniApps(), 6 * 60 * 60 * 1000).unref?.()
 
     // Plugin auto-update and the official marketplace (`plugin-update-timers.ts`).
     const pluginTimers = armPluginUpdateTimers({
@@ -283,29 +203,12 @@ export function createOpsTimersPhase({
     const idleTasks: IdleTask[] = [
       { name: 'mini_app_channels', run: () => channelHost.start() },
       { name: 'plugin_monitors', run: () => monitorHost.start() },
-      {
-        name: 'staging_report',
-        run: () => stagedRoot.then((root) => (root ? reportStagingFailures(root) : undefined)),
-      },
+      miniAppTimers.stagingReportTask,
       { name: 'delegation_recovery', run: recoverReports },
-      // Session data whose session is gone (a crash mid-delete, a write racing the delete):
-      // every user's, like the recovery. Once per start — deletion itself removes the folder.
-      {
-        name: 'session_data_sweep',
-        run: (ctx) =>
-          sweepOrphanSessionData({ existing: (ids) => liveSessionIds(db, ids, ctx) })
-            .then((removed) => {
-              if (removed.length > 0) {
-                logger.info({ event: 'session_data.swept', count: removed.length })
-              }
-            })
-            .catch((error) =>
-              logger.warn({ event: 'session_data.sweep_failed', error: errorMessage(error) }),
-            ),
-      },
+      sessionDataSweepTask(db, logger),
       { name: 'skills_curator', run: runCuratorCheck },
       { name: 'storage_maintenance', run: (ctx) => maintainStorage(signal, ctx) },
-      { name: 'recommended_mini_apps', run: installRecommended },
+      miniAppTimers.recommendedTask,
       // Near the end: it waits on the network (a first fetch of the official marketplace).
       pluginTimers.officialMarketplaceTask,
       // Last: it waits on the network, and the restored catalog is already served.
