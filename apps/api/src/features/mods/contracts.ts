@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
-import type { HookOrigin } from '@localixai/claude-plugin/mods'
+import type { DispatchOptions, HookOrigin } from '@localixai/claude-plugin/mods'
 
 /**
  * The mods host's contracts: where an event happens, and the ports the host reaches the rest of
@@ -171,7 +171,7 @@ export const sceneDispatch =
       event: string,
       input: unknown,
       core: (event: unknown) => unknown,
-      opts: { plugins?: ReadonlySet<string>; origin?: HookOrigin; signal?: AbortSignal },
+      opts: Pick<DispatchOptions, 'plugins' | 'origin' | 'signal' | 'onTrace'>,
     ): Promise<unknown>
   }) =>
   (
@@ -182,9 +182,15 @@ export const sceneDispatch =
     ids?: ReadonlySet<string>,
     origin?: HookOrigin,
     signal?: AbortSignal,
+    onTrace?: DispatchOptions['onTrace'],
   ) =>
     inScene(scene, () =>
-      engine.dispatch(event, input, core, { plugins: ids, origin, ...(signal ? { signal } : {}) }),
+      engine.dispatch(event, input, core, {
+        plugins: ids,
+        origin,
+        ...(signal ? { signal } : {}),
+        ...(onTrace ? { onTrace } : {}),
+      }),
     )
 
 /** The scene of the call in hand, else the one the host falls back to. */

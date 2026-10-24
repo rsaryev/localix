@@ -22,6 +22,7 @@ export {
 } from './engine'
 export { COUNTED_CALLS, SYNC_CALLS } from './intercept'
 export type { BudgetClock } from './budget'
+export type { TraceEntry, TraceOutcome } from './trace'
 export { matchesEvent, matchesEventName, type Matcher, type MatcherValue } from './matcher'
 export { isHookBody } from './stream'
 export { PLAIN_DATA_LIMITS, plainDataProblem } from './plain-data'

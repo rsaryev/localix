@@ -34,6 +34,8 @@ const actionBody = z.object({
   element: z.string().min(1).max(200),
   value: z.string().max(100_000).optional(),
 })
+/** A band's control names its page: each page is its own drawing (`band-pages.ts`). */
+const bandActionBody = actionBody.extend({ page: z.number().int().min(0).max(16).optional() })
 
 export function createModRoutes(
   host: ModsHost,
@@ -79,7 +81,7 @@ export function createModRoutes(
           }),
         )
       })
-      .post('/sessions/:sessionId/band/actions', zValidator('json', actionBody), async (c) => {
+      .post('/sessions/:sessionId/band/actions', zValidator('json', bandActionBody), async (c) => {
         const handled = await host.band.interact(c.req.param('sessionId'), c.req.valid('json'))
         if (!handled) throw new NotFoundError('mod_control_gone', 'That control is no longer drawn')
         return c.json({ ok: true })

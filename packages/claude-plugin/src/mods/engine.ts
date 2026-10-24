@@ -3,6 +3,7 @@ import { createChainRunner, failureOf, type HookEntry } from './chain-run'
 import { interceptApi, type ModsApi } from './intercept'
 import { matchesEventName } from './matcher'
 import type { HookOrigin, On, RegisterFunction, Registration } from './chain'
+import type { TraceEntry } from './trace'
 
 export type * from './chain'
 
@@ -34,6 +35,12 @@ export interface DispatchOptions {
   skipPlugin?: string
   /** The mods enabled where the event happens; the chain and the nouns its `$` sees. */
   plugins?: ReadonlySet<string>
+  /**
+   * Hears the links that ran, outermost first (`next.trace`'s entries), and the mod of each hook
+   * in the chain by its index: a host learns which hook answered without `next` — the last link,
+   * when the engine's own is not there — and which mods it kept from running.
+   */
+  onTrace?: (trace: readonly TraceEntry[], chain: readonly string[]) => void
 }
 
 export interface ModsEngineOptions {
@@ -213,8 +220,14 @@ export function createModsEngine(options: ModsEngineOptions = {}) {
           entry.plugin !== opts.skipPlugin &&
           (!opts.plugins || opts.plugins.has(entry.plugin)),
       )
-      if (chain.length === 0) return Promise.resolve().then(() => core(input))
-      return run(event, chain, 0, input, core, opts).then((outcome) => outcome.value)
+      if (chain.length === 0 && !opts.onTrace) return Promise.resolve().then(() => core(input))
+      return run(event, chain, 0, input, core, opts).then((outcome) => {
+        opts.onTrace?.(
+          outcome.trace ?? [],
+          chain.map((entry) => entry.plugin),
+        )
+        return outcome.value
+      })
     },
 
     /**
