@@ -115,7 +115,7 @@ probed instead of counting them as zero.
 Tool text output defaults to 64,000 characters and at most 128 content parts. A positive
 `MAX_MCP_OUTPUT_TOKENS` value changes the text allowance at roughly four characters per token. A
 tool's `anthropic/maxResultSizeChars` annotation takes precedence, but cannot raise the host limit
-above 256,000 characters.
+above 500,000 characters, Claude Code's own ceiling.
 
 Tool-call failures return non-fatal errors to the model; Localix does not automatically repeat the
 call. Transport failures may be retryable, while a stale lazy descriptor is refused without dispatch
@@ -132,6 +132,9 @@ resource-capable server can still respond.
 | `CLAUDE_CODE_MCP_TOOL_IDLE_TIMEOUT` | Fails a call whose server sends no response and no progress for this long; progress restarts it | 30 minutes for stdio, 5 for HTTP and `ws`; `0` turns it off; a server's `timeout` is its floor |
 | `MCP_TIMEOUT`                       | Connection and capability-discovery deadline                                                    | 30,000 ms; values below 1,000 ms are ignored                                                   |
 | `MAX_MCP_OUTPUT_TOKENS`             | Changes the default text allowance when no tool annotation exists                               | Unset                                                                                          |
+
+These limits are read from the API's environment and, over it, from the `env` of the Claude Code
+settings for the conversation's folder, as Claude Code reads them from its own environment.
 
 Per-tool selection is stored as capability rules such as `mcp:<server>/<tool>`, applied when tools
 are gathered without rewriting the connection configuration. JSON import translates a non-empty
