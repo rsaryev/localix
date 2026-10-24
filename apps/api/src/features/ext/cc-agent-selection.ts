@@ -3,5 +3,7 @@ export const GENERAL_PURPOSE_AGENT = 'general-purpose'
 
 export function roleNameOfSubagentType(subagentType: string | undefined): string | undefined {
   const name = subagentType?.trim()
-  return !name || name.toLowerCase() === GENERAL_PURPOSE_AGENT ? undefined : name
+  // `general-purpose` and the catch-all `claude` are the invoking agent itself.
+  const self = name?.toLowerCase()
+  return !name || self === GENERAL_PURPOSE_AGENT || self === 'claude' ? undefined : name
 }

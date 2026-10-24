@@ -210,3 +210,20 @@ test('without plugin ports a type is an unknown agent', async () => {
   expect(result.isError).toBe(true)
   expect(calls.create).toEqual([])
 })
+
+// sub-agents.md, "Built-in subagents": general-purpose (and the catch-all `claude`) is the
+// delegator itself with every tool. A plugin command written for Claude Code names it
+// (hookify: `"subagent_type": "general-purpose"`), so it must not be refused as unknown.
+test('general-purpose and claude run the task as the delegator itself', async () => {
+  for (const type of ['general-purpose', 'claude', 'General-Purpose']) {
+    const { opts, ports, calls } = host()
+    const out = await startDelegation('c', request({ agent: type }), opts, undefined, ports)
+    expect(JSON.stringify(out)).not.toContain('No enabled agent')
+    expect(calls.create).toEqual([
+      expect.objectContaining({ agents: [{ agentId: 'builtin:localix' }] }),
+    ])
+    expect((calls.create![0] as { provenance: object }).provenance).not.toHaveProperty(
+      'pluginAgent',
+    )
+  }
+})

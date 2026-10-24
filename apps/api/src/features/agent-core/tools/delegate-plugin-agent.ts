@@ -74,6 +74,12 @@ export type DelegateTarget =
   | { agent: DelegateAgent; plugin?: PluginAgentType }
   | { refusal: string }
 
+/**
+ * Claude Code's built-in catch-all subagent types: the delegator itself, with every tool. A task
+ * handed to `general-purpose` (or `claude`) is the same as one with no `agent` at all.
+ */
+const SELF_TYPES = new Set(['general-purpose', 'claude'])
+
 const notFound = (reference: string) =>
   `No enabled agent "${reference}" here. Name one from the agent directory or the agent types, or omit agent to run the task yourself.`
 
@@ -101,7 +107,11 @@ export async function resolveDelegateTarget(
   }
   const agent = await registry()
   if (agent) return { agent }
-  return plugin() ?? { refusal: notFound(reference) }
+  const typed = plugin()
+  if (typed) return typed
+  // A plugin or registry agent of the same name came first, as one replaces Claude Code's built-in.
+  if (SELF_TYPES.has(reference.trim().replace(/^@/, '').toLowerCase())) return { agent: delegator }
+  return { refusal: notFound(reference) }
 }
 
 /** What a plugin agent adds to its child's creation. */

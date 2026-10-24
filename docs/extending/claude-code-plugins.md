@@ -221,6 +221,11 @@ preloaded `skills` and `maxTurns`. `background: true` never waits for the report
 `isolation: worktree` works in a fresh git worktree, which is kept. As in Claude Code, a plugin
 agent's `hooks`, `mcpServers` and `permissionMode` are ignored.
 
+Claude Code's built-in types work too: `general-purpose` and `claude` run the task as the delegating
+agent itself, and `Explore` and `Plan` run it read-only (without the tools that write files) for
+searching and planning. A plugin agent named `Explore` or `Plan` replaces the built-in. In an
+agent's `tools`, `Agent` and `Task` mean `delegate`.
+
 Without `tools`, the child inherits the chat's tools, its MCP tools included behind
 `activate_tools`. A `tools` list is exact: the child holds those tools and `tool_output`, which
 recovers compressed results. It names an MCP tool as `mcp__<server>__<tool>`, a plugin's server as

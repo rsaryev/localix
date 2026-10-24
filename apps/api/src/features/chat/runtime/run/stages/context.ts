@@ -8,6 +8,7 @@
  * the frame the moment they exist, because teardown must release exactly what was acquired
  * even when a later stage throws.
  */
+import { withBuiltinSubagentTypes } from '../builtin-subagent-types'
 import type { HookRunOptions } from '../event-handlers'
 import { buildRunCcHooks } from '../cc-hooks-build'
 import { createModRunScope, NO_MODS } from '../../../../mods/run-scope'
@@ -125,8 +126,11 @@ export async function prepareRunInputs(frame: RunFrame, turn: ResolvedTurn, view
   // A plugin's default `agent` setting runs the default agent's chat as that plugin agent, on its
   // model unless the person picked one — settled before anything below reads the turn's model.
   // A child delegated as a plugin agent type runs as that agent on every run (`plugin-subagent.ts`).
-  const asType = applyPluginSubagent(context, session.provenance, loadedPlugins.agents, (message) =>
-    env.deps.logger?.warn(message),
+  const asType = applyPluginSubagent(
+    context,
+    session.provenance,
+    withBuiltinSubagentTypes(loadedPlugins.agents),
+    (message) => env.deps.logger?.warn(message),
   )
   const main = applyPluginMainAgent(asType ?? context, asType ? null : loadedPlugins.mainAgent, {
     speakerAgentId,

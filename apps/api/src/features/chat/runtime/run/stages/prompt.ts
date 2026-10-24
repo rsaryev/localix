@@ -31,6 +31,7 @@ import type { ResolvedTurn } from './turn'
 import { approvedPlanForRun, planModeForRun } from '../../plan-view'
 import { installedAgentsPrompt } from '../../../../external-agents/installed'
 import { agentTypesSection } from '../plugin-subagent'
+import { withBuiltinSubagentTypes } from '../builtin-subagent-types'
 
 export type RunPrompt = Awaited<ReturnType<typeof buildRunPrompt>>
 
@@ -113,7 +114,7 @@ export async function buildRunPrompt(
   const agentTypes = toolset.tools.some((tool) => tool.name === TOOL.delegate)
     ? agentTypesSection(
         await inputs.mods.offerAgents(
-          inputs.loadedPlugins.agents.map((agent) => ({
+          withBuiltinSubagentTypes(inputs.loadedPlugins.agents).map((agent) => ({
             ...agent,
             agentId: agent.fullName,
             name: agent.fullName,
