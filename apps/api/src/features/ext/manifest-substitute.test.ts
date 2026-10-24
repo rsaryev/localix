@@ -36,52 +36,18 @@ describe('normalizeTokenKey', () => {
 // makeSubstituter — B3 regression (the core fix)
 // ---------------------------------------------------------------------------
 
-describe('makeSubstituter — B3 regression: CLAUDE_PLUGIN_OPTION casing', () => {
-  const config = { API_KEY: 'secret-value-123' }
-
-  it('[prompt path] resolves ${CLAUDE_PLUGIN_OPTION_API_KEY} for a non-secret key', () => {
+describe('makeSubstituter — key casing', () => {
+  it('resolves ${user_config.API_KEY} by the key as declared', () => {
     const subst = makeSubstituter({
       pluginRoot: '/plugin',
       dataDir: '/data',
       projectDir: '/project',
-      config,
-      isSecret: () => false, // prompt path: explicitly non-secret for this key
+      config: { API_KEY: 'secret-value-123' },
+      isSecret: () => false,
     })
-    expect(subst('key=${CLAUDE_PLUGIN_OPTION_API_KEY}')).toBe('key=secret-value-123')
-  })
-
-  it('[mcp path] resolves ${CLAUDE_PLUGIN_OPTION_API_KEY} with isSecret: () => false', () => {
-    // B3: previously the MCP path lowercased the suffix → looked up config['api_key'] → miss → ''
-    const subst = makeSubstituter({
-      pluginRoot: '/plugin',
-      dataDir: '/data',
-      projectDir: '/project',
-      config,
-      isSecret: () => false, // MCP path: secrets allowed
-    })
-    expect(subst('Authorization: Bearer ${CLAUDE_PLUGIN_OPTION_API_KEY}')).toBe(
+    expect(subst('Authorization: Bearer ${user_config.API_KEY}')).toBe(
       'Authorization: Bearer secret-value-123',
     )
-  })
-
-  it('both paths produce the same substitution result (the B3 invariant)', () => {
-    const promptSubst = makeSubstituter({
-      pluginRoot: '/p',
-      dataDir: '/d',
-      projectDir: '/proj',
-      config,
-      isSecret: () => false,
-    })
-    const mcpSubst = makeSubstituter({
-      pluginRoot: '/p',
-      dataDir: '/d',
-      projectDir: '/proj',
-      config,
-      isSecret: () => false,
-    })
-    const input = 'v=${CLAUDE_PLUGIN_OPTION_API_KEY}'
-    expect(promptSubst(input)).toBe(mcpSubst(input))
-    expect(promptSubst(input)).toBe('v=secret-value-123')
   })
 })
 
@@ -116,22 +82,19 @@ describe('makeSubstituter — token forms', () => {
     expect(subst('t=${user_config.MY_TOKEN}')).toBe('t=tok-abc')
   })
 
-  it('resolves bare ${MY_TOKEN}', () => {
-    expect(subst('t=${MY_TOKEN}')).toBe('t=tok-abc')
+  // manifest-reference, "Reference a saved value": content takes `${user_config.KEY}`; a bare
+  // `${MY_TOKEN}` in a skill is the skill's own text (a shell variable), and stays as written.
+  it('leaves a bare ${MY_TOKEN} and ${CLAUDE_PLUGIN_OPTION_MY_TOKEN} as written', () => {
+    expect(subst('t=${MY_TOKEN}')).toBe('t=${MY_TOKEN}')
+    expect(subst('t=${CLAUDE_PLUGIN_OPTION_MY_TOKEN}')).toBe('t=${CLAUDE_PLUGIN_OPTION_MY_TOKEN}')
   })
 
-  it('resolves ${CLAUDE_PLUGIN_OPTION_MY_TOKEN} — the B3 form', () => {
-    expect(subst('t=${CLAUDE_PLUGIN_OPTION_MY_TOKEN}')).toBe('t=tok-abc')
-  })
-
-  it('resolves lowercase key ${low_key} and its OPTION_ form', () => {
-    expect(subst('v=${low_key}')).toBe('v=lower-val')
+  it('resolves a lowercase key in ${user_config.low_key}', () => {
     expect(subst('v=${user_config.low_key}')).toBe('v=lower-val')
-    expect(subst('v=${CLAUDE_PLUGIN_OPTION_low_key}')).toBe('v=lower-val')
   })
 
   it('resolves multiple tokens in one string', () => {
-    expect(subst('root=${CLAUDE_PLUGIN_ROOT} token=${MY_TOKEN}')).toBe(
+    expect(subst('root=${CLAUDE_PLUGIN_ROOT} token=${user_config.MY_TOKEN}')).toBe(
       'root=/root/plugin token=tok-abc',
     )
   })
@@ -160,9 +123,9 @@ describe('makeSubstituter — secret boundary', () => {
       isSecret: (key) => key === 'SECRET_KEY',
     })
     const placeholder = "[sensitive option 'SECRET_KEY' not available in skill content]"
-    expect(subst('pub=${PUBLIC_KEY} sec=${SECRET_KEY}')).toBe(`pub=pub-value sec=${placeholder}`)
-    expect(subst('sec=${user_config.SECRET_KEY}')).toBe(`sec=${placeholder}`)
-    expect(subst('sec=${CLAUDE_PLUGIN_OPTION_SECRET_KEY}')).toBe(`sec=${placeholder}`)
+    expect(subst('pub=${user_config.PUBLIC_KEY} sec=${user_config.SECRET_KEY}')).toBe(
+      `pub=pub-value sec=${placeholder}`,
+    )
   })
 
   it('[mcp path] secret key IS substituted with isSecret: () => false', () => {
@@ -173,7 +136,6 @@ describe('makeSubstituter — secret boundary', () => {
       config,
       isSecret: () => false,
     })
-    expect(subst('sec=${SECRET_KEY}')).toBe('sec=my-secret')
-    expect(subst('sec=${CLAUDE_PLUGIN_OPTION_SECRET_KEY}')).toBe('sec=my-secret')
+    expect(subst('sec=${user_config.SECRET_KEY}')).toBe('sec=my-secret')
   })
 })

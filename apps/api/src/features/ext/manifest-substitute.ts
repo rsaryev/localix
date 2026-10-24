@@ -10,9 +10,9 @@
  * | `${CLAUDE_PLUGIN_ROOT}`       | `pluginRoot`                                |
  * | `${CLAUDE_PLUGIN_DATA}`       | `dataDir`                                   |
  * | `${CLAUDE_PROJECT_DIR}`       | `projectDir`                                |
- * | `${CLAUDE_PLUGIN_OPTION_KEY}` | `config[KEY]` — case-sensitive, exact match |
  * | `${user_config.KEY}`          | `config[KEY]` — case-sensitive, exact match |
- * | `${KEY}`                      | `config[KEY]` — case-sensitive, exact match |
+ *
+ * A bare `${KEY}` or `${CLAUDE_PLUGIN_OPTION_KEY}` stays as written, as in Claude Code.
  *
  * ## Casing (B3 fix)
  *
@@ -104,13 +104,9 @@ export function makeSubstituter(opts: SubstituterOptions): (text: string) => str
     //    predicate controls whether the value is revealed in this context.
     for (const [key, rawVal] of configEntries) {
       const val = isSecret(key) ? sensitiveOptionPlaceholder(key) : String(rawVal)
-      out = out
-        .split(`\${user_config.${key}}`)
-        .join(val)
-        .split(`\${${key}}`)
-        .join(val)
-        .split(`\${CLAUDE_PLUGIN_OPTION_${key}}`)
-        .join(val)
+      // Only Claude Code's `${user_config.KEY}`: a bare `${KEY}` is the text's own (a shell
+      // variable in a skill), and `CLAUDE_PLUGIN_OPTION_<KEY>` is a hook process's variable.
+      out = out.split(`\${user_config.${key}}`).join(val)
     }
 
     return out

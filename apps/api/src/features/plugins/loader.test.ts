@@ -172,7 +172,7 @@ beforeAll(async () => {
   })
   await fs.writeFile(
     join(b2Plugin, 'skills', 'b2skill', 'SKILL.md'),
-    '---\nname: b2skill\ndescription: B2 skill\n---\n\nCall ${BASE_URL} with auth ${API_TOKEN}.',
+    '---\nname: b2skill\ndescription: B2 skill\n---\n\nCall ${user_config.BASE_URL} with auth ${user_config.API_TOKEN}.',
   )
 })
 
