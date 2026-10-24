@@ -8,6 +8,8 @@ Changes land on `main`.
 
 ### Added
 
+- **Claude Code's `outputStyle`**: when neither the chat nor Settings → Preferences chose a style, a
+  chat speaks in the `outputStyle` of your Claude Code settings for its folder.
 - **Your Claude Code output styles**: styles in `~/.claude/output-styles/` and a project's
   `.claude/output-styles/` are offered in `/output-style` and Settings → Preferences → Output style,
   beside Localix's own.

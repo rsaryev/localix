@@ -1,4 +1,5 @@
 import { userHome } from '../../../../lib/env'
+import { claudeCodeOutputStyle } from '../../../cc-settings/settings-files'
 import { readLocalOutputStyles } from '../../../plugins/output-style-files'
 import {
   activeOutputStyle,
@@ -11,7 +12,7 @@ import {
  * The output style a chat run speaks in. Claude Code sends the active style with every request of
  * the main conversation; a delegated child or a job runs its own prompt, so only a chat run asks.
  * The chat's own `/output-style` choice wins, then the person's default (`outputStyle` in
- * Settings); a plugin's `force-for-plugin` style wins over both while its plugin is enabled.
+ * Settings), then `outputStyle` of the Claude Code settings for the folder; a plugin's `force-for-plugin` style wins over both while its plugin is enabled.
  */
 export async function resolveRunOutputStyle(input: {
   /** The chat's choice: a style's full name, `default`, or null when it made none. */
@@ -25,14 +26,15 @@ export async function resolveRunOutputStyle(input: {
   // A forced plugin style needs no files read; neither does a chat with no style at all.
   const forced = activeOutputStyle(input.pluginStyles, null)
   if (forced) return forced
-  if (!input.chosen && !input.defaultStyle) return null
-  const local = await readLocalOutputStyles({
-    homeDir: input.homeDir ?? userHome(),
-    cwd: input.cwd,
-  })
+  const homeDir = input.homeDir ?? userHome()
+  // Claude Code's `outputStyle` setting for the folder, when Localix has no default of its own.
+  const defaultStyle =
+    input.defaultStyle || claudeCodeOutputStyle({ homeDir, cwd: input.cwd ?? null })
+  if (!input.chosen && !defaultStyle) return null
+  const local = await readLocalOutputStyles({ homeDir, cwd: input.cwd })
   return activeOutputStyle(
     outputStyleCatalog({ plugins: input.pluginStyles, ...local }),
     input.chosen,
-    input.defaultStyle,
+    defaultStyle,
   )
 }
