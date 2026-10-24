@@ -19,6 +19,17 @@ Changes land on `main`.
 - **Updates above the message box**: the update line also offers mini app and plugin updates with
   **Update all**, one at a time, when Localix itself has none; each can be hidden until there is
   something newer. See [Updates](docs/getting-started/installation.md#updates).
+- **Built-in plugins**: Localix now ships Claude Code plugins of its own, listed in Settings →
+  Capabilities → Plugins under **Built-in**. They are on by default and can be switched off, and
+  they update with Localix. The first, `localix-mini-apps`, teaches the agent to build, check, pack
+  and publish mini apps (`/localix-mini-apps:new` and the rest). See
+  [Built-in plugins and updates](docs/extending/plugin-updates.md#built-in-plugins).
+- **Plugin updates**: a plugin installed from a marketplace shows **Update now** with the versions
+  it goes from and to, and plugins from marketplaces with auto-update on update themselves a few
+  minutes after start and every six hours. Each marketplace has an auto-update switch and **Update
+  marketplace**; the official `localix` marketplace auto-updates by default and is added on first
+  start. Versions follow Claude Code's rule, and an old version stays on disk for 14 days. See
+  [Updates](docs/extending/plugin-updates.md#updates).
 - **Mini app store pages**: every mini app has its own icon, and choosing one in the store opens its
   page: screenshots at full resolution with a full-window viewer, its README as About, and details
   such as size, license and what it adds. Tags filter the store, and featured apps come first. See

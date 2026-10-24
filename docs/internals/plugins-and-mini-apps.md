@@ -32,16 +32,24 @@ loaders enforce X2.
 
 ## Plugins
 
-| Part     | Where                                                                                    |
-| -------- | ---------------------------------------------------------------------------------------- |
-| Format   | `packages/claude-plugin` (`@localixai/claude-plugin`): Claude Code's documented format.  |
-| Runtime  | `apps/api/src/features/plugins/`: discovery, loading, marketplaces, enable state.        |
-| Disk     | `~/.localix/plugins/<name>/`, `<project>/.localix/plugins/<name>/`, plugin data folders. |
-| Surfaces | `/rpc/plugins`, Settings → Capabilities → Plugins, `/plugin`.                            |
-| Agent    | Skills, commands and agents, namespaced `/<plugin>:<name>` as in Claude Code.            |
+| Part     | Where                                                                                                                                                                                         |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Format   | `packages/claude-plugin` (`@localixai/claude-plugin`): Claude Code's documented format.                                                                                                       |
+| Runtime  | `apps/api/src/features/plugins/`: discovery, loading, marketplaces, enable state, versions and updates.                                                                                       |
+| Disk     | `~/.localix/plugins/<name>/`, `~/.localix/plugins/cache/<marketplace>/<plugin>/<version>/`, `<project>/.localix/plugins/<name>/`, plugin data folders.                                        |
+| Built-in | The repository's `plugins/<name>/`, staged into `resources/builtin-plugins/`: Claude Code plugins listed as Built-in (source `builtin`), on by default, switchable off, updated with Localix. |
+| Surfaces | `/rpc/plugins` (with `/rpc/plugins/updates`), Settings → Capabilities → Plugins, `/plugin`.                                                                                                   |
+| Agent    | Skills, commands and agents, namespaced `/<plugin>:<name>` as in Claude Code.                                                                                                                 |
 
 A part Claude Code defines and Localix does not run is reported in the plugin's validation, never
 dropped silently. A key Claude Code does not define is a validation warning, as in Claude Code.
+
+A built-in plugin is still only a plugin. The first one, `localix-mini-apps`, teaches an agent to
+build mini apps in plain Markdown — a skill and commands that name `/mini-app create`,
+`mini_app_build` and the repository's scripts — and imports no Localix code, so X1 and X2 hold: no
+code path joins the two layers, and its folder holds no `mini-app.json`. Staging keeps them apart
+too: a folder under `plugins/` whose only manifest is `.claude-plugin/plugin.json` is never staged
+as a mini app.
 
 ## Mini apps
 

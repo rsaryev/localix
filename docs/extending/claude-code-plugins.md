@@ -6,20 +6,25 @@ page to install one and to see which Claude Code features run in Localix.
 
 ## What you can do
 
-| Outcome                                  | How                                                                     |
-| ---------------------------------------- | ----------------------------------------------------------------------- |
-| Install a Claude Code plugin from GitHub | `/plugin install owner/repo`                                            |
-| Install from a git URL or a local folder | `/plugin install https://…/repo.git` or `/plugin install /path/to/dir`  |
-| Add a Claude Code marketplace            | `/plugin marketplace add owner/repo` (or a git URL, a folder, a URL)    |
-| Install from a marketplace               | `/plugin install <name>@<marketplace>`                                  |
-| Add a marketplace and install in one go  | `/plugin install <name> --marketplace <source>`                         |
-| Install for one project only             | Add `--project`; installs default to `~/.localix/plugins` for all chats |
-| Drop a folder in                         | Copy it under a plugin root and run `/plugin reload`                    |
+| Outcome                                  | How                                                                        |
+| ---------------------------------------- | -------------------------------------------------------------------------- |
+| Install a Claude Code plugin from GitHub | `/plugin install owner/repo`                                               |
+| Install from a git URL or a local folder | `/plugin install https://…/repo.git` or `/plugin install /path/to/dir`     |
+| Add a Claude Code marketplace            | `/plugin marketplace add owner/repo` (or a git URL, a folder, a URL)       |
+| Install from a marketplace               | `/plugin install <name>@<marketplace>`                                     |
+| Add a marketplace and install in one go  | `/plugin install <name> --marketplace <source>`                            |
+| Install for one project only             | Add `--project`; installs default to `~/.localix/plugins` for all chats    |
+| Drop a folder in                         | Copy it under a plugin root and run `/plugin reload`                       |
+| Update one plugin now                    | **Update now** on its row, or `/plugin update <name>`                      |
+| Update a marketplace and its plugins     | **Update marketplace** in Settings, or `/plugin marketplace update <name>` |
+| Turn auto-update on or off               | The switch on the marketplace's row in Settings → Plugins → Marketplaces   |
 
 A Claude Code marketplace is a repository, folder or hosted file whose catalog is
 `.claude-plugin/marketplace.json`. `/plugin marketplace list <name>` shows its plugins,
-`/plugin marketplace update <name>` refreshes it and updates what was installed from it, and
-`/plugin marketplace remove <name>` removes it with the plugins installed from it.
+`/plugin marketplace update <name>` refreshes it and updates what was installed from it (naming any
+plugin it leaves for you to update), `/plugin marketplace update` with no name refreshes every
+listing and leaves installed plugins at their versions, and `/plugin marketplace remove <name>`
+removes it with the plugins installed from it.
 
 `/plugin install` leaves a plugin whose manifest or marketplace entry sets `defaultEnabled: false`
 off until you enable it, and names the dependencies it installed. `/plugin disable` refuses while
@@ -33,10 +38,11 @@ A user-scope plugin has one configuration in every project, as Claude Code's `pl
 to the plugin; the plugin's settings keep only a reference, and the value reaches its hooks, MCP
 servers and `CLAUDE_PLUGIN_OPTION_<KEY>` when they run.
 
-Localix ships no plugins and has no marketplace of its own: every plugin comes from a source you
-add. Manage them in Settings → Capabilities → Plugins or with `/plugin`. A plugin runs no Localix
-native code. Screens, a backend and agent tools over Localix's APIs are a mini app's, a separate
-format with its own folder, settings and command; see [Build a mini app](mini-apps.md).
+Localix ships a few plugins of its own, listed as **Built-in**, and registers its official
+marketplace, `localix`, on first start; every other plugin comes from a source you add. Manage them
+in Settings → Capabilities → Plugins or with `/plugin`. A plugin runs no Localix native code.
+Screens, a backend and agent tools over Localix's APIs are a mini app's, a separate format with its
+own folder, settings and command; see [Build a mini app](mini-apps.md).
 
 ## How it works
 
@@ -95,6 +101,12 @@ hookify's stop rules read it as they do in Claude Code. A `SubagentStop` hook's
 keeps the conversation in its database and rewrites these files from it before a hook that can read
 them runs; they live in the session's data folder and go with the session.
 
+### Built-in plugins and updates
+
+Localix ships some plugins of its own as **Built-in**, registers its official `localix` marketplace
+on first start, and updates plugins installed from marketplaces by Claude Code's version rule, on
+its own for marketplaces with auto-update on. See [Built-in plugins and updates](plugin-updates.md).
+
 ### Earlier installs
 
 Versions before this one converted a Claude Code plugin at install and wrote a root `plugin.json`
@@ -103,7 +115,9 @@ into the Default project's folder (`~/.localix/workspace/.localix/plugins`), whi
 saw, still move to `~/.localix/plugins` once at startup, with their saved state. A plugin of the
 same name already there keeps both copies where they are, and the log says so. The copies of the
 first-party mini apps that earlier versions kept in `~/.localix/plugins` are removed at startup;
-mini apps now live in `~/.localix/mini-apps`.
+mini apps now live in `~/.localix/mini-apps`. A user-scope copy an earlier version installed from a
+marketplace into `~/.localix/plugins/<name>` keeps working, and its next update moves it into the
+version cache.
 
 ### Marketplaces
 
@@ -308,10 +322,14 @@ Claude Code's own mods — `diff`, `agents-md`, `sec-default`, `telemetry` — a
 - A plugin whose components live only in its marketplace entry, such as the `*-lsp` plugins, has
   them when installed through the marketplace, not from its folder alone.
 - A hosted `marketplace.json` takes only entries with their own sources, since relative paths have
-  no folder to resolve from. `update` and `remove` act on global installs, not project ones. A
-  marketplace added from a git repository, npm, a URL or a catalog file is a copy under
-  `~/.localix/marketplaces`: run `/plugin marketplace update <name>` to refresh it. One added from a
-  local folder is read in place, but a change to its catalog still takes that update.
+  no folder to resolve from. `update` and `remove` act on global installs, not project ones, and
+  only user-scope copies go into the version cache and are auto-updated; a project install stays a
+  copy in the project.
+- An archive entry without a `sha256` pin, and an npm entry, have the version `unknown` unless a
+  `version` field is set, so they are not updated automatically. A marketplace added from a git
+  repository, npm, a URL or a catalog file is a copy under `~/.localix/marketplaces`: run
+  `/plugin marketplace update <name>` to refresh it. One added from a local folder is read in place,
+  but a change to its catalog still takes that update.
 - A Default project chat has no project folder, so `--project` there fails with a hint to install
   globally.
 - Enabling a plugin with hooks, a hooks module, MCP servers or `bin/` executables lets it run local
@@ -320,6 +338,7 @@ Claude Code's own mods — `diff`, `agents-md`, `sec-default`, `telemetry` — a
 ## Related guides
 
 - [Build a mini app](mini-apps.md)
+- [Built-in plugins and updates](plugin-updates.md)
 - [Hooks and slash commands](../features/hooks-and-commands.md)
 - [Language servers](../features/lsp.md)
 
