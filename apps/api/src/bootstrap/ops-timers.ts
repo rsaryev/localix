@@ -7,6 +7,7 @@ import {
   createPluginConditions,
   observePluginConditions,
 } from '../features/notifications/conditions/plugins'
+import { setSessionActivityListener } from '../features/agent-core/session-activity'
 import { setSkillInvocationListener } from '../features/agent-core/skill-invocations'
 import { DEFAULT_AGENT_ID } from '@localixai/agent/agents'
 import { readAvailability } from '../features/capabilities/availability'
@@ -167,6 +168,12 @@ export function createOpsTimersPhase({
   setSkillInvocationListener((invocation) =>
     monitorHost
       .skillInvoked(invocation)
+      .catch((error) => logger.warn({ event: 'plugin_monitor.warn', msg: errorMessage(error) })),
+  )
+  // A chat that runs hears the plugins' `always` monitors, from its own working directory.
+  setSessionActivityListener((activity) =>
+    monitorHost
+      .sessionActive(activity)
       .catch((error) => logger.warn({ event: 'plugin_monitor.warn', msg: errorMessage(error) })),
   )
 

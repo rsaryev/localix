@@ -23,6 +23,7 @@ import type { createEnvironment } from '../../../agent-core/tools/environments'
 import type { LoadedPlugins } from '../../../plugins/loader'
 import type { RunnerDeps } from '../agent-runner-types'
 import { buildFileToolPorts } from './file-tool-ports'
+import { announceSessionActive } from '../../../agent-core/session-activity'
 import { parseLspServersConfig, configuredLspServer, withoutBuiltinOverlap } from '../../../lsp'
 import type { RuntimeState } from '../agent-runner-state'
 import type { ChatRepository, SessionRecord } from '../../repository'
@@ -137,6 +138,13 @@ export function buildRunToolRegistry(
     )
     deps.lspManager.setPluginServers(defaultCwd, pluginLspDefs)
   }
+  // The plugins' `always` monitors reach this chat, from its working directory.
+  if (loadedPlugins.monitors.length)
+    announceSessionActive({
+      userId,
+      sessionId: session.rootSessionId ?? session.id,
+      cwd: defaultCwd,
+    })
 
   const jobsTool = buildJobsTool({
     deps,

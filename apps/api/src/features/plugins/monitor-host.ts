@@ -2,27 +2,29 @@ import { childEnv } from '../../lib/login-shell-env'
 import { localixWorkspaceDir } from '../../lib/env'
 import { withTimeout } from '../../lib/timeout'
 import { createDebouncer } from '../../lib/debounce'
-import type { CapabilitySourceRepository } from '../capabilities/source-repository'
-import type { PluginConditions } from '../notifications/conditions/plugins'
 
 import type { LoadedPluginMonitor } from './loader'
 import { loadEnabledPluginMonitors } from './loader-declarative'
-import type { AvailabilityReader } from '../capabilities/availability'
 import { isAlwaysMonitor, monitorSkillTrigger } from './contracts-monitors'
 import { createMonitorArms } from './monitor-arms'
-import { monitorWaitsForSkill, type SkillInvocationInput } from './monitor-skill-trigger'
+import { monitorWaitsForSkill } from './monitor-skill-trigger'
 import {
   MAX_LINES_PER_WINDOW,
   createRateGate,
   defaultSpawn,
   pumpLines,
   substituteCommand,
-  type MonitorNotification,
   type MonitorProc,
-  type MonitorSpawner,
 } from './monitor-stream'
 
 export type { MonitorNotification, MonitorProc, MonitorSpawner } from './monitor-stream'
+export type {
+  MonitorArmInput,
+  MonitorArmOutcome,
+  MonitorHostOptions,
+  PluginMonitorHost,
+} from './monitor-host-types'
+import type { MonitorHostOptions, PluginMonitorHost } from './monitor-host-types'
 
 /**
  * Process-wide host for plugin background MONITORS — long-running commands whose
@@ -46,66 +48,13 @@ export type { MonitorNotification, MonitorProc, MonitorSpawner } from './monitor
  * An `on-skill-invoke:<skill>` monitor starts the first time its skill runs in a chat, armed
  * for it (`skillInvoked`), then runs like an `always` one until its plugin goes away.
  */
-export interface MonitorHostOptions {
-  /**
-   * What the rules say about this user's plugins. A PORT: this host owns no storage, and
-   * the composition root is the only place that can bind the rule store.
-   *
-   * No agent is named because a monitor runs beside every turn rather than inside one; the
-   * root binds it to the agent that always exists (`DEFAULT_AGENT_ID`).
-   */
-  availabilityFor: (userId: string) => Promise<AvailabilityReader>
-  repo: CapabilitySourceRepository
-  userId: string
-  /** Where a monitor stdout line goes — bound to the wake primitive by boot wiring. */
-  deliver: (note: MonitorNotification) => void
-  /** A line no session was armed for: delivered to nobody, reported once per silent stretch. */
-  unaddressed?: (note: Omit<MonitorNotification, 'sessionIds'>) => void
-  /** Discovery + spawn cwd (`${CLAUDE_PROJECT_DIR}`); defaults to `~/.localix/workspace`. */
-  cwd?: string
-  /** The user's home (see `discoverPlugins`); `userHome()` in production, a fixture in a test. */
-  homeDir: string
-  logger?: { info?: (msg: string) => void; warn: (msg: string, meta?: unknown) => void }
-  /** Injectable spawner (tests supply a fake). Defaults to `Bun.spawn`. */
-  spawn?: MonitorSpawner
-  now?: () => number
-  /** A monitor that stopped as a standing Event Center row, cleared when it starts again. */
-  conditions?: Pick<PluginConditions, 'monitorStarted' | 'monitorStopped'>
-}
-
-export interface PluginMonitorHost {
-  start(): Promise<void>
-  refresh(): void
-  stop(): Promise<void>
-  /** Names of currently running monitors, as `<plugin>:<monitor>`. */
-  running(): string[]
-  /**
-   * Point a monitor's lines at a session. Refused for a monitor the plugin does not declare
-   * and for a user this host does not run monitors for; the SESSION's ownership is the
-   * caller's to check (the host has no session store).
-   */
-  arm(input: MonitorArmInput): Promise<MonitorArmOutcome>
-  disarm(input: MonitorArmInput): void
-  /** A session that cannot take a wake any more leaves every monitor. */
-  disarmSession(sessionId: string): void
-  /** A skill ran in a chat: start the monitors waiting for it, arm them; resolves their keys. */
-  skillInvoked(input: SkillInvocationInput): Promise<string[]>
-}
-
-export interface MonitorArmInput {
-  userId: string
-  sessionId: string
-  pluginName: string
-  monitorName: string
-}
-
-export type MonitorArmOutcome = { status: 'armed' } | { status: 'refused'; reason: string }
 
 const REFRESH_DEBOUNCE_MS = 500
 const MONITOR_STOP_GRACE_MS = 3_000
 
 interface RunningMonitor {
   key: string
+  armKey: string
   proc: MonitorProc
   controller: AbortController
   done: Promise<void>
@@ -127,11 +76,17 @@ export function createPluginMonitorHost(options: MonitorHostOptions): PluginMoni
   const triggered = new Set<string>()
   const triggeredIn = new Map<string, string>()
   const arms = createMonitorArms()
+  /** The working directories of the chats that ran, other than the host's own. */
+  const chatCwds = new Set<string>()
+  const chatArmKey = (m: LoadedPluginMonitor, at: string) =>
+    `${m.pluginName}:${m.monitor.name}${at === cwd ? '' : `@${at}`}`
   const refreshDebouncer = createDebouncer(REFRESH_DEBOUNCE_MS)
   let lifecycle: Promise<void> = Promise.resolve()
 
-  function startMonitor(m: LoadedPluginMonitor, at: string = cwd): RunningMonitor {
+  /** Start `m` in `at`; its lines go to the sessions armed under `armKey`. */
+  function startMonitor(m: LoadedPluginMonitor, at: string = cwd, armKey?: string): RunningMonitor {
     const key = `${m.pluginName}:${m.monitor.name}`
+    const armedAs = armKey ?? key
     const controller = new AbortController()
     // The `${CLAUDE_*}` placeholders stay in the command; `env` below supplies their values.
     const command = substituteCommand(m.monitor.command, m)
@@ -152,9 +107,9 @@ export function createPluginMonitorHost(options: MonitorHostOptions): PluginMoni
         description: m.monitor.description,
         line,
       }
-      const sessionIds = arms.sessionsFor(key)
+      const sessionIds = arms.sessionsFor(armedAs)
       if (sessionIds.length > 0) deliver({ ...note, sessionIds })
-      else if (arms.firstUnaddressed(key)) options.unaddressed?.(note)
+      else if (arms.firstUnaddressed(armedAs)) options.unaddressed?.(note)
     })
       .catch(() => undefined)
       // Output ending without a stop is the monitor dying — it was silent, so a watcher that
@@ -172,7 +127,7 @@ export function createPluginMonitorHost(options: MonitorHostOptions): PluginMoni
       })
     logger?.info?.(`monitor started: ${key}`)
     options.conditions?.monitorStarted(m.pluginName, m.monitor.name)
-    return { key, proc, controller, done }
+    return { key, armKey: armedAs, proc, controller, done }
   }
 
   async function stopRunning(stopping: RunningMonitor[]): Promise<void> {
@@ -226,6 +181,10 @@ export function createPluginMonitorHost(options: MonitorHostOptions): PluginMoni
           )
         }
       }
+      // Each chat's working directory runs its own `always` monitors (`sessionActive`).
+      for (const at of chatCwds)
+        for (const m of declared)
+          if (isAlwaysMonitor(m.monitor)) started.push(startMonitor(m, at, chatArmKey(m, at)))
     } catch (err) {
       // Startup is transactional: a later spawn failure must not orphan earlier processes.
       await stopRunning(started)
@@ -254,6 +213,7 @@ export function createPluginMonitorHost(options: MonitorHostOptions): PluginMoni
       refreshDebouncer.cancel()
       triggered.clear()
       triggeredIn.clear()
+      chatCwds.clear()
       return enqueue(stopAll)
     },
     running: () => monitors.map((r) => r.key),
@@ -277,6 +237,19 @@ export function createPluginMonitorHost(options: MonitorHostOptions): PluginMoni
       arms.disarm(`${input.pluginName}:${input.monitorName}`, input.sessionId)
     },
     disarmSession: (sessionId) => arms.disarmSession(sessionId),
+    async sessionActive(input) {
+      if (input.userId !== userId) return
+      await enqueue(async () => {
+        if (!declaredRead) await readDeclared()
+        const at = input.cwd ?? cwd
+        if (at !== cwd) chatCwds.add(at)
+        for (const m of declared.filter((entry) => isAlwaysMonitor(entry.monitor))) {
+          const armKey = chatArmKey(m, at)
+          arms.arm(armKey, input.sessionId)
+          if (!monitors.some((r) => r.armKey === armKey)) monitors.push(startMonitor(m, at, armKey))
+        }
+      })
+    },
     async skillInvoked(input) {
       if (input.userId !== userId) return []
       let armed: string[] = []
