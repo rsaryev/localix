@@ -16,7 +16,7 @@ import {
 } from './itemOps'
 import { GLOBAL_SCOPE, resolveOpenScope, tabIdInScope, workspaceScope } from './scope'
 import { emptyEditorState, loadGrid, persistGrid } from './persistence'
-import { isUnavailableContributedKind } from './capabilities'
+import { isUnavailableWorkItem } from './capabilities'
 import { loadString, saveString } from '@localixai/mini-app-sdk/ui/storage'
 import { workItemTransferState } from '@/shared/lib/workItemTransferState'
 import type { GridStore } from './store-contracts'
@@ -265,7 +265,7 @@ export function hydrateGrid(): void {
 
 /**
  * Once the backend publishes the authoritative enabled-mini-app set, close only tabs whose
- * registered owner is now confirmed disabled. During the cold `pending` phase those tabs
+ * owner is now confirmed disabled or removed (a contributed kind, or a bridged mini app view). During the cold `pending` phase those tabs
  * remain intact so a slow sidecar can never erase a user's saved layout.
  */
 export function reconcileUnavailableContributedItems(): void {
@@ -274,7 +274,7 @@ export function reconcileUnavailableContributedItems(): void {
   for (const leaf of leaves(snapshot.root)) {
     const ids = leaf.tabs.filter((id) => {
       const item = snapshot.items[id]
-      return item ? isUnavailableContributedKind(item.kind) : false
+      return item ? isUnavailableWorkItem(item) : false
     })
     if (ids.length > 0) targets.push({ group: leaf.id, ids })
   }
@@ -284,7 +284,7 @@ export function reconcileUnavailableContributedItems(): void {
   // deactivation is a system reconciliation, though: retaining those items
   // would let reopenClosedTab resurrect a kind whose renderer is disabled.
   useGridStore.setState((state) => {
-    const closed = state.closed.filter(({ item }) => !isUnavailableContributedKind(item.kind))
+    const closed = state.closed.filter(({ item }) => !isUnavailableWorkItem(item))
     return closed.length === state.closed.length ? state : { ...state, closed }
   })
 }

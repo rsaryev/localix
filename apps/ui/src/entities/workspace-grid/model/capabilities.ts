@@ -165,15 +165,29 @@ export function persistedScopeKindOf(kind: WorkItemKind): 'session' | 'global' |
 
 /** True after the backend confirms that a mini-app-only kind has no active renderer. */
 export function isUnavailableContributedKind(kind: WorkItemKind): boolean {
-  if (isBuiltInWorkItemKind(kind) || areMiniAppContributionsPending()) return false
+  if (isBuiltInWorkItemKind(kind)) return false
   const contributed = workItemKindRegistry.getRegistered(kind)
-  // Disabled bundled mini apps were never imported, so their kinds are unknown
-  // rather than registered-with-a-disabled-owner. Once activation is
-  // authoritative, both states mean the persisted tab cannot be rendered.
-  return (
-    contributed === undefined ||
-    miniAppContributionActivation(contributed.miniAppName) === 'disabled'
-  )
+  // A registered kind knows its owner: the enabled set answers for it alone, so another mini app
+  // still loading (or failed) does not keep a removed or disabled app's tab on screen.
+  if (contributed) return miniAppContributionActivation(contributed.miniAppName) === 'disabled'
+  // Disabled mini apps were never imported, so their kinds are unknown rather than registered.
+  // An unknown kind may still belong to an app whose UI is loading: it waits for that to settle.
+  return !areMiniAppContributionsPending()
+}
+
+/**
+ * Whether a tab can no longer render: its kind's owner is gone ({@link isUnavailableContributedKind}),
+ * or it is a bridged `mini-app-view` of a mini app the enabled set confirms is off or removed.
+ */
+export function isUnavailableWorkItem(item: {
+  kind: WorkItemKind
+  payload?: Record<string, unknown>
+}): boolean {
+  if (item.kind === 'mini-app-view') {
+    const owner = item.payload?.miniAppName
+    return typeof owner === 'string' && miniAppContributionActivation(owner) === 'disabled'
+  }
+  return isUnavailableContributedKind(item.kind)
 }
 
 /**

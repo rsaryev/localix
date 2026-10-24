@@ -104,4 +104,30 @@ describe('reconcileUnavailableContributedItems', () => {
 
     expect(useGridStore.getState().items['chat:s1']).toBeDefined()
   })
+
+  test('a removed mini app closes its tab even while another mini app has not loaded', () => {
+    // Removing it drops it from the enabled set; another app's UI failing to load (a transient
+    // 503, a broken build) must not keep the removed app's tab on screen.
+    setEnabledMiniAppNames(new Set(), new Set(), new Set(['another-mini-app']))
+    reconcileUnavailableContributedItems()
+    expect(useGridStore.getState().items['mini-app:tab']).toBeUndefined()
+    expect(useGridStore.getState().items['file:keep.sql']).toBeDefined()
+  })
+
+  test("a removed mini app's bridged view tab closes too", () => {
+    useGridStore.getState().openItem(
+      {
+        kind: 'mini-app-view',
+        id: 'mini-app-view:gone:board',
+        title: 'Board',
+        scope: 's1',
+        payload: { miniAppName: 'gone-mini-app', viewId: 'board', projectId: '' },
+      },
+      { group: 'group-root' },
+    )
+    setEnabledMiniAppNames(new Set([MINI_APP]))
+    reconcileUnavailableContributedItems()
+    expect(useGridStore.getState().items['mini-app-view:gone:board']).toBeUndefined()
+    expect(useGridStore.getState().items['mini-app:tab']).toBeDefined()
+  })
 })
