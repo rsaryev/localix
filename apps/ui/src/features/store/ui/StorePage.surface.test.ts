@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 
-import surface from './Store.surface'
+import surface from './StorePage.surface'
 
 test('the Store opens from search and the command palette, in its one app-level tab', () => {
   expect(surface).toMatchObject({

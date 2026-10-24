@@ -14,7 +14,7 @@ const LISTINGS = [
     id: 'kanban',
     displayName: 'Kanban',
     installs: [{ scope: 'user', version: '1.0.0', enabled: true }],
-    configure: 'localix://ui/settings/mini-apps#mini-app:kanban',
+    configure: 'localix://ui/settings/mini-apps#mini-app:sample-board',
   }),
   listing({
     id: 'trading',
@@ -58,7 +58,9 @@ describe('the Store’s library', () => {
       expect(view.calls).toEqual(['update mini-app/trading user', 'remove mini-app/kanban user'])
       await view.openMenu(view.button('Kanban actions'))
       await view.click(view.menuItem('Configure'))
-      expect(view.calls.at(-1)).toBe('configure localix://ui/settings/mini-apps#mini-app:kanban')
+      expect(view.calls.at(-1)).toBe(
+        'configure localix://ui/settings/mini-apps#mini-app:sample-board',
+      )
     } finally {
       await view.done()
     }
