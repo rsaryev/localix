@@ -151,7 +151,7 @@ export async function buildRunCcHooks(input: BuildRunCcHooksInput): Promise<RunC
     ...ccHookSessions.skillHooks(session.id),
     ...(params.scope.ccScopedHooks ?? []).filter((scoped) => scoped.lifetime !== 'session'),
   ]
-  for (const scoped of scopedHooks) {
+  for (const scoped of fromSettings.frontmatterAllowed ? scopedHooks : []) {
     mergeCcHookRegistries(
       ccHookRegistry,
       parseScopedHooks(scoped.raw, scoped.source, {

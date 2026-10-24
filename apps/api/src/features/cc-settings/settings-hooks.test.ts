@@ -54,4 +54,6 @@ test('disableAllHooks and allowManagedHooksOnly', () => {
   expect(only.pluginAllowed('vetted@corp')).toBe(true)
   expect(only.pluginAllowed('vetted')).toBe(true)
   expect(only.pluginAllowed('other')).toBe(false)
+  expect(only.frontmatterAllowed).toBe(false)
+  expect(settingsHooks([user], { projectTrusted: true }).frontmatterAllowed).toBe(true)
 })

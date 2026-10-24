@@ -17,6 +17,8 @@ export interface SettingsHooks {
   blocks: Array<{ source: 'user' | 'project' | 'local'; raw: unknown; managed: boolean }>
   /** Whether a plugin's hooks may run (`<name>@<marketplace>` or the bare name). */
   pluginAllowed(pluginId: string): boolean
+  /** Whether a skill's or an agent's frontmatter hooks may run. */
+  frontmatterAllowed: boolean
 }
 
 export function settingsHooks(
@@ -25,7 +27,7 @@ export function settingsHooks(
 ): SettingsHooks {
   const managed = layers.filter((l) => l.source === 'policy')
   if (managed.some((l) => l.settings.disableAllHooks === true))
-    return { blocks: [], pluginAllowed: () => false }
+    return { blocks: [], pluginAllowed: () => false, frontmatterAllowed: false }
   const managedOnly =
     managed.some((l) => l.settings.allowManagedHooksOnly === true) ||
     layers.some((l) => l.source !== 'policy' && l.settings.disableAllHooks === true)
@@ -51,6 +53,8 @@ export function settingsHooks(
   }
   return {
     blocks,
+    // `allowManagedHooksOnly` blocks "hooks declared in agent frontmatter" with the rest.
+    frontmatterAllowed: !managedOnly,
     pluginAllowed: (pluginId) =>
       !managedOnly ||
       forced.has(pluginId) ||
