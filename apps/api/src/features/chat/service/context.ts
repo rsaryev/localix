@@ -1,4 +1,5 @@
 import type { PermissionMode } from '../../../contracts/permission-modes'
+import type { PermissionRule } from '../../agent-core/permission-engine'
 import type { SemanticVectors } from '@localixai/mini-app-sdk/backend'
 import type { DecisionService } from '../../decisions/service'
 import type { GlobalSearchPort } from '../../agent-core/tools/global-search/global-search'
@@ -71,6 +72,11 @@ export interface ChatServiceDeps {
     projectId: string | null,
     names: readonly string[],
   ) => Promise<SkillOverrides>
+  /**
+   * An agent's permission rules, which a typed skill's injected commands meet before any runs
+   * (`skill-command-authorize.ts`). Absent: no rules to meet, the commands run as typed.
+   */
+  loadSkillCommandRules?: (userId: string, agentId: string) => Promise<PermissionRule[]>
   db: Kysely<AppDatabase>
   /** The process's one work registry; the runner records background work in it. */
   work: WorkRegistry

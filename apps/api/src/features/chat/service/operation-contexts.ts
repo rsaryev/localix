@@ -138,6 +138,7 @@ export function createOperationContexts(
   ) => (await deps.loadSkillOverrides?.(...args)) ?? {}
 
   const commandCtx: CommandHandlerContext = {
+    ...(deps.loadSkillCommandRules ? { loadSkillCommandRules: deps.loadSkillCommandRules } : {}),
     changeAgentMembership: (userId, sessionId, change) =>
       updateConversationMembership(
         {

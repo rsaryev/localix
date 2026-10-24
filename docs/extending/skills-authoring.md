@@ -186,15 +186,19 @@ git log --oneline -5
 ```
 ````
 
-Commands run in the session working directory. Localix injects the four `CLAUDE_*` values listed
-above, runs at most 16 commands with concurrency four, and allows ten seconds and 32 KiB per
-command. Aggregate inserted stdout is capped at 64 KiB. Failures become visible error text in the
-skill body.
+Commands run in the session working directory with stderr merged into stdout. Localix injects the
+`CLAUDE_*` values listed above (and, in a plugin skill, `CLAUDE_PLUGIN_ROOT` and
+`CLAUDE_PLUGIN_DATA`), runs at most 16 commands with concurrency four, and allows two minutes and 32
+KiB per command. Aggregate inserted stdout is capped at 64 KiB. A command that fails — a non-zero
+exit, except exit 1 from a search or comparison command, or a timeout — aborts the invocation, and
+the agent never sees the skill.
 
-Shell expansion is single-pass: output cannot start more `!` commands. It does pass through the
-later file-reference and argument stages, so an emitted `@path` or `$ARGUMENTS` can still expand.
-These preprocessing commands spawn directly before the agent run; they do not pass through Bash tool
-approval or the skill's inline tool overrides.
+Before any command runs, each one meets the agent's permission rules as a shell call, typed or
+loaded by the agent: a denied command aborts the invocation, and so does one the rules would ask
+about, unless the skill's `allowed-tools` pre-approve it.
+
+Shell expansion is single-pass: what a command prints, and a file `@path` inlines, reach the agent
+as plain text — a printed `@path`, `!` command or `$ARGUMENTS` is not expanded again.
 
 ### File references
 

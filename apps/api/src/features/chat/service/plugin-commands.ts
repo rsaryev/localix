@@ -4,7 +4,7 @@ import { pluginDataDir } from '../../plugins/mcp'
 import { resolveWebhookUrl } from '../../../lib/runtime-address'
 import { userHome } from '../../../lib/env'
 import { expandFileReferences } from './file-references'
-import { expandSkillContent } from './skill-commands'
+import { expandSkillContent, type AuthorizeSkillCommand } from './skill-commands'
 import { receivesArguments, splitSkillArgs } from './slash-commands'
 
 /**
@@ -119,6 +119,8 @@ export const renderPluginPrompt = async (
     cwd?: string
     /** CC `arguments`: names of the positional arguments, filling `$name`. */
     arguments?: readonly string[]
+    /** Asked about every injected command before any runs (`skill-command-authorize.ts`). */
+    authorize?: AuthorizeSkillCommand
   },
 ): Promise<string> => {
   // The same home `session-workspace` built the command's catalog with.
@@ -164,7 +166,7 @@ export const renderPluginPrompt = async (
       ctx.cwd,
       env,
       { raw: trimmed, ...(ctx.arguments ? { names: ctx.arguments } : {}) },
-      undefined,
+      ctx.authorize,
       vault,
     )
     out = await expandFileReferences(

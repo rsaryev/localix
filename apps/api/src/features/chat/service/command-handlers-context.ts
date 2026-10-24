@@ -1,3 +1,4 @@
+import type { PermissionRule } from '../../agent-core/permission-engine'
 /**
  * Shared types + constants for the slash-command handlers. The CommandHandlerContext
  * interface is the closure surface createChatService hands the dispatchers; it and the
@@ -118,6 +119,8 @@ export interface CommandHandlerContext {
    * Skill visibility for a scope. Takes the names it is deciding about: a verdict is per
    * capability, so a map can only be built for a roster someone has already discovered.
    */
+  /** The agent's permission rules a typed skill's commands meet; absent, none are checked. */
+  loadSkillCommandRules?: (userId: string, agentId: string) => Promise<PermissionRule[]>
   loadSkillOverrides: (
     userId: string,
     projectId: string | null,

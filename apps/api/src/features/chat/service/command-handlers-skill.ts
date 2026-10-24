@@ -7,7 +7,12 @@ import { parseSkillCommand } from './slash-commands'
 import { commandTarget } from './command-participant'
 import { SkillCommandFailedError } from './skill-commands'
 import { renderSkillBody } from './skill-render'
-import { skillToolPathVars, toolOverrideOptions } from './tool-override-options'
+import {
+  skillToolPathVars,
+  substituteToolPathVars,
+  toolOverrideOptions,
+} from './tool-override-options'
+import { authorizeTypedSkillCommands } from './skill-command-authorize'
 import type { SessionRecord } from '../repository'
 import type { SkillRecord } from './skills'
 import { pluginDataDir } from '../../plugins/mcp'
@@ -110,9 +115,26 @@ export async function handleSkillCommand(
   // then arguments and `${CLAUDE_*}` substitute. SECURITY: commands and @refs only for SKILL.md
   // files (source='file'): the user's own, and an ENABLED plugin's — Claude Code runs a plugin
   // skill's commands too. A failed command aborts the invocation before the model is asked.
+  // The agent's rules, which every injected command meets first (`skill-command-authorize.ts`).
+  const rules = await ctx.loadSkillCommandRules?.(userId, speakerRoute.agentId)
+  const pathVars = skillToolPathVars({
+    projectDir: workingDir,
+    path: skill.path,
+    pluginRoot: plugin?.root,
+    pluginDataDir: plugin?.dataDir,
+  })
   let expanded: string
   try {
     expanded = await renderSkillBody(skill, skillCmd.arg, {
+      ...(rules
+        ? {
+            authorize: authorizeTypedSkillCommands(
+              rules,
+              substituteToolPathVars(skill.allowedTools, pathVars),
+              workingDir,
+            ),
+          }
+        : {}),
       sessionId,
       workingDir,
       effort: speakerRoute.reasoningEffort ?? 'low',
@@ -193,15 +215,7 @@ export async function handleSkillCommand(
     {
       // CC disallowed-tools removes tools; allowed-tools auto-approves them.
       // ${CLAUDE_PROJECT_DIR} in allowed-tools resolves to the session working dir.
-      ...toolOverrideOptions(
-        skill,
-        skillToolPathVars({
-          projectDir: workingDir,
-          path: skill.path,
-          pluginRoot: plugin?.root,
-          pluginDataDir: plugin?.dataDir,
-        }),
-      ),
+      ...toolOverrideOptions(skill, pathVars),
       // CC skill frontmatter `hooks` — registered for "the rest of the session once the skill is
       // invoked": from this run on, every later run of the session keeps them. No
       // Stop→SubagentStop conversion: the skill runs in THIS session's turn.

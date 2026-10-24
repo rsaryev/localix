@@ -32,7 +32,11 @@ import type { createLspDocumentService } from '../features/lsp'
 import type { createAgentsService } from '../features/agents/service'
 import type { createLogger } from '../lib/logger'
 import { createCapabilityRuleRepository } from '../features/capabilities/rule-repository'
-import { resolveCapabilities } from '../features/capabilities/resolve'
+import {
+  NO_ROSTERS,
+  projectCapabilities,
+  resolveCapabilities,
+} from '../features/capabilities/resolve'
 import { createPermissionRulePersister } from '../features/capabilities/availability'
 import { createAgentDirectoryPorts } from './agent-directory-ports'
 import { createTerminalPorts } from './terminal-ports'
@@ -166,6 +170,12 @@ export function createChatServicePhase({
       const denied = (await resolveCapabilities(capabilityRules, at)).denied('skill', names)
       return Object.fromEntries(denied.map((name) => [name, 'off' as const]))
     },
+    // A typed skill's injected commands meet the agent's own permission rules first.
+    loadSkillCommandRules: async (userId, agentId) =>
+      projectCapabilities(
+        await resolveCapabilities(capabilityRules, { userId, agentId }),
+        NO_ROSTERS,
+      ).permissions,
     ports: createChatFeaturePorts(db, { pluginService, miniAppService }),
     announceCapabilityChange,
     catalogService,

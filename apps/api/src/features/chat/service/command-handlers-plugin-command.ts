@@ -1,6 +1,11 @@
 import { sessionRoute } from '../../../contracts/session-route'
 import { commandTarget } from './command-participant'
-import { skillToolPathVars, toolOverrideOptions } from './tool-override-options'
+import {
+  skillToolPathVars,
+  substituteToolPathVars,
+  toolOverrideOptions,
+} from './tool-override-options'
+import { authorizeTypedSkillCommands } from './skill-command-authorize'
 import { pluginDataDir } from '../../plugins/mcp'
 import { userHome } from '../../../lib/env'
 import { parsePluginCommandArgs, renderPluginPrompt } from './plugin-commands'
@@ -88,6 +93,13 @@ export async function handlePluginCommand(
       return insertDirectReply(userId, sessionId, prompt, parsed.usage, ts, 'warning')
     }
     const projectDir = await ctx.resolveSessionWorkingDir(userId, session)
+    const pathVars = skillToolPathVars({
+      projectDir,
+      pluginRoot: match.pluginDir,
+      pluginDataDir: pluginDataDir(match.plugin, userHome()),
+    })
+    // The agent's rules, which every injected command meets first (`skill-command-authorize.ts`).
+    const rules = await ctx.loadSkillCommandRules?.(userId, speakerRoute.agentId)
     let instruction: string
     try {
       instruction = await renderPluginPrompt(match.command.prompt, parsed.values, argString, {
@@ -100,6 +112,15 @@ export async function handlePluginCommand(
         // CC dynamic content (`!\`cmd\``, `@path`) runs in the session working dir.
         cwd: projectDir,
         arguments: match.command.arguments,
+        ...(rules
+          ? {
+              authorize: authorizeTypedSkillCommands(
+                rules,
+                substituteToolPathVars(match.command.allowedTools, pathVars),
+                projectDir,
+              ),
+            }
+          : {}),
       })
     } catch (error) {
       // CC: a failed injected command aborts the invocation; the model never sees the command.
@@ -132,14 +153,7 @@ export async function handlePluginCommand(
       instruction,
       ts,
       {
-        ...toolOverrideOptions(
-          match.command,
-          skillToolPathVars({
-            projectDir,
-            pluginRoot: match.pluginDir,
-            pluginDataDir: pluginDataDir(match.plugin, userHome()),
-          }),
-        ),
+        ...toolOverrideOptions(match.command, pathVars),
         ...(resolvedBindings?.length ? { bindings: resolvedBindings } : {}),
         invocation: {
           source: 'plugin',
