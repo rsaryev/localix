@@ -162,6 +162,11 @@ describe('readMaxResultChars', () => {
     )
   })
 
+  test("a tool may raise its text to Claude Code's 500,000-character ceiling, not past it", () => {
+    expect(resolveMcpResultMaxChars(400_000)).toBe(400_000)
+    expect(resolveMcpResultMaxChars(600_000)).toBe(500_000)
+  })
+
   test('admits a genuinely larger request up to the ceiling', () => {
     const asked = MCP_RESULT_DEFAULT_MAX_CHARS * 2
     expect(resolveMcpResultMaxChars(asked)).toBe(asked)

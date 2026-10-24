@@ -48,15 +48,15 @@ export const MCP_RESULT_DEFAULT_MAX_CHARS = 64_000
 export const MCP_RESULT_MAX_PARTS = 128
 
 /**
- * Host ceiling on what a tool ANNOTATION may raise the text cap to — 4x the default, generous
- * enough that a server with genuinely large output is still served, bounded enough that the
- * annotation cannot turn a per-call cap into no cap at all.
+ * Host ceiling on what a tool ANNOTATION may raise the text cap to — Claude Code's own hard
+ * ceiling for `anthropic/maxResultSizeChars` (mcp.md, "Raise the limit for a specific tool"),
+ * bounded so the annotation cannot turn a per-call cap into no cap at all.
  *
  * Deliberately NOT the operator's `MAX_MCP_OUTPUT_TOKENS`: the operator is trusted and may set
  * that to anything, while the annotation comes from the server. Same asymmetry the rest of this
  * module already applies to parts and error messages.
  */
-export const MCP_RESULT_MAX_ANNOTATION_CHARS = MCP_RESULT_DEFAULT_MAX_CHARS * 4
+export const MCP_RESULT_MAX_ANNOTATION_CHARS = 500_000
 
 const MCP_ERROR_TRUNCATION_MARKER = '\n[\u2026MCP error truncated to bound context]'
 
