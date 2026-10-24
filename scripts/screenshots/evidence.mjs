@@ -20,7 +20,7 @@ export async function verifyEvidence(page, scenario) {
     return (await import('./cloud-connection.mjs')).verifyCloudConnection(page)
   if (scenario === 'unfinished-reply')
     return (await import('./unfinished-reply.mjs')).verifyUnfinishedReply(page)
-  if (scenario === 'store' || scenario === 'store-listing')
+  if (scenario === 'store' || scenario === 'store-listing' || scenario === 'store-commands')
     return (await import('./store.mjs')).verifyStore(page, scenario)
   if (scenario === 'codemode-card')
     return (await import('./codemode-card.mjs')).verifyCodemodeCard(page)

@@ -40,18 +40,26 @@ Changes made with `/mini-app` take effect on the next turn.
 Mini apps are added in the **Store**, which opens in its own tab on its **Mini apps** shelf from the
 rail's **+**, from Settings → Mini apps and from setup. A search across the whole Store sits on top,
 and the shelves sit on the left: **Discover** (what Localix features and recommends), one shelf per
-kind of package, one per capability the packages contain (**Screens**, **Agent tools**,
-**Commands**), then **Installed**, **Updates** and **Sources**. A shelf with nothing on it is not
-shown.
+kind of package, one per kind of component you can look for (**Commands**, and for plugins
+**Skills**, **Agents**, **Hooks** and the like), then **Installed**, **Updates** and **Sources**. A
+shelf with nothing on it is not shown. In a narrow pane the shelves become one picker beside the
+search, and the cards stay in one column.
 
-On the Mini apps shelf, apps the Localix catalog features come first, then three groups:
-**Updates**, **Installed** and **Available**. Each card shows the app's icon, name, what is inside
-(a screen, tools for the agent, commands, and that it runs code), what it does, up to three tags and
-one action: **Install**, **Update**, or how far a download has got. Category tabs narrow the shelf;
-choosing a tag shows only the apps that carry it, with the tag as a chip beside the tabs until you
-remove it.
+On the Mini apps shelf, the apps the Localix catalog features and you have not installed come first,
+once, then three groups: **Updates**, **Installed** and **Available**. Each card shows the app's
+icon, name and check mark, what it does, up to three tags, what is inside only where that sets it
+apart from the other apps (an app with commands says "3 commands"), and its action: **Install**,
+**Update**, or how far a download has got. Category tabs narrow the shelf; choosing a tag shows only
+the apps that carry it, with the tag as a chip beside the tabs until you remove it.
 
-![The Store on its Mini apps shelf, with the shelves on the left](../assets/screenshots/store/mini-apps--2026-10-25.png)
+![The Store on its Mini apps shelf: featured apps first, three installed, the rest available](../assets/screenshots/store/mini-apps--2026-10-25.png)
+
+A capability shelf lists the components themselves, not the packages. **Commands** shows each
+command with what it does and the app it comes from; filter it, or switch on **Installed only**.
+Choosing a row opens that app's page on **What's inside** with the command marked, and its button
+(**Install Kanban board**, say) installs the whole app.
+
+![The Commands shelf, each command with the app it comes from](../assets/screenshots/store/commands--2026-10-25.png)
 
 A check mark means Localix verified the publisher. An app from an unverified publisher shows the
 publisher's name, and its install asks **Install anyway?** first. An app built for a newer Localix
@@ -61,9 +69,10 @@ Choosing a card opens the app's page: a large icon, the publisher, category, tag
 action, then its screenshots at the resolution the app published them. Below them, **Overview**
 shows the README beside the version, size, license, author, homepage and mini app API, **What's
 inside** lists its screen, tools, backend and commands, **Permissions** says what would run on this
-computer and warns about an unverified publisher, and **Versions** compares the offered version with
-yours. Page the screenshots with the arrows, a swipe, ←/→ or the dots, and choose one to see it
-full-window. The back button returns to the shelf where you left it, filters and scroll kept.
+computer (and that it runs code) and warns about an unverified publisher, and **Versions** compares
+the offered version with yours. Page the screenshots with the arrows, a swipe, ←/→ or the dots, and
+choose one to see it full-window. The back button returns to the shelf where you left it, filters
+and scroll kept.
 
 ![A mini app's page in the Store, showing what is inside it](../assets/screenshots/store/listing--2026-10-25.png)
 

@@ -258,7 +258,7 @@ export const capturePlan = {
   'store/mini-apps': {
     guide: 'features/mini-apps.md',
     purpose:
-      'The Store on its Mini apps shelf: shelves on the left, featured cards with their icons',
+      'The Store on its Mini apps shelf: Featured once on top, three installed, the rest available',
     scenario: 'store',
     start: 'home',
   },
@@ -266,6 +266,12 @@ export const capturePlan = {
     guide: 'features/mini-apps.md',
     purpose: 'One mini app’s page in the Store: screenshots and what is inside it',
     scenario: 'store-listing',
+    start: 'home',
+  },
+  'store/commands': {
+    guide: 'features/mini-apps.md',
+    purpose: 'The Commands shelf lists each command with the package it comes from',
+    scenario: 'store-commands',
     start: 'home',
   },
   'tools/codemode-card': {

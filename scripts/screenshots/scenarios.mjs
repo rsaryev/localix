@@ -65,7 +65,7 @@ export async function compose(page, scenario) {
     return (await import('./cloud-connection.mjs')).composeCloudConnection(page)
   if (scenario === 'unfinished-reply')
     return (await import('./unfinished-reply.mjs')).composeUnfinishedReply(page)
-  if (scenario === 'store' || scenario === 'store-listing')
+  if (scenario === 'store' || scenario === 'store-listing' || scenario === 'store-commands')
     return (await import('./store.mjs')).composeStore(page, scenario)
   if (scenario === 'codemode-card')
     return (await import('./codemode-card.mjs')).composeCodemodeCard(page)

@@ -79,6 +79,26 @@ The seed turns semantic search on and waits for the real index. The query shares
 the matched fixture message, so the hit is the model's work; how it was found is not shown. Both
 scenarios start from the workspace (`start` in `plan.mjs`) rather than an open conversation.
 
+## Store evidence
+
+The `store/*` scenarios need a home of their own. A person's Store has a few mini apps installed and
+the rest on offer, while the other scenarios need every mini app installed, so the Store runs
+against a second capture runtime whose API has its own `HOME`:
+
+```bash
+R=<capture-root>   # a dedicated localix-…capture… directory, as above
+mkdir -p $R/home
+HOME=$R/home LOCALIX_CAPTURE_ROOT=$R LOCALIX_DB_FILE=$R/localix.db LOCALIX_DEV_API_PORT=5151 \
+  LOCALIX_DEV_UI_PORT=5150 VITE_DEV_HOST=127.0.0.1 bun scripts/dev-servers.mjs
+LOCALIX_CAPTURE_ROOT=$R bun run test:screenshots --grep 'store/'
+```
+
+Each Store scenario runs `store-seed.mjs` first: it writes the fixture the runner opens and, in a
+home with no mini app installed, installs Kanban, Git and Documents through the Store. It never
+removes anything, so against a home that holds other mini apps the scenarios fail their count of
+three rather than uninstall a person's apps. The browser has no macOS shell, so the desktop app
+(**Install as app**) is not offered in these captures; its DOM tests cover it.
+
 ## Demo HTTP responses
 
 The optional runner starts a small Bun HTTP fixture on `127.0.0.1:5160` for the browser preview and
