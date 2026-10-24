@@ -73,6 +73,8 @@ export function assertEnableChanges(input: {
 export async function removeDataIfLastCopy(input: {
   userId: string
   name: string
+  /** The plugin's identifier (`plugin-data-id.ts`), when known: its data folder's key. */
+  id?: string
   home: string
   repo: CapabilitySourceRepository
   discoverHome: () => Promise<DiscoveredPlugin[]>
@@ -80,7 +82,7 @@ export async function removeDataIfLastCopy(input: {
   if (!input.repo.scopesOf) return
   if ((await input.repo.scopesOf(input.userId, input.name)).length > 0) return
   if ((await input.discoverHome()).some((plugin) => plugin.manifest.name === input.name)) return
-  await fs.rm(pluginDataDir(input.name, input.home), { recursive: true, force: true })
+  await fs.rm(pluginDataDir(input.id ?? input.name, input.home), { recursive: true, force: true })
 }
 
 /** Validate a plugin folder in place (`claude plugin validate <path>`), installed or not. */

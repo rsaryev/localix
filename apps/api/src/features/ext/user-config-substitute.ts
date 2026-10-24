@@ -1,3 +1,4 @@
+import { existsSync, renameSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { isCredentialEnvName } from '../../lib/credential-env-name'
@@ -38,17 +39,31 @@ export function isPlainObject(v: unknown): v is Record<string, unknown> {
 
 /**
  * CC `${CLAUDE_PLUGIN_DATA}` — persistent directory for plugin-owned user artifacts.
- * Resolves to `~/.localix/plugin-data/<id>` where `<id>` replaces non-alphanumeric
- * chars with `-` (mirrors the CC spec which uses `~/.claude/plugins/data/<id>` —
+ * Resolves to `~/.localix/plugin-data/<id>`, `<id>` the plugin identifier (`name@marketplace`, or
+ * the bare name for a plugin from no marketplace) with non-alphanumeric chars replaced by `-` (mirrors the CC spec which uses `~/.claude/plugins/data/<id>` —
  * we are a different host, so OUR canonical data dir is the substitution value).
  * Native plugins receive the same path as `ctx.dataDir`; opaque runtime state stays
  * separately under `ctx.stateDir`.
  * Lives here (not `./mcp`) so the cc-hooks feature can import it without pulling
  * in MCP record synthesis; `./mcp` re-exports it for historical importers.
  */
-export function pluginDataDir(pluginName: string, home: string): string {
-  const id = pluginName.replace(/[^a-zA-Z0-9_-]/g, '-')
-  return join(home, '.localix', 'plugin-data', id)
+export function pluginDataDir(pluginId: string, home: string): string {
+  const root = join(home, '.localix', 'plugin-data')
+  const dir = join(root, pluginId.replace(/[^a-zA-Z0-9_-]/g, '-'))
+  // An earlier Localix keyed the folder by the bare name: a `name@marketplace` plugin takes it
+  // over once, its files kept, unless its own folder exists already.
+  const at = pluginId.indexOf('@')
+  if (at > 0) {
+    const legacy = join(root, pluginId.slice(0, at).replace(/[^a-zA-Z0-9_-]/g, '-'))
+    if (!existsSync(dir) && existsSync(legacy)) {
+      try {
+        renameSync(legacy, dir)
+      } catch {
+        // Another process moved it first, or the disk refused: the new folder starts empty.
+      }
+    }
+  }
+  return dir
 }
 
 export interface McpSubstitutionResult {

@@ -101,7 +101,7 @@ export async function handleSkillCommand(
       ? {
           name: skill.pluginName,
           root: skill.pluginDir,
-          dataDir: pluginDataDir(skill.pluginName, userHome()),
+          dataDir: skill.pluginDataDir ?? pluginDataDir(skill.pluginName, userHome()),
         }
       : undefined
   const speakerRoute = speaker ?? sessionRoute(session)

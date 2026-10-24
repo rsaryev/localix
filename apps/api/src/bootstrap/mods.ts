@@ -101,8 +101,10 @@ export function createModsPhase(input: {
       hookEvent,
     })
 
+  // Each loaded mod's data folder, keyed by its plugin identifier (`name@marketplace`).
+  const modDataDirs = new Map<string, string>()
   const ports: ModsPorts = {
-    dataDir: (plugin) => pluginDataDir(plugin, userHome()),
+    dataDir: (plugin) => modDataDirs.get(plugin) ?? pluginDataDir(plugin, userHome()),
     workspaceDir: localixWorkspaceDir(),
     async submitPrompt(scene, input) {
       const wakes = deps.wakes()
@@ -235,7 +237,9 @@ export function createModsPhase(input: {
       userId: defaultUserId,
       homeDir: userHome(),
     })
-    await modsHost.reconcile(mods.map((mod) => ({ ...mod })))
+    modDataDirs.clear()
+    for (const mod of mods) modDataDirs.set(mod.plugin, mod.dataDir)
+    await modsHost.reconcile(mods.map(({ dataDir: _dataDir, ...mod }) => mod))
     publish(defaultUserId, ['mods', 'capabilities'])
   }
   const refreshMods = () =>

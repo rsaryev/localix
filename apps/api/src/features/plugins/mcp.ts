@@ -3,7 +3,8 @@ import type { McpServerRecord } from '../mcp/repository'
 import { normalizeMcpServerEntry } from '../mcp/normalize'
 import type { DiscoveredPlugin } from './discovery'
 import { declaredConfigKeys, type PluginConfigValues } from './config'
-import { pluginDataDir, substituteMcpServerEntry } from '../ext/user-config-substitute'
+import { substituteMcpServerEntry } from '../ext/user-config-substitute'
+import { dataDirOfPlugin } from './plugin-data-id'
 
 // Substitution internals + token collectors + `pluginDataDir` live in
 // `../ext/user-config-substitute` (shared with cc-hooks); re-exported here so historical
@@ -51,7 +52,7 @@ export function buildMcpRecords(
 ): McpServerRecord[] {
   const allowedEnvKeys = declaredConfigKeys(plugin.manifest)
   // Inject CC plugin path variables into config so they resolve in MCP entries.
-  const dataDir = pluginDataDir(plugin.manifest.name, home)
+  const dataDir = dataDirOfPlugin(plugin, home)
   const enrichedConfig: PluginConfigValues = {
     ...config,
     CLAUDE_PLUGIN_ROOT: plugin.dir,

@@ -39,6 +39,8 @@ export interface SkillRecord {
   pluginName?: string
   /** That plugin's directory (`CLAUDE_PLUGIN_ROOT`). */
   pluginDir?: string
+  /** That plugin's `CLAUDE_PLUGIN_DATA`. */
+  pluginDataDir?: string
 }
 
 export interface SkillInput {
@@ -98,6 +100,7 @@ export function toPluginSkillRecord(entry: PluginSkill, projectId: string): Skil
   record.name = entry.fullName
   record.pluginName = entry.pluginName
   record.pluginDir = entry.pluginDir
+  if (entry.skill.pluginDataDir) record.pluginDataDir = entry.skill.pluginDataDir
   return record
 }
 

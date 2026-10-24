@@ -74,7 +74,9 @@ export function createSessionWorkspace(deps: SessionWorkspaceDeps) {
   const gatherEnabledPluginCommands = async (
     userId: string,
     session: SessionRecord,
-  ): Promise<Array<{ plugin: string; command: PluginCommand; pluginDir: string }>> => {
+  ): Promise<
+    Array<{ plugin: string; command: PluginCommand; pluginDir: string; dataDir?: string }>
+  > => {
     const projectId = session.projectId ?? ''
     const [cwd, availability] = await Promise.all([
       resolveSessionWorkingDir(userId, session),

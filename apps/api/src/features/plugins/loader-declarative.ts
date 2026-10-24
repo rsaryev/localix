@@ -5,7 +5,7 @@ import { localixWorkspaceDir } from '../../lib/env'
 import { buildPluginCatalog } from './catalog'
 import type { AvailabilityReader } from '../capabilities/availability'
 import { pluginLoadBlockReason } from './load-block'
-import { pluginDataDir } from './mcp'
+import { dataDirOfPlugin } from './plugin-data-id'
 import type { LoadedPluginMonitor } from './loader'
 import { scalarConfig, type CapabilitySourceRepository } from '../capabilities/source-repository'
 import { resolvePluginConfig } from './config'
@@ -63,7 +63,7 @@ export async function loadEnabledPluginMonitors(
       monitors.push({
         pluginName: plugin.manifest.name,
         pluginRoot: plugin.dir,
-        dataDir: pluginDataDir(plugin.manifest.name, opts.homeDir),
+        dataDir: dataDirOfPlugin(plugin, opts.homeDir),
         monitor,
       })
     }
@@ -80,6 +80,8 @@ export interface LoadedPluginMod {
   options: Record<string, unknown>
   /** Changes when a file beside the module (its own imports) or the options change. */
   revision: string
+  /** Its `${CLAUDE_PLUGIN_DATA}`, keyed by the plugin's identifier. */
+  dataDir: string
 }
 
 /**
@@ -106,6 +108,7 @@ export async function loadEnabledPluginMods(
     mods.push({
       plugin: plugin.manifest.name,
       root: plugin.dir,
+      dataDir: dataDirOfPlugin(plugin, opts.homeDir),
       module,
       options,
       revision: `${mtime}:${JSON.stringify(options)}`,

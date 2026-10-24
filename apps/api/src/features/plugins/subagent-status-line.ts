@@ -1,4 +1,5 @@
 import { childEnv } from '../../lib/login-shell-env'
+import { pluginIdOf } from './plugin-data-id'
 import { pluginDataDir } from '../ext/user-config-substitute'
 import { runHookCommand, type HookCommandOptions } from '../lifecycle-hooks/command'
 import type { PluginCatalog } from './catalog'
@@ -14,6 +15,8 @@ import type { PluginCatalog } from './catalog'
 export interface SubagentStatusLine {
   pluginName: string
   pluginRoot: string
+  /** The plugin's identifier: its `CLAUDE_PLUGIN_DATA` key. */
+  pluginId?: string
   command: string
 }
 
@@ -44,7 +47,12 @@ export function activeSubagentStatusLine(catalog: PluginCatalog): SubagentStatus
   for (const { plugin } of catalog.enabled) {
     const line = plugin.entrypoints.components?.settings.subagentStatusLine
     if (line)
-      found = { pluginName: plugin.manifest.name, pluginRoot: plugin.dir, command: line.command }
+      found = {
+        pluginName: plugin.manifest.name,
+        pluginRoot: plugin.dir,
+        pluginId: pluginIdOf(plugin),
+        command: line.command,
+      }
   }
   return found
 }
@@ -118,7 +126,10 @@ export async function runSubagentStatusLine(input: {
       ...(input.line.pluginName
         ? {
             CLAUDE_PLUGIN_ROOT: input.line.pluginRoot,
-            CLAUDE_PLUGIN_DATA: pluginDataDir(input.line.pluginName, input.homeDir),
+            CLAUDE_PLUGIN_DATA: pluginDataDir(
+              input.line.pluginId ?? input.line.pluginName,
+              input.homeDir,
+            ),
           }
         : {}),
     }),

@@ -71,7 +71,7 @@ function skillPlugin(skill: DiscoveredSkill) {
   return {
     name: skill.pluginName,
     root: skill.pluginRoot,
-    dataDir: pluginDataDir(skill.pluginName, userHome()),
+    dataDir: skill.pluginDataDir ?? pluginDataDir(skill.pluginName, userHome()),
   }
 }
 

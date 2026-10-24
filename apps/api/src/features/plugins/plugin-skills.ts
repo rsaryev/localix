@@ -1,4 +1,5 @@
 import { scalarConfig } from '../capabilities/source-repository'
+import { dataDirOfPlugin, pluginIdOf } from './plugin-data-id'
 import {
   readSkillsFromRoot,
   type DiscoveredSkill,
@@ -55,7 +56,7 @@ export async function readCatalogPluginSkills(
       const config = resolvePluginConfig(plugin.manifest, scalarConfig(state?.config))
       const subst = makePluginSubstituter(
         plugin.dir,
-        name,
+        pluginIdOf(plugin),
         config,
         plugin.manifest,
         opts.projectDir,
@@ -80,6 +81,7 @@ export async function readCatalogPluginSkills(
           // skill can pre-approve its own bundled script.
           if (skill.allowedTools) skill.allowedTools = skill.allowedTools.map(subst)
           skill.pluginName = name
+          skill.pluginDataDir = dataDirOfPlugin(plugin, opts.homeDir)
           const fullName = pluginSkillFullName(name, skill.name)
           out.push({
             pluginName: name,
@@ -103,13 +105,13 @@ export async function readCatalogPluginSkills(
 export function catalogPluginCommands(
   catalog: PluginCatalog,
   opts: { projectDir: string; homeDir: string },
-): Array<{ plugin: string; command: PluginCommand; pluginDir: string }> {
+): Array<{ plugin: string; command: PluginCommand; pluginDir: string; dataDir: string }> {
   return catalog.enabled.flatMap(({ plugin, state }) => {
     const name = plugin.manifest.name
     const config = resolvePluginConfig(plugin.manifest, scalarConfig(state?.config))
     const subst = makePluginSubstituter(
       plugin.dir,
-      name,
+      pluginIdOf(plugin),
       config,
       plugin.manifest,
       opts.projectDir,
@@ -119,6 +121,7 @@ export function catalogPluginCommands(
       plugin: name,
       command: { ...command, prompt: subst(command.prompt) },
       pluginDir: plugin.dir,
+      dataDir: dataDirOfPlugin(plugin, opts.homeDir),
     }))
   })
 }

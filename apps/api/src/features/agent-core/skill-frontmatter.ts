@@ -31,6 +31,8 @@ export interface DiscoveredSkill {
   pluginName?: string
   /** That plugin's directory: `${CLAUDE_PLUGIN_ROOT}` for the skill's commands and hooks. */
   pluginRoot?: string
+  /** That plugin's `${CLAUDE_PLUGIN_DATA}`, keyed by its identifier (`name@marketplace`). */
+  pluginDataDir?: string
   // ---- CC-compatible frontmatter fields ----------------------------------
   // All optional. Parsed from SKILL.md frontmatter by parseSkillFrontmatter.
 

@@ -110,6 +110,8 @@ export const renderPluginPrompt = async (
     effort?: string
     pluginDir?: string
     pluginName?: string
+    /** The plugin's `CLAUDE_PLUGIN_DATA`, keyed by its identifier. */
+    dataDir?: string
     projectDir?: string
     /** Working dir for CC dynamic content (`!\`cmd\`` + `@path`). Omit to skip that stage. */
     cwd?: string
@@ -118,7 +120,7 @@ export const renderPluginPrompt = async (
   },
 ): Promise<string> => {
   // The same home `session-workspace` built the command's catalog with.
-  const dataDir = ctx?.pluginName ? pluginDataDir(ctx.pluginName, userHome()) : ''
+  const dataDir = ctx?.dataDir ?? (ctx?.pluginName ? pluginDataDir(ctx.pluginName, userHome()) : '')
   // Remember whether the authored template consumes user arguments. This must be
   // checked before `${argName}` substitution removes the evidence. Environment
   // placeholders do not count: a command that only references its session/project

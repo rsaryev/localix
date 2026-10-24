@@ -7,6 +7,7 @@ import { setInPlaceRecord } from './in-place-installs'
 import { assertNotBuiltin } from './builtin-plugins'
 import { releaseCachedInstall } from './install-versioned'
 import { removeDataIfLastCopy, rowScopeOf } from './service-lifecycle'
+import { pluginIdOf } from './plugin-data-id'
 import type { PluginService } from './service-types'
 
 /**
@@ -66,6 +67,7 @@ export async function removePlugin(
   await removeDataIfLastCopy({
     userId,
     name: input.name,
+    ...(plugin ? { id: pluginIdOf(plugin) } : {}),
     home,
     repo,
     discoverHome: () => ctx.discover({ cwd: null, projectId: '' }),

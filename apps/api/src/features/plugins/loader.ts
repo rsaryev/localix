@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs'
+import { dataDirOfPlugin, pluginIdOf } from './plugin-data-id'
 import { join } from 'node:path'
 
 import { type CapabilitySourceRepository, scalarConfig } from '../capabilities/source-repository'
@@ -101,7 +102,7 @@ export async function loadEnabledPlugins(opts: {
     // Per-plugin text substituter — created once, reused for agents/skills/promptSections.
     const subst = makePluginSubstituter(
       plugin.dir,
-      plugin.manifest.name,
+      pluginIdOf(plugin),
       config,
       plugin.manifest,
       opts.cwd || '',
@@ -143,6 +144,7 @@ export async function loadEnabledPlugins(opts: {
           if (skill.description) skill.description = subst(skill.description)
           skill.pluginName = plugin.manifest.name
           skill.pluginRoot = plugin.dir
+          skill.pluginDataDir = dataDirOfPlugin(plugin, opts.homeDir)
           result.skills.push(skill)
         }
       } catch (err) {

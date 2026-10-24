@@ -59,7 +59,7 @@ missing license. A root `plugin.json` is not read, as in Claude Code, and a fold
 | `hooks`, `mcpServers`, `lspServers`                  | Merge with `hooks/hooks.json`, `.mcp.json`, `.lsp.json`; the default file first    |
 | `userConfig`, `sensitive: true`                      | The plugin's settings form, masked when sensitive                                  |
 | `${VAR}` in an MCP server's config                   | Expands from the environment, as in Claude Code                                    |
-| `${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_PLUGIN_DATA}`     | The plugin's folder and its data folder                                            |
+| `${CLAUDE_PLUGIN_ROOT}`, `${CLAUDE_PLUGIN_DATA}`     | The plugin's folder, and `~/.localix/plugin-data/<id>` keyed by `name@marketplace` |
 | `${user_config.KEY}`                                 | The setting's value                                                                |
 | Command `arguments` frontmatter                      | Names positional arguments; `$name` takes each value, beside `$ARGUMENTS` and `$1` |
 | Names Anthropic reserves (`claude-…`, `anthropic-…`) | Load, as Claude Code loads Anthropic's own plugins                                 |
@@ -361,8 +361,7 @@ Claude Code's own mods — `diff`, `agents-md`, `sec-default`, `telemetry` — a
 - A plugin whose components live only in its marketplace entry, such as the `*-lsp` plugins, has
   them when installed through the marketplace, not from its folder alone.
 - Plugins are keyed by name: two plugins of one name from different marketplaces cannot both be
-  installed, so `${CLAUDE_PLUGIN_DATA}` is `~/.localix/plugin-data/<name>`.
-- Background auto-update of marketplaces is not run yet; `autoUpdate` is recorded for it.
+  installed.
 - A hosted `marketplace.json` takes only entries with their own sources, since relative paths have
   no folder to resolve from. `update` and `remove` act on global installs, not project ones, and
   only user-scope copies go into the version cache and are auto-updated; a project install stays a

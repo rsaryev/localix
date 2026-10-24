@@ -1,4 +1,5 @@
 import { makeSubstituter } from '../ext/manifest-substitute'
+import { dataDirOfPlugin } from './plugin-data-id'
 import { pluginDataDir } from './mcp'
 import type { PluginManifest } from './contracts'
 import type { PluginConfigValues } from './config'
@@ -14,7 +15,8 @@ import { pluginOutputStyles } from './output-styles'
  */
 export function makePluginSubstituter(
   pluginDir: string,
-  pluginName: string,
+  /** The plugin's identifier (`plugin-data-id.ts`): its `${CLAUDE_PLUGIN_DATA}` key. */
+  pluginId: string,
   config: PluginConfigValues,
   manifest: PluginManifest,
   projectDir: string,
@@ -22,7 +24,7 @@ export function makePluginSubstituter(
 ): (text: string) => string {
   return makeSubstituter({
     pluginRoot: pluginDir,
-    dataDir: pluginDataDir(pluginName, home),
+    dataDir: pluginDataDir(pluginId, home),
     projectDir,
     config,
     isSecret: (key) => Boolean(manifest.config?.[key]?.secret),
@@ -85,7 +87,7 @@ export function appendPluginRuntimeDeclarations({
     result.ccHooks.push({
       pluginName: plugin.manifest.name,
       pluginRoot: plugin.dir,
-      dataDir: pluginDataDir(plugin.manifest.name, opts.homeDir),
+      dataDir: dataDirOfPlugin(plugin, opts.homeDir),
       config,
       sensitiveKeys,
       raw,
@@ -102,7 +104,7 @@ export function appendPluginRuntimeDeclarations({
   if (Object.keys(plugin.entrypoints.lspServers).length > 0) {
     const lspSubst = makeSubstituter({
       pluginRoot: plugin.dir,
-      dataDir: pluginDataDir(plugin.manifest.name, opts.homeDir),
+      dataDir: dataDirOfPlugin(plugin, opts.homeDir),
       projectDir: opts.cwd || '',
       config,
       isSecret: () => false,
@@ -111,7 +113,7 @@ export function appendPluginRuntimeDeclarations({
       pluginName: plugin.manifest.name,
       env: {
         CLAUDE_PLUGIN_ROOT: plugin.dir,
-        CLAUDE_PLUGIN_DATA: pluginDataDir(plugin.manifest.name, opts.homeDir),
+        CLAUDE_PLUGIN_DATA: dataDirOfPlugin(plugin, opts.homeDir),
         ...(opts.cwd ? { CLAUDE_PROJECT_DIR: opts.cwd } : {}),
       },
       servers: substituteStrings(plugin.entrypoints.lspServers, lspSubst) as Record<
@@ -129,7 +131,7 @@ export function appendPluginRuntimeDeclarations({
     result.monitors.push({
       pluginName: plugin.manifest.name,
       pluginRoot: plugin.dir,
-      dataDir: pluginDataDir(plugin.manifest.name, opts.homeDir),
+      dataDir: dataDirOfPlugin(plugin, opts.homeDir),
       monitor,
     })
   }

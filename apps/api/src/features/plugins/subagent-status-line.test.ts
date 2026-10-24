@@ -40,6 +40,7 @@ describe('a plugin subagent status line', () => {
     expect(activeSubagentStatusLine(catalog)).toEqual({
       pluginName: 'c',
       pluginRoot: '/plugins/c',
+      pluginId: 'c',
       command: 'c.sh',
     })
     expect(activeSubagentStatusLine({ enabled: [entry('b')] } as unknown as PluginCatalog)).toBe(

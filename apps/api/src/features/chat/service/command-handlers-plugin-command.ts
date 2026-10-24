@@ -93,6 +93,7 @@ export async function handlePluginCommand(
         effort: speakerRoute.reasoningEffort ?? undefined,
         pluginDir: match.pluginDir,
         pluginName: match.plugin,
+        ...(match.dataDir ? { dataDir: match.dataDir } : {}),
         projectDir,
         // CC dynamic content (`!\`cmd\``, `@path`) runs in the session working dir.
         cwd: projectDir,
