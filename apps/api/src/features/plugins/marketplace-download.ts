@@ -52,6 +52,8 @@ export interface DownloadOptions {
   /** Error code of a refused hop, a failed request or a timeout. */
   code: string
   maxRedirects?: number
+  /** Request headers for one hop (a registry token, a catalog's own headers), by its URL. */
+  headers?: (url: URL) => Record<string, string> | undefined
 }
 
 function isTimeout(err: unknown): boolean {
@@ -94,7 +96,12 @@ export async function fetchChecked(
   refuse(opts, current, null)
   try {
     for (let hops = 0; ; hops++) {
-      const response = await fetch(current, { redirect: 'manual', signal })
+      const headers = opts.headers?.(current)
+      const response = await fetch(current, {
+        redirect: 'manual',
+        signal,
+        ...(headers ? { headers } : {}),
+      })
       const location = response.headers.get('location')
       if (!REDIRECT_STATUSES.has(response.status) || !location) {
         if (!response.ok)

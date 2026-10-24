@@ -11,6 +11,7 @@ import { childEnv } from '../../lib/login-shell-env'
 import { rmrf } from '../ext/install-tree'
 import { fetchChecked, readCapped } from './marketplace-download'
 import { assertGunzipWithin } from './marketplace-gzip-limit'
+import { npmAuthFor } from './marketplace-npm-auth'
 import { downloadNpmTarball } from './marketplace-npm-integrity'
 import { DEFAULT_NPM_REGISTRY, npmHop, userNpmRegistryFor } from './marketplace-npm-registry'
 
@@ -35,6 +36,8 @@ export const MAX_NPM_METADATA_BYTES = 64 * 1024 * 1024
 /** An npm plugin source (CC marketplace spec). */
 export interface NpmEntrySource {
   package: string
+  /** An `https` link to the package's tarball, given as `package`: fetched as it is. */
+  tarball?: string
   version?: string
   registry?: string
 }
@@ -58,18 +61,50 @@ export function parseNpmEntrySource(
     typeof obj.npm === 'string' ||
     (typeof obj.package === 'string' && typeof obj.url !== 'string' && typeof obj.repo !== 'string')
   if (!isNpm) return null
-  const pkg = typeof obj.package === 'string' ? obj.package : (obj.npm as string | undefined)
+  const raw = typeof obj.package === 'string' ? obj.package : (obj.npm as string | undefined)
+  if (raw && /^https?:\/\//i.test(raw)) return tarballSource(entryName, raw)
+  // `@org/formatter@2.0.0`: a version appended to the name (the scope's `@` is not one).
+  const at = raw ? raw.lastIndexOf('@') : -1
+  const appended = raw && at > 0 ? raw.slice(at + 1) : undefined
+  const pkg = appended ? raw!.slice(0, at) : raw
   if (!pkg || !NPM_NAME_RE.test(pkg)) {
     throw new InvalidRequestError(
       'plugin_npm_bad_source',
       `Entry "${entryName}" npm source needs a valid "package" name (got ${JSON.stringify(pkg ?? null)}).`,
     )
   }
+  const version = appended ?? (typeof obj.version === 'string' ? obj.version : undefined)
   return {
     package: pkg,
-    ...(typeof obj.version === 'string' ? { version: obj.version } : {}),
+    ...(version ? { version } : {}),
     ...(typeof obj.registry === 'string' ? { registry: obj.registry } : {}),
   }
+}
+
+/** Git hosts whose download links are not npm tarballs (GitLab's npm registry API aside). */
+const GIT_HOSTS = new Set([
+  'github.com',
+  'gist.github.com',
+  'gitlab.com',
+  'bitbucket.org',
+  'git.sr.ht',
+])
+
+/** A tarball link given as `package`; whether plain http may reach it is checked on fetch. */
+function tarballSource(entryName: string, link: string): NpmEntrySource {
+  const url = URL.canParse(link) ? new URL(link) : null
+  const host = url?.hostname.toLowerCase().replace(/^www\./, '')
+  const gitlabRegistry = host === 'gitlab.com' && url!.pathname.startsWith('/api/v4/')
+  if (!url || (host && GIT_HOSTS.has(host) && !gitlabRegistry))
+    throw new InvalidRequestError(
+      'plugin_npm_bad_source',
+      `Entry "${entryName}" npm source "${link}" is refused: a tarball link on a git host is not an npm package; use a github, url or git-subdir source.`,
+    )
+  const name = decodeURIComponent(url.pathname.split('/').at(-1) ?? '').replace(
+    /\.t?gz$|\.tar\.gz$/i,
+    '',
+  )
+  return { package: name || link, tarball: url.href }
 }
 
 /** Packument URL for a package: scoped names URL-encode the `/` (npm registry API). */
@@ -120,8 +155,9 @@ async function fetchNpm(
   what: string,
   defaultRegistry: string,
   timeoutMs: number,
+  headers?: (url: URL) => Record<string, string> | undefined,
 ): Promise<Response> {
-  const download = { what, timeoutMs, checkHop: npmHop(defaultRegistry) }
+  const download = { what, timeoutMs, checkHop: npmHop(defaultRegistry), headers }
   return (await fetchChecked(url, { ...download, code: 'plugin_npm_fetch_failed' })).response
 }
 
@@ -130,6 +166,7 @@ async function fetchPackument(
   src: NpmEntrySource,
   defaultRegistry: string,
   registry: string,
+  headers: (url: URL) => Record<string, string> | undefined,
 ): Promise<Packument> {
   const what = `npm metadata for "${src.package}"`
   const response = await fetchNpm(
@@ -137,6 +174,7 @@ async function fetchPackument(
     what,
     defaultRegistry,
     NPM_METADATA_TIMEOUT_MS,
+    headers,
   )
   const body = await readCapped(response, MAX_NPM_METADATA_BYTES, {
     what,
@@ -170,9 +208,12 @@ export async function fetchNpmPlugin(
   // registry, checked before anything is contacted.
   const defaultRegistry =
     opts.defaultRegistry ?? (await userNpmRegistryFor(src.package, opts.env, opts.home))
-  const meta = await fetchPackument(src, defaultRegistry, src.registry ?? defaultRegistry)
-  const version = pickNpmVersion(src.package, meta, src.version)
-  const dist = meta.versions?.[version]?.dist
+  const auth = await npmAuthFor(opts.env, opts.home)
+  const meta = src.tarball
+    ? null
+    : await fetchPackument(src, defaultRegistry, src.registry ?? defaultRegistry, auth)
+  const version = meta ? pickNpmVersion(src.package, meta, src.version) : 'tarball'
+  const dist = meta ? meta.versions?.[version]?.dist : { tarball: src.tarball }
   if (!dist?.tarball) {
     throw new InvalidRequestError(
       'plugin_npm_fetch_failed',
@@ -184,6 +225,7 @@ export async function fetchNpmPlugin(
     `npm tarball for "${src.package}@${version}"`,
     defaultRegistry,
     NPM_TARBALL_TIMEOUT_MS,
+    auth,
   )
   const packageVersion = `${src.package}@${version}`
   const tmpFile = join(tmpdir(), `localix-npm-${randomUUID()}.tgz`)
